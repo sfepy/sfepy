@@ -1,0 +1,28 @@
+syntax: glob
+Makefile
+TAGS
+anim/*
+output/*
+output-tests/*
+results/*
+auto/*
+*.vtk
+*.mesh
+*.txt
+
+# Generated files:
+sfe/fem/extmods/fem.py
+sfe/fem/extmods/geometry.py
+sfe/fem/extmods/meshutils.py
+sfe/terms/extmods/terms.py
+tmp/terms.*
+samples/*
+
+syntax: re
+.*\.pyc
+.*\.o
+.*\.so
+.*\_wrap.c
+.*\.toc
+.*\.aux
+.*\.log
