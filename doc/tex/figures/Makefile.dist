@@ -1,0 +1,11 @@
+# 17.01.2006, c
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES = *.fig *.eps *.pdf *.latex Makefile.dist
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fd $(DISTFILES) $(DESTDIR)

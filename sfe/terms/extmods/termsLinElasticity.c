@@ -1,0 +1,364 @@
+#include "formSDCC.h"
+#include "termsLinElasticity.h"
+#include "terms.h"
+
+#undef __FUNC__
+#define __FUNC__ "mat_le_tanModuli11"
+/*!
+  @par Revision history:
+  - 17.03.2003, c
+  - 31.01.2006
+  - 06.02.2006
+  - 07.03.2006, adopted from mafest1
+*/
+int32 mat_le_tanModuli11( FMField *mtx, float64 lam, float64 mu, int32 mode  )
+#define MAT_LE_AuxMacro1_3D \
+    do { for (iqp = 0; iqp < nQP; iqp++) { \
+      pd[0] = lam + 2.0 * mu; \
+      pd[1] = lam; \
+      pd[2] = lam; \
+      pd[6] = lam; \
+      pd[7] = lam + 2.0 * mu; \
+      pd[8] = lam; \
+      pd[12] = lam; \
+      pd[13] = lam; \
+      pd[14] = lam + 2.0 * mu; \
+      pd[21] = mu; \
+      pd[28] = mu; \
+      pd[35] = mu; \
+      pd += 36; \
+    } } while (0)
+#define MAT_LE_AuxMacro2_3D \
+    do { for (iqp = 0; iqp < nQP; iqp++) { \
+      mu23 = mu * (2.0/3.0); \
+      mu43 = 2.0 * mu23; \
+      pd[0] = mu43; \
+      pd[1] = -mu23; \
+      pd[2] = -mu23; \
+      pd[6] = -mu23; \
+      pd[7] = mu43; \
+      pd[8] = -mu23; \
+      pd[12] = -mu23; \
+      pd[13] = -mu23; \
+      pd[14] = mu43; \
+      pd[21] = mu; \
+      pd[28] = mu; \
+      pd[35] = mu; \
+      pd += 36; \
+    } } while (0)
+#define MAT_LE_AuxMacro1_2D \
+    do { for (iqp = 0; iqp < nQP; iqp++) { \
+      pd[0] = lam + 2.0 * mu; \
+      pd[1] = lam; \
+      pd[3] = lam; \
+      pd[4] = lam + 2.0 * mu; \
+      pd[8] = mu; \
+      pd += 9; \
+    } } while (0)
+#define MAT_LE_AuxMacro2_2D \
+    do { for (iqp = 0; iqp < nQP; iqp++) { \
+      mu23 = mu * (2.0/3.0); \
+      mu43 = 2.0 * mu23; \
+      pd[0] = mu43; \
+      pd[1] = -mu23; \
+      pd[3] = -mu23; \
+      pd[4] = mu43; \
+      pd[8] = mu; \
+      pd += 9; \
+    } } while (0)
+{
+  float64 *pd;
+  int32 nQP, iqp, sym;
+
+  nQP = mtx->nLev;
+  sym = mtx->nRow;
+
+  pd = FMF_PtrCurrent( mtx );
+
+  if (sym == 6) {
+    if (1) {
+      MAT_LE_AuxMacro1_3D;
+    } else {
+      float64 mu23, mu43;
+      MAT_LE_AuxMacro2_3D;
+    }
+  } else if (sym == 3) {
+    if (1) {
+      MAT_LE_AuxMacro1_2D;
+    } else {
+      float64 mu23, mu43;
+      MAT_LE_AuxMacro2_2D;
+    }
+  }
+
+  return( RET_OK );
+}
+#undef MAT_LE_AuxMacro1_3D
+#undef MAT_LE_AuxMacro2_3D
+#undef MAT_LE_AuxMacro1_2D
+#undef MAT_LE_AuxMacro2_2D
+
+#undef __FUNC__
+#define __FUNC__ "mat_le_stress"
+/*!
+  In mixed case, builds only the deviatoric part of stress.
+
+  @par Revision history:
+  - 17.03.2003, c
+  - 31.01.2006
+  - 06.02.2006
+  - 07.03.2006, adopted from mafest1
+*/
+int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
+{
+  int32 iell, iqp;
+  int32 sym, nQP;
+  float64 *pstress, *pstrain;
+  float64 mu23, mu43, l2m;
+
+  nQP = stress->nLev;
+  sym = stress->nRow;
+
+  if (sym == 6) {
+    for (iell = 0; iell < stress->nCell; iell++) {
+      pstress = FMF_PtrCell( stress, iell );
+      pstrain = FMF_PtrCell( strain, iell );
+      if (1) {
+	for (iqp = 0; iqp < nQP; iqp++) {
+	  l2m = 2.0 * mu + lam;
+	  pstress[0] = l2m * pstrain[0] + lam * (pstrain[1] + pstrain[2]);
+	  pstress[1] = l2m * pstrain[1] + lam * (pstrain[0] + pstrain[2]);
+	  pstress[2] = l2m * pstrain[2] + lam * (pstrain[0] + pstrain[1]);
+	  pstress[3] = mu * pstrain[3];
+	  pstress[4] = mu * pstrain[4];
+	  pstress[5] = mu * pstrain[5];
+	  pstress += sym;
+	  pstrain += sym;
+	}
+      } else {
+	for (iqp = 0; iqp < nQP; iqp++) {
+	  mu23 = mu * (2.0/3.0);
+	  mu43 = 2.0 * mu23;
+	  pstress[0] = mu43 * pstrain[0] - mu23 * (pstrain[1] + pstrain[2]);
+	  pstress[1] = mu43 * pstrain[1] - mu23 * (pstrain[0] + pstrain[2]);
+	  pstress[2] = mu43 * pstrain[2] - mu23 * (pstrain[0] + pstrain[1]);
+	  pstress[3] = mu * pstrain[3];
+	  pstress[4] = mu * pstrain[4];
+	  pstress[5] = mu * pstrain[5];
+	  pstress += sym;
+	  pstrain += sym;
+	}
+      }
+    }
+  } else if (sym == 3) {
+    for (iell = 0; iell < stress->nCell; iell++) {
+      pstress = FMF_PtrCell( stress, iell );
+      pstrain = FMF_PtrCell( strain, iell );
+      if (1) {
+	for (iqp = 0; iqp < nQP; iqp++) {
+	  l2m = 2.0 * mu + lam;
+	  pstress[0] = l2m * pstrain[0] + lam * (pstrain[1]);
+	  pstress[1] = l2m * pstrain[1] + lam * (pstrain[0]);
+	  pstress[2] = mu * pstrain[2];
+	  pstress += sym;
+	  pstrain += sym;
+	}
+      } else {
+	for (iqp = 0; iqp < nQP; iqp++) {
+	  mu23 = mu * (2.0/3.0);
+	  mu43 = 2.0 * mu23;
+	  pstress[0] = mu43 * pstrain[0] - mu23 * pstrain[1];
+	  pstress[1] = mu43 * pstrain[1] - mu23 * pstrain[0];
+	  pstress[2] = mu * pstrain[2];
+	  pstress += sym;
+	  pstrain += sym;
+	}
+      }
+    }
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_lin_elasticity"
+/*!
+  @par Revision history:
+  - 07.03.2006, c
+*/
+int32 dw_lin_elasticity( FMField *out, FMField *state, int32 offset,
+			 float64 lam, float64 mu, VolumeGeometry *vg,
+			 int32 *conn, int32 nEl, int32 nEP,
+			 int32 *elList, int32 elList_nRow,
+			 int32 isDiff )
+{
+  int32 ii, iel, dim, sym, nQP, ret = RET_OK;
+  FMField *stress = 0, *strain = 0;
+  FMField *st = 0, *res = 0, *disG = 0, *d11 = 0, *gtd11 = 0, *gtd11g = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+  if (isDiff) {
+    fmf_createAlloc( &d11, 1, nQP, sym, sym );
+    fmf_createAlloc( &gtd11, 1, nQP, nEP * dim, sym );
+    fmf_createAlloc( &gtd11g, 1, nQP, nEP * dim, nEP * dim );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+
+      mat_le_tanModuli11( d11, lam, mu, 0 );
+/*       fmf_print( d11, stdout, 0 ); */
+/*       sys_pause(); */
+
+      form_sdcc_actOpGT_M3( gtd11, vg->bfGM, d11 );
+      form_sdcc_actOpG_RM3( gtd11g, gtd11, vg->bfGM );
+      fmf_sumLevelsMulF( out, gtd11g, vg->det->val );
+
+      ERR_CheckGo( ret );
+    }
+  } else {
+    state->val = FMF_PtrFirst( state ) + offset;
+
+    fmf_createAlloc( &strain, nEl, nQP, sym, 1 );
+    fmf_createAlloc( &stress, nEl, nQP, sym, 1 );
+
+    fmf_createAlloc( &st, 1, 1, nEP, dim );
+    fmf_createAlloc( &disG, 1, nQP, dim, dim );
+    fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( strain, ii );
+      FMF_SetCell( vg->bfGM, iel );
+
+      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+      fmf_mulAB_n1( disG, vg->bfGM, st );
+      form_sdcc_strainCauchy_VS( strain, disG );
+      ERR_CheckGo( ret );
+    }
+    mat_le_stress( stress, strain, lam, mu );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( stress, ii );
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+
+      form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
+      fmf_sumLevelsMulF( out, res, vg->det->val );
+      ERR_CheckGo( ret );
+    }
+  }
+
+ end_label:
+  if (isDiff) {
+    fmf_freeDestroy( &d11 );
+    fmf_freeDestroy( &gtd11 );
+    fmf_freeDestroy( &gtd11g );
+  } else {
+    fmf_freeDestroy( &st ); 
+    fmf_freeDestroy( &res ); 
+    fmf_freeDestroy( &disG ); 
+    fmf_freeDestroy( &stress ); 
+    fmf_freeDestroy( &strain ); 
+  }
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "de_cauchy_strain"
+/*!
+  @par Revision history:
+  - 21.09.2006, c
+*/
+int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
+			VolumeGeometry *vg,
+			int32 *conn, int32 nEl, int32 nEP,
+			int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, sym, nQP, ret = RET_OK;
+  FMField *strain = 0, *st = 0, *disG = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  fmf_createAlloc( &st, 1, 1, nEP, dim );
+  fmf_createAlloc( &disG, 1, nQP, dim, dim );
+  fmf_createAlloc( &strain, 1, nQP, sym, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+
+    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    fmf_mulAB_n1( disG, vg->bfGM, st );
+    form_sdcc_strainCauchy_VS( strain, disG );
+    fmf_sumLevelsMulF( out, strain, vg->det->val );
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &disG ); 
+  fmf_freeDestroy( &strain ); 
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_cauchy_strain"
+/*!
+  @par Revision history:
+  - 30.07.2007, from dw_hdpm_cache()
+*/
+int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
+			VolumeGeometry *vg,
+			int32 *conn, int32 nEl, int32 nEP )
+{
+  int32 ii, dim, sym, nQP, ret = RET_OK;
+  FMField *st = 0, *disG = 0;
+
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  sym = (dim + 1) * dim / 2;
+  fmf_createAlloc( &st, 1, 1, nEP, dim );
+  fmf_createAlloc( &disG, 1, nQP, dim, dim );
+
+  for (ii = 0; ii < nEl; ii++) {
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, ii );
+
+    ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
+    fmf_mulAB_n1( disG, vg->bfGM, st );
+    form_sdcc_strainCauchy_VS( out, disG );
+/*       fmf_print( out, stdout, 0 ); */
+/*       sys_pause(); */
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &disG ); 
+
+  return( ret );
+}

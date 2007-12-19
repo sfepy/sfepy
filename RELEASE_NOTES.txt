@@ -1,0 +1,60 @@
+# created: 20.07.2007 (-1)
+# last revision: 14.12.2007
+
+from 00.31.06 to 00.35.01:
+==========================
+- per term integration, major rewrite of sfe.fem and related:
+    - term.integral.domain( arguments ) syntax
+    - 'integral_*' keyword for input files
+    - each term can use its own quadrature points
+    - 'field' keyword syntax changed
+
+- minor:
+    - genDocs.py: PDF term documentation generator
+
+from 00.26.01 to 00.31.06:
+==========================
+
+- acoustic band gaps determination:
+    - zones of frequencies where elastic waves do not prapagate
+    - based on homogenization of material made of small inclusions periodically
+    embedded in an elastic matrix
+    - run via 'eigen.py'
+- general linear combination boundary conditions - 'lcbc' keyword:
+    - rigid body motion constraint imposed on regions
+- new Solver classes, solver reorganization:
+    - all solvers now configured in a uniform way ('solver_[0-9]+' keywords)
+    - specify solvers using 'options' keyword
+- new terms:
+    - dot product in a volume or on a surface region
+    - vector field mass term
+    - scalar field "mass", fine-coarse scalar "mass" terms:
+        - used for coarse mesh -> fine mesh interpolation of scalar fields
+
+- minor:
+    - added updated findSurf.py into distribution - extract surface from a mesh
+    - script/kill_*
+    - script/writeMesh2D.m
+    - script/writeSparseMatrixHDF5.m
+
+from 00.22.02 to 00.26.01:
+==========================
+
+- testing framework (in the spirit of unit tests):
+    - particularly tests that standard input files work
+    - runTests.py: output filtering
+- linear spring term (kind of a relaxed Dirichlet BC on node displacements)
+- volume term
+- Laplace term in 2D
+- chained periodic boundary conditions resolving
+- new options for simple.py: --save-field-meshes, --solve-not
+- periodic mesh merger (genPerMesh.py)
+
+- minor:
+    - improved region saving
+    - growing term data cache
+    - sparse matrix saving into HDF5
+    - point dof connectivity and geometry
+    - region handling improvements (canCells flag)
+    - nonlinear solver status reporting
+    - distribution: test and example meshes included in the release tarball

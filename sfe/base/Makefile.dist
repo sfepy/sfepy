@@ -1,0 +1,14 @@
+# 01.08.2006, c
+# last revision: 12.01.2007
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fpd $(DISTFILES) $(DESTDIR)
+
+reldist: dist

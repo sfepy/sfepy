@@ -1,0 +1,26 @@
+# 17.10.2005, c
+# last revision: 23.10.2007
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+DISTDIRS := base fem homogenization optimize solvers terms
+
+RELDISTFILES := $(DISTFILES)
+RELDISTDIRS := base fem homogenization solvers terms
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fpd $(DISTFILES) $(DESTDIR)
+	@for i in $(DISTDIRS); do \
+	  $(MAKE) -C $$i -f Makefile.dist dist DISTDIR=${DESTDIR}; \
+	done
+
+reldist:
+	mkdir $(DESTDIR)
+	cp -fpd $(RELDISTFILES) $(DESTDIR)
+	@for i in $(RELDISTDIRS); do \
+	  $(MAKE) -C $$i -f Makefile.dist reldist DISTDIR=${DESTDIR}; \
+	done

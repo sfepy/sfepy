@@ -1,0 +1,3 @@
+#!/bin/sh
+# 15.12.2004, c
+gdb --quiet --core=core --se=/usr/bin/python

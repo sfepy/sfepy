@@ -1,0 +1,715 @@
+% 17.01.2006, c
+% 22.01.2006
+% 30.03.2007, from exhaust_noise_seminar_slides.tex
+% 03.04.2007
+\documentclass[10pt,t]{beamer}
+
+\usepackage{listings}
+\usepackage{bm}
+\usepackage{amsmath}
+
+\def\figDir{figures}
+\newcommand{\red}[1]{{\color{red}{#1}}}
+\newcommand{\blue}[1]{{\color{blue}{#1}}}
+\definecolor{lblue}{rgb}{0.0,0.4,1.0}
+\newcommand{\lblue}[1]{{\color{lblue}{#1}}}
+\definecolor{dgreen}{rgb}{0.0,0.4,0.11}
+\newcommand{\dgreen}[1]{{\color{dgreen}{#1}}}
+
+\def \pder#1#2{\frac{\partial #1}{\partial #2}}
+\newcommand{\dvg}{\mathop{\rm div}}
+\newcommand{\ul}[1]{\underline{#1}}
+
+%%
+% Beamer related packages & defs.
+\usepackage{multimedia}
+
+\mode<handout>{\beamertemplatesolidbackgroundcolor{black!5}}
+\mode<presentation>
+{
+%  \usetheme{Frankfurt}
+  \useoutertheme[subsection=false]{smoothbars}
+  \setbeamerfont{block title}{size={}}
+%  \useinnertheme{rectangles}
+  \useinnertheme[shadow=true]{rounded}
+  \useinnertheme{rounded}
+%  \useinnertheme{circles}
+%  \useinnertheme{inmargin}
+  \setbeamercovered{transparent}
+  \usecolortheme{seahorse}
+  \usecolortheme{rose}
+  \beamertemplategridbackground[0.2cm]
+  \beamertemplatetransparentcovereddynamic
+
+  \setbeamertemplate{navigation symbols}{
+    \insertbackfindforwardnavigationsymbol
+    \hspace{1mm} \hbox{\normalsize \insertframenumber/\inserttotalframenumber}
+  }
+}
+
+%%
+% Title page info.
+\title{Python + FEM}
+\subtitle{Introduction to SFE}
+
+\author{Robert Cimrman}
+
+\institute[University of West Bohemia]
+{
+  Department of Mechanics \& New Technologies Research Centre \\
+  University of West Bohemia \\
+  Plze\v{n}, Czech Republic
+}
+
+\titlegraphic{
+  \includegraphics[height=1.5cm,viewport=96 122 504 527,clip]{\figDir/zcu}
+}
+
+\date{April 3, 2007, Plze\v{n}}
+
+\subject{Software design}
+
+% \AtBeginSection[]
+% {
+%   \begin{frame}<beamer>
+%     \frametitle{Outline}
+%     \tableofcontents[currentsection]
+%   \end{frame}
+% }
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+  \frametitle{Outline}
+  \tableofcontents
+\end{frame}
+
+\section{Introduction}
+
+
+\subsection{Programming Languages}
+
+\begin{frame}
+  \frametitle{Programming Languages}
+  \vspace*{-3mm}
+  \begin{enumerate}
+  \item<1-> compiled (fortran, C, C++, Java, \dots)
+    \vspace*{-5mm}
+    \begin{columns}[t]
+      \begin{column}{0.52\linewidth}
+        \begin{exampleblock}<2->{Pros}
+          \begin{itemize}
+          \item speed, speed, speed, \dots, did I say \blue{speed}?
+          \item large code base (legacy codes), tradition
+          \end{itemize}
+        \end{exampleblock}
+      \end{column}
+      \begin{column}{0.55\linewidth}
+        \begin{alertblock}<3->{Cons}
+          \begin{itemize}
+          \item (often) complicated build process, recompile after any change
+          \item low-level $\Rightarrow$ lots of lines to get basic stuff done
+          \item code size $\Rightarrow$ maintenance problems
+          \item \red{static!}
+          \end{itemize}
+        \end{alertblock}
+      \end{column}
+    \end{columns}
+  \item<4-> interpreted or scripting (sh, tcl, matlab, perl, ruby, python,
+    \dots) \vspace*{-5mm}
+    \begin{columns}[t]
+      \begin{column}{0.52\linewidth}
+        \begin{exampleblock}<5->{Pros}
+          \begin{itemize}
+          \item no compiling
+          \item (very) high-level $\Rightarrow$ a few of lines to get (complex)
+            stuff done
+          \item code size $\Rightarrow$ easy maintenance
+          \item \blue{dynamic!}
+          \item (often) large code base
+          \end{itemize}
+        \end{exampleblock}
+      \end{column}
+      \begin{column}{0.55\linewidth}
+        \begin{alertblock}<6->{Cons}
+          \begin{itemize}
+          \item many are relatively new
+          \item lack of speed, or even utterly \red{slow}!
+          \end{itemize}
+        \end{alertblock}
+      \end{column}
+    \end{columns}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Example Python Code}
+
+  \includegraphics[height=0.9\textheight]{\figDir/examples}
+\end{frame}
+
+
+\lstset{language=C}
+\defverbatim{\verbexamples}{
+\small
+\begin{lstlisting}
+char s[] = "sel tudy, mel dudy. a sel opravdu tudy.";
+
+int strfind(char *str, char *tgt)
+{
+	int tlen = strlen(tgt);
+	int max = strlen(str) - tlen;
+	register int i;
+
+	for (i = 0; i < max; i++) {
+	    if (strncmp(&str[i], tgt, tlen) == 0)
+		return i;
+	}
+	return -1;
+}
+
+int i1;
+
+i1 = strfind( s, "tudy" );
+printf( "%d\n", i1 );
+\end{lstlisting}
+}
+\lstset{language=}
+
+\begin{frame}
+  \frametitle{Example C Code}
+
+  \verbexamples
+\end{frame}
+
+
+
+\subsection{Programming Techniques}
+
+\begin{frame}
+  \frametitle{Programming Techniques}
+  Random remarks:
+  \begin{itemize}
+  \item spaghetti code
+  \item modular programming
+  \item OOP
+  \item \dgreen{design patterns} (gang-of-four, GO4)
+  \item post-OOP --- dynamic languages
+  \end{itemize}
+  \begin{center}
+    \uncover<2->{\dots all used, but I try to move down the list! :-)}
+  \end{center}
+\end{frame}
+
+\section{Our choice}
+
+\subsection{Mixing Languages --- Best of Both Worlds}
+
+\begin{frame}
+\frametitle{Mixing Languages --- Best of Both Worlds}  
+\begin{alertblock}<1->{Low level: C}
+  \
+  \begin{itemize}
+  \item FE matrix evaluations
+  \item costly mesh-related functions (listing faces, edges, surface
+    generation, \dots)
+  \item \dots
+  \item can use also \red{fortran}
+  \end{itemize}
+\end{alertblock}
+\uncover<2->{\centerline{\LARGE +}}
+\begin{exampleblock}<2->{High level: Python}
+  \centerline{\href{http://www.python.org}{\blue{www.python.org}}}
+  \centerline{``batteries included''}
+  \begin{minipage}{0.5\linewidth}
+    \begin{itemize}
+    \item logic of the code
+    \item \lblue{configuration} files!
+    \item problem \blue{input} files!
+    \end{itemize}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.4\linewidth}
+    \includegraphics[width=\linewidth]{\figDir/python-logo}
+  \end{minipage}
+\end{exampleblock}
+\end{frame}
+
+\subsection{Python}
+
+\begin{frame}
+  \frametitle{Python I}
+  \begin{quotation}
+    Python\textregistered is a dynamic object-oriented programming language
+    that can be used for many kinds of software development. It offers strong
+    support for integration with other languages and tools, comes with
+    extensive standard libraries, and can be learned in a few days. Many Python
+    programmers report substantial productivity gains and feel the language
+    encourages the development of higher quality, more maintainable code.
+  \end{quotation}
+  \vspace*{10mm}
+  \centerline{\dots}
+  \vspace*{10mm}
+  \centerline{\blue{``batteries included''}}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Python II}
+  1.1.16   Why is it called Python?
+  \begin{quotation}
+    At the same time he began implementing Python, Guido van Rossum was also
+    reading the published scripts from "Monty Python's Flying Circus" (a BBC
+    comedy series from the seventies, in the unlikely case you didn't know). It
+    occurred to him that he needed a name that was short, unique, and slightly
+    mysterious, so he decided to call the language Python.
+  \end{quotation}
+
+  1.1.17   Do I have to like "Monty Python's Flying Circus"?
+  \begin{quotation}
+    No, but it helps. :)
+  \end{quotation}
+
+  \hfill \dots General Python FAQ
+  
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Python III}
+
+  NASA uses Python\dots
+  \begin{center}
+    \includegraphics[width=0.5\linewidth]{\figDir/nasa}
+  \end{center}
+  \dots so does Rackspace, Industrial Light and Magic, AstraZeneca, Honeywell,
+  and many others.
+  \vspace*{10mm}
+  \begin{center}
+    \uncover<2->{\href{http://wiki.python.org/moin/NumericAndScientific}
+      {http://wiki.python.org/moin/NumericAndScientific}}
+  \end{center}
+\end{frame}
+
+
+
+
+\subsection{Software Dependencies}
+
+\begin{frame}
+  \frametitle{Software Dependencies}
+  \begin{enumerate}
+  \item<1-> libraries \& modules
+    \begin{dinglist}{226}
+    \item<2-> \blue{SciPy}: free (BSD license) collection of numerical computing
+      libraries for Python
+      \begin{itemize}
+      \item enables Matlab-like array/matrix manipulations and indexing
+      \end{itemize}
+    \item<3-> \lblue{UMFPACK}: very fast direct solver for sparse systems
+      \begin{itemize}
+      \item Python wrappers are part of SciPy :-)
+      \end{itemize}
+    \item<4-> output files (results) and data files in \blue{HDF5}:
+      \begin{itemize}
+      \item general purpose library and file format for storing scientific
+        data, efficient storage and I/O
+      \item \dots via \lblue{PyTables}
+      \end{itemize}
+    \item<5-> misc: \blue{Pyparsing}, \lblue{Matplotlib}
+    \end{dinglist}
+  \item<5-> tools
+    \begin{dinglist}{226}
+    \item<6-> \lblue{SWIG}: automatic generation of Python-C interface code
+    \item<7-> \blue{Medit}: simple mesh and data viewer
+    \item<7-> \lblue{ParaView}: VTK-based advanced mesh and data viewer in
+      Tcl/Tk
+    \item<7-> \blue{MayaVi/MayaVi2}: VTK-based advanced mesh and data viewer in
+      Python
+    \end{dinglist}
+  \end{enumerate}
+\end{frame}
+
+\section{Example Problem}
+
+\begin{frame}
+  \frametitle{Shape Optimization in Incompressible Flow Problems}
+  \vspace*{-4mm}
+  \begin{block}<1->{Objective Function}
+    \ 
+    \uncover<1->{
+      \begin{equation} \label{eq-ns-4}
+        \Psi_{\Gamma}(u) \equiv \frac{\nu}{2}
+        \int_{\Omega_c} |\nabla u|^2 \longrightarrow \min
+      \end{equation}
+    }
+    \begin{itemize}
+    \item<1-> minimize gradients of solution (e.g. losses) in $\Omega_c
+      \subset \Omega$
+    \item<2-> by moving \dgreen{design boundary} $\Gamma \subset \partial
+      \Omega$
+    \item<3-> perturbation of $\Gamma$ by vector field $\mathcal{V}$
+      \begin{equation}
+        \Omega(t) = \Omega + \{t\mathcal{V}(x)\}_{x \in \Omega} \quad \mbox{
+          where } \mathcal{V} = 0 \mbox{ in } \bar\Omega_c \cup \partial \Omega
+        \setminus \Gamma
+      \end{equation}
+    \end{itemize}
+  \end{block}
+  \vspace*{-3mm}
+  \begin{center}
+    \begin{minipage}{0.48\linewidth}
+      \includegraphics[width=0.35\linewidth,angle=-90]
+      {\figDir/fig-design-domain-flow.pdf}
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.48\linewidth}
+      \includegraphics[width=0.8\linewidth]{\figDir/geometry_kroucenak_c23}
+    \end{minipage}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Appetizer}
+  \vspace*{-3mm}
+  \begin{itemize}
+  \item flow and spline boxes, left: initial, right: final \\
+    \noindent
+    \hspace*{-5mm}
+      \begin{minipage}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{\figDir/kroucenak_c2dup_ini}
+      \end{minipage}
+      $\rightarrow$
+      \begin{minipage}{0.48\linewidth}
+        \includegraphics[width=\linewidth]{\figDir/kroucenak_c2dup_opt}
+      \end{minipage}
+    \item connectivity of spline boxes (6 boxes in different colours)
+    \begin{center}
+      \begin{minipage}{0.4\linewidth}
+        \includegraphics[width=\linewidth]{\figDir/kroucenak_c2dup_cpconn}
+      \end{minipage}
+    \end{center}
+  \end{itemize}
+\end{frame}
+
+
+\subsection{Continuous Formulation}
+
+\begin{frame}
+  \frametitle{Continuous Formulation}
+  \begin{itemize}
+  \item<1-> laminar steady state incompressible \blue{Navier-Stokes equations}
+    \begin{eqnarray}
+      -\nu \nabla^2 \ul{u} + \ul{u} \cdot \nabla \ul{u} + \nabla p & = & 0 \quad \mbox{ in }
+      \Omega \label{eq-ns-1}\\
+      \nabla \cdot \ul{u} & = & 0 \quad \mbox{ in } \Omega \label{eq-ns-2}
+    \end{eqnarray}
+    boundary conditions
+    \begin{equation} \label{eq-ns-3}
+      \begin{split}
+        \ul{u} & = \ul{u}_0 \quad  \mbox{ on } \Gamma_{\rm in} \\
+        -p \ul{n} + \nu \pder{\ul{u}}{\ul{n}} & = -\bar p \ul{n}
+        \quad \mbox{ on } \Gamma_{\rm out} \\
+        \ul{u} & = 0 \quad \mbox{ on } \Gamma_{\rm walls}
+      \end{split}
+    \end{equation}
+  \item<2->
+    \lblue{adjoint equations} for computing the adjoint solution $\ul{w}$:
+    \begin{equation}\label{eq-ns-33}
+      \begin{split}
+        -\nu \nabla^2 \ul{w} + \nabla \ul{u} \cdot \ul{w} - \ul{u} \cdot \nabla
+        \ul{w} - \nabla r & =
+        \chi_{\Omega_c} \,\nu \nabla^2 \ul{u} \ \mbox{ in } \Omega \\
+        \nabla \cdot \ul{w} & = 0 \quad \mbox{ in } \Omega
+      \end{split}
+    \end{equation}
+    $\ul{w} = 0$ on $\Gamma_{\rm in} \cup \Gamma_{\rm walls}$ and
+    $\chi_{\Omega_c}$ is the characteristic function of $\Omega_c$
+  \end{itemize}
+\end{frame}
+\subsection{Weak Formulation}
+
+\begin{frame}
+  \frametitle{Weak Formulation}
+  \begin{itemize}
+  \item<1-> \blue{state problem}: find \ul{u}, p (from suitable function
+    spaces) such that
+    \begin{equation}\label{eq-ns-34a}
+      \begin{split}
+        &\int_\Omega \nu \nabla \ul{v} : \nabla \ul{u} + \int_\Omega (\ul{u}
+        \cdot \nabla \ul{u})\cdot \ul{v} - \int_\Omega p \nabla \cdot \ul{v} =
+        - \int_{\Gamma_{\rm out}} \bar{p} \ul{v} \cdot \ul{n} \quad \forall
+        \ul{v} \in V_0 \;,
+        \\
+        & \int_{\Omega} q \nabla \cdot \ul{u} = 0 \quad \forall q \in Q
+      \end{split}
+    \end{equation}
+  \item<2-> \lblue{adjoint equations}: find \ul{w}, r (from suitable function
+    spaces) such that
+    \begin{equation}\label{eq-ns-34b}
+      \begin{split}
+        & \int_\Omega \nu
+          \nabla \ul{v} : \nabla \ul{w} + \int_\Omega (\ul{v} \cdot \nabla
+          \ul{u})\cdot \ul{w} + \int_\Omega (\ul{u} \cdot \nabla
+          \ul{v})\cdot \ul{w} + \int_\Omega r \nabla \cdot \ul{v} \\
+        & = - \int_{\Omega_c} \nu \nabla \ul{v} : \nabla \ul{u} \quad \forall
+        \ul{v} \in V_0 \;, \\
+        & \int_{\Omega} q \nabla \cdot \ul{w} = 0\quad \forall q \in Q
+      \end{split}
+    \end{equation}
+  \item<3-> + proper BC \dots
+  \end{itemize}
+\end{frame}
+
+\subsection{Problem Description File}
+%\lstset{language=Python}
+
+%%%%%
+\defverbatim\verbmesh{\scriptsize
+\begin{lstlisting}
+fileName_mesh = 'simple.mesh'
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbregions}{\scriptsize
+\begin{lstlisting}
+region_1000 = {
+    'name' : 'Omega',
+    'select' : 'elements of group 6',
+}
+region_0 = {
+    'name' : 'Walls',
+    'select' : 'nodes of surface -n r.Outlet',
+}
+region_1 = {
+    'name' : 'Inlet',
+    'select' : 'nodes by cinc( x, y, z, 0 )',
+}
+region_2 = {
+    'name' : 'Outlet',
+    'select' : 'nodes by cinc( x, y, z, 1 )',
+}
+region_100 = {
+    'name' : 'Omega_C', # Control domain.
+    'select' : 'nodes in (x > -25.9999e-3) & (x < -18.990e-3)',
+}
+region_101 = {
+    'name' : 'Omega_D', # Design domain.
+    'select' : 'all -e r.Omega_C',
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbebc}{\scriptsize
+\begin{lstlisting}
+ebc = {
+    'Walls' : (('Walls', (3,4,5), 0.0 ),),
+    'Inlet' : (('VelocityInlet_x', (4,), 1.0),
+               ('VelocityInlet_yz', (3,5), 0.0)),
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbfields}{\scriptsize
+\begin{lstlisting}
+field_1 = {
+    'name' : '3_velocity',
+    'dim' : (3,1),
+    'flags' : ('BQP',),
+    'bases' : (('Omega', '3_4_P1B'),)
+}
+
+field_2 = {
+    'name' : 'pressure',
+    'dim' : (1,1),
+    'flags' : (),
+    'bases' : (('Omega', '3_4_P1'),)
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbvariables}{\scriptsize
+\begin{lstlisting}
+variables = {
+    'u'   : ('field', 'parameter', '3_velocity', (3, 4, 5)),
+    'w_0' : ('field', 'parameter', '3_velocity', (3, 4, 5)),
+    'w'   : ('field', 'unknown', '3_velocity', (3, 4, 5), 0),
+    'v'   : ('field', 'test', '3_velocity', (3, 4, 5), 'w'),
+    'p'   : ('field', 'parameter', 'pressure', (9,)),
+    'r'   : ('field', 'unknown', 'pressure', (9,), 1),
+    'q'   : ('field', 'test', 'pressure', (9,), 'r'),
+    'Nu'  : ('field', 'meshVelocity', 'pressure', (9,)),
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbequations}{\scriptsize
+\begin{lstlisting}
+equations = {
+    'balance' :
+    """+ dw_div_grad.Omega( fluid, v, w )
+       + dw_convect.Omega( v, w )
+       - dw_grad.Omega( v, r )
+       = - dw_surface_ltr.Outlet( bpress, v )""",
+    'incompressibility' :
+    """dw_div.Omega( q, w ) = 0""",
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbequationsadjoint}{\scriptsize
+\begin{lstlisting}
+equations_adjoint = {
+    'balance' :
+    """+ dw_div_grad.Omega( fluid, v, w )
+       + dw_adj_convect1.Omega( v, w, u )
+       + dw_adj_convect2.Omega( v, w, u )
+       + dw_grad.Omega( v, r )
+       = - dw_adj_div_grad2.Omega_C( one, fluid, v, u )""",
+    'incompressibility' :
+    """dw_div.Omega( q, w ) = 0""",
+}
+\end{lstlisting}
+}
+%%%%%
+\defverbatim{\verbmaterials}{\scriptsize
+\begin{lstlisting}
+material_2 = {
+    'name' : 'fluid',
+    'mode' : 'here',
+    'region' : 'Omega',
+    'viscosity' : 1.25e-1,
+}
+material_100 = {
+    'name' : 'bpress',
+    'mode' : 'here',
+    'region' : 'Omega',
+    'val'  : 0.0,
+}
+\end{lstlisting}
+}
+
+\begin{frame}
+  \frametitle{Problem Description File I}
+  \begin{itemize}
+  \item<1-> a regular python file
+    \red{$\Rightarrow$ all python machinery is accessible!}
+  \item<2-> requires/recognizes several \blue{keywords} to define
+    \begin{itemize}
+    \item<2-> mesh
+    \item<2-> regions $\rightarrow$ subdomains, boundaries, characteristic
+      functions, \dots
+    \item<2-> boundary conditions $\rightarrow$ Dirichlet
+    \item<2-> fields $\rightarrow$ field approximation per subdomain
+    \item<2-> variables $\rightarrow$ unknown fields, test fields, parameters
+    \item<2-> equations
+    \item<2-> materials $\rightarrow$ constitutive relations, e.g. newton
+      fluid, elastic solid, \dots
+    \item<2-> solver parameters $\rightarrow$ nonlinear solver, flow solver,
+      optimization solver, \dots
+    \item<2-> \dots
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Problem Description File II}
+  \vspace*{-5mm}
+  \begin{itemize}
+  \item<1-> \blue{mesh} \verbmesh
+  \item<1-> \lblue{regions} \verbregions
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Problem Description File III}
+  \begin{itemize}
+  \item<1-> \blue{fields} \verbfields
+  \item<2-> \lblue{variables} \verbvariables
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Problem Description File IV}
+  \begin{itemize}
+  \item<1-> \blue{Dirichlet BC} \verbebc
+  \item<2-> \lblue{state equations} (compare with (\ref{eq-ns-34a}))
+    \verbequations
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Problem Description File V}
+  \begin{itemize}
+  \item<1-> \blue{adjoint equations} (compare with (\ref{eq-ns-34b}))
+    \verbequationsadjoint
+  \item<2-> \lblue{materials} \verbmaterials
+  \end{itemize}
+\end{frame}
+
+\section{Final slide :-)}
+
+\subsection*{}
+
+\begin{frame}
+  \frametitle{Yes, the final slide!}
+  \vspace*{-5mm}
+  \begin{columns}[t]
+    \begin{column}{0.52\linewidth}
+      \begin{exampleblock}<1->{What is done}\
+        \begin{itemize}
+        \item basic FE element engine
+          \begin{itemize}
+          \item approximations up to P2 on simplexes (possibly with bubble)
+          \item Q1 tensor-product approximation on rectangles
+          \end{itemize}
+        \item handling of fields and variables
+          \begin{itemize}
+          \item boundary conditions, DOF handling
+          \end{itemize}
+        \item FE assembling
+        \item equations, terms, regions
+        \item materials, material caches
+        \item generic solvers (Newton iteration, direct linear system solution)
+        \end{itemize}
+      \end{exampleblock}
+    \end{column}
+    \begin{column}{0.55\linewidth}
+      \begin{block}<2->{What is not done}
+        \begin{itemize}
+        \item general FE engine, with symbolic evaluation (\`a la SyFi - merge
+          it?)
+        \item documentation, unit tests
+        \item organization of solvers
+          \begin{itemize}
+          \item fast problem-specific solvers
+          \end{itemize}
+        \item parallelization of both assembling and solving
+          \begin{itemize}
+          \item use PETSC?
+          \end{itemize}
+        \end{itemize}
+      \end{block}
+      \begin{alertblock}<3->{What will not be done (?)}
+        \begin{itemize}
+        \item GUI
+        \item real symbolic parsing/evaluation of equations
+        \end{itemize}
+      \end{alertblock}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\section*{}
+
+\begin{frame}
+  \frametitle{This is not a slide!}
+  \vspace*{-3mm}
+  \includegraphics[width=\linewidth]{\figDir/foot_mesh}
+\end{frame}
+
+\end{document}

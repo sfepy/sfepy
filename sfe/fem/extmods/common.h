@@ -1,0 +1,129 @@
+#ifndef _COMMON_H_
+#define _COMMON_H_ 1
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include <math.h>
+#include <stdio.h>
+#include <sys/types.h>
+
+#include <stdlib.h>
+#include <string.h>
+
+#ifdef __cplusplus
+#  define BEGIN_C_DECLS         extern "C" {
+#  define END_C_DECLS           }
+#else
+#  define BEGIN_C_DECLS
+#  define END_C_DECLS
+#endif
+
+#include "types.h"
+#include "version.h"
+
+typedef enum ReturnStatus {
+  RET_OK,
+  RET_Fail
+} ReturnStatus;
+
+void output( const char *what, ... );
+void errput( const char *what, ... );
+void errclear();
+
+#define AL_CookieValue   0xf0e0d0c9
+#define AL_AlreadyFreed  0x0f0e0d9c
+
+/*!
+  @par Revision history:
+  - 25.05.2001, c
+*/
+typedef struct _AllocSpace {
+    unsigned long   size;
+    int             id;
+    int             lineNo;
+    char            *fileName;
+    char            *funName;
+    char            *dirName;
+    unsigned long   cookie;
+    struct _AllocSpace *next,*prev;
+} AllocSpace;
+
+#define AL_HeaderDoubles      sizeof(AllocSpace)/sizeof(double)+1
+
+/*!
+  This union is used to insure that the block passed to the user is
+  aligned on a double boundary
+
+  @par Revision history:
+  - 25.05.2001, c
+*/
+typedef union {
+    AllocSpace sp;
+    double  v[AL_HeaderDoubles];
+} AllocSpaceAlign;
+
+/*! @enum AllocMode
+  @par Revision history:
+  - 15.04.2001, c
+*/
+typedef enum AllocMode {
+  AL_Alloc, AL_Free, AL_Realloc
+} AllocMode;
+
+void *mem_allocMem( size_t size, int lineNo, char *funName,
+		    char *fileName, char *dirName );
+void mem_freeMem( void *pp, int lineNo, char *funName,
+		  char *fileName, char *dirName );
+void mem_checkIntegrity( int lineNo, char *funName,
+			 char *fileName, char *dirName );
+void mem_statistics( int lineNo, char *funName,
+		     char *fileName, char *dirName );
+int32 mem_print( FILE *file, int32 mode );
+int32 mem_printSome( FILE *file, int32 mode, int32 num );
+int32 mem_freeGarbage();
+
+int sys_getch( void );
+void sys_keyboardEnableRaw();
+void sys_keyboardDisableRaw();
+void sys_pause();
+
+/*!
+  @par Revision history:
+  - 06.03.2003, c
+*/
+#define allocMem( Type, num ) \
+ (Type *) mem_allocMem( (num) * sizeof( Type ),\
+                        __LINE__, __FUNC__, __FILE__, __SDIR__ )
+#define freeMem( p ) do {\
+  mem_freeMem( p, __LINE__, __FUNC__, __FILE__, __SDIR__ ); } while (0)
+
+#define printMemStats()\
+  (mem_statistics( __LINE__, __FUNC__, __FILE__, __SDIR__ ))
+
+#define checkMemoryIntegrity()\
+  (mem_checkIntegrity( __LINE__, __FUNC__, __FILE__, __SDIR__ ))
+
+/*!
+  @par Revision history:
+  - 11.03.2003, c
+  - 28.03.2003
+  - 08.04.2003
+  - 26.10.2005
+*/
+#define ERR_CheckGo( ret ) do {\
+  if (g_error != 0) {\
+    (ret) = RET_Fail;\
+    goto end_label;\
+  }\
+} while (0)
+#define ERR_GotoEnd( i ) do { g_error = (i); goto end_label; } while (0)
+#define ERR_Chk (g_error != 0)
+#define ERR_Clear (g_error = 0)
+#define ErrHead __FUNC__ "(): "
+extern int32 g_error;
+
+#define Max(a,b) (((a) > (b)) ? (a) : (b))
+
+#endif /* !SIC_COMMON_H */
