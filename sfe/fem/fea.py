@@ -6,17 +6,14 @@ import extmods.meshutils as mu
 import extmods.geometry as gm
 
 ##
-# 26.01.2006, c
-# 08.02.2006
-# 07.03.2006
-# 19.07.2006
-def setMeshCoors( domain, fields, coors, updateState = False ):
-
+# created:       26.01.2006
+# last revision: 21.12.2007
+def setMeshCoors( domain, fields, geometries, coors, updateState = False ):
     domain.mesh.nod0[:,:-1] = coors
-
     if updateState:
         fields.setupCoors()
-        fields.describeGeometry()
+        for field in fields:
+            field.aps.updateGeometry( field, domain.regions, geometries )
 
 
 ##
@@ -599,7 +596,7 @@ class Approximations( Container ):
     geometry!)"""
 
     ##
-    #
+    # last revision: 21.12.2007
     def __init__( self, bases, interps, domain ):
 
         self.igs = []
@@ -625,6 +622,7 @@ class Approximations( Container ):
                 self.interps[region.name] = interp
             
             apsPerGroup = {}
+            objs = OneTypeList( Approximation )
             for ig in region.igs:
                 if ig in self.igs:
                     output( 'regions must not intersect (%s, %d)'\
@@ -636,13 +634,24 @@ class Approximations( Container ):
                 ap = Approximation( baseName + '_%s_ig%d' % (region.name, ig),
                                     interp, region, ig )
                 apsPerGroup[ig] = ap
+                objs.append( ap )
+
             apsPerRegion[region.name] = apsPerGroup
 
         self.apsPerRegion = apsPerRegion
+        self.update( objs )
 
         self.apsPerGroup = {}
         for regionName, ig, ap in self.iterAps( all = True ):
             self.apsPerGroup.setdefault( ig, {} )[regionName] = ap
+
+        self.clearGeometries()
+
+    ##
+    # created:       21.12.2007
+    # last revision: 21.12.2007
+    def clearGeometries( self ):
+        self.geometries = {}
 
     ##
     #
@@ -934,11 +943,10 @@ class Approximations( Container ):
 ##         pause()
 
     ##
-    # 12.10.2005, c
-    # 07.06.2006
-    # 19.07.2006
-    # 05.09.2006
-    def describeGeometry( self, field, geometries, geomRequest, integral ):
+    # created:       12.10.2005
+    # last revision: 21.12.2007
+    def describeGeometry( self, field, geometries, geomRequest, integral,
+                          overWrite = False ):
 
         for regionName, ig, ap in self.iterAps( all = True,
                                                 igs = geomRequest.region.igs ):
@@ -958,15 +966,35 @@ class Approximations( Container ):
 
             geomKey = (integral.name, geomRequest.gtype,
                        geomRequest.region.name, ap.name)
-##             print geomKey
-            if not geometries.has_key( geomKey ):
-#                print 'new geometry: %s of %s' % (geomKey, ap.name)
-                geom = ap.describeGeometry( field, geomRequest, integral,
-                                            self.coors[:,:-1].copy() )
-                geometries[geomKey] = geom
+##            print field.name, geomKey
 
-        self.geometries = geometries
+            if geometries.has_key( geomKey ):
+                self.geometries[geomKey] = geometries[geomKey]
+            else:
+                if self.geometries.has_key( geomKey ):
+                    geometries[geomKey] = self.geometries[geomKey]
+                else:
+##                print 'new geometry: %s of %s' % (geomKey, ap.name)
+                    geom = ap.describeGeometry( field, geomRequest, integral,
+                                                self.coors[:,:-1].copy() )
+                    self.geometries[geomKey] = geometries[geomKey] = geom
 
+        if overWrite:
+            self.geometries = geometries
+
+    ##
+    # created:       21.12.2007
+    # last revision: 21.12.2007
+    def updateGeometry( self, field, regions, geometries ):
+        for geomKey, geom in self.geometries.iteritems():
+            iname, gtype, tregionName, apName = geomKey
+            ap = self[apName]
+            integral = ap.integrals[iname]
+            geomRequest = Struct( gtype = gtype, region = regions[tregionName] )
+            geom = ap.describeGeometry( field, geomRequest, integral,
+                                        self.coors[:,:-1].copy() )
+            self.geometries[geomKey] = geometries[geomKey] = geom
+            
     ##
     # 03.05.2007, c
     # 17.07.2007

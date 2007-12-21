@@ -262,9 +262,11 @@ class ProblemDefinition( Struct ):
         return self.domain.getMeshCoors()
 
     ##
-    # 26.07.2006, c
+    # created: 26.07.2006
+    # last revision: 21.12.2007
     def setMeshCoors( self, coors, updateState = False ):
-        fea.setMeshCoors( self.domain, self.fields, coors, updateState )
+        fea.setMeshCoors( self.domain, self.fields, self.geometries,
+                          coors, updateState )
 
     ##
     # 08.06.2007, c

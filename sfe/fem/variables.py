@@ -1245,9 +1245,8 @@ class Variable( Struct ):
 ##         pause()
 
     ##
-    # 24.07.2006, c
-    # 25.07.2006
-    # 05.09.2006
+    # created:       24.07.2006
+    # last revision: 21.12.2007
     def getApproximation( self, key, kind = 'Volume' ):
         iname, tregionName, aregionName, ig = key
 ##         print tregionName, aregionName, ig
@@ -1257,7 +1256,12 @@ class Variable( Struct ):
         geometries = aps.geometries
         ap = aps.apsPerRegion[aregionName][ig]
         gKey = (iname, kind, tregionName, ap.name)
-        return ap, geometries[gKey]
+        try:
+            return ap, geometries[gKey]
+        except KeyError:
+            print gKey
+            print geometries
+            raise
 
     ##
     # created:       28.11.2006
