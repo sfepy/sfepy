@@ -178,7 +178,7 @@ def evalTermOP( state, termDesc, problem, **kwargs ):
 
 ##
 # created:       03.01.2006
-# last revision: 14.12.2007
+# last revision: 21.12.2007
 def evalTerm( state, termDesc, conf, domain, variables, materials,
               funmod = None, chunkSize = 1000, termPrefixes = None,
               caches = None, retCaches = False,
@@ -249,7 +249,7 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
                     val += term.sign * aux
             retVal = val
 
-    elif term.itype == 'de':
+    elif (term.itype == 'de') or (term.itype == 'dq'):
         val = None
 
         for term in equation.terms:
