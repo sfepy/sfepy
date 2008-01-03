@@ -137,10 +137,17 @@ class Field( Struct ):
         self.aps.setupCoors( self.domain.mesh, self.cntVN )
 
     ##
-    # 19.07.2006, c
-    # 21.02.2007
-    # 22.02.2007
-    # 28.05.2007
+    # c: 02.01.2008, r: 02.01.2008
+    def getExtraNodesAsSimplices( self, iextra = None ):
+        dim = self.domain.mesh.dim
+        if iextra is None:
+            noft = self.aps.nodeOffsetTable
+            iextra = nm.arange( noft[1,0], noft[-1,-1], dtype = nm.int32 )
+        extra = makePointCells( iextra, dim )
+        return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
+
+    ##
+    # c: 19.07.2006, r: 02.01.2008
     def writeMesh( self, nameTemplate, fieldName = None ):
         """Extra nodes are written as zero-size simplices (= points)."""
         if fieldName is None:
@@ -158,13 +165,11 @@ class Field( Struct ):
             conns.append( conn )
             matIds.append( mesh.matIds[ig] )
             descs.append( mesh.descs[ig] )
-        descs.append( {2 : '2_3', 3 : '3_4'}[dim] )
 
-        noft = self.aps.nodeOffsetTable
-        iextra = nm.arange( noft[1,0], noft[-1,-1], dtype = nm.int32 )
-        extra = makePointCells( iextra, dim )
-        matIds.append( -nm.ones_like( iextra ) )
-        conns.append( extra )
+        aux = self.getExtraNodesAsSimplices()
+        descs.append( aux[0] )
+        matIds.append( aux[1] )
+        conns.append( aux[2] )
 
         tmp = Mesh.fromData( nameTemplate % fieldName,
                              self.aps.coors, conns, matIds, descs )

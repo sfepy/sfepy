@@ -27,7 +27,7 @@ def solveStationary( conf, data = None, saveNames = None, nlsStatus = None ):
     return problem, state, data
 
 ##
-# 03.07.2007, c
+# c: 03.07.2007, r: 02.01.2008
 def saveOnly( conf, saveNames, problem = None ):
     """Save information available prior to setting equations and
     solving them."""
@@ -39,6 +39,9 @@ def saveOnly( conf, saveNames, problem = None ):
 
     if saveNames.fieldMeshes is not None:
         problem.saveFieldMeshes( saveNames.fieldMeshes )
+
+    if saveNames.regionFieldMeshes is not None:
+        problem.saveRegionFieldMeshes( saveNames.regionFieldMeshes )
 
     if saveNames.ebc is not None:
         if not hasattr( problem, 'variables' ):

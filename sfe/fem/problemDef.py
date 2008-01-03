@@ -314,6 +314,22 @@ class ProblemDefinition( Struct ):
             aux.write( '%s_%s.mesh' % (fileNameTrunk, region.name) )
 
     ##
+    # created:       02.01.2008
+    # last revision: 02.01.2008
+    def saveRegionFieldMeshes( self, fileNameTrunk ):
+
+        for field in self.fields:
+            fregion = self.domain.regions[field.regionName]
+            output( 'saving regions of field %s:' % field.name )
+
+            for region in self.domain.regions:
+                if not fregion.contains( region ): continue
+                output( '  saving region %s...' % region.name )
+                aux = Mesh.fromRegionAndField( region, field )
+                aux.write( '%s_%s_%s.mesh' % (fileNameTrunk,
+                                              region.name, field.name) )
+
+    ##
     # 03.07.2007, c
     def saveFieldMeshes( self, fileNameTrunk ):
 

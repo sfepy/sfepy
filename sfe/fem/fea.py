@@ -439,7 +439,7 @@ class Approximation( Struct ):
 
     ##
     # created:       29.11.2007
-    # last revision: 11.12.2007
+    # last revision: 02.10.2008
     def getQP( self, key, iname, integral = None ):
         """integrals are stored in self.integrals..."""
         qpkey = (iname, key)
@@ -455,7 +455,12 @@ class Approximation( Struct ):
             interp = self.interp
             if key[0] == 's':
                 dim = interp.gel.dim - 1
-                nFP = len( interp.gel.sEdges[interp.iKeyMap[key]][0] )
+                if dim == 2:
+                    nFP = len( interp.gel.sFaces[interp.iKeyMap[key]] )
+                elif dim == 1:
+                    nFP = len( interp.gel.sEdges[interp.iKeyMap[key]][0] )
+                else:
+                    raise NotImplementedError
                 geometry = '%d_%d' % (dim, nFP)
             else:
                 geometry = interp.geometry
@@ -525,8 +530,7 @@ class Approximation( Struct ):
 ##             print integral
             bfSG, weights = self.getBase( sd.faceType, 1, integral = integral,
                                           baseOnly = False )
-            print bfSG, weights 
-#            pause()
+##             print bfSG, weights 
 
             sg = gm.SurfaceGeometry( *self.getSDataShape( integral.name,
                                                           region.name ) )

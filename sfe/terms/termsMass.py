@@ -11,11 +11,28 @@ class MassTerm( Term ):
     argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_mass )
-        
     ##
-    # 21.11.2006, c
+    # created:       21.11.2006
+    # last revision: 19.12.2007
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign )
+
+    ##
+    # created:       19.12.2007
+    # last revision: 19.12.2007
+    def setupMatFunction( self, mat ):
+        if nm.isscalar( mat ):
+            self.function = terms.dw_mass
+            return float( mat )
+        elif isinstance( mat, nm.ndarray ):
+            if mat.ndim == 0:
+                self.function = terms.dw_mass
+                return float( mat )
+            self.function = terms.dw_mass_rho_in_el
+            return mat
+    ##
+    # created:       21.11.2006
+    # last revision: 19.12.2007
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         ts, mat, virtual, state, state0 = self.getArgs( **kwargs )
         ap, vg = virtual.getCurrentApproximation()
@@ -33,6 +50,7 @@ class MassTerm( Term ):
         vec, indx = state()
         vec0, indx0 = state0()
         dvec = vec[indx] - vec0[indx0]
+        mat = self.setupMatFunction( mat )
         rhodt = mat / ts.dt
 
         for out, chunk in vectorChunkGenerator( nEl, chunkSize, shape ):
@@ -58,7 +76,7 @@ class MassVectorTerm( MassTerm ):
 
     ##
     # created:       25.09.2007
-    # last revision: 11.12.2007
+    # last revision: 19.12.2007
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         mat, virtual, state = self.getArgs( **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -74,9 +92,10 @@ class MassVectorTerm( MassTerm ):
             raise StopIteration
 
         vec, indx = state()
+        mat = self.setupMatFunction( mat )
         bf = ap.getBase( 'v', 0, self.integralName )
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, float( mat ), vec, indx.start,
+            status = self.function( out, mat, vec, indx.start,
                                     bf, vg, ap.econn, chunk, mode )
             
             yield out, chunk, status
@@ -97,11 +116,12 @@ class MassScalarTerm( Term ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar )
         
     ##
-    # 04.09.2007, c
+    # created:       04.09.2007
+    # last revision: 02.01.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getCurrentApproximation()
-        nEl, nQP, dim, nEP = ap.getVDataShape()
+        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
         
         if diffVar is None:
             shape = (chunkSize, 1, nEP, 1)
@@ -113,9 +133,9 @@ class MassScalarTerm( Term ):
             raise StopIteration
 
         vec, indx = state()
-
+        bf = ap.getBase( 'v', 0, self.integralName )
         for out, chunk in vectorChunkGenerator( nEl, chunkSize, shape ):
-            status = self.function( out, vec, indx.start, ap.bf['v'],
+            status = self.function( out, vec, indx.start, bf,
                                     vg, ap.econn, chunk, mode )
             
             yield out, chunk, status

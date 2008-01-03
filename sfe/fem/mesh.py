@@ -48,7 +48,7 @@ def mesh_joinGroups( conns, descs ):
         connsOut.append( conn )
         descsOut.append( descs[group[0]] )
 
-    return (connsOut, descsOut )
+    return connsOut, descsOut
 
 ##
 # 28.05.2007, c
@@ -376,6 +376,26 @@ class Mesh( Struct ):
     fromRegion = staticmethod( fromRegion )
 
     ##
+    # c: 02.01.2008, r: 02.01.2008
+    def fromRegionAndField( region, field ):
+        mesh, ed, fa = field.domain.mesh, field.domain.ed, field.domain.fa
+        mesh = Mesh.fromRegion( region, mesh, ed, fa )
+        mesh.name = mesh.name + '_field'
+
+        nodes = region.getFieldNodes( field, merge = True )
+
+        aux = field.getExtraNodesAsSimplices( nodes )
+        mesh.nod0 = field.aps.coors
+        mesh.descs.append( aux[0] )
+        mesh.matIds.append( aux[1] )
+        mesh.conns.append( aux[2] )
+
+        mesh.localize( nodes )
+        mesh._setShapeInfo()
+        return mesh
+    fromRegionAndField = staticmethod( fromRegionAndField )
+
+    ##
     # 26.09.2006, c
     # 29.09.2006
     # 21.02.2007
@@ -558,3 +578,19 @@ class Mesh( Struct ):
     def getBoundingBox( self ):
         return nm.array( [nm.amin( self.nod0[:,:-1], 0 ),
                           nm.amax( self.nod0[:,:-1], 0 )] )
+
+
+    ##
+    # c: 02.01.2008, r: 02.01.2008
+    def localize( self, inod ):
+        """Strips nodes not in inod and remaps connectivities."""
+        remap = nm.empty( (self.nod0.shape[0],), dtype = nm.int32 )
+        remap.fill( -1 )
+        remap[inod] = nm.arange( inod.shape[0], dtype = nm.int32 )
+
+        self.nod0 = self.nod0[inod]
+        conns = []
+        for conn in self.conns:
+            conns.append( remap[conn] )
+        self.conns = conns
+

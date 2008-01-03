@@ -11,11 +11,7 @@ from sfe.fem.problemDef import ProblemDefinition
 from sfe.solvers.generic import solveStationary, saveOnly
 
 ##
-# 12.01.2007, c
-# 15.03.2007
-# 20.03.2007
-# 30.03.2007
-# 03.07.2007
+# c: 12.01.2007, r: 02.01.2008
 def solveDirect( conf, options ):
     """Generic (simple) stationary problem solver."""
     if options.outputFileNameTrunk:
@@ -23,13 +19,16 @@ def solveDirect( conf, options ):
     else:
         ofnTrunk = io.getTrunk( conf.fileName_mesh )
 
-    saveNames = Struct( ebc = None, regions = None, fieldMeshes = None )
+    saveNames = Struct( ebc = None, regions = None, fieldMeshes = None,
+                        regionFieldMeshes = None )
     if options.saveEBC:
         saveNames.ebc = ofnTrunk + '_ebc.vtk'
     if options.saveRegions:
         saveNames.regions = ofnTrunk + '_region'
     if options.saveFieldMeshes:
         saveNames.fieldMeshes = ofnTrunk + '_field'
+    if options.saveRegionFieldMeshes:
+        saveNames.regionFieldMeshes = ofnTrunk + '_region_field'
 
     if options.solveNot:
         saveOnly( conf, saveNames )
@@ -78,6 +77,9 @@ help = {
     "save problem regions as meshes [default: %default]",
     'saveFieldMeshes' :
     "save meshes of problem fields (with extra DOF nodes) [default: %default]",
+    'saveRegionFieldMeshes' :
+    "save meshes of regions of problem fields (with extra DOF nodes)"
+    "[default: %default]",
     'solveNot' :
     "do not solve (use in connection with --save-*) [default: %default]",
     'list' :
@@ -86,7 +88,7 @@ help = {
 
 ##
 # created:       12.01.2007
-# last revision: 11.12.2007
+# last revision: 02.01.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -107,6 +109,9 @@ def main():
     parser.add_option( "", "--save-field-meshes",
                        action = "store_true", dest = "saveFieldMeshes",
                        default = False, help = help['saveFieldMeshes'] )
+    parser.add_option( "", "--save-region-field-meshes",
+                       action = "store_true", dest = "saveRegionFieldMeshes",
+                       default = False, help = help['saveRegionFieldMeshes'] )
     parser.add_option( "", "--solve-not",
                        action = "store_true", dest = "solveNot",
                        default = False, help = help['solveNot'] )

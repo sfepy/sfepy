@@ -31,7 +31,7 @@ class VTerm( Term ):
         conn = ap.econn
         for out, chunk in self.charFun( chunkSize, shape ):
             # Fill-in 'out', its shape is 'shape'
-            out[...] = ...
+#            out[...] = ...
 
             # 'chunk' are the indices of elements (into ap.econn)
             # 'status' == 0 means success
