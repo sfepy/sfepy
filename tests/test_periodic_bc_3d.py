@@ -76,10 +76,7 @@ fe = {
     'chunkSize' : 1000
 }
 
-import sys
-sys.path.append( 'input' )
-from inputUtils import *
-
+from sfe.fem.periodic import *
 from sfe.base.testing import TestCommon
 
 ##

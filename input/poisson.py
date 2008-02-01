@@ -1,9 +1,9 @@
 # 14.02.2007
-# last revision: 03.12.2007
+# last revision: 19.12.2007
 #!
 #! Poisson Equation
 #! ================
-#$ \centerline{Example input file, June 1, 2007}
+#$ \centerline{Example input file, \today}
 
 #! Mesh
 #! ----
@@ -75,7 +75,6 @@ ebc = {
 
 #! Equations
 #! ---------
-#$ \usepackage{bm}
 #$ The weak formulation of the Poisson equation is:
 #$ \begin{center}
 #$ Find $t \in V$, such that
@@ -90,7 +89,8 @@ ebc = {
 #$ \end{center}
 #$ where $\nabla u \approx \bm{G} \bm{u}$. Below we use $f = 0$ (Laplace
 #$ equation).
-
+#! We also define an integral here: 'gauss_o1_d3' says that we wish to use
+#! quadrature of the first order in three space dimensions.
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
@@ -102,6 +102,7 @@ equations = {
 
 #! Linear solver parameters
 #! ---------------------------
+#! Just use upfpack.
 solver_0 = {
     'name' : 'ls',
     'kind' : 'ls.umfpack',
@@ -109,6 +110,8 @@ solver_0 = {
 
 #! Nonlinear solver parameters
 #! ---------------------------
+#! Even linear problems are solved by a nonlinear solver (KISS rule) - only one
+#! iteration is needed and the final rezidual is obtained for free.
 solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',

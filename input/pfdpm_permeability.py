@@ -1,5 +1,6 @@
 # 24.05.2007, c
 # last revision: 10.12.2007
+from sfe.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
 fileName_mesh = 'database/micro/perf_symm944t.mesh'
@@ -158,6 +159,3 @@ solver_1 = {
 }
 
 saveFormat = 'hdf5' # 'hdf5' or 'vtk'
-
-from pfdpm_module import *
-from inputUtils import *

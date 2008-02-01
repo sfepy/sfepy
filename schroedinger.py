@@ -96,7 +96,8 @@ def main():
         return
     
     required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe', 'equations',
-                'region_[0-9]+', 'variables', 'material_[0-9]+']
+                'region_[0-9]+|regions', 'integral_[0-9]+', 'variables',
+                'material_[0-9]+']
     other = ['functions', 'modules', 'epbc', 'lcbc']
 
     conf = ProblemConf.fromFile( fileNameIn, required, other )

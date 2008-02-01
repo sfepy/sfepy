@@ -1,0 +1,69 @@
+\textbf{Notation}:
+
+\begin{center}
+  \begin{tabular}{rl}
+    $\Omega$ & volume (sub)domain \\
+    $\Gamma$ & surface (sub)domain \\
+    $t$ & time \\
+    $y$ & any function \\
+    $\ul{y}$ & any vector function \\
+    $\ul{n}$ & unit outward normal \\
+    $q$, $s$ & scalar test function \\
+    $p$, $r$ & scalar unknown or parameter function \\
+    $\bar{p}$ & scalar parameter function \\
+    $\ul{v}$ & vector test function \\
+    $\ul{w}$, $\ul{u}$ & vector unknown or parameter function \\
+    $\ul{b}$ & vector parameter function \\
+    $\ull{e}(\ul{u})$ & Cauchy strain tensor ($\frac{1}{2}((\nabla u) + (\nabla
+    u)^T)$) \\
+    $\ul{f}$ & vector volume forces \\
+    $\rho$ & density \\
+    $\nu$ & kinematic viscosity \\
+    $c$ & any constant \\
+    $\delta_{ij}$, $\ull{I}$ & Kronecker delta, identity matrix \\
+  \end{tabular}
+\end{center}
+
+The suffix "$_0$" denotes a quatity related to a previous time step.
+
+\section{Introduction}
+
+Equations in \sfe{} are built using terms, which correspond directly to the
+integral forms of weak formulation of a problem to be solved. As an example,
+let us consider the Laplace equation:
+\begin{equation}
+  \label{eq:laplace}
+  c \Delta t = 0 \mbox{ in }\Omega,\quad t = \bar{t} \mbox{ on } \Gamma \;.
+\end{equation}
+The weak formulation of (\ref{eq:laplace}) is: Find $t \in V$, such that
+\begin{equation}
+  \label{eq:wlaplace}
+  \int_{\Omega} c\ \nabla t : \nabla s = 0, \quad \forall s \in V_0 \;.
+\end{equation}
+In the syntax used in \sfe{} input
+files, this can be written as
+\begin{equation}
+  \label{eq:cpoisson}
+    \verb|dw_laplace.i1.Omega( coef, s, t ) = 0| \;,
+\end{equation}
+which directly corresponds to the discrete version of (\ref{eq:wlaplace}):
+Find $\bm{t} \in V_h$, such that
+\begin{equation}
+  \bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T \bm{G}) \bm{t} = 0, \quad \forall \bm{s}
+  \in V_{h0} \;,
+\end{equation}
+where $\nabla u \approx \bm{G} \bm{u}$. The integral over the discrete domain
+$\Omega_h$ is approximated by a numerical quadrature, that is named
+\verb|i1| in our case.
+
+In general, the syntax of a term call in \sfe{} is:
+\begin{center}
+  \verb|<term_name>.<i>.<r>( <arg1>, <arg2>, ... )|,
+\end{center}
+where \verb|<i>| denotes an integral name (i.e. a name of numerical quadrature
+to use) and \verb|<r>| marks a region (domain of the integral).
+
+In the following, \verb|<virtual>| corresponds to a test function,
+\verb|<state>| to a unknown function and \verb|<parameter>| to a known function
+arguments. We will now list all the terms available in \sfe{} to date.
+
