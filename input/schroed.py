@@ -63,7 +63,7 @@ field_0 = {
     'dim' : (1,1),
     'flags' : (),
     'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P2'}
+    'bases' : {'Omega' : '3_4_P1'}
 }
 
 integral_1 = {
