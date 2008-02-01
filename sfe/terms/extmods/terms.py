@@ -178,6 +178,14 @@ def dw_mass_scalar(*args):
     """
   return _terms.dw_mass_scalar(*args)
 
+def dw_mass_scalar_variable(*args):
+  """
+    dw_mass_scalar_variable(FMField out, FMField coef, FMField state, int32 offset, 
+        FMField bf, VolumeGeometry vg, int32 conn, 
+        int32 elList, int32 isDiff) -> int32
+    """
+  return _terms.dw_mass_scalar_variable(*args)
+
 def dw_mass_scalar_fine_coarse(*args):
   """
     dw_mass_scalar_fine_coarse(FMField out, FMField state, int32 offset, FMField bf, 

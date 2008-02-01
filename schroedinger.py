@@ -10,13 +10,10 @@ from sfe.base.la import eig
 from sfe.fem.evaluate import evalTermOP
 import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
-from sfe.homogenization.phono import processOptions,\
-     transformPlotData, plotLogs, plotGaps, detectBandGaps
+from sfe.homogenization.phono import processOptions
 
 ##
-# 25.09.2007, c
-# 26.09.2007
-# 27.09.2007
+# c: 01.02.2008, r: 01.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -30,6 +27,9 @@ def solveEigenProblem( conf, options ):
     pb.timeUpdate()
 
     dummy = pb.createStateVector()
+    # Insert 'V' into material 'm'. Trick! Assumes domain with one group of
+    # elements. 
+#    pb.materials['m'].setData( [V] )
     mtxA = evalTermOP( dummy, conf.equations['lhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA )
     mtxB = evalTermOP( dummy, conf.equations['rhs'], pb,
@@ -77,16 +77,10 @@ usage = """%prog [options] fileNameIn"""
 help = {
     'fileName' :
     'basename of output file(s) [default: <basename of input file>]',
-    'detectBandGaps' :
-    'detect frequency band gaps [default: %default]',
-    'plot' :
-    'plot frequency band gaps [default: %default], assumes -b',
 }
 
 ##
-# 25.09.2007, c
-# 27.09.2007
-# 01.10.2007
+# c: 01.02.2008, r: 01.02.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -95,16 +89,8 @@ def main():
     parser.add_option( "-o", "", metavar = 'fileName',
                        action = "store", dest = "outputFileNameTrunk",
                        default = None, help = help['fileName'] )
-    parser.add_option( "-b", "--band-gaps",
-                       action = "store_true", dest = "detectBandGaps",
-                       default = False, help = help['detectBandGaps'] )
-    parser.add_option( "-p", "--plot",
-                       action = "store_true", dest = "plot",
-                       default = False, help = help['plot'] )
 
     options, args = parser.parse_args()
-    if options.plot:
-        options.detectBandGaps = True
 
     if (len( args ) == 1):
         fileNameIn = args[0];
@@ -122,30 +108,5 @@ def main():
 
     evp = solveEigenProblem( conf, options )
 
-    if options.detectBandGaps:
-        bg = detectBandGaps( evp.pb, evp.eigs, evp.mtxPhi, conf, options )
-
-        if options.plot:
-            plotRange, tlogs = transformPlotData( bg.logs,
-                                                  bg.opts.plotTranform,
-                                                  conf.funmod )
-            plotGaps( 1, bg.gaps, bg.kinds, bg.freqRangeMargins,
-                      plotRange, show = False )
-            plotLogs( 1, tlogs, bg.freqRange,
-                      plotRange, bg.opts.squared, show = True )
-
 if __name__ == '__main__':
-##     mtxK = io.readSparseMatrixHDF5( '1todo/K.h5', outputFormat = 'csr' )
-##     print mtxK.__repr__()
-##     mtxM = io.readSparseMatrixHDF5( '1todo/M.h5', outputFormat = 'csr' )
-##     print mtxM.__repr__()
-##     mtxK.save( 'k.txt', format='%d %d %.12f\n' )
-##     mtxM.save( 'm.txt', format='%d %d %.12f\n' )
-##     eigs, mtxSPhi = eig( mtxK.toarray(), mtxM.toarray(),
-##                          printTime = True )
-##     print eigs
-##     eigs, aux = eig( mtxM.toarray(),
-##                      printTime = True )
-##     print eigs
-##     pause()
     main()

@@ -224,7 +224,7 @@ class VolumeDataCache( DataCache ):
 # c: 23.01.2008, r: 23.01.2008
 class MatInQPDataCache( DataCache ):
     name = 'mat_in_qp'
-    argTypes = ('mat', 'ap', 'assumedShapes')
+    argTypes = ('mat', 'ap', 'assumedShapes', 'modeIn')
 
     ##
     # c: 23.01.2008, r: 23.01.2008
@@ -234,20 +234,20 @@ class MatInQPDataCache( DataCache ):
         self.shape = {}
         
     ##
-    # c: 23.01.2008, r: 23.01.2008
+    # c: 23.01.2008, r: 01.02.2008
     def initData( self, key, ckey, **kwargs ):
-        mat, ap, assumedShapes = self.getArgs( **kwargs )
-
-        if mat.ndim == 3:
-            modeIn = 'element_avg'
-        elif mat.ndim == 2:
-            ashape = assumedShapes[0]
-            if ashape[2:] != mat.shape:
-                modeIn = 'vertex'
+        mat, ap, assumedShapes, modeIn = self.getArgs( **kwargs )
+        if modeIn is None:
+            if mat.ndim == 3:
+                modeIn = 'element_avg'
+            elif mat.ndim == 2:
+                ashape = assumedShapes[0]
+                if ashape[2:] != mat.shape:
+                    modeIn = 'vertex'
+                else:
+                    modeIn = 'const'
             else:
-                modeIn = 'const'
-        else:
-            raise ValueError
+                raise ValueError
 
         shape = None
         for ashape in assumedShapes:
@@ -283,10 +283,10 @@ class MatInQPDataCache( DataCache ):
         DataCache.initData( self, key, ckey, shape )
 
     ##
-    # c: 23.01.2008, r: 23.01.2008
+    # c: 23.01.2008, r: 01.02.2008
     def update( self, key, groupIndx, ih, **kwargs ):
         import numpy as nm
-        mat, ap, assumedShapes = self.getArgs( **kwargs )
+        mat, ap, assumedShapes, modeIn = self.getArgs( **kwargs )
         ckey = self.gToC( groupIndx )
 
         shape = self.shape[ckey]
@@ -310,6 +310,8 @@ class MatInQPDataCache( DataCache ):
 ##             print self.shape, ckey
 ##             print vshape
 ##             print self.data[key][ckey][ih].shape
+##             from sfe.base.base import debug
+##             debug()
             matQP = self.data[key][ckey][ih].reshape( vshape )
             self.function( matQP, mat, 0, gbf, conn )
 

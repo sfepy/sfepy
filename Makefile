@@ -31,7 +31,7 @@ DEBUG_FLAGS := -DDEBUG_FMF
 
 ################ Do not edit below! ##############################
 
-ISRELEASE :=
+ISRELEASE := 1
 MODULES := eldesc input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods tests
 ifndef ISRELEASE
   MODULES += sfe/optimize

@@ -1,7 +1,7 @@
 from sfe.base.base import *
 from sfe.solvers.solvers import LinearSolver
 
-import scipy.linsolve.umfpack as um
+import scipy.splinalg.dsolve.umfpack as um
 um.configure( assumeSortedIndices = True )
 
 ##
