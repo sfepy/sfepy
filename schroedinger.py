@@ -27,9 +27,6 @@ def solveEigenProblem( conf, options ):
     pb.timeUpdate()
 
     dummy = pb.createStateVector()
-    # Insert 'V' into material 'm'. Trick! Assumes domain with one group of
-    # elements. 
-#    pb.materials['m'].setData( [V] )
     mtxA = evalTermOP( dummy, conf.equations['lhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA )
     mtxB = evalTermOP( dummy, conf.equations['rhs'], pb,
