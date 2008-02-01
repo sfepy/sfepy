@@ -149,14 +149,15 @@ class DataCache( Struct ):
                         data = self.data[key][ckey][0]
 
     ##
-    # created:       13.12.2007
-    # last revision: 13.12.2007
+    # c: 13.12.2007, r: 15.01.2008
     def gToC( self, groupIndx ):
-        return groupIndx[0], groupIndx[2], groupIndx[3], 
+        if hasattr( self, 'regionMatters' ) and self.regionMatters:
+            return groupIndx
+        else:
+            return groupIndx[0], groupIndx[-1]
         
     ##
-    # created:       19.10.2006
-    # last revision: 13.12.2007
+    # c: 19.10.2006, r: 13.12.2007
     def __call__( self, key, groupIndx, ih, **kwargs ):
         """groupIndx : term.getCurrentGroup() - term.region.name ignored
                   ih : history level index

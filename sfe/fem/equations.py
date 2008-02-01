@@ -50,8 +50,7 @@ def parseTerms( regions, desc, itps ):
     return terms
 
 ##
-# 27.11.2006, c
-# 20.02.2007
+# c: 27.11.2006, r: 18.01.2008
 def setupTermArgs( terms, variables, materials, user = None ):
     """terms ... can be both Terms or Term class
        - checks term argument existence in variables, materials, user
@@ -68,7 +67,7 @@ def setupTermArgs( terms, variables, materials, user = None ):
             if not set( igs ).issubset( set( field.aps.igs ) ):
                 output( ('%s: incompatible regions: (term, field)'
                          + ' (%s(%s) in %s(%s)') %\
-                        (term.name, igs, name, field.igs, field.name) )
+                        (term.name, igs, name, field.igs(), field.name) )
                 raise ValueError
 
         mns = term.getMaterialNames()

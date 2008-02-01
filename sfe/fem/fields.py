@@ -147,7 +147,7 @@ class Field( Struct ):
         return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
 
     ##
-    # c: 19.07.2006, r: 02.01.2008
+    # c: 19.07.2006, r: 15.01.2008
     def writeMesh( self, nameTemplate, fieldName = None ):
         """Extra nodes are written as zero-size simplices (= points)."""
         if fieldName is None:
@@ -157,7 +157,7 @@ class Field( Struct ):
         dim = mesh.dim
 
         conns, matIds, descs = [], [], []
-        for regionName, ig, ap in self.aps.iterAps( all = True ):
+        for regionName, ig, ap in self.aps.iterAps():
             region = ap.region
             group = region.domain.groups[ig]
             offset = group.shape.nEP
@@ -178,10 +178,10 @@ class Field( Struct ):
         tmp.write()
 
     ##
-    # 20.07.2006, c
+    # c: 20.07.2006, r: 15.01.2008
     def getNodeDescs( self, region ):
         nds = {}
-        for regionName, ig, ap in self.aps.iterAps( all = True ):
+        for regionName, ig, ap in self.aps.iterAps():
             if ig in region.igs:
                 nds[ig] = self.aps.nodeDescs[regionName]
 

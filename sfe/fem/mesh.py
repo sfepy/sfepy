@@ -594,3 +594,12 @@ class Mesh( Struct ):
             conns.append( remap[conn] )
         self.conns = conns
 
+
+    ##
+    # c: 18.01.2008, r: 18.01.2008
+    def transformCoords( self, mtxT, refCoords = None ):
+        """x = T * x."""
+        if refCoords is None:
+            refCoords = self.nod0[:,:-1]
+
+        self.nod0[:,:-1] = nm.dot( refCoords, mtxT.T )

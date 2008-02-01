@@ -555,8 +555,8 @@ class Approximation( Struct ):
 ##                 print bfBG
                 sg.evaluateBFBGM( bfBG, coors, sd.fis, self.econn )
 
-##             sg.str( sys.stdout, 0 )
-##             pause()
+##                 sg.str( sys.stdout, 0 )
+##                 pause()
             
             return sg
 
@@ -597,15 +597,19 @@ class Approximations( Container ):
     instances
 
     - interps and hence nodeDescs are per region (must have single
-    geometry!)"""
+    geometry!)
+    - no two interps can be in a same group -> no two aps (with different
+    regions) can be in a same group -> aps can be uniquely indexed with ig"""
 
     ##
-    # last revision: 21.12.2007
+    # c: 23.11.2007, r: 15.01.2008
     def __init__( self, bases, interps, domain ):
 
         self.igs = []
-        apsPerRegion = {}
         self.interps = {}
+        self.apsPerGroup = {}
+        self.regionNamesPerGroup = {}
+        objs = OneTypeList( Approximation )
         for regionName, baseName in bases.iteritems():
             print regionName, baseName
 
@@ -625,11 +629,9 @@ class Approximations( Container ):
                 interp.setup( domain.geomEls[interp.geometry] )
                 self.interps[region.name] = interp
             
-            apsPerGroup = {}
-            objs = OneTypeList( Approximation )
             for ig in region.igs:
                 if ig in self.igs:
-                    output( 'regions must not intersect (%s, %d)'\
+                    output( 'base regions must not share groups! (%s, %d)'\
                             % (region.name, ig) )
                     raise ValueError
 
@@ -637,17 +639,11 @@ class Approximations( Container ):
                 
                 ap = Approximation( baseName + '_%s_ig%d' % (region.name, ig),
                                     interp, region, ig )
-                apsPerGroup[ig] = ap
+                self.apsPerGroup[ig] = ap
+                self.regionNamesPerGroup[ig] = region.name
                 objs.append( ap )
 
-            apsPerRegion[region.name] = apsPerGroup
-
-        self.apsPerRegion = apsPerRegion
         self.update( objs )
-
-        self.apsPerGroup = {}
-        for regionName, ig, ap in self.iterAps( all = True ):
-            self.apsPerGroup.setdefault( ig, {} )[regionName] = ap
 
         self.clearGeometries()
 
@@ -658,55 +654,39 @@ class Approximations( Container ):
         self.geometries = {}
 
     ##
-    #
-    def iterAps( self, all = False, igs = None ):
-        if all:
-            for regionName, apsPerGroup in self.apsPerRegion.iteritems():
-                for ig, ap in apsPerGroup.iteritems():
-                    if igs is not None:
-                        if not ig in igs: continue
-                    yield regionName, ig, ap
-        else:
-            for regionName, apsPerGroup in self.apsPerRegion.iteritems():
-                yield regionName, apsPerGroup
+    # c: 23.11.2007, r: 15.01.2008
+    def iterAps( self, igs = None ):
+        for ig, ap in self.apsPerGroup.iteritems():
+            if igs is not None:
+                if not ig in igs: continue
+            yield self.regionNamesPerGroup[ig], ig, ap
 
     ##
-    #
-    def __len__( self ):
-        nn = 0
-        for apsPerGroup in self.apsPerRegion.itervalues():
-            nn += len( apsPerGroup )
-        return nn
-
-    ##
-    # 19.07.2006, c
+    # c: 19.07.2006, r: 15.01.2008
     def describeNodes( self ):
         self.ent = ent = {}
         self.fnt = fnt = {}
 
         self.nodeDescs = {}
-        for key, interp in self.interps.iteritems():
+        for regionName, interp in self.interps.iteritems():
             interp.listExtraNodeTypes( ent, fnt )
             nodeDesc = interp.describeNodes()
-            self.nodeDescs[key] = nodeDesc
+            self.nodeDescs[regionName] = nodeDesc
 
 ##             print ent, fnt
 ##         pause()
 
-        for key1, key2, ap in self.iterAps( all = True ):
-            ap.describeNodes( self.nodeDescs[key1] )
+        for regionName, ig, ap in self.iterAps():
+            ap.describeNodes( self.nodeDescs[regionName] )
             
 
     ##
-    # 23.09.2005, c
-    # 29.09.2005
-    # 07.10.2005
-    # 19.07.2006
+    # c: 23.09.2005, r: 15.01.2008
     def setupNodes( self ):
 
         self.edgeOris = {}
         self.faceOris = {}
-        for key1, key2, ap in self.iterAps( all = True ):
+        for key1, key2, ap in self.iterAps():
 ##             print ap
 ##             print key1, key2
             domain = ap.region.domain
@@ -734,20 +714,7 @@ class Approximations( Container ):
         # Face node type permutation table.
         
     ##
-    # 30.09.2005, c
-    # 03.10.2005
-    # 04.10.2005
-    # 07.10.2005
-    # 10.10.2005
-    # 01.11.2005
-    # 03.12.2005
-    # 16.12.2005
-    # 19.07.2006
-    # 23.08.2006
-    # 10.10.2006
-    # 13.02.2007
-    # 19.02.2007
-    # 20.02.2007
+    # c: 30.09.2005, r: 15.01.2008
     def setupGlobalBase( self, domain ):
         """
         efaces: indices of faces into econn.
@@ -769,7 +736,7 @@ class Approximations( Container ):
         
         nodeOffsetTable[iVertex,0] = iseq
         ia = 0
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             region = ap.region
             nodeDesc = self.nodeDescs[regionName]
             nEP = ap.nEP['v']
@@ -798,7 +765,7 @@ class Approximations( Container ):
 ##         pause()
 ##         print iseq, remap
 ##         pause()
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             region = ap.region
             nodeDesc = self.nodeDescs[regionName]
             group = region.domain.groups[ig]
@@ -818,7 +785,7 @@ class Approximations( Container ):
         # Edge nodes.
         nodeOffsetTable[iEdge,0] = iseq
         ia = 0
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             region = ap.region
             nodeDesc = self.nodeDescs[regionName]
             group = region.domain.groups[ig]
@@ -836,7 +803,7 @@ class Approximations( Container ):
         #    cntFN = nm.zeros( (fntt.shape[1], fa.nUnique), nm.int32 ) - 1
         nodeOffsetTable[iFace,0] = iseq
         ia = 0
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             nodeOffsetTable[iFace,ia+1] = iseq
             ia += 1
 
@@ -845,7 +812,7 @@ class Approximations( Container ):
         # Bubble nodes.
         nodeOffsetTable[iBubble,0] = iseq
         ia = 0
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             region = ap.region
             nodeDesc = self.nodeDescs[regionName]
             group = region.domain.groups[ig]
@@ -868,7 +835,7 @@ class Approximations( Container ):
         self.nodeOffsetTable = nodeOffsetTable
 
         ia = 0
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             ap.nodeOffsets = self.nodeOffsetTable[:,ia:ia+2]
             ia += 1
 ##             print ia
@@ -876,7 +843,7 @@ class Approximations( Container ):
 ##             print ap.nodeOffsets
 #            pause()
             
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             nodeDesc = self.nodeDescs[regionName]
 
             gd = ap.interp.gel.data['v']
@@ -916,11 +883,7 @@ class Approximations( Container ):
         return iseq, remap, cntVN, cntEN
 
     ##
-    # 19.07.2006, c
-    # 13.02.2007
-    # 19.02.2007
-    # 20.02.2007
-    # 12.07.2007
+    # c: 19.07.2006, r: 15.01.2008
     def setupCoors( self, mesh, cntVN ):
         """id column is set to 1."""
         noft = self.nodeOffsetTable
@@ -939,7 +902,7 @@ class Approximations( Container ):
 ##         print self.coors
 ##         print mesh.nod0
 ##         pause()
-        for regionName, ig, ap in self.iterAps( all = True ):
+        for regionName, ig, ap in self.iterAps():
             ap.evalExtraCoor( self.coors, mesh )
 
 ##         print self.coors
@@ -947,13 +910,11 @@ class Approximations( Container ):
 ##         pause()
 
     ##
-    # created:       12.10.2005
-    # last revision: 21.12.2007
+    # c: 12.10.2005, r: 15.01.2008
     def describeGeometry( self, field, geometries, geomRequest, integral,
                           overWrite = False ):
 
-        for regionName, ig, ap in self.iterAps( all = True,
-                                                igs = geomRequest.region.igs ):
+        for regionName, ig, ap in self.iterAps( igs = geomRequest.region.igs ):
 ##             print regionName, ig, ap.name
 
             # Store integral for possible future base function request.

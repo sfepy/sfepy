@@ -73,6 +73,7 @@ defines = r"""
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
 \def\figDir{../doc/tex/figures}
+\newcommand{\sfe}{SFE}
 """
 
 header = r"""
@@ -82,7 +83,9 @@ header = r"""
 \usepackage{a4wide}
 
 %s
+"""  % defines
 
+begining = r"""
 \setlength{\parindent}{0pt}
 
 \newif\ifPDF
@@ -94,7 +97,7 @@ header = r"""
    \usepackage[pdftex]{graphicx}
    \DeclareGraphicsExtensions{.pdf,.png}
    \pdfinfo{
-    /Title      (Overview of terms in SFE)
+    /Title      (Overview of terms in \sfe{})
     /Author     (R. Cimrman)
   }
 \else
@@ -104,74 +107,16 @@ header = r"""
 
 \begin{document}
 
-\begin{titlepage}
-  \begin{center}
-    \ \\
-    [40mm]
-    \Huge Overview of terms in SFE \\
-    [10mm]
-    \huge Robert Cimrman \& genDocs.py \\
-    [20mm]
-    \Large
-    Department of Mechanics \& New Technologies Research Centre \\
-    University of West Bohemia \\
-    Plze\v{n}, Czech Republic\\
-    [10mm]
-%%    \includegraphics[height=1.5cm,viewport=96 122 504 527,clip]{\figDir/zcu}
-    \includegraphics[height=0.1\linewidth]{\figDir/znak_zcu}
-    \hspace{5mm}
-    \includegraphics[height=0.1\linewidth]{\figDir/logo_fav_en}
-    \hspace{5mm}
-    \includegraphics[height=0.1\linewidth]{\figDir/logoen_bw}
-    \vfill
-    \today
-  \end{center}
-\end{titlepage}
+%s
+
+%%\setcounter{page}{4}
 
 \tableofcontents
 
 \newpage
 
-\section{Introduction}
-
-
-\textbf{Notation}:
-\begin{center}
-  \begin{tabular}{rl}
-    $\Omega$ & volume (sub)domain \\
-    $\Gamma$ & surface (sub)domain \\
-    $t$ & time \\
-    $y$ & any function \\
-    $\ul{y}$ & any vector function \\
-    $\ul{n}$ & unit outward normal \\
-    $q$, $s$ & scalar test function \\
-    $p$, $r$ & scalar unknown or parameter function \\
-    $\bar{p}$ & scalar parameter function \\
-    $\ul{v}$ & vector test function \\
-    $\ul{w}$, $\ul{u}$ & vector unknown or parameter function \\
-    $\ul{b}$ & vector parameter function \\
-    $\ull{e}(\ul{u})$ & Cauchy strain tensor ($\frac{1}{2}((\nabla u) + (\nabla
-    u)^T)$) \\
-    $\ul{f}$ & vector volume forces \\
-    $\rho$ & density \\
-    $\nu$ & kinematic viscosity \\
-    $c$ & any constant \\
-    $\delta_{ij}$, $\ull{I}$ & Kronecker delta, identity matrix \\
-  \end{tabular}
-\end{center}
-
-The suffix "$_0$" denotes a quatity related to a previous time step.
-
-General syntax of a term call:
-\begin{verbatim}
-<term_name>.<region>( <arg1>, <arg2>, ... )
-\end{verbatim}
-
-In the following, \verb|<virtual>| corresponds to a test function,
-\verb|<state>| to a unknown function and \verb|<parameter>| to a known function
-arguments.
-
-""" % defines
+%s
+"""
 
 ending = r"""
 \end{document}
@@ -216,11 +161,11 @@ def itemsPerSections( table, secNamePrefix, omitList ):
     return ips
 
 ##
-# 14.11.2007, c
+# c: 14.11.2007, r: 24.10.2008
 def typesetTermSyntax( fd, cls, name ):
     fd.write( itemSection % 'Syntax' )
     argTypes = '>, <'.join( cls.argTypes )
-    fd.write( termSyntax % (name, '<region>', argTypes) )
+    fd.write( termSyntax % (name, '<i>.<r>', argTypes) )
 
 ##
 # 14.11.2007, c
@@ -302,11 +247,7 @@ help = {
 # ./genDocs.py --omit="termsAdjointNavierStokes termsHDPM  cachesHDPM  cachesBasic"
 
 ##
-# 29.10.2007, c
-# 04.11.2007
-# 13.11.2007
-# 14.11.2007
-# 15.11.2007
+# c: 29.10.2007, r: 24.01.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
     parser.add_option( "", "--omit", metavar = 'list of sections',
@@ -320,9 +261,19 @@ def main():
     latexFileName = 'terms.tex'
     latexFileNameComplete = op.join( outputDir, latexFileName )
     print latexFileNameComplete
+
+    fd = open( 'doc/pages/title_sfe.tex', 'r' )
+    titleSrc = fd.read()
+    fd.close()
+
+    fd = open( 'doc/pages/intro.tex', 'r' )
+    introSrc = fd.read()
+    fd.close()
+
     
     fd = open( latexFileNameComplete, 'w' )
     fd.write( header )
+    fd.write( begining % (titleSrc, introSrc) )
 
     typeset( fd, tps, termTable, typesetTermSyntax )
     typeset( fd, cps, cacheTable, typesetCacheSyntax )

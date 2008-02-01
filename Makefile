@@ -1,6 +1,6 @@
 # 14.12.2004, c
 # last revision: 14.12.2007
-VERSION := 00.35.01
+VERSION := 00.36.08
 PROJECTNAME := sfe
 
 ############### Edit here. #######################################
@@ -31,7 +31,7 @@ DEBUG_FLAGS := -DDEBUG_FMF
 
 ################ Do not edit below! ##############################
 
-ISRELEASE := 1
+ISRELEASE :=
 MODULES := eldesc input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods tests
 ifndef ISRELEASE
   MODULES += sfe/optimize

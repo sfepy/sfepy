@@ -108,24 +108,23 @@ class LCBCEvaluator( BasicEvaluator ):
         BasicEvaluator.updateVec( self, vec, delta )
 
 ##
-# 03.09.2007, c
+# c: 03.09.2007, r: 15.01.2008
 def assembleVector( vec, equation, variables, materials,
                     chunkSize = 1000, **kwargs ):
     getADofConn = variables.getADofConn
 
     for term in equation.terms:
-#        print '>>>>>>', term.name, term.sign
+##         print '>>>>>>', term.name, term.sign
         varNames = term.getVariableNames()
         args = buildArgs( term, variables, materials, **kwargs )
         vn = term.getVirtualName()
         dcType = term.getDofConnType()
 ##         print args
 ##         print vn
-        for regionName, ig in term.iterGroups():
-#            print term.region.name, regionName, ig
-            term.setCurrentGroup( regionName, ig )
-            dc = getADofConn( vn, True, dcType, regionName, ig )
-#            print vn, dc.shape
+##         print dcType
+        for ig in term.iterGroups():
+            dc = getADofConn( vn, True, dcType, ig )
+##             print vn, dc.shape
 #            pause()
             for vecInEls, iels, status in term( chunkSize = chunkSize,
                                                 **args ):
@@ -134,7 +133,7 @@ def assembleVector( vec, equation, variables, materials,
                 fem.assembleVector( vec, vecInEls, iels, term.sign, dc )
 
 ##
-# 03.09.2007, c
+# c: 03.09.2007, r: 15.01.2008
 def assembleMatrix( mtx, equation, variables, materials,
                     chunkSize = 1000, groupCanFail = True, **kwargs ):
     if not sp.isspmatrix_csr( mtx ):
@@ -151,12 +150,11 @@ def assembleMatrix( mtx, equation, variables, materials,
         sns = term.getStateNames()
         dcType = term.getDofConnType()
 
-        for regionName, ig in term.iterGroups():
-            term.setCurrentGroup( regionName, ig )
-            rdc = getADofConn( vn, True, dcType, regionName, ig )
+        for ig in term.iterGroups():
+            rdc = getADofConn( vn, True, dcType, ig )
 #            print vn, rdc.shape
             for sn in sns:
-                cdc = getADofConn( sn, False, dcType, regionName, ig )
+                cdc = getADofConn( sn, False, dcType, ig )
 #                print sn, cdc.shape
 #                pause()
                 for mtxInEls, iels, status in term( diffVar = sn,
@@ -177,8 +175,7 @@ def evalTermOP( state, termDesc, problem, **kwargs ):
                      chunkSize = problem.domain.shape.nEl, **kwargs )
 
 ##
-# created:       03.01.2006
-# last revision: 14.12.2007
+# c: 03.01.2006, r: 15.01.2008
 def evalTerm( state, termDesc, conf, domain, variables, materials,
               funmod = None, chunkSize = 1000, termPrefixes = None,
               caches = None, retCaches = False,
@@ -243,7 +240,7 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
 
         for term in equation.terms:
             args = buildArgs( term, variables, materials, **kwargs )
-            for regionName, ig in term.iterGroups():
+            for ig in term.iterGroups():
                 for aux, iels, status in term( chunkSize = chunkSize,
                                                **args ):
                     val += term.sign * aux
@@ -254,8 +251,7 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
 
         for term in equation.terms:
             args = buildArgs( term, variables, materials, **kwargs )
-            for regionName, ig in term.iterGroups():
-                term.setCurrentGroup( regionName, ig )
+            for ig in term.iterGroups():
                 for aux, iels, status in term( chunkSize = chunkSize,
                                                **args ):
                     if val is None:

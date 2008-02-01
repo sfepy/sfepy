@@ -333,7 +333,7 @@ int32 sg_freeDestroy( SurfaceGeometry **p_obj )
 #define __FUNC__ "sg_print"
 /*!
   @par Revision history:
-  - 21.12.2005, c
+  - c: 21.12.2005, r: 18.01.2008
 */
 int32 sg_print( SurfaceGeometry *obj, FILE *file, int32 mode )
 {
@@ -358,6 +358,7 @@ int32 sg_print( SurfaceGeometry *obj, FILE *file, int32 mode )
     fmf_print( obj->area, file, mode );
 
     if (obj->bfBGM) {
+      FMF_SetCell( obj->bfBGM, ii );
       fprintf( file, "%d bfBGM:\n", ii );
       fmf_print( obj->bfBGM, file, mode );
     }
@@ -560,6 +561,9 @@ int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
 /*       fmf_mulC( vn, -1.0 ); */
 
       fmf_sumLevelsMulF( out, vn, obj->det->val );
+/*       fmf_print( vn, stdout, 0 ); */
+/*       fmf_print( out, stdout, 0 ); */
+/*       sys_pause(); */
       ERR_CheckGo( ret );
     }
   } else {
@@ -602,17 +606,20 @@ int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR,
     FMF_SetCell( obj->bfBGM, ii );
     FMF_SetCell( bfBGR, ifa );
 
-/*     output( "%d %d\n", iel, ifa); */
     for (inod = 0; inod < nEP; inod++) {
       pos = dim*conn[nEP*iel+inod];
       for (idim = 0; idim < dim; idim++ ) {
 	volCoor0->val[dim*inod+idim] = coorIn[idim+pos];
       }
     }
-    fmf_mulATBT_1n( mtxRM, volCoor0, bfBGR );
+    fmf_mulAB_n1( mtxRM, bfBGR, volCoor0 );
     geme_invert3x3( mtxRMI, mtxRM );
-    fmf_mulATB_nn( obj->bfBGM, mtxRMI, bfBGR );
+    fmf_mulAB_nn( obj->bfBGM, mtxRMI, bfBGR );
+/*     fmf_mulATBT_1n( mtxRM, volCoor0, bfBGR ); */
+/*     geme_invert3x3( mtxRMI, mtxRM ); */
+/*     fmf_mulATB_nn( obj->bfBGM, mtxRMI, bfBGR ); */
 
+/*     output( "%d %d %d\n", ii, iel, ifa); */
 /*     fmf_print( bfBGR, stdout, 0 ); */
 /*     fmf_print( volCoor0, stdout, 0 ); */
 /*     fmf_print( obj->bfBGM, stdout, 0 ); */

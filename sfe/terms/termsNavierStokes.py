@@ -345,8 +345,7 @@ class DivIntegratedTerm( Term ):
         Term.__init__( self, region, name, sign )
 
     ##
-    # 13.03.2007, c
-    # 12.04.2007
+    # c: 13.03.2007, r: 17.01.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         par1, par2 = self.getArgs( **kwargs )
         apc, vgc = par2.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -354,9 +353,9 @@ class DivIntegratedTerm( Term ):
         shape = (0,)
 
         cache = self.getCache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.charFun.ig, 0, state = par1 )
+        vec1 = cache( 'state', self.getCurrentGroup(), 0, state = par1 )
         cache = self.getCache( 'div_vector', 0 )
-        div2 = cache( 'div', self.charFun.ig, 0, state = par2 )
+        div2 = cache( 'div', self.getCurrentGroup(), 0, state = par2 )
 
         for out, chunk in self.charFun( chunkSize, shape ):
             out = nm.sum( vec1[chunk] * div2[chunk] * vgc.variable( 1 ) )

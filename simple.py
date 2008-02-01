@@ -87,8 +87,7 @@ help = {
 }
 
 ##
-# created:       12.01.2007
-# last revision: 02.01.2008
+# c: 12.01.2007, r: 23.01.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -132,7 +131,7 @@ def main():
         return
     
     required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe', 'equations',
-                'region_[0-9]+', 'variables', 'material_[0-9]+',
+                'region_[0-9]+|regions', 'variables', 'material_[0-9]+',
                 'integral_[0-9]+', 'solver_[0-9]+']
     other = ['functions', 'modules', 'epbc', 'lcbc', 'options']
     if options.solveNot:
@@ -145,6 +144,11 @@ def main():
 ##     pause()
 
     dpb, vecDP, data = solveDirect( conf, options )
+
+    opts = conf.options
+    if hasattr( opts, 'postProcessHook' ): # User postprocessing.
+        postProcessHook = getattr( conf, opts.postProcessHook )
+        postProcessHook( dpb, vecDP, data )
 
 if __name__ == '__main__':
     main()

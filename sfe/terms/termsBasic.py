@@ -13,17 +13,15 @@ class IntegrateVolumeTerm( Term ):
         Term.__init__( self, region, name, sign )
         
     ##
-    # 12.04.2007, c
-    # 23.04.2007
-    # 01.11.2007
-    # 08.11.2007
+    # created:       12.04.2007
+    # last revision: 21.12.2007
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         par, = self.getArgs( **kwargs )
-        ap, vg = par.getCurrentApproximation()
+        ap, vg = par.getApproximation( self.getCurrentGroup(), 'Volume' )
         shape = (chunkSize, 1, 1, 1)
 
         cache = self.getCache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.charFun.ig, 0, state = par )
+        vec = cache( 'state', self.getCurrentGroup(), 0, state = par )
 
         for out, chunk in self.charFun( chunkSize, shape ):
             status = vg.integrateChunk( out, vec[chunk], chunk )
@@ -45,11 +43,12 @@ class IntegrateVolumeOperatorTerm( Term ):
         Term.__init__( self, region, name, sign )
         
     ##
-    # 01.11.2007, c
+    # created:       01.11.2007
+    # last revision: 21.12.2007
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         virtual, = self.getArgs( **kwargs )
-        ap, vg = virtual.getCurrentApproximation()
-        nEl, nQP, dim, nEP = ap.getVDataShape()
+        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
 
         if diffVar is None:
             shape = (chunkSize, 1, nEP, 1 )
@@ -57,7 +56,7 @@ class IntegrateVolumeOperatorTerm( Term ):
         else:
             raise StopIteration
 
-        bf = ap.bf['v']
+        bf = ap.getBase( 'v', 0, self.integralName )
         for out, chunk in self.charFun( chunkSize, shape ):
             bfT = nm.tile( bf.transpose( (0, 2, 1) ), (chunkSize, 1, 1, 1) )
             status = vg.integrateChunk( out, bfT, chunk )
@@ -80,29 +79,25 @@ class IntegrateSurfaceTerm( Term ):
         self.dofConnType = 'surface'
 
     ##
-    # 24.04.2007, c
-    # 01.11.2007
+    # c: 24.04.2007, r: 15.01.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """
         Integrates over surface.
         """
         par, = self.getArgs( **kwargs )
-        ap, sg = par.getCurrentApproximation( surface = True,
-                                              key = self.region.name )
+        ap, sg = par.getApproximation( self.getCurrentGroup(), 'Surface' )
         shape = (chunkSize, 1, 1, 1)
 
         sd = ap.surfaceData[self.region.name]
 
         cache = self.getCache( 'state_in_surface_qp', 0 )
-        vec = cache( 'state', self.charFun.ig, 0, state = par,
-                     region = self.region )
+        vec = cache( 'state', self.getCurrentGroup(), 0, state = par )
         
         for out, chunk in self.charFun( chunkSize, shape ):
             lchunk = self.charFun.getLocalChunk()
-            status = sg.integrateChunk( out, vec[lchunk] )
+            status = sg.integrateChunk( out, vec[lchunk], lchunk )
             out1 = nm.sum( out )
             yield out1, chunk, status
-
 
 ##
 # 26.09.2007, c
@@ -159,20 +154,16 @@ class DotProductSurfaceTerm( Term ):
         Term.__init__( self, region, name, sign )
         
     ##
-    # 09.10.2007, c
-    # 01.11.2007
+    # c: 09.10.2007, r: 15.01.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         par1, par2 = self.getArgs( **kwargs )
-        ap, sg = par1.getCurrentApproximation( surface = True,
-                                               key = self.region.name )
+        ap, sg = par1.getApproximation( self.getCurrentGroup(), 'Surface' )
         shape = (chunkSize, 1, 1, 1)
 
         cache = self.getCache( 'state_in_surface_qp', 0 )
-        vec1 = cache( 'state', self.charFun.ig, 0, state = par1,
-                      region = self.region )
+        vec1 = cache( 'state', self.getCurrentGroup(), 0, state = par1 )
         cache = self.getCache( 'state_in_surface_qp', 1 )
-        vec2 = cache( 'state', self.charFun.ig, 0, state = par2,
-                      region = self.region )
+        vec2 = cache( 'state', self.getCurrentGroup(), 0, state = par2 )
 
         for out, chunk in self.charFun( chunkSize, shape ):
             lchunk = self.charFun.getLocalChunk()
@@ -180,7 +171,7 @@ class DotProductSurfaceTerm( Term ):
                 vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
             else:
                 vec = vec1[lchunk] * vec2[lchunk]
-            status = sg.integrateChunk( out, vec, chunk )
+            status = sg.integrateChunk( out, vec, lchunk )
             out1 = nm.sum( out )
             yield out1, chunk, status
 

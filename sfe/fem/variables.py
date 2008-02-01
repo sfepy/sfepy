@@ -33,14 +33,14 @@ def createDofConn( conn, dpn, imax ):
     return dc, imax
 
 ##
-# 11.07.2007, c
+# c: 11.07.2007, r: 15.01.2008
 def createADofConns( eq, iterator, indx ):
     adcs = {}
     for key, dc in iterator():
         if isinstance( dc, dict ):
             adcss = createADofConns( eq, dc.iteritems, indx )
             for subkey, subdc in adcss.iteritems():
-                adcs[(key[0], subkey, key[1])] = subdc
+                adcs[(key, subkey)] = subdc
         elif dc is not None:
             aux = eq[dc]
             adcs[key] = aux + nm.where( aux >= 0, indx.start, 0 )
@@ -390,6 +390,27 @@ class Variables( Container ):
             self.avdi = self.adi
 
     ##
+    # c: 09.01.2008, r: 09.01.2008
+    def getNodesOfGlobalDofs( self, igdofs ):
+        """not stripped..."""
+        di = self.di
+        
+        nods = nm.empty( (0,), dtype = nm.int32 )
+        for ii in self.state:
+            var = self[ii]
+            indx = di.indx[var.name]
+            igdof = igdofs[(igdofs >= indx.start) & (igdofs < indx.stop)]
+            ivdof = igdof - indx.start
+            inod = ivdof / var.dpn
+            nods = nm.concatenate( (nods, inod) )
+##             print var.name, indx
+##             print igdof
+##             print ivdof
+##             print inod
+##             pause()
+        return nods
+
+    ##
     # 23.11.2005, c
     # 20.07.2006
     # 08.08.2006
@@ -445,10 +466,10 @@ class Variables( Container ):
 ##         pause()
 
     ##
-    #
-    def getADofConn( self, varName, isDual, dcType, aregionName, ig ):
+    # c: 10.12.2007, r: 15.01.2008
+    def getADofConn( self, varName, isDual, dcType, ig ):
         """Note that primary and dual variables must have same Region!"""
-        kind, tregionName = dcType
+        kind, regionName = dcType
 
         var = self[varName]
         if isDual:
@@ -459,7 +480,10 @@ class Variables( Container ):
             adcs = self.adofConns[varName]
 
         if kind == 'volume':
-            dc = adcs.volumeDCs[(aregionName, ig)]
+            try:
+                dc = adcs.volumeDCs[ig]
+            except:
+                debug()
         else:
             if kind == 'surface':
                 dcs = adcs.surfaceDCs
@@ -470,7 +494,7 @@ class Variables( Container ):
             else:
                 print 'uknown dof connectivity kind:', kind
                 raise ValueError
-            dc = dcs[(aregionName, tregionName, ig)]
+            dc = dcs[(ig, regionName)]
         return dc
         
     ##
@@ -483,16 +507,7 @@ class Variables( Container ):
             dcs[ig] = dc[iemap]
 
     ##
-    # 23.11.2005, c
-    # 27.11.2005
-    # 14.12.2005
-    # 20.07.2006
-    # 08.08.2006
-    # 19.02.2007
-    # 20.02.2007
-    # 11.07.2007
-    # 03.09.2007
-    # 05.09.2007
+    # c: 23.11.2005, r: 15.01.2008
     def createMatrixGraph( self, varNames = None, vvarNames = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -505,9 +520,8 @@ class Variables( Container ):
             gdcs = {}
             for varName in varNames:
                 adcs = adofConns[varName]
-                for (regionName, ig), dc in adcs.volumeDCs.iteritems():
+                for ig, dc in adcs.volumeDCs.iteritems():
 ##                     print dc
-##                     print regionName, ig
                     gdcs.setdefault( ig, [] ).append( dc )
             return gdcs
 
@@ -918,11 +932,7 @@ class Variable( Struct ):
         self.flags.add( isField )
 
     ##
-    # 08.08.2006, c
-    # 11.07.2007
-    # 12.07.2007
-    # 17.07.2007
-    # 19.07.2007
+    # c: 08.08.2006, r: 15.01.2008
     def setupDofConns( self ):
         dpn = self.dpn
         field = self.field
@@ -932,11 +942,10 @@ class Variable( Struct ):
         imax = -1
         ##
         # Expand nodes into dofs.
-        for regionName, ig, ap in field.aps.iterAps( all = True ):
-#        for ii, ap in enumerate( field.aps ):
+        for regionName, ig, ap in field.aps.iterAps():
 
             dc, imax = createDofConn( ap.econn, dpn, imax )
-            dofConns.volumeDCs[(regionName, ig)] = dc
+            dofConns.volumeDCs[ig] = dc
 
             if ap.surfaceData:
                 dcs = {}
@@ -944,15 +953,15 @@ class Variable( Struct ):
                     dc, imax2 = createDofConn( sd.econn, dpn, 0 )
                     assert imax2 <= imax
                     dcs[key] = dc
-                dofConns.surfaceDCs[(regionName, ig)] = dcs
+                dofConns.surfaceDCs[ig] = dcs
 
             else:
-                dofConns.surfaceDCs[(regionName, ig)] = None
+                dofConns.surfaceDCs[ig] = None
 
             if ap.edgeData:
                 raise NotImplementedError
             else:
-                dofConns.edgeDCs[(regionName, ig)] = None
+                dofConns.edgeDCs[ig] = None
 
             if ap.pointData:
                 dcs = {}
@@ -965,10 +974,10 @@ class Variable( Struct ):
 ##                     print key, dc.shape
 ##                     pause()
                     dcs[key] = dc
-                dofConns.pointDCs[(regionName, ig)] = dcs
+                dofConns.pointDCs[ig] = dcs
 
             else:
-                dofConns.pointDCs[(regionName, ig)] = None
+                dofConns.pointDCs[ig] = None
 
 ##         print dofConns
 ##         pause()
@@ -990,6 +999,7 @@ class Variable( Struct ):
         else:
             print 'uknown dof connectivity kind:', kind
             raise ValueError
+
     ##
     # 18.10.2006, c
     def expandNodesToEquations( self, nods, dofs ):
@@ -1108,7 +1118,8 @@ class Variable( Struct ):
         masterSlave = nm.zeros( (di.nDofs[self.name],), dtype = nm.int32 )
         chains = []
         for bc in bcs:
-#            print bc
+##             print bc
+##             debug()
             # Get master region nodes.
             region = regions[bc[0]]
             masterNodList = region.getFieldNodes( field )
@@ -1245,17 +1256,16 @@ class Variable( Struct ):
 ##         pause()
 
     ##
-    # created:       24.07.2006
-    # last revision: 21.12.2007
+    # c: 24.07.2006, r: 15.01.2008
     def getApproximation( self, key, kind = 'Volume' ):
-        iname, tregionName, aregionName, ig = key
+        iname, regionName, ig = key
 ##         print tregionName, aregionName, ig
 #        print self.field.aps.apsPerGroup
 
         aps = self.field.aps
         geometries = aps.geometries
-        ap = aps.apsPerRegion[aregionName][ig]
-        gKey = (iname, kind, tregionName, ap.name)
+        ap = aps.apsPerGroup[ig]
+        gKey = (iname, kind, regionName, ap.name)
         try:
             return ap, geometries[gKey]
         except KeyError:
@@ -1264,14 +1274,14 @@ class Variable( Struct ):
             raise
 
     ##
-    # created:       28.11.2006
-    # last revision: 13.12.2007
-    def getDataShapes( self, key, kind = 'Volume', regionName = None ):
-        iname, aregionName, ig = key
-        ap = self.field.aps.apsPerRegion[aregionName][ig]
+    # c: 28.11.2006, r: 15.01.2008
+    def getDataShapes( self, key, kind = 'Volume' ):
+        iname, ig = key[0], key[-1]
+        ap = self.field.aps.apsPerGroup[ig]
         if kind == 'Volume':
             shape = ap.getVDataShape( iname )
         else:
+            regionName = key[1]
             shape = ap.getSDataShape( iname, regionName )
 
         return shape

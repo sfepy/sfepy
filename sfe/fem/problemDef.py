@@ -103,7 +103,8 @@ class ProblemDefinition( Struct ):
         fields.setupCoors()
         self.fields = fields
 
-#        self.saveFieldMeshes( '.' )
+##         self.saveFieldMeshes( '.' )
+##         pause()
 
     ##
     # 26.07.2006, c
@@ -141,6 +142,8 @@ class ProblemDefinition( Struct ):
         equations.describeGeometry( self.geometries, self.variables,
                                     self.integrals )
 
+##         print self.geometries
+##         pause()
         # Call after describeGeometry(), as it sets ap.surfaceData.
         self.variables.setupDofConns()
 
@@ -338,11 +341,19 @@ class ProblemDefinition( Struct ):
             field.writeMesh( fileNameTrunk + '_%s' )
 
     ##
-    # 03.10.2007, c
-    # 10.10.2007
-    # 17.10.2007
-    def solve( self, state0 = None, data = None, nlsStatus = None,
-               lsConf = None, nlsConf = None ):
+    # c: 17.01.2008, r: 17.01.2008
+    def getEvaluator( self, **kwargs ):
+        if self.variables.hasLCBC:
+            ev = LCBCEvaluator( self, **kwargs )
+        else:
+            ev = BasicEvaluator( self, **kwargs )
+        return ev
+
+    ##
+    # c: 03.10.2007, r: 17.01.2008
+    def solve( self, state0 = None, nlsStatus = None,
+               lsConf = None, nlsConf = None, forceValues = None,
+               **kwargs ):
         """Solve self.equations in current time step."""
 
         lsConf = getDefault( lsConf, self.lsConf )
@@ -360,11 +371,9 @@ class ProblemDefinition( Struct ):
         else:
             state = state0.copy()
 
-        self.applyEBC( state )
-        if self.variables.hasLCBC:
-            ev = LCBCEvaluator( self, data = data )
-        else:
-            ev = BasicEvaluator( self, data = data )
+        self.applyEBC( state, forceValues = forceValues )
+
+        ev = self.getEvaluator( **kwargs )
 
         ls = Solver.anyFromConf( lsConf )
         nls = Solver.anyFromConf( nlsConf, evaluator = ev,

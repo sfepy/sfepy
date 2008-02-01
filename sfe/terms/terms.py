@@ -233,17 +233,14 @@ class Term( Struct ):
         return copy( self.names.parameter )
 
     ##
-    # 24.07.2006, c
-    # 02.08.2006
-    # 03.08.2006
-    # 14.09.2006
+    # c: 24.07.2006, r: 15.01.2008
     def getArgs( self, argTypes = None, **kwargs ):
         ats = self.ats
         if argTypes is None:
             argTypes = ats
         args = []
 
-        iname, tregionName, aregionName, ig = self.getCurrentGroup()
+        iname, regionName, ig = self.getCurrentGroup()
         for at in argTypes:
             ii = ats.index( at )
             name = self.argNames[ii]
@@ -253,7 +250,7 @@ class Term( Struct ):
                 im = self.names.material.index( name )
                 split = self.names.materialSplit[im]
                 mat = kwargs[split[0]]
-                args.append( mat.getData( tregionName, ig, split[1] ) )
+                args.append( mat.getData( regionName, ig, split[1] ) )
             else:
                 args.append( kwargs[name] )
         return args
@@ -265,7 +262,7 @@ class Term( Struct ):
         return self.argNames[ii]
 
     ##
-    #
+    # c: 29.11.2007, r: 15.01.2008
     def describeGeometry( self, geometries, variables, integrals ):
 
         integral = integrals[self.integralName]
@@ -286,10 +283,8 @@ class Term( Struct ):
                 field.aps.describeGeometry( field, geometries,
                                             tgs[varName], integral )
 
-            self.regionMap = {}
-            for regionName, ig, ap in field.aps.iterAps( all = True ):
-                self.regionMap.setdefault( ig, [] ).append( regionName )
-##             print self.regionMap
+##             print field.aps.apsPerGroup
+##             pause()
 
     ##
     # 23.08.2006, c
@@ -307,10 +302,9 @@ class Term( Struct ):
             return None
 
     ##
-    # 28.08.2006, c
+    # c: 28.08.2006, r: 15.01.2008
     def getCurrentGroup( self ):
-        return (self.integralName, self.region.name,
-                self.charFun.currentRegionName, self.charFun.ig)
+        return (self.integralName, self.region.name, self.charFun.ig)
 
     ##
     # 11.10.2006, c
@@ -318,10 +312,9 @@ class Term( Struct ):
         return self.dofConnType, self.region.name
 
     ##
-    # 16.02.2007, c
-    def setCurrentGroup( self, regionName, ig ):
+    # c: 16.02.2007, r: 15.01.2008
+    def setCurrentGroup( self, ig ):
         self.charFun.setCurrentGroup( ig )
-        self.charFun.currentRegionName = regionName
 
     ##
     # 27.02.2007, c
@@ -337,14 +330,13 @@ class Term( Struct ):
         return self.charFun.igs
 
     ##
-    #
+    # c: 05.12.2007, r: 15.01.2008
     def iterGroups( self ):
         if self.dofConnType == 'point':
             igs = self.igs()[0:1]
         else:
             igs = self.igs()
+
         for ig in igs:
-            regionNames = self.regionMap[ig]
-            for regionName in regionNames:
-                self.setCurrentGroup( regionName, ig )
-                yield regionName, ig
+            self.setCurrentGroup( ig )
+            yield ig

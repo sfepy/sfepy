@@ -141,13 +141,16 @@ class Region( Struct ):
         self.mustUpdate = False
 
     ##
-    # 23.02.2007, c
+    # c: 23.02.2007, r: 22.01.2008
     def deleteGroups( self, digs ):
         """self.completeDescription must be called after!"""
         for ig in digs:
-            del self.vertices[ig]
-            del self.cells[ig]
-            self.igs.remove( ig )
+            try:
+                del self.vertices[ig]
+                del self.cells[ig]
+                self.igs.remove( ig )
+            except KeyError:
+                pass
 
     ##
     # 17.07.2007, c
@@ -452,8 +455,7 @@ class Region( Struct ):
             return False
 
     ##
-    # created:       16.07.2007
-    # last revision: 13.12.2007
+    # c: 16.07.2007, r: 15.01.2008
     def updateGeometryInfo( self, field, key ):
         """
         key: iname, aregionName, ig
@@ -462,10 +464,10 @@ class Region( Struct ):
         if self.hasCells():
             val = self.volume.setdefault( field.name, {} )
 
-        iname, aregionName, ig = key
+        iname, ig = key
         aps = field.aps
         geometries = aps.geometries
-        ap = aps.apsPerRegion[aregionName][ig]
+        ap = aps.apsPerGroup[ig]
         gKey = (iname, 'Volume', self.name, ap.name)
 
         vg = geometries[gKey]
