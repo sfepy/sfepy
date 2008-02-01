@@ -5,7 +5,7 @@ CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES = doxygen.config Makefile.dist
-DISTDIRS := tex txt
+DISTDIRS := tex txt pages
 
 dist:
 #	echo $(DESTDIR)

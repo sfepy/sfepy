@@ -1,3 +1,6 @@
+##
+# c: 01.02.2008, r: 01.02.2008
+
 #fileName_mesh = 'database/simple.mesh'
 fileName_mesh = 'database/phono/cube_sphere.mesh'
 
@@ -60,7 +63,7 @@ field_0 = {
     'dim' : (1,1),
     'flags' : (),
     'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P1'}
+    'bases' : {'Omega' : '3_4_P2'}
 }
 
 integral_1 = {

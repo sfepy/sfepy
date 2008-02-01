@@ -1,0 +1,16 @@
+# c: 24.01.2008
+# last revision: 24.01.2008
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES = *.tex *.fig *.latex Makefile.dist
+RELDISTFILES = $(DISTFILES)
+
+dist:
+	mkdir $(DESTDIR)
+	-cp -fpd $(DISTFILES) $(DESTDIR)
+
+reldist:
+	mkdir $(DESTDIR)
+	-cp -fpd $(RELDISTFILES) $(DESTDIR)
