@@ -11,9 +11,7 @@ _matchMaterial = re.compile( '^material(_[a-zA-Z0-9]+)?$' ).match
 _matchMaterialRoot = re.compile( '(.+)\.(.*)' ).match
 
 ##
-# 21.11.2005, c
-# 04.01.2006
-# 08.01.2006
+# c: 21.11.2005, r: 04.02.2008
 def vectorChunkGenerator( totalSize, chunkSize, shapeIn,
                           zero = False, setShape = True ):
     if not chunkSize:
@@ -21,7 +19,7 @@ def vectorChunkGenerator( totalSize, chunkSize, shapeIn,
     shape = list( shapeIn )
 
     sizes = splitRange( totalSize, chunkSize )
-    ii = 0
+    ii = nm.array( 0, dtype = nm.int32 )
     for size in sizes:
         chunk = nm.arange( size, dtype = nm.int32 ) + ii
         if setShape:

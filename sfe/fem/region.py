@@ -72,8 +72,7 @@ class Region( Struct ):
         return Region( name, self.definition, self.domain, parseDef )
 
     ##
-    # 15.06.2006, c
-    # 12.01.2007
+    # c: 15.06.2006, r: 04.02.2008
     def updateGroups( self, force = False ):
         """Vertices common to several groups are listed only in all of them -
         fa, ed.uniqueIndx contain no edge/face duplicates already."""
@@ -96,9 +95,9 @@ class Region( Struct ):
                     mask[vv] = 1
 
                     conn = group.conn
-                    aux = nm.sum( mask[conn], 1 )
+                    aux = nm.sum( mask[conn], 1, dtype = nm.int32 )
                     rcells = nm.where( aux == conn.shape[1] )[0]
-                    self.cells[ig] = rcells
+                    self.cells[ig] = nm.asarray( rcells, dtype = nm.int32 )
         self.mustUpdate = False
 
     ##

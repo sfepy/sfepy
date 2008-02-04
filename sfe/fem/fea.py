@@ -212,7 +212,7 @@ class Interpolant( Struct ):
 
     ##
     # 1. col ... iep, 2. col ... isExtra (simplified for now)
-    # 03.10.2005, c
+    # c: 03.10.2005, r: 04.02.2008
     def describeNodes( self ):
 
         def _describeNodes_aux( inds ):
@@ -228,7 +228,7 @@ class Interpolant( Struct ):
                     if (ii >= len( inds )):
                         break
                     nt = nts[inds[ii]]
-                objs.append( nm.array( obj ) )
+                objs.append( nm.array( obj, dtype = nm.int32 ) )
 
             return objs
 
@@ -714,7 +714,7 @@ class Approximations( Container ):
         # Face node type permutation table.
         
     ##
-    # c: 30.09.2005, r: 15.01.2008
+    # c: 30.09.2005, r: 04.02.2008
     def setupGlobalBase( self, domain ):
         """
         efaces: indices of faces into econn.
@@ -790,7 +790,7 @@ class Approximations( Container ):
             nodeDesc = self.nodeDescs[regionName]
             group = region.domain.groups[ig]
             if nodeDesc.edge:
-                cptr0 = ned.pel[ned.pg[ig]]
+                cptr0 = int( ned.pel[ned.pg[ig]] )
                 ori = self.edgeOris[ig]
                 iseq = mu.assignEdgeNodes( iseq, ap.econn, cntEN, \
                                            ori, entt, ned.uid, \

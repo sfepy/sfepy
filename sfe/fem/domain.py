@@ -55,11 +55,7 @@ def dm_createList( groups, sentinel, mode, isSort ):
     return( (objs, gptr, eptr) )
 
 ##
-# 05.01.2005
-# 18.01.2005
-# 22.02.2005
-# 04.08.2005
-# 31.10.2005
+# c: 05.01.2005, r: 04.02.2008
 def dm_neighbourList( objIn, groups, ic, perm, mode ):
 
     nGr = len( groups )
@@ -71,9 +67,9 @@ def dm_neighbourList( objIn, groups, ic, perm, mode ):
 
     dataS = objIn.dataS
 
-    pg = nm.zeros( (nGr + 1,), nm.int32 )
+    pg = nm.zeros( (nGr + 1,), dtype = nm.int32 )
     pg[1:] = nEl
-    pg = nm.cumsum( pg )
+    pg = nm.cumsum( pg, dtype = nm.int32 )
 
     pel = nm.zeros( (sum( nEl ) + 1,), nm.int32 )
     for ig in range( nGr ):
@@ -84,16 +80,16 @@ def dm_neighbourList( objIn, groups, ic, perm, mode ):
             nItem = gd.nFace
         for ie in range( nEl[ig] ):
             pel[pg[ig]+ie+1] = nItem
-    pel = nm.cumsum( pel )
+    pel = nm.cumsum( pel, dtype = nm.int32 )
 
-    pobj = nm.zeros( (sum( nObj ) + 1,), nm.int32 ) + 1
+    pobj = nm.zeros( (sum( nObj ) + 1,), dtype = nm.int32 ) + 1
     mu.neighbourListPtr( pobj, pg, pel, dataS, ic, mode )
     cntPobj = pobj.copy()
-    pobj = nm.cumsum( pobj )
+    pobj = nm.cumsum( pobj, dtype = nm.int32 )
 
-    objs = nm.zeros( (pobj[-1],), nm.int32 )
-    uid = nm.zeros( (sum( nObj ),), nm.int32 )
-    cnt = nm.zeros( (sum( nObj ),), nm.int32 )
+    objs = nm.zeros( (pobj[-1],), dtype = nm.int32 )
+    uid = nm.zeros( (sum( nObj ),), dtype = nm.int32 )
+    cnt = nm.zeros( (sum( nObj ),), dtype = nm.int32 )
     iu = mu.neighbourList( objs, uid, cnt, \
                            pg, pel, pobj, dataS, objIn.uid, ic, perm, mode )[1]
 
@@ -314,18 +310,7 @@ class Domain( Struct ):
         
 
     ##
-    # 05.01.2005
-    # 14.01.2005
-    # 22.02.2005
-    # 04.08.2005, rewritten
-    # 05.10.2005
-    # 31.10.2005
-    # 03.12.2005
-    # 02.08.2006
-    # 16.02.2007
-    # 19.02.2007
-    # 23.02.2007
-    # 28.02.2007
+    # c: 04.08.2005, r: 04.02.2008
     def setupNeighbourLists( self, createEdgeList = 1, createFaceList = 1 ):
 
         isFace = self.hasFaces()
@@ -342,7 +327,7 @@ class Domain( Struct ):
                                            self.mesh.nod0.shape[0], mode, 1 )
 
                 print "t = ", time.clock() - tt
-                ii = nm.arange( obj.data.shape[0] );
+                ii = nm.arange( obj.data.shape[0], dtype = nm.int32 );
                 ii.shape = (ii.shape[0], 1)
                 aux = nm.concatenate( (obj.data, ii), 1 ).copy()
     ##             print aux.flags['CONTIGUOUS']
@@ -352,7 +337,7 @@ class Domain( Struct ):
                 print "t = ", time.clock() - tt
                 obj.perm = perm = aux[:,-1].copy()
                 obj.dataS = aux[:,:-1].copy()
-                aux = nm.arange( perm.shape[0] )
+                aux = nm.arange( perm.shape[0], dtype = nm.int32 )
                 obj.permI = nm.zeros_like( obj.perm )
                 obj.permI[perm] = aux
 
@@ -361,20 +346,22 @@ class Domain( Struct ):
 
                 ic = nm.where( nm.sum( nm.absolute( \
                     obj.dataS[1:,3:] - obj.dataS[:-1,3:] ), 1 ), 0, 1 )
+		ic = nm.asarray( ic, dtype = nm.int32 )
 ##                 print ic, len( ic )
                 obj.nData = len( ic ) - 1
                 obj.nUnique = len( ic ) - nm.sum( ic ) - 1
-                obj.uniqueList = nm.where( ic[:-1] == 0 )[0]
+                obj.uniqueList = nm.asarray( nm.where( ic[:-1] == 0 )[0],
+					     dtype = nm.int32 )
                 print "t = ", time.clock() - tt
 
                 assert len( obj.uniqueList ) == obj.nUnique
 #                print obj.nUnique, obj.uniqueList, obj.uniqueList.shape
-                ii = nm.cumsum( nm.array( ic[:-1] == 0, dtype = nm.int32 ) )
-                obj.uid = nm.array( ii )
+                ii = nm.cumsum( ic[:-1] == 0, dtype = nm.int32 )
+                obj.uid = ii.copy()
                 obj.uid[0], obj.uid[1:] = 0, ii[:-1]
                 obj.uidI = obj.uid[obj.permI[:-2]]
 ##                 print obj
-##                 pause()
+##                 debug()
 
                 nobj = Struct()
                 nobj.pg, nobj.pel, nobj.pd, nobj.data, nobj.cnt, nobj.uid \
