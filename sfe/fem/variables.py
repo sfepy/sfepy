@@ -33,7 +33,7 @@ def createDofConn( conn, dpn, imax ):
     return dc, imax
 
 ##
-# c: 11.07.2007, r: 15.01.2008
+# c: 11.07.2007, r: 04.02.2008
 def createADofConns( eq, iterator, indx ):
     adcs = {}
     for key, dc in iterator():
@@ -43,7 +43,8 @@ def createADofConns( eq, iterator, indx ):
                 adcs[(key, subkey)] = subdc
         elif dc is not None:
             aux = eq[dc]
-            adcs[key] = aux + nm.where( aux >= 0, indx.start, 0 )
+            adcs[key] = aux + nm.asarray( nm.where( aux >= 0, indx.start, 0 ),
+					  dtype = nm.int32 )
         else:
             adcs[key] = None
     return adcs
@@ -507,7 +508,7 @@ class Variables( Container ):
             dcs[ig] = dc[iemap]
 
     ##
-    # c: 23.11.2005, r: 15.01.2008
+    # c: 23.11.2005, r: 04.02.2008
     def createMatrixGraph( self, varNames = None, vvarNames = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -546,14 +547,15 @@ class Variables( Container ):
                 rdcs.append( rgdc[perm[0]] )
                 cdcs.append( cgdc[perm[1]] )
 #                print ' ', perm, '->', rdcs[-1].shape, cdcs[-1].shape
-
         tt = time.clock()
-        ret, prow, icol = rawGraph( shape[0], shape[1],
+
+#	shape = nm.array( shape, dtype = nm.long )
+        ret, prow, icol = rawGraph( int( shape[0] ), int( shape[1] ),
                                     len( rdcs ), rdcs, cdcs )
         print time.clock() - tt
         nnz = prow[-1]
 ##         print ret, prow, icol, nnz
-
+	
         data = nm.zeros( (nnz,), dtype = nm.float64 )
         matrix = sp.csr_matrix( (data, icol, prow), shape )
 ##         matrix.save( 'matrix', format = '%d %d %e\n' )
@@ -896,26 +898,21 @@ class Variable( Struct ):
                and not (self.isState() or self.isVirtual())
 
     ##
-    # 11.07.2006, c
-    # 24.07.2006
-    # 04.08.2006
-    # 10.07.2007
+    # c: 11.07.2006, r: 04.02.2008
     def dataFromState( self, state = None, indx = None ):
         if (not self.isState()) or (state is None): return
 
         self.data = state
-        self.indx = indx
+        self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.nDof = indx.stop - indx.start
 
     ##
-    # 26.07.2006, c
-    # 04.08.2006
-    # 10.07.2007
+    # c: 26.07.2006, r: 04.02.2008
     def dataFromData( self, data = None, indx = None ):
         if (not self.isNonStateField()) or (data is None): return
 
         self.data = data
-        self.indx = indx
+        self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.nDof = indx.stop - indx.start
 
     ##
