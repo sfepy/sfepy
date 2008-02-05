@@ -1,7 +1,11 @@
 from sfe.base.base import *
 from sfe.solvers.solvers import LinearSolver
 
-import scipy.splinalg.dsolve.umfpack as um
+import scipy
+if scipy.version.version == "0.6.0":
+    import scipy.linsolve.umfpack as um
+else:
+    import scipy.splinalg.dsolve.umfpack as um
 um.configure( assumeSortedIndices = True )
 
 ##
