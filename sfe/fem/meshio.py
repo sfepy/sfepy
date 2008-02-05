@@ -160,7 +160,7 @@ class VTKMeshIO( MeshIO ):
                         modeStatus = 2
                 elif modeStatus == 2:
                     if line.strip() == 'LOOKUP_TABLE default':
-                        matId = readList( fd, nEl, nm.int32 )
+                        matId = readList( fd, nEl, int )
                         modeStatus = 0
                         mode = 'finished'
             elif mode == 'finished':

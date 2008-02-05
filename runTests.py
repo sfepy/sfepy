@@ -47,7 +47,7 @@ def runTest( confName, options ):
         if e.errno != 17: # [Errno 17] File exists
             raise
 
-    if options.filterNone:
+    if options.filterNone or options.debug:
         of = None
     elif options.filterLess:
         of = OutputFilter( ['<<<', '>>>', '...', '!!!', '+++', '---'] )
