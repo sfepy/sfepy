@@ -47,10 +47,14 @@ def runTest( confName, options ):
         if e.errno != 17: # [Errno 17] File exists
             raise
 
-    if options.filter:
+    if options.filterNone:
+        of = None
+    elif options.filterLess:
         of = OutputFilter( ['<<<', '>>>', '...', '!!!', '+++', '---'] )
-    if options.filterMore:
+    elif options.filterMore:
         of = OutputFilter( ['+++', '---'] )
+    else:
+        of = OutputFilter( ['<<<', '+++', '---'] )
         
     print '<<< %s' % confName
     required = ['Test']
@@ -95,7 +99,7 @@ def runTest( confName, options ):
     else:
         print '!!! %s test failed' % nFail
 
-    if options.filter or options.filterMore:
+    if of is not None:
         of.stop()
         
     return nFail, nTotal, testTime
@@ -132,21 +136,17 @@ help = {
     'outDir' : 'directory for storing test results and temporary files'
     ' [default: %default]',
     'debug' : 'raise silenced exceptions to see what was wrong [default:'
-    '%default]',
-    'filter' : 'filter output (suppress all except test messages) [default:'
-    '%default]',
+    ' %default]',
+    'filter-none' : 'do not filter any messages [default:'
+    ' %default]',
+    'filter-less' : 'filter output (suppress all except test messages) [default:'
+    ' %default]',
     'filter-more' : 'filter output (suppress all except test result messages)'
     ' [default: %default]',
 }
 
 ##
-# 30.05.2007, c
-# 01.06.2007
-# 04.06.2007
-# 05.06.2007
-# 03.07.2007
-# 16.07.2007
-# 19.07.2007
+# c: 30.05.2007, r: 05.02.2008
 def main():
 
     version = open( op.join( init_sfe.install_dir,
@@ -161,14 +161,17 @@ def main():
     parser.add_option( "", "--debug",
                        action = "store_true", dest = "debug",
                        default = False, help = help['debug'] )
-    parser.add_option( "", "--filter",
-                       action = "store_true", dest = "filter",
-                       default = False, help = help['filter'] )
+    parser.add_option( "", "--filter-none",
+                       action = "store_true", dest = "filterNone",
+                       default = False, help = help['filter-none'] )
+    parser.add_option( "", "--filter-less",
+                       action = "store_true", dest = "filterLess",
+                       default = False, help = help['filter-less'] )
     parser.add_option( "", "--filter-more",
                        action = "store_true", dest = "filterMore",
                        default = False, help = help['filter-more'] )
     options, args = parser.parse_args()
-
+    
     if len( args ) > 1:
         parser.print_help(),
         return
