@@ -19,8 +19,7 @@ class Test( TestCommon ):
     ##
     # c: 05.02.2008, r: 05.02.2008
     def test_readMeshes( self ):
-        """Currently it just tries to read all listed meshes.
-        TODO: compare same geometry in various formats"""
+        """Try to read all listed meshes."""
         from sfe.fem.mesh import Mesh
 
         meshes = {}
@@ -37,6 +36,7 @@ class Test( TestCommon ):
     ##
     # c: 05.02.2008, r: 05.02.2008
     def test_compareSameMeshes( self ):
+        """Compare same meshes in various formats."""
         import numpy as nm
 
         oks = []
