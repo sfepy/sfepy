@@ -57,6 +57,11 @@ class TestLCBC( TestCommon ):
     # 03.10.2007, c
     # 05.10.2007
     def test_linearRigidBodyBC( self ):
+        import scipy
+        if scipy.version.version == "0.6.0":
+            # This test uses a functionality implemented in scipy svn, which is
+            # missing in scipy 0.6.0
+            return True
         from sfe.base.base import Struct
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
