@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import time
+import os
 import os.path as op
 from optparse import OptionParser
 
@@ -38,12 +39,14 @@ class OutputFilter( object ):
         self.stdout = None
 
 ##
-# 04.06.2007, c
-# 05.06.2007
-# 16.07.2007
-# 19.07.2007
-# 31.07.2007
+# c: 04.06.2007, r: 05.02.2008
 def runTest( confName, options ):
+    try:
+        os.makedirs( options.outDir )
+    except OSError, e:
+        if e.errno != 17: # [Errno 17] File exists
+            raise
+
     if options.filter:
         of = OutputFilter( ['<<<', '>>>', '...', '!!!', '+++', '---'] )
     if options.filterMore:
