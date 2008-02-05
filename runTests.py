@@ -13,9 +13,11 @@ from sfe.base.conf import ProblemConf
 class OutputFilter( object ):
 
     ##
-    # 05.06.2007, c
+    # c: 05.06.2007, r: 05.02.2008
     def __init__( self, allowedLines ):
         self.allowedLines = allowedLines
+        self.msgType1 = ['...', '!!!', '+++', '---']
+        self.msgType2 = ['<<<', '>>>']
         self.start()
 
     ##
@@ -25,10 +27,15 @@ class OutputFilter( object ):
         sys.stdout = self
 
     ##
-    # 05.06.2007, c
+    # c: 05.06.2007, r: 05.02.2008
     def write( self, msg ):
         if self.stdout is not None:
-            if msg[:3] in self.allowedLines:
+            msgType = msg[:3]
+            if msgType in self.allowedLines:
+                if msgType in self.msgType1:
+                    msg = ''.join( (msg[:3], '  ', msg[3:]) )
+                elif msgType in self.msgType2:
+                    msg = msg[4:]
                 self.stdout.write( msg )
                 self.stdout.write( '\n' )
 
