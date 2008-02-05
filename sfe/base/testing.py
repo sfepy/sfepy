@@ -14,16 +14,23 @@ class TestCommon( Struct ):
         return len( tests )
 
     ##
-    # 30.05.2007, c
-    # 16.07.2007
+    # c: 30.05.2007, r: 05.02.2008
     def run( self, debug = False ):
         ok = True
         nFail = 0
 
         methods = inspect.getmembers( self, inspect.ismethod )
-        tests = [ii for ii in methods
-                 if (len( ii[0] ) > 5) and ii[0][:5] == 'test_']
+        if hasattr( self, 'tests' ):
+            dmethods = {}
+            for key, method in methods:
+                dmethods[key] = method
+            tests = [(ii, dmethods[ii]) for ii in self.tests]
+            print tests
+        else:
+            tests = [ii for ii in methods
+                     if (len( ii[0] ) > 5) and ii[0][:5] == 'test_']
 
+            
         for testName, testMethod in tests:
             aux = ' %s: ' % testName
 

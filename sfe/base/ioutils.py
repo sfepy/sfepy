@@ -74,64 +74,20 @@ def readArray( file, nRow, nCol, dtype ):
     return val
 
 ##
-# 17.02.2004, c
-# 08.12.2004
-# 17.06.2005
-# 13.11.2007
-def readMesh( file ):
-    while 1:
-        try:
-            line = file.readline()
-        except:
-            output( 'cannot read mesh header!' )
-            raise
-        if len( line ) == 1: continue
-        if line[0] == '#': continue
-        aux = line.split()
-        if aux[0] == 'Dimension':
-            dim = int( aux[1] )
-            break
+# c: 05.02.2008, r: 05.02.2008
+def readList( fd, nItem, dtype ):
+    vals = []
+    ii = 0
+    while ii < nItem:
+        line = [dtype( ic ) for ic in fd.readline().split()]
+        vals.append( line )
+        ii += len( line )
+    if ii > nItem:
+        output( 'corrupted row?', line, ii, nItem  )
+        raise ValueError
+
+    return vals
         
-    conns = [];
-    desc = [];
-    while 1:
-        try:
-            line = file.readline()
-            if (len( line ) == 0): break
-            if len( line ) == 1: continue
-        except EOFError:
-            break
-        except:
-            output( "Reading " + file.name + " failed!" )
-            raise
-        if (line[:-1] == 'Vertices'):
-            num = int( readToken( file ) );
-            nod = readArray( file, num, dim + 1, 'd' );
-##                 print nod
-        elif (line[:-1] == 'Tetrahedra'):
-            num = int( readToken( file ) );
-            conns.append( readArray( file, num, 5, 'i' ) );
-            desc.append( '3_4' )
-        elif (line[:-1] == 'Hexahedra'):
-            num = int( readToken( file ) );
-            conns.append( readArray( file, num, 9, 'i' ) );
-            desc.append( '3_8' )
-        elif (line[:-1] == 'Triangles'):
-            num = int( readToken( file ) );
-            conns.append( readArray( file, num, 4, 'i' ) );
-            desc.append( '2_3' )
-        elif (line[:-1] == 'Quadrilaterals'):
-            num = int( readToken( file ) );
-            conns.append( readArray( file, num, 5, 'i' ) );
-            desc.append( '2_4' )
-        elif line[0] == '#':
-            continue
-        else:
-            output( "corrupted file (line '%s')!" % line )
-            raise ValueError
-            
-##                 print conns
-    return nod, conns, desc
 
 ##
 # 19.01.2005, c
@@ -209,6 +165,8 @@ DATASET UNSTRUCTURED_GRID
 
 vtkCellTypes = {'2_2' : 3, '2_4' : 9, '2_3' : 5,
                 '3_2' : 3, '3_4' : 10, '3_8' : 12 }
+vtkInverseCellTypes = {(3, 2) : '2_2', (9, 2) : '2_4', (5, 2) : '2_3',
+                       (3, 3) : '3_2', (10, 3) : '3_4', (12, 3) : '3_8' }
 
 ##
 # 15.12.2005, c

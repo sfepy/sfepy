@@ -1,5 +1,5 @@
 # last revision: 03.12.2007
-fileName_mesh = 'database/simple.mesh'
+fileName_mesh = 'database/simple.vtk'
 
 field_1 = {
     'name' : '3_displacement',

@@ -1,6 +1,7 @@
 from sfe.base.base import *
 import sfe.base.la as la
-from sfe.base.ioutils import readMesh, writeMesh, readMeshHDF5
+from sfe.base.ioutils import writeMesh, readMeshHDF5
+from meshio import MeshIO
 
 import os.path as op
 
@@ -424,6 +425,7 @@ class Mesh( Struct ):
     def __init__( self, name = 'mesh', **kwargs ):
         Struct.__init__( self, **kwargs )
         self.name = name
+        self.io = None
         self.setupDone = 0
 
     ##
@@ -438,30 +440,17 @@ class Mesh( Struct ):
         self.nEl = nm.sum( self.nEls )
 
     ##
-    # 17.01.2005
-    # 16.06.2005
-    # 17.06.2005
-    # 04.08.2005
-    # 05.10.2005
-    # 23.01.2006
-    # 04.09.2006
-    # 29.08.2007
-    def read( self, fileName = '' ):
-        if isinstance( fileName, file ):
-            fd = fileName
-            close = False
-        else:
-            try:
-                fd = open( fileName, "r" );
-            except:
-                print "Cannot open " + fileName + " for reading!";
+    # c: 17.01.2005, r: 05.02.2008
+    def read( self, fileName = None, io = None ):
+        """passing *MeshIO instance has precedence over fileName"""
+        if io is None:
+            if fileName is None:
+                output( 'fileName or io must be specified!' )
                 raise ValueError
-            close = True
-            
-        self.nod0, connsIn, descs = readMesh( fd )
-
-        if close:
-            fd.close()
+            else:
+                io = MeshIO.anyFromFileName( fileName )
+        self.io = io
+        self.nod0, connsIn, descs = io.read()
 
         # Detect wedges and pyramides -> separate groups.
         if ('3_8' in descs):
@@ -509,7 +498,6 @@ class Mesh( Struct ):
             ii = nm.argsort( conn[:,-1], kind = 'mergesort' )
             conn = conn[ii]
             
-            conn[:,:-1] -= 1
             conns.append( conn[:,:-1].copy() )
             matIds.append( conn[:,-1].copy() )
 
