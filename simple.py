@@ -6,52 +6,7 @@ from optparse import OptionParser
 import init_sfe
 from sfe.base.base import *
 from sfe.base.conf import ProblemConf
-import sfe.base.ioutils as io
-from sfe.fem.problemDef import ProblemDefinition
-from sfe.solvers.generic import solveStationary, saveOnly
-
-##
-# c: 12.01.2007, r: 02.01.2008
-def solveDirect( conf, options ):
-    """Generic (simple) stationary problem solver."""
-    if options.outputFileNameTrunk:
-        ofnTrunk = options.outputFileNameTrunk
-    else:
-        ofnTrunk = io.getTrunk( conf.fileName_mesh )
-
-    saveNames = Struct( ebc = None, regions = None, fieldMeshes = None,
-                        regionFieldMeshes = None )
-    if options.saveEBC:
-        saveNames.ebc = ofnTrunk + '_ebc.vtk'
-    if options.saveRegions:
-        saveNames.regions = ofnTrunk + '_region'
-    if options.saveFieldMeshes:
-        saveNames.fieldMeshes = ofnTrunk + '_field'
-    if options.saveRegionFieldMeshes:
-        saveNames.regionFieldMeshes = ofnTrunk + '_region_field'
-
-    if options.solveNot:
-        saveOnly( conf, saveNames )
-        return None, None, None
-    
-    dpb, vecDP, data = solveStationary( conf, saveNames = saveNames )
-    out = dpb.stateToOutput( vecDP )
-
-    fd = open( ofnTrunk + '.vtk', 'w' )
-    io.writeVTK( fd, dpb.domain.mesh, out )
-    fd.close()
-
-    if options.dump:
-        import tables as pt
-        import numarray as nar
-
-        fd = pt.openFile( ofnTrunk + '.h5', mode = 'w', title = "Dump file" )
-        for key, val in out.iteritems():
-            fd.createArray( fd.root, key, nar.asarray( val.data ), 
-                            '%s data' % val.mode )
-        fd.close()
-
-    return dpb, vecDP, data
+from sfe.solvers.generic import solveDirect
 
 ##
 # 26.03.2007, c

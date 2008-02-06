@@ -141,6 +141,16 @@ class MassScalarTerm( Term ):
             yield out, chunk, status
 
 ##
+# .09.2007, c
+class MassScalarRTerm( MassScalarTerm ):
+    r""":description: Scalar field mass rezidual --- $r$ is assumed to be known.
+    :definition: $\int_{\Omega} q r$
+    """
+    name = 'dw_mass_scalar_r'
+    argTypes = ('virtual', 'parameter')
+    geometry = [(Volume, 'virtual')]
+
+##
 # 05.09.2007, c
 class MassScalarFineCoarseTerm( Term ):
     r""":description: Scalar field mass matrix/rezidual for coarse to fine grid

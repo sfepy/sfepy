@@ -381,3 +381,13 @@ class ProblemDefinition( Struct ):
         state = nls( state )
 
         return state
+
+    ##
+    # c: 06.02.2008, r: 06.02.2008
+    def getTimeSolver( self, tsConf = None, **kwargs ):
+        tsConf = getDefault( tsConf, self.tsConf )
+        if tsConf is None:
+            print 'you must set time-stepping solver!'
+            raise ValueError
+        
+        return Solver.anyFromConf( tsConf, **kwargs )

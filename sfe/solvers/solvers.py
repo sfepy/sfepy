@@ -48,6 +48,22 @@ class NonlinearSolver( Solver ):
         raise ValueError
 
 ##
+# c: 06.02.2008, r: 06.02.2008
+class TimeSteppingSolver( Solver ):
+    ##
+    # c: 06.02.2008, r: 06.02.2008
+    def __init__( self, conf, stepFun = None, stepArgs = None, **kwargs ):
+        Solver.__init__( self, conf = conf,
+                         stepFun = stepFun, stepArgs = stepArgs, **kwargs )
+
+    ##
+    # c: 06.02.2008, r: 06.02.2008
+    def __call__( self, state0 = None, conf = None,
+                  stepFun = None, stepArgs = None ):
+        print 'called an abstract TimeSteppingSolver instance!'
+        raise ValueError
+
+##
 # 17.10.2007, c
 class OptimizationSolver( Solver ):
     ##

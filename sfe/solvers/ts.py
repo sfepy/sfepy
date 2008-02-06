@@ -1,20 +1,18 @@
 from sfe.base.base import *
+from sfe.solvers.solvers import TimeSteppingSolver
 
 ##
 # 17.07.2006, c
 class TimeStepper( Struct ):
     
     ##
-    # 17.07.2006, c
-    # 04.08.2006
-    # 07.09.2006
-    # 19.09.2006
+    # c: 17.07.2006, r: 06.02.2008
     def fromConf( conf ):
-        return TimeStepper( **conf )
+        return TimeStepper( conf.t0, conf.t1, conf.dt, conf.nStep )
     fromConf = staticmethod( fromConf )
 
     ##
-    # 19.09.2006, c
+    # c: 19.09.2006, r: 06.02.2008
     def __init__( self, t0, t1, dt, nStep ):
         self.t0, self.t1, self.dt, self.nStep = t0, t1, dt, int( nStep )
 
@@ -31,6 +29,8 @@ class TimeStepper( Struct ):
                                                endpoint = True, retstep = True )
         else:
             self.times = nm.array( (self.t0,), dtype = nm.float64 )
+
+        self.nDigit = int( nm.log10( self.nStep ) + 1 )
         
     ##
     # 17.07.2006, c
@@ -88,3 +88,34 @@ class TimeStepper( Struct ):
                    (self.nStep == other.nStep)
         else:
             raise ValueError
+
+##
+# c: 06.02.2008, r: 06.02.2008
+class SimpleTimeSteppingSolver( TimeSteppingSolver ):
+    name = 'ts.simple'
+
+    ##
+    # c: 06.02.2008, r: 06.02.2008
+    def __init__( self, conf, **kwargs ):
+        TimeSteppingSolver.__init__( self, conf, **kwargs )
+
+        self.ts = TimeStepper.fromConf( conf )
+        nd = self.ts.nDigit
+        format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
+
+        self.format = format
+
+    ##
+    # c: 06.02.2008, r: 06.02.2008
+    def __call__( self, state0 = None, conf = None,
+                  stepFun = None, stepArgs = None ):
+
+        stepFun = getDefault( stepFun, self.stepFun )
+        stepArgs = getDefault( stepArgs, self.stepArgs )
+
+        for step, time in self.ts:
+            output( self.format % (time, step + 1, self.ts.nStep) )
+
+            state = stepFun( self.ts, state0, *stepArgs )
+            state0 = state.copy()
+            yield step, time, state
