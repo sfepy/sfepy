@@ -141,7 +141,7 @@ class MassScalarTerm( Term ):
             yield out, chunk, status
 
 ##
-# .09.2007, c
+# 06.02.2008, c
 class MassScalarRTerm( MassScalarTerm ):
     r""":description: Scalar field mass rezidual --- $r$ is assumed to be known.
     :definition: $\int_{\Omega} q r$
