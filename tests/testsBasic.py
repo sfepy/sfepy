@@ -1,9 +1,15 @@
+"""
+This module is not a test file. It contains classes grouping some common
+functionality, that is used in several test files.
+"""
+
 from sfe.base.testing import TestCommon
 import os.path as op
 
 ##
 # 05.06.2007, c
 class TestInput( TestCommon ):
+    """Test that an input file works. See test_input_*.py files."""
 
     ##
     # 05.06.2007, c
@@ -46,6 +52,7 @@ class TestInput( TestCommon ):
 ##
 # 03.10.2007, c
 class TestLCBC( TestCommon ):
+    """Test linear combination BC. See test_lcbc_*.py files."""
 
     ##
     # 03.10.2007, c

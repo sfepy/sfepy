@@ -1,4 +1,24 @@
 #!/usr/bin/env python
+"""
+Notes on writing new test files:
+--------------------------------
+
+A test file can contain anything, but usually it is similar to a regular input
+file (defining a test problem), with a mandatory Test class. This class holds
+all the test_* functions, as well as the fromConf(), which serves to initialize
+the test (conf is in fact the test file itself, options are command-line
+options).
+
+All variables defined in a test file are collected in 'conf' variable passed to
+a Test.__init__(). For example, 'inputName' in test_input_*.py files is
+accessible as 'conf.inputName'. This is usefull if the test class is defined
+outside the test file, as the classes in testsBasic.py are.
+
+The test_* functions are collected automatically by runTests.py, with one
+exception: if a certain order of their evaluation is required, a class
+attribute 'test' of the Test class with a list of the test function names
+should be defined (example: test_meshio.py)."""
+
 import sys
 import time
 import os
@@ -142,23 +162,23 @@ help = {
     'dir' : 'directory with tests [default: %default]',
     'outDir' : 'directory for storing test results and temporary files'
     ' [default: %default]',
-    'debug' : 'raise silenced exceptions to see what was wrong [default:'
-    ' %default]',
-    'filter-none' : 'do not filter any messages [default:'
-    ' %default]',
-    'filter-less' : 'filter output (suppress all except test messages) [default:'
-    ' %default]',
-    'filter-more' : 'filter output (suppress all except test result messages)'
-    ' [default: %default]',
+    'debug' : 'raise silenced exceptions to see what was wrong',
+    'filter-none' : 'do not filter any messages',
+    'filter-less' : 'filter output (suppress all except test messages)',
+    'filter-more' : 'filter output (suppress all except test result messages)',
+    'print-doc' : 'print the docstring of this file (howto write new tests)',
 }
 
 ##
-# c: 30.05.2007, r: 05.02.2008
+# c: 30.05.2007, r: 06.02.2008
 def main():
 
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
     parser = OptionParser( usage = usage, version = "%prog, SFE-" + version )
+    parser.add_option( "", "--print-doc",
+                       action = "store_true", dest = "printDoc",
+                       default = False, help = help['print-doc'] )
     parser.add_option( "-d", "--dir", metavar = 'directory',
                        action = "store", dest = "testDir",
                        default = "tests", help = help['dir'] )
@@ -178,7 +198,11 @@ def main():
                        action = "store_true", dest = "filterMore",
                        default = False, help = help['filter-more'] )
     options, args = parser.parse_args()
-    
+
+    if options.printDoc:
+        print __doc__
+        return
+
     if len( args ) > 1:
         parser.print_help(),
         return
