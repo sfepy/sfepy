@@ -3,7 +3,7 @@ import math
 import geometry as geom
 
 from meshutils import mesh
-import progressbar
+import sfe.base.progressbar as progressbar
 
 def numlist2str(x):
     s=""
