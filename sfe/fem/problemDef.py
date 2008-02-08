@@ -8,7 +8,6 @@ from materials import Materials
 from equations import Equations
 from integrals import Integrals
 import fea as fea
-from sfe.base.ioutils import writeVTK
 from sfe.solvers.ts import TimeStepper
 from sfe.fem.evaluate import BasicEvaluator, LCBCEvaluator
 from sfe.solvers import Solver
@@ -277,13 +276,10 @@ class ProblemDefinition( Struct ):
         self.equations.advance( ts )
 
     ##
-    # 01.03.2007, c
-    # 04.06.2007
-    def saveStateToVTK( self, fileName, state, fillValue = None ):
+    # c: 01.03.2007, r: 08.02.2008
+    def saveState( self, fileName, state, fillValue = None ):
         out = self.stateToOutput( state, fillValue )
-        fd = open( fileName, 'w' )
-        writeVTK( fd, self.domain.mesh, out )
-        fd.close()
+        self.domain.mesh.write( fileName, io = 'auto', out = out )
 
     ##
     # 19.09.2006, c

@@ -30,13 +30,10 @@ class TestInput( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 05.06.2007, c
-    # 03.07.2007
-    # 19.07.2007
+    # c: 05.06.2007, r: 08.02.2008
     def test_input( self ):
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
-        import sfe.base.ioutils as io
 
         self.report( 'solving %s...' % self.conf.inputName )
         status = IndexedStruct()
@@ -46,9 +43,7 @@ class TestInput( TestCommon ):
 
         name = op.join( self.options.outDir,
                         op.split( self.conf.outputName )[1] )
-        fd = open( name, 'w' )
-        io.writeVTK( fd, dpb.domain.mesh, out )
-        fd.close()
+        dpb.saveState( name, vecDP )
         self.report( '%s solved' % self.conf.inputName )
 
         return ok
@@ -65,8 +60,7 @@ class TestLCBC( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 03.10.2007, c
-    # 05.10.2007
+    # c: 03.10.2007, r: 08.02.2008
     def test_linearRigidBodyBC( self ):
         import scipy
         if scipy.version.version == "0.6.0":
@@ -77,7 +71,6 @@ class TestLCBC( TestCommon ):
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
         from sfe.fem.evaluate import evalTermOP
-        import sfe.base.ioutils as io
 
         status = IndexedStruct()
         problem, vec, data = solveStationary( self.conf,
@@ -93,9 +86,7 @@ class TestLCBC( TestCommon ):
 
         name = op.join( self.options.outDir,
                         op.split( self.conf.outputName )[1] )
-        fd = open( name, 'w' )
-        io.writeVTK( fd, problem.domain.mesh, out )
-        fd.close()
+        problem.domain.mesh.write( name, io = 'auto', out = out )
 
         ##
         # Check if rigid body displacements are really rigid should go here.

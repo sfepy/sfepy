@@ -1,6 +1,6 @@
 from sfe.base.base import *
 import sfe.base.la as la
-from sfe.base.ioutils import writeMesh, readMeshHDF5
+from sfe.base.ioutils import readMeshHDF5
 from meshio import MeshIO
 
 import os.path as op
@@ -26,30 +26,6 @@ def mesh_splitByMatId( connsIn, matIdsIn, descsIn ):
             descs.append( descsIn[ig] )
             
     return (conns, matIds, descs)
-
-##
-# Join groups of the same type.
-# 03.10.2005, c
-# 04.10.2005
-# 22.02.2007
-def mesh_joinGroups( conns, descs ):
-
-    el = dictFromKeysInit( descs, list )
-    for ig, desc in enumerate( descs ):
-        el[desc].append( ig )
-    groups = [ii for ii in el.values() if ii]
-##     print el, groups
-
-    descsOut, connsOut = [], []
-    for group in groups:
-        nEP = conns[group[0]].shape[1]
-        conn = nm.zeros( (0, nEP), nm.int32 )
-        for ig in group:
-            conn = nm.concatenate( (conn, conns[ig]) )
-        connsOut.append( conn )
-        descsOut.append( descs[group[0]] )
-
-    return connsOut, descsOut
 
 ##
 # 28.05.2007, c
@@ -406,13 +382,15 @@ class Mesh( Struct ):
     fromFileHDF5 = staticmethod( fromFileHDF5 )
 
     ##
-    # 21.02.2007, c
-    def fromData( name, coors, conns, matIds, descs ):
+    # c: 21.02.2007, r: 08.02.2008
+    def fromData( name, coors, conns, matIds, descs, igs = None ):
+        if igs is None:
+            igs = range( len( conns ) )
         mesh = Mesh( name = name,
                      nod0 = coors,
-                     conns = conns,
-                     matIds = matIds,
-                     descs = descs )
+                     conns = [conns[ig] for ig in igs],
+                     matIds = [matIds[ig] for ig in igs],
+                     descs = [descs[ig] for ig in igs] )
         mesh._setShapeInfo()
         return mesh
     fromData = staticmethod( fromData )
@@ -531,35 +509,32 @@ class Mesh( Struct ):
             return obj
 
     ##
-    # 23.01.2006, c
-    # 17.02.2006
-    def write( self, fileName = None, fd = None, nod = None, igs = None ):
+    # c: 23.01.2006, r: 08.02.2008
+    def write( self, fileName = None, io = None,
+               coors = None, igs = None, out = None ):
+        """Write mesh + optional results in 'out'.
 
+        'io' == 'auto' respects the extension of 'fileName'
+        'coors' can be used instead of mesh coordinates,
+        providing 'igs' filters some groups only"""
         if fileName is None:
             fileName = self.name + '.mesh'
-            
-        if fd is None:
-            try:
-                fd_ = open( fileName, "w" );
-            except:
-                print "Cannot open " + fileName + " for writing!";
-                raise "ERR_FileOpen"
 
-        if nod is None:
-            nod = self.nod0
+        if io is None:
+            io = self.io
+        else:
+            if io == 'auto':
+                io = MeshIO.anyFromFileName( fileName )
+
+        if coors is None:
+            coors = self.nod0
 
         if igs is None:
             igs = range( len( self.conns ) )
 
-        conns = [nm.concatenate( (self.conns[ig],
-                                  self.matIds[ig][:,nm.newaxis]), 1 )
-                 for ig in igs]
-        descs = [self.descs[ig] for ig in igs]
-        aux1, aux2 = mesh_joinGroups( conns, descs )
-        writeMesh( fd_, nod, aux1, aux2 )
-
-        if fd is None:
-            fd_.close()
+        auxMesh = Mesh.fromData( self.name, coors,
+                                 self.conns, self.matIds, self.descs, igs )
+        io.write( fileName, auxMesh, out )
 
     ##
     # 23.05.2007, c

@@ -114,12 +114,10 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 10.07.2007, c
-    # 18.07.2007
+    # c: 10.07.2007, r: 08.02.2008
     def test_linear_terms( self ):
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
-        import sfe.base.ioutils as io
         import os.path as op
 
         ok = True
@@ -136,16 +134,12 @@ class Test( TestCommon ):
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
-            out = problem.stateToOutput( vec )
-
             name = op.join( self.options.outDir,
                             '_'.join( ('test_elasticity_small_strain',
                                       op.splitext( op.basename( fname ) )[0],
                                       bases.values()[0] ))
                             + '.vtk' )
-            fd = open( name, 'w' )
-            io.writeVTK( fd, problem.domain.mesh, out )
-            fd.close()
+            problem.saveState( name, vec )
 
 ##             trunk = op.join( self.options.outDir,
 ##                              op.splitext( op.basename( fname ) )[0] )

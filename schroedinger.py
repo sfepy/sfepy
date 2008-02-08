@@ -58,9 +58,7 @@ def solveEigenProblem( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    fd = open( ofnTrunk + '.vtk', 'w' )
-    io.writeVTK( fd, pb.domain.mesh, out )
-    fd.close()
+    pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofnTrunk + '_eigs.txt', 'w' )
     eigs.tofile( fd, ' ' )

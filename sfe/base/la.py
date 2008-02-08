@@ -194,6 +194,14 @@ def pointsInSimplex( coors, sCoors, eps = 1e-8 ):
     return flag
 
 ##
+# c: 18.01.2008, r: 18.01.2008
+def rotationMatrix2D( angle ):
+    angle *= nm.pi / 180.0
+    mtx = nm.array( [[nm.cos( angle ), -nm.sin( angle )],
+                     [nm.sin( angle ), nm.cos( angle )]], dtype = nm.float64 )
+    return mtx
+
+##
 # 30.08.2007, c
 class MatrixAction( Struct ):
 

@@ -106,7 +106,7 @@ def timeStepFunction( ts, state0, problem, data ):
     return state
 
 ##
-# c: 12.01.2007, r: 06.02.2008
+# c: 12.01.2007, r: 08.02.2008
 def solveDirect( conf, options ):
     """Generic (simple) problem solver."""
     if options.outputFileNameTrunk:
@@ -145,22 +145,14 @@ def solveDirect( conf, options ):
         for step, time, state in timeSolver( state0 ):
             
             if isSave[ii] == step:
-                out = pb.stateToOutput( state )
-
-                fd = open( ofnTrunk + suffix % step, 'w' )
-                io.writeVTK( fd, pb.domain.mesh, out )
-                fd.close()
+                pb.saveState( ofnTrunk + suffix % step, state )
 
                 ii += 1
     else:
         ##
         # Stationary problem.
         pb, state, data = solveStationary( conf, saveNames = saveNames )
-        out = pb.stateToOutput( state )
-
-        fd = open( ofnTrunk + '.vtk', 'w' )
-        io.writeVTK( fd, pb.domain.mesh, out )
-        fd.close()
+        pb.saveState( ofnTrunk + '.vtk', state )
 
         if options.dump:
             import tables as pt
