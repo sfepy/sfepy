@@ -5,7 +5,11 @@ import scipy
 if scipy.version.version == "0.6.0":
     import scipy.linsolve.umfpack as um
 else:
-    import scipy.splinalg.dsolve.umfpack as um
+    try:
+        import scipy.splinalg.dsolve.umfpack as um
+    except ImportError:
+        import scikits.umfpack as um
+
 um.configure( assumeSortedIndices = True )
 
 ##
