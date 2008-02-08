@@ -155,7 +155,7 @@ class MeditMeshIO( MeshIO ):
     def write( self, fileName, mesh, out = None ):
         fd = open( fileName, 'w' )
 
-        nod = mesh.nod
+        nod = mesh.nod0
         conns, desc = joinConnGroups( mesh.conns, mesh.descs,
                                       mesh.matIds, concat = True )
         
