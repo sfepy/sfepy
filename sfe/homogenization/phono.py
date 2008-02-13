@@ -3,6 +3,7 @@ import pylab
 from sfe.base.base import *
 from sfe.base.la import eig
 from sfe.fem.evaluate import evalTermOP
+from sfe.base.progressbar import MyBar
 
 ##
 # 26.09.2007, c
@@ -83,10 +84,9 @@ def computeAverageDensity( pb, matName1, matName2 ):
     return mat1.density * vol1 + mat2.density * vol2
 
 ##
-# 26.09.2007, c
-# 01.10.2007
-# 02.10.2007
-def computeMassComponents( pb, mtxPhi, threshold, transform = None ):
+# c: 26.09.2007, r: 13.02.2008
+def computeMassComponents( pb, mtxPhi, threshold,
+                           transform = None, pbar = None ):
     """Eigenmomenta..."""
     dim = pb.domain.mesh.dim
     nDof, nEigs = mtxPhi.shape
@@ -106,10 +106,16 @@ def computeMassComponents( pb, mtxPhi, threshold, transform = None ):
     
     masses = nm.empty( (nEigs, dim), dtype = nm.float64 )
 
+    if pbar is not None:
+        pbar.init( nEigs - 1 )
+        
     for ii in xrange( nEigs ):
-        if (ii % 100) == 0:
-            print '%d of %d (%f%%)' % (ii, nEigs, 100. * ii / (nEigs - 1))
-
+        if pbar is not None:
+            pbar.update( ii )
+        else:
+            if (ii % 100) == 0:
+                print '%d of %d (%f%%)' % (ii, nEigs, 100. * ii / (nEigs - 1))
+            
         if transform is None:
             vecPhi, isZero = mtxPhi[:,ii], False
         else:
@@ -127,7 +133,7 @@ def computeMassComponents( pb, mtxPhi, threshold, transform = None ):
                 else:
                     masses[ii,ir] = 0.0
     #            print ii, ir, val
-
+        
     return masses
 
 ##
@@ -325,9 +331,7 @@ def plotGaps( figNum, gaps, kinds, freqRange, plotRange, show = False ):
         pylab.show()
     
 ##
-# 27.09.2007, c
-# 01.10.2007
-# 02.10.2007
+# c: 27.09.2007, r: 13.02.2008
 def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
     
     averageDensity = computeAverageDensity( pb, 'matrix', 'inclusion' )
@@ -362,15 +366,15 @@ def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
 ##     print freqRangeMargins
 ##     pause()
 
-    print 'computing mass matrix components...'
-    tt = time.clock()
     if opts.eigVectorTransform is not None:
         fun = getattr( conf.funmod, opts.eigVectorTransform[0] )
         def _wrapTransform( vec, shape ):
             return fun( vec, shape, *opts.eigVectorTransform[1:] )
     else:
         _wrapTransform = None
-    masses = computeMassComponents( pb, mtxPhi, opts.teps, _wrapTransform )
+    pbar = MyBar( 'computing mass matrix components:' )
+    tt = time.clock()
+    masses = computeMassComponents( pb, mtxPhi, opts.teps, _wrapTransform, pbar )
     print 'done in %.2f s' % (time.clock() - tt)
 
     logs = []

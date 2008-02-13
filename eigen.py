@@ -14,9 +14,7 @@ from sfe.homogenization.phono import processOptions,\
      transformPlotData, plotLogs, plotGaps, detectBandGaps
 
 ##
-# 25.09.2007, c
-# 26.09.2007
-# 27.09.2007
+# c: 25.09.2007, r: 13.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -61,9 +59,7 @@ def solveEigenProblem( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    fd = open( ofnTrunk + '.vtk', 'w' )
-    io.writeVTK( fd, pb.domain.mesh, out )
-    fd.close()
+    pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofnTrunk + '_eigs.txt', 'w' )
     eigs.tofile( fd, ' ' )
