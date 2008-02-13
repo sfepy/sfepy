@@ -916,7 +916,7 @@ class Variable( Struct ):
             self.indx = slice( 0, len( data ) )
         else:
             self.indx = slice( int( indx.start ), int( indx.stop ) )
-        self.nDof = indx.stop - indx.start
+        self.nDof = self.indx.stop - self.indx.start
 
     ##
     # 11.07.2006, c
