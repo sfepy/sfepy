@@ -1,0 +1,24 @@
+# 12.02.2003, c
+# last revision: 14.12.2007
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES = *.tex *.fig *.latex Makefile.dist Makefile.inc
+RELDISTFILES = introduction_slides.tex terms.pdf
+DISTDIRS := figures
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	-cp -fpd $(DISTFILES) $(DESTDIR)
+#	@for i in $(DISTDIRS); do \
+#	  $(MAKE) -C $$i -f Makefile.dist dist DISTDIR=${DESTDIR}; \
+#	done
+
+reldist:
+	mkdir $(DESTDIR)
+	-cp -fpd $(RELDISTFILES) $(DESTDIR)
+	@for i in $(DISTDIRS); do \
+	  $(MAKE) -C $$i -f Makefile.dist dist DISTDIR=${DESTDIR}; \
+	done
