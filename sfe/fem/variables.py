@@ -907,12 +907,15 @@ class Variable( Struct ):
         self.nDof = indx.stop - indx.start
 
     ##
-    # c: 26.07.2006, r: 04.02.2008
+    # c: 26.07.2006, r: 13.02.2008
     def dataFromData( self, data = None, indx = None ):
         if (not self.isNonStateField()) or (data is None): return
 
         self.data = data
-        self.indx = slice( int( indx.start ), int( indx.stop ) )
+        if indx is None:
+            self.indx = slice( 0, len( data ) )
+        else:
+            self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.nDof = indx.stop - indx.start
 
     ##
