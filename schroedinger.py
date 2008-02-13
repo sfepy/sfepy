@@ -13,7 +13,7 @@ from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
 
 ##
-# c: 01.02.2008, r: 01.02.2008
+# c: 01.02.2008, r: 08.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
