@@ -13,7 +13,7 @@ from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
 
 ##
-# c: 01.02.2008, r: 08.02.2008
+# c: 01.02.2008, r: 15.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -32,11 +32,22 @@ def solveEigenProblem( conf, options ):
     mtxB = evalTermOP( dummy, conf.equations['rhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA.copy() )
 
+    try:
+        nEigs = conf.options.nEigs
+    except AttributeError:
+        nEigs = mtxA.shape[0]
+
+    if nEigs is None:
+        nEigs = mtxA.shape[0]
+
 ##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
     print 'computing resonance frequencies...'
     tt = [0]
-    eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
+    if nEigs == mtxA.shape[0]:
+        eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
+    else:
+        eigs, mtxSPhi = eig( mtxA, mtxB, num = nEigs, returnTime = tt )
     print 'done in %.2f s' % tt[0]
     print eigs
 ##     import sfe.base.plotutils as plu
