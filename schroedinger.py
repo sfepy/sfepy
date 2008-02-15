@@ -61,6 +61,8 @@ def solveEigenProblem( conf, options ):
     if nEigs is None:
         nEigs = mtxA.shape[0]
 
+##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
+##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
     print 'computing resonance frequencies...'
     #tt = [0]
     #eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )

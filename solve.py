@@ -20,10 +20,10 @@ def assemble(fname,topo,mapping):
 
 def convert_mat(self):
     A = spmatrix.ll_mat(*self.shape)
-    for ii in xrange(self.size):
-        i, j = self.rowcol(ii)
-        val = self.getdata(ii)
-        A.update_add_at([val], [i], [j])
+    for i in xrange( self.indptr.shape[0] - 1 ):
+        ii = slice( self.indptr[i], self.indptr[i+1] )
+        nInRow = ii.stop - ii.start
+        A.update_add_at( self.data[ii], [i] * nInRow, self.indices[ii] )
     return A
 
 def read_mat(fname):
