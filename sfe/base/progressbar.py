@@ -330,6 +330,22 @@ class MyBar:
     def update(self,i):
         self.pbar.update(i)
 
+def progressbar(text="calculating", maxval=100):
+    """
+    Returns a useful default progressbar.
+
+    Usage:
+
+        pbar=progressbar(maxval=10000)
+        for i in range(10000):
+            pbar.update(i)
+            #do some heavy calculation in each step
+        pbar.finish()
+
+    """
+    widgets=[text, " ", Percentage(), ' ', Bar(), ' ', ETA()]
+    return ProgressBar(widgets=widgets,maxval=maxval).start()
+
 
 
 if __name__=='__main__':
