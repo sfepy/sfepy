@@ -109,30 +109,33 @@ def splitRange( nItem, step ):
     return out
 
 ##
-# 25.09.2007, c
-# 26.09.2007
-# 27.09.2007
-# 09.10.2007
-def eig( mtxA, mtxB = None, eigenvectors = True, returnTime = None,
+# c: 25.09.2007, r: 15.02.2008
+def eig( mtxA, mtxB = None, num = None, eigenvectors = True, returnTime = None,
          method = 'symeig' ):
-    if method == 'symeig' and symeig is not None:
-        tt = time.clock()
-        out = symeig( mtxA, mtxB, eigenvectors = eigenvectors )
-        if returnTime is not None:
-            returnTime[0] = time.clock() - tt
+    if num is None:
+        if method == 'symeig' and symeig is not None:
+            tt = time.clock()
+            out = symeig( mtxA, mtxB, eigenvectors = eigenvectors )
+            if returnTime is not None:
+                returnTime[0] = time.clock() - tt
+        else:
+            tt = time.clock()
+            out = nla.eig( mtxA, mtxB, right = eigenvectors )
+            eigs = out[0]
+            ii = nm.argsort( eigs )
+            if eigenvectors:
+                mtxEV = out[1][:,ii]
+                out = (eigs[ii], mtxEV)
+            else:
+                out = (eigs,)
+            if returnTime is not None:
+                returnTime[0] = time.clock() - tt
     else:
         tt = time.clock()
-        out = nla.eig( mtxA, mtxB, right = eigenvectors )
-        eigs = out[0]
-        ii = nm.argsort( eigs )
-        if eigenvectors:
-            mtxEV = out[1][:,ii]
-            out = (eigs[ii], mtxEV)
-        else:
-            out = (eigs,)
+        out = sc.splinalg.eigen_symmetric( mtxA, k = num, M = mtxB )
         if returnTime is not None:
             returnTime[0] = time.clock() - tt
-
+        
     return out
 
 ##

@@ -22,7 +22,7 @@ from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
 
 ##
-# c: 01.02.2008, r: 08.02.2008
+# c: 01.02.2008, r: 15.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -44,11 +44,25 @@ def solveEigenProblem( conf, options ):
     #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
     #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )
     from solve import solve
-    eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
+
+    try:
+        nEigs = conf.options.nEigs
+    except AttributeError:
+        nEigs = mtxA.shape[0]
+
+    if nEigs is None:
+        nEigs = mtxA.shape[0]
+
     print 'computing resonance frequencies...'
     #tt = [0]
     #eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
     #print 'done in %.2f s' % tt[0]
+    if nEigs == mtxA.shape[0]:
+        tt = [0]
+        eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
+        print 'done in %.2f s' % tt[0]
+    else:
+        eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
     print eigs
 ##     import sfe.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
