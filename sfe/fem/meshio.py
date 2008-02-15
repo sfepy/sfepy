@@ -1,6 +1,6 @@
 from sfe.base.base import *
 from sfe.base.ioutils import readToken, readArray, readList
-
+import sfe.base.la as la
 import os.path as op
 
 supportedFormats = {
@@ -17,6 +17,43 @@ vtkCellTypes = {'2_2' : 3, '2_4' : 9, '2_3' : 5,
                 '3_2' : 3, '3_4' : 10, '3_8' : 12 }
 vtkInverseCellTypes = {(3, 2) : '2_2', (9, 2) : '2_4', (5, 2) : '2_3',
                        (3, 3) : '3_2', (10, 3) : '3_4', (12, 3) : '3_8' }
+
+##
+# c: 15.02.2008, r: 15.02.2008
+def sortByMatID( connsIn ):
+
+    # Sort by matId within a group, preserve order.
+    conns = []
+    matIds = []
+    for ig, conn in enumerate( connsIn ):
+        ii = nm.argsort( conn[:,-1], kind = 'mergesort' )
+        conn = conn[ii]
+
+        conns.append( conn[:,:-1].copy() )
+        matIds.append( conn[:,-1].copy() )
+    return conns, matIds
+
+##
+# connsIn must be sorted by matId within a group!
+# c: 16.06.2005, r: 15.02.2008
+def splitByMatId( connsIn, matIdsIn, descsIn ):
+
+    conns = []
+    matIds = []
+    descs = []
+
+    for ig, conn in enumerate( connsIn ):
+        one = nm.array( [-1], nm.int32 )
+        ii = la.diff( nm.concatenate( (one, matIdsIn[ig], one) ) ).nonzero()[0]
+        nGr = len( ii ) - 1;
+#        print ii, nGr
+        for igr in range( 0, nGr ):
+            conns.append( conn[ii[igr]:ii[igr+1],:].copy() )
+            matIds.append( matIdsIn[ig][ii[igr]:ii[igr+1]] )
+            descs.append( descsIn[ig] )
+            
+    return (conns, matIds, descs)
+
 
 ##
 # 12.10.2005, c
@@ -72,14 +109,14 @@ class MeshIO( Struct ):
         Struct.__init__( self, fileName = fileName, **kwargs )
 
     ##
-    # c: 05.02.2008, r: 05.02.2008
-    def read( self, **kwargs ):
+    # c: 05.02.2008, r: 15.02.2008
+    def read( self, mesh, **kwargs ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
     ##
-    # c: 05.02.2008, r: 05.02.2008
-    def write( self, **kwargs ):
+    # c: 05.02.2008, r: 15.02.2008
+    def write( self, fileName, mesh, **kwargs ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
@@ -89,8 +126,8 @@ class MeditMeshIO( MeshIO ):
     format = 'medit'
     
     ##
-    # c: 17.02.2004, r: 05.02.2008
-    def read( self, **kwargs ):
+    # c: 17.02.2004, r: 15.02.2008
+    def read( self, mesh, **kwargs ):
         fd = open( self.fileName, 'r' )
         while 1:
             try:
@@ -105,8 +142,8 @@ class MeditMeshIO( MeshIO ):
                 dim = int( aux[1] )
                 break
 
-        conns = []
-        desc = []
+        connsIn = []
+        descs = []
         while 1:
             try:
                 line = fd.readline()
@@ -123,24 +160,24 @@ class MeditMeshIO( MeshIO ):
     ##                 print nod
             elif (line[:-1] == 'Tetrahedra'):
                 num = int( readToken( fd ) )
-                conns.append( readArray( fd, num, 5, nm.int32 ) )
-                conns[-1][:,:-1] -= 1
-                desc.append( '3_4' )
+                connsIn.append( readArray( fd, num, 5, nm.int32 ) )
+                connsIn[-1][:,:-1] -= 1
+                descs.append( '3_4' )
             elif (line[:-1] == 'Hexahedra'):
                 num = int( readToken( fd ) )
-                conns.append( readArray( fd, num, 9, nm.int32 ) )
-                conns[-1][:,:-1] -= 1
-                desc.append( '3_8' )
+                connsIn.append( readArray( fd, num, 9, nm.int32 ) )
+                connsIn[-1][:,:-1] -= 1
+                descs.append( '3_8' )
             elif (line[:-1] == 'Triangles'):
                 num = int( readToken( fd ) )
-                conns.append( readArray( fd, num, 4, nm.int32 ) )
-                conns[-1][:,:-1] -= 1
-                desc.append( '2_3' )
+                connsIn.append( readArray( fd, num, 4, nm.int32 ) )
+                connsIn[-1][:,:-1] -= 1
+                descs.append( '2_3' )
             elif (line[:-1] == 'Quadrilaterals'):
                 num = int( readToken( fd ) )
-                conns.append( readArray( fd, num, 5, nm.int32 ) )
-                conns[-1][:,:-1] -= 1
-                desc.append( '2_4' )
+                connsIn.append( readArray( fd, num, 5, nm.int32 ) )
+                connsIn[-1][:,:-1] -= 1
+                descs.append( '2_4' )
             elif line[0] == '#':
                 continue
             else:
@@ -148,7 +185,51 @@ class MeditMeshIO( MeshIO ):
                 raise ValueError
         fd.close()
 
-        return nod, conns, desc
+        connsIn, matIds = sortByMatID( connsIn )
+
+        # Detect wedges and pyramides -> separate groups.
+        if ('3_8' in descs):
+            ic = descs.index( '3_8' )
+
+            connIn = connsIn.pop( ic )
+            flag = nm.zeros( (connIn.shape[0],), nm.int32 )
+            for ii, el in enumerate( connIn ):
+                if (el[4] == el[5]):
+                    if (el[5] == el[6]):
+                        flag[ii] = 2
+                    else:
+                        flag[ii] = 1
+
+            conn = []
+            desc = []
+
+            ib = nm.where( flag == 0 )[0]
+            if (len( ib ) > 0):
+                conn.append( connIn[ib] )
+                desc.append( '3_8' )
+
+            iw = nm.where( flag == 1 )[0]
+            if (len( iw ) > 0):
+                ar = nm.array( [0,1,2,3,4,6,8], nm.int32 )
+                conn.append( la.rect( connIn, iw, ar ) )
+                desc.append( '3_6' )
+
+            ip = nm.where( flag == 2 )[0]
+            if (len( ip ) > 0):
+                ar = nm.array( [0,1,2,3,4,8], nm.int32 )
+                conn.append( la.rect( connIn, ip, ar ) )
+                desc.append( '3_5' )
+
+##             print "brick split:", ic, ":", ib, iw, ip, desc
+
+            connsIn[ic:ic] = conn
+            del( descs[ic] )
+            descs[ic:ic] = desc
+
+        conns, matIds, descs = splitByMatId( connsIn, matIds, descs )
+        mesh._setData( nod, conns, matIds, descs )
+
+        return mesh
 
     ##
     # c: 19.01.2005, r: 08.02.2008
@@ -221,8 +302,8 @@ class VTKMeshIO( MeshIO ):
     format = 'vtk'
     
     ##
-    # c: 05.02.2008, r: 05.02.2008
-    def read( self, **kwargs ):
+    # c: 05.02.2008, r: 15.02.2008
+    def read( self, mesh, **kwargs ):
         fd = open( self.fileName, 'r' )
         mode = 'header'
         modeStatus = 0
@@ -304,7 +385,11 @@ class VTKMeshIO( MeshIO ):
             desc.append( key )
             conns.append( nm.array( conn, dtype = nm.int32 ) )
 
-        return nod, conns, desc
+        connsIn, matIds = sortByMatID( conns )
+        conns, matIds, descs = splitByMatId( connsIn, matIds, desc )
+        mesh._setData( nod, conns, matIds, descs )
+
+        return mesh
 
     ##
     # c: 15.12.2005, r: 08.02.2008

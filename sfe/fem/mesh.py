@@ -6,28 +6,6 @@ from meshio import MeshIO
 import os.path as op
 
 ##
-# connsIn must be sorted by matId within a group!
-# 16.06.2005, c
-# 04.08.2005
-def mesh_splitByMatId( connsIn, matIdsIn, descsIn ):
-
-    conns = []
-    matIds = []
-    descs = []
-
-    for ig, conn in enumerate( connsIn ):
-        one = nm.array( [-1], nm.int32 )
-        ii = la.diff( nm.concatenate( (one, matIdsIn[ig], one) ) ).nonzero()[0]
-        nGr = len( ii ) - 1;
-#        print ii, nGr
-        for igr in range( 0, nGr ):
-            conns.append( conn[ii[igr]:ii[igr+1],:].copy() )
-            matIds.append( matIdsIn[ig][ii[igr]:ii[igr+1]] )
-            descs.append( descsIn[ig] )
-            
-    return (conns, matIds, descs)
-
-##
 # 28.05.2007, c
 def makePointCells( indx, dim ):
     conn = nm.zeros( (indx.shape[0], dim + 1), dtype = nm.int32 )
@@ -276,27 +254,26 @@ class Mesh( Struct ):
     fromSurface = staticmethod( fromSurface )
 
     ##
-    # 25.01.2006, c
-    # 17.02.2006
-    # 04.08.2006
-    # 19.02.2007
-    # 29.08.2007
-    def fromFile( fileName ):
-        if isinstance( fileName, file ):
-            trunk = 'fromDescriptor'
+    # c: 25.01.2006, r: 15.02.2008
+    def fromFile( fileName = None, io = None ):
+        """passing *MeshIO instance has precedence over fileName"""
+        if io is None:
+            if fileName is None:
+                output( 'fileName or io must be specified!' )
+                raise ValueError
+            else:
+                io = MeshIO.anyFromFileName( fileName )
+                if isinstance( fileName, file ):
+                    trunk = 'fromDescriptor'
+                else:
+                    trunk = op.splitext( fileName )[0]
         else:
-            trunk = op.splitext( fileName )[0]
+            trunk = io.fileName
 
+        tt = time.clock()
         mesh = Mesh( trunk )
-
-        tt = time.clock() 
-        mesh.read( fileName )
+        mesh = io.read( mesh )
         print "mesh.read = ", time.clock() - tt
-        mesh._setShapeInfo()
-
-        tt = time.clock() 
-        mesh.split( 'matId' )
-        print "mesh.split = ", time.clock() - tt
         mesh._setShapeInfo()
         return mesh
     fromFile = staticmethod( fromFile )
@@ -418,96 +395,13 @@ class Mesh( Struct ):
         self.nEl = nm.sum( self.nEls )
 
     ##
-    # c: 17.01.2005, r: 05.02.2008
-    def read( self, fileName = None, io = None ):
-        """passing *MeshIO instance has precedence over fileName"""
-        if io is None:
-            if fileName is None:
-                output( 'fileName or io must be specified!' )
-                raise ValueError
-            else:
-                io = MeshIO.anyFromFileName( fileName )
-        self.io = io
-        self.nod0, connsIn, descs = io.read()
-
-        # Detect wedges and pyramides -> separate groups.
-        if ('3_8' in descs):
-            ic = descs.index( '3_8' )
-
-            connIn = connsIn.pop( ic )
-            flag = nm.zeros( (connIn.shape[0],), nm.int32 )
-            for ii, el in enumerate( connIn ):
-                if (el[4] == el[5]):
-                    if (el[5] == el[6]):
-                        flag[ii] = 2
-                    else:
-                        flag[ii] = 1
-
-            conn = []
-            desc = []
-
-            ib = nm.where( flag == 0 )[0]
-            if (len( ib ) > 0):
-                conn.append( connIn[ib] )
-                desc.append( '3_8' )
-
-            iw = nm.where( flag == 1 )[0]
-            if (len( iw ) > 0):
-                ar = nm.array( [0,1,2,3,4,6,8], nm.int32 )
-                conn.append( la.rect( connIn, iw, ar ) )
-                desc.append( '3_6' )
-
-            ip = nm.where( flag == 2 )[0]
-            if (len( ip ) > 0):
-                ar = nm.array( [0,1,2,3,4,8], nm.int32 )
-                conn.append( la.rect( connIn, ip, ar ) )
-                desc.append( '3_5' )
-
-##             print "brick split:", ic, ":", ib, iw, ip, desc
-
-            connsIn[ic:ic] = conn
-            del( descs[ic] )
-            descs[ic:ic] = desc
-
-        # Sort by matId within a group, preserve order.
-        conns = []
-        matIds = []
-        for ig, conn in enumerate( connsIn ):
-            ii = nm.argsort( conn[:,-1], kind = 'mergesort' )
-            conn = conn[ii]
-            
-            conns.append( conn[:,:-1].copy() )
-            matIds.append( conn[:,-1].copy() )
-
-
+    # c: 15.02.2008, r: 15.02.2008
+    def _setData( self, coors, conns, matIds, descs ):
+        self.nod0 = coors
         self.conns = conns
         self.matIds = matIds
         self.descs = descs
-
-    ##
-    # 16.06.2005, c
-    # 04.08.2005
-    def split( self, on, inPlace = 1 ):
-
-        if on == 'matId':
-            conns, matIds, descs = \
-                   mesh_splitByMatId( self.conns, self.matIds, self.descs )
-        else:
-            print 'unknown splitting mode: %s' % on
-            raise ValueError
         
-        if inPlace:
-            self.conns = conns
-            self.matIds = matIds
-            self.descs = descs
-            return None
-        else:
-            obj = deepcopy( self )
-            obj.conns = conns
-            obj.matIds = matIds
-            obj.descs = descs
-            return obj
-
     ##
     # c: 23.01.2006, r: 08.02.2008
     def write( self, fileName = None, io = None,
