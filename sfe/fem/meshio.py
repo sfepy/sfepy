@@ -498,9 +498,13 @@ class VTKMeshIO( MeshIO ):
 
         fd.close()
 
+##
+# c: 15.02.2008
 class TetgenMeshIO( MeshIO ):
     format = "tetgen"
 
+    ##
+    # c: 15.02.2008, r: 15.02.2008
     def read( self, mesh, **kwargs ):
         import os
         fname = os.path.splitext(self.fileName)[0]
@@ -509,16 +513,19 @@ class TetgenMeshIO( MeshIO ):
         descs = []
         conns = []
         matIds = []
-        nodes = nm.c_[(nm.array(nodes),nm.zeros(len(nodes)))]
-        elements = nm.array(elements)-1
+        nodes = nm.c_[(nm.array(nodes, dtype = nm.float64),
+                       nm.zeros(len(nodes), dtype = nm.float64))].copy()
+        elements = nm.array( elements, dtype = nm.int32 )-1
         for key, value in regions.iteritems():
-            descs.append("3_4")
-            matIds.append(nm.ones_like(value) * key)
-            conns.append(elements[nm.array(value)-1])
+            descs.append( "3_4" )
+            matIds.append( nm.ones_like(value) * key )
+            conns.append( elements[nm.array(value)-1].copy() )
 
-        mesh._setData(nodes, conns, matIds, descs)
+        mesh._setData( nodes, conns, matIds, descs )
         return mesh
 
+    ##
+    # c: 15.02.2008, r: 15.02.2008
     @staticmethod
     def getnodes(fnods, up, verbose=True):
         """
@@ -549,6 +556,8 @@ class TetgenMeshIO( MeshIO ):
         assert npoints==len(nodes)
         return nodes
 
+    ##
+    # c: 15.02.2008, r: 15.02.2008
     @staticmethod
     def getele(fele, up, verbose=True):
         """
