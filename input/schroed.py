@@ -2,11 +2,13 @@
 # c: 01.02.2008, r: 01.02.2008
 
 #fileName_mesh = 'database/simple.mesh'
-fileName_mesh = 'database/phono/cube_sphere.mesh'
+#fileName_mesh = 'database/phono/cube_sphere.mesh'
+fileName_mesh = 'tmp/t.1.node'
 
 options = {
-    'saveEigVectors' : (10, 10),
+    'saveEigVectors' : None,
     'squared' : False,
+    'nEigs' : 10,
 }
 
 if fileName_mesh.find( 'cube_' ) >= 0:

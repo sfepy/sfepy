@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""
+Usage:
+------
+
+$ python convert.py
+$ ./schroedinger.py input/schroed.py
+$ paraview --data=t.1.vtk
+
+"""
 # 12.01.2007, c 
 import os.path as op
 from optparse import OptionParser
@@ -32,12 +41,14 @@ def solveEigenProblem( conf, options ):
     mtxB = evalTermOP( dummy, conf.equations['rhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA.copy() )
 
-##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
-##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
+    #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
+    #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )
+    from solve import solve
+    eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
     print 'computing resonance frequencies...'
-    tt = [0]
-    eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-    print 'done in %.2f s' % tt[0]
+    #tt = [0]
+    #eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
+    #print 'done in %.2f s' % tt[0]
     print eigs
 ##     import sfe.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
@@ -53,7 +64,8 @@ def solveEigenProblem( conf, options ):
 
     out = {}
     for ii in xrange( nEigs ):
-        if (ii > opts.save[0]) and (ii < (nEigs - opts.save[1])): continue
+        if opts.save is not None:
+            if (ii > opts.save[0]) and (ii < (nEigs - opts.save[1])): continue
         aux = pb.stateToOutput( mtxPhi[:,ii] )
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
