@@ -212,6 +212,62 @@ def findRefinement( coor, conns, fcoor, fconns, eps, checkRefined = True ):
 # 13.12.2004, c
 # 02.01.2005
 class Mesh( Struct ):
+    """
+    Contains the FEM mesh together with all utilities related to it.
+
+    Input and output is handled by the MeshIO class and subclasses.
+    The Mesh class only contains the real mesh - nodes, connectivity,
+    regions, plus methods for doing operations on this mesh.
+
+    Example of creating a mesh:
+
+    >>> m = Mesh.fromFile("database/simple.vtk")
+    >>> m.nod0 
+    >>> m.conns
+    >>> m.matIds
+    >>> m.descs
+    >>> print m
+Mesh:database/simple
+  nEPs:
+    [4]
+  dim:
+    3
+  nEl:
+    1348
+  name:
+    database/simple
+  descs:
+    ['3_4']
+  nNod:
+    354
+  matIds:
+    [array([6, 6, 6, ..., 6, 6, 6])]
+  nEls:
+    [1348]
+  nod0:
+    [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18   0.00000000e+00]
+     [  1.00000000e-01   1.80193774e-02   8.67767478e-03   0.00000000e+00]
+     [  1.00000000e-01   1.24697960e-02   1.56366296e-02   0.00000000e+00]
+     ..., 
+     [  8.00298527e-02   5.21598617e-03  -9.77772215e-05   0.00000000e+00]
+     [  7.02544004e-02   3.61610291e-04  -1.16903153e-04   0.00000000e+00]
+     [  3.19633596e-02  -1.00335972e-02   9.60460305e-03   0.00000000e+00]]
+  io:
+    None
+  conns:
+    [array([[ 28,  60,  45,  29],
+           [ 28,  60,  57,  45],
+           [ 28,  57,  27,  45],
+           ..., 
+           [353, 343, 260, 296],
+           [353, 139, 181, 140],
+           [353, 295, 139, 140]])]
+  setupDone:
+    0
+  elOffsets:
+    [   0 1348]
+
+    """
     ##
     # 19.01.2005, c
     # 03.03.2005
