@@ -4,7 +4,7 @@ Usage:
 ------
 
 $ python convert.py
-$ ./schroedinger.py input/schroed.py
+$ ./schroedinger.py
 $ paraview --data=t.1.vtk
 
 """
@@ -116,8 +116,7 @@ def main():
     if (len( args ) == 1):
         fileNameIn = args[0];
     else:
-        parser.print_help(),
-        return
+        fileNameIn = "input/schroed.py"
     
     required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe', 'equations',
                 'region_[0-9]+|regions', 'integral_[0-9]+', 'variables',
