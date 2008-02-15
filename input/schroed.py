@@ -99,7 +99,7 @@ fe = {
 def funV( ts, coor, region, ig, mode = None ):
     import numpy as nm
     out = {}
-    C = 100.
+    C = 0.5
     val = nm.array( C* (coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2), ndmin = 3 )
     #val = nm.zeros_like( val )
     out['V'] = val
