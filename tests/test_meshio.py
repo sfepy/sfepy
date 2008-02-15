@@ -1,5 +1,6 @@
 fileName_meshes = ['database/simple.mesh',
-                   'database/simple.vtk']
+                   'database/simple.vtk',
+                   'database/t.1.node']
 same = [(0, 1)]
 
 from sfe.base.testing import TestCommon

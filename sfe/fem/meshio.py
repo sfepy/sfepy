@@ -1,11 +1,13 @@
 from sfe.base.base import *
 from sfe.base.ioutils import readToken, readArray, readList
 import sfe.base.la as la
+from sfe.base.progressbar import MyBar
 import os.path as op
 
 supportedFormats = {
     '.mesh' : 'medit',
     '.vtk'  : 'vtk',
+    '.node'  : 'tetgen',
 }
 
 vtkHeader = r"""# vtk DataFile Version 2.0
@@ -495,6 +497,110 @@ class VTKMeshIO( MeshIO ):
                 raise NotImplementedError, (nr, nc)
 
         fd.close()
+
+class TetgenMeshIO( MeshIO ):
+    format = "tetgen"
+
+    def read( self, mesh, **kwargs ):
+        import os
+        fname = os.path.splitext(self.fileName)[0]
+        nodes=self.getnodes(fname+".node", MyBar("       nodes:"))
+        elements, regions = self.getele(fname+".ele", MyBar("       elements:"))
+        descs = []
+        conns = []
+        matIds = []
+        nodes = nm.c_[(nm.array(nodes),nm.zeros(len(nodes)))]
+        elements = nm.array(elements)-1
+        for key, value in regions.iteritems():
+            descs.append("3_4")
+            matIds.append(nm.ones_like(value) * key)
+            conns.append(elements[nm.array(value)-1])
+
+        mesh._setData(nodes, conns, matIds, descs)
+        return mesh
+
+    @staticmethod
+    def getnodes(fnods, up, verbose=True):
+        """
+        Reads t.1.nodes, returns a list of nodes.
+        
+        Example:
+
+        >>> self.getnodes("t.1.node", MyBar("nodes:"))
+        [(0.0, 0.0, 0.0), (4.0, 0.0, 0.0), (0.0, 4.0, 0.0), (-4.0, 0.0, 0.0),
+        (0.0, 0.0, 4.0), (0.0, -4.0, 0.0), (0.0, -0.0, -4.0), (-2.0, 0.0,
+        -2.0), (-2.0, 2.0, 0.0), (0.0, 2.0, -2.0), (0.0, -2.0, -2.0), (2.0,
+        0.0, -2.0), (2.0, 2.0, 0.0), ... ]
+            
+        """
+        f=open(fnods)
+        l=[int(x) for x in f.readline().split()]
+        npoints,dim,nattrib,nbound=l
+        assert dim==3
+        if verbose: up.init(npoints)
+        nodes=[]
+        for line in f:
+            if line[0]=="#": continue
+            l=[float(x) for x in line.split()]
+            assert int(l[0])==len(nodes)+1
+            l = l[1:]
+            nodes.append(tuple(l))
+            if verbose: up.update(len(nodes))
+        assert npoints==len(nodes)
+        return nodes
+
+    @staticmethod
+    def getele(fele, up, verbose=True):
+        """
+        Reads t.1.ele, returns a list of elements.
+        
+        Example:
+
+        >>> elements, regions = self.getele("t.1.ele", MyBar("elements:"))
+        >>> elements
+        [(20, 154, 122, 258), (86, 186, 134, 238), (15, 309, 170, 310), (146,
+        229, 145, 285), (206, 207, 125, 211), (99, 193, 39, 194), (185, 197,
+        158, 225), (53, 76, 74, 6), (19, 138, 129, 313), (23, 60, 47, 96),
+        (119, 321, 1, 329), (188, 296, 122, 322), (30, 255, 177, 256), ...]
+        >>> regions
+        {100: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
+        37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+        55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 7, ...],
+        ...}
+            
+        """
+        f=file(fele)
+        l=[int(x) for x in f.readline().split()]
+        ntetra,nnod,nattrib=l
+        #we have either linear or quadratic tetrahedra:
+        assert nnod in [4,10]
+        linear= (nnod==4)
+        if not linear:
+            raise Exception("Only linear tetrahedra reader is implemented")
+        if verbose: up.init(ntetra)
+        if nattrib!=1:
+            raise "tetgen didn't assign an entity number to each element \
+(option -A)"
+        els=[]
+        regions={}
+        for line in f:
+            if line[0]=="#": continue
+            l=[int(x) for x in line.split()]
+            assert len(l)-2 == 4 
+            els.append((l[1],l[2],l[3],l[4]))
+            regionnum=l[5]
+            if regionnum==0:
+                print "see %s, element # %d"%(fele,l[0])
+                raise "there are elements not belonging to any physical entity"
+            if regions.has_key(regionnum):
+                regions[regionnum].append(l[0])
+            else:
+                regions[regionnum]=[l[0]]
+            assert l[0]==len(els)
+            if verbose: up.update(l[0])
+        return els, regions
+    
 
 ##
 # c: 05.02.2008, r: 05.02.2008

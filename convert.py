@@ -14,10 +14,16 @@ def mesh():
     m.printinfo()
     m.writemsh("tmp/t12.msh")
 
+def mesh2():
+    from sfe.fem.mesh import Mesh
+    m = Mesh.fromFile("tmp/t.1.node")
+    m.write("tmp/t.1.vtk", io = "auto")
+
 
 try:
     os.makedirs( "tmp" )
 except OSError, e:
     if e.errno != 17: # [Errno 17] File exists
         raise
-mesh()
+#mesh()
+mesh2()
