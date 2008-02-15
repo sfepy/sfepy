@@ -3,8 +3,16 @@
 Usage:
 ------
 
-$ python convert.py
+Create a mesh:
+
+$ ./convert.py 
+
+Solve:
+
 $ ./schroedinger.py
+
+Visualize:
+
 $ paraview --data=t.1.vtk
 
 """
@@ -64,6 +72,8 @@ def solveEigenProblem( conf, options ):
     else:
         eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
     print eigs
+    print "relative values:"
+    print 1.5*eigs/eigs[0]
 ##     import sfe.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
