@@ -131,18 +131,12 @@ class DofInfo( Struct ):
 class Variables( Container ):
 
     ##
-    # 14.07.2006, c
-    # 25.07.2006
-    # 27.11.2006
-    # 24.04.2007
-    # 26.07.2007
-    # 05.09.2007
-    # 19.09.2007
+    # c: 14.07.2006, r: 18.02.2008
     def fromConf( conf, fields ):
         objs = OneTypeList( Variable )
         state, virtual, parameter, other = [], [], [], []
-        for ii, (name, val) in enumerate( conf.iteritems() ):
-            var = Variable.fromConf( name, val, fields )
+        for ii, (key, val) in enumerate( conf.iteritems() ):
+            var = Variable.fromConf( key, val, fields )
             if var.isState():
                 state.append( ii )
             elif var.isVirtual():
@@ -167,7 +161,6 @@ class Variables( Container ):
         obj.orderedState = indx.argsort()
 
         obj.linkDuals()
-
         return obj
     fromConf = staticmethod( fromConf )
 
@@ -203,7 +196,7 @@ class Variables( Container ):
             ptr = [0]
             nNod = []
             dpn = []
-            fnames = []
+            vnames = []
             for ii in iterable:
                 var = self[ii]
                 var.iDofMax = var.field.nNod * var.dpn
@@ -211,17 +204,17 @@ class Variables( Container ):
                 nNod.append( var.field.nNod )
                 dpn.append( var.dpn )
                 ptr.append( ptr[-1] + dpn[-1] * nNod[-1] )
-                fnames.append( var.name )
+                vnames.append( var.name )
 
             di = DofInfo(
                 name = 'dofInfo',
                 ptr = nm.array( ptr, dtype = nm.int32 ),
                 nNod = nm.array( nNod, dtype = nm.int32 ),
                 dpn = nm.array( dpn, dtype = nm.int32 ),
-                fnames = fnames, indx = {}, nDofs = {}
+                vnames = vnames, indx = {}, nDofs = {}
             )
 
-            for ii, name in enumerate( di.fnames ):
+            for ii, name in enumerate( di.vnames ):
                 di.indx[name] = slice( di.ptr[ii], di.ptr[ii+1] )
                 di.nDofs[name] = di.ptr[ii+1] - di.ptr[ii]
             return di
@@ -233,40 +226,34 @@ class Variables( Container ):
             self.vdi = self.di
 
     ##
-    # 16.10.2006, c
-    # 17.10.2006
-    # 29.08.2007
-    def _listBCOfVars( self, bcDefs, regions ):
+    # c: 16.10.2006, r: 18.02.2008
+    def _listBCOfVars( self, bcDefs, isEBC = True ):
 
-        bcOfVars = dictFromKeysInit( (key for key in self.di.fnames), list )
+        bcOfVars = dictFromKeysInit( (key for key in self.di.vnames), list )
         if bcDefs is None: return bcOfVars
 
-        for rname, bcs in bcDefs.iteritems():
-            try:
-                ir = regions.find( rname, retIndx = True )[0]
-            except:
-                print "no region '%s' used in BC %s!" % (rname, bcs)
-                raise
+        for key, bc in bcDefs.iteritems():
+            if isEBC:
+                edts = set( bc.dofs )
+            else:
+                edts = set( bc.dofs[0] )
 
-            for bc in bcs:
-                edts = set( bc[1] )
+            for vname in self.di.vnames:
+                var = self[vname]
+                dts = set( var.dofTypes )
+                if dts.intersection( edts ):
+                    bcOfVars[vname].append( (key, bc) )
 
-                for fname in self.di.fnames:
-                    var = self[fname]
-                    dts = set( var.dofTypes )
-                    if dts.intersection( edts ):
-                        bcOfVars[fname].append( (ir,) + bc )
         return bcOfVars
 
     ##
-    # 03.10.2007, c
-    # 04.10.2007
+    # c: 03.10.2007, r: 18.02.2008
     def setupLCBCOperators( self, lcbc, regions ):
         if lcbc is None: return
 
         self.hasLCBC =True
 
-        lcbcOfVars = self._listBCOfVars( lcbc, regions )
+        lcbcOfVars = self._listBCOfVars( lcbc )
 
         # Assume disjoint regions.
         lcbcOps = {}
@@ -334,17 +321,7 @@ class Variables( Container ):
             raise ValueError
 
     ##
-    # 01.11.2005, c
-    # 02.11.2005
-    # 14.11.2005
-    # 27.11.2005
-    # 28.11.2005
-    # 03.12.2005
-    # 03.01.2006
-    # 20.07.2006
-    # 13.10.2006
-    # 16.10.2006
-    # 05.09.2007
+    # c: 01.11.2005, r: 18.02.2008
     def equationMapping( self, ebc, epbc, regions, ts, funmod,
                          vregions = None ):
 
@@ -353,13 +330,13 @@ class Variables( Container ):
 
         ##
         # Assing EBC, PBC to variables and regions.
-        self.bcOfVars = self._listBCOfVars( ebc, regions )
-        dictExtend( self.bcOfVars, self._listBCOfVars( epbc, regions ) )
+        self.bcOfVars = self._listBCOfVars( ebc )
+        dictExtend( self.bcOfVars, self._listBCOfVars( epbc, isEBC = False ) )
 
         ##
         # List EBC nodes/dofs for each variable.
-        for fname, bcs in self.bcOfVars.iteritems():
-            var = self[fname]
+        for varName, bcs in self.bcOfVars.iteritems():
+            var = self[varName]
             var.equationMapping( bcs, regions, self.di, ts, funmod )
             if self.hasVirtualDCs:
                 vvar = self[var.dualVarName]
@@ -376,9 +353,9 @@ class Variables( Container ):
                 ptr = nm.array( di.ptr, dtype = nm.int32 ),
                 nNod = nm.array( di.nNod, dtype = nm.int32 ),
                 dpn = nm.array( di.dpn, dtype = nm.int32 ),
-                fnames = di.fnames, indx = {}, nDofs = {}
+                vnames = di.vnames, indx = {}, nDofs = {}
             )
-            for ii, key in enumerate( adi.fnames ):
+            for ii, key in enumerate( adi.vnames ):
                 adi.nDofs[key] = self[key].eqMap.nEq
                 adi.ptr[ii+1] = adi.ptr[ii] + adi.nDofs[key]
                 adi.indx[key] = slice( adi.ptr[ii], adi.ptr[ii+1] )
@@ -751,7 +728,7 @@ class Variables( Container ):
 
         out = {}
         for key, indx in di.indx.iteritems():
-            dpn = di.dpn[di.fnames.index( key )]
+            dpn = di.dpn[di.vnames.index( key )]
             aux = nm.reshape( vec[indx], (di.nDofs[key] / dpn, dpn) )
 #            print key, aux.shape
             ext = self[key].extendData( aux, nNod, fillValue )
@@ -790,56 +767,52 @@ class Variables( Container ):
 class Variable( Struct ):
 
     ##
-    # 14.07.2006
-    # 24.07.2006
-    # 27.11.2006
-    # 25.07.2007
-    # 26.07.2007
-    def fromConf( name, conf, fields ):
+    # c: 14.07.2006?, r: 18.02.2008
+    def fromConf( key, conf, fields ):
         flags = set()
-        if conf[1] == 'unknown':
+        kind, family = conf.kind.split()
+        if kind == 'unknown':
             flags.add( isState )
-        elif conf[1] == 'test':
+        elif kind == 'test':
             flags.add( isVirtual )
-        elif conf[1] == 'parameter':
+        elif kind == 'parameter':
             flags.add( isParameter )
         else:
             flags.add( isOther )
 
-        if conf[0] == 'field':
+        if family == 'field':
             try:
-                fld = fields[conf[2]]
+                fld = fields[conf.field]
             except:
-                output( 'field "%s" does not exist!' % conf[2] )
+                output( 'field "%s" does not exist!' % conf.fields )
                 raise
 
-            obj = Variable( flags, name = name,
-                            kind = conf[1],
-                            dofTypes = conf[3] )
+            obj = Variable( flags, name = conf.name, key = key,
+                            kind = kind, family = family,
+                            dofTypes = conf.dofs )
             obj.setField( fld )
 
-        elif conf[0] == 'expression':
-            obj = Variable( flags, name = name,
-                            kind = conf[1] )
+        elif family == 'expression':
+            obj = Variable( flags, name = conf.name,
+                            kind = kind )
 
         else:
-            print 'unknown variable type: %s' % conf[0]
+            print 'unknown variable family: %s' % family
             raise ValueError
 
         if obj.isVirtual():
-            if len( conf ) != 5:
-                output( 'test variable %s: related unknown missing' %\
-                        name )
-                raise IndexError
-            obj.primaryVarName = conf[4]
+            if hasattr( conf, 'dual' ):
+                obj.primaryVarName = conf.dual
+            else:
+                output( 'test variable %s: related unknown missing' % conf.name )
+                raise ValueError
 
         if obj.isState():
-            if len( conf ) != 5:
-                output( 'unnown variable %s: order missing' %\
-                        name )
-                raise IndexError
+            if hasattr( conf, 'order' ):
+                obj._order = int( conf.order )
             else:
-                obj._order = int( conf[4] )
+                output( 'unnown variable %s: order missing' % conf.name )
+                raise ValueError
 
         return obj
     fromConf = staticmethod( fromConf )
@@ -1010,8 +983,7 @@ class Variable( Struct ):
         return eq
 
     ##
-    # 03.10.2007, c
-    # 04.10.2007
+    # c: 03.10.2007, r: 18.02.2008
     def createLCBCOperators( self, bcs, regions ):
         if len( bcs ) == 0: return None
 
@@ -1022,16 +994,16 @@ class Variable( Struct ):
         eqLCBC = nm.zeros( (nDof,), dtype = nm.int32 )
         
         opsLC = []
-        for ii, bc in enumerate( bcs ):
-            print self.name, bc
+        for ii, (key, bc) in enumerate( bcs ):
+            print self.name, bc.name
 
-            region = regions[bc[0]]
+            region = regions[bc.region]
             print region.name
 
             nmaster = region.getFieldNodes( self.field, merge = True )
             print nmaster.shape
 
-            meq = eq[self.expandNodesToEquations( nmaster, bc[2] )]
+            meq = eq[self.expandNodesToEquations( nmaster, bc.dofs )]
             assert nm.all( meq >= 0 )
             
             eqLCBC[meq] = ii + 1
@@ -1074,28 +1046,15 @@ class Variable( Struct ):
                        dim = dim )
 
     ##
-    # 20.07.2006, split
-    # 07.08.2006
-    # 08.08.2006
-    # 23.08.2006
-    # 16.10.2006
-    # 17.10.2006
-    # 18.10.2006
-    # 24.10.2006
-    # 20.02.2007
-    # 01.03.2007
-    # 09.03.2007
-    # 15.03.2007
-    # 16.03.2007
-    # 04.06.2007
-    # 12.07.2007
-    # 05.10.2007
+    # c: 20.07.2006, split, r: 18.02.2008
     def equationMapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
-        # Sort by region number.
-        bcs.sort( cmp = lambda i1, i2: i1[0] - i2[0] )
-
+        # Sort by ebc definition name.
+        bcs.sort( cmp = lambda i1, i2: cmp( i1[0], i2[0] ) )
+##         print bcs
+##         pause()
+        
         self.eqMap = eqMap = Struct()
 
         eqMap.eq = nm.arange( di.nDofs[self.name], dtype = nm.int32 )
@@ -1117,16 +1076,24 @@ class Variable( Struct ):
         valEBC = nm.zeros( (di.nDofs[self.name],), dtype = nm.float64 )
         masterSlave = nm.zeros( (di.nDofs[self.name],), dtype = nm.int32 )
         chains = []
-        for bc in bcs:
-##             print bc
-##             debug()
-            # Get master region nodes.
-            region = regions[bc[0]]
-            masterNodList = region.getFieldNodes( field )
-            if len( bc ) == 4:
+        for key, bc in bcs:
+            if key[:3] == 'ebc':
                 ntype = 'EBC'
+                rname = bc.region
             else:
                 ntype = 'EPBC'
+                rname = bc.region[0]
+
+            try:
+                region = regions[rname]
+            except KeyError:
+                print "no region '%s' used in BC %s!" % (rname, bc)
+                raise
+
+##             print ir, key, bc
+##             debug()
+            # Get master region nodes.
+            masterNodList = region.getFieldNodes( field )
             for master in masterNodList[:]:
                 if master is None:
                     masterNodList.remove( master )
@@ -1137,8 +1104,9 @@ class Variable( Struct ):
 
             if len( masterNodList ) == 0:
                 continue
-            if len( bc ) == 4: # EBC.
-                val = bc[3]
+
+            if ntype == 'EBC': # EBC.
+                val = bc.value
                 ##
                 # Evaluate EBC values.
                 vv = nm.empty( (0,), dtype = nm.float64 )
@@ -1148,17 +1116,17 @@ class Variable( Struct ):
                     fun = getattr( funmod, val )
                     vv = fun( bc, ts, coor )
                 else:
-                    vv = nm.repeat( [val], nods.shape[0] * len( bc[2] ) )
+                    vv = nm.repeat( [val], nods.shape[0] * len( bc.dofs ) )
 ##                 print nods
 ##                 print vv
-                eq = self.expandNodesToEquations( nods, bc[2] )
+                eq = self.expandNodesToEquations( nods, bc.dofs )
 
                 # Duplicates removed here...
                 eqEBC[eq] = 1
                 if vv is not None: valEBC[eq] = vv
 
             else: # EPBC.
-                region = regions[bc[-2]]
+                region = regions[bc.region[1]]
                 slaveNodList = region.getFieldNodes( field )
                 for slave in slaveNodList[:]:
                     if slave is None:
@@ -1183,13 +1151,13 @@ class Variable( Struct ):
 
                 mcoor = field.getCoor( nmaster )
                 scoor = field.getCoor( nslave )
-                fun = getattr( funmod, bc[-1] )
+                fun = getattr( funmod, bc.match )
                 i1, i2 = fun( mcoor, scoor )
 ##                 print nm.c_[mcoor[i1], scoor[i2]]
 ##                 print nm.c_[nmaster[i1], nslave[i2]] + 1
 
-                meq = self.expandNodesToEquations( nmaster[i1], bc[2] )
-                seq = self.expandNodesToEquations( nslave[i2], bc[3] )
+                meq = self.expandNodesToEquations( nmaster[i1], bc.dofs[0] )
+                seq = self.expandNodesToEquations( nslave[i2], bc.dofs[1] )
 
                 m_assigned = nm.where( masterSlave[meq] != 0 )[0]
                 s_assigned = nm.where( masterSlave[seq] != 0 )[0]

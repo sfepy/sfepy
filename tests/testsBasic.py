@@ -12,14 +12,10 @@ class TestInput( TestCommon ):
     """Test that an input file works. See test_input_*.py files."""
 
     ##
-    # c: 05.06.2007, r: 06.02.2008
+    # c: 05.06.2007, r: 18.02.2008
     def fromConf( conf, options, cls = None ):
         from sfe.base.conf import ProblemConf
-
-        required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe',
-                    'equations', 'region_[0-9]+|regions', 'variables',
-                    'material_[0-9]+', 'integral_[0-9]+', 'solver_[0-9]+']
-        other = ['functions', 'modules', 'epbc', 'lcbc', 'options']
+        from sfe.solvers.generic import required, other
         testConf = ProblemConf.fromFile( conf.inputName, required, other )
 
         if cls is None:

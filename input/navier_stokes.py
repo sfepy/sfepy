@@ -1,5 +1,5 @@
 # 26.02.2007, c
-# last revision: 23.10.2007
+# last revision: 18.02.2008
 
 fileName_mesh = 'database/pul_klikatak2.mesh'
 
@@ -41,10 +41,23 @@ region_2 = {
     'canCells' : False,
 }
 
-ebc = {
-    'Walls' : (('Walls', (3,4,5), 0.0 ),),
-    'Inlet' : (('VelocityInlet_x', (4,), 1.0),
-               ('VelocityInlet_yz', (3,5), 0.0)),
+ebc_1 = {
+    'name' : 'Walls',
+    'region' : 'Walls',
+    'dofs' : (3, 4, 5),
+    'value' : 0.0,
+}
+ebc_2 = {
+    'name' : 'Inlet_y',
+    'region' : 'Inlet',
+    'dofs' : (4,),
+    'value' : 1.0,
+}
+ebc_3 = {
+    'name' : 'Inlet_xz',
+    'region' : 'Inlet',
+    'dofs' : (3, 5),
+    'value' : 0.0,
 }
 
 material_1 = {
@@ -55,11 +68,33 @@ material_1 = {
     'density' : 1e0,
 }
 
-variables = {
-    'u' : ('field', 'unknown', '3_velocity', (3, 4, 5), 0),
-    'v' : ('field', 'test', '3_velocity', (3, 4, 5), 'u'),
-    'p' : ('field', 'unknown', 'pressure', (9,), 1),
-    'q' : ('field', 'test', 'pressure', (9,), 'p'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '3_velocity',
+    'dofs' : (3, 4, 5),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '3_velocity',
+    'dofs' : (3, 4, 5),
+    'dual' : 'u',
+}
+variable_3 = {
+    'name' : 'p',
+    'kind' : 'unknown field',
+    'field' : 'pressure',
+    'dofs' : (9,),
+    'order' : 1,
+}
+variable_4 = {
+    'name' : 'q',
+    'kind' : 'test field',
+    'field' : 'pressure',
+    'dofs' : (9,),
+    'dual' : 'p',
 }
 
 integral_1 = {
@@ -67,7 +102,6 @@ integral_1 = {
     'kind' : 'v',
     'quadrature' : 'gauss_o2_d3',
 }
-
 integral_2 = {
     'name' : 'i2',
     'kind' : 'v',

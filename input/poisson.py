@@ -1,5 +1,5 @@
 # 14.02.2007
-# last revision: 19.12.2007
+# last revision: 18.02.2008
 #!
 #! Poisson Equation
 #! ================
@@ -45,32 +45,57 @@ field_1 = {
 #! Here the unknown variable (the temperature) is called 't', it's asssociated
 #! DOF number is set to 30 --- this will be referred to
 #! in the Dirichlet boundary section (ebc). The corresponding test variable of
-#! the weak formulation is called 's'. Notice that the last item of a test
+#! the weak formulation is called 's'. Notice that the 'dual' item of a test
 #! variable must specify the unknown it corresponds to.
 
-variables = {
-    't' : ('field', 'unknown', 'temperature', (30,), 0),
-    's' : ('field', 'test', 'temperature', (30,), 't'),
+variable_1 = {
+    'name' : 't',
+    'kind' : 'unknown field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'order' : 0, # order in the global vector of unknowns
 }
 
-#! Regions and Boundary Conditions
-#! -------------------------------
+variable_2 = {
+    'name' : 's',
+    'kind' : 'test field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'dual' : 't',
+}
+
+#! Regions
+#! -------
 region_1000 = {
     'name' : 'Omega',
     'select' : 'elements of group 6',
 }
+
 region_03 = {
     'name' : 'Gamma_Left',
     'select' : 'nodes in (x < 0.00001)',
 }
+
 region_4 = {
     'name' : 'Gamma_Right',
     'select' : 'nodes in (x > 0.099999)',
 }
 
-ebc = {
-    'Gamma_Left' : ('T3', (30,), 2.0),
-    'Gamma_Right' : ('T3', (30,), -2.0),
+#! Boundary Conditions
+#! -------------------
+#! Essential (Dirichlet) boundary conditions can be specified as follows:
+ebc_1 = {
+    'name' : 't1',
+    'region' : 'Gamma_Left',
+    'dofs' : (30,),
+    'value' : 2.0,
+}
+
+ebc_2 = {
+    'name' : 't2',
+    'region' : 'Gamma_Right',
+    'dofs' : (30,),
+    'value' : -2.0,
 }
 
 #! Equations
@@ -96,6 +121,7 @@ integral_1 = {
     'kind' : 'v',
     'quadrature' : 'gauss_o1_d3',
 }
+
 equations = {
     'Temperature' : """dw_laplace.i1.Omega( coef, s, t ) = 0"""
 }

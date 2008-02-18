@@ -1,5 +1,5 @@
 # 10.07.2007, c
-# last revision: 23.10.2007
+# last revision: 18.02.2008
 
 fileName_meshes = ['database/kostka_medium_tetra.mesh',
                    'database/kostka_medium_tetra.mesh',
@@ -34,9 +34,19 @@ material_2 = {
     'projection' : None,
 }
 
-variables = {
-    'u' : ('field', 'unknown', '3_displacement', (0, 1, 2), 0),
-    'v' : ('field', 'test', '3_displacement', (0, 1, 2), 'u'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'dual' : 'u',
 }
 
 region_1000 = {
@@ -53,8 +63,11 @@ region_2 = {
     'select' : 'nodes in (z > 0.499)',
 }
 
-ebc = {
-    'Top' : (('Load', (2,), 0.1),),
+ebc_1 = {
+    'name' : 'Load',
+    'region' : 'Top',
+    'dofs' : (2,),
+    'value' : 0.1,
 }
 
 integral_1 = {

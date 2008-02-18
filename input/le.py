@@ -1,4 +1,4 @@
-# last revision: 03.12.2007
+# last revision: 18.02.2008
 fileName_mesh = 'database/simple.vtk'
 
 field_1 = {
@@ -17,9 +17,19 @@ material_1 = {
     'mu' : 1e0,
 }
 
-variables = {
-    'u' : ('field', 'unknown', '3_displacement', (0, 1, 2), 0),
-    'v' : ('field', 'test', '3_displacement', (0, 1, 2), 'u'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'dual' : 'u',
 }
 
 # Whole domain $Y$.
@@ -46,11 +56,29 @@ region_3 = {
     'select' : 'nodes in (z > 0.017) & (x > 0.01) & (x < 0.08)'
 }
 
-ebc = {
-    'Left' : (('ZeroSurface', (0,1,2), 0.0 ),),
-    'Right' : (('ZeroSurface', (0,1,2), 0.0 ),),
-    'SomewhereTop' : (('PerturbedSurface', (2,), 0.01 ),),
-    'AlsoRight' : (('ZeroVolume', (0,1,2), 0.0 ),),
+ebc_1 = {
+    'name' : 'Left',
+    'region' : 'Left',
+    'dofs' : (0, 1, 2),
+    'value' : 0.0,
+}
+ebc_2 = {
+    'name' : 'Right',
+    'region' : 'Right',
+    'dofs' : (0, 1, 2),
+    'value' : 0.0,
+}
+ebc_100 = {
+    'name' : 'ZeroVolume',
+    'region' : 'AlsoRight',
+    'dofs' : (0, 1, 2),
+    'value' : 0.0,
+}
+ebc_3 = {
+    'name' : 'PerturbedSurface',
+    'region' : 'SomewhereTop',
+    'dofs' : (2,),
+    'value' : 0.01,
 }
 
 integral_1 = {

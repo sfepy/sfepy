@@ -7,8 +7,7 @@ from base import Struct, IndexedStruct, dictToStruct, pause
 from reader import Reader
 
 ##
-# 20.06.2007, c
-# 17.10.2007
+# c: 20.06.2007, r: 18.02.2008
 def transform_toStruct_1( adict ):
     return dictToStruct( adict, flag = (1,) )
 def transform_toIStruct_1( adict ):
@@ -17,30 +16,21 @@ def transform_toStruct_01( adict ):
     return dictToStruct( adict, flag = (0,1) )
 def transform_toStruct_10( adict ):
     return dictToStruct( adict, flag = (1,0) )
-def transform_fields( adict ):
-    for key, val in adict.iteritems():
-        adict[key] = dictToStruct( val, flag = (1,) )
-    return adict
-def transform_bc( adict ):
-    if adict is None: return None
-    for key, bcs in adict.iteritems():
-        if type( bcs[0] ) == str:
-            adict[key] = (bcs,)
-    return adict
 
 transforms = {
-    'options'  : transform_toIStruct_1,
-    'solvers'  : transform_toStruct_01,
-    'integrals': transform_toStruct_01,
-    'opt'      : transform_toStruct_1,
-    'fe'       : transform_toStruct_1,
-    'regions'  : transform_toStruct_01,
-    'shapeOpt' : transform_toStruct_10,
-    'fields'   : transform_fields,
-    'ebc'      : transform_bc,
-    'epbc'     : transform_bc,
-    'nbc'      : transform_bc,
-    'lcbc'     : transform_bc,
+    'options'   : transform_toIStruct_1,
+    'solvers'   : transform_toStruct_01,
+    'integrals' : transform_toStruct_01,
+    'opt'       : transform_toStruct_1,
+    'fe'        : transform_toStruct_1,
+    'regions'   : transform_toStruct_01,
+    'shapeOpt'  : transform_toStruct_10,
+    'fields'    : transform_toStruct_01,
+    'variables' : transform_toStruct_01,
+    'ebcs'      : transform_toStruct_01,
+    'epbcs'     : transform_toStruct_01,
+    'nbcs'      : transform_toStruct_01,
+    'lcbcs'     : transform_toStruct_01,
 }
 
 ##
@@ -127,23 +117,7 @@ class ProblemConf( Struct ):
         return otherMissing
 
     ##
-    # 31.10.2005, c
-    # 01.11.2005
-    # 02.11.2005
-    # 14.11.2005
-    # 14.12.2005
-    # 21.12.2005
-    # 20.01.2006
-    # 29.01.2006
-    # 17.02.2006
-    # 14.04.2006
-    # 19.04.2006
-    # 25.07.2006
-    # 12.02.2007
-    # 14.02.2007
-    # 31.05.2007
-    # 20.06.2007
-    # 23.10.2007
+    # c: 31.10.2005, r: 18.02.2008
     def transformInput( self ):
         """Trivial input transformations."""
 
@@ -151,10 +125,9 @@ class ProblemConf( Struct ):
         # Unordered inputs.
         trList = ['([a-zA-Z0-9]+)_[0-9]+']
         # Keywords not in 'required', but needed even empty (e.g. for runTests).
-        mustHave = {'regions' : {}, 'solvers' : {}, 'options' : {}}
-        for key, val in mustHave.iteritems():
+        for key in transforms.keys():
             if not self.__dict__.has_key( key ):
-                self.__dict__[key] = val
+                self.__dict__[key] = {}
 
         keys = self.__dict__.keys()
         for item in trList:

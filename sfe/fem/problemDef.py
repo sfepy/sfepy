@@ -232,9 +232,9 @@ class ProblemDefinition( Struct ):
             ts = TimeStepper( 0.0, 1.0, 1.0, 1 )
             ts.setStep( 0 )
             
-        conf_ebc = getDefault( conf_ebc, self.conf.ebc )
-        conf_epbc = getDefault( conf_epbc, self.conf.epbc )
-        conf_lcbc = getDefault( conf_lcbc, self.conf.lcbc )
+        conf_ebc = getDefault( conf_ebc, self.conf.ebcs )
+        conf_epbc = getDefault( conf_epbc, self.conf.epbcs )
+        conf_lcbc = getDefault( conf_lcbc, self.conf.lcbcs )
         funmod = getDefault( funmod, self.conf.funmod )
         self.updateBC( ts, conf_ebc, conf_epbc, conf_lcbc, funmod )
         self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
