@@ -619,9 +619,8 @@ class Domain( Struct ):
 #            print region.parseDef
             regions.append( region )
 
-        # Sort by name.
+        # Sort by definition name.
         regions.sort( cmp = lambda i1, i2: cmp( i1.sortName, i2.sortName ) )
-
         self.regions = regions
 
         return regions

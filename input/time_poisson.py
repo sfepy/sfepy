@@ -1,5 +1,5 @@
 ##
-# c: 05.02.2008, r: 06.02.2008
+# c: 05.02.2008, r: 18.02.2008
 fileName_mesh = 'database/simple.mesh'
 
 material_2 = {
@@ -17,10 +17,25 @@ field_1 = {
     'bases' : {'Omega' : '3_4_P1'}
 }
 
-variables = {
-    't'  : ('field', 'unknown', 'temperature', (30,), 0),
-    't0' : ('field', 'parameter', 'temperature', (30,)),
-    's'  : ('field', 'test', 'temperature', (30,), 't'),
+variable_1 = {
+    'name' : 't',
+    'kind' : 'unknown field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 's',
+    'kind' : 'test field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'dual' : 't',
+}
+variable_10 = {
+    'name' : 't0',
+    'kind' : 'parameter field',
+    'field' : 'temperature',
+    'dofs' : (30,),
 }
 
 region_1000 = {
@@ -36,9 +51,17 @@ region_4 = {
     'select' : 'nodes in (x > 0.099999)',
 }
 
-ebc = {
-    'Gamma_Left' : ('T3', (30,), 2.0),
-    'Gamma_Right' : ('T3', (30,), -2.0),
+ebc_1 = {
+    'name' : 't1',
+    'region' : 'Gamma_Left',
+    'dofs' : (30,),
+    'value' : 2.0,
+}
+ebc_2 = {
+    'name' : 't2',
+    'region' : 'Gamma_Right',
+    'dofs' : (30,),
+    'value' : -2.0,
 }
 
 integral_1 = {

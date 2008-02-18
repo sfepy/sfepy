@@ -1,4 +1,4 @@
-# last revision: 03.12.2007
+# last revision: 18.02.2008
 #fileName_mesh = 'database/kostka_big.mesh'
 fileName_mesh = 'database/kostka_medium.mesh'
 
@@ -51,9 +51,20 @@ elif fileName_mesh == 'database/kostka_big.mesh':
         'weights' : [0.5]
     }
 
-variables = {
-    'T' : ('field', 'unknown', 'temperature', (30,), 0),
-    's' : ('field', 'test', 'temperature', (30,), 'T'),
+variable_1 = {
+    'name' : 'T',
+    'kind' : 'unknown field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'order' : 0, # order in the global vector of unknowns
+}
+
+variable_2 = {
+    'name' : 's',
+    'kind' : 'test field',
+    'field' : 'temperature',
+    'dofs' : (30,),
+    'dual' : 'T',
 }
 
 region_0 = {
@@ -73,11 +84,29 @@ region_03 = {
     'select' : 'nodes in (x < -0.4999999)',
 }
 
-ebc = {
-    'Surface' : (('T0', (30,), -3.0),),
-    'Top'     : (('T1', (30,),  1.0),),
-    'Bottom'  : (('T2', (30,), -1.0),),
-    'Left'    : (('T3', (30,),  2.0),),
+ebc_1 = {
+    'name' : 'T0',
+    'region' : 'Surface',
+    'dofs' : (30,),
+    'value' : -3.0,
+}
+ebc_4 = {
+    'name' : 'T1',
+    'region' : 'Top',
+    'dofs' : (30,),
+    'value' : 1.0,
+}
+ebc_3 = {
+    'name' : 'T2',
+    'region' : 'Bottom',
+    'dofs' : (30,),
+    'value' : -1.0,
+}
+ebc_2 = {
+    'name' : 'T3',
+    'region' : 'Left',
+    'dofs' : (30,),
+    'value' : 2.0,
 }
 
 equations = {

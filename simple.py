@@ -6,7 +6,7 @@ from optparse import OptionParser
 import init_sfe
 from sfe.base.base import *
 from sfe.base.conf import ProblemConf
-from sfe.solvers.generic import solveDirect
+from sfe.solvers.generic import solveDirect, required, other
 
 ##
 # 26.03.2007, c
@@ -42,7 +42,7 @@ help = {
 }
 
 ##
-# c: 12.01.2007, r: 23.01.2008
+# c: 12.01.2007, r: 18.02.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -85,14 +85,10 @@ def main():
             parser.print_help(),
         return
     
-    required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe', 'equations',
-                'region_[0-9]+|regions', 'variables', 'material_[0-9]+',
-                'integral_[0-9]+', 'solver_[0-9]+']
-    other = ['functions', 'modules', 'epbc', 'lcbc', 'options']
     if options.solveNot:
         required.remove( 'equations' )
-        required.remove( 'solver_[0-9]+' )
-        other += ['equations']
+        required.remove( 'solver_[0-9]+|solvers' )
+        other.extend( ['equations'] )
 
     conf = ProblemConf.fromFile( fileNameIn, required, other )
 ##     print conf

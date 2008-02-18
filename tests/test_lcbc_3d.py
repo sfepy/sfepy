@@ -1,5 +1,5 @@
 # 05.10.2007, c
-# last revision: 10.12.2007
+# last revision: 18.02.2008
 fileName_mesh = 'database/phono/cube_sphere.mesh'
 
 # Whole domain $Y$.
@@ -48,20 +48,52 @@ field_1 = {
     'bases' : {'Y' : '3_4_P1'}
 }
 
-variables = {
-    'u'  : ('field', 'unknown', '3_displacement', (0, 1, 2), 0),
-    'v'  : ('field', 'test', '3_displacement', (0, 1, 2), 'u'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '3_displacement',
+    'dofs' : (0, 1, 2),
+    'dual' : 'u',
 }
 
-ebc = {
-    'Bottom' : (('Fix', (0, 1, 2), 0.0),),
-    'Top' : (('Fix', (0, 1), 0.2), ('Fix', (2,), 0.5)),
+ebc_1 = {
+    'name' : 'Fix',
+    'region' : 'Bottom',
+    'dofs' : (0, 1, 2),
+    'value' : 0.0,
+}
+ebc_2 = {
+    'name' : 'Load_xy',
+    'region' : 'Top',
+    'dofs' : (0, 1),
+    'value' : 0.2,
+}
+ebc_3 = {
+    'name' : 'Load_z',
+    'region' : 'Top',
+    'dofs' : (2,),
+    'value' : 0.5,
 }
 
-lcbc = {
-    'Y2' : ('RigidBody', (0, 1), 'rigid'),
-#    'Y3' : ('RigidBody', (0, 1, 2), 'rigid'),
+lcbc_1 = {
+    'name' : 'rigid1',
+    'region' : 'Y2',
+    'dofs' : (0, 1),
+    'kind' : 'rigid',
 }
+## lcbc_2 = {
+##     'name' : 'rigid1',
+##     'region' : 'Y3',
+##     'dofs' : (0, 1, 2),
+##     'kind' : 'rigid',
+## }
 
 integral_1 = {
     'name' : 'i1',

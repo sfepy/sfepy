@@ -1,5 +1,5 @@
 # 01.06.2007, c
-# last revision: 10.12.2007
+# last revision: 18.02.2008
 
 fileName_mesh = 'database/tests/small2d.mesh'
 
@@ -47,23 +47,59 @@ field_2 = {
     'bases' : {'Omega' : '2_3_P1'}
 }
 
-variables = {
-    'u'   : ('field', 'unknown', '2_displacement', (0, 1), 0),
-    'v'   : ('field', 'test',    '2_displacement', (0, 1), 'u'),
-    'p'   : ('field', 'unknown', 'pressure',       (8,), 1),
-    'q'   : ('field', 'test',    'pressure',       (8,), 'p'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '2_displacement',
+    'dofs' : (0, 1),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '2_displacement',
+    'dofs' : (0, 1),
+    'dual' : 'u',
+}
+variable_3 = {
+    'name' : 'p',
+    'kind' : 'unknown field',
+    'field' : 'pressure',
+    'dofs' : (8,),
+    'order' : 1,
+}
+variable_4 = {
+    'name' : 'q',
+    'kind' : 'test field',
+    'field' : 'pressure',
+    'dofs' : (8,),
+    'dual' : 'p',
 }
 
-ebc = {}
-## epbc = {
-##     'Left' : (('u', (0, 1), (0, 1), 'Right', 'matchYLine'),),
-##     'Bottom' : (('u', (0, 1), (0, 1), 'Top', 'matchXLine'),),
-## }
-epbc = {
-    'Left' : (('u', (0, 1), (0, 1), 'Right', 'matchYLine'),
-              ('p', (8,), (8,), 'Right', 'matchYLine')),
-    'Bottom' : (('u', (0, 1), (0, 1), 'Top', 'matchXLine'),
-                ('p', (8,), (8,), 'Top', 'matchXLine'),),
+ebcs = {}
+epbc_10 = {
+    'name' : 'u_rl',
+    'region' : ['Left', 'Right'],
+    'dofs' : [(0, 1), (0, 1)],
+    'match' : 'matchYLine',
+}
+epbc_12 = {
+    'name' : 'u_tb',
+    'region' : ['Top', 'Bottom'],
+    'dofs' : [(0, 1), (0, 1)],
+    'match' : 'matchXLine',
+}
+epbc_20 = {
+    'name' : 'p_rl',
+    'region' : ['Left', 'Right'],
+    'dofs' : [(8,), (8,)],
+    'match' : 'matchYLine',
+}
+epbc_22 = {
+    'name' : 'p_tb',
+    'region' : ['Top', 'Bottom'],
+    'dofs' : [(8,), (8,)],
+    'match' : 'matchXLine',
 }
 
 fe = {
@@ -89,12 +125,12 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 01.06.2007, c
+    # c: 01.06.2007, r: 18.02.2008
     def test_pbc( self ):
         problem  = self.problem
         conf = self.conf
         
-        problem.variables.equationMapping( conf.ebc, conf.epbc,
+        problem.variables.equationMapping( conf.ebcs, conf.epbcs,
                                            problem.domain.regions,
                                            None, conf.funmod )
         state = problem.createStateVector()
