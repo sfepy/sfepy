@@ -83,11 +83,33 @@ field_2 = {
     'bases' : {'Y1Y2' : '2_3_P1'}
 }
 
-variables = {
-    'u'   : ('field', 'unknown',   '2_velocity', (3, 4), 0),
-    'v'   : ('field', 'test',      '2_velocity', (3, 4), 'u'),
-    'p'   : ('field', 'unknown',   'pressure',      (8,), 1),
-    'q'   : ('field', 'test',      'pressure',      (8,), 'p'),
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : '2_velocity',
+    'dofs' : (3, 4),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : '2_velocity',
+    'dofs' : (3, 4),
+    'dual' : 'u',
+}
+variable_3 = {
+    'name' : 'p',
+    'kind' : 'unknown field',
+    'field' : 'pressure',
+    'dofs' : (8,),
+    'order' : 1,
+}
+variable_4 = {
+    'name' : 'q',
+    'kind' : 'test field',
+    'field' : 'pressure',
+    'dofs' : (8,),
+    'dual' : 'p',
 }
 
 integral_1 = {
@@ -114,16 +136,42 @@ material_1 = {
     'density' : 1e0,
 }
 
-ebc = {
-    'Top' : (('top_velocity_y', (4,), -1.0),
-             ('top_velocity_x', (3,), 0.0)),
-#    'Top' : (('top_pressure', (8,), 1.0 ),),
-    'Bottom' : (('bottom_pressure', (8,), 0.0),),
-    'Walls' : (('walls', (3, 4), 0.0),),
+ebc_1 = {
+    'name' : 'walls',
+    'region' : 'Walls',
+    'dofs' : (3, 4),
+    'value' : 0.0,
 }
-epbc = {
-    'Left' : (('u', (3, 4), (3, 4), 'Right', 'matchYLine'),
-              ('p', (8,), (8,), 'Right', 'matchYLine')),
+ebc_2 = {
+    'name' : 'top_velocity_y',
+    'region' : 'Top',
+    'dofs' : (4,),
+    'value' : -1.0,
+}
+ebc_3 = {
+    'name' : 'top_velocity_x',
+    'region' : 'Top',
+    'dofs' : (3,),
+    'value' : 0.0,
+}
+ebc_10 = {
+    'name' : 'bottom_pressure',
+    'region' : 'Bottom',
+    'dofs' : (8,),
+    'value' : 0.0,
+}
+
+epbc_1 = {
+    'name' : 'u_rl',
+    'region' : ['Left', 'Right'],
+    'dofs' : [(3, 4), (3, 4)],
+    'match' : 'matchYLine',
+}
+epbc_2 = {
+    'name' : 'p_rl',
+    'region' : ['Left', 'Right'],
+    'dofs' : [(8,), (8,)],
+    'match' : 'matchYLine',
 }
 
 ##
