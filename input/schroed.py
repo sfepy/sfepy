@@ -1,5 +1,5 @@
 ##
-# c: 01.02.2008, r: 01.02.2008
+# c: 01.02.2008, r: 19.02.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
@@ -74,14 +74,32 @@ integral_1 = {
     'quadrature' : 'gauss_o2_d3',
 }
 
-variables = {
-       'Psi': ('field', 'unknown', 'field_Psi', (10,), 0),
-       'v'  : ('field', 'test', 'field_Psi', (10), 'Psi'),
-       'V'  : ('field', 'parameter', 'field_Psi', (10,)),
+variable_1 = {
+    'name' : 'Psi',
+    'kind' : 'unknown field',
+    'field' : 'field_Psi',
+    'dofs' : (10,),
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : 'field_Psi',
+    'dofs' : (10,),
+    'dual' : 'Psi',
+}
+variable_3 = {
+    'name' : 'V',
+    'kind' : 'parameter field',
+    'field' : 'field_Psi',
+    'dofs' : (10,),
 }
 
-ebc = {
-    'Surface' : (('ZeroSurface', (10,), 0.0 ),),
+ebc_1 = {
+    'name' : 'ZeroSurface',
+    'region' : 'Surface',
+    'dofs' : (10,),
+    'value' : 0.0,
 }
 
 equations = {

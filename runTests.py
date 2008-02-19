@@ -27,7 +27,7 @@ from optparse import OptionParser
 
 import init_sfe
 from sfe.base.conf import ProblemConf
-from sfe.solvers.generic import required, other
+from sfe.solvers.generic import getStandardKeywords
 ##
 # 05.06.2007, c
 class OutputFilter( object ):
@@ -66,7 +66,7 @@ class OutputFilter( object ):
         self.stdout = None
 
 ##
-# c: 04.06.2007, r: 18.02.2008
+# c: 04.06.2007, r: 19.02.2008
 def runTest( confName, options ):
     try:
         os.makedirs( options.outDir )
@@ -84,12 +84,14 @@ def runTest( confName, options ):
         of = OutputFilter( ['<<<', '+++', '---'] )
         
     print '<<< %s' % confName
-    _required = ['Test']
+
+    _required, other = getStandardKeywords()
+    required = ['Test']
 
     num = 1
     testTime = 0.0
     try:
-        conf = ProblemConf.fromFile( confName, _required, required + other )
+        conf = ProblemConf.fromFile( confName, required, _required + other )
         test = conf.funmod.Test.fromConf( conf, options )
         num = test.getNumber()
         ok = True

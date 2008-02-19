@@ -1,5 +1,8 @@
 # 25.09.2007, c
-# last revision: 11.12.2007
+# last revision: 19.02.2008
+"""
+u1 is a dummy variable used unly for volume computation.
+"""
 
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/phono/cube_cylinder.mesh'
@@ -97,21 +100,44 @@ if dim == 3:
         'bases' : {'Y2' : '3_4_P1'}
     }
 
-    variables = {
-        'd'  : ('field', 'parameter', 'eigenDirection', (3,) ),
-        'uc' : ('field', 'parameter', 'eigenDirection', (3,) ),
-        'u1' : ('field', 'parameter', '3_displacement_Y1', (0, 1, 2)),
-        'u'  : ('field', 'unknown', '3_displacement_Y2', (0, 1, 2), 0),
-        'v'  : ('field', 'test', '3_displacement_Y2', (0, 1, 2), 'u'),
+    variable_1 = {
+        'name' : 'u',
+        'kind' : 'unknown field',
+        'field' : '3_displacement_Y2',
+        'dofs' : (0, 1, 2),
+        'order' : 0,
+    }
+    variable_2 = {
+        'name' : 'v',
+        'kind' : 'test field',
+        'field' : '3_displacement_Y2',
+        'dofs' : (0, 1, 2),
+        'dual' : 'u',
+    }
+    variable_3 = {
+        'name' : 'u1',
+        'kind' : 'parameter field',
+        'field' : '3_displacement_Y1',
+        'dofs' : (0, 1, 2),
+    }
+    variable_4 = {
+        'name' : 'uc',
+        'kind' : 'parameter field',
+        'field' : 'eigenDirection',
+        'dofs' : (3,),
+    }
+    variable_5 = {
+        'name' : 'd',
+        'kind' : 'parameter field',
+        'field' : 'eigenDirection',
+        'dofs' : (3,),
     }
 
-##     if fileName_mesh.find( 'cube_sphere' ) >= 0:
-##         zeroRegion = 'Y2_Surface'
-##     else:
-##         zeroRegion = 'Y2_InnerSurface'
-
-    ebc = {
-        'Y2_Surface' : (('ZeroSurface', (0,1,2), 0.0 ),),
+    ebc_1 = {
+        'name' : 'ZeroSurface',
+        'region' : 'Y2_Surface',
+        'dofs' : (0, 1, 2),
+        'value' : 0.0,
     }
 
     integral_1 = {
@@ -145,16 +171,44 @@ else:
         'bases' : {'Y2' : '2_3_P1'}
     }
 
-    variables = {
-        'd'  : ('field', 'parameter', 'eigenDirection', (3,) ),
-        'uc' : ('field', 'parameter', 'eigenDirection', (3,) ),
-        'u1' : ('field', 'parameter', '2_displacement_Y1', (0, 1)),
-        'u'  : ('field', 'unknown', '2_displacement_Y2', (0, 1), 0),
-        'v'  : ('field', 'test', '2_displacement_Y2', (0, 1), 'u'),
+    variable_1 = {
+        'name' : 'u',
+        'kind' : 'unknown field',
+        'field' : '2_displacement_Y2',
+        'dofs' : (0, 1),
+        'order' : 0,
+    }
+    variable_2 = {
+        'name' : 'v',
+        'kind' : 'test field',
+        'field' : '2_displacement_Y2',
+        'dofs' : (0, 1),
+        'dual' : 'u',
+    }
+    variable_3 = {
+        'name' : 'u1',
+        'kind' : 'parameter field',
+        'field' : '2_displacement_Y1',
+        'dofs' : (0, 1),
+    }
+    variable_4 = {
+        'name' : 'uc',
+        'kind' : 'parameter field',
+        'field' : 'eigenDirection',
+        'dofs' : (3,),
+    }
+    variable_5 = {
+        'name' : 'd',
+        'kind' : 'parameter field',
+        'field' : 'eigenDirection',
+        'dofs' : (3,),
     }
 
-    ebc = {
-        'Y2_Surface' : (('ZeroSurface', (0,1), 0.0 ),),
+    ebc_1 = {
+        'name' : 'ZeroSurface',
+        'region' : 'Y2_Surface',
+        'dofs' : (0, 1),
+        'value' : 0.0,
     }
 
     integral_1 = {

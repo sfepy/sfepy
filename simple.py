@@ -6,7 +6,7 @@ from optparse import OptionParser
 import init_sfe
 from sfe.base.base import *
 from sfe.base.conf import ProblemConf
-from sfe.solvers.generic import solveDirect, required, other
+from sfe.solvers.generic import solveDirect, getStandardKeywords
 
 ##
 # 26.03.2007, c
@@ -42,7 +42,7 @@ help = {
 }
 
 ##
-# c: 12.01.2007, r: 18.02.2008
+# c: 12.01.2007, r: 19.02.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -85,6 +85,7 @@ def main():
             parser.print_help(),
         return
     
+    required, other = getStandardKeywords()
     if options.solveNot:
         required.remove( 'equations' )
         required.remove( 'solver_[0-9]+|solvers' )

@@ -12,6 +12,7 @@ import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions,\
      transformPlotData, plotLogs, plotGaps, detectBandGaps
+from sfe.solvers.generic import getStandardKeywords
 
 ##
 # c: 25.09.2007, r: 13.02.2008
@@ -80,9 +81,7 @@ help = {
 }
 
 ##
-# 25.09.2007, c
-# 27.09.2007
-# 01.10.2007
+# c: 25.09.2007, r: 19.02.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -107,11 +106,9 @@ def main():
     else:
         parser.print_help(),
         return
-    
-    required = ['fileName_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe', 'equations',
-                'region_[0-9]+', 'variables', 'material_[0-9]+']
-    other = ['functions', 'modules', 'epbc', 'lcbc']
 
+    required, other = getStandardKeywords()
+    required.remove( 'solver_[0-9]+|solvers' )
     conf = ProblemConf.fromFile( fileNameIn, required, other )
 ##     print conf
 ##     pause()
