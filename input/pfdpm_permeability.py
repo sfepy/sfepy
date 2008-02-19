@@ -1,5 +1,5 @@
 # 24.05.2007, c
-# last revision: 10.12.2007
+# last revision: 19.02.2008
 from sfe.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
