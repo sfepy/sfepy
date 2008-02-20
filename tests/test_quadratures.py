@@ -1,12 +1,12 @@
 # 13.11.2007, c
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 fileName_mesh = 'database/tests/triquad.mesh'
 
 material_1 = {
     'name' : 'm',
     'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 1.0,
+    'val' : 1.0,
 }
 
 region_1000 = {
@@ -89,7 +89,7 @@ integral_2 = {
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i2.Omega( m, s, t )
+    'Temperature' : """dw_laplace.i2.Omega( m.val, s, t )
                        = 0"""
 ##     'Temperature' : """dw_laplace.Omega_1( m, s, t )
 ##                      + dw_laplace.Omega_2( m, s, t ) = 0"""

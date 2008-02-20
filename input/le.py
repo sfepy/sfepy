@@ -1,4 +1,4 @@
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 fileName_mesh = 'database/simple.vtk'
 
 field_1 = {
@@ -13,8 +13,7 @@ material_1 = {
     'name' : 'solid',
     'mode' : 'here',
     'region' : 'Y',
-    'lam' : 1e1, # Cannot use lambda as it is Python keyword...
-    'mu' : 1e0,
+    'lame' : {'lambda' : 1e1, 'mu' : 1e0},
 }
 
 variable_1 = {
@@ -87,7 +86,7 @@ integral_1 = {
     'quadrature' : 'gauss_o1_d3',
 }
 equations = {
-    'balance_of_forces' : """dw_sdcc.i1.Y( solid, v, u ) = 0""",
+    'balance_of_forces' : """dw_sdcc.i1.Y( solid.lame, v, u ) = 0""",
 }
 
 solver_0 = {

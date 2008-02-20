@@ -1,5 +1,5 @@
 ##
-# c: 01.02.2008, r: 19.02.2008
+# c: 01.02.2008, r: 20.02.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
@@ -48,7 +48,7 @@ material_1 = {
     'mode' : 'here',
     'region' : 'Omega',
 
-    'coef' : 0.5,
+    'val' : 0.5,
 }
 
 material_2 = {
@@ -103,7 +103,7 @@ ebc_1 = {
 }
 
 equations = {
-    'lhs' : """  dw_laplace.i1.Omega( m, v, Psi )
+    'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
                + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
     'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
 }

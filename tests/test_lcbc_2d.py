@@ -1,5 +1,5 @@
 # 03.10.2007, c
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 fileName_mesh = 'database/phono/mesh_circ21.mesh'
 
 # Whole domain $Y$.
@@ -42,8 +42,7 @@ material_1 = {
     'mode' : 'here',
     'region' : 'Y',
 
-    'lam' : 1e1,
-    'mu' : 1e0,
+    'lame' : {'lambda' : 1e1, 'mu' : 1e0},
     'density' : 1e-1,
 }
 
@@ -103,7 +102,7 @@ integral_1 = {
 }
 
 equations = {
-    'balance' : """dw_sdcc.i1.Y( solid, v, u ) = 0""",
+    'balance' : """dw_sdcc.i1.Y( solid.lame, v, u ) = 0""",
 }
 
 solver_0 = {

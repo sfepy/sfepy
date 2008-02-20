@@ -19,7 +19,7 @@ ifeq ($(ARCH),linux)
   CARCHFLAGS   := -Wall -c
   CARCHOUT     := -o
 
-  PYTHON_INCL  := -I/usr/include/python2.4 -I/home/share/software/include -I/usr/lib/python2.4/site-packages/numpy/core/include
+  PYTHON_INCL  := -I/usr/include/python2.4 -I/home/share/software/usr/lib/python2.4/site-packages/numpy/core/include
 #  SWIG_LIB     := -lswigpy
 
   EXT_INCL     := $(PYTHON_INCL)

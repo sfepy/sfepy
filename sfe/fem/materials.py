@@ -42,6 +42,38 @@ class Materials( Container ):
 ##
 # 21.07.2006, c
 class Material( Struct ):
+    """
+    A class holding constitutive and other material parameters.
+
+    Example input:
+
+    material_2 = {
+       'name' : 'm',
+       'mode' : 'here',
+       'region' : 'Omega',
+       'E' : 1.0,
+    }
+
+    Material parameters are passed to terms using the dot notation,
+    i.e. 'm.E' in our example case.
+
+    >>> mat = Material( **material_2 )
+    >>> print mat
+Material:m
+  E:
+    1.0
+  name:
+    m
+  region:
+    None
+  extraArgs:
+    {}
+  mode:
+    here
+  regionName:
+    Omega
+    
+    """
     ##
     # 22.08.2006, c
     def __init__( self, **kwargs ):
@@ -118,16 +150,18 @@ class Material( Struct ):
                 self.data = None
 
     ##
-    # c: 02.08.2006, r: 01.02.2008
+    # c: 02.08.2006, r: 20.02.2008
     def getData( self, regionName, ig, name = None ):
         """Returns None in function mode if setCurrentGroup() was not called."""
 ##         print 'getting', name
 
         if self.mode == 'here':
             if name is None:
-                return self
+                output( 'material arguments must use the dot notation!'
+                        ' (material: %s)' % self.name )
+                raise ValueError
             else:
-                return nm.asarray( getattr( self, name ) )
+                return getattr( self, name )
 
         else:
             ii = self.igs.index( ig )

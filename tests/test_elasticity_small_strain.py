@@ -1,5 +1,5 @@
 # 10.07.2007, c
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 
 fileName_meshes = ['database/kostka_medium_tetra.mesh',
                    'database/kostka_medium_tetra.mesh',
@@ -22,16 +22,14 @@ material_1 = {
     'name' : 'solid',
     'mode' : 'here',
     'region' : 'Omega',
-    'lam' : 1e1, # Cannot use lambda as it is Python keyword...
-    'mu' : 1e0,
+    'lame' : {'lambda' : 1e1, 'mu' : 1e0},
 }
 
 material_2 = {
     'name' : 'spring',
     'mode' : 'here',
     'region' : 'Omega',
-    'stiffness' : 1e0,
-    'projection' : None,
+    'pars' : {'stiffness' : 1e0, 'projection' : None},
 }
 
 variable_1 = {
@@ -78,8 +76,8 @@ integral_1 = {
 
 equations = {
     'balance_of_forces' :
-    """dw_sdcc.i1.Omega( solid, v, u )
-     = dw_point_lspring.i1.Bottom( spring, v, u )""",
+    """dw_sdcc.i1.Omega( solid.lame, v, u )
+     = dw_point_lspring.i1.Bottom( spring.pars, v, u )""",
 }
 
 solver_0 = {

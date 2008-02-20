@@ -33,10 +33,11 @@ class LinearPointSpringTerm( Term ):
 ##         print vecU.shape
 ##         pause()
 
+        stiffness = mat['stiffness']
         if diffVar is None:
             shape = (chunkSize, 1, dim, 1)
             for out, chunk in vectorChunkGenerator( nNod, chunkSize, shape ):
-                out[:,0,:,0] = - mat.stiffness * vecU[chunk]
+                out[:,0,:,0] = - stiffness * vecU[chunk]
                 yield out, chunk, 0
 
         elif diffVar == self.getArgName( 'state' ):
@@ -44,7 +45,7 @@ class LinearPointSpringTerm( Term ):
             eye = nm.eye( dim, dim, dtype = nm.float64 )
             eye.shape = (1, 1) + eye.shape
             for out, chunk in vectorChunkGenerator( nNod, chunkSize, shape ):
-                out[...] = - mat.stiffness * eye
+                out[...] = - stiffness * eye
                 yield out, chunk, 0
 
         else:

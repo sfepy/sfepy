@@ -1,5 +1,5 @@
 # 24.05.2007, c
-# last revision: 19.02.2008
+# last revision: 20.02.2008
 from sfe.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
@@ -123,7 +123,7 @@ equations = {
     'dw_' : ('div', 'grad', 'div_grad', 'convect'),
     },
     'balance' :
-    """+ div_grad.i1.Y1Y2( fluid, v, u ) - grad.i1.Y1Y2( v, p ) = 0""",
+    """+ div_grad.i1.Y1Y2( fluid.viscosity, v, u ) - grad.i1.Y1Y2( v, p ) = 0""",
     'incompressibility' :
     """div.i1.Y1Y2( q, u ) = 0""",
 }

@@ -1,5 +1,5 @@
 # 14.02.2007
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 #!
 #! Poisson Equation
 #! ================
@@ -19,7 +19,7 @@ material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 1.0,
+    'val' : 1.0,
 }
 
 #! Fields
@@ -123,7 +123,7 @@ integral_1 = {
 }
 
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
 }
 
 #! Linear solver parameters

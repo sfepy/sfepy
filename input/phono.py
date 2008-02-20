@@ -1,5 +1,5 @@
 # 25.09.2007, c
-# last revision: 19.02.2008
+# last revision: 20.02.2008
 """
 u1 is a dummy variable used unly for volume computation.
 """
@@ -54,8 +54,7 @@ material_1 = {
     'region' : 'Y1',
 
     # aluminium
-    'lam' : 5.898, # in 1e+10 Pa
-    'mu' : 2.681, # in 1e+10 Pa
+    'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
     'density' : 0.2799, # in 1e4 kg/m3
 }
 
@@ -65,8 +64,7 @@ material_2 = {
     'region' : 'Y2',
 
     # epoxy
-    'lam' : 0.1798 , #0.458, # in 1e+10 Pa
-    'mu' : 0.148, # in 1e+10 Pa
+    'lame' : {'lambda' : 0.1798, 'mu' : 0.148}, # in 1e+10 Pa
     'density' : 0.1142, # in 1e4 kg/m3
 }
 
@@ -218,7 +216,7 @@ else:
     }
 
 equations = {
-    'lhs' : """dw_sdcc.i1.Y2( inclusion, v, u )""",
+    'lhs' : """dw_sdcc.i1.Y2( inclusion.lame, v, u )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
 }
 

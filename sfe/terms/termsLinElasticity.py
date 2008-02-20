@@ -20,8 +20,7 @@ class SDCCTerm( Term ):
         self.function = terms.dw_lin_elasticity
         
     ##
-    # 07.03.2006, c
-    # 26.07.2006
+    # c: 07.03.2006, r: 20.02.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         material, virtual, state = self.getArgs( **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -37,9 +36,10 @@ class SDCCTerm( Term ):
             raise StopIteration
         
         vec, indx = state()
+        lam = nm.float64( material['lambda'] )
+        mu = nm.float64( material['mu'] )
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start,
-                                    material.lam, material.mu,
+            status = self.function( out, vec, indx.start, lam, mu,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 

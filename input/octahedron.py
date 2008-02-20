@@ -1,11 +1,11 @@
-# c: 15.02.2008, r: 18.02.2008
+# c: 15.02.2008, r: 20.02.2008
 fileName_mesh = 'database/t.1.node'
 
 material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 1.0,
+    'val' : 1.0,
 }
 
 field_1 = {
@@ -75,7 +75,7 @@ integral_1 = {
     'quadrature' : 'gauss_o1_d3',
 }
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef, s, t ) = 0"""
+    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
 }
 
 solver_0 = {

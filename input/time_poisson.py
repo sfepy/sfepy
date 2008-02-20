@@ -6,7 +6,7 @@ material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 0.0001, # coef * \Delta t.
+    'val_dt' : 0.0001, # coef * \Delta t.
 }
 
 field_1 = {
@@ -71,7 +71,7 @@ integral_1 = {
 }
 equations = {
     'Temperature' :
-    """  dw_laplace.i1.Omega( coef, s, t )
+    """  dw_laplace.i1.Omega( coef.val_dt, s, t )
        + dw_mass_scalar.i1.Omega( s, t ) = dw_mass_scalar_r.i1.Omega( s, t0 )"""
 }
 

@@ -19,12 +19,7 @@ class DivGradTerm( Term ):
         Term.__init__( self, region, name, sign, terms.term_ns_asmDivGrad )
         
     ##
-    # 26.10.2005, c
-    # 21.11.2005
-    # 22.11.2005
-    # 01.12.2005
-    # 09.12.2005
-    # 25.07.2006
+    # c: 26.10.2005, r: 20.02.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         material, virtual, state = self.getArgs( **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -41,7 +36,7 @@ class DivGradTerm( Term ):
 
         vec, indx = state()
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, material.viscosity,
+            status = self.function( out, vec, indx.start, nm.float64( material ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 

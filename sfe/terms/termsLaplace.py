@@ -16,10 +16,7 @@ class LaplaceTerm( Term ):
         self.function = terms.term_laplace_asm
         
     ##
-    # 28.11.2005, c
-    # 01.12.2005
-    # 09.12.2005
-    # 24.07.2006
+    # c: 28.11.2005, r: 20.02.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         material, virtual, state = self.getArgs( **kwargs )
 ##         print self.__class__.name, material.name, virtual.name, state.name
@@ -42,6 +39,6 @@ class LaplaceTerm( Term ):
 
         vec, indx = state()
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, material.coef,
+            status = self.function( out, vec, indx.start, nm.float64( material ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status

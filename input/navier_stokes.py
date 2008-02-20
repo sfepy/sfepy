@@ -1,5 +1,5 @@
 # 26.02.2007, c
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 
 fileName_mesh = 'database/pul_klikatak2.mesh'
 
@@ -115,7 +115,7 @@ equations = {
     'dw_' : ('div', 'grad', 'div_grad', 'convect'),
     },
     'balance' :
-    """+ div_grad.i2.Omega( fluid, v, u ) + convect.i2.Omega( v, u )
+    """+ div_grad.i2.Omega( fluid.viscosity, v, u ) + convect.i2.Omega( v, u )
        - grad.i1.Omega( v, p ) = 0""",
     'incompressibility' :
     """div.i1.Omega( q, u ) = 0""",

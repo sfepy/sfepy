@@ -1,4 +1,4 @@
-# last revision: 18.02.2008
+# last revision: 20.02.2008
 #fileName_mesh = 'database/kostka_big.mesh'
 fileName_mesh = 'database/kostka_medium.mesh'
 
@@ -8,7 +8,7 @@ material_1 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 1.0
+    'val' : 1.0
 }
 
 if fileName_mesh == 'database/kostka_medium.mesh':
@@ -110,7 +110,7 @@ ebc_2 = {
 }
 
 equations = {
-    'nice_equation' : """dw_laplace.i1.Omega( coef, s, T ) = 0""",
+    'nice_equation' : """dw_laplace.i1.Omega( coef.val, s, T ) = 0""",
 }
 
 solver_0 = {
