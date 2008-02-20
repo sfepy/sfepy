@@ -110,14 +110,7 @@ def buildArgs( term, variables, materials, **kwargs ):
 class Equations( Container ):
 
     ##
-    # 18.04.2006, c
-    # 21.07.2006
-    # 01.08.2006
-    # 09.08.2006
-    # 27.11.2006
-    # 12.02.2007
-    # 27.02.2007
-    # 12.03.2007
+    # c: 18.04.2006, r: 20.02.2008
     def fromConf( conf ):
         objs = OneTypeList( Equation )
 
@@ -127,8 +120,8 @@ class Equations( Container ):
 
         ii = 0
         for name, desc in conf.iteritems():
-            print name
-            print desc
+            output( 'equation "%s":' %  name )
+            output( desc )
             eq = Equation( name = name,
                            desc = desc,
                            itps = itps )

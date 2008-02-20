@@ -129,5 +129,4 @@ from valec import *
 import os.path as op
 trunk = op.splitext( op.basename( fileName_mesh ) )[0]
 cinc = eval( 'cinc_' + trunk )
-print cinc
 del op, trunk

@@ -277,7 +277,7 @@ class Domain( Struct ):
                     itry = -1
                     break
 
-                output( 'warning: bad element orienation, trying to correct' )
+                output( 'warning: bad element orienation, trying to correct...' )
                 itry += 1
 
             if itry == 2 and flag[0] != -1:
@@ -310,15 +310,17 @@ class Domain( Struct ):
         
 
     ##
-    # c: 04.08.2005, r: 04.02.2008
+    # c: 04.08.2005, r: 20.02.2008
     def setupNeighbourLists( self, createEdgeList = 1, createFaceList = 1 ):
-
+        modeNames = ['edges', 'faces']
+        
         isFace = self.hasFaces()
         flags = [createEdgeList, createFaceList and isFace]
         sortCols = [[3,4], [3,4,5,6]]
 
         for mode in range( 2 ):
             if flags[mode]:
+                output( 'setting up domain %s...' % modeNames[mode] )
 
                 tt = time.clock()
                 obj = Struct()
@@ -326,7 +328,7 @@ class Domain( Struct ):
                           = dm_createList( self.groups,
                                            self.mesh.nod0.shape[0], mode, 1 )
 
-                print "t = ", time.clock() - tt
+#                print "t = ", time.clock() - tt
                 ii = nm.arange( obj.data.shape[0], dtype = nm.int32 );
                 ii.shape = (ii.shape[0], 1)
                 aux = nm.concatenate( (obj.data, ii), 1 ).copy()
@@ -334,7 +336,7 @@ class Domain( Struct ):
                 mu.sortRows( aux, nm.array( sortCols[mode], nm.int32 ) )
     ##             print "->", aux
 
-                print "t = ", time.clock() - tt
+#                print "t = ", time.clock() - tt
                 obj.perm = perm = aux[:,-1].copy()
                 obj.dataS = aux[:,:-1].copy()
                 aux = nm.arange( perm.shape[0], dtype = nm.int32 )
@@ -352,7 +354,7 @@ class Domain( Struct ):
                 obj.nUnique = len( ic ) - nm.sum( ic ) - 1
                 obj.uniqueList = nm.asarray( nm.where( ic[:-1] == 0 )[0],
 					     dtype = nm.int32 )
-                print "t = ", time.clock() - tt
+#               print "t = ", time.clock() - tt
 
                 assert len( obj.uniqueList ) == obj.nUnique
 #                print obj.nUnique, obj.uniqueList, obj.uniqueList.shape
@@ -366,7 +368,7 @@ class Domain( Struct ):
                 nobj = Struct()
                 nobj.pg, nobj.pel, nobj.pd, nobj.data, nobj.cnt, nobj.uid \
                          = dm_neighbourList( obj, self.groups, ic, perm, mode )
-                print "t = ", time.clock() - tt
+#                print "t = ", time.clock() - tt
 
 
                 if mode == 0:
@@ -374,6 +376,8 @@ class Domain( Struct ):
                     self.ed, self.ned = obj, nobj
                 else:
                     self.fa, self.nfa = obj, nobj
+
+                output( '...done in %.2f s' % (time.clock() - tt) )
         if not isFace:
             self.fa, self.nfa = None, None
 
@@ -387,33 +391,13 @@ class Domain( Struct ):
             return self.ed, self.ned, self.fa, self.nfa
 
     ##
-    # 31.10.2005, c
-    # 01.11.2005
-    # 28.11.2005
-    # 03.12.2005
-    # 21.12.2005
-    # 05.01.2006
-    # 09.02.2006
-    # 17.02.2006
-    # 06.03.2006
-    # 07.03.2006
-    # 08.03.2006
-    # 09.03.2006
-    # 21.03.2006
-    # 14.06.2006, split, rewritten
-    # 15.06.2006
-    # 12.02.2007
-    # 19.02.2007
-    # 23.02.2007
-    # 28.02.2007
-    # 01.03.2007
-    # 17.07.2007
-    # 03.10.2007
+    # c: 31.10.2005, r: 20.02.2008
     def createRegions( self, regionDefs, funmod = None ):
-
         from sfe.fem.parseReg import createBNF, visitStack, printStack,\
              ParseException
 
+        output( 'creating regions...' )
+        tt = time.clock()
         regions = OneTypeList( Region )
 
         ##
@@ -614,7 +598,7 @@ class Domain( Struct ):
             region.name = rdef.name
             region.sortName = sortName
             
-            print region.typeName, region.name, region.sortName
+            output( ' ', region.typeName, region.name, region.sortName )
 #            print region.definition
 #            print region.parseDef
             regions.append( region )
@@ -622,6 +606,7 @@ class Domain( Struct ):
         # Sort by definition name.
         regions.sort( cmp = lambda i1, i2: cmp( i1.sortName, i2.sortName ) )
         self.regions = regions
+        output( '...done in %.2f s' % (time.clock() - tt) )
 
         return regions
 

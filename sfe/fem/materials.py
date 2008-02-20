@@ -25,13 +25,16 @@ class Materials( Container ):
             mat.setupRegions( regions )
 
     ##
-    # 01.08.2006, c
-    # 29.10.2007
+    # c: 01.08.2006, r: 20.02.2008
     def timeUpdate( self, ts, funmod, domain, extraMatArgs = None ):
         extraMatArgs = getDefault( extraMatArgs, {} )
+        output( 'updating materials...' )
+        tt = time.clock()
         for mat in self:
+            output( ' ', mat.name )
             extraArgs = extraMatArgs.setdefault( mat.name, {} )
             mat.timeUpdate( ts, funmod, domain, **extraArgs )
+        output( '...done in %.2f s' % (time.clock() - tt) )
 
     ##
     # 22.08.2006, c

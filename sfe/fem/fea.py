@@ -611,7 +611,7 @@ class Approximations( Container ):
         self.regionNamesPerGroup = {}
         objs = OneTypeList( Approximation )
         for regionName, baseName in bases.iteritems():
-            print regionName, baseName
+##             print regionName, baseName
 
             try:
                 region = domain.regions[regionName]

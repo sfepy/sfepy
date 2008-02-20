@@ -3,7 +3,7 @@ import re
 import types
 import sys
 
-from base import Struct, IndexedStruct, dictToStruct, pause
+from base import Struct, IndexedStruct, dictToStruct, pause, output
 from reader import Reader
 
 ##
@@ -90,8 +90,7 @@ class ProblemConf( Struct ):
         return leftOver, missing
 
     ##
-    # 27.10.2005, c
-    # 16.10.2006
+    # c: 27.10.2005, r: 20.02.2008
     def validate( self, required = None, other = None ):
         requiredLeftOver, requiredMissing \
                           = self._validateHelper( required, other )
@@ -103,13 +102,13 @@ class ProblemConf( Struct ):
         err = False
         if requiredMissing:
             err = True
-            print 'error: required missing:', requiredMissing
+            output( 'error: required missing:', requiredMissing )
 
         if otherMissing:
-            print 'warning: other missing:', otherMissing
+            output( 'warning: other missing:', otherMissing )
 
         if otherLeftOver:
-            print 'warning: left over:', otherLeftOver
+            output( 'warning: left over:', otherLeftOver )
 
         if err:
             raise ValueError

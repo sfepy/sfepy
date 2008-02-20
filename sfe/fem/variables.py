@@ -524,12 +524,14 @@ class Variables( Container ):
                 rdcs.append( rgdc[perm[0]] )
                 cdcs.append( cgdc[perm[1]] )
 #                print ' ', perm, '->', rdcs[-1].shape, cdcs[-1].shape
+
+        output( 'assembling matrix graph...' )
         tt = time.clock()
 
 #	shape = nm.array( shape, dtype = nm.long )
         ret, prow, icol = rawGraph( int( shape[0] ), int( shape[1] ),
                                     len( rdcs ), rdcs, cdcs )
-        print time.clock() - tt
+        output( '...done in %.2f s' % (time.clock() - tt) )
         nnz = prow[-1]
 ##         print ret, prow, icol, nnz
 	

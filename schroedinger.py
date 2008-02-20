@@ -31,7 +31,7 @@ from sfe.homogenization.phono import processOptions
 from sfe.solvers.generic import getStandardKeywords
 
 ##
-# c: 01.02.2008, r: 15.02.2008
+# c: 01.02.2008, r: 20.02.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -45,10 +45,18 @@ def solveEigenProblem( conf, options ):
     pb.timeUpdate()
 
     dummy = pb.createStateVector()
+
+    output( 'assembling lhs...' )
+    tt = time.clock()
     mtxA = evalTermOP( dummy, conf.equations['lhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA )
+    output( '...done in %.2f s' % (time.clock() - tt) )
+
+    output( 'assembling rhs...' )
+    tt = time.clock()
     mtxB = evalTermOP( dummy, conf.equations['rhs'], pb,
                        dwMode = 'matrix', tangentMatrix = pb.mtxA.copy() )
+    output( '...done in %.2f s' % (time.clock() - tt) )
 
     #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
     #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )

@@ -310,7 +310,7 @@ Mesh:database/simple
     fromSurface = staticmethod( fromSurface )
 
     ##
-    # c: 25.01.2006, r: 15.02.2008
+    # c: 25.01.2006, r: 20.02.2008
     def fromFile( fileName = None, io = None ):
         """passing *MeshIO instance has precedence over fileName"""
         if io is None:
@@ -326,10 +326,11 @@ Mesh:database/simple
         else:
             trunk = io.fileName
 
+        output( 'reading mesh...' )
         tt = time.clock()
         mesh = Mesh( trunk )
         mesh = io.read( mesh )
-        print "mesh.read = ", time.clock() - tt
+        output( '...done in %.2f s' % (time.clock() - tt) )
         mesh._setShapeInfo()
         return mesh
     fromFile = staticmethod( fromFile )

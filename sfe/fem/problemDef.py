@@ -151,8 +151,7 @@ class ProblemDefinition( Struct ):
         self.equations = equations
 
     ##
-    # 16.10.2007, c
-    # 17.10.2007
+    # c: 16.10.2007, r: 20.02.2008
     def setSolvers( self, conf_solvers = None, options = None ):
         """If solvers are not set in options, use first suitable in
         conf_solvers."""
@@ -178,13 +177,15 @@ class ProblemDefinition( Struct ):
         self.tsConf = _getSolverConf( 'ts' )
         self.nlsConf = _getSolverConf( 'nls' )
         self.lsConf = _getSolverConf( 'ls' )
-        print 'using solvers:'
+        info =  'using solvers:'
         if self.tsConf:
-            print '           ts: %s' % self.tsConf.name
+            info += '\n                ts: %s' % self.tsConf.name
         if self.nlsConf:
-            print '          nls: %s' % self.nlsConf.name
+            info += '\n               nls: %s' % self.nlsConf.name
         if self.lsConf:
-            print '           ls: %s' % self.lsConf.name
+            info += '\n                ls: %s' % self.lsConf.name
+        if info != 'using solvers:':
+            output( info )
 
     ##
     # Utility functions below.
