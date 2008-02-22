@@ -1,10 +1,13 @@
 #!/usr/bin/env python
-
 import os
 import pexpect
 
 import geom
 from sfe.fem.mesh import Mesh
+try:
+    from site_cfg import tetgen_path
+except ImportError:
+    tetgen_path = '/usr/bin/tetgen'
 
 def mesh():
     meshgeometry="database/box.geo"
@@ -13,7 +16,7 @@ def mesh():
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
     geom.runtetgen("tmp/t.poly",a=0.008,Q=1.0,quadratic=False,
-                   tetgenpath='/home/share/software/bin/tetgen')
+                   tetgenpath = tetgen_path)
 
     m = Mesh.fromFile("tmp/t.1.node")
     m.write("tmp/t.1.vtk", io = "auto")
