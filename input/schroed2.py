@@ -1,5 +1,5 @@
 ##
-# c: 01.02.2008, r: 22.02.2008
+# c: 22.02.2008, r: 22.02.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'

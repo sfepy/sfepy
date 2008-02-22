@@ -36,6 +36,13 @@ from solve import solve
 
 ##
 # c: 22.02.2008, r: 22.02.2008
+def updateStateToOutput( out, pb, vec, name, fillValue = None ):
+    aux = pb.stateToOutput( vec, fillValue )
+    key = aux.keys()[0]
+    out[name] = aux[key]
+
+##
+# c: 22.02.2008, r: 22.02.2008
 def wrapFunction( function, args ):
     ncalls = [0]
     times = []
@@ -138,6 +145,10 @@ def solveEigenProblem( conf, options ):
     vecVHXC = broyden3( nonlinV, vecVHXC, verbose = True )
     out = iterate( vecVHXC, pb, conf, nEigs, mtxB )
     eigs, mtxSPhi, vecN, vecVH, vecVXC = out
+
+    coor = pb.domain.getMeshCoors()
+    r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
+    vecN *= r
     
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
@@ -155,17 +166,9 @@ def solveEigenProblem( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    aux = pb.stateToOutput( vecN )
-    key = aux.keys()[0]
-    out['n'] = aux[key]
-
-    aux = pb.stateToOutput( vecVH )
-    key = aux.keys()[0]
-    out['vh'] = aux[key]
-
-    aux = pb.stateToOutput( vecVXC )
-    key = aux.keys()[0]
-    out['vxc'] = aux[key]
+    updateStateToOutput( out, pb, vecN, 'nr2' )
+    updateStateToOutput( out, pb, vecVH, 'vh' )
+    updateStateToOutput( out, pb, vecVXC, 'vxc' )
 
     pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 
