@@ -96,6 +96,7 @@ endif
 .PHONY : tags version dist reldist htmldocs save backup clean
 
 modules: sfe/fem/extmods/version.h $(SRC_LIBSWIG)
+	f2py --fcompiler=gnu95 --f77flags="-W -Wall -fdefault-real-8" -c -m rdirac rdirac.f
 	@echo Python modules done.
 	@echo ""
 
