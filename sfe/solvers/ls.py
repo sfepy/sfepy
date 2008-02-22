@@ -68,7 +68,10 @@ class ScipyCG( LinearSolver ):
     ##
     # c: 22.02.2008, r: 22.02.2008
     def __init__( self, conf, **kwargs ):
-        from scipy.splinalg.isolve import cg
+        if scipy.version.version == "0.6.0":
+            from scipy.linalg import cg
+        else:
+            from scipy.splinalg.isolve import cg
         LinearSolver.__init__( self, conf, solver = cg, **kwargs )
         
     ##
