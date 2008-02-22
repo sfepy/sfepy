@@ -62,17 +62,18 @@ class Umfpack( LinearSolver ):
 
 ##
 # c: 22.02.2008
-class ScipyCG( LinearSolver ):
-    name = 'ls.scipy_cg'
+class ScipyIterative( LinearSolver ):
+    name = 'ls.scipy_iterative'
 
     ##
     # c: 22.02.2008, r: 22.02.2008
     def __init__( self, conf, **kwargs ):
         if scipy.version.version == "0.6.0":
-            from scipy.linalg import cg
+            import scipy.linalg as la
         else:
-            from scipy.splinalg.isolve import cg
-        LinearSolver.__init__( self, conf, solver = cg, **kwargs )
+            import scipy.splinalg.isolve as la
+        solver = getattr( la, conf.method )
+        LinearSolver.__init__( self, conf, solver = solver, **kwargs )
         
     ##
     # c: 22.02.2008, r: 22.02.2008

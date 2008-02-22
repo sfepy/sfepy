@@ -122,7 +122,9 @@ equations_vh = {
 
 solver_0 = {
     'name' : 'ls',
-    'kind' : 'ls.scipy_cg',
+    'kind' : 'ls.scipy_iterative',
+
+    'method' : 'cg',
     'iMax'      : 1000,
     'epsA'      : 1e-12,
 }
