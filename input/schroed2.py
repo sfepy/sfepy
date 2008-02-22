@@ -122,7 +122,9 @@ equations_vh = {
 
 solver_0 = {
     'name' : 'ls',
-    'kind' : 'ls.umfpack',
+    'kind' : 'ls.scipy_cg',
+    'iMax'      : 1000,
+    'epsA'      : 1e-12,
 }
 
 solver_1 = {

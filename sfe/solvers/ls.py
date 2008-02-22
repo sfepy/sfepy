@@ -59,3 +59,25 @@ class Umfpack( LinearSolver ):
             return self.conf.presolve
         except:
             return False
+
+##
+# c: 22.02.2008
+class ScipyCG( LinearSolver ):
+    name = 'ls.scipy_cg'
+
+    ##
+    # c: 22.02.2008, r: 22.02.2008
+    def __init__( self, conf, **kwargs ):
+        from scipy.splinalg.isolve import cg
+        LinearSolver.__init__( self, conf, solver = cg, **kwargs )
+        
+    ##
+    # c: 22.02.2008, r: 22.02.2008
+    def __call__( self, rhs, conf = None, mtx = None, status = None ):
+        conf = getDefault( conf, self.conf )
+        mtx = getDefault( mtx, self.mtx )
+        status = getDefault( status, self.status )
+
+        sol, info = self.solver( mtx, rhs, tol = conf.epsA, maxiter = conf.iMax )
+        
+        return sol
