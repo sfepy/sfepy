@@ -19,6 +19,9 @@ $ paraview --data=t.1.vtk
 # 12.01.2007, c 
 import os.path as op
 from optparse import OptionParser
+from scipy.optimize import broyden3
+from scipy.optimize.nonlin import excitingmixing
+
 
 import init_sfe
 from sfe.base.base import *
@@ -33,11 +36,40 @@ from solve import solve
 
 ##
 # c: 22.02.2008, r: 22.02.2008
-def iterate( pb, conf, nEigs, mtxA, mtxB, nElectron = 5 ):
+def wrapFunction( function, args ):
+    ncalls = [0]
+    times = []
+    def function_wrapper( x ):
+        ncalls[0] += 1
+        tt = time.time()
+        out = function( x, *args )
+        eigs, mtxSPhi, vecN, vecVH, vecVXC = out
+        print vecVH
+        print vecVXC
+        tt2 = time.time()
+        if tt2 < tt:
+            raise RuntimeError, '%f >= %f' % (tt, tt2)
+        times.append( tt2 - tt )
+        return vecVH + vecVXC
+    return ncalls, times, function_wrapper
+
+##
+# c: 22.02.2008, r: 22.02.2008
+def iterate( vecVHXC, pb, conf, nEigs, mtxB, nElectron = 5 ):
+    import rdirac
+
+    pb.updateMaterials( extraMatArgs = {'matV' : {'vhxc' : vecVHXC}} )
+
+    dummy = pb.createStateVector()
+
+    output( 'assembling lhs...' )
+    tt = time.clock()
+    mtxA = evalTermOP( dummy, conf.equations['lhs'], pb,
+                       dwMode = 'matrix', tangentMatrix = pb.mtxA )
+    output( '...done in %.2f s' % (time.clock() - tt) )
+
+
     print 'computing resonance frequencies...'
-    #tt = [0]
-    #eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-    #print 'done in %.2f s' % tt[0]
     if nEigs == mtxA.shape[0]:
         tt = [0]
         eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
@@ -46,22 +78,22 @@ def iterate( pb, conf, nEigs, mtxA, mtxB, nElectron = 5 ):
         eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
     print eigs
 
-    vecPhi = nm.empty( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
-    vecN = nm.zeros_like( vecPhi )
+    vecPhi = nm.zeros_like( vecVHXC )
+    vecN = nm.zeros_like( vecVHXC )
     for ii in xrange( nElectron ):
         vecPhi = pb.variables.makeFullVec( mtxSPhi[:,ii] )
         vecN += vecPhi ** 2
+
+    vecVXC = nm.zeros_like( vecVHXC )
+    for ii, val in enumerate( vecN ):
+        vecVXC[ii] = rdirac.getvxc( val, 0 )
 
     pb.setEquations( conf.equations_vh )
     pb.timeUpdate()
     pb.variables['n'].dataFromData( vecN )
     vecVH = pb.solve()
-##     import sfe.base.plotutils as plu
-##     plu.spy( mtxB, eps = 1e-12 )
-##     plu.pylab.show()
-##     pause()
 
-    return eigs, mtxSPhi, vecN, vecVH
+    return eigs, mtxSPhi, vecN, vecVH, vecVXC
 
 ##
 # c: 01.02.2008, r: 22.02.2008
@@ -78,12 +110,6 @@ def solveEigenProblem( conf, options ):
     pb.timeUpdate()
 
     dummy = pb.createStateVector()
-
-    output( 'assembling lhs...' )
-    tt = time.clock()
-    mtxA = evalTermOP( dummy, conf.equations['lhs'], pb,
-                       dwMode = 'matrix', tangentMatrix = pb.mtxA )
-    output( '...done in %.2f s' % (time.clock() - tt) )
 
     output( 'assembling rhs...' )
     tt = time.clock()
@@ -104,8 +130,15 @@ def solveEigenProblem( conf, options ):
 
 ##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
-    eigs, mtxSPhi, vecN, vecVH = iterate( pb, conf, nEigs, mtxA, mtxB )
 
+    vecVHXC = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
+    ncalls, times, nonlinV = wrapFunction( iterate,
+                                           (pb, conf, nEigs, mtxB) )
+
+    vecVHXC = broyden3( nonlinV, vecVHXC, verbose = True )
+    out = iterate( vecVHXC, pb, conf, nEigs, mtxB )
+    eigs, mtxSPhi, vecN, vecVH, vecVXC = out
+    
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
 
@@ -129,6 +162,10 @@ def solveEigenProblem( conf, options ):
     aux = pb.stateToOutput( vecVH )
     key = aux.keys()[0]
     out['vh'] = aux[key]
+
+    aux = pb.stateToOutput( vecVXC )
+    key = aux.keys()[0]
+    out['vxc'] = aux[key]
 
     pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 

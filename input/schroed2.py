@@ -153,12 +153,17 @@ fe = {
 
 ##
 # c: 01.02.2008, r: 22.02.2008
-def funV( ts, coor, region, ig, mode = None ):
+def funV( ts, coor, region, ig, mode = None, vhxc = None ):
     import numpy as nm
+
+    if vhxc is None:
+        vhxc = 0.0
+
     out = {}
     C = 0.5
     r = nm.sqrt( coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2 )
-    val = nm.array( - C * 5.0 / r, ndmin = 3 )
-    #val = nm.zeros_like( val )
-    out['V'] = val
+    vc = nm.array( - C * 5.0 / r, ndmin = 3 )
+    V = vhxc + vc
+        
+    out['V'] = V
     return out

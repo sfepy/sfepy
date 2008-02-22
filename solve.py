@@ -57,7 +57,7 @@ def solve(A, B, nE = 10):
     #K=None
     A=A.to_sss();M=M.to_sss();
     kconv, lmbd, Q, it, it_in = jdsym.jdsym(A, M, K, nE, tau, 1e-5, 150, 
-            itsolvers.qmrs, clvl=1, strategy=1)
+            itsolvers.qmrs, clvl=0, strategy=1)
 
     print "number of converged eigenvalues:",kconv
     print "done"

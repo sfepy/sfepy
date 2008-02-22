@@ -222,10 +222,16 @@ class ProblemDefinition( Struct ):
 
 
     ##
-    # 12.03.2007, c
-    # 11.04.2007
-    # 03.10.2007
-    # 29.10.2007
+    # c: 22.02.2008, r: 22.02.2008
+    def updateMaterials( self, ts = None, funmod = None, extraMatArgs = None ):
+        if ts is None:
+            ts = TimeStepper( 0.0, 1.0, 1.0, 1 )
+            ts.setStep( 0 )
+        funmod = getDefault( funmod, self.conf.funmod )
+        self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
+
+    ##
+    # c: 12.03.2007, r: 22.02.2008
     def timeUpdate( self, ts = None,
                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
                     funmod = None, extraMatArgs = None ):
@@ -238,7 +244,7 @@ class ProblemDefinition( Struct ):
         conf_lcbc = getDefault( conf_lcbc, self.conf.lcbcs )
         funmod = getDefault( funmod, self.conf.funmod )
         self.updateBC( ts, conf_ebc, conf_epbc, conf_lcbc, funmod )
-        self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
+        self.updateMaterials( ts, funmod, extraMatArgs )
 
     ##
     # 29.01.2006, c
