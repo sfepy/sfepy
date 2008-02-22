@@ -48,8 +48,8 @@ def solve(A, B, nE = 10):
     A = convert_mat(A)
     M = convert_mat(B)
     print "solving..."
-    tau=0.0
-    #tau=-10
+    #tau=0.0
+    tau=-10
     Atau=A.copy()
     Atau.shift(-tau,M)
     K=precon.jacobi(Atau)

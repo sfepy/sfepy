@@ -12,7 +12,8 @@ def mesh():
     g=geom.read_gmsh("tmp/x.geo")
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
-    geom.runtetgen("tmp/t.poly",a=0.007,Q=1.0,quadratic=False)
+    geom.runtetgen("tmp/t.poly",a=0.008,Q=1.0,quadratic=False,
+                   tetgenpath='/home/share/software/bin/tetgen')
 
     m = Mesh.fromFile("tmp/t.1.node")
     m.write("tmp/t.1.vtk", io = "auto")
