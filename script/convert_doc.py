@@ -17,8 +17,9 @@ import pexpect
 from lxml.etree import parse, SubElement, Element, ElementTree, Comment, dump
 from lxml.builder import E
 
-from progressbar import progressbar
-from style import style_string
+sys.path.append( '.' )
+from sfe.base.progressbar import progressbar
+#from style import style_string
 
 def replace(old, new):
     p = old.getparent()
