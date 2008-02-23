@@ -93,26 +93,23 @@ ending = r"""
 """
 
 itemSection = r"""
-\textbf{%s}:
+<em>%s</em>:
 """
 
-termSyntax = r"""{
-\small
-\verb|%s.%s( <%s> )|
-}"""            
+termSyntax = r"""
+%s.%s( &lt;%s> )
+"""            
 
 cacheSyntax = r"""{
 \small
 \begin{verbatim}
-cache = term.getCache( '%s', <index> )
-data = cache( <data name>, <ig>, <ih>, %s )
+cache = term.getCache( '%s', &lt;index> )
+data = cache( &lt;data name>, &lt;ig>, &lt;ih>, %s )
 \end{verbatim}
 }"""            
 
 termDefinition = r"""
-\begin{center}
-  %s
-\end{center}
+<e> %s </e>
 """
 
 ##
@@ -134,8 +131,8 @@ def itemsPerSections( table, secNamePrefix, omitList ):
 # c: 14.11.2007, r: 24.10.2008
 def typesetTermSyntax( fd, cls, name ):
     fd.write( itemSection % 'Syntax' )
-    argTypes = '>, <'.join( cls.argTypes )
-    fd.write( termSyntax % (name, '<i>.<r>', argTypes) )
+    argTypes = '>, &lt;'.join( cls.argTypes )
+    fd.write( termSyntax % (name, '&lt;i>.&lt;r>', argTypes) )
 
 ##
 # 14.11.2007, c
@@ -154,7 +151,7 @@ def typesetArguments( fd, argsText ):
     for argDesc in aux:
         print argDesc
         args = argDesc.split( r':' )
-        fd.write( r'%s & \dots & %s \\' % (args[0], args[1]) )
+        fd.write( r'%s &amp; \dots &amp; %s \\' % (args[0], args[1]) )
         fd.write( '\n' )
 
     fd.write( r'\end{tabular}' )
@@ -198,6 +195,7 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
                     if secName is not None:
                         fd.write( itemSection % secName.capitalize() )
                         if secName == 'definition':
+                            secText = secText.replace("$", "")
                             fd.write( termDefinition % secText )
                             fd.write( '\n\n' )
                         elif secName == 'arguments':
