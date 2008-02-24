@@ -123,6 +123,7 @@ class LaTeXConverter(Converter):
         replacements = {
                 "&": r"\&",
                 ">": r"\hbox{$>$}",
+                "<": r"\hbox{$<$}",
                 "_": r"\_",
                 }
         for old, new in replacements.iteritems():
@@ -155,6 +156,10 @@ class LaTeXConverter(Converter):
             return self.convert_tip(node)
         elif node.tag == "programlisting":
             return self.convert_programlisting(node)
+        elif node.tag == "em":
+            return self.convert_em(node)
+        elif node.tag == "command":
+            return self.convert_command(node)
         elif node.tag == "inlineequation":
             return self.convert_inlineequation(node)
         elif node.tag == "informalequation":
@@ -170,7 +175,7 @@ class LaTeXConverter(Converter):
         elif node.tag in ["email", "ulink", "application", "table",
                 "itemizedlist", "guibutton", "guilabel", "guimenu", 
                 "menuchoice", "variablelist", "keycombo", "orderedlist",
-                "figure", "command", "guimenuitem"]:
+                "figure", "guimenuitem"]:
             return self.convert_text_tail(node)
         return self.convert_default(node)
 
@@ -336,6 +341,28 @@ class LaTeXConverter(Converter):
             r += self.convert_node(x)
         return r
 
+    def convert_em(self, node):
+        assert node.tag == "em"
+        r = r"\textbf{"
+        if node.text is not None:
+            r += self.escape(node.text)
+        r += "}"
+        r += self.default_label(node)
+        if node.tail is not None:
+            r += self.escape(node.tail)
+        return r
+
+    def convert_command(self, node):
+        assert node.tag == "command"
+        r = r"\texttt{"
+        if node.text is not None:
+            r += self.escape(node.text)
+        r += "}"
+        r += self.default_label(node)
+        if node.tail is not None:
+            r += self.escape(node.tail)
+        return r
+
     def convert_tip(self, node):
         assert node.tag == "tip"
         self.check_zero_tail(node.tail)
@@ -424,6 +451,7 @@ class SfePyDocConverter(LaTeXConverter):
 \usepackage{amsmath}
 %\usepackage{braket}
 %\input macros.tex
+\setlength{\parindent}{0pt}
 \def\dt{{\Delta t}}
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
 \def\difd#1{\ {\rm d}#1}
@@ -447,6 +475,17 @@ class SfePyDocConverter(LaTeXConverter):
         linkend = node.attrib["linkend"]
         r = "(\\ref{%s})" % linkend
         if node.tail:
+            r += self.escape(node.tail)
+        return r
+
+    def convert_command(self, node):
+        assert node.tag == "command"
+        r = r"{\small\verb|"
+        if node.text is not None:
+            r += node.text
+        r += "|}"
+        r += self.default_label(node)
+        if node.tail is not None:
             r += self.escape(node.tail)
         return r
 

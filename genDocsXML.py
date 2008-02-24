@@ -97,7 +97,7 @@ itemSection = r"""
 """
 
 termSyntax = r"""
-%s.%s( &lt;%s> )
+<command>%s.%s( &lt;%s> )</command>
 """            
 
 cacheSyntax = r"""{
@@ -174,10 +174,10 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
         for itemName in itemNames:
             itemClass = itemTable[itemName]
             name = itemClass.name#.replace( '_', '\_' )
-            fd.write( r'<section><title>%s</title>' %  name )
-            fd.write( '\n' )
-            fd.write( r'\textbf{Class}: %s' % itemClass.__name__ )
-            fd.write( '\n\n' )
+            fd.write( '\n<section>\n    <title>%s</title>\n' %  name )
+            fd.write( '<p>\n' )
+            fd.write( r'<em>Class</em>: %s' % itemClass.__name__ )
+            fd.write( '</p>\n' )
 
             doc = itemClass.__doc__
             if doc is not None:
@@ -193,18 +193,20 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
 #                    print secText
                     if secName is None and not secText: continue
                     if secName is not None:
+                        fd.write("\n<p>")
                         fd.write( itemSection % secName.capitalize() )
                         if secName == 'definition':
                             secText = secText.replace("$", "")
                             fd.write( termDefinition % secText )
-                            fd.write( '\n\n' )
                         elif secName == 'arguments':
                             typesetArguments( fd, secText )
                         else:
                             fd.write( secText )
-                            fd.write( '\n\n' )
+                        fd.write("\n</p>")
 
+            fd.write("\n<p>")
             typesetSyntax( fd, itemClass, itemName )
+            fd.write("\n</p>")
             fd.write( r'</section>' )
         fd.write( r'</section>' )
 
