@@ -173,7 +173,7 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
         itemNames.sort()
         for itemName in itemNames:
             itemClass = itemTable[itemName]
-            name = itemClass.name.replace( '_', '\_' )
+            name = itemClass.name#.replace( '_', '\_' )
             fd.write( r'<section><title>%s</title>' %  name )
             fd.write( '\n' )
             fd.write( r'\textbf{Class}: %s' % itemClass.__name__ )

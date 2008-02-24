@@ -123,6 +123,7 @@ class LaTeXConverter(Converter):
         replacements = {
                 "&": r"\&",
                 ">": r"\hbox{$>$}",
+                "_": r"\_",
                 }
         for old, new in replacements.iteritems():
             text = text.replace(old, new)
@@ -402,10 +403,10 @@ class LaTeXConverter(Converter):
     def convert_text_tail(self, node):
         r = ""
         if node.text is not None:
-            r += node.text
+            r += self.escape(node.text)
         r += self.default_label(node)
         if node.tail is not None:
-            r += node.tail
+            r += self.escape(node.tail)
         return r
 
     def check_zero_tail(self, tail):
@@ -414,7 +415,7 @@ class LaTeXConverter(Converter):
         if tail.strip() != "":
             print "Unhandled tail: '%s'" % tail
 
-class MasterThesisConverter(LaTeXConverter):
+class SfePyDocConverter(LaTeXConverter):
 
     def convert_article(self, node):
         assert node.tag == "article"
@@ -423,6 +424,17 @@ class MasterThesisConverter(LaTeXConverter):
 \usepackage{amsmath}
 %\usepackage{braket}
 %\input macros.tex
+\def\dt{{\Delta t}}
+\def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
+\def\difd#1{\ {\rm d}#1}
+\newcommand{\dvg}{\mathop{\rm div}}
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\uld}[1]{\dot{\underline{#1}}}
+\newcommand{\ull}[1]{\underline{\underline{#1}}}
+\def\Vcal{\mathcal{V}}
+\def\Tcal{\mathcal{T}}
+\def\figDir{../doc/tex/figures}
+\newcommand{\sfe}{SFE}
 """
         for x in node:
             r += self.convert_node(x)
@@ -729,10 +741,10 @@ class XHTMLConverter(Converter):
     def convert_text_tail(self, node):
         r = ""
         if node.text is not None:
-            r += node.text
+            r += self.escape(node.text)
         r += self.default_label(node)
         if node.tail is not None:
-            r += node.tail
+            r += self.escape(node.tail)
         return r
 
     def check_zero_tail(self, tail):
@@ -749,7 +761,7 @@ def convert_docbook_latex(infile, outfile):
 
     f = open(outfile, "w")
     #f.write(LaTeXConverter(root).convert())
-    f.write(MasterThesisConverter(root).convert())
+    f.write(SfePyDocConverter(root).convert())
 
 def create_image(filename, eq, inline=False):
     r"""Runs "eq" through TeX and saves the result into the "filename" as a png.
