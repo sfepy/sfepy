@@ -100,13 +100,13 @@ termSyntax = r"""
 <command>%s.%s( &lt;%s> )</command>
 """            
 
-cacheSyntax = r"""{
-\small
-\begin{verbatim}
-cache = term.getCache( '%s', &lt;index> )
-data = cache( &lt;data name>, &lt;ig>, &lt;ih>, %s )
-\end{verbatim}
-}"""            
+cacheSyntax = r"""
+<p>
+<command>cache = term.getCache( '%s', &lt;index> )</command>
+</p><p>
+<command>data = cache( &lt;data name>, &lt;ig>, &lt;ih>, %s )</command>
+</p>
+"""            
 
 termDefinition = r"""
 <e> %s </e>

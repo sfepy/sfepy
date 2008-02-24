@@ -447,10 +447,8 @@ class SfePyDocConverter(LaTeXConverter):
     def convert_article(self, node):
         assert node.tag == "article"
         self.check_zero_tail(node.tail)
-        r = r"""\documentclass[12pt]{article}
+        r = r"""\documentclass[10pt]{article}
 \usepackage{amsmath}
-%\usepackage{braket}
-%\input macros.tex
 \setlength{\parindent}{0pt}
 \def\dt{{\Delta t}}
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
