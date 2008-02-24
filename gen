@@ -1,0 +1,7 @@
+./genDocsXML.py
+script/convert_doc.py tmp/terms.xml tmp/t.xml
+script/convert_doc.py tmp/t.xml tmp/t.tex
+cd tmp
+pdflatex t.tex
+pdflatex t.tex
+pdflatex t.tex
