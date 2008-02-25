@@ -158,22 +158,16 @@ def typesetCacheSyntax( fd, cls, name ):
 ##
 # 15.11.2007, c
 def typesetArguments( fd, argsText ):
-    fd.write( r'\begin{center}' )
-    fd.write( '\n' )
+    fd.write( '<table><tgroup>\n' )
     aux = argsText.split( ',' )
-    fd.write( r'\begin{tabular}{rcl}' )
-    fd.write( '\n' )
+    fd.write( '<tbody>\n' )
     for argDesc in aux:
         print argDesc
         args = argDesc.split( r':' )
-        fd.write( r'%s &amp; \dots &amp; <m>%s</m> \\' % (args[0], 
-                args[1].replace("$", "")) )
-        fd.write( '\n' )
+        fd.write( '<row><entry>%s</entry><entry><m>%s</m></entry></row>\n' % \
+                (args[0], args[1].replace("$", "")) )
 
-    fd.write( r'\end{tabular}' )
-    fd.write( '\n' )
-    fd.write( r'\end{center}' )
-    fd.write( '\n' )
+    fd.write( '</tbody></tgroup></table>\n' )
 
 ##
 # 14.11.2007, c
