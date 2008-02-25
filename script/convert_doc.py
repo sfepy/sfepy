@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 
 """
 This module uses lxml heavily. Read the excellent documentation at
@@ -6,6 +7,7 @@ This module uses lxml heavily. Read the excellent documentation at
 http://codespeak.net/lxml
 
 that explains everything needed to understand how this file works.
+
 """
 
 import os
@@ -17,8 +19,8 @@ import pexpect
 from lxml.etree import parse, SubElement, Element, ElementTree, Comment, dump
 from lxml.builder import E
 
-sys.path.append( '.' )
-from sfe.base.progressbar import progressbar
+#sys.path.append( '.' )
+#from sfe.base.progressbar import progressbar
 #from style import style_string
 
 def replace(old, new):
@@ -37,6 +39,7 @@ def convert_xml_docbook(infile, outfile):
     <m>x^2</m> -> <inlineequation><alt>x^2</alt></inlineequation>
     <e>x^2</e> -> <informalequation><alt>x^2</alt></informalequation>
     <e id="ss">x^2</e> -> <equation id="ss"><alt>x^2</alt></equation>
+    <em>ss</em> -> <emphasis>ss</emphasis>
 
     All whitespace is normalized like this:
     <a> ss </a>   -> <s>ss</a>
@@ -66,6 +69,9 @@ def convert_xml_docbook(infile, outfile):
     for e in root.getiterator("p"):
         e.tag = "para"
 
+    for e in root.getiterator("em"):
+        e.tag = "emphasis"
+
     for e in root.getiterator("a"):
         e.tag = "xref"
         e.attrib["linkend"] = e.attrib["ref"]
@@ -79,12 +85,12 @@ def convert_xml_docbook(infile, outfile):
             text = text.replace("  ", " ")
         return text
     for e in root.getiterator():
-        if e.text:
+        if e.text and e.tag != "programlisting":
             preserve_space_end = (e.text[-1] in [" ", "\n"]) and len(e) > 0
             e.text = remove_whitespace(e.text)
             if preserve_space_end and len(e.text) > 0:
                 e.text = e.text + " "
-        if e.tail:
+        if e.tail and e.getparent().tag != "programlisting":
             preserve_space_beginning = e.tail[0] in [" ", "\n"]
             preserve_space_end = (e.tail[-1] in [" ", "\n"]) and \
                     (e.getnext() is not None)
@@ -120,11 +126,17 @@ class LaTeXConverter(Converter):
         return self.convert_node(self.root)
 
     def escape(self, text):
+        if text is None:
+            return text
+        text = text.replace("\\", r"\\")
         replacements = {
                 "&": r"\&",
                 ">": r"\hbox{$>$}",
                 "<": r"\hbox{$<$}",
                 "_": r"\_",
+                "$": r"\$",
+                "#": r"\#",
+                "^": r"\^",
                 }
         for old, new in replacements.iteritems():
             text = text.replace(old, new)
@@ -156,9 +168,11 @@ class LaTeXConverter(Converter):
             return self.convert_tip(node)
         elif node.tag == "programlisting":
             return self.convert_programlisting(node)
-        elif node.tag == "em":
+        elif node.tag == "emphasis":
             return self.convert_em(node)
-        elif node.tag == "command":
+        elif node.tag == "literal":
+            return self.convert_literal(node)
+        elif node.tag in ["command", "citetitle"]:
             return self.convert_command(node)
         elif node.tag == "inlineequation":
             return self.convert_inlineequation(node)
@@ -183,6 +197,8 @@ class LaTeXConverter(Converter):
         """Converts any type of node."""
         if node.tag == "title":
             return self.convert_articleinfo_title(node)
+        elif node.tag == "mathinclude":
+            return self.convert_mathinclude(node)
         elif node.tag == Comment:
             return self.convert_comment(node)
         elif node.tag == "abstract":
@@ -225,6 +241,8 @@ class LaTeXConverter(Converter):
             r = ""
             if "title" in self.data:
                 r += "\\title{%s}\n" % self.data["title"]
+            if "mathinclude" in self.data:
+                r += self.data["mathinclude"] + "\n"
 
             r += "\\begin{document}\n"
             if "title" in self.data:
@@ -246,6 +264,11 @@ class LaTeXConverter(Converter):
         assert node.tag == "title"
         self.check_zero_tail(node.tail)
         self.data["title"] = node.text
+
+    def convert_mathinclude(self, node):
+        assert node.tag == "mathinclude"
+        self.check_zero_tail(node.tail)
+        self.data["mathinclude"] = node.text
 
     def convert_articleinfo_abstract(self, node):
         assert node.tag == "abstract"
@@ -342,7 +365,7 @@ class LaTeXConverter(Converter):
         return r
 
     def convert_em(self, node):
-        assert node.tag == "em"
+        assert node.tag == "emphasis"
         r = r"\textbf{"
         if node.text is not None:
             r += self.escape(node.text)
@@ -352,8 +375,19 @@ class LaTeXConverter(Converter):
             r += self.escape(node.tail)
         return r
 
+    def convert_literal(self, node):
+        assert node.tag == "literal"
+        r = r"{\tt "
+        if node.text is not None:
+            r += self.escape(node.text)
+        r += "}"
+        r += self.default_label(node)
+        if node.tail is not None:
+            r += self.escape(node.tail)
+        return r
+
     def convert_command(self, node):
-        assert node.tag == "command"
+        assert node.tag in ["command", "citetitle"]
         r = r"\texttt{"
         if node.text is not None:
             r += self.escape(node.text)
@@ -374,13 +408,46 @@ class LaTeXConverter(Converter):
         return r
 
     def convert_programlisting(self, node):
+        def encode(x):
+            # TeX cannot handle some unicode charactres
+            if x[0] == "1":
+                print x
+            return x.replace(u'─', "-")
         assert node.tag == "programlisting"
-        r = "\n"
+        r = "\n\\begin{verbatim}\n"
         if node.text:
-            r += self.escape(node.text)
+            r += encode(node.text)
+        for x in node: 
+            if x.text:
+                r += x.text
+            if x.tail:
+                r += encode(x.tail)
+        r += "\end{verbatim}\n"
         if node.tail:
             r += self.escape(node.tail)
         return r
+# Below is a try not to use the {verbatim} environment (that doesn't allow any
+# nested nodes), like <em> ojfosdj </em>, but it doesn't work reliably, so it's
+# commented out.
+#        r = "\n\medskip{\\tt \n"
+#        if node.text:
+#            s = self.escape(node.text).replace("\n", r"\\")
+#            while s[:2] == r"\\":
+#                s = s[2:]
+#            r += s
+#        tail = ""
+#        if len(node) > 0:
+#            last = node[-1]
+#            if last.tail:
+#                tail = last.tail
+#                last.tail = ""
+#        for x in node: 
+#            r += self.convert_node(x)
+#        r += self.escape(tail).replace("\n", r"\\")
+#        r += "}\medskip\n"
+#        if node.tail:
+#            r += self.escape(node.tail)
+#        return r
 
     def convert_inlineequation(self, node):
         assert node.tag == "inlineequation"
@@ -449,18 +516,7 @@ class SfePyDocConverter(LaTeXConverter):
         self.check_zero_tail(node.tail)
         r = r"""\documentclass[10pt]{article}
 \usepackage{amsmath}
-\setlength{\parindent}{0pt}
-\def\dt{{\Delta t}}
-\def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
-\def\difd#1{\ {\rm d}#1}
-\newcommand{\dvg}{\mathop{\rm div}}
-\newcommand{\ul}[1]{\underline{#1}}
-\newcommand{\uld}[1]{\dot{\underline{#1}}}
-\newcommand{\ull}[1]{\underline{\underline{#1}}}
-\def\Vcal{\mathcal{V}}
-\def\Tcal{\mathcal{T}}
-\def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SFE}
+\usepackage[utf8]{inputenc}
 """
         for x in node:
             r += self.convert_node(x)
@@ -477,7 +533,7 @@ class SfePyDocConverter(LaTeXConverter):
         return r
 
     def convert_command(self, node):
-        assert node.tag == "command"
+        assert node.tag in ["command", "citetitle"]
         r = r"{\small\verb|"
         if node.text is not None:
             r += node.text
@@ -506,6 +562,7 @@ class XHTMLConverter(Converter):
         return self.convert_node(self.root)
 
     def escape(self, text):
+        "HTML"
         replacements = {
                 "&": r"\&",
                 ">": r"\hbox{$>$}",
@@ -563,6 +620,8 @@ class XHTMLConverter(Converter):
         """Converts any type of node."""
         if node.tag == "title":
             return self.convert_articleinfo_title(node)
+        elif node.tag == "mathinclude":
+            return self.convert_mathinclude(node)
         elif node.tag == Comment:
             return self.convert_comment(node)
         elif node.tag == "abstract":
@@ -622,6 +681,11 @@ class XHTMLConverter(Converter):
         assert node.tag == "title"
         self.check_zero_tail(node.tail)
         self.data["title"] = node.text
+
+    def convert_mathinclude(self, node):
+        assert node.tag == "mathinclude"
+        self.check_zero_tail(node.tail)
+        self.data["mathinclude"] = node.text
 
     def convert_articleinfo_abstract(self, node):
         assert node.tag == "abstract"
@@ -798,7 +862,8 @@ def convert_docbook_latex(infile, outfile):
 
     f = open(outfile, "w")
     #f.write(LaTeXConverter(root).convert())
-    f.write(SfePyDocConverter(root).convert())
+    r = SfePyDocConverter(root).convert()
+    f.write(r.encode("utf-8"))
 
 def create_image(filename, eq, inline=False):
     r"""Runs "eq" through TeX and saves the result into the "filename" as a png.
