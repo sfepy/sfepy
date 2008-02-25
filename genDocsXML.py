@@ -124,7 +124,7 @@ cacheSyntax = r"""
 """            
 
 termDefinition = r"""
-<e> %s </e>
+ %s 
 """
 
 ##
@@ -212,11 +212,16 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
                         fd.write("\n<p>")
                         fd.write( itemSection % secName.capitalize() )
                         if secName == 'definition':
-                            secText = secText.replace("$", "")
+                            while secText.find("$") != -1:
+                                secText = secText.replace("$", "<m>", 1)
+                                secText = secText.replace("$", "</m>", 1)
                             fd.write( termDefinition % secText )
                         elif secName == 'arguments':
                             typesetArguments( fd, secText )
                         else:
+                            while secText.find("$") != -1:
+                                secText = secText.replace("$", "<m>", 1)
+                                secText = secText.replace("$", "</m>", 1)
                             fd.write( secText )
                         fd.write("\n</p>")
 
