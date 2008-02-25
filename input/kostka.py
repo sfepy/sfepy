@@ -1,4 +1,4 @@
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 #fileName_mesh = 'database/kostka_big.mesh'
 fileName_mesh = 'database/kostka_medium.mesh'
 
@@ -55,7 +55,6 @@ variable_1 = {
     'name' : 'T',
     'kind' : 'unknown field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'order' : 0, # order in the global vector of unknowns
 }
 
@@ -63,7 +62,6 @@ variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'dual' : 'T',
 }
 
@@ -87,26 +85,22 @@ region_03 = {
 ebc_1 = {
     'name' : 'T0',
     'region' : 'Surface',
-    'dofs' : (30,),
-    'value' : -3.0,
+    'dofs' : {'T.0' : -3.0},
 }
 ebc_4 = {
     'name' : 'T1',
     'region' : 'Top',
-    'dofs' : (30,),
-    'value' : 1.0,
+    'dofs' : {'T.0' : 1.0},
 }
 ebc_3 = {
     'name' : 'T2',
     'region' : 'Bottom',
-    'dofs' : (30,),
-    'value' : -1.0,
+    'dofs' : {'T.0' : -1.0},
 }
 ebc_2 = {
     'name' : 'T3',
     'region' : 'Left',
-    'dofs' : (30,),
-    'value' : 2.0,
+    'dofs' : {'T.0' : 2.0},
 }
 
 equations = {

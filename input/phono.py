@@ -1,5 +1,5 @@
 # 25.09.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 """
 u1 is a dummy variable used unly for volume computation.
 """
@@ -69,151 +69,76 @@ material_2 = {
 }
 
 if fileName_mesh.find( 'cube_' ) >= 0:
-    dim = 3
+    dim, geom = 3, '3_4'
 else:
-    dim = 2
+    dim, geom = 2, '2_3'
 
-if dim == 3:
-    field_0 = {
-        'name' : '3_displacement_Y1',
-        'dim' : (3,1),
-        'flags' : (),
-        'domain' : 'Y1',
-        'bases' : {'Y1' : '3_4_P1'}
-    }
+field_0 = {
+    'name' : 'displacement_Y1',
+    'dim' : (dim,1),
+    'flags' : (),
+    'domain' : 'Y1',
+    'bases' : {'Y1' : '%s_P1' % geom}
+}
 
-    field_1 = {
-        'name' : '3_displacement_Y2',
-        'dim' : (3,1),
-        'flags' : (),
-        'domain' : 'Y2',
-        'bases' : {'Y2' : '3_4_P1'}
-    }
+field_1 = {
+    'name' : 'displacement_Y2',
+    'dim' : (dim,1),
+    'flags' : (),
+    'domain' : 'Y2',
+    'bases' : {'Y2' : '%s_P1' % geom}
+}
 
-    field_2 = {
-        'name' : 'eigenDirection',
-        'dim' : (1,1),
-        'flags' : (),
-        'domain' : 'Y2',
-        'bases' : {'Y2' : '3_4_P1'}
-    }
+field_2 = {
+    'name' : 'eigenDirection',
+    'dim' : (1,1),
+    'flags' : (),
+    'domain' : 'Y2',
+    'bases' : {'Y2' : '%s_P1' % geom}
+}
 
-    variable_1 = {
-        'name' : 'u',
-        'kind' : 'unknown field',
-        'field' : '3_displacement_Y2',
-        'dofs' : (0, 1, 2),
-        'order' : 0,
-    }
-    variable_2 = {
-        'name' : 'v',
-        'kind' : 'test field',
-        'field' : '3_displacement_Y2',
-        'dofs' : (0, 1, 2),
-        'dual' : 'u',
-    }
-    variable_3 = {
-        'name' : 'u1',
-        'kind' : 'parameter field',
-        'field' : '3_displacement_Y1',
-        'dofs' : (0, 1, 2),
-    }
-    variable_4 = {
-        'name' : 'uc',
-        'kind' : 'parameter field',
-        'field' : 'eigenDirection',
-        'dofs' : (3,),
-    }
-    variable_5 = {
-        'name' : 'd',
-        'kind' : 'parameter field',
-        'field' : 'eigenDirection',
-        'dofs' : (3,),
-    }
+variable_1 = {
+    'name' : 'u',
+    'kind' : 'unknown field',
+    'field' : 'displacement_Y2',
+    'order' : 0,
+}
+variable_2 = {
+    'name' : 'v',
+    'kind' : 'test field',
+    'field' : 'displacement_Y2',
+    'dual' : 'u',
+}
+variable_3 = {
+    'name' : 'u1',
+    'kind' : 'parameter field',
+    'field' : 'displacement_Y1',
+    'like' : 'u',
+}
+variable_4 = {
+    'name' : 'uc',
+    'kind' : 'parameter field',
+    'field' : 'eigenDirection',
+    'like' : None,
+}
+variable_5 = {
+    'name' : 'd',
+    'kind' : 'parameter field',
+    'field' : 'eigenDirection',
+    'like' : None,
+}
 
-    ebc_1 = {
-        'name' : 'ZeroSurface',
-        'region' : 'Y2_Surface',
-        'dofs' : (0, 1, 2),
-        'value' : 0.0,
-    }
+ebc_1 = {
+    'name' : 'ZeroSurface',
+    'region' : 'Y2_Surface',
+    'dofs' : {'u.all' : 0.0},
+}
 
-    integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
-        'quadrature' : 'gauss_o2_d3',
-    }
-
-else:
-    field_0 = {
-        'name' : '2_displacement_Y1',
-        'dim' : (2,1),
-        'flags' : (),
-        'domain' : 'Y1',
-        'bases' : {'Y1' : '2_3_P1'}
-    }
-
-    field_1 = {
-        'name' : '2_displacement_Y2',
-        'dim' : (2,1),
-        'flags' : (),
-        'domain' : 'Y2',
-        'bases' : {'Y2' : '2_3_P1'}
-    }
-
-    field_2 = {
-        'name' : 'eigenDirection',
-        'dim' : (1,1),
-        'flags' : (),
-        'domain' : 'Y2',
-        'bases' : {'Y2' : '2_3_P1'}
-    }
-
-    variable_1 = {
-        'name' : 'u',
-        'kind' : 'unknown field',
-        'field' : '2_displacement_Y2',
-        'dofs' : (0, 1),
-        'order' : 0,
-    }
-    variable_2 = {
-        'name' : 'v',
-        'kind' : 'test field',
-        'field' : '2_displacement_Y2',
-        'dofs' : (0, 1),
-        'dual' : 'u',
-    }
-    variable_3 = {
-        'name' : 'u1',
-        'kind' : 'parameter field',
-        'field' : '2_displacement_Y1',
-        'dofs' : (0, 1),
-    }
-    variable_4 = {
-        'name' : 'uc',
-        'kind' : 'parameter field',
-        'field' : 'eigenDirection',
-        'dofs' : (3,),
-    }
-    variable_5 = {
-        'name' : 'd',
-        'kind' : 'parameter field',
-        'field' : 'eigenDirection',
-        'dofs' : (3,),
-    }
-
-    ebc_1 = {
-        'name' : 'ZeroSurface',
-        'region' : 'Y2_Surface',
-        'dofs' : (0, 1),
-        'value' : 0.0,
-    }
-
-    integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
-        'quadrature' : 'gauss_o2_d2',
-    }
+integral_1 = {
+    'name' : 'i1',
+    'kind' : 'v',
+    'quadrature' : 'gauss_o2_d%d' % dim,
+}
 
 equations = {
     'lhs' : """dw_sdcc.i1.Y2( inclusion.lame, v, u )""",

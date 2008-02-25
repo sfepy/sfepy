@@ -1,4 +1,4 @@
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 fileName_mesh = 'database/simple.vtk'
 
 field_1 = {
@@ -20,14 +20,12 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'dual' : 'u',
 }
 
@@ -58,26 +56,22 @@ region_3 = {
 ebc_1 = {
     'name' : 'Left',
     'region' : 'Left',
-    'dofs' : (0, 1, 2),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_2 = {
     'name' : 'Right',
     'region' : 'Right',
-    'dofs' : (0, 1, 2),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_100 = {
     'name' : 'ZeroVolume',
     'region' : 'AlsoRight',
-    'dofs' : (0, 1, 2),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_3 = {
     'name' : 'PerturbedSurface',
     'region' : 'SomewhereTop',
-    'dofs' : (2,),
-    'value' : 0.01,
+    'dofs' : {'u.2' : 0.01},
 }
 
 integral_1 = {

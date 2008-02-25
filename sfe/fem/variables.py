@@ -226,23 +226,21 @@ class Variables( Container ):
             self.vdi = self.di
 
     ##
-    # c: 16.10.2006, r: 18.02.2008
+    # c: 16.10.2006, r: 25.02.2008
     def _listBCOfVars( self, bcDefs, isEBC = True ):
 
         bcOfVars = dictFromKeysInit( (key for key in self.di.vnames), list )
         if bcDefs is None: return bcOfVars
 
         for key, bc in bcDefs.iteritems():
-            if isEBC:
-                edts = set( bc.dofs )
-            else:
-                edts = set( bc.dofs[0] )
-
-            for vname in self.di.vnames:
-                var = self[vname]
-                dts = set( var.dofTypes )
-                if dts.intersection( edts ):
-                    bcOfVars[vname].append( (key, bc) )
+##             print key
+##             print bc
+            for dofs, val in bc.dofs.iteritems():
+                vname = dofs.split( '.' )[0]
+                vbc = copy( bc )
+                vbc.dofs = (dofs, val)
+##                 print '///', vbc
+                bcOfVars[vname].append( (key, vbc) )
 
         return bcOfVars
 
@@ -720,10 +718,7 @@ class Variables( Container ):
 
     ##
     # Works for vertex data only.
-    # 15.12.2005, c
-    # 25.07.2006
-    # 20.02.2007
-    # 04.06.2007
+    # c: 15.12.2005, r: 25.02.2008
     def stateToOutput( self, vec, fillValue = None ):
 
         nNod, di = self.domain.shape.nNod, self.di
@@ -738,7 +733,7 @@ class Variables( Container ):
 #            pause()
             out[key] = Struct( name = 'output_data',
                                mode = 'vertex', data = ext,
-                               dofTypes = self[key].dofTypes )
+                               dofs = self[key].dofs )
         return out
 
     ##
@@ -769,18 +764,43 @@ class Variables( Container ):
 class Variable( Struct ):
 
     ##
-    # c: 14.07.2006?, r: 18.02.2008
+    # c: 14.07.2006?, r: 25.02.2008
     def fromConf( key, conf, fields ):
         flags = set()
         kind, family = conf.kind.split()
+
+        obj = Variable( flags, name = conf.name, key = key,
+                        kind = kind, family = family )
+
         if kind == 'unknown':
-            flags.add( isState )
+            obj.flags.add( isState )
+            if hasattr( conf, 'order' ):
+                obj._order = int( conf.order )
+            else:
+                output( 'unnown variable %s: order missing' % conf.name )
+                raise ValueError
+            obj.dofName = obj.name
         elif kind == 'test':
-            flags.add( isVirtual )
+            obj.flags.add( isVirtual )
+            if hasattr( conf, 'dual' ):
+                obj.primaryVarName = conf.dual
+            else:
+                output( 'test variable %s: related unknown missing' % conf.name )
+                raise ValueError
+            obj.dofName = obj.primaryVarName
         elif kind == 'parameter':
-            flags.add( isParameter )
+            obj.flags.add( isParameter )
+            if hasattr( conf, 'like' ):
+                obj.primaryVarName = conf.like
+            else:
+                output( 'parameter variable %s: related unknown missing'\
+                        % conf.name )
+                raise ValueError
+            obj.dofName = obj.primaryVarName
         else:
-            flags.add( isOther )
+            obj.flags.add( isOther )
+            print 'unknown variable family: %s' % family
+            raise NotImplementedError
 
         if family == 'field':
             try:
@@ -789,32 +809,7 @@ class Variable( Struct ):
                 output( 'field "%s" does not exist!' % conf.fields )
                 raise
 
-            obj = Variable( flags, name = conf.name, key = key,
-                            kind = kind, family = family,
-                            dofTypes = conf.dofs )
             obj.setField( fld )
-
-        elif family == 'expression':
-            obj = Variable( flags, name = conf.name,
-                            kind = kind )
-
-        else:
-            print 'unknown variable family: %s' % family
-            raise ValueError
-
-        if obj.isVirtual():
-            if hasattr( conf, 'dual' ):
-                obj.primaryVarName = conf.dual
-            else:
-                output( 'test variable %s: related unknown missing' % conf.name )
-                raise ValueError
-
-        if obj.isState():
-            if hasattr( conf, 'order' ):
-                obj._order = int( conf.order )
-            else:
-                output( 'unnown variable %s: order missing' % conf.name )
-                raise ValueError
 
         return obj
     fromConf = staticmethod( fromConf )
@@ -894,15 +889,17 @@ class Variable( Struct ):
         self.nDof = self.indx.stop - self.indx.start
 
     ##
-    # 11.07.2006, c
-    # 14.07.2006
-    # 20.07.2006
+    # c: 11.07.2006, r: 25.02.2008
     def setField( self, field ):
         """Takes reference to a Field instance."""
-        if isField in self.flags:
-            self.field.unuse()
         self.field = field
         self.dpn = nm.product( field.dim )
+
+        if self.dofName is None:
+            dofName = 'aux'
+        else:
+            dofName = self.dofName
+        self.dofs = [dofName + ('.%d' % ii) for ii in range( self.dpn )]
 
         self.flags.add( isField )
 
@@ -976,16 +973,30 @@ class Variable( Struct ):
             raise ValueError
 
     ##
-    # 18.10.2006, c
+    # c: 25.02.2008, r: 25.02.2008
+    def _canonize( self, dofs ):
+        vname, dd = dofs.split( '.' )
+        if dd == 'all':
+            cdofs = self.dofs
+        elif dd[0] == '[':
+            cdofs = [vname + '.' + ii.strip()
+                     for ii in dd[1:-1].split( ',' )]
+        else:
+            cdofs = [dofs]
+        return cdofs
+
+    ##
+    # c: 18.10.2006, r: 25.02.2008
     def expandNodesToEquations( self, nods, dofs ):
+
         eq = nm.array( [], dtype = nm.int32 )
-        for dof in dofs:
-            idof = list( self.dofTypes ).index( dof )
+        for dof in self._canonize( dofs ):
+            idof = self.dofs.index( dof )
             eq = nm.concatenate( (eq, self.dpn * nods + idof) )
         return eq
 
     ##
-    # c: 03.10.2007, r: 18.02.2008
+    # c: 03.10.2007, r: 25.02.2008
     def createLCBCOperators( self, bcs, regions ):
         if len( bcs ) == 0: return None
 
@@ -1005,7 +1016,8 @@ class Variable( Struct ):
             nmaster = region.getFieldNodes( self.field, merge = True )
             print nmaster.shape
 
-            meq = eq[self.expandNodesToEquations( nmaster, bc.dofs )]
+            dofs, kind = bc.dofs
+            meq = eq[self.expandNodesToEquations( nmaster, dofs )]
             assert nm.all( meq >= 0 )
             
             eqLCBC[meq] = ii + 1
@@ -1048,7 +1060,7 @@ class Variable( Struct ):
                        dim = dim )
 
     ##
-    # c: 20.07.2006, split, r: 18.02.2008
+    # c: 20.07.2006, split, r: 25.02.2008
     def equationMapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
@@ -1108,7 +1120,7 @@ class Variable( Struct ):
                 continue
 
             if ntype == 'EBC': # EBC.
-                val = bc.value
+                dofs, val = bc.dofs
                 ##
                 # Evaluate EBC values.
                 vv = nm.empty( (0,), dtype = nm.float64 )
@@ -1118,10 +1130,10 @@ class Variable( Struct ):
                     fun = getattr( funmod, val )
                     vv = fun( bc, ts, coor )
                 else:
-                    vv = nm.repeat( [val], nods.shape[0] * len( bc.dofs ) )
+                    vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 ##                 print nods
 ##                 print vv
-                eq = self.expandNodesToEquations( nods, bc.dofs )
+                eq = self.expandNodesToEquations( nods, dofs )
 
                 # Duplicates removed here...
                 eqEBC[eq] = 1

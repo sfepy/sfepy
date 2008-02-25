@@ -1,5 +1,5 @@
 # 24.05.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 from sfe.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
@@ -87,28 +87,24 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '2_velocity',
-    'dofs' : (3, 4),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '2_velocity',
-    'dofs' : (3, 4),
     'dual' : 'u',
 }
 variable_3 = {
     'name' : 'p',
     'kind' : 'unknown field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'order' : 1,
 }
 variable_4 = {
     'name' : 'q',
     'kind' : 'test field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'dual' : 'p',
 }
 
@@ -139,38 +135,23 @@ material_1 = {
 ebc_1 = {
     'name' : 'walls',
     'region' : 'Walls',
-    'dofs' : (3, 4),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_2 = {
-    'name' : 'top_velocity_y',
+    'name' : 'top_velocity',
     'region' : 'Top',
-    'dofs' : (4,),
-    'value' : -1.0,
-}
-ebc_3 = {
-    'name' : 'top_velocity_x',
-    'region' : 'Top',
-    'dofs' : (3,),
-    'value' : 0.0,
+    'dofs' : {'u.1' : -1.0, 'u.0' : 0.0},
 }
 ebc_10 = {
     'name' : 'bottom_pressure',
     'region' : 'Bottom',
-    'dofs' : (8,),
-    'value' : 0.0,
+    'dofs' : {'p.0' : 0.0},
 }
 
 epbc_1 = {
     'name' : 'u_rl',
     'region' : ['Left', 'Right'],
-    'dofs' : [(3, 4), (3, 4)],
-    'match' : 'matchYLine',
-}
-epbc_2 = {
-    'name' : 'p_rl',
-    'region' : ['Left', 'Right'],
-    'dofs' : [(8,), (8,)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchYLine',
 }
 

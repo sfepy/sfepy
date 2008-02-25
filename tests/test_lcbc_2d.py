@@ -1,5 +1,5 @@
 # 03.10.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 fileName_mesh = 'database/phono/mesh_circ21.mesh'
 
 # Whole domain $Y$.
@@ -58,41 +58,35 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '2_displacement',
-    'dofs' : (0, 1),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '2_displacement',
-    'dofs' : (0, 1),
     'dual' : 'u',
 }
 
 ebc_1 = {
     'name' : 'Fix',
     'region' : 'Bottom',
-    'dofs' : (0, 1),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_2 = {
     'name' : 'Load',
     'region' : 'Top',
-    'dofs' : (0, 1),
-    'value' : 0.2,
+    'dofs' : {'u.all' : 0.2},
 }
 
 lcbc_1 = {
     'name' : 'rigid1',
     'region' : 'Y2',
-    'dofs' : (0, 1),
-    'kind' : 'rigid',
+    'dofs' : {'u.all' : 'rigid'},
 }
 lcbc_2 = {
     'name' : 'rigid2',
     'region' : 'Y3',
-    'dofs' : (0, 1),
-    'kind' : 'rigid',
+    'dofs' : {'u.all' : 'rigid'},
 }
 
 integral_1 = {

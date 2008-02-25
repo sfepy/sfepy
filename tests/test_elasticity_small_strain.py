@@ -1,5 +1,5 @@
 # 10.07.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 
 fileName_meshes = ['database/kostka_medium_tetra.mesh',
                    'database/kostka_medium_tetra.mesh',
@@ -36,14 +36,12 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'dual' : 'u',
 }
 
@@ -64,8 +62,7 @@ region_2 = {
 ebc_1 = {
     'name' : 'Load',
     'region' : 'Top',
-    'dofs' : (2,),
-    'value' : 0.1,
+    'dofs' : {'u.2' : 0.1},
 }
 
 integral_1 = {

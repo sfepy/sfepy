@@ -1,5 +1,5 @@
 # 04.06.2007, c
-# last revision: 18.02.2008
+# last revision: 25.02.2008
 
 fileName_mesh = 'database/tests/small3d.mesh'
 
@@ -59,66 +59,44 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'dual' : 'u',
 }
 variable_3 = {
     'name' : 'p',
     'kind' : 'unknown field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'order' : 1,
 }
 variable_4 = {
     'name' : 'q',
     'kind' : 'test field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'dual' : 'p',
 }
 
 ebcs = {}
 epbc_10 = {
-    'name' : 'u_rl',
+    'name' : 'rl',
     'region' : ['Left', 'Right'],
-    'dofs' : [(0, 1, 2), (0, 1, 2)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchXPlane',
 }
 epbc_12 = {
-    'name' : 'u_tb',
+    'name' : 'tb',
     'region' : ['Top', 'Bottom'],
-    'dofs' : [(0, 1, 2), (0, 1, 2)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchZPlane',
 }
 epbc_13 = {
-    'name' : 'u_nf',
+    'name' : 'nf',
     'region' : ['Near', 'Far'],
-    'dofs' : [(0, 1, 2), (0, 1, 2)],
-    'match' : 'matchYPlane',
-}
-epbc_20 = {
-    'name' : 'p_rl',
-    'region' : ['Left', 'Right'],
-    'dofs' : [(8,), (8,)],
-    'match' : 'matchXPlane',
-}
-epbc_22 = {
-    'name' : 'p_tb',
-    'region' : ['Top', 'Bottom'],
-    'dofs' : [(8,), (8,)],
-    'match' : 'matchZPlane',
-}
-epbc_23 = {
-    'name' : 'p_nf',
-    'region' : ['Near', 'Far'],
-    'dofs' : [(8,), (8,)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchYPlane',
 }
 

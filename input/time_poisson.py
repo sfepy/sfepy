@@ -1,5 +1,5 @@
 ##
-# c: 05.02.2008, r: 18.02.2008
+# c: 05.02.2008, r: 25.02.2008
 fileName_mesh = 'database/simple.mesh'
 
 material_2 = {
@@ -21,21 +21,19 @@ variable_1 = {
     'name' : 't',
     'kind' : 'unknown field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'order' : 0,
 }
 variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'dual' : 't',
 }
 variable_10 = {
     'name' : 't0',
     'kind' : 'parameter field',
     'field' : 'temperature',
-    'dofs' : (30,),
+    'like' : 't',
 }
 
 region_1000 = {
@@ -54,14 +52,13 @@ region_4 = {
 ebc_1 = {
     'name' : 't1',
     'region' : 'Gamma_Left',
-    'dofs' : (30,),
+    'dofs' : {'t.0' : 2.0},
     'value' : 2.0,
 }
 ebc_2 = {
     'name' : 't2',
     'region' : 'Gamma_Right',
-    'dofs' : (30,),
-    'value' : -2.0,
+    'dofs' : {'t.0' : -2.0},
 }
 
 integral_1 = {

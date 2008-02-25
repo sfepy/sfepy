@@ -1,5 +1,5 @@
 # 14.02.2007
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 #!
 #! Poisson Equation
 #! ================
@@ -41,9 +41,9 @@ field_1 = {
 
 #! Variables
 #! ---------
-#! One field can be used to generate discrete DOFs of several variables.
-#! Here the unknown variable (the temperature) is called 't', it's asssociated
-#! DOF number is set to 30 --- this will be referred to
+#! One field can be used to generate discrete degrees of freedom (DOFs) of
+#! several variables. Here the unknown variable (the temperature) is called
+#! 't', it's asssociated DOF name is 't.0' --- this will be referred to
 #! in the Dirichlet boundary section (ebc). The corresponding test variable of
 #! the weak formulation is called 's'. Notice that the 'dual' item of a test
 #! variable must specify the unknown it corresponds to.
@@ -52,7 +52,6 @@ variable_1 = {
     'name' : 't',
     'kind' : 'unknown field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'order' : 0, # order in the global vector of unknowns
 }
 
@@ -60,7 +59,6 @@ variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'dual' : 't',
 }
 
@@ -87,15 +85,13 @@ region_4 = {
 ebc_1 = {
     'name' : 't1',
     'region' : 'Gamma_Left',
-    'dofs' : (30,),
-    'value' : 2.0,
+    'dofs' : {'t.0' : 2.0},
 }
 
 ebc_2 = {
     'name' : 't2',
     'region' : 'Gamma_Right',
-    'dofs' : (30,),
-    'value' : -2.0,
+    'dofs' : {'t.0' : -2.0},
 }
 
 #! Equations

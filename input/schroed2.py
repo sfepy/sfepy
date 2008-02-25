@@ -1,5 +1,5 @@
 ##
-# c: 22.02.2008, r: 22.02.2008
+# c: 22.02.2008, r: 25.02.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
@@ -79,34 +79,31 @@ variable_1 = {
     'name' : 'Psi',
     'kind' : 'unknown field',
     'field' : 'field_Psi',
-    'dofs' : (10,),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : 'field_Psi',
-    'dofs' : (10,),
     'dual' : 'Psi',
 }
 variable_3 = {
     'name' : 'V',
     'kind' : 'parameter field',
     'field' : 'field_Psi',
-    'dofs' : (10,),
+    'like' : 'Psi',
 }
 variable_4 = {
     'name' : 'n',
     'kind' : 'parameter field',
     'field' : 'field_Psi',
-    'dofs' : (10,),
+    'like' : 'Psi',
 }
 
 ebc_1 = {
     'name' : 'ZeroSurface',
     'region' : 'Surface',
-    'dofs' : (10,),
-    'value' : 0.0,
+    'dofs' : {'Psi.0' : 0.0},
 }
 
 equations = {

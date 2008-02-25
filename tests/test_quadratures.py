@@ -1,5 +1,5 @@
 # 13.11.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 fileName_mesh = 'database/tests/triquad.mesh'
 
 material_1 = {
@@ -45,28 +45,24 @@ variable_1 = {
     'name' : 't',
     'kind' : 'unknown field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'order' : 0,
 }
 variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
-    'dofs' : (30,),
     'dual' : 't',
 }
 
 ebc_1 = {
     'name' : 't1',
     'region' : 'Gamma_Top',
-    'dofs' : (30,),
-    'value' : 'ebcSin',
+    'dofs' : {'t.0' : 'ebcSin'},
 }
 ebc_2 = {
     'name' : 't2',
     'region' : 'Gamma_Bottom',
-    'dofs' : (30,),
-    'value' : -2.0,
+    'dofs' : {'t.0' : -2.0},
 }
 
 integral_1 = {

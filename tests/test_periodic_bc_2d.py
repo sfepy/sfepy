@@ -1,5 +1,5 @@
 # 01.06.2007, c
-# last revision: 18.02.2008
+# last revision: 25.02.2008
 
 fileName_mesh = 'database/tests/small2d.mesh'
 
@@ -51,54 +51,38 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '2_displacement',
-    'dofs' : (0, 1),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '2_displacement',
-    'dofs' : (0, 1),
     'dual' : 'u',
 }
 variable_3 = {
     'name' : 'p',
     'kind' : 'unknown field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'order' : 1,
 }
 variable_4 = {
     'name' : 'q',
     'kind' : 'test field',
     'field' : 'pressure',
-    'dofs' : (8,),
     'dual' : 'p',
 }
 
 ebcs = {}
 epbc_10 = {
-    'name' : 'u_rl',
+    'name' : 'rl',
     'region' : ['Left', 'Right'],
-    'dofs' : [(0, 1), (0, 1)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchYLine',
 }
 epbc_12 = {
-    'name' : 'u_tb',
+    'name' : 'tb',
     'region' : ['Top', 'Bottom'],
-    'dofs' : [(0, 1), (0, 1)],
-    'match' : 'matchXLine',
-}
-epbc_20 = {
-    'name' : 'p_rl',
-    'region' : ['Left', 'Right'],
-    'dofs' : [(8,), (8,)],
-    'match' : 'matchYLine',
-}
-epbc_22 = {
-    'name' : 'p_tb',
-    'region' : ['Top', 'Bottom'],
-    'dofs' : [(8,), (8,)],
+    'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'matchXLine',
 }
 

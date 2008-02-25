@@ -1,5 +1,5 @@
 # 05.10.2007, c
-# last revision: 20.02.2008
+# last revision: 25.02.2008
 fileName_mesh = 'database/phono/cube_sphere.mesh'
 
 # Whole domain $Y$.
@@ -51,47 +51,35 @@ variable_1 = {
     'name' : 'u',
     'kind' : 'unknown field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'order' : 0,
 }
 variable_2 = {
     'name' : 'v',
     'kind' : 'test field',
     'field' : '3_displacement',
-    'dofs' : (0, 1, 2),
     'dual' : 'u',
 }
 
 ebc_1 = {
     'name' : 'Fix',
     'region' : 'Bottom',
-    'dofs' : (0, 1, 2),
-    'value' : 0.0,
+    'dofs' : {'u.all' : 0.0},
 }
 ebc_2 = {
-    'name' : 'Load_xy',
+    'name' : 'Load',
     'region' : 'Top',
-    'dofs' : (0, 1),
-    'value' : 0.2,
-}
-ebc_3 = {
-    'name' : 'Load_z',
-    'region' : 'Top',
-    'dofs' : (2,),
-    'value' : 0.5,
+    'dofs' : {'u.[0,1]' : 0.2, 'u.2' : 0.5},
 }
 
 lcbc_1 = {
     'name' : 'rigid1',
     'region' : 'Y2',
-    'dofs' : (0, 1),
-    'kind' : 'rigid',
+    'dofs' : {'u.[0,1]' : 'rigid'},
 }
 ## lcbc_2 = {
 ##     'name' : 'rigid1',
 ##     'region' : 'Y3',
-##     'dofs' : (0, 1, 2),
-##     'kind' : 'rigid',
+##     'dofs' : {'u.all' : 'rigid'},
 ## }
 
 integral_1 = {
