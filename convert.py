@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import os, sys
 import pexpect
 
 import geom
@@ -10,8 +10,14 @@ except ImportError:
     tetgen_path = '/usr/bin/tetgen'
 
 def mesh():
-    meshgeometry="database/box.geo"
-    pexpect.run("gmsh -0 %s -o tmp/x.geo"%(meshgeometry))
+    if len( sys.argv ) == 3:
+        geomFileName = sys.argv[1]
+        vtkFileName = sys.argv[2]
+    else:
+        geomFileName = "database/box.geo"
+        vtkFileName = "tmp/t.1.vtk"
+
+    pexpect.run( "gmsh -0 %s -o tmp/x.geo" % geomFileName )
     g=geom.read_gmsh("tmp/x.geo")
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
@@ -19,12 +25,12 @@ def mesh():
                    tetgenpath = tetgen_path)
 
     m = Mesh.fromFile("tmp/t.1.node")
-    m.write("tmp/t.1.vtk", io = "auto")
-
+    m.write( vtkFileName, io = "auto" )
 
 try:
     os.makedirs( "tmp" )
 except OSError, e:
     if e.errno != 17: # [Errno 17] File exists
         raise
+
 mesh()
