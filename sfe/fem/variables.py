@@ -387,11 +387,10 @@ class Variables( Container ):
         return nods
 
     ##
-    # 23.11.2005, c
-    # 20.07.2006
-    # 08.08.2006
-    # 05.09.2007
+    # c: 23.11.2005, r: 26.02.2008
     def setupDofConns( self, makeVirtual = False ):
+        output( 'setting up dof connectivities...' )
+        tt = time.clock()
 
         for ii in self.state:
             var = self[ii]
@@ -404,6 +403,8 @@ class Variables( Container ):
             self.hasVirtualDCs = True
         else:
             self.hasVirtualDCs = False
+
+        output( '...done in %.2f s' % (time.clock() - tt) )
 
     ##
     # 08.08.2006, c

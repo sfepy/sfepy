@@ -32,11 +32,20 @@ def debug():
     pdb.set_trace()
 
 ##
-# 05.06.2006, c
+# c: 05.06.2006, r: 26.02.2008
+level = 0
 def output( *argc, **argv ):
-    format = 'sfe:' + ' %s' * len( argc )
+    global level
+    format = ' %s' * len( argc )
     msg =  format % argc
-    print msg
+
+    if msg.startswith( ' ...' ):
+        level -= 1
+
+    print 'sfe:' + ('  ' * level) + msg
+
+    if msg.endswith( '...' ):
+        level += 1
 
 ##
 # 06.04.2005, c

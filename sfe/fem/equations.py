@@ -158,9 +158,14 @@ class Equations( Container ):
         self.materials = materials
         self.variables = variables
 
+    ##
+    # c: ??, r: 26.02.2008
     def describeGeometry( self, geometries, variables, integrals ):
+        output( 'describing geometries...' )
+        tt = time.clock()
         for eq in self:
             eq.describeGeometry( geometries, variables, integrals )
+        output( '...done in %.2f s' % (time.clock() - tt) )
         
 
     ##
