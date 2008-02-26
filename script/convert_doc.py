@@ -1026,7 +1026,12 @@ Converts "filename" DocBook to other formats.
             mod_class_name = None
         if mod_name.endswith(".py"):
             mod_name = mod_name[:-3]
+
+        if sys.version < '2.5':
+            mod_path, mod_name = os.path.split( mod_name )
+            sys.path.append( mod_path )
         mod = __import__(mod_name)
+
         mod_class = getattr(mod, mod_class_name)
         converter = mod_class
     else:
