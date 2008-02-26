@@ -226,7 +226,7 @@ class Variables( Container ):
             self.vdi = self.di
 
     ##
-    # c: 16.10.2006, r: 25.02.2008
+    # c: 16.10.2006, r: 26.02.2008
     def _listBCOfVars( self, bcDefs, isEBC = True ):
 
         bcOfVars = dictFromKeysInit( (key for key in self.di.vnames), list )
@@ -237,11 +237,12 @@ class Variables( Container ):
 ##             print bc
             for dofs, val in bc.dofs.iteritems():
                 vname = dofs.split( '.' )[0]
-                vbc = copy( bc )
-                vbc.dofs = (dofs, val)
-##                 print '///', vbc
-                bcOfVars[vname].append( (key, vbc) )
-
+                if bcOfVars.has_key( vname ):
+                    vbc = copy( bc )
+                    vbc.dofs = (dofs, val)
+                    bcOfVars[vname].append( (key, vbc) )
+                else:
+                    output( 'BC: ignoring nonexistent dof(s) %s' % dofs )
         return bcOfVars
 
     ##
