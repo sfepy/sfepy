@@ -218,8 +218,9 @@ class LaTeXConverter(Converter):
     def convert_article(self, node):
         assert node.tag == "article"
         self.check_zero_tail(node.tail)
-        r = r"""\documentclass[12pt]{article}
+        r = r"""\documentclass[10pt]{article}
 \usepackage{amsmath}
+\usepackage[utf8]{inputenc}
 """
         for x in node:
             r += self.convert_node(x)
@@ -517,7 +518,7 @@ class LaTeXConverter(Converter):
     def convert_xref(self, node):
         assert node.tag == "xref"
         linkend = node.attrib["linkend"]
-        r = "\\ref{%s}" % linkend
+        r = r"(\ref{%s})" % linkend
         if node.tail:
             r += self.escape(node.tail)
         return r
@@ -539,40 +540,6 @@ class LaTeXConverter(Converter):
             return
         if tail.strip() != "":
             print "Unhandled tail: '%s'" % tail
-
-class SfePyDocConverter(LaTeXConverter):
-
-    def convert_article(self, node):
-        assert node.tag == "article"
-        self.check_zero_tail(node.tail)
-        r = r"""\documentclass[10pt]{article}
-\usepackage{amsmath}
-\usepackage[utf8]{inputenc}
-"""
-        for x in node:
-            r += self.convert_node(x)
-        r += """\n\\vfill\n\end{document}\n"""
-
-        return r
-
-    def convert_xref(self, node):
-        assert node.tag == "xref"
-        linkend = node.attrib["linkend"]
-        r = "(\\ref{%s})" % linkend
-        if node.tail:
-            r += self.escape(node.tail)
-        return r
-
-    def convert_command(self, node):
-        assert node.tag in ["command", "citetitle"]
-        r = r"{\small\verb|"
-        if node.text is not None:
-            r += node.text
-        r += "|}"
-        r += self.default_label(node)
-        if node.tail is not None:
-            r += self.escape(node.tail)
-        return r
 
 class XHTMLConverter(Converter):
     """
@@ -886,14 +853,16 @@ class XHTMLConverter(Converter):
             print "Unhandled tail: '%s'" % tail
 
 
-def convert_docbook_latex(infile, outfile):
+def convert_docbook_latex(infile, outfile, converter=None):
     print "Converting text..."
     tree = parse(infile)
     root = tree.getroot()
 
+    if converter is None:
+        converter = LaTeXConverter
+
     f = open(outfile, "w")
-    #f.write(LaTeXConverter(root).convert())
-    r = SfePyDocConverter(root).convert()
+    r = converter(root).convert()
     f.write(r.encode("utf-8"))
 
 def create_image(filename, eq, inline=False):
@@ -997,85 +966,6 @@ def convert_docbook_xhtml(infile, outfile):
         p.update(i)
     p.finish()
 
-def convert_docbook_xhtml_old(infile, outfile):
-    print "Converting text..."
-    tree = parse(infile)
-    root = tree.getroot()
-    eqlist = []
-
-    # convert nonrecursive things first:
-
-    for e in root.getiterator("m"):
-        e.tag = "div"
-        e.attrib["class"] = "inline-equation"
-        imgfile = "figures/eq%d.png" % (len(eqlist) + 1)
-        eqlist.append((e.text, imgfile))
-        img = Element("img")
-        img.attrib["src"] = imgfile
-        img.attrib["alt"] = e.text
-        e.text = ""
-        e.append(img)
-
-    for e in root.getiterator("eq"):
-        e.tag = "div"
-        if "id" in e.attrib:
-            e.attrib["class"] = "equation"
-        else:
-            e.attrib["class"] = "informal-equation"
-        imgfile = "figures/eq%d.png" % (len(eqlist) + 1)
-        eqlist.append((e.text, imgfile))
-        img = Element("img")
-        img.attrib["src"] = imgfile
-        img.attrib["alt"] = e.text
-        e.text = ""
-        e.append(img)
-
-    # convert everything else:
-    def convert(x, level, eqlist):
-        if x.tag == "article":
-            title = x.find("title")
-            html = Element("html")
-            head = SubElement(html, "head")
-            head.append(title)
-            style = SubElement(head, "style")
-            style.attrib["type"] = "text/css"
-            style.text = style_string
-            body = Element("body")
-            for y in x:
-                body.extend(convert(y, level, eqlist))
-            html.append(body) 
-            html.tail = "\n"
-            return html
-        elif x.tag == "section":
-            title = x.find("title")
-            h = Element("h%d" % level)
-            h.text = title.text
-            h.tail = title.tail
-            x.remove(title)
-            r = [h]
-            for y in x: r.extend(convert(y, level + 1, eqlist))
-            return r
-        elif x.tag == "p":
-            p = Element("p")
-            p.text = x.text
-            p.tail = x.tail
-            for y in x:
-                p.extend(convert(y, level + 1, eqlist))
-            return [p]
-        elif x.tag in ["a", "div", "alt", "graphic", "img"]:
-            return [x]
-        raise Exception("unknown tag %r" % x)
-
-    ElementTree(convert(root, 1, eqlist)).write(outfile)
-
-    p = progressbar("Creating images", maxval = len(eqlist))
-    i = 0
-    for eq, eq_file in eqlist:
-        create_image(eq_file, eq, False)
-        i += 1
-        p.update(i)
-    p.finish()
-
 def convert_tex_xml(infile, outfile):
     """
     Converts some easy things from tex to our simplified DocBook.
@@ -1124,10 +1014,23 @@ Converts "filename" DocBook to other formats.
     """
 
     parser = OptionParser(usage = usage)
-    parser.add_option( "-l", "--latex",
-                       action = "store_true", dest = "latex",
-                       default = False, help = "Converts to LaTeX" )
+    parser.add_option( "-c", "--converter",
+                       metavar="converter", help = "Use a custom converter" )
     options, args = parser.parse_args()
+    if options.converter:
+        a = options.converter.split(":")
+        mod_name = a[0]
+        if len(a) > 1:
+            mod_class_name = a[1]
+        else:
+            mod_class_name = None
+        if mod_name.endswith(".py"):
+            mod_name = mod_name[:-3]
+        mod = __import__(mod_name)
+        mod_class = getattr(mod, mod_class_name)
+        converter = mod_class
+    else:
+        converter = None
     if len(args) == 2:
         name, ext = os.path.splitext(args[1])
         if ext == ".xml":
@@ -1139,7 +1042,7 @@ Converts "filename" DocBook to other formats.
                 convert_tex_xml(args[0], args[1])
                 return
         if ext == ".tex":
-            convert_docbook_latex(args[0], args[1])
+            convert_docbook_latex(args[0], args[1], converter)
             return
         if ext == ".html":
             convert_docbook_xhtml(args[0], args[1])
