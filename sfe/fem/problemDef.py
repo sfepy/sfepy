@@ -289,11 +289,7 @@ class ProblemDefinition( Struct ):
         self.domain.mesh.write( fileName, io = 'auto', out = out )
 
     ##
-    # 19.09.2006, c
-    # 01.03.2007
-    # 09.03.2007
-    # 15.03.2007
-    # 04.06.2007
+    # c: 19.09.2006, r: 27.02.2008
     def saveEBC( self, fileName, force = True, default = 0.0 ):
         output( 'saving ebc...' )
         state = self.createStateVector()
@@ -306,42 +302,51 @@ class ProblemDefinition( Struct ):
             self.applyEBC( state, forceValues = vals )
         else:
             self.applyEBC( state )
-        self.saveStateToVTK( fileName, state, fillValue = default )
+        self.saveState( fileName, state, fillValue = default )
+        output( '...done' )
 
     ##
     # created:       30.03.2007
-    # last revision: 14.12.2007
+    # last revision: 27.02.2008
     def saveRegions( self, fileNameTrunk ):
 
+        output( 'saving regions...' )
         for region in self.domain.regions:
-            output( 'saving region %s...' % region.name )
+            output( region.name )
             aux = Mesh.fromRegion( region, self.domain.mesh, self.domain.ed,
                                    self.domain.fa )
-            aux.write( '%s_%s.mesh' % (fileNameTrunk, region.name) )
+            aux.write( '%s_%s.mesh' % (fileNameTrunk, region.name), io = 'auto' )
+        output( '...done' )
 
     ##
     # created:       02.01.2008
-    # last revision: 02.01.2008
+    # last revision: 27.02.2008
     def saveRegionFieldMeshes( self, fileNameTrunk ):
 
+        output( 'saving regions of fields...' )
         for field in self.fields:
             fregion = self.domain.regions[field.regionName]
-            output( 'saving regions of field %s:' % field.name )
+            output( 'field %s: saving regions...' % field.name )
 
             for region in self.domain.regions:
                 if not fregion.contains( region ): continue
-                output( '  saving region %s...' % region.name )
+                output( region.name )
                 aux = Mesh.fromRegionAndField( region, field )
                 aux.write( '%s_%s_%s.mesh' % (fileNameTrunk,
-                                              region.name, field.name) )
+                                              region.name, field.name),
+                           io = 'auto' )
+            output( '...done' )
+        output( '...done' )
 
     ##
-    # 03.07.2007, c
+    # c: 03.07.2007, r: 27.02.2008
     def saveFieldMeshes( self, fileNameTrunk ):
 
+        output( 'saving field meshes...' )
         for field in self.fields:
-            output( 'saving field %s...' % field.name )
+            output( field.name )
             field.writeMesh( fileNameTrunk + '_%s' )
+        output( '...done' )
 
     ##
     # c: 17.01.2008, r: 17.01.2008

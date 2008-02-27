@@ -147,7 +147,7 @@ class Field( Struct ):
         return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
 
     ##
-    # c: 19.07.2006, r: 15.01.2008
+    # c: 19.07.2006, r: 27.02.2008
     def writeMesh( self, nameTemplate, fieldName = None ):
         """Extra nodes are written as zero-size simplices (= points)."""
         if fieldName is None:
@@ -175,7 +175,7 @@ class Field( Struct ):
                              self.aps.coors, conns, matIds, descs )
 ##         print tmp
 ##         pause()
-        tmp.write()
+        tmp.write( io = 'auto' )
 
     ##
     # c: 20.07.2006, r: 15.01.2008

@@ -17,7 +17,7 @@ def getStandardKeywords():
     return copy( _required ), copy( _other )
 
 ##
-# c: 03.07.2007, r: 02.01.2008
+# c: 03.07.2007, r: 27.02.2008
 def saveOnly( conf, saveNames, problem = None ):
     """Save information available prior to setting equations and
     solving them."""
@@ -42,8 +42,8 @@ def saveOnly( conf, saveNames, problem = None ):
         except:
             ts = None
         try:
-            problem.variables.equationMapping( conf.ebc, conf.epbc,
-                                               problem.regions, ts,
+            problem.variables.equationMapping( conf.ebcs, conf.epbcs,
+                                               problem.domain.regions, ts,
                                                conf.funmod )
         except Exception, e:
             output( 'cannot make equation mapping!' )
