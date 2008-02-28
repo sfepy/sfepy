@@ -601,15 +601,38 @@ class Variables( Container ):
             vec[i0+eqMap.master] = vec[i0+eqMap.slave]
 
     ##
-    # 12.04.2007, c
-    def stripStateVector( self, vec ):
+    # c: 12.04.2007, r: 28.02.2008
+    def stripStateVector( self, vec, followEPBC = True ):
+        """
+        Strip a full vector by removing EBC dofs. If 'followEPBC' is True,
+        values of EPBC master dofs are not simply thrown away, but added to the
+        corresponding slave dofs, just like when assembling.
+        """
         svec = nm.empty( (self.adi.ptr[-1],), nm.float64 )
         for varName in self.bcOfVars.iterkeys():
             eqMap = self[varName].eqMap
             i0 = self.di.indx[varName].start
             ii = i0 + eqMap.eqi
 ##            print ii.shape, delta[adi.indx[varName]].shape
-            svec[self.adi.indx[varName]] = vec[ii]
+            aindx = self.adi.indx[varName]
+            svec[aindx] = vec[ii]
+
+            if followEPBC:
+                """ In [10]: a
+                    Out[10]: array([0, 1, 2, 3, 4])
+
+                    In [11]: a[[0,0,0,1,1]] += 1
+
+                    In [12]: a
+                    Out[12]: array([1, 2, 2, 3, 4])
+                    """
+                # svec[aindx.start + eqMap.eq[eqMap.slave]] += vec[eqMap.master]
+                for ii, im in enumerate( eqMap.master ):
+                    i1 = aindx.start + eqMap.eq[eqMap.slave[ii]]
+                    if i1 < 0: continue
+                    svec[i1] += vec[im]
+#                    print ii, i1, im, eqMap.slave[ii], svec[i1], vec[im]
+
         return svec
 
     ##
