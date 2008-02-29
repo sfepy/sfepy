@@ -96,10 +96,10 @@ def getMinVertexDistanceNaive( coor ):
 
 usage = """%prog [options] fileNameIn fileNameOut
 
-The program scales a periodic input mesh (a unit square or cube) in fileNameIn
+The program scales a periodic input mesh (a rectangle or box) in fileNameIn
 by a scale factor and generates a new mesh by repeating the scaled original
 mesh in a regular grid (scale x scale [x scale]), producing again a periodic
-unit square or cube mesh."""
+rectagle or box mesh."""
 
 help = {
     'scale' : 'scale factor [default: %default]',
@@ -110,10 +110,7 @@ help = {
 }
 
 ##
-# 23.05.2007, c
-# 24.05.2007
-# 25.05.2007
-# 28.05.2007
+# c: 23.05.2007, r: 29.02.2008
 def main():
 
     parser = OptionParser( usage = usage, version = "%prog 42" )
@@ -155,9 +152,8 @@ def main():
     scale = nm.array( options.scale, dtype = nm.float64 )
 
     # Normalize original coordinates.
-    coor0 = (meshIn.nod0[:,:-1] - centre0) / (mscale[0])
+    coor0 = (meshIn.nod0[:,:-1] - centre0) / (mscale)
     dim = meshIn.dim
-
     if not options.nomvd:
         mes0 = getMinEdgeSize( coor0, meshIn.conns )
         mvd0 = getMinVertexDistance( coor0, mes0 )
@@ -200,10 +196,10 @@ def main():
         print 'non-periodic input mesh detection skipped!'
 
     print 'renormalizing...'
-    coor = coor / scale
+    coor = (coor * mscale) / scale
     print 'saving...'
     meshOut = makeMesh( coor, conns, meshIn )
-    meshOut.write( fileNameOut )
+    meshOut.write( fileNameOut, io = 'auto' )
     print 'done.'
     
 if __name__ == '__main__':
