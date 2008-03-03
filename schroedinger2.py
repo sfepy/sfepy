@@ -32,7 +32,7 @@ import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
 from sfe.solvers.generic import getStandardKeywords
-from solve import solve
+from sfe.solvers import Solver
 
 ##
 # c: 22.02.2008, r: 22.02.2008
@@ -61,8 +61,8 @@ def wrapFunction( function, args ):
     return ncalls, times, function_wrapper
 
 ##
-# c: 22.02.2008, r: 22.02.2008
-def iterate( vecVHXC, pb, conf, nEigs, mtxB, nElectron = 5 ):
+# c: 22.02.2008, r: 03.03.2008
+def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
     import rdirac
 
     pb.updateMaterials( extraMatArgs = {'matV' : {'vhxc' : vecVHXC}} )
@@ -77,13 +77,7 @@ def iterate( vecVHXC, pb, conf, nEigs, mtxB, nElectron = 5 ):
 
 
     print 'computing resonance frequencies...'
-    if nEigs == mtxA.shape[0]:
-        tt = [0]
-        eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-        print 'done in %.2f s' % tt[0]
-    else:
-        eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
-    print eigs
+    eigs, mtxSPhi = eigSolver( mtxA, mtxB, conf.options.nEigs )
 
     vecPhi = nm.zeros_like( vecVHXC )
     vecN = nm.zeros_like( vecVHXC )
@@ -103,7 +97,7 @@ def iterate( vecVHXC, pb, conf, nEigs, mtxB, nElectron = 5 ):
     return eigs, mtxSPhi, vecN, vecVH, vecVXC
 
 ##
-# c: 01.02.2008, r: 22.02.2008
+# c: 01.02.2008, r: 03.03.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -138,12 +132,14 @@ def solveEigenProblem( conf, options ):
 ##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
 
+    eigConf = pb.getSolverConf( conf.options.eigenSolver )
+    eigSolver = Solver.anyFromConf( eigConf )
     vecVHXC = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
     ncalls, times, nonlinV = wrapFunction( iterate,
-                                           (pb, conf, nEigs, mtxB) )
+                                           (pb, conf, eigSolver, nEigs, mtxB) )
 
     vecVHXC = broyden3( nonlinV, vecVHXC, verbose = True )
-    out = iterate( vecVHXC, pb, conf, nEigs, mtxB )
+    out = iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB )
     eigs, mtxSPhi, vecN, vecVH, vecVXC = out
 
     coor = pb.domain.getMeshCoors()

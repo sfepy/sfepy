@@ -1,5 +1,5 @@
 ##
-# c: 22.02.2008, r: 25.02.2008
+# c: 22.02.2008, r: 03.03.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
@@ -9,6 +9,7 @@ options = {
     'saveEigVectors' : None,
     'squared' : False,
     'nEigs' : 10,
+    'eigenSolver' : 'eigen1',
 }
 
 if fileName_mesh.find( 'cube_' ) >= 0:
@@ -144,6 +145,18 @@ solver_1 = {
     'isPlot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+}
+
+solver_2 = {
+    'name' : 'eigen1',
+    'kind' : 'eig.pysparse',
+
+    'tau' : -10.0,
+    'epsA' : 1e-5,
+    'iMax' : 150,
+    'method' : 'qmrs',
+    'verbosity' : 0,
+    'strategy' : 1,
 }
 
 fe = {

@@ -79,3 +79,21 @@ class OptimizationSolver( Solver ):
                   status = None, objArgs = None ):
         print 'called an abstract OptimizationSolver instance!'
         raise ValueError
+
+##
+# c: 03.03.2008, r: 03.03.2008
+class EigenvalueSolver( Solver ):
+    ##
+    # c: 03.03.2008, r: 03.03.2008
+    def __init__( self, conf, mtxA = None, mtxB = None, nEigs = None,
+                  eigenvectors = None, status = None ):
+        Solver.__init__( self, conf = conf, mtxA = mtxA, mtxB = mtxB,
+                         nEigs = nEigs, eigenvectors = eigenvectors,
+                         status = status )
+                         
+    ##
+    # c: 03.03.2008, r: 03.03.2008
+    def __call__( self, mtxA, mtxB = None, nEigs = None,
+                  eigenvectors = None, status = None, conf = None ):
+        print 'called an abstract EigenvalueSolver instance!'
+        raise ValueError

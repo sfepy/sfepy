@@ -29,9 +29,10 @@ import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
 from sfe.solvers.generic import getStandardKeywords
+from sfe.solvers import Solver
 
 ##
-# c: 01.02.2008, r: 20.02.2008
+# c: 01.02.2008, r: 03.03.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -73,15 +74,8 @@ def solveEigenProblem( conf, options ):
 ##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
     print 'computing resonance frequencies...'
-    #tt = [0]
-    #eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-    #print 'done in %.2f s' % tt[0]
-    if nEigs == mtxA.shape[0]:
-        tt = [0]
-        eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-        print 'done in %.2f s' % tt[0]
-    else:
-        eigs, mtxSPhi = solve(mtxA, mtxB, conf.options.nEigs)
+    eig = Solver.anyFromConf( pb.getSolverConf( conf.options.eigenSolver ) )
+    eigs, mtxSPhi = eig( mtxA, mtxB, conf.options.nEigs )
     print eigs
     print "relative values:"
     print 1.5*eigs/eigs[0]

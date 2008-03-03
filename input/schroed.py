@@ -1,5 +1,5 @@
 ##
-# c: 01.02.2008, r: 25.02.2008
+# c: 01.02.2008, r: 03.03.2008
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
@@ -9,6 +9,7 @@ options = {
     'saveEigVectors' : None,
     'squared' : False,
     'nEigs' : 10,
+    'eigenSolver' : 'eigen1',
 }
 
 if fileName_mesh.find( 'cube_' ) >= 0:
@@ -103,6 +104,18 @@ equations = {
     'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
                + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
     'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
+}
+
+solver_2 = {
+    'name' : 'eigen1',
+    'kind' : 'eig.pysparse',
+
+    'tau' : -10.0,
+    'epsA' : 1e-5,
+    'iMax' : 150,
+    'method' : 'qmrs',
+    'verbosity' : 0,
+    'strategy' : 1,
 }
 
 fe = {
