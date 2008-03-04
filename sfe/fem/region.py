@@ -317,13 +317,13 @@ class Region( Struct ):
         return tmp
 
     ##
-    # 15.06.2006, c
+    # c: 15.06.2006, r: 04.03.2008
     def subE( self, other ):
         tmp = self.lightCopy( 'op',
                               _join( self.parseDef, '-e', other.parseDef ) )
         for ig in self.igs:
-            tmp.igs.append( ig )
             if ig not in other.igs:
+                tmp.igs.append( ig )
                 tmp.cells[ig] = self.cells[ig].copy()
                 continue
             
