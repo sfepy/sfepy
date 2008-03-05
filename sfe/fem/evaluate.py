@@ -175,7 +175,7 @@ def evalTermOP( state, termDesc, problem, **kwargs ):
                      chunkSize = problem.domain.shape.nEl, **kwargs )
 
 ##
-# c: 03.01.2006, r: 15.01.2008
+# c: 03.01.2006, r: 05.03.2008
 def evalTerm( state, termDesc, conf, domain, variables, materials,
               funmod = None, chunkSize = 1000, termPrefixes = None,
               caches = None, retCaches = False,
@@ -244,6 +244,20 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
                 for aux, iels, status in term( chunkSize = chunkSize,
                                                **args ):
                     val += term.sign * aux
+            retVal = val
+
+    elif term.itype == 'di':
+        val = None
+
+        for term in equation.terms:
+            args = buildArgs( term, variables, materials, **kwargs )
+            for ig in term.iterGroups():
+                for aux, iels, status in term( chunkSize = chunkSize,
+                                               **args ):
+                    if val is None:
+                        val = term.sign * aux
+                    else:
+                        val += term.sign * aux
             retVal = val
 
     elif (term.itype == 'de') or (term.itype == 'dq'):
