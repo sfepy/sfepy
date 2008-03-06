@@ -21,13 +21,14 @@ class Umfpack( LinearSolver ):
     name = 'ls.umfpack'
 
     ##
-    # 10.10.2007, c
+    # c: 10.10.2007, r: 06.03.2008
     def __init__( self, conf, **kwargs ):
         LinearSolver.__init__( self, conf, **kwargs )
         self.umfpack = um.UmfpackContext()
 
         if self._presolve() and hasattr( self, 'mtx' ):
-            self.umfpack.numeric( self.mtx )
+            if self.mtx is not None:
+                self.umfpack.numeric( self.mtx )
 
     ##
     # 02.12.2005, c
@@ -38,10 +39,6 @@ class Umfpack( LinearSolver ):
         conf = getDefault( conf, self.conf )
         mtx = getDefault( mtx, self.mtx )
         status = getDefault( status, self.status )
-
-##    tt = time.clock()
-##    vecDX = sp.solve( mtxA, vecR )
-##    print "solve = ", time.clock() - tt
 
 ##     umfpack.control[um.UMFPACK_PRL] = 4
 ##     umfpack.control[um.UMFPACK_IRSTEP] = 10
@@ -56,12 +53,15 @@ class Umfpack( LinearSolver ):
         return sol
 
     ##
-    # 10.10.2007, c
+    # c: 10.10.2007, r: 06.03.2008
     def _presolve( self ):
-        try:
-            return self.conf.presolve
-        except:
-            return False
+        if hasattr( self, 'presolve' ):
+            return self.presolve
+        else:
+            try:
+                return self.conf.presolve
+            except:
+                return False
 
 ##
 # c: 22.02.2008
