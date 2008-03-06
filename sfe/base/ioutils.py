@@ -95,9 +95,7 @@ _rubbish = ''.join( [ch for ch in set( _all ) - set( _letters )] )
 _tr = string.maketrans( _rubbish, '_' * len( _rubbish ) )
 
 ##
-# 26.09.2006, c
-# 27.09.2006
-# 18.06.2007
+# c: 26.09.2006, r: 06.03.2008
 def writeHDF5( fileName, mesh = None, ts = None, out = None ):
 
     if mesh is not None:
@@ -149,16 +147,16 @@ def writeHDF5( fileName, mesh = None, ts = None, out = None ):
         nameDict = {}
         for key, val in out.iteritems():
 #            print key
-            if val.dofTypes is None:
-                dofTypes = (-1,)
+            if val.dofs is None:
+                dofs = (-1,)
             else:
-                dofTypes = val.dofTypes
+                dofs = val.dofs
 
             groupName = '_' + key.translate( _tr )
             dataGroup = fd.createGroup( stepGroup, groupName, '%s data' % key )
             fd.createArray( dataGroup, 'data', val.data, 'data' )
             fd.createArray( dataGroup, 'mode', val.mode, 'mode' )
-            fd.createArray( dataGroup, 'dofTypes', dofTypes, 'dofTypes' )
+            fd.createArray( dataGroup, 'dofs', dofs, 'dofs' )
             fd.createArray( dataGroup, 'name', val.name, 'object name' )
             fd.createArray( dataGroup, 'dname', key, 'data name' )
             nameDict[key] = groupName
@@ -224,7 +222,7 @@ def _getStepGroup( fileName, step ):
     return fd, stepGroup
             
 ##
-# 26.09.2006, c
+# c: 26.09.2006, r: 06.03.2008
 def readDataHDF5( fileName, step ):
     fd, stepGroup = _getStepGroup( fileName, step )
     if fd is None: return None
@@ -235,9 +233,9 @@ def readDataHDF5( fileName, step ):
         out[key] = Struct( name = dataGroup.name.read(),
                            mode = dataGroup.mode.read(),
                            data = dataGroup.data.read(),
-                           dofTypes = tuple( dataGroup.dofTypes.read() ) )
-        if out[key].dofTypes == (-1,):
-            out[key].dofTypes = None
+                           dofs = tuple( dataGroup.dofs.read() ) )
+        if out[key].dofs == (-1,):
+            out[key].dofs = None
             
     fd.close()
 

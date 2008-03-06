@@ -7,12 +7,11 @@ import init_sfe
 from sfe.base.base import *
 from sfe.fem.mesh import Mesh
 from sfe.solvers.ts import TimeStepper
-from sfe.base.ioutils import readTimeStepperHDF5, readDataHDF5, writeVTK,\
+from sfe.base.ioutils import readTimeStepperHDF5, readDataHDF5,\
      getTrunk, readDataHeaderHDF5, readTimeHistoryHDF5, writeDictHDF5
 
 ##
-# 26.09.2006, c 
-# 17.07.2007
+# c: 26.09.2006, r: 06.03.2008
 def dumpToVTK( fileName, options ):
     output( 'dumping to VTK...' )
     
@@ -32,10 +31,9 @@ def dumpToVTK( fileName, options ):
         output( format % (step, ts.nStep) )
         out = readDataHDF5( fileName, step )
         if out is None: break
-        
-        fd = open( ofnTrunk + suffix % step, 'w' )
-        writeVTK( fd, mesh, out )
-        fd.close()
+        mesh.write( ofnTrunk + suffix % step, io = 'auto', out = out )
+
+    output( '...done' )
 
 ##
 # 26.09.2006, c

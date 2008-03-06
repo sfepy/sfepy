@@ -698,15 +698,20 @@ class Variables( Container ):
 
     ##
     # 26.07.2007, c
-    def getIndx( self, varName, stripped = False ):
-        if self[varName].isState():
-            if stripped:
-                return self.adi.indx[varName]
+    def getIndx( self, varName, stripped = False, allowDual = False ):
+        var = self[varName]
+
+        if not var.isState():
+            if allowDual and var.isVirtual():
+                varName = var.primaryVarName
             else:
-                return self.di.indx[varName]
+                output( '%s is not a state part' % varName )
+                raise IndexError
+        
+        if stripped:
+            return self.adi.indx[varName]
         else:
-            output( '%s is not a state part' % varName )
-            raise IndexError
+            return self.di.indx[varName]
 
     ##
     # 26.07.2006, c
@@ -743,22 +748,35 @@ class Variables( Container ):
 
     ##
     # Works for vertex data only.
-    # c: 15.12.2005, r: 25.02.2008
-    def stateToOutput( self, vec, fillValue = None ):
+    # c: 15.12.2005, r: 06.03.2008
+    def stateToOutput( self, vec, fillValue = None, varNames = None ):
 
         nNod, di = self.domain.shape.nNod, self.di
 
+        if varNames is None:
+            varNames = {}
+            for name in di.vnames:
+                varNames[name] = (False, name)
+
         out = {}
         for key, indx in di.indx.iteritems():
+            if key not in varNames.keys(): continue
+            isPart, name = varNames[key]
+            
             dpn = di.dpn[di.vnames.index( key )]
-            aux = nm.reshape( vec[indx], (di.nDofs[key] / dpn, dpn) )
+
+            if isPart:
+                aux = nm.reshape( vec, (di.nDofs[key] / dpn, dpn) )
+            else:
+                aux = nm.reshape( vec[indx], (di.nDofs[key] / dpn, dpn) )
+
 #            print key, aux.shape
             ext = self[key].extendData( aux, nNod, fillValue )
 #            print ext.shape
 #            pause()
-            out[key] = Struct( name = 'output_data',
-                               mode = 'vertex', data = ext,
-                               dofs = self[key].dofs )
+            out[name] = Struct( name = 'output_data',
+                                mode = 'vertex', data = ext,
+                                dofs = self[key].dofs )
         return out
 
     ##

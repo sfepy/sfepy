@@ -259,10 +259,9 @@ class ProblemDefinition( Struct ):
         self.variables.updateVec( vec, delta )
         
     ##
-    # 18.04.2006, c
-    # 25.07.2006
-    def stateToOutput( self, vec, fillValue = None ):
-        return self.variables.stateToOutput( vec, fillValue )
+    # c: 18.04.2006, r: 06.03.2008
+    def stateToOutput( self, vec, **kwargs ):
+        return self.variables.stateToOutput( vec, **kwargs )
 
     ##
     # 26.07.2006, c
@@ -283,9 +282,9 @@ class ProblemDefinition( Struct ):
         self.equations.advance( ts )
 
     ##
-    # c: 01.03.2007, r: 08.02.2008
+    # c: 01.03.2007, r: 06.03.2008
     def saveState( self, fileName, state, fillValue = None ):
-        out = self.stateToOutput( state, fillValue )
+        out = self.stateToOutput( state, fillValue = fillValue )
         self.domain.mesh.write( fileName, io = 'auto', out = out )
 
     ##
