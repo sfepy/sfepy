@@ -260,8 +260,8 @@ class ProblemDefinition( Struct ):
         
     ##
     # c: 18.04.2006, r: 06.03.2008
-    def stateToOutput( self, vec, **kwargs ):
-        return self.variables.stateToOutput( vec, **kwargs )
+    def stateToOutput( self, vec, fillValue = None, varInfo = None ):
+        return self.variables.stateToOutput( vec, fillValue, varInfo )
 
     ##
     # 26.07.2006, c

@@ -749,19 +749,19 @@ class Variables( Container ):
     ##
     # Works for vertex data only.
     # c: 15.12.2005, r: 06.03.2008
-    def stateToOutput( self, vec, fillValue = None, varNames = None ):
+    def stateToOutput( self, vec, fillValue = None, varInfo = None ):
 
         nNod, di = self.domain.shape.nNod, self.di
 
-        if varNames is None:
-            varNames = {}
+        if varInfo is None:
+            varInfo = {}
             for name in di.vnames:
-                varNames[name] = (False, name)
+                varInfo[name] = (False, name)
 
         out = {}
         for key, indx in di.indx.iteritems():
-            if key not in varNames.keys(): continue
-            isPart, name = varNames[key]
+            if key not in varInfo.keys(): continue
+            isPart, name = varInfo[key]
             
             dpn = di.dpn[di.vnames.index( key )]
 
