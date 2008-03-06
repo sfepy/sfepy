@@ -14,8 +14,7 @@ class TestInput( TestCommon ):
     ##
     # c: 05.06.2007, r: 19.02.2008
     def fromConf( conf, options, cls = None ):
-        from sfe.base.conf import ProblemConf
-        from sfe.solvers.generic import getStandardKeywords
+        from sfe.base.conf import ProblemConf, getStandardKeywords
 
         required, other = getStandardKeywords()
         testConf = ProblemConf.fromFile( conf.inputName, required, other )

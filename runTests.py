@@ -26,8 +26,8 @@ import os.path as op
 from optparse import OptionParser
 
 import init_sfe
-from sfe.base.conf import ProblemConf
-from sfe.solvers.generic import getStandardKeywords
+from sfe.base.conf import ProblemConf, getStandardKeywords
+
 ##
 # 05.06.2007, c
 class OutputFilter( object ):

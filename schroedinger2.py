@@ -25,13 +25,12 @@ from scipy.optimize.nonlin import excitingmixing
 
 import init_sfe
 from sfe.base.base import *
-from sfe.base.conf import ProblemConf
+from sfe.base.conf import ProblemConf, getStandardKeywords
 from sfe.base.la import eig
 from sfe.fem.evaluate import evalTermOP
 import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
 from sfe.homogenization.phono import processOptions
-from sfe.solvers.generic import getStandardKeywords
 from sfe.solvers import Solver
 
 ##

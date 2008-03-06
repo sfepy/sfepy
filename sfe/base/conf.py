@@ -3,8 +3,21 @@ import re
 import types
 import sys
 
-from base import Struct, IndexedStruct, dictToStruct, pause, output
+from base import Struct, IndexedStruct, dictToStruct, pause, output, copy
 from reader import Reader
+
+_required = ['fileName_mesh', 'field_[0-9]+|fields',
+             'ebc_[0-9]+|ebcs', 'fe', 'equations',
+             'region_[0-9]+|regions', 'variable_[0-9]+|variables',
+             'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
+             'solver_[0-9]+|solvers']
+_other = ['functions', 'modules', 'epbc_[0-9]+|epbcs',
+          'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs', 'options']
+
+##
+# c: 19.02.2008, r: 19.02.2008
+def getStandardKeywords():
+    return copy( _required ), copy( _other )
 
 ##
 # c: 20.06.2007, r: 18.02.2008

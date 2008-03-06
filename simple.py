@@ -5,8 +5,8 @@ from optparse import OptionParser
 
 import init_sfe
 from sfe.base.base import *
-from sfe.base.conf import ProblemConf
-from sfe.solvers.generic import solveDirect, getStandardKeywords
+from sfe.base.conf import ProblemConf, getStandardKeywords
+from sfe.solvers.generic import solveDirect
 
 ##
 # 26.03.2007, c
