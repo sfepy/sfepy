@@ -6,7 +6,10 @@ if scipy.version.version == "0.6.0":
     import scipy.linsolve.umfpack as um
 else:
     try:
-        import scipy.splinalg.dsolve.umfpack as um
+        if scipy.version.version < '0.7.0.dev3998':
+            import scipy.splinalg.dsolve.umfpack as um
+        else:
+            import scipy.sparse.linalg.dsolve.umfpack as um
     except ImportError:
         import scikits.umfpack as um
 
