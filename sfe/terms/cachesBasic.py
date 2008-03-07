@@ -1,3 +1,4 @@
+import numpy as nm
 import extmods.terms as terms
 from cache import DataCache
 
@@ -102,7 +103,7 @@ class CauchyStrainDataCache( DataCache ):
         DataCache.initData( self, key, ckey, shape )
 
     ##
-    # c: 27.02.2007, r: 15.01.2008
+    # c: 27.02.2007, r: 07.03.2008
     def update( self, key, groupIndx, ih, **kwargs ):
         ckey = self.gToC( groupIndx )
         if not self.valid['strain'][ckey]:
@@ -112,6 +113,14 @@ class CauchyStrainDataCache( DataCache ):
             ap, vg = state.getApproximation( groupIndx, 'Volume' )
             self.function( self.data[key][ckey][ih], vec, indx.start,
                            vg, ap.econn )
+            isFinite = nm.isfinite( self.data[key][ckey][ih] )
+            if not nm.alltrue( isFinite ):
+                ii = nm.where( isFinite == False )
+                print ii
+                print self.data[key][ckey][ih][ii]
+                print 'infinite strains in', ckey
+#                from sfe.base.base import debug; debug()
+                raise ValueError
             self.valid['strain'][ckey] = True
         if key == 'dstrain':
             if self.step > 0:
