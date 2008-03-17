@@ -317,7 +317,7 @@ class Region( Struct ):
         return tmp
 
     ##
-    # c: 15.06.2006, r: 04.03.2008
+    # c: 15.06.2006, r: 17.03.2008
     def subE( self, other ):
         tmp = self.lightCopy( 'op',
                               _join( self.parseDef, '-e', other.parseDef ) )
@@ -327,7 +327,9 @@ class Region( Struct ):
                 tmp.cells[ig] = self.cells[ig].copy()
                 continue
             
-            tmp.cells[ig] = nm.setdiff1d( self.cells[ig], other.cells[ig] )
+            aux = nm.setdiff1d( self.cells[ig], other.cells[ig] )
+            if not len( aux ): continue
+            tmp.cells[ig] = aux
 
         tmp.updateVertices()
         return tmp
@@ -454,7 +456,7 @@ class Region( Struct ):
             return False
 
     ##
-    # c: 16.07.2007, r: 15.01.2008
+    # c: 16.07.2007, r: 17.03.2008
     def updateGeometryInfo( self, field, key ):
         """
         key: iname, aregionName, ig
@@ -470,9 +472,11 @@ class Region( Struct ):
         gKey = (iname, 'Volume', self.name, ap.name)
 
         vg = geometries[gKey]
-        volume = nm.squeeze( vg.variable( 2 ) );
+
+        volume = vg.variable( 2 )
+        volume.shape = (nm.prod( volume.shape ),)
+
         val[key] = nm.sum( volume[self.cells[ig]] )
-                
         self.volume[field.name] = val
 
     ##
