@@ -1,5 +1,5 @@
 # 14.02.2007
-# last revision: 25.02.2008
+# last revision: 20.03.2008
 #!
 #! Poisson Equation
 #! ================
@@ -157,7 +157,7 @@ solver_1 = {
 #! Options
 #! -------
 #! Use them for anything you like... Here we show how to tell which solvers
-#! should be used - reference solver by their name.
+#! should be used - reference solvers by their names.
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
@@ -166,6 +166,9 @@ options = {
 
 #! FE assembling parameters
 #! ------------------------
+#! 'chunkSize' determines maximum number of elements to assemble in one C
+#! function call. Higher values mean faster assembling, but also more memory
+#! usage.
 fe = {
     'chunkSize' : 1000
 }
