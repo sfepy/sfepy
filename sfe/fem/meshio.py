@@ -1,5 +1,5 @@
 from sfe.base.base import *
-from sfe.base.ioutils import readToken, readArray, readList
+from sfe.base.ioutils import skipReadLine, readToken, readArray, readList
 import sfe.base.la as la
 from sfe.base.progressbar import MyBar
 import os.path as op
@@ -7,7 +7,8 @@ import os.path as op
 supportedFormats = {
     '.mesh' : 'medit',
     '.vtk'  : 'vtk',
-    '.node'  : 'tetgen',
+    '.node' : 'tetgen',
+    '.txt'  : 'comsol',
 }
 
 vtkHeader = r"""# vtk DataFile Version 2.0
@@ -610,6 +611,113 @@ class TetgenMeshIO( MeshIO ):
             if verbose: up.update(l[0])
         return els, regions
     
+##
+# c: 20.03.2008
+class ComsolMeshIO( MeshIO ):
+    format = 'comsol'
+
+    ##
+    # c: 20.03.2008, r: 20.03.2008
+    def _readCommentedInt( self ):
+        return int( skipReadLine( self.fd ).split( '#' )[0] )
+
+    ##
+    # c: 20.03.2008, r: 20.03.2008
+    def read( self, mesh, **kwargs ):
+
+        self.fd = fd = open( self.fileName, 'r' )
+        mode = 'header'
+
+        nod = conns = desc = None
+        while 1:
+            if mode == 'header':
+                line = skipReadLine( fd )
+                
+                nTags = self._readCommentedInt()
+                for ii in xrange( nTags ):
+                    skipReadLine( fd )
+                nTypes = self._readCommentedInt()
+                for ii in xrange( nTypes ):
+                    skipReadLine( fd )
+
+                skipReadLine( fd )
+                assert skipReadLine( fd ).split()[1] == 'Mesh'
+                skipReadLine( fd )
+                dim = self._readCommentedInt()
+                assert (dim == 2) or (dim == 3)
+                nNod = self._readCommentedInt()
+                i0 = self._readCommentedInt()
+                mode = 'points'
+
+            elif mode == 'points':
+                nod = readArray( fd, nNod, dim, nm.float64 )
+                mode = 'cells'
+
+            elif mode == 'cells':
+
+                nTypes = self._readCommentedInt()
+                conns = []
+                descs = []
+                matIds = []
+                for it in xrange( nTypes ):
+                    tName = skipReadLine( fd ).split()[1]
+                    nEP = self._readCommentedInt()
+                    nEl = self._readCommentedInt()
+                    if dim == 2:
+                        aux = readArray( fd, nEl, nEP, nm.int32 )
+                        if tName == 'tri':
+                            conns.append( aux )
+                            descs.append( '2_3' )
+                            isConn = True
+                        else:
+                            isConn = False
+                    else:
+                        raise NotImplementedError
+
+                    # Skip parameters.
+                    nPV = self._readCommentedInt()
+                    nPar = self._readCommentedInt()
+                    for ii in xrange( nPar ):
+                        skipReadLine( fd )
+
+                    nDomain = self._readCommentedInt()
+                    assert nDomain == nEl
+                    if isConn:
+                        matId = readArray( fd, nDomain, 1, nm.int32 )
+                        matIds.append( matId )
+                    else:
+                        for ii in xrange( nDomain ):
+                            skipReadLine( fd )
+
+                    # Skip up/down pairs.
+                    nUD = self._readCommentedInt()
+                    for ii in xrange( nUD ):
+                        skipReadLine( fd )
+                break
+
+        nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
+                              1 )
+        nod = nm.ascontiguousarray( nod )
+
+        dim = nod.shape[1] - 1
+
+        conns2 = []
+        for ii, conn in enumerate( conns ):
+            conns2.append( nm.c_[conn, matIds[ii]] )
+
+        connsIn, matIds = sortByMatID( conns2 )
+        conns, matIds, descs = splitByMatId( connsIn, matIds, descs )
+        mesh._setData( nod, conns, matIds, descs )
+
+#        mesh.write( 'pokus.mesh', io = 'auto' )
+        
+        self.fd = None
+        return mesh
+
+    ##
+    # c: 20.03.2008, r: 20.03.2008
+    def write( self, fileName, mesh, out = None ):
+        raise NotImplementedError
 
 ##
 # c: 05.02.2008, r: 05.02.2008

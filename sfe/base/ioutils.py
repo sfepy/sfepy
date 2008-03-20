@@ -15,6 +15,20 @@ def getTrunk( fileName ):
     return op.splitext( op.basename( fileName ) )[0]
 
 ##
+# c: 20.03.2008, r: 20.03.2008
+def skipReadLine( fd ):
+    while 1:
+        try:
+            line = fd.readline().strip()
+        except EOFError:
+            break
+        except:
+            output( "reading " + fd.name + " failed!" )
+            raise
+        if (len( line ) == 0) or (line[0] == '#'): continue
+        return line
+
+##
 # 03.02.2004, c
 def readToken( file ):
     
@@ -52,23 +66,23 @@ def readTuple( file, nItem, nTuple ):
     return out;
 
 ##
-# 12.02.2004, c
+# c: 12.02.2004, r: 20.03.2008
 def readArray( file, nRow, nCol, dtype ):
-    val = [];
+    """nCol is basically ignored, nCol == -1 -> intentionally ignored."""
+    val = []
     for ir in range( 0, nRow ):
         try:
             while 1:
-                line = file.readline();
-                if (line[0] == "#"):
+                line = file.readline().split()
+                if (len( line ) == 0) or (line[0] == "#"):
                     continue
                 else:
                     break
         except:
-            output( "Array (%d, %d) reading failed!" % (nRow, nCol) );
+            output( "Array (%d, %d) reading failed!" % (nRow, nCol) )
             raise
-        row = [float( ii ) for ii in line.split()]
-#        print ir, row
-        val.append( row );
+        row = [float( ii ) for ii in line]
+        val.append( row )
 
     val = array( val, dtype );
     return val
