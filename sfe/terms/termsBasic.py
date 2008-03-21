@@ -218,7 +218,7 @@ class IntegrateVolumeMatTerm( Term ):
     :definition: $\int_\Omega m$
     :arguments: material : $m$ (can have up to two dimensions),
     parameter : $y$, shape : shape of material
-    parameter, mode : 'const' or 'vertex' or 'element\_avg'
+    parameter, mode : 'const' or 'vertex' or 'element_avg'
     """
     name = 'di_volume_integrate_mat'
     argTypes = ('material', 'parameter', 'shape', 'mode')

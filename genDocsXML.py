@@ -158,16 +158,16 @@ def typesetCacheSyntax( fd, cls, name ):
 ##
 # 15.11.2007, c
 def typesetArguments( fd, argsText ):
-    fd.write( '<table><tgroup>\n' )
+    fd.write( '<center><table><tgroup>\n' )
     aux = argsText.split( ',' )
     fd.write( '<tbody>\n' )
     for argDesc in aux:
         print argDesc
         args = argDesc.split( r':' )
-        fd.write( '<row><entry>%s</entry><entry><m>%s</m></entry></row>\n' % \
+        fd.write( '<row><entry>%s</entry><entry>%s</entry></row>\n' % \
                 (args[0], args[1].replace("$", "")) )
 
-    fd.write( '</tbody></tgroup></table>\n' )
+    fd.write( '</tbody></tgroup></table></center>\n' )
 
 ##
 # c: 21.03.2008, r: 21.03.2008
@@ -197,7 +197,7 @@ def typesetItemTable( fd, itemTable ):
     fd.write( r'<section><title>List of all terms</title>' )
     fd.write( '\n\n' )
 
-    fd.write( '<table><tgroup>\n' )
+    fd.write( '<center><table><tgroup>\n' )
     fd.write( '<tbody>\n' )
 
     rowFormat = '<row><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
@@ -216,7 +216,7 @@ def typesetItemTable( fd, itemTable ):
             print replaceDollars( dd )
             fd.write( rowFormat % (itemClass.name, replaceDollars( dd )) )
 
-    fd.write( '</tbody></tgroup></table>\n' )
+    fd.write( '</tbody></tgroup></table></center>\n' )
     fd.write( r'</section>' )
     
 
@@ -260,7 +260,10 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
                             secText = replaceDollars( secText )
                             fd.write( termDefinition % secText )
                         elif secName == 'arguments':
+                            secText = replaceDollars( secText )
+                            fd.write("\n<p>")
                             typesetArguments( fd, secText )
+                            fd.write("\n</p>")
                         else:
                             while secText.find("$") != -1:
                                 secText = secText.replace("$", "<m>", 1)
