@@ -43,8 +43,8 @@ ALLTARGETS := version modules
 
 CUR_DIR := $(shell pwd)
 
-DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfe.py shaper.py test.mesh genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py eigen.py TODO INSTALL.txt README.txt
-RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfe.py extractor.py findSurf.py genDocs.py genPerMesh.py runTests.py simple.py eigen.py INSTALL.txt README.txt RELEASE_NOTES.txt
+DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfe.py shaper.py test.mesh genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py TODO INSTALL.txt README.txt
+RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfe.py extractor.py findSurf.py genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py INSTALL.txt README.txt RELEASE_NOTES.txt
 SUBDIRS = database doc eldesc input para script sfe tests umfpack
 RELSUBDIRS = database doc eldesc input script sfe tests
 DATADIRS := database
