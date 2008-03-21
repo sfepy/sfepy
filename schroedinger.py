@@ -60,8 +60,6 @@ def solveEigenProblem( conf, options ):
 
     #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
     #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )
-    from solve import solve
-
     try:
         nEigs = conf.options.nEigs
     except AttributeError:

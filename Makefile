@@ -1,6 +1,6 @@
 # 14.12.2004, c
-# last revision: 14.12.2007
-VERSION := 00.36.08
+# last revision: 21.03.2008
+VERSION := 00.41.00
 PROJECTNAME := sfe
 
 ############### Edit here. #######################################
@@ -32,7 +32,7 @@ DEBUG_FLAGS := -DDEBUG_FMF
 ################ Do not edit below! ##############################
 
 ISRELEASE := 1
-MODULES := eldesc input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods tests
+MODULES := eldesc input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods sfe/physics sfe/physics/extmods tests
 ifndef ISRELEASE
   MODULES += sfe/optimize
 else
@@ -96,7 +96,6 @@ endif
 .PHONY : tags version dist reldist htmldocs save backup clean
 
 modules: sfe/fem/extmods/version.h $(SRC_LIBSWIG)
-	f2py --fcompiler=gnu95 --f77flags="-W -Wall -fdefault-real-8" -c -m rdirac rdirac.f
 	@echo Python modules done.
 	@echo ""
 

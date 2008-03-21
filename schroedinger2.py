@@ -62,7 +62,7 @@ def wrapFunction( function, args ):
 ##
 # c: 22.02.2008, r: 03.03.2008
 def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
-    import rdirac
+    from sfe.physics import rdirac
 
     pb.updateMaterials( extraMatArgs = {'matV' : {'vhxc' : vecVHXC}} )
 
