@@ -128,7 +128,7 @@ class LaTeXConverter(Converter):
     def escape(self, text):
         if text is None:
             return text
-        text = text.replace("\\", r"\\")
+        text = text.replace("\\", r"\mybackslash{}")
         replacements = {
                 "&": r"\&",
                 ">": r"\hbox{$>$}",
@@ -223,6 +223,7 @@ class LaTeXConverter(Converter):
         r = r"""\documentclass[10pt]{article}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
+\def\mybackslash{$\backslash$}
 """
         for x in node:
             r += self.convert_node(x)
@@ -1044,10 +1045,11 @@ Converts "filename" DocBook to other formats.
             mod_name = mod_name[:-3]
 
         if sys.version < '2.5':
+            # This is needed for python2.4 on Gentoo. It works on python2.4 on
+            # Debian. Weird.
             mod_path, mod_name = os.path.split( mod_name )
             sys.path.append( mod_path )
         mod = __import__(mod_name)
-
         mod_class = getattr(mod, mod_class_name)
         converter = mod_class
     else:
