@@ -153,6 +153,18 @@ class Term( Struct ):
         raise RuntimeError
         
     ##
+    # c: 21.03.2008, r: 21.03.2008
+    def getShape( diffVar, apr, apc = None ):
+        output( 'base class method called for %s' % self.__class__.__name__ )
+        raise RuntimeError
+
+    ##
+    # c: 21.03.2008, r: 21.03.2008
+    def buildCFunArgs( *args, **kwargs ):
+        output( 'base class method called for %s' % self.__class__.__name__ )
+        raise RuntimeError
+
+    ##
     # 16.11.2005, c
     def getArgNames( self ):
         return self.__argNames

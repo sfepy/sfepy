@@ -13,34 +13,40 @@ class SDCCTerm( Term ):
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
-    # 07.03.2006, c
+    # c: 07.03.2006, r: 21.03.2008
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
-        self.function = terms.dw_lin_elasticity
+        Term.__init__( self, region, name, sign, terms.dw_lin_elasticity )
         
     ##
-    # c: 07.03.2006, r: 20.02.2008
+    # c: 21.03.2008, r: 21.03.2008
+    def getShape( self, diffVar, chunkSize, apr, apc = None ):
+        nEl, nQP, dim, nEP = apr.getVDataShape( self.integralName )
+        
+        if diffVar is None:
+            return (chunkSize, 1, dim * nEP, 1), 0
+        elif diffVar == self.getArgName( 'state' ):
+            return (chunkSize, 1, dim * nEP, dim * nEP), 1
+        else:
+            raise StopIteration
+
+    ##
+    # c: 21.03.2008, r: 21.03.2008
+    def buildCFunArgs( self, mat, state, ap, vg ):
+        vec, indx = state()
+        lam, mu = map( nm.float64, [mat[ii] for ii in ['lambda', 'mu']] )
+        return vec, indx.start, lam, mu, vg, ap.econn
+
+    ##
+    # c: 07.03.2006, r: 21.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         material, virtual, state = self.getArgs( **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+
+        shape, mode = self.getShape( diffVar, chunkSize, ap )
+        fargs = self.buildCFunArgs( material, state, ap, vg )
         
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1)
-            mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP)
-            mode = 1
-        else:
-            raise StopIteration
-        
-        vec, indx = state()
-        lam = nm.float64( material['lambda'] )
-        mu = nm.float64( material['mu'] )
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, lam, mu,
-                                    vg, ap.econn, chunk, mode )
+            status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
 ##
