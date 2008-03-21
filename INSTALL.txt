@@ -10,6 +10,9 @@ Dependencies:
     matplotlib, pyparsing, umfpack, pytables
     eigen.py can use symeig
 
+For example in Debian:
+  $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
+
 Not tested on Windows, I don't have them.
 
 Compiling:
