@@ -123,9 +123,7 @@ cacheSyntax = r"""
 </p>
 """            
 
-termDefinition = r"""
- %s 
-"""
+termDefinition = """<center>%s</center>"""
 
 ##
 # 29.10.2007, c
