@@ -200,7 +200,7 @@ def typesetItemTable( fd, itemTable ):
     fd.write( '<table><tgroup>\n' )
     fd.write( '<tbody>\n' )
 
-    rowFormat = '<row><entry>%s</entry><entry>%s</entry></row>\n'
+    rowFormat = '<row><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
 
     keys = itemTable.keys()
     keys.sort()

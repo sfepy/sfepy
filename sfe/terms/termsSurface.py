@@ -15,7 +15,7 @@ def fixTractionShape( tr, nEl ):
 class LinearTractionTerm( Term ):
     r""":description: Linear traction forces (weak form).
     :definition: $\int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}$, where,
-    depending on dimension of 'material' argument,\\ $\ull{\sigma} \cdot
+    depending on dimension of 'material' argument, $\ull{\sigma} \cdot
     \ul{n}$ is $\bar{p} \ull{I} \cdot \ul{n}$ for given scalar pressure,
     $\ul{f}$ for traction vector, and itself for a stress tensor
     """
