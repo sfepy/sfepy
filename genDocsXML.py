@@ -170,7 +170,58 @@ def typesetArguments( fd, argsText ):
     fd.write( '</tbody></tgroup></table>\n' )
 
 ##
-# 14.11.2007, c
+# c: 21.03.2008, r: 21.03.2008
+def replaceDollars( text ):
+    text = text.replace( '<', '&lt;' )
+    while text.find("$") != -1:
+        c0 = c1 = True
+        text2 = text.replace("$", "<m>", 1)
+        if text2 == text:
+            c0 = False
+        text = text2.replace("$", "</m>", 1)
+        if text2 == text:
+            c1 = False
+        if c0 and not c1:
+            print 'missing end $!'
+            pause()
+            raise ValueError
+    return text
+
+##
+# c: 21.03.2008, r: 21.03.2008
+def typesetItemTable( fd, itemTable ):
+    secList = []
+    currentSection = [None]
+    bnf = createBNF( secList, currentSection )
+
+    fd.write( r'<section><title>List of all terms</title>' )
+    fd.write( '\n\n' )
+
+    fd.write( '<table><tgroup>\n' )
+    fd.write( '<tbody>\n' )
+
+    rowFormat = '<row><entry>%s</entry><entry>%s</entry></row>\n'
+
+    keys = itemTable.keys()
+    keys.sort()
+    for key in keys:
+        itemClass = itemTable[key]
+        doc = itemClass.__doc__
+        if doc is not None:
+            secList[:] = []
+            currentSection[0] = None
+            out = bnf.parseString( doc )
+            dd = [x[1] for x in secList if x[0] == 'definition'][0]
+            print dd
+            print replaceDollars( dd )
+            fd.write( rowFormat % (itemClass.name, replaceDollars( dd )) )
+
+    fd.write( '</tbody></tgroup></table>\n' )
+    fd.write( r'</section>' )
+    
+
+##
+# c: 14.11.2007, r: 21.03.2008
 def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
     secList = []
     currentSection = [None]
@@ -206,9 +257,7 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
                         fd.write("\n<p>")
                         fd.write( itemSection % secName.capitalize() )
                         if secName == 'definition':
-                            while secText.find("$") != -1:
-                                secText = secText.replace("$", "<m>", 1)
-                                secText = secText.replace("$", "</m>", 1)
+                            secText = replaceDollars( secText )
                             fd.write( termDefinition % secText )
                         elif secName == 'arguments':
                             typesetArguments( fd, secText )
@@ -234,7 +283,7 @@ help = {
 # ./genDocs.py --omit="termsAdjointNavierStokes termsHDPM  cachesHDPM  cachesBasic"
 
 ##
-# c: 29.10.2007, r: 24.01.2008
+# c: 29.10.2007, r: 21.03.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
     parser.add_option( "", "--omit", metavar = 'list of sections',
@@ -253,6 +302,7 @@ def main():
 #    fd.write( header )
     fd.write( begining )
 
+    typesetItemTable( fd, termTable )
     typeset( fd, tps, termTable, typesetTermSyntax )
     typeset( fd, cps, cacheTable, typesetCacheSyntax )
             
