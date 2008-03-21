@@ -184,6 +184,8 @@ class LaTeXConverter(Converter):
             return self.convert_xref(node)
         elif node.tag == "align":
             return self.convert_align(node)
+        elif node.tag == "center":
+            return self.convert_center(node)
         elif node.tag == "table":
             return self.convert_table(node)
         elif node.tag == "indexterm":
@@ -378,6 +380,20 @@ class LaTeXConverter(Converter):
             r += self.convert_node(x)
         self.align = False
         r += "\n\\end{eqnarray*}"
+        if node.tail:
+            r += "\n" + self.escape(node.tail)
+        return r
+
+    def convert_center(self, node):
+        assert node.tag == "center"
+        r = ""
+        if node.text:
+            r += self.escape(node.text)
+        r += "\\begin{center}\n"
+        for x in node: 
+            r += self.convert_node(x)
+        self.align = False
+        r += "\\end{center}\n"
         if node.tail:
             r += "\n" + self.escape(node.tail)
         return r
