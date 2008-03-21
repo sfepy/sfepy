@@ -215,7 +215,7 @@ def fixMatQPShape( matQP, nEl ):
 class IntegrateVolumeMatTerm( Term ):
     """:description: Integrate material parameter $m$ over a domain. Uses
     approximation of $y$ variable.
-    :definition: $$\int_\Omega m}$
+    :definition: $\int_\Omega m$
     :arguments: material : $m$ (can have up to two dimensions),
     parameter : $y$, shape : shape of material
     parameter, mode : 'const' or 'vertex' or 'element\_avg'
