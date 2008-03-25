@@ -76,7 +76,7 @@ class TestLCBC( TestCommon ):
         self.report( 'converged: %s' % ok )
         out = problem.stateToOutput( vec )
 
-        strain = evalTermOP( vec, 'de_sdcc_strain.i1.Y( u )', problem )
+        strain = evalTermOP( vec, 'de_cauchy_strain.i1.Y( u )', problem )
         out['strain'] = Struct( name = 'output_data',
                                 mode = 'cell', data = strain,
                                 dofTypes = None )

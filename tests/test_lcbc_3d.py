@@ -89,7 +89,7 @@ integral_1 = {
 }
 
 equations = {
-    'balance' : """dw_sdcc.i1.Y( solid.lame, v, u ) = 0""",
+    'balance' : """dw_lin_elastic_iso.i1.Y( solid.lame, v, u ) = 0""",
 }
 
 solver_0 = {
