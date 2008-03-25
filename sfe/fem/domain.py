@@ -233,13 +233,26 @@ class Domain( Struct ):
                                       shape = shape )
             self.shape.nEl += nEl
 
+    ##
+    # c: 22.11.2007, r: 25.03.2008
     def iterGroups( self, igs = None ):
         if igs is None:
-            for group in self.groups.itervalues():
-                yield group
+            for ig in xrange( self.shape.nGr ): # sorted by ig.
+                yield self.groups[ig]
         else:
             for ig in igs:
                 yield ig, self.groups[ig]
+
+    ##
+    # c: 25.03.2008, r: 25.03.2008
+    def getCellOffsets( self ):
+        offs = {}
+        off = 0
+        for group in self.iterGroups():
+            ig = group.ig
+            offs[ig] = off
+            off += group.shape.nEl
+        return offs
 
     ##
     # 22.08.2006, c

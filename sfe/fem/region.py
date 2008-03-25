@@ -495,3 +495,13 @@ class Region( Struct ):
     def contains( self, other ):
         """Tests only igs for now!!!"""
         return set( other.igs ).issubset( set( self.igs ) )
+
+    ##
+    # c: 25.03.2008, r: 25.03.2008
+    def getCellOffsets( self ):
+        offs = {}
+        off = 0
+        for ig in self.igs:
+            offs[ig] = off
+            off += self.shape[ig].nCell
+        return offs

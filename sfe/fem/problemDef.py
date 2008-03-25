@@ -282,9 +282,13 @@ class ProblemDefinition( Struct ):
         self.equations.advance( ts )
 
     ##
-    # c: 01.03.2007, r: 06.03.2008
-    def saveState( self, fileName, state, fillValue = None ):
+    # c: 01.03.2007, r: 25.03.2008
+    def saveState( self, fileName, state,
+                   fillValue = None, postProcessHook = None ):
         out = self.stateToOutput( state, fillValue = fillValue )
+        if postProcessHook is not None:
+            out = postProcessHook( out, self, state )
+
         self.domain.mesh.write( fileName, io = 'auto', out = out )
 
     ##
