@@ -174,7 +174,8 @@ class CauchyStrainTerm( Term ):
 
     ##
     # c: 25.03.2008, r: 25.03.2008
-    def buildCFunArgs( self, vec, ap, vg ):
+    def buildCFunArgs( self, state, ap, vg ):
+        vec, indx = state()
         return vec, indx.start, vg, ap.econn
         
     ##
