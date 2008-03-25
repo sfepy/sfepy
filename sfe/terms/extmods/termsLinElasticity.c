@@ -443,6 +443,43 @@ int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
+#define __FUNC__ "de_cauchy_stress"
+/*!
+  @par Revision history:
+  - c: 25.03.2008
+*/
+int32 de_cauchy_stress( FMField *out, FMField *strain,
+			FMField *mtxD,  VolumeGeometry *vg,
+			int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, sym, nQP, ret = RET_OK;
+  FMField *stress = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+  fmf_createAlloc( &stress, 1, nQP, sym, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( strain, iel );
+    FMF_SetCell( vg->det, iel );
+
+    fmf_mulAB_nn( stress, mtxD, strain );
+    fmf_sumLevelsMulF( out, stress, vg->det->val );
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &stress ); 
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_cauchy_strain"
 /*!
   @par Revision history:
