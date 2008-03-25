@@ -80,7 +80,7 @@ integral_1 = {
     'quadrature' : 'gauss_o1_d3',
 }
 equations = {
-    'balance_of_forces' : """dw_sdcc.i1.Y( solid.lame, v, u ) = 0""",
+    'balance_of_forces' : """dw_lin_elastic_iso.i1.Y( solid.lame, v, u ) = 0""",
 }
 
 solver_0 = {

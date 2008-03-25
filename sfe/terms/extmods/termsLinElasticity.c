@@ -181,16 +181,16 @@ int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_lin_elasticity"
+#define __FUNC__ "dw_lin_elastic_iso"
 /*!
   @par Revision history:
   - 07.03.2006, c
 */
-int32 dw_lin_elasticity( FMField *out, FMField *state, int32 offset,
-			 float64 lam, float64 mu, VolumeGeometry *vg,
-			 int32 *conn, int32 nEl, int32 nEP,
-			 int32 *elList, int32 elList_nRow,
-			 int32 isDiff )
+int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
+			  float64 lam, float64 mu, VolumeGeometry *vg,
+			  int32 *conn, int32 nEl, int32 nEP,
+			  int32 *elList, int32 elList_nRow,
+			  int32 isDiff )
 {
   int32 ii, iel, dim, sym, nQP, ret = RET_OK;
   FMField *stress = 0, *strain = 0;
@@ -272,6 +272,126 @@ int32 dw_lin_elasticity( FMField *out, FMField *state, int32 offset,
     fmf_freeDestroy( &stress ); 
     fmf_freeDestroy( &strain ); 
   }
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_lin_elastic"
+/*!
+  @par Revision history:
+  - 03.08.2006, c
+  - 29.11.2006
+*/
+int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
+		      FMField *mtxD, VolumeGeometry *vg,
+		      int32 *elList, int32 elList_nRow,
+		      int32 isDiff )
+{
+  int32 ii, iel, dim, sym, nQP, nEP, ret = RET_OK;
+  FMField *stress = 0;
+  FMField *res = 0, *gtd = 0, *gtdg = 0;
+
+  nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+/*       fmf_print( mtxD, stdout, 0 ); */
+/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+  if (isDiff) {
+    fmf_createAlloc( &gtd, 1, nQP, nEP * dim, sym );
+    fmf_createAlloc( &gtdg, 1, nQP, nEP * dim, nEP * dim );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+
+      form_sdcc_actOpGT_M3( gtd, vg->bfGM, mtxD );
+      form_sdcc_actOpG_RM3( gtdg, gtd, vg->bfGM );
+      fmf_sumLevelsMulF( out, gtdg, vg->det->val );
+
+      ERR_CheckGo( ret );
+    }
+  } else {
+    fmf_createAlloc( &stress, 1, nQP, sym, 1 );
+    fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( strain, iel );
+
+      fmf_mulAB_nn( stress, mtxD, strain );
+      form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
+      fmf_sumLevelsMulF( out, res, vg->det->val );
+      ERR_CheckGo( ret );
+    }
+  }
+
+  // E.g. 1/dt.
+  fmfc_mulC( out, coef );
+
+ end_label:
+  if (isDiff) {
+    fmf_freeDestroy( &gtd );
+    fmf_freeDestroy( &gtdg );
+  } else {
+    fmf_freeDestroy( &res ); 
+    fmf_freeDestroy( &stress ); 
+  }
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_lin_elastic"
+/*!
+  @par Revision history:
+  - 02.03.2007, c
+*/
+int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
+		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg,
+		     int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, sym, nQP, nEP, ret = RET_OK;
+  FMField *std = 0, *stds = 0;
+
+  nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+  fmf_createAlloc( &std, 1, nQP, 1, sym );
+  fmf_createAlloc( &stds, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( strainV, iel );
+    FMF_SetCell( strainU, iel );
+
+    fmf_mulATB_nn( std, strainV, mtxD );
+    fmf_mulAB_nn( stds, std, strainU );
+    fmf_sumLevelsMulF( out, stds, vg->det->val );
+
+    ERR_CheckGo( ret );
+  }
+
+  // E.g. 1/dt.
+  fmfc_mulC( out, coef );
+
+ end_label:
+  fmf_freeDestroy( &std );
+  fmf_freeDestroy( &stds );
 
   return( ret );
 }

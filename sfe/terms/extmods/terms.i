@@ -86,11 +86,18 @@ int32 term_laplace_asm( FMField *out, FMField *state, int32 offset,
 			int32 *elList, int32 elList_nRow,
 			int32 isDiff );
 
-int32 dw_lin_elasticity( FMField *out, FMField *state, int32 offset,
-			 float64 lam, float64 mu, VolumeGeometry *vg,
-			 int32 *conn, int32 nEl, int32 nEP,
-			 int32 *elList, int32 elList_nRow,
-			 int32 isDiff );
+int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
+			  float64 lam, float64 mu, VolumeGeometry *vg,
+			  int32 *conn, int32 nEl, int32 nEP,
+			  int32 *elList, int32 elList_nRow,
+			  int32 isDiff );
+int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
+		      FMField *mtxD, VolumeGeometry *vg,
+		      int32 *elList, int32 elList_nRow,
+		      int32 isDiff );
+int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
+		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg,
+		     int32 *elList, int32 elList_nRow );
 
 int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			VolumeGeometry *vg,
