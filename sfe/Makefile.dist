@@ -8,7 +8,7 @@ DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
 DISTDIRS := base fem homogenization optimize physics solvers terms
 
 RELDISTFILES := $(DISTFILES)
-RELDISTDIRS := base fem homogenization solvers terms
+RELDISTDIRS := base fem homogenization physics solvers terms
 
 dist:
 #	echo $(DESTDIR)

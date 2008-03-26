@@ -179,7 +179,7 @@ class CauchyStrainTerm( Term ):
         return vec, indx.start, vg, ap.econn
         
     ##
-    # 21.09.2006, c
+    # c: 21.09.2006, r: 25.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         parameter, = self.getArgs( **kwargs )
         ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )

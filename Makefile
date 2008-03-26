@@ -1,7 +1,7 @@
 # 14.12.2004, c
 # last revision: 21.03.2008
-VERSION := 00.41.00
-PROJECTNAME := sfe
+VERSION := 00.41.03
+PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
 
@@ -45,7 +45,7 @@ CUR_DIR := $(shell pwd)
 
 DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfe.py shaper.py test.mesh genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py TODO INSTALL.txt README.txt
 RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfe.py extractor.py findSurf.py genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py INSTALL.txt README.txt RELEASE_NOTES.txt
-SUBDIRS = database doc eldesc input para script sfe tests umfpack
+SUBDIRS = database doc eldesc input script sfe tests
 RELSUBDIRS = database doc eldesc input script sfe tests
 DATADIRS := database
 DATADISTDIR := $(PROJECTNAME)-data-$(shell $(DATE))
