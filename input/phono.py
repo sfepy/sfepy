@@ -141,7 +141,7 @@ integral_1 = {
 }
 
 equations = {
-    'lhs' : """dw_sdcc.i1.Y2( inclusion.lame, v, u )""",
+    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
 }
 
