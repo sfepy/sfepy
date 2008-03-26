@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import os
-import os.path as op
+import sys
 from optparse import OptionParser
 import pyparsing as pp
 
+sys.path.append( '.' )
 from sfe.base.base import *
 from sfe.terms import termTable, cacheTable
 
@@ -56,8 +56,6 @@ def createBNF( slist, currentSection ):
            + pp.StringEnd()
 
     return doc
-
-outputDir = './tmp'
 
 defines = r"""
 \def\dt{{\Delta t}}
@@ -186,7 +184,7 @@ def replaceDollars( text ):
     return text
 
 ##
-# c: 21.03.2008, r: 21.03.2008
+# c: 21.03.2008, r: 26.03.2008
 def typesetItemTable( fd, itemTable ):
     secList = []
     currentSection = [None]
@@ -209,9 +207,13 @@ def typesetItemTable( fd, itemTable ):
             secList[:] = []
             currentSection[0] = None
             out = bnf.parseString( doc )
-            dd = [x[1] for x in secList if x[0] == 'definition'][0]
+            dd = [x[1] for x in secList if x[0] == 'definition']
+            if len( dd ):
+                dd = dd[0]
+            else:
+                dd = ''
             print dd
-            print replaceDollars( dd )
+##             print replaceDollars( dd )
             fd.write( rowFormat % (itemClass.name, replaceDollars( dd )) )
 
     fd.write( '</tbody></tgroup></table></center>\n' )
@@ -279,27 +281,28 @@ usage = """%prog [options]"""
 help = {
     'omit' :
     'omit listed sections',
+    'outputFileName' :
+    'output file name',
 }
 
 # ./genDocs.py --omit="termsAdjointNavierStokes termsHDPM  cachesHDPM  cachesBasic"
 
 ##
-# c: 29.10.2007, r: 21.03.2008
+# c: 29.10.2007, r: 26.03.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
     parser.add_option( "", "--omit", metavar = 'list of sections',
                        action = "store", dest = "omitList",
                        default = "", help = help['omit'] )
+    parser.add_option( "-o", "--output", metavar = 'outputFileName',
+                       action = "store", dest = "outputFileName",
+                       default = "terms.xml", help = help['outputFileName'] )
     (options, args) = parser.parse_args()
 
     tps = itemsPerSections( termTable, 'Terms', options.omitList )
     cps = itemsPerSections( cacheTable, 'Term caches', options.omitList )
 
-    latexFileName = 'terms.xml'
-    latexFileNameComplete = op.join( outputDir, latexFileName )
-    print latexFileNameComplete
-
-    fd = open( latexFileNameComplete, 'w' )
+    fd = open( options.outputFileName, 'w' )
 #    fd.write( header )
     fd.write( begining )
 
