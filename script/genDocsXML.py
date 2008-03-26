@@ -68,17 +68,8 @@ defines = r"""
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
 \def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SFE}
+\newcommand{\sfe}{SfePy}
 """
-
-header = r"""
-\documentclass[10pt,a4paper]{article}
-
-\usepackage{bm}
-\usepackage{a4wide}
-
-%s
-"""  % defines
 
 begining = r"""
 <article>
@@ -183,6 +174,13 @@ def replaceDollars( text ):
             raise ValueError
     return text
 
+##
+# c: 26.03.2008, r: 26.03.2008
+def include( fd, fileName ):
+    fd2 = open( fileName, 'r' )
+    fd.write( fd2.read() )
+    fd2.close()
+    
 ##
 # c: 21.03.2008, r: 26.03.2008
 def typesetItemTable( fd, itemTable ):
@@ -303,10 +301,11 @@ def main():
     cps = itemsPerSections( cacheTable, 'Term caches', options.omitList )
 
     fd = open( options.outputFileName, 'w' )
-#    fd.write( header )
     fd.write( begining )
 
+    include( fd, 'doc/pages/notation.xml' )
     typesetItemTable( fd, termTable )
+    include( fd, 'doc/pages/intro.xml' )
     typeset( fd, tps, termTable, typesetTermSyntax )
     typeset( fd, cps, cacheTable, typesetCacheSyntax )
             

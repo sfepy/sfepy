@@ -1,10 +1,10 @@
 # c: 24.01.2008
-# last revision: 24.01.2008
+# last revision: 26.03.2008
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES = *.tex *.fig *.latex Makefile.dist
+DISTFILES = *.tex *.fig *.latex *.xml Makefile.dist
 RELDISTFILES = $(DISTFILES)
 
 dist:

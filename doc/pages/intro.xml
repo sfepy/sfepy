@@ -1,0 +1,46 @@
+<section><title>Introduction</title>
+<p>
+Equations in SfePy are built using terms, which correspond directly to the
+integral forms of weak formulation of a problem to be solved. As an example,
+let us consider the Laplace equation:
+<e id="eq:laplace">
+  c \Delta t = 0 \mbox{ in }\Omega,\quad t = \bar{t} \mbox{ on } \Gamma \;.
+</e>
+The weak formulation of <a ref="eq:laplace"/> is: Find <m>t \in V</m>, such that
+<e id="eq:wlaplace">
+  \int_{\Omega} c\ \nabla t : \nabla s = 0, \quad \forall s \in V_0 \;.
+</e>
+In the syntax used in SfePy input
+files, this can be written as
+<e id="eq:cpoisson">
+    \verb|dw_laplace.i1.Omega( coef, s, t ) = 0| \;,
+</e>
+which directly corresponds to the discrete version of <a ref="eq:wlaplace"/>:
+Find <m>\bm{t} \in V_h</m>, such that
+<e>
+  \bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T \bm{G}) \bm{t} = 0, \quad \forall \bm{s}
+  \in V_{h0} \;,
+</e>
+where <m>\nabla u \approx \bm{G} \bm{u}</m>. The integral over the discrete
+domain <m>\Omega_h</m> is approximated by a numerical quadrature, that is named
+<m>\verb|i1|</m> in our case.
+</p>
+
+<section><title>Term call syntax</title>
+<p>
+In general, the syntax of a term call in SfePy is:
+<center>
+  <m>\verb|&lt;term_name>.&lt;i>.&lt;r>( &lt;arg1>, &lt;arg2>, ... )|</m>,
+</center>
+where <m>\verb|&lt;i>|</m> denotes an integral name (i.e. a name of numerical
+quadrature to use) and <m>\verb|&lt;r>|</m> marks a region (domain of the
+integral).
+
+In the following, <m>\verb|&lt;virtual>|</m> corresponds to a test function,
+<m>\verb|&lt;state>|</m> to a unknown function and <m>\verb|&lt;parameter>|</m>
+to a known function arguments. We will now describe all the terms available in
+SfePy to date.
+</p>
+</section>
+
+</section>
