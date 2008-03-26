@@ -1,5 +1,5 @@
 # 19.01.2007
-# last revision: 14.12.2007
+# last revision: 26.03.2008
 
 This is not for faint of the heart!
 
@@ -8,7 +8,8 @@ Installation prerequisites:
 
 Dependencies:
     matplotlib, pyparsing, umfpack, pytables
-    eigen.py can use symeig
+    eigen.py requires symeig for correct function
+    schroedinger.py requires pysparse
 
 For example in Debian:
   $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
@@ -27,21 +28,27 @@ Installation:
 None. Run the executable script 'simple.py' in the top-level directory of the
 distribution (TOPDIR).
 
+Examples:
+---------
+
+'./simple.py input/poisson.py' ... creates simple.vtk
+'./simple.py input/pfdpm_permeability.py' ... creates perf_symm944t.vtk
+'./eigen.py -p input/phono.py' ... creates mesh_circ21_eigs.txt, mesh_circ21.vtk
+'./schroedinger.py -s'         ... creates t.1_eigs.txt, t.1.vtk
+'./findSurf.py database/t.1.node -' ... creates surf_t.1.mesh
+'./runTests.py'                ... see below
+
 Testing:
 --------
 
-Run './runTests.py --filter' or './runTests.py --filter-more' in TOPDIR.
+Run './runTests.py' or './runTests.py --filter-less in TOPDIR.
 
 Tests that save results save them into TOPDIR/output-tests directory. View the
 results (*.vtk) with a VTK-capable viewer (e.g. paraview, mayavi2).
 
-If all is ok, four failed tests (of 20) should be reported. The failed tests
-cover code not included in the distribution; they are:
-test_input_pfdpm_permeability.py, test_input_stabilized_navier_stokes.py and
-test_boundaryFluxes() of test_laplace_unit_disk.py,
-test_laplace_unit_square.py.
+No failures should be reported.
 
-If you get more failures, be sure to verify that you have the latest SVN
-version of Numpy and SciPy installed (should be at least '0.7.0.dev3649' for
-SciPy and '1.0.5.dev4571' for NumPy).
-Verify also your pytables installation (possible test_io.py failures).
+If you get some failures it probably means some optional packages are not
+installed. Also be sure to have a recent version of Numpy and SciPy installed
+(SVN version are the best bet). Verify also your pytables (hdf5) installation
+(possible test_io.py failures).

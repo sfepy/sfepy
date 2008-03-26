@@ -1,5 +1,37 @@
 # created: 20.07.2007 (-1)
-# last revision: 14.12.2007
+# last revision: 26.03.2008
+
+from 00.35.01 to 00.41.03:
+==========================
+- works on 64 bits
+- support for various mesh formats:
+    - medit: .mesh
+    - text VTK: .vtk
+    - tetgen: .node + .ele
+    - comsol: .txt
+- Schroedinger equation solver
+    - run via 'schroedinger.py'
+- input files:
+    - new syntax for variables and boundary conditions
+    - improved handling of degrees of freedom
+- more descriptive (and less) test and simulation messages
+- new handling of approximations (-> lots of thing simplified)
+- material parameters can be defined in mesh vertices
+- simple.py: allow user-specified postProcessHook function
+- documentation generation via prettydoc
+- new solvers:
+    - generic time-dependent problem solver
+    - pysparse, symeig, scipy-based eigenproblem solvers
+    - scipy-based iterative solvers
+- new terms:
+    - dw_volume_integrate (volume integral operator)
+    - dw_mass_scalar_r (rhs for time-dependent Poisson problem)
+    - di_volume_integrate_mat (integrate material parameters)
+    - dw_volume_wdot and related terms (weighted dot product)
+    - dw_mass_scalar_variable (scalar mass term with variable coefficients)
+    - dw_lin_elastic and related terms (anisotropic linear elasticity)
+    - dw_lin_viscous (linear viscosity)
+    - de_cauchy_stress (element-averaged Cauchy stress)
 
 from 00.31.06 to 00.35.01:
 ==========================
@@ -16,7 +48,7 @@ from 00.26.01 to 00.31.06:
 ==========================
 
 - acoustic band gaps determination:
-    - zones of frequencies where elastic waves do not prapagate
+    - zones of frequencies where elastic waves do not propagate
     - based on homogenization of material made of small inclusions periodically
     embedded in an elastic matrix
     - run via 'eigen.py'

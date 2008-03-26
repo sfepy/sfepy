@@ -146,6 +146,7 @@ reldist: version
 	-cp -fpd tmp/terms.pdf doc/tex/
 	-./gen
 	-cp -fpd tmp/t.pdf doc/tex/
+	-mv doc/tex/t.pdf doc/tex/terms_new.pdf
 	-mkdir $(RELDISTDIR)
 	rm -rf $(RELDISTDIR)/*
 	for i in $(RELDISTFILES_TOP); do cp -fpd $$i $(RELDISTDIR)/$$i; done
