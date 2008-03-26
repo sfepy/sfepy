@@ -44,10 +44,8 @@ usage = """%prog [options] fileNameIn|- fileNameOut|-
 # 17.10.2005
 version = open( op.join( init_sfe.install_dir, 'VERSION' ) ).readlines()[0][:-1]
 
-# 05.10.2005, c
-# 06.10.2005
-# 11.11.2005
-# 29.08.2007
+##
+# c: 05.10.2005, r: 26.03.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog " + version )
     parser.add_option( "-m", "--mesh",
@@ -78,9 +76,10 @@ def main():
         fileIn.close()
 
     domain = Domain.fromMesh( mesh, 'eldesc' )
-    domain.setupSubDomains()
+    domain.setupGroups()
 
-    if domain.subs[0].nFace:
+    if domain.hasFaces():
+        domain.fixElementOrientation()
         domain.setupNeighbourLists( createEdgeList = False )
 
         lst, surfFaces = domain.surfaceFaces()
@@ -88,7 +87,8 @@ def main():
         surfMesh = Mesh.fromSurface( surfFaces, mesh )
 
         if options.saveMesh:
-            surfMesh.write( "surf_" + op.basename( fileNameIn ) )
+            base, ext = op.splitext( op.basename( fileNameIn ) )
+            surfMesh.write( "surf_" + base + '.mesh', io = 'auto' )
 
         if options.noSurface:
             return

@@ -112,14 +112,14 @@ class MeshIO( Struct ):
         Struct.__init__( self, fileName = fileName, **kwargs )
 
     ##
-    # c: 05.02.2008, r: 15.02.2008
-    def read( self, mesh, **kwargs ):
+    # c: 05.02.2008, r: 26.03.2008
+    def read( self, mesh, *args, **kwargs ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
     ##
-    # c: 05.02.2008, r: 15.02.2008
-    def write( self, fileName, mesh, **kwargs ):
+    # c: 05.02.2008, r: 26.03.2008
+    def write( self, fileName, mesh, *args, **kwargs ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
@@ -610,7 +610,12 @@ class TetgenMeshIO( MeshIO ):
             assert l[0]==len(els)
             if verbose: up.update(l[0])
         return els, regions
-    
+
+    ##
+    # c: 26.03.2008, r: 26.03.2008
+    def write( self, fileName, mesh, out = None ):
+        raise NotImplementedError
+
 ##
 # c: 20.03.2008
 class ComsolMeshIO( MeshIO ):

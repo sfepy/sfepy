@@ -648,7 +648,7 @@ class Domain( Struct ):
         return out
             
     ##
-    # 29.08.2007, re-c from 00.01.18
+    # 29.08.2007, re-c from 00.01.18, r: 26.03.2008
     def surfaceFaces( self ):
 
         if not self.fa:
@@ -665,7 +665,7 @@ class Domain( Struct ):
         itri = nm.where( flag == 1 )[0]
         if itri.size:
             surfFaces.append( fa.data[itri,3:6] )
-            itet = nm.where( flag == 2 )[0]
+        itet = nm.where( flag == 2 )[0]
         if itet.size:
             surfFaces.append( fa.data[itet,3:7] )
 
