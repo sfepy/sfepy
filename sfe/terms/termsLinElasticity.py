@@ -3,12 +3,11 @@ from terms import *
 ##
 # c: 02.08.2006
 class LinearElasticTerm( Term ):
-    r""":description: general linear elasticity term, with $D_{ijkl}$ given in
+    r""":description: General linear elasticity term, with $D_{ijkl}$ given in
     the usual matrix form exploiting symmetry: in 3D it is $6\times6$ with the
     indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it is $3\times3$ with
     the indices ordered as $[11, 22, 12]$.
     :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})$
-     
     """
     name = 'dw_lin_elastic'
     argTypes = ('material', 'virtual', 'state')
@@ -55,6 +54,10 @@ class LinearElasticTerm( Term ):
 ##
 # 20.09.2006, c
 class LinearElasticRTerm( LinearElasticTerm ):
+    r""":description: General linear elasticity term with a known field (to use
+    on a right-hand side).
+    :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{w})$
+    """
     name = 'dw_lin_elastic_r'
     argTypes = ('material', 'virtual', 'parameter')
     useCaches = {'cauchy_strain' : [['parameter']]}
@@ -62,6 +65,9 @@ class LinearElasticRTerm( LinearElasticTerm ):
 ##
 # 01.03.2007, c
 class  LinearElasticIntegratedTerm( Term ):
+    r""":description: Integrated general linear elasticity term.
+    :definition: $\int_{\Omega} D_{ijkl}\ e_{ij}(\ul{b}) e_{kl}(\ul{w})$
+    """
     name = 'd_lin_elastic'
     argTypes = ('material', 'parameter_1', 'parameter_2')
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
@@ -95,7 +101,7 @@ class  LinearElasticIntegratedTerm( Term ):
 ##
 # 07.03.2006, c
 class LinearElasticIsotropicTerm( LinearElasticTerm ):
-    r""":description: isotropic linear elasticity term.
+    r""":description: Isotropic linear elasticity term.
     :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})$
     with $D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
     \lambda \ \delta_{ij} \delta_{kl}$ 
@@ -119,6 +125,16 @@ class LinearElasticIsotropicTerm( LinearElasticTerm ):
 ##
 # 01.08.2006, c
 class LinearViscousTerm( LinearElasticTerm ):
+    r""":description: General linear viscosity term, with $D_{ijkl}$ given in
+    the usual matrix form exploiting symmetry: in 3D it is $6\times6$ with the
+    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it is $3\times3$ with
+    the indices ordered as $[11, 22, 12]$.
+    :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v})
+    \frac{e_{kl}(\ul{u}) - e_{kl}(\ul{u}_0)}{\dt}$
+    :arguments: ts.dt : $\dt$, material : $D_{ijkl}$, virtual : $\ul{v}$,
+    state : $\ul{u}$ (displacements of current time step), parameter : $\ul{u}_0$
+    (known displacements of previous time step)
+    """
     name = 'dw_lin_viscous'
     argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]

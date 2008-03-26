@@ -13,11 +13,11 @@ def fixTractionShape( tr, nEl ):
 ##
 # 22.08.2006, c
 class LinearTractionTerm( Term ):
-    r""":description: Linear traction forces (weak form).
-    :definition: $\int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}$, where,
+    r""":description: Linear traction forces (weak form), where,
     depending on dimension of 'material' argument, $\ull{\sigma} \cdot
-    \ul{n}$ is $\bar{p} \ull{I} \cdot \ul{n}$ for given scalar pressure,
-    $\ul{f}$ for traction vector, and itself for a stress tensor
+    \ul{n}$ is $\bar{p} \ull{I} \cdot \ul{n}$ for a given scalar pressure,
+    $\ul{f}$ for a traction vector, and itself for a stress tensor.
+    :definition: $\int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}$
     """
     name = 'dw_surface_ltr'
     argTypes = ('material', 'virtual')
