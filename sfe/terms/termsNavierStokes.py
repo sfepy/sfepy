@@ -1,4 +1,5 @@
 from terms import *
+from utils import fixScalarInEl
 
 ##
 # 24.10.2005, c
@@ -397,68 +398,13 @@ class GradDivStabilizationTerm( Term ):
 
 ##
 # 31.07.2007, c
-# 29.10.2007
-# 31.10.2007
-def fixMatShape( mat, nEl, default = 1.0 ):
-##     print '>>>', mat
-    if mat is None:
-        out = nm.empty( (nEl, 1, 1, 1), dtype = nm.float64 )
-        out.fill( default )
-    elif nm.isscalar( mat ):
-        out = nm.empty( (nEl, 1, 1, 1), dtype = nm.float64 )
-        out.fill( mat )
-    elif isinstance( mat, nm.ndarray ):
-        if mat.size == nEl:
-            out = mat.reshape( nEl, 1, 1, 1 )
-        else:
-            out = nm.empty( (nEl, 1, 1, 1), dtype = nm.float64 )
-            out.fill( mat )
-    else:
-        print 'unknown mat type!'
-        print mat
-        raise ValueError
-        
-    return out
-
-##
-# 31.07.2007, c
-class PSPGPStabilizationTerm( Term ):
+from termsLaplace import LaplaceTerm
+class PSPGPStabilizationTerm( LaplaceTerm ):
     r""":description: PSPG stabilization term, pressure part ($\tau$ is a local
-    stabilization parameter), cf. Laplace term.
+    stabilization parameter), alias to Laplace term dw_laplace.
     :definition: $\sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q$
     """
     name = 'dw_st_pspg_p'
-    argTypes = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
-
-    ##
-    # 31.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_pspg_p )
-        
-    ##
-    # 31.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        tau, virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
-
-        if diffVar is None:
-            shape = (chunkSize, 1, nEP, 1 )
-            mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, nEP, nEP )
-            mode = 1
-        else:
-            raise StopIteration
-
-        tauInEl = fixMatShape( tau, nEl )
-            
-        vec, indx = state()
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, tauInEl,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
 
 ##
 # 31.07.2007, c
@@ -495,7 +441,7 @@ class PSPGCStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        tauInEl = fixMatShape( tau, nEl )
+        tauInEl = fixScalarInEl( tau, nEl, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()
@@ -541,7 +487,7 @@ class SUPGPStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        deltaInEl = fixMatShape( delta, nEl )
+        deltaInEl = fixScalarInEl( delta, nEl, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()
@@ -585,7 +531,7 @@ class SUPGCStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        deltaInEl = fixMatShape( delta, nEl )
+        deltaInEl = fixScalarInEl( delta, nEl, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()

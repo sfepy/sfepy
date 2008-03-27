@@ -19,9 +19,7 @@ def scaleMatrix( mtx, indx, factor ):
 _dimaterModes = {'edge' : 0, 'volume' : 1, 'max' : 2}
 
 ##
-# 01.08.2007, c
-# 29.10.2007
-# 30.10.2007
+# c: 01.08.2007, r: 15.01.2008
 def createStabilData( problem, fluidName, stabilName, eqName1, eqName2 ):
 
     ns = {}
@@ -71,8 +69,8 @@ def createStabilData( problem, fluidName, stabilName, eqName1, eqName2 ):
 
         if stabil.delta is None:
             term = problem.equations[eqName1].terms['dw_lin_convect']
-            for regionName, ig in term.iterGroups():
-                term.setCurrentGroup( regionName, ig )
+            for ig in term.iterGroups():
+                # This sets term.ig - for 1 group only!!!
                 break
             var = problem.variables[ns['u']]
             ap, vg = var.getApproximation( term.getCurrentGroup(), 'Volume' )
