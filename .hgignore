@@ -17,6 +17,8 @@ sfe/fem/extmods/fem.py
 sfe/fem/extmods/geometry.py
 sfe/fem/extmods/meshutils.py
 sfe/terms/extmods/terms.py
+sfe/fem/extmods/version.h
+VERSION
 tmp/terms.*
 samples/*
 doc/tex/*.pdf
