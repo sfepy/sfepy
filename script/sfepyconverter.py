@@ -12,6 +12,7 @@ class SfePyDocConverter(LaTeXConverter):
 \usepackage{colortbl}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
+\usepackage{hyperref}
 \def\mybackslash{$\backslash$}
 """
         for x in node:
