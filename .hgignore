@@ -10,6 +10,7 @@ auto/*
 *.vtk
 *.mesh
 *.txt
+*.pdf
 
 # Generated files:
 sfe/fem/extmods/fem.py
@@ -18,6 +19,8 @@ sfe/fem/extmods/meshutils.py
 sfe/terms/extmods/terms.py
 tmp/terms.*
 samples/*
+doc/tex/*.pdf
+tmp/*
 
 syntax: re
 .*\.pyc
