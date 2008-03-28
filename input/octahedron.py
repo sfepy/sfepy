@@ -1,10 +1,11 @@
-# c: 15.02.2008, r: 25.02.2008
-fileName_mesh = 'database/t.1.node'
+# c: 15.02.2008, r: 28.03.2008
+fileName_mesh = 'database/octahedron.node'
 
 material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
+    'K' : [[1.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 1.0]],
     'val' : 1.0,
 }
 
@@ -71,7 +72,8 @@ integral_1 = {
     'quadrature' : 'gauss_o1_d3',
 }
 equations = {
-    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+    'Temperature' : """dw_diffusion.i1.Omega( coef.K, s, t ) = 0"""
+#    'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
 }
 
 solver_0 = {

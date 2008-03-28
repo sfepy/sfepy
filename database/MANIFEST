@@ -2,6 +2,8 @@ kostka_big.mesh
 kostka_medium.mesh
 kostka_medium_tetra.mesh
 maillage.txt
+octahedron.node
+octahedron.ele
 plackaplacata.mesh
 pul_klikatak.mesh
 pul_klikatak2.mesh
