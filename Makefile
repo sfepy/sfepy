@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 26.03.2008
+# last revision: 28.03.2008
 VERSION := 00.41.03
 PROJECTNAME := sfepy
 
@@ -109,7 +109,7 @@ modules: sfe/fem/extmods/version.h $(SRC_LIBSWIG)
 #	$(CC) -shared -fPIC -DPIC $< $(SRC_OBJC) $(SWIG_LIB) -o $@
 #
 $(VERSIONH) : Makefile
-	sed "s|^\(#define VERSION\) \"[0-9.]*\"|\1 \"$(VERSION)\"|;" $(VERSIONH).in > $(VERSIONH)
+	sed "s|^\(#define VERSION\) \".*\"|\1 \"$(shell cat VERSION)\"|;" $(VERSIONH).in > $(VERSIONH)
 
 clean:
 	-rm -f *.o *.bak *~ *% *tgz #*
@@ -127,7 +127,7 @@ python_tags:
 	-etags -a $(SRCPYFILES)
 
 version:
-	echo $(VERSION) > 'VERSION'
+	echo $(VERSION)-$(shell hg identify -i) > 'VERSION'
 
 dist: version
 	-mkdir $(DISTDIR)
