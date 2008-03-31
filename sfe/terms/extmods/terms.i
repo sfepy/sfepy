@@ -412,11 +412,6 @@ int32 dw_hdpm_g( FMField *out, float64 coef, FMField *pressure_qp,
 		 int32 *elList, int32 elList_nRow,
 		 int32 isDiff );
 
-int32 de_hdpm_dvel( FMField *out, FMField *state, int32 offset,
-		    FMField *mtxD, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow );
-
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       FMField *mtxD, SurfaceGeometry *sg,
 		       int32 *fis, int32 nFa, int32 nFP,
