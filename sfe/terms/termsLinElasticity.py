@@ -190,18 +190,18 @@ class CauchyStrainTerm( Term ):
 
     ##
     # c: 25.03.2008, r: 25.03.2008
-    def buildCFunArgs( self, state, ap, vg ):
+    def buildCFunArgs( self, state, ap, vg, **kwargs ):
         vec, indx = state()
         return vec, indx.start, vg, ap.econn
         
     ##
-    # c: 21.09.2006, r: 25.03.2008
+    # c: 21.09.2006, r: 31.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        parameter, = self.getArgs( **kwargs )
+        parameter, = self.getArgs( ['parameter'], **kwargs )
         ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape = self.getShape( diffVar, chunkSize, ap )
-        fargs = self.buildCFunArgs( parameter, ap, vg )
+        fargs = self.buildCFunArgs( parameter, ap, vg, **kwargs )
         
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, *fargs + (chunk,) )
@@ -225,22 +225,10 @@ class CauchyStressTerm( CauchyStrainTerm ):
         Term.__init__( self, region, name, sign, terms.de_cauchy_stress )
 
     ##
-    # c: 25.03.2008, r: 25.03.2008
-    def buildCFunArgs( self, mat, vec, ap, vg ):
+    # c: 25.03.2008, r: 31.03.2008
+    def buildCFunArgs( self, state, ap, vg, **kwargs ):
+        mat, = self.getArgs( ['material'], **kwargs )
         matQP = mat[nm.newaxis,:,:].repeat( self.dataShape[1], 0 )
         cache = self.getCache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.getCurrentGroup(), 0, state = vec )
+        strain = cache( 'strain', self.getCurrentGroup(), 0, state = state )
         return strain, matQP, vg
-        
-    ##
-    # c: 25.03.2008, r: 25.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, parameter = self.getArgs( **kwargs )
-        ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
-
-        shape = self.getShape( diffVar, chunkSize, ap )
-        fargs = self.buildCFunArgs( mat, parameter, ap, vg )
-        
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, *fargs + (chunk,) )
-            yield out, chunk, status
