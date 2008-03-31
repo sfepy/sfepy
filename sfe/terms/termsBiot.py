@@ -24,7 +24,7 @@ class BiotGradTerm( GradTerm ):
         cache = self.getCache( 'state_in_volume_qp', 0 )
         vec_qp = cache( 'state', self.getCurrentGroup(), 0, state = state )
 
-        mat = self.getArgs( ['material'], **kwargs )
+        mat, = self.getArgs( ['material'], **kwargs )
         matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
 #        print matQP
         bf = apc.getBase( 'v', 0, self.integralName )
@@ -99,8 +99,8 @@ class BiotDivTerm( DivTerm ):
     def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
         cache = self.getCache( 'cauchy_strain', 0 )
         strain = cache( 'strain', self.getCurrentGroup(), 0, state = state )
-        mat = self.getArgs( ['material'], **kwargs )
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+        mat, = self.getArgs( ['material'], **kwargs )
+        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
         bf = apr.getBase( 'v', 0, self.integralName )
         return 1.0, strain, bf, matQP, vgc
 

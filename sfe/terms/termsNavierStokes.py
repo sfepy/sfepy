@@ -195,7 +195,10 @@ class GradTerm( Term ):
     ##
     # c: 15.12.2005, r: 31.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        if self.name.endswith( '_r' ):
+            virtual, state = self.getArgs( ['virtual', 'parameter'], **kwargs )
+        else:
+            virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
@@ -304,7 +307,10 @@ class DivTerm( Term ):
     ##
     # c: 14.12.2005, r: 31.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        if self.name.endswith( '_r' ):
+            virtual, state = self.getArgs( ['virtual', 'parameter'], **kwargs )
+        else:
+            virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
