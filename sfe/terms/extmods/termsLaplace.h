@@ -27,6 +27,10 @@ int32 d_diffusion( FMField *out, float64 coef, FMField *gradP1, FMField *gradP2,
 int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 			 int32 *conn, int32 nEl, int32 nEP,
 			 int32 *elList, int32 elList_nRow );
+int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+			     FMField *mtxD, VolumeGeometry *vg,
+			     int32 *conn, int32 nEl, int32 nEP,
+			     int32 *elList, int32 elList_nRow );
 
 END_C_DECLS
 

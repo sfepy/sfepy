@@ -437,3 +437,51 @@ int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "de_diffusion_velocity"
+/*!
+  Diffusion velocity.
+  @par Revision history:
+  - 07.09.2006, c
+*/
+int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+			     FMField *mtxD, VolumeGeometry *vg,
+			     int32 *conn, int32 nEl, int32 nEP,
+			     int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *st = 0, *gp = 0, *dgp = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  fmf_createAlloc( &st, 1, 1, nEP, 1 );
+  fmf_createAlloc( &gp, 1, nQP, dim, 1 );
+  fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+
+    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    fmf_mulAB_n1( gp, vg->bfGM, st );
+    fmf_mulAB_nn( dgp, mtxD, gp );
+    fmf_sumLevelsMulF( out, dgp, vg->det->val );
+    ERR_CheckGo( ret );
+  }
+  fmfc_mulC( out, -1.0 );
+
+ end_label:
+  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &gp ); 
+  fmf_freeDestroy( &dgp ); 
+
+  return( ret );
+}

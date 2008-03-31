@@ -181,3 +181,41 @@ class PermeabilityRTerm( Term ):
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, matQP, vg, ap.econn, chunk )
             yield out, chunk, status
+
+##
+# 07.09.2006, c
+class DiffusionVelocityTerm( Term ):
+    """:description: Diffusion velocity averaged in elements.
+    :definition: $\forall K \in \Tcal_h: \int_{T_K} K_{ij} \nabla_j r$
+    """
+    name = 'de_diffusion_velocity'
+    argTypes = ('material','parameter')
+    geometry = [(Volume, 'parameter')]
+    useCaches = {'mat_in_qp' : [['material']]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
+        
+    ##
+    # c: 07.09.2006, r: 31.03.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        mat, parameter = self.getArgs( **kwargs )
+        ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
+        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+
+        if diffVar is None:
+            shape = (chunkSize, 1, dim, 1)
+        else:
+            raise StopIteration
+
+        vec, indx = parameter()
+        cache = self.getCache( 'mat_in_qp', 0 )
+        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+                       mat = mat, ap = ap,
+                       assumedShapes = [(1, nQP, dim, dim),
+                                        (nEl, nQP, dim, dim)],
+                       modeIn = None )
+        for out, chunk in self.charFun( chunkSize, shape ):
+            status = self.function( out, vec, indx.start,
+                                    matQP, vg, ap.econn, chunk )
+            yield out, chunk, status
