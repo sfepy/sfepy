@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 30.07.2007
+# last revision: 31.03.2008
 FEMLOCDIR := sfe/fem/extmods
 LOCDIR := sfe/terms/extmods
 
@@ -12,7 +12,7 @@ SRC_OBJSWIG := $(SRC_OBJSWIGC:.c=.o)
 SRC_OBJSWIGPY := $(SRC_SRCSWIG:.i=.py)
 
 FEMDEPSD = common_python.c fmfield.c geommech.c
-DEPSD := formSDCC.c terms.c termsBasic.c termsAdjointNavierStokes.c termsHDPM.c termsMass.c termsNavierStokes.c termsLaplace.c termsLinElasticity.c termsSurface.c termsVolume.c terms_wrap.c
+DEPSD := formSDCC.c terms.c termsBasic.c termsAdjointNavierStokes.c termsHDPM.c termsMass.c termsNavierStokes.c termsBiot.c termsLaplace.c termsLinElasticity.c termsSurface.c termsVolume.c terms_wrap.c
 ifdef ISRELEASE
   DEPSD := $(filter-out termsAdjointNavierStokes.c termsHDPM.c, $(DEPSD))
 endif

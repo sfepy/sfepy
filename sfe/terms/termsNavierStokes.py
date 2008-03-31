@@ -167,34 +167,43 @@ class GradTerm( Term ):
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
-    # 15.12.2005, c
-    # 10.01.2006
+    # c: 15.12.2005, 31.03.2008
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asmGrad )
+        Term.__init__( self, region, name, sign, terms.dw_grad )
         
     ##
-    # 15.12.2005, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
+    # c: 31.03.2008, r: 31.03.2008
+    def getShape( self, diffVar, chunkSize, apr, apc = None ):
+        self.dataShape = apr.getVDataShape( self.integralName ) 
+        nEl, nQP, dim, nEPR = self.dataShape
 
         if diffVar is None:
-            shape = (chunkSize, 1, dim * nEPR, 1 )
-            mode = 0
+            return (chunkSize, 1, dim * nEPR, 1 ), 0
         elif diffVar == self.getArgName( 'state' ):
             nEPC = apc.getVDataShape( self.integralName )[3]
-            shape = (chunkSize, 1, dim * nEPR, nEPC )
-            mode = 1
+            return (chunkSize, 1, dim * nEPR, nEPC ), 1
         else:
             raise StopIteration
 
+    ##
+    # c: 31.03.2008, r: 31.03.2008
+    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
         vec, indx = state()
         bf = apc.getBase( 'v', 0, self.integralName )
+        return 1.0, vec, indx.start, bf, vgr, apc.econn
+
+    ##
+    # c: 15.12.2005, r: 31.03.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
+        fargs = self.buildCFunArgs( state, apc, vgr, **kwargs )
+        
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, bf,
-                                    vgr, apc.econn, chunk, mode )
+            status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
 ##
@@ -238,38 +247,22 @@ class GradDtTerm( GradTerm ):
     :definition: $ \int_{\Omega}  \frac{p - p_0}{\dt} \nabla \cdot \ul{v}$
     :arguments: ts.dt : $\dt$, parameter : $p_0$
     """
-    name = 'dw_gradDt'
+    name = 'dw_grad_dt'
     argTypes = ('ts', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
-    # 09.03.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        ts, virtual, state, state_0 = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
-
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEPR, 1 )
-            mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape( self.integralName )[3]
-            shape = (chunkSize, 1, dim * nEPR, nEPC )
-            mode = 1
-        else:
-            raise StopIteration
+    # c: 31.03.2008, r: 31.03.2008
+    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
+        ts, state_0 = self.getArgs( ['ts', 'parameter'], **kwargs )
 
         vec, indx = state()
         vec0, indx0 = state_0()
         dvec = vec[indx] - vec0[indx0]
         idt = 1.0/ts.dt 
+
         bf = apc.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, dvec, 0, bf,
-                                    vgr, apc.econn, chunk, mode )
-            out *= idt
-            yield out, chunk, status
+        return idt, dvec, 0, bf, vgr, apc.econn
 
 ##
 # 14.12.2005, c
@@ -285,31 +278,41 @@ class DivTerm( Term ):
     # 14.12.2005, c
     # 10.01.2006
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asmDiv )
+        Term.__init__( self, region, name, sign, terms.dw_div )
 
     ##
-    # 14.12.2005, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
+    # c: 31.03.2008, r: 31.03.2008
+    def getShape( self, diffVar, chunkSize, apr, apc = None ):
+        self.dataShape = apr.getVDataShape( self.integralName ) 
+        nEl, nQP, dim, nEPR = self.dataShape
 
         if diffVar is None:
-            shape = (chunkSize, 1, nEPR, 1 )
-            mode = 0
+            return (chunkSize, 1, nEPR, 1 ), 0
         elif diffVar == self.getArgName( 'state' ):
             nEPC = apc.getVDataShape( self.integralName )[3]
-            shape = (chunkSize, 1, nEPR, dim * nEPC )
-            mode = 1
+            return (chunkSize, 1, nEPR, dim * nEPC ), 1
         else:
             raise StopIteration
 
+    ##
+    # c: 31.03.2008, r: 31.03.2008
+    def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
         vec, indx = state()
         bf = apr.getBase( 'v', 0, self.integralName )
+        return vec, indx.start, bf, vgc, apc.econn
+
+    ##
+    # c: 14.12.2005, r: 31.03.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
+        fargs = self.buildCFunArgs( state, apr, apc, vgc, **kwargs )
+        
         for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, vec, indx.start, bf,
-                                    vgc, apc.econn, chunk, mode )
+            status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
 ##

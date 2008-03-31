@@ -725,18 +725,18 @@ int32 dw_lin_convect( FMField *out,
 }
 
 #undef __FUNC__
-#define __FUNC__ "term_ns_asmDiv"
+#define __FUNC__ "dw_div"
 /*!
   @a state, @a conn are velocity-like.
 
   @par Revision history:
   - 14.12.2005, c
 */
-int32 term_ns_asmDiv( FMField *out, FMField *state, int32 offset,
-		      FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
-		      int32 isDiff )
+int32 dw_div( FMField *out, FMField *state, int32 offset,
+	      FMField *bf, VolumeGeometry *vg,
+	      int32 *conn, int32 nEl, int32 nEP,
+	      int32 *elList, int32 elList_nRow,
+	      int32 isDiff )
 {
   int32 ii, iel, nEPP, dim, nQP, ret = RET_OK;
   FMField *gu = 0, *ftgu = 0, *ftg = 0, *st = 0;
@@ -794,19 +794,18 @@ int32 term_ns_asmDiv( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "term_ns_asmGrad"
+#define __FUNC__ "dw_grad"
 /*!
   @a state, @a conn are pressure-like.
 
   @par Revision history:
-  - 15.12.2005, c
-  - 04.08.2006
+  - c: 15.12.2005, r: 31.03.2008
 */
-int32 term_ns_asmGrad( FMField *out, FMField *state, int32 offset,
-		       FMField *bf, VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff )
+int32 dw_grad( FMField *out, float64 coef, FMField *state, int32 offset,
+	       FMField *bf, VolumeGeometry *vg,
+	       int32 *conn, int32 nEl, int32 nEP,
+	       int32 *elList, int32 elList_nRow,
+	       int32 isDiff )
 {
   int32 ii, iel, nEPU, dim, nQP, ret = RET_OK;
   FMField *fp = 0, *gtfp = 0, *gtf = 0, *st = 0;
@@ -848,6 +847,7 @@ int32 term_ns_asmGrad( FMField *out, FMField *state, int32 offset,
     }
     ERR_CheckGo( ret );
   }
+  fmfc_mulC( out, coef );
 
  end_label:
   if (isDiff) {

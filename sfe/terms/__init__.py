@@ -8,6 +8,7 @@ from termsSurface import *
 from termsVolume import *
 from termsMass import *
 from termsNavierStokes import *
+from termsBiot import *
 from termsSpecial import *
 
 try:

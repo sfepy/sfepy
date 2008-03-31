@@ -6,6 +6,7 @@
 #include "termsLaplace.h"
 #include "termsLinElasticity.h"
 #include "termsNavierStokes.h"
+#include "termsBiot.h"
 #include "termsSurface.h"
 #include "termsMass.h"
 #include "termsVolume.h"
@@ -179,17 +180,17 @@ int32 dw_lin_convect( FMField *out,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
-int32 term_ns_asmDiv( FMField *out, FMField *state, int32 offset,
-		      FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
-		      int32 isDiff );
+int32 dw_div( FMField *out, FMField *state, int32 offset,
+	      FMField *bf, VolumeGeometry *vg,
+	      int32 *conn, int32 nEl, int32 nEP,
+	      int32 *elList, int32 elList_nRow,
+	      int32 isDiff );
 
-int32 term_ns_asmGrad( FMField *out, FMField *state, int32 offset,
-		       FMField *bf, VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff );
+int32 dw_grad( FMField *out, float64 coef, FMField *state, int32 offset,
+	       FMField *bf, VolumeGeometry *vg,
+	       int32 *conn, int32 nEl, int32 nEP,
+	       int32 *elList, int32 elList_nRow,
+	       int32 isDiff );
 
 int32 dw_st_pspg_p( FMField *out, FMField *state, int32 offset,
 		    FMField *coef, VolumeGeometry *vg,
@@ -229,6 +230,21 @@ int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
 		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
+
+int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
+		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
+		    int32 *elList, int32 elList_nRow,
+		    int32 isDiff );
+
+int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
+		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
+		   int32 *elList, int32 elList_nRow,
+		   int32 isDiff );
+
+int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
+		  FMField *mtxD, VolumeGeometry *vg,
+		  int32 *elList, int32 elList_nRow );
+
 #ifndef ISRELEASE
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
@@ -386,43 +402,6 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
-
-int32 dw_hdpm_a( FMField *out, float64 coef, FMField *strain,
-		 FMField *mtxD, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow,
-		 int32 isDiff );
-
-int32 d_hdpm_a( FMField *out, float64 coef, FMField *strainV, FMField *strainU,
-		FMField *mtxD, VolumeGeometry *vg,
-		int32 *elList, int32 elList_nRow );
-
-int32 dw_hdpm_b1( FMField *out, float64 coef, FMField *pressure_qp,
-		  FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		  int32 *elList, int32 elList_nRow,
-		  int32 isDiff );
-
-int32 dw_hdpm_b2( FMField *out, float64 coef, FMField *strain,
-		  FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		  int32 *elList, int32 elList_nRow,
-		  int32 isDiff );
-
-int32 d_hdpm_b2( FMField *out, float64 coef, FMField *state, FMField *strain,
-		 FMField *mtxD, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow );
-
-int32 dw_hdpm_d( FMField *out, float64 coef, FMField *state, int32 offset,
-		 FMField *mtxD, VolumeGeometry *vg,
-		 int32 *conn, int32 nEl, int32 nEP,
-		 int32 *elList, int32 elList_nRow,
-		 int32 isDiff );
-
-int32 d_hdpm_d( FMField *out, float64 coef, FMField *gradP1, FMField *gradP2,
-		FMField *mtxD, VolumeGeometry *vg,
-		int32 *elList, int32 elList_nRow );
-
-int32 dw_hdpm_d2( FMField *out, FMField *mtxD, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow );
 
 int32 dw_hdpm_g( FMField *out, float64 coef, FMField *pressure_qp,
 		 FMField *bf, FMField *mtxD, VolumeGeometry *vg,

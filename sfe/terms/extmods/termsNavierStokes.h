@@ -39,17 +39,17 @@ int32 dw_lin_convect( FMField *out,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
-int32 term_ns_asmDiv( FMField *out, FMField *state, int32 offset,
-		      FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
-		      int32 isDiff );
+int32 dw_div( FMField *out, FMField *state, int32 offset,
+	      FMField *bf, VolumeGeometry *vg,
+	      int32 *conn, int32 nEl, int32 nEP,
+	      int32 *elList, int32 elList_nRow,
+	      int32 isDiff );
 
-int32 term_ns_asmGrad( FMField *out, FMField *state, int32 offset,
-		       FMField *bf, VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff );
+int32 dw_grad( FMField *out, float64 coef, FMField *state, int32 offset,
+	       FMField *bf, VolumeGeometry *vg,
+	       int32 *conn, int32 nEl, int32 nEP,
+	       int32 *elList, int32 elList_nRow,
+	       int32 isDiff );
 
 int32 dw_st_pspg_p( FMField *out, FMField *state, int32 offset,
 		    FMField *coef, VolumeGeometry *vg,
