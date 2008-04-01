@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 """
+Schrodinger equation solver.
+
 Usage:
 ------
 
@@ -14,6 +16,11 @@ $ ./schroedinger.py
 Visualize:
 
 $ paraview --data=t.1.vtk
+
+
+If you want to solve the one particle equation, use:
+
+$ ./schroedinger.py -s
 
 """
 # 12.01.2007, c 
