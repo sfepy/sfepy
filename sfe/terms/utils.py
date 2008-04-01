@@ -33,3 +33,16 @@ def fixScalarConstant( mat, dtype ):
         if mat.size == 1:
             out = dtype( mat )
     return out
+
+##
+# c: 19.12.2007, r: 01.04.2008
+def chooseScalarOrInEl( mat, dtype, fun1, fun2 ):
+    if nm.isscalar( mat ):
+        out = dtype( mat ), fun1
+    elif isinstance( mat, nm.ndarray ):
+        if mat.ndim == 0:
+            out = dtype( mat ), fun1
+        else:
+            out = mat, fun2
+    return out
+

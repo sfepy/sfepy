@@ -11,9 +11,7 @@ class LinearVolumeForceTerm( Term ):
     geometry = [(Volume, 'virtual')]
 
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
-        self.function = terms.dw_volume_lvf
+        Term.__init__( self, region, name, sign, terms.dw_volume_lvf )
         
     ##
     # 18.09.2006, c
