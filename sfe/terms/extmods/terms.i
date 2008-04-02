@@ -43,7 +43,7 @@
     (FMField *vecMV),
     (FMField *mtxD),
     (FMField *traction),
-    (FMField *force),
+    (FMField *forceQP),
     (FMField *coef),
     (FMField *strain),
     (FMField *strainV),
@@ -131,10 +131,8 @@ int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
 		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow );
 
-int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *gbf,
-		     FMField *force, VolumeGeometry *vg,
-		     int32 *conn, int32 nEl, int32 nEP,
-		     int32 *elList, int32 elList_nRow );
+int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
+		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow );
 
 int32 dw_mass( FMField *out, float64 coef, FMField *state, int32 offset,
 	       FMField *bf, VolumeGeometry *vg,
