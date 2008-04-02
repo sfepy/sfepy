@@ -87,7 +87,7 @@ def prepareSaveData( ts, conf, options ):
     return ofnTrunk, suffix, isSave
 
 ##
-# c: 06.02.2008, r: 06.02.2008
+# c: 06.02.2008, r: 02.04.2008
 def timeStepFunction( ts, state0, problem, data ):
     problem.timeUpdate( ts )
 
@@ -95,11 +95,26 @@ def timeStepFunction( ts, state0, problem, data ):
     varNames0 = vh.values()
     varNames = vh.keys()
 
+    setHistoryData = problem.variables.nonStateDataFromState
+
     if ts.step == 0:
         state = state0.copy()
+        problem.initTime( ts )
         problem.applyEBC( state )
+
+        # Initialize caches.
+        if problem.equations.caches:
+            ev = problem.getEvaluator( ts = ts, **data )
+            setHistoryData( varNames0, state0, varNames )
+            vecR, ret = ev.evalResidual( state )
+            if ret == 0: # OK.
+                err = nla.norm( vecR )
+                output( 'initial residual: %e' % err )
+            else:
+                output( 'initial residual evaluation failed, giving up...' )
+                raise ValueError
     else:
-        problem.variables.nonStateDataFromState( varNames0, state0, varNames )
+        setHistoryData( varNames0, state0, varNames )
         state = problem.solve( state0 = state0, ts = ts, **data )
 
     problem.advance( ts )
@@ -107,13 +122,19 @@ def timeStepFunction( ts, state0, problem, data ):
     return state
 
 ##
-# c: 12.01.2007, r: 08.02.2008
+# c: 12.01.2007, r: 02.04.2008
 def solveDirect( conf, options ):
     """Generic (simple) problem solver."""
     if options.outputFileNameTrunk:
         ofnTrunk = options.outputFileNameTrunk
     else:
         ofnTrunk = io.getTrunk( conf.fileName_mesh )
+
+    opts = conf.options
+    if hasattr( opts, 'postProcessHook' ): # User postprocessing.
+        postProcessHook = getattr( conf.funmod, opts.postProcessHook )
+    else:
+        postProcessHook = None
 
     saveNames = Struct( ebc = None, regions = None, fieldMeshes = None,
                         regionFieldMeshes = None )
@@ -146,14 +167,16 @@ def solveDirect( conf, options ):
         for step, time, state in timeSolver( state0 ):
             
             if isSave[ii] == step:
-                pb.saveState( ofnTrunk + suffix % step, state )
+                pb.saveState( ofnTrunk + suffix % step, state,
+                              postProcessHook = postProcessHook )
 
                 ii += 1
     else:
         ##
         # Stationary problem.
         pb, state, data = solveStationary( conf, saveNames = saveNames )
-        pb.saveState( ofnTrunk + '.vtk', state )
+        pb.saveState( ofnTrunk + '.vtk', state,
+                      postProcessHook = postProcessHook )
 
         if options.dump:
             import tables as pt

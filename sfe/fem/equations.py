@@ -198,6 +198,12 @@ class Equations( Container ):
             cache.setMode( cacheOverride )
 
     ##
+    # c: 02.04.2008, r: 02.04.2008
+    def initTime( self, ts ):
+        for cache in self.caches.itervalues():
+            cache.initTime( ts )
+
+    ##
     # 08.06.2007, c
     def advance( self, ts ):
         for cache in self.caches.itervalues():

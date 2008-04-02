@@ -11,12 +11,7 @@ class DataCache( Struct ):
     argTypes = ()
     
     ##
-    # 19.10.2006, c
-    # 24.11.2006
-    # 28.11.2006
-    # 27.02.2007
-    # 08.06.2007
-    # 11.06.2007
+    # c: 19.10.2006, r: 02.04.2008
     def __init__( self, name, argNames, keys, historySizes = None,
                   function = None ):
         """historySizes[key] = (historySize, maxMemHistorySize)
@@ -37,7 +32,8 @@ class DataCache( Struct ):
         self.memGrowing = {}.fromkeys( keys, False )
         self.historyGrowing = {}.fromkeys( keys, False )
         self.mergeHistorySizes( historySizes )
-        
+        self.step = 0
+
     ##
     # 28.11.2006, c
     def keys( self ):
@@ -96,15 +92,15 @@ class DataCache( Struct ):
                                           self.historySizes[key] )
 
     ##
-    # 28.11.2006, c
-    # 30.11.2006
-    # 04.12.2006
-    # 27.02.2007
-    # 08.06.2007
+    # c: 02.04.2008, r: 02.04.2008
+    def initTime( self, ts ):
+        self.step = ts.step
+
+    ##
+    # c: 28.11.2006, r: 02.04.2008
     def initData( self, key, ckey, shape ):
 
         self.valid[key][ckey] = False
-        self.step = 0
         data = self.data[key]
         
         # Current time data.

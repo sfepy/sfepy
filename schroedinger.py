@@ -59,9 +59,9 @@ def wrapFunction( function, args ):
         out = function( x, *args )
         eigs, mtxSPhi, vecN, vecVH, vecVXC = out
         print "-"*70
-        print eigs
-        print vecVH
-        print vecVXC
+        print "eigs",eigs
+        print "V_H",vecVH
+        print "V_XC",vecVXC
         print "-"*70
         tt2 = time.time()
         if tt2 < tt:
@@ -158,7 +158,7 @@ def solveEigenProblemN( conf, options ):
 
     coor = pb.domain.getMeshCoors()
     r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
-    vecN *= r
+    vecNr2 = vecN * r
     
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
@@ -176,7 +176,8 @@ def solveEigenProblemN( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    updateStateToOutput( out, pb, vecN, 'nr2' )
+    updateStateToOutput( out, pb, vecN, 'n' )
+    updateStateToOutput( out, pb, vecNr2, 'nr2' )
     updateStateToOutput( out, pb, vecVH, 'vh' )
     updateStateToOutput( out, pb, vecVXC, 'vxc' )
 

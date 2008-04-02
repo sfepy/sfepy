@@ -42,7 +42,7 @@ help = {
 }
 
 ##
-# c: 12.01.2007, r: 19.02.2008
+# c: 12.01.2007, r: 02.04.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -95,12 +95,15 @@ def main():
 ##     print conf
 ##     pause()
 
+    opts = conf.options
+    if hasattr( opts, 'outputPrefix' ):
+        setOutputPrefix( opts.outputPrefix )
+
     dpb, vecDP, data = solveDirect( conf, options )
 
-    opts = conf.options
-    if hasattr( opts, 'postProcessHook' ): # User postprocessing.
-        postProcessHook = getattr( conf, opts.postProcessHook )
-        postProcessHook( dpb, vecDP, data )
+    if hasattr( opts, 'postProcessHookFinal' ): # User postprocessing.
+        hook = getattr( conf, opts.postProcessHookFinal )
+        hook( dpb, vecDP, data )
 
 if __name__ == '__main__':
     main()

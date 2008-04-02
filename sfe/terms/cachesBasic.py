@@ -28,18 +28,21 @@ class StateInVolumeQPDataCache( DataCache ):
         DataCache.initData( self, key, ckey, shape )
 
     ##
-    # created:       13.03.2007
-    # last revision: 13.12.2007
+    # c: 13.03.2007, r: 02.04.2008
     def update( self, key, groupIndx, ih, **kwargs ):
         state, = self.getArgs( **kwargs )
         ap, vg = state.getApproximation( groupIndx, 'Volume' )
         ckey = self.gToC( groupIndx )
 
-        vec, indx = state()
-        bf = ap.getBase( 'v', 0, groupIndx[0] )
-        self.function( self.data[key][ckey][ih], vec, indx.start,
-                       bf, ap.econn )
-
+        if ih == 0:
+            vec, indx = state()
+            bf = ap.getBase( 'v', 0, groupIndx[0] )
+            self.function( self.data[key][ckey][ih], vec, indx.start,
+                           bf, ap.econn )
+        else:
+            print 'history update!'
+            print kwargs['history']
+            raise NotImplementedError
 
 ##
 # 24.04.2007, c
@@ -306,6 +309,7 @@ class MatInQPDataCache( DataCache ):
             self.data[key][ckey][ih][:] = matQP
 
         elif self.modeIn == 'vertex':
+            """Full domain mat only! (no group.lconn...)"""
             iname, ig = ckey[0], ckey[-1]
             
             gbf = ap.getBase( 'v', 0, iname, fromGeometry = True )
