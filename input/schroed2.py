@@ -3,7 +3,8 @@
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
-fileName_mesh = 'database/t.1.node'
+#fileName_mesh = 'database/t.1.node'
+fileName_mesh = 'tmp/t.1.node'
 
 options = {
     'saveEigVectors' : None,

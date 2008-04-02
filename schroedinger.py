@@ -26,9 +26,10 @@ $ ./schroedinger.py -s
 # 12.01.2007, c 
 import os.path as op
 from optparse import OptionParser
+from math import pi
+
 from scipy.optimize import broyden3
 from scipy.optimize.nonlin import excitingmixing
-
 
 import init_sfe
 from sfe.base.base import *
@@ -57,8 +58,11 @@ def wrapFunction( function, args ):
         tt = time.time()
         out = function( x, *args )
         eigs, mtxSPhi, vecN, vecVH, vecVXC = out
-        print vecVH
-        print vecVXC
+        print "-"*70
+        print "eigs",eigs
+        print "V_H",vecVH
+        print "V_XC",vecVXC
+        print "-"*70
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
@@ -93,7 +97,7 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
 
     vecVXC = nm.zeros_like( vecVHXC )
     for ii, val in enumerate( vecN ):
-        vecVXC[ii] = rdirac.getvxc( val, 0 )
+        vecVXC[ii] = rdirac.getvxc( val/(4*pi), 0 )
 
     pb.setEquations( conf.equations_vh )
     pb.timeUpdate()
@@ -150,7 +154,7 @@ def solveEigenProblemN( conf, options ):
 
     coor = pb.domain.getMeshCoors()
     r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
-    vecN *= r
+    vecNr2 = vecN * r
     
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
@@ -168,7 +172,8 @@ def solveEigenProblemN( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    updateStateToOutput( out, pb, vecN, 'nr2' )
+    updateStateToOutput( out, pb, vecN, 'n' )
+    updateStateToOutput( out, pb, vecNr2, 'nr2' )
     updateStateToOutput( out, pb, vecVH, 'vh' )
     updateStateToOutput( out, pb, vecVXC, 'vxc' )
 
