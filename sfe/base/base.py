@@ -32,7 +32,13 @@ def debug():
     pdb.set_trace()
 
 ##
-# c: 05.06.2006, r: 26.02.2008
+# c: 02.04.2008, r: 02.04.2008
+prefix = 'sfe:'
+def setOutputPrefix( prefix  = 'sfe:' ):
+    globals()['prefix'] = prefix
+
+##
+# c: 05.06.2006, r: 02.04.2008
 level = 0
 def output( *argc, **argv ):
     global level
@@ -42,7 +48,7 @@ def output( *argc, **argv ):
     if msg.startswith( ' ...' ):
         level -= 1
 
-    print 'sfe:' + ('  ' * level) + msg
+    print prefix + ('  ' * level) + msg
 
     if msg.endswith( '...' ):
         level += 1

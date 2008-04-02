@@ -153,7 +153,7 @@ Material:m
                 self.data = None
 
     ##
-    # c: 02.08.2006, r: 20.02.2008
+    # c: 02.08.2006, r: 02.04.2008
     def getData( self, regionName, ig, name = None ):
         """Returns None in function mode if setCurrentGroup() was not called."""
 ##         print 'getting', name
@@ -170,6 +170,8 @@ Material:m
             ii = self.igs.index( ig )
             if name is None:
                 return self.datas[ii]
+            elif isinstance( self.datas[ii], Struct ):
+                return getattr( self.datas[ii], name )
             else:
                 return self.datas[ii][name]
 

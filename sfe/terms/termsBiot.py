@@ -65,10 +65,10 @@ class BiotDivDtTerm( DivTerm ):
         Term.__init__( self, region, name, sign, terms.dw_biot_div )
 
     ##
-    # c: 31.03.2008, r: 31.03.2008
+    # c: 31.03.2008, r: 02.04.2008
     def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
         cache = self.getCache( 'cauchy_strain', 0 )
-        dstrain = cache( 'dstrain', self.charFun.ig, 0, state = state )
+        dstrain = cache( 'dstrain', self.getCurrentGroup(), 0, state = state )
 
         ts, mat = self.getArgs( ['ts', 'material'], **kwargs )
         matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )

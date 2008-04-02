@@ -121,14 +121,8 @@ class ProblemDefinition( Struct ):
         
     
     ##
-    # 18.04.2006, c
-    # 25.07.2006
-    # 24.08.2006
-    # 10.10.2006
-    # 22.02.2007
-    # 23.04.2007
-    # 11.07.2007
-    def setEquations( self, conf_equations, user = None, cacheOverride = True ):
+    # c: 18.04.2006, r: 02.04.2008
+    def setEquations( self, conf_equations, user = None, cacheOverride = None ):
         equations = Equations.fromConf( conf_equations )
         equations.parseTerms( self.domain.regions )
         equations.setupTermArgs( self.variables, self.materials, user )
@@ -146,6 +140,11 @@ class ProblemDefinition( Struct ):
         # Call after describeGeometry(), as it sets ap.surfaceData.
         self.variables.setupDofConns()
 
+        if cacheOverride is None:
+            if hasattr( self.conf.fe, 'cacheOverride' ):
+                cacheOverride = self.conf.fe.cacheOverride
+            else:
+                cacheOverride = True
         equations.setCacheMode( cacheOverride )
 
         self.equations = equations
@@ -275,6 +274,11 @@ class ProblemDefinition( Struct ):
     def setMeshCoors( self, coors, updateState = False ):
         fea.setMeshCoors( self.domain, self.fields, self.geometries,
                           coors, updateState )
+
+    ##
+    # c: 02.04.2008, r: 02.04.2008
+    def initTime( self, ts ):
+        self.equations.initTime( ts )
 
     ##
     # 08.06.2007, c
