@@ -365,7 +365,7 @@ class WDotProductVolumeOperatorTerm( Term ):
             yield out, chunk, status
 
 ##
-# c: 05.03.2008
+# c: 02.04.2008
 class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
     r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
     scalar and vector (not implemented!) fields.
