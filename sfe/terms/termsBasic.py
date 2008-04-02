@@ -3,7 +3,7 @@ from terms import *
 ##
 # 12.04.2007, c
 class IntegrateVolumeTerm( Term ):
-    """:definition: $\int_\Omega y$"""
+    r""":definition: $\int_\Omega y$"""
     name = 'd_volume_integrate'
     argTypes = ('parameter',)
     geometry = [(Volume, 'parameter')]
@@ -31,7 +31,7 @@ class IntegrateVolumeTerm( Term ):
 ##
 # 01.11.2007, c
 class IntegrateVolumeOperatorTerm( Term ):
-    """:definition: $\int_\Omega q$"""
+    r""":definition: $\int_\Omega q$"""
 
     name = 'dw_volume_integrate'
     argTypes = ('virtual',)
@@ -65,7 +65,7 @@ class IntegrateVolumeOperatorTerm( Term ):
 ##
 # 24.04.2007, c
 class IntegrateSurfaceTerm( Term ):
-    """:definition: $\int_\Gamma y$, for vectors: $\int_\Gamma \ul{y} \cdot
+    r""":definition: $\int_\Gamma y$, for vectors: $\int_\Gamma \ul{y} \cdot
     \ul{n}$"""
     name = 'd_surface_integrate'
     argTypes = ('parameter',)
@@ -102,7 +102,7 @@ class IntegrateSurfaceTerm( Term ):
 ##
 # 26.09.2007, c
 class DotProductVolumeTerm( Term ):
-    """:description: Volume $L^2(\Omega)$ dot product for both scalar and
+    r""":description: Volume $L^2(\Omega)$ dot product for both scalar and
     vector fields.
     :definition: $\int_\Omega p r$, $\int_\Omega \ul{u} \cdot \ul{w}$"""
     name = 'd_volume_dot'
@@ -140,7 +140,7 @@ class DotProductVolumeTerm( Term ):
 ##
 # 09.10.2007, c
 class DotProductSurfaceTerm( Term ):
-    """:description: Surface $L^2(\Gamma)$ dot product for both scalar and
+    r""":description: Surface $L^2(\Gamma)$ dot product for both scalar and
     vector fields.
     :definition: $\int_\Gamma p r$, $\int_\Gamma \ul{u} \cdot \ul{w}$"""
     name = 'd_surface_dot'
@@ -178,7 +178,7 @@ class DotProductSurfaceTerm( Term ):
 ##
 # 16.07.2007, c
 class VolumeTerm( Term ):
-    """:description: Volume of a domain. Uses approximation of the parameter
+    r""":description: Volume of a domain. Uses approximation of the parameter
     variable.
     :definition: $\int_\Omega 1$"""
     name = 'd_volume'
@@ -213,7 +213,7 @@ def fixMatQPShape( matQP, nEl ):
 ##
 # c: 05.03.2008
 class IntegrateVolumeMatTerm( Term ):
-    """:description: Integrate material parameter $m$ over a domain. Uses
+    r""":description: Integrate material parameter $m$ over a domain. Uses
     approximation of $y$ variable.
     :definition: $\int_\Omega m$
     :arguments: material : $m$ (can have up to two dimensions),
@@ -254,7 +254,7 @@ class IntegrateVolumeMatTerm( Term ):
 ##
 # c: 05.03.2008
 class WDotProductVolumeTerm( Term ):
-    """:description: Volume $L^2(\Omega)$ weighted dot product for both scalar
+    r""":description: Volume $L^2(\Omega)$ weighted dot product for both scalar
     and  vector fields.
     :definition: $\int_\Omega y p r$, $\int_\Omega y \ul{u} \cdot \ul{w}$
     :arguments: material : weight function $y$"""
@@ -305,7 +305,7 @@ class WDotProductVolumeTerm( Term ):
 ##
 # c: 05.03.2008
 class WDotProductVolumeOperatorTerm( Term ):
-    """:description: Volume $L^2(\Omega)$ weighted dot product operator for
+    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
     scalar and vector (not implemented!) fields.
     :definition: $\int_\Omega y q p$, $\int_\Omega y \ul{v} \cdot \ul{u}$
     :arguments: material : weight function $y$"""
@@ -317,7 +317,7 @@ class WDotProductVolumeOperatorTerm( Term ):
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
-        
+
     ##
     # c: 05.03.2008, r: 05.03.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
@@ -338,7 +338,6 @@ class WDotProductVolumeOperatorTerm( Term ):
             mode = 1
         else:
             raise StopIteration
-
 
         if mat.ndim == 1:
             mat = mat[...,nm.newaxis]
@@ -367,8 +366,73 @@ class WDotProductVolumeOperatorTerm( Term ):
 
 ##
 # c: 05.03.2008
+class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
+    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
+    scalar and vector (not implemented!) fields.
+    :definition: $\int_\Omega y q \frac{p - p_0}{\dt}$,
+    $\int_\Omega y \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}$
+    :arguments: material : weight function $y$"""
+    name = 'dw_volume_wdot_dt'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    useCaches = {'state_in_volume_qp' : [['state', {'state' : (2,2)}]],
+                 'mat_in_qp' : [['material']]}
+
+    ##
+    # c: 02.04.2008, r: 02.04.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        ts, mat, virtual, state, par = self.getArgs( **kwargs )
+        if ts.step == 0:
+            raise StopIteration
+        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+
+        cache = self.getCache( 'state_in_volume_qp', 0 )
+        vec = cache( 'state', self.getCurrentGroup(), 0,
+                     state = state, history = par )
+        vec0 = cache( 'state', self.getCurrentGroup(), 1,
+                     state = state, history = par )
+        dvec = (vec - vec0) / ts.dt
+        vdim = vec.shape[-1]
+
+        if diffVar is None:
+            shape = (chunkSize, 1, vdim * nEP, 1)
+            mode = 0
+        elif diffVar == self.getArgName( 'state' ):
+            shape = (chunkSize, 1, vdim * nEP, vdim * nEP)
+            mode = 1
+        else:
+            raise StopIteration
+
+        if mat.ndim == 1:
+            mat = mat[...,nm.newaxis]
+
+        cache = self.getCache( 'mat_in_qp', 0 )
+        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+                       mat = mat, ap = ap,
+                       assumedShapes = [(1, nQP, 1, 1),
+                                        (nEl, nQP, 1, 1)],
+                       modeIn = None )
+
+        matQP = fixMatQPShape( matQP, chunkSize )
+
+        bf = ap.getBase( 'v', 0, self.integralName )
+        bfT = bf.transpose( (0, 2, 1) )
+        for out, chunk in self.charFun( chunkSize, shape ):
+            if vdim > 1:
+                raise NotImplementedError
+            else:
+                if mode == 0:
+                    vec = bfT * matQP[chunk] * dvec[chunk]
+                else:
+                    vec = bfT * matQP[chunk] * bf / ts.dt
+            status = vg.integrateChunk( out, vec, chunk )
+            yield out, chunk, status
+
+##
+# c: 05.03.2008
 class WDotProductVolumeOperatorRTerm( WDotProductVolumeOperatorTerm ):
-    """:description: Volume $L^2(\Omega)$ weighted dot product operator for
+    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
     scalar and vector (not implemented!) fields (to use on a right-hand side).
     :definition: $\int_\Omega y q r$, $\int_\Omega y \ul{v} \cdot \ul{w}$
     :arguments: material : weight function $y$"""
