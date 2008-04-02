@@ -52,7 +52,7 @@ def checkTangentMatrix( conf, vecX0, mtxA0, evaluator ):
     return time.clock() - tt
 
 ##
-# 02.12.2005, c
+# c: 02.12.2005, r: 02.04.2008
 def convTest( conf, it, err, err0 ):
 
     status = -1
@@ -61,7 +61,7 @@ def convTest( conf, it, err, err0 ):
     else:
         errR = err / err0
 
-    print 'nls: iter: %d, out-of-balance: %e (rel: %e)' % (it, err, errR)
+    output( 'nls: iter: %d, residual: %e (rel: %e)' % (it, err, errR) )
     if it > 0:
         if (err < conf.epsA) and (errR < conf.epsR):
             status = 0
@@ -85,14 +85,7 @@ class Newton( NonlinearSolver ):
         NonlinearSolver.__init__( self, conf, **kwargs )
 
     ##
-    # 02.12.2005, c
-    # 13.12.2005
-    # 14.12.2005
-    # 14.04.2006
-    # 18.09.2006
-    # 05.10.2006
-    # 18.07.2007
-    # 02.10.2007
+    # c: 02.12.2005, r: 02.04.2008
     # 10.10.2007, from newton()
     def __call__( self, vecX0, conf = None, evaluator = None,
                   linSolver = None, status = None ):
@@ -122,25 +115,30 @@ class Newton( NonlinearSolver ):
                 vecR, ret = evaluator.evalResidual( vecX )
                 timeStats['rezidual'] = time.clock() - tt
                 if ret == 0: # OK.
-                    err = nla.norm( vecR )
+                    try:
+                        err = nla.norm( vecR )
+                    except:
+                        output( 'infs or nans in the residual:', vecR )
+                        output( nm.isfinite( vecR ).all() )
+                        debug()
                     if it == 0:
                         err0 = err;
                         break
                     if err < (errLast * conf.lsOn): break
                     red = conf.lsRed;
-                    print 'linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'\
-                          % (it, err, errLast * conf.lsOn, red * ls)
+                    output( 'linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'\
+                            % (it, err, errLast * conf.lsOn, red * ls) )
                 else: # Failure.
                     red = conf.lsRedWarp;
-                    print 'rezidual computation failed for iter %d (new ls: %e)!'\
-                          % (it, red * ls) 
+                    output(  'rezidual computation failed for iter %d'
+                             ' (new ls: %e)!' % (it, red * ls) )
                     if (it == 0):
                         raise RuntimeError, 'giving up...'
 
                 if ls < conf.lsMin:
                     if ret != 0:
                         raise RuntimeError, 'giving up...'
-                    print 'linesearch failed, continuing anyway'
+                    output( 'linesearch failed, continuing anyway' )
                     break
 
                 ls *= red;
@@ -172,25 +170,18 @@ class Newton( NonlinearSolver ):
                 timeStats['check'] = time.clock() - tt - wt
     ##            if conf.check == 2: pause()
 
-    ##         print mtxA.__repr__()
-    ##         pause()
-    ##        print nla.eig( mtxA.A )
-    ##         mtxA.save( 'mtxNSe-5', format = '%d %d %e\n' )
-    ##         pause()
-    ##         plu.spy( mtxA, eps = 1e-12 )
-    ##         plu.pylab.show()
 
             tt = time.clock() 
             vecDX = linSolver( vecR, mtx = mtxA )
             timeStats['solve'] = time.clock() - tt
 
             for kv in timeStats.iteritems():
-                print '%10s: %7.2f [s]' % kv
+                output( '%10s: %7.2f [s]' % kv )
 
             vecE = mtxA * vecDX - vecR
             lerr = nla.norm( vecE )
             if lerr > (conf.epsA * conf.linRed):
-                print 'linear system not solved! (err = %e)' % lerr
+                output( 'linear system not solved! (err = %e)' % lerr )
     #            raise RuntimeError, 'linear system not solved! (err = %e)' % lerr
 
             evaluator.updateVec( vecX, vecDX )
@@ -218,6 +209,23 @@ class Newton( NonlinearSolver ):
                 break
 
             it += 1
+
+##         import pylab as p
+##         problem = evaluator.problem
+##         r0 = problem.variables.makeFullVec( vecR, forceValue = 0.0 )
+##         dx = nm.zeros_like( vecDX )
+##         ii = problem.variables.getIndx( 'r', stripped = True )
+##         dx[ii] = 1.0
+##         r1 = problem.variables.makeFullVec( mtxA * dx, forceValue = 0.0 )
+##         p.plot( r0 )
+##         p.plot( r1 )
+
+##         vv = nm.where( nm.abs( r1 ) > 1e-12, 1.0, 0.0 )
+##         problem.saveStateToVTK( 'sd.vtk', vv )
+##         nodes = problem.variables.getNodesOfGlobalDofs( nm.where( vv > 0.5 )[0] )
+##         print nodes
+## #        problem.saveRegions( 'asdsd' )
+##         p.show()
 
         if status is not None:
             status['timeStats'] = timeStats
