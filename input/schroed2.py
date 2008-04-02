@@ -3,7 +3,8 @@
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
-fileName_mesh = 'database/t.1.node'
+#fileName_mesh = 'database/t.1.node'
+fileName_mesh = 'tmp/t.1.node'
 
 options = {
     'saveEigVectors' : None,
@@ -43,6 +44,17 @@ else:
         'name' : 'Surface',
         'select' : 'nodes of surface',
     }
+
+def get_sphere( x, y, z, mode ):
+    import numpy as nm
+    r = x**2 + y**2 + z**2
+    val = nm.where( (1 <= r) & (r <= 2), 1, 0 )
+    return val
+
+region_03 = {
+    'name' : 'sphere',
+    'select' : 'nodes by get_sphere( x, y, z, 0 )',
+}
     
 material_1 = {
     'name' : 'm',
@@ -111,6 +123,7 @@ equations = {
     'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
                + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
     'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
+    'sphere' : """ d_volume_integrate.i1.sphere( n )""",
 }
 
 equations_vh = {

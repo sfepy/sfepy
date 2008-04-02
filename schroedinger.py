@@ -26,9 +26,10 @@ $ ./schroedinger.py -s
 # 12.01.2007, c 
 import os.path as op
 from optparse import OptionParser
+from math import pi
+
 from scipy.optimize import broyden3
 from scipy.optimize.nonlin import excitingmixing
-
 
 import init_sfe
 from sfe.base.base import *
@@ -57,8 +58,11 @@ def wrapFunction( function, args ):
         tt = time.time()
         out = function( x, *args )
         eigs, mtxSPhi, vecN, vecVH, vecVXC = out
+        print "-"*70
+        print eigs
         print vecVH
         print vecVXC
+        print "-"*70
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
@@ -91,14 +95,18 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
         vecPhi = pb.variables.makeFullVec( mtxSPhi[:,ii] )
         vecN += vecPhi ** 2
 
+
     vecVXC = nm.zeros_like( vecVHXC )
     for ii, val in enumerate( vecN ):
-        vecVXC[ii] = rdirac.getvxc( val, 0 )
+        vecVXC[ii] = rdirac.getvxc( val/(4*pi), 0 )
 
     pb.setEquations( conf.equations_vh )
     pb.timeUpdate()
     pb.variables['n'].dataFromData( vecN )
     vecVH = pb.solve()
+
+    sphere = evalTermOP( dummy, conf.equations['sphere'], pb)
+    print sphere
 
     return eigs, mtxSPhi, vecN, vecVH, vecVXC
 
