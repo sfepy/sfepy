@@ -57,20 +57,6 @@ def createBNF( slist, currentSection ):
 
     return doc
 
-defines = r"""
-\def\dt{{\Delta t}}
-\def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
-\def\difd#1{\ {\rm d}#1}
-\newcommand{\dvg}{\mathop{\rm div}}
-\newcommand{\ul}[1]{\underline{#1}}
-\newcommand{\uld}[1]{\dot{\underline{#1}}}
-\newcommand{\ull}[1]{\underline{\underline{#1}}}
-\def\Vcal{\mathcal{V}}
-\def\Tcal{\mathcal{T}}
-\def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SfePy}
-"""
-
 begining = r"""
 <article>
     <articleinfo>
@@ -79,6 +65,7 @@ begining = r"""
 \setlength{\parindent}{0pt}
 \def\dt{{\Delta t}}
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
+\def\tdiff#1#2{\frac{{\rm d} {#1}}{{\rm d} {#2}}}
 \def\difd#1{\ {\rm d}#1}
 \newcommand{\dvg}{\mathop{\rm div}}
 \newcommand{\ul}[1]{\underline{#1}}
@@ -86,8 +73,11 @@ begining = r"""
 \newcommand{\ull}[1]{\underline{\underline{#1}}}
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
+\def\Hcal{\mathcal{H}}
+\def\Fcal{\mathcal{F}}
+\def\Gcal{\mathcal{G}}
 \def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SFE}
+\newcommand{\sfe}{SfePy}
         </mathinclude>
     </articleinfo>
 """

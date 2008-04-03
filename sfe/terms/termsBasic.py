@@ -441,3 +441,62 @@ class WDotProductVolumeOperatorRTerm( WDotProductVolumeOperatorTerm ):
     geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
     useCaches = {'state_in_volume_qp' : [['parameter']],
                  'mat_in_qp' : [['material']]}
+
+##
+# c: 03.04.2008
+class WDotProductVolumeOperatorTHTerm( Term ):
+    r""":definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
+    \difd{\tau} \right] q$"""
+    name = 'dw_volume_wdot_th'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    useCaches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
+
+    ##
+    # c: 03.04.2008, r: 03.04.2008
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
+
+    ##
+    # c: 03.04.2008, r: 03.04.2008
+    def getShape( self, diffVar, chunkSize, apr, apc = None ):
+        self.dataShape = apr.getVDataShape( self.integralName )
+        nEl, nQP, dim, nEP = self.dataShape
+        if diffVar is None:
+            return (chunkSize, 1, nEP, 1), 0
+        elif diffVar == self.getArgName( 'state' ):
+            return (chunkSize, 1, nEP, nEP), 1
+        else:
+            raise StopIteration
+
+    ##
+    # c: 03.04.2008, r: 03.04.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        ts, mats, virtual, state, history = self.getArgs( **kwargs )
+        if ts.step == 0:
+            raise StopIteration
+        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, ap )
+        nEl, nQP, dim, nEP = self.dataShape
+
+        bf = ap.getBase( 'v', 0, self.integralName )
+
+        if mode == 1:
+            matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+            for out, chunk in self.charFun( chunkSize, shape ):
+                status = self.function( out, 1.0, nm.empty( 0 ), bf,
+                                        matQP, vg, chunk, 1 )
+                yield out, chunk, status
+        else:
+            cache = self.getCache( 'state_in_volume_qp', 0 )
+            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+                out1 = nm.empty_like( out )
+                for ii, mat in enumerate( mats ):
+                    matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+                    vec_qp = cache( 'state', self.getCurrentGroup(), ii,
+                                    state = state, history = history )
+                    status = self.function( out1, 1.0, vec_qp, bf,
+                                            matQP, vg, chunk, 0 )
+                    out += out1
+                yield out, chunk, status

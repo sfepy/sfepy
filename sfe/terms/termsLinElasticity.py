@@ -163,6 +163,56 @@ class LinearViscousTerm( LinearElasticTerm ):
             yield out, chunk, status
 
 ##
+# 14.09.2006, c
+class LinearViscousTHTerm( LinearElasticTerm ):
+    r""":definition: $\int_{\Omega} \left [\int_0^t
+    \Hcal_{ijkl}(t-\tau)\,\tdiff{e_{kl}(\ul{u}(\tau))}{\tau}
+    \difd{\tau} \right]\,e_{ij}(\ul{v})$"""
+    name = 'dw_lin_viscous_th'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual')]
+    useCaches = {'cauchy_strain' : [['state', {'strain' : (2,2),
+                                               'dstrain' : (-1,-1)}]]}
+
+    ##
+    # c: 14.09.2006, r: 03.04.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        """history for now is just state_0, it is not used anyway, as the
+        history is held in the dstrain cache"""
+        ts, mats, virtual, state, history = self.getArgs( **kwargs )
+        if ts.step == 0:
+            raise StopIteration
+        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, ap )
+        nEl, nQP, dim, nEP = self.dataShape
+
+        if mode == 1:
+            matQP = mats[0][nm.newaxis,:,:].repeat( nQP, 0 )
+            for out, chunk in self.charFun( chunkSize, shape ):
+                status = self.function( out, 1.0 / ts.dt, nm.empty( 0 ),
+                                        matQP, vg, chunk, 1 )
+                yield out, chunk, status
+        else:
+            cache = self.getCache( 'cauchy_strain', 0 )
+            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+                out1 = nm.empty_like( out )
+##                 ttt = 0.0
+##                 itt = time.clock()
+                for ii, mat in enumerate( mats ):
+                    matQP = mat[nm.newaxis,:,:].repeat( nQP, 0 )
+                    dstrain = cache( 'dstrain', self.getCurrentGroup(), ii,
+                                     state = state, history = history )
+##                     tt = time.clock()
+                    status = self.function( out1, 1.0 / ts.dt, dstrain,
+                                            matQP, vg, chunk, 0 )
+##                     ttt += time.clock() - tt
+                    out += out1
+##                 itt = time.clock() - itt
+##                 print ttt, itt
+                yield out, chunk, status
+
+##
 # 21.09.2006, c
 class CauchyStrainTerm( Term ):
     r""":description: Cauchy strain tensor averaged in elements.

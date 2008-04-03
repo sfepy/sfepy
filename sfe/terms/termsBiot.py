@@ -46,6 +46,52 @@ class BiotGradRTerm( BiotGradTerm ):
     useCaches = {'state_in_volume_qp' : [['parameter']]}
 
 ##
+# c: 03.04.2008
+class BiotGradTHTerm( BiotGradTerm ):
+    r""":definition: $\int_{\Omega} \left [\int_0^t
+    \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$
+    """
+    name = 'dw_biot_grad_th'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    useCaches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
+
+    ##
+    # c: 03.04.2008, r: 03.04.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        """history for now is just state_0, it is not used anyway, as the
+        history is held in the dstrain cache"""
+        ts, mats, virtual, state, history = self.getArgs( **kwargs )
+        if ts.step == 0:
+            raise StopIteration
+        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
+        nEl, nQP, dim, nEP = self.dataShape
+
+        bf = apc.getBase( 'v', 0, self.integralName )
+
+        if mode == 1:
+            matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+            for out, chunk in self.charFun( chunkSize, shape ):
+                status = self.function( out, 1.0, nm.empty( 0 ), bf,
+                                        matQP, vgr, chunk, 1 )
+                yield out, chunk, status
+        else:
+            cache = self.getCache( 'state_in_volume_qp', 0 )
+            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+                out1 = nm.empty_like( out )
+                for ii, mat in enumerate( mats ):
+                    matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+                    vec_qp = cache( 'state', self.getCurrentGroup(), ii,
+                                    state = state, history = history )
+                    status = self.function( out1, 1.0, vec_qp, bf,
+                                            matQP, vgr, chunk, 0 )
+                    out += out1
+                yield out, chunk, status
+
+##
 # 01.08.2006, c
 class BiotDivDtTerm( DivTerm ):
     r""":description: Biot divergence-like rate term (weak form) with
@@ -158,3 +204,51 @@ class BiotDivRIntegratedTerm( Term ):
             status = self.function( out, 1.0, vecQP, strain, matQP, vgc, chunk )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
+
+##
+# c: 03.04.2008
+class BiotDivTHTerm( BiotDivTerm ):
+    r""":definition: $\int_{\Omega} \left [\int_0^t
+    \alpha_{ij}(t-\tau) \tdiff{e_{kl}(\ul{u}(\tau))}{\tau}
+    \difd{\tau} \right] q$
+    """
+    name = 'dw_biot_div_th'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    useCaches = {'cauchy_strain' : [['state', {'strain' : (2,2),
+                                               'dstrain' : (-1,-1)}]]}
+
+    ##
+    # c: 03.04.2008, r: 03.04.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        """history for now is just state_0, it is not used anyway, as the
+        history is held in the dstrain cache"""
+        ts, mats, virtual, state, history = self.getArgs( **kwargs )
+        if ts.step == 0:
+            raise StopIteration
+        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
+        nEl, nQP, dim, nEP = self.dataShape
+
+        bf = apr.getBase( 'v', 0, self.integralName )
+
+        if mode == 1:
+            matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+            for out, chunk in self.charFun( chunkSize, shape ):
+                status = self.function( out, 1.0 / ts.dt, nm.empty( 0 ), bf,
+                                        matQP, vgc, chunk, 1 )
+                yield out, chunk, status
+        else:
+            cache = self.getCache( 'cauchy_strain', 0 )
+            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+                out1 = nm.empty_like( out )
+                for ii, mat in enumerate( mats ):
+                    matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
+                    dstrain = cache( 'dstrain', self.getCurrentGroup(), ii,
+                                     state = state, history = history )
+                    status = self.function( out1, 1.0 / ts.dt, dstrain,
+                                            bf, matQP, vgc, chunk, 0 )
+                    out += out1
+                yield out, chunk, status

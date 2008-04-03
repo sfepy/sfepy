@@ -51,7 +51,8 @@
     (FMField *gradP1),
     (FMField *gradP2),
     (FMField *pressure),
-    (FMField *pressure_qp)
+    (FMField *pressure_qp),
+    (FMField *state_qp)
 };
 
 %apply (int32 *array, int32 nRow, int32 nCol) {
@@ -80,6 +81,11 @@ int32 dq_grad_scalar( FMField *out, FMField *state, int32 offset,
 int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );
+
+int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
+			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,
+			     int32 *elList, int32 elList_nRow,
+			     int32 isDiff );
 
 int32 dw_laplace( FMField *out, FMField *state, int32 offset,
 		  float64 coef, VolumeGeometry *vg,
@@ -404,11 +410,6 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
-
-int32 dw_hdpm_g( FMField *out, float64 coef, FMField *pressure_qp,
-		 FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow,
-		 int32 isDiff );
 
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       FMField *mtxD, SurfaceGeometry *sg,
