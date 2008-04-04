@@ -379,20 +379,19 @@ class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
                  'mat_in_qp' : [['material']]}
 
     ##
-    # c: 02.04.2008, r: 02.04.2008
+    # c: 02.04.2008, r: 04.04.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         ts, mat, virtual, state, par = self.getArgs( **kwargs )
-        if ts.step == 0:
-            raise StopIteration
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
 
         cache = self.getCache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.getCurrentGroup(), 0,
                      state = state, history = par )
-        vec0 = cache( 'state', self.getCurrentGroup(), 1,
+        if ts.step > 0:
+            vec0 = cache( 'state', self.getCurrentGroup(), 1,
                      state = state, history = par )
-        dvec = (vec - vec0) / ts.dt
+            dvec = (vec - vec0) / ts.dt
         vdim = vec.shape[-1]
 
         if diffVar is None:
@@ -402,6 +401,9 @@ class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
             shape = (chunkSize, 1, vdim * nEP, vdim * nEP)
             mode = 1
         else:
+            raise StopIteration
+
+        if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
         if mat.ndim == 1:
@@ -470,15 +472,16 @@ class WDotProductVolumeOperatorTHTerm( Term ):
             raise StopIteration
 
     ##
-    # c: 03.04.2008, r: 03.04.2008
+    # c: 03.04.2008, r: 04.04.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        if ts.step == 0:
-            raise StopIteration
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape, mode = self.getShape( diffVar, chunkSize, ap )
         nEl, nQP, dim, nEP = self.dataShape
+
+        if (ts.step == 0) and (mode == 0):
+            raise StopIteration
 
         bf = ap.getBase( 'v', 0, self.integralName )
 

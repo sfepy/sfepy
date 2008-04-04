@@ -429,11 +429,18 @@ def dictFromKeysInit( keys, seqClass = None ):
 def dictExtend( d1, d2 ):
     for key, val in d1.iteritems():
         val.extend( d2[key] )
+
 ##
-# 12.03.2007, c
-def getDefault( arg, default ):
+# c: 12.03.2007, r: 04.04.2008
+def getDefault( arg, default, msgIfNone = None ):
     
     if arg is None:
-        return default
+        out = default
     else:
-        return arg
+        out = arg
+
+    if (out is None) and (msgIfNone is not None):
+        output( msgIfNone )
+        raise ValueError
+
+    return out

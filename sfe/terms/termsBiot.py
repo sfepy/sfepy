@@ -57,18 +57,19 @@ class BiotGradTHTerm( BiotGradTerm ):
     useCaches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
     ##
-    # c: 03.04.2008, r: 03.04.2008
+    # c: 03.04.2008, r: 04.04.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
         ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        if ts.step == 0:
-            raise StopIteration
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
         nEl, nQP, dim, nEP = self.dataShape
+
+        if (ts.step == 0) and (mode == 0):
+            raise StopIteration
 
         bf = apc.getBase( 'v', 0, self.integralName )
 
@@ -219,18 +220,19 @@ class BiotDivTHTerm( BiotDivTerm ):
                                                'dstrain' : (-1,-1)}]]}
 
     ##
-    # c: 03.04.2008, r: 03.04.2008
+    # c: 03.04.2008, r: 04.04.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
         ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        if ts.step == 0:
-            raise StopIteration
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
         nEl, nQP, dim, nEP = self.dataShape
+
+        if (ts.step == 0) and (mode == 0):
+            raise StopIteration
 
         bf = apr.getBase( 'v', 0, self.integralName )
 

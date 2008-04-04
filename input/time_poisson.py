@@ -1,5 +1,5 @@
 ##
-# c: 05.02.2008, r: 25.02.2008
+# c: 05.02.2008, r: 04.04.2008
 fileName_mesh = 'database/simple.mesh'
 
 material_2 = {
@@ -93,8 +93,7 @@ solver_1 = {
     'check'     : 0,
     'delta'     : 1e-6,
     'isPlot'    : False,
-    'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'linear', # 'nonlinear' or 'linear' (ignore iMax)
 }
 
 solver_2 = {

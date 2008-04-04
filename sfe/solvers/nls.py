@@ -85,7 +85,7 @@ class Newton( NonlinearSolver ):
         NonlinearSolver.__init__( self, conf, **kwargs )
 
     ##
-    # c: 02.12.2005, r: 02.04.2008
+    # c: 02.12.2005, r: 04.04.2008
     # 10.10.2007, from newton()
     def __call__( self, vecX0, conf = None, evaluator = None,
                   linSolver = None, status = None ):
@@ -156,10 +156,10 @@ class Newton( NonlinearSolver ):
                 break
 
             tt = time.clock()
-            if conf.matrix == 'internal':
+            if conf.problem == 'nonlinear':
                 mtxA, ret = evaluator.evalTangentMatrix( vecX )
             else:
-                mtxA, ret = evaluator.mtxA, 0
+                mtxA, ret = evaluator.mtx, 0
             timeStats['matrix'] = time.clock() - tt
             if ret != 0:
                 raise RuntimeError, 'giving up...'
@@ -169,7 +169,6 @@ class Newton( NonlinearSolver ):
                 wt = checkTangentMatrix( conf, vecX, mtxA, evaluator )
                 timeStats['check'] = time.clock() - tt - wt
     ##            if conf.check == 2: pause()
-
 
             tt = time.clock() 
             vecDX = linSolver( vecR, mtx = mtxA )
@@ -204,9 +203,6 @@ class Newton( NonlinearSolver ):
                 plu.pylab.draw()
                 plu.pylab.ioff()
                 pause()
-
-            if conf.problem == 'linear':
-                break
 
             it += 1
 

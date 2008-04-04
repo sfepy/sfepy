@@ -356,30 +356,69 @@ class ProblemDefinition( Struct ):
         output( '...done' )
 
     ##
-    # c: 17.01.2008, r: 17.01.2008
-    def getEvaluator( self, **kwargs ):
-        if self.variables.hasLCBC:
-            ev = LCBCEvaluator( self, **kwargs )
+    # c: 17.01.2008, r: 04.04.2008
+    def getEvaluator( self, fromNLS = False, **kwargs ):
+        """
+        Either create a new Evaluator instance (fromNLS == False),
+        or return an existing instace, created in a preceding call to
+        ProblemDefinition.initSolvers().
+        """
+        if fromNLS:
+            solvers = self.getSolvers()
+            try:
+                ev = solver.nls.evaluator
+            except AttributeError:
+                output( 'call ProblemDefinition.initSolvers() or'
+                        ' set fromNLS to False!' )
+                raise
         else:
-            ev = BasicEvaluator( self, **kwargs )
+            if self.variables.hasLCBC:
+                ev = LCBCEvaluator( self, **kwargs )
+            else:
+                ev = BasicEvaluator( self, **kwargs )
         return ev
 
     ##
-    # c: 03.10.2007, r: 17.01.2008
+    # c: 04.04.2008, r: 04.04.2008
+    def initSolvers( self, nlsStatus = None, lsConf = None, nlsConf = None,
+                     mtx = None, **kwargs ):
+        lsConf = getDefault( lsConf, self.lsConf, 'you must set linear solver!' )
+
+        nlsConf = getDefault( nlsConf, self.nlsConf,
+                              'you must set nonlinear solver!' )
+        
+        ev = self.getEvaluator( **kwargs )
+        ls = Solver.anyFromConf( lsConf, mtx = mtx )
+        nls = Solver.anyFromConf( nlsConf, evaluator = ev,
+                                  linSolver = ls, status = nlsStatus )
+        self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
+
+    ##
+    # c: 04.04.2008, r: 04.04.2008
+    def getSolvers( self ):
+        return getattr( self, 'solvers', None )
+
+    ##
+    # c: 04.04.2008, r: 04.04.2008
+    def isLinear( self ):
+        nlsConf = getDefault( None, self.nlsConf,
+                              'you must set nonlinear solver!' )
+
+        if nlsConf.problem == 'linear':
+            return True
+        else:
+            return False
+
+    ##
+    # c: 03.10.2007, r: 04.04.2008
     def solve( self, state0 = None, nlsStatus = None,
                lsConf = None, nlsConf = None, forceValues = None,
                **kwargs ):
         """Solve self.equations in current time step."""
-
-        lsConf = getDefault( lsConf, self.lsConf )
-        if lsConf is None:
-            print 'you must set linear solver!'
-            raise ValueError
-
-        nlsConf = getDefault( nlsConf, self.nlsConf )
-        if nlsConf is None:
-            print 'you must set nonlinear solver!'
-            raise ValueError
+        solvers = self.getSolvers()
+        if solvers is None:
+            self.initSolvers( nlsStatus, lsConf, nlsConf, **kwargs )
+            solvers = self.getSolvers()
         
         if state0 is None:
             state = self.createStateVector()
@@ -388,21 +427,14 @@ class ProblemDefinition( Struct ):
 
         self.applyEBC( state, forceValues = forceValues )
 
-        ev = self.getEvaluator( **kwargs )
-
-        ls = Solver.anyFromConf( lsConf )
-        nls = Solver.anyFromConf( nlsConf, evaluator = ev,
-                                  linSolver = ls, status = nlsStatus )
-        state = nls( state )
+        state = solvers.nls( state )
 
         return state
 
     ##
-    # c: 06.02.2008, r: 06.02.2008
+    # c: 06.02.2008, r: 04.04.2008
     def getTimeSolver( self, tsConf = None, **kwargs ):
-        tsConf = getDefault( tsConf, self.tsConf )
-        if tsConf is None:
-            print 'you must set time-stepping solver!'
-            raise ValueError
+        tsConf = getDefault( tsConf, self.tsConf,
+                             'you must set time-stepping solver!' )
         
         return Solver.anyFromConf( tsConf, **kwargs )

@@ -175,17 +175,18 @@ class LinearViscousTHTerm( LinearElasticTerm ):
                                                'dstrain' : (-1,-1)}]]}
 
     ##
-    # c: 14.09.2006, r: 03.04.2008
+    # c: 14.09.2006, r: 04.04.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
         ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        if ts.step == 0:
-            raise StopIteration
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape, mode = self.getShape( diffVar, chunkSize, ap )
         nEl, nQP, dim, nEP = self.dataShape
+
+        if (ts.step == 0) and (mode == 0):
+            raise StopIteration
 
         if mode == 1:
             matQP = mats[0][nm.newaxis,:,:].repeat( nQP, 0 )

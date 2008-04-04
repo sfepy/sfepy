@@ -87,13 +87,12 @@ def prepareSaveData( ts, conf, options ):
     return ofnTrunk, suffix, isSave
 
 ##
-# c: 06.02.2008, r: 02.04.2008
+# c: 06.02.2008, r: 04.04.2008
 def timeStepFunction( ts, state0, problem, data ):
     problem.timeUpdate( ts )
 
     vh = problem.conf.options.variableHistory
-    varNames0 = vh.values()
-    varNames = vh.keys()
+    varNames0, varNames = vh.values(), vh.keys()
 
     setHistoryData = problem.variables.nonStateDataFromState
 
@@ -102,8 +101,8 @@ def timeStepFunction( ts, state0, problem, data ):
         problem.initTime( ts )
         problem.applyEBC( state )
 
-        # Initialize caches.
         if problem.equations.caches:
+            # Initialize caches.
             ev = problem.getEvaluator( ts = ts, **data )
             setHistoryData( varNames0, state0, varNames )
             vecR, ret = ev.evalResidual( state )
@@ -113,6 +112,21 @@ def timeStepFunction( ts, state0, problem, data ):
             else:
                 output( 'initial residual evaluation failed, giving up...' )
                 raise ValueError
+        if problem.isLinear():
+            # Assemble linear system matrix for all
+            # time steps.
+            ev = problem.getEvaluator( ts = ts, mtx = problem.mtxA, **data )
+            setHistoryData( varNames0, state0, varNames )
+            mtxA, ret = ev.evalTangentMatrix( state )
+            if ret != 0:
+                output( 'matrix evaluation failed, giving up...' )
+                raise ValueError
+        else:
+            mtxA = None
+
+        # Initialize solvers (and possibly presolve the matrix).
+        problem.initSolvers( ts = ts, mtx = mtxA, **data )
+
     else:
         setHistoryData( varNames0, state0, varNames )
         state = problem.solve( state0 = state0, ts = ts, **data )
