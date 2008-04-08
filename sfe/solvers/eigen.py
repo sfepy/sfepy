@@ -19,7 +19,7 @@ class SymeigEigenvalueSolver( EigenvalueSolver ):
             raise
 
     ##
-    # c: 03.03.2008, r: 03.03.2008
+    # c: 03.03.2008, r: 08.04.2008
     def __call__( self, mtxA, mtxB = None, nEigs = None,
                   eigenvectors = None, status = None, conf = None ):
         conf = getDefault( conf, self.conf )
@@ -35,9 +35,7 @@ class SymeigEigenvalueSolver( EigenvalueSolver ):
             rng = (1, nEigs)
 
         tt = time.clock()
-        mtxA = mtxA.toarray()
-        if mtxB is not None:
-            mtxB = mtxB.toarray()
+        mtxA, mtxB = self._toArray( mtxA, mtxB )
         out = self.symeig( mtxA, mtxB, range = rng, eigenvectors = eigenvectors )
         if status is not None:
             status['time'] = time.clock() - tt
@@ -66,11 +64,12 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 
         tt = time.clock()
         if nEigs is None:
-            mtxA = mtxA.toarray()
-            if mtxB is not None:
-                mtxB = mtxB.toarray()
+            mtxA, mtxB = self._toArray( mtxA, mtxB )
             out = nla.eig( mtxA, mtxB, right = eigenvectors )
-            eigs = out[0]
+            if eigenvectors:
+                eigs = out[0]
+            else:
+                eigs = out
             ii = nm.argsort( eigs )
             if eigenvectors:
                 mtxEV = out[1][:,ii]
@@ -79,6 +78,57 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
                 out = (eigs,)
         else:
             out = sc.splinalg.eigen_symmetric( mtxA, k = nEigs, M = mtxB )
+
+        if status is not None:
+            status['time'] = time.clock() - tt
+
+        return out
+
+##
+# c: 08.04..2008, r: 08.04..2008
+class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
+    name = 'eig.sgscipy'
+    
+    ##
+    # c: 08.04..2008, r: 08.04..2008
+    def __call__( self, mtxA, mtxB = None, nEigs = None,
+                  eigenvectors = None, status = None, conf = None ):
+        """eigenvectors arg ignored, computes them always"""
+        import scipy.lib.lapack as ll
+        conf = getDefault( conf, self.conf )
+        mtxA = getDefault( mtxA, self.mtxA )
+        mtxB = getDefault( mtxB, self.mtxB )
+        nEigs = getDefault( nEigs, self.nEigs )
+        eigenvectors = getDefault( eigenvectors, self.eigenvectors )
+        status = getDefault( status, self.status )
+
+        tt = time.clock()
+        if nEigs is None:
+            mtxA, mtxB = self._toArray( mtxA, mtxB )
+            if nm.iscomplexobj( mtxA ):
+                if mtxB is None:
+                    fun = ll.get_lapack_funcs( ['heev'], arrays = (mtxA,) )[0]
+                else:
+                    fun = ll.get_lapack_funcs( ['hegv'], arrays = (mtxA,) )[0]
+            else:
+                if mtxB is None:
+                    fun = ll.get_lapack_funcs( ['syev'], arrays = (mtxA,) )[0]
+                else:
+                    fun = ll.get_lapack_funcs( ['sygv'], arrays = (mtxA,) )[0]
+    ##         print fun
+            if mtxB is None:
+                out = fun( mtxA )
+            else:
+                out = fun( mtxA, mtxB )
+
+            if not eigenvectors:
+                out = out[0]
+            else:
+                out = out[:-1]
+            
+        else:
+            out = ScipyEigenvalueSolver.__call__( self, mtxA, mtxB, nEigs,
+                  eigenvectors, status = None )
 
         if status is not None:
             status['time'] = time.clock() - tt

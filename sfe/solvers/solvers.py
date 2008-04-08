@@ -97,3 +97,13 @@ class EigenvalueSolver( Solver ):
                   eigenvectors = None, status = None, conf = None ):
         print 'called an abstract EigenvalueSolver instance!'
         raise ValueError
+
+    ##
+    # c: 08.04..2008, r: 08.04..2008
+    def _toArray( self, mtxA, mtxB = None ):
+        if hasattr( mtxA, 'toarray' ):
+            mtxA = mtxA.toarray()
+        if mtxB is not None:
+            if hasattr( mtxB, 'toarray' ):
+                mtxB = mtxB.toarray()
+        return mtxA, mtxB
