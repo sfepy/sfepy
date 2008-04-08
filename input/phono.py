@@ -1,5 +1,5 @@
 # 25.09.2007, c
-# last revision: 25.02.2008
+# last revision: 08.04.2008
 """
 u1 is a dummy variable used unly for volume computation.
 """
@@ -21,6 +21,8 @@ options = {
 #    'plotTranform' : ('clip', (-20, 20)),
     'plotTranform' : ('normalize', (-1, 1)),
     'squared' : False,
+    
+#    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
 }
 
 # Whole domain $Y$.

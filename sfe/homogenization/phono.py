@@ -68,8 +68,17 @@ def processOptions( options, nEigs ):
     return Struct( **locals() )
 
 ##
+# c: 08.04.2008, r: 08.04.2008
+def getMethod( options ):
+    if hasattr( options, 'method' ):
+        method = options.method
+    else:
+        method = 'eig.sgscipy'
+    return method
+
+##
 # created:       27.09.2007
-# last revision: 11.12.2007
+# last revision: 08.04.2008
 def computeAverageDensity( pb, matName1, matName2 ):
 
     mat1 = pb.materials[matName1]
@@ -78,13 +87,13 @@ def computeAverageDensity( pb, matName1, matName2 ):
     mat2 = pb.materials[matName2]
     regionName = mat2.region.name
     vol2 = evalTermOP( None, 'd_volume.i1.%s( u )' % regionName, pb )
-    print vol1, vol2, vol1 + vol2
-    print mat1.density, mat2.density
+    output( 'volumes:', vol1, vol2, vol1 + vol2 )
+    output( 'densities:', mat1.density, mat2.density )
 
     return mat1.density * vol1 + mat2.density * vol2
 
 ##
-# c: 26.09.2007, r: 13.02.2008
+# c: 26.09.2007, r: 08.04.2008
 def computeMassComponents( pb, mtxPhi, threshold,
                            transform = None, pbar = None ):
     """Eigenmomenta..."""
@@ -114,7 +123,8 @@ def computeMassComponents( pb, mtxPhi, threshold,
             pbar.update( ii )
         else:
             if (ii % 100) == 0:
-                print '%d of %d (%f%%)' % (ii, nEigs, 100. * ii / (nEigs - 1))
+                output( '%d of %d (%f%%)' % (ii, nEigs,
+                                             100. * ii / (nEigs - 1)) )
             
         if transform is None:
             vecPhi, isZero = mtxPhi[:,ii], False
@@ -160,10 +170,10 @@ def computeGeneralizedMass( freq, masses, eigs, averageDensity, squared ):
 
 
 ##
-# 27.09.2007, c
-# 04.10.2007
+# c: 27.09.2007, r: 08.04.2008
 def findZero( f0, f1, masses, eigs, averageDensity, opts, mode ):
     feps, zeps = opts.feps, opts.zeps
+    method = getMethod( opts )
 
     fm, fp = f0, f1
     ieig = {0 : 0, 1 : -1}[mode]
@@ -171,7 +181,7 @@ def findZero( f0, f1, masses, eigs, averageDensity, opts, mode ):
         f = 0.5 * (fm + fp)
         mtxMass = computeGeneralizedMass( f, masses, eigs,
                                           averageDensity, opts.squared )
-        meigs = eig( mtxMass, eigenvectors = False )
+        meigs = eig( mtxMass, eigenvectors = False, method = method )
 #        print meigs
 
         val = meigs[ieig]
@@ -199,7 +209,7 @@ def findZero( f0, f1, masses, eigs, averageDensity, opts, mode ):
             fm = f
 
 ##
-# 27.09.2007, c
+# c: 27.09.2007, r: 08.04.2008
 def describeGaps( gaps ):
     kinds = []
     for ii, (gmin, gmax) in enumerate( gaps ):
@@ -218,8 +228,8 @@ def describeGaps( gaps ):
         elif (gmin[0] == 0) and (gmax[0] == 0):
             kind = ('swp', 'strong band gap + weak band gap + propagation zone')
         else:
-            print 'impossible band gap combination:'
-            print gmin, gmax
+            output( 'impossible band gap combination:' )
+            output( gmin, gmax )
             raise ValueError
         kinds.append( kind )
     return kinds
@@ -274,7 +284,7 @@ def plotLogs( figNum, logs, freqRange, plotRange, squared, show = False ):
         pylab.show()
     
 ##
-# 27.09.2007, c
+# c: 27.09.2007, r: 08.04.2008
 def plotGaps( figNum, gaps, kinds, freqRange, plotRange, show = False ):
 
     def drawRect( ax, x, y, color ):
@@ -318,12 +328,12 @@ def plotGaps( figNum, gaps, kinds, freqRange, plotRange, show = False ):
             drawRect( ax, (gmin[1], f1), plotRange, propagation )
             info = [(f0, gmax[1]), (gmax[1], gmin[1]), (gmin[1], f1)]
         else:
-            print 'impossible band gap combination:'
-            print gmin, gmax
+            output( 'impossible band gap combination:' )
+            output( gmin, gmax )
             raise ValueError
 
-        print ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1
-        print ' -> %s\n    %s' %(kindDesc, info)
+        output( ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1 )
+        output( ' -> %s\n    %s' %(kindDesc, info) )
 
     if show:
         ax.set_xlim( [freqRange[0], freqRange[-1]] )
@@ -331,15 +341,17 @@ def plotGaps( figNum, gaps, kinds, freqRange, plotRange, show = False ):
         pylab.show()
     
 ##
-# c: 27.09.2007, r: 13.02.2008
+# c: 27.09.2007, r: 08.04.2008
 def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
     
     averageDensity = computeAverageDensity( pb, 'matrix', 'inclusion' )
-    print 'average density:', averageDensity
+    output( 'average density:', averageDensity )
 
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
-
+    method = getMethod( conf.options )
+    output( 'method:', method )
+    
     if not opts.squared:
         eigs = nm.sqrt( eigs )
 
@@ -358,9 +370,9 @@ def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
     nextEig = max( opts.feps, nextEig, prevEig + opts.feps )
     freqRangeMargins = nm.r_[prevEig, freqRange, nextEig]
 
-    print 'freq. range             : [%8.3f, %8.3f]' % (minFreq, maxFreq)
-    print 'freq. range with margins: [%8.3f, %8.3f]'\
-          % tuple( freqRangeMargins[[0,-1]] )
+    output( 'freq. range             : [%8.3f, %8.3f]' % (minFreq, maxFreq) )
+    output( 'freq. range with margins: [%8.3f, %8.3f]'\
+          % tuple( freqRangeMargins[[0,-1]] ) )
 
 ##     print freqRange
 ##     print freqRangeMargins
@@ -372,17 +384,18 @@ def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
             return fun( vec, shape, *opts.eigVectorTransform[1:] )
     else:
         _wrapTransform = None
-    pbar = MyBar( 'computing mass matrix components:' )
+    output( 'mass matrix components...')
+    pbar = MyBar( 'computing:' )
     tt = time.clock()
     masses = computeMassComponents( pb, mtxPhi, opts.teps, _wrapTransform, pbar )
-    print 'done in %.2f s' % (time.clock() - tt)
+    output( '...done in %.2f s' % (time.clock() - tt) )
 
     logs = []
     gaps = []
     df = opts.freqStep * (maxFreq - minFreq)
     for ii in xrange( nFreq + 1 ):
         f0, f1 = freqRangeMargins[[ii, ii+1]]
-        print 'interval: ]%.8f, %.8f[' % (f0, f1)
+        output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
 
         log = []
         num = max( 5, (f1 - f0) / df )
@@ -390,7 +403,7 @@ def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
         for f in logFreqs:
             mtxMass = computeGeneralizedMass( f, masses, eigs,
                                               averageDensity, opts.squared )
-            meigs = eig( mtxMass, eigenvectors = False )
+            meigs = eig( mtxMass, eigenvectors = False, method = method )
             log.append( [f, meigs[0], meigs[-1]] )
         log0, log1 = log[0], log[-1]
         if log0[1] > 0.0: # No gaps.
@@ -398,24 +411,27 @@ def detectBandGaps( pb, eigs, mtxPhi, conf, options ):
         elif log1[2] < 0.0: # Full interval strog gap.
             gap = ([1, f1, log1[1]], [1, f1, log1[2]])
         else:
-            print 'finding zero of the largest eig...'
+            output( 'finding zero of the largest eig...' )
             smax, fmax, vmax = findZero( f0, f1, masses, eigs,
                                          averageDensity, opts, 1 )
+            output( '...done' )
             if smax in [0, 2]:
-                print 'finding zero of the smallest eig...'
+                output( 'finding zero of the smallest eig...' )
                 smin, fmin, vmin = findZero( fmax, f1, masses, eigs,
                                              averageDensity, opts, 0 )
+                output( '...done' )
             elif smax == 1:
                 smin = 1 # both are negative everywhere.
                 fmin, vmin = fmax, vmax
 
             gap = ([smin, fmin, vmin], [smax, fmax, vmax])
 
-        print gap[0]
-        print gap[1]
+        output( gap[0] )
+        output( gap[1] )
 #        pause()
         gaps.append( gap )
         logs.append( nm.array( log, dtype = nm.float64 ) )
+        output( '...done' )
 
     kinds = describeGaps( gaps )
 

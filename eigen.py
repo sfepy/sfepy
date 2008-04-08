@@ -10,11 +10,11 @@ from sfe.base.la import eig
 from sfe.fem.evaluate import evalTermOP
 import sfe.base.ioutils as io
 from sfe.fem.problemDef import ProblemDefinition
-from sfe.homogenization.phono import processOptions,\
+from sfe.homogenization.phono import processOptions, getMethod,\
      transformPlotData, plotLogs, plotGaps, detectBandGaps
 
 ##
-# c: 25.09.2007, r: 13.02.2008
+# c: 25.09.2007, r: 08.04.2008
 def solveEigenProblem( conf, options ):
 
     if options.outputFileNameTrunk:
@@ -35,11 +35,12 @@ def solveEigenProblem( conf, options ):
 
 ##     mtxA.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtxB.save( 'b.txt', format='%d %d %.12f\n' )
-    print 'computing resonance frequencies...'
+    output( 'computing resonance frequencies...' )
     tt = [0]
-    eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt )
-    print 'done in %.2f s' % tt[0]
-    print eigs
+    eigs, mtxSPhi = eig( mtxA.toarray(), mtxB.toarray(), returnTime = tt,
+                         method = getMethod( conf.options ) )
+    output( '...done in %.2f s' % tt[0] )
+    output( eigs )
 ##     import sfe.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
@@ -80,7 +81,7 @@ help = {
 }
 
 ##
-# c: 25.09.2007, r: 19.02.2008
+# c: 25.09.2007, r: 08.04.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -105,6 +106,8 @@ def main():
     else:
         parser.print_help(),
         return
+
+    setOutputPrefix( 'eigen:' )
 
     required, other = getStandardKeywords()
     required.remove( 'solver_[0-9]+|solvers' )
