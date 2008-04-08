@@ -52,7 +52,7 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
         EigenvalueSolver.__init__( self, conf, **kwargs )
 
     ##
-    # c: 03.03.2008, r: 03.03.2008
+    # c: 03.03.2008, r: 08.04.2008
     def __call__( self, mtxA, mtxB = None, nEigs = None,
                   eigenvectors = None, status = None, conf = None ):
         conf = getDefault( conf, self.conf )

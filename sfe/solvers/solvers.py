@@ -99,7 +99,7 @@ class EigenvalueSolver( Solver ):
         raise ValueError
 
     ##
-    # c: 08.04..2008, r: 08.04..2008
+    # c: 08.04.2008, r: 08.04.2008
     def _toArray( self, mtxA, mtxB = None ):
         if hasattr( mtxA, 'toarray' ):
             mtxA = mtxA.toarray()
