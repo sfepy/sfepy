@@ -485,7 +485,7 @@ class Variables( Container ):
             dcs[ig] = dc[iemap]
 
     ##
-    # c: 23.11.2005, r: 04.02.2008
+    # c: 23.11.2005, r: 09.04.2008
     def createMatrixGraph( self, varNames = None, vvarNames = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -533,6 +533,8 @@ class Variables( Container ):
                                     len( rdcs ), rdcs, cdcs )
         output( '...done in %.2f s' % (time.clock() - tt) )
         nnz = prow[-1]
+        output( 'matrix structural nonzeros: %d (%.2e%% fill)' \
+                % (nnz, float( nnz ) / nm.prod( shape ) ) )
 ##         print ret, prow, icol, nnz
 	
         data = nm.zeros( (nnz,), dtype = nm.float64 )
