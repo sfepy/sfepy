@@ -165,11 +165,15 @@ class Variables( Container ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 05.09.2007, c
+    # c: 05.09.2007, r: 10.04.2008
     def linkDuals( self ):
         for ii in self.virtual:
             vvar = self[ii]
-            self[vvar.primaryVarName].dualVarName = vvar.name
+            try:
+                self[vvar.primaryVarName].dualVarName = vvar.name
+            except ValueError:
+                output( 'variable %s is not active!' % vvar.primaryVarName )
+                raise
 
     ##
     # 26.07.2007, c
@@ -851,7 +855,7 @@ class Variable( Struct ):
             try:
                 fld = fields[conf.field]
             except:
-                output( 'field "%s" does not exist!' % conf.fields )
+                output( 'field "%s" does not exist!' % conf.field )
                 raise
 
             obj.setField( fld )

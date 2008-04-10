@@ -20,6 +20,46 @@ def getStandardKeywords():
     return copy( _required ), copy( _other )
 
 ##
+# c: 10.04.2008, r: 10.04.2008
+def tupleToConf( name, vals, order ):
+    conf = Struct( name = name )
+    for ii, key in enumerate( order ):
+        setattr( conf, key, vals[ii] )
+    return conf
+
+##
+# c: 10.04.2008, r: 10.04.2008
+def transform_variables( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tupleToConf( key, conf, ['kind', 'field'] )
+            if len( conf ) == 3:
+                kind = c2.kind.split()[0]
+                if kind == 'unknown':
+                    c2.order = conf[2]
+                elif kind == 'test':
+                    c2.dual = conf[2]
+                elif kind == 'parameter':
+                    c2.like = conf[2]
+        else:
+            c2 = transform_toStruct_1( conf )
+        d2['variable_%d' % ii] = c2
+    return d2
+
+##
+# c: 10.04.2008, r: 10.04.2008
+def transform_ebcs( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tupleToConf( key, conf, ['region', 'dofs'] )
+        else:
+            c2 = transform_toStruct_1( conf )
+        d2['ebc_%d' % ii] = c2
+    return d2
+
+##
 # c: 20.06.2007, r: 18.02.2008
 def transform_toStruct_1( adict ):
     return dictToStruct( adict, flag = (1,) )
@@ -39,8 +79,8 @@ transforms = {
     'regions'   : transform_toStruct_01,
     'shapeOpt'  : transform_toStruct_10,
     'fields'    : transform_toStruct_01,
-    'variables' : transform_toStruct_01,
-    'ebcs'      : transform_toStruct_01,
+    'variables' : transform_variables,
+    'ebcs'      : transform_ebcs,
     'epbcs'     : transform_toStruct_01,
     'nbcs'      : transform_toStruct_01,
     'lcbcs'     : transform_toStruct_01,

@@ -136,7 +136,7 @@ def timeStepFunction( ts, state0, problem, data ):
     return state
 
 ##
-# c: 12.01.2007, r: 02.04.2008
+# c: 12.01.2007, r: 10.04.2008
 def solveDirect( conf, options ):
     """Generic (simple) problem solver."""
     if options.outputFileNameTrunk:
@@ -145,7 +145,8 @@ def solveDirect( conf, options ):
         ofnTrunk = io.getTrunk( conf.fileName_mesh )
 
     opts = conf.options
-    if hasattr( opts, 'postProcessHook' ): # User postprocessing.
+    if hasattr( opts, 'postProcessHook' ) and opts.postProcessHook is not None:
+        # User postprocessing.
         postProcessHook = getattr( conf.funmod, opts.postProcessHook )
     else:
         postProcessHook = None

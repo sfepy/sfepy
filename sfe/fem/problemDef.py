@@ -80,7 +80,7 @@ class ProblemDefinition( Struct ):
             
         obj = ProblemDefinition()
         for key, val in self.__dict__.iteritems():
-            print key
+##             print key
             if key in share:
                 obj.__dict__[key] = val
             else:

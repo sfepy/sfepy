@@ -272,10 +272,15 @@ class Term( Struct ):
         return self.argNames[ii]
 
     ##
-    # c: 29.11.2007, r: 15.01.2008
+    # c: 29.11.2007, r: 10.04.2008
     def describeGeometry( self, geometries, variables, integrals ):
 
-        integral = integrals[self.integralName]
+        try:
+            integral = integrals[self.integralName]
+        except ValueError:
+            output( 'integral %s is not defined!' % self.integralName )
+            raise
+            
         integral.createQP()
         tgs = self.getGeometry()
         for varName in self.getVariableNames():
