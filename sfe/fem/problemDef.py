@@ -356,7 +356,7 @@ class ProblemDefinition( Struct ):
         output( '...done' )
 
     ##
-    # c: 17.01.2008, r: 04.04.2008
+    # c: 17.01.2008, r: 11.04.2008
     def getEvaluator( self, fromNLS = False, **kwargs ):
         """
         Either create a new Evaluator instance (fromNLS == False),
@@ -366,7 +366,7 @@ class ProblemDefinition( Struct ):
         if fromNLS:
             solvers = self.getSolvers()
             try:
-                ev = solver.nls.evaluator
+                ev = solvers.nls.evaluator
             except AttributeError:
                 output( 'call ProblemDefinition.initSolvers() or'
                         ' set fromNLS to False!' )
@@ -410,7 +410,7 @@ class ProblemDefinition( Struct ):
             return False
 
     ##
-    # c: 03.10.2007, r: 04.04.2008
+    # c: 03.10.2007, r: 11.04.2008
     def solve( self, state0 = None, nlsStatus = None,
                lsConf = None, nlsConf = None, forceValues = None,
                **kwargs ):
@@ -419,7 +419,11 @@ class ProblemDefinition( Struct ):
         if solvers is None:
             self.initSolvers( nlsStatus, lsConf, nlsConf, **kwargs )
             solvers = self.getSolvers()
-        
+        else:
+            if kwargs:
+                ev = self.getEvaluator( fromNLS = True )
+                ev.setTermArgs( **kwargs )
+            
         if state0 is None:
             state = self.createStateVector()
         else:

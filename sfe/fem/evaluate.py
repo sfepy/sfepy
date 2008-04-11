@@ -23,6 +23,11 @@ class BasicEvaluator( Evaluator ):
             self.mtx = mtx
 
     ##
+    # c: 11.04.2008, r: 11.04.2008
+    def setTermArgs( self, **kwargs ):
+        self.data = kwargs
+
+    ##
     # 02.12.2005, c
     # 25.07.2006
     # 02.10.2007
