@@ -106,16 +106,14 @@ class ProblemDefinition( Struct ):
 ##         pause()
 
     ##
-    # 26.07.2006, c
-    # 08.08.2006
-    # 11.07.2007
-    # 04.09.2007
+    # c: 26.07.2006, r: 14.04.2008
     def setVariables( self, conf_variables = None ):
         conf_variables = getDefault( conf_variables, self.conf.variables )
         variables = Variables.fromConf( conf_variables, self.fields )
         variables.setupDofInfo() # Call after fields.setupGlobalBase().
         self.variables = variables
         self.mtxA = None
+        self.solvers = None
 ##         print variables.di
 ##         pause()
         
@@ -202,18 +200,17 @@ class ProblemDefinition( Struct ):
         return self.variables.createStateVector()
 
     ##
-    # 08.08.2006, c
-    # 16.10.2006
-    # 12.03.2007
-    # 03.10.2007
-    def updateBC( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod ):
-        """Assumes same EBC/EPBC/LCBC nodes for all time steps."""
+    # c: 08.08.2006, r: 14.04.2008
+    def updateBC( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
+                  createMatrix = False ):
+        """Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
+        createMatrix to True"""
         self.variables.equationMapping( conf_ebc, conf_epbc,
                                         self.domain.regions, ts, funmod )
         self.variables.setupLCBCOperators( conf_lcbc, self.domain.regions )
                 
         self.variables.setupADofConns()
-        if self.mtxA is None:
+        if (self.mtxA is None) or createMatrix:
             self.mtxA = self.variables.createMatrixGraph()
 ##             import sfe.base.plotutils as plu
 ##             plu.spy( self.mtxA )
@@ -230,10 +227,10 @@ class ProblemDefinition( Struct ):
         self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
 
     ##
-    # c: 12.03.2007, r: 22.02.2008
+    # c: 12.03.2007, r: 14.04.2008
     def timeUpdate( self, ts = None,
                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
-                    funmod = None, extraMatArgs = None ):
+                    funmod = None, createMatrix = False, extraMatArgs = None ):
         if ts is None:
             ts = TimeStepper( 0.0, 1.0, 1.0, 1 )
             ts.setStep( 0 )
@@ -242,7 +239,7 @@ class ProblemDefinition( Struct ):
         conf_epbc = getDefault( conf_epbc, self.conf.epbcs )
         conf_lcbc = getDefault( conf_lcbc, self.conf.lcbcs )
         funmod = getDefault( funmod, self.conf.funmod )
-        self.updateBC( ts, conf_ebc, conf_epbc, conf_lcbc, funmod )
+        self.updateBC( ts, conf_ebc, conf_epbc, conf_lcbc, funmod, createMatrix )
         self.updateMaterials( ts, funmod, extraMatArgs )
 
     ##
