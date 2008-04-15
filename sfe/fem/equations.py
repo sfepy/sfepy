@@ -252,15 +252,19 @@ class Equation( Struct ):
 
 #            print term.name
             for name, argLists in term.useCaches.iteritems():
-#                print name, argLists
+##                print name, argLists
                 for args in argLists:
                     # Order should be handled in terms...
+                    args = copy( args )
                     if type( args[-1] ) == dict:
                         historySizes = args.pop()
                     else:
                         historySizes = None
                     ans = [term.getArgName( arg ) for arg in args]
                     cname = '_'.join( [name] + ans )
+##                     print term.name, name, argLists, args, self.name, cname
+##                     print historySizes
+##                     debug()
                     if caches.has_key( cname ):
                         caches[cname].mergeHistorySizes( historySizes )
                         continue

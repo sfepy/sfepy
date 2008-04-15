@@ -332,10 +332,12 @@ class Term( Struct ):
         self.charFun.setCurrentGroup( ig )
 
     ##
-    # 27.02.2007, c
+    # c: 27.02.2007, r: 15.04.2008
     def getCache( self, baseName, ii ):
         args = self.__class__.useCaches[baseName][ii]
-        ans = [self.getArgName( arg ) for arg in args]
+        ans = [self.getArgName( arg ) for arg in args if not type( arg ) == dict]
+##         print args, ans
+##         pause()
         cname = '_'.join( [baseName] + ans )
         return self.caches[cname]
 

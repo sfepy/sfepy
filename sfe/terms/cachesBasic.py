@@ -94,7 +94,7 @@ class CauchyStrainDataCache( DataCache ):
                             historySizes, terms.dq_cauchy_strain )
         
     ##
-    # c: 27.02.2007, r: 15.01.2008
+    # c: 27.02.2007, r: 15.04.2008
     def initData( self, key, ckey, **kwargs ):
         state, = self.getArgs( **kwargs )
 
@@ -104,17 +104,23 @@ class CauchyStrainDataCache( DataCache ):
 
 #        print self.name, key, ckey, shape
         DataCache.initData( self, key, ckey, shape )
+        if key == 'dstrain': # dstrain uses strain
+            DataCache.initData( self, 'strain', ckey, shape )
 
     ##
-    # c: 27.02.2007, r: 07.03.2008
+    # c: 27.02.2007, r: 15.04.2008
     def update( self, key, groupIndx, ih, **kwargs ):
         ckey = self.gToC( groupIndx )
         if not self.valid['strain'][ckey]:
+            if ih > 0:
+                print 'history update!'
+                print kwargs['history']
+                raise NotImplementedError
             state, = self.getArgs( **kwargs )
 
             vec, indx = state()
             ap, vg = state.getApproximation( groupIndx, 'Volume' )
-            self.function( self.data[key][ckey][ih], vec, indx.start,
+            self.function( self.data['strain'][ckey][ih], vec, indx.start,
                            vg, ap.econn )
             isFinite = nm.isfinite( self.data[key][ckey][ih] )
             if not nm.alltrue( isFinite ):
