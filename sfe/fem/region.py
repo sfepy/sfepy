@@ -317,7 +317,7 @@ class Region( Struct ):
         return tmp
 
     ##
-    # c: 15.06.2006, r: 17.03.2008
+    # c: 15.06.2006, r: 15.04.2008
     def subE( self, other ):
         tmp = self.lightCopy( 'op',
                               _join( self.parseDef, '-e', other.parseDef ) )
@@ -330,6 +330,7 @@ class Region( Struct ):
             aux = nm.setdiff1d( self.cells[ig], other.cells[ig] )
             if not len( aux ): continue
             tmp.cells[ig] = aux
+            tmp.igs.append( ig )
 
         tmp.updateVertices()
         return tmp
