@@ -7,7 +7,7 @@ import atexit
 class TaskThread( threading.Thread ):
     """Thread that executes a given function every N seconds"""
     
-    def __init__( self, fun, args = (), interval = 0.5 ):
+    def __init__( self, fun, args = (), interval = 1.0 ):
         """
         Create the task thread with:
         fun      .. function to run

@@ -50,14 +50,15 @@ def createADofConns( eq, iterator, indx ):
     return adcs
 
 ##
-# 26.07.2006, c
+# c: 26.07.2006, r: 15.04.2008
 def zeroConfEBC( conf ):
     new = {}
-    for rname, bcs in conf.iteritems():
-        newbc = []
-        for bc in bcs:
-            newbc.append( bc[:-1] + (0.0,) )
-        new[rname] = tuple( newbc )
+    for key, bcs in conf.iteritems():
+        newbc = copy( bcs )
+        newbc.dofs = {}
+        for dd, val in bcs.dofs.iteritems():
+            newbc.dofs[dd] = 0.0
+        new[key] = newbc
     return new
 
 ##
