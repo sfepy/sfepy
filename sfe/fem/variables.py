@@ -230,7 +230,7 @@ class Variables( Container ):
             self.vdi = self.di
 
     ##
-    # c: 16.10.2006, r: 26.02.2008
+    # c: 16.10.2006, r: 15.04.2008
     def _listBCOfVars( self, bcDefs, isEBC = True ):
 
         bcOfVars = dictFromKeysInit( (key for key in self.di.vnames), list )
@@ -242,8 +242,12 @@ class Variables( Container ):
             for dofs, val in bc.dofs.iteritems():
                 vname = dofs.split( '.' )[0]
                 if bcOfVars.has_key( vname ):
+                    var = self[vname]
                     vbc = copy( bc )
-                    vbc.dofs = (dofs, val)
+                    if isEBC:
+                        vbc.dofs = (var._canonize( dofs ), val)
+                    else:
+                        vbc.dofs = (var._canonize( dofs ), var._canonize( val ))
                     bcOfVars[vname].append( (key, vbc) )
                 else:
                     output( 'BC: ignoring nonexistent dof(s) %s' % dofs )
@@ -1035,11 +1039,12 @@ class Variable( Struct ):
         return cdofs
 
     ##
-    # c: 18.10.2006, r: 25.02.2008
+    # c: 18.10.2006, r: 15.04.2008
     def expandNodesToEquations( self, nods, dofs ):
-
+        """dofs must be already canonized - it is done in
+        Variables._listBCOfVars()"""
         eq = nm.array( [], dtype = nm.int32 )
-        for dof in self._canonize( dofs ):
+        for dof in dofs:
             idof = self.dofs.index( dof )
             eq = nm.concatenate( (eq, self.dpn * nods + idof) )
         return eq
