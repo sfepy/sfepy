@@ -18,8 +18,9 @@ ifeq ($(ARCH),linux)
   OPTFLAGS     := -g -O2 -fPIC -DPIC
   CARCHFLAGS   := -Wall -c
   CARCHOUT     := -o
+  PYVER := 2.4
 
-  PYTHON_INCL  := -I/usr/include/python2.4 -I/home/share/software/usr/lib/python2.4/site-packages/numpy/core/include
+  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I/home/share/software/usr/lib/python$(PYVER)/site-packages/numpy/core/include
 #  SWIG_LIB     := -lswigpy
 
   EXT_INCL     := $(PYTHON_INCL)
