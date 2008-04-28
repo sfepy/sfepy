@@ -336,13 +336,8 @@ Mesh:database/simple
     fromFile = staticmethod( fromFile )
 
     ##
-    # 17.02.2006, c
-    # 04.08.2006
-    # 03.10.2006
-    # 30.03.2007
-    # 28.05.2007
-    # 05.06.2007
-    def fromRegion( region, meshIn, ed = None, fa = None ):
+    # c: 17.02.2006, r: 28.04.2008
+    def fromRegion( region, meshIn, ed = None, fa = None, localize = None ):
         mesh = Mesh( meshIn.name + "_reg" )
         mesh.nod0 = meshIn.nod0.copy()
         
@@ -378,10 +373,13 @@ Mesh:database/simple
                     mesh.matIds.append( fdata[i4,0] + 1 )
                     mesh.conns.append( fdata[i4,-4:].copy() )
 
-        mesh.descs.append( {2 : '2_3', 3 : '3_4'}[meshIn.dim] )
-        mesh.matIds.append( -nm.ones_like( region.allVertices ) )
-        mesh.conns.append( makePointCells( region.allVertices, meshIn.dim ) )
+        if (ed is not None) or (fa is not None):
+            mesh.descs.append( {2 : '2_3', 3 : '3_4'}[meshIn.dim] )
+            mesh.matIds.append( -nm.ones_like( region.allVertices ) )
+            mesh.conns.append( makePointCells( region.allVertices, meshIn.dim ) )
 
+        if localize:
+            mesh.localize( region.allVertices )
         mesh._setShapeInfo()
         return mesh
     fromRegion = staticmethod( fromRegion )

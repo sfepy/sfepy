@@ -444,3 +444,12 @@ def getDefault( arg, default, msgIfNone = None ):
         raise ValueError
 
     return out
+
+##
+# c: 28.04.2008, r: 28.04.2008
+def getDefaultAttr( obj, attr, default ):
+    if hasattr( obj, attr ):
+        out = getattr( obj, attr )
+    else:
+        out = default
+    return out

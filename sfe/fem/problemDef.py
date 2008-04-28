@@ -255,9 +255,10 @@ class ProblemDefinition( Struct ):
         self.variables.updateVec( vec, delta )
         
     ##
-    # c: 18.04.2006, r: 06.03.2008
-    def stateToOutput( self, vec, fillValue = None, varInfo = None ):
-        return self.variables.stateToOutput( vec, fillValue, varInfo )
+    # c: 18.04.2006, r: 28.04.2008
+    def stateToOutput( self, vec, fillValue = None, varInfo = None,
+                       extend = False ):
+        return self.variables.stateToOutput( vec, fillValue, varInfo, extend )
 
     ##
     # 26.07.2006, c
@@ -283,14 +284,36 @@ class ProblemDefinition( Struct ):
         self.equations.advance( ts )
 
     ##
-    # c: 01.03.2007, r: 25.03.2008
+    # c: 01.03.2007, r: 28.04.2008
     def saveState( self, fileName, state,
-                   fillValue = None, postProcessHook = None ):
-        out = self.stateToOutput( state, fillValue = fillValue )
+                   fillValue = None, postProcessHook = None,
+                   filePerVar = False ):
+        extend = not filePerVar
+        out = self.stateToOutput( state, fillValue = fillValue, extend = extend )
         if postProcessHook is not None:
-            out = postProcessHook( out, self, state )
+            out = postProcessHook( out, self, state, extend = extend )
 
-        self.domain.mesh.write( fileName, io = 'auto', out = out )
+        if filePerVar:
+            import os.path as op
+
+            meshes = {}
+            for var in self.variables.iterState():
+                rname = var.field.region.name
+                if meshes.has_key( rname ):
+                    mesh = meshes[rname]
+                else:
+                    mesh = Mesh.fromRegion( var.field.region, self.domain.mesh,
+                                            localize = True )
+                    meshes[rname] = mesh
+                vout = {}
+                for key, val in out.iteritems():
+                    if val.varName == var.name:
+                        vout[key] = val
+                base, suffix = op.splitext( fileName )
+                mesh.write( base + '_' + var.name + suffix,
+                            io = 'auto', out = vout )
+        else:
+            self.domain.mesh.write( fileName, io = 'auto', out = out )
 
     ##
     # c: 19.09.2006, r: 27.02.2008

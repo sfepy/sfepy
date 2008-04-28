@@ -759,8 +759,9 @@ class Variables( Container ):
 
     ##
     # Works for vertex data only.
-    # c: 15.12.2005, r: 06.03.2008
-    def stateToOutput( self, vec, fillValue = None, varInfo = None ):
+    # c: 15.12.2005, r: 28.04.2008
+    def stateToOutput( self, vec, fillValue = None, varInfo = None,
+                       extend = True ):
 
         nNod, di = self.domain.shape.nNod, self.di
 
@@ -781,13 +782,15 @@ class Variables( Container ):
             else:
                 aux = nm.reshape( vec[indx], (di.nDofs[key] / dpn, dpn) )
 
-#            print key, aux.shape
-            ext = self[key].extendData( aux, nNod, fillValue )
+            if extend:
+                ext = self[key].extendData( aux, nNod, fillValue )
+            else:
+                ext = aux
 #            print ext.shape
 #            pause()
             out[name] = Struct( name = 'output_data',
                                 mode = 'vertex', data = ext,
-                                dofs = self[key].dofs )
+                                varName = key, dofs = self[key].dofs )
         return out
 
     ##
