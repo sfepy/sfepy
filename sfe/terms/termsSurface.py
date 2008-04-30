@@ -1,14 +1,20 @@
 from terms import *
 
 ##
-# c: 13.11.2007, r: 15.01.2008
-def fixTractionShape( tr, nEl ):
-    tr = nm.array( tr, ndmin = 1 )
-    if tr.ndim < 2:
-        tr = tr[:,nm.newaxis]
-    if tr.shape[0] == 1:
-        tr = nm.tile( tr, (nEl,) + tr.shape[1:] )
-    return nm.ascontiguousarray( tr )
+# c: 13.11.2007, r: 30.04.2008
+def fixTractionShape( mat, nNod ):
+    if nm.isscalar( mat ):
+        mat = nm.tile( mat, (nNod, 1) )
+    else:
+        mat = nm.array( mat, ndmin = 1 )
+        if mat.ndim < 2:
+            mat = mat[:,nm.newaxis]
+        if mat.shape[0] != nNod:
+            if mat.shape[0] == 1:
+                mat = nm.tile( mat, (nNod, 1) )
+            else:
+                mat = nm.tile( mat[:,0], (nNod, 1) )
+    return nm.ascontiguousarray( mat )
 
 ##
 # 22.08.2006, c
@@ -32,7 +38,7 @@ class LinearTractionTerm( Term ):
     # c: 05.09.2006, r: 15.01.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """
-        Works in scalar, vector and tensor mode.
+        Should work in scalar, vector and tensor modes (tensor probably broken).
         Tractions defined in vertices -> using 'vertex' subset of leconn
         """
         traction, virtual = self.getArgs( **kwargs )

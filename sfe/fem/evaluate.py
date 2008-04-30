@@ -135,6 +135,12 @@ def assembleVector( vec, equation, variables, materials,
                                                 **args ):
                 if status != 0:
                     raise StopIteration( status, term, equation )
+
+                checkFinitness = False
+                if checkFinitness and (not nm.isfinite( vecInEls ).all()):
+                    print term.name, term.sign, ig
+                    debug()
+
                 fem.assembleVector( vec, vecInEls, iels, term.sign, dc )
 
 ##
