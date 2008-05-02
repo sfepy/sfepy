@@ -60,6 +60,21 @@ def transform_ebcs( adict ):
     return d2
 
 ##
+# c: 02.05.2008, r: 02.05.2008
+def transform_regions( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tupleToConf( key, conf, ['select', 'flags'] )
+            for flag, val in c2.flags.iteritems():
+                setattr( c2, flag, val )
+            delattr( c2, 'flags' )
+        else:
+            c2 = transform_toStruct_1( conf )
+        d2['region_%d' % ii] = c2
+    return d2
+
+##
 # c: 20.06.2007, r: 18.02.2008
 def transform_toStruct_1( adict ):
     return dictToStruct( adict, flag = (1,) )
@@ -76,7 +91,7 @@ transforms = {
     'integrals' : transform_toStruct_01,
     'opt'       : transform_toStruct_1,
     'fe'        : transform_toStruct_1,
-    'regions'   : transform_toStruct_01,
+    'regions'   : transform_regions,
     'shapeOpt'  : transform_toStruct_10,
     'fields'    : transform_toStruct_01,
     'variables' : transform_variables,
