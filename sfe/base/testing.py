@@ -53,10 +53,12 @@ class TestCommon( Struct ):
         return ok, nFail, len( tests )
 
     ##
-    # 31.05.2007, c
-    def report( text ):
+    # c: 31.05.2007, r: 02.05.2008
+    def report( *argc ):
         """All tests should print via this function."""
-        print '... ' + text
+        format = '...' + ' %s' * len( argc )
+        msg =  format % argc
+        print msg
     report = staticmethod( report )
 
     ##
