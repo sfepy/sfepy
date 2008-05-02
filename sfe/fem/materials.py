@@ -153,24 +153,21 @@ Material:m
                 self.data = None
 
     ##
-    # c: 02.08.2006, r: 02.04.2008
+    # c: 02.08.2006, r: 02.05.2008
     def getData( self, regionName, ig, name = None ):
         """Returns None in function mode if setCurrentGroup() was not called."""
 ##         print 'getting', name
 
-        if self.mode == 'here':
-            if name is None:
-                output( 'material arguments must use the dot notation!'
-                        ' (material: %s)' % self.name )
-                raise ValueError
-            else:
-                return getattr( self, name )
+        if name is None:
+            output( 'material arguments must use the dot notation!' )
+            output( '(material: %s, region: %s)' % (self.name, regionName) )
+            raise ValueError
 
+        if self.mode == 'here':
+            return getattr( self, name )
         else:
             ii = self.igs.index( ig )
-            if name is None:
-                return self.datas[ii]
-            elif isinstance( self.datas[ii], Struct ):
+            if isinstance( self.datas[ii], Struct ):
                 return getattr( self.datas[ii], name )
             else:
                 return self.datas[ii][name]
