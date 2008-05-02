@@ -91,3 +91,46 @@ class ScipyIterative( LinearSolver ):
         sol, info = self.solver( mtx, rhs, tol = conf.epsA, maxiter = conf.iMax )
         
         return sol
+
+##
+# c: 02.05.2008, r: 02.05.2008
+class PyAMGSolver( LinearSolver ):
+    name = 'ls.pyamg'
+
+    ##
+    # c: 02.05.2008, r: 02.05.2008
+    def __init__( self, conf, **kwargs ):
+        try:
+            import pyamg
+        except ImportError:
+            output( 'cannot import pyamg!' )
+            raise
+
+        try:
+            solver = getattr( pyamg, conf.method )
+        except AttributeError:
+            output( 'pyamg.%s does not exist!' % conf.method )
+            output( 'using pyamg.smoothed_aggregation_solver instead' )
+            solver = pyamg.smoothed_aggregation_solver
+
+        LinearSolver.__init__( self, conf,
+                               solver = solver, mg = None,
+                               **kwargs )
+
+        if hasattr( self, 'mtx' ):
+            if self.mtx is not None:
+                self.mg = self.solver( self.mtx )
+        
+    ##
+    # c: 02.05.2008, r: 02.05.2008
+    def __call__( self, rhs, conf = None, mtx = None, status = None ):
+        conf = getDefault( conf, self.conf )
+        mtx = getDefault( mtx, self.mtx )
+        status = getDefault( status, self.status )
+
+        if (self.mg is None) or (mtx is not self.mtx):
+            self.mg = self.solver( mtx )
+
+        sol = self.mg.solve( rhs, tol = conf.epsA )
+        
+        return sol
