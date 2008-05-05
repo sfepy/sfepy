@@ -1,6 +1,6 @@
 # 14.12.2004, c
-# last revision: 28.03.2008
-VERSION := 00.41.03
+# last revision: 05.05.2008
+VERSION := 00.43.01
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -33,7 +33,7 @@ DEBUG_FLAGS := -DDEBUG_FMF
 ################ Do not edit below! ##############################
 
 ISRELEASE := 1
-MODULES := eldesc input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods sfe/physics sfe/physics/extmods tests
+MODULES := eldesc examples input sfe sfe/base sfe/fem sfe/fem/extmods sfe/homogenization sfe/solvers sfe/terms sfe/terms/extmods sfe/physics sfe/physics/extmods tests
 ifndef ISRELEASE
   MODULES += sfe/optimize
 else
@@ -46,8 +46,8 @@ CUR_DIR := $(shell pwd)
 
 DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfe.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py TODO INSTALL.txt README.txt
 RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfe.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py INSTALL.txt README.txt RELEASE_NOTES.txt
-SUBDIRS = database doc eldesc input script sfe tests
-RELSUBDIRS = database doc eldesc input script sfe tests
+SUBDIRS = database doc eldesc examples input script sfe tests
+RELSUBDIRS = database doc eldesc examples input script sfe tests
 DATADIRS := database
 DATADISTDIR := $(PROJECTNAME)-data-$(shell $(DATE))
 DISTDIR := $(PROJECTNAME)-$(VERSION)
