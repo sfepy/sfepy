@@ -54,8 +54,7 @@ def output( *argc, **argv ):
         level += 1
 
 ##
-# 06.04.2005, c
-# 12.02.2007
+# c: 06.04.2005, r: 05.05.2008
 def pause( msg = None ):
     f = sys._getframe(1)
     ff = f.f_code
@@ -65,7 +64,7 @@ def pause( msg = None ):
     else:
         print '%s, %d: %s(), %d' % (ff.co_filename, ff.co_firstlineno,
                                       ff.co_name, f.f_lineno)
-    spause( msg )
+    spause()
 
 ##
 # Silent pause.
