@@ -1,8 +1,13 @@
 import numpy as nm
 
 ##
-# 18.10.2006, c
-# last revision: 04.06.2007
+# c: 05.05.2008, r: 05.05.2008
+eps = 1e-12
+def setAccuracy( eps ):
+    globals()['eps'] = eps
+
+##
+# c: 18.10.2006, r: 05.05.2008
 def matchGridLine( coor1, coor2, which ):
     if coor1.shape != coor2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
@@ -13,7 +18,7 @@ def matchGridLine( coor1, coor2, which ):
     i1 = nm.argsort( c1 )
     i2 = nm.argsort( c2 )
 
-    if not nm.all( nm.abs(c1[i1] - c2[i2]) < 1e-12 ):
+    if not nm.all( nm.abs(c1[i1] - c2[i2]) < eps ):
         print 'cannot match nodes\n(%s,\n %s), %e' % \
               (c1[i1], c2[i2], nm.abs(c1[i1] - c2[i2]).max())
         raise ValueError
