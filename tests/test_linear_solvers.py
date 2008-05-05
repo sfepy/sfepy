@@ -117,6 +117,7 @@ fe = {
 }
 
 from sfe.base.testing import TestCommon
+outputName = 'test_linear_solvers_%s.vtk'
 
 ##
 # c: 02.05.2008
@@ -148,10 +149,11 @@ class Test( TestCommon ):
         return d
 
     ##
-    # c: 02.05.2008, r: 02.05.2008
+    # c: 02.05.2008, r: 05.05.2008
     def test_solvers( self ):
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
+        import os.path as op
 
         solverConfs = self._listLinearSolvers( self.problem.solverConfs )
 
@@ -170,6 +172,8 @@ class Test( TestCommon ):
             self.problem.initSolvers( nlsStatus = status, lsConf = solverConf )
             try:
                 state = self.problem.solve()
+##                 self.problem.mtxA.save( 'mtx_laplace_cube',
+##                                         format='%d %d %.12e\n' )
             except Exception, exc:
                 ok = False
                 status = None
@@ -183,10 +187,15 @@ class Test( TestCommon ):
                 self.report( 'condition: %d, err0: %.3e, err: %.3e'\
                              % (status.condition, status.err0, status.err) )
                 tt.append( [name, status.timeStats['solve']] )
+
+                fname = op.join( self.options.outDir,
+                                op.split( self.conf.outputName )[1] ) % name
+                self.problem.saveState( fname, state )
             else:
                 self.report( 'solver failed:' )
                 self.report( exc )
                 tt.append( [name, 1e10] )
+
 
         tt.sort( cmp = lambda a, b: cmp( a[1], b[1] ) )
         self.report( 'solution times:' )
