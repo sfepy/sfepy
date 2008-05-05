@@ -24,7 +24,41 @@ def test():
     print conns
 
 ##
-# 25.05.2007, c
+# c: 05.05.2008, r: 05.05.2008
+def fixDoubleNodes( coor, conns, eps ):
+    nNod, dim = coor.shape
+    cmap = findMap( coor, nm.zeros( (0,dim) ), eps = eps, allowDouble = True )
+    if cmap.size:
+        print 'double nodes in input mesh!'
+        print 'trying to fix...'
+
+        while cmap.size:
+            print cmap.size
+
+            # Just like in Variable.equationMapping()...
+            ii = nm.argsort( cmap[:,1] )
+            scmap = cmap[ii]
+
+            eq = nm.arange( nNod )
+            eq[scmap[:,1]] = -1
+            eqi = eq[eq >= 0]
+            eq[eqi] = nm.arange( eqi.shape[0] )
+            remap = eq.copy()
+            remap[scmap[:,1]] = eq[scmap[:,0]]
+            print coor.shape
+            coor = coor[eqi]
+            print coor.shape
+            ccs = []
+            for conn in conns:
+                ccs.append( remap[conn] )
+            conns = ccs
+            cmap = findMap( coor, nm.zeros( (0,dim) ), eps = eps,
+                            allowDouble = True )
+        print '...done'
+    return coor, conns
+
+##
+# c: 25.05.2007, r: 05.05.2008
 # 28.05.2007
 def getMinEdgeSize( coor, conns ):
 
@@ -35,7 +69,7 @@ def getMinEdgeSize( coor, conns ):
             x1 = coor[conn[:,ir]]
             for ic in range( ir + 1, nEP ):
                 x2 = coor[conn[:,ic]]
-                aux = nm.sum( (x2 - x1)**2.0, axis = 1 ).min()
+                aux = nm.sqrt( nm.sum( (x2 - x1)**2.0, axis = 1 ).min() )
                 mes = min( mes, aux )
 
     return mes
@@ -77,8 +111,7 @@ def getMinVertexDistance( coor, guess ):
     return mvd
         
 ##
-# 25.05.2007, c
-# 28.05.2007
+# c: 25.05.2007, r: 05.05.2008
 def getMinVertexDistanceNaive( coor ):
 
     ii = nm.arange( coor.shape[0] )
@@ -92,7 +125,7 @@ def getMinVertexDistanceNaive( coor ):
 
     im = aux.argmin()
 
-    return im, i1[ii][im], i2[ii][im], aux[im]
+    return im, i1[ii][im], i2[ii][im], nm.sqrt( aux[im] )
 
 usage = """%prog [options] fileNameIn fileNameOut
 
@@ -110,7 +143,7 @@ help = {
 }
 
 ##
-# c: 23.05.2007, r: 29.02.2008
+# c: 23.05.2007, r: 05.05.2008
 def main():
 
     parser = OptionParser( usage = usage, version = "%prog 42" )
@@ -154,10 +187,18 @@ def main():
     # Normalize original coordinates.
     coor0 = (meshIn.nod0[:,:-1] - centre0) / (mscale)
     dim = meshIn.dim
+
+    coor0, meshIn.conns = fixDoubleNodes( coor0, meshIn.conns, options.eps )
     if not options.nomvd:
         mes0 = getMinEdgeSize( coor0, meshIn.conns )
         mvd0 = getMinVertexDistance( coor0, mes0 )
-    
+        if mes0 > (mvd0 + options.eps):
+            print '          original min. "edge" length: %.5e' % mes0
+            print 'original approx. min. vertex distance: %.5e' % mvd0
+            print '-> still double nodes in input mesh!'
+            print 'try increasing eps...'
+            raise ValueError
+
     for indx in cycle( [options.scale] * dim ):
         aindx = nm.array( indx, dtype = nm.float64 )
         centre = 0.5 * (2.0 * aindx - scale + 1.0)
@@ -190,6 +231,7 @@ def main():
         if mvd < 0.99999 * mvd0:
             print '-> probably non-periodic input mesh!'
             print '   ... adjacent sides were not connected!'
+            print '   try increasing eps...'
         else:
             print '-> input mesh looks periodic'
     else:

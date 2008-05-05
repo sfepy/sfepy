@@ -14,9 +14,7 @@ def makePointCells( indx, dim ):
     return conn
 
 ##
-# 23.05.2007, updated from matlab version
-# 24.05.2007
-# 01.06.2007
+# 23.05.2007, updated from matlab version, r: 05.05.2008
 def findMap( x1, x2, eps = 1e-8, allowDouble = False, join = True ):
     """
     Find a mapping between common coordinates in x1 and x2, such that
@@ -39,20 +37,21 @@ def findMap( x1, x2, eps = 1e-8, allowDouble = False, join = True ):
 ##     io.write_array( 'sss2', x2.T )
 ##     io.write_array( 'sss', xs, precision = 16 )
 ##     pause()
-    xd = nm.sum( nm.diff( xs, axis = 0 )**2.0, axis = 1 )
+    xd = nm.sqrt( nm.sum( nm.diff( xs, axis = 0 )**2.0, axis = 1 ) )
 
     ii = nm.where( xd < eps )[0]
     off1, off2 = ir[iis][ii], ir[iis][ii+1]
     i1, i2 = iis[ii] - off1, iis[ii+1] - off2
-
     dns = nm.where( off1 == off2 )[0]
     if dns.size:
         print 'double node(s) in:'
         for dn in dns:
             if off1[dn] == 0:
-                print 'x1: %s %s' % (i1[dn], i2[dn])
+                print 'x1: %d %d -> %s %s' % (i1[dn], i2[dn],
+                                              x1[:,i1[dn]], x1[:,i2[dn]])
             else:
-                print 'x2: %s %s' % (i1[dn], i2[dn])
+                print 'x2: %d %d -> %s %s' % (i1[dn], i2[dn],
+                                              x2[:,i1[dn]], x2[:,i2[dn]])
         if not allowDouble:
             raise ValueError
 
@@ -495,7 +494,8 @@ Mesh:database/simple
     ##
     # c: 02.01.2008, r: 02.01.2008
     def localize( self, inod ):
-        """Strips nodes not in inod and remaps connectivities."""
+        """Strips nodes not in inod and remaps connectivities.
+        TODO: fix the case when remap[conn] contains -1..."""
         remap = nm.empty( (self.nod0.shape[0],), dtype = nm.int32 )
         remap.fill( -1 )
         remap[inod] = nm.arange( inod.shape[0], dtype = nm.int32 )
