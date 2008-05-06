@@ -395,7 +395,7 @@ class VTKMeshIO( MeshIO ):
         return mesh
 
     ##
-    # c: 15.12.2005, r: 08.02.2008
+    # c: 15.12.2005, r: 06.05.2008
     def write( self, fileName, mesh, out = None ):
 
         fd = open( fileName, 'w' )
@@ -481,15 +481,20 @@ class VTKMeshIO( MeshIO ):
                 if dim == 3:
                     if nr == sym:
                         aux = data[:,[0,3,4,3,1,5,4,5,2]]
-                    else:
+                    elif nr == (dim * dim):
                         aux = data[:,[0,3,4,6,1,5,7,8,2]]
+                    else:
+                        aux = data[:,[0,1,2,3,4,5,6,7,8]]
                 else:
                     zz = nm.zeros( (data.shape[0], 1), dtype = nm.float64 );
                     if nr == sym:
                         aux = nm.c_[data[:,[0,2]], zz, data[:,[2,1]],
                                     zz, zz, zz, zz]
-                    else:
+                    elif nr == (dim * dim):
                         aux = nm.c_[data[:,[0,2]], zz, data[:,[3,1]],
+                                    zz, zz, zz, zz]
+                    else:
+                        aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
                                     zz, zz, zz, zz]
                 for row in aux:
                     fd.write( form % tuple( row ) )
