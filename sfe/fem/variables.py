@@ -1118,7 +1118,7 @@ class Variable( Struct ):
                        dim = dim )
 
     ##
-    # c: 20.07.2006, split, r: 25.02.2008
+    # c: 20.07.2006, split, r: 06.05.2008
     def equationMapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
@@ -1158,7 +1158,7 @@ class Variable( Struct ):
 
             try:
                 region = regions[rname]
-            except KeyError:
+            except IndexError:
                 print "no region '%s' used in BC %s!" % (rname, bc)
                 raise
 
