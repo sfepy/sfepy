@@ -143,7 +143,7 @@ help = {
 }
 
 ##
-# c: 23.05.2007, r: 05.05.2008
+# c: 23.05.2007, r: 06.05.2008
 def main():
 
     parser = OptionParser( usage = usage, version = "%prog 42" )
@@ -229,9 +229,13 @@ def main():
         print 'original approx. min. vertex distance: %.5e' % mvd0
         print '   final approx. min. vertex distance: %.5e' % mvd
         if mvd < 0.99999 * mvd0:
-            print '-> probably non-periodic input mesh!'
-            print '   ... adjacent sides were not connected!'
-            print '   try increasing eps...'
+            if mvd0 > (mes0 + eps):
+                print '-> probably non-periodic input mesh!'
+                print '   ... adjacent sides were not connected!'
+                print '   try increasing eps...'
+            else:
+                print '-> input mesh might be periodic'
+                print '   try increasing eps...'
         else:
             print '-> input mesh looks periodic'
     else:
