@@ -186,7 +186,8 @@ class PermeabilityRTerm( Term ):
 # 07.09.2006, c
 class DiffusionVelocityTerm( Term ):
     r""":description: Diffusion velocity averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} K_{ij} \nabla_j r$
+    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} K_{ij} \nabla_j r
+    / \int_{T_K} 1$
     """
     name = 'de_diffusion_velocity'
     argTypes = ('material','parameter')
@@ -197,7 +198,7 @@ class DiffusionVelocityTerm( Term ):
         Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
         
     ##
-    # c: 07.09.2006, r: 31.03.2008
+    # c: 07.09.2006, r: 06.05.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         mat, parameter = self.getArgs( **kwargs )
         ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -211,11 +212,12 @@ class DiffusionVelocityTerm( Term ):
         vec, indx = parameter()
         cache = self.getCache( 'mat_in_qp', 0 )
         matQP = cache( 'matqp', self.getCurrentGroup(), 0,
-                       mat = mat, ap = ap,
+                       mat = nm.asarray( mat ), ap = ap,
                        assumedShapes = [(1, nQP, dim, dim),
                                         (nEl, nQP, dim, dim)],
                        modeIn = None )
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, vec, indx.start,
                                     matQP, vg, ap.econn, chunk )
-            yield out, chunk, status
+            out1 = out / vg.variable( 2 )
+            yield out1, chunk, status

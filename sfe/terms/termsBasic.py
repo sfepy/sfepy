@@ -211,16 +211,16 @@ def fixMatQPShape( matQP, nEl ):
     return matQP
 
 ##
-# c: 05.03.2008
-class IntegrateVolumeMatTerm( Term ):
-    r""":description: Integrate material parameter $m$ over a domain. Uses
+# c: 06.05.2008
+class AverageVolumeMatTerm( Term ):
+    r""":description: Material parameter $m$ averaged in elements. Uses
     approximation of $y$ variable.
-    :definition: $\int_\Omega m$
+    :definition: $\forall K \in \Tcal_h: \int_{T_K} m / \int_{T_K} 1$
     :arguments: material : $m$ (can have up to two dimensions),
-    parameter : $y$, shape : shape of material
+    parameter : $y$, shape : shape of material parameter
     parameter, mode : 'const' or 'vertex' or 'element_avg'
     """
-    name = 'di_volume_integrate_mat'
+    name = 'de_volume_average_mat'
     argTypes = ('material', 'parameter', 'shape', 'mode')
     geometry = [(Volume, 'parameter')]
     useCaches = {'mat_in_qp' : [['material']]}
@@ -229,8 +229,8 @@ class IntegrateVolumeMatTerm( Term ):
         Term.__init__( self, region, name, sign )
         
     ##
-    # c: 05.03.2008, r: 05.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+    # c: 06.05.2008, r: 06.05.2008
+    def prepareData( self, chunkSize = None, **kwargs ):
         mat, par, matShape, mode = self.getArgs( **kwargs )
         ap, vg = par.getApproximation( self.getCurrentGroup(), 'Volume' )
         nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
@@ -244,6 +244,36 @@ class IntegrateVolumeMatTerm( Term ):
 
         matQP = fixMatQPShape( matQP, chunkSize )
         shape = (chunkSize, 1) + matQP.shape[2:]
+
+        return vg, matQP, shape
+
+    ##
+    # c: 06.05.2008, r: 06.05.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        vg, matQP, shape = self.prepareData( chunkSize, **kwargs )
+
+        for out, chunk in self.charFun( chunkSize, shape ):
+            status = vg.integrateChunk( out, matQP[chunk], chunk )
+            out1 = out / vg.variable( 2 )
+            yield out1, chunk, status
+
+##
+# c: 05.03.2008
+class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
+    r""":description: Integrate material parameter $m$ over a domain. Uses
+    approximation of $y$ variable.
+    :definition: $\int_\Omega m$
+    :arguments: material : $m$ (can have up to two dimensions),
+    parameter : $y$, shape : shape of material parameter
+    parameter, mode : 'const' or 'vertex' or 'element_avg'
+    """
+    name = 'di_volume_integrate_mat'
+
+    ##
+    # c: 05.03.2008, r: 06.05.2008
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        matShape, = self.getArgs( ['shape'], **kwargs )
+        vg, matQP, shape = self.prepareData( chunkSize, **kwargs )
 
         for out, chunk in self.charFun( chunkSize, shape ):
             status = vg.integrateChunk( out, matQP[chunk], chunk )

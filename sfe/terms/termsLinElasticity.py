@@ -217,7 +217,8 @@ class LinearViscousTHTerm( LinearElasticTerm ):
 # 21.09.2006, c
 class CauchyStrainTerm( Term ):
     r""":description: Cauchy strain tensor averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w})$
+    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w}) /
+    \int_{T_K} 1$
     """
     name = 'de_cauchy_strain'
     argTypes = ('parameter',)
@@ -246,7 +247,7 @@ class CauchyStrainTerm( Term ):
         return vec, indx.start, vg, ap.econn
         
     ##
-    # c: 21.09.2006, r: 31.03.2008
+    # c: 21.09.2006, r: 06.05.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         parameter, = self.getArgs( ['parameter'], **kwargs )
         ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -256,14 +257,15 @@ class CauchyStrainTerm( Term ):
         
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, *fargs + (chunk,) )
-            yield out, chunk, status
+            out1 = out / vg.variable( 2 )
+            yield out1, chunk, status
 
 ##
 # c: 25.03.2008
 class CauchyStressTerm( CauchyStrainTerm ):
     r""":description: Cauchy stress tensor averaged in elements.
     :definition: vector of $\forall K \in \Tcal_h:
-    \int_{T_K} D_{ijkl} e_kl(\ul{w})$
+    \int_{T_K} D_{ijkl} e_kl(\ul{w}) / \int_{T_K} 1$
     """
     name = 'de_cauchy_stress'
     argTypes = ('material', 'parameter')
