@@ -28,7 +28,11 @@ def tupleToConf( name, vals, order ):
     return conf
 
 ##
-# c: 10.04.2008, r: 10.04.2008
+# Short syntax: key is suffixed with '_' to prevent collisions with long syntax
+# keys -> both cases can be used in a single input.
+
+##
+# c: 10.04.2008, r: 06.05.2008
 def transform_variables( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
@@ -42,25 +46,27 @@ def transform_variables( adict ):
                     c2.dual = conf[2]
                 elif kind == 'parameter':
                     c2.like = conf[2]
+            d2['variable__%d' % ii] = c2
         else:
             c2 = transform_toStruct_1( conf )
-        d2['variable_%d' % ii] = c2
+            d2[key] = c2
     return d2
 
 ##
-# c: 10.04.2008, r: 10.04.2008
+# c: 10.04.2008, r: 06.05.2008
 def transform_ebcs( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tupleToConf( key, conf, ['region', 'dofs'] )
+            d2['ebc__%d' % ii] = c2
         else:
             c2 = transform_toStruct_1( conf )
-        d2['ebc_%d' % ii] = c2
+            d2[key] = c2
     return d2
 
 ##
-# c: 02.05.2008, r: 02.05.2008
+# c: 02.05.2008, r: 06.05.2008
 def transform_regions( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
@@ -69,9 +75,10 @@ def transform_regions( adict ):
             for flag, val in c2.flags.iteritems():
                 setattr( c2, flag, val )
             delattr( c2, 'flags' )
+            d2['region__%d' % ii] = c2
         else:
             c2 = transform_toStruct_1( conf )
-        d2['region_%d' % ii] = c2
+            d2[key] = c2
     return d2
 
 ##
