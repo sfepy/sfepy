@@ -1,6 +1,7 @@
 import numpy as nm
 import extmods.terms as terms
 from cache import DataCache
+from sfe.base.base import pause, debug
 
 ##
 # 13.03.2007, c
@@ -245,19 +246,36 @@ class MatInQPDataCache( DataCache ):
     argTypes = ('mat', 'ap', 'assumedShapes', 'modeIn')
 
     ##
-    # c: 23.01.2008, r: 23.01.2008
+    # c: 23.01.2008, r: 06.05.2008
     def __init__( self, name, argNames, historySizes = None ):
         DataCache.__init__( self, name, argNames, ['matqp'], historySizes,
                             terms.dq_state_in_qp )
         self.shape = {}
-        
+        self.modeIn = {}
+        self.modeOut = {}
+
     ##
-    # c: 23.01.2008, r: 01.02.2008
+    # c: 23.01.2008, r: 06.05.2008
     def initData( self, key, ckey, **kwargs ):
         mat, ap, assumedShapes, modeIn = self.getArgs( **kwargs )
         if modeIn is None:
             if mat.ndim == 3:
-                modeIn = 'element_avg'
+                ig = ckey[1]
+                rshape = ap.region.shape[ig]
+                if rshape.nVertex == rshape.nCell:
+                    output( 'cannot determine modeIn! (%d nodes, %d cells '
+                            'material data shape: %s)'\
+                            % (rshape.nVertex, rshape.nCell, mat.shape) )
+                    raise ValueError
+                if mat.shape[0] == rshape.nVertex:
+                    modeIn = 'vertex'
+                elif mat.shape[0] == rshape.nCell:
+                    modeIn = 'element_avg'
+                else:
+                    output( 'cannot determine modeIn! (%d nodes, %d cells '
+                            'material data shape: %s)'\
+                            % (rshape.nVertex, rshape.nCell, mat.shape) )
+                    raise ValueError
             elif mat.ndim == 2:
                 ashape = assumedShapes[0]
                 if ashape[2:] != mat.shape:
@@ -295,27 +313,26 @@ class MatInQPDataCache( DataCache ):
         if shape is None:
             raise ValueError
 
-        self.modeIn = modeIn
-        self.modeOut = modeOut
+        self.modeIn[ckey] = modeIn
+        self.modeOut[ckey] = modeOut
         self.shape[ckey] = shape
         DataCache.initData( self, key, ckey, shape )
 
     ##
-    # c: 23.01.2008, r: 01.02.2008
+    # c: 23.01.2008, r: 06.05.2008
     def update( self, key, groupIndx, ih, **kwargs ):
         import numpy as nm
         mat, ap, assumedShapes, modeIn = self.getArgs( **kwargs )
         ckey = self.gToC( groupIndx )
-
         shape = self.shape[ckey]
-        if self.modeIn == 'const':
+        if self.modeIn[ckey] == 'const':
             mat2 = nm.reshape( mat.copy(), (1, 1) + mat.shape )
             mat2 = mat2.repeat( shape[1], 1 )
             matQP = mat2.repeat( shape[0], 0 )
             self.data[key][ckey][ih][:] = matQP
 
-        elif self.modeIn == 'vertex':
-            """Full domain mat only! (no group.lconn...)"""
+        elif self.modeIn[ckey] == 'vertex':
+            """no group.lconn, so it is built here..."""
             iname, ig = ckey[0], ckey[-1]
             
             gbf = ap.getBase( 'v', 0, iname, fromGeometry = True )
@@ -324,15 +341,21 @@ class MatInQPDataCache( DataCache ):
 
             # dq_state_in_qp() works for vectors -> make a view of
             # shape (nEl, nQP, nRow * nCol, 1).
-            vshape = shape[0:2] + (mat.shape[1], 1)
+            vshape = shape[0:2] + (nm.prod( mat.shape[1:] ), 1)
 ##             print self
 ##             print self.shape, ckey
 ##             print vshape
 ##             print self.data[key][ckey][ih].shape
-##             from sfe.base.base import debug
 ##             debug()
             matQP = self.data[key][ckey][ih].reshape( vshape )
-            self.function( matQP, mat, 0, gbf, conn )
+            if ap.region.nVMax > group.shape.nVertex:
+                remap = nm.zeros( (ap.region.nVMax,), dtype = nm.int32 )
+                remap[group.vertices] = nm.arange( group.shape.nVertex,
+                                                   dtype = nm.int32 )
+                lconn = remap[conn]
+            else:
+                lconn = conn
+            self.function( matQP, mat, 0, gbf, lconn )
 
         else:
             raise NotImplementedError
