@@ -21,6 +21,7 @@
   <row><entry><m>\ull{e}(\ul{u})</m></entry><entry>Cauchy strain tensor
     (<m>\frac{1}{2}((\nabla u) + (\nabla u)^T)</m>)</entry></row>
   <row><entry><m>\ul{f}</m></entry><entry>vector volume forces</entry></row>
+  <row><entry><m>f</m></entry><entry>scalar volume force (source)</entry></row>
   <row><entry><m>\rho</m></entry><entry>density</entry></row>
   <row><entry><m>\nu</m></entry><entry>kinematic viscosity</entry></row>
   <row><entry><m>c</m></entry><entry>any constant</entry></row>

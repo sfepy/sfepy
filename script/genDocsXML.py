@@ -172,7 +172,7 @@ def include( fd, fileName ):
     fd2.close()
     
 ##
-# c: 21.03.2008, r: 26.03.2008
+# c: 21.03.2008, r: 07.05.2008
 def typesetItemTable( fd, itemTable ):
     secList = []
     currentSection = [None]
@@ -184,7 +184,11 @@ def typesetItemTable( fd, itemTable ):
     fd.write( '<center><table><tgroup>\n' )
     fd.write( '<tbody>\n' )
 
-    rowFormat = '<row><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
+    fd.write( '<row><entry>section</entry><entry>name</entry>'
+              '<entry format="p{5cm}">definition</entry></row>\n' )
+    fd.write( '<row><entry></entry><entry></entry><entry></entry></row>\n' )
+
+    rowFormat = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
 
     keys = itemTable.keys()
     keys.sort()
@@ -202,14 +206,15 @@ def typesetItemTable( fd, itemTable ):
                 dd = ''
             print dd
 ##             print replaceDollars( dd )
-            fd.write( rowFormat % (itemClass.name, replaceDollars( dd )) )
+            fd.write( rowFormat % (itemClass.name, itemClass.name,
+                                   replaceDollars( dd )) )
 
     fd.write( '</tbody></tgroup></table></center>\n' )
     fd.write( r'</section>' )
     
 
 ##
-# c: 14.11.2007, r: 21.03.2008
+# c: 14.11.2007, r: 07.05.2008
 def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
     secList = []
     currentSection = [None]
@@ -223,7 +228,8 @@ def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
         for itemName in itemNames:
             itemClass = itemTable[itemName]
             name = itemClass.name#.replace( '_', '\_' )
-            fd.write( '\n<section>\n    <title>%s</title>\n' %  name )
+            fd.write( '\n<section id="%s">\n    <title>%s</title>\n'\
+                      % (name, name) )
             fd.write( '<p>\n' )
             fd.write( r'<em>Class</em>: %s' % itemClass.__name__ )
             fd.write( '</p>\n' )
