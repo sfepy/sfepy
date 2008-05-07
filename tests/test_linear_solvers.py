@@ -149,7 +149,7 @@ class Test( TestCommon ):
         return d
 
     ##
-    # c: 02.05.2008, r: 05.05.2008
+    # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
         from sfe.solvers.generic import solveStationary
         from sfe.base.base import IndexedStruct
@@ -169,17 +169,18 @@ class Test( TestCommon ):
             self.report( 'matrix size:', self.problem.mtxA.shape )
             self.report( '        nnz:', self.problem.mtxA.nnz )
             status = IndexedStruct()
-            self.problem.initSolvers( nlsStatus = status, lsConf = solverConf )
             try:
+                self.problem.initSolvers( nlsStatus = status,
+                                          lsConf = solverConf )
                 state = self.problem.solve()
+                failed = status.condition != 0
 ##                 self.problem.mtxA.save( 'mtx_laplace_cube',
 ##                                         format='%d %d %.12e\n' )
             except Exception, exc:
-                ok = False
+                failed = True
                 status = None
 
-            ok = ok and ((status.condition == 0)
-                         or (solverConf.mode in self.canFail))
+            ok = ok and ((not failed) or (solverConf.kind in self.canFail))
 
             if status is not None:
                 for kv in status.timeStats.iteritems():
