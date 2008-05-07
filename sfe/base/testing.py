@@ -79,11 +79,11 @@ class TestCommon( Struct ):
     evalCoorExpression = staticmethod( evalCoorExpression )
 
     ##
-    # 30.05.2007, c
+    # c: 30.05.2007, r: 07.05.2008
     def compareVectors( vec1, vec2, allowedError = 1e-8,
-                        label1 = 'vec1', label2 = 'vec2' ):
+                        label1 = 'vec1', label2 = 'vec2', norm = None ):
 
-        diffNorm = nla.norm( vec1 - vec2 )
+        diffNorm = nla.norm( vec1 - vec2, ord = norm )
         TestCommon.report( '||%s - %s||: %e' % (label1, label2, diffNorm) )
         if diffNorm > allowedError:
             return False
