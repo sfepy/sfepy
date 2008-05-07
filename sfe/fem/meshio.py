@@ -432,7 +432,8 @@ class VTKMeshIO( MeshIO ):
         if out is None: return
 
         pointKeys = [key for key, val in out.iteritems() if val.mode == 'vertex']
-        fd.write( '\nPOINT_DATA %d\n' % nNod );
+        if len( pointKeys ):
+            fd.write( '\nPOINT_DATA %d\n' % nNod );
         for key in pointKeys:
             val = out[key]
             nr, nc = val.data.shape
@@ -454,7 +455,8 @@ class VTKMeshIO( MeshIO ):
                 raise NotImplementedError, nc
 
         cellKeys = [key for key, val in out.iteritems() if val.mode == 'cell']
-        fd.write( '\nCELL_DATA %d\n' % nEl );
+        if len( cellKeys ):
+            fd.write( '\nCELL_DATA %d\n' % nEl );
         for key in cellKeys:
             val = out[key]
             ne, aux, nr, nc = val.data.shape
