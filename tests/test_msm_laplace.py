@@ -52,11 +52,12 @@ equations = {
        = dw_volume_lvf.i1.Omega( rhs.val, s )"""
 }
 
-solution = {
-##     't' : ('(x**2) + (y**2)',
-##            '[-4.0]'),
-    't' : ('nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )',
-           '25.0 * nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )'),
+solutions = {
+    'sincos' : ('t', 'nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )',
+                '25.0 * nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )'),
+    'poly' : ('t', '(x**2) + (y**2)', '[-4.0]'),
+    'polysin' : ('t', '((x - 0.5)**3) * nm.sin( 5.0 * y )',
+                 '- 6.0 * (x - 0.5) * nm.sin( 5.0 * y ) + 25.0 * ((x - 0.5)**3) * nm.sin( 5.0 * y )'),
 }
 
 solver_0 = {
@@ -91,12 +92,13 @@ fe = {
 import numpy as nm
 from sfe.base.testing import TestCommon
 from sfe.base.base import debug, pause
-outputName = 'test_msm_laplace.vtk'
+outputName = 'test_msm_laplace_%s.vtk'
 
 ##
 # c: 07.05.2007, r: 07.05.2008
+solution = ['']
 def ebc( bc, ts, coor, solution = solution ):
-    expression = solution['t'][0]
+    expression = solution[0]
     val = TestCommon.evalCoorExpression( expression, coor )
     return val
 
@@ -107,7 +109,6 @@ def rhs( ts, coor, region, ig, expression = None ):
         expression = '0.0 * x'
 
     val = TestCommon.evalCoorExpression( expression, coor )
-
     return {'val' : val}
 
 ##
@@ -131,15 +132,20 @@ class Test( TestCommon ):
         import pylab
         import os.path as op
         
-        sol = self.conf.solution
+        sols = self.conf.solutions
         problem  = self.problem
 
         ok = True
-        for varName, (solExpr, rhsExpr) in sol.iteritems():
+        for solName, sol in sols.iteritems():
+            self.report( 'testing', solName )
+            varName, solExpr, rhsExpr = sol
+
             self.report( 'sol:', solExpr )
             self.report( 'rhs:', rhsExpr )
             matArgs = {'rhs' : {'expression' : rhsExpr}} 
+            globals()['solution'][0] = solExpr
             problem.timeUpdate( extraMatArgs = matArgs )
+            problem.equations.resetTermCaches()
             vec = problem.solve()
             coor = problem.variables[varName].field.getCoor()
             anaSol = self.evalCoorExpression( solExpr, coor )
@@ -175,8 +181,8 @@ class Test( TestCommon ):
             out['ana_t'] = aux['t']
             aux = problem.stateToOutput( numSol )
             out['num_t'] = aux['t']
-            
-            problem.domain.mesh.write( fname, io = 'auto', out = out )
+
+            problem.domain.mesh.write( fname % solName, io = 'auto', out = out )
 
             ok = ok and ret
 
