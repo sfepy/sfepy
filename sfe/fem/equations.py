@@ -192,6 +192,12 @@ class Equations( Container ):
             cache.clear()
 
     ##
+    # c: 07.05.2008, r: 07.05.2008
+    def resetTermCaches( self ):
+        for cache in self.caches.itervalues():
+            cache.reset()
+
+    ##
     # 02.03.2007, c
     def setCacheMode( self, cacheOverride ):
         for cache in self.caches.itervalues():

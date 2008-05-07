@@ -48,6 +48,13 @@ class DataCache( Struct ):
                 valids[ckey] = False
 
     ##
+    # c: 07.05.2008, r: 07.05.2008
+    def reset( self ):
+        """Complete reset: unlike clear(), reset() removes all ckeys,
+           so that initData() must be called."""
+        self.valid = dictFromKeysInit( self.keys(), dict )
+
+    ##
     # 02.03.2007, c
     def setMode( self, override ):
         self.override = override
