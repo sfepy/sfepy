@@ -8,7 +8,7 @@
   nFEP .. field.
 
   @par Revision history:
-  - c: 18.09.2006, r: 02.04.2008
+  - c: 18.09.2006, r: 07.05.2008
 */
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
 		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow )
@@ -18,9 +18,14 @@ int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
 
   nFEP = bf->nCol;
   nQP = vg->det->nLev;
-  dim = vg->bfGM->nRow;
+  dim = forceQP->nRow;
 
   fmf_createAlloc( &outQP, 1, nQP, dim * nFEP, 1 );
+
+/*   output( "nFEP: %d, nQP: %d, dim: %d\n", nFEP, nQP, dim ); */
+/*   fmf_print( bf, stdout, 1 ); */
+/*   fmf_print( forceQP, stdout, 1 ); */
+/*   fmf_print( outQP, stdout, 1 ); */
 
   for (ii = 0; ii < elList_nRow; ii++) {
     iel = elList[ii];
@@ -29,8 +34,12 @@ int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
     FMF_SetCell( forceQP, iel );
     FMF_SetCell( vg->det, iel );
 
-    bf_actt_c1( outQP, bf, forceQP );
+    //    bf_actt_c1( outQP, bf, forceQP );
+    fmf_mulATB_nn( outQP, bf, forceQP );
     fmf_sumLevelsMulF( out, outQP, vg->det->val );
+/*     fmf_print( forceQP, stdout, 0 ); */
+/*     fmf_print( outQP, stdout, 0 ); */
+/*     sys_pause(); */
     ERR_CheckGo( ret );
   }
 
