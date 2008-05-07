@@ -255,7 +255,7 @@ class ProblemDefinition( Struct ):
         self.variables.updateVec( vec, delta )
         
     ##
-    # c: 18.04.2006, r: 28.04.2008
+    # c: 18.04.2006, r: 07.05.2008
     def stateToOutput( self, vec, fillValue = None, varInfo = None,
                        extend = True ):
         return self.variables.stateToOutput( vec, fillValue, varInfo, extend )

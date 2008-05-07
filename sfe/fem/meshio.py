@@ -395,7 +395,7 @@ class VTKMeshIO( MeshIO ):
         return mesh
 
     ##
-    # c: 15.12.2005, r: 06.05.2008
+    # c: 15.12.2005, r: 07.05.2008
     def write( self, fileName, mesh, out = None ):
 
         fd = open( fileName, 'w' )

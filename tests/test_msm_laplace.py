@@ -112,7 +112,7 @@ def rhs( ts, coor, region, ig, expression = None ):
     return {'val' : val}
 
 ##
-# c: 07.05.2007
+# c: 07.05.2008
 class Test( TestCommon ):
 
     ##
@@ -129,9 +129,7 @@ class Test( TestCommon ):
     ##
     # c: 07.05.2007, r: 07.05.2008
     def test_msm_laplace( self ):
-        import pylab
         import os.path as op
-        
         sols = self.conf.solutions
         problem  = self.problem
 
@@ -163,9 +161,6 @@ class Test( TestCommon ):
 ##             print aa
 ##             pause()
 
-##             pylab.plot( anaSol )
-##             pylab.plot( numSol )
-##             pylab.show()
             anaNorm = nm.linalg.norm( anaSol, nm.inf )
             ret = self.compareVectors( anaSol, numSol,
                                        allowedError = anaNorm * 1e-2,
