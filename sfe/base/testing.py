@@ -62,7 +62,7 @@ class TestCommon( Struct ):
     report = staticmethod( report )
 
     ##
-    # 30.05.2007, c
+    # c: 30.05.2007, r: 09.05.2008
     def evalCoorExpression( expression, coor ):
 
         x = coor[:,0]
@@ -72,8 +72,8 @@ class TestCommon( Struct ):
         else:
             z = None
 
-        coorDict = {'x' : x, 'y' : y, 'z' : z}
-        out = eval( expression, globals(), coorDict )
+        env = {'x' : x, 'y' : y, 'z' : z}
+        out = eval( expression, nm.__dict__, env )
         
         return out
     evalCoorExpression = staticmethod( evalCoorExpression )

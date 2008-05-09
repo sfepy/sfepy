@@ -49,15 +49,15 @@ material_2 = {
 equations = {
     'Temperature' :
     """dw_laplace.i1.Omega( coef.val, s, t )
-       = dw_volume_lvf.i1.Omega( rhs.val, s )"""
+       = - dw_volume_lvf.i1.Omega( rhs.val, s )"""
 }
 
 solutions = {
-    'sincos' : ('t', 'nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )',
-                '25.0 * nm.sin( 3.0 * x ) * nm.cos( 4.0 * y )'),
-    'poly' : ('t', '(x**2) + (y**2)', '[-4.0]'),
-    'polysin' : ('t', '((x - 0.5)**3) * nm.sin( 5.0 * y )',
-                 '- 6.0 * (x - 0.5) * nm.sin( 5.0 * y ) + 25.0 * ((x - 0.5)**3) * nm.sin( 5.0 * y )'),
+    'sincos' : ('t', 'sin( 3.0 * x ) * cos( 4.0 * y )',
+                '-25.0 * sin( 3.0 * x ) * cos( 4.0 * y )'),
+    'poly' : ('t', '(x**2) + (y**2)', '[4.0]'),
+    'polysin' : ('t', '((x - 0.5)**3) * sin( 5.0 * y )',
+                 '6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y )'),
 }
 
 solver_0 = {
@@ -100,16 +100,16 @@ solution = ['']
 def ebc( bc, ts, coor, solution = solution ):
     expression = solution[0]
     val = TestCommon.evalCoorExpression( expression, coor )
-    return val
+    return nm.atleast_1d( val )
 
 ##
-# c: 07.05.2007, r: 07.05.2008
+# c: 07.05.2007, r: 09.05.2008
 def rhs( ts, coor, region, ig, expression = None ):
     if expression is None:
         expression = '0.0 * x'
 
     val = TestCommon.evalCoorExpression( expression, coor )
-    return {'val' : val}
+    return {'val' : nm.atleast_1d( val )}
 
 ##
 # c: 07.05.2008
@@ -127,11 +127,77 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # c: 07.05.2007, r: 07.05.2008
+    # c: 09.05.2007, r: 09.05.2008
+    def _buildRHS( self, sols ):
+        from sfe.fem.equations import buildArgs
+        try:
+            import sympy_operators as sops
+        except ImportError, exc:
+            self.report( exc )
+            self.report( '... manual mode only' )
+            sops = None
+
+        if sops is None:
+            for sol in sols.itervalues():
+                assert len( sol ) == 3
+            return sols
+
+        problem  = self.problem
+        newRHSs = {}
+        self.report( 'evaluating terms, "<=" is solution, "=>" is the rhs:' )
+        for equation in problem.equations:
+            for term in equation.terms:
+                if not hasattr( term, 'symbolic' ): continue
+                expr = term.symbolic['expression']
+                argMap = term.symbolic['map']
+                self.report( '%s( %s )' %\
+                             (term.name, ', '.join( term.argTypes )) )
+                self.report( '  symbolic:', expr )
+                self.report( '  using argument map:', argMap )
+                args = buildArgs( term, problem.variables, problem.materials )
+                for solName, sol in sols.iteritems():
+                    rhs = self._evalTerm( sol[1], term, args, sops )
+                    newRHSs.setdefault( solName, [] ).append( rhs )
+#        print newRHSs
+        newSols = {}
+        for key, val in newRHSs.iteritems():
+            sol = sols[key]
+            newSols[key] = sol[:2] + ('+'.join( val ),)
+#        print newSols
+        return newSols
+
+    ##
+    # c: 09.05.2007, r: 09.05.2008
+    def _evalTerm( self, sol, term, args, sops ):
+        """Works for scalar, single unknown terms only!"""
+        expr = term.symbolic['expression']
+        argMap = term.symbolic['map']
+        env = {'x' : sops.Symbol( 'x' ),
+               'y' : sops.Symbol( 'y' ),
+               'z' : sops.Symbol( 'z' )}
+        for key, val in argMap.iteritems():
+            if val == 'state':
+                env[key] = sol
+            else:
+                env[key] = term.getArgs( [val], **args )[0]
+#        print env
+
+        self.report( '  <= ', sol )
+        val = eval( expr, sops.__dict__, env ).tostr()
+        self.report( '   =>', val )
+        return val
+
+    ##
+    # c: 07.05.2007, r: 09.05.2008
     def test_msm_laplace( self ):
         import os.path as op
-        sols = self.conf.solutions
         problem  = self.problem
+
+        # update data so that buildArgs() works...
+        matArgs = {'rhs' : {'expression' : '0 * x'}} 
+        problem.updateMaterials( extraMatArgs = matArgs )
+
+        sols = self._buildRHS( self.conf.solutions )
 
         ok = True
         for solName, sol in sols.iteritems():

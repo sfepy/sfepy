@@ -35,14 +35,13 @@ def vectorChunkGenerator( totalSize, chunkSize, shapeIn,
 # 22.01.2006, c
 class CharacteristicFunction( Struct ):
     ##
-    # 22.01.2006, c
-    # 11.08.2006
-    # 05.09.2006
+    # c: 22.01.2006, r: 09.05.2008
     def __init__( self, region ):
         self.igs = region.igs
         self.region = region
         self.iCurrent = None
         self.localChunk = None
+        self.ig = None
 
     ##
     # 22.01.2006, c
