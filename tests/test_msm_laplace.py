@@ -35,7 +35,7 @@ material_1 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'val' : 12.0,
 }
 
 material_2 = {
