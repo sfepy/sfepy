@@ -52,12 +52,13 @@ equations = {
        = - dw_volume_lvf.i1.Omega( rhs.val, s )"""
 }
 
+val = material_1['val']
 solutions = {
     'sincos' : ('t', 'sin( 3.0 * x ) * cos( 4.0 * y )',
-                '-25.0 * sin( 3.0 * x ) * cos( 4.0 * y )'),
-    'poly' : ('t', '(x**2) + (y**2)', '[4.0]'),
+                '-25.0 * %s * sin( 3.0 * x ) * cos( 4.0 * y )' % val),
+    'poly' : ('t', '(x**2) + (y**2)', '[4.0 * %s]' % val),
     'polysin' : ('t', '((x - 0.5)**3) * sin( 5.0 * y )',
-                 '6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y )'),
+                 '%s * (6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y ))' % val),
 }
 
 solver_0 = {
@@ -95,7 +96,7 @@ from sfe.base.base import debug, pause
 outputName = 'test_msm_laplace_%s.vtk'
 
 ##
-# c: 07.05.2007, r: 07.05.2008
+# c: 07.05.2007, r: 09.05.2008
 solution = ['']
 def ebc( bc, ts, coor, solution = solution ):
     expression = solution[0]
