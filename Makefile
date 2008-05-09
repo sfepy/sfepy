@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 05.05.2008
+# last revision: 09.05.2008
 VERSION := 00.43.01
 PROJECTNAME := sfepy
 
@@ -19,8 +19,9 @@ ifeq ($(ARCH),linux)
   CARCHFLAGS   := -Wall -c
   CARCHOUT     := -o
   PYVER := 2.4
+  ARCHLIB := lib64
 
-  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I/home/share/software/usr/lib/python$(PYVER)/site-packages/numpy/core/include
+  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I/home/share/software/usr/$(ARCHLIB)/python$(PYVER)/site-packages/numpy/core/include
 #  SWIG_LIB     := -lswigpy
 
   EXT_INCL     := $(PYTHON_INCL)
