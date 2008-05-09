@@ -382,13 +382,7 @@ class Approximation( Struct ):
         return sd.nFa, nQP, dim + 1, nFP
 
     ##
-    # 05.09.2006, c
-    # 06.09.2006
-    # 10.10.2006
-    # 12.10.2006
-    # 20.02.2007
-    # 16.03.2007
-    # 26.03.2007
+    # c: 05.09.2006, r: 09.05.2008
     def setupSurfaceData( self, region ):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
@@ -413,7 +407,7 @@ class Approximation( Struct ):
         nodes = nm.unique1d( ef )
 
         aux = -nm.ones( (nm.max( ef ) + 1,), dtype = nm.int32 )
-        aux[nodes] = nm.arange( len( nodes ) )
+        aux[nodes] = nm.arange( len( nodes ), dtype = nm.int32 )
         leconn = aux[econn].copy()
         assert nm.alltrue( nodes[leconn] == econn )
         
