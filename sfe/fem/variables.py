@@ -186,15 +186,7 @@ class Variables( Container ):
         return names
 
     ##
-    # 07.10.2005, c
-    # 25.10.2005
-    # 26.10.2005
-    # 01.11.2005
-    # 04.11.2005
-    # 07.03.2006
-    # 19.07.2006
-    # 12.07.2007
-    # 05.09.2007
+    # c: 07.10.2005, r: 12.05.2008
     def setupDofInfo( self, makeVirtual = False ):
         """Sets also iDofMax."""
         def _setupDofInfo( iterable ):
@@ -220,7 +212,7 @@ class Variables( Container ):
             )
 
             for ii, name in enumerate( di.vnames ):
-                di.indx[name] = slice( di.ptr[ii], di.ptr[ii+1] )
+                di.indx[name] = slice( int( di.ptr[ii] ), int( di.ptr[ii+1] ) )
                 di.nDofs[name] = di.ptr[ii+1] - di.ptr[ii]
             return di
 
@@ -329,7 +321,7 @@ class Variables( Container ):
             raise ValueError
 
     ##
-    # c: 01.11.2005, r: 18.02.2008
+    # c: 01.11.2005, r: 12.05.2008
     def equationMapping( self, ebc, epbc, regions, ts, funmod,
                          vregions = None ):
 
@@ -366,7 +358,7 @@ class Variables( Container ):
             for ii, key in enumerate( adi.vnames ):
                 adi.nDofs[key] = self[key].eqMap.nEq
                 adi.ptr[ii+1] = adi.ptr[ii] + adi.nDofs[key]
-                adi.indx[key] = slice( adi.ptr[ii], adi.ptr[ii+1] )
+                adi.indx[key] = slice( int( adi.ptr[ii] ), int( adi.ptr[ii+1] ) )
             return adi
 
         self.adi = _createADofInfo( self.di )
