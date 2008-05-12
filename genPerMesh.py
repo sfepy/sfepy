@@ -229,7 +229,7 @@ def main():
         print 'original approx. min. vertex distance: %.5e' % mvd0
         print '   final approx. min. vertex distance: %.5e' % mvd
         if mvd < 0.99999 * mvd0:
-            if mvd0 > (mes0 + eps):
+            if mvd0 < (mes0 - options.eps):
                 print '-> probably non-periodic input mesh!'
                 print '   ... adjacent sides were not connected!'
                 print '   try increasing eps...'
