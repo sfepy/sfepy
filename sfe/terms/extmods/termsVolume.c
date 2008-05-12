@@ -8,7 +8,7 @@
   nFEP .. field.
 
   @par Revision history:
-  - c: 18.09.2006, r: 07.05.2008
+  - c: 18.09.2006, r: 12.05.2008
 */
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
 		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow )
