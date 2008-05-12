@@ -751,7 +751,7 @@ class Variables( Container ):
 
     ##
     # Works for vertex data only.
-    # c: 15.12.2005, r: 28.04.2008
+    # c: 15.12.2005, r: 12.05.2008
     def stateToOutput( self, vec, fillValue = None, varInfo = None,
                        extend = True ):
 
@@ -777,7 +777,7 @@ class Variables( Container ):
             if extend:
                 ext = self[key].extendData( aux, nNod, fillValue )
             else:
-                ext = aux
+                ext = self[key].removeExtraData( aux )
 #            print ext.shape
 #            pause()
             out[name] = Struct( name = 'output_data',
@@ -1355,6 +1355,14 @@ class Variable( Struct ):
         extdata[indx] = data[:indx.size]
 
         return extdata
+    ##
+    # c: 12.05.2008, r: 12.05.2008
+    def removeExtraData( self, data ):
+        """Removes data in extra nodes."""
+        cntVN = self.field.cntVN
+        indx = self.field.remap[cntVN[cntVN >= 0]]
+        newdata = data[indx]
+        return newdata
 
 ## ##
 ## # 11.07.2006, c
