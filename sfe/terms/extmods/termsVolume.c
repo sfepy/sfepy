@@ -34,8 +34,7 @@ int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
     FMF_SetCell( forceQP, iel );
     FMF_SetCell( vg->det, iel );
 
-    //    bf_actt_c1( outQP, bf, forceQP );
-    fmf_mulATB_nn( outQP, bf, forceQP );
+    bf_actt_c1( outQP, bf, forceQP );
     fmf_sumLevelsMulF( out, outQP, vg->det->val );
 /*     fmf_print( forceQP, stdout, 0 ); */
 /*     fmf_print( outQP, stdout, 0 ); */
