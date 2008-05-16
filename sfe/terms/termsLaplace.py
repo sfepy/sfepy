@@ -11,7 +11,7 @@ class LaplaceTerm( Term ):
     name = 'dw_laplace'
     argTypes = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    symbolic = {'expression': 'c * div( grad( u, [x, y, z] ), [x, y, z] )',
+    symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
 
     ##

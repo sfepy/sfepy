@@ -1,28 +1,32 @@
 from sympy import sin, cos, Plot, Basic, Symbol, sympify, zeronm, lambdify,\
      symbols
-from sympy.abc import x, y
+from sympy.abc import x, y, z, t
 
 from numpy import arange
 
-def grad(f, vars=None):
-    f = sympify( f )
+def default_space_vars( vars ):
     if vars is None:
-        vars = list(f.atoms(type=Symbol))
+        vars = [x, y, z]
+    return vars
+
+def grad(f, vars=None):
+    vars = default_space_vars( vars )
+    f = sympify( f )
     div = zeronm(len(vars), 1)
     for i in range(len(vars)):
         div[i, 0] = f.diff(vars[i])
     return div
 
-def div(field, vars):
+def div(field, vars=None):
+    vars = default_space_vars( vars )
     field = list(field)
-    vars = list(vars)
     assert len(field) == len(vars)
     r = 0
     for A_i, x_i in zip(field, vars):
         r += sympify( A_i ).diff(x_i)
     return r
 
-def laplace(f, vars):
+def laplace(f, vars=None):
     return div(grad(f, vars), vars)
 
 def boundary(f, vars):
