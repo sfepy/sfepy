@@ -31,6 +31,39 @@ class BiotGradTerm( GradTerm ):
         return 1.0, vec_qp, bf, matQP, vgr
 
 ##
+# c: 18.05.2008
+class BiotGradDtTerm( GradTerm ):
+    r""":description: Biot gradient-like term (weak form) with time-discretized
+    $\dot{p}$ and $\alpha_{ij}$
+    given in vector form exploiting symmetry: in 3D it has the
+    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
+    the indices ordered as $[11, 22, 12]$.
+    :definition: $\int_{\Omega}  \frac{p - p_0}{\dt}\ \alpha_{ij} e_{ij}(\ul{v})$
+    :arguments: ts.dt : $\dt$, parameter : $p_0$
+    """
+    name = 'dw_biot_grad_dt'
+    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    useCaches = {'state_in_volume_qp' : [['state', {'state' : (2, 2)}]]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.dw_biot_grad )
+
+    ##
+    # c: 18.05.2008, r: 18.05.2008
+    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
+        cache = self.getCache( 'state_in_volume_qp', 0 )
+        vec_qp = cache( 'state', self.getCurrentGroup(), 0, state = state )
+        vec0_qp = cache( 'state', self.getCurrentGroup(), 1,
+                         state = parameter )
+
+        ts, mat = self.getArgs( ['ts', 'material'], **kwargs )
+        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
+#        print matQP
+        bf = apc.getBase( 'v', 0, self.integralName )
+        return 1.0 / ts.dt, vec_qp - vec0_qp, bf, matQP, vgr
+
+##
 # 20.09.2006, c
 class BiotGradRTerm( BiotGradTerm ):
     r""":description: Biot gradient-like term (weak form) with $\alpha_{ij}$
