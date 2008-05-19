@@ -452,3 +452,23 @@ def getDefaultAttr( obj, attr, default ):
     else:
         out = default
     return out
+
+##
+# c: 27.02.2008, r: 27.02.2008
+def selectByNames( objs_all, names, replace = None, simple = True ):
+    objs = {}
+    for key, val in objs_all.iteritems():
+        if val.name in names:
+            if replace is None:
+                objs[key] = val
+            else:
+                newVal = copy( val )
+                oldAttr = getattr( val, replace[0] )
+                if simple:
+                    newAttr = oldAttr % replace[1]
+                    setattr( newVal, replace[0], newAttr )
+                else:
+                    newAttr = replace[1].get( val.name, oldAttr )
+                    setattr( newVal, replace[0], newAttr )
+                objs[key] = newVal
+    return objs
