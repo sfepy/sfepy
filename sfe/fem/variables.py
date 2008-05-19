@@ -486,7 +486,7 @@ class Variables( Container ):
             dcs[ig] = dc[iemap]
 
     ##
-    # c: 23.11.2005, r: 09.04.2008
+    # c: 23.11.2005, r: 19.05.2008
     def createMatrixGraph( self, varNames = None, vvarNames = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -506,6 +506,9 @@ class Variables( Container ):
 
         shape = (self.avdi.ptr[-1], self.adi.ptr[-1])
         output( 'matrix shape:', shape )
+        if nm.prod( shape ) == 0:
+            output( 'no matrix!' )
+            return None
 
         cgdcs = _prepareDCLists( self.adofConns, varNames )
 ##         print cgdcs
