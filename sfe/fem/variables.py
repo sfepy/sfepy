@@ -132,7 +132,7 @@ class DofInfo( Struct ):
 class Variables( Container ):
 
     ##
-    # c: 14.07.2006, r: 18.02.2008
+    # c: 14.07.2006, r: 22.05.2008
     def fromConf( conf, fields ):
         objs = OneTypeList( Variable )
         state, virtual, parameter, other = [], [], [], []
@@ -158,10 +158,19 @@ class Variables( Container ):
                          hasVirtualDCs = False,
                          hasLCBC = False )
 
-        indx = nm.array( [var._order for var in obj.iterState()] )
-        obj.orderedState = indx.argsort()
+        indx = nm.array( [var._order
+                          for var in obj.iterState( ordered = False )] )
+        obj.orderedState = [obj.state[ii] for ii in indx.argsort()]
 
         obj.linkDuals()
+
+        obj.orderedVirtual = []
+        for var in obj.iterState( ordered = True ):
+            for ii in obj.virtual:
+                if obj[ii].primaryVarName == var.name:
+                    obj.orderedVirtual.append( ii )
+                    break
+
         return obj
     fromConf = staticmethod( fromConf )
 
@@ -186,7 +195,7 @@ class Variables( Container ):
         return names
 
     ##
-    # c: 07.10.2005, r: 12.05.2008
+    # c: 07.10.2005, r: 22.05.2008
     def setupDofInfo( self, makeVirtual = False ):
         """Sets also iDofMax."""
         def _setupDofInfo( iterable ):
@@ -216,9 +225,9 @@ class Variables( Container ):
                 di.nDofs[name] = di.ptr[ii+1] - di.ptr[ii]
             return di
 
-        self.di = _setupDofInfo( self.state )
+        self.di = _setupDofInfo( self.orderedState )
         if makeVirtual:
-            self.vdi = _setupDofInfo( self.virtual )
+            self.vdi = _setupDofInfo( self.orderedVirtual )
         else:
             self.vdi = self.di
 
@@ -800,12 +809,12 @@ class Variables( Container ):
         return fieldNames
 
     ##
-    # 27.11.2006, c
-    def iterState( self, ordered = False ):
+    # c: 27.11.2006, r: 22.05.2008
+    def iterState( self, ordered = True ):
 
         if ordered:
             for ii in self.orderedState:
-                yield self[self.state[ii]]
+                yield self[ii]
 
         else:
             for ii in self.state:
