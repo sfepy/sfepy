@@ -69,6 +69,8 @@ class DiffusionTerm( LaplaceTerm ):
     argTypes = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
     useCaches = {'mat_in_qp' : [['material']]}
+    symbolic = {'expression': 'div( K * grad( u ) )',
+                'map' : {'u' : 'state', 'K' : 'material'}}
 
     ##
     # c: 03.08.2006?, r: 28.03.2008

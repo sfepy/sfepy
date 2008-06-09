@@ -1,5 +1,19 @@
 from terms import *
 
+## expr = """
+## e = 1/2 * (grad( vec( u ) ) + grad( vec( u ) ).T)
+## D = map( D_sym )
+## s = D * e
+## div( s )
+## """
+
+## """
+## e[i,j] = 1/2 * (der[j]( u[i] ) + der[i]( u[j] ))
+## map =
+## D[i,j,k,l]
+## s[i,j] = D[i,j,k,l] * e[k,l]
+## """
+
 ##
 # c: 02.08.2006
 class LinearElasticTerm( Term ):
@@ -13,6 +27,8 @@ class LinearElasticTerm( Term ):
     argTypes = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
     useCaches = {'cauchy_strain' : [['state', {'strain' : (1,1)}]]}
+##     symbolic = {'expression': expr,
+##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_elastic )

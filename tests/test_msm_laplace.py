@@ -1,5 +1,7 @@
-# c: 07.05.2007, r: 07.05.2008
+# c: 07.05.2007, r: 05.06.2008
 fileName_mesh = 'database/phono/mesh_circ21.mesh'
+
+dim = 2
 
 field_1 = {
     'name' : 'a_harmonic_field',
@@ -36,6 +38,7 @@ material_1 = {
     'mode' : 'here',
     'region' : 'Omega',
     'val' : 12.0,
+    'K' : [[1.0, 0.3], [0.3, 2.0]]
 }
 
 material_2 = {
@@ -49,7 +52,10 @@ material_2 = {
 equations = {
     'Temperature' :
     """dw_laplace.i1.Omega( coef.val, s, t )
-       = - dw_volume_lvf.i1.Omega( rhs.val, s )"""
+       = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
+##     'Diffusion' :
+##     """dw_diffusion.i1.Omega( coef.K, s, t )
+##        = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
 }
 
 val = material_1['val']
@@ -147,6 +153,7 @@ class Test( TestCommon ):
         newRHSs = {}
         self.report( 'evaluating terms, "<=" is solution, "=>" is the rhs:' )
         for equation in problem.equations:
+            self.report( '%s:' % equation.name )
             for term in equation.terms:
                 if not hasattr( term, 'symbolic' ): continue
                 expr = term.symbolic['expression']
@@ -168,22 +175,28 @@ class Test( TestCommon ):
         return newSols
 
     ##
-    # c: 09.05.2007, r: 09.05.2008
+    # c: 09.05.2007, r: 09.06.2008
     def _evalTerm( self, sol, term, args, sops ):
         """Works for scalar, single unknown terms only!"""
         expr = term.symbolic['expression']
         argMap = term.symbolic['map']
         env = {'x' : sops.Symbol( 'x' ),
                'y' : sops.Symbol( 'y' ),
-               'z' : sops.Symbol( 'z' )}
+               'z' : sops.Symbol( 'z' ),
+               'dim' : dim}
         for key, val in argMap.iteritems():
             if val == 'state':
                 env[key] = sol
             else:
                 env[key] = term.getArgs( [val], **args )[0]
+
+            if val[:8] == 'material':
+                env[key] = nm.array( env[key] )
+
 #        print env
 
         self.report( '  <= ', sol )
+        sops.set_dim( dim )
         val = eval( expr, sops.__dict__, env ).tostr()
         self.report( '   =>', val )
         return val
