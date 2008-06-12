@@ -14,10 +14,13 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 02.07.2007, c
-    # 03.07.2007
+    # c: 02.07.2007, r: 12.06.2008
     def test_sparseMatrixHDF5( self ):
         from sfe.base.ioutils import writeSparseMatrixHDF5, readSparseMatrixHDF5
+        from sfe.base.ioutils import pt
+        if pt is None:
+            self.report( 'skipped (no pytables)' )
+            return True
         fileName = op.join( self.options.outDir, 'mtx.h5' )
 
         aux = nm.random.rand( 5, 5 )
@@ -42,9 +45,13 @@ class Test( TestCommon ):
         return True
 
     ##
-    # 09.07.2007, c
+    # c: 09.07.2007, r: 12.06.2008
     def test_recursiveDictHDF5( self ):
         from sfe.base.ioutils import writeDictHDF5, readDictHDF5
+        from sfe.base.ioutils import pt
+        if pt is None:
+            self.report( 'skipped (no pytables)' )
+            return True
         fileName = op.join( self.options.outDir, 'dict.h5' )
 
         test = {'A' : 0, 'B' : {'C' : [0, 1],

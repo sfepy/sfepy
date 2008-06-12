@@ -7,7 +7,8 @@ from time import asctime
 try:
     import tables as pt
 except:
-    pass
+    pt = None
+    print 'pytables import failed!'
 
 ##
 # 27.04.2006, c
