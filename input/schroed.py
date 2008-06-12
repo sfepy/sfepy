@@ -123,12 +123,13 @@ fe = {
 }
 
 ##
-# c: 01.02.2008, r: 01.02.2008
+# c: 01.02.2008, r: 12.06.2008
 def funV( ts, coor, region, ig, mode = None ):
     import numpy as nm
+
     out = {}
     C = 0.5
-    val = nm.array( C* (coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2), ndmin = 3 )
+    val = C * (coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2)
     #val = nm.zeros_like( val )
     out['V'] = val
     return out
