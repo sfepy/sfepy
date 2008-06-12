@@ -1,4 +1,4 @@
-import pylab
+from sfe.base.plotutils import pylab
 
 from sfe.base.base import *
 from sfe.base.la import eig
@@ -254,9 +254,9 @@ def transformPlotData( datas, plotTranform, funmod ):
     return (dmin, dmax), tdatas
 
 ##
-# created:       27.09.2007
-# last revision: 13.12.2007
+# c: 27.09.2007, r: 12.06.2008
 def plotLogs( figNum, logs, freqRange, plotRange, squared, show = False ):
+    if pylab is None: return
 
     fig = pylab.figure( figNum )
     ax = fig.add_subplot( 111 )
@@ -284,8 +284,9 @@ def plotLogs( figNum, logs, freqRange, plotRange, squared, show = False ):
         pylab.show()
     
 ##
-# c: 27.09.2007, r: 08.04.2008
+# c: 27.09.2007, r: 12.06.2008
 def plotGaps( figNum, gaps, kinds, freqRange, plotRange, show = False ):
+    if pylab is None: return
 
     def drawRect( ax, x, y, color ):
         ax.fill( nm.asarray( x )[[0,1,1,0]],

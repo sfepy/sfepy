@@ -4,6 +4,7 @@ try:
     import pylab
     import matplotlib as mpl
 except ImportError:
+    pylab = None
     print 'matplotlib import failed!'
 
 ##
