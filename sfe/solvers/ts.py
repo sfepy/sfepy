@@ -65,14 +65,17 @@ class TimeStepper( Struct ):
             self.nt = 0.0
         
     ##
-    # 19.09.2006, c
-    # 29.09.2006
+    # c: 19.09.2006, r: 13.06.2008
     def setStep( self, step = -1, nt = 1.0 ):
+        nm1 = self.nStep - 1
         if step is None:
-            step = int( round( nt * (self.nStep - 1) ) )
+            step = int( round( nt * nm1 ) )
 #            print step
         if step < 0:
             step = self.nStep + step
+        if (step >= self.nStep) or (step < 0):
+            output( 'time step must be in [%d, %d]' % (-nm1, nm1)  )
+            raise ValueError
 
         self.step = step
         self.time = self.times[step]

@@ -136,7 +136,50 @@ def timeStepFunction( ts, state0, problem, data ):
     return state
 
 ##
-# c: 12.01.2007, r: 10.04.2008
+# c: 13.06.2008, r: 13.06.2008
+def solveEvolutionaryOP( problem, options,
+                         saveResults = True, returnHistory = False,
+                         postProcessHook = None ):
+    """TODO  returnHistory"""
+    
+    data = {}
+    timeSolver = problem.getTimeSolver( stepFun = timeStepFunction,
+                                        stepArgs = (problem, data) )
+
+    ofnTrunk, suffix, isSave = prepareSaveData( timeSolver.ts,
+                                                problem.conf, options )
+
+    state0 = problem.createStateVector()
+    ii = 0
+    for step, time, state in timeSolver( state0 ):
+
+        if saveResults and (isSave[ii] == step):
+            problem.saveState( ofnTrunk + suffix % step, state,
+                               postProcessHook = postProcessHook )
+
+            ii += 1
+    return state, data
+
+##
+# c: 13.06.2008, r: 13.06.2008
+def solveStationaryOP( problem, options, saveResults = True, ts = None,
+                       postProcessHook = None ):
+    data = {}
+    problem.timeUpdate( ts )
+    state = problem.solve()
+
+    if saveResults:
+        if options.outputFileNameTrunk:
+            ofnTrunk = options.outputFileNameTrunk
+        else:
+            ofnTrunk = io.getTrunk( problem.conf.fileName_mesh ) + '_out'
+        problem.saveState( ofnTrunk + '.vtk', state,
+                           postProcessHook = postProcessHook )
+
+    return state, data
+    
+##
+# c: 12.01.2007, r: 13.06.2008
 def solveDirect( conf, options ):
     """Generic (simple) problem solver."""
     if options.outputFileNameTrunk:
@@ -162,36 +205,28 @@ def solveDirect( conf, options ):
     if options.saveRegionFieldMeshes:
         saveNames.regionFieldMeshes = ofnTrunk + '_region_field'
 
-    if options.solveNot:
+    isExtraSave = False
+    for name, val in saveNames.toDict().iteritems():
+        if val is not None:
+            isExtraSave = True
+            break
+    if isExtraSave:
         saveOnly( conf, saveNames )
-        return None, None, None
 
+    if options.solveNot:
+        return None, None, None
+            
+    pb = ProblemDefinition.fromConf( conf )
     if hasattr( conf.options, 'ts' ):
         ##
         # Time-dependent problem.
-        data = {}
-        pb = ProblemDefinition.fromConf( conf )
-        timeSolver = pb.getTimeSolver( stepFun = timeStepFunction,
-                                       stepArgs = (pb, data) )
-
-        ofnTrunk, suffix, isSave = prepareSaveData( timeSolver.ts,
-                                                    conf, options )
-        
-        state0 = pb.createStateVector()
-        ii = 0
-        for step, time, state in timeSolver( state0 ):
-            
-            if isSave[ii] == step:
-                pb.saveState( ofnTrunk + suffix % step, state,
-                              postProcessHook = postProcessHook )
-
-                ii += 1
+        state, data = solveEvolutionaryOP( pb, options,
+                                           postProcessHook = postProcessHook )
     else:
         ##
         # Stationary problem.
-        pb, state, data = solveStationary( conf, saveNames = saveNames )
-        pb.saveState( ofnTrunk + '.vtk', state,
-                      postProcessHook = postProcessHook )
+        state, data = solveStationaryOP( pb, conf,
+                                         postProcessHook = postProcessHook )
 
         if options.dump:
             import tables as pt

@@ -119,8 +119,9 @@ class ProblemDefinition( Struct ):
         
     
     ##
-    # c: 18.04.2006, r: 02.04.2008
-    def setEquations( self, conf_equations, user = None, cacheOverride = None ):
+    # c: 18.04.2006, r: 13.06.2008
+    def setEquations( self, conf_equations, user = None, cacheOverride = None,
+                      keepSolvers = False ):
         equations = Equations.fromConf( conf_equations )
         equations.parseTerms( self.domain.regions )
         equations.setupTermArgs( self.variables, self.materials, user )
@@ -146,6 +147,9 @@ class ProblemDefinition( Struct ):
         equations.setCacheMode( cacheOverride )
 
         self.equations = equations
+
+        if not keepSolvers:
+            self.solvers = None
 
     ##
     # c: 16.10.2007, r: 20.02.2008
@@ -216,24 +220,33 @@ class ProblemDefinition( Struct ):
 ##             plu.spy( self.mtxA )
 ##             plu.pylab.show()
 
+    ##
+    # c: 13.06.2008, r: 13.06.2008
+    def getDefaultTS( self, t0 = None, t1 = None, dt = None, nStep = None,
+                      step = None ):
+        t0 = getDefault( t0, 0.0 )
+        t1 = getDefault( t1, 1.0 )
+        dt = getDefault( dt, 1.0 )
+        nStep = getDefault( nStep, 1 )
+        ts = TimeStepper( t0, t1, dt, nStep )
+        ts.setStep( step )
+        return ts
 
     ##
-    # c: 22.02.2008, r: 22.02.2008
+    # c: 22.02.2008, r: 13.06.2008
     def updateMaterials( self, ts = None, funmod = None, extraMatArgs = None ):
         if ts is None:
-            ts = TimeStepper( 0.0, 1.0, 1.0, 1 )
-            ts.setStep( 0 )
+            ts = self.getDefaultTS( step = 0 )
         funmod = getDefault( funmod, self.conf.funmod )
         self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
 
     ##
-    # c: 12.03.2007, r: 14.04.2008
+    # c: 12.03.2007, r: 13.06.2008
     def timeUpdate( self, ts = None,
                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
                     funmod = None, createMatrix = False, extraMatArgs = None ):
         if ts is None:
-            ts = TimeStepper( 0.0, 1.0, 1.0, 1 )
-            ts.setStep( 0 )
+            ts = self.getDefaultTS( step = 0 )
             
         conf_ebc = getDefault( conf_ebc, self.conf.ebcs )
         conf_epbc = getDefault( conf_epbc, self.conf.epbcs )
@@ -428,6 +441,16 @@ class ProblemDefinition( Struct ):
             return True
         else:
             return False
+
+    ##
+    # c: 13.06.2008, r: 13.06.2008
+    def setLinear( self, isLinear ):
+        nlsConf = getDefault( None, self.nlsConf,
+                              'you must set nonlinear solver!' )
+        if isLinear:
+            nlsConf.problem = 'linear'
+        else:
+            nlsConf.problem = 'nonlinear'
 
     ##
     # c: 03.10.2007, r: 11.04.2008
