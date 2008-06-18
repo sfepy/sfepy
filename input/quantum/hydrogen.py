@@ -3,12 +3,13 @@
 
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
-fileName_mesh = 'database/t.1.node'
+#fileName_mesh = 'database/t.1.node'
+fileName_mesh = 'tmp/t.1.node'
 
 options = {
     'saveEigVectors' : None,
     'squared' : False,
-    'nEigs' : 10,
+    'nEigs' : 13,
     'eigenSolver' : 'eigen1',
 }
 
@@ -125,11 +126,11 @@ fe = {
 ##
 # c: 01.02.2008, r: 12.06.2008
 def funV( ts, coor, region, ig, mode = None ):
-    import numpy as nm
+    from numpy import sqrt
 
     out = {}
     C = 0.5
-    val = C * (coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2)
-    #val = nm.zeros_like( val )
-    out['V'] = val
+    r = sqrt( coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2 )
+    V = - C * 1.0 / r
+    out['V'] = V
     return out

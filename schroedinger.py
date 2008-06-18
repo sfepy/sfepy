@@ -159,7 +159,7 @@ def solveEigenProblemN( conf, options ):
     coor = pb.domain.getMeshCoors()
     r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
     vecNr2 = vecN * r
-    
+
     nEigs = eigs.shape[0]
     opts = processOptions( conf.options, nEigs )
 
@@ -274,6 +274,12 @@ help = {
     'basename of output file(s) [default: <basename of input file>]',
     'simplified' :
     "solve simplified (1 electron) problem",
+    'well' :
+    "solve infinite potential well (particle in a box) problem",
+    'oscillator' :
+    "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
+    'hydrogen' :
+    "solve the hydrogen atom",
 }
 
 ##
@@ -289,6 +295,15 @@ def main():
     parser.add_option( "-s", "--simplified",
                        action = "store_true", dest = "simplified",
                        default = False, help = help['simplified'] )
+    parser.add_option( "--oscillator",
+                       action = "store_true", dest = "oscillator",
+                       default = False, help = help['oscillator'] )
+    parser.add_option( "--well",
+                       action = "store_true", dest = "well",
+                       default = False, help = help['well'] )
+    parser.add_option( "--hydrogen",
+                       action = "store_true", dest = "hydrogen",
+                       default = False, help = help['hydrogen'] )
 
     options, args = parser.parse_args()
 
@@ -296,13 +311,22 @@ def main():
         fileNameIn = args[0];
     elif len( args ) == 0:
         if options.simplified:
-            fileNameIn = "input/schroed.py"
+            fileNameIn = "input/quantum/schroed.py"
+        elif options.oscillator:
+            fileNameIn = "input/quantum/oscillator.py"
+            options.simplified = True
+        elif options.well:
+            fileNameIn = "input/quantum/well.py"
+            options.simplified = True
+        elif options.hydrogen:
+            fileNameIn = "input/quantum/hydrogen.py"
+            options.simplified = True
         else:
-            fileNameIn = "input/schroed2.py"
+            fileNameIn = "input/quantum/schroed2.py"
     else:
         parser.print_help(),
         return
-        
+
     required, other = getStandardKeywords()
     if options.simplified:
         required.remove( 'solver_[0-9]+|solvers' )

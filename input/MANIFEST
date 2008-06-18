@@ -5,8 +5,7 @@ octahedron.py
 pfdpm_permeability.py
 phono.py
 poisson.py
-schroed.py
-schroed2.py
 sinbc.py
 time_poisson.py
 valec.py
+quantum/*
