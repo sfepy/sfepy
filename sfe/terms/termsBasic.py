@@ -502,7 +502,7 @@ class WDotProductVolumeOperatorTHTerm( Term ):
             raise StopIteration
 
     ##
-    # c: 03.04.2008, r: 04.04.2008
+    # c: 03.04.2008, r: 18.06.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         ts, mats, virtual, state, history = self.getArgs( **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -518,7 +518,7 @@ class WDotProductVolumeOperatorTHTerm( Term ):
         if mode == 1:
             matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
             for out, chunk in self.charFun( chunkSize, shape ):
-                status = self.function( out, 1.0, nm.empty( 0 ), bf,
+                status = self.function( out, ts.dt, nm.empty( 0 ), bf,
                                         matQP, vg, chunk, 1 )
                 yield out, chunk, status
         else:
@@ -529,7 +529,7 @@ class WDotProductVolumeOperatorTHTerm( Term ):
                     matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
                     vec_qp = cache( 'state', self.getCurrentGroup(), ii,
                                     state = state, history = history )
-                    status = self.function( out1, 1.0, vec_qp, bf,
+                    status = self.function( out1, ts.dt, vec_qp, bf,
                                             matQP, vg, chunk, 0 )
                     out += out1
                 yield out, chunk, status

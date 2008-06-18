@@ -191,7 +191,7 @@ class LinearViscousTHTerm( LinearElasticTerm ):
                                                'dstrain' : (-1,-1)}]]}
 
     ##
-    # c: 14.09.2006, r: 04.04.2008
+    # c: 14.09.2006, r: 18.06.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
@@ -207,7 +207,7 @@ class LinearViscousTHTerm( LinearElasticTerm ):
         if mode == 1:
             matQP = mats[0][nm.newaxis,:,:].repeat( nQP, 0 )
             for out, chunk in self.charFun( chunkSize, shape ):
-                status = self.function( out, 1.0 / ts.dt, nm.empty( 0 ),
+                status = self.function( out, 1.0, nm.empty( 0 ),
                                         matQP, vg, chunk, 1 )
                 yield out, chunk, status
         else:
@@ -221,7 +221,7 @@ class LinearViscousTHTerm( LinearElasticTerm ):
                     dstrain = cache( 'dstrain', self.getCurrentGroup(), ii,
                                      state = state, history = history )
 ##                     tt = time.clock()
-                    status = self.function( out1, 1.0 / ts.dt, dstrain,
+                    status = self.function( out1, 1.0, dstrain,
                                             matQP, vg, chunk, 0 )
 ##                     ttt += time.clock() - tt
                     out += out1
