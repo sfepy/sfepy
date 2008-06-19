@@ -267,6 +267,12 @@ def solveEigenProblem1( conf, options ):
 usage = """%prog [options] fileNameIn
 
 By default, solve n-electron DFT problem.
+
+The mesh is read from tmp/t.1.vtk, which you can generate for example using a
+command:
+    $ ./convert.py database/quantum/oscillator.geo
+or
+    $ ./convert.py database/quantum/well.geo
 """
 
 help = {

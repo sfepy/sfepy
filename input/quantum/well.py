@@ -13,37 +13,17 @@ options = {
     'eigenSolver' : 'eigen1',
 }
 
-if fileName_mesh.find( 'cube_' ) >= 0:
-    # Domain $Y_1$.
-    region_1 = {
-        'name' : 'Y1',
-        'select' : 'elements of group 1',
-    }
+# Whole domain $Y$.
+region_1000 = {
+    'name' : 'Omega',
+    'select' : 'all',
+}
 
-    # Domain $Y_2$.
-    region_2 = {
-        'name' : 'Omega',
-        'select' : 'elements of group 2',
-    }
-
-    # Surface of $Y_2$.
-    region_100 = {
-        'name' : 'Surface',
-        'select' : 'r.Y1 *n r.Omega',
-        'canCells' : False,
-    }
-else:
-    # Whole domain $Y$.
-    region_1000 = {
-        'name' : 'Omega',
-        'select' : 'all',
-    }
-
-    # Domain $Y_2$.
-    region_2 = {
-        'name' : 'Surface',
-        'select' : 'nodes of surface',
-    }
+# Domain $Y_2$.
+region_2 = {
+    'name' : 'Surface',
+    'select' : 'nodes of surface',
+}
     
 material_1 = {
     'name' : 'm',

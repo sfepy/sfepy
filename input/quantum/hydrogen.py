@@ -9,7 +9,7 @@ fileName_mesh = 'tmp/t.1.node'
 options = {
     'saveEigVectors' : None,
     'squared' : False,
-    'nEigs' : 13,
+    'nEigs' : 5,
     'eigenSolver' : 'eigen1',
 }
 
@@ -111,7 +111,7 @@ solver_2 = {
     'name' : 'eigen1',
     'kind' : 'eig.pysparse',
 
-    'tau' : -10.0,
+    'tau' : -1.0,
     'epsA' : 1e-5,
     'iMax' : 150,
     'method' : 'qmrs',

@@ -13,6 +13,9 @@ def mesh():
     if len( sys.argv ) == 3:
         geomFileName = sys.argv[1]
         vtkFileName = sys.argv[2]
+    if len( sys.argv ) == 2:
+        geomFileName = sys.argv[1]
+        vtkFileName = "tmp/t.1.vtk"
     else:
         geomFileName = "database/box.geo"
         vtkFileName = "tmp/t.1.vtk"
@@ -21,7 +24,7 @@ def mesh():
     g=geom.read_gmsh("tmp/x.geo")
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
-    geom.runtetgen("tmp/t.poly",a=0.003,Q=1.0,quadratic=False,
+    geom.runtetgen("tmp/t.poly",a=0.0003,Q=1.0,quadratic=False,
                    tetgenpath = tetgen_path)
 
     m = Mesh.fromFile("tmp/t.1.node")
