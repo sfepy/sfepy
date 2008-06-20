@@ -138,6 +138,21 @@ def permutations( seq ):
 ##
 # 14.12.2005, c
 def cycle( bounds ):
+    """
+    Cycles through all combinations of bounds, returns a generator.
+
+    More specifically, let bounds=[a, b, c, ...], so cycle returns all
+    combinations of lists [0<=i<a, 0<=j<b, 0<=k<c, ...] for all i,j,k,...
+
+    Examples:
+    In [9]: list(cycle([3, 2]))
+    Out[9]: [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]
+
+    In [14]: list(cycle([3, 4]))
+    [[0, 0], [0, 1], [0, 2], [0, 3], [1, 0], [1, 1], [1, 2], [1, 3], [2, 0],
+    [2, 1], [2, 2], [2, 3]]
+
+    """
 
     nb  = len( bounds )
     if nb == 1:
