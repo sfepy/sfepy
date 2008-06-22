@@ -179,7 +179,7 @@ def solveStationaryOP( problem, options, saveResults = True, ts = None,
     return state, data
     
 ##
-# c: 12.01.2007, r: 13.06.2008
+# c: 12.01.2007, r: 22.06.2008
 def solveDirect( conf, options ):
     """Generic (simple) problem solver."""
     if options.outputFileNameTrunk:
@@ -225,7 +225,7 @@ def solveDirect( conf, options ):
     else:
         ##
         # Stationary problem.
-        state, data = solveStationaryOP( pb, conf,
+        state, data = solveStationaryOP( pb, options,
                                          postProcessHook = postProcessHook )
 
         if options.dump:
