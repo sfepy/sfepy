@@ -11,8 +11,8 @@ from sfe.base.ioutils import readTimeStepperHDF5, readDataHDF5,\
      getTrunk, readDataHeaderHDF5, readTimeHistoryHDF5, writeDictHDF5
 
 ##
-# c: 26.09.2006, r: 06.03.2008
-def dumpToVTK( fileName, options ):
+# c: 26.09.2006, r: 22.06.2008
+def dumpToVTK( fileName, options, steps = None ):
     output( 'dumping to VTK...' )
     
     mesh = Mesh.fromFileHDF5( fileName )
@@ -27,13 +27,19 @@ def dumpToVTK( fileName, options ):
     else:
         ofnTrunk = getTrunk( fileName )
 
-    for step, time in ts.iterFrom( options.step0 ):
+    if steps is None:
+        iterator = ts.iterFrom( options.step0 )
+    else:
+        iterator = [(step, ts.times[step]) for step in steps]
+
+    for step, time in iterator:
         output( format % (step, ts.nStep) )
         out = readDataHDF5( fileName, step )
         if out is None: break
         mesh.write( ofnTrunk + suffix % step, io = 'auto', out = out )
 
     output( '...done' )
+    return suffix
 
 ##
 # 26.09.2006, c
