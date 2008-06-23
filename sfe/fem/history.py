@@ -1,18 +1,18 @@
 from sfe.base.base import *
-import sfe.base.ioutils as io
 from sfe.solvers.ts import TimeStepper
+from sfe.fem.meshio import HDF5MeshIO
 
 ##
 # 14.06.2007, c
 class Histories( Container ):
 
     ##
-    # 14.06.2007, c
-    # 15.06.2007
+    # c: 14.06.2007, r: 23.06.2008
     def fromFileHDF5( fileName, varNames ):
         """TODO: do not read entire file, provide data on demand."""
-        ts = TimeStepper( *io.readTimeStepperHDF5( fileName ) )
-        ths = io.readVariablesTimeHistoryHDF5( fileName, varNames, ts )
+        io = HDF5MeshIO( fileName )
+        ts = TimeStepper( *io.readTimeStepper() )
+        ths = io.readVariablesTimeHistory( varNames, ts )
 
         steps = nm.arange( ts.nStep, dtype = nm.int32 )
         objs = OneTypeList( History )
