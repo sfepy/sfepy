@@ -210,6 +210,11 @@ class Test( TestCommon ):
     # c: 07.05.2007, r: 25.06.2008
     def test_msm_symbolic( self ):
         import os.path as op
+
+        if sops is None:
+            self.report( 'cannot import sympy, skipping' )
+            return True
+
         problem  = self.problem
 
         # update data so that buildArgs() works...
