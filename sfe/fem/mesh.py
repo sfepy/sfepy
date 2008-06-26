@@ -293,6 +293,24 @@ class Mesh( Struct ):
         [   0 1348]
 
 
+    The Mesh().nod0 is an array of nodes and Mesh().conns is the list of
+    elements of each type (see Mesh().desc), so for example if you want to know
+    the coordinates of the nodes of the fifth finite element of the type 3_4 do:
+
+    In [1]: a.descs
+    Out[1]: ['3_4']
+
+    So now you know that the finite elements of the type 3_4 are in a.conns[0]:
+
+    In [2]: [a.nod0[n] for n in a.conns[0][4]]
+    Out[2]:
+    [array([ 3.0877856 , -4.40913864, -1.58148163,  0.        ]),
+     array([ 3.28954489, -4.53265378, -2.07926241,  0.        ]),
+     array([ 3.00343981, -4.09445003, -2.14632505,  0.        ]),
+     array([ 3.51217117, -4.05946689, -1.68843294,  0.        ])]
+
+
+
     """
     ##
     # 19.01.2005, c
