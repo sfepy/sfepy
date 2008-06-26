@@ -1,5 +1,5 @@
 from sfe.base.base import *
-from sfe.base.ioutils import skipReadLine, readToken, readArray, readList
+from sfe.base.ioutils import skipReadLine, readToken, readArray, readList, pt
 import sfe.base.la as la
 from sfe.base.progressbar import MyBar
 import os.path as op
@@ -9,6 +9,7 @@ supportedFormats = {
     '.vtk'  : 'vtk',
     '.node' : 'tetgen',
     '.txt'  : 'comsol',
+    '.h5'   : 'hdf5',
 }
 
 vtkHeader = r"""# vtk DataFile Version 2.0
@@ -730,6 +731,241 @@ class ComsolMeshIO( MeshIO ):
     # c: 20.03.2008, r: 20.03.2008
     def write( self, fileName, mesh, out = None ):
         raise NotImplementedError
+
+##
+# c: 23.06.2008
+class HDF5MeshIO( MeshIO ):
+    format = "hdf5"
+
+    import string
+    _all = ''.join( map( chr, range( 256 ) ) )
+    _letters = string.letters + string.digits + '_'
+    _rubbish = ''.join( [ch for ch in set( _all ) - set( _letters )] )
+    _tr = string.maketrans( _rubbish, '_' * len( _rubbish ) )
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def read( self, mesh, **kwargs ):
+        fd = pt.openFile( self.fileName, mode = "r" )
+
+        meshGroup = fd.root.mesh
+
+        mesh.name = meshGroup.name.read()
+        nodes = meshGroup.nod0.read()
+
+        nGr =  meshGroup.nGr.read()
+
+        conns = []
+        descs = []
+        matIds = []
+        for ig in xrange( nGr ):
+            grName = 'group%d' % ig
+            group = meshGroup._f_getChild( grName )
+            conns.append( group.conn.read() )
+            matIds.append( group.matId.read() )
+            descs.append( group.desc.read() )
+
+        fd.close()
+        mesh._setData( nodes, conns, matIds, descs )
+
+        return mesh
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def write( self, fileName, mesh, out = None, ts = None ):
+        from time import asctime
+
+        if pt is None:
+            output( 'pytables not imported!' )
+            raise ValueError
+
+        step = getDefaultAttr( ts, 'step', 0 )
+        if step == 0:
+            # A new file.
+            fd = pt.openFile( fileName, mode = "w",
+                              title = "SfePy output file" )
+
+            meshGroup = fd.createGroup( '/', 'mesh', 'mesh' )
+
+            fd.createArray( meshGroup, 'name', mesh.name, 'name' )
+            fd.createArray( meshGroup, 'nod0', mesh.nod0, 'vertices' )
+            fd.createArray( meshGroup, 'nGr', len( mesh.conns ), 'nGr' )
+            for ig, conn in enumerate( mesh.conns ):
+                connGroup = fd.createGroup( meshGroup, 'group%d' % ig,
+                                            'connectivity group' )
+                fd.createArray( connGroup, 'conn', conn, 'connectivity' )
+                fd.createArray( connGroup, 'matId', mesh.matIds[ig], 'material id' )
+                fd.createArray( connGroup, 'desc', mesh.descs[ig], 'element Type' )
+
+            if ts is not None:
+                tsGroup = fd.createGroup( '/', 'ts', 'time stepper' )
+                fd.createArray( tsGroup, 't0', ts.t0, 'initial time' )
+                fd.createArray( tsGroup, 't1', ts.t1, 'final time'  )
+                fd.createArray( tsGroup, 'dt', ts.dt, 'time step' )
+                fd.createArray( tsGroup, 'nStep', ts.nStep, 'nStep' )
+
+            tstatGroup = fd.createGroup( '/', 'tstat', 'global time statistics' )
+            fd.createArray( tstatGroup, 'created', asctime(),
+                            'file creation time' )
+            fd.createArray( tstatGroup, 'finished', '.' * 24,
+                            'file closing time' )
+
+            fd.createArray( fd.root, 'lastStep', nm.array( [0], dtype = nm.int32 ),
+                            'last saved step' )
+
+            fd.close()
+
+        if out is not None:
+            if ts is None:
+                step, time, nt  = 0, 0.0, 0.0
+            else:
+                step, time, nt = ts.step, ts.time, ts.nt
+
+            # Existing file.
+            fd = pt.openFile( fileName, mode = "r+" )
+
+            stepGroup = fd.createGroup( '/', 'step%d' % step, 'time step data' )
+            nameDict = {}
+            for key, val in out.iteritems():
+    #            print key
+                if val.dofs is None:
+                    dofs = (-1,)
+                else:
+                    dofs = val.dofs
+
+                groupName = '_' + key.translate( self._tr )
+                dataGroup = fd.createGroup( stepGroup, groupName, '%s data' % key )
+                fd.createArray( dataGroup, 'data', val.data, 'data' )
+                fd.createArray( dataGroup, 'mode', val.mode, 'mode' )
+                fd.createArray( dataGroup, 'dofs', dofs, 'dofs' )
+                fd.createArray( dataGroup, 'name', val.name, 'object name' )
+                fd.createArray( dataGroup, 'varName',
+                                val.varName, 'object parent name' )
+                fd.createArray( dataGroup, 'dname', key, 'data name' )
+                nameDict[key] = groupName
+
+            stepGroup._v_attrs.nameDict = nameDict
+            fd.root.lastStep[0] = step
+
+            fd.removeNode( fd.root.tstat.finished )
+            fd.createArray( fd.root.tstat, 'finished', asctime(),
+                            'file closing time' )
+            fd.close()
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def readTimeStepper( self, fileName = None ):
+        fileName = getDefault( fileName, self.fileName )
+        fd = pt.openFile( fileName, mode = "r" )
+
+        tsGroup = fd.root.ts
+        out =  (tsGroup.t0.read(), tsGroup.t1.read(),
+                tsGroup.dt.read(), tsGroup.nStep.read())
+        fd.close()
+        return out 
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def _getStepGroup( self, step, fileName = None ):
+        fileName = getDefault( fileName, self.fileName )
+        fd = pt.openFile( fileName, mode = "r" )
+
+        grName = 'step%d' % step
+        try:
+            stepGroup = fd.getNode( fd.root, grName )
+        except:
+            output( 'step %d data not found - premature end of file?' % step )
+            fd.close()
+            return None, None
+
+        return fd, stepGroup
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def readData( self, step, fileName = None ):
+        fd, stepGroup = self._getStepGroup( step, fileName = fileName )
+        if fd is None: return None
+
+        out = {}
+        for dataGroup in stepGroup:
+            key = dataGroup.dname.read()
+            out[key] = Struct( name = dataGroup.name.read(),
+                               mode = dataGroup.mode.read(),
+                               data = dataGroup.data.read(),
+                               dofs = tuple( dataGroup.dofs.read() ) )
+            if out[key].dofs == (-1,):
+                out[key].dofs = None
+
+        fd.close()
+
+        return out
+
+    ##
+    # c: 26.09.2006, r: 23.06.2008
+    def readDataHeader( self, dname, step = 0, fileName = None ):
+        fd, stepGroup = _getStepGroup( step, fileName = fileName )
+        if fd is None: return None
+
+        groups = stepGroup._v_groups
+        for name, dataGroup in groups.iteritems():
+            key = dataGroup.dname.read()
+            if key == dname:
+                mode = dataGroup.mode.read()
+                fd.close()
+                return mode, name
+
+        fd.close()
+        raise KeyError, 'non-existent data: %s' % dname
+
+    ##
+    # c: 27.09.2006, r: 23.06.2008
+    def readTimeHistory( self, nodeName, indx, fileName = None ):
+        fileName = getDefault( fileName, self.fileName )
+        fd = pt.openFile( fileName, mode = "r" )
+
+        th = dictFromKeysInit( indx, list )
+        for step in xrange( fd.root.lastStep[0] + 1 ):
+            grName = 'step%d' % step
+
+            stepGroup = fd.getNode( fd.root, grName )
+            data = stepGroup._f_getChild( nodeName ).data
+
+            for ii in indx:
+                th[ii].append( nm.array( data[ii] ) )
+
+        fd.close()
+
+        for key, val in th.iteritems():
+            aux = nm.array( val )
+            if aux.ndim == 4: # cell data.
+                aux = aux[:,0,:,0]
+            th[key] = aux
+
+        return th
+
+    ##
+    # c: 14.06.2007, r: 23.06.2008
+    def readVariablesTimeHistory( self, varNames, ts, fileName = None ):
+        fileName = getDefault( fileName, self.fileName )
+        fd = pt.openFile( fileName, mode = "r" )
+
+        assert (fd.root.lastStep[0] + 1) == ts.nStep
+
+        ths = dictFromKeysInit( varNames, list )
+
+        arr = nm.asarray
+        for step in xrange( ts.nStep ):
+            grName = 'step%d' % step
+            stepGroup = fd.getNode( fd.root, grName )
+
+            nameDict = stepGroup._v_attrs.nameDict
+            for varName in varNames:
+                data = stepGroup._f_getChild( nameDict[varName] ).data
+                ths[varName].append( arr( data ) )
+
+        fd.close()
+
+        return ths
 
 ##
 # c: 05.02.2008, r: 05.02.2008

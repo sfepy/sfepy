@@ -6,18 +6,19 @@ from optparse import OptionParser
 import init_sfe
 from sfe.base.base import *
 from sfe.fem.mesh import Mesh
+from sfe.fem.meshio import HDF5MeshIO
 from sfe.solvers.ts import TimeStepper
-from sfe.base.ioutils import readTimeStepperHDF5, readDataHDF5,\
-     getTrunk, readDataHeaderHDF5, readTimeHistoryHDF5, writeDictHDF5
+from sfe.base.ioutils import getTrunk, writeDictHDF5
 
 ##
-# c: 26.09.2006, r: 06.03.2008
-def dumpToVTK( fileName, options ):
+# c: 26.09.2006, r: 23.06.2008
+def dumpToVTK( fileName, options, steps = None ):
     output( 'dumping to VTK...' )
     
-    mesh = Mesh.fromFileHDF5( fileName )
+    mesh = Mesh.fromFile( fileName )
 
-    ts = TimeStepper( *readTimeStepperHDF5( fileName ) )
+    io = HDF5MeshIO( fileName )
+    ts = TimeStepper( *io.readTimeStepper() )
     nDigit = int( nm.log10( ts.nStep - 1 ) + 1 )
     format = '%%%dd of %%%dd' % (nDigit, nDigit)
     suffix = '.%%0%dd.vtk' % nDigit
@@ -27,18 +28,22 @@ def dumpToVTK( fileName, options ):
     else:
         ofnTrunk = getTrunk( fileName )
 
-    for step, time in ts.iterFrom( options.step0 ):
-        output( format % (step, ts.nStep) )
-        out = readDataHDF5( fileName, step )
+    if steps is None:
+        iterator = ts.iterFrom( options.step0 )
+    else:
+        iterator = [(step, ts.times[step]) for step in steps]
+
+    for step, time in iterator:
+        output( format % (step, ts.nStep - 1) )
+        out = io.readData( step )
         if out is None: break
         mesh.write( ofnTrunk + suffix % step, io = 'auto', out = out )
 
     output( '...done' )
+    return suffix
 
 ##
-# 26.09.2006, c
-# 27.09.2006
-# 29.09.2006
+# c: 26.09.2006, r: 23.06.2008
 def extractTimeHistory( fileName, options ):
     output( 'extracting selected data...' )
 
@@ -57,7 +62,7 @@ def extractTimeHistory( fileName, options ):
 
     ##
     # Verify array limits, set igs for element data, shift indx.
-    mesh = Mesh.fromFileHDF5( fileName )
+    mesh = Mesh.fromFile( fileName )
     nEl, nEls, offs = mesh.nEl, mesh.nEls, mesh.elOffsets
     for pe in pes:
         if pe.mode == 'n':
@@ -81,20 +86,21 @@ def extractTimeHistory( fileName, options ):
     ##
     # Extract data.
     # Assumes only one element group (ignores igs)!
+    io = HDF5MeshIO( fileName )
     ths = {}
     for pe in pes:
-        mode, nname = readDataHeaderHDF5( fileName, pe.var )
+        mode, nname = io.readDataHeader( pe.var )
         print mode, nname
         if ((pe.mode == 'n' and mode == 'vertex') or
             (pe.mode == 'e' and mode == 'cell')):
-            th = readTimeHistoryHDF5( fileName, nname, pe.indx )
+            th = io.readTimeHistory( nname, pe.indx )
 
         elif pe.mode == 'e' and mode == 'vertex':
             conn = mesh.conns[0]
             th = {}
             for iel in pe.indx:
                 ips = conn[iel]
-                th[iel] = readTimeHistoryHDF5( fileName, nname, ips )
+                th[iel] = io.readTimeHistory( nname, ips )
         else:
             raise RuntimeError, 'cannot extract cell data %s in nodes' % pe.var
             
@@ -137,10 +143,7 @@ help = {
 }
 
 ##
-# 26.09.2006, c
-# 27.09.2006
-# 29.09.2006
-# 17.07.2007
+# c: 26.09.2006, r: 23.06.2008
 def main():
     version = open( op.join( init_sfe.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -183,7 +186,7 @@ def main():
 ##             print ths
 
         if options.outputFileNameTrunk:
-            ts = TimeStepper( *readTimeStepperHDF5( fileNameIn ) )
+            ts = TimeStepper( *HDF5MeshIO( fileNameIn ).readTimeStepper() )
             ths.update( {'times' : ts.times, 'dt' : ts.dt} )
             writeDictHDF5( options.outputFileNameTrunk + '.h5', ths )
 

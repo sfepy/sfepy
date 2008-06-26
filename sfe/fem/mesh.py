@@ -1,6 +1,5 @@
 from sfe.base.base import *
 import sfe.base.la as la
-from sfe.base.ioutils import readMeshHDF5
 from meshio import MeshIO
 
 import os.path as op
@@ -309,10 +308,10 @@ Mesh:database/simple
     fromSurface = staticmethod( fromSurface )
 
     ##
-    # c: 25.01.2006, r: 20.02.2008
-    def fromFile( fileName = None, io = None ):
+    # c: 25.01.2006, r: 23.06.2008
+    def fromFile( fileName = None, io = 'auto' ):
         """passing *MeshIO instance has precedence over fileName"""
-        if io is None:
+        if io == 'auto':
             if fileName is None:
                 output( 'fileName or io must be specified!' )
                 raise ValueError
@@ -404,15 +403,6 @@ Mesh:database/simple
     fromRegionAndField = staticmethod( fromRegionAndField )
 
     ##
-    # 26.09.2006, c
-    # 29.09.2006
-    # 21.02.2007
-    def fromFileHDF5( fileName ):
-        name, nod0, conns, matIds, descs = readMeshHDF5( fileName )
-        return Mesh.fromData( name, nod0, conns, matIds, descs )
-    fromFileHDF5 = staticmethod( fromFileHDF5 )
-
-    ##
     # c: 21.02.2007, r: 08.02.2008
     def fromData( name, coors, conns, matIds, descs, igs = None ):
         if igs is None:
@@ -457,9 +447,9 @@ Mesh:database/simple
         self.descs = descs
         
     ##
-    # c: 23.01.2006, r: 08.02.2008
+    # c: 23.01.2006, r: 23.06.2008
     def write( self, fileName = None, io = None,
-               coors = None, igs = None, out = None ):
+               coors = None, igs = None, out = None, **kwargs ):
         """Write mesh + optional results in 'out'.
 
         'io' == 'auto' respects the extension of 'fileName'
@@ -482,7 +472,7 @@ Mesh:database/simple
 
         auxMesh = Mesh.fromData( self.name, coors,
                                  self.conns, self.matIds, self.descs, igs )
-        io.write( fileName, auxMesh, out )
+        io.write( fileName, auxMesh, out, **kwargs )
 
     ##
     # 23.05.2007, c

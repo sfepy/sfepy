@@ -297,14 +297,16 @@ class ProblemDefinition( Struct ):
         self.equations.advance( ts )
 
     ##
-    # c: 01.03.2007, r: 28.04.2008
-    def saveState( self, fileName, state,
+    # c: 01.03.2007, r: 23.06.2008
+    def saveState( self, fileName, state = None, out = None,
                    fillValue = None, postProcessHook = None,
-                   filePerVar = False ):
+                   filePerVar = False, **kwargs ):
         extend = not filePerVar
-        out = self.stateToOutput( state, fillValue = fillValue, extend = extend )
-        if postProcessHook is not None:
-            out = postProcessHook( out, self, state, extend = extend )
+        if (out is None) and (state is not None):
+            out = self.stateToOutput( state,
+                                      fillValue = fillValue, extend = extend )
+            if postProcessHook is not None:
+                out = postProcessHook( out, self, state, extend = extend )
 
         if filePerVar:
             import os.path as op
@@ -324,9 +326,9 @@ class ProblemDefinition( Struct ):
                         vout[key] = val
                 base, suffix = op.splitext( fileName )
                 mesh.write( base + '_' + var.name + suffix,
-                            io = 'auto', out = vout )
+                            io = 'auto', out = vout, **kwargs )
         else:
-            self.domain.mesh.write( fileName, io = 'auto', out = out )
+            self.domain.mesh.write( fileName, io = 'auto', out = out, **kwargs )
 
     ##
     # c: 19.09.2006, r: 27.02.2008

@@ -1,4 +1,4 @@
-# c: 07.05.2007, r: 05.06.2008
+# c: 07.05.2007, r: 25.06.2008
 fileName_mesh = 'database/phono/mesh_circ21.mesh'
 
 dim = 2
@@ -37,8 +37,7 @@ material_1 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'val' : 12.0,
-    'K' : [[1.0, 0.3], [0.3, 2.0]]
+    'val' : 2.0,
 }
 
 material_2 = {
@@ -53,9 +52,6 @@ equations = {
     'Temperature' :
     """dw_laplace.i1.Omega( coef.val, s, t )
        = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
-##     'Diffusion' :
-##     """dw_diffusion.i1.Omega( coef.K, s, t )
-##        = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
 }
 
 val = material_1['val']
@@ -134,72 +130,11 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # c: 09.05.2007, r: 09.05.2008
+    # c: 09.05.2007, r: 25.06.2008
     def _buildRHS( self, sols ):
-        from sfe.fem.equations import buildArgs
-        try:
-            import sympy_operators as sops
-        except ImportError, exc:
-            self.report( exc )
-            self.report( '... manual mode only' )
-            sops = None
-
-        if sops is None:
-            for sol in sols.itervalues():
-                assert len( sol ) == 3
-            return sols
-
-        problem  = self.problem
-        newRHSs = {}
-        self.report( 'evaluating terms, "<=" is solution, "=>" is the rhs:' )
-        for equation in problem.equations:
-            self.report( '%s:' % equation.name )
-            for term in equation.terms:
-                if not hasattr( term, 'symbolic' ): continue
-                expr = term.symbolic['expression']
-                argMap = term.symbolic['map']
-                self.report( '%s( %s )' %\
-                             (term.name, ', '.join( term.argTypes )) )
-                self.report( '  symbolic:', expr )
-                self.report( '  using argument map:', argMap )
-                args = buildArgs( term, problem.variables, problem.materials )
-                for solName, sol in sols.iteritems():
-                    rhs = self._evalTerm( sol[1], term, args, sops )
-                    newRHSs.setdefault( solName, [] ).append( rhs )
-#        print newRHSs
-        newSols = {}
-        for key, val in newRHSs.iteritems():
-            sol = sols[key]
-            newSols[key] = sol[:2] + ('+'.join( val ),)
-#        print newSols
-        return newSols
-
-    ##
-    # c: 09.05.2007, r: 09.06.2008
-    def _evalTerm( self, sol, term, args, sops ):
-        """Works for scalar, single unknown terms only!"""
-        expr = term.symbolic['expression']
-        argMap = term.symbolic['map']
-        env = {'x' : sops.Symbol( 'x' ),
-               'y' : sops.Symbol( 'y' ),
-               'z' : sops.Symbol( 'z' ),
-               'dim' : dim}
-        for key, val in argMap.iteritems():
-            if val == 'state':
-                env[key] = sol
-            else:
-                env[key] = term.getArgs( [val], **args )[0]
-
-            if val[:8] == 'material':
-                env[key] = nm.array( env[key] )
-
-#        print env
-
-        self.report( '  <= ', sol )
-        sops.set_dim( dim )
-        val = eval( expr, sops.__dict__, env ).tostr()
-        self.report( '   =>', val )
-        return val
+        for sol in sols.itervalues():
+            assert len( sol ) == 3
+        return sols
 
     ##
     # c: 07.05.2007, r: 09.05.2008
@@ -228,18 +163,6 @@ class Test( TestCommon ):
             coor = problem.variables[varName].field.getCoor()
             anaSol = self.evalCoorExpression( solExpr, coor )
             numSol = problem.variables.getStatePartView( vec, varName )
-
-##             from sfe.fem.evaluate import evalTermOP
-##             aa = evalTermOP( anaSol, "dw_laplace.i1.Omega( coef.val, s, t )",
-##                              problem, dwMode = 'vector' )
-##             print aa
-##             aa = evalTermOP( numSol, "dw_laplace.i1.Omega( coef.val, s, t )",
-##                              problem, dwMode = 'vector' )
-##             print aa
-##             aa = evalTermOP( numSol, "dw_volume_lvf.i1.Omega( rhs.val, s )",
-##                              problem, dwMode = 'vector' )
-##             print aa
-##             pause()
 
             anaNorm = nm.linalg.norm( anaSol, nm.inf )
             ret = self.compareVectors( anaSol, numSol,

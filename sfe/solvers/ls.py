@@ -2,7 +2,7 @@ from sfe.base.base import *
 from sfe.solvers.solvers import LinearSolver
 
 import scipy
-if scipy.version.version == "0.6.0":
+if scipy.version.version < '0.7.0.dev3861':
     import scipy.linsolve.umfpack as um
 else:
     try:
@@ -69,13 +69,13 @@ class ScipyIterative( LinearSolver ):
     name = 'ls.scipy_iterative'
 
     ##
-    # c: 22.02.2008, r: 06.03.2008
+    # c: 22.02.2008, r: 23.06.2008
     def __init__( self, conf, **kwargs ):
-        if scipy.version.version == "0.6.0":
+        if scipy.version.version < '0.7.0.dev3861':
             import scipy.linalg as la
         else:
             if scipy.version.version < '0.7.0.dev3998':
-                import scipy.splinalg.isolva as la
+                import scipy.splinalg.isolve as la
             else:
                 import scipy.sparse.linalg.isolve as la
         solver = getattr( la, conf.method )
