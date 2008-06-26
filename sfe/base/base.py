@@ -56,6 +56,15 @@ def output( *argc, **argv ):
 ##
 # c: 06.04.2005, r: 05.05.2008
 def pause( msg = None ):
+    """
+    Prints the line number and waits for a keypress.
+
+    If you press:
+    "q" ............. it will call sys.exit()
+    any other key ... it will continue execution of the program
+
+    This is useful for debugging.
+    """
     f = sys._getframe(1)
     ff = f.f_code
     if (msg):
@@ -71,6 +80,15 @@ def pause( msg = None ):
 # 18.02.2005, c
 # 12.02.2007
 def spause( msg = None ):
+    """
+    Waits for a keypress.
+
+    If you press:
+    "q" ............. it will call sys.exit()
+    any other key ... it will continue execution of the program
+
+    This is useful for debugging. This function is called from pause().
+    """
     if (msg):
         print msg
     sys.stdout.flush()
