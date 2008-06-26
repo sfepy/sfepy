@@ -325,7 +325,7 @@ Mesh:database/simple
         else:
             trunk = io.fileName
 
-        output( 'reading mesh...' )
+        output( 'reading mesh (%s)...' % (fileName) )
         tt = time.clock()
         mesh = Mesh( trunk )
         mesh = io.read( mesh )
