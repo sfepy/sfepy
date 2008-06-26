@@ -1,4 +1,41 @@
 #! /usr/bin/env python
+"""
+SfePy configuration script. It is used in the main Makefile to detect the
+correct python paths and other options that can be specified in
+site_cfg.py. Prints results to stdout.
+
+options:
+
+python_version
+
+    The default Python version that is installed on the system.
+
+archlib
+
+    'lib' or 'lib64' depending on your architecture (32bit or 64bit)
+
+tetgen_path
+
+    Tetgen executable path.
+
+numpy_prefix
+
+    Installation prefix. Ignore if you do not install numpy/scipy on local
+    account.  Numpy headers should be in
+    <numpy_prefix>/usr/<archlib>/python<python_version>/site-packages/numpy/core/include
+
+New options should be added both to site_cfg_template.py and Config class below.
+
+Examples:
+
+$ ./config.py python_version
+2.5
+$
+
+$ ./config.py archlib
+lib
+$
+"""
 import sys
 sys.path.append( '.' )
 import shutil
@@ -6,8 +43,8 @@ import shutil
 try:
     import site_cfg
 except:
-    shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
     try:
+        shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
         import site_cfg
     except:
         site_cfg = None
@@ -16,24 +53,6 @@ has_attr = lambda obj, attr: obj and hasattr( obj, attr )
 
 class Config( object ):
     def python_version( self ):
-        """
-        Detects the default Python version that is installed on the system and prints
-        it to stdout. This is used in the main Makefile to detect the correct python
-        paths.
-
-        Examples:
-
-            $ ./python_version.py
-            2.5
-            $
-
-        on some other system:
-
-            $ ./python_version.py
-            2.4
-            $
-
-        """
         if has_attr( site_cfg, 'python_version' ):
             if site_cfg.python_version == 'auto':
                 return "%d.%d" % tuple(sys.version_info[:2])
