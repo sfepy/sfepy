@@ -373,7 +373,7 @@ class VTKMeshIO( MeshIO ):
         fd.close()
 
         if matId is None:
-            matId = nm.zeros( (nEl,), dtype = nm.int32 )
+            matId = [[0]] * nEl
 
         nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
                               1 )
