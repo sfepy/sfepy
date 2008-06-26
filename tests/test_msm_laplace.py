@@ -93,8 +93,8 @@ fe = {
 }
 
 import numpy as nm
-from sfe.base.testing import TestCommon
-from sfe.base.base import debug, pause
+from sfepy.base.testing import TestCommon
+from sfepy.base.base import debug, pause
 outputName = 'test_msm_laplace_%s.vtk'
 
 ##
@@ -121,7 +121,7 @@ class Test( TestCommon ):
     ##
     # c: 07.05.2007, r: 07.05.2008
     def fromConf( conf, options ):
-        from sfe.fem.problemDef import ProblemDefinition
+        from sfepy.fem.problemDef import ProblemDefinition
 
         problem = ProblemDefinition.fromConf( conf )
         test = Test( problem = problem,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from sfe.base.base import *
-from sfe.fem.mesh import Mesh, findMap, mergeMesh, makeMesh
-from sfe.base.la import cycle
+from sfepy.base.base import *
+from sfepy.fem.mesh import Mesh, findMap, mergeMesh, makeMesh
+from sfepy.base.la import cycle
 from optparse import OptionParser
 
 ##
@@ -251,7 +251,7 @@ def main():
 if __name__ == '__main__':
     main()
 
-##     import sfe.fem.extmods.meshutils as mu
+##     import sfepy.fem.extmods.meshutils as mu
 ##     import time
 ##     n = 3000000
 ##     x = nm.fix( nm.random.rand( n, 3 ) * 10 ) / 10

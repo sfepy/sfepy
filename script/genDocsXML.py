@@ -4,8 +4,8 @@ from optparse import OptionParser
 import pyparsing as pp
 
 sys.path.append( '.' )
-from sfe.base.base import *
-from sfe.terms import termTable, cacheTable
+from sfepy.base.base import *
+from sfepy.terms import termTable, cacheTable
 
 ##
 # 09.11.2007, c
@@ -77,7 +77,7 @@ begining = r"""
 \def\Fcal{\mathcal{F}}
 \def\Gcal{\mathcal{G}}
 \def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SfePy}
+\newcommand{\sfepy}{SfePy}
         </mathinclude>
     </articleinfo>
 """

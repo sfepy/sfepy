@@ -85,8 +85,8 @@ testTerms = {
 }
 
 import numpy as nm
-from sfe.base.testing import TestCommon
-from sfe.base.base import debug, pause
+from sfepy.base.testing import TestCommon
+from sfepy.base.base import debug, pause
 
 ##
 # c: 19.05.2008
@@ -95,7 +95,7 @@ class Test( TestCommon ):
     ##
     # c: 19.05.2008, r: 19.05.2008
     def fromConf( conf, options ):
-        from sfe.fem.problemDef import ProblemDefinition
+        from sfepy.fem.problemDef import ProblemDefinition
 
         problem = ProblemDefinition.fromConf( conf, initVariables = False )
         test = Test( problem = problem,
@@ -106,8 +106,8 @@ class Test( TestCommon ):
     ##
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
-        from sfe.base.base import selectByNames
-        from sfe.fem.evaluate import evalTermOP
+        from sfepy.base.base import selectByNames
+        from sfepy.fem.evaluate import evalTermOP
 
         ok = True
         pb = self.problem

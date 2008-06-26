@@ -116,7 +116,7 @@ fe = {
     'chunkSize' : 100000
 }
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 outputName = 'test_linear_solvers_%s.vtk'
 
 ##
@@ -127,7 +127,7 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 02.05.2008
     def fromConf( conf, options ):
-        from sfe.fem.problemDef import ProblemDefinition
+        from sfepy.fem.problemDef import ProblemDefinition
 
         problem = ProblemDefinition.fromConf( conf )
         problem.timeUpdate()
@@ -151,8 +151,8 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
-        from sfe.solvers.generic import solveStationary
-        from sfe.base.base import IndexedStruct
+        from sfepy.solvers.generic import solveStationary
+        from sfepy.base.base import IndexedStruct
         import os.path as op
 
         solverConfs = self._listLinearSolvers( self.problem.solverConfs )

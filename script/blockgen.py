@@ -2,10 +2,10 @@
 import sys
 sys.path.append( '.' )
 from optparse import OptionParser
-from sfe.base.base import *
-from sfe.fem.mesh import Mesh
-from sfe.base.la import cycle
-from sfe.base.progressbar import MyBar
+from sfepy.base.base import *
+from sfepy.fem.mesh import Mesh
+from sfepy.base.la import cycle
+from sfepy.base.progressbar import MyBar
 
 usage = """%prog [options]
 

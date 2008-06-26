@@ -1,4 +1,4 @@
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # 28.08.2007, c
@@ -13,7 +13,7 @@ class Test( TestCommon ):
     ##
     # 28.08.2007, c
     def test_structAdd( self ):
-        from sfe.base.base import Struct
+        from sfepy.base.base import Struct
         from copy import deepcopy
 
         a = Struct( f1 = 0,
@@ -44,7 +44,7 @@ class Test( TestCommon ):
     ##
     # 28.08.2007, c
     def test_structIAdd( self ):
-        from sfe.base.base import Struct
+        from sfepy.base.base import Struct
 
         a = Struct( f1 = 0,
                     f2 = [1, 2, 3],

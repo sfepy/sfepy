@@ -2,7 +2,7 @@
 import sys
 sys.path.append( '.' )
 
-from sfe.fem.periodic import *
+from sfepy.fem.periodic import *
 
 # c: 05.05.2008, r: 05.05.2008
 def defineRegions( fileName ):
@@ -238,7 +238,7 @@ def  solveSteadyCorrectors_rs( problem, equations, variables, pis,
                                ofnTrunk, postProcessHook = None,
                                filePerVar = False ):
     """Compute the steady state correctors $\bar{\omega}^{rs}$"""
-    from sfe.base.base import Struct
+    from sfepy.base.base import Struct
     
     dim = problem.domain.mesh.dim
 
@@ -280,7 +280,7 @@ def iterSym( dim ):
 # c: 05.05.2008, r: 05.05.2008
 def coefE( problem, corrsRS, pis ):
     """Homogenized elastic coefficient $E_{ijkl}$."""
-    from sfe.fem.evaluate import evalTermOP
+    from sfepy.fem.evaluate import evalTermOP
 
     coefTerm = 'd_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
 
@@ -311,10 +311,10 @@ def coefE( problem, corrsRS, pis ):
 ##
 # c: 05.05.2008, r: 05.05.2008
 def main():
-    from sfe.base.base import spause
-    from sfe.base.conf import ProblemConf, getStandardKeywords
-    from sfe.fem.problemDef import ProblemDefinition
-    from sfe.base.ioutils import getTrunk
+    from sfepy.base.base import spause
+    from sfepy.base.conf import ProblemConf, getStandardKeywords
+    from sfepy.fem.problemDef import ProblemDefinition
+    from sfepy.base.ioutils import getTrunk
 
     nm.set_printoptions( precision = 3 )
 

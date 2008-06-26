@@ -3,7 +3,7 @@ This module is not a test file. It contains classes grouping some common
 functionality, that is used in several test files.
 """
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 import os.path as op
 
 ##
@@ -14,7 +14,7 @@ class TestInput( TestCommon ):
     ##
     # c: 05.06.2007, r: 19.02.2008
     def fromConf( conf, options, cls = None ):
-        from sfe.base.conf import ProblemConf, getStandardKeywords
+        from sfepy.base.conf import ProblemConf, getStandardKeywords
 
         required, other = getStandardKeywords()
         testConf = ProblemConf.fromFile( conf.inputName, required, other )
@@ -29,8 +29,8 @@ class TestInput( TestCommon ):
     ##
     # c: 05.06.2007, r: 08.02.2008
     def test_input( self ):
-        from sfe.solvers.generic import solveStationary
-        from sfe.base.base import IndexedStruct
+        from sfepy.solvers.generic import solveStationary
+        from sfepy.base.base import IndexedStruct
 
         self.report( 'solving %s...' % self.conf.inputName )
         status = IndexedStruct()
@@ -64,10 +64,10 @@ class TestLCBC( TestCommon ):
             # This test uses a functionality implemented in scipy svn, which is
             # missing in scipy 0.6.0
             return True
-        from sfe.base.base import Struct
-        from sfe.solvers.generic import solveStationary
-        from sfe.base.base import IndexedStruct
-        from sfe.fem.evaluate import evalTermOP
+        from sfepy.base.base import Struct
+        from sfepy.solvers.generic import solveStationary
+        from sfepy.base.base import IndexedStruct
+        from sfepy.fem.evaluate import evalTermOP
 
         status = IndexedStruct()
         problem, vec, data = solveStationary( self.conf,

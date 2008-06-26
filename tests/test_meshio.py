@@ -4,7 +4,7 @@ fileName_meshes = ['database/simple.mesh',
                    'database/maillage.txt']
 same = [(0, 1)]
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # c: 05.02.2008
@@ -22,7 +22,7 @@ class Test( TestCommon ):
     # c: 05.02.2008, r: 05.02.2008
     def test_readMeshes( self ):
         """Try to read all listed meshes."""
-        from sfe.fem.mesh import Mesh
+        from sfepy.fem.mesh import Mesh
 
         meshes = {}
         for ii, fileName in enumerate( fileName_meshes ):

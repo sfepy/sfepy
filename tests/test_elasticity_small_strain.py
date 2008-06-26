@@ -127,7 +127,7 @@ fe = {
     'chunkSize' : 1000
 }
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # 10.07.2007, c
@@ -153,8 +153,8 @@ class Test( TestCommon ):
     ##
     # c: 10.07.2007, r: 25.03.2008
     def test_get_solution( self ):
-        from sfe.solvers.generic import solveStationary
-        from sfe.base.base import IndexedStruct
+        from sfepy.solvers.generic import solveStationary
+        from sfepy.base.base import IndexedStruct
         import os.path as op
 
         ok = True
