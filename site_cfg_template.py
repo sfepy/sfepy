@@ -3,7 +3,7 @@
 # $ cp site_cfg_template.py site_cfg.py
 
 # Tetgen executable path.
-tetgen_path = '/home/share/software/bin/tetgen'
+tetgen_path = '/usr/bin/tetgen'
 
 # 'lib' or 'lib64' depending on your architecture (32bit or 64bit)
 archlib = 'lib'
