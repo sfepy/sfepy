@@ -1,1 +1,1 @@
-__all__ = ['rdirac']
+__all__ = ['dft']
