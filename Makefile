@@ -1,6 +1,6 @@
 # 14.12.2004, c
 # last revision: 09.05.2008
-VERSION := 00.43.01
+VERSION := 00.45.01
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -18,10 +18,11 @@ ifeq ($(ARCH),linux)
   OPTFLAGS     := -g -O2 -fPIC -DPIC
   CARCHFLAGS   := -Wall -c
   CARCHOUT     := -o
-  PYVER := $(shell script/python_version.py)
-  ARCHLIB := lib64
+  PYVER := $(shell script/config.py python_version)
+  ARCHLIB := $(shell script/config.py archlib)
+  NUMPYPREFIX := $(shell script/config.py numpy_prefix)
 
-  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I/home/share/software/usr/$(ARCHLIB)/python$(PYVER)/site-packages/numpy/core/include
+  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYPREFIX)/usr/$(ARCHLIB)/python$(PYVER)/site-packages/numpy/core/include
 #  SWIG_LIB     := -lswigpy
 
   EXT_INCL     := $(PYTHON_INCL)
