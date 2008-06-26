@@ -1,6 +1,6 @@
 # 24.05.2007, c
 # last revision: 25.02.2008
-from sfe.fem.periodic import *
+from sfepy.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
 fileName_mesh = 'database/micro/perf_symm944t.mesh'

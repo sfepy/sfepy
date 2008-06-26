@@ -4,8 +4,8 @@ import os.path as op
 from optparse import OptionParser
 import pyparsing as pp
 
-from sfe.base.base import *
-from sfe.terms import termTable, cacheTable
+from sfepy.base.base import *
+from sfepy.terms import termTable, cacheTable
 
 ##
 # 09.11.2007, c
@@ -73,7 +73,7 @@ defines = r"""
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
 \def\figDir{../doc/tex/figures}
-\newcommand{\sfe}{SFE}
+\newcommand{\sfepy{SFE}
 """
 
 header = r"""
@@ -97,7 +97,7 @@ begining = r"""
    \usepackage[pdftex]{graphicx}
    \DeclareGraphicsExtensions{.pdf,.png}
    \pdfinfo{
-    /Title      (Overview of terms in \sfe{})
+    /Title      (Overview of terms in \sfepy{})
     /Author     (R. Cimrman)
   }
 \else
@@ -262,7 +262,7 @@ def main():
     latexFileNameComplete = op.join( outputDir, latexFileName )
     print latexFileNameComplete
 
-    fd = open( 'doc/pages/title_sfe.tex', 'r' )
+    fd = open( 'doc/pages/title_sfepy.tex', 'r' )
     titleSrc = fd.read()
     fd.close()
 

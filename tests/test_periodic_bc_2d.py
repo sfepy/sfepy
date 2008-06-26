@@ -90,8 +90,8 @@ fe = {
     'chunkSize' : 1000
 }
 
-from sfe.fem.periodic import *
-from sfe.base.testing import TestCommon
+from sfepy.fem.periodic import *
+from sfepy.base.testing import TestCommon
 
 ##
 # 01.06.2007, c
@@ -100,7 +100,7 @@ class Test( TestCommon ):
     ##
     # 01.06.2007, c
     def fromConf( conf, options ):
-        from sfe.fem.problemDef import ProblemDefinition
+        from sfepy.fem.problemDef import ProblemDefinition
         problem = ProblemDefinition.fromConf( conf, initEquations = False )
 
         test = Test( problem = problem,

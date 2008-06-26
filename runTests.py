@@ -25,8 +25,8 @@ import os
 import os.path as op
 from optparse import OptionParser
 
-import init_sfe
-from sfe.base.conf import ProblemConf, getStandardKeywords
+import init_sfepy
+from sfepy.base.conf import ProblemConf, getStandardKeywords
 
 ##
 # 05.06.2007, c
@@ -171,7 +171,7 @@ help = {
 # c: 30.05.2007, r: 06.02.2008
 def main():
 
-    version = open( op.join( init_sfe.install_dir,
+    version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
     parser = OptionParser( usage = usage, version = "%prog, SFE-" + version )
     parser.add_option( "", "--print-doc",

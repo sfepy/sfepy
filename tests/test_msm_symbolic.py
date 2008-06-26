@@ -106,8 +106,8 @@ try:
 except ImportError, exc:
     sops = None
     
-from sfe.base.testing import TestCommon
-from sfe.base.base import debug, pause
+from sfepy.base.testing import TestCommon
+from sfepy.base.base import debug, pause
 outputName = 'test_msm_symbolic_%s.vtk'
 
 ##
@@ -134,7 +134,7 @@ class Test( TestCommon ):
     ##
     # c: 07.05.2007, r: 25.06.2008
     def fromConf( conf, options ):
-        from sfe.fem.problemDef import ProblemDefinition
+        from sfepy.fem.problemDef import ProblemDefinition
 
         problem = ProblemDefinition.fromConf( conf, initEquations = False )
         test = Test( problem = problem,
@@ -145,7 +145,7 @@ class Test( TestCommon ):
     ##
     # c: 09.05.2007, r: 25.06.2008
     def _buildRHS( self, equation, sols ):
-        from sfe.fem.equations import buildArgs
+        from sfepy.fem.equations import buildArgs
 
         problem  = self.problem
         rhss = {}

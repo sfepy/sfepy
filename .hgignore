@@ -13,11 +13,11 @@ auto/*
 *.pdf
 
 # Generated files:
-sfe/fem/extmods/fem.py
-sfe/fem/extmods/geometry.py
-sfe/fem/extmods/meshutils.py
-sfe/terms/extmods/terms.py
-sfe/fem/extmods/version.h
+sfepy/fem/extmods/fem.py
+sfepy/fem/extmods/geometry.py
+sfepy/fem/extmods/meshutils.py
+sfepy/terms/extmods/terms.py
+sfepy/fem/extmods/version.h
 VERSION
 tmp/terms.*
 samples/*

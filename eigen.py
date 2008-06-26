@@ -3,14 +3,14 @@
 import os.path as op
 from optparse import OptionParser
 
-import init_sfe
-from sfe.base.base import *
-from sfe.base.conf import ProblemConf, getStandardKeywords
-from sfe.base.la import eig
-from sfe.fem.evaluate import evalTermOP
-import sfe.base.ioutils as io
-from sfe.fem.problemDef import ProblemDefinition
-from sfe.homogenization.phono import processOptions, getMethod,\
+import init_sfepy
+from sfepy.base.base import *
+from sfepy.base.conf import ProblemConf, getStandardKeywords
+from sfepy.base.la import eig
+from sfepy.fem.evaluate import evalTermOP
+import sfepy.base.ioutils as io
+from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.homogenization.phono import processOptions, getMethod,\
      transformPlotData, plotLogs, plotGaps, detectBandGaps
 
 ##
@@ -41,7 +41,7 @@ def solveEigenProblem( conf, options ):
                          method = getMethod( conf.options ) )
     output( '...done in %.2f s' % tt[0] )
     output( eigs )
-##     import sfe.base.plotutils as plu
+##     import sfepy.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
 ##     pause()
@@ -83,7 +83,7 @@ help = {
 ##
 # c: 25.09.2007, r: 08.04.2008
 def main():
-    version = open( op.join( init_sfe.install_dir,
+    version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )

@@ -4,13 +4,13 @@ import sys
 import os.path as op
 from optparse import OptionParser
 
-import init_sfe
+import init_sfepy
 
-from sfe.base.base import *
-from sfe.fem.mesh import Mesh
-from sfe.fem.domain import Domain
-from sfe.fem.extmods.fem import rawGraph
-from sfe.fem.extmods.meshutils import graphComponents
+from sfepy.base.base import *
+from sfepy.fem.mesh import Mesh
+from sfepy.fem.domain import Domain
+from sfepy.fem.extmods.fem import rawGraph
+from sfepy.fem.extmods.meshutils import graphComponents
 
 ##
 # 29.08.2007, c
@@ -42,7 +42,7 @@ usage = """%prog [options] fileNameIn|- fileNameOut|-
 '-' is for stdin, stdout"""
 
 # 17.10.2005
-version = open( op.join( init_sfe.install_dir, 'VERSION' ) ).readlines()[0][:-1]
+version = open( op.join( init_sfepy.install_dir, 'VERSION' ) ).readlines()[0][:-1]
 
 ##
 # c: 05.10.2005, r: 26.03.2008
@@ -95,7 +95,7 @@ def main():
 
         nNod = mesh.nod0.shape[0]
         grS = surfaceGraph( surfFaces, nNod )
-##         import sfe.base.plotutils as plu
+##         import sfepy.base.plotutils as plu
 ##         plu.spy( grS )
 ##         plu.pylab.show()
 

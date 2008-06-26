@@ -31,15 +31,15 @@ from math import pi
 from scipy.optimize import broyden3
 from scipy.optimize.nonlin import excitingmixing
 
-import init_sfe
-from sfe.base.base import *
-from sfe.base.conf import ProblemConf, getStandardKeywords
-from sfe.base.la import eig
-from sfe.fem.evaluate import evalTermOP
-import sfe.base.ioutils as io
-from sfe.fem.problemDef import ProblemDefinition
-from sfe.homogenization.phono import processOptions
-from sfe.solvers import Solver
+import init_sfepy
+from sfepy.base.base import *
+from sfepy.base.conf import ProblemConf, getStandardKeywords
+from sfepy.base.la import eig
+from sfepy.fem.evaluate import evalTermOP
+import sfepy.base.ioutils as io
+from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.homogenization.phono import processOptions
+from sfepy.solvers import Solver
 
 ##
 # c: 22.02.2008, r: 22.02.2008
@@ -73,7 +73,7 @@ def wrapFunction( function, args ):
 ##
 # c: 22.02.2008, r: 03.03.2008
 def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
-    from sfe.physics import dft
+    from sfepy.physics import dft
 
     pb.updateMaterials( extraMatArgs = {'matV' : {'vhxc' : vecVHXC}} )
 
@@ -235,7 +235,7 @@ def solveEigenProblem1( conf, options ):
     print eigs
     print "relative values:"
     print 1.5*eigs/eigs[0]
-##     import sfe.base.plotutils as plu
+##     import sfepy.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
 ##     pause()
@@ -291,7 +291,7 @@ help = {
 ##
 # c: 01.02.2008, r: 21.03.2008
 def main():
-    version = open( op.join( init_sfe.install_dir,
+    version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )

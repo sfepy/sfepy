@@ -1,5 +1,5 @@
 # c: 14.04.2008, r: 14.04.2008
-from sfe.fem.periodic import *
+from sfepy.fem.periodic import *
 
 fileName_mesh = 'database/tests/plane.mesh'
 
@@ -104,7 +104,7 @@ fe = {
     'chunkSize' : 1000
 }
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # c: 14.04.2008
@@ -114,7 +114,7 @@ class Test( TestCommon ):
     # c: 14.04.2008, r: 14.04.2008
     def fromConf( conf, options ):
         import os.path as op
-        from sfe.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solveStationary
 
         problem, vec, data = solveStationary( conf )
         name = op.join( options.outDir,
@@ -130,7 +130,7 @@ class Test( TestCommon ):
     ##
     # c: 14.04.2008, r: 14.04.2008
     def test_vector_matrix( self ):
-        from sfe.fem.evaluate import evalTermOP
+        from sfepy.fem.evaluate import evalTermOP
         problem  = self.problem
 
         state = problem.createStateVector()

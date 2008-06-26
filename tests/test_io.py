@@ -1,4 +1,4 @@
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 import numpy as nm
 import scipy.sparse as sp
 import os.path as op
@@ -16,8 +16,8 @@ class Test( TestCommon ):
     ##
     # c: 02.07.2007, r: 12.06.2008
     def test_sparseMatrixHDF5( self ):
-        from sfe.base.ioutils import writeSparseMatrixHDF5, readSparseMatrixHDF5
-        from sfe.base.ioutils import pt
+        from sfepy.base.ioutils import writeSparseMatrixHDF5, readSparseMatrixHDF5
+        from sfepy.base.ioutils import pt
         if pt is None:
             self.report( 'skipped (no pytables)' )
             return True
@@ -47,8 +47,8 @@ class Test( TestCommon ):
     ##
     # c: 09.07.2007, r: 12.06.2008
     def test_recursiveDictHDF5( self ):
-        from sfe.base.ioutils import writeDictHDF5, readDictHDF5
-        from sfe.base.ioutils import pt
+        from sfepy.base.ioutils import writeDictHDF5, readDictHDF5
+        from sfepy.base.ioutils import pt
         if pt is None:
             self.report( 'skipped (no pytables)' )
             return True

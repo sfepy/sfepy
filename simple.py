@@ -3,15 +3,15 @@
 import os.path as op
 from optparse import OptionParser
 
-import init_sfe
-from sfe.base.base import *
-from sfe.base.conf import ProblemConf, getStandardKeywords
-from sfe.solvers.generic import solveDirect
+import init_sfepy
+from sfepy.base.base import *
+from sfepy.base.conf import ProblemConf, getStandardKeywords
+from sfepy.solvers.generic import solveDirect
 
 ##
 # 26.03.2007, c
 def printTerms():
-    import sfe.terms as t
+    import sfepy.terms as t
     tt = t.termTable
     ct = t.cacheTable
     print 'Terms: %d available:' % len( tt )
@@ -44,7 +44,7 @@ help = {
 ##
 # c: 12.01.2007, r: 02.04.2008
 def main():
-    version = open( op.join( init_sfe.install_dir,
+    version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )

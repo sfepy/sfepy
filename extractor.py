@@ -3,12 +3,12 @@
 import os.path as op
 from optparse import OptionParser
 
-import init_sfe
-from sfe.base.base import *
-from sfe.fem.mesh import Mesh
-from sfe.fem.meshio import HDF5MeshIO
-from sfe.solvers.ts import TimeStepper
-from sfe.base.ioutils import getTrunk, writeDictHDF5
+import init_sfepy
+from sfepy.base.base import *
+from sfepy.fem.mesh import Mesh
+from sfepy.fem.meshio import HDF5MeshIO
+from sfepy.solvers.ts import TimeStepper
+from sfepy.base.ioutils import getTrunk, writeDictHDF5
 
 ##
 # c: 26.09.2006, r: 23.06.2008
@@ -145,7 +145,7 @@ help = {
 ##
 # c: 26.09.2006, r: 23.06.2008
 def main():
-    version = open( op.join( init_sfe.install_dir,
+    version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )

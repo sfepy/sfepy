@@ -19,8 +19,8 @@ class Test( TestInput ):
     def test_input( self ):
         """Does not verify anything!!!"""
         import os.path as op
-        from sfe.solvers.generic import solveDirect
-        from sfe.base.base import Struct
+        from sfepy.solvers.generic import solveDirect
+        from sfepy.base.base import Struct
 
         self.report( 'solving %s...' % self.conf.inputName )
         name = op.join( self.options.outDir, self.conf.outputNameTrunk )

@@ -130,7 +130,7 @@ def ebcSin( bc, ts, coor ):
     val = 2 * nm.sin( coor[:,0] * 5. * nm.pi )
     return val
 
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # 13.11.2007, c
@@ -147,7 +147,7 @@ class Test( TestCommon ):
     ##
     # 13.11.2007, c
     def test_problemCreation( self ):
-        from sfe.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solveStationary
 
         problem, vec, data = solveStationary( self.conf )
         ok = True

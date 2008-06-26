@@ -1,4 +1,4 @@
-from sfe.base.testing import TestCommon
+from sfepy.base.testing import TestCommon
 
 ##
 # 16.07.2007, c
@@ -15,7 +15,7 @@ class Test( TestCommon ):
     # 31.07.2007
     # 13.11.2007
     def test_parseEquations( self ):
-        from sfe.fem.parseEq import createBNF
+        from sfepy.fem.parseEq import createBNF
 
         testStrs = [
             """- d_volume.i1.Omega( uc )""",
@@ -52,7 +52,7 @@ class Test( TestCommon ):
     # 16.07.2007, c
     # 31.07.2007
     def test_parseRegions( self ):
-        from sfe.fem.parseReg import createBNF, _testStrs
+        from sfepy.fem.parseReg import createBNF, _testStrs
 
         testStrs = ['nodes of surface -n r.Omega',
                     'r.Y_2 +n copy r.Y_1',

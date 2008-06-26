@@ -10,7 +10,7 @@ import os
 
 from pyparsing import Word, Optional, alphas, nums, Combine, Literal, CaselessLiteral, LineEnd, Group, Dict, OneOrMore, StringEnd, restOfLine, ParseException, oneOf, Forward, alphanums
 
-import sfe.base.progressbar as progressbar
+import sfepy.base.progressbar as progressbar
 
 #gmsh element types, see 
 #http://www.geuz.org/gmsh/doc/texinfo/gmsh_10.html#SEC65
