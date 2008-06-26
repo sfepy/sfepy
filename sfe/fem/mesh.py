@@ -309,7 +309,14 @@ class Mesh( Struct ):
      array([ 3.00343981, -4.09445003, -2.14632505,  0.        ]),
      array([ 3.51217117, -4.05946689, -1.68843294,  0.        ])]
 
+    The element ids are of the form "<dimension>_<number of nodes>", i.e.:
 
+    2_2 ... line
+    2_3 ... triangle
+    2_4 ... quadrangle
+    3_2 ... line
+    3_4 ... tetrahedron
+    3_8 ... hexahedron
 
     """
     ##
