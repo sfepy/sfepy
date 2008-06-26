@@ -306,18 +306,19 @@ class VTKMeshIO( MeshIO ):
     format = 'vtk'
     
     ##
-    # c: 05.02.2008, r: 15.02.2008
+    # c: 05.02.2008, r: 26.06.2008
     def read( self, mesh, **kwargs ):
         fd = open( self.fileName, 'r' )
         mode = 'header'
         modeStatus = 0
-        nod = conns = desc = None
+        nod = conns = desc = matId = None
         while 1:
             try:
                 line = fd.readline()
-##                print line
+                if len( line ) == 0: break
+                elif len( line ) == 1: continue
+                if line[0] == '#': continue
             except EOFError:
-                print 'sdsd'
                 break
             except:
                 output( "reading " + fd.name + " failed!" )
@@ -370,6 +371,9 @@ class VTKMeshIO( MeshIO ):
             elif mode == 'finished':
                 break
         fd.close()
+
+        if matId is None:
+            matId = nm.zeros( (nEl,), dtype = nm.int32 )
 
         nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
                               1 )
