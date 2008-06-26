@@ -7,7 +7,6 @@ try:
     import tables as pt
 except:
     pt = None
-    print 'pytables import failed!'
 
 ##
 # 27.04.2006, c
