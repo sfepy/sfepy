@@ -1,11 +1,11 @@
 # 19.07.2007, c
-# last revision: 26.03.2008
+# last revision: 30.06.2008
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := Makefile.dist MANIFEST
-DISTDIRS := tests phono micro
+DISTDIRS := tests phono quantum micro
 
 RELDISTFILES := $(DISTFILES) $(shell cat MANIFEST)
 RELDISTDIRS := $(DISTDIRS)

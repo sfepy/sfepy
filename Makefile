@@ -1,6 +1,6 @@
 # 14.12.2004, c
-# last revision: 09.05.2008
-VERSION := 00.45.01
+# last revision: 30.06.2008
+VERSION := 00.46.01
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -145,11 +145,7 @@ dist: version
 	rm -rf $(DISTDIR)
 
 reldist: version
-	-./genDocs.py --omit="termsAdjointNavierStokes termsHDPM  cachesHDPM  cachesBasic"
-	-cp -fpd tmp/terms.pdf doc/tex/
 	-./gen
-	-cp -fpd tmp/t.pdf doc/tex/
-	-mv doc/tex/t.pdf doc/tex/terms_new.pdf
 	-mkdir $(RELDISTDIR)
 	rm -rf $(RELDISTDIR)/*
 	for i in $(RELDISTFILES_TOP); do cp -fpd $$i $(RELDISTDIR)/$$i; done
@@ -157,6 +153,7 @@ reldist: version
           $(MAKE) -C $$i -f Makefile.dist reldist DISTDIR=${CUR_DIR}/$(RELDISTDIR); \
 	done
 	mkdir $(RELDISTDIR)/output-tests
+	mkdir $(RELDISTDIR)/tmp
 	sed "s|ISRELEASE \:\=|ISRELEASE \:\= 1|;" $(RELDISTDIR)/Makefile > $(RELDISTDIR)/Makefile2
 	mv -f $(RELDISTDIR)/Makefile2 $(RELDISTDIR)/Makefile
 	tar cf $(RELDISTDIR).tar $(RELDISTDIR)

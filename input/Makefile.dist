@@ -1,13 +1,14 @@
 # 01.08.2006, c
-# last revision: 26.03.2008
+# last revision: 30.06.2008
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc MANIFEST
-DISTDIRS := bones pfdpm
+DISTDIRS := bones pfdpm quantum
 
 RELDISTFILES := Makefile.dist Makefile.inc MANIFEST $(shell cat MANIFEST)
+RELDISTDIRS := $(DISTDIRS)
 
 dist:
 #	echo $(DESTDIR)
@@ -20,3 +21,6 @@ dist:
 reldist:
 	mkdir $(DESTDIR)
 	cp -fpd $(RELDISTFILES) $(DESTDIR)
+	@for i in $(RELDISTDIRS); do \
+		$(MAKE) -C $$i -f Makefile.dist reldist DISTDIR=${DESTDIR}; \
+	done
