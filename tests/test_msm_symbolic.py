@@ -50,7 +50,7 @@ material_2 = {
 }
 
 equations = {
-    'Temperature' :
+    'Laplace' :
     """dw_laplace.i1.Omega( coef.val, s, t )
     """,
     'Diffusion' :
@@ -58,7 +58,7 @@ equations = {
     """,
 }
 equations_rhs = {
-    'Temperature' :
+    'Laplace' :
     """= - dw_volume_lvf.i1.Omega( rhs.val, s )""",
     'Diffusion' :
     """= - dw_volume_lvf.i1.Omega( rhs.val, s )""",
@@ -204,11 +204,8 @@ class Test( TestCommon ):
         return val
 
     ##
-    # 
-
-    ##
-    # c: 07.05.2007, r: 25.06.2008
-    def test_msm_symbolic( self ):
+    # c: 07.05.2007, r: 30.06.2008
+    def _test_msm_symbolic( self, equations ):
         import os.path as op
 
         if sops is None:
@@ -222,7 +219,7 @@ class Test( TestCommon ):
         problem.updateMaterials( extraMatArgs = matArgs )
 
         ok = True
-        for eqName, equation in problem.conf.equations.iteritems():
+        for eqName, equation in equations.iteritems():
             problem.setEquations( {eqName : equation} )
             rhss = self._buildRHS( problem.equations[eqName],
                                    self.conf.solutions )
@@ -266,3 +263,19 @@ class Test( TestCommon ):
                 ok = ok and ret
 
         return ok
+
+    ##
+    # c: 30.06.2008, r: 30.06.2008
+    def _getEquations( self, name ):
+        """Choose a sub-problem from all equations."""
+        return {name : self.problem.conf.equations[name]}
+        
+    ##
+    # c: 30.06.2008, r: 30.06.2008
+    def test_msm_symbolic_laplace( self ):
+        return self._test_msm_symbolic( self._getEquations( 'Laplace' ) )
+
+    ##
+    # c: 30.06.2008, r: 30.06.2008
+    def test_msm_symbolic_diffusion( self ):
+        return self._test_msm_symbolic( self._getEquations( 'Diffusion' ) )
