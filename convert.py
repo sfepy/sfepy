@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import os, sys
-import pexpect
 
 import geom
 from sfepy.fem.mesh import Mesh
@@ -20,11 +19,11 @@ def mesh():
         geomFileName = "database/box.geo"
         vtkFileName = "tmp/t.1.vtk"
 
-    pexpect.run( "gmsh -0 %s -o tmp/x.geo" % geomFileName )
+    os.system( "gmsh -0 %s -o tmp/x.geo" % geomFileName )
     g=geom.read_gmsh("tmp/x.geo")
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
-    geom.runtetgen("tmp/t.poly",a=0.0003,Q=1.0,quadratic=False,
+    geom.runtetgen("tmp/t.poly",a=0.03,Q=1.0,quadratic=False,
                    tetgenpath = tetgen_path)
 
     m = Mesh.fromFile("tmp/t.1.node")
