@@ -1,5 +1,4 @@
-# 19.01.2007
-# last revision: 26.03.2008
+# c: 19.01.2007, r: 30.06.2008
 
 This is not for faint of the heart!
 
@@ -8,7 +7,6 @@ Installation prerequisites:
 
 Dependencies:
     matplotlib, pyparsing, umfpack, pytables
-    eigen.py requires symeig for correct function
     schroedinger.py requires pysparse
 
 For example in Debian:
@@ -18,10 +16,10 @@ Not tested on Windows, I don't have them.
 
 Compiling:
 ----------
-1. Edit the Makefile.
-  - compiler, swig command
-  - location of python and numpy include files
-2. 'make'
+1. Look at site_cfg_template.py and follow the instructions therein.
+2. (Optionally) edit the Makefile:
+  - compiler, swig command, ...
+3. 'make'
 
 Installation:
 -------------
@@ -34,9 +32,9 @@ Examples:
 './simple.py input/poisson.py' ... creates simple.vtk
 './simple.py input/pfdpm_permeability.py' ... creates perf_symm944t.vtk
 './eigen.py -p input/phono.py' ... creates mesh_circ21_eigs.txt, mesh_circ21.vtk
-'./schroedinger.py -s'         ... creates t.1_eigs.txt, t.1.vtk
+'./schroedinger.py --hydrogen' ... creates t.1_eigs.txt, t.1.vtk
 './findSurf.py database/t.1.node -' ... creates surf_t.1.mesh
-'./runTests.py'                ... see below
+'./runTests.py' ... see below
 
 Testing:
 --------
@@ -52,3 +50,12 @@ If you get some failures it probably means some optional packages are not
 installed. Also be sure to have a recent version of Numpy and SciPy installed
 (SVN version are the best bet). Verify also your pytables (hdf5) installation
 (possible test_io.py failures).
+
+Documentation:
+--------------
+
+Automatically generated documentation can be found in 'doc/sfepy_manual.pdf'.
+The document can be updated by running './gen' script in TOPDIR. It
+depends on 'pexpect' and 'lxml' packages.
+
+See also 'http://sfepy.org' or 'http://sfepy.kme.zcu.cz'.

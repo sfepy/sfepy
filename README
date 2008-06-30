@@ -1,9 +1,10 @@
-See INSTALL.txt for installation instructions.
+See INSTALL for installation instructions.
 
-Automatically generated documentation can be found in 'doc/tex/terms_new.pdf' or
-'doc/tex/terms.pdf'.
+Automatically generated documentation can be found in 'doc/sfepy_manual.pdf'.
+The document can be updated by running './gen' script in this directory. It
+depends on 'pexpect' and 'lxml' packages.
 
-See also 'http://sfepy.kme.zcu.cz' or 'http://code.google.com/p/sfepy/'.
+See also 'http://sfepy.org' or 'http://sfepy.kme.zcu.cz'.
 
 License: BSD (http://www.opensource.org/licenses/bsd-license.php)
 

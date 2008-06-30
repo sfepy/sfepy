@@ -5,3 +5,4 @@ cd tmp
 pdflatex t.tex
 pdflatex t.tex
 pdflatex t.tex
+mv t.pdf ../doc/sfepy_manual.pdf
