@@ -1,11 +1,11 @@
 # 12.02.2003, c
-# last revision: 26.03.2008
+# last revision: 01.07.2008
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES = *.tex *.fig *.latex Makefile.dist Makefile.inc
-RELDISTFILES = $(DISTFILES) terms.pdf terms_new.pdf
+RELDISTFILES = $(DISTFILES)
 DISTDIRS := figures
 
 dist:

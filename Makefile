@@ -1,6 +1,6 @@
 # 14.12.2004, c
 # last revision: 30.06.2008
-VERSION := 00.46.01
+VERSION := 00.46.02
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -47,9 +47,9 @@ ALLTARGETS := version modules
 CUR_DIR := $(shell pwd)
 
 DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README
-RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py INSTALL README RELEASE_NOTES.txt
+RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL README RELEASE_NOTES.txt
 SUBDIRS = database doc eldesc examples input script sfepy tests
-RELSUBDIRS = database doc eldesc examples input script sfepy tests
+RELSUBDIRS = database doc eldesc examples input script sfepy tests geom
 DATADIRS := database
 DATADISTDIR := $(PROJECTNAME)-data-$(shell $(DATE))
 DISTDIR := $(PROJECTNAME)-$(VERSION)

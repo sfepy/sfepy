@@ -1,5 +1,9 @@
 from sfepy.base.base import *
-import extmods.terms as terms
+try:
+    import extmods.terms as terms
+except:
+    output( 'warning: sfepy extension modules are not compiled!' )
+    output( 'type "make"' )
 from sfepy.base.la import splitRange
 #from sfepy.base.ioutils import readCacheData, writeCacheData
 

@@ -1,8 +1,9 @@
 See INSTALL for installation instructions.
 
-Automatically generated documentation can be found in 'doc/sfepy_manual.pdf'.
-The document can be updated by running './gen' script in this directory. It
-depends on 'pexpect' and 'lxml' packages.
+Documentation is in doc/sfepy_manual.pdf. It is automatically generated using
+the ./gen script. It depends on 'pexpect' and 'lxml' packages. If you want to
+update, or regenerate, the documentation and have the prerequisities installed,
+do "./gen".
 
 See also 'http://sfepy.org' or 'http://sfepy.kme.zcu.cz'.
 

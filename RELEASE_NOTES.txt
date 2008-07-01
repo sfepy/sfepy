@@ -1,6 +1,25 @@
 # created: 20.07.2007 (-1)
 # last revision: 26.03.2008
 
+from 00.41.03 to 00.46.02:
+==========================
+- alternative short syntax for specifying essential boundary conditions,
+  variables and  regions
+- saving results per variable (useful when variables defined in different
+  subdomains)
+- manufactured solutions tests:
+    - SymPy support
+- new eigenvalue solvers:
+    - removed symeig dependence
+- linear solvers based on PyAMG
+- simple block mesh generator
+- unified HDF5 mesh/solution reading/writing
+- site configuration now via script/config.py + site_cfg.py
+- example: computing homogenized elastic coefficients
+- new terms and lots of reorganization:
+    - Biot terms
+    - some fading memory terms
+
 from 00.35.01 to 00.41.03:
 ==========================
 - works on 64 bits

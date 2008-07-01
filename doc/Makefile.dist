@@ -1,11 +1,14 @@
 # 02.02.2004, c
-# last revision: 14.12.2007
+# last revision: 01.07.2007
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES = doxygen.config Makefile.dist
 DISTDIRS := tex txt pages
+
+RELDISTFILES := sfepy_manual.pdf $(DISTFILES)
+RELDISTDIRS := tex pages
 
 dist:
 #	echo $(DESTDIR)
@@ -17,7 +20,7 @@ dist:
 
 reldist:
 	mkdir $(DESTDIR)
-	-cp -fpd $(DISTFILES) $(DESTDIR)
-	@for i in $(DISTDIRS); do \
+	-cp -fpd $(RELDISTFILES) $(DESTDIR)
+	@for i in $(RELDISTDIRS); do \
 	  $(MAKE) -C $$i -f Makefile.dist reldist DISTDIR=${DESTDIR}; \
 	done

@@ -1,5 +1,4 @@
 from base import *
-from sfepy.fem.extmods.meshutils import sortRows
 from sfepy.solvers import Solver
 
 ##
@@ -49,6 +48,7 @@ def unique1d( array1, retIndx = False ):
 # 21.02.2005
 # 22.02.2005
 def unique( arrayIn, mode = 'flat' ):
+    from sfepy.fem.extmods.meshutils import sortRows
 
     if mode == 'flat':
         aux = nm.sort( arrayIn.flat )

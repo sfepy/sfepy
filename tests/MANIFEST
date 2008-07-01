@@ -1,3 +1,5 @@
+sympy_operators.py
+test_assembling.py
 test_base.py
 test_elasticity_small_strain.py
 test_input_kostka.py
@@ -11,9 +13,13 @@ test_input_time_poisson.py
 test_io.py
 test_lcbc_2d.py
 test_lcbc_3d.py
+test_linear_solvers.py
 test_meshio.py
+test_msm_laplace.py
+test_msm_symbolic.py
 test_parsing.py
 test_periodic_bc_2d.py
 test_periodic_bc_3d.py
 test_quadratures.py
+test_term_consistency.py
 testsBasic.py
