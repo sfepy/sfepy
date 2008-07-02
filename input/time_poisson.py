@@ -1,5 +1,5 @@
 ##
-# c: 05.02.2008, r: 04.04.2008
+# c: 05.02.2008, r: 02.07.2008
 fileName_mesh = 'database/simple.mesh'
 
 material_2 = {
@@ -7,6 +7,7 @@ material_2 = {
     'mode' : 'here',
     'region' : 'Omega',
     'val_dt' : 0.0001, # coef * \Delta t.
+    'kind' : 'stationary', # 'stationary' or 'time-dependent'
 }
 
 field_1 = {

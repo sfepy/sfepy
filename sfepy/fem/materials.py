@@ -78,14 +78,16 @@ Material:m
     
     """
     ##
-    # 22.08.2006, c
+    # c: 22.08.2006, r: 02.07.2008
     def __init__( self, **kwargs ):
         kwargs.setdefault( 'extraArgs', {} )
         Struct.__init__( self, **kwargs )
 
         self.regionName = self.region
         self.region = None
-            
+        self.datas = None
+        self.kind = getDefaultAttr( self, 'kind', 'time-dependent' )
+
     ##
     # 22.08.2006, c
     def setupRegions( self, regions ):
@@ -94,17 +96,14 @@ Material:m
         self.region = region 
 
     ##
-    # 01.08.2006, c
-    # 02.08.2006
-    # 22.08.2006
-    # 22.02.2007
-    # 14.03.2007
-    # 01.08.2007
-    # 05.10.2007
-    # 29.10.2007
+    # c: 01.08.2006, r: 02.07.2008
     def timeUpdate( self, ts, funmod, domain, **extraArgs ):
         """coor is in region.vertices[ig] order (i.e. sorted by node number)"""
         if self.mode == 'function':
+            self.data = None
+            if (self.datas is not None) and (self.kind == 'stationary'):
+                return
+            
             self.datas = []
 
             if isinstance( self.function, str ):
@@ -120,7 +119,6 @@ Material:m
                 coor = domain.getMeshCoors()[self.region.getVertices( ig )]
                 args.update( {'coor' : coor, 'ig' : ig} )
                 self.datas.append( fun( **args ) )
-            self.data = None
 
     ##
     # 31.07.2007, c
