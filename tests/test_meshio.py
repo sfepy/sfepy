@@ -10,7 +10,7 @@ from sfepy.base.testing import TestCommon
 # c: 05.02.2008
 class Test( TestCommon ):
     """Write test names explicitely to impose a given order of evaluation."""
-    tests = ['test_readMeshes', 'test_compareSameMeshes']
+    tests = ['test_readMeshes', 'test_compareSameMeshes', 'test_read_dimension']
     
     ##
     # c: 05.02.2008, r: 05.02.2008
@@ -92,3 +92,25 @@ class Test( TestCommon ):
                 oks.append( ok0 )
 
         return sum( oks ) == len( oks )
+
+    ##
+    # c: 03.07.2008, r: 03.07.2008
+    def test_read_dimension( self ):
+        from sfepy.fem.meshio import MeshIO
+        meshes = {'database/tests/small2d.mesh' : 2,
+                  'database/tests/small3d.mesh' : 3,
+                  'database/simple.mesh' : 3,
+                  'database/simple.vtk' : 3}
+
+        ok = True
+        for fileName, adim in meshes.iteritems():
+            self.report( 'mesh: %s, dimension %d' % (fileName, adim) )
+            io = MeshIO.anyFromFileName( fileName )
+            dim = io.read_dimension()
+            if dim != adim:
+                self.report( 'read dimension %d -> failed' % dim )
+                ok = False
+            else:
+                self.report( 'read dimension %d -> ok' % dim )
+
+        return ok

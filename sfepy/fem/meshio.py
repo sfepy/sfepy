@@ -103,6 +103,12 @@ class MeshIO( Struct ):
         Struct.__init__( self, fileName = fileName, **kwargs )
 
     ##
+    # c: 03.07.2008, r: 03.07.2008
+    def read_dimension( self, ret_fd = False ):
+        print 'called an abstract MeshIO instance!'
+        raise ValueError
+        
+    ##
     # c: 05.02.2008, r: 26.03.2008
     def read( self, mesh, *args, **kwargs ):
         print 'called an abstract MeshIO instance!'
@@ -120,14 +126,14 @@ class MeditMeshIO( MeshIO ):
     format = 'medit'
 
     ##
-    # c: 17.02.2004, r: 15.02.2008
-    def read( self, mesh, **kwargs ):
+    # c: 03.07.2008, r: 03.07.2008
+    def read_dimension( self, ret_fd = False ):
         fd = open( self.fileName, 'r' )
         while 1:
             try:
                 line = fd.readline()
             except:
-                output( 'cannot read mesh header!' )
+                output( "reading " + fd.name + " failed!" )
                 raise
             if len( line ) == 1: continue
             if line[0] == '#': continue
@@ -135,6 +141,17 @@ class MeditMeshIO( MeshIO ):
             if aux[0] == 'Dimension':
                 dim = int( aux[1] )
                 break
+
+        if ret_fd:
+            return dim, fd
+        else:
+            fd.close()
+            return dim
+
+    ##
+    # c: 17.02.2004, r: 03.07.2008
+    def read( self, mesh, **kwargs ):
+        dim, fd  = self.read_dimension( ret_fd = True )
 
         connsIn = []
         descs = []
@@ -305,6 +322,27 @@ vtkInverseCellTypes = {(3, 2) : '2_2', (9, 2) : '2_4', (5, 2) : '2_3',
 # c: 05.02.2008
 class VTKMeshIO( MeshIO ):
     format = 'vtk'
+
+    ##
+    # c: 03.07.2008, r: 03.07.2008
+    def read_dimension( self, ret_fd = False ):
+        fd = open( self.fileName, 'r' )
+        while 1:
+            try:
+                line = fd.readline().split()
+                if line[0] == 'POINTS':
+                    nod = readArray( fd, 1, -1, nm.float64 )
+                    dim = nod.shape[1]
+                    break
+            except:
+                output( "reading " + fd.name + " failed!" )
+                raise
+
+        if ret_fd:
+            return dim, fd
+        else:
+            fd.close()
+            return dim
 
     ##
     # c: 05.02.2008, r: 26.06.2008
