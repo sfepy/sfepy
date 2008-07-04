@@ -167,7 +167,7 @@ integral_1 = {
 equations = {
     'eq_1' : 
     """dw_lin_elastic.i3.Y( m.D, vc, uc )
-       = - dw_lin_elastic_r.i3.Y( m.D, vc, Pi )""",
+       = - dw_lin_elastic.i3.Y( m.D, vc, Pi )""",
 }
 
 ##

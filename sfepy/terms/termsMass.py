@@ -117,12 +117,9 @@ class MassScalarTerm( Term ):
         return vec, indx.start, bf, vg, ap.econn
 
     ##
-    # c: 04.09.2007, r: 01.04.2008
+    # c: 04.09.2007, r: 04.07.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        if self.name.endswith( '_r' ):
-            virtual, state = self.getArgs( ['virtual', 'parameter'], **kwargs )
-        else:
-            virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
 
         shape, mode = self.getShape( diffVar, chunkSize, ap )
@@ -131,16 +128,6 @@ class MassScalarTerm( Term ):
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
-
-##
-# 06.02.2008, c
-class MassScalarRTerm( MassScalarTerm ):
-    r""":description: Scalar field mass rezidual --- $r$ is assumed to be known.
-    :definition: $\int_{\Omega} q r$
-    """
-    name = 'dw_mass_scalar_r'
-    argTypes = ('virtual', 'parameter')
-    geometry = [(Volume, 'virtual')]
 
 ##
 # c: 01.02.2008

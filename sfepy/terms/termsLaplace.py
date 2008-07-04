@@ -92,19 +92,6 @@ class DiffusionTerm( LaplaceTerm ):
         return 1.0, vec, indx.start, matQP, vg, ap.econn
 
 ##
-# 20.09.2006, c
-class DiffusionRTerm( DiffusionTerm ):
-    r""":description: General diffusion term with permeability $K_{ij}$
-    constant or given in mesh vertices. The argument $r$ is a known field
-    (to use on  a right-hand side).
-    :definition: $\int_{\Omega} K_{ij} \nabla_i q \nabla_j r$
-    """
-    name = 'dw_diffusion_r'
-    argTypes = ('material', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual')]
-    useCaches = {'mat_in_qp' : [['material']]}
-
-##
 # 12.03.2007, c
 class DiffusionIntegratedTerm( Term ):
     r""":description: Integrated general diffusion term with permeability

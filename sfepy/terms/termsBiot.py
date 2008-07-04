@@ -64,21 +64,6 @@ class BiotGradDtTerm( GradTerm ):
         return 1.0 / ts.dt, vec_qp - vec0_qp, bf, matQP, vgr
 
 ##
-# 20.09.2006, c
-class BiotGradRTerm( BiotGradTerm ):
-    r""":description: Biot gradient-like term (weak form) with $\alpha_{ij}$
-    given in vector form exploiting symmetry: in 3D it has the
-    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
-    the indices ordered as $[11, 22, 12]$. The argument $r$ is a known field
-    (to use on a right-hand side).
-    :definition: $\int_{\Omega}  r\ \alpha_{ij} e_{ij}(\ul{v})$
-    """
-    name = 'dw_biot_grad_r'
-    argTypes = ('material', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
-    useCaches = {'state_in_volume_qp' : [['parameter']]}
-
-##
 # c: 03.04.2008
 class BiotGradTHTerm( BiotGradTerm ):
     r""":definition: $\int_{\Omega} \left [\int_0^t
@@ -183,21 +168,6 @@ class BiotDivTerm( DivTerm ):
         matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
         bf = apr.getBase( 'v', 0, self.integralName )
         return 1.0, strain, bf, matQP, vgc
-
-##
-# c: 05.03.2008
-class BiotDivRTerm( BiotDivTerm ):
-    r""":description: Biot divergence-like term (weak form) with
-    $\alpha_{ij}$ given in vector form exploiting symmetry: in 3D it has the
-    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
-    the indices ordered as $[11, 22, 12]$. The argument $\ul{w}$ is a known field
-    (to use on a right-hand side).
-    :definition: $\int_{\Omega} q\ \alpha_{ij} e_{ij}(\ul{w})$
-    """
-    name = 'dw_biot_div_r'
-    argTypes = ('material', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
-    useCaches = {'cauchy_strain' : [['parameter']]}
 
 ##
 # c: 05.03.2008

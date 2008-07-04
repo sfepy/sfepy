@@ -1,5 +1,5 @@
 ##
-# c: 05.02.2008, r: 02.07.2008
+# c: 05.02.2008, r: 04.07.2008
 fileName_mesh = 'database/simple.mesh'
 
 material_2 = {
@@ -70,7 +70,7 @@ integral_1 = {
 equations = {
     'Temperature' :
     """  dw_laplace.i1.Omega( coef.val_dt, s, t )
-       + dw_mass_scalar.i1.Omega( s, t ) = dw_mass_scalar_r.i1.Omega( s, t0 )"""
+       + dw_mass_scalar.i1.Omega( s, t ) = dw_mass_scalar.i1.Omega( s, t0 )"""
 }
 
 solver_0 = {

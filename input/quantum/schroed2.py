@@ -128,7 +128,7 @@ equations = {
 
 equations_vh = {
     'poisson' : """dw_laplace.i1.Omega( m.one, v, Psi )
-                   = dw_mass_scalar_r.i1.Omega( v, n )"""
+                   = dw_mass_scalar.i1.Omega( v, n )"""
 }
 
 solver_0 = {

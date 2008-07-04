@@ -68,17 +68,6 @@ class LinearElasticTerm( Term ):
             yield out, chunk, status
 
 ##
-# 20.09.2006, c
-class LinearElasticRTerm( LinearElasticTerm ):
-    r""":description: General linear elasticity term with a known field (to use
-    on a right-hand side).
-    :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{w})$
-    """
-    name = 'dw_lin_elastic_r'
-    argTypes = ('material', 'virtual', 'parameter')
-    useCaches = {'cauchy_strain' : [['parameter']]}
-
-##
 # 01.03.2007, c
 class  LinearElasticIntegratedTerm( Term ):
     r""":description: Integrated general linear elasticity term.

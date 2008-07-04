@@ -462,19 +462,6 @@ class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
             yield out, chunk, status
 
 ##
-# c: 05.03.2008
-class WDotProductVolumeOperatorRTerm( WDotProductVolumeOperatorTerm ):
-    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
-    scalar and vector (not implemented!) fields (to use on a right-hand side).
-    :definition: $\int_\Omega y q r$, $\int_\Omega y \ul{v} \cdot \ul{w}$
-    :arguments: material : weight function $y$"""
-    name = 'dw_volume_wdot_r'
-    argTypes = ('material', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
-    useCaches = {'state_in_volume_qp' : [['parameter']],
-                 'mat_in_qp' : [['material']]}
-
-##
 # c: 03.04.2008
 class WDotProductVolumeOperatorTHTerm( Term ):
     r""":definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)

@@ -193,12 +193,9 @@ class GradTerm( Term ):
         return 1.0, vec, indx.start, bf, vgr, apc.econn
 
     ##
-    # c: 15.12.2005, r: 31.03.2008
+    # c: 15.12.2005, r: 04.07.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        if self.name.endswith( '_r' ):
-            virtual, state = self.getArgs( ['virtual', 'parameter'], **kwargs )
-        else:
-            virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
@@ -305,12 +302,9 @@ class DivTerm( Term ):
         return vec, indx.start, bf, vgc, apc.econn
 
     ##
-    # c: 14.12.2005, r: 31.03.2008
+    # c: 14.12.2005, r: 04.07.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        if self.name.endswith( '_r' ):
-            virtual, state = self.getArgs( ['virtual', 'parameter'], **kwargs )
-        else:
-            virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
+        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
         apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
         apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
 
@@ -320,17 +314,6 @@ class DivTerm( Term ):
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
-
-##
-# 27.02.2007, c
-class DivRTerm( DivTerm ):
-    r""":description: Divergence term (weak form) with a known field (to use
-    on a right-hand side).
-    :definition: $\int_{\Omega} q\ \nabla \cdot \ul{w}$
-    """
-    name = 'dw_div_r'
-    argTypes = ('virtual', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
 
 ##
 # 13.03.2007, c
