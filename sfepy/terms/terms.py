@@ -229,17 +229,27 @@ class Term( Struct ):
         return self.names.user
 
     ##
-    # 24.07.2006, c
-    # 25.07.2006
-    def getVirtualName( self ):
-        return self.names.virtual[0]
+    # c: 24.07.2006, r: 04.07.2008
+    def getVirtualName( self, variables = None ):
+        name = self.names.virtual[0]
+        if variables is None:
+            return name
+        else:
+            if variables[name].kind == 'test':
+                return name
+            else:
+                output( 'variable %s is not virtual!' % name )
+                raise ValueError
 
     ##
-    # 24.07.2006, c
-    # 25.07.2006
-    def getStateNames( self ):
-        return copy( self.names.state )
-
+    # c: 24.07.2006, r: 04.07.2008
+    def getStateNames( self, variables = None ):
+        if variables is None:
+            return copy( self.names.state )
+        else:
+            return [st for st in self.names.state
+                    if variables[st].kind == 'unknown']
+            
     ##
     # 26.07.2007, c
     def getParameterNames( self ):

@@ -113,7 +113,7 @@ class LCBCEvaluator( BasicEvaluator ):
         BasicEvaluator.updateVec( self, vec, delta )
 
 ##
-# c: 03.09.2007, r: 15.01.2008
+# c: 03.09.2007, r: 04.07.2008
 def assembleVector( vec, equation, variables, materials,
                     chunkSize = 1000, **kwargs ):
     getADofConn = variables.getADofConn
@@ -122,7 +122,7 @@ def assembleVector( vec, equation, variables, materials,
 ##         print '>>>>>>', term.name, term.sign
         varNames = term.getVariableNames()
         args = buildArgs( term, variables, materials, **kwargs )
-        vn = term.getVirtualName()
+        vn = term.getVirtualName( variables = variables )
         dcType = term.getDofConnType()
 ##         print args
 ##         print vn
@@ -144,7 +144,7 @@ def assembleVector( vec, equation, variables, materials,
                 fem.assembleVector( vec, vecInEls, iels, term.sign, dc )
 
 ##
-# c: 03.09.2007, r: 15.01.2008
+# c: 03.09.2007, r: 04.07.2008
 def assembleMatrix( mtx, equation, variables, materials,
                     chunkSize = 1000, groupCanFail = True, **kwargs ):
     if not sp.isspmatrix_csr( mtx ):
@@ -157,8 +157,8 @@ def assembleMatrix( mtx, equation, variables, materials,
 #        print '>>>>>>', term.name, term.sign
         varNames = term.getVariableNames()
         args = buildArgs( term, variables, materials, **kwargs )
-        vn = term.getVirtualName()
-        sns = term.getStateNames()
+        vn = term.getVirtualName( variables = variables )
+        sns = term.getStateNames( variables = variables )
         dcType = term.getDofConnType()
 
         for ig in term.iterGroups():
