@@ -87,11 +87,11 @@ def prepareSaveData( ts, conf, options ):
     return ofnTrunk, suffix, isSave
 
 ##
-# c: 06.02.2008, r: 04.04.2008
+# c: 06.02.2008, r: 08.07.2008
 def timeStepFunction( ts, state0, problem, data ):
     problem.timeUpdate( ts )
 
-    vh = problem.conf.options.variableHistory
+    vh = getDefaultAttr( problem.conf.options, 'variableHistory', {} )
     varNames0, varNames = vh.values(), vh.keys()
 
     setHistoryData = problem.variables.nonStateDataFromState
