@@ -1,6 +1,6 @@
 from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
      oneOf, ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
-     StringStart, StringEnd
+     StringStart, StringEnd, CaselessLiteral
 
 
 ##
@@ -25,18 +25,17 @@ def collectTerm( termDescs, lc, itps ):
     def append( str, loc, toks ):
         sign = signs[toks.sign] * signs[lc[0]]
         termPrefix = itps.get( toks.termDesc.name, '' ) 
-##         print toks, lc, termPrefix
+##        print toks, lc, termPrefix
 ##         print name, integral, region
         tp = TermParse()
         tp.integral = toks.termDesc.integral
         tp.region = toks.termDesc.region
         tp.flag = toks.termDesc.flag
-        tp.sign = sign
+        tp.sign = sign * float( toks.mul[0] )
         tp.name = termPrefix + toks.termDesc.name
         tp.args = toks.args
 #        print tp
         termDescs.append( tp )
-        
     return append
 
 ##
@@ -49,14 +48,7 @@ def rhs( lc ):
     return aux
         
 ##
-# 21.05.2006, c
-# 01.08.2006
-# 12.02.2007
-# 20.03.2007
-# 23.04.2007
-# 16.07.2007
-# 13.11.2007
-# 14.11.2007
+# c: 21.05.2006, r: 08.07.2008
 def createBNF( termDescs, itps ):
     """termDescs .. list of TermParse objects (sign, termName, termArgNames)"""
 
@@ -64,11 +56,21 @@ def createBNF( termDescs, itps ):
     equal = Literal( "=" ).setParseAction( rhs( lc ) )
     zero  = Literal( "0" ).suppress()
 
+    point = Literal( "." )
+    e = CaselessLiteral( "E" )
+    inumber = Word( nums )
+    fnumber = Combine( Word( "+-"+nums, nums ) + 
+                       Optional( point + Optional( Word( nums ) ) ) +
+                       Optional( e + Word( "+-"+nums, nums ) ) )
+
+
     ident = Word( alphas, alphanums + "_")
     variable = Word( alphas, alphanums + '._' )
     flag = Literal( 'a' )
 
     term = Optional( Literal( '+' ) | Literal( '-' ), default = '+' )( "sign" )\
+           + Optional( fnumber + Literal( '*' ).suppress(),
+                       default = '1.0' )( "mul" ) \
            + Combine( ident( "name" )\
                       + Optional( "." + (ident( "integral" ) + "."
                                   + ident( "region" ) + "." + flag( "flag" ) |
@@ -92,7 +94,7 @@ def createBNF( termDescs, itps ):
 if __name__ == "__main__":
 
     testStr = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
-                 + d_term2.Omega( u, w, Nu, dcf, mode )
+                 + 5.0 * d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )"""
     

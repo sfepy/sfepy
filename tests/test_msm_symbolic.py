@@ -1,4 +1,4 @@
-# c: 07.05.2007, r: 05.06.2008
+# c: 07.05.2007, r: 08.07.2008
 fileName_mesh = 'database/phono/mesh_circ21.mesh'
 
 dim = 2
@@ -51,10 +51,10 @@ material_2 = {
 
 equations = {
     'Laplace' :
-    """dw_laplace.i1.Omega( coef.val, s, t )
+    """2 * dw_laplace.i1.Omega( coef.val, s, t )
     """,
     'Diffusion' :
-    """dw_diffusion.i1.Omega( coef.K, s, t )
+    """3 * dw_diffusion.i1.Omega( coef.K, s, t )
     """,
 }
 equations_rhs = {
@@ -143,7 +143,7 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # c: 09.05.2007, r: 25.06.2008
+    # c: 09.05.2007, r: 08.07.2008
     def _buildRHS( self, equation, sols ):
         from sfepy.fem.equations import buildArgs
 
@@ -159,12 +159,14 @@ class Test( TestCommon ):
             argMap = term.symbolic['map']
             self.report( '%s( %s )' %\
                          (term.name, ', '.join( term.argTypes )) )
+            self.report( 'multiplicator: %f' % term.sign )
             self.report( '  symbolic:', expr )
             self.report( '  using argument map:', argMap )
             args = buildArgs( term, problem.variables, problem.materials )
             for solName, sol in sols.iteritems():
                 rhs = self._evalTerm( sol[1], term, args, sops )
-                rhss.setdefault( solName, [] ).append( rhs )
+                srhs = "(%s * (%s))" % (term.sign, rhs)
+                rhss.setdefault( solName, [] ).append( srhs )
 
         for key, val in rhss.iteritems():
             rhss[key] = '+'.join( val )

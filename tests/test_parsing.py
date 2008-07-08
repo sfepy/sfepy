@@ -11,14 +11,13 @@ class Test( TestCommon ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # 16.07.2007, c
-    # 31.07.2007
-    # 13.11.2007
+    # c: 16.07.2007, r: 08.07.2008
     def test_parseEquations( self ):
         from sfepy.fem.parseEq import createBNF
 
         testStrs = [
             """- d_volume.i1.Omega( uc )""",
+            """2 * dw_term.i1.Omega( uc ) = - 3.0 * dw_term2.i1.Omega2( uc )""",
             """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
