@@ -11,7 +11,7 @@ from sfepy.solvers.ts import TimeStepper
 from sfepy.base.ioutils import getTrunk, writeDictHDF5
 
 ##
-# c: 26.09.2006, r: 23.06.2008
+# c: 26.09.2006, r: 09.07.2008
 def dumpToVTK( fileName, options, steps = None ):
     output( 'dumping to VTK...' )
     
@@ -19,9 +19,6 @@ def dumpToVTK( fileName, options, steps = None ):
 
     io = HDF5MeshIO( fileName )
     ts = TimeStepper( *io.readTimeStepper() )
-    nDigit = int( nm.log10( ts.nStep - 1 ) + 1 )
-    format = '%%%dd of %%%dd' % (nDigit, nDigit)
-    suffix = '.%%0%dd.vtk' % nDigit
 
     if options.outputFileNameTrunk:
         ofnTrunk = options.outputFileNameTrunk
@@ -34,13 +31,13 @@ def dumpToVTK( fileName, options, steps = None ):
         iterator = [(step, ts.times[step]) for step in steps]
 
     for step, time in iterator:
-        output( format % (step, ts.nStep - 1) )
+        output( ts.format % (step, ts.nStep - 1) )
         out = io.readData( step )
         if out is None: break
-        mesh.write( ofnTrunk + suffix % step, io = 'auto', out = out )
+        mesh.write( ofnTrunk + ts.suffix % step, io = 'auto', out = out )
 
     output( '...done' )
-    return suffix
+    return ts.suffix
 
 ##
 # c: 26.09.2006, r: 23.06.2008

@@ -65,14 +65,12 @@ def solveStationary( conf, data = None, saveNames = None, nlsStatus = None ):
 
 
 ##
-# c: 06.02.2008, r: 06.02.2008
+# c: 06.02.2008, r: 09.07.2008
 def prepareSaveData( ts, conf, options ):
     if options.outputFileNameTrunk:
         ofnTrunk = options.outputFileNameTrunk
     else:
         ofnTrunk = io.getTrunk( conf.fileName_mesh ) + '_out'
-
-    suffix = '.%%0%dd.vtk' % ts.nDigit
 
     try:
         saveSteps = conf.options.saveSteps
@@ -84,7 +82,7 @@ def prepareSaveData( ts, conf, options ):
     isSave = nm.linspace( 0, ts.nStep - 1, saveSteps ).astype( nm.int32 )
     isSave = nm.unique1d( isSave )
 
-    return ofnTrunk, suffix, isSave
+    return ofnTrunk, ts.suffix, isSave
 
 ##
 # c: 06.02.2008, r: 08.07.2008

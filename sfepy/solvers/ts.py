@@ -1,6 +1,15 @@
 from sfepy.base.base import *
 from sfepy.solvers.solvers import TimeSteppingSolver
 
+
+##
+# c: 09.07.2008, r: 09.07.2008
+def getPrintInfo( nStep ):
+    nDigit = int( nm.log10( nStep - 1 ) + 1 )
+    format = '%%%dd of %%%dd' % (nDigit, nDigit)
+    suffix = '.%%0%dd.vtk' % nDigit
+    return format, suffix
+
 ##
 # 17.07.2006, c
 class TimeStepper( Struct ):
@@ -12,7 +21,7 @@ class TimeStepper( Struct ):
     fromConf = staticmethod( fromConf )
 
     ##
-    # c: 19.09.2006, r: 06.02.2008
+    # c: 19.09.2006, r: 09.07.2008
     def __init__( self, t0, t1, dt, nStep ):
         self.t0, self.t1, self.dt, self.nStep = t0, t1, dt, int( nStep )
 
@@ -30,7 +39,7 @@ class TimeStepper( Struct ):
         else:
             self.times = nm.array( (self.t0,), dtype = nm.float64 )
 
-        self.nDigit = int( nm.log10( self.nStep ) + 1 )
+        self.nDigit, self.suffix = getPrintInfo( self.nStep )
         
     ##
     # 17.07.2006, c
