@@ -672,6 +672,10 @@ class TetgenMeshIO( MeshIO ):
     def write( self, fileName, mesh, out = None ):
         raise NotImplementedError
 
+    def read_dimension(self):
+        # TetGen only supports 3D mesh
+        return 3
+
 ##
 # c: 20.03.2008
 class ComsolMeshIO( MeshIO ):
