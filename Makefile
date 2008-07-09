@@ -20,9 +20,9 @@ ifeq ($(ARCH),linux)
   CARCHOUT     := -o
   PYVER := $(shell script/config.py python_version)
   ARCHLIB := $(shell script/config.py archlib)
-  NUMPYPREFIX := $(shell script/config.py numpy_prefix)
+  NUMPYINCLUDE := $(shell script/config.py numpy_include)
 
-  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYPREFIX)/usr/$(ARCHLIB)/python$(PYVER)/site-packages/numpy/core/include
+  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYINCLUDE)
 #  SWIG_LIB     := -lswigpy
 
   EXT_INCL     := $(PYTHON_INCL)

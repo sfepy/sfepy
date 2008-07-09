@@ -18,11 +18,9 @@ tetgen_path
 
     Tetgen executable path.
 
-numpy_prefix
+numpy_include
 
-    Installation prefix. Ignore if you do not install numpy/scipy on local
-    account.  Numpy headers should be in
-    <numpy_prefix>/usr/<archlib>/python<python_version>/site-packages/numpy/core/include
+    Full path to the numpy headers.  This path should end in numpy/core/include.
 
 New options should be added both to site_cfg_template.py and Config class below.
 
@@ -38,22 +36,21 @@ $
 """
 import sys
 sys.path.append( '.' )
+import os
 import shutil
 
 try:
     import site_cfg
 except:
-    site_cfg = None
-#    try:
-#        shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
-#        import site_cfg
-#    except:
-#        site_cfg = None
+    try:
+        shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
+        import site_cfg
+    except:
+        site_cfg = None
 
+has_attr = lambda obj, attr: obj and hasattr( obj, attr )
 
-import os
-
-def FindinPath(filename):
+def find_in_path( filename ):
     pathlist=sys.path
     outpath=''
     for curpath in pathlist:
@@ -61,10 +58,7 @@ def FindinPath(filename):
         if os.path.exists(temppath):
             outpath=temppath
             break
-    return outpath
-
-
-has_attr = lambda obj, attr: obj and hasattr( obj, attr )
+    return outpath 
 
 class Config( object ):
     def python_version( self ):
@@ -88,19 +82,16 @@ class Config( object ):
         else:
             return '/usr/bin'
 
-    def numpy_prefix( self ):
-        if has_attr( site_cfg, 'numpy_prefix' ):
-            return site_cfg.numpy_prefix
+    def numpy_include( self ):
+        if has_attr( site_cfg, 'numpy_include' ) and (site_cfg.numpy_include is not None):
+            return site_cfg.numpy_include
         else:
-            numpypath = FindinPath('numpy')
-            numpyfullpath = os.path.join(numpypath,os.path.join('core','include'))
+            numpypath = find_in_path( 'numpy' )
+            numpyfullpath = os.path.join( numpypath, 'core', 'include' )
             if not os.path.exists(numpyfullpath):
                 print('could not find core/include in '+ numpypath)
-            slash = os.sep
-            ind = numpyfullpath.find(slash+'usr'+slash)
-            return numpyfullpath[0:ind]
+            return numpyfullpath
 
-    
 usage = """Usage: %s option"""
 
 def main():
@@ -114,7 +105,7 @@ def main():
     try:
         print getattr( config, mode )()
     except:
-        pass
+        raise
 
 if __name__ == '__main__':
     main()

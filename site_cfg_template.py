@@ -14,4 +14,4 @@ python_version = 'auto'
 # Installation prefix. Ignore if you do not install numpy/scipy on local account.
 # Numpy headers should be in
 # <numpy_prefix>/usr/<archlib>/python<python_version>/site-packages/numpy/core/include
-numpy_prefix = '/home/share/software'
+numpy_include = None
