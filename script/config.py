@@ -43,11 +43,26 @@ import shutil
 try:
     import site_cfg
 except:
-    try:
-        shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
-        import site_cfg
-    except:
-        site_cfg = None
+    site_cfg = None
+#    try:
+#        shutil.copyfile( 'site_cfg_template.py', 'site_cfg.py' )
+#        import site_cfg
+#    except:
+#        site_cfg = None
+
+
+import os
+
+def FindinPath(filename):
+    pathlist=sys.path
+    outpath=''
+    for curpath in pathlist:
+        temppath=os.path.join(curpath,filename)
+        if os.path.exists(temppath):
+            outpath=temppath
+            break
+    return outpath
+
 
 has_attr = lambda obj, attr: obj and hasattr( obj, attr )
 
@@ -77,7 +92,14 @@ class Config( object ):
         if has_attr( site_cfg, 'numpy_prefix' ):
             return site_cfg.numpy_prefix
         else:
-            return '/'
+            numpypath = FindinPath('numpy')
+            numpyfullpath = os.path.join(numpypath,os.path.join('core','include'))
+            if not os.path.exists(numpyfullpath):
+                print('could not find core/include in '+ numpypath)
+            slash = os.sep
+            ind = numpyfullpath.find(slash+'usr'+slash)
+            return numpyfullpath[0:ind]
+
     
 usage = """Usage: %s option"""
 
