@@ -45,7 +45,7 @@ usage = """%prog [options] fileNameIn|- fileNameOut|-
 version = open( op.join( init_sfepy.install_dir, 'VERSION' ) ).readlines()[0][:-1]
 
 ##
-# c: 05.10.2005, r: 26.03.2008
+# c: 05.10.2005, r: 09.07.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog " + version )
     parser.add_option( "-m", "--mesh",
@@ -75,7 +75,7 @@ def main():
     if (fileNameIn != '-'):
         fileIn.close()
 
-    domain = Domain.fromMesh( mesh, 'eldesc' )
+    domain = Domain.fromMesh( mesh, op.join( init_sfepy.install_dir, 'eldesc' ) )
     domain.setupGroups()
 
     if domain.hasFaces():

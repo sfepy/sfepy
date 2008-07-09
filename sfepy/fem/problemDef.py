@@ -1,3 +1,5 @@
+import os.path as op
+
 from sfepy.base.base import *
 
 from mesh import Mesh
@@ -11,29 +13,23 @@ import fea as fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
+from init_sfepy import install_dir
 
 ##
 # 29.01.2006, c
 class ProblemDefinition( Struct ):
     
     ##
-    # 29.01.2006, c
-    # 21.03.2006
-    # 18.04.2006
-    # 08.06.2006
-    # 25.07.2006
-    # 22.08.2006
-    # 24.08.2006
-    # 19.09.2006
-    # 23.04.2007
-    # 16.10.2007
+    # c: 29.01.2006, r: 09.07.2008
     def fromConf( conf,
                   initFields = True, initVariables = True, initEquations = True,
                   initSolvers = True ):
 
         mesh = Mesh.fromFile( conf.fileName_mesh )
 
-        domain = Domain.fromMesh( mesh, 'eldesc' )
+        
+        eldesc_dir = op.join( install_dir, 'eldesc' )
+        domain = Domain.fromMesh( mesh, eldesc_dir )
         domain.setupGroups()
         domain.fixElementOrientation()
         domain.setupNeighbourLists()
@@ -55,7 +51,8 @@ class ProblemDefinition( Struct ):
 
         obj = ProblemDefinition( conf = conf,
                                  domain = domain,
-                                 materials = materials )
+                                 materials = materials,
+                                 eldesc_dir = eldesc_dir )
 
         if initFields:
             obj.setFields( conf.fields )
@@ -88,12 +85,11 @@ class ProblemDefinition( Struct ):
         return obj
 
     ##
-    # 23.04.2007, c
-    # 04.09.2007
+    # c: 23.04.2007, r: 09.07.2008
     def setFields( self, conf_fields = None ):
         conf_fields = getDefault( conf_fields, self.conf.fields )
         fields = Fields.fromConf( conf_fields )
-        fields.readInterpolants( 'eldesc' )
+        fields.readInterpolants( self.eldesc_dir )
         fields.setupApproximations( self.domain )
 ##         print fields
 ##         print fields[0].aps
