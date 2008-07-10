@@ -23,7 +23,7 @@ If you want to solve the one particle equation, use:
 $ ./schroedinger.py -s
 
 """
-# 12.01.2007, c 
+import os
 import os.path as op
 from optparse import OptionParser
 from math import pi
@@ -287,6 +287,7 @@ help = {
     'hydrogen' :
     "solve the hydrogen atom",
     "dim": "the dimensionality of the problem, either 2 or 3",
+    "mesh": "creates a mesh"
 }
 
 ##
@@ -314,6 +315,9 @@ def main():
     parser.add_option( "--hydrogen",
                        action = "store_true", dest = "hydrogen",
                        default = False, help = help['hydrogen'] )
+    parser.add_option( "--mesh",
+                       action = "store_true", dest = "mesh",
+                       default = False, help = help['mesh'] )
 
     options, args = parser.parse_args()
 
@@ -335,6 +339,13 @@ def main():
                 assert options.dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
             options.simplified = True
+        elif options.mesh:
+            os.system("cp database/square.geo tmp/mesh.geo")
+            os.system("gmsh -2 tmp/mesh.geo -format mesh")
+            os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
+            sys.exit()
+
+
         else:
             fileNameIn = "input/quantum/schroed2.py"
     else:
