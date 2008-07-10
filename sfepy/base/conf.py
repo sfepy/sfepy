@@ -123,6 +123,31 @@ class ProblemConf( Struct ):
     ##
     # c: 25.07.2006, r: 10.07.2008
     def fromFile( fileName, required = None, other = None ):
+        """
+        Loads the problem definition from a file.
+
+        The filename can either contain plain definitions, or it can contain
+        the define() function, in which case it will be called to return the
+        input definitions.
+
+        The job of the define() function is to return a dictionary of
+        parameters. How the dictionary is constructed is not our business, but
+        the usual way is to simply have a function define() along these lines
+        in the input file:
+
+            def define():
+                options = {
+                    'saveEigVectors' : None,
+                    'eigenSolver' : 'eigen1',
+                }
+                region_2 = {
+                    'name' : 'Surface',
+                    'select' : 'nodes of surface',
+                }
+                ...
+                return locals()
+
+        """
         sys.path.append( op.dirname( fileName ) )
 
         name = op.splitext( op.basename( fileName ) )[0]
