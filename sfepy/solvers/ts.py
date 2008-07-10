@@ -5,9 +5,12 @@ from sfepy.solvers.solvers import TimeSteppingSolver
 ##
 # c: 09.07.2008, r: 10.07.2008
 def getPrintInfo( nStep ):
-    nDigit = int( nm.log10( nStep - 1 ) + 1 )
-    format = '%%%dd of %%%dd' % (nDigit, nDigit)
-    suffix = '.%%0%dd.vtk' % nDigit
+    if nStep > 1:
+        nDigit = int( nm.log10( nStep - 1 ) + 1 )
+        format = '%%%dd of %%%dd' % (nDigit, nDigit)
+        suffix = '.%%0%dd.vtk' % nDigit
+    else:
+        nDigit, format, suffix = 0, None, '.vtk'
     return nDigit, format, suffix
 
 ##
