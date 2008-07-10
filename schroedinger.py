@@ -325,7 +325,7 @@ def main():
             fileNameIn = "input/quantum/well.py"
             options.simplified = True
         elif options.hydrogen:
-            fileNameIn = "input/quantum/hydrogen.py"
+            fileNameIn = "input/quantum/hydrogen3d.py"
             options.simplified = True
         else:
             fileNameIn = "input/quantum/schroed2.py"
