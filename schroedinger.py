@@ -286,6 +286,7 @@ help = {
     "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' :
     "solve the hydrogen atom",
+    "dim": "the dimensionality of the problem, either 2 or 3",
 }
 
 ##
@@ -307,6 +308,9 @@ def main():
     parser.add_option( "--well",
                        action = "store_true", dest = "well",
                        default = False, help = help['well'] )
+    parser.add_option( "-d", "--dim", type="int",
+                       action = "store", dest = "dim",
+                       default = 3, help = help['dim'] )
     parser.add_option( "--hydrogen",
                        action = "store_true", dest = "hydrogen",
                        default = False, help = help['hydrogen'] )
@@ -325,7 +329,11 @@ def main():
             fileNameIn = "input/quantum/well.py"
             options.simplified = True
         elif options.hydrogen:
-            fileNameIn = "input/quantum/hydrogen3d.py"
+            if options.dim == 2:
+                fileNameIn = "input/quantum/hydrogen2d.py"
+            else:
+                assert options.dim == 3
+                fileNameIn = "input/quantum/hydrogen3d.py"
             options.simplified = True
         else:
             fileNameIn = "input/quantum/schroed2.py"
