@@ -123,7 +123,12 @@ class ProblemConf( Struct ):
         name = op.splitext( op.basename( fileName ) )[0]
         funmod = __import__( name )
         obj = ProblemConf()
-        obj.__dict__.update( funmod.__dict__ )
+        if "define" in funmod.__dict__:
+            define_dict = funmod.__dict__["define"]()
+        else:
+            define_dict = funmod.__dict__
+
+        obj.__dict__.update( define_dict )
 
         otherMissing = obj.validate( required = required, other = other )
         for name in otherMissing:
