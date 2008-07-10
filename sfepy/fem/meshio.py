@@ -315,6 +315,7 @@ DATASET UNSTRUCTURED_GRID
 """
 vtkCellTypes = {'2_2' : 3, '2_4' : 9, '2_3' : 5,
                 '3_2' : 3, '3_4' : 10, '3_8' : 12 }
+vtkDims = {3 : 2, 9 : 2, 5 : 2, 3 : 3, 10 : 3, 12 : 3}
 vtkInverseCellTypes = {(3, 2) : '2_2', (9, 2) : '2_4', (5, 2) : '2_3',
                        (3, 3) : '3_2', (10, 3) : '3_4', (12, 3) : '3_8' }
 
@@ -345,7 +346,7 @@ class VTKMeshIO( MeshIO ):
             return dim
 
     ##
-    # c: 05.02.2008, r: 26.06.2008
+    # c: 05.02.2008, r: 10.07.2008
     def read( self, mesh, **kwargs ):
         fd = open( self.fileName, 'r' )
         mode = 'header'
@@ -410,12 +411,16 @@ class VTKMeshIO( MeshIO ):
             elif mode == 'finished':
                 break
         fd.close()
-
+ 
         if matId is None:
             matId = [[0]] * nEl
 
-        nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
-                              1 )
+        dim = vtkDims[cellTypes[0]]
+        if dim == 3:
+            nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
+                                  1 )
+        else:
+            nod[:,2] = 0.0
         nod = nm.ascontiguousarray( nod )
 
         dim = nod.shape[1] - 1
