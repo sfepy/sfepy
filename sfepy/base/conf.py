@@ -111,12 +111,17 @@ transforms = {
 ##
 # 27.10.2005, c
 class ProblemConf( Struct ):
+    """
+    Problem configuration, corresponding to an input (problem description
+    file). It validates the input using lists of required and other keywords
+    that have to/can appear in the input. Default keyword lists can be obtained
+    by sfepy.base.conf.getStandardKeywords().
+
+    ProblemConf instance is used to construct a ProblemDefinition instance via
+    ProblemDefinition.fromConf( conf ).
+    """
     ##
-    # 25.07.2006, c
-    # 19.09.2006
-    # 16.10.2006
-    # 31.05.2007
-    # 05.06.2007
+    # c: 25.07.2006, r: 10.07.2008
     def fromFile( fileName, required = None, other = None ):
         sys.path.append( op.dirname( fileName ) )
 
@@ -196,7 +201,7 @@ class ProblemConf( Struct ):
         return otherMissing
 
     ##
-    # c: 31.10.2005, r: 18.02.2008
+    # c: 31.10.2005, r: 10.07.2008
     def transformInput( self ):
         """Trivial input transformations."""
 

@@ -18,7 +18,12 @@ from init_sfepy import install_dir
 ##
 # 29.01.2006, c
 class ProblemDefinition( Struct ):
-    
+    """
+    Problem definition, the top-level class holding all data necessary to solve
+    a problem.
+
+    Contains: mesh, domain, materials, fields, variables, equations, solvers
+    """
     ##
     # c: 29.01.2006, r: 09.07.2008
     def fromConf( conf,
