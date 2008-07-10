@@ -119,13 +119,18 @@ class ProblemConf( Struct ):
     # 05.06.2007
     def fromFile( fileName, required = None, other = None ):
         sys.path.append( op.dirname( fileName ) )
-        read = Reader( '.' )
-        obj = read( ProblemConf, op.splitext( fileName )[0] )
+
+        name = op.splitext( op.basename( fileName ) )[0]
+        funmod = __import__( name )
+        obj = ProblemConf()
+        obj.__dict__.update( funmod.__dict__ )
+
         otherMissing = obj.validate( required = required, other = other )
         for name in otherMissing:
             setattr( obj, name, None )
         obj._fileName = fileName
         obj.transformInput()
+        obj.funmod = funmod
         return obj
     fromFile = staticmethod( fromFile )
 
@@ -222,7 +227,3 @@ class ProblemConf( Struct ):
         for key, transform in transforms.iteritems():
             if not key in keys: continue
             self.__dict__[key] = transform( self.__dict__[key] )
-
-        # Make module from the input file.
-        name = op.splitext( op.basename( self._fileName ) )[0]
-        self.funmod = __import__( name )
