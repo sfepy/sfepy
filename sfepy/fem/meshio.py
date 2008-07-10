@@ -126,7 +126,7 @@ class MeditMeshIO( MeshIO ):
     format = 'medit'
 
     ##
-    # c: 03.07.2008, r: 03.07.2008
+    # c: 03.07.2008, r: 10.07.2008
     def read_dimension( self, ret_fd = False ):
         fd = open( self.fileName, 'r' )
         while 1:
@@ -139,7 +139,10 @@ class MeditMeshIO( MeshIO ):
             if line[0] == '#': continue
             aux = line.split()
             if aux[0] == 'Dimension':
-                dim = int( aux[1] )
+                if len( aux ) == 2:
+                    dim = int( aux[1] )
+                else:
+                    dim = int( fd.readline() )
                 break
 
         if ret_fd:
