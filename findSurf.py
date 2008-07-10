@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 # 05.10.2005, c
+"""
+Given a mesh file, this script extracts its surface and prints it to stdout in
+form of a list where each row is [group, element, face, component]. A component
+corresponds to a contiguous surface region - for example, a cubical mesh with a
+spherical hole has two surface components. Two surface faces sharing a single
+node belong to one component.
+
+With '-m' option, a mesh of the surface is created and saved in
+'surf_<original mesh file name>.mesh'.
+
+Try ./findSurf.py --help to see more options.
+"""
 import sys
 import os.path as op
 from optparse import OptionParser
