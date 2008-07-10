@@ -9,7 +9,7 @@ def funV( ts, coor, region, ig, mode = None ):
 
     out = {}
     C = 0.5
-    r = sqrt( coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2 )
+    r = sqrt( coor[:,0]**2 + coor[:,1]**2 )
     V = - C * 1.0 / r
     out['V'] = V
     return out

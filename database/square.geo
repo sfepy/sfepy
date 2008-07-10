@@ -1,0 +1,13 @@
+a = 5;
+lt = 0.2;
+Point(1) = {-a,-a,-a, lt};
+Point(2) = {-a,a,-a, lt};
+Point(3) = {a, a,-a, lt};
+Point(4) = {a,-a,-a, lt};
+Line(1) = {1,4};
+Line(2) = {4,3};
+Line(3) = {3,2};
+Line(4) = {2,1};
+Line Loop(5) = {2,3,4,1};
+Plane Surface(6) = {5};
+Physical Surface(1) = {6};

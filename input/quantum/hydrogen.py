@@ -1,6 +1,7 @@
 # hydrogen atom
 
 def common(mesh, dim=3):
+    assert dim in [2, 3]
     fileName_mesh = mesh
     options = {
         'saveEigVectors' : None,
@@ -38,18 +39,28 @@ def common(mesh, dim=3):
         'extraArgs' : {'mode' : 'r^2'},
     }
 
+    if dim == 3:
+        base_approx = "3_4_P1"
+    else:
+        base_approx = "2_3_P1"
+
     field_0 = {
         'name' : 'field_Psi',
         'dim' : (1,1),
         'flags' : (),
         'domain' : 'Omega',
-        'bases' : {'Omega' : '3_4_P1'}
+        'bases' : {'Omega' : base_approx}
     }
+
+    if dim == 3:
+        quadr = "gauss_o2_d3"
+    else:
+        quadr = "gauss_o2_d2"
 
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
-        'quadrature' : 'gauss_o2_d3',
+        'quadrature' : quadr,
     }
 
     variable_1 = {
