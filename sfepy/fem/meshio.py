@@ -138,6 +138,7 @@ class MeditMeshIO( MeshIO ):
             if len( line ) == 1: continue
             if line[0] == '#': continue
             aux = line.split()
+            print aux
             if aux[0] == 'Dimension':
                 if len( aux ) == 2:
                     dim = int( aux[1] )

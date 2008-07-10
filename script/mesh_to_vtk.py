@@ -43,7 +43,10 @@ while 1:
     if not len( line ):
         break
     elif (line[0] == 'Dimension'):
-        dim = int( line[1] )
+        if len( line ) == 2:
+            dim = int( line[1] )
+        else:
+            dim = int( fileIn.readline() )
     elif (line[0] == 'Vertices'):
         nNod = int( fileIn.readline() )
     elif (line[0] in keys):
