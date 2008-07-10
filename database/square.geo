@@ -1,5 +1,5 @@
-a = 5;
-lt = 0.2;
+a = 50;
+lt = 2;
 Point(1) = {-a,-a,-a, lt};
 Point(2) = {-a,a,-a, lt};
 Point(3) = {a, a,-a, lt};
