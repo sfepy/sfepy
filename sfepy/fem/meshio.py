@@ -415,7 +415,7 @@ class VTKMeshIO( MeshIO ):
         if matId is None:
             matId = [[0]] * nEl
 
-        dim = vtkDims[cellTypes[0]]
+        dim = vtkDims[cellTypes[0,0]]
         if dim == 3:
             nod = nm.concatenate( (nod, nm.zeros( (nNod,1), dtype = nm.int32 ) ),
                                   1 )
