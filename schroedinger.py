@@ -89,6 +89,11 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
     print 'computing resonance frequencies...'
     eigs, mtxSPhi = eigSolver( mtxA, mtxB, conf.options.nEigs )
 
+    if len(eigs) < nElectron:
+        print len(eigs)
+        print eigs
+        raise Exception("Not enough eigenvalues have converged. Exitting.")
+
     vecPhi = nm.zeros_like( vecVHXC )
     vecN = nm.zeros_like( vecVHXC )
     for ii in xrange( nElectron ):
@@ -105,8 +110,8 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
     pb.variables['n'].dataFromData( vecN )
     vecVH = pb.solve()
 
-    sphere = evalTermOP( dummy, conf.equations['sphere'], pb)
-    print sphere
+    #sphere = evalTermOP( dummy, conf.equations['sphere'], pb)
+    #print sphere
 
     return eigs, mtxSPhi, vecN, vecVH, vecVXC
 
@@ -348,7 +353,11 @@ def main():
 
 
         else:
-            fileNameIn = "input/quantum/schroed2.py"
+            if options.dim == 2:
+                fileNameIn = "input/quantum/dft2d.py"
+            else:
+                assert options.dim == 3
+                fileNameIn = "input/quantum/dft3d.py"
     else:
         parser.print_help(),
         return

@@ -1,0 +1,20 @@
+from dft import common
+
+def define():
+    l = common('tmp/t.1.vtk', dim=3, n_eigs=7)
+    return l
+
+def funV( ts, coor, region, ig, mode = None, vhxc = None ):
+    import numpy as nm
+
+    if vhxc is None:
+        vhxc = 0.0
+
+    out = {}
+    C = 0.5
+    r = nm.sqrt( coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2 )
+    vc = - C * 5.0 / r
+    V = vhxc + vc
+
+    out['V'] = V
+    return out
