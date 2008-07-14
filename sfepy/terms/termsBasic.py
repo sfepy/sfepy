@@ -248,13 +248,13 @@ class AverageVolumeMatTerm( Term ):
         return vg, matQP, shape
 
     ##
-    # c: 06.05.2008, r: 06.05.2008
+    # c: 06.05.2008, r: 14.07.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         vg, matQP, shape = self.prepareData( chunkSize, **kwargs )
 
         for out, chunk in self.charFun( chunkSize, shape ):
             status = vg.integrateChunk( out, matQP[chunk], chunk )
-            out1 = out / vg.variable( 2 )
+            out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
 
 ##

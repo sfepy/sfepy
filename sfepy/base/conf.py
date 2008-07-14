@@ -11,8 +11,7 @@ _required = ['fileName_mesh', 'field_[0-9]+|fields',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
              'solver_[0-9]+|solvers']
-_other = ['functions', 'modules', 'epbc_[0-9]+|epbcs',
-          'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs', 'options']
+_other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs', 'options']
 
 ##
 # c: 19.02.2008, r: 19.02.2008
@@ -205,7 +204,7 @@ class ProblemConf( Struct ):
         return leftOver, missing
 
     ##
-    # c: 27.10.2005, r: 20.02.2008
+    # c: 27.10.2005, r: 11.07.2008
     def validate( self, required = None, other = None ):
         requiredLeftOver, requiredMissing \
                           = self._validateHelper( required, other )
@@ -219,11 +218,8 @@ class ProblemConf( Struct ):
             err = True
             output( 'error: required missing:', requiredMissing )
 
-        if otherMissing:
-            output( 'warning: other missing:', otherMissing )
-
         if otherLeftOver:
-            output( 'warning: left over:', otherLeftOver )
+            output( 'left over:', otherLeftOver )
 
         if err:
             raise ValueError

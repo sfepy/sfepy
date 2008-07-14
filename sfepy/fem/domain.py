@@ -500,6 +500,17 @@ class Domain( Struct ):
 
                     region.setVertices( out )
 
+                elif token == 'E_EBF':
+                    where = details[2]
+                    
+                    aux = {'domain' : domain}
+                        
+                    fun = 'funmod.' + where
+#                    print fun
+                    out = eval( fun, {'funmod' : funmod}, aux )
+                    print out
+                    region.setCells( out )
+
                 elif token == 'E_EOG':
 
                     group = int( details[3] )
@@ -517,7 +528,8 @@ class Domain( Struct ):
                                                   dtype = nm.int32 ) )
 
                 else:
-                    raise NotImplementedError, token
+                    output( 'token "%s" unkown - check regions!' % token )
+                    raise NotImplementedError
                 return region
             
             return _regionLeaf

@@ -122,12 +122,17 @@ class Region( Struct ):
         self.isComplete = False
 
     ##
-    # 15.06.2006, c
+    # c: 15.06.2006, r: 14.07.2008
     def setCells( self, cells ):
 
-        self.cells = cells
+        self.igs = []
+        self.cells = {}
+        for ig, rcells in cells.iteritems():
+            self.cells[ig] = nm.array( rcells, ndmin = 1 )
+            self.igs.append( ig )
         self.updateVertices()
         self.isComplete = False
+        self.mustUpdate = False
 
     ##
     # 15.06.2006, c
