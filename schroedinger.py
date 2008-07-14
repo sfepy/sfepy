@@ -343,6 +343,7 @@ def main():
             os.system("cp database/square.geo tmp/mesh.geo")
             os.system("gmsh -2 tmp/mesh.geo -format mesh")
             os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
+            print "Mesh written to tmp/mesh.vtk"
             sys.exit()
 
 
