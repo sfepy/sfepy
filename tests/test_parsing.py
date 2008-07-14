@@ -48,8 +48,7 @@ class Test( TestCommon ):
         return True
 
     ##
-    # 16.07.2007, c
-    # 31.07.2007
+    # c: 16.07.2007, r: 14.07.2008
     def test_parseRegions( self ):
         from sfepy.fem.parseReg import createBNF, _testStrs
 
@@ -70,7 +69,8 @@ class Test( TestCommon ):
                     'nodes by noargs()',
                     'nodes by extraargs( x, y, z, abc,3 )',
                     'node in r.Gamma_3',
-                    'node 10']
+                    'node 10',
+                    'elements by afun( domain )']
 
         stack = []
         bnf = createBNF( stack )

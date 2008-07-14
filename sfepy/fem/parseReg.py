@@ -9,7 +9,7 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
 
 opCodes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
-evalCodes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EOG', 'E_ONIR', 'E_NI']
+evalCodes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_ONIR', 'E_NI']
 kwCodes = ['KW_All', 'KW_Region']
 
 ##
@@ -97,15 +97,7 @@ def printStack( stack ):
     visitStack( stack, printOp, printLeaf )
 
 ##
-# 13.06.2006, c
-# 14.06.2006
-# 15.06.2006
-# 20.06.2006
-# 12.10.2006
-# 19.02.2007
-# 02.03.2007
-# 10.04.2007
-# 02.05.2007
+# c: 13.06.2006, r: 14.07.2008
 def createBNF( stack ):
     point = Literal( "." )
     e = CaselessLiteral( "E" )
@@ -135,7 +127,7 @@ def createBNF( stack ):
     elements = Literal( 'elements' )
     group = Literal( 'group' )
     surface = Literal( 'surface' )
-    variable = Word( 'xyz', max = 1 )
+    variable = Word( 'xyz', max = 1 ) | Literal( 'domain' )
     anyVar = Word( alphas + '_', alphanums + '_' ) | fnumber
 
     args = delimitedList( variable, combine = True )\
@@ -165,6 +157,8 @@ def createBNF( stack ):
         replace( 'E_NIR', keep = True ) )
     nbf = Group( nodes + _by + function ).setParseAction( \
         replace( 'E_NBF', keep = True ) )
+    ebf = Group( elements + _by + function ).setParseAction( \
+        replace( 'E_EBF', keep = True ) )
     eog = Group( elements + _of + group + Word( nums ) ).setParseAction( \
         replace( 'E_EOG', keep = True ) )
     onir = Group( node + _in + region ).setParseAction( \
@@ -174,7 +168,7 @@ def createBNF( stack ):
 
     regionExpression = Forward()
 
-    atom1 = (_all | region | ni | onir | nos | nir | nbf | eog)
+    atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog)
     atom1.setParseAction( toStack( stack ) )
     atom2 = (lpar + regionExpression.suppress() + rpar)
     atom = (atom1 | atom2)
@@ -191,24 +185,25 @@ def createBNF( stack ):
     return regionExpression
 
 _testStrs = ['nodes of surface -n r.egion_1',
-            'r.egion_2 +n copy r.egion_1',
-            'nodes in (y <= 0.00001) & (x < 0.11)',
-            'nodes in ((y <= 0.00001) & (x < 0.11))',
-            'nodes in (((y <= 0.00001) & (x < 0.11)))',
-            'nodes in (((0.00001 < y) & (x < 0.11)))',
-            'nodes in (y < 1.0)',
-            'all -n nodes in (y == 0.00001)',
-            'all -n nodes of surface',
-            'all -e r.egion_100',
-            'r.egion_1 -n nodes of surface *e r.egion_8 *n nodes in (y > 0)',
-            'nodes of surface +n nodes by pokus( x, y, z )',
-            'elements of group 6 +e nodes by fn2_3c( x )',
-            """r.egion_1 *n (r.egion_2 +e (nodes in (y > 0) *n r.egion_32))
-            -n nodes of surface -e r.egion_5""",
-            'nodes by noargs()',
-            'nodes by extraargs( x, y, z, abc,3 )',
-            'node in r.region_3',
-            'node 10']
+             'r.egion_2 +n copy r.egion_1',
+             'nodes in (y <= 0.00001) & (x < 0.11)',
+             'nodes in ((y <= 0.00001) & (x < 0.11))',
+             'nodes in (((y <= 0.00001) & (x < 0.11)))',
+             'nodes in (((0.00001 < y) & (x < 0.11)))',
+             'nodes in (y < 1.0)',
+             'all -n nodes in (y == 0.00001)',
+             'all -n nodes of surface',
+             'all -e r.egion_100',
+             'r.egion_1 -n nodes of surface *e r.egion_8 *n nodes in (y > 0)',
+             'nodes of surface +n nodes by pokus( x, y, z )',
+             'elements of group 6 +e nodes by fn2_3c( x )',
+             """r.egion_1 *n (r.egion_2 +e (nodes in (y > 0) *n r.egion_32))
+             -n nodes of surface -e r.egion_5""",
+             'nodes by noargs()',
+             'nodes by extraargs( x, y, z, abc,3 )',
+             'node in r.region_3',
+             'node 10',
+             'elements by afun( domain )']
 
 if __name__ == "__main__":
     testStrs = _testStrs
