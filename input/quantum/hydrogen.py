@@ -1,12 +1,12 @@
 # hydrogen atom
 
-def common(mesh, dim=3):
+def common(mesh, dim=3, n_eigs=5):
     assert dim in [2, 3]
     fileName_mesh = mesh
     options = {
         'saveEigVectors' : None,
         'squared' : False,
-        'nEigs' : 5,
+        'nEigs' : n_eigs,
         'eigenSolver' : 'eigen1',
     }
 
