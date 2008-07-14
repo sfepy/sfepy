@@ -189,7 +189,7 @@ class DiffusionVelocityTerm( Term ):
         Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
         
     ##
-    # c: 07.09.2006, r: 06.05.2008
+    # c: 07.09.2006, r: 14.07.2008
     def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
         mat, parameter = self.getArgs( **kwargs )
         ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
@@ -210,5 +210,5 @@ class DiffusionVelocityTerm( Term ):
         for out, chunk in self.charFun( chunkSize, shape ):
             status = self.function( out, vec, indx.start,
                                     matQP, vg, ap.econn, chunk )
-            out1 = out / vg.variable( 2 )
+            out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
