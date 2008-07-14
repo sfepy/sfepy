@@ -14,6 +14,6 @@ Physical Surface(1) = {6};
 
 Field[1] = MathEval;
 // This is generated using the formula a/5-(a/5-a/50)*(Cos(3.14*x/a)+..)/2
-Field[1].F = "10-(10-1)*(Cos(3.14*x/50)+Cos(3.14*y/50))/2";
+Field[1].F = "10-(10-0.05)*(Cos(3.14*x/50)+Cos(3.14*y/50))/2";
 
 Background Field = 1;
