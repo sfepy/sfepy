@@ -1,7 +1,7 @@
 from hydrogen import common
 
 def define():
-    l = common('tmp/mesh.vtk', dim=2, n_eigs=10)
+    l = common(dim=2, n_eigs=10)
     return l
 
 def funV( ts, coor, region, ig, mode = None ):

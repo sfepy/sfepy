@@ -1,7 +1,7 @@
 from dft import common
 
 def define():
-    l = common('tmp/mesh.vtk', dim=2, n_eigs=7)
+    l = common(dim=2, n_eigs=7)
     return l
 
 def funV( ts, coor, region, ig, mode = None, vhxc = None ):

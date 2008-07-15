@@ -1,6 +1,6 @@
 # hydrogen atom
 
-def common(mesh, dim=3, n_eigs=5):
+def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
     assert dim in [2, 3]
     fileName_mesh = mesh
     options = {
