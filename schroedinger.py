@@ -1,26 +1,12 @@
 #!/usr/bin/env python
 """
-Schrodinger equation solver.
+Electronic structure solver.
 
-Usage:
-------
-
-Create a mesh:
-
-$ ./convert.py 
-
-Solve:
+Type:
 
 $ ./schroedinger.py
 
-Visualize:
-
-$ paraview --data=t.1.vtk
-
-
-If you want to solve the one particle equation, use:
-
-$ ./schroedinger.py -s
+for usage and help.
 
 """
 import os
@@ -36,6 +22,7 @@ from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, getStandardKeywords
 from sfepy.base.la import eig
 from sfepy.fem.evaluate import evalTermOP
+from sfepy.fem.meshio import MeshIO
 import sfepy.base.ioutils as io
 from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.homogenization.phono import processOptions
@@ -119,10 +106,6 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
 # c: 01.02.2008, r: 03.03.2008
 def solveEigenProblemN( conf, options ):
 
-    if options.outputFileNameTrunk:
-        ofnTrunk = options.outputFileNameTrunk
-    else:
-        ofnTrunk = io.getTrunk( conf.fileName_mesh )
 
     pb = ProblemDefinition.fromConf( conf )
     dim = pb.domain.mesh.dim
@@ -186,6 +169,7 @@ def solveEigenProblemN( conf, options ):
     updateStateToOutput( out, pb, vecVH, 'vh' )
     updateStateToOutput( out, pb, vecVXC, 'vxc' )
 
+    ofnTrunk = options.outputFileNameTrunk
     pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofnTrunk + '_eigs.txt', 'w' )
@@ -198,10 +182,6 @@ def solveEigenProblemN( conf, options ):
 # c: 01.02.2008, r: 03.03.2008
 def solveEigenProblem1( conf, options ):
 
-    if options.outputFileNameTrunk:
-        ofnTrunk = options.outputFileNameTrunk
-    else:
-        ofnTrunk = io.getTrunk( conf.fileName_mesh )
 
     pb = ProblemDefinition.fromConf( conf )
     dim = pb.domain.mesh.dim
@@ -238,8 +218,6 @@ def solveEigenProblem1( conf, options ):
     eig = Solver.anyFromConf( pb.getSolverConf( conf.options.eigenSolver ) )
     eigs, mtxSPhi = eig( mtxA, mtxB, conf.options.nEigs )
     print eigs
-    print "relative values:"
-    print 1.5*eigs/eigs[0]
 ##     import sfepy.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
@@ -260,6 +238,7 @@ def solveEigenProblem1( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
+    ofnTrunk = options.outputFileNameTrunk
     pb.domain.mesh.write( ofnTrunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofnTrunk + '_eigs.txt', 'w' )
@@ -271,28 +250,34 @@ def solveEigenProblem1( conf, options ):
 
 usage = """%prog [options] fileNameIn
 
-By default, solve n-electron DFT problem.
+Solver for electronic structure problems. 
 
-The mesh is read from tmp/t.1.vtk, which you can generate for example using a
-command:
-    $ ./convert.py database/quantum/oscillator.geo
-or
-    $ ./convert.py database/quantum/well.geo
+You need to create a mesh (optionally specify a dimension):
+
+    $ ./schroedinger --mesh -d2
+
+and then pick a problem to solve, some examples below (specify the same
+dimension as above):
+
+    $ ./schroedinger --hydrogen -d2
+    $ ./schroedinger --well
+    $ ./schroedinger --dft
+
+and visualize the result:
+
+    $ paraview --data=mesh.vtk
+
 """
 
 help = {
-    'fileName' :
-    'basename of output file(s) [default: <basename of input file>]',
-    'simplified' :
-    "solve simplified (1 electron) problem",
-    'well' :
-    "solve infinite potential well (particle in a box) problem",
-    'oscillator' :
-    "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
-    'hydrogen' :
-    "solve the hydrogen atom",
-    "dim": "the dimensionality of the problem, either 2 or 3",
-    "mesh": "creates a mesh"
+    'fileName' : 'basename of output file(s) [default: %default.vtk]',
+    'simplified' : "solve simplified (1 electron) problem",
+    'well' : "solve infinite potential well (particle in a box) problem",
+    'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
+    'hydrogen' : "solve the hydrogen atom",
+    "dim": "the dimensionality of the problem, either 2 or 3 [default: %default]",
+    "mesh": "creates a mesh",
+    "dft": "Uses a DFT solver"
 }
 
 ##
@@ -304,7 +289,7 @@ def main():
     parser = OptionParser( usage = usage, version = "%prog " + version )
     parser.add_option( "-o", "", metavar = 'fileName',
                        action = "store", dest = "outputFileNameTrunk",
-                       default = None, help = help['fileName'] )
+                       default = "mesh", help = help['fileName'] )
     parser.add_option( "-s", "--simplified",
                        action = "store_true", dest = "simplified",
                        default = False, help = help['simplified'] )
@@ -323,21 +308,24 @@ def main():
     parser.add_option( "--mesh",
                        action = "store_true", dest = "mesh",
                        default = False, help = help['mesh'] )
+    parser.add_option( "--dft",
+                       action = "store_true", dest = "dft",
+                       default = False, help = help['dft'] )
 
     options, args = parser.parse_args()
 
     if len( args ) == 1:
         fileNameIn = args[0];
     elif len( args ) == 0:
-        if options.simplified:
-            fileNameIn = "input/quantum/schroed.py"
-        elif options.oscillator:
+        if options.oscillator:
             fileNameIn = "input/quantum/oscillator.py"
             options.simplified = True
         elif options.well:
             fileNameIn = "input/quantum/well.py"
             options.simplified = True
         elif options.hydrogen:
+            # this is not reliable:
+            #dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
             if options.dim == 2:
                 fileNameIn = "input/quantum/hydrogen2d.py"
             else:
@@ -372,17 +360,18 @@ def main():
                 m = Mesh.fromFile("tmp/t.1.node")
                 m.write("tmp/mesh.vtk", io="auto")
                 print "Mesh written to tmp/mesh.vtk"
-            sys.exit()
-
-
-        else:
+            return
+        elif options.dft:
             if options.dim == 2:
                 fileNameIn = "input/quantum/dft2d.py"
             else:
                 assert options.dim == 3
                 fileNameIn = "input/quantum/dft3d.py"
+        else:
+            parser.print_help()
+            return
     else:
-        parser.print_help(),
+        parser.print_help()
         return
 
     required, other = getStandardKeywords()
@@ -394,6 +383,8 @@ def main():
         evp = solveEigenProblem1( conf, options )
     else:
         evp = solveEigenProblemN( conf, options )
+
+    print "Solution saved to %s.vtk" % options.outputFileNameTrunk
 
 if __name__ == '__main__':
     main()
