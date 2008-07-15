@@ -335,6 +335,7 @@ class VTKMeshIO( MeshIO ):
         while 1:
             try:
                 line = fd.readline().split()
+                if not line: continue
                 if line[0] == 'CELL_TYPES':
                     cellTypes = readArray( fd, 1, -1, nm.int32 )
                     dim = vtkDims[cellTypes[0,0]]
