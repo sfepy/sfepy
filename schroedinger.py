@@ -345,10 +345,33 @@ def main():
                 fileNameIn = "input/quantum/hydrogen3d.py"
             options.simplified = True
         elif options.mesh:
-            os.system("cp database/square.geo tmp/mesh.geo")
-            os.system("gmsh -2 tmp/mesh.geo -format mesh")
-            os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
-            print "Mesh written to tmp/mesh.vtk"
+            try:
+                os.makedirs("tmp")
+            except OSError, e:
+                if e.errno != 17: # [Errno 17] File exists
+                    raise
+            if options.dim == 2:
+                os.system("cp database/square.geo tmp/mesh.geo")
+                os.system("gmsh -2 tmp/mesh.geo -format mesh")
+                os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
+                print "Mesh written to tmp/mesh.vtk"
+            else:
+                assert options.dim == 3
+                import geom
+                from sfepy.fem.mesh import Mesh
+                try:
+                    from site_cfg import tetgen_path
+                except ImportError:
+                    tetgen_path = '/usr/bin/tetgen'
+                os.system("gmsh -0 database/box.geo -o tmp/x.geo")
+                g = geom.read_gmsh("tmp/x.geo")
+                g.printinfo()
+                geom.write_tetgen(g, "tmp/t.poly")
+                geom.runtetgen("tmp/t.poly", a=0.03, Q=1.0, quadratic=False,
+                        tetgenpath=tetgen_path)
+                m = Mesh.fromFile("tmp/t.1.node")
+                m.write("tmp/mesh.vtk", io="auto")
+                print "Mesh written to tmp/mesh.vtk"
             sys.exit()
 
 
