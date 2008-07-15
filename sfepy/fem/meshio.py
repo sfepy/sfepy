@@ -329,15 +329,15 @@ class VTKMeshIO( MeshIO ):
     format = 'vtk'
 
     ##
-    # c: 03.07.2008, r: 03.07.2008
+    # c: 03.07.2008, r: 15.07.2008
     def read_dimension( self, ret_fd = False ):
         fd = open( self.fileName, 'r' )
         while 1:
             try:
                 line = fd.readline().split()
-                if line[0] == 'POINTS':
-                    nod = readArray( fd, 1, -1, nm.float64 )
-                    dim = nod.shape[1]
+                if line[0] == 'CELL_TYPES':
+                    cellTypes = readArray( fd, 1, -1, nm.int32 )
+                    dim = vtkDims[cellTypes[0,0]]
                     break
             except:
                 output( "reading " + fd.name + " failed!" )
