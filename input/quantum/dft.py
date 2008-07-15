@@ -153,7 +153,7 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
         'epsA'      : 1e-10,
         'epsR'      : 1.0,
         'macheps'   : 1e-16,
-        'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
+        'linRed'    : 1, # Linear system error < (epsA * linRed).
         'lsRed'     : 0.1,
         'lsRedWarp' : 0.001,
         'lsOn'      : 1.1,
