@@ -98,6 +98,7 @@ class Test( TestCommon ):
     def test_read_dimension( self ):
         from sfepy.fem.meshio import MeshIO
         meshes = {'database/tests/small2d.mesh' : 2,
+                  'database/tests/small2d.vtk' : 2,
                   'database/tests/small3d.mesh' : 3,
                   'database/simple.mesh' : 3,
                   'database/simple.vtk' : 3}

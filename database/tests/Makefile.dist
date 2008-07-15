@@ -1,12 +1,12 @@
 # 19.07.2007, c
-# last revision: 19.07.2007
+# last revision: 15.07.2008
 
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := Makefile.dist
 
-RELDISTFILES := $(DISTFILES) $(shell ls *.mesh)
+RELDISTFILES := $(DISTFILES) $(shell ls *.mesh) $(shell ls *.vtk)
 
 dist:
 #	echo $(DESTDIR)
