@@ -32,6 +32,16 @@ def debug():
     pdb.set_trace()
 
 ##
+# c: 20.06.2008, r: 20.06.2008
+def import_file( filename ):
+    path = os.path.dirname( filename )
+    if not path in sys.path:
+        sys.path.append( path )
+    name = os.path.splitext( os.path.basename( filename ) )[0]
+    mod = __import__( name )
+    return mod
+
+##
 # c: 02.04.2008, r: 02.04.2008
 prefix = 'sfepy:'
 def setOutputPrefix( prefix  = 'sfepy:' ):
