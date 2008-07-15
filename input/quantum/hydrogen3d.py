@@ -1,7 +1,7 @@
 from hydrogen import common
 
 def define():
-    l = common('tmp/t.1.node', 3)
+    l = common(dim=3)
     return l
 
 def funV( ts, coor, region, ig, mode = None ):
