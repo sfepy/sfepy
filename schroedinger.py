@@ -73,13 +73,13 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
     output( '...done in %.2f s' % (time.clock() - tt) )
 
 
-    print 'computing resonance frequencies...'
+    print 'computing the Ax=Blx Kohn-Sham problem...'
     eigs, mtxSPhi = eigSolver( mtxA, mtxB, conf.options.nEigs )
 
     if len(eigs) < nElectron:
         print len(eigs)
         print eigs
-        raise Exception("Not enough eigenvalues have converged. Exitting.")
+        raise Exception("Not enough eigenvalues have converged. Exiting.")
 
     vecPhi = nm.zeros_like( vecVHXC )
     vecN = nm.zeros_like( vecVHXC )
