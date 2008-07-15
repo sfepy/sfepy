@@ -95,6 +95,7 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
     pb.setEquations( conf.equations_vh )
     pb.timeUpdate()
     pb.variables['n'].dataFromData( vecN )
+    print "Solving Ax=b Poisson equation"
     vecVH = pb.solve()
 
     #sphere = evalTermOP( dummy, conf.equations['sphere'], pb)
