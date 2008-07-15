@@ -272,6 +272,19 @@ class ProblemDefinition( Struct ):
     # c: 18.04.2006, r: 07.05.2008
     def stateToOutput( self, vec, fillValue = None, varInfo = None,
                        extend = True ):
+        """
+        Transforms state vector 'vec' to an output dictionary, that can be
+        passed as 'out' kwarg to Mesh.write(). 'vec' must have full size,
+        i.e. all fixed or periodic values must be included.
+
+        Example:
+        >>> out = problem.stateToOutput( state )
+        >>> problem.saveState( 'file.vtk', out = out )
+
+        Then the  dictionary entries a formed by components of the state vector
+        corresponding to the unknown variables, each transformed to shape
+        (n_mesh_nod, n_dof per node) - all values in extra nodes are removed.
+        """
         return self.variables.stateToOutput( vec, fillValue, varInfo, extend )
 
     ##
