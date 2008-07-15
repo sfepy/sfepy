@@ -271,7 +271,6 @@ and visualize the result:
 
 help = {
     'fileName' : 'basename of output file(s) [default: %default.vtk]',
-    'simplified' : "solve simplified (1 electron) problem",
     'well' : "solve infinite potential well (particle in a box) problem",
     'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' : "solve the hydrogen atom",
@@ -290,9 +289,6 @@ def main():
     parser.add_option( "-o", "", metavar = 'fileName',
                        action = "store", dest = "outputFileNameTrunk",
                        default = "mesh", help = help['fileName'] )
-    parser.add_option( "-s", "--simplified",
-                       action = "store_true", dest = "simplified",
-                       default = False, help = help['simplified'] )
     parser.add_option( "--oscillator",
                        action = "store_true", dest = "oscillator",
                        default = False, help = help['oscillator'] )
@@ -319,10 +315,8 @@ def main():
     elif len( args ) == 0:
         if options.oscillator:
             fileNameIn = "input/quantum/oscillator.py"
-            options.simplified = True
         elif options.well:
             fileNameIn = "input/quantum/well.py"
-            options.simplified = True
         elif options.hydrogen:
             # this is not reliable:
             #dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
@@ -331,7 +325,6 @@ def main():
             else:
                 assert options.dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
-            options.simplified = True
         elif options.mesh:
             try:
                 os.makedirs("tmp")
@@ -375,14 +368,12 @@ def main():
         return
 
     required, other = getStandardKeywords()
-    if options.simplified:
-        required.remove( 'solver_[0-9]+|solvers' )
     conf = ProblemConf.fromFile( fileNameIn, required, other )
 
-    if options.simplified:
-        evp = solveEigenProblem1( conf, options )
-    else:
+    if options.dft:
         evp = solveEigenProblemN( conf, options )
+    else:
+        evp = solveEigenProblem1( conf, options )
 
     print "Solution saved to %s.vtk" % options.outputFileNameTrunk
 
