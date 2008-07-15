@@ -254,14 +254,14 @@ Solver for electronic structure problems.
 
 You need to create a mesh (optionally specify a dimension):
 
-    $ ./schroedinger --mesh -d2
+    $ ./schroedinger.py --mesh --2d
 
 and then pick a problem to solve, some examples below (the dimension is
 determined by the mesh that you created above):
 
-    $ ./schroedinger --hydrogen
-    $ ./schroedinger --well
-    $ ./schroedinger --dft
+    $ ./schroedinger.py --hydrogen
+    $ ./schroedinger.py --well
+    $ ./schroedinger.py --dft
 
 and visualize the result:
 
@@ -275,7 +275,7 @@ help = {
     'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' : "solve the hydrogen atom",
     "mesh": "creates a mesh",
-    "dim": "the dimensionality of the mesh, either 2 or 3, valid only with the --mesh parameter [default: %default]",
+    "dim": "Create a 2D mesh, instead of the default 3D",
     "dft": "Uses a DFT solver",
 }
 
@@ -289,9 +289,9 @@ def main():
     parser.add_option( "--mesh",
                        action = "store_true", dest = "mesh",
                        default = False, help = help['mesh'] )
-    parser.add_option( "-d", "--dim", type="int",
-                       action = "store", dest = "dim",
-                       default = 3, help = help['dim'] )
+    parser.add_option( "--2d",
+                       action = "store_true", dest = "dim2",
+                       default = False, help = help['dim'] )
     parser.add_option( "-o", "", metavar = 'fileName',
                        action = "store", dest = "outputFileNameTrunk",
                        default = "mesh", help = help['fileName'] )
@@ -324,19 +324,20 @@ def main():
             else:
                 assert dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
+            print "Dimension:", dim
         elif options.mesh:
             try:
                 os.makedirs("tmp")
             except OSError, e:
                 if e.errno != 17: # [Errno 17] File exists
                     raise
-            if options.dim == 2:
+            if options.dim2:
+                print "Dimension: 2"
                 os.system("cp database/square.geo tmp/mesh.geo")
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
                 os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
-                print "Mesh written to tmp/mesh.vtk"
             else:
-                assert options.dim == 3
+                print "Dimension: 3"
                 import geom
                 from sfepy.fem.mesh import Mesh
                 try:
@@ -351,7 +352,7 @@ def main():
                         tetgenpath=tetgen_path)
                 m = Mesh.fromFile("tmp/t.1.node")
                 m.write("tmp/mesh.vtk", io="auto")
-                print "Mesh written to tmp/mesh.vtk"
+            print "Mesh written to tmp/mesh.vtk"
             return
         elif options.dft:
             dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
@@ -360,6 +361,7 @@ def main():
             else:
                 assert dim == 3
                 fileNameIn = "input/quantum/dft3d.py"
+            print "Dimension:", dim
         else:
             parser.print_help()
             return
