@@ -256,10 +256,10 @@ You need to create a mesh (optionally specify a dimension):
 
     $ ./schroedinger --mesh -d2
 
-and then pick a problem to solve, some examples below (specify the same
-dimension as above):
+and then pick a problem to solve, some examples below (the dimension is
+determined by the mesh that you created above):
 
-    $ ./schroedinger --hydrogen -d2
+    $ ./schroedinger --hydrogen
     $ ./schroedinger --well
     $ ./schroedinger --dft
 
@@ -274,9 +274,9 @@ help = {
     'well' : "solve infinite potential well (particle in a box) problem",
     'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' : "solve the hydrogen atom",
-    "dim": "the dimensionality of the problem, either 2 or 3 [default: %default]",
     "mesh": "creates a mesh",
-    "dft": "Uses a DFT solver"
+    "dim": "the dimensionality of the mesh, either 2 or 3, valid only with the --mesh parameter [default: %default]",
+    "dft": "Uses a DFT solver",
 }
 
 ##
@@ -286,6 +286,12 @@ def main():
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )
+    parser.add_option( "--mesh",
+                       action = "store_true", dest = "mesh",
+                       default = False, help = help['mesh'] )
+    parser.add_option( "-d", "--dim", type="int",
+                       action = "store", dest = "dim",
+                       default = 3, help = help['dim'] )
     parser.add_option( "-o", "", metavar = 'fileName',
                        action = "store", dest = "outputFileNameTrunk",
                        default = "mesh", help = help['fileName'] )
@@ -295,15 +301,9 @@ def main():
     parser.add_option( "--well",
                        action = "store_true", dest = "well",
                        default = False, help = help['well'] )
-    parser.add_option( "-d", "--dim", type="int",
-                       action = "store", dest = "dim",
-                       default = 3, help = help['dim'] )
     parser.add_option( "--hydrogen",
                        action = "store_true", dest = "hydrogen",
                        default = False, help = help['hydrogen'] )
-    parser.add_option( "--mesh",
-                       action = "store_true", dest = "mesh",
-                       default = False, help = help['mesh'] )
     parser.add_option( "--dft",
                        action = "store_true", dest = "dft",
                        default = False, help = help['dft'] )
@@ -318,12 +318,11 @@ def main():
         elif options.well:
             fileNameIn = "input/quantum/well.py"
         elif options.hydrogen:
-            # this is not reliable:
-            #dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
-            if options.dim == 2:
+            dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
+            if dim == 2:
                 fileNameIn = "input/quantum/hydrogen2d.py"
             else:
-                assert options.dim == 3
+                assert dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
         elif options.mesh:
             try:
@@ -355,10 +354,11 @@ def main():
                 print "Mesh written to tmp/mesh.vtk"
             return
         elif options.dft:
-            if options.dim == 2:
+            dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
+            if dim == 2:
                 fileNameIn = "input/quantum/dft2d.py"
             else:
-                assert options.dim == 3
+                assert dim == 3
                 fileNameIn = "input/quantum/dft3d.py"
         else:
             parser.print_help()
