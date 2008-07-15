@@ -57,9 +57,12 @@ def wrapFunction( function, args ):
         return vecVH + vecVXC
     return ncalls, times, function_wrapper
 
+itercount = 0
 ##
 # c: 22.02.2008, r: 03.03.2008
 def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
+    global itercount
+    itercount += 1
     from sfepy.physics import dft
 
     pb.updateMaterials( extraMatArgs = {'matV' : {'vhxc' : vecVHXC}} )
@@ -80,6 +83,15 @@ def iterate( vecVHXC, pb, conf, eigSolver, nEigs, mtxB, nElectron = 5 ):
         print len(eigs)
         print eigs
         raise Exception("Not enough eigenvalues have converged. Exiting.")
+
+    print "saving solutions, iter=%d" % itercount
+    out = {}
+    varName = pb.variables.getNames( kind = 'state' )[0]
+    for ii in xrange( len(eigs) ):
+        vecPhi = pb.variables.makeFullVec( mtxSPhi[:,ii] )
+        updateStateToOutput( out, pb, vecPhi, varName+'%03d' % ii )
+    pb.saveState( "tmp/iter%d.vtk" % itercount, out = out )
+    print "solutions saved"
 
     vecPhi = nm.zeros_like( vecVHXC )
     vecN = nm.zeros_like( vecVHXC )
