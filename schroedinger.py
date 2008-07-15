@@ -276,7 +276,7 @@ help = {
     'hydrogen' : "solve the hydrogen atom",
     "mesh": "creates a mesh",
     "dim": "Create a 2D mesh, instead of the default 3D",
-    "dft": "Uses a DFT solver",
+    "dft": "Do a DFT calculation",
 }
 
 ##
