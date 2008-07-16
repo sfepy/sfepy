@@ -1,9 +1,7 @@
-import os.path as op
 import re
-import types
-import sys
 
-from base import Struct, IndexedStruct, dictToStruct, pause, output, copy
+from base import Struct, IndexedStruct, dictToStruct, pause, output, copy,\
+     import_file
 from reader import Reader
 
 _required = ['fileName_mesh', 'field_[0-9]+|fields',
@@ -147,10 +145,7 @@ class ProblemConf( Struct ):
                 return locals()
 
         """
-        sys.path.append( op.dirname( fileName ) )
-
-        name = op.splitext( op.basename( fileName ) )[0]
-        funmod = __import__( name )
+        funmod = import_file( fileName )
         obj = ProblemConf()
         if "define" in funmod.__dict__:
             define_dict = funmod.__dict__["define"]()
