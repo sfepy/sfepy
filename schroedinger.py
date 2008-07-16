@@ -231,6 +231,28 @@ def solveEigenProblem1( conf, options ):
     eig = Solver.anyFromConf( pb.getSolverConf( conf.options.eigenSolver ) )
     eigs, mtxSPhi = eig( mtxA, mtxB, conf.options.nEigs )
     print eigs
+    from sfepy.fem.mesh import Mesh
+    bounding_box = Mesh.fromFile("tmp/mesh.vtk").getBoundingBox()
+    # this assumes a box (3D), or a square (2D):
+    a = bounding_box[1][0] - bounding_box[0][0]
+    E_exact = None
+    if options.hydrogen:
+        if options.dim == 2:
+            Z = 1
+            E_exact = [-Z**2/2/(n-0.5)**2 for n in [1]+[2]*2**2+[3]*3**2 ]
+        elif options.dim == 3:
+            Z = 1
+            E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
+    if options.well:
+        if options.dim == 2:
+            E_exact = [pi**2/(2*a**2)*x for x in [2, 5, 5, 8, 10, 10, 13, 13,
+                17, 17, 18, 20, 20 ] ]
+        elif options.dim == 3:
+            E_exact = [pi**2/(2*a**2)*x for x in [3, 6, 6, 6, 9, 9, 9, 11, 11,
+                11, 12, 14, 14, 14, 14, 14] ]
+    if E_exact is not None:
+        print "analytic solution (a=%f):" % a
+        print ("%.3f " * len(E_exact)) % tuple(E_exact)
 ##     import sfepy.base.plotutils as plu
 ##     plu.spy( mtxB, eps = 1e-12 )
 ##     plu.pylab.show()
@@ -328,8 +350,10 @@ def main():
     elif len( args ) == 0:
         if options.oscillator:
             fileNameIn = "input/quantum/oscillator.py"
+            options.dim = 3
         elif options.well:
             fileNameIn = "input/quantum/well.py"
+            options.dim = 3
         elif options.hydrogen:
             dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
             if dim == 2:
@@ -337,6 +361,7 @@ def main():
             else:
                 assert dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
+            options.dim = dim
             print "Dimension:", dim
         elif options.mesh:
             try:
@@ -375,6 +400,7 @@ def main():
                 assert dim == 3
                 fileNameIn = "input/quantum/dft3d.py"
             print "Dimension:", dim
+            options.dim = dim
         else:
             parser.print_help()
             return
