@@ -520,3 +520,29 @@ class WDotProductVolumeOperatorTHTerm( Term ):
                                             matQP, vg, chunk, 0 )
                     out += out1
                 yield out, chunk, status
+
+class AverageVariableTerm( Term ):
+    r""":description: Variable $y$ averaged in elements.
+    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} y /
+    \int_{T_K} 1$"""
+    name = 'de_average_variable'
+    argTypes = ('parameter',)
+    geometry = [(Volume, 'parameter')]
+    useCaches = {'state_in_volume_qp' : [['parameter']]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign )
+        
+    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+        par, = self.getArgs( **kwargs )
+        ap, vg = par.getApproximation( self.getCurrentGroup(), 'Volume' )
+
+        cache = self.getCache( 'state_in_volume_qp', 0 )
+        vec = cache( 'state', self.getCurrentGroup(), 0, state = par )
+        vdim = vec.shape[-1]
+        shape = (chunkSize, 1, vdim, 1)
+
+        for out, chunk in self.charFun( chunkSize, shape ):
+            status = vg.integrateChunk( out, vec[chunk], chunk )
+            out1 = out / vg.variable( 2 )[chunk]
+            yield out1, chunk, status
