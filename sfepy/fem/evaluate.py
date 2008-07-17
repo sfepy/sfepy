@@ -200,7 +200,7 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
         caches = {}
 
     equation = Equation.fromDesc( 'tmp', termDesc, termPrefixes )
-    equation.parseTerms( domain.regions, caches )
+    equation.parse_terms( domain.regions, caches )
     equation.setupTermArgs( variables, materials, kwargs )
     for cache in caches.itervalues():
         cache.setMode( override = override )
