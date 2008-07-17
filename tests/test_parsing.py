@@ -13,7 +13,7 @@ class Test( TestCommon ):
     ##
     # c: 16.07.2007, r: 08.07.2008
     def test_parseEquations( self ):
-        from sfepy.fem.parseEq import createBNF
+        from sfepy.fem.parseEq import create_bnf
 
         testStrs = [
             """- d_volume.i1.Omega( uc )""",
@@ -23,7 +23,7 @@ class Test( TestCommon ):
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )""",
             """noArgs() = 0""",
-            """+ something( a, b, c ) = + somethingElse( c, a, d )""",
+            """+ something( a, b, c ) = + somethingElse( c, a, d[-1] )""",
             """term_.a.a( u )"""
         ]
 
@@ -32,7 +32,7 @@ class Test( TestCommon ):
         for testStr in testStrs:
             termDescs[:] = []
             try:
-                bnf = createBNF( termDescs, {} )
+                bnf = create_bnf( termDescs, {} )
                 bnf.parseString( testStr )
             except:
                 self.report( 'failed: %s' % testStr )

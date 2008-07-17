@@ -49,7 +49,7 @@ def rhs( lc ):
         
 ##
 # c: 21.05.2006, r: 08.07.2008
-def createBNF( termDescs, itps ):
+def create_bnf( termDescs, itps ):
     """termDescs .. list of TermParse objects (sign, termName, termArgNames)"""
 
     lc = ['+'] # Linear combination context.
@@ -58,14 +58,18 @@ def createBNF( termDescs, itps ):
 
     point = Literal( "." )
     e = CaselessLiteral( "E" )
-    inumber = Word( nums )
+    inumber = Word( "+-"+nums, nums )
     fnumber = Combine( Word( "+-"+nums, nums ) + 
                        Optional( point + Optional( Word( nums ) ) ) +
                        Optional( e + Word( "+-"+nums, nums ) ) )
+    lbracket = Literal( '[' ).suppress()
+    rbracket = Literal( ']' ).suppress()
 
 
     ident = Word( alphas, alphanums + "_")
-    variable = Word( alphas, alphanums + '._' )
+    history = Optional( lbracket + inumber + rbracket, default = 0 )( "history" )
+    history.setParseAction( lambda str, loc, toks: int( toks[0] ) )
+    variable = Group( Word( alphas, alphanums + '._' ) + history )
     flag = Literal( 'a' )
 
     term = Optional( Literal( '+' ) | Literal( '-' ), default = '+' )( "sign" )\
@@ -95,11 +99,11 @@ if __name__ == "__main__":
 
     testStr = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + 5.0 * d_term2.Omega( u, w, Nu, dcf, mode )
-                 - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
+                 - d_another_term.Elsewhere( w, p[-1], Nu, dcf, mode )
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )"""
     
     termDescs = []
-    bnf = createBNF( termDescs, {} )
+    bnf = create_bnf( termDescs, {} )
     out = bnf.parseString( testStr )
 
     print 'out:', out, '\n'
