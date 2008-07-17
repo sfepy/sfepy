@@ -824,14 +824,13 @@ class Variables( Container ):
 # 11.07.2006, c
 class Variable( Struct ):
 
-    ##
-    # c: 14.07.2006?, r: 25.02.2008
     def fromConf( key, conf, fields ):
         flags = set()
         kind, family = conf.kind.split()
+        history = getDefaultAttr( conf, 'history', None )
 
         obj = Variable( flags, name = conf.name, key = key,
-                        kind = kind, family = family )
+                        kind = kind, family = family, history = history )
 
         if kind == 'unknown':
             obj.flags.add( isState )

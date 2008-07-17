@@ -124,7 +124,7 @@ class ProblemDefinition( Struct ):
     def setEquations( self, conf_equations, user = None, cacheOverride = None,
                       keepSolvers = False ):
         equations = Equations.fromConf( conf_equations )
-        equations.parseTerms( self.domain.regions )
+        equations.parse_terms( self.domain.regions )
         equations.setupTermArgs( self.variables, self.materials, user )
 
         iNames = equations.getTermIntegralNames()
@@ -501,3 +501,8 @@ class ProblemDefinition( Struct ):
                              'you must set time-stepping solver!' )
         
         return Solver.anyFromConf( tsConf, **kwargs )
+
+
+    def init_variables( self, state ):
+        """Initialize variables with history."""
+        self.variables.init( state )

@@ -1,19 +1,24 @@
 ##
-# c: 05.02.2008, r: 04.07.2008
+# c: 05.02.2008
 fileName_mesh = 'database/simple.mesh'
+
+from sfepy.solvers.ts import TimeStepper
+t0 = 0.0
+t1 = 1.0
+nStep = 10
+ts = TimeStepper( t0, t1, None, nStep )
 
 material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'val_dt' : 0.0001, # coef * \Delta t.
+    'val_dt' : 0.01 * ts.dt, # coef * \Delta t.
     'kind' : 'stationary', # 'stationary' or 'time-dependent'
 }
 
 field_1 = {
     'name' : 'temperature',
     'dim' : (1,1),
-    'flags' : (),
     'domain' : 'Omega',
     'bases' : {'Omega' : '3_4_P1'}
 }
@@ -23,18 +28,13 @@ variable_1 = {
     'kind' : 'unknown field',
     'field' : 'temperature',
     'order' : 0,
+    'history' : 'previous', # 'previous' or 'full'
 }
 variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
     'dual' : 't',
-}
-variable_10 = {
-    'name' : 't0',
-    'kind' : 'parameter field',
-    'field' : 'temperature',
-    'like' : 't',
 }
 
 region_1000 = {
@@ -70,7 +70,8 @@ integral_1 = {
 equations = {
     'Temperature' :
     """  dw_laplace.i1.Omega( coef.val_dt, s, t )
-       + dw_mass_scalar.i1.Omega( s, t ) = dw_mass_scalar.i1.Omega( s, t0 )"""
+       + dw_mass_scalar.i1.Omega( s, t )
+       = dw_mass_scalar.i1.Omega( s, t[-1] )"""
 }
 
 solver_0 = {
@@ -101,10 +102,10 @@ solver_2 = {
     'name' : 'ts',
     'kind' : 'ts.simple',
 
-    't0'    : 0.0,
-    't1'    : 1.0,
+    't0'    : t0,
+    't1'    : t1,
     'dt'    : None,
-    'nStep' : 10, # has precedence over dt!
+    'nStep' : nStep, # has precedence over dt!
 }
 
 options = {
@@ -112,7 +113,6 @@ options = {
     'ls' : 'ls',
     'ts' : 'ts',
     'saveSteps' : -1,
-    'variableHistory' : {'t' : 't0'},
 }
 
 fe = {

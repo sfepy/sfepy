@@ -84,15 +84,8 @@ def prepareSaveData( ts, conf, options ):
 
     return ofnTrunk, ts.suffix, isSave
 
-##
-# c: 06.02.2008, r: 08.07.2008
-def timeStepFunction( ts, state0, problem, data ):
+def time_step_function( ts, state0, problem, data ):
     problem.timeUpdate( ts )
-
-    vh = getDefaultAttr( problem.conf.options, 'variableHistory', {} )
-    varNames0, varNames = vh.values(), vh.keys()
-
-    setHistoryData = problem.variables.nonStateDataFromState
 
     if ts.step == 0:
         state = state0.copy()
@@ -102,7 +95,6 @@ def timeStepFunction( ts, state0, problem, data ):
         if problem.equations.caches:
             # Initialize caches.
             ev = problem.getEvaluator( ts = ts, **data )
-            setHistoryData( varNames0, state0, varNames )
             vecR, ret = ev.evalResidual( state )
             if ret == 0: # OK.
                 err = nla.norm( vecR )
@@ -110,11 +102,11 @@ def timeStepFunction( ts, state0, problem, data ):
             else:
                 output( 'initial residual evaluation failed, giving up...' )
                 raise ValueError
+
         if problem.isLinear():
             # Assemble linear system matrix for all
             # time steps.
             ev = problem.getEvaluator( ts = ts, mtx = problem.mtxA, **data )
-            setHistoryData( varNames0, state0, varNames )
             mtxA, ret = ev.evalTangentMatrix( state )
             if ret != 0:
                 output( 'matrix evaluation failed, giving up...' )
@@ -124,9 +116,10 @@ def timeStepFunction( ts, state0, problem, data ):
 
         # Initialize solvers (and possibly presolve the matrix).
         problem.initSolvers( ts = ts, mtx = mtxA, **data )
+        # Initialize variables with history.
+        problem.init_variables( state0 )
 
     else:
-        setHistoryData( varNames0, state0, varNames )
         state = problem.solve( state0 = state0, ts = ts, **data )
 
     problem.advance( ts )
@@ -141,7 +134,7 @@ def solveEvolutionaryOP( problem, options,
     """TODO  returnHistory"""
     
     data = {}
-    timeSolver = problem.getTimeSolver( stepFun = timeStepFunction,
+    timeSolver = problem.getTimeSolver( stepFun = time_step_function,
                                         stepArgs = (problem, data) )
 
     ofnTrunk, suffix, isSave = prepareSaveData( timeSolver.ts,

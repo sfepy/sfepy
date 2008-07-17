@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from parseEq import createBNF
+from parseEq import create_bnf
 from materials import Materials
 from sfepy.terms import Terms, Term, termTable, cacheTable
 
@@ -10,20 +10,13 @@ Note:
   used in equations
 """
 
-##
-# 03.01.2006. c
-# 10.01.2006
-# 21.03.2006
-# 21.05.2006
-# 21.07.2006
-# 01.08.2006
-# 11.08.2006
-# 12.02.2007
-# 20.03.2007
-def parseTerms( regions, desc, itps ):
+def parse_terms( regions, desc, itps ):
+    """
+    Parse equation given by 'desc' into terms. Assign each term its region.
+    """
     # Parse.
     termDescs = []
-    bnf = createBNF( termDescs, itps )
+    bnf = create_bnf( termDescs, itps )
     try:
         bnf.parseString( desc )
     except:
@@ -43,7 +36,7 @@ def parseTerms( regions, desc, itps ):
             raise ValueError
         region = regions[td.region]
         term = constructor( region, td.name, td.sign )
-        term.argNames = td.args
+        term.argNames, term.argSteps = zip( *td.args )
         term.integralName = td.integral
         terms.append( term )
 
@@ -141,10 +134,10 @@ class Equations( Container ):
     # 13.02.2007
     # 27.02.2007
     # 02.03.2007
-    def parseTerms( self, regions ):
+    def parse_terms( self, regions ):
         self.caches = {}
         for eq in self:
-            eq.parseTerms( regions, self.caches )
+            eq.parse_terms( regions, self.caches )
 
     ##
     # 21.07.2006, c
@@ -238,8 +231,8 @@ class Equation( Struct ):
     # 11.08.2006
     # 12.02.2007
     # 27.02.2007
-    def parseTerms( self, regions, caches ):
-        terms = parseTerms( regions, self.desc, self.itps )
+    def parse_terms( self, regions, caches ):
+        terms = parse_terms( regions, self.desc, self.itps )
         self.terms = Terms( terms )
         self.assignTermCaches( caches )
 

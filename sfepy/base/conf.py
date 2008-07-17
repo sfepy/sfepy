@@ -28,14 +28,12 @@ def tupleToConf( name, vals, order ):
 # Short syntax: key is suffixed with '_' to prevent collisions with long syntax
 # keys -> both cases can be used in a single input.
 
-##
-# c: 10.04.2008, r: 06.05.2008
 def transform_variables( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tupleToConf( key, conf, ['kind', 'field'] )
-            if len( conf ) == 3:
+            if len( conf ) >= 3:
                 kind = c2.kind.split()[0]
                 if kind == 'unknown':
                     c2.order = conf[2]
@@ -43,6 +41,8 @@ def transform_variables( adict ):
                     c2.dual = conf[2]
                 elif kind == 'parameter':
                     c2.like = conf[2]
+                if len( conf ) == 4:
+                    c2.history = conf[3]
             d2['variable__%d' % ii] = c2
         else:
             c2 = transform_toStruct_1( conf )
