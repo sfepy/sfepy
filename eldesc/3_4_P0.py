@@ -2,7 +2,7 @@ name = '3_4_P0'
 
 desc = {
     'family'      : 'Lagrange',
-    'approxOrder' : 0
+    'approx_order' : 0
 }
 
 geometry = '3_4'
@@ -18,7 +18,7 @@ nodes = {
     }
 }
 
-baseFuns = {
+base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1

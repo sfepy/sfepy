@@ -20,23 +20,23 @@ class SymeigEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 08.04.2008
-    def __call__( self, mtxA, mtxB = None, nEigs = None,
+    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
-        conf = getDefault( conf, self.conf )
-        mtxA = getDefault( mtxA, self.mtxA )
-        mtxB = getDefault( mtxB, self.mtxB )
-        nEigs = getDefault( nEigs, self.nEigs )
-        eigenvectors = getDefault( eigenvectors, self.eigenvectors )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx_a = get_default( mtx_a, self.mtx_a )
+        mtx_b = get_default( mtx_b, self.mtx_b )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        eigenvectors = get_default( eigenvectors, self.eigenvectors )
+        status = get_default( status, self.status )
 
-        if nEigs is None:
+        if n_eigs is None:
             rng = None
         else:
-            rng = (1, nEigs)
+            rng = (1, n_eigs)
 
         tt = time.clock()
-        mtxA, mtxB = self._toArray( mtxA, mtxB )
-        out = self.symeig( mtxA, mtxB, range = rng, eigenvectors = eigenvectors )
+        mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
+        out = self.symeig( mtx_a, mtx_b, range = rng, eigenvectors = eigenvectors )
         if status is not None:
             status['time'] = time.clock() - tt
 
@@ -53,31 +53,31 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 08.04.2008
-    def __call__( self, mtxA, mtxB = None, nEigs = None,
+    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
-        conf = getDefault( conf, self.conf )
-        mtxA = getDefault( mtxA, self.mtxA )
-        mtxB = getDefault( mtxB, self.mtxB )
-        nEigs = getDefault( nEigs, self.nEigs )
-        eigenvectors = getDefault( eigenvectors, self.eigenvectors )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx_a = get_default( mtx_a, self.mtx_a )
+        mtx_b = get_default( mtx_b, self.mtx_b )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        eigenvectors = get_default( eigenvectors, self.eigenvectors )
+        status = get_default( status, self.status )
 
         tt = time.clock()
-        if nEigs is None:
-            mtxA, mtxB = self._toArray( mtxA, mtxB )
-            out = nla.eig( mtxA, mtxB, right = eigenvectors )
+        if n_eigs is None:
+            mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
+            out = nla.eig( mtx_a, mtx_b, right = eigenvectors )
             if eigenvectors:
                 eigs = out[0]
             else:
                 eigs = out
             ii = nm.argsort( eigs )
             if eigenvectors:
-                mtxEV = out[1][:,ii]
-                out = (eigs[ii], mtxEV)
+                mtx_ev = out[1][:,ii]
+                out = (eigs[ii], mtx_ev)
             else:
                 out = (eigs,)
         else:
-            out = sc.splinalg.eigen_symmetric( mtxA, k = nEigs, M = mtxB )
+            out = sc.splinalg.eigen_symmetric( mtx_a, k = n_eigs, M = mtx_b )
 
         if status is not None:
             status['time'] = time.clock() - tt
@@ -91,35 +91,35 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
     
     ##
     # c: 08.04..2008, r: 08.04..2008
-    def __call__( self, mtxA, mtxB = None, nEigs = None,
+    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
         """eigenvectors arg ignored, computes them always"""
         import scipy.lib.lapack as ll
-        conf = getDefault( conf, self.conf )
-        mtxA = getDefault( mtxA, self.mtxA )
-        mtxB = getDefault( mtxB, self.mtxB )
-        nEigs = getDefault( nEigs, self.nEigs )
-        eigenvectors = getDefault( eigenvectors, self.eigenvectors )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx_a = get_default( mtx_a, self.mtx_a )
+        mtx_b = get_default( mtx_b, self.mtx_b )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        eigenvectors = get_default( eigenvectors, self.eigenvectors )
+        status = get_default( status, self.status )
 
         tt = time.clock()
-        if nEigs is None:
-            mtxA, mtxB = self._toArray( mtxA, mtxB )
-            if nm.iscomplexobj( mtxA ):
-                if mtxB is None:
-                    fun = ll.get_lapack_funcs( ['heev'], arrays = (mtxA,) )[0]
+        if n_eigs is None:
+            mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
+            if nm.iscomplexobj( mtx_a ):
+                if mtx_b is None:
+                    fun = ll.get_lapack_funcs( ['heev'], arrays = (mtx_a,) )[0]
                 else:
-                    fun = ll.get_lapack_funcs( ['hegv'], arrays = (mtxA,) )[0]
+                    fun = ll.get_lapack_funcs( ['hegv'], arrays = (mtx_a,) )[0]
             else:
-                if mtxB is None:
-                    fun = ll.get_lapack_funcs( ['syev'], arrays = (mtxA,) )[0]
+                if mtx_b is None:
+                    fun = ll.get_lapack_funcs( ['syev'], arrays = (mtx_a,) )[0]
                 else:
-                    fun = ll.get_lapack_funcs( ['sygv'], arrays = (mtxA,) )[0]
+                    fun = ll.get_lapack_funcs( ['sygv'], arrays = (mtx_a,) )[0]
     ##         print fun
-            if mtxB is None:
-                out = fun( mtxA )
+            if mtx_b is None:
+                out = fun( mtx_a )
             else:
-                out = fun( mtxA, mtxB )
+                out = fun( mtx_a, mtx_b )
 
             if not eigenvectors:
                 out = out[0]
@@ -127,7 +127,7 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
                 out = out[:-1]
             
         else:
-            out = ScipyEigenvalueSolver.__call__( self, mtxA, mtxB, nEigs,
+            out = ScipyEigenvalueSolver.__call__( self, mtx_a, mtx_b, n_eigs,
                   eigenvectors, status = None )
 
         if status is not None:
@@ -145,8 +145,8 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
         A = spmatrix.ll_mat(*mtx.shape)
         for i in xrange( mtx.indptr.shape[0] - 1 ):
             ii = slice( mtx.indptr[i], mtx.indptr[i+1] )
-            nInRow = ii.stop - ii.start
-            A.update_add_at( mtx.data[ii], [i] * nInRow, mtx.indices[ii] )
+            n_in_row = ii.stop - ii.start
+            A.update_add_at( mtx.data[ii], [i] * n_in_row, mtx.indices[ii] )
         return A
     _convert_mat = staticmethod( _convert_mat )
 
@@ -157,34 +157,34 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 03.03.2008
-    def __call__( self, mtxA, mtxB = None, nEigs = None,
+    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
         from pysparse import jdsym, itsolvers, precon
-        conf = getDefault( conf, self.conf )
-        mtxA = getDefault( mtxA, self.mtxA )
-        mtxB = getDefault( mtxB, self.mtxB )
-        nEigs = getDefault( nEigs, self.nEigs )
-        eigenvectors = getDefault( eigenvectors, self.eigenvectors )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx_a = get_default( mtx_a, self.mtx_a )
+        mtx_b = get_default( mtx_b, self.mtx_b )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        eigenvectors = get_default( eigenvectors, self.eigenvectors )
+        status = get_default( status, self.status )
 
         output( "loading..." )
-        A = self._convert_mat( mtxA )
+        A = self._convert_mat( mtx_a )
         output( "...done" )
-        if mtxB is not None:
-            M = self._convert_mat( mtxB )
+        if mtx_b is not None:
+            M = self._convert_mat( mtx_b )
 
         output( "solving..." )
         tt = time.clock()
         Atau=A.copy()
         Atau.shift(-conf.tau,M)
-        K=precon.jacobi(Atau)
+        K=precon.jacobi(_atau)
         A=A.to_sss();
-        if mtxB is not None:
+        if mtx_b is not None:
             M=M.to_sss();
 
         method = getattr( itsolvers, conf.method )
-        kconv, lmbd, Q, it, it_in = jdsym.jdsym( A, M, K, nEigs, conf.tau,
-                                                 conf.epsA, conf.iMax, 
+        kconv, lmbd, Q, it, it_in = jdsym.jdsym( A, M, K, n_eigs, conf.tau,
+                                                 conf.eps_a, conf.i_max, 
                                                  method,
                                                  clvl = conf.verbosity,
                                                  strategy = conf.strategy )
@@ -195,7 +195,7 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
 
         if status is not None:
             status['time'] = ttt
-            status['Q'] = Q
+            status['q'] = Q
             status['it'] = it
             status['it_in'] = it_in
 

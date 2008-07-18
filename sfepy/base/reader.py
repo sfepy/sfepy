@@ -6,7 +6,7 @@ import os.path as op
 class Reader( Struct ):
     """
     Reads and executes a Python file as a script with execfile(), storing its
-    locals. Then sets the __dict__ of a new instance of objClass to the stored
+    locals. Then sets the __dict__ of a new instance of obj_class to the stored
     locals.
 
     Example:
@@ -15,13 +15,13 @@ class Reader( Struct ):
     >>>    pass
 
     >>> read = Reader( '.' )
-    >>> instanceOfA = read( A, 'file.py' )
+    >>> instance_of_a = read( A, 'file.py' )
 
     It is equivalent to:
 
     >>> mod = __import__( 'file' )
-    >>> instanceOfA = A()
-    >>> instanceOfA.__dict__.update( mod.__dict__ )
+    >>> instance_of_a = A()
+    >>> instance_of_a.__dict__.update( mod.__dict__ )
 
     The first way does not create the 'file.pyc'...
     """
@@ -34,13 +34,13 @@ class Reader( Struct ):
     # 16.06.2005, c
     # 17.10.2005
     # 09.02.2006
-    def __call__( self, objClass, name ):
-        fileName = op.join( self.directory, name + '.py' )
+    def __call__( self, obj_class, name ):
+        file_name = op.join( self.directory, name + '.py' )
 
         aux = {}
-        execfile( fileName, {}, aux )
+        execfile( file_name, {}, aux )
 
-        obj = objClass()
+        obj = obj_class()
         for key, val in aux.iteritems():
             obj.__dict__[key] = val
 

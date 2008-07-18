@@ -8,12 +8,12 @@ import string
 import math
 import os
 
-from pyparsing import Word, Optional, alphas, nums, Combine, Literal, CaselessLiteral, LineEnd, Group, Dict, OneOrMore, StringEnd, restOfLine, ParseException, oneOf, Forward, alphanums
+from pyparsing import Word, Optional, alphas, nums, Combine, Literal, CaselessLiteral, LineEnd, Group, Dict, OneOrMore, StringEnd, rest_of_line, ParseException, one_of, Forward, alphanums
 
 import sfepy.base.progressbar as progressbar
 
 #gmsh element types, see 
-#http://www.geuz.org/gmsh/doc/texinfo/gmsh_10.html#SEC65
+#http://www.geuz.org/gmsh/doc/texinfo/gmsh_10.html#sec65
 #1D elements
 mshpoint=15 #Point (1 node)
 mshline=1 #Line (2 nodes)
@@ -43,7 +43,7 @@ pmdhexahedron=56 #Hexahedron (8 or 20 nodes)
 pmdsemiloof=61 #triangular semi-loof (6 nodes)
 
 #libmesh element types, see
-#http://libmesh.sourceforge.net/doxygen/namespacelibMeshEnums.php#54ee290fca7f0c26eb1e5986f52714574518904c8c2948ef3d2869c4cb4a2b8f
+#http://libmesh.sourceforge.net/doxygen/namespacelib_mesh_enums.php#54ee290fca7f0c26eb1e5986f52714574518904c8c2948ef3d2869c4cb4a2b8f
 #2D elements:
 libmeshtriangle=3 #TRI3
 libmeshquadrangle=5 #QUAD4
@@ -142,9 +142,9 @@ class bound:
                     f.extend(range(int(seq[0]),
                         int(seq[1])+1))
                 else:
-                    error("Invalid syntax",2)
+                    error("_invalid syntax",2)
         except ValueError:
-            error("Invalid syntax",2)
+            error("_invalid syntax",2)
         return f
     def writepmd(self,filename):
         f=file(filename,"w")
@@ -157,7 +157,7 @@ class bound:
         return self.str(self.getf(key))
     def getf(self,key):
         if key > mshmodelnum and not self.elementsassociated:
-            error("Elements from entity %d aren't associated."%(key))
+            error("_elements from entity %d aren't associated."%(key))
         return self.simplify(self.f[key])
     def simplify(self,l):
         """Removes repeating numbers and sorts the internal list l.
@@ -314,7 +314,7 @@ class bound:
                     else:
                         error("findelements:error 5",3)
         return el
-    def writeSV(self,f,els,key):
+    def write_sv(self,f,els,key):
         for e in els:
             f.write("  /S %d E %d S%d\n"%(key,e[0],e[1]))
     def associateelements(self,elements):
@@ -402,7 +402,7 @@ class mesh:
         #The whole mesh is in fact PMD type of mesh - it is using
         #PMD primitives etc. So conversion to/from other formats
         #is handled by appropriate functions (writemsh,readmsh,
-        #readELE,writeELE,...)
+        #readELE,write_ele,...)
         self.boundbox = (0,0,0,0,0,0) 
         #reading:
         #  I1: read from RP
@@ -516,7 +516,7 @@ class mesh:
             if p[2] == mshmodelnum:
                 if p[1] == mshtriangle: 
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdtrianglerot
@@ -526,7 +526,7 @@ class mesh:
                         p[5],p[6],p[7]))
                 elif p[1] == mshtriangle2:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdtrianglerot
@@ -536,7 +536,7 @@ class mesh:
                         p[5],p[6],p[7],p[8],p[9],p[10]))
                 elif p[1] == mshquadrangle:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdquadranglerot
@@ -546,7 +546,7 @@ class mesh:
                         p[5],p[6],p[7],p[8]))
                 elif p[1] == mshquadrangle2:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdquadranglerot
@@ -558,14 +558,14 @@ class mesh:
                     faces.append(p[13])
                 elif p[1] == mshtetrahedron:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdtetrahedron
                     self.elements.append((pmdelm,eltype,
                         p[5],p[6],p[7],p[8]))
                 elif p[1] == mshtetrahedron2:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdtetrahedron
                     self.elements.append((pmdelm,eltype,
@@ -573,7 +573,7 @@ class mesh:
                         p[9],p[10],p[11],p[12],p[13],p[14]))
                 elif p[1] == mshhexahedron:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdhexahedron
                     el=[pmdelm,eltype]
@@ -581,7 +581,7 @@ class mesh:
                     self.elements.append(tuple(el))
                 elif p[1] == mshprism:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdprism
                     el=[pmdelm,eltype]
@@ -687,7 +687,7 @@ class mesh:
             if p[2] == mshmodelnum:
                 if p[1] == mshtriangle: 
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdtrianglerot
@@ -697,7 +697,7 @@ class mesh:
                         p[5],p[6],p[7]))
                 elif p[1] == mshtriangle2:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdtrianglerot
@@ -707,7 +707,7 @@ class mesh:
                         p[5],p[6],p[7],p[8],p[9],p[10]))
                 elif p[1] == mshquadrangle:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdquadranglerot
@@ -716,7 +716,7 @@ class mesh:
                     self.elements.append((pmdelm,eltype)+tuple(p[3:]))
                 elif p[1] == mshquadrangle2:
                     if not self.is2d:
-                        error("2D element in 3D mesh",2)
+                        error("2d element in 3D mesh",2)
                     pmdelm+=1
                     if symmetric:
                         eltype=pmdquadranglerot
@@ -728,14 +728,14 @@ class mesh:
                     faces.append(p[13])
                 elif p[1] == mshtetrahedron:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdtetrahedron
                     self.elements.append((pmdelm,eltype,
                         p[5],p[6],p[7],p[8]))
                 elif p[1] == mshhexahedron:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdhexahedron
                     el=[pmdelm,eltype]
@@ -743,7 +743,7 @@ class mesh:
                     self.elements.append(tuple(el))
                 elif p[1] == mshprism:
                     if self.is2d:
-                        error("3D element in 2D mesh",2)
+                        error("3d element in 2D mesh",2)
                     pmdelm+=1
                     eltype=pmdprism
                     el=[pmdelm,eltype]
@@ -802,7 +802,7 @@ class mesh:
             elif t==pmdprism:
                 elt=libmeshprism
             else:
-                error("Unimplemented yet t=%d."%(t),2)
+                error("_unimplemented yet t=%d."%(t),2)
             if elt in blocks:
                 blocks[elt].append(p)
             else:
@@ -831,7 +831,7 @@ class mesh:
                 bs.extend(bo)
 
         f=file(filename,"w")
-        f.write("DEAL 003:003\n")
+        f.write("deal 003:003\n")
         f.write("%d  # Num. Elements\n"%len(self.elements))
         f.write("%d  # Num. Nodes\n"%len(self.nodes))
         f.write("%d  # Sum of Element Weights\n"%(sew))
@@ -842,8 +842,8 @@ class mesh:
             "    # Element types in each block.\n")
         f.write(("%d "*len(nels))%tuple(nels)+
             "    # Num. of elements in each block.\n")
-        f.write("Id String\n")
-        f.write("Title String\n")
+        f.write("_id String\n")
+        f.write("_title String\n")
         for block in blocks.values():
             for el in block:
                 f.write(("%d "*len(el))%tuple(el)+"\n")
@@ -862,7 +862,7 @@ class mesh:
         up=progressbar.MyBar("Writing mesh to %s:"%filename)
         if verbose: up.init(len(self.nodes)+len(self.elements))
         f=file(filename,"w")
-        l=f.write("$NOD\n")
+        l=f.write("$nod\n")
         l=f.write("%d\n"%len(self.nodes))
         for node in self.nodes:
             if self.is2d:
@@ -870,8 +870,8 @@ class mesh:
             else:
                 f.write("%d %f %f %f\n"%node)
             if verbose: up.update(node[0])
-        l=f.write("$ENDNOD\n")
-        l=f.write("$ELM\n")
+        l=f.write("$endnod\n")
+        l=f.write("$elm\n")
         l=f.write("%d\n"%len(self.elements))
         for el in self.elements:
             if el[1]==pmdtriangle or el[1]==pmdtrianglerot:
@@ -921,25 +921,25 @@ class mesh:
             f.write("%d "*len(n)%tuple(n))
             f.write("\n")
             if verbose: up.update(len(self.nodes)+el[0])
-        l=f.write("$ENDELM\n")
+        l=f.write("$endelm\n")
         f.close()
     def writemsh2(self,filename):
         """Writes mesh to filename (*.msh). Version 2.0
 
         """
         f=file(filename,"w")
-        l=f.write("$MeshFormat\n")
+        l=f.write("$_mesh_format\n")
         l=f.write("2.0 0 8\n")
-        l=f.write("$EndMeshFormat\n")
-        l=f.write("$Nodes\n")
+        l=f.write("$_end_mesh_format\n")
+        l=f.write("$_nodes\n")
         l=f.write("%d\n"%len(self.nodes))
         for node in self.nodes:
             if self.is2d:
                 f.write("%d %f %f %d\n"%node)
             else:
                 f.write("%d %f %f %f\n"%node)
-        l=f.write("$EndNodes\n")
-        l=f.write("$Elements\n")
+        l=f.write("$_end_nodes\n")
+        l=f.write("$_elements\n")
         l=f.write("%d\n"%len(self.elements))
         for el in self.elements:
             if el[1]==pmdtriangle or el[1]==pmdtrianglerot:
@@ -983,9 +983,9 @@ class mesh:
             n.extend(el[2:2+number_of_nodes])
             f.write("%d "*len(n)%tuple(n))
             f.write("\n")
-        l=f.write("$EndElements\n")
+        l=f.write("$_end_elements\n")
         f.close()
-    def readNOD(self,filename,scale=1.0):
+    def read_nod(self,filename,scale=1.0):
         """Read nodes from filename (*.NOD). 
         """
         f=file(filename)
@@ -1002,13 +1002,13 @@ class mesh:
                 self.is2d=False
             self.nodes.append(node)
             l=f.readline()
-    def writeNOD(self,filename):
+    def write_nod(self,filename):
         """Write nodes to filename (*.NOD). 
         """
         f=file(filename,"w")
         for nod in self.nodes:
             f.write("%d %f %f %f\n"%tuple(nod))
-    def readELE(self,filename,symmetric=False):
+    def read_ele(self,filename,symmetric=False):
         """Read elements from filename (*.ELE). 
         """
         #format:first line don't know yet 
@@ -1051,20 +1051,20 @@ class mesh:
             pos+=3+nnod
 
     def renumber_elements(self):
-        self.writeELE("t1.ELE")
-        if os.access("XELM.ELE",os.F_OK): os.remove("XELM.ELE")
+        self.write_ele("t1.ELE")
+        if os.access("xelm.ELE",os.F_OK): os.remove("xelm.ELE")
         os.spawnv(os.P_WAIT,"/home/ondra/pmd/PMD/xelm",["xelm","t1.ELE"])
-        print "readELE"
-        self.readELE("XELM.ELE")
+        print "read_ele"
+        self.read_ele("xelm.ELE")
         print "removing"
-        os.remove("XELM.ELE")
+        os.remove("xelm.ELE")
         os.remove("t1.ELE")
         el=[]
         for e in self.elements:
             el.append(e[:-3])
         self.elements=el
 
-    def readELE2(self,filename):
+    def read_ele2(self,filename):
         """Read elements from filename (*.ELE). 
         """
         #format:first line don't know yet 
@@ -1101,7 +1101,7 @@ class mesh:
             else:
                 return 0
         self.nodes.sort(mycmp)
-    def writeELE(self,filename):
+    def write_ele(self,filename):
         """Write nodes to filename (*.ELE). 
         """
         f=file(filename,"w")
@@ -1136,7 +1136,7 @@ class mesh:
             if x[0]==";":
                 x=f.readline()
             return x
-        x=string.split(C(f.readline()))
+        x=string.split(c(f.readline()))
         check(x[0],"IP")
         p=[int(a) for a in x[1:]]
         nelements=p[0]; nnodes=p[1]; ited=p[2]; kss=p[9]
@@ -1145,12 +1145,12 @@ class mesh:
         else:
             self.symmetric=False
 
-        x=string.split(C(f.readline()))
+        x=string.split(c(f.readline()))
         check(x[0],"RP")
         p=[float(a) for a in x[1:]]
         self.crit=p[0]; scale=p[1]; thdef=p[2]; self.boundbox=p[3:9]
 
-        x=string.split(C(f.readline()))
+        x=string.split(c(f.readline()))
         check(x[0],"XY")
         if len(x)>1: #old format....
             dict={}
@@ -1160,12 +1160,12 @@ class mesh:
             #   print toks, "->", out
                 return out
             def ev2(str,loc,toks):
-                out=int(toks[0])*toks.asList()[2:]
+                out=int(toks[0])*toks.as_list()[2:]
             #   print toks, "->", out
                 return out
             def ev3(str,loc,toks):
                 key=toks[1] 
-                out=toks.asList()[2:len(toks)-2]
+                out=toks.as_list()[2:len(toks)-2]
                 d=[]
                 for a in out:
                     num=eval("%s"%(a))
@@ -1201,52 +1201,52 @@ class mesh:
 
             terms=Forward()
             atom=fnum | (lpar+ terms+rpar)
-            seq=(atom+":"+atom).setParseAction(ev1)
-            rep=(inum+"*"+atom).setParseAction(ev2)
+            seq=(atom+":"+atom).set_parse_action(ev1)
+            rep=(inum+"*"+atom).set_parse_action(ev2)
             terms << OneOrMore(rep | seq | atom)
             numlist=OneOrMore(terms|(defpar+terms+
-                defpar).setParseAction(ev3) | 
-                callpar.setParseAction(ev4))
+                defpar).set_parse_action(ev3) | 
+                callpar.set_parse_action(ev4))
 
-            nodX = Group("X"+numlist)
+            nod_x = Group("X"+numlist)
             #nodX = Group("X"+numlist+LineEnd())
-            nodY = Group("Y"+numlist)
-            nodZ = Group("Z"+numlist)
-            nodes=Group(Dict(Literal("XY")+Group("N"+numlist)+nodX+nodY+Optional(nodZ)))
+            nod_y = Group("Y"+numlist)
+            nod_z = Group("Z"+numlist)
+            nodes=Group(Dict(Literal("XY")+Group("N"+numlist)+nod_x+nod_y+Optional(nodZ)))
             element= Group(Literal("EL")+Optional("T"+inum)+"E"+numlist+"N"+
                 OneOrMore(numlist))
-            CN=Group("CN"+restOfLine)
-            elements=Group(OneOrMore(element)).setResultsName("ELs")
+            CN=Group("CN"+rest_of_line)
+            elements=Group(OneOrMore(element)).set_results_name("e_ls")
 
             EN=Literal("EN")
             end=Group(EN+EN)
             grammar=Dict(nodes+elements+end+StringEnd())
             grammar.ignore(comment)
-            grammar.ignore(CN)
+            grammar.ignore(cn)
 
             data=[string.join(x)+"\n"]
             data.extend(f.readlines())
             data=string.join(data)
             tokens=""
             try:
-                tokens=grammar.parseString(data)
+                tokens=grammar.parse_string(data)
             except ParseException, err:
                 error("\n"+err.line+"\n"+" "*(err.column-1)+\
                     "^\n" + repr(err),2)
 
-            if "Z" in tokens["XY"].keys():
-                Zn=map(float,tokens["XY"]["Z"])
+            if "Z" in tokens["xy"].keys():
+                Zn=map(float,tokens["xy"]["z"])
                 self.is2d=False
             else:
-                Zn=[0.0]*len(tokens["XY"]["X"])
+                Zn=[0.0]*len(tokens["xy"]["x"])
 
-            self.nodes=zip(range(1,len(Zn)+1),
-                map(float,tokens["XY"]["X"]),
-                map(float,tokens["XY"]["Y"]),
+            self.nodes=zip(range(1,len(_zn)+1),
+                map(float,tokens["xy"]["x"]),
+                map(float,tokens["xy"]["y"]),
                 Zn)
 
             elm={}
-            els= tokens["ELs"]
+            els= tokens["e_ls"]
             for el in els:
                 i=1
                 if el[i]=="T":
@@ -1269,7 +1269,7 @@ class mesh:
                 else:
                     error("unsupported type. "\
                         "type=%d"%(type),3)
-                el=el.asList()[i:]
+                el=el.as_list()[i:]
                 n=1
                 while el[n]!="N": n+=1
                 n+=1
@@ -1284,7 +1284,7 @@ class mesh:
                 n+=1
         else:
             for n in range(1,nnodes+1):
-                x=string.split(C(f.readline()))
+                x=string.split(c(f.readline()))
                 check(x[0],"C")
                 if int(x[1])!=n: error("node number mismatch",2)
                 if len(x)==4:
@@ -1296,7 +1296,7 @@ class mesh:
                     self.is2d=False
                 self.nodes.append(node)
 
-            x=string.split(C(f.readline()))
+            x=string.split(c(f.readline()))
             for n in range(1,nelements+1):
             #   print x
                 check(x[0],"EL")
@@ -1307,13 +1307,13 @@ class mesh:
                 check(x[5],"N")
                 el=[n,T]
                 el.extend([int(a) for a in x[6:]])
-                x=string.split(C(f.readline()))
+                x=string.split(c(f.readline()))
                 if x[0] != "EL" and x[0] != "EN":
                     el.extend([int(a) for a in x])
-                    x=string.split(C(f.readline()))
+                    x=string.split(c(f.readline()))
                 self.elements.append(el)
             check(x[0],"EN")
-            x=string.split(C(f.readline()))
+            x=string.split(c(f.readline()))
             check(x[0],"EN")
             f.close()
 
@@ -1329,14 +1329,14 @@ class mesh:
             kss=2
         else:
             kss=-1
-        f.write("IP %d %d %d 0 0 0 0 0 0 %d\n"
+        f.write("ip %d %d %d 0 0 0 0 0 0 %d\n"
             %(len(self.elements),len(self.nodes),ited,kss));
         scale=1.0;thdef=1;
         str=[self.crit,scale,thdef]
         str.extend(self.boundbox)
-        f.write("RP %.2f %.4f %.3f %.3f %.3f %.3f %.3f %.3f %.3f 0\n"
+        f.write("rp %.2f %.4f %.3f %.3f %.3f %.3f %.3f %.3f %.3f 0\n"
             %tuple(str))
-        f.write("XY\n");
+        f.write("xy\n");
         for p in self.nodes:
             if self.is2d:
                 f.write("  C %d %.17f %.17f\n"%(p[0],p[1],p[2]))
@@ -1344,13 +1344,13 @@ class mesh:
                 f.write("  C %d %.17f %.17f %.17f\n"%
                     (p[0],p[1],p[2],p[3]))
         for p in self.elements:
-            f.write("EL T %d E %d N"%(p[1],p[0]))
+            f.write("el T %d E %d N"%(p[1],p[0]))
             for a in p[2:]: f.write(" %d"%(a))
             f.write("\n")
-        f.write("EN\n");
-        f.write("EN\n");
+        f.write("en\n");
+        f.write("en\n");
         f.close()
-    def readxt2sSTR(self,filename):
+    def readxt2s_str(self,filename):
         "Reads temperature data from filename (*.STR) to scalars."
         f=file(filename,"r")
         l=f.readline()
@@ -1369,7 +1369,7 @@ class mesh:
             if p[3] != 0: error("2nd number is not zero",2)
             l=f.readline()
         f.close()
-    def readstr2STR(self,filename):
+    def readstr2str(self,filename):
         "Reads temperature data from filename (*.STR) to scalars."
         f=file(filename,"r")
         l=f.readline()
@@ -1424,7 +1424,7 @@ class mesh:
                 l=f.readline()
             l=f.readline()
         f.close()
-    def readstr3STR(self,filename):
+    def readstr3str(self,filename):
         "Reads temperature data from filename (*.STR) to scalars."
         f=file(filename,"r")
         l=f.readline()
@@ -1486,13 +1486,13 @@ class mesh:
         You can set visibility in gmsh (only points, only triangles...).
         """
         if len(self.nodes) != len(self.vectors):
-            error("Different number of nodes and vectors!")
+            error("_different number of nodes and vectors!")
         f=file(filename,"w")
-        f.write("$PostFormat\n")
+        f.write("$_post_format\n")
         #1.3 file-type data-size
         f.write("%g %d %d\n"%(1.2,0,8))
-        f.write("$EndPostFormat\n")
-        f.write("$View\n")
+        f.write("$_end_post_format\n")
+        f.write("$_view\n")
         f.write("%s %d\n"
             "%d %d %d\n"
             "%d %d %d\n"
@@ -1533,7 +1533,7 @@ class mesh:
             n=(self.getxyz(node[0]),)
             T=(self.getvector(node[0]),)
             f.write(formatpos2(n,T))
-        f.write("$EndView\n")
+        f.write("$_end_view\n")
         f.close()
     def writevectorspos3(self,filename,vectorfield,infotext="PMD_vectors"):
         self.vectors=vectorfield
@@ -1555,15 +1555,15 @@ class mesh:
         You can set visibility in gmsh (only points, only triangles...).
         """
         if len(self.nodes) != len(self.scalars):
-            error("Different number of nodes and scalars!")
+            error("_different number of nodes and scalars!")
         up=progressbar.MyBar("Writing scalar field to %s:"%filename)
         up.init(len(self.nodes)+len(self.elements))
         f=file(filename,"w")
-        f.write("$PostFormat\n")
+        f.write("$_post_format\n")
         #1.3 file-type data-size
         f.write("%g %d %d\n"%(1.2,0,8))
-        f.write("$EndPostFormat\n")
-        f.write("$View\n")
+        f.write("$_end_post_format\n")
+        f.write("$_view\n")
         f.write("%s %d\n"
             "%d %d %d\n"
             "%d %d %d\n"
@@ -1679,7 +1679,7 @@ class mesh:
                 self.getscalar(el[6]),
                 self.getscalar(el[7]))
                 f.write(formatpos(n,T))
-        f.write("$EndView\n")
+        f.write("$_end_view\n")
         f.close()
     def writescalarspos2(self,filename,scaltime,infotext="PMD_scalars",dt=1.0):
         """Writes self.scalars to *.pos.
@@ -1695,11 +1695,11 @@ class mesh:
         You can set visibility in gmsh (only points, only triangles...).
         """
         f=file(filename,"w")
-        f.write("$PostFormat\n")
+        f.write("$_post_format\n")
         #1.3 file-type data-size
         f.write("%g %d %d\n"%(1.2,0,8))
-        f.write("$EndPostFormat\n")
-        f.write("$View\n")
+        f.write("$_end_post_format\n")
+        f.write("$_view\n")
         f.write("%s %d\n"
             "%d %d %d\n"
             "%d %d %d\n"
@@ -1750,12 +1750,12 @@ class mesh:
                 for timestep in range(len(scaltime)):
                     self.scalars=scaltime[timestep]
                     if len(self.nodes) != len(self.scalars):
-                        error("Different number of nodes and scalars!")
+                        error("_different number of nodes and scalars!")
                     T.extend((self.getscalar(el[2]),
                         self.getscalar(el[3]),
                         self.getscalar(el[4])))
                 f.write(formatpos(n,T))
-        f.write("$EndView\n")
+        f.write("$_end_view\n")
         f.close()
     def writescalars(self,filename,scalars,C=0.0):
         f=file(filename,"w")
@@ -1776,13 +1776,13 @@ class mesh:
         You can set visibility in gmsh (only points, only triangles...).
         """
         if len(self.elements) != len(self.elementdata):
-            error("Different number of elements and data!")
+            error("_different number of elements and data!")
         f=file(filename,"w")
-        f.write("$PostFormat\n")
+        f.write("$_post_format\n")
         #1.3 file-type data-size
         f.write("%g %d %d\n"%(1.2,0,8))
-        f.write("$EndPostFormat\n")
-        f.write("$View\n")
+        f.write("$_end_post_format\n")
+        f.write("$_view\n")
         f.write("%s %d\n"
             "%d %d %d\n"
             "%d %d %d\n"
@@ -1842,7 +1842,7 @@ class mesh:
                 self.getxyz(el[5]))
                 T=data[:4]
                 f.write(formatpos(n,T))
-        f.write("$EndView\n")
+        f.write("$_end_view\n")
         f.close()
     def average(self,list):
         a=0
@@ -1979,7 +1979,7 @@ class mesh:
                 tmp[node-1].append(scalar)  
         scalars=[]
         for s in tmp:
-            if s==[]: error("There are some extra nodes!")
+            if s==[]: error("_there are some extra nodes!")
             scalars.append(self.average_vectors(s))
         return scalars
     def dist(self,a,b):
@@ -2023,7 +2023,7 @@ class mesh:
                 #if e[0]==2879: print v
                 grad.append((v,v,v,v))
             else:
-                error("Element not implemented yet.")
+                error("_element not implemented yet.")
         return self.vectors_elements2nodes(grad)
 
     def computenorm(self,vectors):
@@ -2037,7 +2037,7 @@ class mesh:
         print "nodes:    %d"%(len(self.nodes))
         print "elements: %d"%(len(self.elements))
 
-    def readGMV(self,filename,what=2):
+    def read_gmv(self,filename,what=2):
         """Reads GMV file.
 
         what ... 0 read only mesh
@@ -2112,7 +2112,7 @@ class mesh:
     def writeregions(self,filename):
         f=open(filename,"w")
         f.write(str(self.regions))
-    def writeBC(self,filename,verbose=True):
+    def write_bc(self,filename,verbose=True):
         """self.faces contain triplets (p1,p2,p3) which are triangles of
         tetrahedrons on the boundary. We need to find the number of each
         corresponding tetrahedron and it's side."""
@@ -2239,7 +2239,7 @@ def formatpos(n,T):
     for i in range(len(n[0])):
         for j in range(len(n)):
             y.append(n[j][i])
-    y.extend(T)
+    y.extend(t)
     str="%.18f "*(len(y))%tuple(y)
     return "%s\n"%(str)
 def formatpos2(n,T):

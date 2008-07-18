@@ -6,7 +6,7 @@ import os.path as op
 
 ##
 # 28.05.2007, c
-def makePointCells( indx, dim ):
+def make_point_cells( indx, dim ):
     conn = nm.zeros( (indx.shape[0], dim + 1), dtype = nm.int32 )
     for ii in range( 0, dim + 1 ):
         conn[:,ii] = indx
@@ -14,7 +14,7 @@ def makePointCells( indx, dim ):
 
 ##
 # 23.05.2007, updated from matlab version, r: 05.05.2008
-def findMap( x1, x2, eps = 1e-8, allowDouble = False, join = True ):
+def find_map( x1, x2, eps = 1e-8, allow_double = False, join = True ):
     """
     Find a mapping between common coordinates in x1 and x2, such that
     x1[cmap[:,0]] == x2[cmap[:,1]]
@@ -51,7 +51,7 @@ def findMap( x1, x2, eps = 1e-8, allowDouble = False, join = True ):
             else:
                 print 'x2: %d %d -> %s %s' % (i1[dn], i2[dn],
                                               x2[:,i1[dn]], x2[:,i2[dn]])
-        if not allowDouble:
+        if not allow_double:
             raise ValueError
 
     if join:
@@ -65,7 +65,7 @@ def findMap( x1, x2, eps = 1e-8, allowDouble = False, join = True ):
 # 24.05.2007
 # 25.05.2007
 # 28.05.2007
-def mergeMesh( x1, conns1, x2, conns2, cmap, eps = 1e-8 ):
+def merge_mesh( x1, conns1, x2, conns2, cmap, eps = 1e-8 ):
     nc = cmap.shape[0]
     n1 = x1.shape[0]
     n2 = x2.shape[0]
@@ -95,27 +95,27 @@ def mergeMesh( x1, conns1, x2, conns2, cmap, eps = 1e-8 ):
 
 ##
 # 24.05.2007, c
-def makeMesh( coor, conns, meshIn ):
+def make_mesh( coor, conns, mesh_in ):
     nod0 = nm.c_[coor, nm.zeros( (coor.shape[0],), dtype = nm.float64 )]
 
-    matIds = []
+    mat_ids = []
     for ii, conn in enumerate( conns ):
-        matId = nm.empty( (conn.shape[0],), dtype = nm.int32 )
-        matId.fill( meshIn.matIds[ii][0] )
-        matIds.append( matId )
+        mat_id = nm.empty( (conn.shape[0],), dtype = nm.int32 )
+        mat_id.fill( mesh_in.mat_ids[ii][0] )
+        mat_ids.append( mat_id )
         
-    meshOut = Mesh.fromData( 'merged mesh', nod0, conns,
-                             matIds, meshIn.descs )
-    return meshOut
+    mesh_out = Mesh.from_data( 'merged mesh', nod0, conns,
+                             mat_ids, mesh_in.descs )
+    return mesh_out
 
 ##
 # 30.08.2007, c
 # 31.08.2007
 # 05.09.2007
-def findRefinement( coor, conns, fcoor, fconns, eps, checkRefined = True ):
+def find_refinement( coor, conns, fcoor, fconns, eps, check_refined = True ):
     ##
     # Find mesh vertices in the refined mesh.
-    vmap = findMap( coor, fcoor )
+    vmap = find_map( coor, fcoor )
 #    print vmap
     if vmap.shape[0] != coor.shape[0]:
         print 'nonconforming meshes!'
@@ -146,7 +146,7 @@ def findRefinement( coor, conns, fcoor, fconns, eps, checkRefined = True ):
         iconn = iconns[ig]
         fconn = fconns[ig]
 
-        nEP = fconn.shape[1]
+        n_ep = fconn.shape[1]
         for iel, row in enumerate( conn ):
             fels = []
 #            print '*** iel:', iel, row
@@ -155,7 +155,7 @@ def findRefinement( coor, conns, fcoor, fconns, eps, checkRefined = True ):
             while seeds.size:
 #                print 'seeds:', seeds
 
-                newSeeds = []
+                new_seeds = []
                 for fnode in seeds:
 #                    print fnode
                     pfels = [fel for fel in iconn[fnode] if not fel in fels]
@@ -168,42 +168,42 @@ def findRefinement( coor, conns, fcoor, fconns, eps, checkRefined = True ):
 ##                 print fcoor[fnodes,:]
 
                     # Use average element coordinate (simplex -> always convex).
-                    eflag = la.pointsInSimplex( fcoor[fnodes,:].sum( 1 ) / nEP,
+                    eflag = la.points_in_simplex( fcoor[fnodes,:].sum( 1 ) / n_ep,
                                                 coor[row,:], eps )
 #                    print eflag
                     if eflag.any():
                         fels.append( pfels[eflag] )
-                        newSeeds.append( fnodes[eflag] )
+                        new_seeds.append( fnodes[eflag] )
 #                    print pfels[eflag], '->', fels
 
-#                print 'new:', newSeeds
-                seeds = nm.setdiff1d( nm.asarray( newSeeds ).ravel(), seeds )
+#                print 'new:', new_seeds
+                seeds = nm.setdiff1d( nm.asarray( new_seeds ).ravel(), seeds )
 #                pause()
             emap.append( nm.array( fels ).ravel() )
 ##             print '->>', iel, fels
 ##             pause()
 ##         print '->>>', emap
-        if checkRefined:
-            nRef = 2**dim
+        if check_refined:
+            n_ref = 2**dim
             for row in emap:
-                assert len( row ) == nRef
+                assert len( row ) == n_ref
         emaps.append( emap )
 ##         pause()
 
     iemaps = []
-    nFEls = []
+    n_f_els = []
     for ig, emap in enumerate( emaps ):
         iemap = nm.empty( (fconns[ig].shape[0],), dtype = nm.int32 )
         iemap.fill( -1 )
-        nFEl = nm.empty( (len( emap ),), dtype = nm.int32 )
+        n_f_el = nm.empty( (len( emap ),), dtype = nm.int32 )
         for iel, row in enumerate( emap ):
             for fiel in row:
                 iemap[fiel] = iel
-            nFEl[iel] = len( row )
+            n_f_el[iel] = len( row )
         iemaps.append( iemap )
-        nFEls.append( nFEl )
+        n_f_els.append( n_f_el )
 
-    return emaps, iemaps, nFEls
+    return emaps, iemaps, n_f_els
 
 ##
 # Mesh.
@@ -220,7 +220,7 @@ class Mesh( Struct ):
     Example of creating and working with a mesh:
 
     >>> from sfepy.fem.mesh import Mesh
-    >>> m = Mesh.fromFile("database/simple.vtk")
+    >>> m = Mesh.from_file("database/simple.vtk")
     sfepy: reading mesh (database/simple.vtk)...
     sfepy: ...done in 0.06 s
     >>> m.nod0
@@ -245,7 +245,7 @@ class Mesh( Struct ):
            [353, 343, 260, 296],
            [353, 139, 181, 140],
            [353, 295, 139, 140]])]
-    >>> m.matIds
+    >>> m.mat_ids
     [array([6, 6, 6, ..., 6, 6, 6])]
     >>> m.descs
     ['3_4']
@@ -253,21 +253,21 @@ class Mesh( Struct ):
     Mesh:database/simple
     >>> print m
     Mesh:database/simple
-      nEPs:
+      n_e_ps:
         [4]
       dim:
         3
-      nEl:
+      n_el:
         1348
       name:
         database/simple
       descs:
         ['3_4']
-      nNod:
+      n_nod:
         354
-      matIds:
+      mat_ids:
         [array([6, 6, 6, ..., 6, 6, 6])]
-      nEls:
+      n_els:
         [1348]
       nod0:
         [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18   0.00000000e+00]
@@ -287,9 +287,9 @@ class Mesh( Struct ):
                [353, 343, 260, 296],
                [353, 139, 181, 140],
                [353, 295, 139, 140]])]
-      setupDone:
+      setup_done:
         0
-      elOffsets:
+      el_offsets:
         [   0 1348]
 
 
@@ -326,148 +326,148 @@ class Mesh( Struct ):
     # 05.10.2005
     # 04.08.2006
     # 29.08.2007
-    def fromSurface( surfFaces, meshIn ):
+    def from_surface( surf_faces, mesh_in ):
 
-        inod = la.asUniqueSet( surfFaces )
-        nNod = len( inod )
-        nNodM, nCol = meshIn.nod0.shape
+        inod = la.as_unique_set( surf_faces )
+        n_nod = len( inod )
+        n_nod_m, n_col = mesh_in.nod0.shape
 
-        aux = nm.arange( nNod )
-        remap = nm.zeros( (nNodM,), nm.int32 )
+        aux = nm.arange( n_nod )
+        remap = nm.zeros( (n_nod_m,), nm.int32 )
         remap[inod] = aux
 
-        mesh = Mesh( meshIn.name + "_surf" )
+        mesh = Mesh( mesh_in.name + "_surf" )
 
-        mesh.nod0 = meshIn.nod0[inod,:nCol]
+        mesh.nod0 = mesh_in.nod0[inod,:nCol]
 
         sfm = {3 : "2_3", 4 : "2_4"}
         mesh.conns = []
         mesh.descs = []
-        mesh.matIds = []
-        for ii, sf in enumerate( surfFaces ):
-            nEl, nFP = sf.shape
+        mesh.mat_ids = []
+        for ii, sf in enumerate( surf_faces ):
+            n_el, n_fp = sf.shape
 
             conn = remap[sf]
-            matId = nm.empty( (conn.shape[0],), dtype = nm.int32 )
-            matId.fill( ii )
+            mat_id = nm.empty( (conn.shape[0],), dtype = nm.int32 )
+            mat_id.fill( ii )
 
-            mesh.descs.append( sfm[nFP] )
+            mesh.descs.append( sfm[n_fp] )
             mesh.conns.append( conn )
-            mesh.matIds.append( matId )
+            mesh.mat_ids.append( mat_id )
 
-        mesh._setShapeInfo()
+        mesh._set_shape_info()
         
         return mesh
-    fromSurface = staticmethod( fromSurface )
+    from_surface = staticmethod( from_surface )
 
     ##
     # c: 25.01.2006, r: 23.06.2008
-    def fromFile( fileName = None, io = 'auto' ):
-        """passing *MeshIO instance has precedence over fileName"""
+    def from_file( file_name = None, io = 'auto' ):
+        """passing *MeshIO instance has precedence over file_name"""
         if io == 'auto':
-            if fileName is None:
-                output( 'fileName or io must be specified!' )
+            if file_name is None:
+                output( 'file_name or io must be specified!' )
                 raise ValueError
             else:
-                io = MeshIO.anyFromFileName( fileName )
-                if isinstance( fileName, file ):
-                    trunk = 'fromDescriptor'
+                io = MeshIO.any_from_file_name( file_name )
+                if isinstance( file_name, file ):
+                    trunk = 'from_descriptor'
                 else:
-                    trunk = op.splitext( fileName )[0]
+                    trunk = op.splitext( file_name )[0]
         else:
-            trunk = io.fileName
+            trunk = io.file_name
 
-        output( 'reading mesh (%s)...' % (fileName) )
+        output( 'reading mesh (%s)...' % (file_name) )
         tt = time.clock()
         mesh = Mesh( trunk )
         mesh = io.read( mesh )
         output( '...done in %.2f s' % (time.clock() - tt) )
-        mesh._setShapeInfo()
+        mesh._set_shape_info()
         return mesh
-    fromFile = staticmethod( fromFile )
+    from_file = staticmethod( from_file )
 
     ##
     # c: 17.02.2006, r: 28.04.2008
-    def fromRegion( region, meshIn, ed = None, fa = None, localize = None ):
-        mesh = Mesh( meshIn.name + "_reg" )
-        mesh.nod0 = meshIn.nod0.copy()
+    def from_region( region, mesh_in, ed = None, fa = None, localize = None ):
+        mesh = Mesh( mesh_in.name + "_reg" )
+        mesh.nod0 = mesh_in.nod0.copy()
         
         mesh.conns = []
         mesh.descs = []
-        mesh.matIds = []
-        if region.hasCells():
+        mesh.mat_ids = []
+        if region.has_cells():
             for ig in region.igs:
-                mesh.descs.append( meshIn.descs[ig] )
-                els = region.getCells( ig )
-                mesh.matIds.append( meshIn.matIds[ig][els,:].copy() )
-                mesh.conns.append( meshIn.conns[ig][els,:].copy() )
+                mesh.descs.append( mesh_in.descs[ig] )
+                els = region.get_cells( ig )
+                mesh.mat_ids.append( mesh_in.mat_ids[ig][els,:].copy() )
+                mesh.conns.append( mesh_in.conns[ig][els,:].copy() )
 
         if ed is not None:
             for ig in region.igs:
-                edges = region.getEdges( ig )
+                edges = region.get_edges( ig )
                 mesh.descs.append( '1_2' )
-                mesh.matIds.append( ed.data[edges,0] + 1 )
+                mesh.mat_ids.append( ed.data[edges,0] + 1 )
                 mesh.conns.append( ed.data[edges,-2:].copy() )
 
         if fa is not None:
             for ig in region.igs:
-                faces = region.getFaces( ig )
+                faces = region.get_faces( ig )
                 fdata = fa.data[faces]
                 i3 = nm.where( fdata[:,-1] == -1 )[0]
                 i4 = nm.where( fdata[:,-1] != -1 )[0]
                 if i3.size:
                     mesh.descs.append( '2_3' )
-                    mesh.matIds.append( fdata[i3,0] + 1 )
+                    mesh.mat_ids.append( fdata[i3,0] + 1 )
                     mesh.conns.append( fdata[i3,-4:-1].copy() )
                 if i4.size:
                     mesh.descs.append( '2_4' )
-                    mesh.matIds.append( fdata[i4,0] + 1 )
+                    mesh.mat_ids.append( fdata[i4,0] + 1 )
                     mesh.conns.append( fdata[i4,-4:].copy() )
 
         if (ed is not None) or (fa is not None):
             mesh.descs.append( {2 : '2_3', 3 : '3_4'}[meshIn.dim] )
-            mesh.matIds.append( -nm.ones_like( region.allVertices ) )
-            mesh.conns.append( makePointCells( region.allVertices, meshIn.dim ) )
+            mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
+            mesh.conns.append( make_point_cells( region.all_vertices, mesh_in.dim ) )
 
         if localize:
-            mesh.localize( region.allVertices )
-        mesh._setShapeInfo()
+            mesh.localize( region.all_vertices )
+        mesh._set_shape_info()
         return mesh
-    fromRegion = staticmethod( fromRegion )
+    from_region = staticmethod( from_region )
 
     ##
     # c: 02.01.2008, r: 02.01.2008
-    def fromRegionAndField( region, field ):
+    def from_region_and_field( region, field ):
         mesh, ed, fa = field.domain.mesh, field.domain.ed, field.domain.fa
-        mesh = Mesh.fromRegion( region, mesh, ed, fa )
+        mesh = Mesh.from_region( region, mesh, ed, fa )
         mesh.name = mesh.name + '_field'
 
-        nodes = region.getFieldNodes( field, merge = True )
+        nodes = region.get_field_nodes( field, merge = True )
 
-        aux = field.getExtraNodesAsSimplices( nodes )
+        aux = field.get_extra_nodes_as_simplices( nodes )
         mesh.nod0 = field.aps.coors
         mesh.descs.append( aux[0] )
-        mesh.matIds.append( aux[1] )
+        mesh.mat_ids.append( aux[1] )
         mesh.conns.append( aux[2] )
 
         mesh.localize( nodes )
-        mesh._setShapeInfo()
+        mesh._set_shape_info()
         return mesh
-    fromRegionAndField = staticmethod( fromRegionAndField )
+    from_region_and_field = staticmethod( from_region_and_field )
 
     ##
     # c: 21.02.2007, r: 08.02.2008
-    def fromData( name, coors, conns, matIds, descs, igs = None ):
+    def from_data( name, coors, conns, mat_ids, descs, igs = None ):
         if igs is None:
             igs = range( len( conns ) )
         mesh = Mesh( name = name,
                      nod0 = coors,
                      conns = [conns[ig] for ig in igs],
-                     matIds = [matIds[ig] for ig in igs],
+                     mat_ids = [mat_ids[ig] for ig in igs],
                      descs = [descs[ig] for ig in igs] )
-        mesh._setShapeInfo()
+        mesh._set_shape_info()
         return mesh
-    fromData = staticmethod( fromData )
+    from_data = staticmethod( from_data )
         
 
     ##
@@ -478,44 +478,44 @@ class Mesh( Struct ):
         Struct.__init__( self, **kwargs )
         self.name = name
         self.io = None
-        self.setupDone = 0
+        self.setup_done = 0
 
     ##
     # 04.08.2006, c
     # 29.09.2006
-    def _setShapeInfo( self ):
-        self.nNod = self.nod0.shape[0]
+    def _set_shape_info( self ):
+        self.n_nod = self.nod0.shape[0]
         self.dim = self.nod0.shape[1] - 1
-        self.nEls = nm.array( [conn.shape[0] for conn in self.conns] )
-        self.nEPs = nm.array( [conn.shape[1] for conn in self.conns] )
-        self.elOffsets = nm.cumsum( nm.r_[0, self.nEls] )
-        self.nEl = nm.sum( self.nEls )
+        self.n_els = nm.array( [conn.shape[0] for conn in self.conns] )
+        self.n_e_ps = nm.array( [conn.shape[1] for conn in self.conns] )
+        self.el_offsets = nm.cumsum( nm.r_[0, self.n_els] )
+        self.n_el = nm.sum( self.n_els )
 
     ##
     # c: 15.02.2008, r: 15.02.2008
-    def _setData( self, coors, conns, matIds, descs ):
+    def _set_data( self, coors, conns, mat_ids, descs ):
         self.nod0 = coors
         self.conns = conns
-        self.matIds = matIds
+        self.mat_ids = mat_ids
         self.descs = descs
         
     ##
     # c: 23.01.2006, r: 23.06.2008
-    def write( self, fileName = None, io = None,
+    def write( self, file_name = None, io = None,
                coors = None, igs = None, out = None, **kwargs ):
         """Write mesh + optional results in 'out'.
 
-        'io' == 'auto' respects the extension of 'fileName'
+        'io' == 'auto' respects the extension of 'file_name'
         'coors' can be used instead of mesh coordinates,
         providing 'igs' filters some groups only"""
-        if fileName is None:
-            fileName = self.name + '.mesh'
+        if file_name is None:
+            file_name = self.name + '.mesh'
 
         if io is None:
             io = self.io
         else:
             if io == 'auto':
-                io = MeshIO.anyFromFileName( fileName )
+                io = MeshIO.any_from_file_name( file_name )
 
         if coors is None:
             coors = self.nod0
@@ -523,13 +523,13 @@ class Mesh( Struct ):
         if igs is None:
             igs = range( len( self.conns ) )
 
-        auxMesh = Mesh.fromData( self.name, coors,
-                                 self.conns, self.matIds, self.descs, igs )
-        io.write( fileName, auxMesh, out, **kwargs )
+        aux_mesh = Mesh.from_data( self.name, coors,
+                                 self.conns, self.mat_ids, self.descs, igs )
+        io.write( file_name, aux_mesh, out, **kwargs )
 
     ##
     # 23.05.2007, c
-    def getBoundingBox( self ):
+    def get_bounding_box( self ):
         return nm.array( [nm.amin( self.nod0[:,:-1], 0 ),
                           nm.amax( self.nod0[:,:-1], 0 )] )
 
@@ -552,9 +552,9 @@ class Mesh( Struct ):
 
     ##
     # c: 18.01.2008, r: 18.01.2008
-    def transformCoords( self, mtxT, refCoords = None ):
+    def transform_coords( self, mtx_t, ref_coords = None ):
         """x = T * x."""
-        if refCoords is None:
-            refCoords = self.nod0[:,:-1]
+        if ref_coords is None:
+            ref_coords = self.nod0[:,:-1]
 
-        self.nod0[:,:-1] = nm.dot( refCoords, mtxT.T )
+        self.nod0[:,:-1] = nm.dot( ref_coords, mtx_t.T )

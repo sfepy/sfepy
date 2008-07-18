@@ -1,5 +1,5 @@
 from terms import *
-from utils import fixScalarConstant, fixScalarInEl
+from utils import fix_scalar_constant, fix_scalar_in_el
 
 ##
 # 28.11.2005, c
@@ -9,7 +9,7 @@ class LaplaceTerm( Term ):
     or $\sum_{K \in \Tcal_h}\int_{T_K} c_K\ \nabla s \cdot \nabla r$
     """
     name = 'dw_laplace'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
@@ -21,40 +21,40 @@ class LaplaceTerm( Term ):
 
     ##
     # c: 27.03.2008, r: 27.03.2008
-    def getShape( self, diffVar, chunkSize, apr, apc = None ):
-        self.dataShape = apr.getVDataShape( self.integralName )
-        nEl, nQP, dim, nEP = self.dataShape
-        if diffVar is None:
-            return (chunkSize, 1, nEP, 1), 0
-        elif diffVar == self.getArgName( 'state' ):
-            return (chunkSize, 1, nEP, nEP), 1
+    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = self.data_shape
+        if diff_var is None:
+            return (chunk_size, 1, n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, n_ep, n_ep), 1
         else:
             raise StopIteration
 
     ##
     # c: 27.03.2008, r: 28.03.2008
-    def buildCFunArgs( self, mat, state, ap, vg ):
+    def build_c_fun_args( self, mat, state, ap, vg ):
         vec, indx = state()
-        matArg = fixScalarConstant( mat, nm.float64 )
-        if matArg is None:
-            matArg = fixScalarInEl( mat, self.dataShape[0], nm.float64 )
+        mat_arg = fix_scalar_constant( mat, nm.float64 )
+        if mat_arg is None:
+            mat_arg = fix_scalar_in_el( mat, self.data_shape[0], nm.float64 )
             self.function = terms.dw_st_pspg_p
         else:
             self.function = terms.dw_laplace
-        fargs = vec, indx.start, matArg, vg, ap.econn
+        fargs = vec, indx.start, mat_arg, vg, ap.econn
 
         return fargs
         
     ##
     # c: 28.11.2005, r: 28.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        material, virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        material, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, ap )
-        fargs = self.buildCFunArgs( material, state, ap, vg )
+        shape, mode = self.get_shape( diff_var, chunk_size, ap )
+        fargs = self.build_c_fun_args( material, state, ap, vg )
         
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
@@ -66,9 +66,9 @@ class DiffusionTerm( LaplaceTerm ):
     :definition: $\int_{\Omega} K_{ij} \nabla_i q  \nabla_j p$
     """
     name = 'dw_diffusion'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    useCaches = {'mat_in_qp' : [['material']]}
+    use_caches = {'mat_in_qp' : [['material']]}
     symbolic = {'expression': 'div( K * grad( u ) )',
                 'map' : {'u' : 'state', 'K' : 'material'}}
 
@@ -79,17 +79,17 @@ class DiffusionTerm( LaplaceTerm ):
         
     ##
     # c: 28.03.2008, r: 28.03.2008
-    def buildCFunArgs( self, mat, state, ap, vg ):
+    def build_c_fun_args( self, mat, state, ap, vg ):
         vec, indx = state()
 
-        nEl, nQP, dim, nEP = self.dataShape
-        cache = self.getCache( 'mat_in_qp', 0 )
-        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+        n_el, n_qp, dim, n_ep = self.data_shape
+        cache = self.get_cache( 'mat_in_qp', 0 )
+        mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = nm.asarray( mat ), ap = ap,
-                       assumedShapes = [(1, nQP, dim, dim),
-                                        (nEl, nQP, dim, dim)],
-                       modeIn = None )
-        return 1.0, vec, indx.start, matQP, vg, ap.econn
+                       assumed_shapes = [(1, n_qp, dim, dim),
+                                        (n_el, n_qp, dim, dim)],
+                       mode_in = None )
+        return 1.0, vec, indx.start, mat_qp, vg, ap.econn
 
 ##
 # 12.03.2007, c
@@ -99,9 +99,9 @@ class DiffusionIntegratedTerm( Term ):
     :definition: $\int_{\Omega} K_{ij} \nabla_i \bar{p}  \nabla_j r$
     """
     name = 'd_diffusion'
-    argTypes = ('material', 'parameter_1', 'parameter_2')
+    arg_types = ('material', 'parameter_1', 'parameter_2')
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    useCaches = {'grad_scalar' : [['parameter_1'], ['parameter_2']],
+    use_caches = {'grad_scalar' : [['parameter_1'], ['parameter_2']],
                  'mat_in_qp' : [['material']]}
 
     ##
@@ -111,25 +111,25 @@ class DiffusionIntegratedTerm( Term ):
         
     ##
     # c: 12.03.2007, r: 28.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, par1, par2 = self.getArgs( **kwargs )
-        ap, vg = par1.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
-        shape = (chunkSize, 1, 1, 1)
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par1, par2 = self.get_args( **kwargs )
+        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        shape = (chunk_size, 1, 1, 1)
 
-        cache = self.getCache( 'grad_scalar', 0 )
-        gp1 = cache( 'grad', self.getCurrentGroup(), 0, state = par1 )
-        cache = self.getCache( 'grad_scalar', 1 )
-        gp2 = cache( 'grad', self.getCurrentGroup(), 0, state = par2 )
+        cache = self.get_cache( 'grad_scalar', 0 )
+        gp1 = cache( 'grad', self.get_current_group(), 0, state = par1 )
+        cache = self.get_cache( 'grad_scalar', 1 )
+        gp2 = cache( 'grad', self.get_current_group(), 0, state = par2 )
 
-        cache = self.getCache( 'mat_in_qp', 0 )
-        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+        cache = self.get_cache( 'mat_in_qp', 0 )
+        mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = mat, ap = ap,
-                       assumedShapes = [(1, nQP, dim, dim),
-                                        (nEl, nQP, dim, dim)],
-                       modeIn = None )
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, 1.0, gp1, gp2, matQP, vg, chunk )
+                       assumed_shapes = [(1, n_qp, dim, dim),
+                                        (n_el, n_qp, dim, dim)],
+                       mode_in = None )
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, 1.0, gp1, gp2, mat_qp, vg, chunk )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
@@ -141,9 +141,9 @@ class PermeabilityRTerm( Term ):
     :definition: $\int_{\Omega} K_{ij} \nabla_j q$
     """
     name = 'dw_permeability_r'
-    argTypes = ('material', 'virtual', 'index')
+    arg_types = ('material', 'virtual', 'index')
     geometry = [(Volume, 'virtual')]
-    useCaches = {'mat_in_qp' : [['material']]}
+    use_caches = {'mat_in_qp' : [['material']]}
 
     ##
     # c: 23.04.2007, r: 28.03.2008
@@ -152,25 +152,25 @@ class PermeabilityRTerm( Term ):
         
     ##
     # c: 23.04.2007, r: 28.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, virtual, index = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, index = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, nEP, 1)
+        if diff_var is None:
+            shape = (chunk_size, 1, n_ep, 1)
         else:
             raise StopIteration
 
-        cache = self.getCache( 'mat_in_qp', 0 )
-        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+        cache = self.get_cache( 'mat_in_qp', 0 )
+        mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = mat, ap = ap,
-                       assumedShapes = [(1, nQP, dim, dim),
-                                        (nEl, nQP, dim, dim)],
-                       modeIn = None )
-        matQP = nm.ascontiguousarray( matQP[...,index:index+1] )
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, matQP, vg, ap.econn, chunk )
+                       assumed_shapes = [(1, n_qp, dim, dim),
+                                        (n_el, n_qp, dim, dim)],
+                       mode_in = None )
+        mat_qp = nm.ascontiguousarray( mat_qp[...,index:index+1] )
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, mat_qp, vg, ap.econn, chunk )
             yield out, chunk, status
 
 ##
@@ -181,34 +181,34 @@ class DiffusionVelocityTerm( Term ):
     / \int_{T_K} 1$
     """
     name = 'de_diffusion_velocity'
-    argTypes = ('material','parameter')
+    arg_types = ('material','parameter')
     geometry = [(Volume, 'parameter')]
-    useCaches = {'mat_in_qp' : [['material']]}
+    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
         
     ##
     # c: 07.09.2006, r: 14.07.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, parameter = self.getArgs( **kwargs )
-        ap, vg = parameter.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, parameter = self.get_args( **kwargs )
+        ap, vg = parameter.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim, 1)
+        if diff_var is None:
+            shape = (chunk_size, 1, dim, 1)
         else:
             raise StopIteration
 
         vec, indx = parameter()
-        cache = self.getCache( 'mat_in_qp', 0 )
-        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+        cache = self.get_cache( 'mat_in_qp', 0 )
+        mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = nm.asarray( mat ), ap = ap,
-                       assumedShapes = [(1, nQP, dim, dim),
-                                        (nEl, nQP, dim, dim)],
-                       modeIn = None )
-        for out, chunk in self.charFun( chunkSize, shape ):
+                       assumed_shapes = [(1, n_qp, dim, dim),
+                                        (n_el, n_qp, dim, dim)],
+                       mode_in = None )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start,
-                                    matQP, vg, ap.econn, chunk )
+                                    mat_qp, vg, ap.econn, chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status

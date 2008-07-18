@@ -4,16 +4,16 @@
 #fileName_mesh = 'database/simple.mesh'
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/t.1.node'
-fileName_mesh = 'tmp/t.1.node'
+file_name_mesh = 'tmp/t.1.node'
 
 options = {
-    'saveEigVectors' : None,
+    'save_eig_vectors' : None,
     'squared' : False,
-    'nEigs' : 10,
-    'eigenSolver' : 'eigen1',
+    'n_eigs' : 10,
+    'eigen_solver' : 'eigen1',
 }
 
-if fileName_mesh.find( 'cube_' ) >= 0:
+if file_name_mesh.find( 'cube_' ) >= 0:
     # Domain $Y_1$.
     region_1 = {
         'name' : 'Y1',
@@ -30,7 +30,7 @@ if fileName_mesh.find( 'cube_' ) >= 0:
     region_100 = {
         'name' : 'Surface',
         'select' : 'r.Y1 *n r.Omega',
-        'canCells' : False,
+        'can_cells' : False,
     }
 else:
     # Whole domain $Y$.
@@ -66,12 +66,12 @@ material_1 = {
 }
 
 material_2 = {
-    'name' : 'matV',
+    'name' : 'mat_v',
     'mode' : 'function',
     'region' : 'Omega',
 
-    'function' : 'funV',
-    'extraArgs' : {'mode' : 'r^2'},
+    'function' : 'fun_v',
+    'extra_args' : {'mode' : 'r^2'},
 }
 
 field_0 = {
@@ -121,7 +121,7 @@ ebc_1 = {
 
 equations = {
     'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
-               + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
+               + dw_mass_scalar_variable.i1.Omega( mat_v.V, v, Psi )""",
     'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
     'sphere' : """ d_volume_integrate.i1.sphere( n )""",
 }
@@ -136,28 +136,28 @@ solver_0 = {
     'kind' : 'ls.scipy_iterative',
 
     'method' : 'cg',
-    'iMax'      : 1000,
-    'epsA'      : 1e-12,
+    'i_max'      : 1000,
+    'eps_a'      : 1e-12,
 }
 
 solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 solver_2 = {
@@ -165,20 +165,20 @@ solver_2 = {
     'kind' : 'eig.pysparse',
 
     'tau' : -10.0,
-    'epsA' : 1e-5,
-    'iMax' : 150,
+    'eps_a' : 1e-5,
+    'i_max' : 150,
     'method' : 'qmrs',
     'verbosity' : 0,
     'strategy' : 1,
 }
 
 fe = {
-    'chunkSize' : 100000
+    'chunk_size' : 100000
 }
 
 ##
 # c: 01.02.2008, r: 12.06.2008
-def funV( ts, coor, region, ig, mode = None, vhxc = None ):
+def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
     import numpy as nm
 
     if vhxc is None:
@@ -190,5 +190,5 @@ def funV( ts, coor, region, ig, mode = None, vhxc = None ):
     vc = - C * 5.0 / r
     V = vhxc + vc
         
-    out['V'] = V
+    out['v'] = V
     return out

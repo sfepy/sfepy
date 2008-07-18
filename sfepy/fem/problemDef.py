@@ -26,28 +26,28 @@ class ProblemDefinition( Struct ):
     """
     ##
     # c: 29.01.2006, r: 09.07.2008
-    def fromConf( conf,
-                  initFields = True, initVariables = True, initEquations = True,
-                  initSolvers = True ):
+    def from_conf( conf,
+                  init_fields = True, init_variables = True, init_equations = True,
+                  init_solvers = True ):
 
-        mesh = Mesh.fromFile( conf.fileName_mesh )
+        mesh = Mesh.from_file( conf.file_name_mesh )
 
         
         eldesc_dir = op.join( install_dir, 'eldesc' )
-        domain = Domain.fromMesh( mesh, eldesc_dir )
-        domain.setupGroups()
-        domain.fixElementOrientation()
-        domain.setupNeighbourLists()
+        domain = Domain.from_mesh( mesh, eldesc_dir )
+        domain.setup_groups()
+        domain.fix_element_orientation()
+        domain.setup_neighbour_lists()
 #        print domain
 ##         for gr in domain.groups.itervalues():
 ##             print gr.shape
 
-        domain.createRegions( conf.regions, conf.funmod )
+        domain.create_regions( conf.regions, conf.funmod )
 ##         print regions
 ##         pause()
 
-        materials = Materials.fromConf( conf.materials )
-        materials.setupRegions( domain.regions )
+        materials = Materials.from_conf( conf.materials )
+        materials.setup_regions( domain.regions )
     ##     print materials
     ##     pause()
 
@@ -59,20 +59,20 @@ class ProblemDefinition( Struct ):
                                  materials = materials,
                                  eldesc_dir = eldesc_dir )
 
-        if initFields:
-            obj.setFields( conf.fields )
+        if init_fields:
+            obj.set_fields( conf.fields )
 
-            if initVariables:
-                obj.setVariables( conf.variables )
+            if init_variables:
+                obj.set_variables( conf.variables )
 
-                if initEquations:
-                    obj.setEquations( conf.equations )
+                if init_equations:
+                    obj.set_equations( conf.equations )
 
-        if initSolvers:
-            obj.setSolvers( conf.solvers, conf.options )
+        if init_solvers:
+            obj.set_solvers( conf.solvers, conf.options )
 
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 18.04.2006, c
@@ -91,29 +91,29 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 23.04.2007, r: 09.07.2008
-    def setFields( self, conf_fields = None ):
-        conf_fields = getDefault( conf_fields, self.conf.fields )
-        fields = Fields.fromConf( conf_fields )
-        fields.readInterpolants( self.eldesc_dir )
-        fields.setupApproximations( self.domain )
+    def set_fields( self, conf_fields = None ):
+        conf_fields = get_default( conf_fields, self.conf.fields )
+        fields = Fields.from_conf( conf_fields )
+        fields.read_interpolants( self.eldesc_dir )
+        fields.setup_approximations( self.domain )
 ##         print fields
 ##         print fields[0].aps
 ##         pause()
-        fields.setupGlobalBase()
-        fields.setupCoors()
+        fields.setup_global_base()
+        fields.setup_coors()
         self.fields = fields
 
-##         self.saveFieldMeshes( '.' )
+##         self.save_field_meshes( '.' )
 ##         pause()
 
     ##
     # c: 26.07.2006, r: 14.04.2008
-    def setVariables( self, conf_variables = None ):
-        conf_variables = getDefault( conf_variables, self.conf.variables )
-        variables = Variables.fromConf( conf_variables, self.fields )
-        variables.setupDofInfo() # Call after fields.setupGlobalBase().
+    def set_variables( self, conf_variables = None ):
+        conf_variables = get_default( conf_variables, self.conf.variables )
+        variables = Variables.from_conf( conf_variables, self.fields )
+        variables.setup_dof_info() # Call after fields.setup_global_base().
         self.variables = variables
-        self.mtxA = None
+        self.mtx_a = None
         self.solvers = None
 ##         print variables.di
 ##         pause()
@@ -121,71 +121,71 @@ class ProblemDefinition( Struct ):
     
     ##
     # c: 18.04.2006, r: 13.06.2008
-    def setEquations( self, conf_equations, user = None, cacheOverride = None,
-                      keepSolvers = False ):
-        equations = Equations.fromConf( conf_equations )
+    def set_equations( self, conf_equations, user = None, cache_override = None,
+                      keep_solvers = False ):
+        equations = Equations.from_conf( conf_equations )
         equations.parse_terms( self.domain.regions )
-        equations.setupTermArgs( self.variables, self.materials, user )
+        equations.setup_term_args( self.variables, self.materials, user )
 
-        iNames = equations.getTermIntegralNames()
-        self.integrals = Integrals.fromConf( self.conf.integrals, iNames )
-        self.integrals.setQuadratures( fea.collectQuadratures() )
+        i_names = equations.get_term_integral_names()
+        self.integrals = Integrals.from_conf( self.conf.integrals, i_names )
+        self.integrals.set_quadratures( fea.collect_quadratures() )
 
         self.geometries = {}
-        equations.describeGeometry( self.geometries, self.variables,
+        equations.describe_geometry( self.geometries, self.variables,
                                     self.integrals )
 
 ##         print self.geometries
 ##         pause()
-        # Call after describeGeometry(), as it sets ap.surfaceData.
-        self.variables.setupDofConns()
+        # Call after describe_geometry(), as it sets ap.surface_data.
+        self.variables.setup_dof_conns()
 
-        if cacheOverride is None:
-            if hasattr( self.conf.fe, 'cacheOverride' ):
-                cacheOverride = self.conf.fe.cacheOverride
+        if cache_override is None:
+            if hasattr( self.conf.fe, 'cache_override' ):
+                cache_override = self.conf.fe.cache_override
             else:
-                cacheOverride = True
-        equations.setCacheMode( cacheOverride )
+                cache_override = True
+        equations.set_cache_mode( cache_override )
 
         self.equations = equations
 
-        if not keepSolvers:
+        if not keep_solvers:
             self.solvers = None
 
     ##
     # c: 16.10.2007, r: 20.02.2008
-    def setSolvers( self, conf_solvers = None, options = None ):
+    def set_solvers( self, conf_solvers = None, options = None ):
         """If solvers are not set in options, use first suitable in
         conf_solvers."""
-        conf_solvers = getDefault( conf_solvers, self.conf.solvers )
-        self.solverConfs = {}
+        conf_solvers = get_default( conf_solvers, self.conf.solvers )
+        self.solver_confs = {}
         for key, val in conf_solvers.iteritems():
-            self.solverConfs[val.name] = val
+            self.solver_confs[val.name] = val
         
-        def _findSuitable( prefix ):
-            for key, val in self.solverConfs.iteritems():
+        def _find_suitable( prefix ):
+            for key, val in self.solver_confs.iteritems():
                 if val.kind.find( prefix ) == 0:
                     return val
             return None
 
-        def _getSolverConf( kind ):
+        def _get_solver_conf( kind ):
             try:
                 key = options[kind]
-                conf = self.solverConfs[key]
+                conf = self.solver_confs[key]
             except:
-                conf = _findSuitable( kind + '.' )
+                conf = _find_suitable( kind + '.' )
             return conf
         
-        self.tsConf = _getSolverConf( 'ts' )
-        self.nlsConf = _getSolverConf( 'nls' )
-        self.lsConf = _getSolverConf( 'ls' )
+        self.ts_conf = _get_solver_conf( 'ts' )
+        self.nls_conf = _get_solver_conf( 'nls' )
+        self.ls_conf = _get_solver_conf( 'ls' )
         info =  'using solvers:'
-        if self.tsConf:
-            info += '\n                ts: %s' % self.tsConf.name
-        if self.nlsConf:
-            info += '\n               nls: %s' % self.nlsConf.name
-        if self.lsConf:
-            info += '\n                ls: %s' % self.lsConf.name
+        if self.ts_conf:
+            info += '\n                ts: %s' % self.ts_conf.name
+        if self.nls_conf:
+            info += '\n               nls: %s' % self.nls_conf.name
+        if self.ls_conf:
+            info += '\n                ls: %s' % self.ls_conf.name
         if info != 'using solvers:':
             output( info )
 
@@ -195,82 +195,82 @@ class ProblemDefinition( Struct ):
 
     ##
     # 17.10.2007, c
-    def getSolverConf( self, name ):
-        return self.solverConfs[name]
+    def get_solver_conf( self, name ):
+        return self.solver_confs[name]
     
     ##
     # 29.01.2006, c
     # 25.07.2006
-    def createStateVector( self ):
-        return self.variables.createStateVector()
+    def create_state_vector( self ):
+        return self.variables.create_state_vector()
 
     ##
     # c: 08.08.2006, r: 14.04.2008
-    def updateBC( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
-                  createMatrix = False ):
+    def update_bc( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
+                  create_matrix = False ):
         """Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
-        createMatrix to True"""
-        self.variables.equationMapping( conf_ebc, conf_epbc,
+        create_matrix to True"""
+        self.variables.equation_mapping( conf_ebc, conf_epbc,
                                         self.domain.regions, ts, funmod )
-        self.variables.setupLCBCOperators( conf_lcbc, self.domain.regions )
+        self.variables.setup_lcbc_operators( conf_lcbc, self.domain.regions )
                 
-        self.variables.setupADofConns()
-        if (self.mtxA is None) or createMatrix:
-            self.mtxA = self.variables.createMatrixGraph()
+        self.variables.setup_a_dof_conns()
+        if (self.mtx_a is None) or create_matrix:
+            self.mtx_a = self.variables.create_matrix_graph()
 ##             import sfepy.base.plotutils as plu
-##             plu.spy( self.mtxA )
+##             plu.spy( self.mtx_a )
 ##             plu.pylab.show()
 
     ##
     # c: 13.06.2008, r: 13.06.2008
-    def getDefaultTS( self, t0 = None, t1 = None, dt = None, nStep = None,
+    def get_default_ts( self, t0 = None, t1 = None, dt = None, n_step = None,
                       step = None ):
-        t0 = getDefault( t0, 0.0 )
-        t1 = getDefault( t1, 1.0 )
-        dt = getDefault( dt, 1.0 )
-        nStep = getDefault( nStep, 1 )
-        ts = TimeStepper( t0, t1, dt, nStep )
-        ts.setStep( step )
+        t0 = get_default( t0, 0.0 )
+        t1 = get_default( t1, 1.0 )
+        dt = get_default( dt, 1.0 )
+        n_step = get_default( n_step, 1 )
+        ts = TimeStepper( t0, t1, dt, n_step )
+        ts.set_step( step )
         return ts
 
     ##
     # c: 22.02.2008, r: 13.06.2008
-    def updateMaterials( self, ts = None, funmod = None, extraMatArgs = None ):
+    def update_materials( self, ts = None, funmod = None, extra_mat_args = None ):
         if ts is None:
-            ts = self.getDefaultTS( step = 0 )
-        funmod = getDefault( funmod, self.conf.funmod )
-        self.materials.timeUpdate( ts, funmod, self.domain, extraMatArgs )
+            ts = self.get_default_ts( step = 0 )
+        funmod = get_default( funmod, self.conf.funmod )
+        self.materials.time_update( ts, funmod, self.domain, extra_mat_args )
 
     ##
     # c: 12.03.2007, r: 13.06.2008
-    def timeUpdate( self, ts = None,
+    def time_update( self, ts = None,
                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
-                    funmod = None, createMatrix = False, extraMatArgs = None ):
+                    funmod = None, create_matrix = False, extra_mat_args = None ):
         if ts is None:
-            ts = self.getDefaultTS( step = 0 )
+            ts = self.get_default_ts( step = 0 )
             
-        conf_ebc = getDefault( conf_ebc, self.conf.ebcs )
-        conf_epbc = getDefault( conf_epbc, self.conf.epbcs )
-        conf_lcbc = getDefault( conf_lcbc, self.conf.lcbcs )
-        funmod = getDefault( funmod, self.conf.funmod )
-        self.updateBC( ts, conf_ebc, conf_epbc, conf_lcbc, funmod, createMatrix )
-        self.updateMaterials( ts, funmod, extraMatArgs )
+        conf_ebc = get_default( conf_ebc, self.conf.ebcs )
+        conf_epbc = get_default( conf_epbc, self.conf.epbcs )
+        conf_lcbc = get_default( conf_lcbc, self.conf.lcbcs )
+        funmod = get_default( funmod, self.conf.funmod )
+        self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod, create_matrix )
+        self.update_materials( ts, funmod, extra_mat_args )
 
     ##
     # 29.01.2006, c
     # 25.07.2006
     # 19.09.2006
-    def applyEBC( self, vec, forceValues = None ):
-        self.variables.applyEBC( vec, forceValues )
+    def apply_ebc( self, vec, force_values = None ):
+        self.variables.apply_ebc( vec, force_values )
 
     ##
     # 25.07.2006, c
-    def updateVec( self, vec, delta ):
-        self.variables.updateVec( vec, delta )
+    def update_vec( self, vec, delta ):
+        self.variables.update_vec( vec, delta )
         
     ##
     # c: 18.04.2006, r: 07.05.2008
-    def stateToOutput( self, vec, fillValue = None, varInfo = None,
+    def state_to_output( self, vec, fill_value = None, var_info = None,
                        extend = True ):
         """
         Transforms state vector 'vec' to an output dictionary, that can be
@@ -278,32 +278,32 @@ class ProblemDefinition( Struct ):
         i.e. all fixed or periodic values must be included.
 
         Example:
-        >>> out = problem.stateToOutput( state )
-        >>> problem.saveState( 'file.vtk', out = out )
+        >>> out = problem.state_to_output( state )
+        >>> problem.save_state( 'file.vtk', out = out )
 
         Then the  dictionary entries a formed by components of the state vector
         corresponding to the unknown variables, each transformed to shape
         (n_mesh_nod, n_dof per node) - all values in extra nodes are removed.
         """
-        return self.variables.stateToOutput( vec, fillValue, varInfo, extend )
+        return self.variables.state_to_output( vec, fill_value, var_info, extend )
 
     ##
     # 26.07.2006, c
     # 22.08.2006
-    def getMeshCoors( self ):
-        return self.domain.getMeshCoors()
+    def get_mesh_coors( self ):
+        return self.domain.get_mesh_coors()
 
     ##
     # created: 26.07.2006
     # last revision: 21.12.2007
-    def setMeshCoors( self, coors, updateState = False ):
-        fea.setMeshCoors( self.domain, self.fields, self.geometries,
-                          coors, updateState )
+    def set_mesh_coors( self, coors, update_state = False ):
+        fea.set_mesh_coors( self.domain, self.fields, self.geometries,
+                          coors, update_state )
 
     ##
     # c: 02.04.2008, r: 02.04.2008
-    def initTime( self, ts ):
-        self.equations.initTime( ts )
+    def init_time( self, ts ):
+        self.equations.init_time( ts )
 
     ##
     # 08.06.2007, c
@@ -313,83 +313,83 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 01.03.2007, r: 23.06.2008
-    def saveState( self, fileName, state = None, out = None,
-                   fillValue = None, postProcessHook = None,
-                   filePerVar = False, **kwargs ):
-        extend = not filePerVar
+    def save_state( self, file_name, state = None, out = None,
+                   fill_value = None, post_process_hook = None,
+                   file_per_var = False, **kwargs ):
+        extend = not file_per_var
         if (out is None) and (state is not None):
-            out = self.stateToOutput( state,
-                                      fillValue = fillValue, extend = extend )
-            if postProcessHook is not None:
-                out = postProcessHook( out, self, state, extend = extend )
+            out = self.state_to_output( state,
+                                      fill_value = fill_value, extend = extend )
+            if post_process_hook is not None:
+                out = post_process_hook( out, self, state, extend = extend )
 
-        if filePerVar:
+        if file_per_var:
             import os.path as op
 
             meshes = {}
-            for var in self.variables.iterState():
+            for var in self.variables.iter_state():
                 rname = var.field.region.name
                 if meshes.has_key( rname ):
                     mesh = meshes[rname]
                 else:
-                    mesh = Mesh.fromRegion( var.field.region, self.domain.mesh,
+                    mesh = Mesh.from_region( var.field.region, self.domain.mesh,
                                             localize = True )
                     meshes[rname] = mesh
                 vout = {}
                 for key, val in out.iteritems():
-                    if val.varName == var.name:
+                    if val.var_name == var.name:
                         vout[key] = val
-                base, suffix = op.splitext( fileName )
+                base, suffix = op.splitext( file_name )
                 mesh.write( base + '_' + var.name + suffix,
                             io = 'auto', out = vout, **kwargs )
         else:
-            self.domain.mesh.write( fileName, io = 'auto', out = out, **kwargs )
+            self.domain.mesh.write( file_name, io = 'auto', out = out, **kwargs )
 
     ##
     # c: 19.09.2006, r: 27.02.2008
-    def saveEBC( self, fileName, force = True, default = 0.0 ):
+    def save_ebc( self, file_name, force = True, default = 0.0 ):
         output( 'saving ebc...' )
-        state = self.createStateVector()
+        state = self.create_state_vector()
         state.fill( default )
         if force:
-            vals = dictFromKeysInit( [self.variables.names[ii]
+            vals = dict_from_keys_init( [self.variables.names[ii]
                                       for ii in self.variables.state] )
             for ii, key in enumerate( vals.iterkeys() ):
                 vals[key] = ii + 1
-            self.applyEBC( state, forceValues = vals )
+            self.apply_ebc( state, force_values = vals )
         else:
-            self.applyEBC( state )
-        self.saveState( fileName, state, fillValue = default )
+            self.apply_ebc( state )
+        self.save_state( file_name, state, fill_value = default )
         output( '...done' )
 
     ##
     # created:       30.03.2007
     # last revision: 27.02.2008
-    def saveRegions( self, fileNameTrunk ):
+    def save_regions( self, file_name_trunk ):
 
         output( 'saving regions...' )
         for region in self.domain.regions:
             output( region.name )
-            aux = Mesh.fromRegion( region, self.domain.mesh, self.domain.ed,
+            aux = Mesh.from_region( region, self.domain.mesh, self.domain.ed,
                                    self.domain.fa )
-            aux.write( '%s_%s.mesh' % (fileNameTrunk, region.name), io = 'auto' )
+            aux.write( '%s_%s.mesh' % (file_name_trunk, region.name), io = 'auto' )
         output( '...done' )
 
     ##
     # created:       02.01.2008
     # last revision: 27.02.2008
-    def saveRegionFieldMeshes( self, fileNameTrunk ):
+    def save_region_field_meshes( self, file_name_trunk ):
 
         output( 'saving regions of fields...' )
         for field in self.fields:
-            fregion = self.domain.regions[field.regionName]
+            fregion = self.domain.regions[field.region_name]
             output( 'field %s: saving regions...' % field.name )
 
             for region in self.domain.regions:
                 if not fregion.contains( region ): continue
                 output( region.name )
-                aux = Mesh.fromRegionAndField( region, field )
-                aux.write( '%s_%s_%s.mesh' % (fileNameTrunk,
+                aux = Mesh.from_region_and_field( region, field )
+                aux.write( '%s_%s_%s.mesh' % (file_name_trunk,
                                               region.name, field.name),
                            io = 'auto' )
             output( '...done' )
@@ -397,32 +397,32 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 03.07.2007, r: 27.02.2008
-    def saveFieldMeshes( self, fileNameTrunk ):
+    def save_field_meshes( self, file_name_trunk ):
 
         output( 'saving field meshes...' )
         for field in self.fields:
             output( field.name )
-            field.writeMesh( fileNameTrunk + '_%s' )
+            field.write_mesh( file_name_trunk + '_%s' )
         output( '...done' )
 
     ##
     # c: 17.01.2008, r: 11.04.2008
-    def getEvaluator( self, fromNLS = False, **kwargs ):
+    def get_evaluator( self, from_nls = False, **kwargs ):
         """
-        Either create a new Evaluator instance (fromNLS == False),
+        Either create a new Evaluator instance (from_nls == False),
         or return an existing instace, created in a preceding call to
-        ProblemDefinition.initSolvers().
+        ProblemDefinition.init_solvers().
         """
-        if fromNLS:
-            solvers = self.getSolvers()
+        if from_nls:
+            solvers = self.get_solvers()
             try:
                 ev = solvers.nls.evaluator
             except AttributeError:
-                output( 'call ProblemDefinition.initSolvers() or'
-                        ' set fromNLS to False!' )
+                output( 'call ProblemDefinition.init_solvers() or'
+                        ' set from_nls to False!' )
                 raise
         else:
-            if self.variables.hasLCBC:
+            if self.variables.has_lcbc:
                 ev = LCBCEvaluator( self, **kwargs )
             else:
                 ev = BasicEvaluator( self, **kwargs )
@@ -430,66 +430,66 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 04.04.2008, r: 04.04.2008
-    def initSolvers( self, nlsStatus = None, lsConf = None, nlsConf = None,
+    def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
                      mtx = None, **kwargs ):
-        lsConf = getDefault( lsConf, self.lsConf, 'you must set linear solver!' )
+        ls_conf = get_default( ls_conf, self.ls_conf, 'you must set linear solver!' )
 
-        nlsConf = getDefault( nlsConf, self.nlsConf,
+        nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
         
-        ev = self.getEvaluator( **kwargs )
-        ls = Solver.anyFromConf( lsConf, mtx = mtx )
-        nls = Solver.anyFromConf( nlsConf, evaluator = ev,
-                                  linSolver = ls, status = nlsStatus )
+        ev = self.get_evaluator( **kwargs )
+        ls = Solver.any_from_conf( ls_conf, mtx = mtx )
+        nls = Solver.any_from_conf( nls_conf, evaluator = ev,
+                                  lin_solver = ls, status = nls_status )
         self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
 
     ##
     # c: 04.04.2008, r: 04.04.2008
-    def getSolvers( self ):
+    def get_solvers( self ):
         return getattr( self, 'solvers', None )
 
     ##
     # c: 04.04.2008, r: 04.04.2008
-    def isLinear( self ):
-        nlsConf = getDefault( None, self.nlsConf,
+    def is_linear( self ):
+        nls_conf = get_default( None, self.nls_conf,
                               'you must set nonlinear solver!' )
 
-        if nlsConf.problem == 'linear':
+        if nls_conf.problem == 'linear':
             return True
         else:
             return False
 
     ##
     # c: 13.06.2008, r: 13.06.2008
-    def setLinear( self, isLinear ):
-        nlsConf = getDefault( None, self.nlsConf,
+    def set_linear( self, is_linear ):
+        nls_conf = get_default( None, self.nls_conf,
                               'you must set nonlinear solver!' )
-        if isLinear:
-            nlsConf.problem = 'linear'
+        if is_linear:
+            nls_conf.problem = 'linear'
         else:
-            nlsConf.problem = 'nonlinear'
+            nls_conf.problem = 'nonlinear'
 
     ##
     # c: 03.10.2007, r: 11.04.2008
-    def solve( self, state0 = None, nlsStatus = None,
-               lsConf = None, nlsConf = None, forceValues = None,
+    def solve( self, state0 = None, nls_status = None,
+               ls_conf = None, nls_conf = None, force_values = None,
                **kwargs ):
         """Solve self.equations in current time step."""
-        solvers = self.getSolvers()
+        solvers = self.get_solvers()
         if solvers is None:
-            self.initSolvers( nlsStatus, lsConf, nlsConf, **kwargs )
-            solvers = self.getSolvers()
+            self.init_solvers( nls_status, ls_conf, nls_conf, **kwargs )
+            solvers = self.get_solvers()
         else:
             if kwargs:
-                ev = self.getEvaluator( fromNLS = True )
-                ev.setTermArgs( **kwargs )
+                ev = self.get_evaluator( from_nls = True )
+                ev.set_term_args( **kwargs )
             
         if state0 is None:
-            state = self.createStateVector()
+            state = self.create_state_vector()
         else:
             state = state0.copy()
 
-        self.applyEBC( state, forceValues = forceValues )
+        self.apply_ebc( state, force_values = force_values )
 
         state = solvers.nls( state )
 
@@ -497,11 +497,11 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 06.02.2008, r: 04.04.2008
-    def getTimeSolver( self, tsConf = None, **kwargs ):
-        tsConf = getDefault( tsConf, self.tsConf,
+    def get_time_solver( self, ts_conf = None, **kwargs ):
+        ts_conf = get_default( ts_conf, self.ts_conf,
                              'you must set time-stepping solver!' )
         
-        return Solver.anyFromConf( tsConf, **kwargs )
+        return Solver.any_from_conf( ts_conf, **kwargs )
 
 
     def init_variables( self, state ):

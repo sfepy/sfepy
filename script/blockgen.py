@@ -12,7 +12,7 @@ usage = """%prog [options]
 Block mesh generator.
 """
 help = {
-    'fileName' :
+    'file_name' :
     'output file name [default: %default]',
     'dims' :
     'dimension of the block [default: %default]',
@@ -26,9 +26,9 @@ help = {
 # c: 19.06.2008, r: 19.06.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
-    parser.add_option( "-o", "", metavar = 'fileName',
-                       action = "store", dest = "outputFileName",
-                       default = 'out.vtk', help = help['fileName'] )
+    parser.add_option( "-o", "", metavar = 'file_name',
+                       action = "store", dest = "output_file_name",
+                       default = 'out.vtk', help = help['file_name'] )
     parser.add_option( "-d", "--dims", metavar = 'dims',
                        action = "store", dest = "dims",
                        default = '[1.0, 1.0, 1.0]', help = help['dims'] )
@@ -54,12 +54,12 @@ def main():
     dd = dims / (shape - 1)
 
     grid = nm.zeros( shape, dtype = nm.float64 )
-    nNod = nm.prod( shape )
-    coors = nm.zeros( (nNod, dim + 1), dtype = nm.float64 )
+    n_nod = nm.prod( shape )
+    coors = nm.zeros( (n_nod, dim + 1), dtype = nm.float64 )
 
     # This is 3D only...
     bar = MyBar( "       nodes:" )
-    bar.init( nNod )
+    bar.init( n_nod )
     for ii, ic in enumerate( cycle( shape ) ):
         ix, iy, iz = ic
         grid[ix,iy,iz] = ii
@@ -67,10 +67,10 @@ def main():
         if not (ii % 100):
             bar.update( ii )
     print
-    nEl = nm.prod( shape - 1 )
-    conn = nm.zeros( (nEl, 8), dtype = nm.int32 )
+    n_el = nm.prod( shape - 1 )
+    conn = nm.zeros( (n_el, 8), dtype = nm.int32 )
     bar = MyBar( "       elements:" )
-    bar.init( nEl )
+    bar.init( n_el )
     for ii, (ix, iy, iz) in enumerate( cycle( shape - 1 ) ):
         conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
                       grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
@@ -79,12 +79,12 @@ def main():
         if not (ii % 100):
             bar.update( ii )
     print
-    matId = nm.zeros( (nEl,), dtype = nm.int32 )
+    mat_id = nm.zeros( (n_el,), dtype = nm.int32 )
     desc = '3_8'
 
-    mesh = Mesh.fromData( options.outputFileName,
-                          coors, [conn], [matId], [desc] )
-    mesh.write( options.outputFileName, io = 'auto' )
+    mesh = Mesh.from_data( options.output_file_name,
+                          coors, [conn], [mat_id], [desc] )
+    mesh.write( options.output_file_name, io = 'auto' )
 
 if __name__ == '__main__':
     main()

@@ -20,15 +20,15 @@ def intersect1d_nu( array1, array2 ):
 # 01.11.2005, c
 # 02.11.2005
 # 16.12.2005
-def unique1d( array1, retIndx = False ):
+def unique1d( array1, ret_indx = False ):
     if len( array1 ) == 0:
-        if retIndx:
+        if ret_indx:
             return array1.copy(), array1.copy()
         else:
             return array1.copy()
             
     ar = nm.array( array1 ).flat
-    if retIndx:
+    if ret_indx:
         perm = nm.argsort( ar )
         aux = nm.take( ar, perm )
         ic = nm.empty( aux.shape, dtype = aux.dtype )
@@ -47,17 +47,17 @@ def unique1d( array1, retIndx = False ):
 # 18.02.2005, c
 # 21.02.2005
 # 22.02.2005
-def unique( arrayIn, mode = 'flat' ):
-    from sfepy.fem.extmods.meshutils import sortRows
+def unique( array_in, mode = 'flat' ):
+    from sfepy.fem.extmods.meshutils import sort_rows
 
     if mode == 'flat':
-        aux = nm.sort( arrayIn.flat )
+        aux = nm.sort( array_in.flat )
         ic = nm.zeros( aux.shape, aux.dtype )
         ic[-1] = 1
         ic[:-1] = nm.where( diff( aux ), 1, 0 )
     elif mode == 'rows':
-        aux = arrayIn.copy()
-        sortRows( aux, nm.arange( aux.shape[1], dtype = nm.int32 ) )
+        aux = array_in.copy()
+        sort_rows( aux, nm.arange( aux.shape[1], dtype = nm.int32 ) )
         ic = nm.zeros( aux.shape[0], aux.dtype )
         ic[-1] = 1
         ic[:-1] = nm.where( nm.sum( nm.abs( \
@@ -66,20 +66,20 @@ def unique( arrayIn, mode = 'flat' ):
         print 'unknown unique mode: %s' % mode
         raise ValueError
 
-    arrayOut = aux[nm.where( ic )[0]]
+    array_out = aux[nm.where( ic )[0]]
 
-    return( arrayOut )
+    return( array_out )
 
 ##
 # 14.01.2005, c
-def asUniqueSet( obj ):
-    objS = nm.zeros( (0,), nm.int32 )
+def as_unique_set( obj ):
+    obj_s = nm.zeros( (0,), nm.int32 )
     for ii in obj:
-        objS = nm.concatenate( (objS, ii.flat) )
-    objS = nm.sort( objS )
-#    objS = nm.where( objS == -1, , objS )
-    flag = nm.zeros( objS.shape, nm.int32 )
-    flag[objS] = 1;
+        obj_s = nm.concatenate( (obj_s, ii.flat) )
+    obj_s = nm.sort( obj_s )
+#    obj_s = nm.where( obj_s == -1, , obj_s )
+    flag = nm.zeros( obj_s.shape, nm.int32 )
+    flag[obj_s] = 1;
     set = flag.nonzero()[0]
     return( set )
 
@@ -95,29 +95,29 @@ def diff( obj ):
 
 ##
 # 21.11.2005, c
-def splitRange( nItem, step ):
-    num = nItem / step
+def split_range( n_item, step ):
+    num = n_item / step
     out = [step] * num
     aux = sum( out )
-    if aux < nItem:
-        out.append( nItem - aux )
+    if aux < n_item:
+        out.append( n_item - aux )
 
     return out
 
 ##
 # c: 25.09.2007, r: 08.04.2008
-def eig( mtxA, mtxB = None, num = None, eigenvectors = True, returnTime = None,
+def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True, return_time = None,
          method = 'eig.scipy', **ckwargs ):
 
     kwargs = {'name' : 'aux', 'kind' : method}
     kwargs.update( ckwargs )
     conf = Struct( **kwargs )
-    solver = Solver.anyFromConf( conf )
+    solver = Solver.any_from_conf( conf )
 
     status = {}
-    out = solver( mtxA, mtxB, num, eigenvectors, status )
-    if returnTime is not None:
-        returnTime[0] = status['time']
+    out = solver( mtx_a, mtx_b, num, eigenvectors, status )
+    if return_time is not None:
+        return_time[0] = status['time']
         
     return out
 
@@ -167,17 +167,17 @@ def cycle( bounds ):
 
 ##
 # 01.09.2007, c
-def barycentricCoors( coors, sCoors ):
-    nV, dim = sCoors.shape
-    nC, dim2 = coors.shape
+def barycentric_coors( coors, s_coors ):
+    n_v, dim = s_coors.shape
+    n_c, dim2 = coors.shape
     assert dim == dim2
-    assert ((dim + 1) * dim / 2) == nV
+    assert ((dim + 1) * dim / 2) == n_v
 
-    mtx = nm.ones( (nV, nV), nm.float64 )
-    mtx[0:nV-1,:] = sCoors.T
-    rhs = nm.empty( (nV,nC), nm.float64 )
-    rhs[0:nV-1,:] = coors.T
-    rhs[nV-1,:] = 1.0
+    mtx = nm.ones( (n_v, n_v), nm.float64 )
+    mtx[0:n_v-1,:] = s_coors.T
+    rhs = nm.empty( (n_v,n_c), nm.float64 )
+    rhs[0:n_v-1,:] = coors.T
+    rhs[n_v-1,:] = 1.0
     bc = nla.solve( mtx, rhs )
 ##     print bc.T
     return bc
@@ -185,10 +185,10 @@ def barycentricCoors( coors, sCoors ):
 ##
 # 30.08.2007, c
 # 01.09.2007
-def pointsInSimplex( coors, sCoors, eps = 1e-8 ):
-    nC, dim = coors.shape
-    bc = barycentricCoors( coors, sCoors )
-    flag = nm.ones( (nC,), dtype = nm.bool )
+def points_in_simplex( coors, s_coors, eps = 1e-8 ):
+    n_c, dim = coors.shape
+    bc = barycentric_coors( coors, s_coors )
+    flag = nm.ones( (n_c,), dtype = nm.bool )
     for idim in xrange( dim + 1 ):
         flag &= nm.where( (bc[idim,:] > -eps)
                           & (bc[idim,:] < (1.0 + eps)), True, False )
@@ -196,7 +196,7 @@ def pointsInSimplex( coors, sCoors, eps = 1e-8 ):
 
 ##
 # c: 18.01.2008, r: 18.01.2008
-def rotationMatrix2D( angle ):
+def rotation_matrix2d( angle ):
     angle *= nm.pi / 180.0
     mtx = nm.array( [[nm.cos( angle ), -nm.sin( angle )],
                      [nm.sin( angle ), nm.cos( angle )]], dtype = nm.float64 )
@@ -208,30 +208,30 @@ class MatrixAction( Struct ):
 
     ##
     # 30.08.2007, c
-    def fromFunction( fun, expectedShape, dtype ):
+    def from_function( fun, expected_shape, dtype ):
         def call( self, vec ):
             aux = fun( vec )
             assert aux.shape[0] == self.shape[0] 
             return nm.asanyarray( aux, dtype = self.dtype )
-        obj = MatrixAction( shape = expectedShape,
+        obj = MatrixAction( shape = expected_shape,
                             dtype = dtype,
                             kind = 'function' )
-        insertMethod( obj, call )
+        insert_method( obj, call )
         return obj
-    fromFunction = staticmethod( fromFunction )
+    from_function = staticmethod( from_function )
 
     ##
     # 30.08.2007, c
-    def fromArray( arr ):
+    def from_array( arr ):
         def call( self, vec ):
             return nm.asarray( sc.dot( self.arr, vec ) )
         obj = MatrixAction( shape = arr.shape,
                             dtype = arr.dtype,
                             arr = arr,
                             kind = 'array' )
-        insertMethod( obj, call )
+        insert_method( obj, call )
         return obj
-    fromArray = staticmethod( fromArray )
+    from_array = staticmethod( from_array )
     
     ##
     # 30.08.2007, c
@@ -240,7 +240,7 @@ class MatrixAction( Struct ):
 
     ##
     # 30.08.2007, c
-    def toArray( self ):
+    def to_array( self ):
         if self.kind == 'array':
             return self.arr
         else:

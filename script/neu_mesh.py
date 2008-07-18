@@ -8,35 +8,35 @@ import sys
 import fileinput
 
 if (len( sys.argv ) == 3):
-    fileNameIn = sys.argv[1];
-    fileNameOut = sys.argv[2];
+    file_name_in = sys.argv[1];
+    file_name_out = sys.argv[2];
 else:
     print 'Two args required!'
     raise ValueError
 
-if (fileNameOut == '-'):
-    fileOut = sys.stdout
+if (file_name_out == '-'):
+    file_out = sys.stdout
 else:
-    fileOut = open( fileNameOut, "w" ); 
+    file_out = open( file_name_out, "w" ); 
 
 mode = 0
 nod = []
 els = {3 : {'tetra4' : [], 'pyram5' : [], 'wedge6' : [], 'brick8' : []},
        2 : {'tria3' : [], 'quad4' : []}}
 
-groupIds = []
-groupNEls = []
+group_ids = []
+group_n_els = []
 groups = []
 
-input = fileinput.input( fileNameIn )
+input = fileinput.input( file_name_in )
 for line in input:
     row = line.split()
     if len( row ) == 0: continue
 
     if (row[0] == 'NUMNP'):
         row = input.readline().split()
-        nNod, nEl, dim = row[0], row[1], int( row[4] )
-        print nNod, nEl, dim
+        n_nod, n_el, dim = row[0], row[1], int( row[4] )
+        print n_nod, n_el, dim
         el = els[dim]
 
     elif (row[0] == 'NODAL'):
@@ -73,11 +73,11 @@ for line in input:
                 row = input.readline().split()
 
     elif (row[0] == 'GROUP:'):
-        groupIds.append( row[1] )
-        gNEl = int( row[3] )
-        groupNEls.append( gNEl )
+        group_ids.append( row[1] )
+        g_n_el = int( row[3] )
+        group_n_els.append( g_n_el )
         name = input.readline().strip()
-        print name, groupIds[-1]
+        print name, group_ids[-1]
         
         els = []
         row = input.readline().split()
@@ -85,20 +85,20 @@ for line in input:
         while not( row[0] == 'ENDOFSECTION' ):
             els.extend( row )
             row = input.readline().split()
-        if gNEl != len( els ):
+        if g_n_el != len( els ):
             print 'wrong number of group elements! (%d == %d)'\
-                  % (nEl, len( els ))
+                  % (n_el, len( els ))
             raise ValueError
         groups.append( els )
         
-if int( nEl ) != sum( groupNEls ):
+if int( n_el ) != sum( group_n_els ):
     print 'wrong total number of group elements! (%d == %d)'\
-          % (int( nEl ), len( groupNEls ))
+          % (int( n_el ), len( group_n_els ))
 
-matIds = [None] * int( nEl )
+mat_ids = [None] * int( n_el )
 for ii, els in enumerate( groups ):
     for iel in els:
-        matIds[int( iel ) - 1] = groupIds[ii]
+        mat_ids[int( iel ) - 1] = group_ids[ii]
 
 out = 'els: '
 total = 0
@@ -109,51 +109,51 @@ for key, lst in el.iteritems():
 out += ' total: %d' % total
 print out
 
-fileOut.write( """MeshVersionFormatted 1
+file_out.write( """MeshVersionFormatted 1
 Dimension %d
 """ % dim )
     
-fileOut.write( "Vertices\n%d\n" % len( nod ) )
+file_out.write( "Vertices\n%d\n" % len( nod ) )
 for nn in nod:
-    fileOut.write( " ".join( nn ) + " 0\n" )
+    file_out.write( " ".join( nn ) + " 0\n" )
 
 if dim == 3:
     if (len( el['tetra4'] ) > 0):
-        fileOut.write( "Tetrahedra\n%d\n" % len( el['tetra4'] ) )
+        file_out.write( "Tetrahedra\n%d\n" % len( el['tetra4'] ) )
         for ee in el['tetra4']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( ee[3:] ) + " " + matIds[ii] + "\n" )
+            file_out.write( " ".join( ee[3:] ) + " " + mat_ids[ii] + "\n" )
 
-    nHex = len( el['pyram5'] ) + len( el['wedge6'] ) + len( el['brick8'] )
-    if (nHex > 0):
-        fileOut.write( "Hexahedra\n%d\n" % nHex )
+    n_hex = len( el['pyram5'] ) + len( el['wedge6'] ) + len( el['brick8'] )
+    if (n_hex > 0):
+        file_out.write( "Hexahedra\n%d\n" % n_hex )
         for ee in el['brick8']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( (ee[3], ee[4], ee[6], ee[5],
+            file_out.write( " ".join( (ee[3], ee[4], ee[6], ee[5],
                                       ee[7], ee[8], ee[10], ee[9]) )
-                           + " " + matIds[ii] + "\n" )
+                           + " " + mat_ids[ii] + "\n" )
         for ee in el['wedge6']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( (ee[3], ee[5], ee[8], ee[6],
+            file_out.write( " ".join( (ee[3], ee[5], ee[8], ee[6],
                                       ee[4], ee[4], ee[7], ee[7]) )
-                           + " " + matIds[ii] + "\n" )
+                           + " " + mat_ids[ii] + "\n" )
         for ee in el['pyram5']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( (ee[5], ee[3], ee[4], ee[6],
+            file_out.write( " ".join( (ee[5], ee[3], ee[4], ee[6],
                                       ee[7], ee[7], ee[7], ee[7]) )
-                           + " " + matIds[ii] + "\n" )
+                           + " " + mat_ids[ii] + "\n" )
 else:
     if (len( el['tria3'] ) > 0):
-        fileOut.write( "Triangles\n%d\n" % len( el['tria3'] ) )
+        file_out.write( "Triangles\n%d\n" % len( el['tria3'] ) )
         for ee in el['tria3']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( ee[3:] ) + " " + matIds[ii] + "\n" )
+            file_out.write( " ".join( ee[3:] ) + " " + mat_ids[ii] + "\n" )
 
     if (len( el['quad4'] ) > 0):
-        fileOut.write( "Quadrilaterals\n%d\n" % len( el['quad4'] ) )
+        file_out.write( "Quadrilaterals\n%d\n" % len( el['quad4'] ) )
         for ee in el['quad4']:
             ii = int( ee[0] ) - 1
-            fileOut.write( " ".join( ee[3:] ) + " " + matIds[ii] + "\n" )
+            file_out.write( " ".join( ee[3:] ) + " " + mat_ids[ii] + "\n" )
     
-if (fileNameOut != '-'):
-    fileOut.close()
+if (file_name_out != '-'):
+    file_out.close()

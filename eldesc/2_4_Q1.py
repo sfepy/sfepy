@@ -2,7 +2,7 @@ name = '2_4_Q1'
 
 desc = {
     'family'      : 'LagrangeTensor111',
-    'approxOrder' : 1
+    'approx_order' : 1
 }
 
 geometry = '2_4'
@@ -19,9 +19,9 @@ nodes = {
 }
 
 # geometry key : qp key
-keyMap = {'v' : 'v', 's2' : 's2'}
+key_map = {'v' : 'v', 's2' : 's2'}
 
-baseFuns = {
+base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1

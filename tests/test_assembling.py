@@ -1,7 +1,7 @@
 # c: 14.04.2008, r: 14.04.2008
 from sfepy.fem.periodic import *
 
-fileName_mesh = 'database/tests/plane.mesh'
+file_name_mesh = 'database/tests/plane.mesh'
 
 material_2 = {
     'name' : 'm',
@@ -61,7 +61,7 @@ epbc_10 = {
     'name' : 'periodic_x',
     'region' : ['LeftStrip', 'RightStrip'],
     'dofs' : {'p.0' : 'p.0'},
-    'match' : 'matchYLine',
+    'match' : 'match_y_line',
 }
 
 integral_1 = {
@@ -83,25 +83,25 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
-    'linSolver' : 'umfpack',
+    'is_plot'    : False,
+    'lin_solver' : 'umfpack',
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 from sfepy.base.testing import TestCommon
@@ -112,45 +112,45 @@ class Test( TestCommon ):
 
     ##
     # c: 14.04.2008, r: 14.04.2008
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         import os.path as op
-        from sfepy.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solve_stationary
 
-        problem, vec, data = solveStationary( conf )
-        name = op.join( options.outDir,
+        problem, vec, data = solve_stationary( conf )
+        name = op.join( options.out_dir,
                         op.splitext( op.basename( __file__ ) )[0] + '.vtk' )
-        problem.saveState( name, vec )
+        problem.save_state( name, vec )
 
         test = Test( problem = problem, vec = vec, data = data,
                      conf = conf, options = options )
         return test
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     
     ##
     # c: 14.04.2008, r: 14.04.2008
     def test_vector_matrix( self ):
-        from sfepy.fem.evaluate import evalTermOP
+        from sfepy.fem.evaluate import eval_term_op
         problem  = self.problem
 
-        state = problem.createStateVector()
-        problem.applyEBC( state )
+        state = problem.create_state_vector()
+        problem.apply_ebc( state )
 
-        aux1 = evalTermOP( state, "dw_diffusion.i1.Omega( m.K, q, p )",
-                           problem, dwMode = 'vector' )
-        aux1g = problem.variables.makeFullVec( aux1 )
-        problem.timeUpdate( conf_ebc = {}, conf_epbc = {} )
-        mtx = evalTermOP( state, "dw_diffusion.i1.Omega( m.K, q, p )",
-                          problem, dwMode = 'matrix' )
+        aux1 = eval_term_op( state, "dw_diffusion.i1.Omega( m.K, q, p )",
+                           problem, dw_mode = 'vector' )
+        aux1g = problem.variables.make_full_vec( aux1 )
+        problem.time_update( conf_ebc = {}, conf_epbc = {} )
+        mtx = eval_term_op( state, "dw_diffusion.i1.Omega( m.K, q, p )",
+                          problem, dw_mode = 'matrix' )
         aux2g = mtx * state
-        problem.timeUpdate( conf_ebc = self.conf.ebcs,
+        problem.time_update( conf_ebc = self.conf.ebcs,
                             conf_epbc = self.conf.epbcs )
-        aux2 = problem.variables.stripStateVector( aux2g, followEPBC = True )
+        aux2 = problem.variables.strip_state_vector( aux2g, follow_epbc = True )
 
-        ret = self.compareVectors( aux1, aux2,
+        ret = self.compare_vectors( aux1, aux2,
                                    label1 = 'vector mode',
                                    label2 = 'matrix mode' )
         if not ret:
-            self.report( 'variable %s: failed' % varName )
+            self.report( 'variable %s: failed' % var_name )
 
         return ret

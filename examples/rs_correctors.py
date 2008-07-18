@@ -5,47 +5,47 @@ sys.path.append( '.' )
 from sfepy.fem.periodic import *
 
 # c: 05.05.2008, r: 05.05.2008
-def defineRegions( fileName ):
+def define_regions( file_name ):
     """Define various subdomain for a given mesh file. This function is called
     below."""
     regions = {}
-    is3D = False
+    is3d = False
     
-    regions['Y'] = ('all', {})
+    regions['y'] = ('all', {})
 
     eog = 'elements of group %d'
-    if fileName.find( 'osteonT1' ) >= 0:
-        matIds = [11, 39, 6, 8, 27, 28, 9, 2, 4, 14, 12, 17, 45, 28, 15]
-        regions['Ym'] = (' +e '.join( (eog % im) for im in  matIds ), {})
+    if file_name.find( 'osteon_t1' ) >= 0:
+        mat_ids = [11, 39, 6, 8, 27, 28, 9, 2, 4, 14, 12, 17, 45, 28, 15]
+        regions['_ym'] = (' +e '.join( (eog % im) for im in  mat_ids ), {})
         wx = 0.865
         wy = 0.499
 
-    regions['Yc'] = ('r.Y -e r.Ym', {})
+    regions['_yc'] = ('r.Y -e r.Ym', {})
 
     # Sides.
-    regions['Left'] = ('nodes in (x < -%.3f)' % wx, {})
-    regions['Right'] = ('nodes in (x > %.3f)' % wx, {})
-    regions['Bottom'] = ('nodes in (y < -%.3f)' % wy, {})
-    regions['Top'] = ('nodes in (y > %.3f)' % wy, {})
-    regions['Corners'] = ("""nodes in
+    regions['_left'] = ('nodes in (x < -%.3f)' % wx, {})
+    regions['_right'] = ('nodes in (x > %.3f)' % wx, {})
+    regions['_bottom'] = ('nodes in (y < -%.3f)' % wy, {})
+    regions['_top'] = ('nodes in (y > %.3f)' % wy, {})
+    regions['_corners'] = ("""nodes in
                             ((x < -%.3f) & (y < -%.3f))
                           | ((x >  %.3f) & (y < -%.3f))
                           | ((x >  %.3f) & (y >  %.3f))
                           | ((x < -%.3f) & (y >  %.3f))
                           """ % ((wx, wy) * 4), {})
-    return is3D, regions, matIds
+    return is3d, regions, mat_ids
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def getPars( ts, coor, region, ig, matIds = [] ):
+def get_pars( ts, coor, region, ig, mat_ids = [] ):
     """Define material parameters:
          $D_ijkl$ (elasticity),
        in a given region."""
     dim = coor.shape[1]
     sym = (dim + 1) * dim / 2
 
-    m2i = region.domain.matIdsToIGs
-    matrixIgs = [m2i[im] for im in matIds]
+    m2i = region.domain.mat_ids_to_i_gs
+    matrix_igs = [m2i[im] for im in mat_ids]
 
     out = {}
 
@@ -54,23 +54,23 @@ def getPars( ts, coor, region, ig, matIds = [] ):
     mu = 0.3
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
     oot = nm.outer( o, o )
-    out['D'] = lam * oot + mu * nm.diag( o + 1.0 )
+    out['d'] = lam * oot + mu * nm.diag( o + 1.0 )
 
-    if ig not in matrixIgs: # channels
-        out['D'] *= 1e-1
+    if ig not in matrix_igs: # channels
+        out['d'] *= 1e-1
 
     return out
     
 ##
 # Mesh file.
-fileName_mesh = 'examples/osteonT1_11.mesh'
+file_name_mesh = 'examples/osteon_t1_11.mesh'
 
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
 # depending on a mesh used.
-is3D, regions, matIds = defineRegions( fileName_mesh )
+is3d, regions, mat_ids = define_regions( file_name_mesh )
 
-if is3D:
+if is3d:
     dim, geom = 3, '3_4'
 else:
     dim, geom = 2, '2_3'
@@ -110,32 +110,32 @@ if dim == 3:
         'name' : 'periodic_x',
         'region' : ['Left', 'Right'],
         'dofs' : {'uc.all' : 'uc.all'},
-        'match' : 'matchXPlane',
+        'match' : 'match_x_plane',
     }
     epbc_11 = {
         'name' : 'periodic_y',
         'region' : ['Near', 'Far'],
         'dofs' : {'uc.all' : 'uc.all'},
-        'match' : 'matchYPlane',
+        'match' : 'match_y_plane',
     }
     epbc_12 = {
         'name' : 'periodic_z',
         'region' : ['Top', 'Bottom'],
         'dofs' : {'uc.all' : 'uc.all'},
-        'match' : 'matchZPlane',
+        'match' : 'match_z_plane',
     }
 else:
     epbc_10 = {
         'name' : 'periodic_x',
         'region' : ['Left', 'Right'],
         'dofs' : {'uc.all' : 'uc.all'},
-        'match' : 'matchYLine',
+        'match' : 'match_y_line',
     }
     epbc_11 = {
         'name' : 'periodic_y',
         'region' : ['Top', 'Bottom'],
         'dofs' : {'uc.all' : 'uc.all'},
-        'match' : 'matchXLine',
+        'match' : 'match_x_line',
     }
     
 ##
@@ -150,8 +150,8 @@ material_1 = {
     'name' : 'm',
     'mode' : 'function',
     'region' : 'Y',
-    'function' : 'getPars',
-    'extraArgs' : {'matIds' : matIds},
+    'function' : 'get_pars',
+    'extra_args' : {'mat_ids' : mat_ids},
 }
 
 ##
@@ -173,8 +173,8 @@ equations = {
 ##
 # FE assembling options.
 fe = {
-    'chunkSize' : 100000,
-    'cacheOverride' : True,
+    'chunk_size' : 100000,
+    'cache_override' : True,
 }
 
 ##
@@ -188,19 +188,19 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 2,
-    'epsA'      : 1e-8,
-    'epsR'      : 1e-2,
+    'i_max'      : 2,
+    'eps_a'      : 1e-8,
+    'eps_r'      : 1e-2,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 0.99999,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 0.99999,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'is_plot'    : False,
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 ############################################
@@ -208,10 +208,10 @@ solver_1 = {
 
 ##
 # c: 28.02.2007, r: 13.02.2008
-def buildOpPi( varName, problem, ir, ic ):
+def build_op_pi( var_name, problem, ir, ic ):
     """\Pi^{rs}_i = \delta_{ri} y_s. """
-    var = problem.variables[varName]
-    coor = var.field.getCoor()[:,:-1]
+    var = problem.variables[var_name]
+    coor = var.field.get_coor()[:,:-1]
 
     pi = nm.zeros_like( coor )
     pi[:,ir] = coor[:,ic]
@@ -221,55 +221,55 @@ def buildOpPi( varName, problem, ir, ic ):
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def createPis( problem, variables, varName ):
-    problem.setVariables( variables )
+def create_pis( problem, variables, var_name ):
+    problem.set_variables( variables )
 
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim, dim), dtype = nm.object )
     for ir in range( dim ):
         for ic in range( dim ):
-            pi = buildOpPi( varName, problem, ir, ic )
+            pi = build_op_pi( var_name, problem, ir, ic )
             pis[ir,ic] = pi
     return pis
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def  solveSteadyCorrectors_rs( problem, equations, variables, pis,
-                               ofnTrunk, postProcessHook = None,
-                               filePerVar = False ):
+def  solve_steady_correctors_rs( problem, equations, variables, pis,
+                               ofn_trunk, post_process_hook = None,
+                               file_per_var = False ):
     """Compute the steady state correctors $\bar{\omega}^{rs}$"""
     from sfepy.base.base import Struct
     
     dim = problem.domain.mesh.dim
 
-    problem.setVariables( variables )
-    problem.setEquations( equations )
+    problem.set_variables( variables )
+    problem.set_equations( equations )
 
-    problem.timeUpdate()
+    problem.time_update()
 
-    statesRS = nm.zeros( (dim, dim), dtype = nm.object )
+    states_rs = nm.zeros( (dim, dim), dtype = nm.object )
     for ir in range( dim ):
         for ic in range( dim ):
             pi = pis[ir,ic]
             # Non-state variables must be assigned manually.
-            problem.variables['Pi'].dataFromData( pi )
+            problem.variables['_pi'].data_from_data( pi )
 
-            state = problem.createStateVector()
-            problem.applyEBC( state )
+            state = problem.create_state_vector()
+            problem.apply_ebc( state )
             state = problem.solve()
-            assert problem.variables.hasEBC( state )
-            statesRS[ir,ic] = state
+            assert problem.variables.has_ebc( state )
+            states_rs[ir,ic] = state
 
-            problem.saveState( ofnTrunk + '_steady_rs_%d%d.vtk' % (ir, ic),
-                               state, postProcessHook = postProcessHook,
-                               filePerVar = filePerVar )
+            problem.save_state( ofn_trunk + '_steady_rs_%d%d.vtk' % (ir, ic),
+                               state, post_process_hook = post_process_hook,
+                               file_per_var = file_per_var )
     return Struct( name = 'Steady RS correctors',
-                   statesRS = statesRS,
+                   states_rs = states_rs,
                    di = problem.variables.di )
 
 ##
 # c: 05.03.2008, r: 05.03.2008
-def iterSym( dim ):
+def iter_sym( dim ):
     for ii in xrange( dim ):
         yield ii, ii
     for ir in xrange( 0, dim ):
@@ -278,31 +278,31 @@ def iterSym( dim ):
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def coefE( problem, corrsRS, pis ):
+def coef_e( problem, corrs_rs, pis ):
     """Homogenized elastic coefficient $E_{ijkl}$."""
-    from sfepy.fem.evaluate import evalTermOP
+    from sfepy.fem.evaluate import eval_term_op
 
-    coefTerm = 'd_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
+    coef_term = 'd_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
 
     dim = problem.domain.mesh.dim
     sym = (dim + 1) * dim / 2
     coef = nm.zeros( (sym, sym), dtype = nm.float64 )
 
-    indx = corrsRS.di.indx['uc']
-    for ir, (irr, icr) in enumerate( iterSym( dim ) ):
-        omega1 = corrsRS.statesRS[irr,icr][indx]
+    indx = corrs_rs.di.indx['uc']
+    for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
+        omega1 = corrs_rs.states_rs[irr,icr][indx]
         pi1 = pis[irr,icr] + omega1
         # Non-state variables must be assigned manually.
-        problem.variables['Pi1'].dataFromData( pi1 )
+        problem.variables['_pi1'].data_from_data( pi1 )
             
-        for ic, (irc, icc) in enumerate( iterSym( dim ) ):
-            omega2 = corrsRS.statesRS[irc,icc][indx]
+        for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
+            omega2 = corrs_rs.states_rs[irc,icc][indx]
             pi2 = pis[irc,icc] + omega2
             # Non-state variables must be assigned manually.
-            problem.variables['Pi2'].dataFromData( pi2 )
+            problem.variables['_pi2'].data_from_data( pi2 )
 
             # Variables have their data, so evaluate the term.
-            val = evalTermOP( None, coefTerm, problem )
+            val = eval_term_op( None, coef_term, problem )
 
             coef[ir,ic] = val
     return coef
@@ -312,9 +312,9 @@ def coefE( problem, corrsRS, pis ):
 # c: 05.05.2008, r: 05.05.2008
 def main():
     from sfepy.base.base import spause
-    from sfepy.base.conf import ProblemConf, getStandardKeywords
+    from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem.problemDef import ProblemDefinition
-    from sfepy.base.ioutils import getTrunk
+    from sfepy.base.ioutils import get_trunk
 
     nm.set_printoptions( precision = 3 )
 
@@ -322,9 +322,9 @@ def main():
 First, this file will be read in place of an input
 (problem description) file.
 Press 'q' to quit the example, press any other key to continue...""" )
-    required, other = getStandardKeywords()
+    required, other = get_standard_keywords()
     # Use this file as the input file.
-    conf = ProblemConf.fromFile( __file__, required, other )
+    conf = ProblemConf.from_file( __file__, required, other )
     print conf
     spause( r""">>>
 ...the read input.
@@ -333,9 +333,9 @@ Press 'q' to quit the example, press any other key to continue...""" )
     spause( r""">>>
 Now the input will be used to create a ProblemDefinition instance.
 ['q'/other key to quit/continue...]""" )
-    problem = ProblemDefinition.fromConf( conf,
-                                          initVariables = False,
-                                          initEquations = False )
+    problem = ProblemDefinition.from_conf( conf,
+                                          init_variables = False,
+                                          init_equations = False )
     print problem
     spause( r""">>>
 ...the ProblemDefinition instance.
@@ -347,21 +347,21 @@ The homogenized elastic coefficient $E_{ijkl}$ is expressed
 using $\Pi$ operators, computed now. In fact, those operators are permuted
 coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""" )
-    pis = createPis( problem, conf.variables, 'Pi' )
+    pis = create_pis( problem, conf.variables, 'Pi' )
     print pis
     spause( r""">>>
 ...the $\Pi$ operators.
 ['q'/other key to quit/continue...]""" )
 
-    ofnTrunk = getTrunk( conf.fileName_mesh ) + '_out'
+    ofn_trunk = get_trunk( conf.file_name_mesh ) + '_out'
     spause( r""">>>
 Next, $E_{ijkl}$ needs so called steady state correctors $\bar{\omega}^{rs}$,
 computed now. The results will be saved in: %s_*.vtk
-['q'/other key to quit/continue...]""" % ofnTrunk )
+['q'/other key to quit/continue...]""" % ofn_trunk )
 
-    corrsRS = solveSteadyCorrectors_rs( problem, conf.equations,
-                                        conf.variables, pis, ofnTrunk )
-    print corrsRS
+    corrs_rs = solve_steady_correctors_rs( problem, conf.equations,
+                                        conf.variables, pis, ofn_trunk )
+    print corrs_rs
     spause( r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
 ['q'/other key to quit/continue...]""" )
@@ -370,11 +370,11 @@ computed now. The results will be saved in: %s_*.vtk
     spause( r""">>>
 Finally, $E_{ijkl}$ can be computed.
 ['q'/other key to quit/continue...]""" )
-    cE = coefE( problem, corrsRS, pis )
+    c_e = coef_e( problem, corrs_rs, pis )
     print r""">>>
 The homogenized elastic coefficient $E_{ijkl}$, symmetric storage
 with rows, columns in 11, 22, 12 ordering:"""
-    print cE
+    print c_e
     
 if __name__ == '__main__':
     main()

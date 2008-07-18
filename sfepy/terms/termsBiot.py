@@ -11,24 +11,24 @@ class BiotGradTerm( GradTerm ):
     :definition: $\int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v})$
     """
     name = 'dw_biot_grad'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'state_in_volume_qp' : [['state']]}
+    use_caches = {'state_in_volume_qp' : [['state']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_biot_grad )
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
-        cache = self.getCache( 'state_in_volume_qp', 0 )
-        vec_qp = cache( 'state', self.getCurrentGroup(), 0, state = state )
+    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
+        cache = self.get_cache( 'state_in_volume_qp', 0 )
+        vec_qp = cache( 'state', self.get_current_group(), 0, state = state )
 
-        mat, = self.getArgs( ['material'], **kwargs )
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
-#        print matQP
-        bf = apc.getBase( 'v', 0, self.integralName )
-        return 1.0, vec_qp, bf, matQP, vgr
+        mat, = self.get_args( ['material'], **kwargs )
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( self.data_shape[1], 0 )
+#        print mat_qp
+        bf = apc.get_base( 'v', 0, self.integral_name )
+        return 1.0, vec_qp, bf, mat_qp, vgr
 
 ##
 # c: 18.05.2008
@@ -42,26 +42,26 @@ class BiotGradDtTerm( GradTerm ):
     :arguments: ts.dt : $\dt$, parameter : $p_0$
     """
     name = 'dw_biot_grad_dt'
-    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'state_in_volume_qp' : [['state', {'state' : (2, 2)}]]}
+    use_caches = {'state_in_volume_qp' : [['state', {'state' : (2, 2)}]]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_biot_grad )
 
     ##
     # c: 18.05.2008, r: 18.05.2008
-    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
-        cache = self.getCache( 'state_in_volume_qp', 0 )
-        vec_qp = cache( 'state', self.getCurrentGroup(), 0, state = state )
-        vec0_qp = cache( 'state', self.getCurrentGroup(), 1,
+    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
+        cache = self.get_cache( 'state_in_volume_qp', 0 )
+        vec_qp = cache( 'state', self.get_current_group(), 0, state = state )
+        vec0_qp = cache( 'state', self.get_current_group(), 1,
                          state = parameter )
 
-        ts, mat = self.getArgs( ['ts', 'material'], **kwargs )
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
-#        print matQP
-        bf = apc.getBase( 'v', 0, self.integralName )
-        return 1.0 / ts.dt, vec_qp - vec0_qp, bf, matQP, vgr
+        ts, mat = self.get_args( ['ts', 'material'], **kwargs )
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( self.data_shape[1], 0 )
+#        print mat_qp
+        bf = apc.get_base( 'v', 0, self.integral_name )
+        return 1.0 / ts.dt, vec_qp - vec0_qp, bf, mat_qp, vgr
 
 ##
 # c: 03.04.2008
@@ -70,43 +70,43 @@ class BiotGradTHTerm( BiotGradTerm ):
     \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$
     """
     name = 'dw_biot_grad_th'
-    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
+    use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
     ##
     # c: 03.04.2008, r: 18.06.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
-        ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+        ts, mats, virtual, state, history = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
-        nEl, nQP, dim, nEP = self.dataShape
+        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
+        n_el, n_qp, dim, n_ep = self.data_shape
 
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        bf = apc.getBase( 'v', 0, self.integralName )
+        bf = apc.get_base( 'v', 0, self.integral_name )
 
         if mode == 1:
-            matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
-            for out, chunk in self.charFun( chunkSize, shape ):
+            mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+            for out, chunk in self.char_fun( chunk_size, shape ):
                 status = self.function( out, ts.dt, nm.empty( 0 ), bf,
-                                        matQP, vgr, chunk, 1 )
+                                        mat_qp, vgr, chunk, 1 )
                 yield out, chunk, status
         else:
-            cache = self.getCache( 'state_in_volume_qp', 0 )
-            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+            cache = self.get_cache( 'state_in_volume_qp', 0 )
+            for out, chunk in self.char_fun( chunk_size, shape, zero = True ):
                 out1 = nm.empty_like( out )
                 for ii, mat in enumerate( mats ):
-                    matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
-                    vec_qp = cache( 'state', self.getCurrentGroup(), ii,
+                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+                    vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, history = history )
                     status = self.function( out1, ts.dt, vec_qp, bf,
-                                            matQP, vgr, chunk, 0 )
+                                            mat_qp, vgr, chunk, 0 )
                     out += out1
                 yield out, chunk, status
 
@@ -121,9 +121,9 @@ class BiotDivDtTerm( DivTerm ):
     e_{ij}(\ul{u_0})}{\dt}$
     """
     name = 'dw_biot_div_dt'
-    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'cauchy_strain' : [['state', {'strain' : (2,2),
+    use_caches = {'cauchy_strain' : [['state', {'strain' : (2,2),
                                                'dstrain' : (1,1)}]]}
 
     def __init__( self, region, name = name, sign = 1 ):
@@ -131,15 +131,15 @@ class BiotDivDtTerm( DivTerm ):
 
     ##
     # c: 31.03.2008, r: 02.04.2008
-    def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
-        cache = self.getCache( 'cauchy_strain', 0 )
-        dstrain = cache( 'dstrain', self.getCurrentGroup(), 0, state = state )
+    def build_c_fun_args( self, state, apr, apc, vgc, **kwargs ):
+        cache = self.get_cache( 'cauchy_strain', 0 )
+        dstrain = cache( 'dstrain', self.get_current_group(), 0, state = state )
 
-        ts, mat = self.getArgs( ['ts', 'material'], **kwargs )
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
-#        print matQP
-        bf = apr.getBase( 'v', 0, self.integralName )
-        return 1.0 / ts.dt, dstrain, bf, matQP, vgc
+        ts, mat = self.get_args( ['ts', 'material'], **kwargs )
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( self.data_shape[1], 0 )
+#        print mat_qp
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        return 1.0 / ts.dt, dstrain, bf, mat_qp, vgc
 
 
 ##
@@ -152,22 +152,22 @@ class BiotDivTerm( DivTerm ):
     :definition: $\int_{\Omega} q\ \alpha_{ij} e_{ij}(\ul{u})$
     """
     name = 'dw_biot_div'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'cauchy_strain' : [['state']]}
+    use_caches = {'cauchy_strain' : [['state']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_biot_div )
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
-        cache = self.getCache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.getCurrentGroup(), 0, state = state )
-        mat, = self.getArgs( ['material'], **kwargs )
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( self.dataShape[1], 0 )
-        bf = apr.getBase( 'v', 0, self.integralName )
-        return 1.0, strain, bf, matQP, vgc
+    def build_c_fun_args( self, state, apr, apc, vgc, **kwargs ):
+        cache = self.get_cache( 'cauchy_strain', 0 )
+        strain = cache( 'strain', self.get_current_group(), 0, state = state )
+        mat, = self.get_args( ['material'], **kwargs )
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( self.data_shape[1], 0 )
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        return 1.0, strain, bf, mat_qp, vgc
 
 ##
 # c: 05.03.2008
@@ -179,9 +179,9 @@ class BiotDivRIntegratedTerm( Term ):
     :definition: $\int_{\Omega} r\ \alpha_{ij} e_{ij}(\ul{w})$
     """
     name = 'd_biot_div'
-    argTypes = ('material', 'parameter_1', 'parameter_2')
+    arg_types = ('material', 'parameter_1', 'parameter_2')
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    useCaches = {'state_in_volume_qp' : [['parameter_1']],
+    use_caches = {'state_in_volume_qp' : [['parameter_1']],
                  'cauchy_strain' : [['parameter_2']]}
 
     def __init__( self, region, name = name, sign = 1 ):
@@ -189,23 +189,23 @@ class BiotDivRIntegratedTerm( Term ):
 
     ##
     # c: 05.03.2008, r: 05.03.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, parP, parU = self.getArgs( **kwargs )
-        apr, vgr = parP.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = parU.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par_p, par_u = self.get_args( **kwargs )
+        apr, vgr = par_p.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = par_u.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
         
-        shape = (chunkSize, 1, 1, 1)
+        shape = (chunk_size, 1, 1, 1)
         
-        cache = self.getCache( 'state_in_volume_qp', 0 )
-        vecQP = cache( 'state', self.getCurrentGroup(), 0, state = parP )
+        cache = self.get_cache( 'state_in_volume_qp', 0 )
+        vec_qp = cache( 'state', self.get_current_group(), 0, state = par_p )
 
-        cache = self.getCache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.getCurrentGroup(), 0, state = parU )
+        cache = self.get_cache( 'cauchy_strain', 0 )
+        strain = cache( 'strain', self.get_current_group(), 0, state = par_u )
 
-        matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
-        for out, chunk in self.charFun( chunkSize, shape ):
-            status = self.function( out, 1.0, vecQP, strain, matQP, vgc, chunk )
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, 1.0, vec_qp, strain, mat_qp, vgc, chunk )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
@@ -217,43 +217,43 @@ class BiotDivTHTerm( BiotDivTerm ):
     \difd{\tau} \right] q$
     """
     name = 'dw_biot_div_th'
-    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    useCaches = {'cauchy_strain' : [['state', {'strain' : (2,2),
+    use_caches = {'cauchy_strain' : [['state', {'strain' : (2,2),
                                                'dstrain' : (-1,-1)}]]}
 
     ##
     # c: 03.04.2008, r: 18.06.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
-        ts, mats, virtual, state, history = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+        ts, mats, virtual, state, history = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
-        nEl, nQP, dim, nEP = self.dataShape
+        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
+        n_el, n_qp, dim, n_ep = self.data_shape
 
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        bf = apr.getBase( 'v', 0, self.integralName )
+        bf = apr.get_base( 'v', 0, self.integral_name )
 
         if mode == 1:
-            matQP = mats[0][nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
-            for out, chunk in self.charFun( chunkSize, shape ):
+            mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+            for out, chunk in self.char_fun( chunk_size, shape ):
                 status = self.function( out, 1.0, nm.empty( 0 ), bf,
-                                        matQP, vgc, chunk, 1 )
+                                        mat_qp, vgc, chunk, 1 )
                 yield out, chunk, status
         else:
-            cache = self.getCache( 'cauchy_strain', 0 )
-            for out, chunk in self.charFun( chunkSize, shape, zero = True ):
+            cache = self.get_cache( 'cauchy_strain', 0 )
+            for out, chunk in self.char_fun( chunk_size, shape, zero = True ):
                 out1 = nm.empty_like( out )
                 for ii, mat in enumerate( mats ):
-                    matQP = mat[nm.newaxis,:,nm.newaxis].repeat( nQP, 0 )
-                    dstrain = cache( 'dstrain', self.getCurrentGroup(), ii,
+                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+                    dstrain = cache( 'dstrain', self.get_current_group(), ii,
                                      state = state, history = history )
                     status = self.function( out1, 1.0, dstrain,
-                                            bf, matQP, vgc, chunk, 0 )
+                                            bf, mat_qp, vgc, chunk, 0 )
                     out += out1
                 yield out, chunk, status

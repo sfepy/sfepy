@@ -17,33 +17,33 @@ def default_space_variables( variables ):
 
 def grad( f, variables = None ):
     variables = default_space_variables( variables )
-    nVar = len( variables )
+    n_var = len( variables )
 #    import pdb; pdb.set_trace()
     f = sp.sympify( f )
 
-    out = sp.zeronm( nVar, 1)
+    out = sp.zeronm( n_var, 1)
     for iv, var in enumerate( variables ):
        out[iv,0] = f.diff( var )
     return out
 
 ##
 # c: 09.06.2008, r: 09.06.2008
-def gradV( f, variables = None ):
+def grad_v( f, variables = None ):
     variables = default_space_variables( variables )
-    nVar = len( variables )
+    n_var = len( variables )
 
     f = sympify( f )
-    out = zeros( (nVar,) + f.shape )
+    out = zeros( (n_var,) + f.shape )
     for iv, var in enumerate( variables ):
        out[iv,...] = f.diff( var )
     return out
 
 def div( field, variables = None ):
     variables = default_space_variables( variables )
-    nVar = len( variables )
+    n_var = len( variables )
 
     field = list( field )
-    assert len( field ) == nVar
+    assert len( field ) == n_var
 
     out = 0
     for f_i, x_i in zip( field, variables ):

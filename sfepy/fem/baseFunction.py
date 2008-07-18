@@ -7,15 +7,15 @@ class BaseFunction( Struct ):
     # 30.03.2005, c
     # 20.07.2005
     # 07.12.2005
-    def __init__( self, bf, nodes, varSet = None ):
+    def __init__( self, bf, nodes, var_set = None ):
         self.nodes = nodes.copy()
         self.bf = bf
-        self.varSet = varSet
+        self.var_set = var_set
 
         self.aos = nm.sum( nodes, 1 )
     ##
-    # baseFun.value( qpCoor['v'], nodes )
-    # baseFun.value( qpCoor['v'], nodes, (0,1,2) )
+    # base_fun.value( qp_coor['v'], nodes )
+    # base_fun.value( qp_coor['v'], nodes, (0,1,2) )
     #
     # 30.03.2005, c
     # 01.04.2005
@@ -23,7 +23,7 @@ class BaseFunction( Struct ):
     # 23.11.2005
     # 07.12.2005
     # 01.09.2007
-    def value( self, coors, nodes, ivs = None, suppressErrors = False ):
+    def value( self, coors, nodes, ivs = None, suppress_errors = False ):
 
 ##         print self
 ##         print self.bf
@@ -37,23 +37,23 @@ class BaseFunction( Struct ):
             print nodes, naos
             raise AssertionError
         
-        nNod = len( nodes )
+        n_nod = len( nodes )
         if not( ivs ):
-            val = nm.zeros( (coors.shape[0], 1, nNod), nm.float64 )
+            val = nm.zeros( (coors.shape[0], 1, n_nod), nm.float64 )
             for ii, node in enumerate( nodes ):
                 val[:,0,ii] = self.bf( coors, node,
-                                       suppressErrors = suppressErrors )
+                                       suppress_errors = suppress_errors )
         else:
             # Check iv.
             for iv in ivs:
-                if not(iv in self.varSet):
+                if not(iv in self.var_set):
                     print "bad base function variable:", iv
                     raise ValueError
 
-            val = nm.zeros( (coors.shape[0], len( ivs ), nNod), nm.float64 )
+            val = nm.zeros( (coors.shape[0], len( ivs ), n_nod), nm.float64 )
             for ir, iv in enumerate( ivs ):
                 for ic, node in enumerate( nodes ):
                     val[:,ir,ic] = self.bf( coors, node, iv,
-                                            suppressErrors = suppressErrors )
+                                            suppress_errors = suppress_errors )
 
         return( val )

@@ -26,7 +26,7 @@ class CustomQuadrature( Quadrature ):
     family = 'custom'
     name = 'custom'
 
-    def fromConf( conf ):
+    def from_conf( conf ):
         if conf.mode == 'custom':
             obj = CustomQuadrature( vals = nm.asarray( conf.vals, nm.float64 ),
                                     weights = nm.asarray( conf.weights,
@@ -36,7 +36,7 @@ class CustomQuadrature( Quadrature ):
             raise ValueError
 
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
 
 ##
@@ -215,27 +215,27 @@ class GaussO3G34( Quadrature ):
 
 ##
 # 13.11.2007, c
-def collectQuadratures():
-    varDict = globals().items()
+def collect_quadratures():
+    var_dict = globals().items()
 
-    quadTable = {}
-    for key, var in varDict:
+    quad_table = {}
+    for key, var in var_dict:
         try:
-            if isDerivedClass( var, Quadrature ):
-                quadTable[var.name] = var
+            if is_derived_class( var, Quadrature ):
+                quad_table[var.name] = var
         except TypeError:
             pass
-#    print quadTable
+#    print quad_table
 
-    familyTable = {}
-    for name, cls in quadTable.iteritems():
-        familyTable.setdefault( cls.family, {}  )[name] = cls
+    family_table = {}
+    for name, cls in quad_table.iteritems():
+        family_table.setdefault( cls.family, {}  )[name] = cls
 
-#    print familyTable
+#    print family_table
 
-    return familyTable
+    return family_table
 
-quadratures = collectQuadratures()
+quadratures = collect_quadratures()
 
 if __name__ == "__main__":
-    print collectQuadratures()
+    print collect_quadratures()

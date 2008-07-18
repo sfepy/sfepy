@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from sfepy.base.base import *
-from sfepy.fem.mesh import Mesh, findMap, mergeMesh, makeMesh
+from sfepy.fem.mesh import Mesh, find_map, merge_mesh, make_mesh
 from sfepy.base.la import cycle
 from optparse import OptionParser
 
@@ -9,7 +9,7 @@ from optparse import OptionParser
 def test():
     x1 = nm.fix( nm.random.rand( 5, 3 ) * 5 ) / 10
     x2 = nm.fix( nm.random.rand( 10, 3 ) * 5 ) / 10
-    cmap = findMap( x1, x2 )
+    cmap = find_map( x1, x2 )
     conn1 = nm.array( [[range( 5 )], [range( 5 )]] ).squeeze()
     conn2 = nm.array( [[range( 10 )], [range( 10 )]] ).squeeze()
     conn2.shape = (4, 5)
@@ -19,15 +19,15 @@ def test():
     print x2
     print conn2
     print cmap
-    xx, conns = mergeMesh( x1, [conn1], x2, [conn2], cmap )
+    xx, conns = merge_mesh( x1, [conn1], x2, [conn2], cmap )
     print xx
     print conns
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def fixDoubleNodes( coor, conns, eps ):
-    nNod, dim = coor.shape
-    cmap = findMap( coor, nm.zeros( (0,dim) ), eps = eps, allowDouble = True )
+def fix_double_nodes( coor, conns, eps ):
+    n_nod, dim = coor.shape
+    cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps, allow_double = True )
     if cmap.size:
         print 'double nodes in input mesh!'
         print 'trying to fix...'
@@ -35,11 +35,11 @@ def fixDoubleNodes( coor, conns, eps ):
         while cmap.size:
             print cmap.size
 
-            # Just like in Variable.equationMapping()...
+            # Just like in Variable.equation_mapping()...
             ii = nm.argsort( cmap[:,1] )
             scmap = cmap[ii]
 
-            eq = nm.arange( nNod )
+            eq = nm.arange( n_nod )
             eq[scmap[:,1]] = -1
             eqi = eq[eq >= 0]
             eq[eqi] = nm.arange( eqi.shape[0] )
@@ -52,22 +52,22 @@ def fixDoubleNodes( coor, conns, eps ):
             for conn in conns:
                 ccs.append( remap[conn] )
             conns = ccs
-            cmap = findMap( coor, nm.zeros( (0,dim) ), eps = eps,
-                            allowDouble = True )
+            cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps,
+                            allow_double = True )
         print '...done'
     return coor, conns
 
 ##
 # c: 25.05.2007, r: 05.05.2008
 # 28.05.2007
-def getMinEdgeSize( coor, conns ):
+def get_min_edge_size( coor, conns ):
 
     mes = 1e16
     for conn in conns:
-        nEP = conn.shape[1]
-        for ir in range( nEP ):
+        n_ep = conn.shape[1]
+        for ir in range( n_ep ):
             x1 = coor[conn[:,ir]]
-            for ic in range( ir + 1, nEP ):
+            for ic in range( ir + 1, n_ep ):
                 x2 = coor[conn[:,ic]]
                 aux = nm.sqrt( nm.sum( (x2 - x1)**2.0, axis = 1 ).min() )
                 mes = min( mes, aux )
@@ -76,7 +76,7 @@ def getMinEdgeSize( coor, conns ):
 
 ##
 # 25.05.2007, c
-def getMinVertexDistance( coor, guess ):
+def get_min_vertex_distance( coor, guess ):
     """Can miss the minimum, but is enough for our purposes."""
     # Sort by x.
     ix = nm.argsort( coor[:,0] )
@@ -85,17 +85,17 @@ def getMinVertexDistance( coor, guess ):
     mvd = 1e16
     
     # Get mvd in chunks potentially smaller than guess.
-    nCoor = coor.shape[0]
-    print nCoor
+    n_coor = coor.shape[0]
+    print n_coor
     
     i0 = i1 = 0
     x0 = scoor[i0,0]
     while 1:
-        while ((scoor[i1,0] - x0) < guess) and (i1 < (nCoor - 1)):
+        while ((scoor[i1,0] - x0) < guess) and (i1 < (n_coor - 1)):
             i1 += 1
 
 #        print i0, i1, x0, scoor[i1,0]
-        aim, aa1, aa2, aux = getMinVertexDistanceNaive( scoor[i0:i1+1] )
+        aim, aa1, aa2, aux = get_min_vertex_distance_naive( scoor[i0:i1+1] )
         if aux < mvd:
             im, a1, a2 = aim, aa1 + i0, aa2 + i0
         mvd = min( mvd, aux )
@@ -104,7 +104,7 @@ def getMinVertexDistance( coor, guess ):
         x0 = scoor[i0,0]
 #        print '-', i0
 
-        if i1 == nCoor - 1: break
+        if i1 == n_coor - 1: break
 
     print im, ix[a1], ix[a2], a1, a2, scoor[a1], scoor[a2]
 
@@ -112,7 +112,7 @@ def getMinVertexDistance( coor, guess ):
         
 ##
 # c: 25.05.2007, r: 05.05.2008
-def getMinVertexDistanceNaive( coor ):
+def get_min_vertex_distance_naive( coor ):
 
     ii = nm.arange( coor.shape[0] )
     i1, i2 = nm.meshgrid( ii, ii )
@@ -127,9 +127,9 @@ def getMinVertexDistanceNaive( coor ):
 
     return im, i1[ii][im], i2[ii][im], nm.sqrt( aux[im] )
 
-usage = """%prog [options] fileNameIn fileNameOut
+usage = """%prog [options] file_name_in file_name_out
 
-The program scales a periodic input mesh (a rectangle or box) in fileNameIn
+The program scales a periodic input mesh (a rectangle or box) in file_name_in
 by a scale factor and generates a new mesh by repeating the scaled original
 mesh in a regular grid (scale x scale [x scale]), producing again a periodic
 rectagle or box mesh."""
@@ -166,8 +166,8 @@ def main():
         return
 
     if (len( args ) == 2):
-        fileNameIn = args[0]
-        fileNameOut = args[1]
+        file_name_in = args[0]
+        file_name_out = args[1]
     else:
         parser.print_help()
         return
@@ -175,8 +175,8 @@ def main():
     print 'scale:', options.scale
     print 'eps:', options.eps
 
-    meshIn = Mesh.fromFile( fileNameIn )
-    bbox = meshIn.getBoundingBox()
+    mesh_in = Mesh.from_file( file_name_in )
+    bbox = mesh_in.get_bounding_box()
     print 'bbox:\n', bbox
     mscale = bbox[1] - bbox[0]
     centre0 = 0.5 * (bbox[1] + bbox[0])
@@ -185,13 +185,13 @@ def main():
     scale = nm.array( options.scale, dtype = nm.float64 )
 
     # Normalize original coordinates.
-    coor0 = (meshIn.nod0[:,:-1] - centre0) / (mscale)
-    dim = meshIn.dim
+    coor0 = (mesh_in.nod0[:,:-1] - centre0) / (mscale)
+    dim = mesh_in.dim
 
-    coor0, meshIn.conns = fixDoubleNodes( coor0, meshIn.conns, options.eps )
+    coor0, mesh_in.conns = fix_double_nodes( coor0, mesh_in.conns, options.eps )
     if not options.nomvd:
-        mes0 = getMinEdgeSize( coor0, meshIn.conns )
-        mvd0 = getMinVertexDistance( coor0, mes0 )
+        mes0 = get_min_edge_size( coor0, mesh_in.conns )
+        mvd0 = get_min_vertex_distance( coor0, mes0 )
         if mes0 > (mvd0 + options.eps):
             print '          original min. "edge" length: %.5e' % mes0
             print 'original approx. min. vertex distance: %.5e' % mvd0
@@ -206,23 +206,23 @@ def main():
 
         if aindx.sum() == 0:
             coor = coor0 + centre
-            conns = meshIn.conns
+            conns = mesh_in.conns
         else:
             coor1 = coor0 + centre
-            conns1 = meshIn.conns
+            conns1 = mesh_in.conns
 
-            cmap = findMap( coor, coor1, eps = options.eps )
+            cmap = find_map( coor, coor1, eps = options.eps )
             if not cmap.size:
                 print 'non-periodic mesh!'
 #                raise ValueError
             else:
                 print cmap.size / 2
-            coor, conns = mergeMesh( coor, conns, coor1, conns1, cmap,
+            coor, conns = merge_mesh( coor, conns, coor1, conns1, cmap,
                                      eps = options.eps )
 
     if not options.nomvd:
-        mes = getMinEdgeSize( coor, conns )
-        mvd = getMinVertexDistance( coor, mes0 )
+        mes = get_min_edge_size( coor, conns )
+        mvd = get_min_vertex_distance( coor, mes0 )
 
         print '          original min. "edge" length: %.5e' % mes0
         print '             final min. "edge" length: %.5e' % mes
@@ -244,8 +244,8 @@ def main():
     print 'renormalizing...'
     coor = (coor * mscale) / scale
     print 'saving...'
-    meshOut = makeMesh( coor, conns, meshIn )
-    meshOut.write( fileNameOut, io = 'auto' )
+    mesh_out = make_mesh( coor, conns, mesh_in )
+    mesh_out.write( file_name_out, io = 'auto' )
     print 'done.'
     
 if __name__ == '__main__':
@@ -267,7 +267,7 @@ if __name__ == '__main__':
 ##     print x2
 
 ##     tt = time.clock()
-##     mu.sortRows( x, nm.array( [0,1,2], nm.int32 ) )
+##     mu.sort_rows( x, nm.array( [0,1,2], nm.int32 ) )
 ##     print time.clock() - tt
 ##     print x
 

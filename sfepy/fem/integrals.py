@@ -3,8 +3,8 @@ from quadratures import CustomQuadrature, quadratures
 
 import re
 
-_matchOrderDim = re.compile( '.*_o([0-9]+)_d([0-9]+)$' ).match
-_matchOrderGeom = re.compile( '.*_o([0-9]+)_g([0-9]+_[0-9]+)$' ).match
+_match_order_dim = re.compile( '.*_o([0-9]+)_d([0-9]+)$' ).match
+_match_order_geom = re.compile( '.*_o([0-9]+)_g([0-9]+_[0-9]+)$' ).match
 
 ##
 # 16.11.2007, c
@@ -12,35 +12,35 @@ class Integrals( Container ):
 
     ##
     # 16.11.2007, c
-    def fromConf( conf, names ):
+    def from_conf( conf, names ):
         objs = OneTypeList( Integral )
 
-        nameMap = {}
+        name_map = {}
         for desc in conf.itervalues():
-            nameMap[desc.name] = desc
+            name_map[desc.name] = desc
 
         for name in names:
-            if not nameMap.has_key( name ): continue
+            if not name_map.has_key( name ): continue
 
-            intConf = nameMap[name]
-            aux = Integral( name = intConf.name,
-                            kind = intConf.kind,
-                            quadName = intConf.quadrature,
+            int_conf = name_map[name]
+            aux = Integral( name = int_conf.name,
+                            kind = int_conf.kind,
+                            quad_name = int_conf.quadrature,
                             mode = 'builtin' )
-            if hasattr( intConf, 'vals' ):
-                aux.vals = nm.array( intConf.vals, nm.float64 )
-                aux.weights = nm.array( intConf.weights, nm.float64 )
+            if hasattr( int_conf, 'vals' ):
+                aux.vals = nm.array( int_conf.vals, nm.float64 )
+                aux.weights = nm.array( int_conf.weights, nm.float64 )
                 aux.mode = 'custom'
                 
             objs.append( aux )
 
         obj = Integrals( objs )
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
-    def setQuadratures( self, quadratures ):
+    def set_quadratures( self, quadratures ):
         for intl in self:
-            intl.qcs = quadratures[intl.quadName]
+            intl.qcs = quadratures[intl.quad_name]
             intl.setup()
 
 ##
@@ -49,30 +49,30 @@ class Integral( Struct ):
 
     def setup( self ):
         if self.mode == 'builtin':
-            match = _matchOrderDim( self.quadName )
+            match = _match_order_dim( self.quad_name )
             self.order, self.dim = [int( ii ) for ii in match.groups()]
             qcs = {}
-            for key, quadContructor in self.qcs.iteritems():
+            for key, quad_contructor in self.qcs.iteritems():
 #                print key
-                match = _matchOrderGeom( key )
+                match = _match_order_geom( key )
                 order = int( match.group( 1 ) )
                 geom = match.group( 2 )
-                qcs[geom] = quadContructor
+                qcs[geom] = quad_contructor
                 assert order == self.order
             self.qcs = qcs
         else:
             self.order = None
             self.dim = self.vals.shape[1]
 
-    def createQP( self ):
+    def create_qp( self ):
         self.qp = {}
         if self.mode == 'builtin':
-            for geom, quadContructor in self.qcs.iteritems():
-                self.qp[geom] = quadContructor()
+            for geom, quad_contructor in self.qcs.iteritems():
+                self.qp[geom] = quad_contructor()
         else:
-            self.qp['custom'] = CustomQuadrature.fromConf( self )
+            self.qp['custom'] = CustomQuadrature.from_conf( self )
 
-    def getQP( self, geometry ):
+    def get_qp( self, geometry ):
         if self.mode == 'builtin':
             return self.qp[geometry]
         else:

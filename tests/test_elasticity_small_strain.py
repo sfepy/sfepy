@@ -1,14 +1,14 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
 
-fileName_meshes = ['database/kostka_medium_tetra.mesh',
+file_name_meshes = ['database/kostka_medium_tetra.mesh',
                    'database/kostka_medium_tetra.mesh',
                    'database/kostka_medium.mesh']
-allYourBases = [{'Omega' : '3_4_P1'},
+all_your_bases = [{'Omega' : '3_4_P1'},
                 {'Omega' : '3_4_P2'},
                 {'Omega' : '3_8_Q1'}]
 
-fileName_mesh = None
+file_name_mesh = None
 
 field_1 = {
     'name' : '3_displacement',
@@ -18,7 +18,7 @@ field_1 = {
     'bases' : None
 }
 
-def getPars( dim, full = False ):
+def get_pars( dim, full = False ):
     import numpy as nm
     sym = (dim + 1) * dim / 2
     lam = 1e1
@@ -34,8 +34,8 @@ material_1 = {
     'name' : 'solid',
     'mode' : 'here',
     'region' : 'Omega',
-    'lame' : getPars( 3 ),
-    'Dijkl' : getPars( 3, True ),
+    'lame' : get_pars( 3 ),
+    'Dijkl' : get_pars( 3, True ),
 }
 
 material_2 = {
@@ -104,27 +104,27 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
-    'linSolver' : 'umfpack',
+    'is_plot'    : False,
+    'lin_solver' : 'umfpack',
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 ##
 # FE assembling parameters.
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 from sfepy.base.testing import TestCommon
@@ -136,16 +136,16 @@ class Test( TestCommon ):
 
     ##
     # 10.07.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         return Test( conf = conf, options = options )
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 25.03.2008, r: 25.03.2008
     def test_linear_terms( self ):
         ok = True
         for sols in self.solutions:
-            ok = ok and self.compareVectors( sols[0], sols[1],
+            ok = ok and self.compare_vectors( sols[0], sols[1],
                                              label1 = 'isotropic',
                                              label2 = 'general' )
         return ok
@@ -153,48 +153,48 @@ class Test( TestCommon ):
     ##
     # c: 10.07.2007, r: 25.03.2008
     def test_get_solution( self ):
-        from sfepy.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
         import os.path as op
 
         ok = True
         self.solutions = []
-        for ii, bases in enumerate( allYourBases ):
-            fname = fileName_meshes[ii]
+        for ii, bases in enumerate( all_your_bases ):
+            fname = file_name_meshes[ii]
 
-            self.conf.fileName_mesh = fname
+            self.conf.file_name_mesh = fname
             self.conf.fields['field_1'].bases = bases
             self.report( 'mesh: %s, base: %s' % (fname, bases) )
             status = IndexedStruct()
 
             self.report( 'isotropic' )
             self.conf.equations = self.conf.equations_iso
-            problem, vec1, data = solveStationary( self.conf,
-                                                  nlsStatus = status )
+            problem, vec1, data = solve_stationary( self.conf,
+                                                  nls_status = status )
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
             self.report( 'general' )
             self.conf.equations = self.conf.equations_general
-            problem, vec2, data = solveStationary( self.conf,
-                                                  nlsStatus = status )
+            problem, vec2, data = solve_stationary( self.conf,
+                                                  nls_status = status )
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
             self.solutions.append( (vec1, vec2) )
 
-            name = op.join( self.options.outDir,
+            name = op.join( self.options.out_dir,
                             '_'.join( ('test_elasticity_small_strain',
                                       op.splitext( op.basename( fname ) )[0],
                                       bases.values()[0] ))
                             + '.vtk' )
-            problem.saveState( name, vec1 )
+            problem.save_state( name, vec1 )
 
-##             trunk = op.join( self.options.outDir,
+##             trunk = op.join( self.options.out_dir,
 ##                              op.splitext( op.basename( fname ) )[0] )
-##             problem.saveFieldMeshes( trunk )
-##             problem.saveRegions( trunk )
+##             problem.save_field_meshes( trunk )
+##             problem.save_regions( trunk )
             
         return ok

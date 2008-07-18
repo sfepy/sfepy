@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 from parseEq import create_bnf
 from materials import Materials
-from sfepy.terms import Terms, Term, termTable, cacheTable
+from sfepy.terms import Terms, Term, term_table, cache_table
 
 """
 Note:
@@ -15,36 +15,36 @@ def parse_terms( regions, desc, itps ):
     Parse equation given by 'desc' into terms. Assign each term its region.
     """
     # Parse.
-    termDescs = []
-    bnf = create_bnf( termDescs, itps )
+    term_descs = []
+    bnf = create_bnf( term_descs, itps )
     try:
-        bnf.parseString( desc )
+        bnf.parse_string( desc )
     except:
         print 'cannot parse:\n', desc
         raise
     
     # Construct terms.
     terms = OneTypeList( Term )
-    for td in termDescs:
+    for td in term_descs:
 ##         print td
 ##         pause()
         try:
-            constructor = termTable[td.name]
+            constructor = term_table[td.name]
         except:
             print "term '%s' is not in %s" % (td.name,
-                                              sorted( termTable.keys() ))
+                                              sorted( term_table.keys() ))
             raise ValueError
         region = regions[td.region]
-        argNames = []
-        argSteps = {}
+        arg_names = []
+        arg_steps = {}
         for name, step in td.args:
-            argNames.append( name )
-            argSteps[name] = step
+            arg_names.append( name )
+            arg_steps[name] = step
 
         term = constructor( region, td.name, td.sign )
-        term.argNames = argNames
-        term.argSteps = argSteps
-        term.integralName = td.integral
+        term.arg_names = arg_names
+        term.arg_steps = arg_steps
+        term.integral_name = td.integral
 
         terms.append( term )
 
@@ -52,14 +52,14 @@ def parse_terms( regions, desc, itps ):
 
 ##
 # c: 27.11.2006, r: 18.01.2008
-def setupTermArgs( terms, variables, materials, user = None ):
+def setup_term_args( terms, variables, materials, user = None ):
     """terms ... can be both Terms or Term class
        - checks term argument existence in variables, materials, user
        - checks equality of field and term subdomain lists (igs)"""
-    terms.classifyArgs()
+    terms.classify_args()
     for term in terms:
-        igs = term.charFun.igs
-        vns = term.getVariableNames()
+        igs = term.char_fun.igs
+        vns = term.get_variable_names()
         for name in vns:
             if name not in variables.names:
                 output( 'variable "%s" not found' % name )
@@ -71,7 +71,7 @@ def setupTermArgs( terms, variables, materials, user = None ):
                         (term.name, igs, name, field.igs(), field.name) )
                 raise ValueError
 
-        mns = term.getMaterialNames()
+        mns = term.get_material_names()
         for name in mns:
             if name not in materials.names:
                 output( 'material "%s" not found' % name )
@@ -86,7 +86,7 @@ def setupTermArgs( terms, variables, materials, user = None ):
     if user is None:
         return
 
-    uns = terms.getUserNames()
+    uns = terms.get_user_names()
     uks = user.keys()
     for name in uns:
         if name not in uks:
@@ -96,12 +96,12 @@ def setupTermArgs( terms, variables, materials, user = None ):
 
 ##
 # 24.07.2006, c
-def buildArgs( term, variables, materials, **kwargs ):
+def build_args( term, variables, materials, **kwargs ):
     args = kwargs
-    vns = term.getVariableNames()
+    vns = term.get_variable_names()
     for vn in vns:
         args[vn] = variables[vn]
-    mns = term.getMaterialNames()
+    mns = term.get_material_names()
     for mn in mns:
         args[mn] = materials[mn]
     return args
@@ -112,12 +112,12 @@ class Equations( Container ):
 
     ##
     # c: 18.04.2006, r: 20.02.2008
-    def fromConf( conf ):
+    def from_conf( conf ):
         objs = OneTypeList( Equation )
 
         conf = copy( conf )
         tps = conf.pop( 'namespaces', {} )
-        itps = invertDict( tps, True )
+        itps = invert_dict( tps, True )
 
         ii = 0
         for name, desc in conf.iteritems():
@@ -132,7 +132,7 @@ class Equations( Container ):
         obj = Equations( objs, itps = itps )
         
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 21.07.2006, c
@@ -152,63 +152,63 @@ class Equations( Container ):
     # 24.07.2006
     # 27.11.2006
     # 27.02.2007
-    def setupTermArgs( self, variables, materials, user = None ):
+    def setup_term_args( self, variables, materials, user = None ):
         for eq in self:
-            eq.setupTermArgs( variables, materials, user )
+            eq.setup_term_args( variables, materials, user )
 
         self.materials = materials
         self.variables = variables
 
     ##
     # c: ??, r: 26.02.2008
-    def describeGeometry( self, geometries, variables, integrals ):
+    def describe_geometry( self, geometries, variables, integrals ):
         output( 'describing geometries...' )
         tt = time.clock()
         for eq in self:
-            eq.describeGeometry( geometries, variables, integrals )
+            eq.describe_geometry( geometries, variables, integrals )
         output( '...done in %.2f s' % (time.clock() - tt) )
         
 
     ##
     # 24.08.2006, c
     # 24.04.2007
-    def getTermGeometries( self ):
+    def get_term_geometries( self ):
         tgs = set()
         for eq in self:
-            tgs.update( eq.getTermGeometries() )
+            tgs.update( eq.get_term_geometries() )
         return tgs
 
     ##
     # 16.11.2007, c
-    def getTermIntegralNames( self ):
-        iNames = set()
+    def get_term_integral_names( self ):
+        i_names = set()
         for eq in self:
-            iNames.update( eq.getTermIntegralNames() )
-        return iNames
+            i_names.update( eq.get_term_integral_names() )
+        return i_names
 
     ##
     # 27.02.2007, c
-    def invalidateTermCaches( self ):
+    def invalidate_term_caches( self ):
         for cache in self.caches.itervalues():
             cache.clear()
 
     ##
     # c: 07.05.2008, r: 07.05.2008
-    def resetTermCaches( self ):
+    def reset_term_caches( self ):
         for cache in self.caches.itervalues():
             cache.reset()
 
     ##
     # 02.03.2007, c
-    def setCacheMode( self, cacheOverride ):
+    def set_cache_mode( self, cache_override ):
         for cache in self.caches.itervalues():
-            cache.setMode( cacheOverride )
+            cache.set_mode( cache_override )
 
     ##
     # c: 02.04.2008, r: 02.04.2008
-    def initTime( self, ts ):
+    def init_time( self, ts ):
         for cache in self.caches.itervalues():
-            cache.initTime( ts )
+            cache.init_time( ts )
 
     ##
     # 08.06.2007, c
@@ -224,13 +224,13 @@ class Equation( Struct ):
     # 25.07.2006, c
     # 28.08.2006
     # 12.02.2007
-    def fromDesc( name, desc, termPrefixes = None ):
-        if termPrefixes is None: termPrefixes = {}
+    def from_desc( name, desc, term_prefixes = None ):
+        if term_prefixes is None: term_prefixes = {}
 
         obj = Equation( name = name, desc = desc,
-                        itps = invertDict( termPrefixes, True ) )
+                        itps = invert_dict( term_prefixes, True ) )
         return obj
-    fromDesc = staticmethod( fromDesc )
+    from_desc = staticmethod( from_desc )
 
     ##
     # 21.07.2006, c
@@ -242,47 +242,47 @@ class Equation( Struct ):
     def parse_terms( self, regions, caches ):
         terms = parse_terms( regions, self.desc, self.itps )
         self.terms = Terms( terms )
-        self.assignTermCaches( caches )
+        self.assign_term_caches( caches )
 
     ##
     # 29.11.2006, c
     # 27.02.2007
     # 08.06.2007
     # 11.06.2007
-    def assignTermCaches( self, caches ):
+    def assign_term_caches( self, caches ):
         """
         History sizes for a particular cache instance are taken as maximum
-        of historySizes requirements of all terms using the instance.
+        of history_sizes requirements of all terms using the instance.
         """
         for term in self.terms:
-            if not hasattr( term, 'useCaches' ): continue
+            if not hasattr( term, 'use_caches' ): continue
 
 #            print term.name
-            for name, argLists in term.useCaches.iteritems():
-##                print name, argLists
-                for args in argLists:
+            for name, arg_lists in term.use_caches.iteritems():
+##                print name, arg_lists
+                for args in arg_lists:
                     # Order should be handled in terms...
                     args = copy( args )
                     if type( args[-1] ) == dict:
-                        historySizes = args.pop()
+                        history_sizes = args.pop()
                     else:
-                        historySizes = None
-                    ans = [term.getArgName( arg ) for arg in args]
+                        history_sizes = None
+                    ans = [term.get_arg_name( arg ) for arg in args]
                     cname = '_'.join( [name] + ans )
-##                     print term.name, name, argLists, args, self.name, cname
-##                     print historySizes
+##                     print term.name, name, arg_lists, args, self.name, cname
+##                     print history_sizes
 ##                     debug()
                     if caches.has_key( cname ):
-                        caches[cname].mergeHistorySizes( historySizes )
+                        caches[cname].merge_history_sizes( history_sizes )
                         continue
 
 #                    print 'new'
                     try:
-                        constructor = cacheTable[name]
+                        constructor = cache_table[name]
                     except:
                         raise RuntimeError, 'cache not found! %s in %s'\
-                              % (name, sorted( cacheTable.keys() ))
-                    caches[cname] = constructor( cname, ans, historySizes )
+                              % (name, sorted( cache_table.keys() ))
+                    caches[cname] = constructor( cname, ans, history_sizes )
             term.caches = caches
 
     ##
@@ -292,30 +292,30 @@ class Equation( Struct ):
     # 25.08.2006
     # 27.11.2006
     # 20.02.2007
-    def setupTermArgs( self, variables, materials, user = None ):
+    def setup_term_args( self, variables, materials, user = None ):
         """- checks term argument existence in variables, materials, user
            - checks compatability of field and term subdomain lists (igs)"""
-        setupTermArgs( self.terms, variables, materials, user )
+        setup_term_args( self.terms, variables, materials, user )
 
     ##
     #
-    def describeGeometry( self, geometries, variables, integrals ):
+    def describe_geometry( self, geometries, variables, integrals ):
         for term in self.terms:
-            term.describeGeometry( geometries, variables, integrals )
+            term.describe_geometry( geometries, variables, integrals )
 
     ##
     # 24.04.2007, c
-    def getTermGeometries( self ):
+    def get_term_geometries( self ):
         tgs = set()
         for term in self.terms:
-            for tg in term.getGeometry():
+            for tg in term.get_geometry():
                 tgs.add( tg )
         return tgs
 
     ##
     # 16.11.2007, c
-    def getTermIntegralNames( self ):
-        iNames = set()
+    def get_term_integral_names( self ):
+        i_names = set()
         for term in self.terms:
-            iNames.add( term.integralName )
-        return iNames
+            i_names.add( term.integral_name )
+        return i_names

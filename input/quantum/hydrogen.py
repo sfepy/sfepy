@@ -2,12 +2,12 @@
 
 def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
     assert dim in [2, 3]
-    fileName_mesh = mesh
+    file_name_mesh = mesh
     options = {
-        'saveEigVectors' : None,
+        'save_eig_vectors' : None,
         'squared' : False,
-        'nEigs' : n_eigs,
-        'eigenSolver' : 'eigen1',
+        'n_eigs' : n_eigs,
+        'eigen_solver' : 'eigen1',
     }
 
     # Whole domain $Y$.
@@ -31,12 +31,12 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
     }
 
     material_2 = {
-        'name' : 'matV',
+        'name' : 'mat_v',
         'mode' : 'function',
         'region' : 'Omega',
 
-        'function' : 'funV',
-        'extraArgs' : {'mode' : 'r^2'},
+        'function' : 'fun_v',
+        'extra_args' : {'mode' : 'r^2'},
     }
 
     if dim == 3:
@@ -90,7 +90,7 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
 
     equations = {
         'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
-                   + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
+                   + dw_mass_scalar_variable.i1.Omega( mat_v.V, v, Psi )""",
         'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
     }
 
@@ -99,14 +99,14 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
         'kind' : 'eig.pysparse',
 
         'tau' : -1.0,
-        'epsA' : 1e-5,
-        'iMax' : 150,
+        'eps_a' : 1e-5,
+        'i_max' : 150,
         'method' : 'qmrs',
         'verbosity' : 0,
         'strategy' : 1,
     }
 
     fe = {
-        'chunkSize' : 100000
+        'chunk_size' : 100000
     }
     return locals()

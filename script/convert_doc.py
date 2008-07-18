@@ -883,7 +883,7 @@ def convert_docbook_latex(infile, outfile, converter=None):
     f.write(r.encode("utf-8"))
 
 def create_image(filename, eq, inline=False):
-    r"""Runs "eq" through TeX and saves the result into the "filename" as a png.
+    r"""_runs "eq" through TeX and saves the result into the "filename" as a png.
 
     Example:
 
@@ -970,7 +970,7 @@ def convert_docbook_xhtml(infile, outfile):
     f = open(outfile, "w")
     c = XHTMLConverter(root)
     f.write(c.convert())
-    p = progressbar("Creating images", maxval = len(c.eqlist))
+    p = progressbar("_creating images", maxval = len(c.eqlist))
     i = 0
     for eq, eq_file, inline in c.eqlist:
         try:

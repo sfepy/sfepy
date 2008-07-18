@@ -5,7 +5,7 @@ from sfepy.base.base import *
 class Materials( Container ):
     ##
     # 24.07.2006, c
-    def fromConf( conf, wanted = None ):
+    def from_conf( conf, wanted = None ):
 
         if wanted is None:
             wanted = conf.keys()
@@ -16,31 +16,31 @@ class Materials( Container ):
                 objs.append( Material( **val ) )
         obj = Materials( objs )
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 22.08.2006, c
-    def setupRegions( self, regions ):
+    def setup_regions( self, regions ):
         for mat in self:
-            mat.setupRegions( regions )
+            mat.setup_regions( regions )
 
     ##
     # c: 01.08.2006, r: 20.02.2008
-    def timeUpdate( self, ts, funmod, domain, extraMatArgs = None ):
-        extraMatArgs = getDefault( extraMatArgs, {} )
+    def time_update( self, ts, funmod, domain, extra_mat_args = None ):
+        extra_mat_args = get_default( extra_mat_args, {} )
         output( 'updating materials...' )
         tt = time.clock()
         for mat in self:
             output( ' ', mat.name )
-            extraArgs = extraMatArgs.setdefault( mat.name, {} )
-            mat.timeUpdate( ts, funmod, domain, **extraArgs )
+            extra_args = extra_mat_args.setdefault( mat.name, {} )
+            mat.time_update( ts, funmod, domain, **extra_args )
         output( '...done in %.2f s' % (time.clock() - tt) )
 
     ##
     # 22.08.2006, c
-    def setCurrentGroup( self, ig ):
+    def set_current_group( self, ig ):
         for mat in self:
-            mat.setCurrentGroup( ig )
+            mat.set_current_group( ig )
 
 ##
 # 21.07.2006, c
@@ -69,35 +69,35 @@ Material:m
     m
   region:
     None
-  extraArgs:
+  extra_args:
     {}
   mode:
     here
-  regionName:
+  region_name:
     Omega
     
     """
     ##
     # c: 22.08.2006, r: 02.07.2008
     def __init__( self, **kwargs ):
-        kwargs.setdefault( 'extraArgs', {} )
+        kwargs.setdefault( 'extra_args', {} )
         Struct.__init__( self, **kwargs )
 
-        self.regionName = self.region
+        self.region_name = self.region
         self.region = None
         self.datas = None
-        self.kind = getDefaultAttr( self, 'kind', 'time-dependent' )
+        self.kind = get_default_attr( self, 'kind', 'time-dependent' )
 
     ##
     # 22.08.2006, c
-    def setupRegions( self, regions ):
-        region = regions[self.regionName]
+    def setup_regions( self, regions ):
+        region = regions[self.region_name]
         self.igs = region.igs
         self.region = region 
 
     ##
     # c: 01.08.2006, r: 02.07.2008
-    def timeUpdate( self, ts, funmod, domain, **extraArgs ):
+    def time_update( self, ts, funmod, domain, **extra_args ):
         """coor is in region.vertices[ig] order (i.e. sorted by node number)"""
         if self.mode == 'function':
             self.data = None
@@ -111,38 +111,38 @@ Material:m
             else:
                 fun = self.function
 
-            kwargs = copy( self.extraArgs )
-            kwargs.update( extraArgs )
+            kwargs = copy( self.extra_args )
+            kwargs.update( extra_args )
             args = dict( ts = ts, region = self.region, **kwargs )
 
             for ig in self.igs:
-                coor = domain.getMeshCoors()[self.region.getVertices( ig )]
+                coor = domain.get_mesh_coors()[self.region.get_vertices( ig )]
                 args.update( {'coor' : coor, 'ig' : ig} )
                 self.datas.append( fun( **args ) )
 
     ##
     # 31.07.2007, c
-    def setData( self, datas ):
+    def set_data( self, datas ):
         self.mode = 'user'
         self.datas = datas
         self.data = None
 
     ##
     # 01.08.2007, c
-    def setFunction( self, function ):
+    def set_function( self, function ):
         self.mode =  'function'
         self.function = function
 
     ##
     # 01.08.2007, c
-    def setExtraArgs( self, extraArgs ):
-        self.extraArgs = extraArgs
+    def set_extra_args( self, extra_args ):
+        self.extra_args = extra_args
         
     ##
     # 22.08.2006, c
     # 22.02.2007
     # 31.07.2007
-    def setCurrentGroup( self, ig ):
+    def set_current_group( self, ig ):
         if (self.mode == 'function') or (self.mode == 'user'):
             try:
                 ii = self.igs.index( ig )
@@ -152,13 +152,13 @@ Material:m
 
     ##
     # c: 02.08.2006, r: 02.05.2008
-    def getData( self, regionName, ig, name = None ):
-        """Returns None in function mode if setCurrentGroup() was not called."""
+    def get_data( self, region_name, ig, name = None ):
+        """Returns None in function mode if set_current_group() was not called."""
 ##         print 'getting', name
 
         if name is None:
             output( 'material arguments must use the dot notation!' )
-            output( '(material: %s, region: %s)' % (self.name, regionName) )
+            output( '(material: %s, region: %s)' % (self.name, region_name) )
             raise ValueError
 
         if self.mode == 'here':
@@ -172,11 +172,11 @@ Material:m
 
     ##
     # 01.08.2007, c
-    def reduceOnDatas( self, reduceFun, init = 0.0 ):
+    def reduce_on_datas( self, reduce_fun, init = 0.0 ):
         out = {}.fromkeys( self.datas[0].keys(), init )
 
         for data in self.datas:
             for key, val in data.iteritems():
-                out[key] = reduceFun( out[key], val )
+                out[key] = reduce_fun( out[key], val )
 
         return out

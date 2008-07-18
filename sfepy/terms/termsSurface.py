@@ -2,18 +2,18 @@ from terms import *
 
 ##
 # c: 13.11.2007, r: 30.04.2008
-def fixTractionShape( mat, nNod ):
+def fix_traction_shape( mat, n_nod ):
     if nm.isscalar( mat ):
-        mat = nm.tile( mat, (nNod, 1) )
+        mat = nm.tile( mat, (n_nod, 1) )
     else:
         mat = nm.array( mat, ndmin = 1 )
         if mat.ndim < 2:
             mat = mat[:,nm.newaxis]
-        if mat.shape[0] != nNod:
+        if mat.shape[0] != n_nod:
             if mat.shape[0] == 1:
-                mat = nm.tile( mat, (nNod, 1) )
+                mat = nm.tile( mat, (n_nod, 1) )
             else:
-                mat = nm.tile( mat[:,0], (nNod, 1) )
+                mat = nm.tile( mat[:,0], (n_nod, 1) )
     return nm.ascontiguousarray( mat )
 
 ##
@@ -26,44 +26,44 @@ class LinearTractionTerm( Term ):
     :definition: $\int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}$
     """
     name = 'dw_surface_ltr'
-    argTypes = ('material', 'virtual')
+    arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
 
     # 11.10.2006
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_surface_ltr )
-        self.dofConnType = 'surface'
+        self.dof_conn_type = 'surface'
 
     ##
     # c: 05.09.2006, r: 15.01.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
         Should work in scalar, vector and tensor modes (tensor probably broken).
         Tractions defined in vertices -> using 'vertex' subset of leconn
         """
-        traction, virtual = self.getArgs( **kwargs )
-        ap, sg = virtual.getApproximation( self.getCurrentGroup(), 'Surface' )
-        if diffVar is None:
-            shape = (chunkSize, 1, sg.dim * sg.nFP, 1)
+        traction, virtual = self.get_args( **kwargs )
+        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        if diff_var is None:
+            shape = (chunk_size, 1, sg.dim * sg.n_fp, 1)
         else:
             raise StopIteration
 
-        sd = ap.surfaceData[self.region.name]
-        bf = ap.getBase( sd.faceType, 0, self.integralName )
-        gbf = ap.getBase( sd.faceType, 0, self.integralName,
-                          fromGeometry = True )
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        gbf = ap.get_base( sd.face_type, 0, self.integral_name,
+                          from_geometry = True )
 
-        traction = fixTractionShape( traction, sd.nodes.shape[0] )
+        traction = fix_traction_shape( traction, sd.nodes.shape[0] )
 ##        sg.str( sys.stdout, 0 )
-##         print ap.bf[sd.faceType]
+##         print ap.bf[sd.face_type]
 ##         pause()
 
-##         if ap.bf[sd.faceType].shape != gbf.shape:
+##         if ap.bf[sd.face_type].shape != gbf.shape:
 ##             raise NotImplementedError, 'tractions on P1 edges only!'
-        nEP = gbf.shape[2]
+        n_ep = gbf.shape[2]
         leconn = sd.leconn[:,:nEP].copy()
-        for out, chunk in self.charFun( chunkSize, shape ):
-            lchunk = self.charFun.getLocalChunk()
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
 #            print out.shape, lchunk.shape
             status = self.function( out, bf, gbf,
                                     traction, sg, leconn, lchunk )

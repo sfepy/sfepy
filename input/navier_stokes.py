@@ -1,7 +1,7 @@
 # 26.02.2007, c
 # last revision: 25.02.2008
 
-fileName_mesh = 'database/pul_klikatak2.mesh'
+file_name_mesh = 'database/pul_klikatak2.mesh'
 
 field_1 = {
     'name' : '3_velocity',
@@ -28,17 +28,17 @@ region_1000 = {
 region_0 = {
     'name' : 'Walls',
     'select' : 'nodes of surface -n (r.Outlet +n r.Inlet)',
-    'canCells' : False,
+    'can_cells' : False,
 }
 region_1 = {
     'name' : 'Inlet',
     'select' : 'nodes by cinc( x, y, z, 0 )', # In
-    'canCells' : False,
+    'can_cells' : False,
 }
 region_2 = {
     'name' : 'Outlet',
     'select' : 'nodes by cinc( x, y, z, 1 )', # Out
-    'canCells' : False,
+    'can_cells' : False,
 }
 
 ebc_1 = {
@@ -124,7 +124,7 @@ equations = {
 ##
 # FE assembling parameters.
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 solver_0 = {
@@ -136,20 +136,20 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 5,
-    'epsA'      : 1e-8,
-    'epsR'      : 1.0,
+    'i_max'      : 5,
+    'eps_a'      : 1e-8,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 0.99999,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 0.99999,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 ##
@@ -159,7 +159,7 @@ from valec import *
 ##
 # Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( fileName_mesh ) )[0]
+trunk = op.splitext( op.basename( file_name_mesh ) )[0]
 print trunk
 cinc = eval( 'cinc_' + trunk )
 print cinc

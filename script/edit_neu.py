@@ -7,42 +7,42 @@ given in Medit .mesh file.
 """
 
 usage = """
-Three args required! (fileIn|-, fileMesh, fileOut|-)
+Three args required! (file_in|-, file_mesh, file_out|-)
 """
 
 if (len( sys.argv ) == 4):
-    fileNameIn = sys.argv[1];
-    fileNameMesh = sys.argv[2];
-    fileNameOut = sys.argv[3];
+    file_name_in = sys.argv[1];
+    file_name_mesh = sys.argv[2];
+    file_name_out = sys.argv[3];
 else:
     print usage
     raise '123'
 
 ##
 # Read vertices.
-fd = open( fileNameMesh, "r" ); 
+fd = open( file_name_mesh, "r" ); 
 while 1:
     line = fd.readline().split()
     if not len( line ):
         break
     elif (line[0] == 'Vertices'):
-        nNod = int( fd.readline() )
+        n_nod = int( fd.readline() )
         coors = []
-        for ii in range( nNod ):
+        for ii in range( n_nod ):
             line = [float( ic ) for ic in fd.readline().split()]
             coors.append( '%10d   % 14.10e   % 14.10e   % 14.10e\n'\
                           % ((ii+1,) +  tuple( line[:-1] )) )
 fd.close()
 
-if (fileNameIn == '-'):
+if (file_name_in == '-'):
     fdi = sys.stdin
 else:
-    fdi = open( fileNameIn, "r" ); 
+    fdi = open( file_name_in, "r" ); 
 
-if (fileNameOut == '-'):
+if (file_name_out == '-'):
     fdo = sys.stdout
 else:
-    fdo = open( fileNameOut, "w" ); 
+    fdo = open( file_name_out, "w" ); 
 
 while 1:
     line = fdi.readline()
@@ -53,19 +53,19 @@ while 1:
         fdo.write( line )
         line = fdi.readline()
         row = line.split()
-        if nNod != int( row[0] ):
+        if n_nod != int( row[0] ):
             raise RuntimeError, 'Meshes not compatible! (%d == %s)'\
-                  % (nNod, row[0])
+                  % (n_nod, row[0])
         fdo.write( line )
     elif (row[0] == 'NODAL'):
         fdo.write( line )
-        for ii in range( nNod ):
+        for ii in range( n_nod ):
             aux = fdi.readline()
             fdo.write( coors[ii] )
     else:
         fdo.write( line )
         
-if (fileNameIn != '-'):
+if (file_name_in != '-'):
     fdi.close()
-if (fileNameOut != '-'):
+if (file_name_out != '-'):
     fdo.close()

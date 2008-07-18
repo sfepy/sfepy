@@ -4,7 +4,7 @@ def define():
     l = common(dim=3, n_eigs=7)
     return l
 
-def funV( ts, coor, region, ig, mode = None, vhxc = None ):
+def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
     import numpy as nm
 
     if vhxc is None:
@@ -16,5 +16,5 @@ def funV( ts, coor, region, ig, mode = None, vhxc = None ):
     vc = - C * 5.0 / r
     V = vhxc + vc
 
-    out['V'] = V
+    out['v'] = V
     return out

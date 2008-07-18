@@ -13,35 +13,35 @@ class TestInput( TestCommon ):
 
     ##
     # c: 05.06.2007, r: 19.02.2008
-    def fromConf( conf, options, cls = None ):
-        from sfepy.base.conf import ProblemConf, getStandardKeywords
+    def from_conf( conf, options, cls = None ):
+        from sfepy.base.conf import ProblemConf, get_standard_keywords
 
-        required, other = getStandardKeywords()
-        testConf = ProblemConf.fromFile( conf.inputName, required, other )
+        required, other = get_standard_keywords()
+        test_conf = ProblemConf.from_file( conf.input_name, required, other )
 
         if cls is None:
             cls = TestInput
-        test = cls( testConf = testConf, conf = conf, options = options )
+        test = cls( test_conf = test_conf, conf = conf, options = options )
 
         return test
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 05.06.2007, r: 08.02.2008
     def test_input( self ):
-        from sfepy.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
 
-        self.report( 'solving %s...' % self.conf.inputName )
+        self.report( 'solving %s...' % self.conf.input_name )
         status = IndexedStruct()
-        dpb, vecDP, data = solveStationary( self.testConf, nlsStatus = status )
+        dpb, vec_dp, data = solve_stationary( self.test_conf, nls_status = status )
         ok = status.condition == 0
-        out = dpb.stateToOutput( vecDP )
+        out = dpb.state_to_output( vec_dp )
 
-        name = op.join( self.options.outDir,
-                        op.split( self.conf.outputName )[1] )
-        dpb.saveState( name, vecDP )
-        self.report( '%s solved' % self.conf.inputName )
+        name = op.join( self.options.out_dir,
+                        op.split( self.conf.output_name )[1] )
+        dpb.save_state( name, vec_dp )
+        self.report( '%s solved' % self.conf.input_name )
 
         return ok
 
@@ -52,37 +52,37 @@ class TestLCBC( TestCommon ):
 
     ##
     # 03.10.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         return TestLCBC( conf = conf, options = options )
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 03.10.2007, r: 08.02.2008
-    def test_linearRigidBodyBC( self ):
+    def test_linear_rigid_body_bc( self ):
         import scipy
         if scipy.version.version == "0.6.0":
             # This test uses a functionality implemented in scipy svn, which is
             # missing in scipy 0.6.0
             return True
         from sfepy.base.base import Struct
-        from sfepy.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
-        from sfepy.fem.evaluate import evalTermOP
+        from sfepy.fem.evaluate import eval_term_op
 
         status = IndexedStruct()
-        problem, vec, data = solveStationary( self.conf,
-                                              nlsStatus = status )
+        problem, vec, data = solve_stationary( self.conf,
+                                              nls_status = status )
         ok = status.condition == 0
         self.report( 'converged: %s' % ok )
-        out = problem.stateToOutput( vec )
+        out = problem.state_to_output( vec )
 
-        strain = evalTermOP( vec, 'de_cauchy_strain.i1.Y( u )', problem )
+        strain = eval_term_op( vec, 'de_cauchy_strain.i1.Y( u )', problem )
         out['strain'] = Struct( name = 'output_data',
                                 mode = 'cell', data = strain,
-                                dofTypes = None )
+                                dof_types = None )
 
-        name = op.join( self.options.outDir,
-                        op.split( self.conf.outputName )[1] )
+        name = op.join( self.options.out_dir,
+                        op.split( self.conf.output_name )[1] )
         problem.domain.mesh.write( name, io = 'auto', out = out )
 
         ##

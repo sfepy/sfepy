@@ -10,7 +10,7 @@ node belong to one component.
 With '-m' option, a mesh of the surface is created and saved in
 'surf_<original mesh file name>.mesh'.
 
-Try ./findSurf.py --help to see more options.
+Try ./find_surf.py --help to see more options.
 """
 import sys
 import os.path as op
@@ -21,35 +21,35 @@ import init_sfepy
 from sfepy.base.base import *
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.domain import Domain
-from sfepy.fem.extmods.fem import rawGraph
-from sfepy.fem.extmods.meshutils import graphComponents
+from sfepy.fem.extmods.fem import raw_graph
+from sfepy.fem.extmods.meshutils import graph_components
 
 ##
 # 29.08.2007, c
-def surfaceGraph( surfFaces, nNod ):
-    ret, prow, icol = rawGraph( nNod, nNod,
-                                len( surfFaces), surfFaces, surfFaces )
+def surface_graph( surf_faces, n_nod ):
+    ret, prow, icol = raw_graph( n_nod, n_nod,
+                                len( surf_faces), surf_faces, surf_faces )
     nnz = prow[-1]
     data = nm.empty( (nnz,), dtype = nm.int32 )
     data.fill( 2 )
-    return sp.csr_matrix( (data, icol, prow), (nNod, nNod) )
+    return sp.csr_matrix( (data, icol, prow), (n_nod, n_nod) )
 
 ##
 # 29.08.2007, c
-def surfaceComponents( grS, surfFaces ):
-    nNod = grS.shape[0]
-    flag = nm.empty( (nNod,), dtype = nm.int32 )
+def surface_components( gr_s, surf_faces ):
+    n_nod = gr_s.shape[0]
+    flag = nm.empty( (n_nod,), dtype = nm.int32 )
     pos = nm.empty_like( flag )
-    ret, nComp = graphComponents( flag, grS.indptr, grS.indices, pos )
+    ret, n_comp = graph_components( flag, gr_s.indptr, gr_s.indices, pos )
 
     comps = []
-    for ii, face in enumerate( surfFaces ):
+    for ii, face in enumerate( surf_faces ):
         comp = flag[face[:,0]]
         comps.append( comp )
-    print nComp
-    return nComp, comps
+    print n_comp
+    return n_comp, comps
 
-usage = """%prog [options] fileNameIn|- fileNameOut|-
+usage = """%prog [options] file_name_in|- file_name_out|-
 
 '-' is for stdin, stdout"""
 
@@ -61,58 +61,58 @@ version = open( op.join( init_sfepy.install_dir, 'VERSION' ) ).readlines()[0][:-
 def main():
     parser = OptionParser( usage = usage, version = "%prog " + version )
     parser.add_option( "-m", "--mesh",
-                       action = "store_true", dest = "saveMesh",
+                       action = "store_true", dest = "save_mesh",
                        default = True,
                        help = "save surface mesh [default: %default]" )
     parser.add_option( "-n", "--no-surface",
-                       action = "store_true", dest = "noSurface",
+                       action = "store_true", dest = "no_surface",
                        default = False,
                        help = "do not output surface [default: %default]" )
     (options, args) = parser.parse_args()
 
     if (len( args ) == 2):
-        fileNameIn = args[0];
-        fileNameOut = args[1];
+        file_name_in = args[0];
+        file_name_out = args[1];
     else:
         parser.print_help(),
         return
 
-    if (fileNameIn == '-'):
-        fileIn = sys.stdin
+    if (file_name_in == '-'):
+        file_in = sys.stdin
     else:
-        fileIn = open( fileNameIn, "r" ); 
+        file_in = open( file_name_in, "r" ); 
 
-    mesh = Mesh.fromFile( fileNameIn )
+    mesh = Mesh.from_file( file_name_in )
 
-    if (fileNameIn != '-'):
-        fileIn.close()
+    if (file_name_in != '-'):
+        file_in.close()
 
-    domain = Domain.fromMesh( mesh, op.join( init_sfepy.install_dir, 'eldesc' ) )
-    domain.setupGroups()
+    domain = Domain.from_mesh( mesh, op.join( init_sfepy.install_dir, 'eldesc' ) )
+    domain.setup_groups()
 
-    if domain.hasFaces():
-        domain.fixElementOrientation()
-        domain.setupNeighbourLists( createEdgeList = False )
+    if domain.has_faces():
+        domain.fix_element_orientation()
+        domain.setup_neighbour_lists( create_edge_list = False )
 
-        lst, surfFaces = domain.surfaceFaces()
+        lst, surf_faces = domain.surface_faces()
 
-        surfMesh = Mesh.fromSurface( surfFaces, mesh )
+        surf_mesh = Mesh.from_surface( surf_faces, mesh )
 
-        if options.saveMesh:
-            base, ext = op.splitext( op.basename( fileNameIn ) )
-            surfMesh.write( "surf_" + base + '.mesh', io = 'auto' )
+        if options.save_mesh:
+            base, ext = op.splitext( op.basename( file_name_in ) )
+            surf_mesh.write( "surf_" + base + '.mesh', io = 'auto' )
 
-        if options.noSurface:
+        if options.no_surface:
             return
 
-        nNod = mesh.nod0.shape[0]
-        grS = surfaceGraph( surfFaces, nNod )
+        n_nod = mesh.nod0.shape[0]
+        gr_s = surface_graph( surf_faces, n_nod )
 ##         import sfepy.base.plotutils as plu
-##         plu.spy( grS )
+##         plu.spy( gr_s )
 ##         plu.pylab.show()
 
-        nComp, comps = surfaceComponents( grS, surfFaces )
-#        print 'components:', nComp
+        n_comp, comps = surface_components( gr_s, surf_faces )
+#        print 'components:', n_comp
 
         ccs, comps = comps, nm.zeros( (0,1), nm.int32 )
         for cc in ccs:
@@ -120,14 +120,14 @@ def main():
 
         out = nm.concatenate( (lst, comps), 1 )
 
-        if (fileNameOut == '-'):
-            fileOut = sys.stdout
+        if (file_name_out == '-'):
+            file_out = sys.stdout
         else:
-            fileOut = open( fileNameOut, "w" ); 
+            file_out = open( file_name_out, "w" ); 
         for row in out:
-            fileOut.write( '%d %d %d %d\n' % (row[0], row[1], row[2], row[3]) )
-        if (fileNameOut != '-'):
-            fileOut.close()
+            file_out.write( '%d %d %d %d\n' % (row[0], row[1], row[2], row[3]) )
+        if (file_name_out != '-'):
+            file_out.close()
     
 
 if __name__=='__main__':

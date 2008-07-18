@@ -6,13 +6,13 @@ class Test( TestCommon ):
 
     ##
     # 28.08.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         return Test( conf = conf, options = options )
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 28.08.2007, c
-    def test_structAdd( self ):
+    def test_struct_add( self ):
         from sfepy.base.base import Struct
         from copy import deepcopy
 
@@ -43,7 +43,7 @@ class Test( TestCommon ):
 
     ##
     # 28.08.2007, c
-    def test_structIAdd( self ):
+    def test_struct_i_add( self ):
         from sfepy.base.base import Struct
 
         a = Struct( f1 = 0,
