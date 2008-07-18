@@ -221,9 +221,10 @@ def solve_direct( conf, options ):
             import tables as pt
             import numarray as nar
 
-            fd = pt.open_file( ofn_trunk + '.h5', mode = 'w', title = "Dump file" )
+            fd = pt.openFile( ofn_trunk + '.h5', mode = 'w',
+                              title = "Dump file" )
             for key, val in out.iteritems():
-                fd.create_array( fd.root, key, nar.asarray( val.data ), 
+                fd.createArray( fd.root, key, nar.asarray( val.data ), 
                                 '%s data' % val.mode )
             fd.close()
 

@@ -106,17 +106,17 @@ def read_list( fd, n_item, dtype ):
 def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
 
     if level == 0:
-        fd = pt.open_file( file_name, mode = "w",
+        fd = pt.openFile( file_name, mode = "w",
                           title = "Recursive dict dump" )
         group = '/'
 
     for key, val in adict.iteritems():
 #        print level * ' ', key, '->', group
         if isinstance( val, dict ):
-            group2 = fd.create_group( group, '_' + str( key ), '%s group' % key )
+            group2 = fd.createGroup( group, '_' + str( key ), '%s group' % key )
             write_dict_hdf5( file_name, val, level + 1, group2, fd )
         else:
-            fd.create_array( group, '_' + str( key ), val, '%s data' % key )
+            fd.createArray( group, '_' + str( key ), val, '%s data' % key )
             
     if level == 0:
         fd.close()
@@ -127,7 +127,7 @@ def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
     out = {}
 
     if level == 0:
-        fd = pt.open_file( file_name, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
         group = fd.root
 
     for name, gr in group._v_groups.iteritems():
@@ -148,17 +148,17 @@ def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
 # 02.07.2007, c
 def write_sparse_matrix_hdf5( file_name, mtx, name = 'a sparse matrix' ):
     """Assume CSR/CSC."""
-    fd = pt.open_file( file_name, mode = "w", title = name )
+    fd = pt.openFile( file_name, mode = "w", title = name )
     try:
-        info = fd.create_group( '/', 'info' )
-        fd.create_array( info, 'dtype', mtx.dtype.str )
-        fd.create_array( info, 'shape', mtx.shape )
-        fd.create_array( info, 'format', mtx.format )
+        info = fd.createGroup( '/', 'info' )
+        fd.createArray( info, 'dtype', mtx.dtype.str )
+        fd.createArray( info, 'shape', mtx.shape )
+        fd.createArray( info, 'format', mtx.format )
 
-        data = fd.create_group( '/', 'data' )
-        fd.create_array( data, 'data', mtx.data )
-        fd.create_array( data, 'indptr', mtx.indptr )
-        fd.create_array( data, 'indices', mtx.indices )
+        data = fd.createGroup( '/', 'data' )
+        fd.createArray( data, 'data', mtx.data )
+        fd.createArray( data, 'indptr', mtx.indptr )
+        fd.createArray( data, 'indices', mtx.indices )
 
     except:
         print 'matrix must be in SciPy sparse CSR/CSC format!'
@@ -174,7 +174,7 @@ def read_sparse_matrix_hdf5( file_name, output_format = None ):
     import scipy.sparse as sp
     constructors = {'csr' : sp.csr_matrix, 'csc' : sp.csc_matrix}
     
-    fd = pt.open_file( file_name, mode = "r" )
+    fd = pt.openFile( file_name, mode = "r" )
     info = fd.root.info
     data = fd.root.data
 

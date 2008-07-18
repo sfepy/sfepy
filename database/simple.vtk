@@ -3057,7 +3057,7 @@ CELL_TYPES 1348
 10
 CELL_DATA 1348
 
-SCALARS matId float 1
+SCALARS mat_id float 1
 LOOKUP_TABLE default
 6
 6

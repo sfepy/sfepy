@@ -146,8 +146,8 @@ typedef struct VolumeGeometry {
     @par Revision history:
     - 01.11.2007, c
   */
-  int32 integrateChunk( FMField *out, FMField *in,
-			int32 *elList, int32 elList_nRow ) {
+  int32 integrate_chunk( FMField *out, FMField *in,
+			 int32 *elList, int32 elList_nRow ) {
     return( vg_integrateChunk( self, out, in, elList, elList_nRow ) );
   }
   /*!

@@ -444,7 +444,7 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
 }
 
 #undef __FUNC__
-#define __FUNC__ "term_ns_asmDivGrad"
+#define __FUNC__ "term_ns_asm_div_grad"
 /*!
   @par Revision history:
   - 25.10.2005, c
@@ -452,7 +452,7 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
   - 09.12.2005
   - 14.12.2005
 */
-int32 term_ns_asmDivGrad( FMField *out, FMField *state, int32 offset,
+int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
 			  float64 viscosity, VolumeGeometry *vg,
 			  int32 *conn, int32 nEl, int32 nEP,
 			  int32 *elList, int32 elList_nRow,
@@ -529,13 +529,13 @@ int32 term_ns_asmDivGrad( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "term_ns_asmConvect"
+#define __FUNC__ "term_ns_asm_convect"
 /*!
   @par Revision history:
   - 20.12.2005, c
   - 30.07.2007
 */
-int32 term_ns_asmConvect( FMField *out, FMField *state, int32 offset,
+int32 term_ns_asm_convect( FMField *out, FMField *state, int32 offset,
 			  FMField *bf, VolumeGeometry *vg,
 			  int32 *conn, int32 nEl, int32 nEP,
 			  int32 *elList, int32 elList_nRow,

@@ -167,18 +167,18 @@ int32 dw_mass_scalar_fine_coarse( FMField *out, FMField *state, int32 offset,
 				  int32 *elList, int32 elList_nRow,
 				  int32 isDiff );
 
-int32 term_ns_asmDivGrad( FMField *out, FMField *state, int32 offset,
-			  float64 viscosity, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff );
+int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
+			    float64 viscosity, VolumeGeometry *vg,
+			    int32 *conn, int32 nEl, int32 nEP,
+			    int32 *elList, int32 elList_nRow,
+			    int32 isDiff );
 
 
-int32 term_ns_asmConvect( FMField *out, FMField *state, int32 offset,
-			  FMField *bf, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff );
+int32 term_ns_asm_convect( FMField *out, FMField *state, int32 offset,
+			   FMField *bf, VolumeGeometry *vg,
+			   int32 *conn, int32 nEl, int32 nEP,
+			   int32 *elList, int32 elList_nRow,
+			   int32 isDiff );
 
 int32 dw_lin_convect( FMField *out,
 		      FMField *stateB, int32 offsetB,

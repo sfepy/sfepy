@@ -117,7 +117,7 @@ class ProgressBarWidgetHFill(object):
 class ETA(ProgressBarWidget):
     "Widget for the Estimated Time of Arrival"
     def format_time(self, seconds):
-        return time.strftime('%h:%m:%s', time.gmtime(seconds))
+        return time.strftime('%H:%M:%S', time.gmtime(seconds))
     def update(self, pbar):
         if pbar.currval == 0:
             return 'ETA:  --:--:--'
@@ -230,7 +230,7 @@ class ProgressBar(object):
         self.signal_set = False
         if term_width is None:
             try:
-                self.handle_resize(_none,None)
+                self.handle_resize(None,None)
                 signal.signal(signal.SIGWINCH, self.handle_resize)
                 self.signal_set = True
             except:

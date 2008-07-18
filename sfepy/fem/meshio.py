@@ -802,7 +802,7 @@ class HDF5MeshIO( MeshIO ):
     ##
     # c: 26.09.2006, r: 23.06.2008
     def read( self, mesh, **kwargs ):
-        fd = pt.open_file( self.file_name, mode = "r" )
+        fd = pt.openFile( self.file_name, mode = "r" )
 
         mesh_group = fd.root.mesh
 
@@ -838,35 +838,35 @@ class HDF5MeshIO( MeshIO ):
         step = get_default_attr( ts, 'step', 0 )
         if step == 0:
             # A new file.
-            fd = pt.open_file( file_name, mode = "w",
+            fd = pt.openFile( file_name, mode = "w",
                               title = "SfePy output file" )
 
-            mesh_group = fd.create_group( '/', 'mesh', 'mesh' )
+            mesh_group = fd.createGroup( '/', 'mesh', 'mesh' )
 
-            fd.create_array( mesh_group, 'name', mesh.name, 'name' )
-            fd.create_array( mesh_group, 'nod0', mesh.nod0, 'vertices' )
-            fd.create_array( mesh_group, 'n_gr', len( mesh.conns ), 'n_gr' )
+            fd.createArray( mesh_group, 'name', mesh.name, 'name' )
+            fd.createArray( mesh_group, 'nod0', mesh.nod0, 'vertices' )
+            fd.createArray( mesh_group, 'n_gr', len( mesh.conns ), 'n_gr' )
             for ig, conn in enumerate( mesh.conns ):
-                conn_group = fd.create_group( mesh_group, 'group%d' % ig,
+                conn_group = fd.createGroup( mesh_group, 'group%d' % ig,
                                             'connectivity group' )
-                fd.create_array( conn_group, 'conn', conn, 'connectivity' )
-                fd.create_array( conn_group, 'mat_id', mesh.mat_ids[ig], 'material id' )
-                fd.create_array( conn_group, 'desc', mesh.descs[ig], 'element Type' )
+                fd.createArray( conn_group, 'conn', conn, 'connectivity' )
+                fd.createArray( conn_group, 'mat_id', mesh.mat_ids[ig], 'material id' )
+                fd.createArray( conn_group, 'desc', mesh.descs[ig], 'element Type' )
 
             if ts is not None:
-                ts_group = fd.create_group( '/', 'ts', 'time stepper' )
-                fd.create_array( ts_group, 't0', ts.t0, 'initial time' )
-                fd.create_array( ts_group, 't1', ts.t1, 'final time'  )
-                fd.create_array( ts_group, 'dt', ts.dt, 'time step' )
-                fd.create_array( ts_group, 'n_step', ts.n_step, 'n_step' )
+                ts_group = fd.createGroup( '/', 'ts', 'time stepper' )
+                fd.createArray( ts_group, 't0', ts.t0, 'initial time' )
+                fd.createArray( ts_group, 't1', ts.t1, 'final time'  )
+                fd.createArray( ts_group, 'dt', ts.dt, 'time step' )
+                fd.createArray( ts_group, 'n_step', ts.n_step, 'n_step' )
 
-            tstat_group = fd.create_group( '/', 'tstat', 'global time statistics' )
-            fd.create_array( tstat_group, 'created', asctime(),
+            tstat_group = fd.createGroup( '/', 'tstat', 'global time statistics' )
+            fd.createArray( tstat_group, 'created', asctime(),
                             'file creation time' )
-            fd.create_array( tstat_group, 'finished', '.' * 24,
+            fd.createArray( tstat_group, 'finished', '.' * 24,
                             'file closing time' )
 
-            fd.create_array( fd.root, 'last_step', nm.array( [0], dtype = nm.int32 ),
+            fd.createArray( fd.root, 'last_step', nm.array( [0], dtype = nm.int32 ),
                             'last saved step' )
 
             fd.close()
@@ -878,9 +878,9 @@ class HDF5MeshIO( MeshIO ):
                 step, time, nt = ts.step, ts.time, ts.nt
 
             # Existing file.
-            fd = pt.open_file( file_name, mode = "r+" )
+            fd = pt.openFile( file_name, mode = "r+" )
 
-            step_group = fd.create_group( '/', 'step%d' % step, 'time step data' )
+            step_group = fd.createGroup( '/', 'step%d' % step, 'time step data' )
             name_dict = {}
             for key, val in out.iteritems():
     #            print key
@@ -890,21 +890,21 @@ class HDF5MeshIO( MeshIO ):
                     dofs = val.dofs
 
                 group_name = '_' + key.translate( self._tr )
-                data_group = fd.create_group( step_group, group_name, '%s data' % key )
-                fd.create_array( data_group, 'data', val.data, 'data' )
-                fd.create_array( data_group, 'mode', val.mode, 'mode' )
-                fd.create_array( data_group, 'dofs', dofs, 'dofs' )
-                fd.create_array( data_group, 'name', val.name, 'object name' )
-                fd.create_array( data_group, 'var_name',
+                data_group = fd.createGroup( step_group, group_name, '%s data' % key )
+                fd.createArray( data_group, 'data', val.data, 'data' )
+                fd.createArray( data_group, 'mode', val.mode, 'mode' )
+                fd.createArray( data_group, 'dofs', dofs, 'dofs' )
+                fd.createArray( data_group, 'name', val.name, 'object name' )
+                fd.createArray( data_group, 'var_name',
                                 val.var_name, 'object parent name' )
-                fd.create_array( data_group, 'dname', key, 'data name' )
+                fd.createArray( data_group, 'dname', key, 'data name' )
                 name_dict[key] = group_name
 
             step_group._v_attrs.name_dict = name_dict
             fd.root.last_step[0] = step
 
             fd.remove_node( fd.root.tstat.finished )
-            fd.create_array( fd.root.tstat, 'finished', asctime(),
+            fd.createArray( fd.root.tstat, 'finished', asctime(),
                             'file closing time' )
             fd.close()
 
@@ -912,7 +912,7 @@ class HDF5MeshIO( MeshIO ):
     # c: 26.09.2006, r: 23.06.2008
     def read_time_stepper( self, file_name = None ):
         file_name = get_default( file_name, self.file_name )
-        fd = pt.open_file( file_name, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
 
         ts_group = fd.root.ts
         out =  (ts_group.t0.read(), ts_group.t1.read(),
@@ -924,7 +924,7 @@ class HDF5MeshIO( MeshIO ):
     # c: 26.09.2006, r: 23.06.2008
     def _get_step_group( self, step, file_name = None ):
         file_name = get_default( file_name, self.file_name )
-        fd = pt.open_file( file_name, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
 
         gr_name = 'step%d' % step
         try:
@@ -977,7 +977,7 @@ class HDF5MeshIO( MeshIO ):
     # c: 27.09.2006, r: 23.06.2008
     def read_time_history( self, node_name, indx, file_name = None ):
         file_name = get_default( file_name, self.file_name )
-        fd = pt.open_file( file_name, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
 
         th = dict_from_keys_init( indx, list )
         for step in xrange( fd.root.last_step[0] + 1 ):
@@ -1003,7 +1003,7 @@ class HDF5MeshIO( MeshIO ):
     # c: 14.06.2007, r: 23.06.2008
     def read_variables_time_history( self, var_names, ts, file_name = None ):
         file_name = get_default( file_name, self.file_name )
-        fd = pt.open_file( file_name, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
 
         assert (fd.root.last_step[0] + 1) == ts.n_step
 
