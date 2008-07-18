@@ -2,14 +2,14 @@
 #include "sort.h"
 
 #undef __FUNC__
-#define __FUNC__ "assembleVector"
+#define __FUNC__ "assemble_vector"
 /*!
   @par Revision history:
   - 21.11.2005, c
   - 26.11.2005
   - 27.11.2005
 */
-int32 assembleVector( FMField *vec, FMField *vecInEls,
+int32 assemble_vector( FMField *vec, FMField *vecInEls,
 		      int32 *iels, int32 iels_len,
 		      float64 sign, int32 *conn, int32 nEl, int32 nEP )
 {
@@ -42,7 +42,7 @@ int32 assembleVector( FMField *vec, FMField *vecInEls,
 }
 
 #undef __FUNC__
-#define __FUNC__ "assembleMatrix"
+#define __FUNC__ "assemble_matrix"
 /*!
   Requires a CSR matrix.
 
@@ -50,7 +50,7 @@ int32 assembleVector( FMField *vec, FMField *vecInEls,
   - 27.11.2005, c
   - 15.12.2005
 */
-int32 assembleMatrix( FMField *mtx,
+int32 assemble_matrix( FMField *mtx,
 		      int32 *prows, int32 prows_len,
 		      int32 *cols, int32 cols_len,
 		      FMField *mtxInEls,

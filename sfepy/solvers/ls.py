@@ -43,7 +43,7 @@ class Umfpack( LinearSolver ):
 ##     umfpack.control[um.UMFPACK_PRL] = 4
 ##     umfpack.control[um.UMFPACK_IRSTEP] = 10
 ##     umfpack.report_control()
-        sol = self.umfpack( um.UMFPACK_A, mtx, rhs, auto_transpose = True )
+        sol = self.umfpack( um.UMFPACK_A, mtx, rhs, autoTranspose = True )
 ##     umfpack.report_info()
 ##    tt = time.clock()
 ##    vec_dx2 = umfpack( um.UMFPACK_At, mtx_a, vec_r )

@@ -31,11 +31,11 @@
   (int32 *cols, int32 cols_len)
 };
 
-int32 assembleVector( FMField *vec, FMField *vecInEls,
+int32 assemble_vector( FMField *vec, FMField *vecInEls,
 		      int32 *iels, int32 iels_len,
 		      float64 sign, int32 *conn, int32 nEl, int32 nEP );
 
-int32 assembleMatrix( FMField *mtx,
+int32 assemble_matrix( FMField *mtx,
 		      int32 *prows, int32 prows_len,
 		      int32 *cols, int32 cols_len,
 		      FMField *mtxInEls,
