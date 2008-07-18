@@ -132,5 +132,5 @@ def fun_v( ts, coor, region, ig, mode = None ):
     C = 0.5
     val = C * (coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2)
     #val = nm.zeros_like( val )
-    out['v'] = val
+    out['V'] = val
     return out

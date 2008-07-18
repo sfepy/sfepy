@@ -334,7 +334,7 @@ def plot_gaps( fig_num, gaps, kinds, freq_range, plot_range, show = False ):
             raise ValueError
 
         output( ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1 )
-        output( ' -> %s\n    %s' %(kindDesc, info) )
+        output( ' -> %s\n    %s' %(kind_desc, info) )
 
     if show:
         ax.set_xlim( [freq_range[0], freq_range[-1]] )

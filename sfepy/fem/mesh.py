@@ -338,7 +338,7 @@ class Mesh( Struct ):
 
         mesh = Mesh( mesh_in.name + "_surf" )
 
-        mesh.nod0 = mesh_in.nod0[inod,:nCol]
+        mesh.nod0 = mesh_in.nod0[inod,:n_col]
 
         sfm = {3 : "2_3", 4 : "2_4"}
         mesh.conns = []

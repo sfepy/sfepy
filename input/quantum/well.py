@@ -110,5 +110,5 @@ def fun_v( ts, coor, region, ig, mode = None ):
 
     out = {}
     val = zeros_like( coor[:,0] )
-    out['v'] = val
+    out['V'] = val
     return out

@@ -11,5 +11,5 @@ def fun_v( ts, coor, region, ig, mode = None ):
     C = 0.5
     r = sqrt( coor[:,0]**2 + coor[:,1]**2 )
     V = - C * 1.0 / r
-    out['v'] = V
+    out['V'] = V
     return out

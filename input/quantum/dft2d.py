@@ -16,5 +16,5 @@ def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
     vc = - C * 5.0 / r
     V = vhxc + vc
 
-    out['v'] = V
+    out['V'] = V
     return out
