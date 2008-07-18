@@ -3,9 +3,9 @@
 
 Regions serve for selection of certain parts of the computational domain (= selection of nodes and elements of a FE mesh). They are used to define the boundary conditions, the domains of terms and materials etc.
 """
-from pyparsing import Literal, CaselessLiteral, Word, delimited_list,\
+from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
      Group, Optional, ZeroOrMore, nums, alphas, alphanums,\
-     Combine, StringStart, StringEnd, Forward, one_of, ParseException
+     Combine, StringStart, StringEnd, Forward, oneOf, ParseException
 
 op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
@@ -110,18 +110,18 @@ def create_bnf( stack ):
     _by = Literal( 'by' )
     _copy = Literal( 'copy' )
 
-    _mn = Literal( '-n' ).set_parse_action( replace( 'OA_SubN' ) )
-    _me = Literal( '-e' ).set_parse_action( replace( 'OA_SubE' ) )
-    _pn = Literal( '+n' ).set_parse_action( replace( 'OA_AddN' ) )
-    _pe = Literal( '+e' ).set_parse_action( replace( 'OA_AddE' ) )
-    _inn = Literal( '*n' ).set_parse_action( replace( 'OA_IntersectN' ) )
-    _ine = Literal( '*e' ).set_parse_action( replace( 'OA_IntersectE' ) )
+    _mn = Literal( '-n' ).setParseAction( replace( 'OA_SubN' ) )
+    _me = Literal( '-e' ).setParseAction( replace( 'OA_SubE' ) )
+    _pn = Literal( '+n' ).setParseAction( replace( 'OA_AddN' ) )
+    _pe = Literal( '+e' ).setParseAction( replace( 'OA_AddE' ) )
+    _inn = Literal( '*n' ).setParseAction( replace( 'OA_IntersectN' ) )
+    _ine = Literal( '*e' ).setParseAction( replace( 'OA_IntersectE' ) )
     regop = (_mn | _me | _pn | _pe | _inn | _ine)
 
     lpar  = Literal( "(" ).suppress()
     rpar  = Literal( ")" ).suppress()
 
-    _all = Literal( 'all' ).set_parse_action( replace( 'KW_All' ) )
+    _all = Literal( 'all' ).setParseAction( replace( 'KW_All' ) )
     node = Literal( 'node' )
     nodes = Literal( 'nodes' )
     elements = Literal( 'elements' )
@@ -130,51 +130,51 @@ def create_bnf( stack ):
     variable = Word( 'xyz', max = 1 ) | Literal( 'domain' )
     any_var = Word( alphas + '_', alphanums + '_' ) | fnumber
 
-    args = delimited_list( variable, combine = True )\
+    args = delimitedList( variable, combine = True )\
            + ZeroOrMore( Literal( ',' ) + any_var )
 
     function = Word( alphas, alphanums + '_' )\
                + Literal( '(' ) + Optional( args ) + Literal( ')' )
-    function = Group( function ).set_parse_action( join_tokens )
+    function = Group( function ).setParseAction( join_tokens )
 
     region = Combine( Literal( 'r.' ) + Word( alphas, '_' + alphas + nums ) )
     region = Group( Optional( _copy, default = 'nocopy' ) + region )
-    region.set_parse_action( replace( 'KW_Region', keep = True ) )
+    region.setParseAction( replace( 'KW_Region', keep = True ) )
 
-    coor = one_of( 'x y z' )
-    boolop = one_of( '& |' )
-    relop = one_of( '< > <= >= != ==' )
+    coor = oneOf( 'x y z' )
+    boolop = oneOf( '& |' )
+    relop = oneOf( '< > <= >= != ==' )
     bool_term = ZeroOrMore( '(' ) + (coor | fnumber ) + relop + (coor | fnumber)\
                + ZeroOrMore( ')' )
     relation = Forward()
     relation << ZeroOrMore( '(' )\
              + bool_term + ZeroOrMore( boolop + relation )\
              + ZeroOrMore( ')' )
-    relation = Group( relation ).set_parse_action( join_tokens )
+    relation = Group( relation ).setParseAction( join_tokens )
 
-    nos = Group( nodes + _of + surface ).set_parse_action( replace( 'E_NOS' ) )
-    nir = Group( nodes + _in + relation ).set_parse_action( \
+    nos = Group( nodes + _of + surface ).setParseAction( replace( 'E_NOS' ) )
+    nir = Group( nodes + _in + relation ).setParseAction( \
         replace( 'E_NIR', keep = True ) )
-    nbf = Group( nodes + _by + function ).set_parse_action( \
+    nbf = Group( nodes + _by + function ).setParseAction( \
         replace( 'E_NBF', keep = True ) )
-    ebf = Group( elements + _by + function ).set_parse_action( \
+    ebf = Group( elements + _by + function ).setParseAction( \
         replace( 'E_EBF', keep = True ) )
-    eog = Group( elements + _of + group + Word( nums ) ).set_parse_action( \
+    eog = Group( elements + _of + group + Word( nums ) ).setParseAction( \
         replace( 'E_EOG', keep = True ) )
-    onir = Group( node + _in + region ).set_parse_action( \
+    onir = Group( node + _in + region ).setParseAction( \
         replace_with_region( 'E_ONIR', 2 ) )
-    ni = Group( node + inumber ).set_parse_action( \
+    ni = Group( node + inumber ).setParseAction( \
         replace( 'E_NI', keep = True ) )
 
     region_expression = Forward()
 
     atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog)
-    atom1.set_parse_action( to_stack( stack ) )
+    atom1.setParseAction( to_stack( stack ) )
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)
 
     aux = (regop + region_expression)
-    aux.set_parse_action( to_stack( stack ) )
+    aux.setParseAction( to_stack( stack ) )
     region_expression << atom + ZeroOrMore( aux )
     region_expression = StringStart() + region_expression + StringEnd()
 
@@ -217,7 +217,7 @@ if __name__ == "__main__":
         stack[:] = []
 
         try:
-            out = bnf.parse_string( test_str )
+            out = bnf.parseString( test_str )
 #            print out
 #            print stack
         except:

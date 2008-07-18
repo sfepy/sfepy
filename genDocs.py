@@ -217,7 +217,7 @@ def typeset( fd, items_per_section, item_table, typeset_syntax ):
                 print doc
                 sec_list[:] = []
                 current_section[0] = None
-                out = bnf.parse_string( doc )
+                out = bnf.parseString( doc )
 ##                 print sec_list
 ##                 pause()
 

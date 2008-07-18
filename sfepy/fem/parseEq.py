@@ -1,5 +1,5 @@
-from pyparsing import Combine, Literal, Word, delimited_list, Group, Optional,\
-     one_of, ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
+from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
+     ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
      StringStart, StringEnd, CaselessLiteral
 
 
@@ -53,7 +53,7 @@ def create_bnf( term_descs, itps ):
     """term_descs .. list of TermParse objects (sign, term_name, term_arg_names)"""
 
     lc = ['+'] # Linear combination context.
-    equal = Literal( "=" ).set_parse_action( rhs( lc ) )
+    equal = Literal( "=" ).setParseAction( rhs( lc ) )
     zero  = Literal( "0" ).suppress()
 
     point = Literal( "." )
@@ -68,7 +68,7 @@ def create_bnf( term_descs, itps ):
 
     ident = Word( alphas, alphanums + "_")
     history = Optional( lbracket + inumber + rbracket, default = 0 )( "history" )
-    history.set_parse_action( lambda str, loc, toks: int( toks[0] ) )
+    history.setParseAction( lambda str, loc, toks: int( toks[0] ) )
     variable = Group( Word( alphas, alphanums + '._' ) + history )
     flag = Literal( 'a' )
 
@@ -81,9 +81,9 @@ def create_bnf( term_descs, itps ):
                                   ident( "integral" ) + "." + ident( "region" ) |
                                   ident( "region" )
                                   )))( "term_desc" ) + "("\
-                                  + Optional( delimited_list( variable ),
+                                  + Optional( delimitedList( variable ),
                                 default = [] )( "args" ) + ")"
-    term.set_parse_action( collect_term( term_descs, lc, itps ) )
+    term.setParseAction( collect_term( term_descs, lc, itps ) )
 
     rhs1 = equal + OneOrMore( term )
     rhs2 = equal + zero
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     term_descs = []
     bnf = create_bnf( term_descs, {} )
-    out = bnf.parse_string( test_str )
+    out = bnf.parseString( test_str )
 
     print 'out:', out, '\n'
     for tp in term_descs:

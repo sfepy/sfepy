@@ -1229,7 +1229,7 @@ class mesh:
             data=string.join(data)
             tokens=""
             try:
-                tokens=grammar.parse_string(data)
+                tokens=grammar.parseString(data)
             except ParseException, err:
                 error("\n"+err.line+"\n"+" "*(err.column-1)+\
                     "^\n" + repr(err),2)

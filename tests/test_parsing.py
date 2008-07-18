@@ -33,7 +33,7 @@ class Test( TestCommon ):
             term_descs[:] = []
             try:
                 bnf = create_bnf( term_descs, {} )
-                bnf.parse_string( test_str )
+                bnf.parseString( test_str )
             except:
                 self.report( 'failed: %s' % test_str )
                 if self.options.debug:
@@ -80,7 +80,7 @@ class Test( TestCommon ):
             stack[:] = []
 
             try:
-                out = bnf.parse_string( test_str )
+                out = bnf.parseString( test_str )
             except:
                 self.report( 'failed: %s' % test_str )
                 n_fail += 1

@@ -562,7 +562,7 @@ class Domain( Struct ):
 
         ##
         # Sort region definitions by dependencies.
-        depends = re.compile( 'r\.([a-z_a-Z_0-9]+)' ).search
+        depends = re.compile( 'r\.([a-zA-Z_0-9]+)' ).search
         graph = {}
         name_to_sort_name = {}
         for sort_name, rdef in region_defs.iteritems():
@@ -595,7 +595,7 @@ class Domain( Struct ):
 
             stack[:] = []
             try:
-                out = bnf.parse_string( rdef.select )
+                out = bnf.parseString( rdef.select )
             except ParseException:
                 print 'parsing failed:', rdef
                 raise

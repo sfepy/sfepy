@@ -18,7 +18,7 @@ def parse_terms( regions, desc, itps ):
     term_descs = []
     bnf = create_bnf( term_descs, itps )
     try:
-        bnf.parse_string( desc )
+        bnf.parseString( desc )
     except:
         print 'cannot parse:\n', desc
         raise

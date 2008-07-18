@@ -228,7 +228,7 @@ class ProblemConf( Struct ):
 
         ##
         # Unordered inputs.
-        tr_list = ['([a-z_a-Z0-9]+)_[0-9]+']
+        tr_list = ['([a-zA-Z0-9]+)_[0-9]+']
         # Keywords not in 'required', but needed even empty (e.g. for run_tests).
         for key in transforms.keys():
             if not self.__dict__.has_key( key ):

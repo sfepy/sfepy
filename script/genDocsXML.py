@@ -198,7 +198,7 @@ def typeset_item_table( fd, item_table ):
         if doc is not None:
             sec_list[:] = []
             current_section[0] = None
-            out = bnf.parse_string( doc )
+            out = bnf.parseString( doc )
             dd = [x[1] for x in sec_list if x[0] == 'definition']
             if len( dd ):
                 dd = dd[0]
@@ -239,7 +239,7 @@ def typeset( fd, items_per_section, item_table, typeset_syntax ):
                 print doc
                 sec_list[:] = []
                 current_section[0] = None
-                out = bnf.parse_string( doc )
+                out = bnf.parseString( doc )
 ##                 print sec_list
 ##                 pause()
 
