@@ -235,13 +235,15 @@ def solveEigenProblem1( conf, options ):
     # this assumes a box (3D), or a square (2D):
     a = bounding_box[1][0] - bounding_box[0][0]
     E_exact = None
-    if options.hydrogen:
+    if options.hydrogen or options.boron:
+        if options.hydrogen:
+            Z = 1
+        elif options.boron:
+            Z = 5
         if options.dim == 2:
-            Z = 1
-            E_exact = [-float(Z)**2/2/(n-0.5)**2/4 for n in [1]+[2]*2+[3]*5 +\
-                    [4]*4]
+            E_exact = [-float(Z)**2/2/(n-0.5)**2/4 for n in [1]+[2]*3+[3]*4 +\
+                    [4]*6]
         elif options.dim == 3:
-            Z = 1
             E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
     if options.well:
         if options.dim == 2:
@@ -327,6 +329,7 @@ help = {
     'well' : "solve infinite potential well (particle in a box) problem",
     'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' : "solve the hydrogen atom",
+    'boron' : "solve the boron atom with 1 electron",
     "mesh": "creates a mesh",
     "dim": "Create a 2D mesh, instead of the default 3D",
     "dft": "Do a DFT calculation",
@@ -357,6 +360,9 @@ def main():
     parser.add_option( "--hydrogen",
                        action = "store_true", dest = "hydrogen",
                        default = False, help = help['hydrogen'] )
+    parser.add_option( "--boron",
+                       action = "store_true", dest = "boron",
+                       default = False, help = help['boron'] )
     parser.add_option( "--dft",
                        action = "store_true", dest = "dft",
                        default = False, help = help['dft'] )
@@ -391,6 +397,15 @@ def main():
             else:
                 assert dim == 3
                 fileNameIn = "input/quantum/hydrogen3d.py"
+            options.dim = dim
+            print "Dimension:", dim
+        elif options.boron:
+            dim = MeshIO.anyFromFileName("tmp/mesh.vtk").read_dimension()
+            if dim == 2:
+                fileNameIn = "input/quantum/boron2d.py"
+            else:
+                assert dim == 3
+                fileNameIn = "input/quantum/boron3d.py"
             options.dim = dim
             print "Dimension:", dim
         elif options.mesh:
