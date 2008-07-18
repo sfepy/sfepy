@@ -241,8 +241,8 @@ def solveEigenProblem1( conf, options ):
         elif options.boron:
             Z = 5
         if options.dim == 2:
-            E_exact = [-float(Z)**2/2/(n-0.5)**2/4 for n in [1]+[2]*3+[3]*4 +\
-                    [4]*6]
+            E_exact = [-float(Z)**2/2/(n-0.5)**2/4 for n in [1]+[2]*3+[3]*5 +\
+                    [4]*8 + [5]*15]
         elif options.dim == 3:
             E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
     if options.well:
