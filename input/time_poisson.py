@@ -4,8 +4,8 @@ fileName_mesh = 'database/simple.mesh'
 
 from sfepy.solvers.ts import TimeStepper
 t0 = 0.0
-t1 = 1.0
-nStep = 10
+t1 = 0.1
+nStep = 11
 ts = TimeStepper( t0, t1, None, nStep )
 
 material_2 = {

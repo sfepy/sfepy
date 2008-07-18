@@ -244,11 +244,14 @@ class Term( Struct ):
     ##
     # c: 24.07.2006, r: 04.07.2008
     def getStateNames( self, variables = None ):
+        """If variables are given, return only true unknowns whose data are of
+        the current time step (0)."""
         if variables is None:
             return copy( self.names.state )
         else:
             return [st for st in self.names.state
-                    if variables[st].kind == 'unknown']
+                    if (variables[st].kind == 'unknown') and
+                    (self.argSteps[st] == 0)]
             
     ##
     # 26.07.2007, c

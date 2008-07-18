@@ -309,6 +309,7 @@ class ProblemDefinition( Struct ):
     # 08.06.2007, c
     def advance( self, ts ):
         self.equations.advance( ts )
+        self.variables.advance( ts )
 
     ##
     # c: 01.03.2007, r: 23.06.2008
@@ -505,4 +506,4 @@ class ProblemDefinition( Struct ):
 
     def init_variables( self, state ):
         """Initialize variables with history."""
-        self.variables.init( state )
+        self.variables.init_state( state )

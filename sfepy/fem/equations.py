@@ -35,9 +35,17 @@ def parse_terms( regions, desc, itps ):
                                               sorted( termTable.keys() ))
             raise ValueError
         region = regions[td.region]
+        argNames = []
+        argSteps = {}
+        for name, step in td.args:
+            argNames.append( name )
+            argSteps[name] = step
+
         term = constructor( region, td.name, td.sign )
-        term.argNames, term.argSteps = zip( *td.args )
+        term.argNames = argNames
+        term.argSteps = argSteps
         term.integralName = td.integral
+
         terms.append( term )
 
     return terms

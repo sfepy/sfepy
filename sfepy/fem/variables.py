@@ -1,3 +1,5 @@
+from collections import deque
+
 from sfepy.base.base import *
 import sfepy.base.la as la
 from extmods.fem import rawGraph
@@ -820,6 +822,15 @@ class Variables( Container ):
             for ii in self.state:
                 yield self[ii]
 
+    def init_state( self, state ):
+        for var in self.iterState():
+            var.init_state( state, self.di.indx[var.name] )
+
+    def advance( self, ts ):
+        for var in self.iterState():
+            var.advance( ts )
+
+
 ##
 # 11.07.2006, c
 class Variable( Struct ):
@@ -827,7 +838,9 @@ class Variable( Struct ):
     def fromConf( key, conf, fields ):
         flags = set()
         kind, family = conf.kind.split()
+
         history = getDefaultAttr( conf, 'history', None )
+        assert (history is None) or (history in ['previous', 'full'])
 
         obj = Variable( flags, name = conf.name, key = key,
                         kind = kind, family = family, history = history )
@@ -874,9 +887,6 @@ class Variable( Struct ):
         return obj
     fromConf = staticmethod( fromConf )
 
-    ##
-    # 11.07.2006, c
-    # 04.08.2006
     def __init__( self, flags, data = None, indx = 0, **kwargs ):
         Struct.__init__( self, **kwargs )
 
@@ -884,18 +894,18 @@ class Variable( Struct ):
         for flag in flags:
             self.flags.add( flag )
 
-        self.data = data
+        self.data = deque()
+        self.data.append( data )
         self.indx = None
         self.nDof = None
         self.currentAp = None
+        self.step = None
 
         if self.isVirtual():
             self.data = None
 
-    ##
-    # 11.07.2006, c
-    def __call__( self ):
-        return (self.data, self.indx)
+    def __call__( self, step = 0 ):
+        return (self.data[step], self.indx)
 
     ##
     # 11.07.2006, c
@@ -927,21 +937,35 @@ class Variable( Struct ):
         return (isField in self.flags)\
                and not (self.isState() or self.isVirtual())
 
-    ##
-    # c: 11.07.2006, r: 04.02.2008
-    def dataFromState( self, state = None, indx = None ):
+    def init_state( self, state, indx ):
+        """Initialize data of variables with history."""
+        if self.history is None: return
+
+        self.data.append( None )
+        self.step = 0
+        self.dataFromState( state, indx, step = 0 )
+
+    def advance( self, ts ):
+        if self.history is None: return
+
+        self.step = ts.step + 1
+        if self.history == 'previous':
+            self.data.rotate()
+        else:
+            self.data.append( None )
+
+    def dataFromState( self, state = None, indx = None, step = 0 ):
+        """step: 0 = current,  """
         if (not self.isState()) or (state is None): return
 
-        self.data = state
         self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.nDof = indx.stop - indx.start
+        self.data[step] = state
 
-    ##
-    # c: 26.07.2006, r: 13.02.2008
-    def dataFromData( self, data = None, indx = None ):
+    def dataFromData( self, data = None, indx = None, step = 0 ):
         if (not self.isNonStateField()) or (data is None): return
 
-        self.data = data
+        self.data[step] = data
         if indx is None:
             self.indx = slice( 0, len( data ) )
         else:
@@ -1329,9 +1353,7 @@ class Variable( Struct ):
 
         return shape
 
-    ##
-    # 10.07.2007, c
-    def getStateInRegion( self, region, igs = None, reshape = True ):
+    def getStateInRegion( self, region, igs = None, reshape = True, step = 0 ):
         nods = region.getFieldNodes( self.field, merge = True, igs = igs )
 ##         print nods, len( nods )
 ##         pause()
@@ -1339,7 +1361,7 @@ class Variable( Struct ):
         for idof in range( self.dpn ):
             eq[idof::self.dpn] = self.dpn * nods + idof + self.indx.start
 
-        out = self.data[eq]
+        out = self.data[step][eq]
         if reshape:
             out.shape = (len( nods ), self.dpn)
 
@@ -1374,7 +1396,7 @@ class Variable( Struct ):
         indx = self.field.remap[cntVN[cntVN >= 0]]
         newdata = data[indx]
         return newdata
-
+        
 ## ##
 ## # 11.07.2006, c
 ## class FEVariable( Variable ):

@@ -88,9 +88,9 @@ def time_step_function( ts, state0, problem, data ):
     problem.timeUpdate( ts )
 
     if ts.step == 0:
+        problem.applyEBC( state0 )
         state = state0.copy()
         problem.initTime( ts )
-        problem.applyEBC( state )
 
         if problem.equations.caches:
             # Initialize caches.
@@ -126,8 +126,6 @@ def time_step_function( ts, state0, problem, data ):
 
     return state
 
-##
-# c: 13.06.2008, r: 13.06.2008
 def solveEvolutionaryOP( problem, options,
                          saveResults = True, returnHistory = False,
                          postProcessHook = None ):

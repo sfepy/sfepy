@@ -109,10 +109,9 @@ class MassScalarTerm( Term ):
         else:
             raise StopIteration
         
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def buildCFunArgs( self, state, ap, vg, **kwargs ):
-        vec, indx = state()
+        step = self.argSteps[state.name]
+        vec, indx = state( step = step )
         bf = ap.getBase( 'v', 0, self.integralName )
         return vec, indx.start, bf, vg, ap.econn
 
