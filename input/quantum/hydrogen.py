@@ -1,6 +1,6 @@
 # hydrogen atom
 
-def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
+def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
     assert dim in [2, 3]
     fileName_mesh = mesh
     options = {
@@ -98,7 +98,7 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5):
         'name' : 'eigen1',
         'kind' : 'eig.pysparse',
 
-        'tau' : -1.0,
+        'tau' : tau,
         'epsA' : 1e-5,
         'iMax' : 150,
         'method' : 'qmrs',
