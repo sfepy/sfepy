@@ -1,12 +1,12 @@
 #include "geomtrans.h"
 
 #undef __FUNC__
-#define __FUNC__ "gtr_crossProduct"
+#define __FUNC__ "gtr_cross_product"
 /*!
   @par Revision history:
   - 22.03.2002, c
 */
-int32 gtr_crossProduct( float64 obj[3], float64 obj1[3], float64 obj2[3] )
+int32 gtr_cross_product( float64 obj[3], float64 obj1[3], float64 obj2[3] )
 {
   obj[0] = obj1[1]*obj2[2]-obj1[2]*obj2[1];
   obj[1] = obj1[2]*obj2[0]-obj1[0]*obj2[2];
@@ -16,12 +16,12 @@ int32 gtr_crossProduct( float64 obj[3], float64 obj1[3], float64 obj2[3] )
 }
 
 #undef __FUNC__
-#define __FUNC__ "gtr_normalizeV3"
+#define __FUNC__ "gtr_normalize_v3"
 /*!
   @par Revision history:
   - 22.03.2002, c
 */
-int32 gtr_normalizeV3( float64 obj[3], float64 obj1[3] )
+int32 gtr_normalize_v3( float64 obj[3], float64 obj1[3] )
 {
   float64 norm;
 
@@ -39,12 +39,12 @@ int32 gtr_normalizeV3( float64 obj[3], float64 obj1[3] )
 }
 
 #undef __FUNC__
-#define __FUNC__ "gtr_dotV3"
+#define __FUNC__ "gtr_dot_v3"
 /*!
   @par Revision history:
   - 08.06.2006, c
 */
-int32 gtr_dotV3( float64 *p_val, float64 obj1[3], float64 obj2[3] )
+int32 gtr_dot_v3( float64 *p_val, float64 obj1[3], float64 obj2[3] )
 {
   *p_val = obj1[0] * obj2[0] + obj1[1] * obj2[1] + obj1[2] * obj2[2];
 

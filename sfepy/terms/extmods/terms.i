@@ -55,7 +55,7 @@
     (FMField *state_qp)
 };
 
-%apply (int32 *array, int32 nRow, int32 nCol) {
+%apply (int32 *array, int32 n_row, int32 n_col) {
     (int32 *conn, int32 nEl, int32 nEP),
     (int32 *conn_u, int32 nEl_u, int32 nEP_u),
     (int32 *conn_w, int32 nEl_w, int32 nEP_w),

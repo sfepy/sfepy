@@ -21,7 +21,7 @@ int32 fmf_alloc( FMField *obj, int32 nCell, int32 nLev,
   obj->nCol = nCol;
   obj->cellSize = obj->nLev * obj->nRow * obj->nCol;
   obj->nAlloc = obj->nCell * obj->cellSize;
-  obj->val0 = obj->val = allocMem( float64, obj->nAlloc );
+  obj->val0 = obj->val = alloc_mem( float64, obj->nAlloc );
 
   obj->nColFull = obj->nCol;
   obj->offset = 0;
@@ -39,7 +39,7 @@ int32 fmf_alloc( FMField *obj, int32 nCell, int32 nLev,
 int32 fmf_createAlloc( FMField **p_obj, int32 nCell, int32 nLev,
 		       int32 nRow, int32 nCol )
 {
-  *p_obj = allocMem( FMField, 1 );
+  *p_obj = alloc_mem( FMField, 1 );
   fmf_alloc( *p_obj, nCell, nLev, nRow, nCol );
 
   return( RET_OK );
@@ -82,7 +82,7 @@ int32 fmf_free( FMField *obj )
   if (obj == 0) return( RET_OK );
 
   if (obj->nAlloc >= 0) {
-    freeMem( obj->val0 );
+    free_mem( obj->val0 );
   } else {
     errput( ErrHead "FMField was pretended\n" );
   }
@@ -101,7 +101,7 @@ int32 fmf_freeDestroy( FMField **p_obj )
   if ((*p_obj) == 0) return( RET_OK );
 
   fmf_free( *p_obj );
-  freeMem( *p_obj );
+  free_mem( *p_obj );
 
   return( RET_OK );
 }

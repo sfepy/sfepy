@@ -19,7 +19,7 @@
   (FMField *mtx),
   (FMField *mtxInEls)
 };
-%apply (int32 *array, int32 nRow, int32 nCol) {
+%apply (int32 *array, int32 n_row, int32 n_col) {
   (int32 *conn, int32 nEl, int32 nEP),
   (int32 *connR, int32 nElR, int32 nEPR),
   (int32 *connC, int32 nElC, int32 nEPC)
@@ -60,12 +60,12 @@ int32 assembleMatrix( FMField *mtx,
   }
 
   nGr = PyList_Size( $input );
-  tnEl = allocMem( int32, nGr );
-  tnEP = allocMem( int32, nGr );
-  tconn = allocMem( int32 *, nGr );
+  tnEl = alloc_mem( int32, nGr );
+  tnEP = alloc_mem( int32, nGr );
+  tconn = alloc_mem( int32 *, nGr );
   for (ig = 0; ig < nGr; ig++) {
     aux = PyList_GetItem( $input, ig );
-    obj = helper_getCArrayObject( aux, PyArray_INT32, 0, 0 );
+    obj = helper_get_c_array_object( aux, PyArray_INT32, 0, 0 );
     if (!obj) return NULL;
     tnEl[ig] = obj->dimensions[0];
     tnEP[ig] = obj->dimensions[1];
@@ -78,9 +78,9 @@ int32 assembleMatrix( FMField *mtx,
   $3 = tconn;
 };
 %typemap( freearg ) (int32 *nEl, int32 *nEP, int32 **conn) {
-  freeMem( $1 );
-  freeMem( $2 );
-  freeMem( $3 );
+  free_mem( $1 );
+  free_mem( $2 );
+  free_mem( $3 );
 }
 
 %apply (int32 *nEl, int32 *nEP, int32 **conn) {
@@ -93,10 +93,10 @@ int32 assembleMatrix( FMField *mtx,
   (int32 *p_nnz, int32 **p_icol)
 };
 
-int32 rawGraph( int32 *p_nRow, int32 **p_prow,
-		int32 *p_nnz, int32 **p_icol,
-		int32 nRow, int32 nCol, int32 nGr,
-		int32 *nElR, int32 *nEPR, int32 **connR,
-		int32 *nElC, int32 *nEPC, int32 **connC );
+int32 raw_graph( int32 *p_nRow, int32 **p_prow,
+		 int32 *p_nnz, int32 **p_icol,
+		 int32 nRow, int32 nCol, int32 nGr,
+		 int32 *nElR, int32 *nEPR, int32 **connR,
+		 int32 *nElC, int32 *nEPC, int32 **connC );
 
 #endif

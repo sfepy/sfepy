@@ -37,7 +37,7 @@
   - 17.02.2005, c
 */
 %{
-PyObject *helper_appendToTuple( PyObject *where, PyObject *what ) {
+PyObject *helper_append_to_tuple( PyObject *where, PyObject *what ) {
   PyObject *o2, *o3;
 
   if ((!where) || (where == Py_None)) {
@@ -93,7 +93,7 @@ PyObject *helper_appendToTuple( PyObject *where, PyObject *what ) {
   PyObject *o;
 
   o = PyInt_FromLong( *$1 );
-  $result = helper_appendToTuple( $result, o );
+  $result = helper_append_to_tuple( $result, o );
 }
 
 /*!
@@ -111,7 +111,7 @@ PyObject *helper_appendToTuple( PyObject *where, PyObject *what ) {
   PyObject *o;
 
   o = PyInt_FromLong( *$1 );
-  $result = helper_appendToTuple( $result, o );
+  $result = helper_append_to_tuple( $result, o );
 }
 
 /*!
@@ -127,7 +127,7 @@ PyObject *helper_appendToTuple( PyObject *where, PyObject *what ) {
   - 06.03.2005, c
 */
 %typemap( argout ) PyObject **p_PyObject_argout {
-  $result = helper_appendToTuple( $result, *$1 );
+  $result = helper_append_to_tuple( $result, *$1 );
 }
 
 void errclear();
