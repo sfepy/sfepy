@@ -24,8 +24,6 @@ usage = """%prog [options] file_name_in"""
 help = {
     'file_name' :
     'basename of output file(s) [default: <basename of input file>]',
-    'dump' :
-    "dump problem state [default: %default]",
     'save_ebc' :
     "save problem state showing EBC (Dirichlet conditions) [default: %default]",
     'save_regions' :
@@ -41,8 +39,6 @@ help = {
     "list data according to what, what can be one of: terms",
 }
 
-##
-# c: 12.01.2007, r: 02.04.2008
 def main():
     version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -51,9 +47,6 @@ def main():
     parser.add_option( "-o", "", metavar = 'file_name',
                        action = "store", dest = "output_file_name_trunk",
                        default = None, help = help['file_name'] )
-    parser.add_option( "", "--dump",
-                       action = "store_true", dest = "dump",
-                       default = False, help = help['dump'] )
     parser.add_option( "", "--save-ebc",
                        action = "store_true", dest = "save_ebc",
                        default = False, help = help['save_ebc'] )

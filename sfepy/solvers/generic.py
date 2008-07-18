@@ -217,15 +217,4 @@ def solve_direct( conf, options ):
         state, data = solve_stationary_op( pb, options,
                                          post_process_hook = post_process_hook )
 
-        if options.dump:
-            import tables as pt
-            import numarray as nar
-
-            fd = pt.openFile( ofn_trunk + '.h5', mode = 'w',
-                              title = "Dump file" )
-            for key, val in out.iteritems():
-                fd.createArray( fd.root, key, nar.asarray( val.data ), 
-                                '%s data' % val.mode )
-            fd.close()
-
     return pb, state, data
