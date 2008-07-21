@@ -154,12 +154,12 @@ typedef struct VolumeGeometry {
     @par Revision history:
     - 09.01.2006, c
   */
-  int32 getElementDiameters( FMField *out,
-			     int32 *edges, int32 edges_nRow, int32 edges_nCol,
-			     float64 *coorIn, int32 nNod, int32 dim,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow,
-			     int32 mode ) {
+  int32 get_element_diameters( FMField *out,
+			       int32 *edges, int32 edges_nRow, int32 edges_nCol,
+			       float64 *coorIn, int32 nNod, int32 dim,
+			       int32 *conn, int32 nEl, int32 nEP,
+			       int32 *elList, int32 elList_nRow,
+			       int32 mode ) {
     return( vg_getElementDiameters( self, out,
 				    edges, edges_nRow, edges_nCol,
 				    coorIn, nNod, dim,
@@ -206,7 +206,7 @@ typedef struct SurfaceGeometry {
     @par Revision history:
     - 04.05.2007, c
   */
-  int32 allocExtraData( int32 nEP  ) {
+  int32 alloc_extra_data( int32 nEP  ) {
     fmf_createAlloc( &(self->bfBGM), self->nFa, self->nQP, self->dim, nEP );
     return( RET_OK );
   }
@@ -314,8 +314,8 @@ typedef struct SurfaceGeometry {
     @par Revision history:
     - 01.11.2007, c
   */
-  int32 integrateChunk( FMField *out, FMField *in,
-			int32 *elList, int32 elList_nRow ) {
+  int32 integrate_chunk( FMField *out, FMField *in,
+			 int32 *elList, int32 elList_nRow ) {
     return( sg_integrateChunk( self, out, in, elList, elList_nRow ) );
   }
 
@@ -323,10 +323,10 @@ typedef struct SurfaceGeometry {
     @par Revision history:
     - 04.05.2007, c
   */
-  int32 evaluateBFBGM( FMField *bfBGR,
-		       float64 *coorIn, int32 nNod, int32 dim,
-		       int32 *fis, int32 nFa, int32 nFP,
-		       int32 *conn, int32 nEl, int32 nEP ) {
+  int32 evaluate_bfbgm( FMField *bfBGR,
+			float64 *coorIn, int32 nNod, int32 dim,
+			int32 *fis, int32 nFa, int32 nFP,
+			int32 *conn, int32 nEl, int32 nEP ) {
     return( sg_evaluateBFBGM( self, bfBGR, coorIn, nNod, dim,
 			      fis, nFa, nFP, conn, nEl, nEP ) );
   }

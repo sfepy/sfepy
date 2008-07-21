@@ -799,8 +799,6 @@ class HDF5MeshIO( MeshIO ):
     _rubbish = ''.join( [ch for ch in set( _all ) - set( _letters )] )
     _tr = string.maketrans( _rubbish, '_' * len( _rubbish ) )
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def read( self, mesh, **kwargs ):
         fd = pt.openFile( self.file_name, mode = "r" )
 
@@ -816,7 +814,7 @@ class HDF5MeshIO( MeshIO ):
         mat_ids = []
         for ig in xrange( n_gr ):
             gr_name = 'group%d' % ig
-            group = mesh_group._f_get_child( gr_name )
+            group = mesh_group._f_getChild( gr_name )
             conns.append( group.conn.read() )
             mat_ids.append( group.mat_id.read() )
             descs.append( group.desc.read() )
@@ -826,8 +824,6 @@ class HDF5MeshIO( MeshIO ):
 
         return mesh
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def write( self, file_name, mesh, out = None, ts = None ):
         from time import asctime
 
@@ -903,13 +899,11 @@ class HDF5MeshIO( MeshIO ):
             step_group._v_attrs.name_dict = name_dict
             fd.root.last_step[0] = step
 
-            fd.remove_node( fd.root.tstat.finished )
+            fd.removeNode( fd.root.tstat.finished )
             fd.createArray( fd.root.tstat, 'finished', asctime(),
                             'file closing time' )
             fd.close()
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def read_time_stepper( self, file_name = None ):
         file_name = get_default( file_name, self.file_name )
         fd = pt.openFile( file_name, mode = "r" )
@@ -920,15 +914,13 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
         return out
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def _get_step_group( self, step, file_name = None ):
         file_name = get_default( file_name, self.file_name )
         fd = pt.openFile( file_name, mode = "r" )
 
         gr_name = 'step%d' % step
         try:
-            step_group = fd.get_node( fd.root, gr_name )
+            step_group = fd.getNode( fd.root, gr_name )
         except:
             output( 'step %d data not found - premature end of file?' % step )
             fd.close()
@@ -936,8 +928,6 @@ class HDF5MeshIO( MeshIO ):
 
         return fd, step_group
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def read_data( self, step, file_name = None ):
         fd, step_group = self._get_step_group( step, file_name = file_name )
         if fd is None: return None
@@ -956,8 +946,6 @@ class HDF5MeshIO( MeshIO ):
 
         return out
 
-    ##
-    # c: 26.09.2006, r: 23.06.2008
     def read_data_header( self, dname, step = 0, file_name = None ):
         fd, step_group = _get_step_group( step, file_name = file_name )
         if fd is None: return None
@@ -973,8 +961,6 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
         raise KeyError, 'non-existent data: %s' % dname
 
-    ##
-    # c: 27.09.2006, r: 23.06.2008
     def read_time_history( self, node_name, indx, file_name = None ):
         file_name = get_default( file_name, self.file_name )
         fd = pt.openFile( file_name, mode = "r" )
@@ -983,8 +969,8 @@ class HDF5MeshIO( MeshIO ):
         for step in xrange( fd.root.last_step[0] + 1 ):
             gr_name = 'step%d' % step
 
-            step_group = fd.get_node( fd.root, gr_name )
-            data = step_group._f_get_child( node_name ).data
+            step_group = fd.getNode( fd.root, gr_name )
+            data = step_group._f_getChild( node_name ).data
 
             for ii in indx:
                 th[ii].append( nm.array( data[ii] ) )
@@ -999,8 +985,6 @@ class HDF5MeshIO( MeshIO ):
 
         return th
 
-    ##
-    # c: 14.06.2007, r: 23.06.2008
     def read_variables_time_history( self, var_names, ts, file_name = None ):
         file_name = get_default( file_name, self.file_name )
         fd = pt.openFile( file_name, mode = "r" )
@@ -1012,11 +996,11 @@ class HDF5MeshIO( MeshIO ):
         arr = nm.asarray
         for step in xrange( ts.n_step ):
             gr_name = 'step%d' % step
-            step_group = fd.get_node( fd.root, gr_name )
+            step_group = fd.getNode( fd.root, gr_name )
 
             name_dict = step_group._v_attrs.name_dict
             for var_name in var_names:
-                data = step_group._f_get_child( name_dict[var_name] ).data
+                data = step_group._f_getChild( name_dict[var_name] ).data
                 ths[var_name].append( arr( data ) )
 
         fd.close()

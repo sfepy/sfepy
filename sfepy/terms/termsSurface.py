@@ -34,8 +34,6 @@ class LinearTractionTerm( Term ):
         Term.__init__( self, region, name, sign, terms.dw_surface_ltr )
         self.dof_conn_type = 'surface'
 
-    ##
-    # c: 05.09.2006, r: 15.01.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
         Should work in scalar, vector and tensor modes (tensor probably broken).
@@ -43,15 +41,17 @@ class LinearTractionTerm( Term ):
         """
         traction, virtual = self.get_args( **kwargs )
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+                                                     self.region.name )
         if diff_var is None:
-            shape = (chunk_size, 1, sg.dim * sg.n_fp, 1)
+            shape = (chunk_size, 1, dim * n_fp, 1)
         else:
             raise StopIteration
 
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base( sd.face_type, 0, self.integral_name )
         gbf = ap.get_base( sd.face_type, 0, self.integral_name,
-                          from_geometry = True )
+                           from_geometry = True )
 
         traction = fix_traction_shape( traction, sd.nodes.shape[0] )
 ##        sg.str( sys.stdout, 0 )
@@ -61,7 +61,7 @@ class LinearTractionTerm( Term ):
 ##         if ap.bf[sd.face_type].shape != gbf.shape:
 ##             raise NotImplementedError, 'tractions on P1 edges only!'
         n_ep = gbf.shape[2]
-        leconn = sd.leconn[:,:nEP].copy()
+        leconn = sd.leconn[:,:n_ep].copy()
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
 #            print out.shape, lchunk.shape

@@ -101,8 +101,6 @@ def read_list( fd, n_item, dtype ):
 
     return vals
 
-##
-# 27.09.2006, c
 def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
 
     if level == 0:
@@ -121,8 +119,6 @@ def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
     if level == 0:
         fd.close()
 
-##
-# 09.07.2007, c
 def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
     out = {}
 
@@ -132,11 +128,11 @@ def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
 
     for name, gr in group._v_groups.iteritems():
 #        print level * ' ', gr, '->', group
-        name = name.replace( '_', '' )
+        name = name.replace( '_', '', 1 )
         out[name] = read_dict_hdf5( file_name, level + 1, gr, fd )
 
     for name, data in group._v_leaves.iteritems():
-        name = name.replace( '_', '' )
+        name = name.replace( '_', '', 1 )
         out[name] = data.read()
 
     if level == 0:
