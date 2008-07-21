@@ -187,10 +187,10 @@ def femlabsurface(f,n,points):
     return s
 
 
-def write_femlab(g,filename, export0d=False, export1d=False, export2d=False,
-    export3d=False):
-    if not export1d and not export2d and not export3d and not export3d:
-        export3d=True
+def write_femlab(g,filename, export0D=False, export1D=False, export2D=False,
+    export3D=False):
+    if not export1D and not export2D and not export3D and not export3D:
+        export3D=True
     head="""\
 flclear fem
 
@@ -264,12 +264,12 @@ fem=multiphysics(fem);
 """
     s=""
     objs=[]
-    if export0d:
+    if export0D:
         for x in g.d0.values():
             assert isinstance(x,geom.point)
             s+="p%d=point3(%s)\n"%(x.getn(),x.getstr())
             objs.append("p%d"%x.getn())
-    if export1d:
+    if export1D:
         for x in g.d1.values():
             if isinstance(x,geom.line):
                 p=x.getpoints()
@@ -284,7 +284,7 @@ fem=multiphysics(fem);
                 print "Warning: unknown element ",type(x)
                 continue
             objs.append("l%d"%x.getn())
-    if export2d or export3d:
+    if export2D or export3D:
         for x in g.d2.values():
             if isinstance(x,geom.planesurface):
                 p=x.getpoints()
@@ -297,9 +297,9 @@ fem=multiphysics(fem);
             else:
                 print "Warning: unknown element ",type(x)
                 continue
-            if export2d: 
+            if export2D: 
                 objs.append("f%s"%x.getn())
-    if export3d:
+    if export3D:
         for x in g.d3.values():
             if isinstance(x,geom.volume):
                 p=x.getsurfaces()

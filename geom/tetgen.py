@@ -40,7 +40,7 @@ def write_tetgen(g,filename):
         for hole in x.getholepoints():
             h.append([map[y.getn()] for y in hole])
             pts.append(getinsidepoint(hole).getxyz())
-        bc=g.get_b_cnum(x.getn())
+        bc=g.getBCnum(x.getn())
         facets.append((p,bc,h,pts))
     # # of facets, boundary markers=yes
     s+="\n%d 1\n"%len(facets)
@@ -122,7 +122,7 @@ def read_tetgen(fname,verbose=True):
             assert l[0]==len(els)
             if verbose: up.update(l[0])
         return els,regions,linear
-    def get_b_cfaces(ffaces,up):
+    def getBCfaces(ffaces,up):
         f=file(ffaces)
         l=[int(x) for x in f.readline().split()]
         nfaces,nattrib=l
@@ -173,7 +173,7 @@ def read_tetgen(fname,verbose=True):
         #tetgen doesn't compute xyz coordinates of the aditional 6 nodes
         #(only of the 4 corner nodes) in tetrahedra.
         calculatexyz(m.nodes,m.elements)
-    m.faces=get_b_cfaces(fname+".face",progressbar.MyBar("        BC:"))
+    m.faces=getBCfaces(fname+".face",progressbar.MyBar("        BC:"))
     return m
 
 def runtetgen(filename,a=None,Q=None,quadratic=False,verbose=True,
@@ -188,9 +188,9 @@ def runtetgen(filename,a=None,Q=None,quadratic=False,verbose=True,
     """
     import pexpect
     if not refine:
-        cmd = "%s -p_q_aq" % (tetgenpath)
+        cmd = "%s -pQAq" % (tetgenpath)
     else:
-        cmd = "%s -r_q_aq" % (tetgenpath)
+        cmd = "%s -rQAq" % (tetgenpath)
     if Q!=None:
         cmd=cmd+"%f"%Q
     if a!=None and not refine:
@@ -203,12 +203,12 @@ def runtetgen(filename,a=None,Q=None,quadratic=False,verbose=True,
     if verbose: print "Generating mesh using", cmd
     p=pexpect.spawn(cmd,timeout=None)
     if not refine:
-        p.expect("_opening %s."%(filename))
+        p.expect("Opening %s."%(filename))
     else:
-        p.expect("_opening %s.node.\r\n"%(filename))
-        p.expect("_opening %s.ele.\r\n"%(filename))
-        p.expect("_opening %s.face.\r\n"%(filename))
-        p.expect("_opening %s.vol."%(filename))
+        p.expect("Opening %s.node.\r\n"%(filename))
+        p.expect("Opening %s.ele.\r\n"%(filename))
+        p.expect("Opening %s.face.\r\n"%(filename))
+        p.expect("Opening %s.vol."%(filename))
     assert p.before==""
     p.expect(pexpect.EOF)
     if p.before!="\r\n":

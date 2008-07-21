@@ -50,7 +50,7 @@ class geometry(object):
         "volumelist=[v1,v2,v3,...]"
         o=physicalvolume(self,n,volumelist)
         self.phys3[o.getn()]=o
-    def get_b_cnum(self,snum):
+    def getBCnum(self,snum):
         for x in self.phys2:
             if snum in self.phys2[x].surfaces:
                 return x

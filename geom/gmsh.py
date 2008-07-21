@@ -1,8 +1,8 @@
 import math
 
 from pyparsing import Word, Optional, alphas, nums, Combine, Literal, \
-CaselessLiteral, LineEnd, Group, Dict, OneOrMore, StringEnd, rest_of_line, \
-ParseException, one_of, Forward, alphanums, Keyword, SkipTo, ZeroOrMore
+CaselessLiteral, LineEnd, Group, Dict, OneOrMore, StringEnd, restOfLine, \
+ParseException, oneOf, Forward, alphanums, Keyword, SkipTo, ZeroOrMore
 
 import geometry as geom
 
@@ -68,7 +68,7 @@ def read_gmsh(filename):
             Word(alphanums)+eq+fnum+semi
             )
 
-    comment = Group( Literal("//")+rest_of_line).suppress()
+    comment = Group( Literal("//")+restOfLine).suppress()
 
     command = point | line | lineloop | circle | planesurface | ruledsurface | \
             surfaceloop | volume | physicalsurface | physicalvolume | comment \
@@ -77,7 +77,7 @@ def read_gmsh(filename):
     grammar= OneOrMore(command)+StringEnd()
 
     try:
-        tokens= grammar.parse_file(filename)
+        tokens= grammar.parseFile(filename)
     except ParseException, err:
         print err.line
         print " "*(err.column-1) + "^"

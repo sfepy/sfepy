@@ -4,7 +4,7 @@ def define():
     l = common(dim=3, n_eigs=20, tau=0.0)
     return l
 
-def funV( ts, coor, region, ig, mode = None ):
+def fun_v( ts, coor, region, ig, mode = None ):
     from numpy import zeros_like
 
     out = {}
