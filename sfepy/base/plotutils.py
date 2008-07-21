@@ -3,7 +3,7 @@ from base import *
 try:
     import pylab
     import matplotlib as mpl
-except ImportError:
+except (ImportError, RuntimeError):
     pylab = None
     print 'matplotlib import failed!'
 
