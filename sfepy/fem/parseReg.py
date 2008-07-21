@@ -7,22 +7,22 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
      Group, Optional, ZeroOrMore, nums, alphas, alphanums,\
      Combine, StringStart, StringEnd, Forward, oneOf, ParseException
 
-opCodes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
+op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
-evalCodes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_ONIR', 'E_NI']
-kwCodes = ['KW_All', 'KW_Region']
+eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_ONIR', 'E_NI']
+kw_codes = ['KW_All', 'KW_Region']
 
 ##
 # 11.05.2006, c
-def toStack( stack ):
-    def pushFirst( str, loc, toks ):
+def to_stack( stack ):
+    def push_first( str, loc, toks ):
         if toks:
 #            print stack
             stack.append( toks[0] )
 #            print toks, '->', stack
 #            print ''
         return toks
-    return pushFirst
+    return push_first
 
 ##
 # 14.06.2006, c
@@ -38,42 +38,42 @@ def replace( what, keep = False ):
 
 ##
 # 02.05.2007, c
-def replaceWithRegion( what, rIndex ):
+def replace_with_region( what, r_index ):
     def _replace( str, loc, toks ):
         ret = {'token' : what, 'orig' : []}
 
         orig = toks[0]
-        rOrig = orig[rIndex]
-        if isinstance( rOrig, dict ) and (rOrig['token'] == 'KW_Region'):
-            orig = list( orig[:rIndex] ) + rOrig['orig']
+        r_orig = orig[r_index]
+        if isinstance( r_orig, dict ) and (r_orig['token'] == 'KW_Region'):
+            orig = list( orig[:r_index] ) + r_orig['orig']
         ret['orig'] = orig
         return ret
     return _replace
 
 ##
 # 14.06.2006, c
-def joinTokens( str, loc, toks ):
+def join_tokens( str, loc, toks ):
 #    print toks
     return [" ".join( toks[0] )]
 
 ##
 # 14.06.2006, c
-def visitStack( stack, opVisitor, leafVisitor ):
+def visit_stack( stack, op_visitor, leaf_visitor ):
 
     def visit( stack, level ):
         op = stack.pop()
 
         token = op['token']
-        if token in opCodes:
+        if token in op_codes:
             res2 = visit( stack, level + 1 )
             res1 = visit( stack, level + 1 )
-            return opVisitor( level, op, res1, res2 )
+            return op_visitor( level, op, res1, res2 )
 
-        elif token in evalCodes:
-            return leafVisitor( level, op )
+        elif token in eval_codes:
+            return leaf_visitor( level, op )
 
-        elif token in kwCodes:
-            return leafVisitor( level, op )
+        elif token in kw_codes:
+            return leaf_visitor( level, op )
 
         else:
             raise ValueError, token
@@ -83,22 +83,22 @@ def visitStack( stack, opVisitor, leafVisitor ):
 
 ##
 # 14.06.2006, c
-def printOp( level, op, item1, item2 ):
+def print_op( level, op, item1, item2 ):
     print level * '  ' + (': %s' % op)
 
 ##
 # 14.06.2006, c
-def printLeaf( level, op ):
+def print_leaf( level, op ):
     print level * '  ' + ('< %s' % op)
 
 ##
 # 14.06.2006, c
-def printStack( stack ):
-    visitStack( stack, printOp, printLeaf )
+def print_stack( stack ):
+    visit_stack( stack, print_op, print_leaf )
 
 ##
 # c: 13.06.2006, r: 14.07.2008
-def createBNF( stack ):
+def create_bnf( stack ):
     point = Literal( "." )
     e = CaselessLiteral( "E" )
     inumber = Word( nums )
@@ -128,14 +128,14 @@ def createBNF( stack ):
     group = Literal( 'group' )
     surface = Literal( 'surface' )
     variable = Word( 'xyz', max = 1 ) | Literal( 'domain' )
-    anyVar = Word( alphas + '_', alphanums + '_' ) | fnumber
+    any_var = Word( alphas + '_', alphanums + '_' ) | fnumber
 
     args = delimitedList( variable, combine = True )\
-           + ZeroOrMore( Literal( ',' ) + anyVar )
+           + ZeroOrMore( Literal( ',' ) + any_var )
 
     function = Word( alphas, alphanums + '_' )\
                + Literal( '(' ) + Optional( args ) + Literal( ')' )
-    function = Group( function ).setParseAction( joinTokens )
+    function = Group( function ).setParseAction( join_tokens )
 
     region = Combine( Literal( 'r.' ) + Word( alphas, '_' + alphas + nums ) )
     region = Group( Optional( _copy, default = 'nocopy' ) + region )
@@ -144,13 +144,13 @@ def createBNF( stack ):
     coor = oneOf( 'x y z' )
     boolop = oneOf( '& |' )
     relop = oneOf( '< > <= >= != ==' )
-    boolTerm = ZeroOrMore( '(' ) + (coor | fnumber ) + relop + (coor | fnumber)\
+    bool_term = ZeroOrMore( '(' ) + (coor | fnumber ) + relop + (coor | fnumber)\
                + ZeroOrMore( ')' )
     relation = Forward()
     relation << ZeroOrMore( '(' )\
-             + boolTerm + ZeroOrMore( boolop + relation )\
+             + bool_term + ZeroOrMore( boolop + relation )\
              + ZeroOrMore( ')' )
-    relation = Group( relation ).setParseAction( joinTokens )
+    relation = Group( relation ).setParseAction( join_tokens )
 
     nos = Group( nodes + _of + surface ).setParseAction( replace( 'E_NOS' ) )
     nir = Group( nodes + _in + relation ).setParseAction( \
@@ -162,29 +162,29 @@ def createBNF( stack ):
     eog = Group( elements + _of + group + Word( nums ) ).setParseAction( \
         replace( 'E_EOG', keep = True ) )
     onir = Group( node + _in + region ).setParseAction( \
-        replaceWithRegion( 'E_ONIR', 2 ) )
+        replace_with_region( 'E_ONIR', 2 ) )
     ni = Group( node + inumber ).setParseAction( \
         replace( 'E_NI', keep = True ) )
 
-    regionExpression = Forward()
+    region_expression = Forward()
 
     atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog)
-    atom1.setParseAction( toStack( stack ) )
-    atom2 = (lpar + regionExpression.suppress() + rpar)
+    atom1.setParseAction( to_stack( stack ) )
+    atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)
 
-    aux = (regop + regionExpression)
-    aux.setParseAction( toStack( stack ) )
-    regionExpression << atom + ZeroOrMore( aux )
-    regionExpression = StringStart() + regionExpression + StringEnd()
+    aux = (regop + region_expression)
+    aux.setParseAction( to_stack( stack ) )
+    region_expression << atom + ZeroOrMore( aux )
+    region_expression = StringStart() + region_expression + StringEnd()
 
-#    region.setDebug()
-#    relation.setDebug()
-#    regionExpression.setDebug()
+#    region.set_debug()
+#    relation.set_debug()
+#    region_expression.set_debug()
 
-    return regionExpression
+    return region_expression
 
-_testStrs = ['nodes of surface -n r.egion_1',
+_test_strs = ['nodes of surface -n r.egion_1',
              'r.egion_2 +n copy r.egion_1',
              'nodes in (y <= 0.00001) & (x < 0.11)',
              'nodes in ((y <= 0.00001) & (x < 0.11))',
@@ -206,24 +206,24 @@ _testStrs = ['nodes of surface -n r.egion_1',
              'elements by afun( domain )']
 
 if __name__ == "__main__":
-    testStrs = _testStrs
+    test_strs = _test_strs
 
     stack = []
-    bnf = createBNF( stack )
+    bnf = create_bnf( stack )
 
-    nFail = 0
-    for testStr in testStrs:
-        print testStr
+    n_fail = 0
+    for test_str in test_strs:
+        print test_str
         stack[:] = []
 
         try:
-            out = bnf.parseString( testStr )
+            out = bnf.parseString( test_str )
 #            print out
 #            print stack
         except:
             print '...failed!'
-            nFail += 1
+            n_fail += 1
             continue
 
-        printStack( stack )
-    print 'failed: %d' % nFail
+        print_stack( stack )
+    print 'failed: %d' % n_fail

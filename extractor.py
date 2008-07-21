@@ -8,43 +8,43 @@ from sfepy.base.base import *
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
-from sfepy.base.ioutils import getTrunk, writeDictHDF5
+from sfepy.base.ioutils import get_trunk, write_dict_hdf5
 
 ##
 # c: 26.09.2006, r: 09.07.2008
-def dumpToVTK( fileName, options, steps = None ):
+def dump_to_vtk( file_name, options, steps = None ):
     output( 'dumping to VTK...' )
     
-    mesh = Mesh.fromFile( fileName )
+    mesh = Mesh.from_file( file_name )
 
-    io = HDF5MeshIO( fileName )
-    ts = TimeStepper( *io.readTimeStepper() )
+    io = HDF5MeshIO( file_name )
+    ts = TimeStepper( *io.read_time_stepper() )
 
-    if options.outputFileNameTrunk:
-        ofnTrunk = options.outputFileNameTrunk
+    if options.output_file_name_trunk:
+        ofn_trunk = options.output_file_name_trunk
     else:
-        ofnTrunk = getTrunk( fileName )
+        ofn_trunk = get_trunk( file_name )
 
     if steps is None:
-        iterator = ts.iterFrom( options.step0 )
+        iterator = ts.iter_from( options.step0 )
     else:
         iterator = [(step, ts.times[step]) for step in steps]
 
     for step, time in iterator:
-        output( ts.format % (step, ts.nStep - 1) )
-        out = io.readData( step )
+        output( ts.format % (step, ts.n_step - 1) )
+        out = io.read_data( step )
         if out is None: break
-        mesh.write( ofnTrunk + ts.suffix % step, io = 'auto', out = out )
+        mesh.write( ofn_trunk + ts.suffix % step, io = 'auto', out = out )
 
     output( '...done' )
     return ts.suffix
 
 ##
 # c: 26.09.2006, r: 23.06.2008
-def extractTimeHistory( fileName, options ):
+def extract_time_history( file_name, options ):
     output( 'extracting selected data...' )
 
-    el = options.extractList
+    el = options.extract_list
     output( 'extraction list:', el )
 
     ##
@@ -59,22 +59,22 @@ def extractTimeHistory( fileName, options ):
 
     ##
     # Verify array limits, set igs for element data, shift indx.
-    mesh = Mesh.fromFile( fileName )
-    nEl, nEls, offs = mesh.nEl, mesh.nEls, mesh.elOffsets
+    mesh = Mesh.from_file( file_name )
+    n_el, n_els, offs = mesh.n_el, mesh.n_els, mesh.el_offsets
     for pe in pes:
         if pe.mode == 'n':
             for ii in pe.indx:
-                if (ii < 0) or (ii >= mesh.nNod):
+                if (ii < 0) or (ii >= mesh.n_nod):
                     raise IndexError, 'node index 0 <= %d < %d'\
-                          % (ii, mesh.nNod)
+                          % (ii, mesh.n_nod)
 
         if pe.mode == 'e':
             pe.igs = []
             for ii, ie in enumerate( pe.indx[:] ):
-                if (ie < 0) or (ie >= nEl):
+                if (ie < 0) or (ie >= n_el):
                     raise IndexError, 'element index 0 <= %d < %d'\
-                          % (ie, nEl)
-                ig = (ie < nEls).argmax()
+                          % (ie, n_el)
+                ig = (ie < n_els).argmax()
                 pe.igs.append( ig )
                 pe.indx[ii] = ie - offs[ig]
 
@@ -83,21 +83,21 @@ def extractTimeHistory( fileName, options ):
     ##
     # Extract data.
     # Assumes only one element group (ignores igs)!
-    io = HDF5MeshIO( fileName )
+    io = HDF5MeshIO( file_name )
     ths = {}
     for pe in pes:
-        mode, nname = io.readDataHeader( pe.var )
+        mode, nname = io.read_data_header( pe.var )
         print mode, nname
         if ((pe.mode == 'n' and mode == 'vertex') or
             (pe.mode == 'e' and mode == 'cell')):
-            th = io.readTimeHistory( nname, pe.indx )
+            th = io.read_time_history( nname, pe.indx )
 
         elif pe.mode == 'e' and mode == 'vertex':
             conn = mesh.conns[0]
             th = {}
             for iel in pe.indx:
                 ips = conn[iel]
-                th[iel] = io.readTimeHistory( nname, ips )
+                th[iel] = io.read_time_history( nname, ips )
         else:
             raise RuntimeError, 'cannot extract cell data %s in nodes' % pe.var
             
@@ -106,9 +106,9 @@ def extractTimeHistory( fileName, options ):
 
 ##
 # 27.09.2006, c
-def averageVertexVarInCells( thsIn ):
-    ths = dict.fromkeys( thsIn.keys() )
-    for var, th in thsIn.iteritems():
+def average_vertex_var_in_cells( ths_in ):
+    ths = dict.fromkeys( ths_in.keys() )
+    for var, th in ths_in.iteritems():
         aux = dict.fromkeys( th.keys() )
         for ir, data in th.iteritems():
             if isinstance( data, dict ):
@@ -124,10 +124,10 @@ def averageVertexVarInCells( thsIn ):
 
     return ths
 
-usage = """%prog [options] fileNameIn"""
+usage = """%prog [options] file_name_in"""
 
 help = {
-    'fileName' :
+    'file_name' :
     'basename of output file(s) [default: <basename of input file>]',
     'dump' :
     'dump to sequence of VTK files',
@@ -146,9 +146,9 @@ def main():
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )
-    parser.add_option( "-o", "", metavar = 'fileName',
-                       action = "store", dest = "outputFileNameTrunk",
-                       default = None, help = help['fileName'] )
+    parser.add_option( "-o", "", metavar = 'file_name',
+                       action = "store", dest = "output_file_name_trunk",
+                       default = None, help = help['file_name'] )
     parser.add_option( "-d", "--dump",
                        action = "store_true", dest = "dump",
                        default = False, help = help['dump'] )
@@ -156,7 +156,7 @@ def main():
                        action = "store", dest = "step0",
                        default = 0, help = help['from'] )
     parser.add_option( "-e", "--extract", metavar = 'list',
-                       action = "store", dest = "extractList",
+                       action = "store", dest = "extract_list",
                        default = None, help = help['extract'] )
     parser.add_option( "-a", "--average",
                        action = "store_true", dest = "average",
@@ -166,26 +166,26 @@ def main():
     print options
     print args
     if (len( args ) == 1):
-        fileNameIn = args[0];
+        file_name_in = args[0];
     else:
         parser.print_help(),
         return
 
     if options.dump:
-        dumpToVTK( fileNameIn, options )
+        dump_to_vtk( file_name_in, options )
 
-    if options.extractList:
-        ths = extractTimeHistory( fileNameIn, options )
+    if options.extract_list:
+        ths = extract_time_history( file_name_in, options )
 ##         print ths
 
         if options.average:
-            ths = averageVertexVarInCells( ths )
+            ths = average_vertex_var_in_cells( ths )
 ##             print ths
 
-        if options.outputFileNameTrunk:
-            ts = TimeStepper( *HDF5MeshIO( fileNameIn ).readTimeStepper() )
+        if options.output_file_name_trunk:
+            ts = TimeStepper( *HDF5MeshIO( file_name_in ).read_time_stepper() )
             ths.update( {'times' : ts.times, 'dt' : ts.dt} )
-            writeDictHDF5( options.outputFileNameTrunk + '.h5', ths )
+            write_dict_hdf5( options.output_file_name_trunk + '.h5', ths )
 
 if __name__ == '__main__':
     main()

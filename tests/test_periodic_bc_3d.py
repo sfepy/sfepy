@@ -1,7 +1,7 @@
 # 04.06.2007, c
 # last revision: 25.02.2008
 
-fileName_mesh = 'database/tests/small3d.mesh'
+file_name_mesh = 'database/tests/small3d.mesh'
 
 material_1 = {
     'name' : 'coef',
@@ -85,23 +85,23 @@ epbc_10 = {
     'name' : 'rl',
     'region' : ['Left', 'Right'],
     'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
-    'match' : 'matchXPlane',
+    'match' : 'match_x_plane',
 }
 epbc_12 = {
     'name' : 'tb',
     'region' : ['Top', 'Bottom'],
     'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
-    'match' : 'matchZPlane',
+    'match' : 'match_z_plane',
 }
 epbc_13 = {
     'name' : 'nf',
     'region' : ['Near', 'Far'],
     'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
-    'match' : 'matchYPlane',
+    'match' : 'match_y_plane',
 }
 
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 from sfepy.fem.periodic import *
@@ -113,14 +113,14 @@ class Test( TestCommon ):
 
     ##
     # 01.06.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         from sfepy.fem.problemDef import ProblemDefinition
-        problem = ProblemDefinition.fromConf( conf, initEquations = False )
+        problem = ProblemDefinition.from_conf( conf, init_equations = False )
 
         test = Test( problem = problem,
                      conf = conf, options = options )
         return test
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 01.06.2007, r: 18.02.2008
@@ -128,9 +128,9 @@ class Test( TestCommon ):
         problem  = self.problem
         conf = self.conf
         
-        problem.variables.equationMapping( conf.ebcs, conf.epbcs,
+        problem.variables.equation_mapping( conf.ebcs, conf.epbcs,
                                            problem.domain.regions,
                                            None, conf.funmod )
-        state = problem.createStateVector()
-        problem.applyEBC( state )
-        return problem.variables.hasEBC( state )
+        state = problem.create_state_vector()
+        problem.apply_ebc( state )
+        return problem.variables.has_ebc( state )

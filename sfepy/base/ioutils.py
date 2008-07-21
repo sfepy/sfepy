@@ -2,7 +2,7 @@ import numpy as nm
 from numpy import array
 import re, sys
 import os.path as op
-from base import output, Struct, pause, dictFromKeysInit
+from base import output, Struct, pause, dict_from_keys_init
 try:
     import tables as pt
 except:
@@ -10,12 +10,12 @@ except:
 
 ##
 # 27.04.2006, c
-def getTrunk( fileName ):
-    return op.splitext( op.basename( fileName ) )[0]
+def get_trunk( file_name ):
+    return op.splitext( op.basename( file_name ) )[0]
 
 ##
 # c: 20.03.2008, r: 20.03.2008
-def skipReadLine( fd ):
+def skip_read_line( fd ):
     while 1:
         try:
             line = fd.readline().strip()
@@ -29,7 +29,7 @@ def skipReadLine( fd ):
 
 ##
 # 03.02.2004, c
-def readToken( file ):
+def read_token( file ):
     
     out = "";
     # Skip initial whitespace.
@@ -49,13 +49,13 @@ def readToken( file ):
         
 ##
 # 03.02.2004, c
-def readTuple( file, nItem, nTuple ):
+def read_tuple( file, n_item, n_tuple ):
 
     out = ();
-    for it in range( 0, nTuple ):
+    for it in range( 0, n_tuple ):
         token = ();
-        for ii in range( 0, nItem ):
-            token = token + (readToken( file ),);
+        for ii in range( 0, n_item ):
+            token = token + (read_token( file ),);
 #            print token[ii];
         if (len( token[ii] ) == 0):
             output( "Corrupted file (token %d)!" % ii )
@@ -66,10 +66,10 @@ def readTuple( file, nItem, nTuple ):
 
 ##
 # c: 12.02.2004, r: 20.03.2008
-def readArray( file, nRow, nCol, dtype ):
-    """nCol is basically ignored, nCol == -1 -> intentionally ignored."""
+def read_array( file, n_row, n_col, dtype ):
+    """n_col is basically ignored, n_col == -1 -> intentionally ignored."""
     val = []
-    for ir in range( 0, nRow ):
+    for ir in range( 0, n_row ):
         try:
             while 1:
                 line = file.readline().split()
@@ -78,7 +78,7 @@ def readArray( file, nRow, nCol, dtype ):
                 else:
                     break
         except:
-            output( "Array (%d, %d) reading failed!" % (nRow, nCol) )
+            output( "Array (%d, %d) reading failed!" % (n_row, n_col) )
             raise
         row = [float( ii ) for ii in line]
         val.append( row )
@@ -88,25 +88,25 @@ def readArray( file, nRow, nCol, dtype ):
 
 ##
 # c: 05.02.2008, r: 05.02.2008
-def readList( fd, nItem, dtype ):
+def read_list( fd, n_item, dtype ):
     vals = []
     ii = 0
-    while ii < nItem:
+    while ii < n_item:
         line = [dtype( ic ) for ic in fd.readline().split()]
         vals.append( line )
         ii += len( line )
-    if ii > nItem:
-        output( 'corrupted row?', line, ii, nItem  )
+    if ii > n_item:
+        output( 'corrupted row?', line, ii, n_item  )
         raise ValueError
 
     return vals
 
 ##
 # 27.09.2006, c
-def writeDictHDF5( fileName, adict, level = 0, group = None, fd = None ):
+def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
 
     if level == 0:
-        fd = pt.openFile( fileName, mode = "w",
+        fd = pt.openFile( file_name, mode = "w",
                           title = "Recursive dict dump" )
         group = '/'
 
@@ -114,7 +114,7 @@ def writeDictHDF5( fileName, adict, level = 0, group = None, fd = None ):
 #        print level * ' ', key, '->', group
         if isinstance( val, dict ):
             group2 = fd.createGroup( group, '_' + str( key ), '%s group' % key )
-            writeDictHDF5( fileName, val, level + 1, group2, fd )
+            write_dict_hdf5( file_name, val, level + 1, group2, fd )
         else:
             fd.createArray( group, '_' + str( key ), val, '%s data' % key )
             
@@ -123,17 +123,17 @@ def writeDictHDF5( fileName, adict, level = 0, group = None, fd = None ):
 
 ##
 # 09.07.2007, c
-def readDictHDF5( fileName, level = 0, group = None, fd = None ):
+def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
     out = {}
 
     if level == 0:
-        fd = pt.openFile( fileName, mode = "r" )
+        fd = pt.openFile( file_name, mode = "r" )
         group = fd.root
 
     for name, gr in group._v_groups.iteritems():
 #        print level * ' ', gr, '->', group
         name = name.replace( '_', '' )
-        out[name] = readDictHDF5( fileName, level + 1, gr, fd )
+        out[name] = read_dict_hdf5( file_name, level + 1, gr, fd )
 
     for name, data in group._v_leaves.iteritems():
         name = name.replace( '_', '' )
@@ -146,9 +146,9 @@ def readDictHDF5( fileName, level = 0, group = None, fd = None ):
 
 ##
 # 02.07.2007, c
-def writeSparseMatrixHDF5( fileName, mtx, name = 'a sparse matrix' ):
+def write_sparse_matrix_hdf5( file_name, mtx, name = 'a sparse matrix' ):
     """Assume CSR/CSC."""
-    fd = pt.openFile( fileName, mode = "w", title = name )
+    fd = pt.openFile( file_name, mode = "w", title = name )
     try:
         info = fd.createGroup( '/', 'info' )
         fd.createArray( info, 'dtype', mtx.dtype.str )
@@ -170,11 +170,11 @@ def writeSparseMatrixHDF5( fileName, mtx, name = 'a sparse matrix' ):
 ##
 # 02.07.2007, c
 # 08.10.2007
-def readSparseMatrixHDF5( fileName, outputFormat = None ):
+def read_sparse_matrix_hdf5( file_name, output_format = None ):
     import scipy.sparse as sp
     constructors = {'csr' : sp.csr_matrix, 'csc' : sp.csc_matrix}
     
-    fd = pt.openFile( fileName, mode = "r" )
+    fd = pt.openFile( file_name, mode = "r" )
     info = fd.root.info
     data = fd.root.data
 
@@ -186,10 +186,10 @@ def readSparseMatrixHDF5( fileName, outputFormat = None ):
     if not isinstance( dtype, str ):
         dtype = dtype[0]
 
-    if outputFormat is None:
+    if output_format is None:
         constructor = constructors[format]
     else:
-        constructor = constructors[outputFormat]
+        constructor = constructors[output_format]
 
     if format in ['csc', 'csr']:
         mtx = constructor( (data.data.read(),
@@ -204,7 +204,7 @@ def readSparseMatrixHDF5( fileName, outputFormat = None ):
         raise ValueError
     fd.close()
 
-    if outputFormat in ['csc', 'csr']:
+    if output_format in ['csc', 'csr']:
         mtx.sort_indices()
     
     return mtx

@@ -1,6 +1,6 @@
 # 13.11.2007, c
 # last revision: 25.02.2008
-fileName_mesh = 'database/tests/triquad.mesh'
+file_name_mesh = 'database/tests/triquad.mesh'
 
 material_1 = {
     'name' : 'm',
@@ -57,7 +57,7 @@ variable_2 = {
 ebc_1 = {
     'name' : 't1',
     'region' : 'Gamma_Top',
-    'dofs' : {'t.0' : 'ebcSin'},
+    'dofs' : {'t.0' : 'ebc_sin'},
 }
 ebc_2 = {
     'name' : 't2',
@@ -100,20 +100,20 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 options = {
@@ -122,11 +122,11 @@ options = {
 }
 
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 import numpy as nm
-def ebcSin( bc, ts, coor ):
+def ebc_sin( bc, ts, coor ):
     val = 2 * nm.sin( coor[:,0] * 5. * nm.pi )
     return val
 
@@ -138,17 +138,17 @@ class Test( TestCommon ):
 
     ##
     # 13.11.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
 
         test = Test( conf = conf, options = options )
         return test
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 13.11.2007, c
-    def test_problemCreation( self ):
-        from sfepy.solvers.generic import solveStationary
+    def test_problem_creation( self ):
+        from sfepy.solvers.generic import solve_stationary
 
-        problem, vec, data = solveStationary( self.conf )
+        problem, vec, data = solve_stationary( self.conf )
         ok = True
         return ok

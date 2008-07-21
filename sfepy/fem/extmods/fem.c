@@ -2,14 +2,14 @@
 #include "sort.h"
 
 #undef __FUNC__
-#define __FUNC__ "assembleVector"
+#define __FUNC__ "assemble_vector"
 /*!
   @par Revision history:
   - 21.11.2005, c
   - 26.11.2005
   - 27.11.2005
 */
-int32 assembleVector( FMField *vec, FMField *vecInEls,
+int32 assemble_vector( FMField *vec, FMField *vecInEls,
 		      int32 *iels, int32 iels_len,
 		      float64 sign, int32 *conn, int32 nEl, int32 nEP )
 {
@@ -42,7 +42,7 @@ int32 assembleVector( FMField *vec, FMField *vecInEls,
 }
 
 #undef __FUNC__
-#define __FUNC__ "assembleMatrix"
+#define __FUNC__ "assemble_matrix"
 /*!
   Requires a CSR matrix.
 
@@ -50,7 +50,7 @@ int32 assembleVector( FMField *vec, FMField *vecInEls,
   - 27.11.2005, c
   - 15.12.2005
 */
-int32 assembleMatrix( FMField *mtx,
+int32 assemble_matrix( FMField *mtx,
 		      int32 *prows, int32 prows_len,
 		      int32 *cols, int32 cols_len,
 		      FMField *mtxInEls,
@@ -179,7 +179,7 @@ int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 /*   output( "%d %d %d %d %d %d\n", nRow, nCol, nGr, nEl[0], nEPR[0], nEPC[0] ); */
 
   /* Get niec (= nodes in elements count) for rows. */
-  niec = allocMem( int32, nRow + 1 );
+  niec = alloc_mem( int32, nRow + 1 );
   mesh_nodInElCount( &niecMaxR, niec, nRow, nGr, nEl, nEPR, connR );
 /*   output( "%d\n", niecMaxR ); */
 
@@ -197,10 +197,10 @@ int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
     nn += nEPR[ig] * nEl[ig];
     nEPMaxC = Max( nEPMaxC, nEPC[ig] );
   }
-  eonlist = allocMem( int32, 2 * nn );
+  eonlist = alloc_mem( int32, 2 * nn );
 
   /* nir is just a buffer here. */
-  nir = allocMem( int32, nRow + 1 );
+  nir = alloc_mem( int32, nRow + 1 );
   memset( nir, 0, (nRow + 1) * sizeof( int32 ) );
 
 /*    output( "1\n" ); */
@@ -229,7 +229,7 @@ int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 
   /* List of column nodes for each row node. */
 /*   output( "%d, %d\n", nEPMaxC, niecMaxR * nEPMaxC ); */
-  nods = allocMem( int32, niecMaxR * nEPMaxC );
+  nods = alloc_mem( int32, niecMaxR * nEPMaxC );
 
   nn = 0;
   for (in = 0; in < nRow; in++) {
@@ -272,7 +272,7 @@ int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 
   *p_nnz = nn;
   *p_prow = niec;
-  icol = *p_icol = allocMem( int32, nn );
+  icol = *p_icol = alloc_mem( int32, nn );
 
   /* Fill in *p_prow. */
   niec[0] = 0;
@@ -326,21 +326,21 @@ int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
 
 /*   output( "5\n" ); */
 
-  freeMem( nods );
-  freeMem( nir );
-  freeMem( eonlist );
+  free_mem( nods );
+  free_mem( nir );
+  free_mem( eonlist );
 
   return( RET_OK );
 }
 
 #undef __FUNC__
-#define __FUNC__ "rawGraph"
+#define __FUNC__ "raw_graph"
 /*!
   @par Revision history:
   - 27.11.2005, c
   - 19.02.2007
 */
-int32 rawGraph( int32 *p_nRow, int32 **p_prow,
+int32 raw_graph( int32 *p_nRow, int32 **p_prow,
 		int32 *p_nnz, int32 **p_icol,
 		int32 nRow, int32 nCol, int32 nGr,
 		int32 *nElR, int32 *nEPR, int32 **connR,

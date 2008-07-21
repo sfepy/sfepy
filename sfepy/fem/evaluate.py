@@ -2,7 +2,7 @@ from sfepy.base.base import *
 import extmods.fem as fem
 from sfepy.terms import Term
 from region import Region
-from equations import Equation, buildArgs
+from equations import Equation, build_args
 from integrals import Integrals, quadratures
 
 ##
@@ -18,46 +18,46 @@ class BasicEvaluator( Evaluator ):
     def __init__( self, problem, mtx = None, **kwargs ):
         Evaluator.__init__( self, problem = problem, data = kwargs )
         if mtx is None:
-            self.mtx = problem.mtxA
+            self.mtx = problem.mtx_a
         else:
             self.mtx = mtx
 
     ##
     # c: 11.04.2008, r: 11.04.2008
-    def setTermArgs( self, **kwargs ):
+    def set_term_args( self, **kwargs ):
         self.data = kwargs
 
     ##
     # 02.12.2005, c
     # 25.07.2006
     # 02.10.2007
-    def evalResidual( self, vec ):
+    def eval_residual( self, vec ):
         status = 0
         try:
             pb = self.problem
-            vecR = evalResiduals( vec, pb.equations, pb.conf.fe.chunkSize,
+            vec_r = eval_residuals( vec, pb.equations, pb.conf.fe.chunk_size,
                                   **self.data )
         except StopIteration, exc:
-            vecR = None
+            vec_r = None
             status = exc.args[0]
             print 'error %d in term "%s" of equation "%s"!'\
                   % (status, exc.args[1].name, exc.args[2].desc)
 
-        return vecR, status
+        return vec_r, status
             
     ##
     # 02.12.2005, c
     # 25.07.2006
     # 02.10.2007
-    def evalTangentMatrix( self, vec, mtx = None ):
+    def eval_tangent_matrix( self, vec, mtx = None ):
         status = 0
         try:
             pb = self.problem
             if mtx is None:
                 mtx = self.mtx
             mtx.data[:] = 0.0
-            mtx = evalTangentMatrices( vec, mtx,
-                                       pb.equations, pb.conf.fe.chunkSize,
+            mtx = eval_tangent_matrices( vec, mtx,
+                                       pb.equations, pb.conf.fe.chunk_size,
                                        **self.data )
         except StopIteration, exc:
             status = exc.args[0]
@@ -72,8 +72,8 @@ class BasicEvaluator( Evaluator ):
     # 09.12.2005
     # 25.07.2006
     # 02.10.2007
-    def updateVec( self, vec, delta ):
-        self.problem.updateVec( vec, delta )
+    def update_vec( self, vec, delta ):
+        self.problem.update_vec( vec, delta )
 
 ##
 # 04.10.2007, c
@@ -83,215 +83,215 @@ class LCBCEvaluator( BasicEvaluator ):
     # 04.10.2007, c
     def __init__( self, problem, mtx = None, **kwargs ):
         BasicEvaluator.__init__( self, problem, mtx, **kwargs )
-        self.opLCBC = problem.variables.getLCBCOperator()
+        self.op_lcbc = problem.variables.get_lcbc_operator()
 
     ##
     # 04.10.2007, c
-    def evalResidual( self, vec ):
-        vecR, status = BasicEvaluator.evalResidual( self, vec )
-        vecRR = self.opLCBC.T * vecR
-        return vecRR, status
+    def eval_residual( self, vec ):
+        vec_r, status = BasicEvaluator.eval_residual( self, vec )
+        vec_rr = self.op_lcbc.T * vec_r
+        return vec_rr, status
             
     ##
     # 04.10.2007, c
-    def evalTangentMatrix( self, vec, mtx = None ):
-        mtx, status = BasicEvaluator.evalTangentMatrix( self, vec, mtx )
-        mtxR = self.opLCBC.T * mtx * self.opLCBC
-        mtxR = mtxR.tocsr()
-        mtxR.sort_indices()
+    def eval_tangent_matrix( self, vec, mtx = None ):
+        mtx, status = BasicEvaluator.eval_tangent_matrix( self, vec, mtx )
+        mtx_r = self.op_lcbc.T * mtx * self.op_lcbc
+        mtx_r = mtx_r.tocsr()
+        mtx_r.sort_indices()
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
-##         spy( mtxR )
+##         spy( mtx_r )
 ##         pylab.show()
-        print mtxR.__repr__()
-        return mtxR, status
+        print mtx_r.__repr__()
+        return mtx_r, status
 
     ##
     # 04.10.2007, c
-    def updateVec( self, vec, deltaR ):
-        delta = self.opLCBC * deltaR
-        BasicEvaluator.updateVec( self, vec, delta )
+    def update_vec( self, vec, delta_r ):
+        delta = self.op_lcbc * delta_r
+        BasicEvaluator.update_vec( self, vec, delta )
 
 ##
 # c: 03.09.2007, r: 04.07.2008
-def assembleVector( vec, equation, variables, materials,
-                    chunkSize = 1000, **kwargs ):
-    getADofConn = variables.getADofConn
+def assemble_vector( vec, equation, variables, materials,
+                    chunk_size = 1000, **kwargs ):
+    get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
 ##         print '>>>>>>', term.name, term.sign
-        varNames = term.getVariableNames()
-        args = buildArgs( term, variables, materials, **kwargs )
-        vn = term.getVirtualName( variables = variables )
-        dcType = term.getDofConnType()
+        var_names = term.get_variable_names()
+        args = build_args( term, variables, materials, **kwargs )
+        vn = term.get_virtual_name( variables = variables )
+        dc_type = term.get_dof_conn_type()
 ##         print args
 ##         print vn
-##         print dcType
-        for ig in term.iterGroups():
-            dc = getADofConn( vn, True, dcType, ig )
+##         print dc_type
+        for ig in term.iter_groups():
+            dc = get_a_dof_conn( vn, True, dc_type, ig )
 ##             print vn, dc.shape
 #            pause()
-            for vecInEls, iels, status in term( chunkSize = chunkSize,
+            for vec_in_els, iels, status in term( chunk_size = chunk_size,
                                                 **args ):
                 if status != 0:
                     raise StopIteration( status, term, equation )
 
-                checkFinitness = False
-                if checkFinitness and (not nm.isfinite( vecInEls ).all()):
+                check_finitness = False
+                if check_finitness and (not nm.isfinite( vec_in_els ).all()):
                     print term.name, term.sign, ig
                     debug()
 
-                fem.assembleVector( vec, vecInEls, iels, term.sign, dc )
+                fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
 
 ##
 # c: 03.09.2007, r: 04.07.2008
-def assembleMatrix( mtx, equation, variables, materials,
-                    chunkSize = 1000, groupCanFail = True, **kwargs ):
+def assemble_matrix( mtx, equation, variables, materials,
+                    chunk_size = 1000, group_can_fail = True, **kwargs ):
     if not sp.isspmatrix_csr( mtx ):
         raise TypeError, 'must be CSR matrix!'
     tmd = (mtx.data, mtx.indptr, mtx.indices)
 
-    getADofConn = variables.getADofConn
+    get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
 #        print '>>>>>>', term.name, term.sign
-        varNames = term.getVariableNames()
-        args = buildArgs( term, variables, materials, **kwargs )
-        vn = term.getVirtualName( variables = variables )
-        sns = term.getStateNames( variables = variables )
-        dcType = term.getDofConnType()
+        var_names = term.get_variable_names()
+        args = build_args( term, variables, materials, **kwargs )
+        vn = term.get_virtual_name( variables = variables )
+        sns = term.get_state_names( variables = variables )
+        dc_type = term.get_dof_conn_type()
 
-        for ig in term.iterGroups():
-            rdc = getADofConn( vn, True, dcType, ig )
+        for ig in term.iter_groups():
+            rdc = get_a_dof_conn( vn, True, dc_type, ig )
 #            print vn, rdc.shape
             for sn in sns:
-                cdc = getADofConn( sn, False, dcType, ig )
+                cdc = get_a_dof_conn( sn, False, dc_type, ig )
 #                print sn, cdc.shape
 #                pause()
-                for mtxInEls, iels, status in term( diffVar = sn,
-                                                    chunkSize = chunkSize,
+                for mtx_in_els, iels, status in term( diff_var = sn,
+                                                    chunk_size = chunk_size,
                                                     **args ):
                     if status != 0:
-                        raise StopIteration( status, term, equation, varNameCol )
-                    fem.assembleMatrix( tmd[0], tmd[1], tmd[2], mtxInEls,
+                        raise StopIteration( status, term, equation, var_name_col )
+                    fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,
                                         iels, term.sign, rdc, cdc )
 
 ##
 # 01.10.2007, c
-def evalTermOP( state, termDesc, problem, **kwargs ):
-    """Convenience wrapper of evalTerm() in a context of ProblemDefinition
+def eval_term_op( state, term_desc, problem, **kwargs ):
+    """Convenience wrapper of eval_term() in a context of ProblemDefinition
     instance."""
-    return evalTerm( state, termDesc, problem.conf,
+    return eval_term( state, term_desc, problem.conf,
                      problem.domain, problem.variables, problem.materials,
-                     chunkSize = problem.domain.shape.nEl, **kwargs )
+                     chunk_size = problem.domain.shape.n_el, **kwargs )
 
 ##
 # c: 03.01.2006, r: 05.03.2008
-def evalTerm( state, termDesc, conf, domain, variables, materials,
-              funmod = None, chunkSize = 1000, termPrefixes = None,
-              caches = None, retCaches = False,
-              override = True, newGeometries = True,
-              dwMode = 'vector', tangentMatrix = None,
+def eval_term( state, term_desc, conf, domain, variables, materials,
+              funmod = None, chunk_size = 1000, term_prefixes = None,
+              caches = None, ret_caches = False,
+              override = True, new_geometries = True,
+              dw_mode = 'vector', tangent_matrix = None,
               **kwargs ):
     """Evaluate a term. May not succeed!"""
-    if termPrefixes is None:
-        termPrefixes = {}
+    if term_prefixes is None:
+        term_prefixes = {}
     if caches is None:
         caches = {}
 
-    equation = Equation.fromDesc( 'tmp', termDesc, termPrefixes )
+    equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
     equation.parse_terms( domain.regions, caches )
-    equation.setupTermArgs( variables, materials, kwargs )
+    equation.setup_term_args( variables, materials, kwargs )
     for cache in caches.itervalues():
-        cache.setMode( override = override )
+        cache.set_mode( override = override )
 
-    if newGeometries:
-        iNames = equation.getTermIntegralNames()
-        integrals = Integrals.fromConf( conf.integrals, iNames )
-        integrals.setQuadratures( quadratures )
+    if new_geometries:
+        i_names = equation.get_term_integral_names()
+        integrals = Integrals.from_conf( conf.integrals, i_names )
+        integrals.set_quadratures( quadratures )
         
         geometries = {}
-        equation.describeGeometry( geometries, variables, integrals )
+        equation.describe_geometry( geometries, variables, integrals )
 
-    variables.dataFromState( state )
-    # itype according to the first term in termDesc!
+    variables.data_from_state( state )
+    # itype according to the first term in term_desc!
     term = equation.terms[0]
     if term.itype == 'dw':
 
-        variables.setupDofConns()
-        if dwMode == 'vector':
-            residual = variables.createStrippedStateVector()
-            assembleVector( residual, equation, variables, materials,
-                            chunkSize, groupCanFail = False, **kwargs )
-            if variables.hasLCBC:
-                opLCBC = variables.opLCBC
-                residual = opLCBC.T * residual
-            retVal = residual
+        variables.setup_dof_conns()
+        if dw_mode == 'vector':
+            residual = variables.create_stripped_state_vector()
+            assemble_vector( residual, equation, variables, materials,
+                            chunk_size, group_can_fail = False, **kwargs )
+            if variables.has_lcbc:
+                op_lcbc = variables.op_lcbc
+                residual = op_lcbc.T * residual
+            ret_val = residual
 
-        elif dwMode == 'matrix':
-            if tangentMatrix is None:
-                tangentMatrix = variables.createMatrixGraph()
+        elif dw_mode == 'matrix':
+            if tangent_matrix is None:
+                tangent_matrix = variables.create_matrix_graph()
 
-            tangentMatrix.data[:] = 0.0
-            assembleMatrix( tangentMatrix, equation, variables, materials,
-                            chunkSize, groupCanFail = False, **kwargs )
-            if variables.hasLCBC:
-                opLCBC = variables.opLCBC
-                tangentMatrix = opLCBC.T * tangentMatrix * opLCBC
-                tangentMatrix = tangentMatrix.tocsr()
-                tangentMatrix.sort_indices()
-            retVal = tangentMatrix
+            tangent_matrix.data[:] = 0.0
+            assemble_matrix( tangent_matrix, equation, variables, materials,
+                            chunk_size, group_can_fail = False, **kwargs )
+            if variables.has_lcbc:
+                op_lcbc = variables.op_lcbc
+                tangent_matrix = op_lcbc.T * tangent_matrix * op_lcbc
+                tangent_matrix = tangent_matrix.tocsr()
+                tangent_matrix.sort_indices()
+            ret_val = tangent_matrix
 
         else:
-            print dwMode
+            print dw_mode
             raise ValueError
 
     elif term.itype == 'd':
         val = 0.0
 
         for term in equation.terms:
-            args = buildArgs( term, variables, materials, **kwargs )
-            for ig in term.iterGroups():
-                for aux, iels, status in term( chunkSize = chunkSize,
+            args = build_args( term, variables, materials, **kwargs )
+            for ig in term.iter_groups():
+                for aux, iels, status in term( chunk_size = chunk_size,
                                                **args ):
                     val += term.sign * aux
-            retVal = val
+            ret_val = val
 
     elif term.itype == 'di':
         val = None
 
         for term in equation.terms:
-            args = buildArgs( term, variables, materials, **kwargs )
-            for ig in term.iterGroups():
-                for aux, iels, status in term( chunkSize = chunkSize,
+            args = build_args( term, variables, materials, **kwargs )
+            for ig in term.iter_groups():
+                for aux, iels, status in term( chunk_size = chunk_size,
                                                **args ):
                     if val is None:
                         val = term.sign * aux
                     else:
                         val += term.sign * aux
-            retVal = val
+            ret_val = val
 
     elif (term.itype == 'de') or (term.itype == 'dq'):
         val = None
 
         for term in equation.terms:
-            args = buildArgs( term, variables, materials, **kwargs )
-            for ig in term.iterGroups():
-                for aux, iels, status in term( chunkSize = chunkSize,
+            args = build_args( term, variables, materials, **kwargs )
+            for ig in term.iter_groups():
+                for aux, iels, status in term( chunk_size = chunk_size,
                                                **args ):
                     if val is None:
                         val = term.sign * aux
                     else:
                         val = nm.concatenate( (val, term.sign * aux), axis = 0 )
-        retVal = val
+        ret_val = val
 
     else:
         raise NotImplementedError, 'unknown term int. type: %s' % term.itype
 
-    if retCaches:
-        return retVal, caches
+    if ret_caches:
+        return ret_val, caches
     else:
-        return retVal
+        return ret_val
 
 ##
 # 21.11.2005, c
@@ -306,20 +306,20 @@ def evalTerm( state, termDesc, conf, domain, variables, materials,
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def evalResiduals( state, equations, chunkSize = 1000,
+def eval_residuals( state, equations, chunk_size = 1000,
                    **kwargs ):
 
     variables = equations.variables
     materials = equations.materials
 
-    variables.dataFromState( state )
+    variables.data_from_state( state )
 
-    residual = variables.createStrippedStateVector()
-    equations.invalidateTermCaches()
+    residual = variables.create_stripped_state_vector()
+    equations.invalidate_term_caches()
 
     for equation in equations:
-        assembleVector( residual, equation, variables, materials,
-                        chunkSize = chunkSize, **kwargs )
+        assemble_vector( residual, equation, variables, materials,
+                        chunk_size = chunk_size, **kwargs )
 
     return residual
 
@@ -336,16 +336,16 @@ def evalResiduals( state, equations, chunkSize = 1000,
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def evalTangentMatrices( state, tangentMatrix, equations, chunkSize = 1000,
+def eval_tangent_matrices( state, tangent_matrix, equations, chunk_size = 1000,
                          **kwargs ):
 
     variables = equations.variables
     materials = equations.materials
 
-    variables.dataFromState( state )
+    variables.data_from_state( state )
 
     for equation in equations:
-        assembleMatrix( tangentMatrix, equation, variables, materials,
-                        chunkSize = chunkSize, **kwargs )
+        assemble_matrix( tangent_matrix, equation, variables, materials,
+                        chunk_size = chunk_size, **kwargs )
 
-    return tangentMatrix
+    return tangent_matrix

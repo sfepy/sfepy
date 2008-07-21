@@ -6,53 +6,53 @@ class Test( TestCommon ):
 
     ##
     # 16.07.2007, c
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         return Test( conf = conf, options = options )
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 16.07.2007, r: 08.07.2008
-    def test_parseEquations( self ):
+    def test_parse_equations( self ):
         from sfepy.fem.parseEq import create_bnf
 
-        testStrs = [
+        test_strs = [
             """- d_volume.i1.Omega( uc )""",
             """2 * dw_term.i1.Omega( uc ) = - 3.0 * dw_term2.i1.Omega2( uc )""",
             """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )""",
-            """noArgs() = 0""",
-            """+ something( a, b, c ) = + somethingElse( c, a, d[-1] )""",
+            """no_args() = 0""",
+            """+ something( a, b, c ) = + something_else( c, a, d[-1] )""",
             """term_.a.a( u )"""
         ]
 
-        nFail = 0
-        termDescs = []
-        for testStr in testStrs:
-            termDescs[:] = []
+        n_fail = 0
+        term_descs = []
+        for test_str in test_strs:
+            term_descs[:] = []
             try:
-                bnf = create_bnf( termDescs, {} )
-                bnf.parseString( testStr )
+                bnf = create_bnf( term_descs, {} )
+                bnf.parseString( test_str )
             except:
-                self.report( 'failed: %s' % testStr )
+                self.report( 'failed: %s' % test_str )
                 if self.options.debug:
                     raise
-                nFail += 1
-            for td in termDescs:
+                n_fail += 1
+            for td in term_descs:
                 print td
-        self.report( '%d failure(s)' % nFail )
+        self.report( '%d failure(s)' % n_fail )
 
-        if nFail:
+        if n_fail:
             raise AssertionError
         return True
 
     ##
     # c: 16.07.2007, r: 14.07.2008
-    def test_parseRegions( self ):
-        from sfepy.fem.parseReg import createBNF, _testStrs
+    def test_parse_regions( self ):
+        from sfepy.fem.parseReg import create_bnf, _test_strs
 
-        testStrs = ['nodes of surface -n r.Omega',
+        test_strs = ['nodes of surface -n r.Omega',
                     'r.Y_2 +n copy r.Y_1',
                     'nodes in (y <= 0.00001) & (x < 0.11)',
                     'nodes in ((y <= 0.00001) & (x < 0.11))',
@@ -73,20 +73,20 @@ class Test( TestCommon ):
                     'elements by afun( domain )']
 
         stack = []
-        bnf = createBNF( stack )
+        bnf = create_bnf( stack )
 
-        nFail = 0
-        for testStr in testStrs:
+        n_fail = 0
+        for test_str in test_strs:
             stack[:] = []
 
             try:
-                out = bnf.parseString( testStr )
+                out = bnf.parseString( test_str )
             except:
-                self.report( 'failed: %s' % testStr )
-                nFail += 1
+                self.report( 'failed: %s' % test_str )
+                n_fail += 1
 
-        self.report( '%d failures' % nFail )
+        self.report( '%d failures' % n_fail )
 
-        if nFail:
+        if n_fail:
             raise AssertionError
         return True

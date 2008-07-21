@@ -6,12 +6,12 @@ BEGIN_C_DECLS
 
 typedef unsigned int intp;
 
-int32 int32_sortRows( int32 *array, int32 nRow, int32 nCol,
-		      int32 *iSortCol, int32 nSortCol );
+int32 int32_sort_rows( int32 *array, int32 n_row, int32 n_col,
+		      int32 *i_sort_col, int32 n_sort_col );
 int32 int32_quicksort(int32 *start, intp num, void *unused);
 int32 int32_aquicksort(int32 *v, intp* tosort, intp num, void *unused);
-int32 int32_mtx_aquicksort( int32 *v, int32 nRow, int32 nCol,
-			    int32 *ic, int32 nC,
+int32 int32_mtx_aquicksort( int32 *v, int32 n_row, int32 n_col,
+			    int32 *ic, int32 n_c,
 			    intp* tosort );
 
 END_C_DECLS

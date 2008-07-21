@@ -8,13 +8,13 @@ class Histories( Container ):
 
     ##
     # c: 14.06.2007, r: 23.06.2008
-    def fromFileHDF5( fileName, varNames ):
+    def from_file_hdf5( file_name, var_names ):
         """TODO: do not read entire file, provide data on demand."""
-        io = HDF5MeshIO( fileName )
-        ts = TimeStepper( *io.readTimeStepper() )
-        ths = io.readVariablesTimeHistory( varNames, ts )
+        io = HDF5MeshIO( file_name )
+        ts = TimeStepper( *io.read_time_stepper() )
+        ths = io.read_variables_time_history( var_names, ts )
 
-        steps = nm.arange( ts.nStep, dtype = nm.int32 )
+        steps = nm.arange( ts.n_step, dtype = nm.int32 )
         objs = OneTypeList( History )
         for name, th in ths.iteritems():
             hist = History( name = name,
@@ -23,9 +23,9 @@ class Histories( Container ):
             objs.append( hist )
             
         obj = Histories( objs,
-                         name = ' '.join( varNames ) )
+                         name = ' '.join( var_names ) )
         return obj
-    fromFileHDF5 = staticmethod( fromFileHDF5 )
+    from_file_hdf5 = staticmethod( from_file_hdf5 )
 
 
 ##
@@ -34,12 +34,12 @@ class History( Struct ):
 
     ##
     # 14.06.2007, c
-    def fromSequence( seq, name ):
+    def from_sequence( seq, name ):
         obj = History( name = name,
                        steps = nm.arange( len( seq ), dtype = nm.int32 ),
                        th = list( seq ) )
         return obj
-    fromSequence = staticmethod( fromSequence )
+    from_sequence = staticmethod( from_sequence )
 
 ##     def __setitem__( self, key, value ):
 ##         pass

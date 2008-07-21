@@ -1,5 +1,5 @@
 from terms import *
-from utils import fixScalarInEl
+from utils import fix_scalar_in_el
 
 ##
 # 24.10.2005, c
@@ -8,7 +8,7 @@ class DivGradTerm( Term ):
     :definition: $\int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}$
     """
     name = 'dw_div_grad'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -17,26 +17,26 @@ class DivGradTerm( Term ):
     # 16.11.2005
     # 10.01.2006
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asmDivGrad )
+        Term.__init__( self, region, name, sign, terms.term_ns_asm_div_grad )
         
     ##
     # c: 26.10.2005, r: 20.02.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        material, virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        material, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP )
+        elif diff_var == self.get_arg_name( 'state' ):
+            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
             mode = 1
         else:
             raise StopIteration
 
         vec, indx = state()
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start, nm.float64( material ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
@@ -48,35 +48,35 @@ class ConvectTerm( Term ):
     :definition: $\int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}$
     """
     name = 'dw_convect'
-    argTypes = ('virtual', 'state')
+    arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
     # 20.12.2005, c
     # 10.01.2006
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asmConvect )
+        Term.__init__( self, region, name, sign, terms.term_ns_asm_convect )
         
     ##
     # 20.12.2005, c
     # 25.07.2006
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP )
+        elif diff_var == self.get_arg_name( 'state' ):
+            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
             mode = 1
         else:
             raise StopIteration
 
         vec, indx = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start, bf,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
@@ -88,7 +88,7 @@ class LinearConvectTerm( Term ):
     :definition: $\int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}$
     """
     name = 'dw_lin_convect'
-    argTypes = ('virtual', 'parameter', 'state')
+    arg_types = ('virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -98,24 +98,24 @@ class LinearConvectTerm( Term ):
         
     ##
     # 25.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, par, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, par, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP )
+        elif diff_var == self.get_arg_name( 'state' ):
+            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
             mode = 1
         else:
             raise StopIteration
 
         vec1, i1 = par()
         vec2, i2 = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, i1.start, vec2, i2.start,
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
@@ -127,7 +127,7 @@ class LinearConvectQTerm( Term ):
     :definition: $((\ul{b} \cdot \nabla) \ul{u})|_{qp}$
     """
     name = 'dq_lin_convect'
-    argTypes = ('parameter', 'state')
+    arg_types = ('parameter', 'state')
     geometry = [(Volume, 'state')]
 
     ##
@@ -137,21 +137,21 @@ class LinearConvectQTerm( Term ):
         
     ##
     # 30.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        par, state = self.getArgs( **kwargs )
-        ap, vg = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        par, state = self.get_args( **kwargs )
+        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, nQP, dim, 1 )
+        if diff_var is None:
+            shape = (chunk_size, n_qp, dim, 1 )
             mode = 2
         else:
             raise StopIteration
 
         vec1, i1 = par()
         vec2, i2 = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, i1.start, vec2, i2.start,
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
@@ -163,7 +163,7 @@ class GradTerm( Term ):
     :definition: $\int_{\Omega}  p\ \nabla \cdot \ul{v}$
     """
     name = 'dw_grad'
-    argTypes = ('virtual', 'state')
+    arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
@@ -173,36 +173,36 @@ class GradTerm( Term ):
         
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def getShape( self, diffVar, chunkSize, apr, apc = None ):
-        self.dataShape = apr.getVDataShape( self.integralName ) 
-        nEl, nQP, dim, nEPR = self.dataShape
+    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
+        n_el, n_qp, dim, n_epr = self.data_shape
 
-        if diffVar is None:
-            return (chunkSize, 1, dim * nEPR, 1 ), 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape( self.integralName )[3]
-            return (chunkSize, 1, dim * nEPR, nEPC ), 1
+        if diff_var is None:
+            return (chunk_size, 1, dim * n_epr, 1 ), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            return (chunk_size, 1, dim * n_epr, n_epc ), 1
         else:
             raise StopIteration
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
+    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
         vec, indx = state()
-        bf = apc.getBase( 'v', 0, self.integralName )
+        bf = apc.get_base( 'v', 0, self.integral_name )
         return 1.0, vec, indx.start, bf, vgr, apc.econn
 
     ##
     # c: 15.12.2005, r: 04.07.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
-        fargs = self.buildCFunArgs( state, apc, vgr, **kwargs )
+        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
+        fargs = self.build_c_fun_args( state, apc, vgr, **kwargs )
         
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
@@ -213,7 +213,7 @@ class GradQTerm( Term ):
     :definition: $(\nabla p)|_{qp}$
     """
     name = 'dq_grad'
-    argTypes = ('state',)
+    arg_types = ('state',)
     geometry = [(Volume, 'state')]
 
     ##
@@ -223,19 +223,19 @@ class GradQTerm( Term ):
 
     ##
     # 30.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        state = self.getArgs( **kwargs )
-        ap, vg = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        state = self.get_args( **kwargs )
+        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, nQP, dim, 1 )
+        if diff_var is None:
+            shape = (chunk_size, n_qp, dim, 1 )
             mode = 0
         else:
             raise StopIteration
 
         vec, indx = state()
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start,
                                     vg, apc.econn, chunk )
             yield out, chunk, status
@@ -248,20 +248,20 @@ class GradDtTerm( GradTerm ):
     :arguments: ts.dt : $\dt$, parameter : $p_0$
     """
     name = 'dw_grad_dt'
-    argTypes = ('ts', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def buildCFunArgs( self, state, apc, vgr, **kwargs ):
-        ts, state_0 = self.getArgs( ['ts', 'parameter'], **kwargs )
+    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
+        ts, state_0 = self.get_args( ['ts', 'parameter'], **kwargs )
 
         vec, indx = state()
         vec0, indx0 = state_0()
         dvec = vec[indx] - vec0[indx0]
         idt = 1.0/ts.dt 
 
-        bf = apc.getBase( 'v', 0, self.integralName )
+        bf = apc.get_base( 'v', 0, self.integral_name )
         return idt, dvec, 0, bf, vgr, apc.econn
 
 ##
@@ -271,7 +271,7 @@ class DivTerm( Term ):
     :definition: $\int_{\Omega} q\ \nabla \cdot \ul{u}$
     """
     name = 'dw_div'
-    argTypes = ('virtual', 'state')
+    arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
@@ -282,36 +282,36 @@ class DivTerm( Term ):
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def getShape( self, diffVar, chunkSize, apr, apc = None ):
-        self.dataShape = apr.getVDataShape( self.integralName ) 
-        nEl, nQP, dim, nEPR = self.dataShape
+    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
+        n_el, n_qp, dim, n_epr = self.data_shape
 
-        if diffVar is None:
-            return (chunkSize, 1, nEPR, 1 ), 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape( self.integralName )[3]
-            return (chunkSize, 1, nEPR, dim * nEPC ), 1
+        if diff_var is None:
+            return (chunk_size, 1, n_epr, 1 ), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            return (chunk_size, 1, n_epr, dim * n_epc ), 1
         else:
             raise StopIteration
 
     ##
     # c: 31.03.2008, r: 31.03.2008
-    def buildCFunArgs( self, state, apr, apc, vgc, **kwargs ):
+    def build_c_fun_args( self, state, apr, apc, vgc, **kwargs ):
         vec, indx = state()
-        bf = apr.getBase( 'v', 0, self.integralName )
+        bf = apr.get_base( 'v', 0, self.integral_name )
         return vec, indx.start, bf, vgc, apc.econn
 
     ##
     # c: 14.12.2005, r: 04.07.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, apr, apc )
-        fargs = self.buildCFunArgs( state, apr, apc, vgc, **kwargs )
+        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
+        fargs = self.build_c_fun_args( state, apr, apc, vgc, **kwargs )
         
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
@@ -322,9 +322,9 @@ class DivIntegratedTerm( Term ):
     :definition: $\int_{\Omega} \bar{p}\ \nabla \cdot \ul{w}$
     """
     name = 'd_div'
-    argTypes = ('parameter_1', 'parameter_2')
+    arg_types = ('parameter_1', 'parameter_2')
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    useCaches = {'state_in_volume_qp' : [['parameter_1']],
+    use_caches = {'state_in_volume_qp' : [['parameter_1']],
                  'div_vector' : [['parameter_2']]}
 
     ##
@@ -334,18 +334,18 @@ class DivIntegratedTerm( Term ):
 
     ##
     # c: 13.03.2007, r: 17.01.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        par1, par2 = self.getArgs( **kwargs )
-        apc, vgc = par2.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPC = apc.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        par1, par2 = self.get_args( **kwargs )
+        apc, vgc = par2.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_epc = apc.get_v_data_shape( self.integral_name )
         shape = (0,)
 
-        cache = self.getCache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.getCurrentGroup(), 0, state = par1 )
-        cache = self.getCache( 'div_vector', 0 )
-        div2 = cache( 'div', self.getCurrentGroup(), 0, state = par2 )
+        cache = self.get_cache( 'state_in_volume_qp', 0 )
+        vec1 = cache( 'state', self.get_current_group(), 0, state = par1 )
+        cache = self.get_cache( 'div_vector', 0 )
+        div2 = cache( 'div', self.get_current_group(), 0, state = par2 )
 
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             out = nm.sum( vec1[chunk] * div2[chunk] * vgc.variable( 1 ) )
             yield out, chunk, 0
 
@@ -358,7 +358,7 @@ class GradDivStabilizationTerm( Term ):
     (\nabla\cdot\ul{v})$
     """
     name = 'dw_st_grad_div'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -368,22 +368,22 @@ class GradDivStabilizationTerm( Term ):
         
     ##
     # 26.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        gamma, virtual, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        gamma, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP )
+        elif diff_var == self.get_arg_name( 'state' ):
+            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
             mode = 1
         else:
             raise StopIteration
 
         vec, indx = state()
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start, float( gamma ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
@@ -407,7 +407,7 @@ class PSPGCStabilizationTerm( Term ):
     \cdot \nabla) \ul{u}) \cdot \nabla q $
     """
     name = 'dw_st_pspg_c'
-    argTypes = ('material', 'virtual', 'parameter', 'state')
+    arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
@@ -417,30 +417,30 @@ class PSPGCStabilizationTerm( Term ):
         
     ##
     # 31.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        tau, virtual, par, state = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        tau, virtual, par, state = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, nEPR, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, n_epr, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape( self.integralName )[3]
-            shape = (chunkSize, 1, nEPR, dim * nEPC )
+        elif diff_var == self.get_arg_name( 'state' ):
+            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            shape = (chunk_size, 1, n_epr, dim * n_epc )
             mode = 1
         else:
             raise StopIteration
 
-        tauInEl = fixScalarInEl( tau, nEl, nm.float64 )
+        tau_in_el = fix_scalar_in_el( tau, n_el, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()
-        bf = apc.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = apc.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, i1.start, vec2, i2.start,
-                                    tauInEl, bf, vgr, vgc,
+                                    tau_in_el, bf, vgr, vgc,
                                     apc.econn, chunk, mode )
             yield out, chunk, status
 
@@ -453,7 +453,7 @@ class SUPGPStabilizationTerm( Term ):
     ((\ul{b} \cdot \nabla) \ul{v})$
     """
     name = 'dw_st_supg_p'
-    argTypes = ('material', 'virtual', 'parameter', 'state')
+    arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     ##
@@ -463,30 +463,30 @@ class SUPGPStabilizationTerm( Term ):
         
     ##
     # 31.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        delta, virtual, par, state = self.getArgs( **kwargs )
-        apr, vgr = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        apc, vgc = state.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEPR = apr.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        delta, virtual, par, state = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEPR, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_epr, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape( self.integralName )[3]
-            shape = (chunkSize, 1, dim * nEPR, nEPC )
+        elif diff_var == self.get_arg_name( 'state' ):
+            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            shape = (chunk_size, 1, dim * n_epr, n_epc )
             mode = 1
         else:
             raise StopIteration
 
-        deltaInEl = fixScalarInEl( delta, nEl, nm.float64 )
+        delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()
-        bf = apr.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, i1.start, vec2, i2.start,
-                                    deltaInEl, bf, vgr, vgc,
+                                    delta_in_el, bf, vgr, vgc,
                                     apr.econn, apc.econn, chunk, mode )
             yield out, chunk, status
 
@@ -499,7 +499,7 @@ class SUPGCStabilizationTerm( Term ):
     \cdot \nabla) \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})$
     """
     name = 'dw_st_supg_c'
-    argTypes = ('material', 'virtual', 'parameter', 'state')
+    arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -509,27 +509,27 @@ class SUPGCStabilizationTerm( Term ):
         
     ##
     # 31.07.2007, c
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        delta, virtual, par, state = self.getArgs( **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
-        nEl, nQP, dim, nEP = ap.getVDataShape( self.integralName )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        delta, virtual, par, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        if diffVar is None:
-            shape = (chunkSize, 1, dim * nEP, 1 )
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1 )
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            shape = (chunkSize, 1, dim * nEP, dim * nEP )
+        elif diff_var == self.get_arg_name( 'state' ):
+            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
             mode = 1
         else:
             raise StopIteration
 
-        deltaInEl = fixScalarInEl( delta, nEl, nm.float64 )
+        delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
             
         vec1, i1 = par()
         vec2, i2 = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
-        for out, chunk in self.charFun( chunkSize, shape ):
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, i1.start, vec2, i2.start,
-                                    deltaInEl, bf, vg,
+                                    delta_in_el, bf, vg,
                                     ap.econn, chunk, mode )
             yield out, chunk, status

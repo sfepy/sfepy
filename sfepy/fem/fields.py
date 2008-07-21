@@ -2,7 +2,7 @@ from sfepy.base.base import *
 from sfepy.base.reader import Reader
 import sfepy.base.la as la
 import fea
-from mesh import Mesh, makePointCells
+from mesh import Mesh, make_point_cells
 import sfepy.terms as terms
 import extmods.geometry as gm
 
@@ -12,65 +12,65 @@ class Fields( Container ):
 
     ##
     # 14.07.2006, c
-    def fromConf( conf ):
+    def from_conf( conf ):
 
         objs = OneTypeList( Field )
         for key, val in conf.iteritems():
-            objs.append( Field.fromConf( val ) )
+            objs.append( Field.from_conf( val ) )
 
         obj = Fields( objs )
 
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 05.09.2007, c
-    def fromFieldList( flist, qpCoors, names = None ):
+    def from_field_list( flist, qp_coors, names = None ):
         objs = OneTypeList( Field )
         objs.extend( flist )
         obj = Fields( objs )
         if names is not None:
             obj.names = names
 
-        obj.qpCoors = qpCoors
+        obj.qp_coors = qp_coors
         
         return obj
-    fromFieldList = staticmethod( fromFieldList )
+    from_field_list = staticmethod( from_field_list )
     
     ##
     # 14.07.2006, c
     # 18.07.2006
-    def readInterpolants( self, componentDir ):
+    def read_interpolants( self, component_dir ):
 
-        read = Reader( componentDir )
+        read = Reader( component_dir )
 
         interps = {}
 
         for field in self:
-            field.createInterpolants( interps, read )
+            field.create_interpolants( interps, read )
 
         self.interps = interps
 
     ##
     # 18.07.2006, c
     # 19.02.2007
-    def setupApproximations( self, domain ):
+    def setup_approximations( self, domain ):
 
         for field in self:
-            field.setupApproximations( domain )
+            field.setup_approximations( domain )
 
     ##
     # 19.07.2006, c
-    def setupGlobalBase( self ):
+    def setup_global_base( self ):
         gb = []
         for field in self:
-            gb.append( field.setupGlobalBase() )
+            gb.append( field.setup_global_base() )
 
     ##
     # 19.07.2006, c
-    def setupCoors( self ):
+    def setup_coors( self ):
         for field in self:
-            field.setupCoors()
+            field.setup_coors()
 
 ##
 # 14.07.2006, c
@@ -79,38 +79,38 @@ class Field( Struct ):
     ##
     # 14.07.2006, c
     # 26.04.2007
-    def fromConf( conf ):
+    def from_conf( conf ):
 
         obj = Field( name = conf.name,
                      dim = conf.dim,
                      flags = set( getattr( conf, 'flags', () ) ),
-                     regionName = conf.domain,
+                     region_name = conf.domain,
                      bases = conf.bases )
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # 18.07.2006, c
-    def createInterpolants( self, interps, read ):
+    def create_interpolants( self, interps, read ):
         """One interpolant for each base, shared if same."""
         self.interps = {}
-        for regionName, baseName in self.bases.iteritems():
+        for region_name, base_name in self.bases.iteritems():
 
-            if interps.has_key( baseName ):
-                interp = interps[baseName]
+            if interps.has_key( base_name ):
+                interp = interps[base_name]
             else:
-                interp = read( fea.Interpolant, baseName )
-                interps[baseName] = interp
+                interp = read( fea.Interpolant, base_name )
+                interps[base_name] = interp
 
-            self.interps[baseName] = interp
+            self.interps[base_name] = interp
             
     ##
     # 18.07.2006, c
     # 05.09.2006
-    def setupApproximations( self, domain ):
+    def setup_approximations( self, domain ):
         self.aps = fea.Approximations( self.bases, self.interps, domain )
         self.domain = domain
-        self.region = domain.regions[self.regionName]
+        self.region = domain.regions[self.region_name]
 
     ##
     #
@@ -119,71 +119,71 @@ class Field( Struct ):
 
     ##
     # 19.07.2006, c
-    def setupGlobalBase( self ):
+    def setup_global_base( self ):
 
-        self.aps.describeNodes()
-        self.aps.setupNodes()
+        self.aps.describe_nodes()
+        self.aps.setup_nodes()
 
-        aux = self.aps.setupGlobalBase( self.domain )
-        self.nNod, self.remap, self.cntVN, self.cntEN = aux
+        aux = self.aps.setup_global_base( self.domain )
+        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
 
-##         print self.nNod, self.cntVN, self.cntEN
+##         print self.n_nod, self.cnt_vn, self.cnt_en
 #        pause()
 
     ##
     # 19.07.2006, c
-    def setupCoors( self ):
+    def setup_coors( self ):
         """Coordinates of field nodes."""
-        self.aps.setupCoors( self.domain.mesh, self.cntVN )
+        self.aps.setup_coors( self.domain.mesh, self.cnt_vn )
 
     ##
     # c: 02.01.2008, r: 02.01.2008
-    def getExtraNodesAsSimplices( self, iextra = None ):
+    def get_extra_nodes_as_simplices( self, iextra = None ):
         dim = self.domain.mesh.dim
         if iextra is None:
-            noft = self.aps.nodeOffsetTable
+            noft = self.aps.node_offset_table
             iextra = nm.arange( noft[1,0], noft[-1,-1], dtype = nm.int32 )
-        extra = makePointCells( iextra, dim )
+        extra = make_point_cells( iextra, dim )
         return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
 
     ##
     # c: 19.07.2006, r: 27.02.2008
-    def writeMesh( self, nameTemplate, fieldName = None ):
+    def write_mesh( self, name_template, field_name = None ):
         """Extra nodes are written as zero-size simplices (= points)."""
-        if fieldName is None:
-            fieldName = self.name
+        if field_name is None:
+            field_name = self.name
 
         mesh = self.domain.mesh
         dim = mesh.dim
 
-        conns, matIds, descs = [], [], []
-        for regionName, ig, ap in self.aps.iterAps():
+        conns, mat_ids, descs = [], [], []
+        for region_name, ig, ap in self.aps.iter_aps():
             region = ap.region
             group = region.domain.groups[ig]
-            offset = group.shape.nEP
+            offset = group.shape.n_ep
             conn = ap.econn[:,:offset]
             conns.append( conn )
-            matIds.append( mesh.matIds[ig] )
+            mat_ids.append( mesh.mat_ids[ig] )
             descs.append( mesh.descs[ig] )
 
-        aux = self.getExtraNodesAsSimplices()
+        aux = self.get_extra_nodes_as_simplices()
         descs.append( aux[0] )
-        matIds.append( aux[1] )
+        mat_ids.append( aux[1] )
         conns.append( aux[2] )
 
-        tmp = Mesh.fromData( nameTemplate % fieldName,
-                             self.aps.coors, conns, matIds, descs )
+        tmp = Mesh.from_data( name_template % field_name,
+                             self.aps.coors, conns, mat_ids, descs )
 ##         print tmp
 ##         pause()
         tmp.write( io = 'auto' )
 
     ##
     # c: 20.07.2006, r: 15.01.2008
-    def getNodeDescs( self, region ):
+    def get_node_descs( self, region ):
         nds = {}
-        for regionName, ig, ap in self.aps.iterAps():
+        for region_name, ig, ap in self.aps.iter_aps():
             if ig in region.igs:
-                nds[ig] = self.aps.nodeDescs[regionName]
+                nds[ig] = self.aps.node_descs[region_name]
 
         return nds
 
@@ -195,20 +195,20 @@ class Field( Struct ):
     # 05.06.2006
     # 25.07.2006
     # 04.09.2006
-    def interpCValsToNVals( self, vec ):
-        """len( vec ) == domain.nEl"""
-        nEls = [sub.nEl for sub in self.domain.subs]
-        oel = nm.cumsum( [0] + nEls )
-        if sum( nEls ) != vec.shape[0]:
-            print 'incomatible shape! (%d == %d)' % (sum( nEls ), vec.shape[0])
+    def interp_c_vals_to_n_vals( self, vec ):
+        """len( vec ) == domain.n_el"""
+        n_els = [sub.n_el for sub in self.domain.subs]
+        oel = nm.cumsum( [0] + n_els )
+        if sum( n_els ) != vec.shape[0]:
+            print 'incomatible shape! (%d == %d)' % (sum( n_els ), vec.shape[0])
             raise ValueError
 
         ##
         # Mesh vertex values. 
-        nVertex = self.domain.nNod
-        nodVol = nm.zeros( (nVertex,), nm.float64 )
+        n_vertex = self.domain.n_nod
+        nod_vol = nm.zeros( (n_vertex,), nm.float64 )
         dim = vec.shape[1]
-        nodVolVal = nm.zeros( (nVertex, dim ), nm.float64 )
+        nod_vol_val = nm.zeros( (n_vertex, dim ), nm.float64 )
         for ii, ap in enumerate( self.aps ):
             sub = ap.sub
             ig = sub.iseq
@@ -217,52 +217,52 @@ class Field( Struct ):
 
             for ii in range( sub.conn.shape[1] ):
                 cc = sub.conn[:,ii]
-                nodVol[cc] += volume
+                nod_vol[cc] += volume
                 val = volume[:,nm.newaxis] * vec[oel[ig]:oel[ig+1],:]
                 ind2, ind1 = nm.meshgrid( nm.arange( dim ), cc )
-                nodVolVal[ind1,ind2] += val
+                nod_vol_val[ind1,ind2] += val
         
-        nodVolVal = nodVolVal / nodVol[:,nm.newaxis]
+        nod_vol_val = nod_vol_val / nod_vol[:,nm.newaxis]
 
         ##
         # Field nodes values.
-        enodVolVal = self.interpVValsToNVals( nodVolVal )
+        enod_vol_val = self.interp_v_vals_to_n_vals( nod_vol_val )
 
-        return enodVolVal
+        return enod_vol_val
     
     ##
     # 05.06.2006, c
     # 25.07.2006
     # 31.08.2006
-    def interpVValsToNVals( self, vec ):
+    def interp_v_vals_to_n_vals( self, vec ):
         dim = vec.shape[1]
-        enodVolVal = nm.zeros( (self.nNod, dim), nm.float64 )
+        enod_vol_val = nm.zeros( (self.n_nod, dim), nm.float64 )
         for ii, ap in enumerate( self.aps ):
             sub = ap.sub
 
-            noff = ap.nodeOffsets
+            noff = ap.node_offsets
             if noff[1] == noff[-1]:
                 # Vertex values only...
-                enodVolVal[sub.conn] = vec[sub.conn]
+                enod_vol_val[sub.conn] = vec[sub.conn]
                 continue
 
             econn = ap.econn
 
             ginterp = ap.interp.gel.interp
-            coors = ap.interp.nodes['v'].barCoors
+            coors = ap.interp.nodes['v'].bar_coors
 
             qp = Struct( vals = coors )
-            bf, aux = fea.evalBF( {'v': qp}, ginterp.baseFuns, ginterp.nodes )
+            bf, aux = fea.eval_bf( {'v': qp}, ginterp.base_funs, ginterp.nodes )
             bf = bf['v'][:,0,:].copy()
             
-            fea.mu.interpVertexData( enodVolVal, econn, vec, sub.conn, bf, 0 )
+            fea.mu.interp_vertex_data( enod_vol_val, econn, vec, sub.conn, bf, 0 )
 
-        return enodVolVal
+        return enod_vol_val
 
     ##
     # 08.08.2006, c
     # 13.02.2007
-    def getCoor( self, nods = None, igs = None ):
+    def get_coor( self, nods = None, igs = None ):
         """Will igs be ever needed?"""
         if nods is None:
             return self.aps.coors
@@ -275,7 +275,7 @@ class Field( Struct ):
     ##
     # 16.07.2007, c
     # 31.07.2007
-    def getGeometry( self, kind, ig, silence = False ):
+    def get_geometry( self, kind, ig, silence = False ):
 
         if kind == 'volume':
             vgs, igs = self.vgs
@@ -293,7 +293,7 @@ class Field( Struct ):
 
     ##
     # 31.08.2007, c
-    def getBaseFunctions( self, kind = None, igs = None ):
+    def get_base_functions( self, kind = None, igs = None ):
 
         if igs is None:
             igs = self.igs
@@ -313,7 +313,7 @@ class Field( Struct ):
 
     ##
     # 31.08.2007, c
-    def getQuadraturePoints( self, kind = None, igs = None ):
+    def get_quadrature_points( self, kind = None, igs = None ):
 
         if igs is None:
             igs = self.igs
@@ -323,15 +323,15 @@ class Field( Struct ):
             ii = self.igs.index( ig )
             ap = self.aps[ii]
             if kind is None:
-                qps.append( self.qpCoors )
+                qps.append( self.qp_coors )
             else:
-                qps.append( self.qpCoors[kind] )
+                qps.append( self.qp_coors[kind] )
 
         return qps
 
     ##
     # 31.08.2007, c
-    def getInterpolants( self, igs = None ):
+    def get_interpolants( self, igs = None ):
         
         if igs is None:
             igs = self.igs
@@ -349,11 +349,11 @@ class Field( Struct ):
     # 01.09.2007
     # 03.09.2007
     # 05.09.2007
-    def getProlongBase( self, coors, coarseDomain, iemaps,
-                        coarseInterps, suppressErrors = False ):
+    def get_prolong_base( self, coors, coarse_domain, iemaps,
+                        coarse_interps, suppress_errors = False ):
 
-        ccoors = coarseDomain.getMeshCoors()
-        cconns = coarseDomain.getConns()
+        ccoors = coarse_domain.get_mesh_coors()
+        cconns = coarse_domain.get_conns()
 
         pbase = {}
         for ii, ap in enumerate( self.aps ):
@@ -365,12 +365,12 @@ class Field( Struct ):
             iemap = iemaps[ig]
             cconn = cconns[ig]
 
-            cinterp = coarseInterps[ii]
+            cinterp = coarse_interps[ii]
             cnodes = cinterp.nodes['v'].vals
-            crefCoors = cinterp.nodes['v'].barCoors
-            fun = cinterp.baseFuns['v'].fun
+            cref_coors = cinterp.nodes['v'].bar_coors
+            fun = cinterp.base_funs['v'].fun
 
-            cbfs = nm.empty( (ap.sub.nEl, bf.shape[0], 1, cconn.shape[1]),
+            cbfs = nm.empty( (ap.sub.n_el, bf.shape[0], 1, cconn.shape[1]),
                              dtype = nm.float64 )
             for iel, row in enumerate( conn ):
                 ciel = iemap[iel]
@@ -385,17 +385,17 @@ class Field( Struct ):
                 # Barycentric coordinates of spatial QP w.r.t. coarse element.
                 ccoor = ccoors[crow,:]
 #                print ccoor
-                bcqp = la.barycentricCoors( xqp, ccoor )
+                bcqp = la.barycentric_coors( xqp, ccoor )
 #                print bcqp
 
                 # Barycentric QP -> reference QP w.r.t. coarse element.
-                cqp = nm.dot( bcqp.T, crefCoors )
+                cqp = nm.dot( bcqp.T, cref_coors )
 #                print cqp
 
                 # Coarse base function in fine QP.
                 try:
                     cbf = fun.value( cqp, cnodes,
-                                     suppressErrors = suppressErrors )
+                                     suppress_errors = suppress_errors )
                 except AssertionError:
                     print ig, iel, row
                     print bcqp
@@ -406,7 +406,7 @@ class Field( Struct ):
                     ax1.scatter( xqp[:,0], xqp[:,1], c = 'r' )
                     ax1.axis( 'equal' )
                     ax2 = fig.add_subplot( 122 )
-                    ax2.scatter( crefCoors[:,0], crefCoors[:,1] )
+                    ax2.scatter( cref_coors[:,0], cref_coors[:,1] )
                     ax2.scatter( cqp[:,0], cqp[:,1], c = 'r' )
                     ax2.axis( 'equal' )
                     pylab.show()

@@ -1,5 +1,5 @@
 # c: 02.05.2008, r: 02.05.2008
-fileName_mesh = 'database/phono/cube_cylinder.mesh'
+file_name_mesh = 'database/phono/cube_cylinder.mesh'
 
 material_2 = {
     'name' : 'coef',
@@ -51,7 +51,7 @@ solver_101 = {
     'kind' : 'ls.pyamg',
 
     'method' : 'ruge_stuben_solver',
-    'epsA'   : 1e-12,
+    'eps_a'   : 1e-12,
 }
 
 solver_102 = {
@@ -59,7 +59,7 @@ solver_102 = {
     'kind' : 'ls.pyamg',
 
     'method' : 'smoothed_aggregation_solver',
-    'epsA'   : 1e-12,
+    'eps_a'   : 1e-12,
 }
 
 solver_110 = {
@@ -67,8 +67,8 @@ solver_110 = {
     'kind' : 'ls.scipy_iterative',
 
     'method' : 'cg',
-    'iMax'   : 1000,
-    'epsA'   : 1e-12,
+    'i_max'   : 1000,
+    'eps_a'   : 1e-12,
 }
 
 solver_111 = {
@@ -76,8 +76,8 @@ solver_111 = {
     'kind' : 'ls.scipy_iterative',
 
     'method' : 'bicgstab',
-    'iMax'   : 1000,
-    'epsA'   : 1e-12,
+    'i_max'   : 1000,
+    'eps_a'   : 1e-12,
 }
 
 solver_112 = {
@@ -85,27 +85,27 @@ solver_112 = {
     'kind' : 'ls.scipy_iterative',
 
     'method' : 'qmr',
-    'iMax'   : 1000,
-    'epsA'   : 1e-12,
+    'i_max'   : 1000,
+    'eps_a'   : 1e-12,
 }
 
 solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'is_plot'    : False,
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 options = {
@@ -113,33 +113,33 @@ options = {
 }
 
 fe = {
-    'chunkSize' : 100000
+    'chunk_size' : 100000
 }
 
 from sfepy.base.testing import TestCommon
-outputName = 'test_linear_solvers_%s.vtk'
+output_name = 'test_linear_solvers_%s.vtk'
 
 ##
 # c: 02.05.2008
 class Test( TestCommon ):
-    canFail = ['ls.pyamg']
+    can_fail = ['ls.pyamg']
 
     ##
     # c: 02.05.2008, r: 02.05.2008
-    def fromConf( conf, options ):
+    def from_conf( conf, options ):
         from sfepy.fem.problemDef import ProblemDefinition
 
-        problem = ProblemDefinition.fromConf( conf )
-        problem.timeUpdate()
+        problem = ProblemDefinition.from_conf( conf )
+        problem.time_update()
 
         test = Test( problem = problem, 
                      conf = conf, options = options )
         return test
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 02.05.2008, r: 02.05.2008
-    def _listLinearSolvers( self, confs ):
+    def _list_linear_solvers( self, confs ):
         d = []
         for key, val in confs.iteritems():
             if val.kind.find( 'ls.' ) == 0:
@@ -151,47 +151,47 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
-        from sfepy.solvers.generic import solveStationary
+        from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
         import os.path as op
 
-        solverConfs = self._listLinearSolvers( self.problem.solverConfs )
+        solver_confs = self._list_linear_solvers( self.problem.solver_confs )
 
         ok = True
         tt = []
-        for solverConf in solverConfs:
-            if hasattr( solverConf, 'method' ):
-                method = solverConf.method
+        for solver_conf in solver_confs:
+            if hasattr( solver_conf, 'method' ):
+                method = solver_conf.method
             else:
                 method = ''
-            name = ' '.join( (solverConf.name, solverConf.kind, method) )
+            name = ' '.join( (solver_conf.name, solver_conf.kind, method) )
             self.report( name )
-            self.report( 'matrix size:', self.problem.mtxA.shape )
-            self.report( '        nnz:', self.problem.mtxA.nnz )
+            self.report( 'matrix size:', self.problem.mtx_a.shape )
+            self.report( '        nnz:', self.problem.mtx_a.nnz )
             status = IndexedStruct()
             try:
-                self.problem.initSolvers( nlsStatus = status,
-                                          lsConf = solverConf )
+                self.problem.init_solvers( nls_status = status,
+                                          ls_conf = solver_conf )
                 state = self.problem.solve()
                 failed = status.condition != 0
-##                 self.problem.mtxA.save( 'mtx_laplace_cube',
+##                 self.problem.mtx_a.save( 'mtx_laplace_cube',
 ##                                         format='%d %d %.12e\n' )
             except Exception, exc:
                 failed = True
                 status = None
 
-            ok = ok and ((not failed) or (solverConf.kind in self.canFail))
+            ok = ok and ((not failed) or (solver_conf.kind in self.can_fail))
 
             if status is not None:
-                for kv in status.timeStats.iteritems():
+                for kv in status.time_stats.iteritems():
                     self.report( '%10s: %7.2f [s]' % kv )
                 self.report( 'condition: %d, err0: %.3e, err: %.3e'\
                              % (status.condition, status.err0, status.err) )
-                tt.append( [name, status.timeStats['solve']] )
+                tt.append( [name, status.time_stats['solve']] )
 
-                fname = op.join( self.options.outDir,
-                                op.split( self.conf.outputName )[1] ) % name
-                self.problem.saveState( fname, state )
+                fname = op.join( self.options.out_dir,
+                                op.split( self.conf.output_name )[1] ) % name
+                self.problem.save_state( fname, state )
             else:
                 self.report( 'solver failed:' )
                 self.report( exc )

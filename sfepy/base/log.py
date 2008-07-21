@@ -12,17 +12,17 @@ except ImportError:
 class MyLogFormatter( LogFormatter ):
     def __call__( self, x, pos = None ):
         self.verify_intervals()
-        d = abs(self.viewInterval.span())
+        d = abs(self.view_interval.span())
         b=self._base
         # only label the decades
         fx = nm.log(x)/nm.log(b)
-        isDecade = self.is_decade(fx)
-        if not isDecade and self.labelOnlyBase: s = ''
+        is_decade = self.is_decade(fx)
+        if not is_decade and self.label_only_base: s = ''
         elif x>10000: s= '%1.0e'%x
         elif x<1: s =  '%1.0e'%x
         else: s =  self.pprint_val(x,d)
 
-        print d, fx, isDecade, s
+        print d, fx, is_decade, s
         
         pause()
         return s
@@ -35,23 +35,23 @@ class Log( Struct ):
     # 20.04.2006, c
     # 21.04.2006
     # 21.03.2007
-    def fromConf( conf, dataNames ):
-        obj = Log( dataNames = dataNames, seqDataNames = [], igs = [],
-                   data = {}, yscales = [], nCalls = 0 )
+    def from_conf( conf, data_names ):
+        obj = Log( data_names = data_names, seq_data_names = [], igs = [],
+                   data = {}, yscales = [], n_calls = 0 )
         
-        for ig, names in enumerate( obj.dataNames ):
+        for ig, names in enumerate( obj.data_names ):
             for name in names:
                 obj.data[name] = []
                 obj.igs.append( ig )
-                obj.seqDataNames.append( name )
+                obj.seq_data_names.append( name )
                 obj.yscales.append( 'linear' ) # Defaults.
-        obj.nArg = len( obj.igs )
-        obj.nGr = len( obj.dataNames )
+        obj.n_arg = len( obj.igs )
+        obj.n_gr = len( obj.data_names )
         
         try:
-            obj.isPlot = conf.isPlot
+            obj.is_plot = conf.is_plot
         except:
-            obj.isPlot = True
+            obj.is_plot = True
 
         try:
             obj.yscales = conf.yscales
@@ -59,7 +59,7 @@ class Log( Struct ):
             pass
         
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
     
     ##
     # 20.04.2006, c
@@ -76,11 +76,11 @@ class Log( Struct ):
 
         yscales = self.yscales
                 
-        ls = len( args ), self.nArg
+        ls = len( args ), self.n_arg
         if ls[0] != ls[1]:
             raise IndexError, '%d == %d' % ls
 
-        for ii, name in enumerate( self.seqDataNames ):
+        for ii, name in enumerate( self.seq_data_names ):
             aux = args[ii]
             if isinstance( aux, nm.ndarray ):
                 aux = nm.array( aux, ndmin = 1 )
@@ -90,23 +90,23 @@ class Log( Struct ):
                     raise ValueError, 'can log only scalars (%s)' % aux
             self.data[name].append( aux )
 
-        if self.isPlot and (pylab is not None):
-            if self.nCalls == 0:
+        if self.is_plot and (pylab is not None):
+            if self.n_calls == 0:
                 pylab.ion()
                 self.fig = pylab.figure()
                 pylab.ioff()
                 self.ax = []
-                for ig in range( self.nGr ):
-                    isub = 100 * self.nGr + 11 + ig
+                for ig in range( self.n_gr ):
+                    isub = 100 * self.n_gr + 11 + ig
                     self.ax.append( self.fig.add_subplot( isub ) )
                 self.thread = TaskThread( self.fig.canvas.draw )
                 self.thread.start()
             
             self.thread.off()
-            for ig in range( self.nGr ):
+            for ig in range( self.n_gr ):
                 self.ax[ig].cla()
 
-            for ii, name in enumerate( self.seqDataNames ):
+            for ii, name in enumerate( self.seq_data_names ):
                 try:
                     ax = self.ax[self.igs[ii]]
                     ax.set_yscale( yscales[ii] )
@@ -114,13 +114,13 @@ class Log( Struct ):
                     ax.plot( self.data[name] )
 
                     if yscales[ii] == 'log':
-                        ymajorFormatter = ax.yaxis.get_major_formatter()
-                        ymajorFormatter.label_minor( True )
-                        yminorLocator = LogLocator()
+                        ymajor_formatter = ax.yaxis.get_major_formatter()
+                        ymajor_formatter.label_minor( True )
+                        yminor_locator = LogLocator()
                     else:
-                        yminorLocator = AutoLocator()
-                    self.ax[ig].yaxis.set_minor_locator( yminorLocator )
-#                    self.ax[ig].yaxis.set_minor_formatter( yminorFormatter )
+                        yminor_locator = AutoLocator()
+                    self.ax[ig].yaxis.set_minor_locator( yminor_locator )
+#                    self.ax[ig].yaxis.set_minor_formatter( yminor_formatter )
 #                    pylab.axis( 'image' )
 ##                     bb = [nm.min( self.data[name] ), nm.max( self.data[name] )]
 ##                     ylim = [0.99 * bb[0], 1.01 * bb[1]]
@@ -131,14 +131,14 @@ class Log( Struct ):
                     print ii, name, self.data[name]
                     raise
                     pass
-            for ig in range( self.nGr ):
-                self.ax[ig].legend( self.dataNames[ig] )
+            for ig in range( self.n_gr ):
+                self.ax[ig].legend( self.data_names[ig] )
             self.thread.on()
 #            pause()
             
-        self.nCalls += 1
+        self.n_calls += 1
 
-        if finished and self.isPlot and (pylab is not None):
+        if finished and self.is_plot and (pylab is not None):
             self.thread.shutdown()
             self.thread.join()
             pylab.show()

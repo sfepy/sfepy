@@ -68,11 +68,11 @@ typedef struct VolumeGeometry {
     return( vg_print( self, file, mode ) );
   }
 
-  %apply (int32 *array, int32 nRow, int32 nCol) {
+  %apply (int32 *array, int32 n_row, int32 n_col) {
       (int32 *conn, int32 nEl, int32 nEP),
       (int32 *edges, int32 edges_nRow, int32 edges_nCol)
   };
-  %apply (float64 *array, int32 nRow, int32 nCol) {
+  %apply (float64 *array, int32 n_row, int32 n_col) {
       (float64 *coorIn, int32 nNod, int32 dim)
   };
   %apply (FMField *in) {
@@ -146,8 +146,8 @@ typedef struct VolumeGeometry {
     @par Revision history:
     - 01.11.2007, c
   */
-  int32 integrateChunk( FMField *out, FMField *in,
-			int32 *elList, int32 elList_nRow ) {
+  int32 integrate_chunk( FMField *out, FMField *in,
+			 int32 *elList, int32 elList_nRow ) {
     return( vg_integrateChunk( self, out, in, elList, elList_nRow ) );
   }
   /*!
@@ -231,12 +231,12 @@ typedef struct SurfaceGeometry {
     return( sg_print( self, file, mode ) );
   }
 
-  %apply (int32 *array, int32 nRow, int32 nCol) {
+  %apply (int32 *array, int32 n_row, int32 n_col) {
       (int32 *fconn, int32 nFa, int32 nFP),
       (int32 *conn, int32 nEl, int32 nEP),
       (int32 *fis, int32 nFa, int32 nFP)
   };
-  %apply (float64 *array, int32 nRow, int32 nCol) {
+  %apply (float64 *array, int32 n_row, int32 n_col) {
       (float64 *coorIn, int32 nNod, int32 dim)
   };
   %apply (FMField *in) {

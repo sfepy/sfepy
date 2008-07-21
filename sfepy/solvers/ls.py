@@ -13,7 +13,7 @@ else:
     except ImportError:
         import scikits.umfpack as um
 
-um.configure( assumeSortedIndices = True )
+um.configure( assume_sorted_indices = True )
 
 ##
 # 10.10.2007, c
@@ -36,9 +36,9 @@ class Umfpack( LinearSolver ):
     # 02.10.2007
     # 10.10.2007, from solve_umfpack()
     def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = getDefault( conf, self.conf )
-        mtx = getDefault( mtx, self.mtx )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx = get_default( mtx, self.mtx )
+        status = get_default( status, self.status )
 
 ##     umfpack.control[um.UMFPACK_PRL] = 4
 ##     umfpack.control[um.UMFPACK_IRSTEP] = 10
@@ -46,9 +46,9 @@ class Umfpack( LinearSolver ):
         sol = self.umfpack( um.UMFPACK_A, mtx, rhs, autoTranspose = True )
 ##     umfpack.report_info()
 ##    tt = time.clock()
-##    vecDX2 = umfpack( um.UMFPACK_At, mtxA, vecR )
+##    vec_dx2 = umfpack( um.UMFPACK_At, mtx_a, vec_r )
 ##    print "solve = ", time.clock() - tt
-##    print nla.norm( vecDX1 - vecDX ), nla.norm( vecDX2 - vecDX )
+##    print nla.norm( vec_dx1 - vec_dx ), nla.norm( vec_dx2 - vec_dx )
     
         return sol
 
@@ -84,11 +84,11 @@ class ScipyIterative( LinearSolver ):
     ##
     # c: 22.02.2008, r: 22.02.2008
     def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = getDefault( conf, self.conf )
-        mtx = getDefault( mtx, self.mtx )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx = get_default( mtx, self.mtx )
+        status = get_default( status, self.status )
 
-        sol, info = self.solver( mtx, rhs, tol = conf.epsA, maxiter = conf.iMax )
+        sol, info = self.solver( mtx, rhs, tol = conf.eps_a, maxiter = conf.i_max )
         
         return sol
 
@@ -124,13 +124,13 @@ class PyAMGSolver( LinearSolver ):
     ##
     # c: 02.05.2008, r: 02.05.2008
     def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = getDefault( conf, self.conf )
-        mtx = getDefault( mtx, self.mtx )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        mtx = get_default( mtx, self.mtx )
+        status = get_default( status, self.status )
 
         if (self.mg is None) or (mtx is not self.mtx):
             self.mg = self.solver( mtx )
 
-        sol = self.mg.solve( rhs, tol = conf.epsA )
+        sol = self.mg.solve( rhs, tol = conf.eps_a )
         
         return sol

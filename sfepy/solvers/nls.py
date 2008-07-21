@@ -6,70 +6,70 @@ import sfepy.base.plotutils as plu
 # 13.12.2005, c
 # 14.12.2005
 # 02.10.2007
-def checkTangentMatrix( conf, vecX0, mtxA0, evaluator ):
-    vecX = vecX0.copy()
+def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
+    vec_x = vec_x0.copy()
     delta = conf.delta
 
-    vecR, status = evaluator.evalResidual( vecX ) # Update state.
-    mtxA0, status = evaluator.evalTangentMatrix( vecX, mtxA0 )
+    vec_r, status = evaluator.eval_residual( vec_x ) # Update state.
+    mtx_a0, status = evaluator.eval_tangent_matrix( vec_x, mtx_a0 )
 
-    mtxA = mtxA0.tocsc()
-    mtxD = mtxA.copy()
-    mtxD.data[:] = 0.0
+    mtx_a = mtx_a0.tocsc()
+    mtx_d = mtx_a.copy()
+    mtx_d.data[:] = 0.0
 
-    vecDX = nm.zeros_like( vecR )
+    vec_dx = nm.zeros_like( vec_r )
 
-    for ic in range( vecDX.shape[0] ):
-        vecDX[ic] = delta
-        xx = vecX.copy()
-        evaluator.updateVec( xx, vecDX )
-        vecR1, status = evaluator.evalResidual( xx )
+    for ic in range( vec_dx.shape[0] ):
+        vec_dx[ic] = delta
+        xx = vec_x.copy()
+        evaluator.update_vec( xx, vec_dx )
+        vec_r1, status = evaluator.eval_residual( xx )
 
-        vecDX[ic] = -delta
-        xx = vecX.copy()
-        evaluator.updateVec( xx, vecDX )
-        vecR2, status = evaluator.evalResidual( xx )
+        vec_dx[ic] = -delta
+        xx = vec_x.copy()
+        evaluator.update_vec( xx, vec_dx )
+        vec_r2, status = evaluator.eval_residual( xx )
 
-        vecDX[ic] = 0.0;
+        vec_dx[ic] = 0.0;
 
-        vec = 0.5 * (vecR2 - vecR1) / delta
+        vec = 0.5 * (vec_r2 - vec_r1) / delta
 
-##         ir = mtxA.indices[mtxA.indptr[ic]:mtxA.indptr[ic+1]]
+##         ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
 ##         for ii in ir:
-##             mtxD[ii,ic] = vec[ii]
+##             mtx_d[ii,ic] = vec[ii]
             
-        ir = mtxA.indices[mtxA.indptr[ic]:mtxA.indptr[ic+1]]
-        mtxD.data[mtxA.indptr[ic]:mtxA.indptr[ic+1]] = vec[ir]
+        ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
+        mtx_d.data[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]] = vec[ir]
 
 
-    vecR, status = evaluator.evalResidual( vecX ) # Restore.
+    vec_r, status = evaluator.eval_residual( vec_x ) # Restore.
 
     tt = time.clock()
-    print mtxA, mtxD
-    plu.plotMatrixDiff( mtxD, mtxA, delta, ['difference', 'analytical'],
+    print mtx_a, mtx_d
+    plu.plot_matrix_diff( mtx_d, mtx_a, delta, ['difference', 'analytical'],
                         conf.check )
 
     return time.clock() - tt
 
 ##
 # c: 02.12.2005, r: 02.04.2008
-def convTest( conf, it, err, err0 ):
+def conv_test( conf, it, err, err0 ):
 
     status = -1
     if (abs( err0 ) < conf.macheps):
-        errR = 0.0
+        err_r = 0.0
     else:
-        errR = err / err0
+        err_r = err / err0
 
-    output( 'nls: iter: %d, residual: %e (rel: %e)' % (it, err, errR) )
+    output( 'nls: iter: %d, residual: %e (rel: %e)' % (it, err, err_r) )
     if it > 0:
-        if (err < conf.epsA) and (errR < conf.epsR):
+        if (err < conf.eps_a) and (err_r < conf.eps_r):
             status = 0
     else:
-        if err < conf.epsA:
+        if err < conf.eps_a:
             status = 0
 
-    if (status == -1) and (it >= conf.iMax):
+    if (status == -1) and (it >= conf.i_max):
         status = 1
 
     return status
@@ -87,55 +87,55 @@ class Newton( NonlinearSolver ):
     ##
     # c: 02.12.2005, r: 04.04.2008
     # 10.10.2007, from newton()
-    def __call__( self, vecX0, conf = None, evaluator = None,
-                  linSolver = None, status = None ):
+    def __call__( self, vec_x0, conf = None, evaluator = None,
+                  lin_solver = None, status = None ):
         """setting conf.problem == 'linear' means 1 iteration and no rezidual
         check!
         """
-        conf = getDefault( conf, self.conf )
-        evaluator = getDefault( evaluator, self.evaluator )
-        linSolver = getDefault( linSolver, self.linSolver )
-        status = getDefault( status, self.status )
+        conf = get_default( conf, self.conf )
+        evaluator = get_default( evaluator, self.evaluator )
+        lin_solver = get_default( lin_solver, self.lin_solver )
+        status = get_default( status, self.status )
 
-        timeStats = {}
+        time_stats = {}
 
-        vecX = vecX0.copy()
-        vecXLast = vecX0.copy()
-        vecDX = None
+        vec_x = vec_x0.copy()
+        vec_x_last = vec_x0.copy()
+        vec_dx = None
 
         err0 = -1.0
-        errLast = -1.0
+        err_last = -1.0
         it = 0
         while 1:
 
             ls = 1.0
-            vecDX0 = vecDX;
+            vec_dx0 = vec_dx;
             while 1:
                 tt = time.clock()
-                vecR, ret = evaluator.evalResidual( vecX )
-                timeStats['rezidual'] = time.clock() - tt
+                vec_r, ret = evaluator.eval_residual( vec_x )
+                time_stats['rezidual'] = time.clock() - tt
                 if ret == 0: # OK.
                     try:
-                        err = nla.norm( vecR )
+                        err = nla.norm( vec_r )
                     except:
-                        output( 'infs or nans in the residual:', vecR )
-                        output( nm.isfinite( vecR ).all() )
+                        output( 'infs or nans in the residual:', vec_r )
+                        output( nm.isfinite( vec_r ).all() )
                         debug()
                     if it == 0:
                         err0 = err;
                         break
-                    if err < (errLast * conf.lsOn): break
-                    red = conf.lsRed;
+                    if err < (err_last * conf.ls_on): break
+                    red = conf.ls_red;
                     output( 'linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'\
-                            % (it, err, errLast * conf.lsOn, red * ls) )
+                            % (it, err, err_last * conf.ls_on, red * ls) )
                 else: # Failure.
-                    red = conf.lsRedWarp;
+                    red = conf.ls_red_warp;
                     output(  'rezidual computation failed for iter %d'
                              ' (new ls: %e)!' % (it, red * ls) )
                     if (it == 0):
                         raise RuntimeError, 'giving up...'
 
-                if ls < conf.lsMin:
+                if ls < conf.ls_min:
                     if ret != 0:
                         raise RuntimeError, 'giving up...'
                     output( 'linesearch failed, continuing anyway' )
@@ -143,62 +143,62 @@ class Newton( NonlinearSolver ):
 
                 ls *= red;
 
-                vecDX = ls * vecDX0;
-                vecX = vecXLast.copy()
-                evaluator.updateVec( vecX, vecDX )
+                vec_dx = ls * vec_dx0;
+                vec_x = vec_x_last.copy()
+                evaluator.update_vec( vec_x, vec_dx )
             # End residual loop.
 
-            errLast = err;
-            vecXLast = vecX.copy()
+            err_last = err;
+            vec_x_last = vec_x.copy()
 
-            condition = convTest( conf, it, err, err0 )
+            condition = conv_test( conf, it, err, err0 )
             if condition >= 0:
                 break
 
             tt = time.clock()
             if conf.problem == 'nonlinear':
-                mtxA, ret = evaluator.evalTangentMatrix( vecX )
+                mtx_a, ret = evaluator.eval_tangent_matrix( vec_x )
             else:
-                mtxA, ret = evaluator.mtx, 0
-            timeStats['matrix'] = time.clock() - tt
+                mtx_a, ret = evaluator.mtx, 0
+            time_stats['matrix'] = time.clock() - tt
             if ret != 0:
                 raise RuntimeError, 'giving up...'
 
             if conf.check:
                 tt = time.clock()
-                wt = checkTangentMatrix( conf, vecX, mtxA, evaluator )
-                timeStats['check'] = time.clock() - tt - wt
+                wt = check_tangent_matrix( conf, vec_x, mtx_a, evaluator )
+                time_stats['check'] = time.clock() - tt - wt
     ##            if conf.check == 2: pause()
 
             tt = time.clock() 
-            vecDX = linSolver( vecR, mtx = mtxA )
-            timeStats['solve'] = time.clock() - tt
+            vec_dx = lin_solver( vec_r, mtx = mtx_a )
+            time_stats['solve'] = time.clock() - tt
 
-            for kv in timeStats.iteritems():
+            for kv in time_stats.iteritems():
                 output( '%10s: %7.2f [s]' % kv )
 
-            vecE = mtxA * vecDX - vecR
-            lerr = nla.norm( vecE )
-            if lerr > (conf.epsA * conf.linRed):
+            vec_e = mtx_a * vec_dx - vec_r
+            lerr = nla.norm( vec_e )
+            if lerr > (conf.eps_a * conf.lin_red):
                 output( 'linear system not solved! (err = %e)' % lerr )
     #            raise RuntimeError, 'linear system not solved! (err = %e)' % lerr
 
-            evaluator.updateVec( vecX, vecDX )
+            evaluator.update_vec( vec_x, vec_dx )
 
-            if conf.isPlot:
+            if conf.is_plot:
                 plu.pylab.ion()
                 plu.pylab.gcf().clear()
                 plu.pylab.subplot( 2, 2, 1 )
-                plu.pylab.plot( vecXLast )
+                plu.pylab.plot( vec_x_last )
                 plu.pylab.ylabel( r'$x_{i-1}$' )
                 plu.pylab.subplot( 2, 2, 2 )
-                plu.pylab.plot( vecR )
+                plu.pylab.plot( vec_r )
                 plu.pylab.ylabel( r'$r$' )
                 plu.pylab.subplot( 2, 2, 4 )
-                plu.pylab.plot( vecDX )
-                plu.pylab.ylabel( r'$\Delta x$' )
+                plu.pylab.plot( vec_dx )
+                plu.pylab.ylabel( r'$\_delta x$' )
                 plu.pylab.subplot( 2, 2, 3 )
-                plu.pylab.plot( vecX )
+                plu.pylab.plot( vec_x )
                 plu.pylab.ylabel( r'$x_i$' )
                 plu.pylab.draw()
                 plu.pylab.ioff()
@@ -208,25 +208,25 @@ class Newton( NonlinearSolver ):
 
 ##         import pylab as p
 ##         problem = evaluator.problem
-##         r0 = problem.variables.makeFullVec( vecR, forceValue = 0.0 )
-##         dx = nm.zeros_like( vecDX )
-##         ii = problem.variables.getIndx( 'r', stripped = True )
+##         r0 = problem.variables.make_full_vec( vec_r, force_value = 0.0 )
+##         dx = nm.zeros_like( vec_dx )
+##         ii = problem.variables.get_indx( 'r', stripped = True )
 ##         dx[ii] = 1.0
-##         r1 = problem.variables.makeFullVec( mtxA * dx, forceValue = 0.0 )
+##         r1 = problem.variables.make_full_vec( mtx_a * dx, force_value = 0.0 )
 ##         p.plot( r0 )
 ##         p.plot( r1 )
 
 ##         vv = nm.where( nm.abs( r1 ) > 1e-12, 1.0, 0.0 )
-##         problem.saveStateToVTK( 'sd.vtk', vv )
-##         nodes = problem.variables.getNodesOfGlobalDofs( nm.where( vv > 0.5 )[0] )
+##         problem.save_state_to_vtk( 'sd.vtk', vv )
+##         nodes = problem.variables.get_nodes_of_global_dofs( nm.where( vv > 0.5 )[0] )
 ##         print nodes
-## #        problem.saveRegions( 'asdsd' )
+## #        problem.save_regions( 'asdsd' )
 ##         p.show()
 
         if status is not None:
-            status['timeStats'] = timeStats
+            status['time_stats'] = time_stats
             status['err0'] = err0
             status['err'] = err
             status['condition'] = condition
 
-        return vecX
+        return vec_x

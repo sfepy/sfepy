@@ -3,10 +3,10 @@
 from sfepy.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
-fileName_mesh = 'database/micro/perf_symm944t.mesh'
+file_name_mesh = 'database/micro/perf_symm944t.mesh'
 #fileName_mesh = 'database/micro/perf_symm748t.mesh'
 
-if fileName_mesh.find( 'symm' ):
+if file_name_mesh.find( 'symm' ):
     region_1 = {
         'name' : 'Y1',
         'select' : """elements of group 3""",
@@ -152,14 +152,14 @@ epbc_1 = {
     'name' : 'u_rl',
     'region' : ['Left', 'Right'],
     'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
-    'match' : 'matchYLine',
+    'match' : 'match_y_line',
 }
 
 ##
 # FE assembling parameters.
 fe = {
-    'chunkSize' : 100,
-    'cacheOverride' : True,
+    'chunk_size' : 100,
+    'cache_override' : True,
 }
 
 solver_0 = {
@@ -171,20 +171,20 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 2,
-    'epsA'      : 1e-8,
-    'epsR'      : 1e-2,
+    'i_max'      : 2,
+    'eps_a'      : 1e-8,
+    'eps_r'      : 1e-2,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-saveFormat = 'hdf5' # 'hdf5' or 'vtk'
+save_format = 'hdf5' # 'hdf5' or 'vtk'

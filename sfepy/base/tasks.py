@@ -20,12 +20,12 @@ class TaskThread( threading.Thread ):
         self.interval = interval
         self.fun = fun
         self.args = args
-        self.canRun = False
+        self.can_run = False
 
         # Respond to Ctrl_C.
         atexit.register( self.shutdown )
         
-    def setInterval( self, interval ):
+    def set_interval( self, interval ):
         """Set the number of seconds we sleep between executing the function."""
         self.interval = interval
     
@@ -35,9 +35,9 @@ class TaskThread( threading.Thread ):
     
     def run(self):
         while 1:
-            if self.finished.isSet(): return
+            if self.finished.is_set(): return
 
-            if self.canRun:
+            if self.can_run:
                 self.task()
             
             # sleep for interval or until shutdown
@@ -47,10 +47,10 @@ class TaskThread( threading.Thread ):
         apply( self.fun, self.args )
 
     def on( self ):
-        self.canRun = True
+        self.can_run = True
 
     def off( self ):
-        self.canRun = False
+        self.can_run = False
 
 if __name__ == '__main__':
     import pylab

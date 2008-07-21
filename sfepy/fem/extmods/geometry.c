@@ -14,7 +14,7 @@ int32 vg_createAlloc( VolumeGeometry **p_obj,
 {
   VolumeGeometry *obj;
 
-  obj = allocMem( VolumeGeometry, 1 );
+  obj = alloc_mem( VolumeGeometry, 1 );
   fmf_createAlloc( &(obj->bfGM), nEl, nQP, dim, nEP );
   fmf_createAlloc( &(obj->det), nEl, nQP, 1, 1 );
   fmf_createAlloc( &(obj->volume), nEl, 1, 1, 1 );
@@ -50,7 +50,7 @@ int32 vg_freeDestroy( VolumeGeometry **p_obj )
     fmf_freeDestroy( &(obj->det) );
   if (obj->volume) 
     fmf_freeDestroy( &(obj->volume) );
-  freeMem( *p_obj );
+  free_mem( *p_obj );
 
   return( RET_OK );
 }
@@ -288,7 +288,7 @@ int32 sg_createAlloc( SurfaceGeometry **p_obj,
 {
   SurfaceGeometry *obj;
 
-  obj = allocMem( SurfaceGeometry, 1 );
+  obj = alloc_mem( SurfaceGeometry, 1 );
   obj->nFa = nFa;
   obj->nQP = nQP;
   obj->dim = dim;
@@ -324,7 +324,7 @@ int32 sg_freeDestroy( SurfaceGeometry **p_obj )
     fmf_freeDestroy( &(obj->area) );
   if (obj->bfBGM) 
     fmf_freeDestroy( &(obj->bfBGM) );
-  freeMem( *p_obj );
+  free_mem( *p_obj );
 
   return( RET_OK );
 }

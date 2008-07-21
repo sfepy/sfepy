@@ -4,10 +4,10 @@ from sfepy.base.base import *
 # 02.12.2004, c
 # 22.06.2005
 order = {'m' : 0, 'f' : 1, 'e' : 2, 'i' : 3, 's' : 4}
-def eld_cmpNode( objA, objB ):
-    ret = cmp( order[objA[0]], order[objB[0]] )
+def eld_cmp_node( obj_a, obj_b ):
+    ret = cmp( order[obj_a[0]], order[obj_b[0]] )
     if (ret == 0):
-        ret = cmp( objA[1:], objB[1:] )
+        ret = cmp( obj_a[1:], obj_b[1:] )
     return( ret )
 
 ##
@@ -19,7 +19,7 @@ def gel_translate( coors, edges, faces ):
     out = Struct()
 
     out.ids = coors.keys()
-    out.ids.sort( eld_cmpNode )
+    out.ids.sort( eld_cmp_node )
 
     out.coors = nm.array( [coors[ii] for ii in out.ids], nm.float64 )
 
@@ -29,63 +29,63 @@ def gel_translate( coors, edges, faces ):
     out.trans[''] = -1
 
     ##
-    def trEdge( edgesIn ):
-        nEdge = len( edgesIn )
-        edges = nm.zeros( (nEdge, 2), nm.int32 )
-        for ii, edge in enumerate( edgesIn ):
+    def tr_edge( edges_in ):
+        n_edge = len( edges_in )
+        edges = nm.zeros( (n_edge, 2), nm.int32 )
+        for ii, edge in enumerate( edges_in ):
             edges[ii,:] = [out.trans[edge[0]], out.trans[edge[1]]]
-        return (nEdge, edges)
+        return (n_edge, edges)
     ##
-    def trFace( facesIn ):
-        nFace = len( facesIn )
-        nFP = len( facesIn[0] )
+    def tr_face( faces_in ):
+        n_face = len( faces_in )
+        n_fp = len( faces_in[0] )
 
-        faces = nm.zeros( (nFace, nFP), nm.int32 )
-        for ii, face in enumerate( facesIn ):
-            for ifa in range( nFP ):
+        faces = nm.zeros( (n_face, n_fp), nm.int32 )
+        for ii, face in enumerate( faces_in ):
+            for ifa in range( n_fp ):
                 faces[ii,ifa] = out.trans[face[ifa]]
-        return (nFace, nFP, faces)
+        return (n_face, n_fp, faces)
 
-    out.nEdge, out.edges = trEdge( edges )
+    out.n_edge, out.edges = tr_edge( edges )
     if dim == 3:
-        out.nFace, out.nFP, out.faces = trFace( faces )
+        out.n_face, out.n_fp, out.faces = tr_face( faces )
         # Assign edges to a face (in order).
         indx = {3: [[0, 1], [1, 2], [2, 0]],
                 4: [[0, 1], [1, 2], [2, 3], [3, 0]]}
-        out.edgesOfFaces = []
+        out.edges_of_faces = []
         se = [set( edge ) for edge in out.edges]
-        iis = indx[out.nFP]
+        iis = indx[out.n_fp]
         for face in out.faces:
             eof = []
             for ii in iis:
                 edge = set( face[ii] )
                 ie = se.index( edge )
                 eof.append( ie )
-            out.edgesOfFaces.append( eof )
-        out.edgesOfFaces = nm.array( out.edgesOfFaces )
-##         print out.edgesOfFaces
+            out.edges_of_faces.append( eof )
+        out.edges_of_faces = nm.array( out.edges_of_faces )
+##         print out.edges_of_faces
     else:
-        out.nFace, out.faces = out.nEdge, out.edges
-        out.edgesOfFaces = nm.arange( out.nEdge )[:,nm.newaxis]
+        out.n_face, out.faces = out.n_edge, out.edges
+        out.edges_of_faces = nm.arange( out.n_edge )[:,nm.newaxis]
     out.dim = dim
-    out.nVertex = len( out.ids )
+    out.n_vertex = len( out.ids )
 
     return out
 
 ##
 # 08.06.2006, c
-def gel_setupOrientation( vecsTuple ):
-    cycle = range( len( vecsTuple ) / 4 )
+def gel_setup_orientation( vecs_tuple ):
+    cycle = range( len( vecs_tuple ) / 4 )
 
-    roots = nm.array( [vecsTuple[4*ii] for ii in cycle], dtype = nm.int32 )
-    vecs = nm.array( [vecsTuple[4*ii+1] for ii in cycle],
+    roots = nm.array( [vecs_tuple[4*ii] for ii in cycle], dtype = nm.int32 )
+    vecs = nm.array( [vecs_tuple[4*ii+1] for ii in cycle],
                      dtype = nm.int32, ndmin = 2 )
-    swapFrom = nm.array( [vecsTuple[4*ii+2] for ii in cycle],
+    swap_from = nm.array( [vecs_tuple[4*ii+2] for ii in cycle],
                          dtype = nm.int32, ndmin = 2 )
-    swapTo = nm.array( [vecsTuple[4*ii+3] for ii in cycle],
+    swap_to = nm.array( [vecs_tuple[4*ii+3] for ii in cycle],
                        dtype = nm.int32, ndmin = 2 )
 
-    return roots, vecs, swapFrom, swapTo
+    return roots, vecs, swap_from, swap_to
 
 
 ##
@@ -98,12 +98,12 @@ def gel_setupOrientation( vecsTuple ):
 # 09.12.2004
 class GeomElement( Struct ):
     # Class methods.
-    def cmpEdge( objA, objB ):
-        a = objA[3:].sort()
-        b = objB[3:].sort()
+    def cmp_edge( obj_a, obj_b ):
+        a = obj_a[3:].sort()
+        b = obj_b[3:].sort()
         
         return( cmp( a, b ) )
-    cmpEdge = classmethod( cmpEdge )
+    cmp_edge = classmethod( cmp_edge )
 
     ##
     # 30.03.2005
@@ -111,7 +111,7 @@ class GeomElement( Struct ):
     # 07.12.2005
     def __init__( self, **kwargs ):
         Struct.__init__( self, **kwargs )
-        self.setupDone = 0
+        self.setup_done = 0
         
     ##
     # 17.01.2005
@@ -121,21 +121,21 @@ class GeomElement( Struct ):
     # 08.06.2006
     # 02.08.2006
     def setup( self ):
-        if (self.setupDone): return
+        if (self.setup_done): return
 
-        self.dim = len( self.vCoors.values()[0] )
+        self.dim = len( self.v_coors.values()[0] )
 
         self.data = {}
-        self.data['v'] = gel_translate( self.vCoors, self.vEdges, self.vFaces )
-        for key in self.sEdges.keys():
+        self.data['v'] = gel_translate( self.v_coors, self.v_edges, self.v_faces )
+        for key in self.s_edges.keys():
             if self.dim == 2:
-                self.sFaces = {key : None}
-            self.data[key] = gel_translate( self.sCoors,
-                                            self.sEdges[key],
-                                            self.sFaces[key] )
+                self.s_faces = {key : None}
+            self.data[key] = gel_translate( self.s_coors,
+                                            self.s_edges[key],
+                                            self.s_faces[key] )
 
-        ori = dictToStruct( self.orientation, flag = (1,) )
-        ori.vRoots, ori.vVecs, ori.swapFrom, ori.swapTo =\
-                    gel_setupOrientation( ori.vVecs )
+        ori = dict_to_struct( self.orientation, flag = (1,) )
+        ori.v_roots, ori.v_vecs, ori.swap_from, ori.swap_to =\
+                    gel_setup_orientation( ori.v_vecs )
         self.orientation = ori
-        self.setupDone = 1
+        self.setup_done = 1

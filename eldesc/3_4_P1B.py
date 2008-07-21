@@ -2,7 +2,7 @@ name = '3_4_P1B'
 
 desc = {
     'family'      : 'LagrangeP1B',
-    'approxOrder' : 1
+    'approx_order' : 1
 }
 
 geometry = '3_4'
@@ -19,9 +19,9 @@ nodes = {
 }
 
 # geometry key : qp key
-keyMap = {'v' : 'v', 's3' : 's3'}
+key_map = {'v' : 'v', 's3' : 's3'}
 
-baseFuns = {
+base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1

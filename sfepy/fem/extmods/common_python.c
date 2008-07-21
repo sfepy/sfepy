@@ -64,12 +64,12 @@ static AllocSpace *al_head = 0;
 
 
 #undef __FUNC__
-#define __FUNC__ "mem_allocMem"
+#define __FUNC__ "mem_alloc_mem"
 /*!
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-void *mem_allocMem( size_t size, int lineNo, char *funName,
+void *mem_alloc_mem( size_t size, int lineNo, char *funName,
                     char *fileName, char *dirName )
 {
   char *p;
@@ -130,12 +130,12 @@ void *mem_allocMem( size_t size, int lineNo, char *funName,
 }
 
 #undef __FUNC__
-#define __FUNC__ "mem_freeMem"
+#define __FUNC__ "mem_free_mem"
 /*!
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-void mem_freeMem( void *pp, int lineNo, char *funName,
+void mem_free_mem( void *pp, int lineNo, char *funName,
                   char *fileName, char *dirName )
 {
   char *p = (char *) pp;
@@ -402,7 +402,7 @@ int32 mem_freeGarbage()
   output( "freeing garbage.\n" );
   while (al_head) {
     p = (char *) al_head + hsize;
-    freeMem( p );
+    free_mem( p );
 /*      output( "  %s, %s, %s, %d: size: %d, ptr: %p\n", */
 /*  	    head->dirName, head->fileName, head->funName, head->lineNo, */
 /*  	    head->size, p + hsize ); */

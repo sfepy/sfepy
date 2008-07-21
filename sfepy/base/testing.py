@@ -7,7 +7,7 @@ class TestCommon( Struct ):
 
     ##
     # 16.07.2007, c
-    def getNumber( self ):
+    def get_number( self ):
         methods = inspect.getmembers( self, inspect.ismethod )
         tests = [ii for ii in methods
                  if (len( ii[0] ) > 5) and ii[0][:5] == 'test_']
@@ -17,7 +17,7 @@ class TestCommon( Struct ):
     # c: 30.05.2007, r: 05.02.2008
     def run( self, debug = False ):
         ok = True
-        nFail = 0
+        n_fail = 0
 
         methods = inspect.getmembers( self, inspect.ismethod )
         if hasattr( self, 'tests' ):
@@ -31,11 +31,11 @@ class TestCommon( Struct ):
                      if (len( ii[0] ) > 5) and ii[0][:5] == 'test_']
 
             
-        for testName, testMethod in tests:
-            aux = ' %s: ' % testName
+        for test_name, test_method in tests:
+            aux = ' %s: ' % test_name
 
             try:
-                ret = testMethod()
+                ret = test_method()
             except:
                 if debug:
                     raise
@@ -43,14 +43,14 @@ class TestCommon( Struct ):
                 
             if not ret:
                 aux = '---' + aux + 'failed!'
-                nFail += 1
+                n_fail += 1
                 ok = False
             else:
                 aux = '+++' + aux + 'ok'
 
             print aux
 
-        return ok, nFail, len( tests )
+        return ok, n_fail, len( tests )
 
     ##
     # c: 31.05.2007, r: 02.05.2008
@@ -63,7 +63,7 @@ class TestCommon( Struct ):
 
     ##
     # c: 30.05.2007, r: 09.05.2008
-    def evalCoorExpression( expression, coor ):
+    def eval_coor_expression( expression, coor ):
 
         x = coor[:,0]
         y = coor[:,1]
@@ -76,17 +76,17 @@ class TestCommon( Struct ):
         out = eval( expression, nm.__dict__, env )
         
         return out
-    evalCoorExpression = staticmethod( evalCoorExpression )
+    eval_coor_expression = staticmethod( eval_coor_expression )
 
     ##
     # c: 30.05.2007, r: 07.05.2008
-    def compareVectors( vec1, vec2, allowedError = 1e-8,
+    def compare_vectors( vec1, vec2, allowed_error = 1e-8,
                         label1 = 'vec1', label2 = 'vec2', norm = None ):
 
-        diffNorm = nla.norm( vec1 - vec2, ord = norm )
-        TestCommon.report( '||%s - %s||: %e' % (label1, label2, diffNorm) )
-        if diffNorm > allowedError:
+        diff_norm = nla.norm( vec1 - vec2, ord = norm )
+        TestCommon.report( '||%s - %s||: %e' % (label1, label2, diff_norm) )
+        if diff_norm > allowed_error:
             return False
         else:
             return True
-    compareVectors = staticmethod( compareVectors )
+    compare_vectors = staticmethod( compare_vectors )

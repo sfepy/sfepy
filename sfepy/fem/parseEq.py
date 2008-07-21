@@ -1,5 +1,5 @@
 from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
-     oneOf, ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
+     ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
      StringStart, StringEnd, CaselessLiteral
 
 
@@ -20,22 +20,22 @@ class TermParse( object ):
 # 10.04.2007
 # 23.04.2007
 # 13.11.2007
-def collectTerm( termDescs, lc, itps ):
+def collect_term( term_descs, lc, itps ):
     signs = {'+' : 1.0, '-': -1.0}
     def append( str, loc, toks ):
         sign = signs[toks.sign] * signs[lc[0]]
-        termPrefix = itps.get( toks.termDesc.name, '' ) 
-##        print toks, lc, termPrefix
+        term_prefix = itps.get( toks.term_desc.name, '' ) 
+##        print toks, lc, term_prefix
 ##         print name, integral, region
         tp = TermParse()
-        tp.integral = toks.termDesc.integral
-        tp.region = toks.termDesc.region
-        tp.flag = toks.termDesc.flag
+        tp.integral = toks.term_desc.integral
+        tp.region = toks.term_desc.region
+        tp.flag = toks.term_desc.flag
         tp.sign = sign * float( toks.mul[0] )
-        tp.name = termPrefix + toks.termDesc.name
+        tp.name = term_prefix + toks.term_desc.name
         tp.args = toks.args
 #        print tp
-        termDescs.append( tp )
+        term_descs.append( tp )
     return append
 
 ##
@@ -49,8 +49,8 @@ def rhs( lc ):
         
 ##
 # c: 21.05.2006, r: 08.07.2008
-def create_bnf( termDescs, itps ):
-    """termDescs .. list of TermParse objects (sign, termName, termArgNames)"""
+def create_bnf( term_descs, itps ):
+    """term_descs .. list of TermParse objects (sign, term_name, term_arg_names)"""
 
     lc = ['+'] # Linear combination context.
     equal = Literal( "=" ).setParseAction( rhs( lc ) )
@@ -80,32 +80,32 @@ def create_bnf( termDescs, itps ):
                                   + ident( "region" ) + "." + flag( "flag" ) |
                                   ident( "integral" ) + "." + ident( "region" ) |
                                   ident( "region" )
-                                  )))( "termDesc" ) + "("\
+                                  )))( "term_desc" ) + "("\
                                   + Optional( delimitedList( variable ),
                                 default = [] )( "args" ) + ")"
-    term.setParseAction( collectTerm( termDescs, lc, itps ) )
+    term.setParseAction( collect_term( term_descs, lc, itps ) )
 
     rhs1 = equal + OneOrMore( term )
     rhs2 = equal + zero
     equation = StringStart() + OneOrMore( term )\
                + Optional( rhs1 | rhs2 ) + StringEnd()
 
-#    term.setDebug()
+#    term.set_debug()
 
     return equation
     
     
 if __name__ == "__main__":
 
-    testStr = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
+    test_str = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + 5.0 * d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p[-1], Nu, dcf, mode )
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )"""
     
-    termDescs = []
-    bnf = create_bnf( termDescs, {} )
-    out = bnf.parseString( testStr )
+    term_descs = []
+    bnf = create_bnf( term_descs, {} )
+    out = bnf.parseString( test_str )
 
     print 'out:', out, '\n'
-    for tp in termDescs:
+    for tp in term_descs:
         print tp

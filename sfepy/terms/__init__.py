@@ -34,19 +34,19 @@ except:
 # 28.11.2005
 # 24.11.2006
 # 27.02.2007
-varDict = vars().items()
-termTable = {}
-cacheTable = {}
-isTerm = re.compile( '[a-zA-Z_0-9]+Term$' ).match
-isCache = re.compile( '[a-zA-Z_0-9]+DataCache$' ).match
+var_dict = vars().items()
+term_table = {}
+cache_table = {}
+is_term = re.compile( '[a-zA-Z_0-9]+Term$' ).match
+is_cache = re.compile( '[a-zA-Z_0-9]+DataCache$' ).match
 
-for key, var in varDict:
+for key, var in var_dict:
 #    print key, var
-    if isTerm( key ):
-        termTable[var.name] = var
-    elif isCache( key ):
-        cacheTable[var.name] = var
-del varDict
-## print termTable.keys()
-## print cacheTable.keys()
+    if is_term( key ):
+        term_table[var.name] = var
+    elif is_cache( key ):
+        cache_table[var.name] = var
+del var_dict
+## print term_table.keys()
+## print cache_table.keys()
 ## pause()

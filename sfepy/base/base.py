@@ -44,7 +44,7 @@ def import_file( filename ):
 ##
 # c: 02.04.2008, r: 02.04.2008
 prefix = 'sfepy:'
-def setOutputPrefix( prefix  = 'sfepy:' ):
+def set_output_prefix( prefix  = 'sfepy:' ):
     globals()['prefix'] = prefix
 
 ##
@@ -175,12 +175,12 @@ class Struct( object ):
         return self
 
     # 08.03.2005, c
-    def strAll( self ):
+    def str_all( self ):
         ss = "%s\n" % self.__class__
         for key, val in self.__dict__.iteritems():
             if issubclass( self.__dict__[key].__class__, Struct ):
                 ss += "  %s:\n" % key
-                aux = "\n" + self.__dict__[key].strAll()
+                aux = "\n" + self.__dict__[key].str_all()
                 aux = aux.replace( "\n", "\n    " );
                 ss += aux[1:] + "\n"
             else:
@@ -191,7 +191,7 @@ class Struct( object ):
 
     ##
     # 09.07.2007, c
-    def toDict( self ):
+    def to_dict( self ):
         return copy( self.__dict__ )
 
 ##
@@ -264,7 +264,7 @@ class Container( Struct ):
         
     ##
     # 12.06.2007, c
-    def printNames( self ):
+    def print_names( self ):
         print [obj.name for obj in self._objs]
 
 ##
@@ -272,17 +272,17 @@ class Container( Struct ):
 # 01.12.2004
 # 01.12.2004
 class OneTypeList( list ):
-    def __init__( self, itemClass ):
-        self.itemClass = itemClass
+    def __init__( self, item_class ):
+        self.item_class = item_class
         pass
     
     def __setitem__( self, key, value ):
         if (type( value ) in (list, tuple)):
             for ii, val in enumerate( value ):
-                if (val.__class__ != self.itemClass):
+                if (val.__class__ != self.item_class):
                     raise TypeError
         else:
-            if (value.__class__ != self.itemClass):
+            if (value.__class__ != self.item_class):
                 raise TypeError
         list.__setitem__( self, key, value )
 
@@ -292,7 +292,7 @@ class OneTypeList( list ):
         if isinstance( ii, int ):
             return list.__getitem__( self, ii )
         elif isinstance( ii, str ):
-            ir = self.find( ii, retIndx = True )
+            ir = self.find( ii, ret_indx = True )
             if ir:
                 return list.__getitem__( self, ir[0] )
             else:
@@ -310,10 +310,10 @@ class OneTypeList( list ):
         ss += "]"
         return( ss )
     
-    def find( self, name, retIndx = False ):
+    def find( self, name, ret_indx = False ):
         for ii, item in enumerate( self ):
             if item.name == name:
-                if retIndx:
+                if ret_indx:
                     return ii, item
                 else:
                     return item
@@ -321,7 +321,7 @@ class OneTypeList( list ):
 
     ##
     # 12.06.2007, c
-    def printNames( self ):
+    def print_names( self ):
         print [ii.name for ii in self]
 
 ##
@@ -329,7 +329,7 @@ class OneTypeList( list ):
 # 06.10.2005
 # 11.10.2005
 # 17.10.2005
-## def printMemStats():
+## def print_mem_stats():
 ##     import ccore
 ##     modules = [ii.__name__ for ii in vars( ccore ).values()
 ##                if (type( ii ) == type( ccore ))]
@@ -344,13 +344,13 @@ class OneTypeList( list ):
 ##             pass
 
 ##     fd.close()
-## atexit.register( printMemStats  )
+## atexit.register( print_mem_stats  )
 
 ##
 # 19.07.2005, c
 # 26.05.2006
 # 17.10.2007
-def dictToStruct( *args, **kwargs ):
+def dict_to_struct( *args, **kwargs ):
 
     try:
         level = kwargs['level']
@@ -383,7 +383,7 @@ def dictToStruct( *args, **kwargs ):
                         flag[level+1]
                     except:
                         flag = flag + (0,)
-                    val2 = dictToStruct( val, level = level + 1, flag = flag )
+                    val2 = dict_to_struct( val, level = level + 1, flag = flag )
                     if flag[level]:
                         aux.__dict__[key] = val2
                     else:
@@ -404,7 +404,7 @@ def dictToStruct( *args, **kwargs ):
 
 ##
 # 23.01.2006, c
-def isSequence( var ):
+def is_sequence( var ):
     if issubclass( var.__class__, tuple ) or issubclass( var.__class__, list ):
         return True
     else:
@@ -412,26 +412,26 @@ def isSequence( var ):
 
 ##
 # 17.10.2007, c
-def isDerivedClass( cls, parent ):
+def is_derived_class( cls, parent ):
     return issubclass( cls, parent ) and (cls is not parent)
 
 ##
 # 23.10.2007, c
-def insertStaticMethod( cls, function ):
+def insert_static_method( cls, function ):
     setattr( cls, function.__name__, staticmethod( function ) )
 
 ##
 # 23.10.2007, c
-def insertMethod( instance, function ):
+def insert_method( instance, function ):
     setattr( instance, function.__name__,
              UnboundMethodType( function, instance, instance.__class__ ) )
 
 ##
 # 09.08.2006, c
-def invertDict( d, isValTuple = False ):
+def invert_dict( d, is_val_tuple = False ):
     di = {}
     for key, val in d.iteritems():
-        if isValTuple:
+        if is_val_tuple:
             for v in val:
                 di[v] = key
         else:
@@ -441,40 +441,40 @@ def invertDict( d, isValTuple = False ):
 ##
 # 24.08.2006, c
 # 05.09.2006
-def dictFromKeysInit( keys, seqClass = None ):
+def dict_from_keys_init( keys, seq_class = None ):
 
-    if seqClass is None:
+    if seq_class is None:
         return {}.fromkeys( keys )
     
     out = {}
     for key in keys:
-        out[key] = seqClass()
+        out[key] = seq_class()
     return out
 
 ##
 # 16.10.2006, c
-def dictExtend( d1, d2 ):
+def dict_extend( d1, d2 ):
     for key, val in d1.iteritems():
         val.extend( d2[key] )
 
 ##
 # c: 12.03.2007, r: 04.04.2008
-def getDefault( arg, default, msgIfNone = None ):
+def get_default( arg, default, msg_if_none = None ):
     
     if arg is None:
         out = default
     else:
         out = arg
 
-    if (out is None) and (msgIfNone is not None):
-        output( msgIfNone )
+    if (out is None) and (msg_if_none is not None):
+        output( msg_if_none )
         raise ValueError
 
     return out
 
 ##
 # c: 28.04.2008, r: 28.04.2008
-def getDefaultAttr( obj, attr, default ):
+def get_default_attr( obj, attr, default ):
     if hasattr( obj, attr ):
         out = getattr( obj, attr )
     else:
@@ -483,20 +483,20 @@ def getDefaultAttr( obj, attr, default ):
 
 ##
 # c: 27.02.2008, r: 27.02.2008
-def selectByNames( objs_all, names, replace = None, simple = True ):
+def select_by_names( objs_all, names, replace = None, simple = True ):
     objs = {}
     for key, val in objs_all.iteritems():
         if val.name in names:
             if replace is None:
                 objs[key] = val
             else:
-                newVal = copy( val )
-                oldAttr = getattr( val, replace[0] )
+                new_val = copy( val )
+                old_attr = getattr( val, replace[0] )
                 if simple:
-                    newAttr = oldAttr % replace[1]
-                    setattr( newVal, replace[0], newAttr )
+                    new_attr = old_attr % replace[1]
+                    setattr( new_val, replace[0], new_attr )
                 else:
-                    newAttr = replace[1].get( val.name, oldAttr )
-                    setattr( newVal, replace[0], newAttr )
-                objs[key] = newVal
+                    new_attr = replace[1].get( val.name, old_attr )
+                    setattr( new_val, replace[0], new_attr )
+                objs[key] = new_val
     return objs

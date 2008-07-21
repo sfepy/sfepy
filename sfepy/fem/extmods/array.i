@@ -26,8 +26,8 @@
   - 30.11.2005
   - 01.12.2005
 */
-PyArrayObject *helper_getCArrayObject( PyObject *input, int type,
-				       int minDim, int maxDim ) {
+PyArrayObject *helper_get_c_array_object( PyObject *input, int type,
+					  int min_dim, int max_dim ) {
   PyArrayObject *obj;
 
   if (PyArray_Check( input )) {
@@ -37,7 +37,7 @@ PyArrayObject *helper_getCArrayObject( PyObject *input, int type,
       return NULL;
     }
     obj = (PyArrayObject *)
-      PyArray_ContiguousFromAny( input, type, minDim, maxDim );
+      PyArray_ContiguousFromAny( input, type, min_dim, max_dim );
     if (!obj) return NULL;
   } else {
     PyErr_SetString( PyExc_TypeError, "not an array" );
@@ -53,7 +53,7 @@ PyArrayObject *helper_getCArrayObject( PyObject *input, int type,
   - 24.02.2004, c
   - 27.11.2005, adapted from mafest1
 */
-PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
+PyArrayObject *helper_new_c_array_object_i32( int32 len, int32 *array ) {
   int32 ii;
   int32 *out;
   npy_intp plen[1];
@@ -82,7 +82,7 @@ PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
 %typemap( in ) (int32 *array) {
   PyArrayObject *obj;
 
-  obj = helper_getCArrayObject( $input, PyArray_INT32, 0, 0 );
+  obj = helper_get_c_array_object( $input, PyArray_INT32, 0, 0 );
   if (!obj) return NULL;
 
   $1 = (int32 *) PyArray_DATA( obj );
@@ -97,7 +97,7 @@ PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
 %typemap( in ) (int32 *array, int32 len) {
   PyArrayObject *obj;
 
-  obj = helper_getCArrayObject( $input, PyArray_INT32, 1, 1 );
+  obj = helper_get_c_array_object( $input, PyArray_INT32, 1, 1 );
   if (!obj) return NULL;
 
   $1 = (int32 *) PyArray_DATA( obj );
@@ -110,10 +110,10 @@ PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
   - 14.12.2004, c
   - 22.02.2005
 */
-%typemap( in ) (int32 *array, int32 nRow, int32 nCol) {
+%typemap( in ) (int32 *array, int32 n_row, int32 n_col) {
   PyArrayObject *obj;
 
-  obj = helper_getCArrayObject( $input, PyArray_INT32, 2, 2 );
+  obj = helper_get_c_array_object( $input, PyArray_INT32, 2, 2 );
   if (!obj) return NULL;
 
   $1 = (int32 *) PyArray_DATA( obj );
@@ -126,10 +126,10 @@ PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
   @par Revision history:
   - 10.10.2005, c
 */
-%typemap( in ) (float64 *array, int32 nRow, int32 nCol) {
+%typemap( in ) (float64 *array, int32 n_row, int32 n_col) {
   PyArrayObject *obj;
 
-  obj = helper_getCArrayObject( $input, PyArray_FLOAT64, 2, 2 );
+  obj = helper_get_c_array_object( $input, PyArray_FLOAT64, 2, 2 );
   if (!obj) return NULL;
 
   $1 = (float64 *) PyArray_DATA( obj );
@@ -155,10 +155,10 @@ PyArrayObject *helper_newCArrayObject_i32( int32 len, int32 *array ) {
 %typemap( argout ) (int32 *p_len, int32 **p_array) {
   PyArrayObject *obj;
 
-  obj = helper_newCArrayObject_i32( *$1, *$2 );
-  freeMem( *$2 );
+  obj = helper_new_c_array_object_i32( *$1, *$2 );
+  free_mem( *$2 );
   if (obj == NULL) return( NULL );
 
-  $result = helper_appendToTuple( $result, PyArray_Return( obj ) );
+  $result = helper_append_to_tuple( $result, PyArray_Return( obj ) );
 }
 #endif

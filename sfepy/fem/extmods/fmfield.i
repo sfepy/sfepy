@@ -12,12 +12,12 @@
   @par Revision history:
   - 09.12.2005, c
 */
-int32 helper_pretendFMField( FMField *out, PyObject *input )
+int32 helper_pretend_FMField( FMField *out, PyObject *input )
 {
   PyArrayObject *obj;
   int32 ii, nCell = 1, nLev = 1, nRow = 1, nCol = 1;
 
-  obj = helper_getCArrayObject( input, PyArray_FLOAT64, 1, 4 );
+  obj = helper_get_c_array_object( input, PyArray_FLOAT64, 1, 4 );
   if (!obj) return 0;
 
   ii = 0;
@@ -50,7 +50,7 @@ int32 helper_pretendFMField( FMField *out, PyObject *input )
 */
 %typemap( in ) (FMField *in) (FMField out[1]) {
 
-  if (helper_pretendFMField( out, $input )) {
+  if (helper_pretend_FMField( out, $input )) {
     $1 = out;
   } else {
     return NULL;

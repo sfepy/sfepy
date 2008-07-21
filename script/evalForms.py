@@ -3,89 +3,89 @@ import sympy as s
 
 ##
 # 25.09.2007, c
-def createScalar( name, nEP ):
-    vec = s.matrices.zeronm( nEP, 1 )
-    for ip in range( nEP ):
+def create_scalar( name, n_ep ):
+    vec = s.matrices.zeronm( n_ep, 1 )
+    for ip in range( n_ep ):
         vec[ip,0] = '%s%d' % (name, ip)
     return vec
 
 ##
 # 24.09.2007, c
-def createVector( name, nEP, dim ):
+def create_vector( name, n_ep, dim ):
     """ordering is DOF-by-DOF"""
-    vec = s.matrices.zeronm( dim * nEP, 1 )
+    vec = s.matrices.zeronm( dim * n_ep, 1 )
     for ii in range( dim ):
-        for ip in range( nEP ):
-            vec[nEP*ii+ip,0] = '%s%d%d' % (name, ii, ip)
+        for ip in range( n_ep ):
+            vec[n_ep*ii+ip,0] = '%s%d%d' % (name, ii, ip)
     return vec
 
 ##
 # 24.09.2007, c
-def createScalarBase( name, nEP ):
-    phi = s.matrices.zeronm( 1, nEP )
-    for ip in range( nEP ):
+def create_scalar_base( name, n_ep ):
+    phi = s.matrices.zeronm( 1, n_ep )
+    for ip in range( n_ep ):
         phi[0,ip] = '%s%d' % (name, ip)
     return phi
 
 ##
 # 24.09.2007, c
 # 25.09.2007
-def createVectorBase( name, phic, dim ):
-    nEP = phic.shape[1]
-    phi = s.matrices.zeronm( dim, dim * nEP )
+def create_vector_base( name, phic, dim ):
+    n_ep = phic.shape[1]
+    phi = s.matrices.zeronm( dim, dim * n_ep )
     indx = []
     for ii in range( dim ):
-        phi[ii,nEP*ii:nEP*(ii+1)] = phic
+        phi[ii,n_ep*ii:n_ep*(ii+1)] = phic
         indx.append( ii )
     return phi, indx
 
 ##
 # 24.09.2007, c
-def createScalarBaseGrad( name, phic, dim ):
-    nEP = phic.shape[1]
-    gc = s.matrices.zeronm( dim, nEP )
+def create_scalar_base_grad( name, phic, dim ):
+    n_ep = phic.shape[1]
+    gc = s.matrices.zeronm( dim, n_ep )
     for ii in range( dim ):
-        for ip in range( nEP ):
+        for ip in range( n_ep ):
             gc[ii,ip] = '%s%d%d' % (name, ii, ip)
     return gc
 
 ##
 # 24.09.2007, c
 # 25.09.2007
-def createVectorBaseGrad( name, gc, transpose = False ):
-    dim, nEP = gc.shape
-    g = s.matrices.zeronm( dim * dim, dim * nEP )
+def create_vector_base_grad( name, gc, transpose = False ):
+    dim, n_ep = gc.shape
+    g = s.matrices.zeronm( dim * dim, dim * n_ep )
     indx = []
     if transpose:
         for ir in range( dim ):
             for ic in range( dim ):
-                g[dim*ir+ic,nEP*ic:nEP*(ic+1)] = gc[ir,:]
+                g[dim*ir+ic,n_ep*ic:n_ep*(ic+1)] = gc[ir,:]
                 indx.append( (ic, ir) )
     else:
         for ir in range( dim ):
             for ic in range( dim ):
-                g[dim*ir+ic,nEP*ir:nEP*(ir+1)] = gc[ic,:]
+                g[dim*ir+ic,n_ep*ir:n_ep*(ir+1)] = gc[ic,:]
                 indx.append( (ir, ic) )
     return g, indx
 
 ##
 # 25.09.2007, c
-def createUOperator( u, transpose = False ):
+def create_u_operator( u, transpose = False ):
     dim = u.shape[0]
-    opU = s.matrices.zeronm( dim * dim, dim )
+    op_u = s.matrices.zeronm( dim * dim, dim )
     if transpose:
         for ir in range( dim ):
             for ic in range( dim ):
-                opU[dim*ir+ic,ic] = u[ir]
+                op_u[dim*ir+ic,ic] = u[ir]
     else:
         for ii in range( dim ):
-            opU[dim*ii:dim*(ii+1),ii] = u
-    return opU
+            op_u[dim*ii:dim*(ii+1),ii] = u
+    return op_u
 
 ##
 # 24.09.2007, c
 # 25.09.2007
-def gradVectorToMatrix( name, gv ):
+def grad_vector_to_matrix( name, gv ):
     dim2 = gv.shape[0]
     dim = int( s.sqrt( dim2 ) )
     gm = s.matrices.zeronm( dim, dim )
@@ -97,7 +97,7 @@ def gradVectorToMatrix( name, gv ):
 ##
 # 24.09.2007, c
 # 25.09.2007
-def substituteContinuous( expr, names, u, phi ):
+def substitute_continuous( expr, names, u, phi ):
     pu = phi * u
     for ii in range( phi.lines ):
         expr = expr.subs( pu[ii,0], names[ii] )
@@ -105,34 +105,34 @@ def substituteContinuous( expr, names, u, phi ):
 
 ##
 # 25.09.2007, c
-def createVectorVarData( name, phi, vindx, g, gt, vgindx, u ):
+def create_vector_var_data( name, phi, vindx, g, gt, vgindx, u ):
     gu = g * u
-    gum = gradVectorToMatrix( 'gum', gu )
+    gum = grad_vector_to_matrix( 'gum', gu )
     print 'g %s:\n' % name, gum
 
     gut = gt * u
-    gutm = gradVectorToMatrix( 'gutm', gut )
+    gutm = grad_vector_to_matrix( 'gutm', gut )
     print 'gt %s:\n' % name, gutm
 
     pu = phi * u
     names = ['c%s%d' % (name, indx) for indx in vindx]
-    cu = substituteContinuous( pu, names, u, phi )
+    cu = substitute_continuous( pu, names, u, phi )
     print 'continuous %s:\n' % name, cu
 
     gnames = ['cg%s%d_%d' % (name, indx[0], indx[1]) for indx in vgindx]
-    cgu = substituteContinuous( gu, gnames, u, g )
-    cgum = gradVectorToMatrix( 'gum', cgu )
+    cgu = substitute_continuous( gu, gnames, u, g )
+    cgum = grad_vector_to_matrix( 'gum', cgu )
     print 'continuous g %s:\n' % name, cgum
 
-    cgut = substituteContinuous( gut, gnames, u, g )
-    cgutm = gradVectorToMatrix( 'gutm', cgut )
+    cgut = substitute_continuous( gut, gnames, u, g )
+    cgutm = grad_vector_to_matrix( 'gutm', cgut )
     print 'continuous gt %s:\n' % name, cgutm
 
-    opU = createUOperator( cu )
-    print opU
+    op_u = create_u_operator( cu )
+    print op_u
 
-    opUT = createUOperator( cu, transpose = True )
-    print opUT
+    op_ut = create_u_operator( cu, transpose = True )
+    print op_ut
 
     out = {
         'g' : gu,
@@ -143,8 +143,8 @@ def createVectorVarData( name, phi, vindx, g, gt, vgindx, u ):
         'cg_m' : cgum,
         'cgt' : cgut,
         'cgt_m' : cgutm,
-        'op' : opU,
-        'opt' : opUT,
+        'op' : op_u,
+        'opt' : op_ut,
         'names' : names,
         'gnames' : gnames,
     }
@@ -153,27 +153,27 @@ def createVectorVarData( name, phi, vindx, g, gt, vgindx, u ):
 
 ##
 # 25.09.2007, c
-def createScalarVarData( name, phi, g, u ):
+def create_scalar_var_data( name, phi, g, u ):
     gu = g * u
 
     pu = phi * u
     names = ['c%s' % name]
-    cu = substituteContinuous( pu, names, u, phi )
+    cu = substitute_continuous( pu, names, u, phi )
     print 'continuous %s:\n' % name, cu
 
     gnames = ['cg%s_%d' % (name, ii) for ii in range( g.shape[0] )]
-    cgu = substituteContinuous( gu, gnames, u, g )
+    cgu = substitute_continuous( gu, gnames, u, g )
     print 'continuous g %s:\n' % name, cgu
 
-    opGU = createUOperator( cgu )
-    print opGU
+    op_gu = create_u_operator( cgu )
+    print op_gu
 
     out = {
         'g' : gu,
         'q' : pu,
         'c' : cu,
         'cg' : cgu,
-        'gop' : opGU,
+        'gop' : op_gu,
         'names' : names,
         'gnames' : gnames,
     }
@@ -183,25 +183,25 @@ def createScalarVarData( name, phi, g, u ):
 ##
 # 25.09.2007, c
 def main():
-    nEP = 3
+    n_ep = 3
     dim = 2
 
 
-    u = createVector( 'u', nEP, dim )
-    v = createVector( 'v', nEP, dim )
-    b = createVector( 'b', nEP, dim )
-    p = createScalar( 'p', nEP )
-    q = createScalar( 'q', nEP )
-    r = createScalar( 'r', nEP )
+    u = create_vector( 'u', n_ep, dim )
+    v = create_vector( 'v', n_ep, dim )
+    b = create_vector( 'b', n_ep, dim )
+    p = create_scalar( 'p', n_ep )
+    q = create_scalar( 'q', n_ep )
+    r = create_scalar( 'r', n_ep )
 
     ## print u
     ## print v
 
-    phic = createScalarBase( 'phic', nEP )
-    phi, vindx = createVectorBase( 'phi', phic, dim )
-    gc = createScalarBaseGrad( 'gc', phic, dim )
-    g, vgindx = createVectorBaseGrad( 'g', gc )
-    gt, aux = createVectorBaseGrad( 'gt', gc, transpose = True )
+    phic = create_scalar_base( 'phic', n_ep )
+    phi, vindx = create_vector_base( 'phi', phic, dim )
+    gc = create_scalar_base_grad( 'gc', phic, dim )
+    g, vgindx = create_vector_base_grad( 'g', gc )
+    gt, aux = create_vector_base_grad( 'gt', gc, transpose = True )
 
     ## print phi
     ## print phic
@@ -209,12 +209,12 @@ def main():
     print g
     print gt
 
-    ud = createVectorVarData( 'u', phi, vindx, g, gt, vgindx, u )
-    vd = createVectorVarData( 'v', phi, vindx, g, gt, vgindx, v )
-    bd = createVectorVarData( 'b', phi, vindx, g, gt, vgindx, b )
-    pd = createScalarVarData( 'p', phic, gc, p )
-    qd = createScalarVarData( 'q', phic, gc, q )
-    rd = createScalarVarData( 'r', phic, gc, r )
+    ud = create_vector_var_data( 'u', phi, vindx, g, gt, vgindx, u )
+    vd = create_vector_var_data( 'v', phi, vindx, g, gt, vgindx, v )
+    bd = create_vector_var_data( 'b', phi, vindx, g, gt, vgindx, b )
+    pd = create_scalar_var_data( 'p', phic, gc, p )
+    qd = create_scalar_var_data( 'q', phic, gc, q )
+    rd = create_scalar_var_data( 'r', phic, gc, r )
     print ud.keys()
 
     assert bool( bd['op'].T * g == bd['opt'].T * gt )

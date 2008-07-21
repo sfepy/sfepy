@@ -1,5 +1,5 @@
 # c: 15.02.2008, r: 28.03.2008
-fileName_mesh = 'database/octahedron.node'
+file_name_mesh = 'database/octahedron.node'
 
 material_2 = {
     'name' : 'coef',
@@ -85,20 +85,20 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 options = {
@@ -107,5 +107,5 @@ options = {
 }
 
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }

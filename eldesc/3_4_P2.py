@@ -2,7 +2,7 @@ name = '3_4_P2'
 
 desc = {
     'family'      : 'Lagrange',
-    'approxOrder' : 2
+    'approx_order' : 2
 }
 
 geometry = '3_4'
@@ -19,7 +19,7 @@ nodes = {
 }
 
 # geometry key : qp key
-keyMap = {'v' : 'v', 's3' : 's6'}
+key_map = {'v' : 'v', 's3' : 's6'}
 
 
 ## # 3D 11 point, order 4
@@ -37,7 +37,7 @@ keyMap = {'v' : 'v', 's3' : 's6'}
 ## aux2 = [-0.105244444444444, 0.060977777777778, 0.060977777777778, 0.060977777777778, 0.060977777777778, 0.199111111111111, 0.199111111111111, 0.199111111111111, 0.199111111111111, 0.199111111111111, 0.199111111111111]
 ## import scipy.base as nm
 
-## qpCoors = {
+## qp_coors = {
 ##     'v' : {
 ##         'mode'    : 'here',
 ##         'vals'    : 0.5 * (nm.array( aux1 ) + 1.0),
@@ -68,7 +68,7 @@ keyMap = {'v' : 'v', 's3' : 's6'}
 ## sc = 1.0 / 6.0
 ## sd = 2.0 / 3.0
 
-## qpCoors = {
+## qp_coors = {
 ##     'v' : {
 ##         'mode'    : 'here',
 ## #        'vals'    : [[0.25, 0.25, 0.25]],
@@ -100,9 +100,9 @@ keyMap = {'v' : 'v', 's3' : 's6'}
 ##         'weights' : [sc] * 3
 ##     }
 ## }
-## print qpCoors
+## print qp_coors
 
-baseFuns = {
+base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1

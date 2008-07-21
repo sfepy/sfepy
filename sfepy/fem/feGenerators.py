@@ -14,9 +14,9 @@ from geomElement import GeomElement
 # 22.09.2005
 # 27.11.2005
 # 16.12.2005
-def ap_nodegen_lagrange( ao, key, nod, gel, wantBarCoors = 0 ):
+def ap_nodegen_lagrange( ao, key, nod, gel, want_bar_coors = 0 ):
     ##
-    def genEdges( nodes, nts, iseq, nt, edges, ao ):
+    def gen_edges( nodes, nts, iseq, nt, edges, ao ):
         for ii, edge in enumerate( edges ):
             n1 = nodes[edge[0],:].copy()
             n2 = nodes[edge[1],:].copy()
@@ -30,7 +30,7 @@ def ap_nodegen_lagrange( ao, key, nod, gel, wantBarCoors = 0 ):
         return iseq
 
     ##
-    def genFaces( nodes, nts, iseq, nt, faces, ao ):
+    def gen_faces( nodes, nts, iseq, nt, faces, ao ):
         for ii, face in enumerate( faces ):
             n1 = nodes[face[0],:].copy()
             n2 = nodes[face[1],:].copy()
@@ -48,7 +48,7 @@ def ap_nodegen_lagrange( ao, key, nod, gel, wantBarCoors = 0 ):
         return iseq
 
     ##
-    def genBubble( nodes, nts, iseq, nt, ao ):
+    def gen_bubble( nodes, nts, iseq, nt, ao ):
         n1 = nodes[0,:].copy()
         n2 = nodes[1,:].copy()
         n3 = nodes[2,:].copy()
@@ -72,35 +72,35 @@ def ap_nodegen_lagrange( ao, key, nod, gel, wantBarCoors = 0 ):
 
     gd = gel.data[key]
     dim = gd.dim
-    nV = gd.nVertex
+    n_v = gd.n_vertex
 
-    nNod = fac( ao + dim ) / (fac( ao ) * fac( dim ))
-##     print nNod, gd
-    nodes = nm.zeros( (nNod, nV), nm.int32 )
-    nts = nm.zeros( (nNod, 2), nm.int32 )
+    n_nod = fac( ao + dim ) / (fac( ao ) * fac( dim ))
+##     print n_nod, gd
+    nodes = nm.zeros( (n_nod, n_v), nm.int32 )
+    nts = nm.zeros( (n_nod, 2), nm.int32 )
 
     if ao == 0:
         nts[0,:] = [3, 0]
-        nodes[0,:] = nm.zeros( (nV,), nm.int32 )
+        nodes[0,:] = nm.zeros( (n_v,), nm.int32 )
     else:
         iseq = 0
         delta = 1.0 / float( ao )
         # Vertex nodes.
-        nts[0:nV,0] = 0
-        nts[0:nV,1] = nm.arange( nV, dtype = nm.int32 )
-        aux = ao * nm.identity( nV, dtype = nm.int32 )
-        nodes[iseq:iseq+nV,:] = aux
-        iseq += nV
+        nts[0:n_v,0] = 0
+        nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
+        aux = ao * nm.identity( n_v, dtype = nm.int32 )
+        nodes[iseq:iseq+n_v,:] = aux
+        iseq += n_v
 
         if dim == 1:
-            iseq = genEdges( nodes, nts, iseq, 3, [[0, 1]], ao )
+            iseq = gen_edges( nodes, nts, iseq, 3, [[0, 1]], ao )
         elif dim == 2:
-            iseq = genEdges( nodes, nts, iseq, 1, gd.edges, ao )
-            iseq = genFaces( nodes, nts, iseq, 3, [[0, 1, 2]], ao )
+            iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+            iseq = gen_faces( nodes, nts, iseq, 3, [[0, 1, 2]], ao )
         elif dim == 3:
-            iseq = genEdges( nodes, nts, iseq, 1, gd.edges, ao )
-            iseq = genFaces( nodes, nts, iseq, 2, gd.faces, ao )
-            iseq = genBubble( nodes, nts, iseq, 3, ao )
+            iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+            iseq = gen_faces( nodes, nts, iseq, 2, gd.faces, ao )
+            iseq = gen_bubble( nodes, nts, iseq, 3, ao )
         else:
             raise NotImplementedError
         
@@ -112,23 +112,23 @@ def ap_nodegen_lagrange( ao, key, nod, gel, wantBarCoors = 0 ):
         print nodes
         raise AssertionError
 
-    if wantBarCoors:
+    if want_bar_coors:
         ##
         # Barycentric coordinates.
         if ao == 0:
-            tmp = nm.ones( (nNod, nV), nm.int32 )
-            barCoors = nm.dot( tmp, gd.coors ) / nV
+            tmp = nm.ones( (n_nod, n_v), nm.int32 )
+            bar_coors = nm.dot( tmp, gd.coors ) / n_v
         else:
-            barCoors = nm.dot( nodes, gd.coors ) / ao
+            bar_coors = nm.dot( nodes, gd.coors ) / ao
 
-        return (nts, nodes, barCoors)
+        return (nts, nodes, bar_coors)
     else:
         return (nts, nodes)
 
 ##
 # 23.11.2005, c
 # 16.12.2005
-def ap_nodegen_lagrange_pxb( ao, key, nod, gel, wantBarCoors = 0 ):
+def ap_nodegen_lagrange_pxb( ao, key, nod, gel, want_bar_coors = 0 ):
     
     nts, nodes = ap_nodegen_lagrange( ao, key, nod, gel, 0 )
     shape = [nts.shape[0] + 1, 2]
@@ -140,13 +140,13 @@ def ap_nodegen_lagrange_pxb( ao, key, nod, gel, wantBarCoors = 0 ):
     nodes[-1,0] = -1
     nodes[-1,1:] = 0
     
-    if wantBarCoors:
+    if want_bar_coors:
         gd = gel.data[key]
-        barCoors = nm.dot( nodes, gd.coors ) / ao
-        nV = gel.data[key].nVertex
-        tmp = nm.ones( (nV,), nm.int32 )
-        barCoors[-1,:] =  nm.dot( tmp, gd.coors ) / nV
-        return (nts, nodes, barCoors)
+        bar_coors = nm.dot( nodes, gd.coors ) / ao
+        n_v = gel.data[key].n_vertex
+        tmp = nm.ones( (n_v,), nm.int32 )
+        bar_coors[-1,:] =  nm.dot( tmp, gd.coors ) / n_v
+        return (nts, nodes, bar_coors)
     else:
         return (nts, nodes)
 
@@ -154,10 +154,10 @@ def ap_nodegen_lagrange_pxb( ao, key, nod, gel, wantBarCoors = 0 ):
 # 06.12.2005, c
 # 07.12.2005
 # 02.08.2006
-def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
+def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, want_bar_coors = 0 ):
 
     ##
-    def genEdges( nodes, nts, iseq, nt, edges, ao ):
+    def gen_edges( nodes, nts, iseq, nt, edges, ao ):
         delta = 1.0 / float( ao )
         for ii, edge in enumerate( edges ):
             n1 = nodes[edge[0],:].copy()
@@ -172,7 +172,7 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
         return iseq
 
     ##
-    def genFaces( nodes, nts, iseq, nt, faces, ao ):
+    def gen_faces( nodes, nts, iseq, nt, faces, ao ):
         delta = 1.0 / (float( ao ) ** 2)
         for ii, face in enumerate( faces ):
             n1 = nodes[face[0],:].copy()
@@ -193,7 +193,7 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
                     iseq += 1
         return iseq
     ##
-    def genBubble( nodes, nts, iseq, nt, ao ):
+    def gen_bubble( nodes, nts, iseq, nt, ao ):
         delta = 1.0 / (float( ao ) ** 3)
         n1 = nodes[0,:].copy()
         n2 = nodes[1,:].copy()
@@ -223,7 +223,7 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
         return iseq
 
     # Requires fixed vertex numbering!
-    vertexMaps = {3 : [[0, 0, 0],
+    vertex_maps = {3 : [[0, 0, 0],
                       [ao, 0, 0],
                       [ao, ao, 0],
                       [0, ao, 0],
@@ -239,48 +239,48 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
                        ao] }
     gd = gel.data[key]
     dim = gd.dim
-    vertexMap = vertexMaps[dim]
+    vertex_map = vertex_maps[dim]
 
     ##
     # Make tensor product of 1D nodes.
-    nNod = (ao + 1) ** dim
-    nV = gd.nVertex
-    nodes = nm.zeros( (nNod, 2 * dim), nm.int32 )
-    nts = nm.zeros( (nNod, 2), nm.int32 )
+    n_nod = (ao + 1) ** dim
+    n_v = gd.n_vertex
+    nodes = nm.zeros( (n_nod, 2 * dim), nm.int32 )
+    nts = nm.zeros( (n_nod, 2), nm.int32 )
 
-##     print nNod, gd
+##     print n_nod, gd
 
     iseq = 0
     ##
     # Vertex nodes.
-    nts[0:nV,0] = 0
-    nts[0:nV,1] = nm.arange( nV, dtype = nm.int32 )
-    aux = ao * nm.identity( nV, dtype = nm.int32 )
+    nts[0:n_v,0] = 0
+    nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
+    aux = ao * nm.identity( n_v, dtype = nm.int32 )
     if dim == 3:
-        for ii in range( nV ):
-            i1, i2, i3 = vertexMap[ii]
+        for ii in range( n_v ):
+            i1, i2, i3 = vertex_map[ii]
             nodes[iseq,:] = [ao - i1, i1, ao - i2, i2, ao - i3, i3]
             iseq += 1
     elif dim == 2:
-        for ii in range( nV ):
-            i1, i2 = vertexMap[ii]
+        for ii in range( n_v ):
+            i1, i2 = vertex_map[ii]
             nodes[iseq,:] = [ao - i1, i1, ao - i2, i2]
             iseq += 1
     else:
-        for ii in range( nV ):
-            i1 = vertexMap[ii]
+        for ii in range( n_v ):
+            i1 = vertex_map[ii]
             nodes[iseq,:] = [ao - i1, i1]
             iseq += 1
 
     if dim == 1:
-        iseq = genEdges( nodes, nts, iseq, 3, [[0, 1]], ao )
+        iseq = gen_edges( nodes, nts, iseq, 3, [[0, 1]], ao )
     elif dim == 2:
-        iseq = genEdges( nodes, nts, iseq, 1, gd.edges, ao )
-        iseq = genFaces( nodes, nts, iseq, 3, [[0, 1, 2, 3]], ao )
+        iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+        iseq = gen_faces( nodes, nts, iseq, 3, [[0, 1, 2, 3]], ao )
     elif dim == 3:
-        iseq = genEdges( nodes, nts, iseq, 1, gd.edges, ao )
-        iseq = genFaces( nodes, nts, iseq, 2, gd.faces, ao )
-        iseq = genBubble( nodes, nts, iseq, 3, ao )
+        iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+        iseq = gen_faces( nodes, nts, iseq, 2, gd.faces, ao )
+        iseq = gen_bubble( nodes, nts, iseq, 3, ao )
     else:
         raise NotImplementedError
         
@@ -296,19 +296,19 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
         print nm.concatenate( (nodes, naos[:,nm.newaxis]), 1 )
         raise AssertionError
 
-    if wantBarCoors:
+    if want_bar_coors:
         ##
         # Barycentric coordinates.
-        cMin = nm.amin( gd.coors, 0 )
-        cMax = nm.amax( gd.coors, 0 )
+        c_min = nm.amin( gd.coors, 0 )
+        c_max = nm.amax( gd.coors, 0 )
 ##         print gd.coors
-##         print cMin, cMax
+##         print c_min, c_max
 
         cr = nm.arange( 2 * dim )
-        barCoors = (nodes[:,cr[::2]] * cMin + nodes[:,cr[1::2]] * cMax) / ao
-##         print barCoors
+        bar_coors = (nodes[:,cr[::2]] * c_min + nodes[:,cr[1::2]] * c_max) / ao
+##         print bar_coors
         
-        return (nts, nodes, barCoors)
+        return (nts, nodes, bar_coors)
     else:
         return (nts, nodes)
 
@@ -320,26 +320,26 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, wantBarCoors = 0 ):
 def ap_bfgen_lagrange( *args ):
 
     class Generator( Struct ):
-        def __init__( self, vCoors, bf, nodes, varSet ):
+        def __init__( self, v_coors, bf, nodes, var_set ):
             if bf.grad > 1:
                 raise NotImplementedError
 
             self.nodes = nodes
-            self.nV = self.nodes.shape[1]
+            self.n_v = self.nodes.shape[1]
             self.ao = nm.sum( nodes[0,:] )
-            mtx = nm.ones( (self.nV, self.nV), nm.float64 )
-            mtx[0:self.nV-1,:] = nm.transpose( vCoors )
-            self.mtxI = nla.inv( mtx )
-            self.rhs = nm.ones( (self.nV,), nm.float64 )
+            mtx = nm.ones( (self.n_v, self.n_v), nm.float64 )
+            mtx[0:self.n_v-1,:] = nm.transpose( v_coors )
+            self.mtx_i = nla.inv( mtx )
+            self.rhs = nm.ones( (self.n_v,), nm.float64 )
             
         # 01.09.2007
-        def __call__( self, coors, node, iv = None, suppressErrors = False ):
+        def __call__( self, coors, node, iv = None, suppress_errors = False ):
 
             # Barycentric coordinates.
-            bc = nm.zeros( (self.nV, coors.shape[0]), nm.float64 )
+            bc = nm.zeros( (self.n_v, coors.shape[0]), nm.float64 )
             for ic, coor in enumerate( coors ):
-                self.rhs[0:self.nV-1] = coor
-                bc[:,ic] = nm.dot( self.mtxI, self.rhs )
+                self.rhs[0:self.n_v-1] = coor
+                bc[:,ic] = nm.dot( self.mtx_i, self.rhs )
                 error = False
                 for ii, val in enumerate( bc[:,ic] ):
                     if val < 0.:
@@ -352,7 +352,7 @@ def ap_bfgen_lagrange( *args ):
                             bc[ii,ic] = 1.
                         else:
                             error = True
-                    if error and not suppressErrors:
+                    if error and not suppress_errors:
                         print 'quadrature point outside of element!'
                         print ic, coor, node, iv
                         print bc
@@ -360,14 +360,14 @@ def ap_bfgen_lagrange( *args ):
 
             if iv is None:
                 val = nm.ones( (coors.shape[0],), nm.float64 )
-                for i1 in range( self.nV ):
+                for i1 in range( self.n_v ):
                     for i2 in range( node[i1] ):
                         val *= (self.ao * bc[i1,:] - i2) / (i2 + 1.0)
             else:
                 val = nm.zeros( (coors.shape[0],), nm.float64 )
-                for ii in range( self.nV ):
+                for ii in range( self.n_v ):
                     vv = nm.ones( (coors.shape[0],), nm.float64 )
-                    for i1 in range( self.nV ):
+                    for i1 in range( self.n_v ):
                         if i1 == ii: continue
                         for i2 in range( node[i1] ):
                             vv *= (self.ao * bc[i1,:] - i2) / (i2 + 1.0)
@@ -380,7 +380,7 @@ def ap_bfgen_lagrange( *args ):
                             dd *= (self.ao * bc[ii,:] - i2) / (i2 + 1.0)
                         dval += dd * self.ao / (i1 + 1.0)
 
-                    val += vv * dval * self.mtxI[ii,iv]
+                    val += vv * dval * self.mtx_i[ii,iv]
 
             return val
 
@@ -392,26 +392,26 @@ def ap_bfgen_lagrange( *args ):
 def ap_bfgen_lagrange_pxb( *args ):
 
     class Generator( Struct ):
-        def __init__( self, vCoors, bf, nodes, varSet ):
+        def __init__( self, v_coors, bf, nodes, var_set ):
             if bf.grad > 1:
                 raise NotImplementedError
 
-            self.bfGen = ap_bfgen_lagrange( vCoors, bf, nodes, varSet )
-            self.nF = nodes.shape[0] - 1
+            self.bf_gen = ap_bfgen_lagrange( v_coors, bf, nodes, var_set )
+            self.n_f = nodes.shape[0] - 1
 
             # Make a 'hypercubic' (cubic in 2D) node.
             self.bnode = nm.array( [nodes[-1,:]], nm.int32 )
             self.bnode[:] = 1
-            self.bfGenBubble = ap_bfgen_lagrange( vCoors, bf, self.bnode, \
-                                                  varSet )
+            self.bf_gen_bubble = ap_bfgen_lagrange( v_coors, bf, self.bnode, \
+                                                  var_set )
 
         # 01.09.2007
-        def __call__( self, coors, node, iv = None, suppressErrors = False ):
-            valb = self.bfGenBubble( coors, self.bnode[0], iv )
+        def __call__( self, coors, node, iv = None, suppress_errors = False ):
+            valb = self.bf_gen_bubble( coors, self.bnode[0], iv )
             if nm.sum( node ) >= 0:
-                bf = self.bfGen( coors, node, iv,
-                                 suppressErrors = suppressErrors )
-                return bf - valb / float( self.nF )
+                bf = self.bf_gen( coors, node, iv,
+                                 suppress_errors = suppress_errors )
+                return bf - valb / float( self.n_f )
             else:
                 return valb
             
@@ -422,55 +422,55 @@ def ap_bfgen_lagrange_pxb( *args ):
 def ap_bfgen_lagrange_tensor111( *args ):
 
     class Generator( Struct ):
-        def __init__( self, vCoors, bf, nodes, varSet ):
+        def __init__( self, v_coors, bf, nodes, var_set ):
 
             if bf.grad > 1:
                 raise NotImplementedError
 
-            dim = vCoors.shape[1]
-            cMin = nm.amin( vCoors, 0 )
-            cMax = nm.amax( vCoors, 0 )
-##             print dim, cMin, cMax
+            dim = v_coors.shape[1]
+            c_min = nm.amin( v_coors, 0 )
+            c_max = nm.amax( v_coors, 0 )
+##             print dim, c_min, c_max
 
             ##
             # Make a fake 1D gel.
-            gd = Struct( nVertex = 2, dim = 1 )
+            gd = Struct( n_vertex = 2, dim = 1 )
             gel = GeomElement( data = {'aux' : gd} )
 
-            self.bfGens = []
+            self.bf_gens = []
             for ii in range( dim ):
-                vc = nm.array( [[cMin[ii]], [cMax[ii]]] )
+                vc = nm.array( [[c_min[ii]], [c_max[ii]]] )
                 ao = nm.sum( nodes[0,2*ii:2*ii+2] )
 ##                 print vc, ao
                 aux, nod1 = ap_nodegen_lagrange( ao, 'aux', None, gel, 0 )
 ##                 print nod1
 ##                 pause()
-                bfGen = ap_bfgen_lagrange( vc, bf, nod1, varSet )
-                self.bfGens.append( bfGen )
+                bf_gen = ap_bfgen_lagrange( vc, bf, nod1, var_set )
+                self.bf_gens.append( bf_gen )
 
         # 01.09.2007
-        def __call__( self, coors, node, iv = None, suppressErrors = False ):
+        def __call__( self, coors, node, iv = None, suppress_errors = False ):
 
 ##             print coors, node, iv
             dim = coors.shape[1]
             if iv is None:
                 val = 1.0
                 for ii in range( dim ):
-                    val *= self.bfGens[ii]( coors[:,ii],
+                    val *= self.bf_gens[ii]( coors[:,ii],
                                             node[2*ii:2*ii+2], iv,
-                                            suppressErrors = suppressErrors )
+                                            suppress_errors = suppress_errors )
                 return val
             else:
                 val = 1.0
                 for ii in range( dim ):
                     if ii == iv:
-                        val *= self.bfGens[ii]( coors[:,ii],
+                        val *= self.bf_gens[ii]( coors[:,ii],
                                                 node[2*ii:2*ii+2], 0,
-                                                suppressErrors = suppressErrors )
+                                                suppress_errors = suppress_errors )
                     else:
-                        val *= self.bfGens[ii]( coors[:,ii],
+                        val *= self.bf_gens[ii]( coors[:,ii],
                                                 node[2*ii:2*ii+2], None,
-                                                suppressErrors = suppressErrors )
+                                                suppress_errors = suppress_errors )
                 return val
 
             
@@ -478,7 +478,7 @@ def ap_bfgen_lagrange_tensor111( *args ):
 
 ##
 # (volume ('v', 'b'), surface ('s*')) generator
-ap_nodeGenerators = {
+ap_node_generators = {
     'Lagrange' : (ap_nodegen_lagrange, ap_nodegen_lagrange),
     'LagrangeP1B' : (ap_nodegen_lagrange_pxb, ap_nodegen_lagrange),
     'LagrangeP2B' : (ap_nodegen_lagrange_pxb, ap_nodegen_lagrange),
@@ -486,7 +486,7 @@ ap_nodeGenerators = {
                            ap_nodegen_lagrange_tensor111)
 }
 
-ap_bfGenerators = {
+ap_bf_generators = {
     'Lagrange' : (ap_bfgen_lagrange, ap_bfgen_lagrange),
     'LagrangeP1B' : (ap_bfgen_lagrange_pxb, ap_bfgen_lagrange),
     'LagrangeP2B' : (ap_bfgen_lagrange_pxb, ap_bfgen_lagrange),

@@ -72,10 +72,10 @@ typedef enum AllocMode {
   AL_Alloc, AL_Free, AL_Realloc
 } AllocMode;
 
-void *mem_allocMem( size_t size, int lineNo, char *funName,
-		    char *fileName, char *dirName );
-void mem_freeMem( void *pp, int lineNo, char *funName,
-		  char *fileName, char *dirName );
+void *mem_alloc_mem( size_t size, int lineNo, char *funName,
+		     char *fileName, char *dirName );
+void mem_free_mem( void *pp, int lineNo, char *funName,
+		   char *fileName, char *dirName );
 void mem_checkIntegrity( int lineNo, char *funName,
 			 char *fileName, char *dirName );
 void mem_statistics( int lineNo, char *funName,
@@ -93,16 +93,16 @@ void sys_pause();
   @par Revision history:
   - 06.03.2003, c
 */
-#define allocMem( Type, num ) \
- (Type *) mem_allocMem( (num) * sizeof( Type ),\
-                        __LINE__, __FUNC__, __FILE__, __SDIR__ )
-#define freeMem( p ) do {\
-  mem_freeMem( p, __LINE__, __FUNC__, __FILE__, __SDIR__ ); } while (0)
+#define alloc_mem( Type, num ) \
+ (Type *) mem_alloc_mem( (num) * sizeof( Type ),\
+			 __LINE__, __FUNC__, __FILE__, __SDIR__ )
+#define free_mem( p ) do {\
+    mem_free_mem( p, __LINE__, __FUNC__, __FILE__, __SDIR__ ); } while (0)
 
-#define printMemStats()\
+#define print_mem_stats()\
   (mem_statistics( __LINE__, __FUNC__, __FILE__, __SDIR__ ))
 
-#define checkMemoryIntegrity()\
+#define check_memory_integrity()\
   (mem_checkIntegrity( __LINE__, __FUNC__, __FILE__, __SDIR__ ))
 
 /*!

@@ -1,11 +1,11 @@
 def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
     assert dim in [2, 3]
-    fileName_mesh = mesh
+    file_name_mesh = mesh
     options = {
-        'saveEigVectors' : None,
+        'save_eig_vectors' : None,
         'squared' : False,
-        'nEigs' : 10,
-        'eigenSolver' : 'eigen1',
+        'n_eigs' : 10,
+        'eigen_solver' : 'eigen1',
     }
 
     # Whole domain $Y$.
@@ -41,12 +41,12 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
     }
 
     material_2 = {
-        'name' : 'matV',
+        'name' : 'mat_v',
         'mode' : 'function',
         'region' : 'Omega',
 
-        'function' : 'funV',
-        'extraArgs' : {'mode' : 'r^2'},
+        'function' : 'fun_v',
+        'extra_args' : {'mode' : 'r^2'},
     }
 
     if dim == 3:
@@ -106,7 +106,7 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
 
     equations = {
         'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
-                   + dw_mass_scalar_variable.i1.Omega( matV.V, v, Psi )""",
+                   + dw_mass_scalar_variable.i1.Omega( mat_v.V, v, Psi )""",
         'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
         #'sphere' : """ d_volume_integrate.i1.sphere( n )""",
     }
@@ -121,43 +121,43 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
         'kind' : 'ls.scipy_iterative',
 
         'method' : 'cg',
-        'iMax'      : 1000,
-        'epsA'      : 1e-12,
+        'i_max'      : 1000,
+        'eps_a'      : 1e-12,
     }
 
     solver_1 = {
         'name' : 'newton',
         'kind' : 'nls.newton',
 
-        'iMax'      : 1,
-        'epsA'      : 1e-10,
-        'epsR'      : 1.0,
+        'i_max'      : 1,
+        'eps_a'      : 1e-10,
+        'eps_r'      : 1.0,
         'macheps'   : 1e-16,
-        'linRed'    : 1, # Linear system error < (epsA * linRed).
-        'lsRed'     : 0.1,
-        'lsRedWarp' : 0.001,
-        'lsOn'      : 1.1,
-        'lsMin'     : 1e-5,
+        'lin_red'    : 1, # Linear system error < (eps_a * lin_red).
+        'ls_red'     : 0.1,
+        'ls_red_warp' : 0.001,
+        'ls_on'      : 1.1,
+        'ls_min'     : 1e-5,
         'check'     : 0,
         'delta'     : 1e-6,
-        'isPlot'    : False,
+        'is_plot'    : False,
         'matrix'    : 'internal', # 'external' or 'internal'
-        'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+        'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
     }
 
     solver_2 = {
         'name' : 'eigen1',
         'kind' : 'eig.pysparse',
 
-        'tau' : tau,
-        'epsA' : 1e-5,
-        'iMax' : 150,
+        'tau' : -10.0,
+        'eps_a' : 1e-5,
+        'i_max' : 150,
         'method' : 'qmrs',
         'verbosity' : 0,
         'strategy' : 1,
     }
 
     fe = {
-        'chunkSize' : 100000
+        'chunk_size' : 100000
     }
     return locals()

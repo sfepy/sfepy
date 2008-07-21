@@ -2,7 +2,7 @@ name = '3_4_P2B'
 
 desc = {
     'family'      : 'LagrangeP2B',
-    'approxOrder' : 2
+    'approx_order' : 2
 }
 
 geometry = '3_4'
@@ -19,9 +19,9 @@ nodes = {
 }
 
 # geometry key : qp key
-keyMap = {'v' : 'v', 's3' : 's6'}
+key_map = {'v' : 'v', 's3' : 's6'}
 
-baseFuns = {
+base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1

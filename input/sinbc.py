@@ -1,5 +1,5 @@
 # c: 20.03.2008, r: 20.03.2008
-fileName_mesh = 'database/maillage.txt'
+file_name_mesh = 'database/maillage.txt'
 
 material_1 = {
     'name' : 'm',
@@ -45,12 +45,12 @@ variable_2 = {
 ebc_1 = {
     'name' : 't1',
     'region' : 'Gamma_Top',
-    'dofs' : {'t.0' : 'ebcSin'},
+    'dofs' : {'t.0' : 'ebc_sin'},
 }
 ebc_2 = {
     'name' : 't2',
     'region' : 'Gamma_Bottom',
-    'dofs' : {'t.0' : 'ebcSin2'},
+    'dofs' : {'t.0' : 'ebc_sin2'},
 }
 
 integral_1 = {
@@ -73,20 +73,20 @@ solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
 
-    'iMax'      : 1,
-    'epsA'      : 1e-10,
-    'epsR'      : 1.0,
+    'i_max'      : 1,
+    'eps_a'      : 1e-10,
+    'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'linRed'    : 1e-2, # Linear system error < (epsA * linRed).
-    'lsRed'     : 0.1,
-    'lsRedWarp' : 0.001,
-    'lsOn'      : 1.1,
-    'lsMin'     : 1e-5,
+    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'ls_red'     : 0.1,
+    'ls_red_warp' : 0.001,
+    'ls_on'      : 1.1,
+    'ls_min'     : 1e-5,
     'check'     : 0,
     'delta'     : 1e-6,
-    'isPlot'    : False,
+    'is_plot'    : False,
     'matrix'    : 'internal', # 'external' or 'internal'
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore iMax)
+    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
 options = {
@@ -95,18 +95,18 @@ options = {
 }
 
 fe = {
-    'chunkSize' : 1000
+    'chunk_size' : 1000
 }
 
 import numpy as nm
 
 amplitude = 2.0
-def ebcSin( bc, ts, coor ):
+def ebc_sin( bc, ts, coor ):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 2. * nm.pi )
     return val
 
-def ebcSin2( bc, ts, coor ):
+def ebc_sin2( bc, ts, coor ):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 3. * nm.pi )
     return val

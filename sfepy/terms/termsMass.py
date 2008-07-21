@@ -1,5 +1,5 @@
 from terms import *
-from utils import chooseScalarOrInEl
+from utils import choose_scalar_or_in_el
 
 ##
 # 21.11.2006, c
@@ -9,7 +9,7 @@ class MassTerm( Term ):
     \ul{u}_0}{\dt}$
     :arguments: material.rho : $\rho$, ts.dt : $\dt$, parameter : $\ul{u}_0$"""
     name = 'dw_mass'
-    argTypes = ('ts', 'material', 'virtual', 'state', 'parameter')
+    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -20,44 +20,44 @@ class MassTerm( Term ):
 
     ##
     # c: 01.04.2008, r: 01.04.2008
-    def getShape( self, diffVar, chunkSize, apr, apc = None ):
-        self.dataShape = apr.getVDataShape( self.integralName )
-        nEl, nQP, dim, nEP = self.dataShape
+    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = self.data_shape
 
-        if diffVar is None:
-            return (chunkSize, 1, dim * nEP, 1), 0
-        elif diffVar == self.getArgName( 'state' ):
-            return (chunkSize, 1, dim * nEP, dim * nEP), 1
+        if diff_var is None:
+            return (chunk_size, 1, dim * n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, dim * n_ep, dim * n_ep), 1
         else:
             raise StopIteration
         
     ##
     # c: 01.04.2008, r: 01.04.2008
-    def buildCFunArgs( self, mat, state, ap, vg ):
+    def build_c_fun_args( self, mat, state, ap, vg ):
         # terms.dw_mass_rho_in_el is missing
-        mat, self.function = chooseScalarOrInEl( mat, nm.float64,
+        mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
                                                  terms.dw_mass,
                                                  NotImplemented )
-        ts, state0 = self.getArgs( ['ts', 'parameter'], **kwargs )
+        ts, state0 = self.get_args( ['ts', 'parameter'], **kwargs )
 
         vec, indx = state()
         vec0, indx0 = state0()
         dvec = vec[indx] - vec0[indx0]
         rhodt = mat / ts.dt
-        bf = ap.getBase( 'v', 0, self.integralName )
+        bf = ap.get_base( 'v', 0, self.integral_name )
         return rhodt, dvec, 0, bf, vg, ap.econn
 
     ##
     # c: 21.11.2006, r: 01.04.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        mat, virtual, state = self.getArgs( ['material', 'virtual', 'state'],
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, state = self.get_args( ['material', 'virtual', 'state'],
                                             **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, ap )
-        fargs = self.buildCFunArgs( mat, state, ap, vg )
+        shape, mode = self.get_shape( diff_var, chunk_size, ap )
+        fargs = self.build_c_fun_args( mat, state, ap, vg )
 
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
@@ -68,17 +68,17 @@ class MassVectorTerm( MassTerm ):
     :definition: $\int_{\Omega} \rho\ \ul{v} \cdot \ul{u}$
     """
     name = 'dw_mass_vector'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
     # c: 01.04.2008, r: 01.04.2008
-    def buildCFunArgs( self, mat, state, ap, vg ):
-        mat, self.function = chooseScalarOrInEl( mat, nm.float64,
+    def build_c_fun_args( self, mat, state, ap, vg ):
+        mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
                                                  terms.dw_mass,
                                                  NotImplemented )
         vec, indx = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
+        bf = ap.get_base( 'v', 0, self.integral_name )
         return mat, vec, indx.start, bf, vg, ap.econn
 
 ##
@@ -88,7 +88,7 @@ class MassScalarTerm( Term ):
     :definition: $\int_{\Omega} q p$
     """
     name = 'dw_mass_scalar'
-    argTypes = ('virtual', 'state')
+    arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -98,33 +98,33 @@ class MassScalarTerm( Term ):
         
     ##
     # c: 01.04.2008, r: 01.04.2008
-    def getShape( self, diffVar, chunkSize, apr, apc = None ):
-        self.dataShape = apr.getVDataShape( self.integralName )
-        nEl, nQP, dim, nEP = self.dataShape
+    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = self.data_shape
 
-        if diffVar is None:
-            return (chunkSize, 1, nEP, 1), 0
-        elif diffVar == self.getArgName( 'state' ):
-            return (chunkSize, 1, nEP, nEP), 1
+        if diff_var is None:
+            return (chunk_size, 1, n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, n_ep, n_ep), 1
         else:
             raise StopIteration
         
-    def buildCFunArgs( self, state, ap, vg, **kwargs ):
-        step = self.argSteps[state.name]
+    def build_c_fun_args( self, state, ap, vg, **kwargs ):
+        step = self.arg_steps[state.name]
         vec, indx = state( step = step )
-        bf = ap.getBase( 'v', 0, self.integralName )
+        bf = ap.get_base( 'v', 0, self.integral_name )
         return vec, indx.start, bf, vg, ap.econn
 
     ##
     # c: 04.09.2007, r: 04.07.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state = self.getArgs( ['virtual', 'state'], **kwargs )
-        ap, vg = virtual.getApproximation( self.getCurrentGroup(), 'Volume' )
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.getShape( diffVar, chunkSize, ap )
-        fargs = self.buildCFunArgs( state, ap, vg, **kwargs )
+        shape, mode = self.get_shape( diff_var, chunk_size, ap )
+        fargs = self.build_c_fun_args( state, ap, vg, **kwargs )
 
-        for out, chunk in self.charFun( chunkSize, shape ):
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
@@ -136,9 +136,9 @@ class MassScalarVariableTerm( MassScalarTerm ):
     :definition: $\int_{\Omega} c q p$
     """
     name = 'dw_mass_scalar_variable'
-    argTypes = ('material', 'virtual', 'state')
+    arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    useCaches = {'mat_in_qp' : [['material']]}
+    use_caches = {'mat_in_qp' : [['material']]}
 
     ##
     # c: 01.02.2008, r: 01.02.2008
@@ -147,19 +147,19 @@ class MassScalarVariableTerm( MassScalarTerm ):
         
     ##
     # c: 01.04.2008, r: 01.04.2008
-    def buildCFunArgs( self, state, ap, vg, **kwargs ):
-        nEl, nQP = self.dataShape[:2]
+    def build_c_fun_args( self, state, ap, vg, **kwargs ):
+        n_el, n_qp = self.data_shape[:2]
         
-        mat, = self.getArgs( ['material'], **kwargs )
-        cache = self.getCache( 'mat_in_qp', 0 )
-        matQP = cache( 'matqp', self.getCurrentGroup(), 0,
+        mat, = self.get_args( ['material'], **kwargs )
+        cache = self.get_cache( 'mat_in_qp', 0 )
+        mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = mat, ap = ap,
-                       assumedShapes = [(nEl, nQP, 1, 1)],
-                       modeIn = 'vertex' )
+                       assumed_shapes = [(n_el, n_qp, 1, 1)],
+                       mode_in = 'vertex' )
 
         vec, indx = state()
-        bf = ap.getBase( 'v', 0, self.integralName )
-        return matQP, vec, indx.start, bf, vg, ap.econn
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        return mat_qp, vec, indx.start, bf, vg, ap.econn
 
 ##
 # 05.09.2007, c
@@ -170,7 +170,7 @@ class MassScalarFineCoarseTerm( Term ):
     :definition: $\int_{\Omega} q_h p_H$
     """
     name = 'dw_mass_scalar_fine_coarse'
-    argTypes = ('virtual', 'state', 'iemaps', 'pbase' )
+    arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
     geometry = [(Volume, 'virtual')]
 
     ##
@@ -181,27 +181,27 @@ class MassScalarFineCoarseTerm( Term ):
         
     ##
     # c: 05.09.2007, r: 01.04.2008
-    def __call__( self, diffVar = None, chunkSize = None, **kwargs ):
-        virtual, state, iemaps, pbase = self.getArgs( **kwargs )
-        apr, vgr = virtual.getCurrentApproximation()
-        apc, vgc = virtual.getCurrentApproximation()
-        nEl, nQP, dim, nEPR = apr.getVDataShape()
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state, iemaps, pbase = self.get_args( **kwargs )
+        apr, vgr = virtual.get_current_approximation()
+        apc, vgc = virtual.get_current_approximation()
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape()
         
-        if diffVar is None:
-            shape = (chunkSize, 1, nEPR, 1)
+        if diff_var is None:
+            shape = (chunk_size, 1, n_epr, 1)
             mode = 0
-        elif diffVar == self.getArgName( 'state' ):
-            nEPC = apc.getVDataShape()[3]
-            shape = (chunkSize, 1, nEPR, nEPC)
+        elif diff_var == self.get_arg_name( 'state' ):
+            n_epc = apc.get_v_data_shape()[3]
+            shape = (chunk_size, 1, n_epr, n_epc)
             mode = 1
         else:
             raise StopIteration
 
         vec, indx = state()
 
-        cbfs = pbase[self.charFun.ig]
-        iemap = iemaps[self.charFun.ig]
-        for out, chunk in self.charFun( chunkSize, shape ):
+        cbfs = pbase[self.char_fun.ig]
+        iemap = iemaps[self.char_fun.ig]
+        for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, indx.start, apr.bf['v'], cbfs,
                                     vgr, apc.econn, iemap, chunk, mode )
             

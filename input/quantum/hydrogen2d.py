@@ -4,7 +4,7 @@ def define():
     l = common(dim=2, n_eigs=10, tau=-15)
     return l
 
-def funV( ts, coor, region, ig, mode = None ):
+def fun_v( ts, coor, region, ig, mode = None ):
     from numpy import sqrt
 
     out = {}

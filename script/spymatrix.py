@@ -4,7 +4,7 @@ from pylab import *
 import scipy as nm
 from optparse import OptionParser
 
-usage = """%prog [options] fileName"""
+usage = """%prog [options] file_name"""
 
 # 23.11.2005, c
 # 24.11.2005
@@ -19,16 +19,16 @@ def main():
     if len( args ) < 1:
         print usage
         return
-    fileName = args[0]
-    print fileName + ':'
+    file_name = args[0]
+    print file_name + ':'
 
-    fd = open( fileName, "r" )
-    nRow, nCol = map( int, fd.readline().split() )
-    nItem = int( fd.readline() )
-    print nRow, nCol, nItem
+    fd = open( file_name, "r" )
+    n_row, n_col = map( int, fd.readline().split() )
+    n_item = int( fd.readline() )
+    print n_row, n_col, n_item
 
-    ij = nm.zeros( (nItem,2), nm.int32 )
-    val = nm.zeros( (nItem,), nm.float64 )
+    ij = nm.zeros( (n_item,2), nm.int32 )
+    val = nm.zeros( (n_item,), nm.float64 )
     for ii, row in enumerate( fd.readlines() ):
         aux = row.split()
         ij[ii] = int( aux[0] ), int( aux[1] )
@@ -37,18 +37,18 @@ def main():
     if options.eps is not None:
         print 'using', options.eps
         ij = nm.compress( nm.absolute( val ) > options.eps, ij, 0 )
-        nItem = ij.shape[0]
+        n_item = ij.shape[0]
     else:
         print 'showing all'
 
-    print nItem
-    if nItem:
+    print n_item
+    if n_item:
         plot( ij[:,1] + 0.5, ij[:,0] + 0.5, linestyle = 'None',
               marker = ',', markersize = 0.5, markeredgewidth = 0.1 )
-    axis( [-0.5, nRow+0.5, -0.5, nCol+0.5] )
+    axis( [-0.5, n_row+0.5, -0.5, n_col+0.5] )
     axis( 'image' )
     xlabel( '%d x %d: %d nnz, %.2f\%% fill'
-            % (nRow, nCol, nItem, 100. * nItem / float( nRow * nCol )) )
+            % (n_row, n_col, n_item, 100. * n_item / float( n_row * n_col )) )
     gca().set_ylim( gca().get_ylim()[::-1] )
     show()
     

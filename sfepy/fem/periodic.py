@@ -3,12 +3,12 @@ import numpy as nm
 ##
 # c: 05.05.2008, r: 05.05.2008
 eps = 1e-12
-def setAccuracy( eps ):
+def set_accuracy( eps ):
     globals()['eps'] = eps
 
 ##
 # c: 18.10.2006, r: 05.05.2008
-def matchGridLine( coor1, coor2, which ):
+def match_grid_line( coor1, coor2, which ):
     if coor1.shape != coor2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
               % ( coor1.shape, coor2.shape)
@@ -28,18 +28,18 @@ def matchGridLine( coor1, coor2, which ):
 ##
 # 18.10.2006, c
 # last revision: 18.10.2006
-def matchXLine( coor1, coor2 ):
-    return matchGridLine( coor1, coor2, 0 )
-def matchYLine( coor1, coor2 ):
-    return matchGridLine( coor1, coor2, 1 )
-def matchZLine( coor1, coor2 ):
-    return matchGridLine( coor1, coor2, 2 )
+def match_x_line( coor1, coor2 ):
+    return match_grid_line( coor1, coor2, 0 )
+def match_y_line( coor1, coor2 ):
+    return match_grid_line( coor1, coor2, 1 )
+def match_z_line( coor1, coor2 ):
+    return match_grid_line( coor1, coor2, 2 )
 
 ##
 # 01.06.2007, c
 # last revision: 01.06.2007
-def matchGridPlane( coor1, coor2, which ):
-    from sfepy.fem.mesh import findMap
+def match_grid_plane( coor1, coor2, which ):
+    from sfepy.fem.mesh import find_map
     
     if coor1.shape != coor2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
@@ -48,7 +48,7 @@ def matchGridPlane( coor1, coor2, which ):
     offset = coor1[0,which] - coor2[0,which]
     aux = coor2.copy()
     aux[:,which] += offset
-    i1, i2 = findMap( coor1, aux, join = False )
+    i1, i2 = find_map( coor1, aux, join = False )
 
     if i1.shape[0] != coor1.shape[0]:
         print 'cannot match nodes\n(%s,\n %s)' % (coor1[i1], coor2[i2])
@@ -63,9 +63,9 @@ def matchGridPlane( coor1, coor2, which ):
 ##
 # 01.06.2007, c
 # last revision: 01.06.2007
-def matchXPlane( coor1, coor2 ):
-    return matchGridPlane( coor1, coor2, 0 )
-def matchYPlane( coor1, coor2 ):
-    return matchGridPlane( coor1, coor2, 1 )
-def matchZPlane( coor1, coor2 ):
-    return matchGridPlane( coor1, coor2, 2 )
+def match_x_plane( coor1, coor2 ):
+    return match_grid_plane( coor1, coor2, 0 )
+def match_y_plane( coor1, coor2 ):
+    return match_grid_plane( coor1, coor2, 1 )
+def match_z_plane( coor1, coor2 ):
+    return match_grid_plane( coor1, coor2, 2 )

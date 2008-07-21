@@ -5,12 +5,12 @@ import pyparsing as pp
 
 sys.path.append( '.' )
 from sfepy.base.base import *
-from sfepy.terms import termTable, cacheTable
+from sfepy.terms import term_table, cache_table
 
 ##
 # 09.11.2007, c
 # 13.11.2007
-def setSection( sec ):
+def set_section( sec ):
     def action( str, loc, toks ):
         if toks:
             sec[0] = toks[0][1:-1]
@@ -19,7 +19,7 @@ def setSection( sec ):
 
 ##
 # 09.11.2007, c
-def toList( slist, sec ):
+def to_list( slist, sec ):
     def action( str, loc, toks ):
         if toks:
 ##             print toks
@@ -31,21 +31,21 @@ def toList( slist, sec ):
 ##
 # 09.11.2007, c
 # 13.11.2007
-def createBNF( slist, currentSection ):
+def create_bnf( slist, current_section ):
     
     colon = pp.Literal( ':' )
 
     section = pp.Combine( colon
                           + pp.Word( pp.alphas, pp.alphanums + '_ ' )
                           + colon )
-    section.setParseAction( setSection( currentSection ) )
-    section.setName( 'section' )
-#    section.setDebug()
+    section.set_parse_action( set_section( current_section ) )
+    section.set_name( 'section' )
+#    section.set_debug()
 
     text = pp.SkipTo( section | pp.StringEnd() )
-    text.setParseAction( toList( slist, currentSection ) )
-    text.setName( 'text' )
-#    text.setDebug()
+    text.set_parse_action( to_list( slist, current_section ) )
+    text.set_name( 'text' )
+#    text.set_debug()
 
 ##     doc = pp.StringStart()\
 ##           + pp.ZeroOrMore( section + text )\
@@ -86,61 +86,61 @@ ending = r"""
 </article>
 """
 
-itemSection = r"""
+item_section = r"""
 <em>%s</em>:
 """
 
-termSyntax = r"""
+term_syntax = r"""
 <command>%s.%s( &lt;%s> )</command>
 """            
 
-cacheSyntax = r"""
+cache_syntax = r"""
 <p>
-<command>cache = term.getCache( '%s', &lt;index> )</command>
+<command>cache = term.get_cache( '%s', &lt;index> )</command>
 </p><p>
 <command>data = cache( &lt;data name>, &lt;ig>, &lt;ih>, %s )</command>
 </p>
 """            
 
-termDefinition = """<center>%s</center>"""
+term_definition = """<center>%s</center>"""
 
 ##
 # 29.10.2007, c
 # 15.11.2007
-def itemsPerSections( table, secNamePrefix, omitList ):
-    if omitList is not None:
-        omitList = omitList.split()
+def items_per_sections( table, sec_name_prefix, omit_list ):
+    if omit_list is not None:
+        omit_list = omit_list.split()
 
     ips = {}
     for name, cls in table.iteritems():
         module = cls.__module__.split( '.' )[-1]
-        if module in omitList: continue
-        secName = '%s in %s' % (secNamePrefix, module)
-        ips.setdefault( secName, [] ).append( name )
+        if module in omit_list: continue
+        sec_name = '%s in %s' % (sec_name_prefix, module)
+        ips.setdefault( sec_name, [] ).append( name )
     return ips
 
 ##
 # c: 14.11.2007, r: 24.10.2008
-def typesetTermSyntax( fd, cls, name ):
-    fd.write( itemSection % 'Syntax' )
-    argTypes = '>, &lt;'.join( cls.argTypes )
-    fd.write( termSyntax % (name, '&lt;i>.&lt;r>', argTypes) )
+def typeset_term_syntax( fd, cls, name ):
+    fd.write( item_section % 'Syntax' )
+    arg_types = '>, &lt;'.join( cls.arg_types )
+    fd.write( term_syntax % (name, '&lt;i>.&lt;r>', arg_types) )
 
 ##
 # 14.11.2007, c
-def typesetCacheSyntax( fd, cls, name ):
-    argTypes = ', '.join( cls.argTypes )
-    fd.write( cacheSyntax % (name, argTypes) )
+def typeset_cache_syntax( fd, cls, name ):
+    arg_types = ', '.join( cls.arg_types )
+    fd.write( cache_syntax % (name, arg_types) )
 
 ##
 # 15.11.2007, c
-def typesetArguments( fd, argsText ):
+def typeset_arguments( fd, args_text ):
     fd.write( '<center><table><tgroup>\n' )
-    aux = argsText.split( ',' )
+    aux = args_text.split( ',' )
     fd.write( '<tbody>\n' )
-    for argDesc in aux:
-        print argDesc
-        args = argDesc.split( r':' )
+    for arg_desc in aux:
+        print arg_desc
+        args = arg_desc.split( r':' )
         fd.write( '<row><entry>%s</entry><entry>%s</entry></row>\n' % \
                 (args[0], args[1].replace("$", "")) )
 
@@ -148,7 +148,7 @@ def typesetArguments( fd, argsText ):
 
 ##
 # c: 21.03.2008, r: 21.03.2008
-def replaceDollars( text ):
+def replace_dollars( text ):
     text = text.replace( '<', '&lt;' )
     while text.find("$") != -1:
         c0 = c1 = True
@@ -166,19 +166,19 @@ def replaceDollars( text ):
 
 ##
 # c: 26.03.2008, r: 26.03.2008
-def include( fd, fileName ):
-    fd2 = open( fileName, 'r' )
+def include( fd, file_name ):
+    fd2 = open( file_name, 'r' )
     fd.write( fd2.read() )
     fd2.close()
     
 ##
 # c: 21.03.2008, r: 07.05.2008
-def typesetItemTable( fd, itemTable ):
-    secList = []
-    currentSection = [None]
-    bnf = createBNF( secList, currentSection )
+def typeset_item_table( fd, item_table ):
+    sec_list = []
+    current_section = [None]
+    bnf = create_bnf( sec_list, current_section )
 
-    fd.write( r'<section><title>List of all terms</title>' )
+    fd.write( r'<section><title>_list of all terms</title>' )
     fd.write( '\n\n' )
 
     fd.write( '<center><table><tgroup>\n' )
@@ -188,26 +188,26 @@ def typesetItemTable( fd, itemTable ):
               '<entry format="p{5cm}">definition</entry></row>\n' )
     fd.write( '<row><entry></entry><entry></entry><entry></entry></row>\n' )
 
-    rowFormat = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
+    row_format = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
 
-    keys = itemTable.keys()
+    keys = item_table.keys()
     keys.sort()
     for key in keys:
-        itemClass = itemTable[key]
-        doc = itemClass.__doc__
+        item_class = item_table[key]
+        doc = item_class.__doc__
         if doc is not None:
-            secList[:] = []
-            currentSection[0] = None
+            sec_list[:] = []
+            current_section[0] = None
             out = bnf.parseString( doc )
-            dd = [x[1] for x in secList if x[0] == 'definition']
+            dd = [x[1] for x in sec_list if x[0] == 'definition']
             if len( dd ):
                 dd = dd[0]
             else:
                 dd = ''
             print dd
-##             print replaceDollars( dd )
-            fd.write( rowFormat % (itemClass.name, itemClass.name,
-                                   replaceDollars( dd )) )
+##             print replace_dollars( dd )
+            fd.write( row_format % (item_class.name, item_class.name,
+                                   replace_dollars( dd )) )
 
     fd.write( '</tbody></tgroup></table></center>\n' )
     fd.write( r'</section>' )
@@ -215,58 +215,58 @@ def typesetItemTable( fd, itemTable ):
 
 ##
 # c: 14.11.2007, r: 07.05.2008
-def typeset( fd, itemsPerSection, itemTable, typesetSyntax ):
-    secList = []
-    currentSection = [None]
-    bnf = createBNF( secList, currentSection )
+def typeset( fd, items_per_section, item_table, typeset_syntax ):
+    sec_list = []
+    current_section = [None]
+    bnf = create_bnf( sec_list, current_section )
 
-    for secName, itemNames in itemsPerSection.iteritems():
-        fd.write( r'<section><title>%s</title>' % secName )
+    for sec_name, item_names in items_per_section.iteritems():
+        fd.write( r'<section><title>%s</title>' % sec_name )
         fd.write( '\n\n' )
 
-        itemNames.sort()
-        for itemName in itemNames:
-            itemClass = itemTable[itemName]
-            name = itemClass.name#.replace( '_', '\_' )
+        item_names.sort()
+        for item_name in item_names:
+            item_class = item_table[item_name]
+            name = item_class.name#.replace( '_', '\_' )
             fd.write( '\n<section id="%s">\n    <title>%s</title>\n'\
                       % (name, name) )
             fd.write( '<p>\n' )
-            fd.write( r'<em>Class</em>: %s' % itemClass.__name__ )
+            fd.write( r'<em>_class</em>: %s' % item_class.__name__ )
             fd.write( '</p>\n' )
 
-            doc = itemClass.__doc__
+            doc = item_class.__doc__
             if doc is not None:
                 print doc
-                secList[:] = []
-                currentSection[0] = None
+                sec_list[:] = []
+                current_section[0] = None
                 out = bnf.parseString( doc )
-##                 print secList
+##                 print sec_list
 ##                 pause()
 
-                for secName, secText in secList:
-#                    print secName
-#                    print secText
-                    if secName is None and not secText: continue
-                    if secName is not None:
+                for sec_name, sec_text in sec_list:
+#                    print sec_name
+#                    print sec_text
+                    if sec_name is None and not sec_text: continue
+                    if sec_name is not None:
                         fd.write("\n<p>")
-                        fd.write( itemSection % secName.capitalize() )
-                        if secName == 'definition':
-                            secText = replaceDollars( secText )
-                            fd.write( termDefinition % secText )
-                        elif secName == 'arguments':
-                            secText = replaceDollars( secText )
+                        fd.write( item_section % sec_name.capitalize() )
+                        if sec_name == 'definition':
+                            sec_text = replace_dollars( sec_text )
+                            fd.write( term_definition % sec_text )
+                        elif sec_name == 'arguments':
+                            sec_text = replace_dollars( sec_text )
                             fd.write("\n<p>")
-                            typesetArguments( fd, secText )
+                            typeset_arguments( fd, sec_text )
                             fd.write("\n</p>")
                         else:
-                            while secText.find("$") != -1:
-                                secText = secText.replace("$", "<m>", 1)
-                                secText = secText.replace("$", "</m>", 1)
-                            fd.write( secText )
+                            while sec_text.find("$") != -1:
+                                sec_text = sec_text.replace("$", "<m>", 1)
+                                sec_text = sec_text.replace("$", "</m>", 1)
+                            fd.write( sec_text )
                         fd.write("\n</p>")
 
             fd.write("\n<p>")
-            typesetSyntax( fd, itemClass, itemName )
+            typeset_syntax( fd, item_class, item_name )
             fd.write("\n</p>")
             fd.write( r'</section>' )
         fd.write( r'</section>' )
@@ -275,35 +275,35 @@ usage = """%prog [options]"""
 help = {
     'omit' :
     'omit listed sections',
-    'outputFileName' :
+    'output_file_name' :
     'output file name',
 }
 
-# ./genDocs.py --omit="termsAdjointNavierStokes termsHDPM  cachesHDPM  cachesBasic"
+# ./gen_docs.py --omit="terms_adjoint_navier_stokes terms_hdpm  caches_hdpm  caches_basic"
 
 ##
 # c: 29.10.2007, r: 26.03.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
     parser.add_option( "", "--omit", metavar = 'list of sections',
-                       action = "store", dest = "omitList",
+                       action = "store", dest = "omit_list",
                        default = "", help = help['omit'] )
-    parser.add_option( "-o", "--output", metavar = 'outputFileName',
-                       action = "store", dest = "outputFileName",
-                       default = "terms.xml", help = help['outputFileName'] )
+    parser.add_option( "-o", "--output", metavar = 'output_file_name',
+                       action = "store", dest = "output_file_name",
+                       default = "terms.xml", help = help['output_file_name'] )
     (options, args) = parser.parse_args()
 
-    tps = itemsPerSections( termTable, 'Terms', options.omitList )
-    cps = itemsPerSections( cacheTable, 'Term caches', options.omitList )
+    tps = items_per_sections( term_table, 'Terms', options.omit_list )
+    cps = items_per_sections( cache_table, 'Term caches', options.omit_list )
 
-    fd = open( options.outputFileName, 'w' )
+    fd = open( options.output_file_name, 'w' )
     fd.write( begining )
 
     include( fd, 'doc/pages/notation.xml' )
-    typesetItemTable( fd, termTable )
+    typeset_item_table( fd, term_table )
     include( fd, 'doc/pages/intro.xml' )
-    typeset( fd, tps, termTable, typesetTermSyntax )
-    typeset( fd, cps, cacheTable, typesetCacheSyntax )
+    typeset( fd, tps, term_table, typeset_term_syntax )
+    typeset( fd, cps, cache_table, typeset_cache_syntax )
             
     fd.write( ending )
     fd.close()

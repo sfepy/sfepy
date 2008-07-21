@@ -2,29 +2,29 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
-from extmods.fem import rawGraph
+from extmods.fem import raw_graph
 
-isState = 0
-isVirtual = 1
-isParameter = 2
-isOther = 3
-isField = 10
+is_state = 0
+is_virtual = 1
+is_parameter = 2
+is_other = 3
+is_field = 10
 
 ##
 # 11.07.2007, c
 # 19.07.2007
-def createDofConn( conn, dpn, imax ):
+def create_dof_conn( conn, dpn, imax ):
     if dpn == 1:
         dc = conn.copy()
     else:
-        nEl, nEP = conn.shape
-        nED = nEP * dpn
-        dc = nm.empty( (nEl, nED), dtype = conn.dtype )
-        for ic in range( nED ):
+        n_el, n_ep = conn.shape
+        n_ed = n_ep * dpn
+        dc = nm.empty( (n_el, n_ed), dtype = conn.dtype )
+        for ic in range( n_ed ):
             inod = ic / dpn
             idof = ic % dpn
 ##                    iloc = ic
-            iloc = nEP * idof + inod # Hack: For DBD order.
+            iloc = n_ep * idof + inod # Hack: For DBD order.
             dc[:,iloc] = dpn * conn[:,inod] + idof
 
     try:
@@ -36,11 +36,11 @@ def createDofConn( conn, dpn, imax ):
 
 ##
 # c: 11.07.2007, r: 04.02.2008
-def createADofConns( eq, iterator, indx ):
+def create_a_dof_conns( eq, iterator, indx ):
     adcs = {}
     for key, dc in iterator():
         if isinstance( dc, dict ):
-            adcss = createADofConns( eq, dc.iteritems, indx )
+            adcss = create_a_dof_conns( eq, dc.iteritems, indx )
             for subkey, subdc in adcss.iteritems():
                 adcs[(key, subkey)] = subdc
         elif dc is not None:
@@ -53,7 +53,7 @@ def createADofConns( eq, iterator, indx ):
 
 ##
 # c: 26.07.2006, r: 15.04.2008
-def zeroConfEBC( conf ):
+def zero_conf_ebc( conf ):
     new = {}
     for key, bcs in conf.iteritems():
         newbc = copy( bcs )
@@ -65,9 +65,9 @@ def zeroConfEBC( conf ):
 
 ##
 # 27.11.2006, c
-def invertDataShapes( varShapes ):
+def invert_data_shapes( var_shapes ):
     shapes = {}
-    for name, groups in varShapes.iteritems():
+    for name, groups in var_shapes.iteritems():
         for ig, shape in groups.iteritems():
             shapes.setdefault( ig, {} )[name] = shape
 ##                 if not shapes.has_key( ig ):
@@ -78,40 +78,40 @@ def invertDataShapes( varShapes ):
 ##
 # 15.03.2007, c
 # 04.06.2007
-def resolveChains( masterSlave, chains ):
+def resolve_chains( master_slave, chains ):
     """Resolve EPBC chains - e.g. in corner nodes."""
 
     for chain in chains:
         slave = chain[-1]
-        masterSlave[chain[:-1]] = slave + 1
-        masterSlave[slave] = - chain[0] - 1 # Any of masters...
+        master_slave[chain[:-1]] = slave + 1
+        master_slave[slave] = - chain[0] - 1 # Any of masters...
 
 ##
 # 04.06.2007, c
-def groupChains( chainList ):
+def group_chains( chain_list ):
 
     chains = []
-    while len( chainList ):
-        chain = set( chainList.pop( 0 ) )
+    while len( chain_list ):
+        chain = set( chain_list.pop( 0 ) )
 ##         print ':', chain
         ii = 0
-        while ii < len( chainList ):
-            c1 = sorted( chainList[ii] )
+        while ii < len( chain_list ):
+            c1 = sorted( chain_list[ii] )
 #            print '--', ii, c1, chain
             is0 = c1[0] in chain
             is1 = c1[1] in chain
 
             if is0 and is1:
-                chainList.pop( ii )
+                chain_list.pop( ii )
             elif is0 or is1:
                 chain.update( c1 )
-                chainList.pop( ii )
+                chain_list.pop( ii )
                 ii = 0
             else:
                 ii += 1
-#            print ii, chain, chainList
+#            print ii, chain, chain_list
 ##         print '->', chain
-##         print chainList
+##         print chain_list
 ##         pause()
 
         chains.append( list( chain ) )
@@ -135,18 +135,18 @@ class Variables( Container ):
 
     ##
     # c: 14.07.2006, r: 22.05.2008
-    def fromConf( conf, fields ):
+    def from_conf( conf, fields ):
         objs = OneTypeList( Variable )
         state, virtual, parameter, other = [], [], [], []
         for ii, (key, val) in enumerate( conf.iteritems() ):
-            var = Variable.fromConf( key, val, fields )
-            if var.isState():
+            var = Variable.from_conf( key, val, fields )
+            if var.is_state():
                 state.append( ii )
-            elif var.isVirtual():
+            elif var.is_virtual():
                 virtual.append( ii )
-            elif var.isParameter():
+            elif var.is_parameter():
                 parameter.append( ii )
-            elif var.isOther():
+            elif var.is_other():
                 other.append( ii )
             objs.append( var )
 
@@ -157,183 +157,183 @@ class Variables( Container ):
                          other = other,
                          domain = fields[0].domain,
                          fields = fields,
-                         hasVirtualDCs = False,
-                         hasLCBC = False )
+                         has_virtual_d_cs = False,
+                         has_lcbc = False )
 
         indx = nm.array( [var._order
-                          for var in obj.iterState( ordered = False )] )
-        obj.orderedState = [obj.state[ii] for ii in indx.argsort()]
+                          for var in obj.iter_state( ordered = False )] )
+        obj.ordered_state = [obj.state[ii] for ii in indx.argsort()]
 
-        obj.linkDuals()
+        obj.link_duals()
 
-        obj.orderedVirtual = []
-        for var in obj.iterState( ordered = True ):
+        obj.ordered_virtual = []
+        for var in obj.iter_state( ordered = True ):
             for ii in obj.virtual:
-                if obj[ii].primaryVarName == var.name:
-                    obj.orderedVirtual.append( ii )
+                if obj[ii].primary_var_name == var.name:
+                    obj.ordered_virtual.append( ii )
                     break
 
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     ##
     # c: 05.09.2007, r: 10.04.2008
-    def linkDuals( self ):
+    def link_duals( self ):
         for ii in self.virtual:
             vvar = self[ii]
             try:
-                self[vvar.primaryVarName].dualVarName = vvar.name
+                self[vvar.primary_var_name].dual_var_name = vvar.name
             except ValueError:
-                output( 'variable %s is not active!' % vvar.primaryVarName )
+                output( 'variable %s is not active!' % vvar.primary_var_name )
                 raise
 
     ##
     # 26.07.2007, c
-    def getNames( self, kind = None ):
+    def get_names( self, kind = None ):
         if kind is None:
             names = [var.name for var in self]
         else:
-            names = [var.name for var in self if var.isKind( kind )]
+            names = [var.name for var in self if var.is_kind( kind )]
         return names
 
     ##
     # c: 07.10.2005, r: 22.05.2008
-    def setupDofInfo( self, makeVirtual = False ):
-        """Sets also iDofMax."""
-        def _setupDofInfo( iterable ):
+    def setup_dof_info( self, make_virtual = False ):
+        """Sets also i_dof_max."""
+        def _setup_dof_info( iterable ):
             ptr = [0]
-            nNod = []
+            n_nod = []
             dpn = []
             vnames = []
             for ii in iterable:
                 var = self[ii]
-                var.iDofMax = var.field.nNod * var.dpn
+                var.i_dof_max = var.field.n_nod * var.dpn
 
-                nNod.append( var.field.nNod )
+                n_nod.append( var.field.n_nod )
                 dpn.append( var.dpn )
-                ptr.append( ptr[-1] + dpn[-1] * nNod[-1] )
+                ptr.append( ptr[-1] + dpn[-1] * n_nod[-1] )
                 vnames.append( var.name )
 
             di = DofInfo(
-                name = 'dofInfo',
+                name = 'dof_info',
                 ptr = nm.array( ptr, dtype = nm.int32 ),
-                nNod = nm.array( nNod, dtype = nm.int32 ),
+                n_nod = nm.array( n_nod, dtype = nm.int32 ),
                 dpn = nm.array( dpn, dtype = nm.int32 ),
-                vnames = vnames, indx = {}, nDofs = {}
+                vnames = vnames, indx = {}, n_dofs = {}
             )
 
             for ii, name in enumerate( di.vnames ):
                 di.indx[name] = slice( int( di.ptr[ii] ), int( di.ptr[ii+1] ) )
-                di.nDofs[name] = di.ptr[ii+1] - di.ptr[ii]
+                di.n_dofs[name] = di.ptr[ii+1] - di.ptr[ii]
             return di
 
-        self.di = _setupDofInfo( self.orderedState )
-        if makeVirtual:
-            self.vdi = _setupDofInfo( self.orderedVirtual )
+        self.di = _setup_dof_info( self.ordered_state )
+        if make_virtual:
+            self.vdi = _setup_dof_info( self.ordered_virtual )
         else:
             self.vdi = self.di
 
     ##
     # c: 16.10.2006, r: 15.04.2008
-    def _listBCOfVars( self, bcDefs, isEBC = True ):
+    def _list_bc_of_vars( self, bc_defs, is_ebc = True ):
 
-        bcOfVars = dictFromKeysInit( (key for key in self.di.vnames), list )
-        if bcDefs is None: return bcOfVars
+        bc_of_vars = dict_from_keys_init( (key for key in self.di.vnames), list )
+        if bc_defs is None: return bc_of_vars
 
-        for key, bc in bcDefs.iteritems():
+        for key, bc in bc_defs.iteritems():
 ##             print key
 ##             print bc
             for dofs, val in bc.dofs.iteritems():
                 vname = dofs.split( '.' )[0]
-                if bcOfVars.has_key( vname ):
+                if bc_of_vars.has_key( vname ):
                     var = self[vname]
                     vbc = copy( bc )
-                    if isEBC:
+                    if is_ebc:
                         vbc.dofs = (var._canonize( dofs ), val)
                     else:
                         vbc.dofs = (var._canonize( dofs ), var._canonize( val ))
-                    bcOfVars[vname].append( (key, vbc) )
+                    bc_of_vars[vname].append( (key, vbc) )
                 else:
                     output( 'BC: ignoring nonexistent dof(s) %s' % dofs )
-        return bcOfVars
+        return bc_of_vars
 
     ##
     # c: 03.10.2007, r: 18.02.2008
-    def setupLCBCOperators( self, lcbc, regions ):
+    def setup_lcbc_operators( self, lcbc, regions ):
         if lcbc is None: return
 
-        self.hasLCBC =True
+        self.has_lcbc =True
 
-        lcbcOfVars = self._listBCOfVars( lcbc )
+        lcbc_of_vars = self._list_bc_of_vars( lcbc )
 
         # Assume disjoint regions.
-        lcbcOps = {}
-        for varName, bcs in lcbcOfVars.iteritems():
-            var = self[varName]
-            lcbcOps[varName] = var.createLCBCOperators( bcs, regions )
+        lcbc_ops = {}
+        for var_name, bcs in lcbc_of_vars.iteritems():
+            var = self[var_name]
+            lcbc_ops[var_name] = var.create_lcbc_operators( bcs, regions )
 
-        opsLC = []
-        eqLCBC = nm.empty( (0,), dtype = nm.float64 )
-        nGroups = 0
-        for varName, lcbcOp in lcbcOps.iteritems():
-            if lcbcOp is None: continue
-#            print varName, lcbcOp
+        ops_lc = []
+        eq_lcbc = nm.empty( (0,), dtype = nm.float64 )
+        n_groups = 0
+        for var_name, lcbc_op in lcbc_ops.iteritems():
+            if lcbc_op is None: continue
+#            print var_name, lcbc_op
 
-            indx = self.adi.indx[varName]
-            aux = nm.where( lcbcOp.eqLCBC >= 0, indx.start, 0 )
-            eqLCBC = nm.hstack( (eqLCBC, lcbcOp.eqLCBC + aux) )
-            opsLC.extend( lcbcOp.opsLC )
+            indx = self.adi.indx[var_name]
+            aux = nm.where( lcbc_op.eq_lcbc >= 0, indx.start, 0 )
+            eq_lcbc = nm.hstack( (eq_lcbc, lcbc_op.eq_lcbc + aux) )
+            ops_lc.extend( lcbc_op.ops_lc )
 
-            nRigidDof = lcbcOp.nRigidDof
-            dim = lcbcOp.dim
-            nGroups += lcbcOp.nGroups
+            n_rigid_dof = lcbc_op.n_rigid_dof
+            dim = lcbc_op.dim
+            n_groups += lcbc_op.n_groups
 
-        if nGroups == 0:
-            self.hasLCBC = False
+        if n_groups == 0:
+            self.has_lcbc = False
             return
             
-        nDof = self.adi.ptr[-1]
+        n_dof = self.adi.ptr[-1]
 
-        ii = nm.nonzero( eqLCBC )[0]
-        nConstrained = ii.shape[0]
-        nDofNotRigid = nDof - nConstrained
-        nDofReduced = nDofNotRigid + nGroups * nRigidDof
-        print nDof, nDofReduced, nConstrained, nDofNotRigid
+        ii = nm.nonzero( eq_lcbc )[0]
+        n_constrained = ii.shape[0]
+        n_dof_not_rigid = n_dof - n_constrained
+        n_dof_reduced = n_dof_not_rigid + n_groups * n_rigid_dof
+        print n_dof, n_dof_reduced, n_constrained, n_dof_not_rigid
 
-        mtxLC = sp.lil_matrix( (nDof, nDofReduced), dtype = nm.float64 )
-        ir = nm.where( eqLCBC == 0 )[0]
-        ic = nm.arange( nDofReduced, dtype = nm.int32 )
-        mtxLC[ir,ic] = 1.0
-        for ii, opLC in enumerate( opsLC ):
-            indx = nm.where( eqLCBC == (ii + 1) )[0]
-            icols = slice( nDofNotRigid + nRigidDof * ii,
-                           nDofNotRigid + nRigidDof * (ii + 1) )
-            mtxLC[indx,icols] = opLC
+        mtx_lc = sp.lil_matrix( (n_dof, n_dof_reduced), dtype = nm.float64 )
+        ir = nm.where( eq_lcbc == 0 )[0]
+        ic = nm.arange( n_dof_reduced, dtype = nm.int32 )
+        mtx_lc[ir,ic] = 1.0
+        for ii, op_lc in enumerate( ops_lc ):
+            indx = nm.where( eq_lcbc == (ii + 1) )[0]
+            icols = slice( n_dof_not_rigid + n_rigid_dof * ii,
+                           n_dof_not_rigid + n_rigid_dof * (ii + 1) )
+            mtx_lc[indx,icols] = op_lc
 
-        mtxLC = mtxLC.tocsr()
+        mtx_lc = mtx_lc.tocsr()
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
-##         spy( mtxLC )
+##         spy( mtx_lc )
 ##         pylab.show()
-##         print mtxLC
-        nnz = nDof - nConstrained + nConstrained * dim
-        print nnz, mtxLC.getnnz()
-        assert nnz >= mtxLC.getnnz()
+##         print mtx_lc
+        nnz = n_dof - n_constrained + n_constrained * dim
+        print nnz, mtx_lc.getnnz()
+        assert nnz >= mtx_lc.getnnz()
 
-        self.opLCBC = mtxLC
+        self.op_lcbc = mtx_lc
 
     ##
     # 04.10.2007, c
-    def getLCBCOperator( self ):
-        if self.hasLCBC:
-            return self.opLCBC
+    def get_lcbc_operator( self ):
+        if self.has_lcbc:
+            return self.op_lcbc
         else:
             print 'no LCBC defined!'
             raise ValueError
 
     ##
     # c: 01.11.2005, r: 12.05.2008
-    def equationMapping( self, ebc, epbc, regions, ts, funmod,
+    def equation_mapping( self, ebc, epbc, regions, ts, funmod,
                          vregions = None ):
 
         if vregions is None:
@@ -341,46 +341,46 @@ class Variables( Container ):
 
         ##
         # Assing EBC, PBC to variables and regions.
-        self.bcOfVars = self._listBCOfVars( ebc )
-        dictExtend( self.bcOfVars, self._listBCOfVars( epbc, isEBC = False ) )
+        self.bc_of_vars = self._list_bc_of_vars( ebc )
+        dict_extend( self.bc_of_vars, self._list_bc_of_vars( epbc, is_ebc = False ) )
 
         ##
         # List EBC nodes/dofs for each variable.
-        for varName, bcs in self.bcOfVars.iteritems():
-            var = self[varName]
-            var.equationMapping( bcs, regions, self.di, ts, funmod )
-            if self.hasVirtualDCs:
-                vvar = self[var.dualVarName]
-                vvar.equationMapping( bcs, vregions, self.vdi, ts, funmod )
+        for var_name, bcs in self.bc_of_vars.iteritems():
+            var = self[var_name]
+            var.equation_mapping( bcs, regions, self.di, ts, funmod )
+            if self.has_virtual_d_cs:
+                vvar = self[var.dual_var_name]
+                vvar.equation_mapping( bcs, vregions, self.vdi, ts, funmod )
 
-##             print var.eqMap
+##             print var.eq_map
 ##             pause()
 
         ##
         # Adjust by offsets - create active dof info.
-        def _createADofInfo( di ):
+        def _create_a_dof_info( di ):
             adi = DofInfo(
-                name = 'active_dofInfo',
+                name = 'active_dof_info',
                 ptr = nm.array( di.ptr, dtype = nm.int32 ),
-                nNod = nm.array( di.nNod, dtype = nm.int32 ),
+                n_nod = nm.array( di.n_nod, dtype = nm.int32 ),
                 dpn = nm.array( di.dpn, dtype = nm.int32 ),
-                vnames = di.vnames, indx = {}, nDofs = {}
+                vnames = di.vnames, indx = {}, n_dofs = {}
             )
             for ii, key in enumerate( adi.vnames ):
-                adi.nDofs[key] = self[key].eqMap.nEq
-                adi.ptr[ii+1] = adi.ptr[ii] + adi.nDofs[key]
+                adi.n_dofs[key] = self[key].eq_map.n_eq
+                adi.ptr[ii+1] = adi.ptr[ii] + adi.n_dofs[key]
                 adi.indx[key] = slice( int( adi.ptr[ii] ), int( adi.ptr[ii+1] ) )
             return adi
 
-        self.adi = _createADofInfo( self.di )
-        if self.hasVirtualDCs:
-            self.avdi = _createADofInfo( self.vdi )
+        self.adi = _create_a_dof_info( self.di )
+        if self.has_virtual_d_cs:
+            self.avdi = _create_a_dof_info( self.vdi )
         else:
             self.avdi = self.adi
 
     ##
     # c: 09.01.2008, r: 09.01.2008
-    def getNodesOfGlobalDofs( self, igdofs ):
+    def get_nodes_of_global_dofs( self, igdofs ):
         """not stripped..."""
         di = self.di
         
@@ -401,21 +401,21 @@ class Variables( Container ):
 
     ##
     # c: 23.11.2005, r: 26.02.2008
-    def setupDofConns( self, makeVirtual = False ):
+    def setup_dof_conns( self, make_virtual = False ):
         output( 'setting up dof connectivities...' )
         tt = time.clock()
 
         for ii in self.state:
             var = self[ii]
-            var.setupDofConns()
+            var.setup_dof_conns()
 
-        if makeVirtual:
+        if make_virtual:
             for ii in self.virtual:
                 var = self[ii]
-                var.setupDofConns()
-            self.hasVirtualDCs = True
+                var.setup_dof_conns()
+            self.has_virtual_d_cs = True
         else:
-            self.hasVirtualDCs = False
+            self.has_virtual_d_cs = False
 
         output( '...done in %.2f s' % (time.clock() - tt) )
 
@@ -426,91 +426,91 @@ class Variables( Container ):
     # 22.02.2007
     # 11.07.2007
     # 05.09.2007
-    def setupADofConns( self ):
+    def setup_a_dof_conns( self ):
         """Translate dofs to active dofs."""
-        def _setupADofConns( iterable, adi ):
-            adofConns = dictFromKeysInit( [self[ii].name for ii in iterable],
+        def _setup_a_dof_conns( iterable, adi ):
+            adof_conns = dict_from_keys_init( [self[ii].name for ii in iterable],
                                           Struct )
             for ii in iterable:
                 var = self[ii]
                 indx = adi.indx[var.name]
-                eq = var.eqMap.eq
-                adofConns[var.name].name = 'adofConns'
-                it =  var.iterDofConns( 'volume' )
-                adofConns[var.name].volumeDCs = createADofConns( eq, it, indx )
-                it =  var.iterDofConns( 'surface' )
-                adofConns[var.name].surfaceDCs = createADofConns( eq, it, indx )
-                it =  var.iterDofConns( 'edge' )
-                adofConns[var.name].edgeDCs = createADofConns( eq, it, indx )
-                it =  var.iterDofConns( 'point' )
-                adofConns[var.name].pointDCs = createADofConns( eq, it, indx )
-            return adofConns
+                eq = var.eq_map.eq
+                adof_conns[var.name].name = 'adof_conns'
+                it =  var.iter_dof_conns( 'volume' )
+                adof_conns[var.name].volume_d_cs = create_a_dof_conns( eq, it, indx )
+                it =  var.iter_dof_conns( 'surface' )
+                adof_conns[var.name].surface_d_cs = create_a_dof_conns( eq, it, indx )
+                it =  var.iter_dof_conns( 'edge' )
+                adof_conns[var.name].edge_d_cs = create_a_dof_conns( eq, it, indx )
+                it =  var.iter_dof_conns( 'point' )
+                adof_conns[var.name].point_d_cs = create_a_dof_conns( eq, it, indx )
+            return adof_conns
 
-        self.adofConns = _setupADofConns( self.state, self.adi )
-        if self.hasVirtualDCs:
-            self.avdofConns = _setupADofConns( self.virtual, self.avdi )
+        self.adof_conns = _setup_a_dof_conns( self.state, self.adi )
+        if self.has_virtual_d_cs:
+            self.avdof_conns = _setup_a_dof_conns( self.virtual, self.avdi )
         else:
-            self.avdofConns = self.adofConns
+            self.avdof_conns = self.adof_conns
 
-##         print self.adofConns.values()[0]
+##         print self.adof_conns.values()[0]
 ##         pause()
 
     ##
     # c: 10.12.2007, r: 15.01.2008
-    def getADofConn( self, varName, isDual, dcType, ig ):
+    def get_a_dof_conn( self, var_name, is_dual, dc_type, ig ):
         """Note that primary and dual variables must have same Region!"""
-        kind, regionName = dcType
+        kind, region_name = dc_type
 
-        var = self[varName]
-        if isDual:
-            if not self.hasVirtualDCs:
-                varName = var.primaryVarName
-            adcs = self.avdofConns[varName]
+        var = self[var_name]
+        if is_dual:
+            if not self.has_virtual_d_cs:
+                var_name = var.primary_var_name
+            adcs = self.avdof_conns[var_name]
         else:
-            adcs = self.adofConns[varName]
+            adcs = self.adof_conns[var_name]
 
         if kind == 'volume':
             try:
-                dc = adcs.volumeDCs[ig]
+                dc = adcs.volume_d_cs[ig]
             except:
                 debug()
         else:
             if kind == 'surface':
-                dcs = adcs.surfaceDCs
+                dcs = adcs.surface_d_cs
             elif kind == 'edge':
-                dcs = adcs.edgeDCs
+                dcs = adcs.edge_d_cs
             elif kind == 'point':
-                dcs = adcs.pointDCs
+                dcs = adcs.point_d_cs
             else:
                 print 'uknown dof connectivity kind:', kind
                 raise ValueError
-            dc = dcs[(ig, regionName)]
+            dc = dcs[(ig, region_name)]
         return dc
         
     ##
     # 05.09.2007, c
-    def fixCoarseGridADofConns( self, iemaps, varName ):
+    def fix_coarse_grid_a_dof_conns( self, iemaps, var_name ):
         """Volume only!"""
-        dcs = self.adofConns[varName].volumeDCs
+        dcs = self.adof_conns[var_name].volume_d_cs
         for ig, dc in dcs.iteritems():
             iemap = iemaps[ig]
             dcs[ig] = dc[iemap]
 
     ##
     # c: 23.11.2005, r: 19.05.2008
-    def createMatrixGraph( self, varNames = None, vvarNames = None ):
+    def create_matrix_graph( self, var_names = None, vvar_names = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
         important here...
         """
-        def _prepareDCLists( adofConns, varNames = None ):
-            if varNames is None:
-                varNames = adofConns.iterkeys()
+        def _prepare_dc_lists( adof_conns, var_names = None ):
+            if var_names is None:
+                var_names = adof_conns.iterkeys()
 
             gdcs = {}
-            for varName in varNames:
-                adcs = adofConns[varName]
-                for ig, dc in adcs.volumeDCs.iteritems():
+            for var_name in var_names:
+                adcs = adof_conns[var_name]
+                for ig, dc in adcs.volume_d_cs.iteritems():
 ##                     print dc
                     gdcs.setdefault( ig, [] ).append( dc )
             return gdcs
@@ -521,11 +521,11 @@ class Variables( Container ):
             output( 'no matrix!' )
             return None
 
-        cgdcs = _prepareDCLists( self.adofConns, varNames )
+        cgdcs = _prepare_dc_lists( self.adof_conns, var_names )
 ##         print cgdcs
 ##         pause()
-        if self.hasVirtualDCs:
-            rgdcs = _prepareDCLists( self.avdofConns, vvarNames )
+        if self.has_virtual_d_cs:
+            rgdcs = _prepare_dc_lists( self.avdof_conns, vvar_names )
         else:
             rgdcs = cgdcs
 
@@ -544,7 +544,7 @@ class Variables( Container ):
         tt = time.clock()
 
 #	shape = nm.array( shape, dtype = nm.long )
-        ret, prow, icol = rawGraph( int( shape[0] ), int( shape[1] ),
+        ret, prow, icol = raw_graph( int( shape[0] ), int( shape[1] ),
                                     len( rdcs ), rdcs, cdcs )
         output( '...done in %.2f s' % (time.clock() - tt) )
         nnz = prow[-1]
@@ -563,20 +563,20 @@ class Variables( Container ):
     # 24.07.2006, c
     # 25.07.2006
     # 04.08.2006
-    def dataFromState( self, state = None ):
+    def data_from_state( self, state = None ):
         for ii in self.state:
             var = self[ii]
-            var.dataFromState( state, self.di.indx[var.name] )
+            var.data_from_state( state, self.di.indx[var.name] )
 
     ##
     # 25.07.2006, c
-    def createStateVector( self ):
+    def create_state_vector( self ):
         vec = nm.zeros( (self.di.ptr[-1],), nm.float64 )
         return vec
 
     ##
     # 25.07.2006, c
-    def createStrippedStateVector( self ):
+    def create_stripped_state_vector( self ):
         vec = nm.zeros( (self.adi.ptr[-1],), nm.float64 )
         return vec
 
@@ -585,56 +585,56 @@ class Variables( Container ):
     # 25.07.2006
     # 19.09.2006
     # 18.10.2006
-    def applyEBC( self, vec, forceValues = None ):
-        for varName in self.bcOfVars.iterkeys():
-            eqMap = self[varName].eqMap
-            i0 = self.di.indx[varName].start
-            ii = i0 + eqMap.eqEBC
-##             print ii, eqMap.valEBC
+    def apply_ebc( self, vec, force_values = None ):
+        for var_name in self.bc_of_vars.iterkeys():
+            eq_map = self[var_name].eq_map
+            i0 = self.di.indx[var_name].start
+            ii = i0 + eq_map.eq_ebc
+##             print ii, eq_map.val_ebc
 ##             pause()
-            if forceValues is None:
-                vec[ii] = eqMap.valEBC
+            if force_values is None:
+                vec[ii] = eq_map.val_ebc
             else:
-                if isinstance( forceValues, dict ):
-                    vec[ii] = forceValues[varName]
+                if isinstance( force_values, dict ):
+                    vec[ii] = force_values[var_name]
                 else:
-                    vec[ii] = forceValues
+                    vec[ii] = force_values
             # EPBC.
-            vec[i0+eqMap.master] = vec[i0+eqMap.slave]
+            vec[i0+eq_map.master] = vec[i0+eq_map.slave]
 
     ##
     # 27.11.2005, c
     # 09.12.2005
     # 25.07.2006
     # 18.10.2006
-    def updateVec( self, vec, delta ):
-        for varName in self.bcOfVars.iterkeys():
-            eqMap = self[varName].eqMap
-            i0 = self.di.indx[varName].start
-            ii = i0 + eqMap.eqi
-##            print ii.shape, delta[adi.indx[varName]].shape
-            vec[ii] -= delta[self.adi.indx[varName]]
+    def update_vec( self, vec, delta ):
+        for var_name in self.bc_of_vars.iterkeys():
+            eq_map = self[var_name].eq_map
+            i0 = self.di.indx[var_name].start
+            ii = i0 + eq_map.eqi
+##            print ii.shape, delta[adi.indx[var_name]].shape
+            vec[ii] -= delta[self.adi.indx[var_name]]
             # EPBC.
-            vec[i0+eqMap.master] = vec[i0+eqMap.slave]
+            vec[i0+eq_map.master] = vec[i0+eq_map.slave]
 
     ##
     # c: 12.04.2007, r: 28.02.2008
-    def stripStateVector( self, vec, followEPBC = True ):
+    def strip_state_vector( self, vec, follow_epbc = True ):
         """
-        Strip a full vector by removing EBC dofs. If 'followEPBC' is True,
+        Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,
         values of EPBC master dofs are not simply thrown away, but added to the
         corresponding slave dofs, just like when assembling.
         """
         svec = nm.empty( (self.adi.ptr[-1],), nm.float64 )
-        for varName in self.bcOfVars.iterkeys():
-            eqMap = self[varName].eqMap
-            i0 = self.di.indx[varName].start
-            ii = i0 + eqMap.eqi
-##            print ii.shape, delta[adi.indx[varName]].shape
-            aindx = self.adi.indx[varName]
+        for var_name in self.bc_of_vars.iterkeys():
+            eq_map = self[var_name].eq_map
+            i0 = self.di.indx[var_name].start
+            ii = i0 + eq_map.eqi
+##            print ii.shape, delta[adi.indx[var_name]].shape
+            aindx = self.adi.indx[var_name]
             svec[aindx] = vec[ii]
 
-            if followEPBC:
+            if follow_epbc:
                 """ In [10]: a
                     Out[10]: array([0, 1, 2, 3, 4])
 
@@ -643,179 +643,179 @@ class Variables( Container ):
                     In [12]: a
                     Out[12]: array([1, 2, 2, 3, 4])
                     """
-                # svec[aindx.start + eqMap.eq[eqMap.slave]] += vec[eqMap.master]
-                for ii, im in enumerate( eqMap.master ):
-                    i1 = aindx.start + eqMap.eq[eqMap.slave[ii]]
+                # svec[aindx.start + eq_map.eq[eq_map.slave]] += vec[eq_map.master]
+                for ii, im in enumerate( eq_map.master ):
+                    i1 = aindx.start + eq_map.eq[eq_map.slave[ii]]
                     if i1 < 0: continue
                     svec[i1] += vec[im]
-#                    print ii, i1, im, eqMap.slave[ii], svec[i1], vec[im]
+#                    print ii, i1, im, eq_map.slave[ii], svec[i1], vec[im]
 
         return svec
 
     ##
     # created:       12.04.2007
     # last revision: 14.12.2007
-    def makeFullVec( self, svec, varName = None, forceValue = None ):
+    def make_full_vec( self, svec, var_name = None, force_value = None ):
         """
         Make a full vector satisfying E(P)BC
-        from a stripped vector. For a selected variable if varName is set.
+        from a stripped vector. For a selected variable if var_name is set.
         """
-        def _makeFullVec( vec, eqMap ):
+        def _make_full_vec( vec, eq_map ):
             # EBC.
-            ii = eqMap.eqEBC
-            if forceValue is None:
-                vec[ii] = eqMap.valEBC
+            ii = eq_map.eq_ebc
+            if force_value is None:
+                vec[ii] = eq_map.val_ebc
             else:
-                vec[ii] = forceValue
+                vec[ii] = force_value
 
             # Stripped vector values.
-            ii = eqMap.eqi
+            ii = eq_map.eqi
             vec[ii] = svec
 
             # EPBC.
-            vec[eqMap.master] = vec[eqMap.slave]
+            vec[eq_map.master] = vec[eq_map.slave]
 
-        if self.hasLCBC:
-            svec = self.opLCBC * svec
+        if self.has_lcbc:
+            svec = self.op_lcbc * svec
 
-        if varName is None:
-            vec = self.createStateVector()
+        if var_name is None:
+            vec = self.create_state_vector()
 
-            for varName in self.bcOfVars.iterkeys():
-                eqMap = self[varName].eqMap
-                _makeFullVec( vec[self.di.indx[varName]], eqMap )
+            for var_name in self.bc_of_vars.iterkeys():
+                eq_map = self[var_name].eq_map
+                _make_full_vec( vec[self.di.indx[var_name]], eq_map )
         else:
-            vec = nm.empty( (self.di.nDofs[varName],), nm.float64 )
-            eqMap = self[varName].eqMap
-            _makeFullVec( vec, eqMap )
+            vec = nm.empty( (self.di.n_dofs[var_name],), nm.float64 )
+            eq_map = self[var_name].eq_map
+            _make_full_vec( vec, eq_map )
 
         return vec
 
     ##
     # 14.03.2007, c
-    def hasEBC( self, vec, forceValues = None ):
-        for varName in self.bcOfVars.iterkeys():
-            eqMap = self[varName].eqMap
-            i0 = self.di.indx[varName].start
-            ii = i0 + eqMap.eqEBC
-            if forceValues is None:
-                if not nm.allclose( vec[ii], eqMap.valEBC ):
+    def has_ebc( self, vec, force_values = None ):
+        for var_name in self.bc_of_vars.iterkeys():
+            eq_map = self[var_name].eq_map
+            i0 = self.di.indx[var_name].start
+            ii = i0 + eq_map.eq_ebc
+            if force_values is None:
+                if not nm.allclose( vec[ii], eq_map.val_ebc ):
                     return False
             else:
-                if isinstance( forceValues, dict ):
-                    if not nm.allclose( vec[ii], forceValues[varName] ):
+                if isinstance( force_values, dict ):
+                    if not nm.allclose( vec[ii], force_values[var_name] ):
                         return False
                 else:
-                    if not nm.allclose( vec[ii], forceValues ):
+                    if not nm.allclose( vec[ii], force_values ):
                         return False
             # EPBC.
-            if not nm.allclose( vec[i0+eqMap.master], vec[i0+eqMap.slave] ):
+            if not nm.allclose( vec[i0+eq_map.master], vec[i0+eq_map.slave] ):
                 return False
         return True
 
     ##
     # 26.07.2007, c
-    def getIndx( self, varName, stripped = False, allowDual = False ):
-        var = self[varName]
+    def get_indx( self, var_name, stripped = False, allow_dual = False ):
+        var = self[var_name]
 
-        if not var.isState():
-            if allowDual and var.isVirtual():
-                varName = var.primaryVarName
+        if not var.is_state():
+            if allow_dual and var.is_virtual():
+                var_name = var.primary_var_name
             else:
-                output( '%s is not a state part' % varName )
+                output( '%s is not a state part' % var_name )
                 raise IndexError
         
         if stripped:
-            return self.adi.indx[varName]
+            return self.adi.indx[var_name]
         else:
-            return self.di.indx[varName]
+            return self.di.indx[var_name]
 
     ##
     # 26.07.2006, c
     # 12.04.2007
     # 26.07.2007
-    def getStatePartView( self, state, varName, stripped = False ):
-        return state[self.getIndx( varName, stripped )]
+    def get_state_part_view( self, state, var_name, stripped = False ):
+        return state[self.get_indx( var_name, stripped )]
 
     ##
     # 26.07.2006, c
     # 12.04.2007
     # 26.07.2007
-    def setStatePart( self, state, part, varName, stripped = False ):
-        state[self.getIndx( varName, stripped )] = part
+    def set_state_part( self, state, part, var_name, stripped = False ):
+        state[self.get_indx( var_name, stripped )] = part
 
     ##
     # 26.07.2006, c
     # 02.08.2006
     # 04.08.2006
-    def nonStateDataFromState( self, varNames, state, varNamesState ):
-        if isinstance( varNames, str ):
-            varNames = [varNames]
-            varNamesState = [varNamesState]
+    def non_state_data_from_state( self, var_names, state, var_names_state ):
+        if isinstance( var_names, str ):
+            var_names = [var_names]
+            var_names_state = [var_names_state]
 
-        for ii, varName in enumerate( varNames ):
-            varNameState = varNamesState[ii]
-            if self[varNameState].isState():
-                self[varName].dataFromData( state,
-                                            self.di.indx[varNameState] )
+        for ii, var_name in enumerate( var_names ):
+            var_name_state = var_names_state[ii]
+            if self[var_name_state].is_state():
+                self[var_name].data_from_data( state,
+                                            self.di.indx[var_name_state] )
             else:
-                output( '%s is not a state part' % varNameState )
+                output( '%s is not a state part' % var_name_state )
                 raise IndexError
 
 
     ##
     # Works for vertex data only.
     # c: 15.12.2005, r: 12.05.2008
-    def stateToOutput( self, vec, fillValue = None, varInfo = None,
+    def state_to_output( self, vec, fill_value = None, var_info = None,
                        extend = True ):
 
-        nNod, di = self.domain.shape.nNod, self.di
+        n_nod, di = self.domain.shape.n_nod, self.di
 
-        if varInfo is None:
-            varInfo = {}
+        if var_info is None:
+            var_info = {}
             for name in di.vnames:
-                varInfo[name] = (False, name)
+                var_info[name] = (False, name)
 
         out = {}
         for key, indx in di.indx.iteritems():
-            if key not in varInfo.keys(): continue
-            isPart, name = varInfo[key]
+            if key not in var_info.keys(): continue
+            is_part, name = var_info[key]
             
             dpn = di.dpn[di.vnames.index( key )]
 
-            if isPart:
-                aux = nm.reshape( vec, (di.nDofs[key] / dpn, dpn) )
+            if is_part:
+                aux = nm.reshape( vec, (di.n_dofs[key] / dpn, dpn) )
             else:
-                aux = nm.reshape( vec[indx], (di.nDofs[key] / dpn, dpn) )
+                aux = nm.reshape( vec[indx], (di.n_dofs[key] / dpn, dpn) )
 
             if extend:
-                ext = self[key].extendData( aux, nNod, fillValue )
+                ext = self[key].extend_data( aux, n_nod, fill_value )
             else:
-                ext = self[key].removeExtraData( aux )
+                ext = self[key].remove_extra_data( aux )
 #            print ext.shape
 #            pause()
             out[name] = Struct( name = 'output_data',
                                 mode = 'vertex', data = ext,
-                                varName = key, dofs = self[key].dofs )
+                                var_name = key, dofs = self[key].dofs )
         return out
 
     ##
     # 24.08.2006, c
     # 20.09.2006
-    def getFieldsOfVars( self, varNames ):
-        fieldNames = {}
-        for varName in varNames:
-            if not self.has_key( varName ):
-                raise RuntimeError, 'undefined variable %s' % varName
-            fieldNames[varName] = self[varName].field.name
-        return fieldNames
+    def get_fields_of_vars( self, var_names ):
+        field_names = {}
+        for var_name in var_names:
+            if not self.has_key( var_name ):
+                raise RuntimeError, 'undefined variable %s' % var_name
+            field_names[var_name] = self[var_name].field.name
+        return field_names
 
     ##
     # c: 27.11.2006, r: 22.05.2008
-    def iterState( self, ordered = True ):
+    def iter_state( self, ordered = True ):
 
         if ordered:
-            for ii in self.orderedState:
+            for ii in self.ordered_state:
                 yield self[ii]
 
         else:
@@ -823,11 +823,11 @@ class Variables( Container ):
                 yield self[ii]
 
     def init_state( self, state ):
-        for var in self.iterState():
+        for var in self.iter_state():
             var.init_state( state, self.di.indx[var.name] )
 
     def advance( self, ts ):
-        for var in self.iterState():
+        for var in self.iter_state():
             var.advance( ts )
 
 
@@ -835,43 +835,43 @@ class Variables( Container ):
 # 11.07.2006, c
 class Variable( Struct ):
 
-    def fromConf( key, conf, fields ):
+    def from_conf( key, conf, fields ):
         flags = set()
         kind, family = conf.kind.split()
 
-        history = getDefaultAttr( conf, 'history', None )
+        history = get_default_attr( conf, 'history', None )
         assert (history is None) or (history in ['previous', 'full'])
 
         obj = Variable( flags, name = conf.name, key = key,
                         kind = kind, family = family, history = history )
 
         if kind == 'unknown':
-            obj.flags.add( isState )
+            obj.flags.add( is_state )
             if hasattr( conf, 'order' ):
                 obj._order = int( conf.order )
             else:
                 output( 'unnown variable %s: order missing' % conf.name )
                 raise ValueError
-            obj.dofName = obj.name
+            obj.dof_name = obj.name
         elif kind == 'test':
-            obj.flags.add( isVirtual )
+            obj.flags.add( is_virtual )
             if hasattr( conf, 'dual' ):
-                obj.primaryVarName = conf.dual
+                obj.primary_var_name = conf.dual
             else:
                 output( 'test variable %s: related unknown missing' % conf.name )
                 raise ValueError
-            obj.dofName = obj.primaryVarName
+            obj.dof_name = obj.primary_var_name
         elif kind == 'parameter':
-            obj.flags.add( isParameter )
+            obj.flags.add( is_parameter )
             if hasattr( conf, 'like' ):
-                obj.primaryVarName = conf.like
+                obj.primary_var_name = conf.like
             else:
                 output( 'parameter variable %s: related unknown missing'\
                         % conf.name )
                 raise ValueError
-            obj.dofName = obj.primaryVarName
+            obj.dof_name = obj.primary_var_name
         else:
-            obj.flags.add( isOther )
+            obj.flags.add( is_other )
             print 'unknown variable family: %s' % family
             raise NotImplementedError
 
@@ -882,10 +882,10 @@ class Variable( Struct ):
                 output( 'field "%s" does not exist!' % conf.field )
                 raise
 
-            obj.setField( fld )
+            obj.set_field( fld )
 
         return obj
-    fromConf = staticmethod( fromConf )
+    from_conf = staticmethod( from_conf )
 
     def __init__( self, flags, data = None, indx = 0, **kwargs ):
         Struct.__init__( self, **kwargs )
@@ -897,11 +897,11 @@ class Variable( Struct ):
         self.data = deque()
         self.data.append( data )
         self.indx = None
-        self.nDof = None
-        self.currentAp = None
+        self.n_dof = None
+        self.current_ap = None
         self.step = None
 
-        if self.isVirtual():
+        if self.is_virtual():
             self.data = None
 
     def __call__( self, step = 0 ):
@@ -909,33 +909,33 @@ class Variable( Struct ):
 
     ##
     # 11.07.2006, c
-    def isState( self ):
-        return isState in self.flags
+    def is_state( self ):
+        return is_state in self.flags
 
     ##
     # 11.07.2006, c
-    def isVirtual( self ):
-        return isVirtual in self.flags
+    def is_virtual( self ):
+        return is_virtual in self.flags
 
     ##
     # 26.07.2007, c
-    def isParameter( self ):
-        return isParameter in self.flags
+    def is_parameter( self ):
+        return is_parameter in self.flags
     ##
     # 26.07.2007, c
-    def isOther( self ):
-        return isOther in self.flags
+    def is_other( self ):
+        return is_other in self.flags
 
     ##
     # 26.07.2007, c
-    def isKind( self, kind ):
+    def is_kind( self, kind ):
         return eval( 'self.is%s()' % kind.capitalize() )
 
     ##
     # 26.07.2006, c
-    def isNonStateField( self ):
-        return (isField in self.flags)\
-               and not (self.isState() or self.isVirtual())
+    def is_non_state_field( self ):
+        return (is_field in self.flags)\
+               and not (self.is_state() or self.is_virtual())
 
     def init_state( self, state, indx ):
         """Initialize data of variables with history."""
@@ -943,7 +943,7 @@ class Variable( Struct ):
 
         self.data.append( None )
         self.step = 0
-        self.dataFromState( state, indx, step = 0 )
+        self.data_from_state( state, indx, step = 0 )
 
     def advance( self, ts ):
         if self.history is None: return
@@ -954,75 +954,75 @@ class Variable( Struct ):
         else:
             self.data.append( None )
 
-    def dataFromState( self, state = None, indx = None, step = 0 ):
+    def data_from_state( self, state = None, indx = None, step = 0 ):
         """step: 0 = current,  """
-        if (not self.isState()) or (state is None): return
+        if (not self.is_state()) or (state is None): return
 
         self.indx = slice( int( indx.start ), int( indx.stop ) )
-        self.nDof = indx.stop - indx.start
+        self.n_dof = indx.stop - indx.start
         self.data[step] = state
 
-    def dataFromData( self, data = None, indx = None, step = 0 ):
-        if (not self.isNonStateField()) or (data is None): return
+    def data_from_data( self, data = None, indx = None, step = 0 ):
+        if (not self.is_non_state_field()) or (data is None): return
 
         self.data[step] = data
         if indx is None:
             self.indx = slice( 0, len( data ) )
         else:
             self.indx = slice( int( indx.start ), int( indx.stop ) )
-        self.nDof = self.indx.stop - self.indx.start
+        self.n_dof = self.indx.stop - self.indx.start
 
     ##
     # c: 11.07.2006, r: 25.02.2008
-    def setField( self, field ):
+    def set_field( self, field ):
         """Takes reference to a Field instance."""
         self.field = field
         self.dpn = nm.product( field.dim )
 
-        if self.dofName is None:
-            dofName = 'aux'
+        if self.dof_name is None:
+            dof_name = 'aux'
         else:
-            dofName = self.dofName
-        self.dofs = [dofName + ('.%d' % ii) for ii in range( self.dpn )]
+            dof_name = self.dof_name
+        self.dofs = [dof_name + ('.%d' % ii) for ii in range( self.dpn )]
 
-        self.flags.add( isField )
+        self.flags.add( is_field )
 
     ##
     # c: 08.08.2006, r: 15.01.2008
-    def setupDofConns( self ):
+    def setup_dof_conns( self ):
         dpn = self.dpn
         field = self.field
 
-        dofConns = Struct( name = 'dofConns', volumeDCs = {},
-                           surfaceDCs = {}, edgeDCs = {}, pointDCs = {} )
+        dof_conns = Struct( name = 'dof_conns', volume_d_cs = {},
+                           surface_d_cs = {}, edge_d_cs = {}, point_d_cs = {} )
         imax = -1
         ##
         # Expand nodes into dofs.
-        for regionName, ig, ap in field.aps.iterAps():
+        for region_name, ig, ap in field.aps.iter_aps():
 
-            dc, imax = createDofConn( ap.econn, dpn, imax )
-            dofConns.volumeDCs[ig] = dc
+            dc, imax = create_dof_conn( ap.econn, dpn, imax )
+            dof_conns.volume_d_cs[ig] = dc
 
-            if ap.surfaceData:
+            if ap.surface_data:
                 dcs = {}
-                for key, sd in ap.surfaceData.iteritems():
-                    dc, imax2 = createDofConn( sd.econn, dpn, 0 )
+                for key, sd in ap.surface_data.iteritems():
+                    dc, imax2 = create_dof_conn( sd.econn, dpn, 0 )
                     assert imax2 <= imax
                     dcs[key] = dc
-                dofConns.surfaceDCs[ig] = dcs
+                dof_conns.surface_d_cs[ig] = dcs
 
             else:
-                dofConns.surfaceDCs[ig] = None
+                dof_conns.surface_d_cs[ig] = None
 
-            if ap.edgeData:
+            if ap.edge_data:
                 raise NotImplementedError
             else:
-                dofConns.edgeDCs[ig] = None
+                dof_conns.edge_d_cs[ig] = None
 
-            if ap.pointData:
+            if ap.point_data:
                 dcs = {}
-                for key, conn in ap.pointData.iteritems():
-                    dc, imax2 = createDofConn( conn, dpn, 0 )
+                for key, conn in ap.point_data.iteritems():
+                    dc, imax2 = create_dof_conn( conn, dpn, 0 )
                     # imax2 can be greater than imax, as all spring nodes
                     # are assigned to the first group!!!
 ##                     print conn
@@ -1030,28 +1030,28 @@ class Variable( Struct ):
 ##                     print key, dc.shape
 ##                     pause()
                     dcs[key] = dc
-                dofConns.pointDCs[ig] = dcs
+                dof_conns.point_d_cs[ig] = dcs
 
             else:
-                dofConns.pointDCs[ig] = None
+                dof_conns.point_d_cs[ig] = None
 
-##         print dofConns
+##         print dof_conns
 ##         pause()
-        self.dofConns = dofConns
-        assert self.iDofMax >= imax
+        self.dof_conns = dof_conns
+        assert self.i_dof_max >= imax
 
     ##
     # 20.02.2007, c
     # 11.07.2007
-    def iterDofConns( self, kind ):
+    def iter_dof_conns( self, kind ):
         if kind == 'volume':
-            return self.dofConns.volumeDCs.iteritems
+            return self.dof_conns.volume_d_cs.iteritems
         elif kind == 'surface':
-            return self.dofConns.surfaceDCs.iteritems
+            return self.dof_conns.surface_d_cs.iteritems
         elif kind == 'edge':
-            return self.dofConns.edgeDCs.iteritems
+            return self.dof_conns.edge_d_cs.iteritems
         elif kind == 'point':
-            return self.dofConns.pointDCs.iteritems
+            return self.dof_conns.point_d_cs.iteritems
         else:
             print 'uknown dof connectivity kind:', kind
             raise ValueError
@@ -1071,9 +1071,9 @@ class Variable( Struct ):
 
     ##
     # c: 18.10.2006, r: 15.04.2008
-    def expandNodesToEquations( self, nods, dofs ):
+    def expand_nodes_to_equations( self, nods, dofs ):
         """dofs must be already canonized - it is done in
-        Variables._listBCOfVars()"""
+        Variables._list_bc_of_vars()"""
         eq = nm.array( [], dtype = nm.int32 )
         for dof in dofs:
             idof = self.dofs.index( dof )
@@ -1082,71 +1082,71 @@ class Variable( Struct ):
 
     ##
     # c: 03.10.2007, r: 25.02.2008
-    def createLCBCOperators( self, bcs, regions ):
+    def create_lcbc_operators( self, bcs, regions ):
         if len( bcs ) == 0: return None
 
-        eq = self.eqMap.eq
-        nDof = self.eqMap.nEq
+        eq = self.eq_map.eq
+        n_dof = self.eq_map.n_eq
         
-        nGroups = len( bcs )
-        eqLCBC = nm.zeros( (nDof,), dtype = nm.int32 )
+        n_groups = len( bcs )
+        eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
         
-        opsLC = []
+        ops_lc = []
         for ii, (key, bc) in enumerate( bcs ):
             print self.name, bc.name
 
             region = regions[bc.region]
             print region.name
 
-            nmaster = region.getFieldNodes( self.field, merge = True )
+            nmaster = region.get_field_nodes( self.field, merge = True )
             print nmaster.shape
 
             dofs, kind = bc.dofs
-            meq = eq[self.expandNodesToEquations( nmaster, dofs )]
+            meq = eq[self.expand_nodes_to_equations( nmaster, dofs )]
             assert nm.all( meq >= 0 )
             
-            eqLCBC[meq] = ii + 1
+            eq_lcbc[meq] = ii + 1
 ##             print meq, meq.shape
-##             print nm.where( eqLCBC )[0]
+##             print nm.where( eq_lcbc )[0]
             
-            mcoor = self.field.getCoor( nmaster )[:,:-1]
-            nNod, dim = mcoor.shape
+            mcoor = self.field.get_coor( nmaster )[:,:-1]
+            n_nod, dim = mcoor.shape
 
 #            print mcoor, mcoor.shape
 
-            mtxE = nm.tile( nm.eye( dim, dtype = nm.float64 ), (nNod, 1) )
+            mtx_e = nm.tile( nm.eye( dim, dtype = nm.float64 ), (n_nod, 1) )
             if dim == 2:
-                mtxR = nm.empty( (dim * nNod, 1), dtype = nm.float64 )
-                mtxR[0::dim,0] = -mcoor[:,1]
-                mtxR[1::dim,0] = mcoor[:,0]
-                nRigidDof = 3
+                mtx_r = nm.empty( (dim * n_nod, 1), dtype = nm.float64 )
+                mtx_r[0::dim,0] = -mcoor[:,1]
+                mtx_r[1::dim,0] = mcoor[:,0]
+                n_rigid_dof = 3
             elif dim == 3:
-                mtxR = nm.zeros( (dim * nNod, dim), dtype = nm.float64 )
-                mtxR[0::dim,1] = mcoor[:,2]
-                mtxR[0::dim,2] = -mcoor[:,1]
-                mtxR[1::dim,0] = -mcoor[:,2]
-                mtxR[1::dim,2] = mcoor[:,0]
-                mtxR[2::dim,0] = mcoor[:,1]
-                mtxR[2::dim,1] = -mcoor[:,0]
-                nRigidDof = 6
+                mtx_r = nm.zeros( (dim * n_nod, dim), dtype = nm.float64 )
+                mtx_r[0::dim,1] = mcoor[:,2]
+                mtx_r[0::dim,2] = -mcoor[:,1]
+                mtx_r[1::dim,0] = -mcoor[:,2]
+                mtx_r[1::dim,2] = mcoor[:,0]
+                mtx_r[2::dim,0] = mcoor[:,1]
+                mtx_r[2::dim,1] = -mcoor[:,0]
+                n_rigid_dof = 6
             else:
                 print 'dimension in [2,3]: %d' % dim
                 raise ValueError
 
-            opLC = nm.hstack( (mtxR, mtxE) )
-##             print opLC, opLC.shape
+            op_lc = nm.hstack( (mtx_r, mtx_e) )
+##             print op_lc, op_lc.shape
 
-            opsLC.append( opLC )
+            ops_lc.append( op_lc )
 
-        return Struct( eqLCBC = eqLCBC,
-                       opsLC = opsLC,
-                       nGroups = nGroups,
-                       nRigidDof = nRigidDof,
+        return Struct( eq_lcbc = eq_lcbc,
+                       ops_lc = ops_lc,
+                       n_groups = n_groups,
+                       n_rigid_dof = n_rigid_dof,
                        dim = dim )
 
     ##
     # c: 20.07.2006, split, r: 06.05.2008
-    def equationMapping( self, bcs, regions, di, ts, funmod, warn = False ):
+    def equation_mapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
         # Sort by ebc definition name.
@@ -1154,26 +1154,26 @@ class Variable( Struct ):
 ##         print bcs
 ##         pause()
         
-        self.eqMap = eqMap = Struct()
+        self.eq_map = eq_map = Struct()
 
-        eqMap.eq = nm.arange( di.nDofs[self.name], dtype = nm.int32 )
-        eqMap.valEBC = nm.empty( (0,), dtype = nm.float64 )
+        eq_map.eq = nm.arange( di.n_dofs[self.name], dtype = nm.int32 )
+        eq_map.val_ebc = nm.empty( (0,), dtype = nm.float64 )
         if len( bcs ) == 0:
             ##
             # No ebc for this field.
-            eqMap.eqi = nm.arange( di.nDofs[self.name], dtype = nm.int32 )
-            eqMap.eqEBC = nm.empty( (0,), dtype = nm.int32 )
-            eqMap.nEq = eqMap.eqi.shape[0]
-            eqMap.nEBC = eqMap.eqEBC.shape[0]
-            eqMap.master = nm.empty( (0,), dtype = nm.int32 )
-            eqMap.slave = nm.empty( (0,), dtype = nm.int32 )
+            eq_map.eqi = nm.arange( di.n_dofs[self.name], dtype = nm.int32 )
+            eq_map.eq_ebc = nm.empty( (0,), dtype = nm.int32 )
+            eq_map.n_eq = eq_map.eqi.shape[0]
+            eq_map.n_ebc = eq_map.eq_ebc.shape[0]
+            eq_map.master = nm.empty( (0,), dtype = nm.int32 )
+            eq_map.slave = nm.empty( (0,), dtype = nm.int32 )
             return
 
         field = self.field
 
-        eqEBC = nm.zeros( (di.nDofs[self.name],), dtype = nm.int32 )
-        valEBC = nm.zeros( (di.nDofs[self.name],), dtype = nm.float64 )
-        masterSlave = nm.zeros( (di.nDofs[self.name],), dtype = nm.int32 )
+        eq_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
+        val_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = nm.float64 )
+        master_slave = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
         chains = []
         for key, bc in bcs:
             if key[:3] == 'ebc':
@@ -1192,16 +1192,16 @@ class Variable( Struct ):
 ##             print ir, key, bc
 ##             debug()
             # Get master region nodes.
-            masterNodList = region.getFieldNodes( field )
-            for master in masterNodList[:]:
+            master_nod_list = region.get_field_nodes( field )
+            for master in master_nod_list[:]:
                 if master is None:
-                    masterNodList.remove( master )
+                    master_nod_list.remove( master )
                     if warn:
                         output( 'warning: ignoring nonexistent %s'\
                                 + ' node (%s) in %s'\
                                 % (ntype, self.name, region.name) )
 
-            if len( masterNodList ) == 0:
+            if len( master_nod_list ) == 0:
                 continue
 
             if ntype == 'EBC': # EBC.
@@ -1209,8 +1209,8 @@ class Variable( Struct ):
                 ##
                 # Evaluate EBC values.
                 vv = nm.empty( (0,), dtype = nm.float64 )
-                nods = nm.unique1d( nm.hstack( masterNodList ) )
-                coor = field.getCoor( nods )
+                nods = nm.unique1d( nm.hstack( master_nod_list ) )
+                coor = field.get_coor( nods )
                 if type( val ) == str:
                     fun = getattr( funmod, val )
                     vv = fun( bc, ts, coor )
@@ -1218,59 +1218,59 @@ class Variable( Struct ):
                     vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 ##                 print nods
 ##                 print vv
-                eq = self.expandNodesToEquations( nods, dofs )
+                eq = self.expand_nodes_to_equations( nods, dofs )
 
                 # Duplicates removed here...
-                eqEBC[eq] = 1
-                if vv is not None: valEBC[eq] = vv
+                eq_ebc[eq] = 1
+                if vv is not None: val_ebc[eq] = vv
 
             else: # EPBC.
                 region = regions[bc.region[1]]
-                slaveNodList = region.getFieldNodes( field )
-                for slave in slaveNodList[:]:
+                slave_nod_list = region.get_field_nodes( field )
+                for slave in slave_nod_list[:]:
                     if slave is None:
-                        slaveNodList.remove( slave )
+                        slave_nod_list.remove( slave )
                         if warn:
                             output( 'warning: ignoring nonexistent EPBC'\
                                     + ' slave node (%s) in %s'\
                                     % (self.name, region.name) )
-                if len( slaveNodList ) == 0:
+                if len( slave_nod_list ) == 0:
                     continue
 
-##                 print masterNodList
-##                 print slaveNodList
+##                 print master_nod_list
+##                 print slave_nod_list
 
-                nmaster = nm.unique1d( nm.hstack( masterNodList ) )
-                nslave = nm.unique1d( nm.hstack( slaveNodList ) )
+                nmaster = nm.unique1d( nm.hstack( master_nod_list ) )
+                nslave = nm.unique1d( nm.hstack( slave_nod_list ) )
 ##                 print nmaster + 1
 ##                 print nslave + 1
                 if nmaster.shape != nslave.shape:
                     raise 'EPBC list lengths do not match!\n(%s,\n %s)' %\
                           (nmaster, nslave)
 
-                mcoor = field.getCoor( nmaster )
-                scoor = field.getCoor( nslave )
+                mcoor = field.get_coor( nmaster )
+                scoor = field.get_coor( nslave )
                 fun = getattr( funmod, bc.match )
                 i1, i2 = fun( mcoor, scoor )
 ##                 print nm.c_[mcoor[i1], scoor[i2]]
 ##                 print nm.c_[nmaster[i1], nslave[i2]] + 1
 
-                meq = self.expandNodesToEquations( nmaster[i1], bc.dofs[0] )
-                seq = self.expandNodesToEquations( nslave[i2], bc.dofs[1] )
+                meq = self.expand_nodes_to_equations( nmaster[i1], bc.dofs[0] )
+                seq = self.expand_nodes_to_equations( nslave[i2], bc.dofs[1] )
 
-                m_assigned = nm.where( masterSlave[meq] != 0 )[0]
-                s_assigned = nm.where( masterSlave[seq] != 0 )[0]
+                m_assigned = nm.where( master_slave[meq] != 0 )[0]
+                s_assigned = nm.where( master_slave[seq] != 0 )[0]
                 if m_assigned.size or s_assigned.size: # Chain EPBC.
 ##                     print m_assigned, meq[m_assigned]
 ##                     print s_assigned, seq[s_assigned]
 
-                    aux = masterSlave[meq[m_assigned]]
+                    aux = master_slave[meq[m_assigned]]
                     sgn = nm.sign( aux )
                     om_chain = zip( meq[m_assigned], (aux - sgn) * sgn )
 ##                     print om_chain
                     chains.extend( om_chain )
 
-                    aux = masterSlave[seq[s_assigned]]
+                    aux = master_slave[seq[s_assigned]]
                     sgn = nm.sign( aux )
                     os_chain = zip( seq[s_assigned], (aux - sgn) * sgn )
 ##                     print os_chain
@@ -1287,74 +1287,74 @@ class Variable( Struct ):
 
                     msa = nm.union1d( m_assigned, s_assigned )
                     ii = nm.setdiff1d( nm.arange( meq.size ), msa )
-                    masterSlave[meq[ii]] = seq[ii] + 1
-                    masterSlave[seq[ii]] = - meq[ii] - 1
+                    master_slave[meq[ii]] = seq[ii] + 1
+                    master_slave[seq[ii]] = - meq[ii] - 1
                 else:
-                    masterSlave[meq] = seq + 1
-                    masterSlave[seq] = - meq - 1
-##                 print 'ms', masterSlave
+                    master_slave[meq] = seq + 1
+                    master_slave[seq] = - meq - 1
+##                 print 'ms', master_slave
 ##                 print chains
 
-##         print masterSlave
-        chains = groupChains( chains )
-        resolveChains( masterSlave, chains )
+##         print master_slave
+        chains = group_chains( chains )
+        resolve_chains( master_slave, chains )
 
-        ii = nm.argwhere( eqEBC == 1 )
-        eqMap.eqEBC = nm.atleast_1d( ii.squeeze() )
-        eqMap.valEBC = nm.atleast_1d( valEBC[ii].squeeze() )
-        eqMap.master = nm.argwhere( masterSlave > 0 ).squeeze()
-        eqMap.slave = masterSlave[eqMap.master] - 1
-##         print eqMap.master
-##         print eqMap.slave
+        ii = nm.argwhere( eq_ebc == 1 )
+        eq_map.eq_ebc = nm.atleast_1d( ii.squeeze() )
+        eq_map.val_ebc = nm.atleast_1d( val_ebc[ii].squeeze() )
+        eq_map.master = nm.argwhere( master_slave > 0 ).squeeze()
+        eq_map.slave = master_slave[eq_map.master] - 1
+##         print eq_map.master
+##         print eq_map.slave
 ##         pause()
 
-        assert (eqMap.eqEBC.shape == eqMap.valEBC.shape)
-##         print eqMap.eqEBC.shape
+        assert (eq_map.eq_ebc.shape == eq_map.val_ebc.shape)
+##         print eq_map.eq_ebc.shape
 ##         pause()
-        eqMap.eq[eqMap.eqEBC] = -2
-        eqMap.eq[eqMap.master] = -1
-        eqMap.eqi = nm.compress( eqMap.eq >= 0, eqMap.eq )
-        eqMap.eq[eqMap.eqi] = nm.arange( eqMap.eqi.shape[0], dtype = nm.int32 )
-        eqMap.eq[eqMap.master] = eqMap.eq[eqMap.slave]
-        eqMap.nEq = eqMap.eqi.shape[0]
-        eqMap.nEBC = eqMap.eqEBC.shape[0]
-        eqMap.nEPBC = eqMap.master.shape[0]
-##         print eqMap
+        eq_map.eq[eq_map.eq_ebc] = -2
+        eq_map.eq[eq_map.master] = -1
+        eq_map.eqi = nm.compress( eq_map.eq >= 0, eq_map.eq )
+        eq_map.eq[eq_map.eqi] = nm.arange( eq_map.eqi.shape[0], dtype = nm.int32 )
+        eq_map.eq[eq_map.master] = eq_map.eq[eq_map.slave]
+        eq_map.n_eq = eq_map.eqi.shape[0]
+        eq_map.n_ebc = eq_map.eq_ebc.shape[0]
+        eq_map.n_epbc = eq_map.master.shape[0]
+##         print eq_map
 ##         pause()
 
     ##
     # c: 24.07.2006, r: 15.01.2008
-    def getApproximation( self, key, kind = 'Volume' ):
-        iname, regionName, ig = key
-##         print tregionName, aregionName, ig
-#        print self.field.aps.apsPerGroup
+    def get_approximation( self, key, kind = 'Volume' ):
+        iname, region_name, ig = key
+##         print tregion_name, aregion_name, ig
+#        print self.field.aps.aps_per_group
 
         aps = self.field.aps
         geometries = aps.geometries
-        ap = aps.apsPerGroup[ig]
-        gKey = (iname, kind, regionName, ap.name)
+        ap = aps.aps_per_group[ig]
+        g_key = (iname, kind, region_name, ap.name)
         try:
-            return ap, geometries[gKey]
+            return ap, geometries[g_key]
         except KeyError:
-            print gKey
+            print g_key
             print geometries
             raise
 
     ##
     # c: 28.11.2006, r: 15.01.2008
-    def getDataShapes( self, key, kind = 'Volume' ):
+    def get_data_shapes( self, key, kind = 'Volume' ):
         iname, ig = key[0], key[-1]
-        ap = self.field.aps.apsPerGroup[ig]
+        ap = self.field.aps.aps_per_group[ig]
         if kind == 'Volume':
-            shape = ap.getVDataShape( iname )
+            shape = ap.get_v_data_shape( iname )
         else:
-            regionName = key[1]
-            shape = ap.getSDataShape( iname, regionName )
+            region_name = key[1]
+            shape = ap.get_s_data_shape( iname, region_name )
 
         return shape
 
-    def getStateInRegion( self, region, igs = None, reshape = True, step = 0 ):
-        nods = region.getFieldNodes( self.field, merge = True, igs = igs )
+    def get_state_in_region( self, region, igs = None, reshape = True, step = 0 ):
+        nods = region.get_field_nodes( self.field, merge = True, igs = igs )
 ##         print nods, len( nods )
 ##         pause()
         eq = nm.empty( (len( nods ) * self.dpn,), dtype = nm.int32 )
@@ -1372,10 +1372,10 @@ class Variable( Struct ):
     # 14.03.2007
     # 24.05.2007
     # 04.06.2007
-    def extendData( self, data, nNod, val = None ):
+    def extend_data( self, data, n_nod, val = None ):
         """Extend data (with value val) to cover whole domain."""
-        cntVN = self.field.cntVN
-        indx = cntVN[cntVN >= 0]
+        cnt_vn = self.field.cnt_vn
+        indx = cnt_vn[cnt_vn >= 0]
 
         if val is None:
             if data.shape[1] > 1: # Vector.
@@ -1383,17 +1383,17 @@ class Variable( Struct ):
             else: # Scalar.
                 val = nm.amin( data )
 
-        extdata = nm.empty( (nNod, data.shape[1]), dtype = nm.float64 )
+        extdata = nm.empty( (n_nod, data.shape[1]), dtype = nm.float64 )
         extdata.fill( val )
         extdata[indx] = data[:indx.size]
 
         return extdata
     ##
     # c: 12.05.2008, r: 12.05.2008
-    def removeExtraData( self, data ):
+    def remove_extra_data( self, data ):
         """Removes data in extra nodes."""
-        cntVN = self.field.cntVN
-        indx = self.field.remap[cntVN[cntVN >= 0]]
+        cnt_vn = self.field.cnt_vn
+        indx = self.field.remap[cnt_vn[cnt_vn >= 0]]
         newdata = data[indx]
         return newdata
         

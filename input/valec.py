@@ -2,7 +2,7 @@
 # Functions.
 import numpy as nm
 
-def coorsInCylinder( x, y, z, centre, axis, radius, length ):
+def coors_in_cylinder( x, y, z, centre, axis, radius, length ):
     """
     Select coordinates in a cylindre.
     """
@@ -34,7 +34,7 @@ def cinc_simple( x, y, z, mode ):
         radius = 0.012
         length = 0.04
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )
 
 cinc_simple2 = cinc_simple
 cinc_simple3 = cinc_simple
@@ -42,7 +42,7 @@ cinc_simple3 = cinc_simple
 def cinc_klikatak( x, y, z ):
     raise NotImplementedError
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )
 
 def cinc_pul_klikatak2( x, y, z, mode ):
     if mode == 0: # In
@@ -54,7 +54,7 @@ def cinc_pul_klikatak2( x, y, z, mode ):
     radius = 0.029
     length = 0.00002
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )
 
 ##
 # 21.03.2007, c
@@ -71,7 +71,7 @@ def cinc_new_kroucenak_c1( x, y, z, mode ):
     radius = 4.5e-3
     length = 0.00002e-3
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )
 
 ##
 # 22.03.2007, c
@@ -88,7 +88,7 @@ def cinc_new_kroucenak_c2( x, y, z, mode ):
     radius = 4.5e-3
     length = 0.00002e-3
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )
 
 ##
 # 26.03.2007, c
@@ -105,4 +105,4 @@ def cinc_new_kroucenak_c3( x, y, z, mode ):
     radius = 4.5e-3
     length = 0.00002e-3
 
-    return coorsInCylinder( x, y, z, centre, axis, radius, length )
+    return coors_in_cylinder( x, y, z, centre, axis, radius, length )

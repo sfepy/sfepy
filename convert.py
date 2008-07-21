@@ -10,24 +10,24 @@ except ImportError:
 
 def mesh():
     if len( sys.argv ) == 3:
-        geomFileName = sys.argv[1]
-        vtkFileName = sys.argv[2]
+        geom_file_name = sys.argv[1]
+        vtk_file_name = sys.argv[2]
     if len( sys.argv ) == 2:
-        geomFileName = sys.argv[1]
-        vtkFileName = "tmp/t.1.vtk"
+        geom_file_name = sys.argv[1]
+        vtk_file_name = "tmp/t.1.vtk"
     else:
-        geomFileName = "database/box.geo"
-        vtkFileName = "tmp/t.1.vtk"
+        geom_file_name = "database/box.geo"
+        vtk_file_name = "tmp/t.1.vtk"
 
-    os.system( "gmsh -0 %s -o tmp/x.geo" % geomFileName )
+    os.system( "gmsh -0 %s -o tmp/x.geo" % geom_file_name )
     g=geom.read_gmsh("tmp/x.geo")
     g.printinfo()
     geom.write_tetgen(g,"tmp/t.poly")
     geom.runtetgen("tmp/t.poly",a=0.03,Q=1.0,quadratic=False,
                    tetgenpath = tetgen_path)
 
-    m = Mesh.fromFile("tmp/t.1.node")
-    m.write( vtkFileName, io = "auto" )
+    m = Mesh.from_file("tmp/t.1.node")
+    m.write( vtk_file_name, io = "auto" )
 
 try:
     os.makedirs( "tmp" )
