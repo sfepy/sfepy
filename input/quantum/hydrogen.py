@@ -98,7 +98,7 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
         'name' : 'eigen1',
         'kind' : 'eig.pysparse',
 
-        'tau' : -1.0,
+        'tau' : tau,
         'eps_a' : 1e-5,
         'i_max' : 150,
         'method' : 'qmrs',

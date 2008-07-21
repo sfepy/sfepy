@@ -1,7 +1,7 @@
 from hydrogen import common
 
 def define():
-    l = common(dim=2, n_eigs=10, tau=-15)
+    l = common(dim=2, n_eigs=10, tau=-1)
     return l
 
 def fun_v( ts, coor, region, ig, mode = None ):
