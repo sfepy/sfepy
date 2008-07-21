@@ -929,7 +929,7 @@ class Variable( Struct ):
     ##
     # 26.07.2007, c
     def is_kind( self, kind ):
-        return eval( 'self.is%s()' % kind.capitalize() )
+        return eval( 'self.is_%s()' % kind )
 
     ##
     # 26.07.2006, c
