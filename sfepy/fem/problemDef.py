@@ -24,8 +24,7 @@ class ProblemDefinition( Struct ):
 
     Contains: mesh, domain, materials, fields, variables, equations, solvers
     """
-    ##
-    # c: 29.01.2006, r: 09.07.2008
+
     def from_conf( conf,
                   init_fields = True, init_variables = True, init_equations = True,
                   init_solvers = True ):
@@ -71,6 +70,9 @@ class ProblemDefinition( Struct ):
         if init_solvers:
             obj.set_solvers( conf.solvers, conf.options )
 
+
+        obj.ts = None
+        
         return obj
     from_conf = staticmethod( from_conf )
 
@@ -241,20 +243,24 @@ class ProblemDefinition( Struct ):
         funmod = get_default( funmod, self.conf.funmod )
         self.materials.time_update( ts, funmod, self.domain, extra_mat_args )
 
-    ##
-    # c: 12.03.2007, r: 13.06.2008
     def time_update( self, ts = None,
-                    conf_ebc = None, conf_epbc = None, conf_lcbc = None,
-                    funmod = None, create_matrix = False, extra_mat_args = None ):
+                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
+                     funmod = None, create_matrix = False,
+                     extra_mat_args = None ):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
-            
+
+        self.ts = ts
         conf_ebc = get_default( conf_ebc, self.conf.ebcs )
         conf_epbc = get_default( conf_epbc, self.conf.epbcs )
         conf_lcbc = get_default( conf_lcbc, self.conf.lcbcs )
         funmod = get_default( funmod, self.conf.funmod )
-        self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod, create_matrix )
+        self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
+                        create_matrix )
         self.update_materials( ts, funmod, extra_mat_args )
+
+    def get_timestepper( self ):
+        return self.ts
 
     ##
     # 29.01.2006, c
