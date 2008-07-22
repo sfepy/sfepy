@@ -1,8 +1,6 @@
 from terms import *
 from utils import fix_scalar_in_el
 
-##
-# 24.10.2005, c
 class DivGradTerm( Term ):
     r""":description: Diffusion term.
     :definition: $\int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}$
@@ -11,16 +9,9 @@ class DivGradTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 24.10.2005, c
-    # 15.11.2005
-    # 16.11.2005
-    # 10.01.2006
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.term_ns_asm_div_grad )
         
-    ##
-    # c: 26.10.2005, r: 20.02.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         material, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -35,14 +26,12 @@ class DivGradTerm( Term ):
         else:
             raise StopIteration
 
-        vec, indx = state()
+        vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, indx.start, nm.float64( material ),
+            status = self.function( out, vec, 0, nm.float64( material ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-##
-# 20.12.2005, c
 class ConvectTerm( Term ):
     r""":description: Nonlinear convective term.
     :definition: $\int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}$
@@ -51,15 +40,9 @@ class ConvectTerm( Term ):
     arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 20.12.2005, c
-    # 10.01.2006
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.term_ns_asm_convect )
         
-    ##
-    # 20.12.2005, c
-    # 25.07.2006
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -74,15 +57,13 @@ class ConvectTerm( Term ):
         else:
             raise StopIteration
 
-        vec, indx = state()
+        vec = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, indx.start, bf,
+            status = self.function( out, vec, 0, bf,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-##
-# 25.07.2007, c
 class LinearConvectTerm( Term ):
     r""":description: Linearized convective term.
     :definition: $\int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}$
@@ -91,13 +72,9 @@ class LinearConvectTerm( Term ):
     arg_types = ('virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 25.07.2007, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_convect )
         
-    ##
-    # 25.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, par, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -112,16 +89,14 @@ class LinearConvectTerm( Term ):
         else:
             raise StopIteration
 
-        vec1, i1 = par()
-        vec2, i2 = state()
+        vec1 = par()
+        vec2 = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, i1.start, vec2, i2.start,
+            status = self.function( out, vec1, 0, vec2, 0,
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-##
-# 30.07.2007, c
 class LinearConvectQTerm( Term ):
     r""":description: Linearized convective term evaluated in quadrature points.
     :definition: $((\ul{b} \cdot \nabla) \ul{u})|_{qp}$
@@ -130,13 +105,9 @@ class LinearConvectQTerm( Term ):
     arg_types = ('parameter', 'state')
     geometry = [(Volume, 'state')]
 
-    ##
-    # 30.07.2007, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_convect )
         
-    ##
-    # 30.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, state = self.get_args( **kwargs )
         ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
@@ -148,16 +119,14 @@ class LinearConvectQTerm( Term ):
         else:
             raise StopIteration
 
-        vec1, i1 = par()
-        vec2, i2 = state()
+        vec1 = par()
+        vec2 = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, i1.start, vec2, i2.start,
+            status = self.function( out, vec1, 0, vec2, 0,
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-##
-# 15.12.2005, c
 class GradTerm( Term ):
     r""":description: Gradient term (weak form).
     :definition: $\int_{\Omega}  p\ \nabla \cdot \ul{v}$
@@ -166,13 +135,9 @@ class GradTerm( Term ):
     arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    ##
-    # c: 15.12.2005, 31.03.2008
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_grad )
         
-    ##
-    # c: 31.03.2008, r: 31.03.2008
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name ) 
         n_el, n_qp, dim, n_epr = self.data_shape
@@ -185,15 +150,11 @@ class GradTerm( Term ):
         else:
             raise StopIteration
 
-    ##
-    # c: 31.03.2008, r: 31.03.2008
     def build_c_fun_args( self, state, apc, vgr, **kwargs ):
-        vec, indx = state()
+        vec = state()
         bf = apc.get_base( 'v', 0, self.integral_name )
-        return 1.0, vec, indx.start, bf, vgr, apc.econn
+        return 1.0, vec, 0, bf, vgr, apc.econn
 
-    ##
-    # c: 15.12.2005, r: 04.07.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -206,8 +167,6 @@ class GradTerm( Term ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-##
-# 30.07.2007, c
 class GradQTerm( Term ):
     r""":description: Gradient term (weak form) in quadrature points.
     :definition: $(\nabla p)|_{qp}$
@@ -221,8 +180,6 @@ class GradQTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dq_grad_scalar )
 
-    ##
-    # 30.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state = self.get_args( **kwargs )
         ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
@@ -234,10 +191,9 @@ class GradQTerm( Term ):
         else:
             raise StopIteration
 
-        vec, indx = state()
+        vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, indx.start,
-                                    vg, apc.econn, chunk )
+            status = self.function( out, vec, 0, vg, apc.econn, chunk )
             yield out, chunk, status
 
 ##
@@ -251,14 +207,10 @@ class GradDtTerm( GradTerm ):
     arg_types = ('ts', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    ##
-    # c: 31.03.2008, r: 31.03.2008
     def build_c_fun_args( self, state, apc, vgr, **kwargs ):
         ts, state_0 = self.get_args( ['ts', 'parameter'], **kwargs )
 
-        vec, indx = state()
-        vec0, indx0 = state_0()
-        dvec = vec[indx] - vec0[indx0]
+        dvec = state() - state_0()
         idt = 1.0/ts.dt 
 
         bf = apc.get_base( 'v', 0, self.integral_name )
@@ -294,19 +246,17 @@ class DivTerm( Term ):
         else:
             raise StopIteration
 
-    ##
-    # c: 31.03.2008, r: 31.03.2008
     def build_c_fun_args( self, state, apr, apc, vgc, **kwargs ):
-        vec, indx = state()
+        vec = state()
         bf = apr.get_base( 'v', 0, self.integral_name )
-        return vec, indx.start, bf, vgc, apc.econn
+        return vec, 0, bf, vgc, apc.econn
 
-    ##
-    # c: 14.12.2005, r: 04.07.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
 
         shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
         fargs = self.build_c_fun_args( state, apr, apc, vgc, **kwargs )
@@ -366,8 +316,6 @@ class GradDivStabilizationTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_st_grad_div )
         
-    ##
-    # 26.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         gamma, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -382,9 +330,9 @@ class GradDivStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        vec, indx = state()
+        vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, indx.start, float( gamma ),
+            status = self.function( out, vec, 0, float( gamma ),
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
@@ -415,8 +363,6 @@ class PSPGCStabilizationTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_st_pspg_c )
         
-    ##
-    # 31.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         tau, virtual, par, state = self.get_args( **kwargs )
         apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -435,11 +381,11 @@ class PSPGCStabilizationTerm( Term ):
 
         tau_in_el = fix_scalar_in_el( tau, n_el, nm.float64 )
             
-        vec1, i1 = par()
-        vec2, i2 = state()
+        vec1 = par()
+        vec2 = state()
         bf = apc.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, i1.start, vec2, i2.start,
+            status = self.function( out, vec1, 0, vec2, 0,
                                     tau_in_el, bf, vgr, vgc,
                                     apc.econn, chunk, mode )
             yield out, chunk, status
@@ -461,8 +407,6 @@ class SUPGPStabilizationTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_st_supg_p )
         
-    ##
-    # 31.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
         apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -481,11 +425,11 @@ class SUPGPStabilizationTerm( Term ):
 
         delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
             
-        vec1, i1 = par()
-        vec2, i2 = state()
+        vec1 = par()
+        vec2 = state()
         bf = apr.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, i1.start, vec2, i2.start,
+            status = self.function( out, vec1, 0, vec2, 0,
                                     delta_in_el, bf, vgr, vgc,
                                     apr.econn, apc.econn, chunk, mode )
             yield out, chunk, status
@@ -507,8 +451,6 @@ class SUPGCStabilizationTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_st_supg_c )
         
-    ##
-    # 31.07.2007, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -525,11 +467,11 @@ class SUPGCStabilizationTerm( Term ):
 
         delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
             
-        vec1, i1 = par()
-        vec2, i2 = state()
+        vec1 = par()
+        vec2 = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, i1.start, vec2, i2.start,
+            status = self.function( out, vec1, 0, vec2, 0,
                                     delta_in_el, bf, vg,
                                     ap.econn, chunk, mode )
             yield out, chunk, status

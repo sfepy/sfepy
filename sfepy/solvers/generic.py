@@ -122,13 +122,11 @@ def time_step_function( ts, state0, problem, data ):
     else:
         state = problem.solve( state0 = state0, ts = ts, **data )
 
-    problem.advance( ts )
-
     return state
 
 def solve_evolutionary_op( problem, options,
-                         save_results = True, return_history = False,
-                         post_process_hook = None ):
+                           save_results = True, return_history = False,
+                           post_process_hook = None ):
     """TODO  return_history"""
     
     data = {}
@@ -140,12 +138,12 @@ def solve_evolutionary_op( problem, options,
 
     state0 = problem.create_state_vector()
     ii = 0
-    for step, time, state in time_solver( state0 ):
+    for ts, state in time_solver( state0 ):
 
-        if save_results and (is_save[ii] == step):
-            problem.save_state( ofn_trunk + suffix % step, state,
-                               post_process_hook = post_process_hook )
-
+        if save_results and (is_save[ii] == ts.step):
+            problem.save_state( ofn_trunk + suffix % ts.step, state,
+                                post_process_hook = post_process_hook )
+            problem.advance( ts )
             ii += 1
     return state, data
 

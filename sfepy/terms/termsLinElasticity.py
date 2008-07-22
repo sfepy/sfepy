@@ -14,8 +14,6 @@ from terms import *
 ## s[i,j] = D[i,j,k,l] * e[k,l]
 ## """
 
-##
-# c: 02.08.2006
 class LinearElasticTerm( Term ):
     r""":description: General linear elasticity term, with $D_{ijkl}$ given in
     the usual matrix form exploiting symmetry: in 3D it is $6\times6$ with the
@@ -33,8 +31,6 @@ class LinearElasticTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_elastic )
 
-    ##
-    # c: 21.03.2008, r: 25.03.2008
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -46,16 +42,12 @@ class LinearElasticTerm( Term ):
         else:
             raise StopIteration
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
     def build_c_fun_args( self, mat, state, ap, vg ):
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
         strain = cache( 'strain', self.get_current_group(), 0, state = state )
         return 1.0, strain, mat_qp, vg
 
-    ##
-    # c: 07.03.2006, r: 21.03.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         material, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -67,8 +59,6 @@ class LinearElasticTerm( Term ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-##
-# 01.03.2007, c
 class  LinearElasticIntegratedTerm( Term ):
     r""":description: Integrated general linear elasticity term.
     :definition: $\int_{\Omega} D_{ijkl}\ e_{ij}(\ul{b}) e_{kl}(\ul{w})$
@@ -81,8 +71,6 @@ class  LinearElasticIntegratedTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.d_lin_elastic )
 
-    ##
-    # c: 01.03.2007, r: 15.01.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
@@ -103,8 +91,6 @@ class  LinearElasticIntegratedTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-##
-# 07.03.2006, c
 class LinearElasticIsotropicTerm( LinearElasticTerm ):
     r""":description: Isotropic linear elasticity term.
     :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})$
@@ -115,20 +101,14 @@ class LinearElasticIsotropicTerm( LinearElasticTerm ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    ##
-    # c: 07.03.2006, r: 21.03.2008
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_elastic_iso )
 
-    ##
-    # c: 21.03.2008, r: 21.03.2008
     def build_c_fun_args( self, mat, state, ap, vg ):
-        vec, indx = state()
+        vec = state()
         lam, mu = map( nm.float64, [mat[ii] for ii in ['lambda', 'mu']] )
-        return vec, indx.start, lam, mu, vg, ap.econn
+        return vec, 0, lam, mu, vg, ap.econn
 
-##
-# 01.08.2006, c
 class LinearViscousTerm( LinearElasticTerm ):
     r""":description: General linear viscosity term, with $D_{ijkl}$ given in
     the usual matrix form exploiting symmetry: in 3D it is $6\times6$ with the
@@ -146,16 +126,12 @@ class LinearViscousTerm( LinearElasticTerm ):
     use_caches = {'cauchy_strain' : [['state', {'strain' : (2,2),
                                                'dstrain' : (1,1)}]]}
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
     def build_c_fun_args( self, dt, mat, state, ap, vg ):
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
         dstrain = cache( 'dstrain', self.get_current_group(), 0, state = state )
         return 1.0 / dt, dstrain, mat_qp, vg
 
-    ##
-    # c: 03.08.2006, r: 25.03.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat, virtual, state, state0 = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -167,8 +143,6 @@ class LinearViscousTerm( LinearElasticTerm ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-##
-# 14.09.2006, c
 class LinearViscousTHTerm( LinearElasticTerm ):
     r""":definition: $\int_{\Omega} \left [\int_0^t
     \Hcal_{ijkl}(t-\tau)\,\tdiff{e_{kl}(\ul{u}(\tau))}{\tau}
@@ -179,8 +153,6 @@ class LinearViscousTHTerm( LinearElasticTerm ):
     use_caches = {'cauchy_strain' : [['state', {'strain' : (2,2),
                                                'dstrain' : (-1,-1)}]]}
 
-    ##
-    # c: 14.09.2006, r: 18.06.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
@@ -218,8 +190,6 @@ class LinearViscousTHTerm( LinearElasticTerm ):
 ##                 print ttt, itt
                 yield out, chunk, status
 
-##
-# 21.09.2006, c
 class CauchyStrainTerm( Term ):
     r""":description: Cauchy strain tensor averaged in elements.
     :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w}) /
@@ -229,13 +199,9 @@ class CauchyStrainTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
 
-    ##
-    # 05.10.2007
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.de_cauchy_strain )
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -245,14 +211,10 @@ class CauchyStrainTerm( Term ):
         else:
             raise StopIteration
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
-        vec, indx = state()
-        return vec, indx.start, vg, ap.econn
+        vec = state()
+        return vec, 0, vg, ap.econn
         
-    ##
-    # c: 21.09.2006, r: 14.07.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         parameter, = self.get_args( ['parameter'], **kwargs )
         ap, vg = parameter.get_approximation( self.get_current_group(), 'Volume' )
@@ -265,8 +227,6 @@ class CauchyStrainTerm( Term ):
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
 
-##
-# c: 25.03.2008
 class CauchyStressTerm( CauchyStrainTerm ):
     r""":description: Cauchy stress tensor averaged in elements.
     :definition: vector of $\forall K \in \Tcal_h:
@@ -277,13 +237,9 @@ class CauchyStressTerm( CauchyStrainTerm ):
     geometry = [(Volume, 'parameter')]
     use_caches = {'cauchy_strain' : [['parameter']]}
 
-    ##
-    # c: 25.03.2008, r: 25.03.2008
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.de_cauchy_stress )
 
-    ##
-    # c: 25.03.2008, r: 31.03.2008
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         mat, = self.get_args( ['material'], **kwargs )
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )

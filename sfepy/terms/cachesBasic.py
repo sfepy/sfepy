@@ -3,22 +3,14 @@ import extmods.terms as terms
 from cache import DataCache
 from sfepy.base.base import pause, debug
 
-##
-# 13.03.2007, c
 class StateInVolumeQPDataCache( DataCache ):
     name = 'state_in_volume_qp'
     arg_types = ('state',)
 
-    ##
-    # 13.03.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['state'], history_sizes,
                             terms.dq_state_in_qp )
         
-    ##
-    # created:       13.03.2007
-    # last revision: 13.12.2007
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
 
@@ -28,39 +20,28 @@ class StateInVolumeQPDataCache( DataCache ):
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # c: 13.03.2007, r: 02.04.2008
     def update( self, key, group_indx, ih, **kwargs ):
         state, = self.get_args( **kwargs )
         ap, vg = state.get_approximation( group_indx, 'Volume' )
         ckey = self.g_to_c( group_indx )
 
         if ih == 0:
-            vec, indx = state()
             bf = ap.get_base( 'v', 0, group_indx[0] )
-            self.function( self.data[key][ckey][ih], vec, indx.start,
-                           bf, ap.econn )
+            self.function( self.data[key][ckey][ih], state(), 0, bf, ap.econn )
         else:
             print 'history update!'
             print kwargs['history']
             raise NotImplementedError
 
-##
-# 24.04.2007, c
 class StateInSurfaceQPDataCache( DataCache ):
     name = 'state_in_surface_qp'
     arg_types = ('state',)
     region_matters = True
     
-    ##
-    # 24.04.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['state'], history_sizes,
                             terms.dq_state_in_qp )
         
-    ##
-    # c: 24.04.2007, r: 15.01.2008
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
         n_fa, n_qp = state.get_data_shapes( ckey, kind = 'Surface' )[:2]
@@ -68,34 +49,23 @@ class StateInSurfaceQPDataCache( DataCache ):
 
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # c: 24.04.2007, r: 15.01.2008
     def update( self, key, group_indx, ih, **kwargs ):
         ckey = self.g_to_c( group_indx )
         state, = self.get_args( **kwargs )
 
-        vec, indx = state()
         ap, sg = state.get_approximation( group_indx, 'Surface' )
         sd = ap.surface_data[group_indx[1]]
         bf = ap.get_base( sd.face_type, 0, group_indx[0] )
-        self.function( self.data[key][ckey][ih], vec, indx.start,
-                       bf, sd.econn )
+        self.function( self.data[key][ckey][ih], state(), 0, bf, sd.econn )
 
-##
-# 27.02.2007, c
 class CauchyStrainDataCache( DataCache ):
     name = 'cauchy_strain'
     arg_types = ('state',)
 
-    ##
-    # 27.02.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['strain', 'dstrain'],
                             history_sizes, terms.dq_cauchy_strain )
         
-    ##
-    # c: 27.02.2007, r: 15.04.2008
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
 
@@ -108,8 +78,6 @@ class CauchyStrainDataCache( DataCache ):
         if key == 'dstrain': # dstrain uses strain
             DataCache.init_data( self, 'strain', ckey, shape )
 
-    ##
-    # c: 27.02.2007, r: 15.04.2008
     def update( self, key, group_indx, ih, **kwargs ):
         ckey = self.g_to_c( group_indx )
         if not self.valid['strain'][ckey]:
@@ -119,9 +87,8 @@ class CauchyStrainDataCache( DataCache ):
                 raise NotImplementedError
             state, = self.get_args( **kwargs )
 
-            vec, indx = state()
             ap, vg = state.get_approximation( group_indx, 'Volume' )
-            self.function( self.data['strain'][ckey][ih], vec, indx.start,
+            self.function( self.data['strain'][ckey][ih], state(), 0,
                            vg, ap.econn )
             is_finite = nm.isfinite( self.data[key][ckey][ih] )
             if not nm.alltrue( is_finite ):
@@ -143,21 +110,14 @@ class CauchyStrainDataCache( DataCache ):
             else:
                 self.data[key][ckey][ih].fill( 0.0 )
                 
-##
-# 12.03.2007, c
 class GradScalarDataCache( DataCache ):
     name = 'grad_scalar'
     arg_types = ('state',)
 
-    ##
-    # 12.03.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['grad'], history_sizes,
                             terms.dq_grad_scalar )
         
-    ##
-    # c: 12.03.2007, r: 14.01.2008
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
 
@@ -167,31 +127,21 @@ class GradScalarDataCache( DataCache ):
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # c: 12.03.2007, r: 14.01.2008
     def update( self, key, group_indx, ih, **kwargs ):
         state, = self.get_args( **kwargs )
         ap, vg = state.get_approximation( group_indx, 'Volume' )
         ckey = self.g_to_c( group_indx )
 
-        vec, indx = state()
-        self.function( self.data[key][ckey][ih], vec, indx.start, vg, ap.econn )
+        self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
 
-##
-# 13.03.2007, c
 class DivVectorDataCache( DataCache ):
     name = 'div_vector'
     arg_types = ('state',)
 
-    ##
-    # 13.03.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['div'], history_sizes,
                             terms.dq_div_vector )
         
-    ##
-    # c: 13.03.2007, r: 17.01.2008
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
 
@@ -201,52 +151,35 @@ class DivVectorDataCache( DataCache ):
 #        print self.name, key, ig, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # c: 13.03.2007, r: 17.01.2008
     def update( self, key, group_indx, ih, **kwargs ):
         state, = self.get_args( **kwargs )
         ap, vg = state.get_approximation( group_indx, 'Volume' )
         ckey = self.g_to_c( group_indx )
 
-        vec, indx = state()
-        self.function( self.data[key][ckey][ih], vec, indx.start, vg, ap.econn )
+        self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
 
-##
-# 23.04.2007, c
 class VolumeDataCache( DataCache ):
     name = 'volume'
     arg_types = ('region','field')
 
-    ##
-    # 23.04.2007, c
-    # 08.06.2007
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['volume'], history_sizes )
         
-    ##
-    # 23.04.2007, c
     def init_data( self, key, ckey, **kwargs ):
         shape = (1, 1, 1, 1)
 
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # created:       23.04.2007
-    # last revision: 13.12.2007
     def update( self, key, group_indx, ih, **kwargs ):
         region, field = self.get_args( **kwargs )
         ckey = self.g_to_c( group_indx )
         self.data[key][ckey][ih] = region.get_volume( field, ckey, update = True )
 
 
-##
-# c: 23.01.2008, r: 23.01.2008
 class MatInQPDataCache( DataCache ):
     name = 'mat_in_qp'
     arg_types = ('mat', 'ap', 'assumed_shapes', 'mode_in')
 
-    ##
-    # c: 23.01.2008, r: 06.05.2008
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['matqp'], history_sizes,
                             terms.dq_state_in_qp )
@@ -254,8 +187,6 @@ class MatInQPDataCache( DataCache ):
         self.mode_in = {}
         self.mode_out = {}
 
-    ##
-    # c: 23.01.2008, r: 06.05.2008
     def init_data( self, key, ckey, **kwargs ):
         mat, ap, assumed_shapes, mode_in = self.get_args( **kwargs )
         if mode_in is None:
@@ -318,8 +249,6 @@ class MatInQPDataCache( DataCache ):
         self.shape[ckey] = shape
         DataCache.init_data( self, key, ckey, shape )
 
-    ##
-    # c: 23.01.2008, r: 06.05.2008
     def update( self, key, group_indx, ih, **kwargs ):
         import numpy as nm
         mat, ap, assumed_shapes, mode_in = self.get_args( **kwargs )
@@ -359,4 +288,3 @@ class MatInQPDataCache( DataCache ):
 
         else:
             raise NotImplementedError
-

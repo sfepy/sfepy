@@ -1,8 +1,6 @@
 from terms import *
 from utils import choose_scalar_or_in_el
 
-##
-# 21.11.2006, c
 class MassTerm( Term ):
     r""":description: Inertial forces term (constant density).
     :definition: $\int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} -
@@ -12,14 +10,9 @@ class MassTerm( Term ):
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # created:       21.11.2006
-    # last revision: 19.12.2007
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
 
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -31,27 +24,21 @@ class MassTerm( Term ):
         else:
             raise StopIteration
         
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def build_c_fun_args( self, mat, state, ap, vg ):
         # terms.dw_mass_rho_in_el is missing
         mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
-                                                 terms.dw_mass,
-                                                 NotImplemented )
+                                                     terms.dw_mass,
+                                                     NotImplemented )
         ts, state0 = self.get_args( ['ts', 'parameter'], **kwargs )
 
-        vec, indx = state()
-        vec0, indx0 = state0()
-        dvec = vec[indx] - vec0[indx0]
+        dvec = state() - state0()
         rhodt = mat / ts.dt
         bf = ap.get_base( 'v', 0, self.integral_name )
         return rhodt, dvec, 0, bf, vg, ap.econn
 
-    ##
-    # c: 21.11.2006, r: 01.04.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( ['material', 'virtual', 'state'],
-                                            **kwargs )
+                                             **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         shape, mode = self.get_shape( diff_var, chunk_size, ap )
@@ -61,8 +48,6 @@ class MassTerm( Term ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-##
-# c: 25.09.2007
 class MassVectorTerm( MassTerm ):
     r""":description: Vector field mass matrix/rezidual.
     :definition: $\int_{\Omega} \rho\ \ul{v} \cdot \ul{u}$
@@ -71,18 +56,14 @@ class MassVectorTerm( MassTerm ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def build_c_fun_args( self, mat, state, ap, vg ):
         mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
-                                                 terms.dw_mass,
-                                                 NotImplemented )
-        vec, indx = state()
+                                                     terms.dw_mass,
+                                                     NotImplemented )
+        vec = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
-        return mat, vec, indx.start, bf, vg, ap.econn
+        return mat, vec, 0, bf, vg, ap.econn
 
-##
-# 04.09.2007, c
 class MassScalarTerm( Term ):
     r""":description: Scalar field mass matrix/rezidual.
     :definition: $\int_{\Omega} q p$
@@ -91,13 +72,9 @@ class MassScalarTerm( Term ):
     arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 04.09.2007, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar )
         
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -111,12 +88,10 @@ class MassScalarTerm( Term ):
         
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         step = self.arg_steps[state.name]
-        vec, indx = state( step = step )
+        vec = state( step = step )
         bf = ap.get_base( 'v', 0, self.integral_name )
-        return vec, indx.start, bf, vg, ap.econn
+        return vec, 0, bf, vg, ap.econn
 
-    ##
-    # c: 04.09.2007, r: 04.07.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -128,8 +103,6 @@ class MassScalarTerm( Term ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-##
-# c: 01.02.2008
 class MassScalarVariableTerm( MassScalarTerm ):
     r""":description: Scalar field mass matrix/rezidual with coefficient $c$
     defined in nodes.
@@ -140,29 +113,23 @@ class MassScalarVariableTerm( MassScalarTerm ):
     geometry = [(Volume, 'virtual')]
     use_caches = {'mat_in_qp' : [['material']]}
 
-    ##
-    # c: 01.02.2008, r: 01.02.2008
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar_variable )
         
-    ##
-    # c: 01.04.2008, r: 01.04.2008
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         n_el, n_qp = self.data_shape[:2]
         
         mat, = self.get_args( ['material'], **kwargs )
         cache = self.get_cache( 'mat_in_qp', 0 )
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                       mat = mat, ap = ap,
-                       assumed_shapes = [(n_el, n_qp, 1, 1)],
-                       mode_in = 'vertex' )
+                        mat = mat, ap = ap,
+                        assumed_shapes = [(n_el, n_qp, 1, 1)],
+                        mode_in = 'vertex' )
 
-        vec, indx = state()
+        vec = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
-        return mat_qp, vec, indx.start, bf, vg, ap.econn
+        return mat_qp, vec, 0, bf, vg, ap.econn
 
-##
-# 05.09.2007, c
 class MassScalarFineCoarseTerm( Term ):
     r""":description: Scalar field mass matrix/rezidual for coarse to fine grid
     interpolation. Field $p_H$ belong to the coarse grid, test field $q_h$ to
@@ -173,14 +140,10 @@ class MassScalarFineCoarseTerm( Term ):
     arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 05.09.2007, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign,
                        terms.dw_mass_scalar_fine_coarse )
         
-    ##
-    # c: 05.09.2007, r: 01.04.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state, iemaps, pbase = self.get_args( **kwargs )
         apr, vgr = virtual.get_current_approximation()
@@ -197,12 +160,12 @@ class MassScalarFineCoarseTerm( Term ):
         else:
             raise StopIteration
 
-        vec, indx = state()
+        vec = state()
 
         cbfs = pbase[self.char_fun.ig]
         iemap = iemaps[self.char_fun.ig]
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, indx.start, apr.bf['v'], cbfs,
+            status = self.function( out, vec, 0, apr.bf['v'], cbfs,
                                     vgr, apc.econn, iemap, chunk, mode )
             
             yield out, chunk, status

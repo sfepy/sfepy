@@ -757,7 +757,7 @@ class Variables( Container ):
             var_name_state = var_names_state[ii]
             if self[var_name_state].is_state():
                 self[var_name].data_from_data( state,
-                                            self.di.indx[var_name_state] )
+                                               self.di.indx[var_name_state] )
             else:
                 output( '%s is not a state part' % var_name_state )
                 raise IndexError
@@ -903,9 +903,6 @@ class Variable( Struct ):
 
         if self.is_virtual():
             self.data = None
-
-    def __call__( self, step = 0 ):
-        return (self.data[step], self.indx)
 
     ##
     # 11.07.2006, c
@@ -1353,7 +1350,18 @@ class Variable( Struct ):
 
         return shape
 
-    def get_state_in_region( self, region, igs = None, reshape = True, step = 0 ):
+    def __call__( self, step = 0 ):
+        """Returns: a view of the state vector."""
+        return self.data[step][self.indx]
+
+    def get_full_state( self, step = 0 ):
+        return self.data[step]
+
+    def get_indx( self ):
+        return self.indx
+
+    def get_state_in_region( self, region, igs = None, reshape = True,
+                             step = 0 ):
         nods = region.get_field_nodes( self.field, merge = True, igs = igs )
 ##         print nods, len( nods )
 ##         pause()
