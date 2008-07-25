@@ -997,11 +997,10 @@ class HDF5MeshIO( MeshIO ):
         for step in xrange( ts.n_step ):
             gr_name = 'step%d' % step
             step_group = fd.getNode( fd.root, gr_name )
-
             name_dict = step_group._v_attrs.name_dict
             for var_name in var_names:
                 data = step_group._f_getChild( name_dict[var_name] ).data
-                ths[var_name].append( arr( data ) )
+                ths[var_name].append( arr( data.read() ) )
 
         fd.close()
 
