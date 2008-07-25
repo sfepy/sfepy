@@ -362,22 +362,22 @@ class Mesh( Struct ):
 
     ##
     # c: 25.01.2006, r: 23.06.2008
-    def from_file( file_name = None, io = 'auto' ):
-        """passing *MeshIO instance has precedence over file_name"""
+    def from_file( filename = None, io = 'auto' ):
+        """passing *MeshIO instance has precedence over filename"""
         if io == 'auto':
-            if file_name is None:
-                output( 'file_name or io must be specified!' )
+            if filename is None:
+                output( 'filename or io must be specified!' )
                 raise ValueError
             else:
-                io = MeshIO.any_from_file_name( file_name )
-                if isinstance( file_name, file ):
+                io = MeshIO.any_from_filename( filename )
+                if isinstance( filename, file ):
                     trunk = 'from_descriptor'
                 else:
-                    trunk = op.splitext( file_name )[0]
+                    trunk = op.splitext( filename )[0]
         else:
-            trunk = io.file_name
+            trunk = io.filename
 
-        output( 'reading mesh (%s)...' % (file_name) )
+        output( 'reading mesh (%s)...' % (filename) )
         tt = time.clock()
         mesh = Mesh( trunk )
         mesh = io.read( mesh )
@@ -501,21 +501,21 @@ class Mesh( Struct ):
         
     ##
     # c: 23.01.2006, r: 23.06.2008
-    def write( self, file_name = None, io = None,
+    def write( self, filename = None, io = None,
                coors = None, igs = None, out = None, **kwargs ):
         """Write mesh + optional results in 'out'.
 
-        'io' == 'auto' respects the extension of 'file_name'
+        'io' == 'auto' respects the extension of 'filename'
         'coors' can be used instead of mesh coordinates,
         providing 'igs' filters some groups only"""
-        if file_name is None:
-            file_name = self.name + '.mesh'
+        if filename is None:
+            filename = self.name + '.mesh'
 
         if io is None:
             io = self.io
         else:
             if io == 'auto':
-                io = MeshIO.any_from_file_name( file_name )
+                io = MeshIO.any_from_filename( filename )
 
         if coors is None:
             coors = self.nod0
@@ -525,7 +525,7 @@ class Mesh( Struct ):
 
         aux_mesh = Mesh.from_data( self.name, coors,
                                  self.conns, self.mat_ids, self.descs, igs )
-        io.write( file_name, aux_mesh, out, **kwargs )
+        io.write( filename, aux_mesh, out, **kwargs )
 
     ##
     # 23.05.2007, c

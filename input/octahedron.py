@@ -1,5 +1,5 @@
 # c: 15.02.2008, r: 28.03.2008
-file_name_mesh = 'database/octahedron.node'
+filename_mesh = 'database/octahedron.node'
 
 material_2 = {
     'name' : 'coef',

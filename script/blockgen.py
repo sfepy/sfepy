@@ -12,7 +12,7 @@ usage = """%prog [options]
 Block mesh generator.
 """
 help = {
-    'file_name' :
+    'filename' :
     'output file name [default: %default]',
     'dims' :
     'dimension of the block [default: %default]',
@@ -26,9 +26,9 @@ help = {
 # c: 19.06.2008, r: 19.06.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
-    parser.add_option( "-o", "", metavar = 'file_name',
-                       action = "store", dest = "output_file_name",
-                       default = 'out.vtk', help = help['file_name'] )
+    parser.add_option( "-o", "", metavar = 'filename',
+                       action = "store", dest = "output_filename",
+                       default = 'out.vtk', help = help['filename'] )
     parser.add_option( "-d", "--dims", metavar = 'dims',
                        action = "store", dest = "dims",
                        default = '[1.0, 1.0, 1.0]', help = help['dims'] )
@@ -82,9 +82,9 @@ def main():
     mat_id = nm.zeros( (n_el,), dtype = nm.int32 )
     desc = '3_8'
 
-    mesh = Mesh.from_data( options.output_file_name,
+    mesh = Mesh.from_data( options.output_filename,
                           coors, [conn], [mat_id], [desc] )
-    mesh.write( options.output_file_name, io = 'auto' )
+    mesh.write( options.output_filename, io = 'auto' )
 
 if __name__ == '__main__':
     main()

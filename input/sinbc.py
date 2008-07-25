@@ -1,5 +1,5 @@
 # c: 20.03.2008, r: 20.03.2008
-file_name_mesh = 'database/maillage.txt'
+filename_mesh = 'database/maillage.txt'
 
 material_1 = {
     'name' : 'm',

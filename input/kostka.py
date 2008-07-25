@@ -1,6 +1,6 @@
 # last revision: 25.02.2008
 #fileName_mesh = 'database/kostka_big.mesh'
-file_name_mesh = 'database/kostka_medium.mesh'
+filename_mesh = 'database/kostka_medium.mesh'
 
 ############# Laplace.
 
@@ -11,7 +11,7 @@ material_1 = {
     'val' : 1.0
 }
 
-if file_name_mesh == 'database/kostka_medium.mesh':
+if filename_mesh == 'database/kostka_medium.mesh':
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 0',
@@ -30,7 +30,7 @@ if file_name_mesh == 'database/kostka_medium.mesh':
         'quadrature' : 'gauss_o1_d3',
     }
 
-elif file_name_mesh == 'database/kostka_big.mesh':
+elif filename_mesh == 'database/kostka_big.mesh':
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 6',

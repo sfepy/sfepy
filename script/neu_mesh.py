@@ -8,16 +8,16 @@ import sys
 import fileinput
 
 if (len( sys.argv ) == 3):
-    file_name_in = sys.argv[1];
-    file_name_out = sys.argv[2];
+    filename_in = sys.argv[1];
+    filename_out = sys.argv[2];
 else:
     print 'Two args required!'
     raise ValueError
 
-if (file_name_out == '-'):
+if (filename_out == '-'):
     file_out = sys.stdout
 else:
-    file_out = open( file_name_out, "w" ); 
+    file_out = open( filename_out, "w" ); 
 
 mode = 0
 nod = []
@@ -28,7 +28,7 @@ group_ids = []
 group_n_els = []
 groups = []
 
-input = fileinput.input( file_name_in )
+input = fileinput.input( filename_in )
 for line in input:
     row = line.split()
     if len( row ) == 0: continue
@@ -155,5 +155,5 @@ else:
             ii = int( ee[0] ) - 1
             file_out.write( " ".join( ee[3:] ) + " " + mat_ids[ii] + "\n" )
     
-if (file_name_out != '-'):
+if (filename_out != '-'):
     file_out.close()

@@ -99,8 +99,8 @@ class MeshIO( Struct ):
 
     ##
     # c: 05.02.2008, r: 05.02.2008
-    def __init__( self, file_name, **kwargs ):
-        Struct.__init__( self, file_name = file_name, **kwargs )
+    def __init__( self, filename, **kwargs ):
+        Struct.__init__( self, filename = filename, **kwargs )
 
     ##
     # c: 03.07.2008, r: 03.07.2008
@@ -116,7 +116,7 @@ class MeshIO( Struct ):
 
     ##
     # c: 05.02.2008, r: 26.03.2008
-    def write( self, file_name, mesh, *args, **kwargs ):
+    def write( self, filename, mesh, *args, **kwargs ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
@@ -128,7 +128,7 @@ class MeditMeshIO( MeshIO ):
     ##
     # c: 03.07.2008, r: 10.07.2008
     def read_dimension( self, ret_fd = False ):
-        fd = open( self.file_name, 'r' )
+        fd = open( self.filename, 'r' )
         while 1:
             try:
                 line = fd.readline()
@@ -247,8 +247,8 @@ class MeditMeshIO( MeshIO ):
 
     ##
     # c: 19.01.2005, r: 08.02.2008
-    def write( self, file_name, mesh, out = None ):
-        fd = open( file_name, 'w' )
+    def write( self, filename, mesh, out = None ):
+        fd = open( filename, 'w' )
 
         nod = mesh.nod0
         conns, desc = join_conn_groups( mesh.conns, mesh.descs,
@@ -330,7 +330,7 @@ class VTKMeshIO( MeshIO ):
     ##
     # c: 03.07.2008, r: 15.07.2008
     def read_dimension( self, ret_fd = False ):
-        fd = open( self.file_name, 'r' )
+        fd = open( self.filename, 'r' )
         while 1:
             try:
                 line = fd.readline().split()
@@ -352,7 +352,7 @@ class VTKMeshIO( MeshIO ):
     ##
     # c: 05.02.2008, r: 10.07.2008
     def read( self, mesh, **kwargs ):
-        fd = open( self.file_name, 'r' )
+        fd = open( self.filename, 'r' )
         mode = 'header'
         mode_status = 0
         nod = conns = desc = mat_id = None
@@ -449,9 +449,9 @@ class VTKMeshIO( MeshIO ):
 
     ##
     # c: 15.12.2005, r: 07.05.2008
-    def write( self, file_name, mesh, out = None ):
+    def write( self, filename, mesh, out = None ):
 
-        fd = open( file_name, 'w' )
+        fd = open( filename, 'w' )
         fd.write( vtk_header % op.basename( sys.argv[0] ) )
 
         n_nod, nc = mesh.nod0.shape
@@ -568,7 +568,7 @@ class TetgenMeshIO( MeshIO ):
     # c: 15.02.2008, r: 15.02.2008
     def read( self, mesh, **kwargs ):
         import os
-        fname = os.path.splitext(self.file_name)[0]
+        fname = os.path.splitext(self.filename)[0]
         nodes=self.getnodes(fname+".node", MyBar("       nodes:"))
         elements, regions = self.getele(fname+".ele", MyBar("       elements:"))
         descs = []
@@ -673,7 +673,7 @@ class TetgenMeshIO( MeshIO ):
 
     ##
     # c: 26.03.2008, r: 26.03.2008
-    def write( self, file_name, mesh, out = None ):
+    def write( self, filename, mesh, out = None ):
         raise NotImplementedError
 
     def read_dimension(self):
@@ -694,7 +694,7 @@ class ComsolMeshIO( MeshIO ):
     # c: 20.03.2008, r: 20.03.2008
     def read( self, mesh, **kwargs ):
 
-        self.fd = fd = open( self.file_name, 'r' )
+        self.fd = fd = open( self.filename, 'r' )
         mode = 'header'
 
         nod = conns = desc = None
@@ -785,7 +785,7 @@ class ComsolMeshIO( MeshIO ):
 
     ##
     # c: 20.03.2008, r: 20.03.2008
-    def write( self, file_name, mesh, out = None ):
+    def write( self, filename, mesh, out = None ):
         raise NotImplementedError
 
 ##
@@ -800,7 +800,7 @@ class HDF5MeshIO( MeshIO ):
     _tr = string.maketrans( _rubbish, '_' * len( _rubbish ) )
 
     def read( self, mesh, **kwargs ):
-        fd = pt.openFile( self.file_name, mode = "r" )
+        fd = pt.openFile( self.filename, mode = "r" )
 
         mesh_group = fd.root.mesh
 
@@ -824,7 +824,7 @@ class HDF5MeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, file_name, mesh, out = None, ts = None ):
+    def write( self, filename, mesh, out = None, ts = None ):
         from time import asctime
 
         if pt is None:
@@ -834,7 +834,7 @@ class HDF5MeshIO( MeshIO ):
         step = get_default_attr( ts, 'step', 0 )
         if step == 0:
             # A new file.
-            fd = pt.openFile( file_name, mode = "w",
+            fd = pt.openFile( filename, mode = "w",
                               title = "SfePy output file" )
 
             mesh_group = fd.createGroup( '/', 'mesh', 'mesh' )
@@ -874,7 +874,7 @@ class HDF5MeshIO( MeshIO ):
                 step, time, nt = ts.step, ts.time, ts.nt
 
             # Existing file.
-            fd = pt.openFile( file_name, mode = "r+" )
+            fd = pt.openFile( filename, mode = "r+" )
 
             step_group = fd.createGroup( '/', 'step%d' % step, 'time step data' )
             name_dict = {}
@@ -904,9 +904,9 @@ class HDF5MeshIO( MeshIO ):
                             'file closing time' )
             fd.close()
 
-    def read_time_stepper( self, file_name = None ):
-        file_name = get_default( file_name, self.file_name )
-        fd = pt.openFile( file_name, mode = "r" )
+    def read_time_stepper( self, filename = None ):
+        filename = get_default( filename, self.filename )
+        fd = pt.openFile( filename, mode = "r" )
 
         ts_group = fd.root.ts
         out =  (ts_group.t0.read(), ts_group.t1.read(),
@@ -914,9 +914,9 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
         return out
 
-    def _get_step_group( self, step, file_name = None ):
-        file_name = get_default( file_name, self.file_name )
-        fd = pt.openFile( file_name, mode = "r" )
+    def _get_step_group( self, step, filename = None ):
+        filename = get_default( filename, self.filename )
+        fd = pt.openFile( filename, mode = "r" )
 
         gr_name = 'step%d' % step
         try:
@@ -928,8 +928,8 @@ class HDF5MeshIO( MeshIO ):
 
         return fd, step_group
 
-    def read_data( self, step, file_name = None ):
-        fd, step_group = self._get_step_group( step, file_name = file_name )
+    def read_data( self, step, filename = None ):
+        fd, step_group = self._get_step_group( step, filename = filename )
         if fd is None: return None
 
         out = {}
@@ -946,8 +946,8 @@ class HDF5MeshIO( MeshIO ):
 
         return out
 
-    def read_data_header( self, dname, step = 0, file_name = None ):
-        fd, step_group = _get_step_group( step, file_name = file_name )
+    def read_data_header( self, dname, step = 0, filename = None ):
+        fd, step_group = _get_step_group( step, filename = filename )
         if fd is None: return None
 
         groups = step_group._v_groups
@@ -961,9 +961,9 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
         raise KeyError, 'non-existent data: %s' % dname
 
-    def read_time_history( self, node_name, indx, file_name = None ):
-        file_name = get_default( file_name, self.file_name )
-        fd = pt.openFile( file_name, mode = "r" )
+    def read_time_history( self, node_name, indx, filename = None ):
+        filename = get_default( filename, self.filename )
+        fd = pt.openFile( filename, mode = "r" )
 
         th = dict_from_keys_init( indx, list )
         for step in xrange( fd.root.last_step[0] + 1 ):
@@ -985,9 +985,9 @@ class HDF5MeshIO( MeshIO ):
 
         return th
 
-    def read_variables_time_history( self, var_names, ts, file_name = None ):
-        file_name = get_default( file_name, self.file_name )
-        fd = pt.openFile( file_name, mode = "r" )
+    def read_variables_time_history( self, var_names, ts, filename = None ):
+        filename = get_default( filename, self.filename )
+        fd = pt.openFile( filename, mode = "r" )
 
         assert (fd.root.last_step[0] + 1) == ts.n_step
 
@@ -1021,14 +1021,14 @@ del var_dict
 
 ##
 # c: 05.02.2008, r: 05.02.2008
-def any_from_file_name( file_name ):
-    aux, ext = op.splitext( file_name )
+def any_from_filename( filename ):
+    aux, ext = op.splitext( filename )
     format = supported_formats[ext]
     try:
-        return io_table[format]( file_name )
+        return io_table[format]( filename )
     except KeyError:
         output( 'unsupported mesh file suffix: %s' % ext )
         raise
 
-insert_static_method( MeshIO, any_from_file_name )
-del any_from_file_name
+insert_static_method( MeshIO, any_from_filename )
+del any_from_filename

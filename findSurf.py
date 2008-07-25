@@ -49,7 +49,7 @@ def surface_components( gr_s, surf_faces ):
     print n_comp
     return n_comp, comps
 
-usage = """%prog [options] file_name_in|- file_name_out|-
+usage = """%prog [options] filename_in|- filename_out|-
 
 '-' is for stdin, stdout"""
 
@@ -71,20 +71,20 @@ def main():
     (options, args) = parser.parse_args()
 
     if (len( args ) == 2):
-        file_name_in = args[0];
-        file_name_out = args[1];
+        filename_in = args[0];
+        filename_out = args[1];
     else:
         parser.print_help(),
         return
 
-    if (file_name_in == '-'):
+    if (filename_in == '-'):
         file_in = sys.stdin
     else:
-        file_in = open( file_name_in, "r" ); 
+        file_in = open( filename_in, "r" ); 
 
-    mesh = Mesh.from_file( file_name_in )
+    mesh = Mesh.from_file( filename_in )
 
-    if (file_name_in != '-'):
+    if (filename_in != '-'):
         file_in.close()
 
     domain = Domain.from_mesh( mesh, op.join( init_sfepy.install_dir, 'eldesc' ) )
@@ -99,7 +99,7 @@ def main():
         surf_mesh = Mesh.from_surface( surf_faces, mesh )
 
         if options.save_mesh:
-            base, ext = op.splitext( op.basename( file_name_in ) )
+            base, ext = op.splitext( op.basename( filename_in ) )
             surf_mesh.write( "surf_" + base + '.mesh', io = 'auto' )
 
         if options.no_surface:
@@ -120,13 +120,13 @@ def main():
 
         out = nm.concatenate( (lst, comps), 1 )
 
-        if (file_name_out == '-'):
+        if (filename_out == '-'):
             file_out = sys.stdout
         else:
-            file_out = open( file_name_out, "w" ); 
+            file_out = open( filename_out, "w" ); 
         for row in out:
             file_out.write( '%d %d %d %d\n' % (row[0], row[1], row[2], row[3]) )
-        if (file_name_out != '-'):
+        if (filename_out != '-'):
             file_out.close()
     
 

@@ -5,7 +5,7 @@ sys.path.append( '.' )
 from sfepy.fem.periodic import *
 
 # c: 05.05.2008, r: 05.05.2008
-def define_regions( file_name ):
+def define_regions( filename ):
     """Define various subdomain for a given mesh file. This function is called
     below."""
     regions = {}
@@ -14,7 +14,7 @@ def define_regions( file_name ):
     regions['y'] = ('all', {})
 
     eog = 'elements of group %d'
-    if file_name.find( 'osteon_t1' ) >= 0:
+    if filename.find( 'osteon_t1' ) >= 0:
         mat_ids = [11, 39, 6, 8, 27, 28, 9, 2, 4, 14, 12, 17, 45, 28, 15]
         regions['_ym'] = (' +e '.join( (eog % im) for im in  mat_ids ), {})
         wx = 0.865
@@ -63,12 +63,12 @@ def get_pars( ts, coor, region, ig, mat_ids = [] ):
     
 ##
 # Mesh file.
-file_name_mesh = 'examples/osteon_t1_11.mesh'
+filename_mesh = 'examples/osteon_t1_11.mesh'
 
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
 # depending on a mesh used.
-is3d, regions, mat_ids = define_regions( file_name_mesh )
+is3d, regions, mat_ids = define_regions( filename_mesh )
 
 if is3d:
     dim, geom = 3, '3_4'
@@ -353,7 +353,7 @@ coordinates of the mesh nodes.
 ...the $\Pi$ operators.
 ['q'/other key to quit/continue...]""" )
 
-    ofn_trunk = get_trunk( conf.file_name_mesh ) + '_out'
+    ofn_trunk = get_trunk( conf.filename_mesh ) + '_out'
     spause( r""">>>
 Next, $E_{ijkl}$ needs so called steady state correctors $\bar{\omega}^{rs}$,
 computed now. The results will be saved in: %s_*.vtk

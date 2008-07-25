@@ -1,6 +1,6 @@
 # 13.11.2007, c
 # last revision: 25.02.2008
-file_name_mesh = 'database/tests/triquad.mesh'
+filename_mesh = 'database/tests/triquad.mesh'
 
 material_1 = {
     'name' : 'm',

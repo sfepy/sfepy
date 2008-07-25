@@ -1,7 +1,7 @@
 # 26.02.2007, c
 # last revision: 25.02.2008
 
-file_name_mesh = 'database/pul_klikatak2.mesh'
+filename_mesh = 'database/pul_klikatak2.mesh'
 
 field_1 = {
     'name' : '3_velocity',
@@ -159,7 +159,7 @@ from valec import *
 ##
 # Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( file_name_mesh ) )[0]
+trunk = op.splitext( op.basename( filename_mesh ) )[0]
 print trunk
 cinc = eval( 'cinc_' + trunk )
 print cinc

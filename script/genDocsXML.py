@@ -166,8 +166,8 @@ def replace_dollars( text ):
 
 ##
 # c: 26.03.2008, r: 26.03.2008
-def include( fd, file_name ):
-    fd2 = open( file_name, 'r' )
+def include( fd, filename ):
+    fd2 = open( filename, 'r' )
     fd.write( fd2.read() )
     fd2.close()
     
@@ -275,7 +275,7 @@ usage = """%prog [options]"""
 help = {
     'omit' :
     'omit listed sections',
-    'output_file_name' :
+    'output_filename' :
     'output file name',
 }
 
@@ -288,15 +288,15 @@ def main():
     parser.add_option( "", "--omit", metavar = 'list of sections',
                        action = "store", dest = "omit_list",
                        default = "", help = help['omit'] )
-    parser.add_option( "-o", "--output", metavar = 'output_file_name',
-                       action = "store", dest = "output_file_name",
-                       default = "terms.xml", help = help['output_file_name'] )
+    parser.add_option( "-o", "--output", metavar = 'output_filename',
+                       action = "store", dest = "output_filename",
+                       default = "terms.xml", help = help['output_filename'] )
     (options, args) = parser.parse_args()
 
     tps = items_per_sections( term_table, 'Terms', options.omit_list )
     cps = items_per_sections( cache_table, 'Term caches', options.omit_list )
 
-    fd = open( options.output_file_name, 'w' )
+    fd = open( options.output_filename, 'w' )
     fd.write( begining )
 
     include( fd, 'doc/pages/notation.xml' )

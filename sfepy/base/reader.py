@@ -35,10 +35,10 @@ class Reader( Struct ):
     # 17.10.2005
     # 09.02.2006
     def __call__( self, obj_class, name ):
-        file_name = op.join( self.directory, name + '.py' )
+        filename = op.join( self.directory, name + '.py' )
 
         aux = {}
-        execfile( file_name, {}, aux )
+        execfile( filename, {}, aux )
 
         obj = obj_class()
         for key, val in aux.iteritems():

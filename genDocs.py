@@ -258,9 +258,9 @@ def main():
     tps = items_per_sections( term_table, 'Terms', options.omit_list )
     cps = items_per_sections( cache_table, 'Term caches', options.omit_list )
 
-    latex_file_name = 'terms.tex'
-    latex_file_name_complete = op.join( output_dir, latex_file_name )
-    print latex_file_name_complete
+    latex_filename = 'terms.tex'
+    latex_filename_complete = op.join( output_dir, latex_filename )
+    print latex_filename_complete
 
     fd = open( 'doc/pages/title_sfepy.tex', 'r' )
     title_src = fd.read()
@@ -271,7 +271,7 @@ def main():
     fd.close()
 
     
-    fd = open( latex_file_name_complete, 'w' )
+    fd = open( latex_filename_complete, 'w' )
     fd.write( header )
     fd.write( begining % (title_src, intro_src) )
 
@@ -285,7 +285,7 @@ def main():
     cd_out = 'cd %s;' % os.curdir
     
     cmd = ' '.join( (cd_in,
-                     latex, latex_options, latex_file_name, ';',
+                     latex, latex_options, latex_filename, ';',
                      cd_out) )
     for ii in xrange( latex_runs ):
         os.system( cmd )

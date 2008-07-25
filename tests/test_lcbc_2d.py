@@ -1,6 +1,6 @@
 # 03.10.2007, c
 # last revision: 25.02.2008
-file_name_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = 'database/phono/mesh_circ21.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

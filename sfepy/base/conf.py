@@ -4,7 +4,7 @@ from base import Struct, IndexedStruct, dict_to_struct, pause, output, copy,\
      import_file
 from reader import Reader
 
-_required = ['file_name_mesh', 'field_[0-9]+|fields',
+_required = ['filename_mesh', 'field_[0-9]+|fields',
              'ebc_[0-9]+|ebcs', 'fe', 'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
@@ -119,7 +119,7 @@ class ProblemConf( Struct ):
     """
     ##
     # c: 25.07.2006, r: 10.07.2008
-    def from_file( file_name, required = None, other = None ):
+    def from_file( filename, required = None, other = None ):
         """
         Loads the problem definition from a file.
 
@@ -145,7 +145,7 @@ class ProblemConf( Struct ):
                 return locals()
 
         """
-        funmod = import_file( file_name )
+        funmod = import_file( filename )
         obj = ProblemConf()
         if "define" in funmod.__dict__:
             define_dict = funmod.__dict__["define"]()
@@ -157,7 +157,7 @@ class ProblemConf( Struct ):
         other_missing = obj.validate( required = required, other = other )
         for name in other_missing:
             setattr( obj, name, None )
-        obj._file_name = file_name
+        obj._filename = filename
         obj.transform_input()
         obj.funmod = funmod
         return obj

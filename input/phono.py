@@ -6,7 +6,7 @@ u1 is a dummy variable used unly for volume computation.
 
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/phono/cube_cylinder.mesh'
-file_name_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = 'database/phono/mesh_circ21.mesh'
 #fileName_mesh = 'database/phono/mesh_circ21_small.mesh'
 
 options = {
@@ -70,7 +70,7 @@ material_2 = {
     'density' : 0.1142, # in 1e4 kg/m3
 }
 
-if file_name_mesh.find( 'cube_' ) >= 0:
+if filename_mesh.find( 'cube_' ) >= 0:
     dim, geom = 3, '3_4'
 else:
     dim, geom = 2, '2_3'

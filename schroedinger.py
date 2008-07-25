@@ -182,7 +182,7 @@ def solve_eigen_problem_n( conf, options ):
     update_state_to_output( out, pb, vec_vh, 'vh' )
     update_state_to_output( out, pb, vec_vxc, 'vxc' )
 
-    ofn_trunk = options.output_file_name_trunk
+    ofn_trunk = options.output_filename_trunk
     pb.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofn_trunk + '_eigs.txt', 'w' )
@@ -293,7 +293,7 @@ def solve_eigen_problem1( conf, options ):
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    ofn_trunk = options.output_file_name_trunk
+    ofn_trunk = options.output_filename_trunk
     pb.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofn_trunk + '_eigs.txt', 'w' )
@@ -303,7 +303,7 @@ def solve_eigen_problem1( conf, options ):
     return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
 
 
-usage = """%prog [options] file_name_in
+usage = """%prog [options] filename_in
 
 Solver for electronic structure problems. 
 
@@ -325,7 +325,7 @@ and visualize the result:
 """
 
 help = {
-    'file_name' : 'basename of output file(s) [default: %default.vtk]',
+    'filename' : 'basename of output file(s) [default: %default.vtk]',
     'well' : "solve infinite potential well (particle in a box) problem",
     'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
     'hydrogen' : "solve the hydrogen atom",
@@ -348,9 +348,9 @@ def main():
     parser.add_option( "--2d",
                        action = "store_true", dest = "dim2",
                        default = False, help = help['dim'] )
-    parser.add_option( "-o", "", metavar = 'file_name',
-                       action = "store", dest = "output_file_name_trunk",
-                       default = "mesh", help = help['file_name'] )
+    parser.add_option( "-o", "", metavar = 'filename',
+                       action = "store", dest = "output_filename_trunk",
+                       default = "mesh", help = help['filename'] )
     parser.add_option( "--oscillator",
                        action = "store_true", dest = "oscillator",
                        default = False, help = help['oscillator'] )
@@ -370,42 +370,42 @@ def main():
     options, args = parser.parse_args()
 
     if len( args ) == 1:
-        file_name_in = args[0];
+        filename_in = args[0];
     elif len( args ) == 0:
         if options.oscillator:
-            dim = MeshIO.any_from_file_name("tmp/mesh.vtk").read_dimension()
+            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                file_name_in = "input/quantum/oscillator2d.py"
+                filename_in = "input/quantum/oscillator2d.py"
             else:
                 assert dim == 3
-                file_name_in = "input/quantum/oscillator3d.py"
+                filename_in = "input/quantum/oscillator3d.py"
             options.dim = dim
             print "Dimension:", dim
         elif options.well:
-            dim = MeshIO.any_from_file_name("tmp/mesh.vtk").read_dimension()
+            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                file_name_in = "input/quantum/well2d.py"
+                filename_in = "input/quantum/well2d.py"
             else:
                 assert dim == 3
-                file_name_in = "input/quantum/well3d.py"
+                filename_in = "input/quantum/well3d.py"
             options.dim = dim
             print "Dimension:", dim
         elif options.hydrogen:
-            dim = MeshIO.any_from_file_name("tmp/mesh.vtk").read_dimension()
+            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                file_name_in = "input/quantum/hydrogen2d.py"
+                filename_in = "input/quantum/hydrogen2d.py"
             else:
                 assert dim == 3
-                file_name_in = "input/quantum/hydrogen3d.py"
+                filename_in = "input/quantum/hydrogen3d.py"
             options.dim = dim
             print "Dimension:", dim
         elif options.boron:
-            dim = MeshIO.any_from_file_name("tmp/mesh.vtk").read_dimension()
+            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                file_name_in = "input/quantum/boron2d.py"
+                filename_in = "input/quantum/boron2d.py"
             else:
                 assert dim == 3
-                file_name_in = "input/quantum/boron3d.py"
+                filename_in = "input/quantum/boron3d.py"
             options.dim = dim
             print "Dimension:", dim
         elif options.mesh:
@@ -438,12 +438,12 @@ def main():
             print "Mesh written to tmp/mesh.vtk"
             return
         elif options.dft:
-            dim = MeshIO.any_from_file_name("tmp/mesh.vtk").read_dimension()
+            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                file_name_in = "input/quantum/dft2d.py"
+                filename_in = "input/quantum/dft2d.py"
             else:
                 assert dim == 3
-                file_name_in = "input/quantum/dft3d.py"
+                filename_in = "input/quantum/dft3d.py"
             print "Dimension:", dim
             options.dim = dim
         else:
@@ -454,14 +454,14 @@ def main():
         return
 
     required, other = get_standard_keywords()
-    conf = ProblemConf.from_file( file_name_in, required, other )
+    conf = ProblemConf.from_file( filename_in, required, other )
 
     if options.dft:
         evp = solve_eigen_problem_n( conf, options )
     else:
         evp = solve_eigen_problem1( conf, options )
 
-    print "Solution saved to %s.vtk" % options.output_file_name_trunk
+    print "Solution saved to %s.vtk" % options.output_filename_trunk
 
 if __name__ == '__main__':
     main()

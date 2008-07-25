@@ -19,10 +19,10 @@ def print_terms():
     print 'Term caches: %d available:' % len( ct )
     print sorted( ct.keys() )
 
-usage = """%prog [options] file_name_in"""
+usage = """%prog [options] filename_in"""
 
 help = {
-    'file_name' :
+    'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'save_ebc' :
     "save problem state showing EBC (Dirichlet conditions) [default: %default]",
@@ -44,9 +44,9 @@ def main():
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )
-    parser.add_option( "-o", "", metavar = 'file_name',
-                       action = "store", dest = "output_file_name_trunk",
-                       default = None, help = help['file_name'] )
+    parser.add_option( "-o", "", metavar = 'filename',
+                       action = "store", dest = "output_filename_trunk",
+                       default = None, help = help['filename'] )
     parser.add_option( "", "--save-ebc",
                        action = "store_true", dest = "save_ebc",
                        default = False, help = help['save_ebc'] )
@@ -70,7 +70,7 @@ def main():
 #    print options; pause()
 
     if (len( args ) == 1):
-        file_name_in = args[0];
+        filename_in = args[0];
     else:
         if options._list == 'terms':
             print_terms()
@@ -84,7 +84,7 @@ def main():
         required.remove( 'solver_[0-9]+|solvers' )
         other.extend( ['equations'] )
 
-    conf = ProblemConf.from_file( file_name_in, required, other )
+    conf = ProblemConf.from_file( filename_in, required, other )
 ##     print conf
 ##     pause()
 

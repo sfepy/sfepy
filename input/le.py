@@ -1,5 +1,5 @@
 # last revision: 25.02.2008
-file_name_mesh = 'database/simple.vtk'
+filename_mesh = 'database/simple.vtk'
 
 field_1 = {
     'name' : '3_displacement',
@@ -121,6 +121,6 @@ from valec import *
 ##
 # Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( file_name_mesh ) )[0]
+trunk = op.splitext( op.basename( filename_mesh ) )[0]
 cinc = eval( 'cinc_' + trunk )
 del op, trunk

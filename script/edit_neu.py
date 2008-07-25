@@ -11,16 +11,16 @@ Three args required! (file_in|-, file_mesh, file_out|-)
 """
 
 if (len( sys.argv ) == 4):
-    file_name_in = sys.argv[1];
-    file_name_mesh = sys.argv[2];
-    file_name_out = sys.argv[3];
+    filename_in = sys.argv[1];
+    filename_mesh = sys.argv[2];
+    filename_out = sys.argv[3];
 else:
     print usage
     raise '123'
 
 ##
 # Read vertices.
-fd = open( file_name_mesh, "r" ); 
+fd = open( filename_mesh, "r" ); 
 while 1:
     line = fd.readline().split()
     if not len( line ):
@@ -34,15 +34,15 @@ while 1:
                           % ((ii+1,) +  tuple( line[:-1] )) )
 fd.close()
 
-if (file_name_in == '-'):
+if (filename_in == '-'):
     fdi = sys.stdin
 else:
-    fdi = open( file_name_in, "r" ); 
+    fdi = open( filename_in, "r" ); 
 
-if (file_name_out == '-'):
+if (filename_out == '-'):
     fdo = sys.stdout
 else:
-    fdo = open( file_name_out, "w" ); 
+    fdo = open( filename_out, "w" ); 
 
 while 1:
     line = fdi.readline()
@@ -65,7 +65,7 @@ while 1:
     else:
         fdo.write( line )
         
-if (file_name_in != '-'):
+if (filename_in != '-'):
     fdi.close()
-if (file_name_out != '-'):
+if (filename_out != '-'):
     fdo.close()
