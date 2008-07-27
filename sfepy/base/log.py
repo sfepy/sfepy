@@ -5,10 +5,10 @@ try:
     import pylab
     from matplotlib.ticker import LogLocator, AutoLocator, LogFormatter
 except ImportError:
-    print 'matplotlib import failed!'
+    #print 'matplotlib import failed!'
     pylab = None
     LogFormatter = object
-    
+
 class MyLogFormatter( LogFormatter ):
     def __call__( self, x, pos = None ):
         self.verify_intervals()

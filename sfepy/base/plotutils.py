@@ -5,7 +5,7 @@ try:
     import matplotlib as mpl
 except (ImportError, RuntimeError):
     pylab = None
-    print 'matplotlib import failed!'
+    #print 'matplotlib import failed!'
 
 ##
 # 13.12.2005, c
