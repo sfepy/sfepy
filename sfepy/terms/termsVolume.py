@@ -1,7 +1,6 @@
 from terms import *
+from utils import fix_scalar_constant
 
-##
-# 18.09.2006, c
 class LinearVolumeForceTerm( Term ):
     r""":description: Vector or scalar linear volume forces (weak form) --- a
     right-hand side source term.
@@ -15,8 +14,6 @@ class LinearVolumeForceTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_volume_lvf )
         
-    ##
-    # c: 18.09.2006, r: 07.05.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         force, virtual = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -30,9 +27,13 @@ class LinearVolumeForceTerm( Term ):
             raise StopIteration
 
         cache = self.get_cache( 'mat_in_qp', 0 )
-        mat = nm.asarray( force, dtype = nm.float64 )
-        if mat.ndim == 1:
-            mat = nm.ascontiguousarray( mat[...,nm.newaxis] )
+        mat = fix_scalar_constant( force, nm.float64 )
+        if mat is None:
+            mat = nm.asarray( force, dtype = nm.float64 )
+            if mat.ndim == 1:
+                mat = nm.ascontiguousarray( mat[...,nm.newaxis] )
+        else:
+            mat = mat[...,nm.newaxis,nm.newaxis]
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = mat, ap = ap,
                        assumed_shapes = [(n_el, n_qp, vdim, 1)],

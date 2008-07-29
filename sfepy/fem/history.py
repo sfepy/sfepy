@@ -6,9 +6,9 @@ from sfepy.fem.meshio import HDF5MeshIO
 # 14.06.2007, c
 class Histories( Container ):
 
-    def from_file_hdf5( file_name, var_names ):
+    def from_file_hdf5( filename, var_names ):
         """TODO: do not read entire file, provide data on demand."""
-        io = HDF5MeshIO( file_name )
+        io = HDF5MeshIO( filename )
         ts = TimeStepper( *io.read_time_stepper() )
         ths = io.read_variables_time_history( var_names, ts )
 

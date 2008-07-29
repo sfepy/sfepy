@@ -3,10 +3,10 @@
 from sfepy.fem.periodic import *
 
 #fileName_mesh = 'database/micro/perf_symm638t.mesh'
-file_name_mesh = 'database/micro/perf_symm944t.mesh'
+filename_mesh = 'database/micro/perf_symm944t.mesh'
 #fileName_mesh = 'database/micro/perf_symm748t.mesh'
 
-if file_name_mesh.find( 'symm' ):
+if filename_mesh.find( 'symm' ):
     region_1 = {
         'name' : 'Y1',
         'select' : """elements of group 3""",

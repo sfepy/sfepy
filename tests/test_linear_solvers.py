@@ -1,5 +1,5 @@
 # c: 02.05.2008, r: 02.05.2008
-file_name_mesh = 'database/phono/cube_cylinder.mesh'
+filename_mesh = 'database/phono/cube_cylinder.mesh'
 
 material_2 = {
     'name' : 'coef',

@@ -1,6 +1,6 @@
 ##
 # c: 05.02.2008
-file_name_mesh = 'database/simple.mesh'
+filename_mesh = 'database/simple.mesh'
 
 from sfepy.solvers.ts import TimeStepper
 t0 = 0.0

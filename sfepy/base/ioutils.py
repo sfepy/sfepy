@@ -10,8 +10,8 @@ except:
 
 ##
 # 27.04.2006, c
-def get_trunk( file_name ):
-    return op.splitext( op.basename( file_name ) )[0]
+def get_trunk( filename ):
+    return op.splitext( op.basename( filename ) )[0]
 
 ##
 # c: 20.03.2008, r: 20.03.2008
@@ -101,10 +101,10 @@ def read_list( fd, n_item, dtype ):
 
     return vals
 
-def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
+def write_dict_hdf5( filename, adict, level = 0, group = None, fd = None ):
 
     if level == 0:
-        fd = pt.openFile( file_name, mode = "w",
+        fd = pt.openFile( filename, mode = "w",
                           title = "Recursive dict dump" )
         group = '/'
 
@@ -112,24 +112,24 @@ def write_dict_hdf5( file_name, adict, level = 0, group = None, fd = None ):
 #        print level * ' ', key, '->', group
         if isinstance( val, dict ):
             group2 = fd.createGroup( group, '_' + str( key ), '%s group' % key )
-            write_dict_hdf5( file_name, val, level + 1, group2, fd )
+            write_dict_hdf5( filename, val, level + 1, group2, fd )
         else:
             fd.createArray( group, '_' + str( key ), val, '%s data' % key )
             
     if level == 0:
         fd.close()
 
-def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
+def read_dict_hdf5( filename, level = 0, group = None, fd = None ):
     out = {}
 
     if level == 0:
-        fd = pt.openFile( file_name, mode = "r" )
+        fd = pt.openFile( filename, mode = "r" )
         group = fd.root
 
     for name, gr in group._v_groups.iteritems():
 #        print level * ' ', gr, '->', group
         name = name.replace( '_', '', 1 )
-        out[name] = read_dict_hdf5( file_name, level + 1, gr, fd )
+        out[name] = read_dict_hdf5( filename, level + 1, gr, fd )
 
     for name, data in group._v_leaves.iteritems():
         name = name.replace( '_', '', 1 )
@@ -142,9 +142,9 @@ def read_dict_hdf5( file_name, level = 0, group = None, fd = None ):
 
 ##
 # 02.07.2007, c
-def write_sparse_matrix_hdf5( file_name, mtx, name = 'a sparse matrix' ):
+def write_sparse_matrix_hdf5( filename, mtx, name = 'a sparse matrix' ):
     """Assume CSR/CSC."""
-    fd = pt.openFile( file_name, mode = "w", title = name )
+    fd = pt.openFile( filename, mode = "w", title = name )
     try:
         info = fd.createGroup( '/', 'info' )
         fd.createArray( info, 'dtype', mtx.dtype.str )
@@ -166,11 +166,11 @@ def write_sparse_matrix_hdf5( file_name, mtx, name = 'a sparse matrix' ):
 ##
 # 02.07.2007, c
 # 08.10.2007
-def read_sparse_matrix_hdf5( file_name, output_format = None ):
+def read_sparse_matrix_hdf5( filename, output_format = None ):
     import scipy.sparse as sp
     constructors = {'csr' : sp.csr_matrix, 'csc' : sp.csc_matrix}
     
-    fd = pt.openFile( file_name, mode = "r" )
+    fd = pt.openFile( filename, mode = "r" )
     info = fd.root.info
     data = fd.root.data
 

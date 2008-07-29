@@ -21,17 +21,17 @@ class Test( TestCommon ):
         if pt is None:
             self.report( 'skipped (no pytables)' )
             return True
-        file_name = op.join( self.options.out_dir, 'mtx.h5' )
+        filename = op.join( self.options.out_dir, 'mtx.h5' )
 
         aux = nm.random.rand( 5, 5 )
         aux[1,:] = aux[:,2] = aux[3,:] = 0.0
 
         mtx = sp.csr_matrix( aux, dtype = nm.float64 )
 #        self.report( 'sparse matrix:\n%s' % mtx )
-        self.report( 'saving matrix into %s...' % file_name )
-        write_sparse_matrix_hdf5( file_name, mtx )
+        self.report( 'saving matrix into %s...' % filename )
+        write_sparse_matrix_hdf5( filename, mtx )
         self.report( 'reading...' )
-        mtx2 = read_sparse_matrix_hdf5( file_name )
+        mtx2 = read_sparse_matrix_hdf5( filename )
 #        self.report( 'read matrix:\n%s' % mtx2 )
         self.report( 'difference:\n%s' % (mtx2 - mtx).__repr__() )
 
@@ -52,16 +52,16 @@ class Test( TestCommon ):
         if pt is None:
             self.report( 'skipped (no pytables)' )
             return True
-        file_name = op.join( self.options.out_dir, 'dict.h5' )
+        filename = op.join( self.options.out_dir, 'dict.h5' )
 
         test = {'A' : 0, 'B' : {'C' : [0, 1],
                                 'D' : {'E' : {'F' : {'G' : 2.0}}}}}
 
         self.report( '%s' % test )
-        self.report( 'saving into %s...' % file_name )
-        write_dict_hdf5( file_name, test )
+        self.report( 'saving into %s...' % filename )
+        write_dict_hdf5( filename, test )
         self.report( 'reading...' )
-        test2 = read_dict_hdf5( file_name )
+        test2 = read_dict_hdf5( filename )
         self.report( '%s' % test2 )
 
         assert test == test2

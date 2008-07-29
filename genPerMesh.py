@@ -127,9 +127,9 @@ def get_min_vertex_distance_naive( coor ):
 
     return im, i1[ii][im], i2[ii][im], nm.sqrt( aux[im] )
 
-usage = """%prog [options] file_name_in file_name_out
+usage = """%prog [options] filename_in filename_out
 
-The program scales a periodic input mesh (a rectangle or box) in file_name_in
+The program scales a periodic input mesh (a rectangle or box) in filename_in
 by a scale factor and generates a new mesh by repeating the scaled original
 mesh in a regular grid (scale x scale [x scale]), producing again a periodic
 rectagle or box mesh."""
@@ -166,8 +166,8 @@ def main():
         return
 
     if (len( args ) == 2):
-        file_name_in = args[0]
-        file_name_out = args[1]
+        filename_in = args[0]
+        filename_out = args[1]
     else:
         parser.print_help()
         return
@@ -175,7 +175,7 @@ def main():
     print 'scale:', options.scale
     print 'eps:', options.eps
 
-    mesh_in = Mesh.from_file( file_name_in )
+    mesh_in = Mesh.from_file( filename_in )
     bbox = mesh_in.get_bounding_box()
     print 'bbox:\n', bbox
     mscale = bbox[1] - bbox[0]
@@ -245,7 +245,7 @@ def main():
     coor = (coor * mscale) / scale
     print 'saving...'
     mesh_out = make_mesh( coor, conns, mesh_in )
-    mesh_out.write( file_name_out, io = 'auto' )
+    mesh_out.write( filename_out, io = 'auto' )
     print 'done.'
     
 if __name__ == '__main__':

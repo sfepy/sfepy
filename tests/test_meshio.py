@@ -1,4 +1,4 @@
-file_name_meshes = ['database/simple.mesh',
+filename_meshes = ['database/simple.mesh',
                    'database/simple.vtk',
                    'database/t.1.node',
                    'database/maillage.txt']
@@ -25,11 +25,11 @@ class Test( TestCommon ):
         from sfepy.fem.mesh import Mesh
 
         meshes = {}
-        for ii, file_name in enumerate( file_name_meshes ):
-            self.report( '%d. mesh: %s' % (ii + 1, file_name) )
-            mesh = Mesh.from_file( file_name )
+        for ii, filename in enumerate( filename_meshes ):
+            self.report( '%d. mesh: %s' % (ii + 1, filename) )
+            mesh = Mesh.from_file( filename )
             self.report( 'read ok' )
-            meshes[file_name] = mesh
+            meshes[filename] = mesh
 
         self.meshes = meshes
 
@@ -43,8 +43,8 @@ class Test( TestCommon ):
 
         oks = []
         for i0, i1 in same:
-            name0 = file_name_meshes[i0]
-            name1 = file_name_meshes[i1]
+            name0 = filename_meshes[i0]
+            name1 = filename_meshes[i1]
             self.report( 'comparing meshes from "%s" and "%s"' % (name0, name1) )
             mesh0 = self.meshes[name0]
             mesh1 = self.meshes[name1]
@@ -104,9 +104,9 @@ class Test( TestCommon ):
                   'database/simple.vtk' : 3}
 
         ok = True
-        for file_name, adim in meshes.iteritems():
-            self.report( 'mesh: %s, dimension %d' % (file_name, adim) )
-            io = MeshIO.any_from_file_name( file_name )
+        for filename, adim in meshes.iteritems():
+            self.report( 'mesh: %s, dimension %d' % (filename, adim) )
+            io = MeshIO.any_from_filename( filename )
             dim = io.read_dimension()
             if dim != adim:
                 self.report( 'read dimension %d -> failed' % dim )

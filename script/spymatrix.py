@@ -4,7 +4,7 @@ from pylab import *
 import scipy as nm
 from optparse import OptionParser
 
-usage = """%prog [options] file_name"""
+usage = """%prog [options] filename"""
 
 # 23.11.2005, c
 # 24.11.2005
@@ -19,10 +19,10 @@ def main():
     if len( args ) < 1:
         print usage
         return
-    file_name = args[0]
-    print file_name + ':'
+    filename = args[0]
+    print filename + ':'
 
-    fd = open( file_name, "r" )
+    fd = open( filename, "r" )
     n_row, n_col = map( int, fd.readline().split() )
     n_item = int( fd.readline() )
     print n_row, n_col, n_item

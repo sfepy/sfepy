@@ -24,7 +24,7 @@ class Test( TestInput ):
 
         self.report( 'solving %s...' % self.conf.input_name )
         name = op.join( self.options.out_dir, self.conf.output_name_trunk )
-        options = Struct( output_file_name_trunk = name,
+        options = Struct( output_filename_trunk = name,
                           save_ebc = False, save_regions = False,
                           save_field_meshes = False, save_region_field_meshes = False,
                           solve_not = False )

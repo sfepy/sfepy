@@ -135,15 +135,15 @@ def run_test( conf_name, options ):
 # 04.06.2007
 # 19.07.2007
 def wrap_run_tests( options ):
-    def run_tests( stats, dir_name, file_names ):
-        file_names = [file_name for file_name in file_names
-                     if (len( file_name ) > 8) and
-                     file_name[:5] == 'test_' and file_name[-3:] == '.py']
+    def run_tests( stats, dir_name, filenames ):
+        filenames = [filename for filename in filenames
+                     if (len( filename ) > 8) and
+                     filename[:5] == 'test_' and filename[-3:] == '.py']
 
-        print '<<< directory: %s, test files: %d' % (dir_name, len( file_names ))
+        print '<<< directory: %s, test files: %d' % (dir_name, len( filenames ))
 
-        for file_name in file_names:
-            conf_name = op.join( dir_name, file_name )
+        for filename in filenames:
+            conf_name = op.join( dir_name, filename )
 
             n_fail, n_total, test_time = run_test( conf_name, options )
 
@@ -154,7 +154,7 @@ def wrap_run_tests( options ):
 
     return run_tests
 
-usage = """%prog [options] [test_file_name]"""
+usage = """%prog [options] [test_filename]"""
 
 help = {
     'dir' : 'directory with tests [default: %default]',
@@ -205,9 +205,9 @@ def main():
         parser.print_help(),
         return
     elif len( args ) == 1:
-        test_file_name = args[0]
+        test_filename = args[0]
 
-        stats = run_test( test_file_name, options )
+        stats = run_test( test_filename, options )
         print '1 test file executed in %.2f s, %d failure(s) of %d test(s)'\
               % (stats[2], stats[0], stats[1])
         return

@@ -17,10 +17,10 @@ from sfepy.homogenization.phono import process_options, get_method,\
 # c: 25.09.2007, r: 08.04.2008
 def solve_eigen_problem( conf, options ):
 
-    if options.output_file_name_trunk:
-        ofn_trunk = options.output_file_name_trunk
+    if options.output_filename_trunk:
+        ofn_trunk = options.output_filename_trunk
     else:
-        ofn_trunk = io.get_trunk( conf.file_name_mesh )
+        ofn_trunk = io.get_trunk( conf.filename_mesh )
 
     pb = ProblemDefinition.from_conf( conf )
     dim = pb.domain.mesh.dim
@@ -69,10 +69,10 @@ def solve_eigen_problem( conf, options ):
     return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
 
 
-usage = """%prog [options] file_name_in"""
+usage = """%prog [options] filename_in"""
 
 help = {
-    'file_name' :
+    'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'detect_band_gaps' :
     'detect frequency band gaps [default: %default]',
@@ -87,9 +87,9 @@ def main():
                              'VERSION' ) ).readlines()[0][:-1]
 
     parser = OptionParser( usage = usage, version = "%prog " + version )
-    parser.add_option( "-o", "", metavar = 'file_name',
-                       action = "store", dest = "output_file_name_trunk",
-                       default = None, help = help['file_name'] )
+    parser.add_option( "-o", "", metavar = 'filename',
+                       action = "store", dest = "output_filename_trunk",
+                       default = None, help = help['filename'] )
     parser.add_option( "-b", "--band-gaps",
                        action = "store_true", dest = "detect_band_gaps",
                        default = False, help = help['detect_band_gaps'] )
@@ -102,7 +102,7 @@ def main():
         options.detect_band_gaps = True
 
     if (len( args ) == 1):
-        file_name_in = args[0];
+        filename_in = args[0];
     else:
         parser.print_help(),
         return
@@ -111,7 +111,7 @@ def main():
 
     required, other = get_standard_keywords()
     required.remove( 'solver_[0-9]+|solvers' )
-    conf = ProblemConf.from_file( file_name_in, required, other )
+    conf = ProblemConf.from_file( filename_in, required, other )
 ##     print conf
 ##     pause()
 

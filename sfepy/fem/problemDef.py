@@ -29,7 +29,7 @@ class ProblemDefinition( Struct ):
                   init_fields = True, init_variables = True, init_equations = True,
                   init_solvers = True ):
 
-        mesh = Mesh.from_file( conf.file_name_mesh )
+        mesh = Mesh.from_file( conf.filename_mesh )
 
         
         eldesc_dir = op.join( install_dir, 'eldesc' )
@@ -319,7 +319,7 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 01.03.2007, r: 23.06.2008
-    def save_state( self, file_name, state = None, out = None,
+    def save_state( self, filename, state = None, out = None,
                    fill_value = None, post_process_hook = None,
                    file_per_var = False, **kwargs ):
         extend = not file_per_var
@@ -345,15 +345,15 @@ class ProblemDefinition( Struct ):
                 for key, val in out.iteritems():
                     if val.var_name == var.name:
                         vout[key] = val
-                base, suffix = op.splitext( file_name )
+                base, suffix = op.splitext( filename )
                 mesh.write( base + '_' + var.name + suffix,
                             io = 'auto', out = vout, **kwargs )
         else:
-            self.domain.mesh.write( file_name, io = 'auto', out = out, **kwargs )
+            self.domain.mesh.write( filename, io = 'auto', out = out, **kwargs )
 
     ##
     # c: 19.09.2006, r: 27.02.2008
-    def save_ebc( self, file_name, force = True, default = 0.0 ):
+    def save_ebc( self, filename, force = True, default = 0.0 ):
         output( 'saving ebc...' )
         state = self.create_state_vector()
         state.fill( default )
@@ -365,26 +365,26 @@ class ProblemDefinition( Struct ):
             self.apply_ebc( state, force_values = vals )
         else:
             self.apply_ebc( state )
-        self.save_state( file_name, state, fill_value = default )
+        self.save_state( filename, state, fill_value = default )
         output( '...done' )
 
     ##
     # created:       30.03.2007
     # last revision: 27.02.2008
-    def save_regions( self, file_name_trunk ):
+    def save_regions( self, filename_trunk ):
 
         output( 'saving regions...' )
         for region in self.domain.regions:
             output( region.name )
             aux = Mesh.from_region( region, self.domain.mesh, self.domain.ed,
                                    self.domain.fa )
-            aux.write( '%s_%s.mesh' % (file_name_trunk, region.name), io = 'auto' )
+            aux.write( '%s_%s.mesh' % (filename_trunk, region.name), io = 'auto' )
         output( '...done' )
 
     ##
     # created:       02.01.2008
     # last revision: 27.02.2008
-    def save_region_field_meshes( self, file_name_trunk ):
+    def save_region_field_meshes( self, filename_trunk ):
 
         output( 'saving regions of fields...' )
         for field in self.fields:
@@ -395,7 +395,7 @@ class ProblemDefinition( Struct ):
                 if not fregion.contains( region ): continue
                 output( region.name )
                 aux = Mesh.from_region_and_field( region, field )
-                aux.write( '%s_%s_%s.mesh' % (file_name_trunk,
+                aux.write( '%s_%s_%s.mesh' % (filename_trunk,
                                               region.name, field.name),
                            io = 'auto' )
             output( '...done' )
@@ -403,12 +403,12 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 03.07.2007, r: 27.02.2008
-    def save_field_meshes( self, file_name_trunk ):
+    def save_field_meshes( self, filename_trunk ):
 
         output( 'saving field meshes...' )
         for field in self.fields:
             output( field.name )
-            field.write_mesh( file_name_trunk + '_%s' )
+            field.write_mesh( filename_trunk + '_%s' )
         output( '...done' )
 
     ##

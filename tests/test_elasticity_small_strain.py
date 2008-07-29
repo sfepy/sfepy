@@ -1,14 +1,14 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
 
-file_name_meshes = ['database/kostka_medium_tetra.mesh',
+filename_meshes = ['database/kostka_medium_tetra.mesh',
                    'database/kostka_medium_tetra.mesh',
                    'database/kostka_medium.mesh']
 all_your_bases = [{'Omega' : '3_4_P1'},
                 {'Omega' : '3_4_P2'},
                 {'Omega' : '3_8_Q1'}]
 
-file_name_mesh = None
+filename_mesh = None
 
 field_1 = {
     'name' : '3_displacement',
@@ -160,9 +160,9 @@ class Test( TestCommon ):
         ok = True
         self.solutions = []
         for ii, bases in enumerate( all_your_bases ):
-            fname = file_name_meshes[ii]
+            fname = filename_meshes[ii]
 
-            self.conf.file_name_mesh = fname
+            self.conf.filename_mesh = fname
             self.conf.fields['field_1'].bases = bases
             self.report( 'mesh: %s, base: %s' % (fname, bases) )
             status = IndexedStruct()

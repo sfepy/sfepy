@@ -67,10 +67,10 @@ def solve_stationary( conf, data = None, save_names = None, nls_status = None ):
 ##
 # c: 06.02.2008, r: 09.07.2008
 def prepare_save_data( ts, conf, options ):
-    if options.output_file_name_trunk:
-        ofn_trunk = options.output_file_name_trunk
+    if options.output_filename_trunk:
+        ofn_trunk = options.output_filename_trunk
     else:
-        ofn_trunk = io.get_trunk( conf.file_name_mesh ) + '_out'
+        ofn_trunk = io.get_trunk( conf.filename_mesh ) + '_out'
 
     try:
         save_steps = conf.options.save_steps
@@ -156,10 +156,10 @@ def solve_stationary_op( problem, options, save_results = True, ts = None,
     state = problem.solve()
 
     if save_results:
-        if options.output_file_name_trunk:
-            ofn_trunk = options.output_file_name_trunk
+        if options.output_filename_trunk:
+            ofn_trunk = options.output_filename_trunk
         else:
-            ofn_trunk = io.get_trunk( problem.conf.file_name_mesh ) + '_out'
+            ofn_trunk = io.get_trunk( problem.conf.filename_mesh ) + '_out'
         problem.save_state( ofn_trunk + '.vtk', state,
                            post_process_hook = post_process_hook )
 
@@ -169,10 +169,10 @@ def solve_stationary_op( problem, options, save_results = True, ts = None,
 # c: 12.01.2007, r: 22.06.2008
 def solve_direct( conf, options ):
     """Generic (simple) problem solver."""
-    if options.output_file_name_trunk:
-        ofn_trunk = options.output_file_name_trunk
+    if options.output_filename_trunk:
+        ofn_trunk = options.output_filename_trunk
     else:
-        ofn_trunk = io.get_trunk( conf.file_name_mesh )
+        ofn_trunk = io.get_trunk( conf.filename_mesh )
 
     opts = conf.options
     if hasattr( opts, 'post_process_hook' ) and opts.post_process_hook is not None:
