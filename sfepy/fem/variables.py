@@ -173,6 +173,8 @@ class Variables( Container ):
                     obj.ordered_virtual.append( ii )
                     break
 
+        obj.setup_dtype()
+
         return obj
     from_conf = staticmethod( from_conf )
 
@@ -186,6 +188,22 @@ class Variables( Container ):
             except ValueError:
                 output( 'variable %s is not active!' % vvar.primary_var_name )
                 raise
+
+    def setup_dtype( self ):
+        """Setup data types of state variables - all have to be of the same
+        data type, one of nm.float64 or nm.complex128."""
+        dtypes = {nm.complex128 : 0, nm.float64 : 0}
+        for var in self.iter_state():
+            dtypes[var.dtype] += 1
+
+        if dtypes[nm.float64] and dtypes[nm.complex128]:
+            raise ValueError( "All variables must have the same dtype!" )
+
+        elif dtypes[nm.float64]:
+            self.dtype = nm.float64
+
+        else:
+            self.dtype = nm.complex128
 
     ##
     # 26.07.2007, c
@@ -273,7 +291,7 @@ class Variables( Container ):
             lcbc_ops[var_name] = var.create_lcbc_operators( bcs, regions )
 
         ops_lc = []
-        eq_lcbc = nm.empty( (0,), dtype = nm.float64 )
+        eq_lcbc = nm.empty( (0,), dtype = nm.int32 )
         n_groups = 0
         for var_name, lcbc_op in lcbc_ops.iteritems():
             if lcbc_op is None: continue
@@ -496,8 +514,6 @@ class Variables( Container ):
             iemap = iemaps[ig]
             dcs[ig] = dc[iemap]
 
-    ##
-    # c: 23.11.2005, r: 19.05.2008
     def create_matrix_graph( self, var_names = None, vvar_names = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -552,7 +568,7 @@ class Variables( Container ):
                 % (nnz, float( nnz ) / nm.prod( shape ) ) )
 ##         print ret, prow, icol, nnz
 	
-        data = nm.zeros( (nnz,), dtype = nm.float64 )
+        data = nm.zeros( (nnz,), dtype = self.dtype )
         matrix = sp.csr_matrix( (data, icol, prow), shape )
 ##         matrix.save( 'matrix', format = '%d %d %e\n' )
 ##         pause()
@@ -568,16 +584,12 @@ class Variables( Container ):
             var = self[ii]
             var.data_from_state( state, self.di.indx[var.name] )
 
-    ##
-    # 25.07.2006, c
     def create_state_vector( self ):
-        vec = nm.zeros( (self.di.ptr[-1],), nm.float64 )
+        vec = nm.zeros( (self.di.ptr[-1],), dtype = self.dtype )
         return vec
 
-    ##
-    # 25.07.2006, c
     def create_stripped_state_vector( self ):
-        vec = nm.zeros( (self.adi.ptr[-1],), nm.float64 )
+        vec = nm.zeros( (self.adi.ptr[-1],), dtype = self.dtype )
         return vec
 
     ##
@@ -617,15 +629,13 @@ class Variables( Container ):
             # EPBC.
             vec[i0+eq_map.master] = vec[i0+eq_map.slave]
 
-    ##
-    # c: 12.04.2007, r: 28.02.2008
     def strip_state_vector( self, vec, follow_epbc = True ):
         """
         Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,
         values of EPBC master dofs are not simply thrown away, but added to the
         corresponding slave dofs, just like when assembling.
         """
-        svec = nm.empty( (self.adi.ptr[-1],), nm.float64 )
+        svec = nm.empty( (self.adi.ptr[-1],), dtype = self.dtype )
         for var_name in self.bc_of_vars.iterkeys():
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
@@ -652,9 +662,6 @@ class Variables( Container ):
 
         return svec
 
-    ##
-    # created:       12.04.2007
-    # last revision: 14.12.2007
     def make_full_vec( self, svec, var_name = None, force_value = None ):
         """
         Make a full vector satisfying E(P)BC
@@ -685,7 +692,7 @@ class Variables( Container ):
                 eq_map = self[var_name].eq_map
                 _make_full_vec( vec[self.di.indx[var_name]], eq_map )
         else:
-            vec = nm.empty( (self.di.n_dofs[var_name],), nm.float64 )
+            vec = nm.empty( (self.di.n_dofs[var_name],), dtype = self.dtype )
             eq_map = self[var_name].eq_map
             _make_full_vec( vec, eq_map )
 
@@ -969,10 +976,9 @@ class Variable( Struct ):
             self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.n_dof = self.indx.stop - self.indx.start
 
-    ##
-    # c: 11.07.2006, r: 25.02.2008
     def set_field( self, field ):
-        """Takes reference to a Field instance."""
+        """Takes reference to a Field instance. Sets dtype according to
+        field.dtype."""
         self.field = field
         self.dpn = nm.product( field.dim )
 
@@ -983,6 +989,7 @@ class Variable( Struct ):
         self.dofs = [dof_name + ('.%d' % ii) for ii in range( self.dpn )]
 
         self.flags.add( is_field )
+        self.dtype = field.dtype
 
     ##
     # c: 08.08.2006, r: 15.01.2008
@@ -1141,8 +1148,6 @@ class Variable( Struct ):
                        n_rigid_dof = n_rigid_dof,
                        dim = dim )
 
-    ##
-    # c: 20.07.2006, split, r: 06.05.2008
     def equation_mapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
@@ -1154,7 +1159,7 @@ class Variable( Struct ):
         self.eq_map = eq_map = Struct()
 
         eq_map.eq = nm.arange( di.n_dofs[self.name], dtype = nm.int32 )
-        eq_map.val_ebc = nm.empty( (0,), dtype = nm.float64 )
+        eq_map.val_ebc = nm.empty( (0,), dtype = self.dtype )
         if len( bcs ) == 0:
             ##
             # No ebc for this field.
@@ -1169,7 +1174,7 @@ class Variable( Struct ):
         field = self.field
 
         eq_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
-        val_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = nm.float64 )
+        val_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = self.dtype )
         master_slave = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
         chains = []
         for key, bc in bcs:
@@ -1205,7 +1210,7 @@ class Variable( Struct ):
                 dofs, val = bc.dofs
                 ##
                 # Evaluate EBC values.
-                vv = nm.empty( (0,), dtype = nm.float64 )
+                vv = nm.empty( (0,), dtype = self.dtype )
                 nods = nm.unique1d( nm.hstack( master_nod_list ) )
                 coor = field.get_coor( nods )
                 if type( val ) == str:
@@ -1375,11 +1380,6 @@ class Variable( Struct ):
 
         return out
 
-    ##
-    # 20.02.2007, c
-    # 14.03.2007
-    # 24.05.2007
-    # 04.06.2007
     def extend_data( self, data, n_nod, val = None ):
         """Extend data (with value val) to cover whole domain."""
         cnt_vn = self.field.cnt_vn
@@ -1391,7 +1391,7 @@ class Variable( Struct ):
             else: # Scalar.
                 val = nm.amin( data )
 
-        extdata = nm.empty( (n_nod, data.shape[1]), dtype = nm.float64 )
+        extdata = nm.empty( (n_nod, data.shape[1]), dtype = self.dtype )
         extdata.fill( val )
         extdata[indx] = data[:indx.size]
 

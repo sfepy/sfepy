@@ -76,14 +76,12 @@ class Fields( Container ):
 # 14.07.2006, c
 class Field( Struct ):
 
-    ##
-    # 14.07.2006, c
-    # 26.04.2007
     def from_conf( conf ):
 
         obj = Field( name = conf.name,
                      dim = conf.dim,
                      flags = set( getattr( conf, 'flags', () ) ),
+                     dtype = getattr( conf, 'dtype', nm.float64 ),
                      region_name = conf.domain,
                      bases = conf.bases )
         return obj
