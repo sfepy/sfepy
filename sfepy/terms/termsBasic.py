@@ -95,7 +95,7 @@ class IntegrateSurfaceTerm( Term ):
         
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
-            status = sg.integrate_chunk( out, vec[lchunk], lchunk )
+            status = sg.integrate_chunk( out, vec[lchunk], lchunk, 0 )
             out1 = nm.sum( out )
             yield out1, chunk, status
 
@@ -171,9 +171,46 @@ class DotProductSurfaceTerm( Term ):
                 vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
             else:
                 vec = vec1[lchunk] * vec2[lchunk]
-            status = sg.integrate_chunk( out, vec, lchunk )
+            status = sg.integrate_chunk( out, vec, lchunk, 0 )
             out1 = nm.sum( out )
             yield out1, chunk, status
+
+
+##
+# 30.06.2008, c
+class IntegrateSurfaceOperatorTerm( Term ):
+    r""":definition: $\int_{\Gamma} q$"""
+
+    name = 'dw_surface_integrate'
+    arg_types = ('material', 'virtual',)
+    geometry = [(Surface, 'virtual')]
+
+    ##
+    # 30.06.2008, c
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign )
+        self.dof_conn_type = 'surface'
+
+    ##
+    # 30.06.2008, c
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, = self.get_args( **kwargs )
+        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+
+        if diff_var is None:
+            shape = (chunk_size, 1, sg.n_fp, 1 )
+        else:
+            raise StopIteration
+
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
+            bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
+            status = sg.integrate_chunk( out, bf_t, lchunk, 1 )
+            out = out*mat
+            yield out, lchunk, 0
 
 ##
 # 16.07.2007, c

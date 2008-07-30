@@ -2,6 +2,7 @@ import extmods
 import terms
 from termsBasic import *
 from termsLinElasticity import *
+#from termsAcoustic import *
 from termsLaplace import *
 from termsPoint import *
 from termsSurface import *

@@ -89,7 +89,7 @@ int32 sg_describe( SurfaceGeometry *obj,
 		   FMField *bfGR, FMField *weight );
 int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in );
 int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow );
+			 int32 *elList, int32 elList_nRow, int32 mode );
 int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR,
 			float64 *coorIn, int32 nNod, int32 dim,
 			int32 *fis, int32 nFa, int32 nFP,

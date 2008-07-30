@@ -315,8 +315,8 @@ typedef struct SurfaceGeometry {
     - 01.11.2007, c
   */
   int32 integrate_chunk( FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow ) {
-    return( sg_integrateChunk( self, out, in, elList, elList_nRow ) );
+			 int32 *elList, int32 elList_nRow, int32 mode ) {
+    return( sg_integrateChunk( self, out, in, elList, elList_nRow, mode ) );
   }
 
   /*!

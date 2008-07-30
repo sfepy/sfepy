@@ -529,15 +529,15 @@ int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in )
   - 01.11.2007, c
 */
 int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow )
+			 int32 *elList, int32 elList_nRow, int32 mode )
 {
   int32 dim, nQP, iel, ii, ret = RET_OK;
   FMField *vn = 0;
 
   dim = obj->normal->nRow;
   nQP = obj->normal->nLev;
-
-  if (in->nRow == 1) {
+   
+  if (in->nRow == 1 || mode == 1) {
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
       FMF_SetCell( obj->det, iel );
