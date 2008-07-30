@@ -196,9 +196,11 @@ class IntegrateSurfaceOperatorTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, = self.get_args( **kwargs )
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+                                                     self.region.name )
 
         if diff_var is None:
-            shape = (chunk_size, 1, sg.n_fp, 1 )
+            shape = (chunk_size, 1, n_fp, 1 )
         else:
             raise StopIteration
 
