@@ -770,11 +770,9 @@ class Variables( Container ):
                 raise IndexError
 
 
-    ##
-    # Works for vertex data only.
-    # c: 15.12.2005, r: 12.05.2008
     def state_to_output( self, vec, fill_value = None, var_info = None,
                        extend = True ):
+        """Works for vertex data only."""
 
         n_nod, di = self.domain.shape.n_nod, self.di
 
@@ -804,6 +802,27 @@ class Variables( Container ):
             out[name] = Struct( name = 'output_data',
                                 mode = 'vertex', data = ext,
                                 var_name = key, dofs = self[key].dofs )
+
+        out = self.convert_complex_output( out )
+        
+        return out
+
+    def convert_complex_output( self, out_in ):
+        out = {}
+        for key, val in out_in.iteritems():
+
+            if val.data.dtype in  complex_types:
+                rval = copy( val )
+                rval.data = val.data.real
+                out['real(%s)' % key] = rval
+
+                ival = copy( val )
+                ival.data = val.data.imag
+                out['imag(%s)' % key] = ival
+
+            else:
+                out[key] = val
+
         return out
 
     ##
@@ -940,6 +959,12 @@ class Variable( Struct ):
     def is_non_state_field( self ):
         return (is_field in self.flags)\
                and not (self.is_state() or self.is_virtual())
+
+    def is_real( self ):
+        return self.dtype in real_types
+
+    def is_complex( self ):
+        return self.dtype in complex_types
 
     def init_state( self, state, indx ):
         """Initialize data of variables with history."""

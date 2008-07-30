@@ -14,10 +14,8 @@ _match_parameter = re.compile( '^parameter(_[a-zA-Z0-9]+)?$' ).match
 _match_material = re.compile( '^material(_[a-zA-Z0-9]+)?$' ).match
 _match_material_root = re.compile( '(.+)\.(.*)' ).match
 
-##
-# c: 21.11.2005, r: 04.02.2008
 def vector_chunk_generator( total_size, chunk_size, shape_in,
-                          zero = False, set_shape = True ):
+                            zero = False, set_shape = True, dtype = nm.float64 ):
     if not chunk_size:
         chunk_size = total_size
     shape = list( shape_in )
@@ -29,9 +27,9 @@ def vector_chunk_generator( total_size, chunk_size, shape_in,
         if set_shape:
             shape[0] = size
         if zero:
-            out = nm.zeros( shape, dtype = nm.float64 )
+            out = nm.zeros( shape, dtype = dtype )
         else:
-            out = nm.empty( shape, dtype = nm.float64 )
+            out = nm.empty( shape, dtype = dtype )
         yield out, chunk
         ii += size
 
@@ -47,14 +45,12 @@ class CharacteristicFunction( Struct ):
         self.local_chunk = None
         self.ig = None
 
-    ##
-    # 22.01.2006, c
-    # 11.08.2006
-    # 05.09.2006
-    def __call__( self, chunk_size, shape_in, zero = False, set_shape = True ):
+    def __call__( self, chunk_size, shape_in, zero = False, set_shape = True,
+                  dtype = nm.float64 ):
         els = self.region.cells[self.ig]
         for out, chunk in vector_chunk_generator( els.shape[0], chunk_size,
-                                                shape_in, zero, set_shape ):
+                                                  shape_in, zero, set_shape,
+                                                  dtype ):
             self.local_chunk = chunk
             yield out, els[chunk]
 

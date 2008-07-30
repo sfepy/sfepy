@@ -16,8 +16,16 @@
 %apply (FMField *in) {
   (FMField *vec),
   (FMField *vecInEls),
+  (FMField *vec_r),
+  (FMField *vecInEls_r),
+  (FMField *vec_i),
+  (FMField *vecInEls_i),
   (FMField *mtx),
-  (FMField *mtxInEls)
+  (FMField *mtxInEls),
+  (FMField *mtx_r),
+  (FMField *mtxInEls_r),
+  (FMField *mtx_i),
+  (FMField *mtxInEls_i)
 };
 %apply (int32 *array, int32 n_row, int32 n_col) {
   (int32 *conn, int32 nEl, int32 nEP),
@@ -32,8 +40,14 @@
 };
 
 int32 assemble_vector( FMField *vec, FMField *vecInEls,
-		      int32 *iels, int32 iels_len,
-		      float64 sign, int32 *conn, int32 nEl, int32 nEP );
+		       int32 *iels, int32 iels_len,
+		       float64 sign, int32 *conn, int32 nEl, int32 nEP );
+
+int32 assemble_vector_complex( FMField *vec_r, FMField *vec_i,
+			       FMField *vecInEls_r, FMField *vecInEls_i,
+			       int32 *iels, int32 iels_len,
+			       float64 sign_r, float64 sign_i,
+			       int32 *conn, int32 nEl, int32 nEP );
 
 int32 assemble_matrix( FMField *mtx,
 		      int32 *prows, int32 prows_len,
@@ -42,6 +56,15 @@ int32 assemble_matrix( FMField *mtx,
 		      int32 *iels, int32 iels_len, float64 sign,
 		      int32 *connR, int32 nElR, int32 nEPR,
 		      int32 *connC, int32 nElC, int32 nEPC );
+
+int32 assemble_matrix_complex( FMField *mtx_r, FMField *mtx_i,
+			       int32 *prows, int32 prows_len,
+			       int32 *cols, int32 cols_len,
+			       FMField *mtxInEls_r, FMField *mtxInEls_i,
+			       int32 *iels, int32 iels_len,
+			       float64 sign_r, float64 sign_i,
+			       int32 *connR, int32 nElR, int32 nEPR,
+			       int32 *connC, int32 nElC, int32 nEPC );
 
 /*!
   @par Revision history:

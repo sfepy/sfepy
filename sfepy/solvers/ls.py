@@ -15,30 +15,29 @@ else:
 
 um.configure( assume_sorted_indices = True )
 
-##
-# 10.10.2007, c
 class Umfpack( LinearSolver ):
     name = 'ls.umfpack'
+    _family = {nm.dtype( 'float64' ) : 'di',
+               nm.dtype( 'complex128' ) : 'zi'}
 
-    ##
-    # c: 10.10.2007, r: 06.03.2008
     def __init__( self, conf, **kwargs ):
         LinearSolver.__init__( self, conf, **kwargs )
-        self.umfpack = um.UmfpackContext()
 
+        self.umfpack = None
         if self._presolve() and hasattr( self, 'mtx' ):
             if self.mtx is not None:
+                family = Umfpack._family[mtx.dtype]
+                self.umfpack = um.UmfpackContext( family = family )
                 self.umfpack.numeric( self.mtx )
 
-    ##
-    # 02.12.2005, c
-    # 14.04.2006
-    # 02.10.2007
-    # 10.10.2007, from solve_umfpack()
     def __call__( self, rhs, conf = None, mtx = None, status = None ):
         conf = get_default( conf, self.conf )
         mtx = get_default( mtx, self.mtx )
         status = get_default( status, self.status )
+
+        family = Umfpack._family[mtx.dtype]
+        self.umfpack = get_default( self.umfpack,
+                                    um.UmfpackContext( family = family ) )
 
 ##     umfpack.control[um.UMFPACK_PRL] = 4
 ##     umfpack.control[um.UMFPACK_IRSTEP] = 10
@@ -52,8 +51,6 @@ class Umfpack( LinearSolver ):
     
         return sol
 
-    ##
-    # c: 10.10.2007, r: 06.03.2008
     def _presolve( self ):
         if hasattr( self, 'presolve' ):
             return self.presolve

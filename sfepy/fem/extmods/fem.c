@@ -10,8 +10,8 @@
   - 27.11.2005
 */
 int32 assemble_vector( FMField *vec, FMField *vecInEls,
-		      int32 *iels, int32 iels_len,
-		      float64 sign, int32 *conn, int32 nEl, int32 nEP )
+		       int32 *iels, int32 iels_len,
+		       float64 sign, int32 *conn, int32 nEl, int32 nEP )
 {
   int32 ii, iel, ir, irg;
   int32 *pconn;
@@ -42,6 +42,46 @@ int32 assemble_vector( FMField *vec, FMField *vecInEls,
 }
 
 #undef __FUNC__
+#define __FUNC__ "assemble_vector_complex"
+int32 assemble_vector_complex( FMField *vec_r, FMField *vec_i,
+			       FMField *vecInEls_r, FMField *vecInEls_i,
+			       int32 *iels, int32 iels_len,
+			       float64 sign_r, float64 sign_i,
+			       int32 *conn, int32 nEl, int32 nEP )
+{
+  int32 ii, iel, ir, irg, stride;
+  int32 *pconn;
+  float64 aux_r, aux_i;
+  float64 *val_r, *val_i;
+
+  stride = vec_r->offset;
+  val_r = FMF_PtrFirst( vec_r );
+  val_i = FMF_PtrFirst( vec_i );
+
+  for (ii = 0; ii < iels_len; ii++) {
+    iel = iels[ii];
+    FMF_SetCell( vecInEls_r, ii );
+    FMF_SetCell( vecInEls_i, ii );
+
+    pconn = conn + nEP * iel;
+    for (ir = 0; ir < nEP; ir++) {
+      irg = pconn[ir];
+      if (irg < 0) continue;
+      
+/*       output( "%d %d %d\n", iel, ir, irg ); */
+      aux_r = (sign_r * vecInEls_r->val[stride*ir])
+	- (sign_i * vecInEls_i->val[stride*ir]);
+      aux_i = (sign_r * vecInEls_i->val[stride*ir])
+	+ (sign_i * vecInEls_r->val[stride*ir]);
+      val_r[stride*irg] += aux_r - aux_i;
+      val_i[stride*irg] += aux_r + aux_i;
+    }
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
 #define __FUNC__ "assemble_matrix"
 /*!
   Requires a CSR matrix.
@@ -51,12 +91,12 @@ int32 assemble_vector( FMField *vec, FMField *vecInEls,
   - 15.12.2005
 */
 int32 assemble_matrix( FMField *mtx,
-		      int32 *prows, int32 prows_len,
-		      int32 *cols, int32 cols_len,
-		      FMField *mtxInEls,
-		      int32 *iels, int32 iels_len, float64 sign,
-		      int32 *connR, int32 nElR, int32 nEPR,
-		      int32 *connC, int32 nElC, int32 nEPC )
+		       int32 *prows, int32 prows_len,
+		       int32 *cols, int32 cols_len,
+		       FMField *mtxInEls,
+		       int32 *iels, int32 iels_len, float64 sign,
+		       int32 *connR, int32 nElR, int32 nEPR,
+		       int32 *connC, int32 nElC, int32 nEPC )
 {
   int32 ii, iel, ir, ic, irg, icg, is, iloc, found;
   int32 *pconnR, *pconnC;
@@ -89,6 +129,75 @@ int32 assemble_matrix( FMField *mtx,
 	for (is = prows[irg]; is < prows[irg+1]; is++) {
 	  if (cols[is] == icg) {
 	    val[is] += sign * mtxInEls->val[iloc];
+	    found = 1;
+	    break;
+	  }
+	}
+	if (!found) {
+	  errput( "matrix item (%d,%d) does not exist\n", irg, icg );
+	  return( RET_Fail );
+	}
+      }
+    }
+/*     fmf_print( mtxInEls, stdout, 0 ); */
+/*     sys_pause(); */
+  }
+/*   fmf_print( mtx, stdout, 0 ); */
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
+#define __FUNC__ "assemble_matrix_complex"
+/*!
+  Requires a CSR matrix.
+*/
+int32 assemble_matrix_complex( FMField *mtx_r, FMField *mtx_i,
+			       int32 *prows, int32 prows_len,
+			       int32 *cols, int32 cols_len,
+			       FMField *mtxInEls_r, FMField *mtxInEls_i,
+			       int32 *iels, int32 iels_len,
+			       float64 sign_r, float64 sign_i,
+			       int32 *connR, int32 nElR, int32 nEPR,
+			       int32 *connC, int32 nElC, int32 nEPC )
+{
+  int32 ii, iel, ir, ic, irg, icg, is, iloc, found, stride;
+  int32 *pconnR, *pconnC;
+  float64 aux_r, aux_i;
+  float64 *val_r, *val_i;
+
+  stride = mtx_r->offset;
+  val_r = FMF_PtrFirst( mtx_r );
+  val_i = FMF_PtrFirst( mtx_i );
+
+  for (ii = 0; ii < iels_len; ii++) {
+    iel = iels[ii];
+    FMF_SetCell( mtxInEls_r, ii );
+    FMF_SetCell( mtxInEls_i, ii );
+
+    pconnR = connR + nEPR * iel;
+    pconnC = connC + nEPC * iel;
+    
+    for (ir = 0; ir < nEPR; ir++) {
+      irg = pconnR[ir];
+      if (irg < 0) continue;
+
+      for (ic = 0; ic < nEPC; ic++) {
+	icg = pconnC[ic];
+	if (icg < 0) continue;
+	iloc = stride * (nEPC * ir + ic);
+
+/* 	output( "%d %d %d %d %d %d\n", iel, ir, ic, irg, icg, iloc ); */
+	/* Try bsearch instead here... */
+	found = 0;
+	for (is = prows[irg]; is < prows[irg+1]; is++) {
+	  if (cols[is] == icg) {
+	    aux_r = (sign_r * mtxInEls_r->val[iloc])
+	      - (sign_i * mtxInEls_i->val[iloc]);
+	    aux_i = (sign_r * mtxInEls_i->val[iloc])
+	      + (sign_i * mtxInEls_r->val[iloc]);
+	    val_r[stride*is] += aux_r;
+	    val_i[stride*is] += aux_i;
 	    found = 1;
 	    break;
 	  }

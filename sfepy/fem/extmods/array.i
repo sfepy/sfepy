@@ -46,6 +46,21 @@ PyArrayObject *helper_get_c_array_object( PyObject *input, int type,
   return obj;
 }
 
+PyArrayObject *helper_get_array_object( PyObject *input,
+					int min_dim, int max_dim ) {
+  PyArrayObject *obj;
+
+  if (PyArray_Check( input )) {
+    obj = (PyArrayObject *)
+      PyArray_FromAny( input, 0, min_dim, max_dim, NPY_BEHAVED, 0 );
+    if (!obj) return NULL;
+  } else {
+    PyErr_SetString( PyExc_TypeError, "not an array" );
+    return NULL;
+  }
+  return obj;
+}
+
 /*!
   Makes a copy -> free original buffer afterwards.
 

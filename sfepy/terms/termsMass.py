@@ -90,7 +90,13 @@ class MassScalarTerm( Term ):
         step = self.arg_steps[state.name]
         vec = state( step = step )
         bf = ap.get_base( 'v', 0, self.integral_name )
-        return vec, 0, bf, vg, ap.econn
+
+        if state.is_real():
+            return vec, 0, bf, vg, ap.econn
+        else:
+            ac = nm.ascontiguousarray
+            return [(ac( vec.real ), 0, bf, vg, ap.econn),
+                    (ac( vec.imag ), 0, bf, vg, ap.econn)]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
@@ -99,9 +105,18 @@ class MassScalarTerm( Term ):
         shape, mode = self.get_shape( diff_var, chunk_size, ap )
         fargs = self.build_c_fun_args( state, ap, vg, **kwargs )
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
+        if state.is_real():
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk, mode) )
+                yield out, chunk, status
+        else:
+            # For mode == 1, the matrix is the same both for real and imaginary
+            # part -> optimization possible.
+            for out_real, chunk in self.char_fun( chunk_size, shape ):
+                out_imag = nm.zeros_like( out_real )
+                status1 = self.function( out_real, *fargs[0] + (chunk, mode) )
+                status2 = self.function( out_imag, *fargs[1] + (chunk, mode) )
+                yield out_real + 1j * out_imag, chunk, status1 or status2
 
 class MassScalarVariableTerm( MassScalarTerm ):
     r""":description: Scalar field mass matrix/rezidual with coefficient $c$

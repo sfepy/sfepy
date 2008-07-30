@@ -15,6 +15,9 @@ from getch import getch
 
 import atexit
 
+real_types = [nm.float64]
+complex_types = [nm.complex128]
+
 nm.set_printoptions( threshold = 100 )
 
 ##

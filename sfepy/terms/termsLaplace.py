@@ -33,8 +33,14 @@ class LaplaceTerm( Term ):
             self.function = terms.dw_st_pspg_p
         else:
             self.function = terms.dw_laplace
-        fargs = vec, 0, mat_arg, vg, ap.econn
 
+        if state.is_real():
+            fargs = vec, 0, mat_arg, vg, ap.econn
+        else:
+            ac = nm.ascontiguousarray
+            fargs = [(ac( vec.real ), 0, mat_arg, vg, ap.econn),
+                     (ac( vec.imag ), 0, mat_arg, vg, ap.econn)]
+            
         return fargs
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -44,9 +50,19 @@ class LaplaceTerm( Term ):
         shape, mode = self.get_shape( diff_var, chunk_size, ap )
         fargs = self.build_c_fun_args( material, state, ap, vg )
         
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
+        if state.is_real():
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk, mode) )
+                yield out, chunk, status
+        else:
+            # For mode == 1, the matrix is the same both for real and imaginary
+            # part -> optimization possible.
+            for out_real, chunk in self.char_fun( chunk_size, shape ):
+                out_imag = nm.zeros_like( out_real )
+                status1 = self.function( out_real, *fargs[0] + (chunk, mode) )
+                status2 = self.function( out_imag, *fargs[1] + (chunk, mode) )
+                yield out_real + 1j * out_imag, chunk, status1 or status2
+            
 
 class DiffusionTerm( LaplaceTerm ):
     r""":description: General diffusion term with permeability $K_{ij}$

@@ -112,8 +112,6 @@ class LCBCEvaluator( BasicEvaluator ):
         delta = self.op_lcbc * delta_r
         BasicEvaluator.update_vec( self, vec, delta )
 
-##
-# c: 03.09.2007, r: 04.07.2008
 def assemble_vector( vec, equation, variables, materials,
                     chunk_size = 1000, **kwargs ):
     get_a_dof_conn = variables.get_a_dof_conn
@@ -141,10 +139,19 @@ def assemble_vector( vec, equation, variables, materials,
                     print term.name, term.sign, ig
                     debug()
 
-                fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
+                if vec.dtype == nm.float64:
+                    fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
 
-##
-# c: 03.09.2007, r: 04.07.2008
+                else:
+                    assert vec.dtype == nm.complex128
+                    sign = nm.array( term.sign, dtype = nm.complex128 )
+                    fem.assemble_vector_complex( vec.real, vec.imag,
+                                                 vec_in_els.real,
+                                                 vec_in_els.imag,
+                                                 iels,
+                                                 float( sign.real ),
+                                                 float( sign.imag ), dc )
+
 def assemble_matrix( mtx, equation, variables, materials,
                     chunk_size = 1000, group_can_fail = True, **kwargs ):
     if not sp.isspmatrix_csr( mtx ):
@@ -172,9 +179,24 @@ def assemble_matrix( mtx, equation, variables, materials,
                                                     chunk_size = chunk_size,
                                                     **args ):
                     if status != 0:
-                        raise StopIteration( status, term, equation, var_name_col )
-                    fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,
-                                        iels, term.sign, rdc, cdc )
+                        raise StopIteration( status, term, equation,
+                                             var_name_col )
+
+                    if mtx.dtype == nm.float64:
+                        fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,
+                                             iels, term.sign, rdc, cdc )
+
+                    else:
+                        assert mtx.dtype == nm.complex128
+                        sign = nm.array( term.sign, dtype = nm.complex128 )
+                        fem.assemble_matrix_complex( tmd[0].real, tmd[0].imag,
+                                                     tmd[1], tmd[2],
+                                                     mtx_in_els.real,
+                                                     mtx_in_els.imag,
+                                                     iels,
+                                                     float( sign.real ),
+                                                     float( sign.imag ),
+                                                     rdc, cdc )
 
 ##
 # 01.10.2007, c
