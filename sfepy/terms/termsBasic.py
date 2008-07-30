@@ -58,7 +58,7 @@ class IntegrateVolumeOperatorTerm( Term ):
 
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk_size, 1, 1, 1) )
+            bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
             status = vg.integrate_chunk( out, bf_t, chunk )
             yield out, chunk, 0
 
