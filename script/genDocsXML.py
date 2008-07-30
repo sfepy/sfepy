@@ -28,9 +28,6 @@ def to_list( slist, sec ):
         return toks
     return action
     
-##
-# 09.11.2007, c
-# 13.11.2007
 def create_bnf( slist, current_section ):
     
     colon = pp.Literal( ':' )
@@ -38,14 +35,12 @@ def create_bnf( slist, current_section ):
     section = pp.Combine( colon
                           + pp.Word( pp.alphas, pp.alphanums + '_ ' )
                           + colon )
-    section.set_parse_action( set_section( current_section ) )
-    section.set_name( 'section' )
-#    section.set_debug()
+    section.setParseAction( set_section( current_section ) )
+    section.setName( 'section' )
 
     text = pp.SkipTo( section | pp.StringEnd() )
-    text.set_parse_action( to_list( slist, current_section ) )
-    text.set_name( 'text' )
-#    text.set_debug()
+    text.setParseAction( to_list( slist, current_section ) )
+    text.setName( 'text' )
 
 ##     doc = pp.StringStart()\
 ##           + pp.ZeroOrMore( section + text )\
