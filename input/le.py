@@ -1,6 +1,19 @@
 # last revision: 25.02.2008
 filename_mesh = 'database/simple.vtk'
 
+###############################
+#
+# This file models a cylider that is fixed at both ends.  The input to
+# the problem is a specified displacement of 0.01 in the z direction
+# for points in the region labeld SomewhereTop.  This boundary
+# condition is named PerturbedSurface.  The region SomewhereTop is
+# specified as those nodes for which (z > 0.017) & (x > 0.01) & (x <
+# 0.08).  The output is the displacement for each node.  The material
+# is linear elastic and its properties are specified as Lame
+# parameters (see http://en.wikipedia.org/wiki/Lam%C3%A9_parameters)
+#
+###############################
+
 field_1 = {
     'name' : '3_displacement',
     'dim' : (3,1),
