@@ -1,23 +1,25 @@
+# -*- coding: utf-8 -*-
 # last revision: 25.02.2008
 filename_mesh = 'database/simple.vtk'
 
 ###############################
 #
-# This file models a cylider that is fixed at both ends.  The input to
-# the problem is a specified displacement of 0.01 in the z direction
-# for points in the region labeld SomewhereTop.  This boundary
-# condition is named PerturbedSurface.  The region SomewhereTop is
-# specified as those nodes for which (z > 0.017) & (x > 0.01) & (x <
-# 0.08).  The output is the displacement for each node.  The material
-# is linear elastic and its properties are specified as Lame
-# parameters (see http://en.wikipedia.org/wiki/Lam%C3%A9_parameters)
+# This file models a cylinder that is fixed at both ends. The input to the
+# problem is a specified displacement of 0.01 in the z direction for points in
+# the region labeled SomewhereTop.  This boundary condition is named
+# PerturbedSurface.  The region SomewhereTop is specified as those nodes for
+# which
+#              (z > 0.017) & (x > 0.01) & (x <  0.08).
+# The output is the displacement for each node, saved by default to
+# simple_out.vtk. The material is linear elastic and its properties are
+# specified as Lamé parameters (see
+# http://en.wikipedia.org/wiki/Lam%C3%A9_parameters)
 #
 ###############################
 
 field_1 = {
     'name' : '3_displacement',
     'dim' : (3,1),
-    'flags' : (),
     'domain' : 'Y',
     'bases' : {'Y' : '3_4_P1'}
 }
@@ -57,10 +59,6 @@ region_2 = {
     'name' : 'Right',
     'select' : 'nodes in (x > 0.099)'
 }
-region_100 = {
-    'name' : 'AlsoRight',
-    'select' : 'nodes in (x > 0.09)'
-}
 region_3 = {
     'name' : 'SomewhereTop',
     'select' : 'nodes in (z > 0.017) & (x > 0.01) & (x < 0.08)'
@@ -74,11 +72,6 @@ ebc_1 = {
 ebc_2 = {
     'name' : 'Right',
     'region' : 'Right',
-    'dofs' : {'u.all' : 0.0},
-}
-ebc_100 = {
-    'name' : 'ZeroVolume',
-    'region' : 'AlsoRight',
     'dofs' : {'u.all' : 0.0},
 }
 ebc_3 = {
@@ -117,7 +110,6 @@ solver_1 = {
     'check'     : 0,
     'delta'     : 1e-6,
     'is_plot'    : False,
-    'matrix'    : 'internal', # 'external' or 'internal'
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
