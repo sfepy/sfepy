@@ -15,9 +15,16 @@ import sys
 import tempfile
 from optparse import OptionParser
 
-import pexpect
-from lxml.etree import parse, SubElement, Element, ElementTree, Comment, dump
-from lxml.builder import E
+try:
+    import pexpect
+except ImportError:
+    raise ImportError( 'To generate docs both "pexpect" and "lxml" are needed!' )
+
+try:
+    from lxml.etree import parse, SubElement, Element, ElementTree, Comment, dump
+    from lxml.builder import E
+except ImportError:
+    raise ImportError( 'To generate docs both "pexpect" and "lxml" are needed!' )
 
 #sys.path.append( '.' )
 #from sfepy.base.progressbar import progressbar
