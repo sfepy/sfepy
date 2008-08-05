@@ -10,7 +10,7 @@ else:
             import scipy.splinalg.dsolve.umfpack as um
         else:
             import scipy.sparse.linalg.dsolve.umfpack as um
-    except ImportError:
+    except (ImportError, AttributeError):
         import scikits.umfpack as um
 
 um.configure( assume_sorted_indices = True )
