@@ -92,6 +92,18 @@ class Config( object ):
                 print('could not find core/include in '+ numpypath)
             return numpyfullpath
 
+    def opt_flags( self ):
+        if has_attr( site_cfg, 'opt_flags' ):
+            return site_cfg.opt_flags
+        else:
+            return '-g -O2 -fPIC -DPIC'
+
+    def link_flags( self ):
+        if has_attr( site_cfg, 'link_flags' ):
+            return site_cfg.link_flags
+        else:
+            return '-shared -fPIC -DPIC'
+
 usage = """Usage: %s option"""
 
 def main():
@@ -109,3 +121,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

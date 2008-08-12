@@ -1,38 +1,36 @@
 # 14.12.2004, c
-# last revision: 30.06.2008
+# last revision: 12.08.2008
 VERSION := 00.46.02
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
 
-ARCH	:= linux
-#ARCH	:= cygwin
+C++         := gcc
+CC          := gcc
+SWIG        := swig
+DATE        := date +%Y_%m_%d
 
-ifeq ($(ARCH),linux)
-  C++         := gcc
-  CC          := gcc
-  SWIG        := swig
-  DATE        := date +%Y_%m_%d
-
-#  OPTFLAGS     := -g -pg -fPIC -DPIC
-  OPTFLAGS     := -g -O2 -fPIC -DPIC
-  CARCHFLAGS   := -Wall -c
-  CARCHOUT     := -o
-  PYVER := $(shell script/config.py python_version)
-  ARCHLIB := $(shell script/config.py archlib)
-  NUMPYINCLUDE := $(shell script/config.py numpy_include)
-
-  PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYINCLUDE)
-#  SWIG_LIB     := -lswigpy
-
-  EXT_INCL     := $(PYTHON_INCL)
-endif
+CARCHFLAGS   := -Wall -c
+CARCHOUT     := -o
 
 #DEBUG_FLAGS := -DDEBUG_FMF -DDEBUG_MESH
 DEBUG_FLAGS := -DDEBUG_FMF
 #DEBUG_FLAGS :=
 
 ################ Do not edit below! ##############################
+
+#  OPTFLAGS     := -g -pg -fPIC -DPIC
+OPTFLAGS     := $(shell script/config.py opt_flags)
+PYVER := $(shell script/config.py python_version)
+ARCHLIB := $(shell script/config.py archlib)
+NUMPYINCLUDE := $(shell script/config.py numpy_include)
+
+PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYINCLUDE)
+#  SWIG_LIB     := -lswigpy
+
+EXT_INCL     := $(PYTHON_INCL)
+
+###############
 
 ISRELEASE := 1
 MODULES := eldesc examples input sfepy sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests

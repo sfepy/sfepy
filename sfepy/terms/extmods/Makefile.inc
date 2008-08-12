@@ -1,7 +1,7 @@
-# 14.12.2004, c
-# last revision: 31.03.2008
 FEMLOCDIR := sfepy/fem/extmods
 LOCDIR := sfepy/terms/extmods
+
+LINKFLAGS := $(shell script/config.py link_flags)
 
 SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
@@ -20,7 +20,7 @@ DEPSD := $(addprefix $(FEMLOCDIR)/,$(FEMDEPSD:.c=.o)) $(addprefix $(LOCDIR)/,$(D
 $(LOCDIR)/terms_wrap.c : $(FEMLOCDIR)/common.i $(FEMLOCDIR)/array.i $(FEMLOCDIR)/fmfield.i
 $(LOCDIR)/_terms.so: $(DEPSD)
 	@echo $(DEPSD)
-	$(CC) -shared -fPIC -DPIC $(DEPSD) $(SWIG_LIB) -o $@
+	$(CC) $(LINKFLAGS) $(DEPSD) $(SWIG_LIB) -o $@
 
 
 SRC_LIBSWIG += $(LOCDIR)/_terms.so

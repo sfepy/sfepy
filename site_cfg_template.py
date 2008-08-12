@@ -15,3 +15,14 @@ python_version = 'auto'
 # Numpy headers should be in
 # <numpy_prefix>/usr/<archlib>/python<python_version>/site-packages/numpy/core/include
 numpy_include = None
+
+# Flags passed to C compiler to compile C extension modules.
+# Below is a Linux gcc default.
+# For an Intel Mac, use
+# '-g -O2 -fPIC -DPIC -fno-strict-aliasing -fno-common -dynamic'
+opt_flags = '-g -O2 -fPIC -DPIC'
+
+# Flags passed to C compiler to link C extension modules.
+# Below is a Linux gcc default.
+# For an Intel Mac, use '-dynamiclib -undefined dynamic_lookup -fPIC -DPIC'
+link_flags = '-shared -fPIC -DPIC'

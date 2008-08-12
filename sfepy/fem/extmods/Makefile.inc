@@ -1,6 +1,6 @@
-# 14.12.2004, c
-# last revision: 11.01.2007
 LOCDIR := sfepy/fem/extmods
+
+LINKFLAGS := $(shell script/config.py link_flags)
 
 SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
@@ -16,21 +16,21 @@ DEPSB := $(addprefix $(LOCDIR)/,$(DEPSB:.c=.o))
 $(LOCDIR)/meshutils_wrap.c : $(LOCDIR)/common.i $(LOCDIR)/array.i
 $(LOCDIR)/_meshutils.so: $(DEPSB)
 	@echo $(DEPSB)
-	$(CC) -shared -fPIC -DPIC $(DEPSB) $(SWIG_LIB) -o $@
+	$(CC) $(LINKFLAGS) $(DEPSB) $(SWIG_LIB) -o $@
 
 DEPSC := fmfield.c geometry.c geometry_wrap.c geommech.c common_python.c
 DEPSC := $(addprefix $(LOCDIR)/,$(DEPSC:.c=.o))
 $(LOCDIR)/geometry_wrap.c : $(LOCDIR)/common.i $(LOCDIR)/array.i $(LOCDIR)/fmfield.i
 $(LOCDIR)/_geometry.so: $(DEPSC)
 	@echo $(DEPSC)
-	$(CC) -shared -fPIC -DPIC $(DEPSC) $(SWIG_LIB) -o $@
+	$(CC) $(LINKFLAGS) $(DEPSC) $(SWIG_LIB) -o $@
 
 DEPSE := fmfield.c fem.c fem_wrap.c sort.c common_python.c
 DEPSE := $(addprefix $(LOCDIR)/,$(DEPSE:.c=.o))
 $(LOCDIR)/fem_wrap.c : $(LOCDIR)/common.i $(LOCDIR)/array.i $(LOCDIR)/fmfield.i
 $(LOCDIR)/_fem.so: $(DEPSE)
 	@echo $(DEPSE)
-	$(CC) -shared -fPIC -DPIC $(DEPSE) $(SWIG_LIB) -o $@
+	$(CC) $(LINKFLAGS) $(DEPSE) $(SWIG_LIB) -o $@
 
 SRC_LIBSWIG += $(LOCDIR)/_meshutils.so $(LOCDIR)/_geometry.so $(LOCDIR)/_fem.so
 
