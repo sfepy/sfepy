@@ -178,7 +178,7 @@ class GradQTerm( Term ):
     ##
     # 30.07.2007, c
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dq_grad_scalar )
+        Term.__init__( self, region, name, sign, terms.dq_grad )
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state = self.get_args( **kwargs )

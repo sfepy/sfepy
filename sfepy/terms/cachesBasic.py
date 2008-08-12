@@ -116,7 +116,7 @@ class GradScalarDataCache( DataCache ):
 
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['grad'], history_sizes,
-                            terms.dq_grad_scalar )
+                            terms.dq_grad )
         
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
@@ -133,6 +133,19 @@ class GradScalarDataCache( DataCache ):
         ckey = self.g_to_c( group_indx )
 
         self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
+
+class GradVectorDataCache( GradScalarDataCache ):
+    name = 'grad_vector'
+    arg_types = ('state',)
+
+    def init_data( self, key, ckey, **kwargs ):
+        state, = self.get_args( **kwargs )
+
+        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        shape = (n_el, n_qp, dim, dim)
+
+#        print self.name, key, ckey, shape
+        DataCache.init_data( self, key, ckey, shape )
 
 class DivVectorDataCache( DataCache ):
     name = 'div_vector'

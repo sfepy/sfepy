@@ -40,14 +40,9 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dq_grad_scalar"
-/*!
-  @par Revision history:
-  - 30.07.2007, from dw_hdpm_cache()
-*/
-int32 dq_grad_scalar( FMField *out, FMField *state, int32 offset,
-		      VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP )
+#define __FUNC__ "dq_grad"
+int32 dq_grad( FMField *out, FMField *state, int32 offset,
+	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP )
 {
   int32 ii, nQP, ret = RET_OK;
   FMField *st = 0;
@@ -56,7 +51,7 @@ int32 dq_grad_scalar( FMField *out, FMField *state, int32 offset,
 
   nQP = vg->bfGM->nLev;
 
-  fmf_createAlloc( &st, 1, 1, nEP, 1 );
+  fmf_createAlloc( &st, 1, 1, nEP, out->nCol );
 
   for (ii = 0; ii < nEl; ii++) {
     FMF_SetCell( out, ii );
