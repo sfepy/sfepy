@@ -159,16 +159,16 @@ class DataCache( Struct ):
         else:
             return group_indx[0], group_indx[-1]
         
-    ##
-    # c: 19.10.2006, r: 13.12.2007
-    def __call__( self, key, group_indx, ih, **kwargs ):
+
+    def _call( self, key, group_indx, ih, **kwargs ):
         """group_indx : term.get_current_group() - term.region.name ignored
                   ih : history level index
                        0 .. current, 1, 2, 3...
         """
+#        print key, group_indx, ih, kwargs
         if not key in self.valid.keys():
-            print 'invalid cache key: %s in %s' % (key, self.keys())
-            raise ValueError
+            err = 'invalid cache key: %s not in %s' % (key, self.keys())
+            raise ValueError( err )
 
         ckey = self.g_to_c( group_indx )
         if not self.valid[key].has_key( ckey ):
@@ -187,3 +187,18 @@ class DataCache( Struct ):
         else:
             print ih, self.mem_sizes[key]
             raise NotImplementedError
+
+    def __call__( self, key, group_indx, ih, **kwargs ):
+        """group_indx : term.get_current_group() - term.region.name ignored
+                  ih : history level index
+                       0 .. current, 1, 2, 3...
+        """
+        if isinstance( key, str ):
+            out = self._call( key, group_indx, ih, **kwargs )
+
+        else:
+            assert isinstance( key, list )
+            out = [self._call( k, group_indx, ih, **kwargs ) for k in key]
+
+        return out
+    
