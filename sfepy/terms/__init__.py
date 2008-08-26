@@ -2,6 +2,7 @@ import extmods
 import terms
 from termsBasic import *
 from termsLinElasticity import *
+from termsHyperElasticity import *
 #from termsAcoustic import *
 from termsLaplace import *
 from termsPoint import *
@@ -22,6 +23,7 @@ try:
 except:
     pass
 
+from cachesFiniteStrain import *
 try:
     from cachesBasic import *
 except:

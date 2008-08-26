@@ -1,4 +1,5 @@
 from terms import *
+from utils import fix_mat_qp_shape
 
 ##
 # 12.04.2007, c
@@ -239,15 +240,6 @@ class VolumeTerm( Term ):
         volume = cache( 'volume', self.get_current_group(), 0,
                         region = self.char_fun.region, field = par.field )
         yield volume, 0, 0
-
-##
-# c: 05.03.2008, r: 05.03.2008
-def fix_mat_qp_shape( mat_qp, n_el ):
-    if mat_qp.ndim == 3:
-        mat_qp = mat_qp[...,nm.newaxis]
-    if mat_qp.shape[0] == 1:
-        mat_qp = nm.tile( mat_qp, (n_el, 1, 1, 1) )
-    return mat_qp
 
 ##
 # c: 06.05.2008

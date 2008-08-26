@@ -29,6 +29,8 @@ typedef struct FMField {
 
   int32 offset;
   int32 nColFull;
+
+  int32 stride;
 } FMField;
 
 /*!

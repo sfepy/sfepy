@@ -46,3 +46,13 @@ def choose_scalar_or_in_el( mat, dtype, fun1, fun2 ):
             out = mat, fun2
     return out
 
+##
+# c: 05.03.2008, r: 05.03.2008
+def fix_mat_qp_shape( mat_qp, n_el ):
+    """Ensures that mat_qp.shape is (n_el, n_qp, *, *)."""
+    if mat_qp.ndim == 3:
+        mat_qp = mat_qp[...,nm.newaxis]
+    if mat_qp.shape[0] == 1:
+        mat_qp = nm.tile( mat_qp, (n_el, 1, 1, 1) )
+    return mat_qp
+

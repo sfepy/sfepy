@@ -1246,7 +1246,6 @@ class Variable( Struct ):
 ##                 print nods
 ##                 print vv
                 eq = self.expand_nodes_to_equations( nods, dofs )
-
                 # Duplicates removed here...
                 eq_ebc[eq] = 1
                 if vv is not None: val_ebc[eq] = vv

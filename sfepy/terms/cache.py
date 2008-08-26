@@ -119,6 +119,9 @@ class DataCache( Struct ):
         for ih in xrange( self.mem_sizes[key] - 1 ):
             data[ckey].append( nm.empty_like( arr ) )
 
+    def init_datas( self, ckey, shapes ):
+        for key, shape in shapes.iteritems():
+            DataCache.init_data( self, key, ckey, shape )
     ##
     # 30.11.2006, c
     # 08.06.2007

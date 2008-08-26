@@ -47,11 +47,11 @@ int32 helper_pretend_FMField( FMField *out, PyObject *input )
   out->nAlloc = -1;
   fmf_pretend( out, nCell, nLev, nRow, nCol, (float64 *) obj->data );
   if (stride == 8) { // float64
-    // Use offset for stride, fem.i relies on that.
-    out->offset = 1;
+    // Set stride, fem.i relies on that.
+    out->stride = 1;
   } else if (stride == 16) { // real or imag of complex128
-    // Use offset for stride, fem.i relies on that.
-    out->offset = 2;
+    // Set stride, fem.i relies on that.
+    out->stride = 2;
     // FMF_SetCell() should work.
     out->cellSize *= 2;
   } else {

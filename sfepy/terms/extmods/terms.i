@@ -5,6 +5,7 @@
 #include "termsBasic.h"
 #include "termsLaplace.h"
 #include "termsLinElasticity.h"
+#include "termsHyperElasticity.h"
 #include "termsNavierStokes.h"
 #include "termsBiot.h"
 #include "termsSurface.h"
@@ -52,7 +53,17 @@
     (FMField *gradP2),
     (FMField *pressure),
     (FMField *pressure_qp),
-    (FMField *state_qp)
+    (FMField *state_qp),
+    (FMField *stress),
+    (FMField *tan_mod),
+    (FMField *mtxF),
+    (FMField *detF),
+    (FMField *vecCS),
+    (FMField *trC),
+    (FMField *in2C),
+    (FMField *vecInvCS),
+    (FMField *vecES),
+    (FMField *mat)
 };
 
 %apply (int32 *array, int32 n_row, int32 n_col) {
@@ -80,6 +91,29 @@ int32 dq_grad( FMField *out, FMField *state, int32 offset,
 int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );
+
+int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
+			   FMField *trC, FMField *in2C, FMField *vecInvCS,
+			   FMField *vecES,
+			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   int32 *conn, int32 nEl, int32 nEP );
+
+int32 dq_tl_he_stress_neohook( FMField *out, FMField *mat,
+			       FMField *detF, FMField *trC, FMField *vecInvCS );
+
+int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
+			    FMField *detF, FMField *vecInvCS );
+
+int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
+				FMField *detF, FMField *trC, FMField *vecInvCS );
+
+int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
+			     FMField *detF, FMField *vecInvCS );
+
+int32 dw_tl_he_rtm( FMField *out,
+		    FMField *stress, FMField *tan_mod, FMField *mtxF,
+		    VolumeGeometry *vg,
+		    int32 *elList, int32 elList_nRow, int32 isDiff );
 
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,

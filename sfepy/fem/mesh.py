@@ -425,7 +425,7 @@ class Mesh( Struct ):
                     mesh.conns.append( fdata[i4,-4:].copy() )
 
         if (ed is not None) or (fa is not None):
-            mesh.descs.append( {2 : '2_3', 3 : '3_4'}[meshIn.dim] )
+            mesh.descs.append( {2 : '2_3', 3 : '3_4'}[mesh_in.dim] )
             mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
             mesh.conns.append( make_point_cells( region.all_vertices, mesh_in.dim ) )
 

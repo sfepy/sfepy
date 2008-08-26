@@ -37,7 +37,7 @@ def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
 ##         ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
 ##         for ii in ir:
 ##             mtx_d[ii,ic] = vec[ii]
-            
+
         ir = mtx_a.indices[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]]
         mtx_d.data[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]] = vec[ir]
 
@@ -45,7 +45,8 @@ def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
     vec_r, status = evaluator.eval_residual( vec_x ) # Restore.
 
     tt = time.clock()
-    print mtx_a, mtx_d
+    print mtx_a, '.. analytical'
+    print mtx_d, '.. difference'
     plu.plot_matrix_diff( mtx_d, mtx_a, delta, ['difference', 'analytical'],
                         conf.check )
 

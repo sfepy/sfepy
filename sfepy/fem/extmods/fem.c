@@ -54,7 +54,7 @@ int32 assemble_vector_complex( FMField *vec_r, FMField *vec_i,
   float64 aux_r, aux_i;
   float64 *val_r, *val_i;
 
-  stride = vec_r->offset;
+  stride = vec_r->stride;
   val_r = FMF_PtrFirst( vec_r );
   val_i = FMF_PtrFirst( vec_i );
 
@@ -166,7 +166,7 @@ int32 assemble_matrix_complex( FMField *mtx_r, FMField *mtx_i,
   float64 aux_r, aux_i;
   float64 *val_r, *val_i;
 
-  stride = mtx_r->offset;
+  stride = mtx_r->stride;
   val_r = FMF_PtrFirst( mtx_r );
   val_i = FMF_PtrFirst( mtx_i );
 
