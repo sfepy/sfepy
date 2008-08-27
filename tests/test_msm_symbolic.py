@@ -201,7 +201,7 @@ class Test( TestCommon ):
 
         self.report( '  <= ', sol )
         sops.set_dim( dim )
-        val = eval( expr, sops.__dict__, env ).tostr()
+        val = str( eval( expr, sops.__dict__, env ) )
         self.report( '   =>', val )
         return val
 
