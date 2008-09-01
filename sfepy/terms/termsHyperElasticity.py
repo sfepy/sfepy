@@ -82,8 +82,10 @@ class HyperElasticBase( Term ):
 
 
 class NeoHookeanTerm( HyperElasticBase ):
-    r""":description: Hyperelastic neo-Hooekan term.
-    :definition: $\int_{\Omega} $
+    r""":description: Hyperelastic neo-Hookean term. Effective stress $S_{ij} =
+    \mu J^{-\frac{2}{3}}(\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})$.
+    :definition:
+    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
     """
     name = 'dw_tl_he_neohook'
     arg_types = ('material', 'virtual', 'state')
@@ -121,9 +123,54 @@ class NeoHookeanTerm( HyperElasticBase ):
 
         return out
 
+class MooneyRivlinTerm( HyperElasticBase ):
+    r""":description: Hyperelastic Mooney-Rivlin term. Effective stress $S_{ij}
+    = \kappa J^{-\frac{4}{3}} (C_{kk} \delta_{ij} - C_{ij} - \frac{2}{3
+    } I_2 C_{ij}^{-1})$.
+    :definition:
+    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
+    """
+    name = 'dw_tl_he_mooney_rivlin'
+    arg_types = ('material', 'virtual', 'state')
+    geometry = [(Volume, 'virtual')]
+    use_caches = {'finite_strain_tl' : [['state']],
+                  'mat_in_qp' : [['material']]}
+
+    family_data_names = ['detF', 'trC', 'invC', 'C', 'in2C']
+
+    def __init__( self, region, name = name, sign = 1 ):
+        HyperElasticBase.__init__( self, region, name, sign )
+
+        self.function.update( {
+            'stress' : terms.dq_tl_he_stress_mooney_rivlin,
+            'tangent_modulus' : terms.dq_tl_he_tan_mod_mooney_rivlin,
+        } )
+
+    def compute_crt_data( self, family_data, ap, vg, mode, **kwargs ):
+        mat = self.get_args( ['material'], **kwargs )[0]
+
+        mat_qp = self.mat_to_qp( mat, ap )
+
+        detF, trC, invC, vecC, in2C = family_data
+
+        if mode == 0:
+            out = nm.empty_like( invC )
+            fun = self.function['stress']
+        else:
+            shape = list( invC.shape )
+            shape[-1] = shape[-2]
+            out = nm.empty( shape, dtype = nm.float64 )
+            fun = self.function['tangent_modulus']
+
+        fun( out, mat_qp, detF, trC, invC, vecC, in2C )
+
+        return out
+
 class BulkPenaltyTerm( HyperElasticBase ):
-    r""":description: Hyperelastic neo-Hooekan term.
-    :definition: $\int_{\Omega} $
+    r""":description: Hyperelastic bulk penalty term. Stress $S_{ij}
+    = K(J-1)\; J C_{ij}^{-1}$.
+    :definition:
+    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
     """
     name = 'dw_tl_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')

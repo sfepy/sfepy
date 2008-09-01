@@ -24,7 +24,8 @@ material_1 = {
     'region' : 'Omega',
 
     'K'  : 1e3, # bulk modulus
-    'mu' : 20e0, # shear modulus
+    'mu' : 20e0, # shear modulus of neoHookean term
+    'kappa' : 10e0, # shear modulus of Mooney-Rivlin term
 }
 
 variables = {
@@ -32,20 +33,10 @@ variables = {
     'v' : ('test field', 'displacement', 'u'),
 }
 
-# Whole domain.
-region_1000 = {
-    'name' : 'Omega',
-    'select' : 'all',
-}
-
-# EBC regions.
-region_1 = {
-    'name' : 'Left',
-    'select' : 'nodes in (x < 0.001)'
-}
-region_2 = {
-    'name' : 'Right',
-    'select' : 'nodes in (x > 0.099)'
+regions = {
+    'Omega' : ('all', {}),
+    'Left' : ('nodes in (x < 0.001)', {}),
+    'Right' : ('nodes in (x > 0.099)', {}),
 }
 
 ##
@@ -82,6 +73,7 @@ integral_1 = {
 }
 equations = {
     'balance' : """dw_tl_he_neohook.i1.Omega( solid.mu, v, u )
+                 + dw_tl_he_mooney_rivlin.i1.Omega( solid.kappa, v, u )
                  + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
                  = 0""",
 }
