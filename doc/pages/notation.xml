@@ -2,7 +2,7 @@
 
 <p>
 <center><table><tgroup>
-<tbody>
+<tbody format = '|l|p{0.7\linewidth}|'>
   <row><entry><m>\Omega</m></entry><entry>volume (sub)domain</entry></row>
   <row><entry><m>\Gamma</m></entry><entry>surface (sub)domain</entry></row>
   <row><entry><m>t</m></entry><entry>time</entry></row>
@@ -20,12 +20,22 @@
   <row><entry><m>\ul{b}</m></entry><entry>vector parameter function</entry></row>
   <row><entry><m>\ull{e}(\ul{u})</m></entry><entry>Cauchy strain tensor
     (<m>\frac{1}{2}((\nabla u) + (\nabla u)^T)</m>)</entry></row>
+  <row><entry><m>\ull{F}</m></entry><entry>deformation gradient<m>F_{ij} =
+  \pdiff{x_i}{\pd X_j} </m></entry></row>
+  <row><entry><m>J</m></entry><entry><m>\det(F)</m></entry></row>
+  <row><entry><m>\ull{C}</m></entry><entry>right Cauchy-Green deformation
+  tensor <m>C = F^T F</m></entry></row>
+  <row><entry><m>\ull{E}(\ul{u})</m></entry><entry>Green strain tensor
+    <m>E_{ij} = \frac{1}{2}(\pdiff{u_i}{x_j} + \pdiff{u_j}{x_i} +
+    \pdiff{u_m}{x_i}\pdiff{u_m}{x_j})</m></entry></row>
+  <row><entry><m>\ull{S}</m></entry><entry>second Piola-Kirchhoff stress
+  tensor</entry></row>
   <row><entry><m>\ul{f}</m></entry><entry>vector volume forces</entry></row>
   <row><entry><m>f</m></entry><entry>scalar volume force (source)</entry></row>
   <row><entry><m>\rho</m></entry><entry>density</entry></row>
   <row><entry><m>\nu</m></entry><entry>kinematic viscosity</entry></row>
   <row><entry><m>c</m></entry><entry>any constant</entry></row>
-  <row><entry><m>\delta_{ij}$, $\ull{I}</m></entry><entry>Kronecker delta,
+  <row><entry><m>\delta_{ij}, \ull{I}</m></entry><entry>Kronecker delta,
   identity matrix</entry></row>
 </tbody></tgroup></table></center>
 </p>
@@ -37,7 +47,7 @@ The suffix "<m>_0</m>" denotes a quatity related to a previous time step.
 <p>
 Term names are prefixed according to the following conventions:
 <center><table><tgroup>
-<tbody>
+<tbody format = '|l|l|p{0.6\linewidth}|'>
   <row><entry>dw</entry><entry>discrete weak</entry>
     <entry>terms having a virtual (test) argument and zero or more unknown
     arguments, used for FE assembling</entry></row>

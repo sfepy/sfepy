@@ -71,6 +71,7 @@ begining = r"""
 \def\Hcal{\mathcal{H}}
 \def\Fcal{\mathcal{F}}
 \def\Gcal{\mathcal{G}}
+\def\pd{\partial}
 \def\figDir{../doc/tex/figures}
 \newcommand{\sfepy}{SfePy}
         </mathinclude>
@@ -173,17 +174,17 @@ def typeset_item_table( fd, item_table ):
     current_section = [None]
     bnf = create_bnf( sec_list, current_section )
 
-    fd.write( r'<section><title>_list of all terms</title>' )
+    fd.write( r'<section><title>List of all terms</title>' )
     fd.write( '\n\n' )
 
     fd.write( '<center><table><tgroup>\n' )
-    fd.write( '<tbody>\n' )
+    fd.write( '<tbody format="|l|l|p{0.6\linewidth}|">\n' )
 
     fd.write( '<row><entry>section</entry><entry>name</entry>'
-              '<entry format="p{5cm}">definition</entry></row>\n' )
+              '<entry>definition</entry></row>\n' )
     fd.write( '<row><entry></entry><entry></entry><entry></entry></row>\n' )
 
-    row_format = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry format="p{5cm}">%s</entry></row>\n'
+    row_format = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry>%s</entry></row>\n'
 
     keys = item_table.keys()
     keys.sort()
@@ -202,7 +203,7 @@ def typeset_item_table( fd, item_table ):
             print dd
 ##             print replace_dollars( dd )
             fd.write( row_format % (item_class.name, item_class.name,
-                                   replace_dollars( dd )) )
+                                    replace_dollars( dd )) )
 
     fd.write( '</tbody></tgroup></table></center>\n' )
     fd.write( r'</section>' )
@@ -226,7 +227,7 @@ def typeset( fd, items_per_section, item_table, typeset_syntax ):
             fd.write( '\n<section id="%s">\n    <title>%s</title>\n'\
                       % (name, name) )
             fd.write( '<p>\n' )
-            fd.write( r'<em>_class</em>: %s' % item_class.__name__ )
+            fd.write( r'<em>Class</em>: %s' % item_class.__name__ )
             fd.write( '</p>\n' )
 
             doc = item_class.__doc__

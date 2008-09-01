@@ -37,11 +37,14 @@ class SfePyDocConverter(LaTeXConverter):
         self.check_zero_tail(node.tail)
         r = "\n"
         body = node.find("tgroup").find("tbody")
-        cols = "|"
         ncolumns = len(body.find("row"))
-        for i in range(ncolumns-1):
-            cols += " l | "
-        cols += "p{5cm} |"
+        if 'format' in body.attrib:
+            cols = body.attrib['format']
+        else:
+            cols = "|"
+            for i in range(ncolumns-1):
+                cols += " l | "
+            cols += "p{5cm} |"
         r += r"\renewcommand{\arraystretch}{1.4}" + '\n'
         r += "\\begin{longtable}{%s}\n" % cols
         r += r"""
