@@ -31,8 +31,8 @@ def save_only( conf, save_names, problem = None ):
             ts = None
         try:
             problem.variables.equation_mapping( conf.ebcs, conf.epbcs,
-                                               problem.domain.regions, ts,
-                                               conf.funmod )
+                                                problem.domain.regions, ts,
+                                                conf.funmod )
         except Exception, e:
             output( 'cannot make equation mapping!' )
             output( 'reason: %s' % e )
@@ -126,31 +126,35 @@ def time_step_function( ts, state0, problem, data ):
 
 def solve_evolutionary_op( problem, options,
                            save_results = True, return_history = False,
-                           post_process_hook = None ):
+                           post_process_hook = None, step_hook = None ):
     """TODO  return_history"""
     
     data = {}
     time_solver = problem.get_time_solver( step_fun = time_step_function,
-                                        step_args = (problem, data) )
+                                           step_args = (problem, data) )
 
     ofn_trunk, suffix, is_save = prepare_save_data( time_solver.ts,
-                                                problem.conf, options )
+                                                    problem.conf, options )
 
     state0 = problem.create_state_vector()
     ii = 0
     for ts, state in time_solver( state0 ):
 
+        if step_hook is not None:
+            step_hook( problem, ts, state )
+
         if save_results and (is_save[ii] == ts.step):
             problem.save_state( ofn_trunk + suffix % ts.step, state,
                                 post_process_hook = post_process_hook )
-            problem.advance( ts )
             ii += 1
+
+        problem.advance( ts )
     return state, data
 
 ##
 # c: 13.06.2008, r: 13.06.2008
 def solve_stationary_op( problem, options, save_results = True, ts = None,
-                       post_process_hook = None ):
+                         post_process_hook = None ):
     data = {}
     problem.time_update( ts )
     state = problem.solve()
@@ -161,7 +165,7 @@ def solve_stationary_op( problem, options, save_results = True, ts = None,
         else:
             ofn_trunk = io.get_trunk( problem.conf.filename_mesh ) + '_out'
         problem.save_state( ofn_trunk + '.vtk', state,
-                           post_process_hook = post_process_hook )
+                            post_process_hook = post_process_hook )
 
     return state, data
     
@@ -175,14 +179,15 @@ def solve_direct( conf, options ):
         ofn_trunk = io.get_trunk( conf.filename_mesh )
 
     opts = conf.options
-    if hasattr( opts, 'post_process_hook' ) and opts.post_process_hook is not None:
+    if hasattr( opts, 'post_process_hook' ) and \
+           opts.post_process_hook is not None:
         # User postprocessing.
         post_process_hook = getattr( conf.funmod, opts.post_process_hook )
     else:
         post_process_hook = None
 
     save_names = Struct( ebc = None, regions = None, field_meshes = None,
-                        region_field_meshes = None )
+                         region_field_meshes = None )
     if options.save_ebc:
         save_names.ebc = ofn_trunk + '_ebc.vtk'
     if options.save_regions:
@@ -208,11 +213,11 @@ def solve_direct( conf, options ):
         ##
         # Time-dependent problem.
         state, data = solve_evolutionary_op( pb, options,
-                                           post_process_hook = post_process_hook )
+                                             post_process_hook = post_process_hook )
     else:
         ##
         # Stationary problem.
         state, data = solve_stationary_op( pb, options,
-                                         post_process_hook = post_process_hook )
+                                           post_process_hook = post_process_hook )
 
     return pb, state, data
