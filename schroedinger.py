@@ -416,7 +416,7 @@ def main():
                     raise
             if options.dim2:
                 print "Dimension: 2"
-                os.system("cp database/square.geo tmp/mesh.geo")
+                os.system("cp database/quantum/square.geo tmp/mesh.geo")
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
                 os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
             else:
