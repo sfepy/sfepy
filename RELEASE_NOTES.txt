@@ -1,5 +1,28 @@
 # created: 20.07.2007 (-1)
-# last revision: 01.07.2008
+# last revision: 02.09.2008
+
+from 00.46.02 to 00.50.00:
+==========================
+- finite strain elasticity: neo-Hookean, Mooney-Rivlin materials
+  - total Lagrangian (TL) formulation
+  - geometric data via finite_strain_tl DataCache
+- solving problems in complex numbers
+- generalized equations to allow linear combination of terms
+  - example: """2 * aterm.i1.Omega( v, u ) = - 3.0 * bterm.i1.Omega2( v, u )""" 
+- run-time type of state term arguments
+  - removed all *_r terms, now useless
+- 'elements by function( domain )' region selector
+- refactoring to follow Python coding style guidelines
+- history support in variables
+- MeshIO.read_dimension() to quickly get dimension in an input file
+- improved site_cfg_template.py
+- improved schroedinger.py
+- new terms:
+  - de_average_variable (average a variable in elements)
+  - dw_surface_integrate (integrate over surface operator)
+  - dw_tl_bulk_penalty (bulk penalty in TL formulation)
+  - dw_tl_he_neohook (neo-Hooekan term in TL formulation)
+  - dw_tl_he_mooney_rivlin (Mooney-Rivlin term in TL formulation)
 
 from 00.41.03 to 00.46.02:
 ==========================

@@ -1,6 +1,6 @@
 # 14.12.2004, c
 # last revision: 12.08.2008
-VERSION := 00.46.02
+VERSION := 00.50.00
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
