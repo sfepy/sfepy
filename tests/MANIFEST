@@ -2,6 +2,7 @@ sympy_operators.py
 test_assembling.py
 test_base.py
 test_elasticity_small_strain.py
+test_input_hyperelastic.py
 test_input_kostka.py
 test_input_le.py
 test_input_navier_stokes.py
