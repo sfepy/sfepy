@@ -219,7 +219,7 @@ def main():
             legend.append( key )
 
         pylab.legend( legend, loc = 2 )
-        pylab.xlabel( 'pressure [kPa]' )
+        pylab.xlabel( 'tension [kPa]' )
         pylab.ylabel( 'displacement [mm]' )
         pylab.grid( True )
 
