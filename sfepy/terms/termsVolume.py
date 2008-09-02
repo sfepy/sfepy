@@ -33,7 +33,11 @@ class LinearVolumeForceTerm( Term ):
             if mat.ndim == 1:
                 mat = nm.ascontiguousarray( mat[...,nm.newaxis] )
         else:
-            mat = mat[...,nm.newaxis,nm.newaxis]
+            try:
+                mat = mat[...,nm.newaxis,nm.newaxis]
+            except TypeError: # Old numpy...
+                mat = nm.array( mat, ndmin = 2 )
+
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
                        mat = mat, ap = ap,
                        assumed_shapes = [(n_el, n_qp, vdim, 1)],
