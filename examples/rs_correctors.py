@@ -11,23 +11,23 @@ def define_regions( filename ):
     regions = {}
     is3d = False
     
-    regions['y'] = ('all', {})
+    regions['Y'] = ('all', {})
 
     eog = 'elements of group %d'
-    if filename.find( 'osteon_t1' ) >= 0:
+    if filename.find( 'osteonT1' ) >= 0:
         mat_ids = [11, 39, 6, 8, 27, 28, 9, 2, 4, 14, 12, 17, 45, 28, 15]
-        regions['_ym'] = (' +e '.join( (eog % im) for im in  mat_ids ), {})
+        regions['Ym'] = (' +e '.join( (eog % im) for im in  mat_ids ), {})
         wx = 0.865
         wy = 0.499
 
-    regions['_yc'] = ('r.Y -e r.Ym', {})
+    regions['Yc'] = ('r.Y -e r.Ym', {})
 
     # Sides.
-    regions['_left'] = ('nodes in (x < -%.3f)' % wx, {})
-    regions['_right'] = ('nodes in (x > %.3f)' % wx, {})
-    regions['_bottom'] = ('nodes in (y < -%.3f)' % wy, {})
-    regions['_top'] = ('nodes in (y > %.3f)' % wy, {})
-    regions['_corners'] = ("""nodes in
+    regions['Left'] = ('nodes in (x < -%.3f)' % wx, {})
+    regions['Right'] = ('nodes in (x > %.3f)' % wx, {})
+    regions['Bottom'] = ('nodes in (y < -%.3f)' % wy, {})
+    regions['Top'] = ('nodes in (y > %.3f)' % wy, {})
+    regions['Corners'] = ("""nodes in
                             ((x < -%.3f) & (y < -%.3f))
                           | ((x >  %.3f) & (y < -%.3f))
                           | ((x >  %.3f) & (y >  %.3f))
@@ -54,16 +54,16 @@ def get_pars( ts, coor, region, ig, mat_ids = [] ):
     mu = 0.3
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
     oot = nm.outer( o, o )
-    out['d'] = lam * oot + mu * nm.diag( o + 1.0 )
+    out['D'] = lam * oot + mu * nm.diag( o + 1.0 )
 
     if ig not in matrix_igs: # channels
-        out['d'] *= 1e-1
+        out['D'] *= 1e-1
 
     return out
     
 ##
 # Mesh file.
-filename_mesh = 'examples/osteon_t1_11.mesh'
+filename_mesh = 'examples/osteonT1_11.mesh'
 
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
@@ -252,7 +252,7 @@ def  solve_steady_correctors_rs( problem, equations, variables, pis,
         for ic in range( dim ):
             pi = pis[ir,ic]
             # Non-state variables must be assigned manually.
-            problem.variables['_pi'].data_from_data( pi )
+            problem.variables['Pi'].data_from_data( pi )
 
             state = problem.create_state_vector()
             problem.apply_ebc( state )
@@ -293,13 +293,13 @@ def coef_e( problem, corrs_rs, pis ):
         omega1 = corrs_rs.states_rs[irr,icr][indx]
         pi1 = pis[irr,icr] + omega1
         # Non-state variables must be assigned manually.
-        problem.variables['_pi1'].data_from_data( pi1 )
+        problem.variables['Pi1'].data_from_data( pi1 )
             
         for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
             omega2 = corrs_rs.states_rs[irc,icc][indx]
             pi2 = pis[irc,icc] + omega2
             # Non-state variables must be assigned manually.
-            problem.variables['_pi2'].data_from_data( pi2 )
+            problem.variables['Pi2'].data_from_data( pi2 )
 
             # Variables have their data, so evaluate the term.
             val = eval_term_op( None, coef_term, problem )
