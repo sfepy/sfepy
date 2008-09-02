@@ -186,7 +186,8 @@ class VolumeDataCache( DataCache ):
     def update( self, key, group_indx, ih, **kwargs ):
         region, field = self.get_args( **kwargs )
         ckey = self.g_to_c( group_indx )
-        self.data[key][ckey][ih] = region.get_volume( field, ckey, update = True )
+        self.data[key][ckey][ih] = region.get_volume( field, ckey,
+                                                      update = True )
 
 
 class MatInQPDataCache( DataCache ):
@@ -207,19 +208,19 @@ class MatInQPDataCache( DataCache ):
                 ig = ckey[1]
                 rshape = ap.region.shape[ig]
                 if rshape.n_vertex == rshape.n_cell:
-                    output( 'cannot determine mode_in! (%d nodes, %d cells '
-                            'material data shape: %s)'\
-                            % (rshape.n_vertex, rshape.n_cell, mat.shape) )
-                    raise ValueError
+                    msg = ('cannot determine mode_in! (%d nodes, %d cells ' +
+                           'material data shape: %s)') \
+                           % (rshape.n_vertex, rshape.n_cell, mat.shape)
+                    raise ValueError( msg )
                 if mat.shape[0] == rshape.n_vertex:
                     mode_in = 'vertex'
                 elif mat.shape[0] == rshape.n_cell:
                     mode_in = 'element_avg'
                 else:
-                    output( 'cannot determine mode_in! (%d nodes, %d cells '
-                            'material data shape: %s)'\
-                            % (rshape.n_vertex, rshape.n_cell, mat.shape) )
-                    raise ValueError
+                    msg = ('cannot determine mode_in! (%d nodes, %d cells ' +
+                           'material data shape: %s)') \
+                           % (rshape.n_vertex, rshape.n_cell, mat.shape)
+                    raise ValueError( msg )
             elif mat.ndim == 2:
                 ashape = assumed_shapes[0]
                 if ashape[2:] != mat.shape:
