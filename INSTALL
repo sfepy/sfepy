@@ -1,4 +1,4 @@
-# c: 19.01.2007, r: 30.06.2008
+# c: 19.01.2007, r: 02.09.2008
 
 This is not for faint of the heart!
 
@@ -12,7 +12,8 @@ Dependencies:
 For example in Debian:
   $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
 
-Not tested on Windows, I don't have them.
+SfePy is known to work on various flavours of Linux, and on Intel Macs. Not
+tested on Windows.
 
 Compiling:
 ----------
@@ -23,7 +24,7 @@ Compiling:
 
 Installation:
 -------------
-None. Run the executable script 'simple.py' in the top-level directory of the
+None. Run the executable script './simple.py' in the top-level directory of the
 distribution (TOPDIR).
 
 Examples:
@@ -32,14 +33,20 @@ Examples:
 './simple.py input/poisson.py' ... creates simple.vtk
 './simple.py input/pfdpm_permeability.py' ... creates perf_symm944t.vtk
 './eigen.py -p input/phono.py' ... creates mesh_circ21_eigs.txt, mesh_circ21.vtk
-'./schroedinger.py --hydrogen' ... creates t.1_eigs.txt, t.1.vtk
+'./schroedinger.py --2d --mesh'
+'./schroedinger.py --2d --hydrogen'
 './findSurf.py database/t.1.node -' ... creates surf_t.1.mesh
 './runTests.py' ... see below
+
+Stand-alone examples:
+
+'python examples/rs_correctors.py'
+'python examples/compare_elastic_materials.py'
 
 Testing:
 --------
 
-Run './runTests.py' or './runTests.py --filter-less in TOPDIR.
+Run './runTests.py' or './runTests.py --filter-less' in TOPDIR.
 
 Tests that save results save them into TOPDIR/output-tests directory. View the
 results (*.vtk) with a VTK-capable viewer (e.g. paraview, mayavi2).
@@ -50,6 +57,9 @@ If you get some failures it probably means some optional packages are not
 installed. Also be sure to have a recent version of Numpy and SciPy installed
 (SVN version are the best bet). Verify also your pytables (hdf5) installation
 (possible test_io.py failures).
+
+To debug a failure, run './runTests.py --debug'.
+See also './runTests.py --help' for further options.
 
 Documentation:
 --------------
