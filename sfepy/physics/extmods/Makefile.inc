@@ -23,7 +23,7 @@ DEPSF := $(addprefix $(LOCDIR)/,$(DEPSF:.c=.o))
 $(LOCDIR)/dft_wrap.c:
 $(LOCDIR)/_dft.so: $(DEPSF)
 	@echo $(DEPSF)
-	$(CC) $(LINKFLAGS) $(DEPSF) $(SWIG_LIB) /usr/lib/libf2c.a -o $@
+	$(CC) $(LINKFLAGS) $(DEPSF) $(SWIG_LIB) -o $@
 
 SRC_LIBSWIG += $(LOCDIR)/_dft.so
 
