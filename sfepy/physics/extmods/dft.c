@@ -1,3 +1,6 @@
+#include <math.h>
+#include "dft.h"
+
 double max(double a, double b)
 {
     if (a > b)
@@ -6,7 +9,7 @@ double max(double a, double b)
         return b;
 }
 
-void vxc(double n, double *vxc, int relat)
+double vxc(double n, int relat)
 {
     double DTH,A,B,C,Y0,Q,VXLDA,RS,Y,Y2, YYY,YY0;
     double Q2YB;
@@ -15,8 +18,7 @@ void vxc(double n, double *vxc, int relat)
     double THRD=0.3333333333333333;
 
     if (n == 0) {
-        *vxc = 0.;
-        return;
+        return 0.0;
     }
     DTH=pow(max(0.,n),THRD);
     A=.0621814;
@@ -52,5 +54,5 @@ void vxc(double n, double *vxc, int relat)
         dRdbeta = -3*A*dAdbeta;
         VXLDA = VXLDA*R+VXLDA*dRdbeta*beta/4;
     }
-    *vxc = VXLDA+VCCA;
+    return VXLDA+VCCA;
 }

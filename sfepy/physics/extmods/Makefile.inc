@@ -11,13 +11,6 @@ SRC_OBJSWIGC := $(SRC_SRCSWIG:.i=_wrap.c)
 SRC_OBJSWIG := $(SRC_OBJSWIGC:.c=.o)
 SRC_OBJSWIGPY := $(SRC_SRCSWIG:.i=.py)
 
-#DEPSA := dft.f
-#DEPSA := $(addprefix $(LOCDIR)/,$(DEPSA))
-#$(LOCDIR)/dft.so: $(DEPSA)
-#	@echo $(DEPSA)
-#	f2py --fcompiler=gnu95 --f77flags="-W -Wall -fdefault-real-8" -c -m dft $(DEPSA)
-#	mv dft.so $@
-
 DEPSF := dft.c dft_wrap.c
 DEPSF := $(addprefix $(LOCDIR)/,$(DEPSF:.c=.o))
 $(LOCDIR)/dft_wrap.c:
