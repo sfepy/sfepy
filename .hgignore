@@ -18,6 +18,7 @@ sfepy/fem/extmods/geometry.py
 sfepy/fem/extmods/meshutils.py
 sfepy/terms/extmods/terms.py
 sfepy/fem/extmods/version.h
+sfepy/physics/extmods/dft.py
 VERSION
 tmp/terms.*
 samples/*
