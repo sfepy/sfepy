@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 12.08.2008
+# last revision: 07.09.2008
 VERSION := 00.50.00
 PROJECTNAME := sfepy
 
@@ -33,7 +33,7 @@ EXT_INCL     := $(PYTHON_INCL)
 ###############
 
 ISRELEASE := 1
-MODULES := eldesc examples input sfepy sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
+MODULES := eldesc examples input sfepy sfepy/applications sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
 ifndef ISRELEASE
   MODULES += sfepy/optimize
 else

@@ -87,6 +87,7 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 ##
 # c: 08.04..2008, r: 08.04..2008
 class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
+    """Solver for symmetric problems."""
     name = 'eig.sgscipy'
     
     ##

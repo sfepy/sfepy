@@ -11,6 +11,7 @@ auto/*
 *.mesh
 *.txt
 *.pdf
+*.png
 
 # Generated files:
 sfepy/fem/extmods/fem.py

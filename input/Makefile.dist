@@ -5,7 +5,7 @@ CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc MANIFEST
-DISTDIRS := bones pfdpm quantum
+DISTDIRS := bones pfdpm phono quantum
 
 RELDISTFILES := Makefile.dist Makefile.inc MANIFEST $(shell cat MANIFEST)
 RELDISTDIRS := $(DISTDIRS)

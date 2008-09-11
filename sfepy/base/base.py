@@ -49,6 +49,8 @@ def import_file( filename ):
 prefix = 'sfepy:'
 def set_output_prefix( prefix  = 'sfepy:' ):
     globals()['prefix'] = prefix
+def get_output_prefix():
+    return prefix
 
 ##
 # c: 05.06.2006, r: 02.04.2008
@@ -429,6 +431,9 @@ def insert_method( instance, function ):
     setattr( instance, function.__name__,
              UnboundMethodType( function, instance, instance.__class__ ) )
 
+def insert_as_static_method( cls, name, function ):
+    setattr( cls, name, staticmethod( function ) )
+
 ##
 # 09.08.2006, c
 def invert_dict( d, is_val_tuple = False ):
@@ -470,8 +475,7 @@ def get_default( arg, default, msg_if_none = None ):
         out = arg
 
     if (out is None) and (msg_if_none is not None):
-        output( msg_if_none )
-        raise ValueError
+        raise ValueError( msg_if_none )
 
     return out
 

@@ -106,8 +106,8 @@ def split_range( n_item, step ):
 
 ##
 # c: 25.09.2007, r: 08.04.2008
-def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True, return_time = None,
-         method = 'eig.scipy', **ckwargs ):
+def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
+         return_time = None, method = 'eig.scipy', **ckwargs ):
 
     kwargs = {'name' : 'aux', 'kind' : method}
     kwargs.update( ckwargs )

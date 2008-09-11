@@ -151,8 +151,6 @@ class MeditMeshIO( MeshIO ):
             fd.close()
             return dim
 
-    ##
-    # c: 17.02.2004, r: 03.07.2008
     def read( self, mesh, **kwargs ):
         dim, fd  = self.read_dimension( ret_fd = True )
 
@@ -168,35 +166,38 @@ class MeditMeshIO( MeshIO ):
             except:
                 output( "reading " + fd.name + " failed!" )
                 raise
-            if (line[:-1] == 'Vertices'):
+            ls = line.strip()
+            if (ls == 'Vertices'):
                 num = int( read_token( fd ) )
                 nod = read_array( fd, num, dim + 1, nm.float64 )
     ##                 print nod
-            elif (line[:-1] == 'Tetrahedra'):
+            elif (ls == 'Tetrahedra'):
                 num = int( read_token( fd ) )
                 conns_in.append( read_array( fd, num, 5, nm.int32 ) )
                 conns_in[-1][:,:-1] -= 1
                 descs.append( '3_4' )
-            elif (line[:-1] == 'Hexahedra'):
+            elif (ls == 'Hexahedra'):
                 num = int( read_token( fd ) )
                 conns_in.append( read_array( fd, num, 9, nm.int32 ) )
                 conns_in[-1][:,:-1] -= 1
                 descs.append( '3_8' )
-            elif (line[:-1] == 'Triangles'):
+            elif (ls == 'Triangles'):
                 num = int( read_token( fd ) )
                 conns_in.append( read_array( fd, num, 4, nm.int32 ) )
                 conns_in[-1][:,:-1] -= 1
                 descs.append( '2_3' )
-            elif (line[:-1] == 'Quadrilaterals'):
+            elif (ls == 'Quadrilaterals'):
                 num = int( read_token( fd ) )
                 conns_in.append( read_array( fd, num, 5, nm.int32 ) )
                 conns_in[-1][:,:-1] -= 1
                 descs.append( '2_4' )
+            elif ls == 'End':
+                break
             elif line[0] == '#':
                 continue
             else:
-                output( "corrupted file (line '%s')!" % line )
-                raise ValueError
+                msg = "corrupted file (line '%s')!" % line
+                raise ValueError( msg )
         fd.close()
 
         conns_in, mat_ids = sort_by_mat_id( conns_in )

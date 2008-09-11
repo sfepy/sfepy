@@ -5,11 +5,6 @@ from sfepy.base.la import eig
 from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
 
-##
-# 26.09.2007, c
-# 27.09.2007
-# 01.10.2007
-# 02.10.2007
 def process_options( options, n_eigs ):
     try:
         save = options.save_eig_vectors
@@ -29,6 +24,11 @@ def process_options( options, n_eigs ):
         freq_margins = 0.01 * nm.array( options.freq_margins, dtype = nm.float64 )
     except:
         freq_margins = nm.array( (0.05, 0.05), dtype = nm.float64 )
+
+    try:
+        fixed_eig_range = options.fixed_eig_range
+    except:
+        fixed_eig_range = None
 
     try:
         freq_step = 0.01 * options.freq_step
@@ -51,6 +51,11 @@ def process_options( options, n_eigs ):
         teps = 1e-4
 
     try:
+        teps_rel = options.teps_rel
+    except:
+        teps_rel = True
+
+    try:
         eig_vector_transform = options.eig_vector_transform
     except:
         eig_vector_transform = None
@@ -65,6 +70,45 @@ def process_options( options, n_eigs ):
     except:
         squared = True
 
+    try:
+        plot_options = options.plot_options
+    except:
+        plot_options = {
+            'show' : True,
+            'legend' : False,
+        }
+
+    try:
+        fig_name = options.fig_name
+    except:
+        fig_name = None
+
+    default_plot_rsc =  {
+        'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
+        'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
+        'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
+        'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--' },
+        'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-' },
+        'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
+        'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
+        'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
+        'params' : {'axes.labelsize': 'large',
+                    'text.fontsize': 'large',
+                    'legend.fontsize': 'large',
+                    'xtick.labelsize': 'large',
+                    'ytick.labelsize': 'large',
+                    'text.usetex': False},
+    }
+    try:
+        plot_rsc = options.plot_rsc
+        # Missing values are set to default.
+        for key, val in default_plot_rsc.iteritems():
+            if not key in plot_rsc:
+                plot_rsc[key] = val
+    except:
+        plot_rsc = default_plot_rsc
+    del default_plot_rsc
+    
     return Struct( **locals() )
 
 ##
@@ -76,48 +120,50 @@ def get_method( options ):
         method = 'eig.sgscipy'
     return method
 
-##
-# created:       27.09.2007
-# last revision: 08.04.2008
-def compute_average_density( pb, mat_name1, mat_name2 ):
+def compute_average_density( pb, volume_term, region_to_material ):
 
-    mat1 = pb.materials[mat_name1]
-    region_name = mat1.region.name
-    vol1 = eval_term_op( None, 'd_volume.i1.%s( u1 )' % region_name, pb )
-    mat2 = pb.materials[mat_name2]
-    region_name = mat2.region.name
-    vol2 = eval_term_op( None, 'd_volume.i1.%s( u )' % region_name, pb )
-    output( 'volumes:', vol1, vol2, vol1 + vol2 )
-    output( 'densities:', mat1.density, mat2.density )
+    average_density = 0.0
+    total_volume = 0.0
+    for region_name, mat_name in region_to_material.iteritems():
+        mat = pb.materials[mat_name]
+        assert region_name == mat.region.name
+        vol = eval_term_op( None, volume_term % region_name, pb )
+        density = mat.density
+        output( 'region %s: volume %f, density %f' % (region_name,
+                                                      vol, density ) )
+        average_density += vol * density
+        total_volume += vol
+    output( 'total volume:', total_volume )
 
-    return mat1.density * vol1 + mat2.density * vol2
+    average_density /= total_volume
 
-##
-# c: 26.09.2007, r: 08.04.2008
-def compute_mass_components( pb, mtx_phi, threshold,
-                           transform = None, pbar = None ):
-    """Eigenmomenta..."""
+    return average_density
+
+def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
+                          mtx_phi, threshold, threshold_is_relative,
+                          transform = None, pbar = None ):
+    """Eigenmomenta.
+
+    Valid == True means an eigenmomentum above threshold."""
     dim = pb.domain.mesh.dim
     n_dof, n_eigs = mtx_phi.shape
     n_nod = n_dof / dim
-    
-    term = pb.equations[0].terms[0]
-    mat_name = term.get_material_names()[0]
-    mat = pb.materials[mat_name]
-    
-    uc_name = 'uc'
-    d_name = 'd'
-    dot_term = 'd_volume_dot.i1.%s( %s, %s )' % (mat.region.name, d_name, uc_name)
 
-    density = nm.empty( (n_dof,), dtype = nm.float64 )
-    density.fill( mat.density )
-    pb.variables[d_name].data_from_data( density, slice( 0, n_dof ) )
-    
+    u_name = conf_eigenmomentum['var']
+    rnames = conf_eigenmomentum['regions']
+    term = conf_eigenmomentum['term']
+    tt = []
+    for rname in rnames:
+        mat = pb.materials[region_to_material[rname]]
+        tt.append( term % (mat.density, rname, u_name) )
+    em_eq = ' + '.join( tt )
+    output( 'eigenmomentum equation:', em_eq )
+
     masses = nm.empty( (n_eigs, dim), dtype = nm.float64 )
 
     if pbar is not None:
         pbar.init( n_eigs - 1 )
-        
+
     for ii in xrange( n_eigs ):
         if pbar is not None:
             pbar.update( ii )
@@ -134,25 +180,40 @@ def compute_mass_components( pb, mtx_phi, threshold,
         if is_zero:
             masses[ii,:] = 0.0
         else:
-            for ir in range( dim ):
-                vec = vec_phi[ir::dim].copy()
-                pb.variables[uc_name].data_from_data( vec, slice( 0, n_nod ) )
-                val = eval_term_op( None, dot_term, pb )
-                if abs( val ) >= threshold:
-                    masses[ii,ir] = val
-                else:
-                    masses[ii,ir] = 0.0
-    #            print ii, ir, val
-        
-    return masses
+            pb.variables[u_name].data_from_data( vec_phi.copy() )
+            val = eval_term_op( None, em_eq, pb )
+            masses[ii,:] = val
+#            print ii, ir, val
 
-##
-# 26.09.2007, c
-# 27.09.2007
+    mag = nm.zeros( (n_eigs,), dtype = nm.float64 )
+    for ir in range( dim ):
+        mag += masses[:,ir] ** 2
+    mag = nm.sqrt( mag )
+
+    if threshold_is_relative:
+        tol = threshold * mag.max()
+    else:
+        tol = threshold
+        
+    valid = nm.where( mag < tol, False, True )
+    mask = nm.where( valid == False )[0]
+    masses[mask,:] = 0.0
+    n_zeroed = mask.shape[0]
+
+    output( '%d of %d eigenmomenta zeroed (under %.2e)'\
+            % (n_zeroed, n_eigs, tol) )
+##     print valid
+##     import pylab
+##     pylab.plot( masses )
+##     pylab.show()
+    
+    return n_zeroed, valid, masses
+
 def compute_generalized_mass( freq, masses, eigs, average_density, squared ):
-    """Assumes squared freq!"""
+    """Assumes that `masses`, `eigs` contain only valid resonances."""
     dim = masses.shape[1]
     mtx_mass = nm.eye( dim, dim, dtype = nm.float64 ) * average_density
+
     for ir in range( dim ):
         for ic in range( dim ):
             if ir <= ic:
@@ -168,10 +229,21 @@ def compute_generalized_mass( freq, masses, eigs, average_density, squared ):
                 mtx_mass[ir,ic] = mtx_mass[ic,ir]
     return mtx_mass
 
-
-##
-# c: 27.09.2007, r: 08.04.2008
 def find_zero( f0, f1, masses, eigs, average_density, opts, mode ):
+    """For f \in ]f0, f1[ find frequency f for which either the smallest
+    (`mode` = 0) or the largest (`mode` = 1) eigenvalue of M is zero.
+
+    Return:
+
+    (flag, frequency, eigenvalue)
+
+    mode | flag | meaning
+    0, 1 | 0    | eigenvalue -> 0 for f \in ]f0, f1[
+    0    | 1    | f -> f1, smallest eigenvalue < 0
+    0    | 2    | f -> f0, smallest eigenvalue > 0 and -> -\infty
+    1    | 1    | f -> f1, largest eigenvalue < 0 and  -> +\infty
+    1    | 2    | f -> f0, largest eigenvalue > 0
+    """
     feps, zeps = opts.feps, opts.zeps
     method = get_method( opts )
 
@@ -180,26 +252,25 @@ def find_zero( f0, f1, masses, eigs, average_density, opts, mode ):
     while 1:
         f = 0.5 * (fm + fp)
         mtx_mass = compute_generalized_mass( f, masses, eigs,
-                                          average_density, opts.squared )
+                                             average_density, opts.squared )
         meigs = eig( mtx_mass, eigenvectors = False, method = method )
-#        print meigs
+##         print meigs
 
         val = meigs[ieig]
-#        print f, val, fp - fm
+##         print f, f0, f1, fm, fp, val
 
         if (abs( val ) < zeps)\
-               or ((fp - fm) < (100.0 * nm.finfo( float ).eps))\
-               or ((fp - fm) < feps):
+               or ((fp - fm) < (100.0 * nm.finfo( float ).eps)):
             return 0, f, val
 
         if mode == 0:
             if (f - f0) < feps:
                 return 2, f0, val
             elif (f1 - f) < feps:
-                return 1, f, val
+                return 1, f1, val
         elif mode == 1:
             if (f1 - f) < feps:
-                return 1, f, val
+                return 1, f1, val
             elif (f - f0) < feps:
                 return 2, f0, val
             
@@ -253,53 +324,115 @@ def transform_plot_data( datas, plot_tranform, funmod ):
     dmin, dmax = min( dmax - 1e-8, dmin ), max( dmin + 1e-8, dmax )
     return (dmin, dmax), tdatas
 
-##
-# c: 27.09.2007, r: 12.06.2008
-def plot_logs( fig_num, logs, freq_range, plot_range, squared, show = False ):
+def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
+               show = False, clear = False, new_axes = False ):
+    """
+    Plot resonance/eigen-frequencies.
+
+    `valid` must correspond to `freq_range`
+
+    resonances : red
+    masked resonances: dotted red
+    """
+    if pylab is None: return
+    assert len( valid ) == len( freq_range )
+
+    fig = pylab.figure( fig_num )
+    if clear:
+        fig.clf()
+    if new_axes:
+        ax = fig.add_subplot( 111 )
+    else:
+        ax = fig.gca()
+
+    l0 = l1 = None
+    for ii, f in enumerate( freq_range ):
+        if valid[ii]:
+            l0 = ax.plot( [f, f], plot_range, **plot_rsc['resonance'] )[0]
+        else:
+            l1 = ax.plot( [f, f], plot_range, **plot_rsc['masked'] )[0]
+ 
+    if l0:
+        l0.set_label( 'eigenfrequencies' )
+    if l1:
+        l1.set_label( 'masked eigenfrequencies' )
+
+    if new_axes:
+        ax.set_xlim( [freq_range[0], freq_range[-1]] )
+        ax.set_ylim( plot_range )
+
+    if show:
+        pylab.show()
+    return fig 
+
+def plot_logs( fig_num, plot_rsc,
+               logs, valid, freq_range, plot_range, squared,
+               draw_eigs = True, show_legend = True, show = False,
+               clear = False, new_axes = False ):
+    """
+    Plot logs of min/max eigs of M.
+    """
     if pylab is None: return
 
     fig = pylab.figure( fig_num )
-    ax = fig.add_subplot( 111 )
+    if clear:
+        fig.clf()
+    if new_axes:
+        ax = fig.add_subplot( 111 )
+    else:
+        ax = fig.gca()
 
-    for f in freq_range:
-        l0 = ax.plot( [f, f], plot_range, 'r' )
+    if draw_eigs:
+        aux = plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range )
 
     for log in logs:
-        l1 = ax.plot( log[:,0], log[:,1], 'b--' )
-        l2 = ax.plot( log[:,0], log[:,2], 'b-' )
+        l1 = ax.plot( log[:,0], log[:,1], **plot_rsc['eig_min'] )
+        l2 = ax.plot( log[:,0], log[:,2], **plot_rsc['eig_max'] )
+    l1[0].set_label( 'min eig($M^*$)' )
+    l2[0].set_label( 'max eig($M^*$)' )
 
     fmin, fmax = logs[0][0,0], logs[-1][-1,0]
-    ax.plot( [fmin, fmax], [0, 0], 'k--' )
-    ax.legend( (l0, l1, l2),
-               ('eigenfrequencies', 'min eig($a^*$)', 'max eig($a^*$)') )
+    ax.plot( [fmin, fmax], [0, 0], **plot_rsc['x_axis'] )
+
     if squared:
         ax.set_xlabel( r'$\lambda$, $\omega^2$' )
     else:
         ax.set_xlabel( r'$\sqrt{\lambda}$, $\omega$' )
-    ax.set_ylabel( r'eigenvalues of mass matrix $A^*$' )
+    ax.set_ylabel( r'eigenvalues of mass matrix $M^*$' )
 
-    if show:
+    if new_axes:
         ax.set_xlim( [fmin, fmax] )
         ax.set_ylim( plot_range )
+
+    if show_legend:
+        ax.legend()
+
+    if show:
         pylab.show()
+    return fig
     
-##
-# c: 27.09.2007, r: 12.06.2008
-def plot_gaps( fig_num, gaps, kinds, freq_range, plot_range, show = False ):
+def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range, plot_range,
+               show = False, clear = False, new_axes = False ):
+    """ """
     if pylab is None: return
 
-    def draw_rect( ax, x, y, color ):
+    def draw_rect( ax, x, y, rsc ):
         ax.fill( nm.asarray( x )[[0,1,1,0]],
                  nm.asarray( y )[[0,0,1,1]],
-                 fc = color, linewidth = 0 )
+                 **rsc )
 
     fig = pylab.figure( fig_num )
-    ax = fig.add_subplot( 111 )
+    if clear:
+        fig.clf()
+    if new_axes:
+        ax = fig.add_subplot( 111 )
+    else:
+        ax = fig.gca()
 
     # Colors.
-    strong = (1, 1, 0.5)
-    weak = (1, 1, 1)
-    propagation = (0.5, 1, 0.5)
+    strong = plot_rsc['strong_gap']
+    weak = plot_rsc['weak_gap']
+    propagation = plot_rsc['propagation']
 
     for ii in xrange( len( freq_range ) - 1 ):
         f0, f1 = freq_range[[ii, ii+1]]
@@ -336,16 +469,62 @@ def plot_gaps( fig_num, gaps, kinds, freq_range, plot_range, show = False ):
         output( ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1 )
         output( ' -> %s\n    %s' %(kind_desc, info) )
 
-    if show:
+    if new_axes:
         ax.set_xlim( [freq_range[0], freq_range[-1]] )
         ax.set_ylim( plot_range )
+
+    if show:
         pylab.show()
+    return fig
+
+def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,
+                    fixed_eig_range, feps ):
+    """Cut off masked resonance frequencies. Margins are preserved, like no
+    resonances were cut.
+
+    Return:
+
+      freq_range - new resonance frequencies
+      freq_range_margins - freq_range with prepended/appended margins
+                           equal to fixed_eig_range if it is not None
+    """
+    n_freq = freq_range.shape[0]
+    n_eigs = eigs.shape[0]
+
+    output( 'masked resonance frequencies in range:' )
+    valid_slice = slice( *eig_range )
+    output( nm.where( valid[valid_slice] == False )[0] )
+
+    if fixed_eig_range is None:
+        min_freq, max_freq = freq_range[0], freq_range[-1]
+        margins = freq_margins * (max_freq - min_freq)
+        prev_eig = min_freq - margins[0]
+        next_eig = max_freq + margins[1]
+        if eig_range[0] > 0:
+            prev_eig = max( eigs[eig_range[0]-1] + feps, prev_eig )
+        if eig_range[1] < n_eigs:
+            next_eig = min( eigs[eig_range[1]] - feps, next_eig )
+        prev_eig = max( feps, prev_eig )
+        next_eig = max( feps, next_eig, prev_eig + feps )
+    else:
+        prev_eig, next_eig = fixed_eig_range
+
+    freq_range = freq_range[valid[valid_slice]]
+    freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
+
+    return freq_range, freq_range_margins
     
-##
-# c: 27.09.2007, r: 08.04.2008
 def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
-    
-    average_density = compute_average_density( pb, 'matrix', 'inclusion' )
+    """Detect band gaps given solution to eigenproblem (eigs, mtx_phi). Only
+    valid resonance frequencies (e.i. those for which corresponding
+    eigenmomenta are above a given threshold) are taken into account.
+
+    ??? make feps relative to ]f0, f1[ size ???
+    """
+    conf_bg = conf.band_gaps
+    average_density = compute_average_density( pb,
+                                               conf_bg['volume'],
+                                               conf_bg['region_to_material'] )
     output( 'average density:', average_density )
 
     n_eigs = eigs.shape[0]
@@ -356,76 +535,106 @@ def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
     if not opts.squared:
         eigs = nm.sqrt( eigs )
 
-    freq_range = eigs[slice( *opts.eig_range )]
-    n_freq = freq_range.shape[0]
-    min_freq, max_freq = freq_range[0], freq_range[-1]
-    margins = opts.freq_margins * (max_freq - min_freq)
-
-    prev_eig = min_freq - margins[0]
-    next_eig = max_freq + margins[1]
-    if opts.eig_range[0] > 0:
-        prev_eig = max( eigs[opts.eig_range[0]-1] + opts.feps, prev_eig )
-    if opts.eig_range[1] < n_eigs:
-        next_eig = min( eigs[opts.eig_range[1]] - opts.feps, next_eig )
-    prev_eig = max( opts.feps, prev_eig )
-    next_eig = max( opts.feps, next_eig, prev_eig + opts.feps )
-    freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
-
-    output( 'freq. range             : [%8.3f, %8.3f]' % (min_freq, max_freq) )
-    output( 'freq. range with margins: [%8.3f, %8.3f]'\
-          % tuple( freq_range_margins[[0,-1]] ) )
-
-##     print freq_range
-##     print freq_range_margins
-##     pause()
+    if opts.fixed_eig_range is not None:
+        mine, maxe = opts.fixed_eig_range
+        ii = nm.where( (eigs > mine) & (eigs < maxe) )[0]
+        freq_range_initial = eigs[ii]
+        opts.eig_range = (ii[0], ii[-1]+1) # +1 as it is a slice.
+    else:
+        freq_range_initial = eigs[slice( *opts.eig_range )]
+    output( 'initial freq. range     : [%8.3f, %8.3f]'\
+            % tuple( freq_range_initial[[0,-1]] ) )
 
     if opts.eig_vector_transform is not None:
         fun = getattr( conf.funmod, opts.eig_vector_transform[0] )
-        def _wrap_transform( vec, shape ):
+        def wrap_transform( vec, shape ):
             return fun( vec, shape, *opts.eig_vector_transform[1:] )
     else:
-        _wrap_transform = None
-    output( 'mass matrix components...')
+        wrap_transform = None
+    output( 'mass matrix eigenmomenta...')
     pbar = MyBar( 'computing:' )
     tt = time.clock()
-    masses = compute_mass_components( pb, mtx_phi, opts.teps, _wrap_transform, pbar )
+    aux = compute_eigenmomenta( pb, conf_bg['eigenmomentum'],
+                                conf_bg['region_to_material'],
+                                mtx_phi, opts.teps, opts.teps_rel,
+                                wrap_transform, pbar )
+    n_zeroed, valid, masses = aux
     output( '...done in %.2f s' % (time.clock() - tt) )
+    aux = cut_freq_range( freq_range_initial, eigs, valid,
+                          opts.freq_margins, opts.eig_range,
+                          opts.fixed_eig_range,
+                          opts.feps )
+    freq_range, freq_range_margins = aux
+    if len( freq_range ):
+        output( 'freq. range             : [%8.3f, %8.3f]'\
+                % tuple( freq_range[[0,-1]] ) )
+    else:
+        # All masked.
+        output( 'freq. range             : all masked!' )
 
+    min_freq, max_freq = freq_range_margins[0], freq_range_margins[-1]
+    output( 'freq. range with margins: [%8.3f, %8.3f]'\
+            % (min_freq, max_freq) )
+        
     logs = []
     gaps = []
+
     df = opts.freq_step * (max_freq - min_freq)
-    for ii in xrange( n_freq + 1 ):
+    valid_masses = masses[valid,:]
+    valid_eigs = eigs[valid]
+    cgm = compute_generalized_mass
+    for ii in xrange( freq_range.shape[0] + 1 ):
+
         f0, f1 = freq_range_margins[[ii, ii+1]]
         output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
 
         log = []
-        num = max( 5, (f1 - f0) / df )
+        num = min( 200, max( 20, (f1 - f0) / df ) )
         log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         for f in log_freqs:
-            mtx_mass = compute_generalized_mass( f, masses, eigs,
-                                              average_density, opts.squared )
+            mtx_mass = cgm( f, valid_masses, valid_eigs,
+                            average_density, opts.squared )
             meigs = eig( mtx_mass, eigenvectors = False, method = method )
             log.append( [f, meigs[0], meigs[-1]] )
+
         log0, log1 = log[0], log[-1]
         if log0[1] > 0.0: # No gaps.
             gap = ([2, f0, log0[1]], [2, f0, log0[2]])
-        elif log1[2] < 0.0: # Full interval strog gap.
+        elif log1[2] < 0.0: # Full interval strong gap.
             gap = ([1, f1, log1[1]], [1, f1, log1[2]])
         else:
+            # Insert fmin, fmax into log.
+            alog = nm.array( log )
+
             output( 'finding zero of the largest eig...' )
-            smax, fmax, vmax = find_zero( f0, f1, masses, eigs,
-                                         average_density, opts, 1 )
+            smax, fmax, vmax = find_zero( f0, f1, valid_masses, valid_eigs,
+                                          average_density, opts, 1 )
+            mtx_mass = cgm( fmax, valid_masses, valid_eigs,
+                            average_density, opts.squared )
+            meigs = eig( mtx_mass, eigenvectors = False, method = method )
+            im = nm.searchsorted( alog[:,0], fmax )
+            log.insert( im, (fmax, meigs[0], meigs[-1] ) )
+
             output( '...done' )
             if smax in [0, 2]:
                 output( 'finding zero of the smallest eig...' )
-                smin, fmin, vmin = find_zero( fmax, f1, masses, eigs,
-                                             average_density, opts, 0 )
+                # having fmax instead of f0 does not work if feps is large.
+                smin, fmin, vmin = find_zero( f0, f1, valid_masses, valid_eigs,
+                                              average_density, opts, 0 )
+                mtx_mass = cgm( fmin, valid_masses, valid_eigs,
+                                average_density, opts.squared )
+                meigs = eig( mtx_mass, eigenvectors = False, method = method )
+                im = nm.searchsorted( alog[:,0], fmin )
+                # +1 due to fmax already inserted before.
+                log.insert( im+1, (fmin, meigs[0], meigs[-1] ) )
+
                 output( '...done' )
             elif smax == 1:
                 smin = 1 # both are negative everywhere.
                 fmin, vmin = fmax, vmax
 
             gap = ([smin, fmin, vmin], [smax, fmax, vmax])
+            
 
         output( gap[0] )
         output( gap[1] )
@@ -435,7 +644,11 @@ def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
         output( '...done' )
 
     kinds = describe_gaps( gaps )
-
+    
     return Struct( logs = logs, gaps = gaps, kinds = kinds,
-                   freq_range = freq_range, freq_range_margins = freq_range_margins,
+                   valid = valid, eig_range = slice( *opts.eig_range ),
+                   n_eigs = eigs.shape[0], n_zeroed = n_zeroed,
+                   freq_range_initial = freq_range_initial,
+                   freq_range = freq_range,
+                   freq_range_margins = freq_range_margins,
                    opts = opts )

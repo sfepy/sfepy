@@ -158,6 +158,13 @@ class ProblemConf( Struct ):
         for name in other_missing:
             setattr( obj, name, None )
         obj._filename = filename
+
+        obj.transform_input_trivial()
+        obj._raw = {}
+        for key, val in define_dict.iteritems():
+            if isinstance( val, dict ):
+                obj._raw[key] = copy( val )
+
         obj.transform_input()
         obj.funmod = funmod
         return obj
@@ -223,7 +230,7 @@ class ProblemConf( Struct ):
 
     ##
     # c: 31.10.2005, r: 10.07.2008
-    def transform_input( self ):
+    def transform_input_trivial( self ):
         """Trivial input transformations."""
 
         ##
@@ -249,7 +256,17 @@ class ProblemConf( Struct ):
                         
                     del self.__dict__[key]
 
+    def transform_input( self ):
         keys = self.__dict__.keys()
         for key, transform in transforms.iteritems():
             if not key in keys: continue
             self.__dict__[key] = transform( self.__dict__[key] )
+
+    def get_raw( self, key = None ):
+        if key is None:
+            return self._raw
+        else:
+            return self._raw[key]
+
+    def edit( self, key, newval ):
+        self.__dict__[key] = transforms[key]( newval )

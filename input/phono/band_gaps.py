@@ -1,53 +1,42 @@
-# 25.09.2007, c
-# last revision: 08.04.2008
-"""
-u1 is a dummy variable used unly for volume computation.
-"""
+# c: 25.09.2007, r: 10.09.2008
+import os
+import numpy as nm
+from sfepy.fem.meshio import MeshIO
 
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/phono/cube_cylinder.mesh'
 filename_mesh = 'database/phono/mesh_circ21.mesh'
 #fileName_mesh = 'database/phono/mesh_circ21_small.mesh'
 
+cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
+
 options = {
-    'save_eig_vectors' : (10, 10),
+    'save_eig_vectors' : (10, 0),
     'eig_range' : (0, 30), # -> freq_range = eigs[slice(*eig_range)][[0, -1]]
     'freq_margins' : (10, 10), # % of freq_range
+
     'feps' : 1e-10, # frequency
     'zeps' : 1e-12, # zero finding
-    'teps' : 1e-3, # eigenmomentum threshold
+    'teps' : 1e-1, # eigenmomentum threshold
+    'teps_rel' : True, # eigenmomentum threshold is relative w.r.t. largest one
     'freq_step' : 0.01, # % of freq_range
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
 #    'plot_tranform' : ('clip', (-20, 20)),
     'plot_tranform' : ('normalize', (-1, 1)),
     'squared' : False,
+
+    'output_dir' : os.path.join( cwd, 'output/' ),
+
+    'fig_name' : 'band_gaps.pdf',
     
 #    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
 }
 
-# Whole domain $Y$.
-region_1000 = {
-    'name' : 'Y',
-    'select' : 'all',
-}
-
-# Domain $Y_1$.
-region_1 = {
-    'name' : 'Y1',
-    'select' : 'elements of group 1',
-}
-
-# Domain $Y_2$.
-region_2 = {
-    'name' : 'Y2',
-    'select' : 'elements of group 2',
-}
-
-# Surface of $Y_2$.
-region_100 = {
-    'name' : 'Y2_Surface',
-    'select' : 'r.Y1 *n r.Y2',
-    'can_cells' : False,
+regions = {
+    'Y' : ('all', {}),
+    'Y1' : ('elements of group 1', {}),
+    'Y2' : ('elements of group 2', {}),
+    'Y2_Surface': ('r.Y1 *n r.Y2', {'can_cells' : False}),
 }
 
 material_1 = {
@@ -70,64 +59,28 @@ material_2 = {
     'density' : 0.1142, # in 1e4 kg/m3
 }
 
-if filename_mesh.find( 'cube_' ) >= 0:
-    dim, geom = 3, '3_4'
-else:
-    dim, geom = 2, '2_3'
+dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 field_0 = {
-    'name' : 'displacement_Y1',
+    'name' : 'displacement_Y',
     'dim' : (dim,1),
-    'flags' : (),
-    'domain' : 'Y1',
-    'bases' : {'Y1' : '%s_P1' % geom}
+    'domain' : 'Y',
+    'bases' : {'Y' : '%s_P1' % geom}
 }
 
 field_1 = {
     'name' : 'displacement_Y2',
     'dim' : (dim,1),
-    'flags' : (),
     'domain' : 'Y2',
     'bases' : {'Y2' : '%s_P1' % geom}
 }
 
-field_2 = {
-    'name' : 'eigen_direction',
-    'dim' : (1,1),
-    'flags' : (),
-    'domain' : 'Y2',
-    'bases' : {'Y2' : '%s_P1' % geom}
-}
-
-variable_1 = {
-    'name' : 'u',
-    'kind' : 'unknown field',
-    'field' : 'displacement_Y2',
-    'order' : 0,
-}
-variable_2 = {
-    'name' : 'v',
-    'kind' : 'test field',
-    'field' : 'displacement_Y2',
-    'dual' : 'u',
-}
-variable_3 = {
-    'name' : 'u1',
-    'kind' : 'parameter field',
-    'field' : 'displacement_Y1',
-    'like' : 'u',
-}
-variable_4 = {
-    'name' : 'uc',
-    'kind' : 'parameter field',
-    'field' : 'eigen_direction',
-    'like' : None,
-}
-variable_5 = {
-    'name' : 'd',
-    'kind' : 'parameter field',
-    'field' : 'eigen_direction',
-    'like' : None,
+variables = {
+    'u' : ('unknown field', 'displacement_Y2', 0),
+    'v' : ('test field', 'displacement_Y2', 'u'),
+    'uy' : ('parameter field', 'displacement_Y', None),
+    'up' : ('parameter field', 'displacement_Y2', 'u'),
 }
 
 ebc_1 = {
@@ -148,12 +101,23 @@ equations = {
 }
 
 ##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 1000
+# Other equations/terms related to band gaps.
+band_gaps = {
+    'eigenmomentum' : {'var' : 'up',
+                       'regions' : ['Y2'],
+                       'term' : '%s * di_volume_integrate.i1.%s( %s )'},
+    # Used to compute average density.
+    'region_to_material' : {'Y1' : 'matrix',
+                            'Y2' : 'inclusion',},
+    'volume' : 'd_volume.i1.%s( uy )',
 }
 
-import numpy as nm
+##
+# FE assembling parameters.
+fe = {
+    'chunk_size' : 100000
+}
+
 def clip( data, plot_range ):
     return nm.clip( data, *plot_range )
 

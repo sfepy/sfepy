@@ -1,12 +1,9 @@
-# 23.10.2007, c
-# last revision: 23.10.2007
-
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := Makefile.dist
+DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
 
-RELDISTFILES := $(DISTFILES) $(shell ls *.mesh) $(shell ls *.geo)
+RELDISTFILES := $(DISTFILES)
 
 dist:
 #	echo $(DESTDIR)

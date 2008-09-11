@@ -1,11 +1,9 @@
 from terms import *
 from utils import fix_mat_qp_shape
 
-##
-# 12.04.2007, c
 class IntegrateVolumeTerm( Term ):
-    r""":definition: $\int_\Omega y$"""
-    name = 'd_volume_integrate'
+    r""":definition: $\int_\Omega y$,  $\int_\Omega \ul{y}$"""
+    name = 'di_volume_integrate'
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
@@ -13,20 +11,19 @@ class IntegrateVolumeTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
         
-    ##
-    # created:       12.04.2007
-    # last revision: 21.12.2007
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
-        shape = (chunk_size, 1, 1, 1)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        shape = (chunk_size, 1, dim, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0, state = par )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = vg.integrate_chunk( out, vec[chunk], chunk )
-            out1 = nm.sum( out )
+            out1 = nm.sum( out, 0 )
+            out1.shape = (dim,)
             yield out1, chunk, status
 
 ##

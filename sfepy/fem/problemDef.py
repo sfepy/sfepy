@@ -26,37 +26,24 @@ class ProblemDefinition( Struct ):
     """
 
     def from_conf( conf,
-                  init_fields = True, init_variables = True, init_equations = True,
-                  init_solvers = True ):
+                   init_fields = True,
+                   init_variables = True,
+                   init_equations = True,
+                   init_solvers = True ):
 
         mesh = Mesh.from_file( conf.filename_mesh )
 
-        
         eldesc_dir = op.join( install_dir, 'eldesc' )
         domain = Domain.from_mesh( mesh, eldesc_dir )
         domain.setup_groups()
         domain.fix_element_orientation()
         domain.setup_neighbour_lists()
-#        print domain
-##         for gr in domain.groups.itervalues():
-##             print gr.shape
-
-        domain.create_regions( conf.regions, conf.funmod )
-##         print regions
-##         pause()
-
-        materials = Materials.from_conf( conf.materials )
-        materials.setup_regions( domain.regions )
-    ##     print materials
-    ##     pause()
-
-    ##     print fields
-    ##     pause()
 
         obj = ProblemDefinition( conf = conf,
                                  domain = domain,
-                                 materials = materials,
                                  eldesc_dir = eldesc_dir )
+
+        obj.set_regions( conf.regions, conf.materials, conf.funmod )
 
         if init_fields:
             obj.set_fields( conf.fields )
@@ -90,6 +77,18 @@ class ProblemDefinition( Struct ):
             else:
                 obj.__dict__[key] = copy( val )
         return obj
+
+    def set_regions( self, conf_regions = None,
+                     conf_materials = None, funmod = None):
+        conf_regions = get_default( conf_regions, self.conf.regions )
+        conf_materials = get_default( conf_materials, self.conf.materials )
+        funmod = get_default( funmod, self.conf.funmod )
+
+        self.domain.create_regions( conf_regions, funmod )
+
+        materials = Materials.from_conf( conf_materials )
+        materials.setup_regions( self.domain.regions )
+        self.materials = materials
 
     ##
     # c: 23.04.2007, r: 09.07.2008

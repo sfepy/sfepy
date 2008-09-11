@@ -461,8 +461,15 @@ class Region( Struct ):
         else:
             return False
 
-    ##
-    # c: 16.07.2007, r: 17.03.2008
+    def has_cells_if_can( self ):
+        if self.can_cells:
+            for cells in self.cells.itervalues():
+                if cells.size:
+                    return True
+            return False
+        else:
+            return True
+
     def update_geometry_info( self, field, key ):
         """
         key: iname, aregion_name, ig
@@ -470,6 +477,9 @@ class Region( Struct ):
         ?call for all regions & fields in describe_geometry()?"""
         if self.has_cells():
             val = self.volume.setdefault( field.name, {} )
+        else:
+            self.volume[field.name] = 0.0
+            return
 
         iname, ig = key
         aps = field.aps

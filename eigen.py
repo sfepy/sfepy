@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # 12.01.2007, c 
 import os.path as op
+import shutil
 from optparse import OptionParser
 
 import init_sfepy
@@ -12,61 +13,140 @@ import sfepy.base.ioutils as io
 from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.homogenization.phono import process_options, get_method,\
      transform_plot_data, plot_logs, plot_gaps, detect_band_gaps
+from sfepy.applications import Application
+from sfepy.base.plotutils import pylab
 
-##
-# c: 25.09.2007, r: 08.04.2008
-def solve_eigen_problem( conf, options ):
+class AcousticBandGapsApp( Application ):
 
-    if options.output_filename_trunk:
-        ofn_trunk = options.output_filename_trunk
-    else:
-        ofn_trunk = io.get_trunk( conf.filename_mesh )
+    def __init__( self, conf, options, output_prefix ):
+        Application.__init__( self, conf, options, output_prefix )
 
-    pb = ProblemDefinition.from_conf( conf )
-    dim = pb.domain.mesh.dim
+        opts = conf.options
+        post_process_hook = get_default_attr( opts, 'post_process_hook', None )
+        if post_process_hook is not None:
+            post_process_hook = getattr( conf.funmod, post_process_hook )
 
-    pb.time_update()
+        self.post_process_hook = post_process_hook
 
-    dummy = pb.create_state_vector()
-    mtx_a = eval_term_op( dummy, conf.equations['lhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
-    mtx_b = eval_term_op( dummy, conf.equations['rhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a.copy() )
+        output_dir = get_default_attr( opts, 'output_dir', '.' )
+        if not os.path.exists( output_dir ):
+            os.mkdir( output_dir )
+        shutil.copyfile( conf._filename,
+                         op.join( output_dir, op.basename( conf._filename ) ) )
+        if options.output_filename_trunk:
+            ofn_trunk = options.output_filename_trunk
+        else:
+            ofn_trunk = op.join( output_dir, io.get_trunk( conf.filename_mesh ) )
+
+        self.problem = ProblemDefinition.from_conf( conf )
+        self.problem.ofn_trunk = ofn_trunk
+        self.problem.output_dir = output_dir
+
+        
+    def call( self ):
+        options = self.options
+        evp = solve_eigen_problem( self.problem,
+                                   post_process_hook = self.post_process_hook )
+
+        if options.detect_band_gaps:
+            bg = detect_band_gaps( self.problem, evp.eigs, evp.mtx_phi,
+                                   self.conf, options )
+
+            if options.plot:
+                plot_range, tlogs = transform_plot_data( bg.logs,
+                                                         bg.opts.plot_tranform,
+                                                         self.conf.funmod )
+
+                plot_rsc = bg.opts.plot_rsc
+                plot_opts =  bg.opts.plot_options
+                
+                pylab.rcParams.update( plot_rsc['params'] )
+
+                fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
+                                 bg.freq_range_margins, plot_range,
+                                 clear = True )
+                fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
+                                 bg.freq_range_initial,
+                                 plot_range, bg.opts.squared,
+                                 show = plot_opts['show'],
+                                 show_legend = plot_opts['legend'],
+                                 new_axes = True )
+
+                fig_name = bg.opts.fig_name
+                if fig_name is not None:
+                    fig.savefig( fig_name )
+
+        return evp, bg
+    
+def solve_eigen_problem( problem, ofn_trunk = None, post_process_hook = None ):
+
+    ofn_trunk = get_default( ofn_trunk, problem.ofn_trunk,
+                             'output file name trunk missing!' )
+    conf = problem.conf
+    dim = problem.domain.mesh.dim
+
+    problem.time_update()
+
+    dummy = problem.create_state_vector()
+    mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
+                          dw_mode = 'matrix', tangent_matrix = problem.mtx_a )
+
+##     from sfepy.base.plotutils import spy, pylab
+##     spy( mtx_a, eps = 1e-12 )
+##     pylab.show()
+    
+    mtx_b = eval_term_op( dummy, conf.equations['rhs'], problem,
+                          dw_mode = 'matrix',
+                          tangent_matrix = problem.mtx_a.copy() )
 
 ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
     output( 'computing resonance frequencies...' )
     tt = [0]
     eigs, mtx_s_phi = eig( mtx_a.toarray(), mtx_b.toarray(), return_time = tt,
-                         method = get_method( conf.options ) )
+                           method = get_method( conf.options ) )
     output( '...done in %.2f s' % tt[0] )
     output( eigs )
+    output( 'number of frequencies: %d' % eigs.shape[0] )
+
+    try:
+        assert nm.isfinite( eigs ).all()
+    except:
+        debug()
+
 ##     import sfepy.base.plotutils as plu
 ##     plu.spy( mtx_b, eps = 1e-12 )
 ##     plu.pylab.show()
 ##     pause()
+
+##    B-orthogonality check.
+##    nm.dot( mtx_s_phi[:,5], mtx_b * mtx_s_phi[:,5] )
+    
     n_eigs = eigs.shape[0]
     opts = process_options( conf.options, n_eigs )
 
-    mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
+    mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
                        dtype = nm.float64 )
     for ii in xrange( n_eigs ):
-        mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+        mtx_phi[:,ii] = problem.variables.make_full_vec( mtx_s_phi[:,ii] )
 
     out = {}
     for ii in xrange( n_eigs ):
         if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
-        aux = pb.state_to_output( mtx_phi[:,ii] )
+        aux = problem.state_to_output( mtx_phi[:,ii] )
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
 
-    pb.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
+    if post_process_hook is not None:
+        out = post_process_hook( out, problem, mtx_phi )
+
+    problem.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
 
     fd = open( ofn_trunk + '_eigs.txt', 'w' )
     eigs.tofile( fd, ' ' )
     fd.close()
 
-    return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+    return Struct( eigs = eigs, mtx_phi = mtx_phi )
 
 
 usage = """%prog [options] filename_in"""
@@ -80,8 +160,6 @@ help = {
     'plot frequency band gaps [default: %default], assumes -b',
 }
 
-##
-# c: 25.09.2007, r: 08.04.2008
 def main():
     version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -107,27 +185,16 @@ def main():
         parser.print_help(),
         return
 
-    set_output_prefix( 'eigen:' )
-
     required, other = get_standard_keywords()
     required.remove( 'solver_[0-9]+|solvers' )
     conf = ProblemConf.from_file( filename_in, required, other )
-##     print conf
-##     pause()
 
-    evp = solve_eigen_problem( conf, options )
-
-    if options.detect_band_gaps:
-        bg = detect_band_gaps( evp.pb, evp.eigs, evp.mtx_phi, conf, options )
-
-        if options.plot:
-            plot_range, tlogs = transform_plot_data( bg.logs,
-                                                  bg.opts.plot_tranform,
-                                                  conf.funmod )
-            plot_gaps( 1, bg.gaps, bg.kinds, bg.freq_range_margins,
-                      plot_range, show = False )
-            plot_logs( 1, tlogs, bg.freq_range,
-                      plot_range, bg.opts.squared, show = True )
+    app = AcousticBandGapsApp( conf, options, 'eigen:' )
+    opts = conf.options
+    if hasattr( opts, 'parametric_hook' ): # Parametric study.
+        parametric_hook = getattr( conf, opts.parametric_hook )
+        app.parametrize( parametric_hook )
+    app()
 
 if __name__ == '__main__':
 ##     mtx_k = io.read_sparse_matrix_hdf5( '1todo/K.h5', output_format = 'csr' )
