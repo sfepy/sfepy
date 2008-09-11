@@ -151,7 +151,6 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
-        from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
         import os.path as op
 

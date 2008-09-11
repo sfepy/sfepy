@@ -272,6 +272,9 @@ class Container( Struct ):
     def print_names( self ):
         print [obj.name for obj in self._objs]
 
+    def get_names( self ):
+        return [obj.name for obj in self._objs]
+
 ##
 # 30.11.2004, c
 # 01.12.2004
@@ -328,6 +331,9 @@ class OneTypeList( list ):
     # 12.06.2007, c
     def print_names( self ):
         print [ii.name for ii in self]
+
+    def get_names( self ):
+        return [ii.name for ii in self]
 
 ##
 # 08.03.2005, c

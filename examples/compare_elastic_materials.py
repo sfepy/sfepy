@@ -167,7 +167,7 @@ def solve_branch( problem, options, branch_function ):
     for key, eq in problem.conf.equations.iteritems():
         problem.set_equations( {key : eq} )
         out = []
-        aux = solve_evolutionary_op( problem, options,
+        aux = solve_evolutionary_op( problem,
                                      save_results = False,
                                      step_hook = store_top_u( out ) )
         displacements[key] = nm.array( out, dtype = nm.float64 )

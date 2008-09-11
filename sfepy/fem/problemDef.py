@@ -2,6 +2,7 @@ import os.path as op
 
 from sfepy.base.base import *
 
+import sfepy.base.ioutils as io
 from mesh import Mesh
 from domain import Domain
 from fields import Fields
@@ -42,6 +43,9 @@ class ProblemDefinition( Struct ):
         obj = ProblemDefinition( conf = conf,
                                  domain = domain,
                                  eldesc_dir = eldesc_dir )
+
+	# Default output file trunk.
+	obj.ofn_trunk = io.get_trunk( conf.filename_mesh )
 
         obj.set_regions( conf.regions, conf.materials, conf.funmod )
 
@@ -367,14 +371,16 @@ class ProblemDefinition( Struct ):
         self.save_state( filename, state, fill_value = default )
         output( '...done' )
 
-    ##
-    # created:       30.03.2007
-    # last revision: 27.02.2008
-    def save_regions( self, filename_trunk ):
+    def save_regions( self, filename_trunk, region_names = None ):
+	"""Save regions as meshes."""
+
+	if region_names is None:
+	    region_names = self.domain.regions.get_names()
 
         output( 'saving regions...' )
-        for region in self.domain.regions:
-            output( region.name )
+        for name in region_names:
+	    region = self.domain.regions[name]
+            output( name )
             aux = Mesh.from_region( region, self.domain.mesh, self.domain.ed,
                                    self.domain.fa )
             aux.write( '%s_%s.mesh' % (filename_trunk, region.name), io = 'auto' )

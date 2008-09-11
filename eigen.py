@@ -9,17 +9,16 @@ from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
 from sfepy.fem.evaluate import eval_term_op
-import sfepy.base.ioutils as io
 from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.homogenization.phono import process_options, get_method,\
      transform_plot_data, plot_logs, plot_gaps, detect_band_gaps
-from sfepy.applications import Application
+from sfepy.applications import SimpleApp
 from sfepy.base.plotutils import pylab
 
-class AcousticBandGapsApp( Application ):
+class AcousticBandGapsApp( SimpleApp ):
 
     def __init__( self, conf, options, output_prefix ):
-        Application.__init__( self, conf, options, output_prefix )
+        SimpleApp.__init__( self, conf, options, output_prefix )
 
         opts = conf.options
         post_process_hook = get_default_attr( opts, 'post_process_hook', None )
@@ -28,20 +27,9 @@ class AcousticBandGapsApp( Application ):
 
         self.post_process_hook = post_process_hook
 
-        output_dir = get_default_attr( opts, 'output_dir', '.' )
-        if not os.path.exists( output_dir ):
-            os.mkdir( output_dir )
+        output_dir = self.problem.output_dir
         shutil.copyfile( conf._filename,
                          op.join( output_dir, op.basename( conf._filename ) ) )
-        if options.output_filename_trunk:
-            ofn_trunk = options.output_filename_trunk
-        else:
-            ofn_trunk = op.join( output_dir, io.get_trunk( conf.filename_mesh ) )
-
-        self.problem = ProblemDefinition.from_conf( conf )
-        self.problem.ofn_trunk = ofn_trunk
-        self.problem.output_dir = output_dir
-
         
     def call( self ):
         options = self.options

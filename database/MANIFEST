@@ -10,6 +10,7 @@ pul_klikatak.mesh
 pul_klikatak2.mesh
 simple.mesh
 simple.vtk
+square_circ.vtk
 t.1.node
 t.1.ele
 triplacka.mesh

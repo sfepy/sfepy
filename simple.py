@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # 12.01.2007, c 
 import os.path as op
+import shutil
 from optparse import OptionParser
 
 import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.solvers.generic import solve_direct
+from sfepy.applications import SimpleApp
 
 ##
 # 26.03.2007, c
@@ -85,18 +86,14 @@ def main():
         other.extend( ['equations'] )
 
     conf = ProblemConf.from_file( filename_in, required, other )
-##     print conf
-##     pause()
-
     opts = conf.options
-    if hasattr( opts, 'output_prefix' ):
-        set_output_prefix( opts.output_prefix )
+    output_prefix = get_default_attr( opts, 'output_prefix', 'sfepy:' )
 
-    dpb, vec_dp, data = solve_direct( conf, options )
-
-    if hasattr( opts, 'post_process_hook_final' ): # User postprocessing.
-        hook = getattr( conf, opts.post_process_hook_final )
-        hook( dpb, vec_dp, data )
+    app = SimpleApp( conf, options, output_prefix )
+    if hasattr( opts, 'parametric_hook' ): # Parametric study.
+        parametric_hook = getattr( conf, opts.parametric_hook )
+        app.parametrize( parametric_hook )
+    app()
 
 if __name__ == '__main__':
     main()
