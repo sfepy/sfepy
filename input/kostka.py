@@ -1,5 +1,4 @@
-# last revision: 25.02.2008
-#fileName_mesh = 'database/kostka_big.mesh'
+#filename_mesh = 'database/kostka_big.mesh'
 filename_mesh = 'database/kostka_medium.mesh'
 
 ############# Laplace.
@@ -20,7 +19,6 @@ if filename_mesh == 'database/kostka_medium.mesh':
     field_1 = {
         'name' : 'temperature',
         'dim' : (1,1),
-        'flags' : (),
         'domain' : 'Omega',
         'bases' : {'Omega' : '3_8_Q1'}
     }
@@ -28,6 +26,10 @@ if filename_mesh == 'database/kostka_medium.mesh':
         'name' : 'i1',
         'kind' : 'v',
         'quadrature' : 'gauss_o1_d3',
+    }
+    solver_0 = {
+        'name' : 'ls',
+        'kind' : 'ls.umfpack',
     }
 
 elif filename_mesh == 'database/kostka_big.mesh':
@@ -39,7 +41,6 @@ elif filename_mesh == 'database/kostka_big.mesh':
     field_1 = {
         'name' : 'temperature',
         'dim' : (1,1),
-        'flags' : (),
         'domain' : 'Omega',
         'bases' : {'Omega' : '3_4_P1'}
     }
@@ -47,8 +48,16 @@ elif filename_mesh == 'database/kostka_big.mesh':
         'name' : 'i1',
         'kind' : 'v',
         'quadrature' : 'custom',
-        'vals'    : [[1./3., 1./3.]],
+        'vals'    : [[1./3., 1./3., 1./3.]],
         'weights' : [0.5]
+    }
+    solver_0 = {
+        'name' : 'ls',
+        'kind' : 'ls.scipy_iterative',
+
+        'method' : 'cg',
+        'i_max'   : 1000,
+        'eps_a'   : 1e-12,
     }
 
 variable_1 = {
@@ -107,11 +116,6 @@ equations = {
     'nice_equation' : """dw_laplace.i1.Omega( coef.val, s, T ) = 0""",
 }
 
-solver_0 = {
-    'name' : 'ls',
-    'kind' : 'ls.umfpack',
-}
-
 solver_1 = {
     'name' : 'newton',
     'kind' : 'nls.newton',
@@ -135,5 +139,5 @@ solver_1 = {
 ##
 # FE assembling parameters.
 fe = {
-    'chunk_size' : 1000
+    'chunk_size' : 100000
 }
