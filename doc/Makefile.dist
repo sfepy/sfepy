@@ -5,10 +5,10 @@ CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES = doxygen.config Makefile.dist
-DISTDIRS := tex txt pages
+DISTDIRS := logo tex txt pages
 
 RELDISTFILES := sfepy_manual.pdf $(DISTFILES)
-RELDISTDIRS := tex pages
+RELDISTDIRS := logo tex pages
 
 dist:
 #	echo $(DESTDIR)
