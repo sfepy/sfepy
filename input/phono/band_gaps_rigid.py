@@ -63,7 +63,7 @@ options = {
     'parametric_hook' : 'vary_y3_size',
 #    'parametric_hook' : 'vary_teps',
     'post_process_hook' : 'post_process',
-    'output_dir' : os.path.join( cwd, 'output/sym/ry3' ),
+    'output_dir' : os.path.join( cwd, 'output/' ),
     #############################################
 
     'fig_name' : 'band_gaps_sym_025.pdf',
@@ -396,7 +396,8 @@ def vary_y3_size( problem ):
         conf.edit( 'regions', cr )
         problem = ProblemDefinition.from_conf( conf )
 
-        problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ) )
+        problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
+			      ['Y2', 'Y3'] )
         for region in problem.domain.regions:
             if not region.has_cells_if_can():
                 raise ValueError( 'region %s has no cells!' % region.name )
