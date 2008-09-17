@@ -29,7 +29,7 @@ class IntegrateVolumeTerm( Term ):
             yield out1, chunk, status
 
 class IntegrateVolumeOperatorTerm( Term ):
-    r""":definition: $\int_\Omega q$,  $\int_\Omega \ul{v}$"""
+    r""":definition: $\int_\Omega q$"""
 
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
@@ -44,6 +44,8 @@ class IntegrateVolumeOperatorTerm( Term ):
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         field_dim = par.field.dim[0]
+        assert field_dim == 1
+        
         if diff_var is None:
             shape = (chunk_size, 1, field_dim * n_ep, 1 )
             mode = 0
@@ -52,11 +54,8 @@ class IntegrateVolumeOperatorTerm( Term ):
 
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            if field_dim == 1:
-                bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
-                                (chunk.shape[0], 1, 1, 1) )
-            else:
-                raise NotImplementedError
+            bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
+                            (chunk.shape[0], 1, 1, 1) )
             status = vg.integrate_chunk( out, bf_t, chunk )
             yield out, chunk, 0
 
