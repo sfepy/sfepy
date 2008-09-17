@@ -15,7 +15,9 @@ class IntegrateVolumeTerm( Term ):
         par, = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
-        shape = (chunk_size, 1, dim, 1)
+
+        field_dim = par.field.dim[0]
+        shape = (chunk_size, 1, field_dim, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0, state = par )
@@ -23,40 +25,38 @@ class IntegrateVolumeTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = vg.integrate_chunk( out, vec[chunk], chunk )
             out1 = nm.sum( out, 0 )
-            out1.shape = (dim,)
+            out1.shape = (field_dim,)
             yield out1, chunk, status
 
-##
-# 01.11.2007, c
 class IntegrateVolumeOperatorTerm( Term ):
-    r""":definition: $\int_\Omega q$"""
+    r""":definition: $\int_\Omega q$,  $\int_\Omega \ul{v}$"""
 
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 01.11.2007, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
         
-    ##
-    # created:       01.11.2007
-    # last revision: 21.12.2007
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
+        field_dim = par.field.dim[0]
         if diff_var is None:
-            shape = (chunk_size, 1, n_ep, 1 )
+            shape = (chunk_size, 1, field_dim * n_ep, 1 )
             mode = 0
         else:
             raise StopIteration
 
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
+            if field_dim == 1:
+                bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
+                                (chunk.shape[0], 1, 1, 1) )
+            else:
+                raise NotImplementedError
             status = vg.integrate_chunk( out, bf_t, chunk )
             yield out, chunk, 0
 

@@ -6,7 +6,7 @@ from sfepy.fem.meshio import MeshIO
 from gen_mesh import gen_concentric
 
 is_3D = False
-generate_2D = True
+generate_2D = False
 
 if is_3D:
     filename_mesh = 'database/phono/cube_sphere.mesh'
@@ -63,7 +63,7 @@ options = {
     'parametric_hook' : 'vary_y3_size',
 #    'parametric_hook' : 'vary_teps',
     'post_process_hook' : 'post_process',
-    'output_dir' : os.path.join( cwd, 'output/' ),
+    'output_dir' : os.path.join( cwd, 'output/csstd' ),
     #############################################
 
     'fig_name' : 'band_gaps_sym_025.pdf',
@@ -77,9 +77,12 @@ options = {
         'x_axis' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '-' },
         'eig_min' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '--' },
         'eig_max' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '-' },
-        'strong_gap' : {'linewidth' : 0, 'facecolor' : (0.6, 0.6, 0.6) },
-        'weak_gap' : {'linewidth' : 0, 'facecolor' : (0.8, 0.8, 0.8) },
-        'propagation' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
+        'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
+        'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
+        'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
+##         'strong_gap' : {'linewidth' : 0, 'facecolor' : (0.6, 0.6, 0.6) },
+##         'weak_gap' : {'linewidth' : 0, 'facecolor' : (0.8, 0.8, 0.8) },
+##         'propagation' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
         'params' : {'axes.labelsize': 'x-large',
                     'text.fontsize': 'large',
                     'legend.fontsize': 'large',
