@@ -50,13 +50,11 @@ def parse_terms( regions, desc, itps ):
 
     return terms
 
-##
-# c: 27.11.2006, r: 18.01.2008
 def setup_term_args( terms, variables, materials, user = None ):
     """terms ... can be both Terms or Term class
        - checks term argument existence in variables, materials, user
        - checks equality of field and term subdomain lists (igs)"""
-    terms.classify_args()
+    terms.classify_args( variables )
     for term in terms:
         igs = term.char_fun.igs
         vns = term.get_variable_names()

@@ -73,9 +73,9 @@ class Terms( Container ):
 
     ##
     # 24.07.2006, c
-    def classify_args( self ):
+    def classify_args( self, variables ):
         for term in self:
-            term.classify_args()
+            term.classify_args( variables )
             
     ##
     # 24.07.2006, c
@@ -177,36 +177,60 @@ class Term( Struct ):
 
     ##
     # 24.07.2006, c
-    # 25.07.2006
-    # 02.08.2006
-    # 14.09.2006
-    # 26.07.2007
-    def classify_args( self ):
+    def classify_args( self, variables ):
+        """state variable can be in place of parameter variable and vice
+        versa."""
         self.names = Struct( name = 'arg_names',
                              material = [], variable = [], user = [],
                              state = [], virtual = [], parameter = [],
                              material_split = [] )
+
+        msg = "variable '%s' requested by term '%s' does not exist!"
+        arg_types = []
         for ii, arg_type in enumerate( self.arg_types ):
             name = self.__arg_names[ii]
-            if _match_var( arg_type ):
-                names = self.names.variable
-                if _match_state( arg_type ):
-                    self.names.state.append( name )
-                elif arg_type == 'virtual':
-                    self.names.virtual.append( name )
-                elif _match_parameter( arg_type ):
-                    self.names.parameter.append( name )
-            elif _match_material( arg_type ):
-                names = self.names.material
-                match = _match_material_root( name )
-                if match:
-                    self.names.material_split.append( (match.group( 1 ),
-                                                      match.group( 2 )) )
+            for single_type in arg_type.split( '|' ):
+                if _match_var( single_type ):
+                    names = self.names.variable
+                    try:
+                        var = variables[name]
+                    except KeyError:
+                        raise KeyError( msg )
+##                     print arg_types, single_type, name, var.flags
+
+                    if _match_state( single_type ) and \
+                           var.is_state_or_parameter():
+                        self.names.state.append( name )
+                    elif (single_type == 'virtual') and var.is_virtual():
+                        self.names.virtual.append( name )
+                    elif _match_parameter( single_type ) and \
+                             var.is_state_or_parameter():
+                        self.names.parameter.append( name )
+                    else:
+                        continue
+                    arg_types.append( single_type )
+
+                elif _match_material( arg_type ):
+                    names = self.names.material
+                    match = _match_material_root( name )
+                    if match:
+                        self.names.material_split.append( (match.group( 1 ),
+                                                          match.group( 2 )) )
+                    else:
+                        self.names.material_split.append( (name, None) )
+                    arg_types.append( single_type )
                 else:
-                    self.names.material_split.append( (name, None) )
-            else:
-                names = self.names.user
+                    names = self.names.user
+                    arg_types.append( single_type )
+                break
             names.append( name )
+
+        self.n_virtual = len( self.names.virtual )
+        if self.n_virtual > 1:
+            raise ValueError( 'at most one virtial variable is allowed! (%d)'\
+                              % self.n_virtual )
+
+        self.ats = arg_types
         
     ##
     # 24.07.2006, c

@@ -949,6 +949,9 @@ class Variable( Struct ):
     def is_other( self ):
         return is_other in self.flags
 
+    def is_state_or_parameter( self ):
+        return (is_state in self.flags) or (is_parameter in self.flags)
+
     ##
     # 26.07.2007, c
     def is_kind( self, kind ):
