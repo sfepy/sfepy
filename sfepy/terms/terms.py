@@ -231,6 +231,11 @@ class Term( Struct ):
                               % self.n_virtual )
 
         self.ats = arg_types
+
+        self.set_arg_types()
+
+    def set_arg_types( self ):
+        pass
         
     ##
     # 24.07.2006, c

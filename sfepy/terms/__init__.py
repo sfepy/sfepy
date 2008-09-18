@@ -11,6 +11,7 @@ from termsVolume import *
 from termsMass import *
 from termsNavierStokes import *
 from termsBiot import *
+from termsPiezo import *
 
 try:
     from termsAdjointNavierStokes import *
