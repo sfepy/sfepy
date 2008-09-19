@@ -2,6 +2,27 @@ from collections import deque
 
 from sfepy.base.base import *
 
+class DataCaches( Container ):
+    def __init__( self, **kwargs ):
+        Container.__init__( self, **kwargs )
+
+        self.cache_info = {}
+
+    def insert_cache( self, cache ):
+        self.append( cache )
+
+    def insert_term( self, cache_name, term_name, term_args ):
+        self.cache_info.setdefault( cache_name, [] ).append( (term_name,
+                                                              term_args) )
+
+    def del_term( self, cache_name, term_name, term_args ):
+        """Destroys a cache if its term count reaches zero."""
+        ci = self.cache_info[cache_name]
+        ci.remove( (term_name, term_args) )
+        if len( ci ) == 0:
+            del self.cache_info[cache_name]
+            self.remove_name( cache_name )
+
 ##
 # 24.11.2006, c
 class DataCache( Struct ):

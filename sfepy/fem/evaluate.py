@@ -1,6 +1,6 @@
 from sfepy.base.base import *
 import extmods.fem as fem
-from sfepy.terms import Term
+from sfepy.terms import Term, DataCaches
 from region import Region
 from equations import Equation, build_args
 from integrals import Integrals, quadratures
@@ -219,7 +219,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
     if term_prefixes is None:
         term_prefixes = {}
     if caches is None:
-        caches = {}
+        caches = DataCaches()
 
     equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
     equation.parse_terms( domain.regions, caches )

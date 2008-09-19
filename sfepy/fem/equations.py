@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 from parseEq import create_bnf
 from materials import Materials
-from sfepy.terms import Terms, Term, term_table, cache_table
+from sfepy.terms import Terms, Term, term_table, DataCaches, cache_table
 
 """
 Note:
@@ -141,7 +141,7 @@ class Equations( Container ):
     # 27.02.2007
     # 02.03.2007
     def parse_terms( self, regions ):
-        self.caches = {}
+        self.caches = DataCaches()
         for eq in self:
             eq.parse_terms( regions, self.caches )
 
@@ -153,6 +153,7 @@ class Equations( Container ):
     def setup_term_args( self, variables, materials, user = None ):
         for eq in self:
             eq.setup_term_args( variables, materials, user )
+            eq.assign_term_caches( self.caches )
 
         self.materials = materials
         self.variables = variables
@@ -240,7 +241,6 @@ class Equation( Struct ):
     def parse_terms( self, regions, caches ):
         terms = parse_terms( regions, self.desc, self.itps )
         self.terms = Terms( terms )
-        self.assign_term_caches( caches )
 
     ##
     # 29.11.2006, c
@@ -272,17 +272,20 @@ class Equation( Struct ):
 ##                     debug()
                     if caches.has_key( cname ):
                         caches[cname].merge_history_sizes( history_sizes )
-                        continue
 
-#                    print 'new'
-                    try:
-                        constructor = cache_table[name]
-                    except:
-                        raise RuntimeError, 'cache not found! %s in %s'\
-                              % (name, sorted( cache_table.keys() ))
-                    caches[cname] = constructor( cname, ans, history_sizes )
+                    else:
+##                    print 'new'
+                        try:
+                            constructor = cache_table[name]
+                        except:
+                            raise RuntimeError, 'cache not found! %s in %s'\
+                                  % (name, sorted( cache_table.keys() ))
+                        cache = constructor( cname, ans, history_sizes )
+                        caches.insert_cache( cache )
+                caches.insert_term( cname, term.name, ans )
             term.caches = caches
-
+        print caches
+        
     ##
     # 21.07.2006, c
     # 24.07.2006

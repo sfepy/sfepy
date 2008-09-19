@@ -1,5 +1,6 @@
 import extmods
 import terms
+from cache import DataCache, DataCaches
 from termsBasic import *
 from termsLinElasticity import *
 from termsHyperElasticity import *
