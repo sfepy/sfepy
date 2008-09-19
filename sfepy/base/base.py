@@ -9,7 +9,7 @@ import pdb
 import glob, re, time, sys, os
 from copy import *
 from sets import Set
-from types import UnboundMethodType
+from types import MethodType, UnboundMethodType
 
 from getch import getch
 
@@ -436,6 +436,9 @@ def insert_static_method( cls, function ):
 def insert_method( instance, function ):
     setattr( instance, function.__name__,
              UnboundMethodType( function, instance, instance.__class__ ) )
+
+def use_method_with_name( instance, method, new_name ):
+    setattr( instance, new_name, method )
 
 def insert_as_static_method( cls, name, function ):
     setattr( cls, name, staticmethod( function ) )

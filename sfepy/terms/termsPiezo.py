@@ -16,25 +16,24 @@ class PiezoCouplingTerm( Term ):
         if self.ats[1] == 'virtual':
             self.mode = 'grad'
 #            self.function = terms.dw_piezo_coupling
-            insert_as_static_method( self.__class__, 'get_shape',
-                                     self.get_shape_grad )
+            use_method_with_name( self, self.get_shape_grad, 'get_shape' )
         elif self.ats[2] == 'virtual':
             self.mode = 'div'
 #            self.function = terms.dw_piezo_coupling
-            insert_as_static_method( self.__class__, 'get_shape',
-                                     self.get_shape_div )
+            use_method_with_name( self, self.get_shape_div, 'get_shape' )
         else:
             self.mode = 'eval'
             raise NotImplementedError
 
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
+    def get_shape( self, diff_var, chunk_size, apr, apc ):
         """This is either get_shape_grad() or get_shape_div()."""
         pass
     
-    def get_shape_grad( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
-        n_el, n_qp, dim, n_epr = self.data_shape
+    def get_shape_grad( self, diff_var, chunk_size, apr, apc ):
+        data_shape = apr.get_v_data_shape( self.integral_name ) 
+        n_el, n_qp, dim, n_epr = data_shape
 
+        print 0
         if diff_var is None:
             return (chunk_size, 1, dim * n_epr, 1 ), 0
         elif diff_var == self.get_arg_name( 'state' ):
@@ -43,10 +42,11 @@ class PiezoCouplingTerm( Term ):
         else:
             raise StopIteration
 
-    def get_shape_div( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
-        n_el, n_qp, dim, n_epr = self.data_shape
+    def get_shape_div( self, diff_var, chunk_size, apr, apc ):
+        data_shape = apr.get_v_data_shape( self.integral_name ) 
+        n_el, n_qp, dim, n_epr = data_shape
 
+        print 1
         if diff_var is None:
             return (chunk_size, 1, n_epr, 1 ), 2
         elif diff_var == self.get_arg_name( 'state' ):
@@ -68,6 +68,7 @@ class PiezoCouplingTerm( Term ):
         apc, vgc = state.get_approximation( self.get_current_group(),
                                             'Volume' )
 
+        print diff_var, self.get_arg_name( 'state' ), self.mode
         shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
         debug()
         fargs = self.build_c_fun_args( state, apc, vgr, **kwargs )
