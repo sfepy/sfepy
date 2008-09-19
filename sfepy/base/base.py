@@ -220,10 +220,11 @@ class Container( Struct ):
     def __init__( self, objs = None, **kwargs ):
         Struct.__init__( self, **kwargs )
 
-        self._objs = objs
         if objs is not None:
+            self._objs = objs
             self.update()
         else:
+            self._objs = []
             self.names = []
 
     def update( self, objs = None ):
@@ -244,11 +245,31 @@ class Container( Struct ):
 
     def __iter__( self ):
         return self._objs.__iter__()
-
     ##
     # 18.07.2006, c
     def __len__( self ):
         return len( self._objs )
+
+    def append( self, obj ):
+        self._objs.append( obj )
+        self.names.append( obj.name )
+
+    def remove_name( self, name ):
+        ii = self.names.index[name]
+        del self.names[ii]
+        del self._objs[ii]
+
+    ##
+    # dict-like methods.
+    def itervalues( self ):
+        return self._objs.__iter__()
+
+    def iterkeys( self ):
+        return self.get_names().__iter__()
+
+    def iteritems( self ):
+        for obj in self._objs:
+            yield obj.name, obj
 
     ##
     # 20.09.2006, c
@@ -275,6 +296,7 @@ class Container( Struct ):
     def get_names( self ):
         return [obj.name for obj in self._objs]
 
+        
 ##
 # 30.11.2004, c
 # 01.12.2004
