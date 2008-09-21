@@ -36,7 +36,7 @@ class BasicEvaluator( Evaluator ):
         try:
             pb = self.problem
             vec_r = eval_residuals( vec, pb.equations, pb.conf.fe.chunk_size,
-                                  **self.data )
+                                    **self.data )
         except StopIteration, exc:
             vec_r = None
             status = exc.args[0]
@@ -57,8 +57,8 @@ class BasicEvaluator( Evaluator ):
                 mtx = self.mtx
             mtx.data[:] = 0.0
             mtx = eval_tangent_matrices( vec, mtx,
-                                       pb.equations, pb.conf.fe.chunk_size,
-                                       **self.data )
+                                         pb.equations, pb.conf.fe.chunk_size,
+                                         **self.data )
         except StopIteration, exc:
             status = exc.args[0]
             print ('error %d in term "%s" of derivative of equation "%s"'
@@ -113,7 +113,7 @@ class LCBCEvaluator( BasicEvaluator ):
         BasicEvaluator.update_vec( self, vec, delta )
 
 def assemble_vector( vec, equation, variables, materials,
-                    chunk_size = 1000, **kwargs ):
+                     chunk_size = 1000, **kwargs ):
     get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
@@ -130,7 +130,7 @@ def assemble_vector( vec, equation, variables, materials,
 ##             print vn, dc.shape
 #            pause()
             for vec_in_els, iels, status in term( chunk_size = chunk_size,
-                                                **args ):
+                                                  **args ):
                 if status != 0:
                     raise StopIteration( status, term, equation )
 
@@ -153,7 +153,7 @@ def assemble_vector( vec, equation, variables, materials,
                                                  float( sign.imag ), dc )
 
 def assemble_matrix( mtx, equation, variables, materials,
-                    chunk_size = 1000, group_can_fail = True, **kwargs ):
+                     chunk_size = 1000, group_can_fail = True, **kwargs ):
     if not sp.isspmatrix_csr( mtx ):
         raise TypeError, 'must be CSR matrix!'
     tmd = (mtx.data, mtx.indptr, mtx.indices)
@@ -176,8 +176,8 @@ def assemble_matrix( mtx, equation, variables, materials,
 #                print sn, cdc.shape
 #                pause()
                 for mtx_in_els, iels, status in term( diff_var = sn,
-                                                    chunk_size = chunk_size,
-                                                    **args ):
+                                                      chunk_size = chunk_size,
+                                                      **args ):
                     if status != 0:
                         raise StopIteration( status, term, equation,
                                              var_name_col )
@@ -204,8 +204,8 @@ def eval_term_op( state, term_desc, problem, **kwargs ):
     """Convenience wrapper of eval_term() in a context of ProblemDefinition
     instance."""
     return eval_term( state, term_desc, problem.conf,
-                     problem.domain, problem.variables, problem.materials,
-                     chunk_size = problem.domain.shape.n_el, **kwargs )
+                      problem.domain, problem.variables, problem.materials,
+                      chunk_size = problem.domain.shape.n_el, **kwargs )
 
 ##
 # c: 03.01.2006, r: 05.03.2008
@@ -243,7 +243,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
         if dw_mode == 'vector':
             residual = variables.create_stripped_state_vector()
             assemble_vector( residual, equation, variables, materials,
-                            chunk_size, group_can_fail = False, **kwargs )
+                             chunk_size, group_can_fail = False, **kwargs )
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
                 residual = op_lcbc.T * residual
@@ -255,7 +255,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
 
             tangent_matrix.data[:] = 0.0
             assemble_matrix( tangent_matrix, equation, variables, materials,
-                            chunk_size, group_can_fail = False, **kwargs )
+                             chunk_size, group_can_fail = False, **kwargs )
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
                 tangent_matrix = op_lcbc.T * tangent_matrix * op_lcbc
@@ -340,7 +340,7 @@ def eval_residuals( state, equations, chunk_size = 1000,
 
     for equation in equations:
         assemble_vector( residual, equation, variables, materials,
-                        chunk_size = chunk_size, **kwargs )
+                         chunk_size = chunk_size, **kwargs )
 
     return residual
 
@@ -367,6 +367,6 @@ def eval_tangent_matrices( state, tangent_matrix, equations, chunk_size = 1000,
 
     for equation in equations:
         assemble_matrix( tangent_matrix, equation, variables, materials,
-                        chunk_size = chunk_size, **kwargs )
+                         chunk_size = chunk_size, **kwargs )
 
     return tangent_matrix
