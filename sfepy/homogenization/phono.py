@@ -128,7 +128,7 @@ def compute_average_density( pb, volume_term, region_to_material ):
         mat = pb.materials[mat_name]
         assert region_name == mat.region.name
         vol = eval_term_op( None, volume_term % region_name, pb )
-        density = mat.density
+        density = mat.get_data( region_name, mat.igs[0], 'density' )
         output( 'region %s: volume %f, density %f' % (region_name,
                                                       vol, density ) )
         average_density += vol * density
@@ -155,7 +155,8 @@ def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     tt = []
     for rname in rnames:
         mat = pb.materials[region_to_material[rname]]
-        tt.append( term % (mat.density, rname, u_name) )
+        density = mat.get_data( rname, mat.igs[0], 'density' )
+        tt.append( term % (density, rname, u_name) )
     em_eq = ' + '.join( tt )
     output( 'eigenmomentum equation:', em_eq )
 
