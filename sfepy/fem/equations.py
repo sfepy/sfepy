@@ -132,31 +132,21 @@ class Equations( Container ):
         return obj
     from_conf = staticmethod( from_conf )
 
-    ##
-    # 21.07.2006, c
-    # 27.11.2006
-    # 29.11.2006
-    # 12.02.2007
-    # 13.02.2007
-    # 27.02.2007
-    # 02.03.2007
-    def parse_terms( self, regions ):
-        self.caches = DataCaches()
-        for eq in self:
-            eq.parse_terms( regions, self.caches )
+    def setup_terms( self, regions, variables, materials, caches = None,
+                     user = None ):
+        """Parse equations and create term instances.
 
-    ##
-    # 21.07.2006, c
-    # 24.07.2006
-    # 27.11.2006
-    # 27.02.2007
-    def setup_term_args( self, variables, materials, user = None ):
-        for eq in self:
-            eq.setup_term_args( variables, materials, user )
-            eq.assign_term_caches( self.caches )
+        Grabs references to materials and variables."""
+        if caches is None:
+            self.caches = DataCaches()
+        else:
+            self.caches = caches
 
         self.materials = materials
         self.variables = variables
+
+        for eq in self:
+            eq.setup_terms( regions, variables, materials, self.caches, user )
 
     ##
     # c: ??, r: 26.02.2008
@@ -238,9 +228,22 @@ class Equation( Struct ):
     # 11.08.2006
     # 12.02.2007
     # 27.02.2007
-    def parse_terms( self, regions, caches ):
+    def parse_terms( self, regions ):
         terms = parse_terms( regions, self.desc, self.itps )
         self.terms = Terms( terms )
+
+
+    ##
+    # 21.07.2006, c
+    # 24.07.2006
+    # 22.08.2006
+    # 25.08.2006
+    # 27.11.2006
+    # 20.02.2007
+    def setup_term_args( self, variables, materials, user = None ):
+        """- checks term argument existence in variables, materials, user
+           - checks compatability of field and term subdomain lists (igs)"""
+        setup_term_args( self.terms, variables, materials, user )
 
     ##
     # 29.11.2006, c
@@ -284,19 +287,13 @@ class Equation( Struct ):
                         caches.insert_cache( cache )
                 caches.insert_term( cname, term.name, ans )
             term.caches = caches
-        print caches
-        
-    ##
-    # 21.07.2006, c
-    # 24.07.2006
-    # 22.08.2006
-    # 25.08.2006
-    # 27.11.2006
-    # 20.02.2007
-    def setup_term_args( self, variables, materials, user = None ):
-        """- checks term argument existence in variables, materials, user
-           - checks compatability of field and term subdomain lists (igs)"""
-        setup_term_args( self.terms, variables, materials, user )
+
+    def setup_terms( self, regions, variables, materials, caches,
+                     user = None ):
+        """Parse equation and create term instances."""
+        self.parse_terms( regions )
+        self.setup_term_args( variables, materials, user )
+        self.assign_term_caches( caches )
 
     ##
     #

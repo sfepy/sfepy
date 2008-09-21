@@ -129,8 +129,8 @@ class ProblemDefinition( Struct ):
     def set_equations( self, conf_equations, user = None, cache_override = None,
                       keep_solvers = False ):
         equations = Equations.from_conf( conf_equations )
-        equations.parse_terms( self.domain.regions )
-        equations.setup_term_args( self.variables, self.materials, user )
+        equations.setup_terms( self.domain.regions, self.variables,
+                               self.materials, user )
 
         i_names = equations.get_term_integral_names()
         self.integrals = Integrals.from_conf( self.conf.integrals, i_names )

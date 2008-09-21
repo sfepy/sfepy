@@ -222,8 +222,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
         caches = DataCaches()
 
     equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
-    equation.parse_terms( domain.regions, caches )
-    equation.setup_term_args( variables, materials, kwargs )
+    equation.setup_terms( domain.regions, variables, materials, caches, kwargs )
     for cache in caches.itervalues():
         cache.set_mode( override = override )
 
