@@ -26,7 +26,7 @@ class Umfpack( LinearSolver ):
         self.umfpack = None
         if self._presolve() and hasattr( self, 'mtx' ):
             if self.mtx is not None:
-                family = Umfpack._family[mtx.dtype]
+                family = Umfpack._family[self.mtx.dtype]
                 self.umfpack = um.UmfpackContext( family = family )
                 self.umfpack.numeric( self.mtx )
 
