@@ -145,21 +145,23 @@ class Term( Struct ):
         self.itype = itype
         self.ats = list( self.arg_types )
 
-    ##
-    # 02.08.2006, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        """Subclasses either implement __call__ or plug in a proper _call()."""
+        return self._call( diff_var, chunk_size, **kwargs )
+
+    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
         output( 'base class method called for %s' % self.__class__.__name__ )
         raise RuntimeError
-        
+    
     ##
     # c: 21.03.2008, r: 21.03.2008
-    def get_shape( diff_var, apr, apc = None ):
+    def get_shape( self, diff_var, apr, apc = None ):
         output( 'base class method called for %s' % self.__class__.__name__ )
         raise RuntimeError
 
     ##
     # c: 21.03.2008, r: 21.03.2008
-    def build_c_fun_args( *args, **kwargs ):
+    def build_c_fun_args( self, *args, **kwargs ):
         output( 'base class method called for %s' % self.__class__.__name__ )
         raise RuntimeError
 
@@ -337,7 +339,7 @@ class Term( Struct ):
             if tgs.has_key( var_name ):
 ##                 print tgs[var_name]
                 field.aps.describe_geometry( field, geometries,
-                                            tgs[var_name], integral )
+                                             tgs[var_name], integral )
 
 ##             print field.aps.aps_per_group
 ##             pause()
@@ -375,7 +377,7 @@ class Term( Struct ):
     ##
     # c: 27.02.2007, r: 15.04.2008
     def get_cache( self, base_name, ii ):
-        args = self.__class__.use_caches[base_name][ii]
+        args = self.use_caches[base_name][ii]
         ans = [self.get_arg_name( arg ) for arg in args if not type( arg ) == dict]
 ##         print args, ans
 ##         pause()

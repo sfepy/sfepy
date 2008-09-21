@@ -56,3 +56,8 @@ def fix_mat_qp_shape( mat_qp, n_el ):
         mat_qp = nm.tile( mat_qp, (n_el, 1, 1, 1) )
     return mat_qp
 
+def fix_mat_shape( mat, n_qp ):
+    """Tiles mat to qp."""
+    if mat.ndim == 2:
+        mat = nm.tile( mat, (n_qp, 1, 1) )
+    return mat

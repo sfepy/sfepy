@@ -8,6 +8,7 @@
 #include "termsHyperElasticity.h"
 #include "termsNavierStokes.h"
 #include "termsBiot.h"
+#include "termsPiezo.h"
 #include "termsSurface.h"
 #include "termsMass.h"
 #include "termsVolume.h"
@@ -43,6 +44,7 @@
     (FMField *stateR),
     (FMField *vecMV),
     (FMField *mtxD),
+    (FMField *mtxG),
     (FMField *traction),
     (FMField *forceQP),
     (FMField *coef),
@@ -52,6 +54,7 @@
     (FMField *gradP1),
     (FMField *gradP2),
     (FMField *pressure),
+    (FMField *pressure_grad),
     (FMField *pressure_qp),
     (FMField *state_qp),
     (FMField *stress),
@@ -295,6 +298,11 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
 		  FMField *mtxD, VolumeGeometry *vg,
 		  int32 *elList, int32 elList_nRow );
+
+int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *pressure_grad,
+			 FMField *mtxG, VolumeGeometry *vg,
+			 int32 *elList, int32 elList_nRow,
+			 int32 mode );
 
 #ifndef ISRELEASE
 
