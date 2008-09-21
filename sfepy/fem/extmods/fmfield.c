@@ -1192,7 +1192,7 @@ int32 fmf_sumLevelsMulF( FMField *objR, FMField *objA, float64 *val )
 */
 int32 fmf_sumLevelsTMulF( FMField *objR, FMField *objA, float64 *val )
 {
-  int32 il, ir, ic, wr;
+  int32 il, ir, ic, wr, wc;
   float64 *pa, *pr;
 
 #ifdef DEBUG_FMF
@@ -1205,13 +1205,14 @@ int32 fmf_sumLevelsTMulF( FMField *objR, FMField *objA, float64 *val )
 
   wr = objR->nCol;
   pr = objR->val;
+  wc = objA->nCol;
 
   fmf_fillC( objR, 0.0 );
   for (il = 0; il < objA->nLev; il++) {
     pa = objA->val + objA->nCol * objA->nRow * il;
     for (ir = 0; ir < objR->nRow; ir++) {
       for (ic = 0; ic < objR->nCol; ic++) {
-	pr[wr*ir+ic] += pa[wr*ic+ir] * val[il];
+	pr[wr*ir+ic] += pa[wc*ic+ir] * val[il];
       }
     }
   }
