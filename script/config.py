@@ -104,6 +104,12 @@ class Config( object ):
         else:
             return '-shared -fPIC -DPIC'
 
+    def debug_flags( self ):
+        if has_attr( site_cfg, 'debug_flags' ):
+            return site_cfg.debug_flags
+        else:
+            return ''
+
 usage = """Usage: %s option"""
 
 def main():

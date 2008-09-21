@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 07.09.2008
+# last revision: 21.09.2008
 VERSION := 00.50.00
 PROJECTNAME := sfepy
 
@@ -13,14 +13,13 @@ DATE        := date +%Y_%m_%d
 CARCHFLAGS   := -Wall -c
 CARCHOUT     := -o
 
-#DEBUG_FLAGS := -DDEBUG_FMF -DDEBUG_MESH
-DEBUG_FLAGS := -DDEBUG_FMF
-#DEBUG_FLAGS :=
-
 ################ Do not edit below! ##############################
 
 #  OPTFLAGS     := -g -pg -fPIC -DPIC
 OPTFLAGS     := $(shell script/config.py opt_flags)
+#DEBUG_FLAGS := -DDEBUG_FMF -DDEBUG_MESH
+DEBUG_FLAGS := $(shell script/config.py debug_flags)
+#DEBUG_FLAGS :=
 PYVER := $(shell script/config.py python_version)
 ARCHLIB := $(shell script/config.py archlib)
 NUMPYINCLUDE := $(shell script/config.py numpy_include)
@@ -36,8 +35,6 @@ ISRELEASE := 1
 MODULES := eldesc examples input sfepy sfepy/applications sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
 ifndef ISRELEASE
   MODULES += sfepy/optimize
-else
-  DEBUG_FLAGS :=
 endif
 VERSIONH := sfepy/fem/extmods/version.h
 ALLTARGETS := version modules

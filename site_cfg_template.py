@@ -26,3 +26,6 @@ opt_flags = '-g -O2 -fPIC -DPIC'
 # Below is a Linux gcc default.
 # For an Intel Mac, use '-dynamiclib -undefined dynamic_lookup -fPIC -DPIC'
 link_flags = '-shared -fPIC -DPIC'
+
+# Can be a combination of '-DDEBUG_FMF' '-DDEBUG_MESH'.
+debug_flags = ''
