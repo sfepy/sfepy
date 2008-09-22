@@ -8,6 +8,10 @@ from sfepy.fem.meshio import MeshIO
 filename_mesh = 'database/phono/mesh_circ21.mesh'
 #filename_mesh = 'database/phono/mesh_circ21_small.mesh'
 
+
+omega = 1
+omega_squared = omega**2
+
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 
 dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
@@ -97,10 +101,10 @@ integral_1 = {
 }
 
 equations = {
-    '1' : """dw_mass_vector.i1.Y( inclusion.density, v, u )
-           + dw_lin_elastic_iso.i1.Y( inclusion.lame, v, u )
-           - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
-           = 0""",
+    '1' : """- %f * dw_mass_vector.i1.Y( inclusion.density, v, u )
+             + dw_lin_elastic_iso.i1.Y( inclusion.lame, v, u )
+             - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
+           = 0""" % omega_squared,
     '2' : """dw_diffusion.i1.Y( inclusion.dielectric, psi, phi )
            + dw_piezo_coupling.i1.Y2( inclusion.coupling, u, psi )
            = 0""",

@@ -11,7 +11,7 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *pressure_grad,
+int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			 FMField *mtxG, VolumeGeometry *vg,
 			 int32 *elList, int32 elList_nRow,
 			 int32 mode );

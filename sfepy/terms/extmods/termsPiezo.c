@@ -4,7 +4,7 @@
 
 #undef __FUNC__
 #define __FUNC__ "dw_piezo_coupling"
-int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *pressure_grad,
+int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			 FMField *mtxG, VolumeGeometry *vg,
 			 int32 *elList, int32 elList_nRow,
 			 int32 mode )
@@ -42,9 +42,9 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *pressure_grad,
     FMF_SetCell( vg->det, iel );
 
     if (mode == 0) { // vector - grad
-      FMF_SetCell( pressure_grad, iel );
+      FMF_SetCell( charge_grad, iel );
 
-      fmf_mulATB_nn( gtgp, mtxG, pressure_grad );
+      fmf_mulATB_nn( gtgp, mtxG, charge_grad );
       form_sdcc_actOpGT_VS3( gtgtgp, vg->bfGM, gtgp );
       fmf_sumLevelsMulF( out, gtgtgp, vg->det->val );
 

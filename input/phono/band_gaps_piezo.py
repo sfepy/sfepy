@@ -126,11 +126,13 @@ integral_1 = {
 
 equations = {
     'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )
-             - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
-             + dw_diffusion.i1.Y2( inclusion.dielectric, psi, phi )
-             + dw_piezo_coupling.i1.Y2( inclusion.coupling, u, psi )""",
+             + dw_diffusion.i1.Y2( inclusion.dielectric, psi, phi )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
 }
+##     'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )
+##              - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
+##              + dw_diffusion.i1.Y2( inclusion.dielectric, psi, phi )
+##              + dw_piezo_coupling.i1.Y2( inclusion.coupling, u, psi )""",
 
 ##
 # Other equations/terms related to band gaps.

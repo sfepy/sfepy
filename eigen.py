@@ -79,6 +79,14 @@ def solve_eigen_problem( problem, ofn_trunk = None, post_process_hook = None ):
     mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
                           dw_mode = 'matrix', tangent_matrix = problem.mtx_a )
 
+##     aa = mtx_a.toarray()
+##     print aa - aa.T
+##     ii =    nm.where( nm.abs( aa - aa.T ) > 1e-8 )
+##     print ii
+##     print aa[ii]
+##     print aa.T[ii]
+##     print nm.allclose( aa, aa.T )
+
 ##     from sfepy.base.plotutils import spy, pylab
 ##     spy( mtx_a, eps = 1e-12 )
 ##     pylab.show()
@@ -87,8 +95,16 @@ def solve_eigen_problem( problem, ofn_trunk = None, post_process_hook = None ):
                           dw_mode = 'matrix',
                           tangent_matrix = problem.mtx_a.copy() )
 
+##    mtx_b = sc.sparse.eye( mtx_a.shape[0], mtx_a.shape[1], dtype = nm.float64 )
+
+##     from sfepy.base.plotutils import spy, pylab
+##     spy( mtx_b, eps = 1e-12 )
+##     pylab.show()
 ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+##     pause()
+    debug()
+
     output( 'computing resonance frequencies...' )
     tt = [0]
     eigs, mtx_s_phi = eig( mtx_a.toarray(), mtx_b.toarray(), return_time = tt,
