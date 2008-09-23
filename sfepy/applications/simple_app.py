@@ -25,6 +25,8 @@ class SimpleApp( Application ):
         self.problem = ProblemDefinition.from_conf( conf )
         self.problem.ofn_trunk = ofn_trunk
         self.problem.output_dir = output_dir
+        if hasattr( options, 'output_format' ):
+            self.problem.output_format = options.output_format
 
     def call( self ):
 	dpb, vec_dp, data = solve_direct( self.conf, self.options,

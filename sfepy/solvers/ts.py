@@ -6,9 +6,9 @@ def get_print_info( n_step ):
     if n_step > 1:
         n_digit = int( nm.log10( n_step - 1 ) + 1 )
         format = '%%%dd of %%%dd' % (n_digit, n_digit)
-        suffix = '.%%0%dd.vtk' % n_digit
+        suffix = '%%0%dd' % n_digit
     else:
-        n_digit, format, suffix = 0, None, '.vtk'
+        n_digit, format, suffix = 0, None, None
     return n_digit, format, suffix
 
 class TimeStepper( Struct ):

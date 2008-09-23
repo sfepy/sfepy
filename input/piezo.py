@@ -3,9 +3,9 @@ import os
 import numpy as nm
 from sfepy.fem.meshio import MeshIO
 
-filename_mesh = 'database/phono/cube_sphere.mesh'
+#filename_mesh = 'database/phono/cube_sphere.mesh'
 #filename_mesh = 'database/phono/cube_cylinder.mesh'
-#filename_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = 'database/phono/mesh_circ21.mesh'
 #filename_mesh = 'database/phono/mesh_circ21_small.mesh'
 
 

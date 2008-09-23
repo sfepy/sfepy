@@ -44,8 +44,9 @@ class ProblemDefinition( Struct ):
                                  domain = domain,
                                  eldesc_dir = eldesc_dir )
 
-	# Default output file trunk.
+	# Default output file trunk and format.
 	obj.ofn_trunk = io.get_trunk( conf.filename_mesh )
+        obj.output_format = 'vtk'
 
         obj.set_regions( conf.regions, conf.materials, conf.funmod )
 
@@ -518,3 +519,10 @@ class ProblemDefinition( Struct ):
     def init_variables( self, state ):
         """Initialize variables with history."""
         self.variables.init_state( state )
+
+    def get_output_name( self, suffix = None ):
+        """Return default ouput file name."""
+        if suffix is None:
+            return '.'.join( (self.ofn_trunk, self.output_format) )
+        else:
+            return '.'.join( (self.ofn_trunk, suffix, self.output_format) )

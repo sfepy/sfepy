@@ -344,8 +344,7 @@ def vary_teps( problem ):
     ofn_trunk, output_dir = problem.ofn_trunk, problem.output_dir
     join = os.path.join
 
-    n_digit, aux, suffix = get_print_info( len( tepss ) + 1 )
-    d_format = suffix[1:-4]
+    n_digit, aux, d_format = get_print_info( len( tepss ) + 1 )
     
     for ii, teps in enumerate( tepss ):
         output( 'iteration %d: teps %.2e' % (ii, teps) )
@@ -389,8 +388,7 @@ def vary_y3_size( problem ):
 
     conf = problem.conf
     cr = conf.get_raw( 'regions' )
-    n_digit, aux, suffix = get_print_info( len( y3_diameters ) + 1 )
-    d_format = suffix[1:-4]
+    n_digit, aux, d_format = get_print_info( len( y3_diameters ) + 1 )
     for ii, diameter in enumerate( y3_diameters ):
         output( 'iteration %d: diameter %3.2f' % (ii, diameter) )
         opts = problem.conf.options

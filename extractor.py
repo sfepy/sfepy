@@ -34,7 +34,8 @@ def dump_to_vtk( filename, options, steps = None ):
         output( ts.format % (step, ts.n_step - 1) )
         out = io.read_data( step )
         if out is None: break
-        mesh.write( ofn_trunk + ts.suffix % step, io = 'auto', out = out )
+        mesh.write( ofn_trunk + ts.suffix % step + '.vtk',
+                    io = 'auto', out = out )
 
     output( '...done' )
     return ts.suffix

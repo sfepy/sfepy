@@ -155,13 +155,13 @@ def vary_omega1_size( problem ):
     set_output_prefix( 'vary_omega1_size:' )
 
     diameters = nm.linspace( 0.1, 0.6, 7 ) + 0.001
-    ofn_trunk, output_dir = problem.ofn_trunk, problem.output_dir
+    ofn_trunk, output_format = problem.ofn_trunk, problem.output_format
+    output_dir = problem.output_dir
     join = os.path.join
 
     conf = problem.conf
     cr = conf.get_raw( 'regions' )
-    n_digit, aux, suffix = get_print_info( len( diameters ) + 1 )
-    d_format = suffix[1:-4]
+    n_digit, aux, d_format = get_print_info( len( diameters ) + 1 )
     for ii, diameter in enumerate( diameters ):
         output( 'iteration %d: diameter %3.2f' % (ii, diameter) )
 
@@ -176,6 +176,7 @@ def vary_omega1_size( problem ):
 	    raise ValueError( 'region %s has no cells!' % region.name )
 
         problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
+        problem.output_format = output_format
 
         out = []
         yield problem, out

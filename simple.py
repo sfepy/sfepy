@@ -25,19 +25,20 @@ usage = """%prog [options] filename_in"""
 help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
+    'output_format' :
+    'output file format, one of: {vtk, h5, mesh} [default: %default]',
     'save_ebc' :
-    "save problem state showing EBC (Dirichlet conditions) [default: %default]",
+    "save problem state showing EBC (Dirichlet conditions)",
     'save_regions' :
-    "save problem regions as meshes [default: %default]",
+    "save problem regions as meshes",
     'save_field_meshes' :
-    "save meshes of problem fields (with extra DOF nodes) [default: %default]",
+    "save meshes of problem fields (with extra DOF nodes)",
     'save_region_field_meshes' :
-    "save meshes of regions of problem fields (with extra DOF nodes)"
-    "[default: %default]",
+    "save meshes of regions of problem fields (with extra DOF nodes)",
     'solve_not' :
-    "do not solve (use in connection with --save-*) [default: %default]",
+    "do not solve (use in connection with --save-*)",
     'list' :
-    "list data according to what, what can be one of: terms",
+    "list data, what can be one of: {terms}",
 }
 
 def main():
@@ -48,6 +49,9 @@ def main():
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename_trunk",
                        default = None, help = help['filename'] )
+    parser.add_option( "", "--format", metavar = 'format',
+                       action = "store", dest = "output_format",
+                       default = "vtk", help = help['output_format'] )
     parser.add_option( "", "--save-ebc",
                        action = "store_true", dest = "save_ebc",
                        default = False, help = help['save_ebc'] )

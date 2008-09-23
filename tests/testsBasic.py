@@ -64,6 +64,7 @@ class TestInputEvolutionary( TestInput ):
         self.report( 'solving %s...' % self.conf.input_name )
         name = op.join( self.options.out_dir, self.conf.output_name_trunk )
         options = Struct( output_filename_trunk = name,
+                          output_format ='vtk',
                           save_ebc = False, save_regions = False,
                           save_field_meshes = False,
                           save_region_field_meshes = False,

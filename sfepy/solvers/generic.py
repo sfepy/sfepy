@@ -136,7 +136,8 @@ def solve_evolutionary_op( problem,
             step_hook( problem, ts, state )
 
         if save_results and (is_save[ii] == ts.step):
-            problem.save_state( problem.ofn_trunk + suffix % ts.step, state,
+            filename = problem.get_output_name( suffix = suffix % ts.step )
+            problem.save_state( filename, state,
                                 post_process_hook = post_process_hook )
             ii += 1
 
@@ -150,7 +151,7 @@ def solve_stationary_op( problem, save_results = True, ts = None,
     state = problem.solve()
 
     if save_results:
-        problem.save_state( problem.ofn_trunk + '.vtk', state,
+        problem.save_state( problem.get_output_name(), state,
                             post_process_hook = post_process_hook )
 
     return state, data
@@ -162,6 +163,8 @@ def solve_direct( conf, options, problem = None ):
 	if options.output_filename_trunk:
 	    ofn_trunk = options.output_filename_trunk
 	    problem.ofn_trunk = ofn_trunk
+	if options.output_format:
+	    problem.output_format = options.output_format
     ofn_trunk = problem.ofn_trunk
     
     opts = conf.options
