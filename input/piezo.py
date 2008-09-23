@@ -3,9 +3,9 @@ import os
 import numpy as nm
 from sfepy.fem.meshio import MeshIO
 
-#fileName_mesh = 'database/phono/cube_sphere.mesh'
-#fileName_mesh = 'database/phono/cube_cylinder.mesh'
-filename_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = 'database/phono/cube_sphere.mesh'
+#filename_mesh = 'database/phono/cube_cylinder.mesh'
+#filename_mesh = 'database/phono/mesh_circ21.mesh'
 #filename_mesh = 'database/phono/mesh_circ21_small.mesh'
 
 
@@ -17,13 +17,18 @@ cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
+if dim == 2:
+    x_left, x_right = 0.0001,  0.9999
+else:
+    x_left, x_right = -0.4999,  0.4999
+    
 regions = {
     'Y' : ('all', {}),
     'Y1' : ('elements of group 1', {}),
     'Y2' : ('elements of group 2', {}),
     'Y2_Surface': ('r.Y1 *n r.Y2', {'can_cells' : False}),
-    'Left' : ('nodes in (x < 0.0001)', {}),
-    'Right' : ('nodes in (x > 0.9999)', {}),
+    'Left' : ('nodes in (x < %f)' % x_left, {}),
+    'Right' : ('nodes in (x > %f)' % x_right, {}),
 }
 
 material_1 = {
