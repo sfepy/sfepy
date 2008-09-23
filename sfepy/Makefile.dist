@@ -1,11 +1,8 @@
-# 17.10.2005, c
-# last revision: 21.03.2008
-
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
-DISTDIRS := base fem homogenization optimize physics solvers terms
+DISTDIRS := applications base fem homogenization optimize physics solvers terms
 
 RELDISTFILES := $(DISTFILES)
 RELDISTDIRS := base fem homogenization physics solvers terms

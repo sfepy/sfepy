@@ -9,5 +9,5 @@ dist:
 	cp -fpd $(DISTFILES) $(DESTDIR)
 
 reldist:
-        mkdir $(DESTDIR)
-        cp -fpd $(RELDISTFILES) $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fpd $(RELDISTFILES) $(DESTDIR)
