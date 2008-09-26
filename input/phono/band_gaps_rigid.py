@@ -66,6 +66,16 @@ options = {
     'output_dir' : os.path.join( cwd, 'output/csstd' ),
     #############################################
 
+    'eigenmomentum' : {'var' : 'up',
+                       'regions' : ['Y2', 'Y3'],
+                       'term' : '%s * di_volume_integrate.i1.%s( %s )'},
+    # Used to compute average density.
+    'region_to_material' : {'Y1' : 'matrix',
+                            'Y2' : 'inclusion',
+                            'Y3' : 'rigid',},
+    'volume' : 'd_volume.i1.%s( uy )',
+    'eig_problem' : 'simple',
+
     'fig_name' : 'band_gaps_sym_025.pdf',
     'plot_options' : {
         'show' : True, # Show figure.
@@ -187,20 +197,6 @@ equations = {
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )
              + dw_mass_vector.i1.Y3( rigid.density, v, u )""",
 }
-
-##
-# Other equations/terms related to band gaps.
-band_gaps = {
-    'eigenmomentum' : {'var' : 'up',
-                       'regions' : ['Y2', 'Y3'],
-                       'term' : '%s * di_volume_integrate.i1.%s( %s )'},
-    # Used to compute average density.
-    'region_to_material' : {'Y1' : 'matrix',
-                            'Y2' : 'inclusion',
-                            'Y3' : 'rigid',},
-    'volume' : 'd_volume.i1.%s( uy )',
-}
-
 
 ##
 # FE assembling parameters.

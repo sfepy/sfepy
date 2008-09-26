@@ -30,6 +30,15 @@ options = {
     'fig_name' : 'band_gaps.pdf',
     
 #    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
+
+    'eigenmomentum' : {'var' : 'up',
+                       'regions' : ['Y2'],
+                       'term' : '%s * di_volume_integrate.i1.%s( %s )'},
+    # Used to compute average density.
+    'region_to_material' : {'Y1' : 'matrix',
+                            'Y2' : 'inclusion',},
+    'volume' : 'd_volume.i1.%s( uy )',
+    'eig_problem' : 'simple',
 }
 
 regions = {
@@ -98,18 +107,6 @@ integral_1 = {
 equations = {
     'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
-}
-
-##
-# Other equations/terms related to band gaps.
-band_gaps = {
-    'eigenmomentum' : {'var' : 'up',
-                       'regions' : ['Y2'],
-                       'term' : '%s * di_volume_integrate.i1.%s( %s )'},
-    # Used to compute average density.
-    'region_to_material' : {'Y1' : 'matrix',
-                            'Y2' : 'inclusion',},
-    'volume' : 'd_volume.i1.%s( uy )',
 }
 
 ##

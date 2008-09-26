@@ -6,6 +6,7 @@ anim/*
 output/*
 output-tests/*
 results/*
+work/*
 auto/*
 *.vtk
 *.mesh

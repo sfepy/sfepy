@@ -108,6 +108,21 @@ def process_options( options, n_eigs ):
     except:
         plot_rsc = default_plot_rsc
     del default_plot_rsc
+
+    try:
+        eigenmomentum = options.eigenmomentum
+    except:
+        raise ValueError( 'missing key "eigenmomentum" in options!' )
+
+    try:
+        region_to_material = options.region_to_material
+    except:
+        raise ValueError( 'missing key "region_to_material" in options!' )
+
+    try:
+        volume = options.volume
+    except:
+        raise ValueError( 'missing key "volume" in options!' )
     
     return Struct( **locals() )
 
@@ -522,16 +537,15 @@ def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
 
     ??? make feps relative to ]f0, f1[ size ???
     """
-    conf_bg = conf.band_gaps
-    average_density = compute_average_density( pb,
-                                               conf_bg['volume'],
-                                               conf_bg['region_to_material'] )
-    output( 'average density:', average_density )
-
     n_eigs = eigs.shape[0]
     opts = process_options( conf.options, n_eigs )
     method = get_method( conf.options )
     output( 'method:', method )
+
+    average_density = compute_average_density( pb,
+                                               opts.volume,
+                                               opts.region_to_material )
+    output( 'average density:', average_density )
     
     if not opts.squared:
         eigs = nm.sqrt( eigs )
@@ -555,8 +569,8 @@ def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
     output( 'mass matrix eigenmomenta...')
     pbar = MyBar( 'computing:' )
     tt = time.clock()
-    aux = compute_eigenmomenta( pb, conf_bg['eigenmomentum'],
-                                conf_bg['region_to_material'],
+    aux = compute_eigenmomenta( pb, opts.eigenmomentum,
+                                opts.region_to_material,
                                 mtx_phi, opts.teps, opts.teps_rel,
                                 wrap_transform, pbar )
     n_zeroed, valid, masses = aux

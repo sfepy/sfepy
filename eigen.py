@@ -33,8 +33,7 @@ class AcousticBandGapsApp( SimpleApp ):
         
     def call( self ):
         options = self.options
-        evp = solve_eigen_problem( self.problem,
-                                   post_process_hook = self.post_process_hook )
+        evp = self.solve_eigen_problem()
 
         if options.detect_band_gaps:
             bg = detect_band_gaps( self.problem, evp.eigs, evp.mtx_phi,
@@ -66,82 +65,82 @@ class AcousticBandGapsApp( SimpleApp ):
 
         return evp, bg
     
-def solve_eigen_problem( problem, ofn_trunk = None, post_process_hook = None ):
+    def solve_eigen_problem( self, ofn_trunk = None, post_process_hook = None ):
 
-    ofn_trunk = get_default( ofn_trunk, problem.ofn_trunk,
-                             'output file name trunk missing!' )
-    conf = problem.conf
-    dim = problem.domain.mesh.dim
+        problem = self.problem
+        ofn_trunk = get_default( ofn_trunk, problem.ofn_trunk,
+                                 'output file name trunk missing!' )
+        post_process_hook = get_default( post_process_hook,
+                                         self.post_process_hook )
+ 
+        conf = self.conf
+        
+        eig_problem = get_default_attr( conf.options, 'eig_problem', 'simple' )
+        if eig_problem == 'simple':
+            dim = problem.domain.mesh.dim
+            problem.time_update()
 
-    problem.time_update()
+            dummy = problem.create_state_vector()
+            mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
+                                  dw_mode = 'matrix',
+                                  tangent_matrix = problem.mtx_a )
 
-    dummy = problem.create_state_vector()
-    mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
-                          dw_mode = 'matrix', tangent_matrix = problem.mtx_a )
+            mtx_b = eval_term_op( dummy, conf.equations['rhs'], problem,
+                                  dw_mode = 'matrix',
+                                  tangent_matrix = problem.mtx_a.copy() )
 
-##     from sfepy.base.plotutils import spy, pylab
-##     spy( mtx_a, eps = 1e-12 )
-##     pylab.show()
-    
-    mtx_b = eval_term_op( dummy, conf.equations['rhs'], problem,
-                          dw_mode = 'matrix',
-                          tangent_matrix = problem.mtx_a.copy() )
+    ##     from sfepy.base.plotutils import spy, pylab
+    ##     spy( mtx_b, eps = 1e-12 )
+    ##     pylab.show()
+    ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
+    ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+    ##     pause()
 
-##    mtx_b = sc.sparse.eye( mtx_a.shape[0], mtx_a.shape[1], dtype = nm.float64 )
+            output( 'computing resonance frequencies...' )
+            tt = [0]
+            eigs, mtx_s_phi = eig( mtx_a.toarray(), mtx_b.toarray(),
+                                   return_time = tt,
+                                   method = get_method( conf.options ) )
+            output( '...done in %.2f s' % tt[0] )
+            output( eigs )
+            output( 'number of frequencies: %d' % eigs.shape[0] )
 
-##     from sfepy.base.plotutils import spy, pylab
-##     spy( mtx_b, eps = 1e-12 )
-##     pylab.show()
-##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
-##     pause()
+            try:
+                assert nm.isfinite( eigs ).all()
+            except:
+                debug()
 
-    output( 'computing resonance frequencies...' )
-    tt = [0]
-    eigs, mtx_s_phi = eig( mtx_a.toarray(), mtx_b.toarray(), return_time = tt,
-                           method = get_method( conf.options ) )
-    output( '...done in %.2f s' % tt[0] )
-    output( eigs )
-    output( 'number of frequencies: %d' % eigs.shape[0] )
+    ##    B-orthogonality check.
+    ##    nm.dot( mtx_s_phi[:,5], mtx_b * mtx_s_phi[:,5] )
 
-    try:
-        assert nm.isfinite( eigs ).all()
-    except:
-        debug()
+        else:
+            raise NotImplementedError
 
-##     import sfepy.base.plotutils as plu
-##     plu.spy( mtx_b, eps = 1e-12 )
-##     plu.pylab.show()
-##     pause()
+        n_eigs = eigs.shape[0]
+        opts = process_options( conf.options, n_eigs )
 
-##    B-orthogonality check.
-##    nm.dot( mtx_s_phi[:,5], mtx_b * mtx_s_phi[:,5] )
-    
-    n_eigs = eigs.shape[0]
-    opts = process_options( conf.options, n_eigs )
+        mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
+                           dtype = nm.float64 )
+        for ii in xrange( n_eigs ):
+            mtx_phi[:,ii] = problem.variables.make_full_vec( mtx_s_phi[:,ii] )
 
-    mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
-                       dtype = nm.float64 )
-    for ii in xrange( n_eigs ):
-        mtx_phi[:,ii] = problem.variables.make_full_vec( mtx_s_phi[:,ii] )
+        out = {}
+        for ii in xrange( n_eigs ):
+            if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
+            aux = problem.state_to_output( mtx_phi[:,ii] )
+            key = aux.keys()[0]
+            out[key+'%03d' % ii] = aux[key]
 
-    out = {}
-    for ii in xrange( n_eigs ):
-        if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
-        aux = problem.state_to_output( mtx_phi[:,ii] )
-        key = aux.keys()[0]
-        out[key+'%03d' % ii] = aux[key]
+        if post_process_hook is not None:
+            out = post_process_hook( out, problem, mtx_phi )
 
-    if post_process_hook is not None:
-        out = post_process_hook( out, problem, mtx_phi )
+        problem.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
 
-    problem.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
+        fd = open( ofn_trunk + '_eigs.txt', 'w' )
+        eigs.tofile( fd, ' ' )
+        fd.close()
 
-    fd = open( ofn_trunk + '_eigs.txt', 'w' )
-    eigs.tofile( fd, ' ' )
-    fd.close()
-
-    return Struct( eigs = eigs, mtx_phi = mtx_phi )
+        return Struct( eigs = eigs, mtx_phi = mtx_phi )
 
 
 usage = """%prog [options] filename_in"""
