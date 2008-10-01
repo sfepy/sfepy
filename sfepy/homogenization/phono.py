@@ -155,13 +155,13 @@ def compute_average_density( pb, volume_term, region_to_material ):
     return average_density
 
 def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
-                          mtx_phi, threshold, threshold_is_relative,
+                          eig_vectors, threshold, threshold_is_relative,
                           transform = None, pbar = None ):
     """Eigenmomenta.
 
     Valid == True means an eigenmomentum above threshold."""
     dim = pb.domain.mesh.dim
-    n_dof, n_eigs = mtx_phi.shape
+    n_dof, n_eigs = eig_vectors.shape
     n_nod = n_dof / dim
 
     u_name = conf_eigenmomentum['var']
@@ -189,9 +189,9 @@ def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
                                              100. * ii / (n_eigs - 1)) )
             
         if transform is None:
-            vec_phi, is_zero = mtx_phi[:,ii], False
+            vec_phi, is_zero = eig_vectors[:,ii], False
         else:
-            vec_phi, is_zero = transform( mtx_phi[:,ii], (n_nod, dim) )
+            vec_phi, is_zero = transform( eig_vectors[:,ii], (n_nod, dim) )
            
         if is_zero:
             masses[ii,:] = 0.0
@@ -530,10 +530,11 @@ def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,
 
     return freq_range, freq_range_margins
     
-def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
-    """Detect band gaps given solution to eigenproblem (eigs, mtx_phi). Only
-    valid resonance frequencies (e.i. those for which corresponding
-    eigenmomenta are above a given threshold) are taken into account.
+def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
+    """Detect band gaps given solution to eigenproblem (eigs,
+    eig_vectors). Only valid resonance frequencies (e.i. those for which
+    corresponding eigenmomenta are above a given threshold) are taken into
+    account.
 
     ??? make feps relative to ]f0, f1[ size ???
     """
@@ -571,7 +572,7 @@ def detect_band_gaps( pb, eigs, mtx_phi, conf, options ):
     tt = time.clock()
     aux = compute_eigenmomenta( pb, opts.eigenmomentum,
                                 opts.region_to_material,
-                                mtx_phi, opts.teps, opts.teps_rel,
+                                eig_vectors, opts.teps, opts.teps_rel,
                                 wrap_transform, pbar )
     n_zeroed, valid, masses = aux
     output( '...done in %.2f s' % (time.clock() - tt) )

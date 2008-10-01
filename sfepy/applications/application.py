@@ -8,7 +8,7 @@ class Application( Struct ):
 
     Automates parametric studies, see parametrize().
     """
-    def __init__( self, conf, options, output_prefix ):
+    def __init__( self, conf, options, output_prefix, **kwargs ):
         Struct.__init__( self,
                          conf = conf,
                          options = options,

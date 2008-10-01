@@ -121,9 +121,15 @@ class ProblemDefinition( Struct ):
         self.variables = variables
         self.mtx_a = None
         self.solvers = None
+        self.clear_equations()
 ##         print variables.di
 ##         pause()
         
+
+    def clear_equations( self ):
+        self.integrals = None
+        self.geometries = None
+        self.equations = None
     
     ##
     # c: 18.04.2006, r: 13.06.2008

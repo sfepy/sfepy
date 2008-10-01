@@ -8,17 +8,19 @@ import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
-from sfepy.fem.evaluate import eval_term_op
-from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.fem import eval_term_op, ProblemDefinition, Equations
+from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import process_options, get_method,\
      transform_plot_data, plot_logs, plot_gaps, detect_band_gaps
 from sfepy.applications import SimpleApp
+from sfepy.solvers import Solver
 from sfepy.base.plotutils import pylab
 
 class AcousticBandGapsApp( SimpleApp ):
 
-    def __init__( self, conf, options, output_prefix ):
-        SimpleApp.__init__( self, conf, options, output_prefix )
+    def __init__( self, conf, options, output_prefix, **kwargs ):
+        SimpleApp.__init__( self, conf, options, output_prefix,
+                            init_equations = False )
 
         opts = conf.options
         post_process_hook = get_default_attr( opts, 'post_process_hook', None )
@@ -36,7 +38,7 @@ class AcousticBandGapsApp( SimpleApp ):
         evp = self.solve_eigen_problem()
 
         if options.detect_band_gaps:
-            bg = detect_band_gaps( self.problem, evp.eigs, evp.mtx_phi,
+            bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
                                    self.conf, options )
 
             if options.plot:
@@ -77,6 +79,8 @@ class AcousticBandGapsApp( SimpleApp ):
         
         eig_problem = get_default_attr( conf.options, 'eig_problem', 'simple' )
         if eig_problem == 'simple':
+            problem.set_equations( conf.equations )
+
             dim = problem.domain.mesh.dim
             problem.time_update()
 
@@ -85,51 +89,97 @@ class AcousticBandGapsApp( SimpleApp ):
                                   dw_mode = 'matrix',
                                   tangent_matrix = problem.mtx_a )
 
-            mtx_b = eval_term_op( dummy, conf.equations['rhs'], problem,
+            mtx_m = eval_term_op( dummy, conf.equations['rhs'], problem,
                                   dw_mode = 'matrix',
                                   tangent_matrix = problem.mtx_a.copy() )
 
-    ##     from sfepy.base.plotutils import spy, pylab
-    ##     spy( mtx_b, eps = 1e-12 )
-    ##     pylab.show()
-    ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-    ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
-    ##     pause()
+        elif eig_problem == 'schur':
+            # A = K + B^T D^{-1} B.
+            mtx = assemble_by_blocks( conf.equations, self.problem )
+            problem.set_equations( conf.equations )
+            problem.time_update()
 
-            output( 'computing resonance frequencies...' )
-            tt = [0]
-            eigs, mtx_s_phi = eig( mtx_a.toarray(), mtx_b.toarray(),
-                                   return_time = tt,
-                                   method = get_method( conf.options ) )
-            output( '...done in %.2f s' % tt[0] )
-            output( eigs )
-            output( 'number of frequencies: %d' % eigs.shape[0] )
+            ls = Solver.any_from_conf( problem.ls_conf,
+                                       presolve = True, mtx = mtx['D'] )
 
-            try:
-                assert nm.isfinite( eigs ).all()
-            except:
-                debug()
-
-    ##    B-orthogonality check.
-    ##    nm.dot( mtx_s_phi[:,5], mtx_b * mtx_s_phi[:,5] )
+            mtx_b, mtx_m = mtx['B'], mtx['M']
+            mtx_dib = nm.empty( mtx_b.shape, dtype = mtx_b.dtype )
+            for ic in xrange( mtx_b.shape[1] ):
+                mtx_dib[:,ic] = ls( mtx_b[:,ic].toarray().squeeze() )
+            mtx_a = mtx['K'] + mtx_b.T * mtx_dib
 
         else:
             raise NotImplementedError
+
+##     from sfepy.base.plotutils import spy, pylab
+##     spy( mtx_b, eps = 1e-12 )
+##     pylab.show()
+##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
+##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+##     pause()
+
+        output( 'computing resonance frequencies...' )
+        tt = [0]
+
+        if isinstance( mtx_a, sc.sparse.spmatrix ):
+            mtx_a = mtx_a.toarray()
+        if isinstance( mtx_m, sc.sparse.spmatrix ):
+            mtx_m = mtx_m.toarray()
+
+        eigs, mtx_s_phi = eig( mtx_a, mtx_m, return_time = tt,
+                               method = get_method( conf.options ) )
+        output( '...done in %.2f s' % tt[0] )
+        output( eigs )
+        output( 'number of frequencies: %d' % eigs.shape[0] )
+
+        try:
+            assert nm.isfinite( eigs ).all()
+        except:
+            debug()
+
+        # B-orthogonality check.
+##         print nm.dot( mtx_s_phi[:,5], nm.dot( mtx_m, mtx_s_phi[:,5] ) )
+##         print nm.dot( mtx_s_phi[:,5], nm.dot( mtx_m, mtx_s_phi[:,0] ) )
+##         debug()
 
         n_eigs = eigs.shape[0]
         opts = process_options( conf.options, n_eigs )
 
         mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
                            dtype = nm.float64 )
-        for ii in xrange( n_eigs ):
-            mtx_phi[:,ii] = problem.variables.make_full_vec( mtx_s_phi[:,ii] )
+
+        make_full = problem.variables.make_full_vec
+        if eig_problem == 'simple':
+            for ii in xrange( n_eigs ):
+                mtx_phi[:,ii] = make_full( mtx_s_phi[:,ii] )
+            eig_vectors = mtx_phi
+            
+        elif eig_problem == 'schur':
+            # Update also eliminated variables.
+            schur = conf.options.schur
+            primary_var = schur['primary_var']
+            eliminated_var = schur['eliminated_var']
+
+            mtx_s_phi_schur = sc.dot( mtx_dib, mtx_s_phi )
+            aux = nm.empty( (problem.variables.adi.ptr[-1],),
+                            dtype = nm.float64 )
+            set = problem.variables.set_state_part
+            for ii in xrange( n_eigs ):
+                set( aux, mtx_s_phi[:,ii], primary_var, stripped = True )
+                set( aux, mtx_s_phi_schur[:,ii], eliminated_var,
+                     stripped = True )
+
+                mtx_phi[:,ii] = make_full( aux )
+
+            indx = problem.variables.get_indx( primary_var )
+            eig_vectors = mtx_phi[indx,:]
 
         out = {}
         for ii in xrange( n_eigs ):
             if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
             aux = problem.state_to_output( mtx_phi[:,ii] )
-            key = aux.keys()[0]
-            out[key+'%03d' % ii] = aux[key]
+            for name, val in aux.iteritems():
+                out[name+'%03d' % ii] = val
 
         if post_process_hook is not None:
             out = post_process_hook( out, problem, mtx_phi )
@@ -140,7 +190,7 @@ class AcousticBandGapsApp( SimpleApp ):
         eigs.tofile( fd, ' ' )
         fd.close()
 
-        return Struct( eigs = eigs, mtx_phi = mtx_phi )
+        return Struct( eigs = eigs, eig_vectors = eig_vectors )
 
 
 usage = """%prog [options] filename_in"""

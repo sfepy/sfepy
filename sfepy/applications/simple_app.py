@@ -2,13 +2,14 @@ import os.path as op
 
 from sfepy.base.base import *
 import sfepy.base.ioutils as io
-from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.fem import ProblemDefinition
 from sfepy.solvers.generic import solve_direct
 from application import Application
 
 class SimpleApp( Application ):
 
-    def __init__( self, conf, options, output_prefix ):
+    def __init__( self, conf, options, output_prefix, **kwargs ):
+        """`kwargs` are passed to  ProblemDefinition.from_conf()"""
         Application.__init__( self, conf, options, output_prefix )
 
         opts = conf.options
@@ -22,7 +23,7 @@ class SimpleApp( Application ):
 	else:
             ofn_trunk = options.output_filename_trunk
 
-        self.problem = ProblemDefinition.from_conf( conf )
+        self.problem = ProblemDefinition.from_conf( conf, **kwargs )
         self.problem.ofn_trunk = ofn_trunk
         self.problem.output_dir = output_dir
         if hasattr( options, 'output_format' ):
