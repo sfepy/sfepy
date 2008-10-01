@@ -1,7 +1,7 @@
 # c: 25.09.2007, r: 10.09.2008
 import os
 import numpy as nm
-from sfepy.fem.meshio import MeshIO
+from sfepy.fem import MeshIO
 
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/phono/cube_cylinder.mesh'

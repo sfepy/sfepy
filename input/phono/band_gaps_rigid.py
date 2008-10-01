@@ -2,7 +2,7 @@
 import os
 import numpy as nm
 from sfepy.base.base import output, set_output_prefix, pause, debug, Struct
-from sfepy.fem.meshio import MeshIO
+from sfepy.fem import MeshIO
 from gen_mesh import gen_concentric
 
 is_3D = False
@@ -285,7 +285,7 @@ def extend_cell_data( data, pb, rname, val = None ):
     return edata
 
 def post_process( out, problem, mtx_phi ):
-    from sfepy.fem.evaluate import eval_term_op
+    from sfepy.fem import eval_term_op
 
     for key in out.keys():
         ii = int( key[1:] )
@@ -368,7 +368,7 @@ def vary_teps( problem ):
 
 def vary_y3_size( problem ):
     """Vary size of Y3 inclusion."""
-    from sfepy.fem.problemDef import ProblemDefinition
+    from sfepy.fem import ProblemDefinition
     from sfepy.solvers.ts import get_print_info
     
     set_output_prefix( 'vary_y3_size:' )

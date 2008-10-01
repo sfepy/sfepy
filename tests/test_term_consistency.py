@@ -95,7 +95,7 @@ class Test( TestCommon ):
     ##
     # c: 19.05.2008, r: 19.05.2008
     def from_conf( conf, options ):
-        from sfepy.fem.problemDef import ProblemDefinition
+        from sfepy.fem import ProblemDefinition
 
         problem = ProblemDefinition.from_conf( conf, init_variables = False )
         test = Test( problem = problem,
@@ -107,7 +107,7 @@ class Test( TestCommon ):
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
         from sfepy.base.base import select_by_names
-        from sfepy.fem.evaluate import eval_term_op
+        from sfepy.fem import eval_term_op
 
         ok = True
         pb = self.problem

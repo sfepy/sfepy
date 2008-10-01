@@ -175,6 +175,14 @@ class Equations( Container ):
             i_names.update( eq.get_term_integral_names() )
         return i_names
 
+    def get_variable_names( self ):
+        """Return the list of names of all variables used in equations."""
+        vns = set()
+        for eq in self:
+            for term in eq.terms:
+                vns.update( term.get_variable_names() )
+        return list( vns )
+
     ##
     # 27.02.2007, c
     def invalidate_term_caches( self ):

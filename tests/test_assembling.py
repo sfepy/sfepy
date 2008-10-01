@@ -130,7 +130,7 @@ class Test( TestCommon ):
     ##
     # c: 14.04.2008, r: 14.04.2008
     def test_vector_matrix( self ):
-        from sfepy.fem.evaluate import eval_term_op
+        from sfepy.fem import eval_term_op
         problem  = self.problem
 
         state = problem.create_state_vector()

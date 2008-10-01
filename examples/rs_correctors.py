@@ -280,7 +280,7 @@ def iter_sym( dim ):
 # c: 05.05.2008, r: 05.05.2008
 def coef_e( problem, corrs_rs, pis ):
     """Homogenized elastic coefficient $E_{ijkl}$."""
-    from sfepy.fem.evaluate import eval_term_op
+    from sfepy.fem import eval_term_op
 
     coef_term = 'd_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
 
@@ -313,7 +313,7 @@ def coef_e( problem, corrs_rs, pis ):
 def main():
     from sfepy.base.base import spause
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem.problemDef import ProblemDefinition
+    from sfepy.fem import ProblemDefinition
     from sfepy.base.ioutils import get_trunk
 
     nm.set_printoptions( precision = 3 )

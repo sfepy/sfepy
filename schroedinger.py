@@ -21,10 +21,8 @@ import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
-from sfepy.fem.evaluate import eval_term_op
-from sfepy.fem.meshio import MeshIO
+from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
-from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.homogenization.phono import process_options
 from sfepy.solvers import Solver
 

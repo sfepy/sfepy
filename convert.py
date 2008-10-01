@@ -2,7 +2,7 @@
 import os, sys
 
 import geom
-from sfepy.fem.mesh import Mesh
+from sfepy.fem import Mesh
 try:
     from site_cfg import tetgen_path
 except ImportError:

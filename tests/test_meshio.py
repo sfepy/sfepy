@@ -22,7 +22,7 @@ class Test( TestCommon ):
     # c: 05.02.2008, r: 05.02.2008
     def test_read_meshes( self ):
         """Try to read all listed meshes."""
-        from sfepy.fem.mesh import Mesh
+        from sfepy.fem import Mesh
 
         meshes = {}
         for ii, filename in enumerate( filename_meshes ):
@@ -96,7 +96,7 @@ class Test( TestCommon ):
     ##
     # c: 03.07.2008, r: 03.07.2008
     def test_read_dimension( self ):
-        from sfepy.fem.meshio import MeshIO
+        from sfepy.fem import MeshIO
         meshes = {'database/tests/small2d.mesh' : 2,
                   'database/tests/small2d.vtk' : 2,
                   'database/tests/small3d.mesh' : 3,

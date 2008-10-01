@@ -3,7 +3,7 @@ import sys
 sys.path.append( '.' )
 from optparse import OptionParser
 from sfepy.base.base import *
-from sfepy.fem.mesh import Mesh
+from sfepy.fem import Mesh
 from sfepy.base.la import cycle
 from sfepy.base.progressbar import MyBar
 

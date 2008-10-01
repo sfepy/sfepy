@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 
 import sfepy.base.ioutils as io
-from sfepy.fem.problemDef import ProblemDefinition
+from sfepy.fem import ProblemDefinition
 from sfepy.base.conf import get_standard_keywords
 
 ##

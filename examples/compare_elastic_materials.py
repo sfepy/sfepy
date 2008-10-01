@@ -175,7 +175,7 @@ def solve_branch( problem, options, branch_function ):
 
 def main():
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem.problemDef import ProblemDefinition
+    from sfepy.fem import ProblemDefinition
     from sfepy.base.plotutils import pylab
 
     required, other = get_standard_keywords()

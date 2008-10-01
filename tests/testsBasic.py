@@ -98,7 +98,7 @@ class TestLCBC( TestCommon ):
         from sfepy.base.base import Struct
         from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
-        from sfepy.fem.evaluate import eval_term_op
+        from sfepy.fem import eval_term_op
 
         status = IndexedStruct()
         problem, vec, data = solve_stationary( self.conf,

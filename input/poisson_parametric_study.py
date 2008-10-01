@@ -149,7 +149,7 @@ def vary_omega1_size( problem ):
       3. use the output container for some logging
       4. yields None (to signal next iteration to Application)
     """
-    from sfepy.fem.problemDef import ProblemDefinition
+    from sfepy.fem import ProblemDefinition
     from sfepy.solvers.ts import get_print_info
     
     set_output_prefix( 'vary_omega1_size:' )

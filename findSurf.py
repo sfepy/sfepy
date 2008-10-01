@@ -19,8 +19,7 @@ from optparse import OptionParser
 import init_sfepy
 
 from sfepy.base.base import *
-from sfepy.fem.mesh import Mesh
-from sfepy.fem.domain import Domain
+from sfepy.fem import Mesh, Domain
 from sfepy.fem.extmods.fem import raw_graph
 from sfepy.fem.extmods.meshutils import graph_components
 
