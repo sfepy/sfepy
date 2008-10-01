@@ -274,9 +274,10 @@ def find_zero( f0, f1, masses, eigs, average_density, opts, mode ):
 
         val = meigs[ieig]
 ##         print f, f0, f1, fm, fp, val
+##         print '%.16e' % f, '%.16e' % fm, '%.16e' % fp, '%.16e' % val
 
         if (abs( val ) < zeps)\
-               or ((fp - fm) < (100.0 * nm.finfo( float ).eps)):
+               or ((fp - fm) < (abs( fm ) * nm.finfo( float ).eps)):
             return 0, f, val
 
         if mode == 0:
@@ -605,7 +606,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
         output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
 
         log = []
-        num = min( 200, max( 20, (f1 - f0) / df ) )
+        num = min( 1000, max( 20, (f1 - f0) / df ) )
         log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         for f in log_freqs:
             mtx_mass = cgm( f, valid_masses, valid_eigs,

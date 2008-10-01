@@ -160,7 +160,7 @@ class AcousticBandGapsApp( SimpleApp ):
             primary_var = schur['primary_var']
             eliminated_var = schur['eliminated_var']
 
-            mtx_s_phi_schur = sc.dot( mtx_dib, mtx_s_phi )
+            mtx_s_phi_schur = - sc.dot( mtx_dib, mtx_s_phi )
             aux = nm.empty( (problem.variables.adi.ptr[-1],),
                             dtype = nm.float64 )
             set = problem.variables.set_state_part
