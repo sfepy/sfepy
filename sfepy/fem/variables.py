@@ -667,7 +667,7 @@ class Variables( Container ):
         Make a full vector satisfying E(P)BC
         from a stripped vector. For a selected variable if var_name is set.
         """
-        def _make_full_vec( vec, eq_map ):
+        def _make_full_vec( vec, svec, eq_map ):
             # EBC.
             ii = eq_map.eq_ebc
             if force_value is None:
@@ -690,11 +690,12 @@ class Variables( Container ):
 
             for var_name in self.bc_of_vars.iterkeys():
                 eq_map = self[var_name].eq_map
-                _make_full_vec( vec[self.di.indx[var_name]], eq_map )
+                _make_full_vec( vec[self.di.indx[var_name]],
+                                svec[self.adi.indx[var_name]], eq_map )
         else:
             vec = nm.empty( (self.di.n_dofs[var_name],), dtype = self.dtype )
             eq_map = self[var_name].eq_map
-            _make_full_vec( vec, eq_map )
+            _make_full_vec( vec, svec, eq_map )
 
         return vec
 
@@ -1281,8 +1282,8 @@ class Variable( Struct ):
                 scoor = field.get_coor( nslave )
                 fun = getattr( funmod, bc.match )
                 i1, i2 = fun( mcoor, scoor )
-##                 print nm.c_[mcoor[i1], scoor[i2]]
-##                 print nm.c_[nmaster[i1], nslave[i2]] + 1
+##                print nm.c_[mcoor[i1], scoor[i2]]
+##                print nm.c_[nmaster[i1], nslave[i2]] + 1
 
                 meq = self.expand_nodes_to_equations( nmaster[i1], bc.dofs[0] )
                 seq = self.expand_nodes_to_equations( nslave[i2], bc.dofs[1] )
@@ -1333,9 +1334,6 @@ class Variable( Struct ):
         eq_map.val_ebc = nm.atleast_1d( val_ebc[ii].squeeze() )
         eq_map.master = nm.argwhere( master_slave > 0 ).squeeze()
         eq_map.slave = master_slave[eq_map.master] - 1
-##         print eq_map.master
-##         print eq_map.slave
-##         pause()
 
         assert (eq_map.eq_ebc.shape == eq_map.val_ebc.shape)
 ##         print eq_map.eq_ebc.shape
