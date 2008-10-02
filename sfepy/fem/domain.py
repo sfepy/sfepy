@@ -48,9 +48,9 @@ def dm_create_list( groups, sentinel, mode, is_sort ):
 ##         print gptr, eptr
 
     if (ii != sum( n_obj )):
-        print 'neighbour_list size mismatch! (%d == %d = sum( %s ))'\
+        msg = 'neighbour_list size mismatch! (%d == %d = sum( %s ))'\
               % (ii, sum( n_obj ), n_obj)
-        raise AssertionError
+        raise ValueError( msg )
 
     return( (objs, gptr, eptr) )
 
@@ -95,14 +95,12 @@ def dm_neighbour_list( obj_in, groups, ic, perm, mode ):
 
 
     if (nm.sometrue( cnt_pobj[1:] - cnt )):
-        print cnt_pobj[1:]
-        print cnt
-        print cnt_pobj[1:] - cnt
-        raise AssertionError
+        msg = '%s\n%s\n%s\n' % (cnt_pobj[1:], cnt, cnt_pobj[1:] - cnt)
+        raise ValueError( msg )
 
     if (iu != obj_in.n_unique):
-        print iu, "==", obj_in.n_unique
-        raise AssertionError
+        msg = ' '.join( [iu, "==", obj_in.n_unique] )
+        raise ValueError( msg )
 
     return( (pg, pel, pobj, objs, cnt, uid) )
 
@@ -369,7 +367,7 @@ class Domain( Struct ):
 					     dtype = nm.int32 )
 #               print "t = ", time.clock() - tt
 
-                assert len( obj.unique_list ) == obj.n_unique
+                assert_( len( obj.unique_list ) == obj.n_unique )
 #                print obj.n_unique, obj.unique_list, obj.unique_list.shape
                 ii = nm.cumsum( ic[:-1] == 0, dtype = nm.int32 )
                 obj.uid = ii.copy()
@@ -451,8 +449,8 @@ class Domain( Struct ):
                     
                     if where[0] == '[':
                         out = nm.array( eval( where ), dtype = nm.int32 )
-                        assert nm.amin( out ) >= 0
-                        assert nm.amax( out ) < domain.mesh.nod0.shape[0]
+                        assert_( nm.amin( out ) >= 0 )
+                        assert_( nm.amax( out ) < domain.mesh.nod0.shape[0] )
                     else:
                         x = domain.mesh.nod0[:,0]
                         y = domain.mesh.nod0[:,1]

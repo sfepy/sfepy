@@ -1,4 +1,4 @@
-from sfepy.base.testing import TestCommon
+from sfepy.base.testing import TestCommon, assert_
 import numpy as nm
 import scipy.sparse as sp
 import os.path as op
@@ -35,12 +35,12 @@ class Test( TestCommon ):
 #        self.report( 'read matrix:\n%s' % mtx2 )
         self.report( 'difference:\n%s' % (mtx2 - mtx).__repr__() )
 
-        assert mtx.shape == mtx2.shape
-        assert mtx.dtype == mtx2.dtype
-        assert mtx.format == mtx2.format
-        assert nm.allclose( mtx.data, mtx2.data )
-        assert nm.allclose( mtx.indices, mtx2.indices )
-        assert nm.allclose( mtx.indptr, mtx2.indptr )
+        assert_( mtx.shape == mtx2.shape )
+        assert_( mtx.dtype == mtx2.dtype )
+        assert_( mtx.format == mtx2.format )
+        assert_( nm.allclose( mtx.data, mtx2.data ) )
+        assert_( nm.allclose( mtx.indices, mtx2.indices ) )
+        assert_( nm.allclose( mtx.indptr, mtx2.indptr ) )
 
         return True
 
@@ -64,6 +64,6 @@ class Test( TestCommon ):
         test2 = read_dict_hdf5( filename )
         self.report( '%s' % test2 )
 
-        assert test == test2
+        assert_( test == test2 )
 
         return True

@@ -170,8 +170,8 @@ def cycle( bounds ):
 def barycentric_coors( coors, s_coors ):
     n_v, dim = s_coors.shape
     n_c, dim2 = coors.shape
-    assert dim == dim2
-    assert ((dim + 1) * dim / 2) == n_v
+    assert_( dim == dim2 )
+    assert_( ((dim + 1) * dim / 2) == n_v )
 
     mtx = nm.ones( (n_v, n_v), nm.float64 )
     mtx[0:n_v-1,:] = s_coors.T
@@ -211,7 +211,7 @@ class MatrixAction( Struct ):
     def from_function( fun, expected_shape, dtype ):
         def call( self, vec ):
             aux = fun( vec )
-            assert aux.shape[0] == self.shape[0] 
+            assert_( aux.shape[0] == self.shape[0] )
             return nm.asanyarray( aux, dtype = self.dtype )
         obj = MatrixAction( shape = expected_shape,
                             dtype = dtype,

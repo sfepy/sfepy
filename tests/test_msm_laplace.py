@@ -94,7 +94,7 @@ fe = {
 
 import numpy as nm
 from sfepy.base.testing import TestCommon
-from sfepy.base.base import debug, pause
+from sfepy.base.base import debug, pause, assert_
 output_name = 'test_msm_laplace_%s.vtk'
 
 ##
@@ -133,7 +133,7 @@ class Test( TestCommon ):
     # c: 09.05.2007, r: 25.06.2008
     def _build_rhs( self, sols ):
         for sol in sols.itervalues():
-            assert len( sol ) == 3
+            assert_( len( sol ) == 3 )
         return sols
 
     ##

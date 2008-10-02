@@ -336,7 +336,7 @@ class Variables( Container ):
 ##         print mtx_lc
         nnz = n_dof - n_constrained + n_constrained * dim
         print nnz, mtx_lc.getnnz()
-        assert nnz >= mtx_lc.getnnz()
+        assert_( nnz >= mtx_lc.getnnz() )
 
         self.op_lcbc = mtx_lc
 
@@ -867,7 +867,7 @@ class Variable( Struct ):
         kind, family = conf.kind.split()
 
         history = get_default_attr( conf, 'history', None )
-        assert (history is None) or (history in ['previous', 'full'])
+        assert_( (history is None) or (history in ['previous', 'full']) )
 
         obj = Variable( flags, name = conf.name, key = key,
                         kind = kind, family = family, history = history )
@@ -1040,7 +1040,7 @@ class Variable( Struct ):
                 dcs = {}
                 for key, sd in ap.surface_data.iteritems():
                     dc, imax2 = create_dof_conn( sd.econn, dpn, 0 )
-                    assert imax2 <= imax
+                    assert_( imax2 <= imax )
                     dcs[key] = dc
                 dof_conns.surface_d_cs[ig] = dcs
 
@@ -1071,7 +1071,7 @@ class Variable( Struct ):
 ##         print dof_conns
 ##         pause()
         self.dof_conns = dof_conns
-        assert self.i_dof_max >= imax
+        assert_( self.i_dof_max >= imax )
 
     ##
     # 20.02.2007, c
@@ -1136,7 +1136,7 @@ class Variable( Struct ):
 
             dofs, kind = bc.dofs
             meq = eq[self.expand_nodes_to_equations( nmaster, dofs )]
-            assert nm.all( meq >= 0 )
+            assert_( nm.all( meq >= 0 ) )
             
             eq_lcbc[meq] = ii + 1
 ##             print meq, meq.shape
@@ -1335,7 +1335,7 @@ class Variable( Struct ):
         eq_map.master = nm.argwhere( master_slave > 0 ).squeeze()
         eq_map.slave = master_slave[eq_map.master] - 1
 
-        assert (eq_map.eq_ebc.shape == eq_map.val_ebc.shape)
+        assert_( (eq_map.eq_ebc.shape == eq_map.val_ebc.shape) )
 ##         print eq_map.eq_ebc.shape
 ##         pause()
         eq_map.eq[eq_map.eq_ebc] = -2

@@ -1,7 +1,7 @@
 import re
 
 from base import Struct, IndexedStruct, dict_to_struct, pause, output, copy,\
-     import_file
+     import_file, assert_
 from reader import Reader
 
 _required = ['filename_mesh', 'field_[0-9]+|fields',
@@ -213,7 +213,7 @@ class ProblemConf( Struct ):
         other_left_over, other_missing \
                        = self._validate_helper( other, required )
 
-        assert required_left_over == other_left_over
+        assert_( required_left_over == other_left_over )
 
         err = False
         if required_missing:

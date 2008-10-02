@@ -68,6 +68,10 @@ def output( *argc, **argv ):
     if msg.endswith( '...' ):
         level += 1
 
+def assert_( condition ):
+    if not condition:
+        raise ValueError( 'assertion failed!' )
+
 ##
 # c: 06.04.2005, r: 05.05.2008
 def pause( msg = None ):

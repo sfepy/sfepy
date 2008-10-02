@@ -98,8 +98,8 @@ class DataCache( Struct ):
         if history_sizes is not None:
             for key, hs in history_sizes.iteritems():
                 if not key in self.keys():
-                    print 'unknown cache key! (%s in %s)' % (key, self.keys())
-                    raise AssertionError
+                    msg = 'unknown cache key! (%s in %s)' % (key, self.keys())
+                    raise ValueError( msg )
                 if hs[0] >= 0 and (not self.history_growing[key]):
                     self.history_sizes[key] = max( hs[0],
                                                   self.history_sizes[key] )
@@ -221,7 +221,7 @@ class DataCache( Struct ):
             out = self._call( key, group_indx, ih, **kwargs )
 
         else:
-            assert isinstance( key, list )
+            assert_( isinstance( key, list ) )
             out = [self._call( k, group_indx, ih, **kwargs ) for k in key]
 
         return out

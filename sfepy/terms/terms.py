@@ -331,7 +331,7 @@ class Term( Struct ):
 
             variable = variables[var_name]
             field = variable.field
-            assert field.region.contains( self.region )
+            assert_( field.region.contains( self.region ) )
             
 ##             print field.name, field.region_name
 ##             print field.bases

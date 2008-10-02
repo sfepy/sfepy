@@ -143,7 +143,7 @@ def assemble_vector( vec, equation, variables, materials,
                     fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
 
                 else:
-                    assert vec.dtype == nm.complex128
+                    assert_( vec.dtype == nm.complex128 )
                     sign = nm.array( term.sign, dtype = nm.complex128 )
                     fem.assemble_vector_complex( vec.real, vec.imag,
                                                  vec_in_els.real,
@@ -187,7 +187,7 @@ def assemble_matrix( mtx, equation, variables, materials,
                                              iels, term.sign, rdc, cdc )
 
                     else:
-                        assert mtx.dtype == nm.complex128
+                        assert_( mtx.dtype == nm.complex128 )
                         sign = nm.array( term.sign, dtype = nm.complex128 )
                         fem.assemble_matrix_complex( tmd[0].real, tmd[0].imag,
                                                      tmd[1], tmd[2],
@@ -223,6 +223,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
 
     equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
     equation.setup_terms( domain.regions, variables, materials, caches, kwargs )
+
     for cache in caches.itervalues():
         cache.set_mode( override = override )
 

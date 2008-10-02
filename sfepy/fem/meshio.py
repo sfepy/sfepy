@@ -107,7 +107,13 @@ class MeshIO( Struct ):
     def read_dimension( self, ret_fd = False ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
-        
+
+    ##
+    # c: 22.07.2008, r: 22.07.2008
+    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
+        print 'called an abstract MeshIO instance!'
+        raise ValueError
+
     ##
     # c: 05.02.2008, r: 26.03.2008
     def read( self, mesh, *args, **kwargs ):
@@ -150,6 +156,54 @@ class MeditMeshIO( MeshIO ):
         else:
             fd.close()
             return dim
+
+    ##
+    # c: 22.07.2008
+    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
+        fd = open( self.fileName, 'r' )
+
+        while 1:
+            try:
+                line = fd.readline()
+            except:
+                output( "reading " + fd.name + " failed!" )
+                raise
+            if len( line ) == 0: break
+            if len( line ) == 1: continue
+            if line[0] == '#': continue
+            aux = line.split()
+            if (aux[0] == 'Dimension'):
+                if len( aux ) == 2:
+                    dim = int( aux[1] )
+                else:
+                    dim = int( fd.readline() )            
+            elif (aux[0] == 'Vertices'):
+                num = int( readToken( fd ) )
+                nod = readArray( fd, num, dim + 1, nm.float64 )
+                break
+
+        bbox = [ [nod[0][0]]*2, [nod[0][1]]*2, [nod[0][2]]*2 ]
+
+        for inod in nod[1:]:
+            for idim in range( dim ):
+                if inod[idim] < bbox[idim][0]:
+                    bbox[idim][0] = inod[idim]
+                if inod[idim] > bbox[idim][1]:
+                    bbox[idim][1] = inod[idim]
+
+
+        if ret_dim:
+            if ret_fd:
+                return bbox, dim, fd
+            else:
+                fd.close()
+                return bbox, dim
+        else:
+            if ret_fd:
+                return bbox, fd
+            else:
+                fd.close()
+                return bbox
 
     def read( self, mesh, **kwargs ):
         dim, fd  = self.read_dimension( ret_fd = True )
@@ -351,6 +405,43 @@ class VTKMeshIO( MeshIO ):
             return dim
 
     ##
+    # c: 22.07.2008
+    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
+        fd = open( self.fileName, 'r' )
+        while 1:
+            try:
+                line = fd.readline().split()
+                if line[0] == 'POINTS':
+                    nod = readArray( fd, 1, -1, nm.float64 )
+                    dim = nod.shape[1]
+                    break
+            except:
+                output( "reading " + fd.name + " failed!" )
+                raise
+
+        bbox = [ [nod[0][0]]*2, [nod[0][1]]*2, [nod[0][2]]*2 ]
+
+        for inod in nod[1:]:
+            for idim in range( dim ):
+                if inod[idim] < bbox[idim][0]:
+                    bbox[idim][0] = inod[idim]
+                if inod[idim] > bbox[idim][1]:
+                    bbox[idim][1] = inod[idim]
+
+        if ret_dim:
+            if ret_fd:
+                return bbox, dim, fd
+            else:
+                fd.close()
+                return bbox, dim
+        else:
+            if ret_fd:
+                return bbox, fd
+            else:
+                fd.close()
+                return bbox
+
+    ##
     # c: 05.02.2008, r: 10.07.2008
     def read( self, mesh, **kwargs ):
         fd = open( self.filename, 'r' )
@@ -395,7 +486,7 @@ class VTKMeshIO( MeshIO ):
             elif mode == 'cell_types':
                 line = line.split()
                 if line[0] == 'CELL_TYPES':
-                    assert int( line[1] ) == n_el
+                    assert_( int( line[1] ) == n_el )
                     cell_types = read_array( fd, n_el, -1, nm.int32 )
                     mode = 'mat_id'
 
@@ -403,7 +494,7 @@ class VTKMeshIO( MeshIO ):
                 if mode_status == 0:
                     line = line.split()
                     if line[0] == 'CELL_DATA':
-                        assert int( line[1] ) == n_el
+                        assert_( int( line[1] ) == n_el )
                         mode_status = 1
                 elif mode_status == 1:
                     if line.strip() == 'SCALARS mat_id float 1':
@@ -605,17 +696,17 @@ class TetgenMeshIO( MeshIO ):
         f=open(fnods)
         l=[int(x) for x in f.readline().split()]
         npoints,dim,nattrib,nbound=l
-        assert dim==3
+        assert_( dim==3 )
         if verbose: up.init(npoints)
         nodes=[]
         for line in f:
             if line[0]=="#": continue
             l=[float(x) for x in line.split()]
-            assert int(l[0])==len(nodes)+1
+            assert_( int(l[0])==len(nodes)+1 )
             l = l[1:]
             nodes.append(tuple(l))
             if verbose: up.update(len(nodes))
-        assert npoints==len(nodes)
+        assert_( npoints==len(nodes) )
         return nodes
 
     ##
@@ -645,7 +736,7 @@ class TetgenMeshIO( MeshIO ):
         l=[int(x) for x in f.readline().split()]
         ntetra,nnod,nattrib=l
         #we have either linear or quadratic tetrahedra:
-        assert nnod in [4,10]
+        assert_( nnod in [4,10] )
         linear= (nnod==4)
         if not linear:
             raise Exception("Only linear tetrahedra reader is implemented")
@@ -658,7 +749,7 @@ class TetgenMeshIO( MeshIO ):
         for line in f:
             if line[0]=="#": continue
             l=[int(x) for x in line.split()]
-            assert len(l)-2 == 4
+            assert_( len(l)-2 == 4 )
             els.append((l[1],l[2],l[3],l[4]))
             regionnum=l[5]
             if regionnum==0:
@@ -668,7 +759,7 @@ class TetgenMeshIO( MeshIO ):
                 regions[regionnum].append(l[0])
             else:
                 regions[regionnum]=[l[0]]
-            assert l[0]==len(els)
+            assert_( l[0]==len(els) )
             if verbose: up.update(l[0])
         return els, regions
 
@@ -680,6 +771,12 @@ class TetgenMeshIO( MeshIO ):
     def read_dimension(self):
         # TetGen only supports 3D mesh
         return 3
+
+    ##
+    # c: 22.07.2008
+    def read_boundingBox( self ):
+        raise NotImplementedError
+
 
 ##
 # c: 20.03.2008
@@ -711,10 +808,10 @@ class ComsolMeshIO( MeshIO ):
                     skip_read_line( fd )
 
                 skip_read_line( fd )
-                assert skip_read_line( fd ).split()[1] == 'Mesh'
+                assert_( skip_read_line( fd ).split()[1] == 'Mesh' )
                 skip_read_line( fd )
                 dim = self._read_commented_int()
-                assert (dim == 2) or (dim == 3)
+                assert_( (dim == 2) or (dim == 3) )
                 n_nod = self._read_commented_int()
                 i0 = self._read_commented_int()
                 mode = 'points'
@@ -751,7 +848,7 @@ class ComsolMeshIO( MeshIO ):
                         skip_read_line( fd )
 
                     n_domain = self._read_commented_int()
-                    assert n_domain == n_el
+                    assert_( n_domain == n_el )
                     if is_conn:
                         mat_id = read_array( fd, n_domain, 1, nm.int32 )
                         mat_ids.append( mat_id )
@@ -990,7 +1087,7 @@ class HDF5MeshIO( MeshIO ):
         filename = get_default( filename, self.filename )
         fd = pt.openFile( filename, mode = "r" )
 
-        assert (fd.root.last_step[0] + 1) == ts.n_step
+        assert_( (fd.root.last_step[0] + 1) == ts.n_step )
 
         ths = dict_from_keys_init( var_names, list )
 

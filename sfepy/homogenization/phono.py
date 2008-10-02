@@ -17,8 +17,8 @@ def process_options( options, n_eigs ):
             eig_range[-1] += n_eigs + 1
     except:
         eig_range = (0, n_eigs)
-    assert eig_range[0] < (eig_range[1] - 1)
-    assert eig_range[1] <= n_eigs
+    assert_( eig_range[0] < (eig_range[1] - 1) )
+    assert_( eig_range[1] <= n_eigs )
     
     try:
         freq_margins = 0.01 * nm.array( options.freq_margins, dtype = nm.float64 )
@@ -141,7 +141,7 @@ def compute_average_density( pb, volume_term, region_to_material ):
     total_volume = 0.0
     for region_name, mat_name in region_to_material.iteritems():
         mat = pb.materials[mat_name]
-        assert region_name == mat.region.name
+        assert_( region_name == mat.region.name )
         vol = eval_term_op( None, volume_term % region_name, pb )
         density = mat.get_data( region_name, mat.igs[0], 'density' )
         output( 'region %s: volume %f, density %f' % (region_name,
@@ -352,7 +352,7 @@ def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
     masked resonances: dotted red
     """
     if pylab is None: return
-    assert len( valid ) == len( freq_range )
+    assert_( len( valid ) == len( freq_range ) )
 
     fig = pylab.figure( fig_num )
     if clear:

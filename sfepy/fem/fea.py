@@ -74,8 +74,7 @@ def eval_bf( qp, base_fun, nodes, derivative ):
     if derivative == 0:
         aux = nm.sum( val, -1 ).ravel()
         if not nm.alltrue( nm.absolute( aux - 1.0 ) < 1e-14 ):
-            print aux
-            raise AssertionError
+            raise ValueError( '%s' % aux )
 
     return val
 
@@ -377,7 +376,7 @@ class Approximation( Struct ):
         sd = self.surface_data[key]
         bf_sg = self.bf[(iname, sd.face_type, 1)]
         n_qp, dim, n_fp = bf_sg.shape
-        assert n_fp == sd.n_fp
+        assert_( n_fp == sd.n_fp )
         
         return sd.n_fa, n_qp, dim + 1, n_fp
 
@@ -409,7 +408,7 @@ class Approximation( Struct ):
         aux = -nm.ones( (nm.max( ef ) + 1,), dtype = nm.int32 )
         aux[nodes] = nm.arange( len( nodes ), dtype = nm.int32 )
         leconn = aux[econn].copy()
-        assert nm.alltrue( nodes[leconn] == econn )
+        assert_( nm.alltrue( nodes[leconn] == econn ) )
         
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp

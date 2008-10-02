@@ -375,7 +375,7 @@ def main():
             if dim == 2:
                 filename_in = "input/quantum/oscillator2d.py"
             else:
-                assert dim == 3
+                assert_( dim == 3 )
                 filename_in = "input/quantum/oscillator3d.py"
             options.dim = dim
             print "Dimension:", dim
@@ -384,7 +384,7 @@ def main():
             if dim == 2:
                 filename_in = "input/quantum/well2d.py"
             else:
-                assert dim == 3
+                assert_( dim == 3 )
                 filename_in = "input/quantum/well3d.py"
             options.dim = dim
             print "Dimension:", dim
@@ -393,7 +393,7 @@ def main():
             if dim == 2:
                 filename_in = "input/quantum/hydrogen2d.py"
             else:
-                assert dim == 3
+                assert_( dim == 3 )
                 filename_in = "input/quantum/hydrogen3d.py"
             options.dim = dim
             print "Dimension:", dim
@@ -402,7 +402,7 @@ def main():
             if dim == 2:
                 filename_in = "input/quantum/boron2d.py"
             else:
-                assert dim == 3
+                assert_( dim == 3 )
                 filename_in = "input/quantum/boron3d.py"
             options.dim = dim
             print "Dimension:", dim
@@ -440,7 +440,7 @@ def main():
             if dim == 2:
                 filename_in = "input/quantum/dft2d.py"
             else:
-                assert dim == 3
+                assert_( dim == 3 )
                 filename_in = "input/quantum/dft3d.py"
             print "Dimension:", dim
             options.dim = dim

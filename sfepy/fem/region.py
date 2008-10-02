@@ -237,7 +237,7 @@ class Region( Struct ):
         for ig in self.igs:
             rfaces = faces[ig]
             aux = fa.data[rfaces]
-            assert nm.all( aux[:,0] == ig )
+            assert_( nm.all( aux[:,0] == ig ) )
             fi = aux[:,1:3].copy()
             self.fis[ig] = fi
 

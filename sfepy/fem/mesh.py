@@ -186,7 +186,7 @@ def find_refinement( coor, conns, fcoor, fconns, eps, check_refined = True ):
         if check_refined:
             n_ref = 2**dim
             for row in emap:
-                assert len( row ) == n_ref
+                assert_( len( row ) == n_ref )
         emaps.append( emap )
 ##         pause()
 

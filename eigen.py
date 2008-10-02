@@ -133,8 +133,8 @@ class AcousticBandGapsApp( SimpleApp ):
         output( 'number of frequencies: %d' % eigs.shape[0] )
 
         try:
-            assert nm.isfinite( eigs ).all()
-        except:
+            assert_( nm.isfinite( eigs ).all() )
+        except ValueError:
             debug()
 
         # B-orthogonality check.

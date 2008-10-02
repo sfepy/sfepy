@@ -58,7 +58,7 @@ class Integral( Struct ):
                 order = int( match.group( 1 ) )
                 geom = match.group( 2 )
                 qcs[geom] = quad_contructor
-                assert order == self.order
+                assert_( order == self.order )
             self.qcs = qcs
         else:
             self.order = None

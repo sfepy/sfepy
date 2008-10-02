@@ -44,7 +44,7 @@ class IntegrateVolumeOperatorTerm( Term ):
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         field_dim = par.field.dim[0]
-        assert field_dim == 1
+        assert_( field_dim == 1 )
         
         if diff_var is None:
             shape = (chunk_size, 1, field_dim * n_ep, 1 )
@@ -57,13 +57,12 @@ class IntegrateVolumeOperatorTerm( Term ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
             status = vg.integrate_chunk( out, bf_t, chunk )
+
             yield out, chunk, 0
 
-##
-# 24.04.2007, c
+## 24.04.2007, c
 class IntegrateSurfaceTerm( Term ):
-    r""":definition: $\int_\Gamma y$, for vectors: $\int_\Gamma \ul{y} \cdot
-    \ul{n}$"""
+    r""":definition: $\int_\Gamma y$, for vectors: $\int_\Gamma \ul{y} \cdot \ul{n}$"""
     name = 'd_surface_integrate'
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
@@ -93,6 +92,7 @@ class IntegrateSurfaceTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             status = sg.integrate_chunk( out, vec[lchunk], lchunk, 0 )
+
             out1 = nm.sum( out )
             yield out1, chunk, status
 
@@ -168,7 +168,9 @@ class DotProductSurfaceTerm( Term ):
                 vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
             else:
                 vec = vec1[lchunk] * vec2[lchunk]
+
             status = sg.integrate_chunk( out, vec, lchunk, 0 )
+
             out1 = nm.sum( out )
             yield out1, chunk, status
 
@@ -186,6 +188,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     # 30.06.2008, c
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
+
         self.dof_conn_type = 'surface'
 
     ##
@@ -195,7 +198,6 @@ class IntegrateSurfaceOperatorTerm( Term ):
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
                                                      self.region.name )
-
         if diff_var is None:
             shape = (chunk_size, 1, n_fp, 1 )
         else:
@@ -208,6 +210,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
             lchunk = self.char_fun.get_local_chunk()
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
             status = sg.integrate_chunk( out, bf_t, lchunk, 1 )
+
             out = out*mat
             yield out, lchunk, 0
 
