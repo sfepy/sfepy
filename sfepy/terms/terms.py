@@ -150,20 +150,22 @@ class Term( Struct ):
         return self._call( diff_var, chunk_size, **kwargs )
 
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
-        output( 'base class method called for %s' % self.__class__.__name__ )
-        raise RuntimeError
+        msg = 'base class method "_call" called for %s' % self.__class__.__name__
+        raise RuntimeError( msg )
     
     ##
     # c: 21.03.2008, r: 21.03.2008
     def get_shape( self, diff_var, apr, apc = None ):
-        output( 'base class method called for %s' % self.__class__.__name__ )
-        raise RuntimeError
+        msg = 'base class method "get_shape" called for %s'\
+              % self.__class__.__name__
+        raise RuntimeError( msg )
 
     ##
     # c: 21.03.2008, r: 21.03.2008
     def build_c_fun_args( self, *args, **kwargs ):
-        output( 'base class method called for %s' % self.__class__.__name__ )
-        raise RuntimeError
+        msg = 'base class method "build_c_fun_args" called for %s'\
+              % self.__class__.__name__
+        raise RuntimeError( msg )
 
     ##
     # 16.11.2005, c
@@ -172,8 +174,8 @@ class Term( Struct ):
 
     def set_arg_names( self, val ):
         if len( val ) != len( self.__class__.arg_types ):
-            raise ValueError, 'equal shapes: %s, %s' \
-                  % (val, self.__class__.arg_types)
+            raise ValueError( 'equal shapes: %s, %s' \
+                              % (val, self.__class__.arg_types) )
         self.__arg_names = val
     arg_names = property( get_arg_names, set_arg_names )
 
@@ -265,8 +267,8 @@ class Term( Struct ):
             if variables[name].kind == 'test':
                 return name
             else:
-                output( 'variable %s is not virtual!' % name )
-                raise ValueError
+                msg = 'variable %s is not virtual!' % name
+                raise ValueError( msg )
 
     ##
     # c: 24.07.2006, r: 04.07.2008
@@ -285,9 +287,9 @@ class Term( Struct ):
     def get_parameter_names( self ):
         return copy( self.names.parameter )
 
-    ##
-    # c: 24.07.2006, r: 15.01.2008
     def get_args( self, arg_types = None, **kwargs ):
+        """Extract arguments from **kwargs by type as specified in arg_types
+        (or self.ats)."""
         ats = self.ats
         if arg_types is None:
             arg_types = ats
@@ -306,7 +308,13 @@ class Term( Struct ):
                 args.append( mat.get_data( region_name, ig, split[1] ) )
             else:
                 args.append( kwargs[name] )
+
         return args
+
+    def get_kwargs( self, keys, **kwargs ):
+        """Extract arguments from **kwargs listed in keys (default is
+        None)."""
+        return [kwargs.get( name ) for name in keys]
 
     ##
     # 24.07.2006, c
@@ -321,8 +329,8 @@ class Term( Struct ):
         try:
             integral = integrals[self.integral_name]
         except ValueError:
-            output( 'integral %s is not defined!' % self.integral_name )
-            raise
+            msg = 'integral %s is not defined!' % self.integral_name
+            raise ValueError( msg )
             
         integral.create_qp()
         tgs = self.get_geometry()
