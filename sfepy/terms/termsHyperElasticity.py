@@ -50,6 +50,7 @@ class HyperElasticBase( Term ):
         return mat_qp
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
@@ -58,28 +59,41 @@ class HyperElasticBase( Term ):
         cache = self.get_cache( 'finite_strain_tl', 0 )
         family_data = cache( self.family_data_names,
                              self.get_current_group(), 0, state = state )
-        mtxF = cache( 'F', self.get_current_group(), 0, state = state )
 ##         print family_data
-#        print mtxF
 
-        out = self.compute_crt_data( family_data, ap, vg, mode, **kwargs )
-        if mode == 0:
-            self.crt_data.stress = out
-        else:
-            self.crt_data.tan_mod = out
+        if call_mode is None:
 
-##         print out
-#        pause()
-            
-        fun = self.function['element_contribution']
+            out = self.compute_crt_data( family_data, ap, vg, mode, **kwargs )
+            if mode == 0:
+                self.crt_data.stress = out
+            else:
+                self.crt_data.tan_mod = out
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = fun( out, self.crt_data.stress, self.crt_data.tan_mod,
-                          mtxF, vg, chunk, mode )
-##             print out
-##             pause()
-            yield out, chunk, status
+            fun = self.function['element_contribution']
 
+            mtxF = cache( 'F', self.get_current_group(), 0, state = state )
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = fun( out, self.crt_data.stress, self.crt_data.tan_mod,
+                              mtxF, vg, chunk, mode )
+                yield out, chunk, status
+
+        elif call_mode == 'd_eval':
+            raise NotImplementedError
+
+        elif call_mode in ['de_strain', 'de_stress']:
+
+            if call_mode == 'de_strain':
+                out_qp = cache( 'E', self.get_current_group(), 0, state = state )
+            elif call_mode == 'de_stress':
+                out_qp = self.compute_crt_data( family_data, ap, vg, 0,
+                                                **kwargs )
+                
+            shape = (chunk_size, 1) + out_qp.shape[2:]
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = vg.integrate_chunk( out, out_qp[chunk], chunk )
+                out1 = out / vg.variable( 2 )[chunk]
+
+            yield out1, chunk, status
 
 class NeoHookeanTerm( HyperElasticBase ):
     r""":description: Hyperelastic neo-Hookean term. Effective stress $S_{ij} =

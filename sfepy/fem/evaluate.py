@@ -238,7 +238,12 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
     variables.data_from_state( state )
     # itype according to the first term in term_desc!
     term = equation.terms[0]
-    if term.itype == 'dw':
+    if 'call_mode' in kwargs:
+        itype = kwargs['call_mode'].split( '_' )[0]
+    else:
+        itype = term.itype
+
+    if itype == 'dw':
 
         variables.setup_dof_conns()
         if dw_mode == 'vector':
@@ -268,7 +273,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
             print dw_mode
             raise ValueError
 
-    elif term.itype == 'd':
+    elif itype == 'd':
         val = 0.0
 
         for term in equation.terms:
@@ -279,7 +284,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
                     val += term.sign * aux
             ret_val = val
 
-    elif term.itype == 'di':
+    elif itype == 'di':
         val = None
 
         for term in equation.terms:
@@ -293,7 +298,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
                         val += term.sign * aux
             ret_val = val
 
-    elif (term.itype == 'de') or (term.itype == 'dq'):
+    elif (itype == 'de') or (itype == 'dq'):
         val = None
 
         for term in equation.terms:
@@ -308,7 +313,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
         ret_val = val
 
     else:
-        raise NotImplementedError, 'unknown term int. type: %s' % term.itype
+        raise NotImplementedError, 'unknown term integration type: %s' % itype
 
     if ret_caches:
         return ret_val, caches

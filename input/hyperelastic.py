@@ -8,6 +8,7 @@ options = {
     'ls' : 'ls',
     'ts' : 'ts',
     'save_steps' : -1,
+    'post_process_hook' : 'stress_strain',
 }
 
 
@@ -63,6 +64,40 @@ def rotate_yz( bc, ts, coor ):
     displacement = vec_rotated - vec
     
     return displacement.T.flat
+
+def stress_strain( out, problem, state, extend = False ):
+    from sfepy.base.base import Struct, debug
+    from sfepy.fem import eval_term_op
+
+    strain = eval_term_op( state,
+                           'dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+                           problem, call_mode = 'de_strain' )
+    out['green_strain'] = Struct( name = 'output_data',
+                                  mode = 'cell', data = strain,
+                                  dof_types = None )
+
+    stress = eval_term_op( state,
+                           'dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+                           problem, call_mode = 'de_stress' )
+    out['neohook_stress'] = Struct( name = 'output_data',
+                                    mode = 'cell', data = stress,
+                                    dof_types = None )
+
+    stress = eval_term_op( state,
+                           'dw_tl_he_mooney_rivlin.i1.Omega( solid.mu, v, u )',
+                           problem, call_mode = 'de_stress' )
+    out['mooney_rivlin_stress'] = Struct( name = 'output_data',
+                                          mode = 'cell', data = stress,
+                                          dof_types = None )
+
+    stress = eval_term_op( state,
+                           'dw_tl_bulk_penalty.i1.Omega( solid.mu, v, u )',
+                           problem, call_mode = 'de_stress' )
+    out['bulk_stress'] = Struct( name = 'output_data',
+                                 mode = 'cell', data = stress,
+                                 dof_types = None )
+
+    return out
 
 ##
 # Balance of forces.
