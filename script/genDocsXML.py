@@ -170,6 +170,7 @@ def include( fd, filename ):
 ##
 # c: 21.03.2008, r: 07.05.2008
 def typeset_item_table( fd, item_table ):
+    """Terms are sorted by name without the d*_ prefix."""
     sec_list = []
     current_section = [None]
     bnf = create_bnf( sec_list, current_section )
@@ -187,8 +188,10 @@ def typeset_item_table( fd, item_table ):
     row_format = '<row><entry><a ref="%s"/></entry><entry>%s</entry><entry>%s</entry></row>\n'
 
     keys = item_table.keys()
-    keys.sort()
-    for key in keys:
+    sort_keys = [key[key.find( '_' ):] for key in keys]
+    iis = nm.argsort( sort_keys )
+    for ii in iis:
+        key = keys[ii]
         item_class = item_table[key]
         doc = item_class.__doc__
         if doc is not None:
