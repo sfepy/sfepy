@@ -119,7 +119,8 @@ def items_per_sections( table, sec_name_prefix, omit_list ):
 # c: 14.11.2007, r: 24.10.2008
 def typeset_term_syntax( fd, cls, name ):
     fd.write( item_section % 'Syntax' )
-    arg_types = '>, &lt;'.join( cls.arg_types )
+    aux = [s.replace( '|', ' or ' ) for s in cls.arg_types]
+    arg_types = '>, &lt;'.join( aux )
     fd.write( term_syntax % (name, '&lt;i>.&lt;r>', arg_types) )
 
 ##
