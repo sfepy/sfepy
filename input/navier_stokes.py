@@ -100,13 +100,13 @@ integral_2 = {
 # Stationary Navier-Stokes equations.
 equations = {
     'namespaces' : {
-    'dw_' : ('div', 'grad', 'div_grad', 'convect'),
+    'dw_' : ('stokes', 'div_grad', 'convect'),
     },
     'balance' :
     """+ div_grad.i2.Omega( fluid.viscosity, v, u ) + convect.i2.Omega( v, u )
-       - grad.i1.Omega( v, p ) = 0""",
+       - stokes.i1.Omega( v, p ) = 0""",
     'incompressibility' :
-    """div.i1.Omega( q, u ) = 0""",
+    """stokes.i1.Omega( u, q ) = 0""",
 }
 
 ##

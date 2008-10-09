@@ -1,4 +1,5 @@
 from terms import *
+from terms_base import CouplingVectorScalar
 from utils import fix_scalar_in_el
 
 class DivGradTerm( Term ):
@@ -126,6 +127,69 @@ class LinearConvectQTerm( Term ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
+
+class StokesDiv( CouplingVectorScalar ):
+
+    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
+        state, virtual = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        vec = state()
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        return (vec, 0, bf, vgc, apc.econn), shape, mode
+
+class StokesGrad( CouplingVectorScalar ):
+
+    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        vec = state()
+        bf = apc.get_base( 'v', 0, self.integral_name )
+        return (1.0, vec, 0, bf, vgr, apc.econn), shape, mode
+
+class StokesEval( Struct ):
+
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        raise NotImplementedError
+
+class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
+    r""":description: Stokes problem coupling term. Corresponds to weak
+    forms of gradient and divergence terms. Can be evaluated.
+    :definition: $\int_{\Omega}  p\ \nabla \cdot \ul{v}$, $\int_{\Omega} q\
+    \nabla \cdot \ul{u}$
+    """
+    name = 'dw_stokes'
+    arg_types = ('virtual|state', 'state|virtual')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+
+    def set_arg_types( self ):
+        """Dynamically inherits from either StokesGrad or
+        StokesDiv."""
+        if self.ats[0] == 'virtual':
+            self.mode = 'grad'
+            self.function = terms.dw_grad
+            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
+        elif self.ats[1] == 'virtual':
+            self.mode = 'div'
+            self.function = terms.dw_div
+            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
+        else:
+            self.mode = 'eval'
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            raise NotImplementedError
 
 class GradTerm( Term ):
     r""":description: Gradient term (weak form).
