@@ -6,7 +6,6 @@ filename_mesh = 'database/pul_klikatak2.mesh'
 field_1 = {
     'name' : '3_velocity',
     'dim' : (3,1),
-    'flags' : (),
     'domain' : 'Omega',
     'bases' : {'Omega' : '3_4_P1B'}
 }
@@ -14,7 +13,6 @@ field_1 = {
 field_2 = {
     'name' : 'pressure',
     'dim' : (1,1),
-    'flags' : (),
     'domain' : 'Omega',
     'bases' : {'Omega' : '3_4_P1'}
 }

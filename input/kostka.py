@@ -132,7 +132,6 @@ solver_1 = {
     'check'     : 0,
     'delta'     : 1e-6,
     'is_plot'    : False,
-    'matrix'    : 'internal', # 'external' or 'internal'
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 

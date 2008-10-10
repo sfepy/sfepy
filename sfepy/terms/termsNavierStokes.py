@@ -128,22 +128,6 @@ class LinearConvectQTerm( Term ):
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-class StokesDiv( CouplingVectorScalar ):
-
-    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, virtual = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
-
-        vec = state()
-        bf = apr.get_base( 'v', 0, self.integral_name )
-        return (vec, 0, bf, vgc, apc.econn), shape, mode
-
 class StokesGrad( CouplingVectorScalar ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -159,6 +143,22 @@ class StokesGrad( CouplingVectorScalar ):
         vec = state()
         bf = apc.get_base( 'v', 0, self.integral_name )
         return (1.0, vec, 0, bf, vgr, apc.econn), shape, mode
+
+class StokesDiv( CouplingVectorScalar ):
+
+    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
+        state, virtual = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        vec = state()
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        return (vec, 0, bf, vgc, apc.econn), shape, mode
 
 class StokesEval( Struct ):
 
