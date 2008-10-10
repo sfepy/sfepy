@@ -1,5 +1,94 @@
 from terms import *
+from terms_base import CouplingVectorScalar
 from termsNavierStokes import GradTerm, DivTerm
+
+class BiotGrad( CouplingVectorScalar ):
+
+    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, state = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
+        if diff_var is None:
+            cache = self.get_cache( 'state_in_volume_qp', 0 )
+            vec_qp = cache( 'state', self.get_current_group(), 0, state = state )
+        else:
+            vec_qp = aux
+
+        n_qp = self.data_shape_r[1]
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+#        print mat_qp
+        bf = apc.get_base( 'v', 0, self.integral_name )
+
+        return (1.0, vec_qp, bf, mat_qp, vgr), shape, mode
+
+class BiotDiv( CouplingVectorScalar ):
+
+    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, state, virtual = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
+        if diff_var is None:
+            cache = self.get_cache( 'cauchy_strain', 0 )
+            strain = cache( 'strain', self.get_current_group(), 0,
+                            state = state )
+        else:
+            strain = aux
+
+        n_qp = self.data_shape_r[1]
+        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+        bf = apr.get_base( 'v', 0, self.integral_name )
+
+        return (1.0, strain, bf, mat_qp, vgc), shape, mode
+
+class BiotEval( Struct ):
+
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        raise NotImplementedError
+
+class BiotTerm( BiotDiv, BiotGrad, BiotEval, Term ):
+    r""":description: Biot coupling term with $\alpha_{ij}$
+    given in vector form exploiting symmetry: in 3D it has the
+    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
+    the indices ordered as $[11, 22, 12]$. Corresponds to weak
+    forms of Biot gradient and divergence terms. Can be evaluated.
+    :definition: $\int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v})$, $\int_{\Omega}
+    q\ \alpha_{ij} e_{ij}(\ul{u})$
+    """
+    name = 'dw_biot'
+    arg_types = ('material', 'virtual|state', 'state|virtual')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+
+    def set_arg_types( self ):
+        """Dynamically inherits from either BiotGrad or
+        BiotDiv."""
+        if self.ats[1] == 'virtual':
+            self.mode = 'grad'
+            self.function = terms.dw_biot_grad
+            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
+            self.use_caches = {'state_in_volume_qp' : [['state']]}
+        elif self.ats[2] == 'virtual':
+            self.mode = 'div'
+            self.function = terms.dw_biot_div
+            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
+            self.use_caches = {'cauchy_strain' : [['state']]}
+        else:
+            self.mode = 'eval'
+            use_method_with_name( self, self.call_eval, '_call' )
+            raise NotImplementedError
 
 ##
 # 01.08.2006, c
