@@ -61,8 +61,10 @@ class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad, Term ):
     $\int_{\Omega} g_{kij}\ e_{ij}(\ul{v}) \nabla_k p$
     """
     name = 'dw_piezo_coupling'
-    arg_types = ('material', 'virtual|state', 'state|virtual')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'virtual'), (Volume, 'state')])
 
     def set_arg_types( self ):
         """Dynamically inherits from either PiezoCouplingGrad or

@@ -4,7 +4,7 @@ try:
 except:
     output( 'warning: sfepy extension modules are not compiled!' )
     output( 'type "make"' )
-from sfepy.base.la import split_range
+from sfepy.base.la import split_range, combine
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
 _match_var = re.compile( '^virtual$|^state(_[a-zA-Z0-9]+)?$'\
@@ -173,7 +173,12 @@ class Term( Struct ):
         return self.__arg_names
 
     def set_arg_names( self, val ):
-        if len( val ) != len( self.__class__.arg_types ):
+        if isinstance( self.__class__.arg_types[0], tuple ):
+            n_arg = len( self.__class__.arg_types[0] )
+        else:
+            n_arg = len( self.__class__.arg_types )
+
+        if len( val ) != n_arg:
             raise ValueError( 'equal shapes: %s, %s' \
                               % (val, self.__class__.arg_types) )
         self.__arg_names = val
@@ -190,51 +195,81 @@ class Term( Struct ):
                              material_split = [] )
 
         msg = "variable '%s' requested by term '%s' does not exist!"
-        arg_types = []
-        for ii, arg_type in enumerate( self.arg_types ):
+
+        if isinstance( self.arg_types[0], tuple ):
+            # Find matching call signature.
+            matched = []
+            for it, arg_types in enumerate( self.arg_types ):
+                failed = False
+                for ii, arg_type in enumerate( arg_types ):
+                    name = self.__arg_names[ii]
+                    if _match_var( arg_type ):
+                        names = self.names.variable
+                        try:
+                            var = variables[name]
+                        except KeyError:
+                            raise KeyError( msg )
+
+                        if _match_state( arg_type ) and \
+                               var.is_state_or_parameter():
+                            pass
+                        elif (arg_type == 'virtual') and var.is_virtual():
+                            pass
+                        elif _match_parameter( arg_type ) and \
+                                 var.is_state_or_parameter():
+                            pass
+                        else:
+                            failed = True
+                            break
+                if not failed:
+                    matched.append( it )
+
+            if len( matched ) == 1:
+                arg_types = self.arg_types[matched[0]]
+                self.geometry = self.__class__.geometry[matched[0]]
+            else:
+                msg = 'ambiguous arguments! (%s)' % self.__arg_names
+                raise ValueError( msg )
+        else:
+            arg_types = self.arg_types
+
+        # Set actual argument types.
+        self.ats = list( arg_types )
+
+        for ii, arg_type in enumerate( arg_types ):
             name = self.__arg_names[ii]
-            for single_type in arg_type.split( '|' ):
-                if _match_var( single_type ):
-                    names = self.names.variable
-                    try:
-                        var = variables[name]
-                    except KeyError:
-                        raise KeyError( msg )
-##                     print arg_types, single_type, name, var.flags
+            if _match_var( arg_type ):
+                names = self.names.variable
+                try:
+                    var = variables[name]
+                except KeyError:
+                    raise KeyError( msg )
 
-                    if _match_state( single_type ) and \
-                           var.is_state_or_parameter():
-                        self.names.state.append( name )
-                    elif (single_type == 'virtual') and var.is_virtual():
-                        self.names.virtual.append( name )
-                    elif _match_parameter( single_type ) and \
-                             var.is_state_or_parameter():
-                        self.names.parameter.append( name )
-                    else:
-                        continue
-                    arg_types.append( single_type )
+                if _match_state( arg_type ) and \
+                       var.is_state_or_parameter():
+                    self.names.state.append( name )
+                elif (arg_type == 'virtual') and var.is_virtual():
+                    self.names.virtual.append( name )
+                elif _match_parameter( arg_type ) and \
+                         var.is_state_or_parameter():
+                    self.names.parameter.append( name )
 
-                elif _match_material( arg_type ):
-                    names = self.names.material
-                    match = _match_material_root( name )
-                    if match:
-                        self.names.material_split.append( (match.group( 1 ),
-                                                          match.group( 2 )) )
-                    else:
-                        self.names.material_split.append( (name, None) )
-                    arg_types.append( single_type )
+            elif _match_material( arg_type ):
+                names = self.names.material
+                match = _match_material_root( name )
+                if match:
+                    self.names.material_split.append( (match.group( 1 ),
+                                                      match.group( 2 )) )
                 else:
-                    names = self.names.user
-                    arg_types.append( single_type )
-                break
+                    self.names.material_split.append( (name, None) )
+            else:
+                names = self.names.user
             names.append( name )
 
         self.n_virtual = len( self.names.virtual )
         if self.n_virtual > 1:
             raise ValueError( 'at most one virtial variable is allowed! (%d)'\
                               % self.n_virtual )
-
-        self.ats = arg_types
 
         self.set_arg_types()
 
@@ -352,17 +387,14 @@ class Term( Struct ):
 ##             print field.aps.aps_per_group
 ##             pause()
 
-    ##
-    # 23.08.2006, c
-    # 24.08.2006
     def get_geometry( self ):
-        geom = self.__class__.geometry
+        geom = self.geometry
         if geom:
             out = {}
             for (gtype, arg_type) in geom:
                 arg_name = self.get_arg_name( arg_type )
                 out[arg_name] = Struct( gtype = gtype,
-                                       region = self.region )
+                                        region = self.region )
             return out
         else:
             return None

@@ -69,8 +69,10 @@ class BiotTerm( BiotDiv, BiotGrad, BiotEval, Term ):
     q\ \alpha_{ij} e_{ij}(\ul{u})$
     """
     name = 'dw_biot'
-    arg_types = ('material', 'virtual|state', 'state|virtual')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'virtual'), (Volume, 'state')])
 
     def set_arg_types( self ):
         """Dynamically inherits from either BiotGrad or

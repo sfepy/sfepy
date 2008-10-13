@@ -39,10 +39,22 @@ class CouplingVectorScalar( Struct ):
             raise StopIteration
 
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
+        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
 
         fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
-        
+        if call_mode is None:
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk, mode) )
+                yield out, chunk, status
+
+        elif call_mode == 'd_eval':
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk,) )
+                out1 = nm.sum( out )
+                yield out1, chunk, status
+
+
+        else:
+            msg = 'unknown call_mode for %s' % self.name
+            raise ValueError( msg )

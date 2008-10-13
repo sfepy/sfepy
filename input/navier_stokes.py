@@ -3,6 +3,12 @@
 
 filename_mesh = 'database/pul_klikatak2.mesh'
 
+options = {
+    'nls' : 'newton',
+    'ls' : 'ls',
+    'post_process_hook' : 'verify_incompressibility',
+}
+
 field_1 = {
     'name' : '3_velocity',
     'dim' : (3,1),
@@ -82,6 +88,12 @@ variable_4 = {
     'field' : 'pressure',
     'dual' : 'p',
 }
+variable_5 = {
+    'name' : 'pp',
+    'kind' : 'parameter field',
+    'field' : 'pressure',
+    'like' : 'p',
+}
 
 integral_1 = {
     'name' : 'i1',
@@ -149,6 +161,23 @@ solver_1 = {
     'matrix'    : 'internal', # 'external' or 'internal'
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
+
+def verify_incompressibility( out, problem, state, extend = False ):
+    """This hook is normally used for post-processing (additional results can
+    be inserted into `out` dictionary), but here we just verify the weak
+    incompressibility condition."""
+    from sfepy.base.base import Struct, debug
+    from sfepy.fem import eval_term_op
+
+    vv = problem.variables
+    one = nm.ones( (vv['pp'].field.n_nod,), dtype = nm.float64 )
+    vv['pp'].data_from_data( one )
+    zero = eval_term_op( state,
+                         'dw_stokes.i1.Omega( pp, u )',
+                         problem, pp = one, call_mode = 'd_eval' )
+    print 'div( u ) = %.3e' % zero
+
+    return out
 
 ##
 # Functions.

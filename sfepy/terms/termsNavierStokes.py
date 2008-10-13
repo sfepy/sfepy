@@ -163,7 +163,25 @@ class StokesDiv( CouplingVectorScalar ):
 class StokesEval( Struct ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        raise NotImplementedError
+        par_s, par_v = self.get_args( **kwargs )
+        apr, vgr = par_s.get_approximation( self.get_current_group(),
+                                            'Volume' )
+        apc, vgc = par_v.get_approximation( self.get_current_group(),
+                                            'Volume' )
+        self.set_data_shape( apr, apc )
+        return (par_s, par_v, vgc), (chunk_size, 1, 1, 1), 0
+
+    def d_eval( self, out, par_s, par_v, vgc, chunk ):
+        cache = self.get_cache( 'state_in_volume_qp', 0 )
+        vec = cache( 'state', self.get_current_group(), 0, state = par_s )
+        cache = self.get_cache( 'div_vector', 0 )
+        div = cache( 'div', self.get_current_group(), 0, state = par_v )
+
+        out_qp = vec[chunk] * div[chunk]
+
+        status = vgc.integrate_chunk( out, out_qp, chunk )
+        
+        return status
 
 class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     r""":description: Stokes problem coupling term. Corresponds to weak
@@ -172,8 +190,12 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     \nabla \cdot \ul{u}$
     """
     name = 'dw_stokes'
-    arg_types = ('virtual|state', 'state|virtual')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    arg_types = (('virtual', 'state'),
+                 ('state', 'virtual'),
+                 ('parameter_s', 'parameter_v'))
+    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'parameter_s'), (Volume, 'parameter_v')])
 
     def set_arg_types( self ):
         """Dynamically inherits from either StokesGrad or
@@ -188,8 +210,10 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
             use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
         else:
             self.mode = 'eval'
+            self.function = self.d_eval
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            raise NotImplementedError
+            self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
+                               'div_vector' : [['parameter_v']]}
 
 class GradTerm( Term ):
     r""":description: Gradient term (weak form).
