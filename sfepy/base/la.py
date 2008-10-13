@@ -164,6 +164,25 @@ def cycle( bounds ):
             for perm in cycle( bounds[1:] ):
                 yield [ii] + perm
 
+def combine( seqs ):
+    """Same as cycle, but with general sequences.
+
+    Example:
+
+    In [19]: c = combine( [['a', 'x'], ['b', 'c'], ['dd']] )
+
+    In [20]: list(c)
+    Out[20]: [['a', 'b', 'dd'], ['a', 'c', 'dd'], ['x', 'b', 'dd'],
+    ['x', 'c', 'dd']]
+    """
+    nb  = len( seqs )
+    if nb == 1:
+        for ii in seqs[0]:
+            yield [ii]
+    else:
+        for ii in seqs[0]:
+            for perm in combine( seqs[1:] ):
+                yield [ii] + perm
 
 ##
 # 01.09.2007, c
