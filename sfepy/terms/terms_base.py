@@ -3,18 +3,18 @@ from terms import *
 class CouplingVectorScalar( Struct ):
 
     def set_data_shape( self, apr, apc ):
-        """TODO: shape checking"""
+        """Set element data shape and checks dimensions of approximations."""
         self.data_shape_r = apr.get_v_data_shape( self.integral_name ) 
         self.data_shape_c = apc.get_v_data_shape( self.integral_name ) 
 
-##         if self.mode == 'grad':
-##             dim_c = (1, 1)
-##             dim_r = (self.data_shape_r[2], 1)
-##         else: # 'div', 'eval'
-##             dim_c = (self.data_shape_r[2], 1)
-##             dim_r = (1, 1)
-##         assert_( apc.field.dim == dim_c )
-##         assert_( apr.field.dim == dim_r )
+        if self.mode == 'grad':
+            dim_c = (1, 1)
+            dim_r = (self.data_shape_r[2], 1)
+        else: # 'div', 'eval'
+            dim_c = (self.data_shape_r[2], 1)
+            dim_r = (1, 1)
+        assert_( apc.dim == dim_c )
+        assert_( apr.dim == dim_r )
 
     def get_shape_div( self, diff_var, chunk_size, mode0 = 0 ):
         n_el, n_qp, dim, n_epr = self.data_shape_r
