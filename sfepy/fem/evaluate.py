@@ -139,6 +139,8 @@ def assemble_vector( vec, equation, variables, materials,
                     print term.name, term.sign, ig
                     debug()
 
+                assert_( vec_in_els.shape[2] == dc.shape[1] )
+
                 if vec.dtype == nm.float64:
                     fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
 
@@ -181,6 +183,9 @@ def assemble_matrix( mtx, equation, variables, materials,
                     if status != 0:
                         raise StopIteration( status, term, equation,
                                              var_name_col )
+
+                    assert_( mtx_in_els.shape[2:] == (rdc.shape[1],
+                                                      cdc.shape[1]) )
 
                     if mtx.dtype == nm.float64:
                         fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,

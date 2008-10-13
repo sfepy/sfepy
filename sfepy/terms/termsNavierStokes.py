@@ -154,7 +154,7 @@ class StokesDiv( CouplingVectorScalar ):
                                             'Volume' )
 
         self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+        shape, mode = self.get_shape_div( diff_var, chunk_size )
 
         vec = state()
         bf = apr.get_base( 'v', 0, self.integral_name )

@@ -39,7 +39,7 @@ class PiezoCouplingDiv( CouplingVectorScalar ):
                                             'Volume' )
 
         self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+        shape, mode = self.get_shape_div( diff_var, chunk_size )
 
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
