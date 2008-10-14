@@ -73,22 +73,20 @@ class BiotTerm( BiotDiv, BiotGrad, BiotEval, Term ):
                  ('material', 'state', 'virtual'))
     geometry = ([(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'virtual'), (Volume, 'state')])
+    modes = ('grad', 'div')
 
     def set_arg_types( self ):
         """Dynamically inherits from either BiotGrad or
         BiotDiv."""
-        if self.ats[1] == 'virtual':
-            self.mode = 'grad'
+        if self.mode == 'grad':
             self.function = terms.dw_biot_grad
             use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['state']]}
-        elif self.ats[2] == 'virtual':
-            self.mode = 'div'
+        elif self.mode == 'div':
             self.function = terms.dw_biot_div
             use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
             self.use_caches = {'cauchy_strain' : [['state']]}
         else:
-            self.mode = 'eval'
             use_method_with_name( self, self.call_eval, '_call' )
             raise NotImplementedError
 

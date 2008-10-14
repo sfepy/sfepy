@@ -197,6 +197,8 @@ class Term( Struct ):
         msg = "variable '%s' requested by term '%s' does not exist!"
 
         if isinstance( self.arg_types[0], tuple ):
+            assert_( len( self.modes ) == len( self.arg_types )\
+                     == len( self.__class__.geometry ) )
             # Find matching call signature.
             matched = []
             for it, arg_types in enumerate( self.arg_types ):
@@ -225,8 +227,13 @@ class Term( Struct ):
                     matched.append( it )
 
             if len( matched ) == 1:
-                arg_types = self.arg_types[matched[0]]
-                self.geometry = self.__class__.geometry[matched[0]]
+                i_match = matched[0]
+                arg_types = self.arg_types[i_match]
+                self.geometry = self.__class__.geometry[i_match]
+                self.mode = self.modes[i_match]
+            elif len( matched ) == 0:
+                msg = 'cannot match arguments! (%s)' % self.__arg_names
+                raise ValueError( msg )
             else:
                 msg = 'ambiguous arguments! (%s)' % self.__arg_names
                 raise ValueError( msg )

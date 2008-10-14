@@ -90,6 +90,20 @@ term_syntax = r"""
 <command>%s.%s( &lt;%s> )</command>
 """            
 
+term_long_syntax = r"""
+<command>%s.%s( &lt;arguments> )</command>
+where <command>&lt;arguments></command> is one of:
+<center>
+%s
+</center>
+"""            
+
+term_arg_types = r"""
+<p>
+<command>&lt;%s></command>
+</p>
+"""
+
 cache_syntax = r"""
 <p>
 <command>cache = term.get_cache( '%s', &lt;index> )</command>
@@ -119,9 +133,19 @@ def items_per_sections( table, sec_name_prefix, omit_list ):
 # c: 14.11.2007, r: 24.10.2008
 def typeset_term_syntax( fd, cls, name ):
     fd.write( item_section % 'Syntax' )
-    aux = [s.replace( '|', ' or ' ) for s in cls.arg_types]
-    arg_types = '>, &lt;'.join( aux )
-    fd.write( term_syntax % (name, '&lt;i>.&lt;r>', arg_types) )
+    if isinstance( cls.arg_types[0], tuple ):
+        aux = []
+        for arg_types in cls.arg_types:
+            aux.append( term_arg_types % str_arg_types( arg_types ) )
+        debug()
+        aux = '\n'.join( aux )
+        fd.write( term_long_syntax % (name, '&lt;i>.&lt;r>', aux) )
+    else:
+        aux = str_arg_types( cls.arg_types )
+        fd.write( term_syntax % (name, '&lt;i>.&lt;r>', aux) )
+
+def str_arg_types( arg_types ):
+    return '>, &lt;'.join( arg_types )
 
 ##
 # 14.11.2007, c

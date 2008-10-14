@@ -196,20 +196,18 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     geometry = ([(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'parameter_s'), (Volume, 'parameter_v')])
+    modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):
         """Dynamically inherits from either StokesGrad or
         StokesDiv."""
-        if self.ats[0] == 'virtual':
-            self.mode = 'grad'
+        if self.mode == 'grad':
             self.function = terms.dw_grad
             use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
-        elif self.ats[1] == 'virtual':
-            self.mode = 'div'
+        elif self.mode == 'div':
             self.function = terms.dw_div
             use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
         else:
-            self.mode = 'eval'
             self.function = self.d_eval
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
