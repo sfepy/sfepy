@@ -12,7 +12,7 @@ material_2 = {
     'name' : 'coef',
     'mode' : 'here',
     'region' : 'Omega',
-    'val_dt' : 0.01 * ts.dt, # coef * \Delta t.
+    'val' : 0.01,
     'kind' : 'stationary', # 'stationary' or 'time-dependent'
 }
 
@@ -24,7 +24,7 @@ field_1 = {
 }
 
 variable_1 = {
-    'name' : 't',
+    'name' : 'T',
     'kind' : 'unknown field',
     'field' : 'temperature',
     'order' : 0,
@@ -34,7 +34,7 @@ variable_2 = {
     'name' : 's',
     'kind' : 'test field',
     'field' : 'temperature',
-    'dual' : 't',
+    'dual' : 'T',
 }
 
 region_1000 = {
@@ -51,15 +51,15 @@ region_4 = {
 }
 
 ebc_1 = {
-    'name' : 't1',
+    'name' : 'T1',
     'region' : 'Gamma_Left',
-    'dofs' : {'t.0' : 2.0},
+    'dofs' : {'T.0' : 2.0},
     'value' : 2.0,
 }
 ebc_2 = {
-    'name' : 't2',
+    'name' : 'T2',
     'region' : 'Gamma_Right',
-    'dofs' : {'t.0' : -2.0},
+    'dofs' : {'T.0' : -2.0},
 }
 
 integral_1 = {
@@ -67,11 +67,12 @@ integral_1 = {
     'kind' : 'v',
     'quadrature' : 'gauss_o1_d3',
 }
+
 equations = {
     'Temperature' :
-    """  dw_laplace.i1.Omega( coef.val_dt, s, t )
-       + dw_mass_scalar.i1.Omega( s, t )
-       = dw_mass_scalar.i1.Omega( s, t[-1] )"""
+    """  dw_laplace.i1.Omega( coef.val, s, T )
+       + dw_mass_scalar.i1.Omega( s, dT/dt )
+       = 0"""
 }
 
 solver_0 = {

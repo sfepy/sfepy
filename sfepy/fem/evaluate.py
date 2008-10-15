@@ -156,6 +156,8 @@ def assemble_vector( vec, equation, variables, materials,
 
 def assemble_matrix( mtx, equation, variables, materials,
                      chunk_size = 1000, group_can_fail = True, **kwargs ):
+    """Assemble tangent matrix. Supports backward time difference of state
+    variables."""
     if not sp.isspmatrix_csr( mtx ):
         raise TypeError, 'must be CSR matrix!'
     tmd = (mtx.data, mtx.indptr, mtx.indices)
@@ -186,6 +188,9 @@ def assemble_matrix( mtx, equation, variables, materials,
 
                     assert_( mtx_in_els.shape[2:] == (rdc.shape[1],
                                                       cdc.shape[1]) )
+
+                    if term.arg_derivatives[sn]:
+                        mtx_in_els *= 1.0 / term.dt
 
                     if mtx.dtype == nm.float64:
                         fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,

@@ -31,19 +31,29 @@ def parse_terms( regions, desc, itps ):
         try:
             constructor = term_table[td.name]
         except:
-            print "term '%s' is not in %s" % (td.name,
+            msg = "term '%s' is not in %s" % (td.name,
                                               sorted( term_table.keys() ))
-            raise ValueError
+            raise ValueError( msg )
         region = regions[td.region]
         arg_names = []
         arg_steps = {}
-        for name, step in td.args:
+        arg_derivatives = {}
+        for arg in td.args:
+            if len( arg ) == 2:
+                name, step = arg
+                derivative = None
+            else:
+                name, step = arg[1]
+                derivative = arg[2]
+
             arg_names.append( name )
             arg_steps[name] = step
+            arg_derivatives[name] = derivative
 
         term = constructor( region, td.name, td.sign )
         term.arg_names = arg_names
         term.arg_steps = arg_steps
+        term.arg_derivatives = arg_derivatives
         term.integral_name = td.integral
 
         terms.append( term )
@@ -200,6 +210,11 @@ class Equations( Container ):
     def set_cache_mode( self, cache_override ):
         for cache in self.caches.itervalues():
             cache.set_mode( cache_override )
+
+    def time_update( self, ts ):
+        for eq in self:
+            for term in eq.terms:
+                term.time_update( ts )
 
     ##
     # c: 02.04.2008, r: 02.04.2008

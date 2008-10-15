@@ -137,6 +137,8 @@ class Term( Struct ):
         self.sign = sign
         self.dof_conn_type = 'volume'
         self.function = function
+        self.step = 0
+        self.dt = 1.0
         
         itype = None
         aux = re.compile( '([a-z]+)_.*' ).match( name )
@@ -447,3 +449,19 @@ class Term( Struct ):
         for ig in igs:
             self.set_current_group( ig )
             yield ig
+
+    def time_update( self, ts ):
+        self.step = ts.step
+        self.dt = ts.dt
+
+    def get_state( self, variable ):
+        """Get the state data stored in `variable` according to self.arg_steps
+        and self.arg_derivatives. Supports only the backward difference w.r.t.
+        time."""
+
+        name = variable.name
+
+        if self.arg_derivatives[name]:
+            return (variable() - variable( step = -1 )) / self.dt
+        else:
+            return variable( step = self.arg_steps[name] )

@@ -253,6 +253,11 @@ class ProblemDefinition( Struct ):
         funmod = get_default( funmod, self.conf.funmod )
         self.materials.time_update( ts, funmod, self.domain, extra_mat_args )
 
+    def update_equations( self, ts = None ):
+        if ts is None:
+            ts = self.get_default_ts( step = 0 )
+        self.equations.time_update( ts )
+
     def time_update( self, ts = None,
                      conf_ebc = None, conf_epbc = None, conf_lcbc = None,
                      funmod = None, create_matrix = False,
@@ -268,6 +273,7 @@ class ProblemDefinition( Struct ):
         self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
                         create_matrix )
         self.update_materials( ts, funmod, extra_mat_args )
+        self.update_equations( ts )
 
     def get_timestepper( self ):
         return self.ts
