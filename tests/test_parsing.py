@@ -24,7 +24,8 @@ class Test( TestCommon ):
                  = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )""",
             """no_args() = 0""",
             """+ something( a, b, c ) = + something_else( c, a, d[-1] )""",
-            """term_.a.a( u )"""
+            """term_.a.a( u )""",
+            """term.i1.Omega( v, du/dt ) + term2.i2.Gamma( v, dphi/dt)"""
         ]
 
         n_fail = 0

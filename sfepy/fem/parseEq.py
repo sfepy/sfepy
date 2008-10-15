@@ -58,9 +58,17 @@ def create_bnf( term_descs, itps ):
 
 
     ident = Word( alphas, alphanums + "_")
+
     history = Optional( lbracket + inumber + rbracket, default = 0 )( "history" )
     history.setParseAction( lambda str, loc, toks: int( toks[0] ) )
+
     variable = Group( Word( alphas, alphanums + '._' ) + history )
+
+    derivative = Group( Literal( 'd' ) + variable\
+                 + Literal( '/' ).suppress() + Literal( 'dt' ) )
+
+    var_der = derivative | variable
+
     flag = Literal( 'a' )
 
     term = Optional( Literal( '+' ) | Literal( '-' ), default = '+' )( "sign" )\
@@ -72,7 +80,7 @@ def create_bnf( term_descs, itps ):
                                   ident( "integral" ) + "." + ident( "region" ) |
                                   ident( "region" )
                                   )))( "term_desc" ) + "("\
-                                  + Optional( delimitedList( variable ),
+                                  + Optional( delimitedList( var_der ),
                                 default = [] )( "args" ) + ")"
     term.setParseAction( collect_term( term_descs, lc, itps ) )
 
