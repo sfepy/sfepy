@@ -2,11 +2,9 @@
 # c: 05.02.2008
 filename_mesh = 'database/simple.mesh'
 
-from sfepy.solvers.ts import TimeStepper
 t0 = 0.0
 t1 = 0.1
 n_step = 11
-ts = TimeStepper( t0, t1, None, n_step )
 
 material_2 = {
     'name' : 'coef',
@@ -37,29 +35,15 @@ variable_2 = {
     'dual' : 'T',
 }
 
-region_1000 = {
-    'name' : 'Omega',
-    'select' : 'all',
-}
-region_03 = {
-    'name' : 'Gamma_Left',
-    'select' : 'nodes in (x < 0.00001)',
-}
-region_4 = {
-    'name' : 'Gamma_Right',
-    'select' : 'nodes in (x > 0.099999)',
+regions = {
+    'Omega' : ('all', {}),
+    'Gamma_Left' : ('nodes in (x < 0.00001)', {}),
+    'Gamma_Right' : ('nodes in (x > 0.099999)', {}),
 }
 
-ebc_1 = {
-    'name' : 'T1',
-    'region' : 'Gamma_Left',
-    'dofs' : {'T.0' : 2.0},
-    'value' : 2.0,
-}
-ebc_2 = {
-    'name' : 'T2',
-    'region' : 'Gamma_Right',
-    'dofs' : {'T.0' : -2.0},
+ebcs = {
+    'T1': ('Gamma_Left', {'T.0' : 2.0}),
+    'T2': ('Gamma_Right', {'T.0' : -2.0}),
 }
 
 integral_1 = {
