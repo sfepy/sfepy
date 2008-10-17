@@ -7,11 +7,11 @@ except:
 from sfepy.base.la import split_range, combine
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
-_match_var = re.compile( '^virtual$|^state(_[a-zA-Z0-9]+)?$'\
-                        + '|^parameter(_[a-zA-Z0-9]+)?$' ).match
-_match_state = re.compile( '^state(_[a-zA-Z0-9]+)?$' ).match
-_match_parameter = re.compile( '^parameter(_[a-zA-Z0-9]+)?$' ).match
-_match_material = re.compile( '^material(_[a-zA-Z0-9]+)?$' ).match
+_match_var = re.compile( '^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
+                        + '|^parameter(_[_a-zA-Z0-9]+)?$' ).match
+_match_state = re.compile( '^state(_[_a-zA-Z0-9]+)?$' ).match
+_match_parameter = re.compile( '^parameter(_[_a-zA-Z0-9]+)?$' ).match
+_match_material = re.compile( '^material(_[_a-zA-Z0-9]+)?$' ).match
 _match_material_root = re.compile( '(.+)\.(.*)' ).match
 
 def vector_chunk_generator( total_size, chunk_size, shape_in,
