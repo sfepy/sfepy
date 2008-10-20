@@ -73,16 +73,19 @@ def get_pars( ts, coor, region, ig, mode = None ):
 
     return {'val' : val}
 
-# ('d' variables, 'dw' variables (test must be paired with unknown, which
-# should be last!), mat mode)
-test_terms = {
-    '%s_biot_div.i1.Omega( m.val, %s, %s )' :
-    (('ps1', 'pv1'), ('ts', 'pv1', 'us'), 'biot'),
-    '%s_diffusion.i1.Omega( m.val, %s, %s )' :
-    (('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability'),
-    '%s_volume_wdot.i1.Omega( m.val, %s, %s )' :
-    (('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m'),
-}
+# (eval term prefix, parameter corresponding to test variable, 'd' variables,
+# 'dw' variables (test must be paired with unknown, which should be last!), mat
+# mode)
+test_terms = [
+    ('%s_biot.i1.Omega( m.val, %s, %s )',
+     ('dw', 'ps1', ('ps1', 'pv1'), ('pv1', 'ts', 'us'), 'biot')),
+    ('%s_biot.i1.Omega( m.val, %s, %s )',
+     ('dw', 'pv1', ('ps1', 'pv1'), ('tv', 'ps1', 'uv'), 'biot')),
+    ('%s_diffusion.i1.Omega( m.val, %s, %s )',
+     ('d', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
+    ('%s_volume_wdot.i1.Omega( m.val, %s, %s )',
+     ('d', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m')),
+]
 
 import numpy as nm
 from sfepy.base.testing import TestCommon
@@ -111,18 +114,13 @@ class Test( TestCommon ):
 
         ok = True
         pb = self.problem
-        for term_template, (d_vars, dw_vars, par_mode) in test_terms.iteritems():
-            print term_template, d_vars, dw_vars, par_mode
+        for aux in test_terms:
+            term_template, (prefix, par_name, d_vars, dw_vars, mat_mode) = aux
+            print term_template, prefix, par_name, d_vars, dw_vars, mat_mode
 
             var_names = nm.unique1d( d_vars + dw_vars )
             variables = select_by_names( pb.conf.variables, var_names )
             pb.set_variables( variables )
-
-            term1 = term_template % (('d',) + d_vars)
-            pb.set_equations( {'eq': term1} )
-
-            mat_args = {'m' : {'mode' : par_mode}} 
-            pb.time_update( extra_mat_args = mat_args )
 
             vecs = {}
             for var_name in d_vars:
@@ -130,14 +128,25 @@ class Test( TestCommon ):
                 n_dof = var.field.n_nod * var.field.dim[0]
                 vecs[var_name] = nm.arange( n_dof, dtype = nm.float64 )
                 var.data_from_data( vecs[var_name] )
+
+            term1 = term_template % ((prefix,) + d_vars)
+            pb.set_equations( {'eq': term1} )
+
+            mat_args = {'m' : {'mode' : mat_mode}} 
+            pb.time_update( extra_mat_args = mat_args )
+
             dummy = pb.create_state_vector()
-            val1 = eval_term_op( dummy, term1, pb )
+            if prefix == 'd':
+                val1 = eval_term_op( dummy, term1, pb )
+            else:
+                val1 = eval_term_op( dummy, term1, pb, call_mode = 'd_eval' )
+                
             self.report( '%s: %s' % (term1, val1) )
             
             term2 = term_template % (('dw',) + dw_vars[:-1])
 
             vec = eval_term_op( dummy, term2, pb )
-            val2 = nm.dot( vecs[d_vars[0]], vec )
+            val2 = nm.dot( vecs[par_name], vec )
             self.report( '%s: %s' % (term2, val2) )
 
             err = nm.abs( val1 - val2 ) / nm.abs( val1 )
