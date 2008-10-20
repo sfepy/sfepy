@@ -247,7 +247,8 @@ class ProblemDefinition( Struct ):
 
     ##
     # c: 22.02.2008, r: 13.06.2008
-    def update_materials( self, ts = None, funmod = None, extra_mat_args = None ):
+    def update_materials( self, ts = None, funmod = None,
+                          extra_mat_args = None ):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
         funmod = get_default( funmod, self.conf.funmod )
@@ -257,6 +258,7 @@ class ProblemDefinition( Struct ):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
         self.equations.time_update( ts )
+        self.variables.time_update( ts )
 
     def time_update( self, ts = None,
                      conf_ebc = None, conf_epbc = None, conf_lcbc = None,

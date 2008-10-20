@@ -281,8 +281,9 @@ class Equation( Struct ):
         for term in self.terms:
             if not hasattr( term, 'use_caches' ): continue
 
-#            print term.name
+##             print term.name
             for name, arg_lists in term.use_caches.iteritems():
+##                 print term.arg_names
 ##                print name, arg_lists
                 for args in arg_lists:
                     # Order should be handled in terms...
@@ -291,7 +292,7 @@ class Equation( Struct ):
                         history_sizes = args.pop()
                     else:
                         history_sizes = None
-                    ans = [term.get_arg_name( arg ) for arg in args]
+                    ans = [term.get_arg_name( arg, full = True ) for arg in args]
                     cname = '_'.join( [name] + ans )
 ##                     print term.name, name, arg_lists, args, self.name, cname
 ##                     print history_sizes

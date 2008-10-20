@@ -362,9 +362,15 @@ class Term( Struct ):
 
     ##
     # 24.07.2006, c
-    def get_arg_name( self, arg_type ):
+    def get_arg_name( self, arg_type, full = False ):
         ii = self.ats.index( arg_type )
-        return self.arg_names[ii]
+        name = self.arg_names[ii]
+        if full:
+            # Include derivatives.
+            if self.arg_derivatives[name]:
+                name = 'd%s/%s' % (name, self.arg_derivatives[name] )
+
+        return name
 
     ##
     # c: 29.11.2007, r: 10.04.2008
@@ -427,7 +433,8 @@ class Term( Struct ):
     # c: 27.02.2007, r: 15.04.2008
     def get_cache( self, base_name, ii ):
         args = self.use_caches[base_name][ii]
-        ans = [self.get_arg_name( arg ) for arg in args if not type( arg ) == dict]
+        ans = [self.get_arg_name( arg, full = True ) for arg in args
+               if not type( arg ) == dict]
 ##         print args, ans
 ##         pause()
         cname = '_'.join( [base_name] + ans )
@@ -454,14 +461,11 @@ class Term( Struct ):
         self.step = ts.step
         self.dt = ts.dt
 
-    def get_state( self, variable ):
-        """Get the state data stored in `variable` according to self.arg_steps
+    def get_vector( self, variable ):
+        """Get the vector stored in `variable` according to self.arg_steps
         and self.arg_derivatives. Supports only the backward difference w.r.t.
         time."""
 
         name = variable.name
-
-        if self.arg_derivatives[name]:
-            return (variable() - variable( step = -1 )) / self.dt
-        else:
-            return variable( step = self.arg_steps[name] )
+        return variable( step = self.arg_steps[name],
+                         derivative = self.arg_derivatives[name] )

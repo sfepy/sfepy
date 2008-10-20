@@ -853,6 +853,10 @@ class Variables( Container ):
         for var in self.iter_state():
             var.init_state( state, self.di.indx[var.name] )
 
+    def time_update( self, ts ):
+        for var in self:
+            var.time_update( ts )
+
     def advance( self, ts ):
         for var in self.iter_state():
             var.advance( ts )
@@ -926,7 +930,8 @@ class Variable( Struct ):
         self.indx = None
         self.n_dof = None
         self.current_ap = None
-        self.step = None
+        self.step = 0
+        self.dt = 1.0
 
         if self.is_virtual():
             self.data = None
@@ -977,6 +982,9 @@ class Variable( Struct ):
         self.data.append( None )
         self.step = 0
         self.data_from_state( state, indx, step = 0 )
+
+    def time_update( self, ts ):
+        self.dt = ts.dt
 
     def advance( self, ts ):
         if self.history is None: return
@@ -1380,9 +1388,21 @@ class Variable( Struct ):
 
         return shape
 
-    def __call__( self, step = 0 ):
-        """Returns: a view of the state vector."""
-        return self.data[step][self.indx]
+    def __call__( self, step = 0, derivative = None, dt = None ):
+        """Returns:
+             if `derivative` is None: a view of the data vector,
+             otherwise: required derivative of the data vector
+             at time step given by `step`.
+
+           Supports only the backward difference w.r.t. time."""
+        if derivative is None:
+            return self.data[step][self.indx]
+        else:
+            assert_( self.history is not None )
+            dt = get_default( dt, self.dt )
+##            print self.name, step, dt
+            return (self( step = step ) - self( step = step-1 )) / dt
+            
 
     def get_full_state( self, step = 0 ):
         return self.data[step]
