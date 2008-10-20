@@ -189,16 +189,16 @@ def assemble_matrix( mtx, equation, variables, materials,
                     assert_( mtx_in_els.shape[2:] == (rdc.shape[1],
                                                       cdc.shape[1]) )
 
+                    sign = term.sign
                     if term.arg_derivatives[sn]:
-                        mtx_in_els *= 1.0 / term.dt
+                        sign *= 1.0 / term.dt
 
                     if mtx.dtype == nm.float64:
                         fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,
-                                             iels, term.sign, rdc, cdc )
+                                             iels, sign, rdc, cdc )
 
                     else:
                         assert_( mtx.dtype == nm.complex128 )
-                        sign = nm.array( term.sign, dtype = nm.complex128 )
                         fem.assemble_matrix_complex( tmd[0].real, tmd[0].imag,
                                                      tmd[1], tmd[2],
                                                      mtx_in_els.real,
