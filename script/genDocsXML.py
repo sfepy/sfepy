@@ -137,7 +137,6 @@ def typeset_term_syntax( fd, cls, name ):
         aux = []
         for arg_types in cls.arg_types:
             aux.append( term_arg_types % str_arg_types( arg_types ) )
-        debug()
         aux = '\n'.join( aux )
         fd.write( term_long_syntax % (name, '&lt;i>.&lt;r>', aux) )
     else:
