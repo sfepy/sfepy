@@ -20,7 +20,8 @@ class IntegrateVolumeTerm( Term ):
         shape = (chunk_size, 1, field_dim, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0, state = par )
+        vec = cache( 'state', self.get_current_group(), 0,
+                     state = par, get_vector = self.get_vector )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = vg.integrate_chunk( out, vec[chunk], chunk )
@@ -121,9 +122,11 @@ class DotProductVolumeTerm( Term ):
         shape = (chunk_size, 1, 1, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.get_current_group(), 0, state = par1 )
+        vec1 = cache( 'state', self.get_current_group(), 0,
+                      state = par1, get_vector = self.get_vector )
         cache = self.get_cache( 'state_in_volume_qp', 1 )
-        vec2 = cache( 'state', self.get_current_group(), 0, state = par2 )
+        vec2 = cache( 'state', self.get_current_group(), 0,
+                      state = par2, get_vector = self.get_vector )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             if vec1.shape[-1] > 1:
@@ -336,9 +339,11 @@ class WDotProductVolumeTerm( Term ):
         shape = (chunk_size, 1, 1, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.get_current_group(), 0, state = par1 )
+        vec1 = cache( 'state', self.get_current_group(), 0,
+                      state = par1, get_vector = self.get_vector )
         cache = self.get_cache( 'state_in_volume_qp', 1 )
-        vec2 = cache( 'state', self.get_current_group(), 0, state = par2 )
+        vec2 = cache( 'state', self.get_current_group(), 0,
+                      state = par2, get_vector = self.get_vector )
 
         if mat.ndim == 1:
             mat = mat[...,nm.newaxis]
@@ -386,7 +391,8 @@ class WDotProductVolumeOperatorTerm( Term ):
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0, state = state )
+        vec = cache( 'state', self.get_current_group(), 0,
+                     state = state, get_vector = self.get_vector )
 
         vdim = vec.shape[-1]
 
@@ -447,10 +453,11 @@ class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0,
-                     state = state, history = par )
+                     state = state, history = par, get_vector = self.get_vector )
         if ts.step > 0:
             vec0 = cache( 'state', self.get_current_group(), 1,
-                     state = state, history = par )
+                          state = state, history = par,
+                          get_vector = self.get_vector )
             dvec = (vec - vec0) / ts.dt
         vdim = vec.shape[-1]
 
@@ -545,7 +552,8 @@ class WDotProductVolumeOperatorTHTerm( Term ):
                 for ii, mat in enumerate( mats ):
                     mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     vec_qp = cache( 'state', self.get_current_group(), ii,
-                                    state = state, history = history )
+                                    state = state, history = history,
+                                    get_vector = self.get_vector )
                     status = self.function( out1, ts.dt, vec_qp, bf,
                                             mat_qp, vg, chunk, 0 )
                     out += out1
@@ -568,7 +576,8 @@ class AverageVariableTerm( Term ):
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0, state = par )
+        vec = cache( 'state', self.get_current_group(), 0,
+                     state = par, get_vector = self.get_vector )
         vdim = vec.shape[-1]
         shape = (chunk_size, 1, vdim, 1)
 

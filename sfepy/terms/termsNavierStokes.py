@@ -140,7 +140,7 @@ class StokesGrad( CouplingVectorScalar ):
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
 
-        vec = state()
+        vec = self.get_vector( state )
         bf = apc.get_base( 'v', 0, self.integral_name )
         return (1.0, vec, 0, bf, vgr, apc.econn), shape, mode
 
@@ -156,11 +156,11 @@ class StokesDiv( CouplingVectorScalar ):
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
 
-        vec = state()
+        vec = self.get_vector( state )
         bf = apr.get_base( 'v', 0, self.integral_name )
         return (vec, 0, bf, vgc, apc.econn), shape, mode
 
-class StokesEval( Struct ):
+class StokesEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         par_s, par_v = self.get_args( **kwargs )
@@ -213,46 +213,6 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
             self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
                                'div_vector' : [['parameter_v']]}
 
-class GradTerm( Term ):
-    r""":description: Gradient term (weak form).
-    :definition: $\int_{\Omega}  p\ \nabla \cdot \ul{v}$
-    """
-    name = 'dw_grad'
-    arg_types = ('virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_grad )
-        
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
-        n_el, n_qp, dim, n_epr = self.data_shape
-
-        if diff_var is None:
-            return (chunk_size, 1, dim * n_epr, 1 ), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape( self.integral_name )[3]
-            return (chunk_size, 1, dim * n_epr, n_epc ), 1
-        else:
-            raise StopIteration
-
-    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
-        vec = state()
-        bf = apc.get_base( 'v', 0, self.integral_name )
-        return 1.0, vec, 0, bf, vgr, apc.econn
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
-
-        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
-        fargs = self.build_c_fun_args( state, apc, vgr, **kwargs )
-        
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
-
 class GradQTerm( Term ):
     r""":description: Gradient term (weak form) in quadrature points.
     :definition: $(\nabla p)|_{qp}$
@@ -281,109 +241,6 @@ class GradQTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, 0, vg, apc.econn, chunk )
             yield out, chunk, status
-
-##
-# 09.03.2007, c
-class GradDtTerm( GradTerm ):
-    r""":description: Gradient term (weak form) with time-discretized $\dot{p}$.
-    :definition: $ \int_{\Omega}  \frac{p - p_0}{\dt} \nabla \cdot \ul{v}$
-    :arguments: ts.dt : $\dt$, parameter : $p_0$
-    """
-    name = 'dw_grad_dt'
-    arg_types = ('ts', 'virtual', 'state', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-
-    def build_c_fun_args( self, state, apc, vgr, **kwargs ):
-        ts, state_0 = self.get_args( ['ts', 'parameter'], **kwargs )
-
-        dvec = state() - state_0()
-        idt = 1.0/ts.dt 
-
-        bf = apc.get_base( 'v', 0, self.integral_name )
-        return idt, dvec, 0, bf, vgr, apc.econn
-
-##
-# 14.12.2005, c
-class DivTerm( Term ):
-    r""":description: Divergence term (weak form).
-    :definition: $\int_{\Omega} q\ \nabla \cdot \ul{u}$
-    """
-    name = 'dw_div'
-    arg_types = ('virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-
-    ##
-    # 14.12.2005, c
-    # 10.01.2006
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_div )
-
-    ##
-    # c: 31.03.2008, r: 31.03.2008
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name ) 
-        n_el, n_qp, dim, n_epr = self.data_shape
-
-        if diff_var is None:
-            return (chunk_size, 1, n_epr, 1 ), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape( self.integral_name )[3]
-            return (chunk_size, 1, n_epr, dim * n_epc ), 1
-        else:
-            raise StopIteration
-
-    def build_c_fun_args( self, state, apr, apc, vgc, **kwargs ):
-        vec = state()
-        bf = apr.get_base( 'v', 0, self.integral_name )
-        return vec, 0, bf, vgc, apc.econn
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
-
-        shape, mode = self.get_shape( diff_var, chunk_size, apr, apc )
-        fargs = self.build_c_fun_args( state, apr, apc, vgc, **kwargs )
-        
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
-
-##
-# 13.03.2007, c
-class DivIntegratedTerm( Term ):
-    r""":description: Integrated divergence term (weak form).
-    :definition: $\int_{\Omega} \bar{p}\ \nabla \cdot \ul{w}$
-    """
-    name = 'd_div'
-    arg_types = ('parameter_1', 'parameter_2')
-    geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    use_caches = {'state_in_volume_qp' : [['parameter_1']],
-                 'div_vector' : [['parameter_2']]}
-
-    ##
-    # 13.03.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-
-    ##
-    # c: 13.03.2007, r: 17.01.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args( **kwargs )
-        apc, vgc = par2.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_epc = apc.get_v_data_shape( self.integral_name )
-        shape = (0,)
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.get_current_group(), 0, state = par1 )
-        cache = self.get_cache( 'div_vector', 0 )
-        div2 = cache( 'div', self.get_current_group(), 0, state = par2 )
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            out = nm.sum( vec1[chunk] * div2[chunk] * vgc.variable( 1 ) )
-            yield out, chunk, 0
 
 ##
 # 26.07.2007, c

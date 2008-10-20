@@ -87,7 +87,7 @@ class MassScalarTerm( Term ):
             raise StopIteration
         
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
-        vec = self.get_state( state )
+        vec = self.get_vector( state )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
         if state.is_real():

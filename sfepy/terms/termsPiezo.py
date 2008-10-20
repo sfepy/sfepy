@@ -45,7 +45,7 @@ class PiezoCouplingDiv( CouplingVectorScalar ):
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
             strain = cache( 'strain', self.get_current_group(), 0,
-                            state = state )
+                            state = state, get_vector = self.get_vector )
         else:
             strain = aux
 
