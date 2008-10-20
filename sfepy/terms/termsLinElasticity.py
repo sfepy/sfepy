@@ -45,7 +45,8 @@ class LinearElasticTerm( Term ):
     def build_c_fun_args( self, mat, state, ap, vg ):
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.get_current_group(), 0, state = state )
+        strain = cache( 'strain', self.get_current_group(), 0,
+                        state = state, get_vector = self.get_vector )
         return 1.0, strain, mat_qp, vg
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -81,9 +82,11 @@ class  LinearElasticIntegratedTerm( Term ):
 #        print mat_qp
 
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain1 = cache( 'strain', self.get_current_group(), 0, state = par1 )
+        strain1 = cache( 'strain', self.get_current_group(), 0,
+                         state = par1, get_vector = self.get_vector )
         cache = self.get_cache( 'cauchy_strain', 1 )
-        strain2 = cache( 'strain', self.get_current_group(), 0, state = par2 )
+        strain2 = cache( 'strain', self.get_current_group(), 0,
+                         state = par2, get_vector = self.get_vector )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, 1.0, strain1, strain2, mat_qp,
@@ -129,7 +132,8 @@ class LinearViscousTerm( LinearElasticTerm ):
     def build_c_fun_args( self, dt, mat, state, ap, vg ):
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
-        dstrain = cache( 'dstrain', self.get_current_group(), 0, state = state )
+        dstrain = cache( 'dstrain', self.get_current_group(), 0,
+                         state = state, get_vector = self.get_vector )
         return 1.0 / dt, dstrain, mat_qp, vg
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -143,20 +147,19 @@ class LinearViscousTerm( LinearElasticTerm ):
             status = self.function( out, *fargs + (chunk, mode) )
             yield out, chunk, status
 
-class LinearViscousTHTerm( LinearElasticTerm ):
+class LinearElasticTHTerm( LinearElasticTerm ):
     r""":definition: $\int_{\Omega} \left [\int_0^t
     \Hcal_{ijkl}(t-\tau)\,\tdiff{e_{kl}(\ul{u}(\tau))}{\tau}
     \difd{\tau} \right]\,e_{ij}(\ul{v})$"""
-    name = 'dw_lin_viscous_th'
-    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
+    name = 'dw_lin_elastic_th'
+    arg_types = ('ts', 'material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'cauchy_strain' : [['state', {'strain' : (2,2),
-                                               'dstrain' : (-1,-1)}]]}
+    use_caches = {'cauchy_strain' : [['state', {'strain' : (-1,-1)}]]}
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """history for now is just state_0, it is not used anyway, as the
         history is held in the dstrain cache"""
-        ts, mats, virtual, state, history = self.get_args( **kwargs )
+        ts, mats, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         shape, mode = self.get_shape( diff_var, chunk_size, ap )
@@ -168,7 +171,7 @@ class LinearViscousTHTerm( LinearElasticTerm ):
         if mode == 1:
             mat_qp = mats[0][nm.newaxis,:,:].repeat( n_qp, 0 )
             for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, 1.0, nm.empty( 0 ),
+                status = self.function( out, ts.dt, nm.empty( 0 ),
                                         mat_qp, vg, chunk, 1 )
                 yield out, chunk, status
         else:
@@ -179,10 +182,10 @@ class LinearViscousTHTerm( LinearElasticTerm ):
 ##                 itt = time.clock()
                 for ii, mat in enumerate( mats ):
                     mat_qp = mat[nm.newaxis,:,:].repeat( n_qp, 0 )
-                    dstrain = cache( 'dstrain', self.get_current_group(), ii,
-                                     state = state, history = history )
+                    strain = cache( 'strain', self.get_current_group(), ii,
+                                    state = state, get_vector = self.get_vector )
 ##                     tt = time.clock()
-                    status = self.function( out1, 1.0, dstrain,
+                    status = self.function( out1, ts.dt, strain,
                                             mat_qp, vg, chunk, 0 )
 ##                     ttt += time.clock() - tt
                     out += out1
@@ -244,5 +247,7 @@ class CauchyStressTerm( CauchyStrainTerm ):
         mat, = self.get_args( ['material'], **kwargs )
         mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.get_current_group(), 0, state = state )
+        strain = cache( 'strain', self.get_current_group(), 0,
+                        state = state, get_vector = self.get_vector )
         return strain, mat_qp, vg
+
