@@ -2,27 +2,35 @@
 <p>
 Equations in SfePy are built using terms, which correspond directly to the
 integral forms of weak formulation of a problem to be solved. As an example,
-let us consider the Laplace equation:
+let us consider the Laplace equation in time interval <m>t \in [0, t_{\rm
+final}]</m>:
 <e id="eq:laplace">
-  c \Delta t = 0 \mbox{ in }\Omega,\quad t = \bar{t} \mbox{ on } \Gamma \;.
+  \pdiff{T}{t} + c \Delta T = 0 \mbox{ in }\Omega,\quad T(t) = \bar{T}(t)
+  \mbox{ on } \Gamma \;.
 </e>
-The weak formulation of <a ref="eq:laplace"/> is: Find <m>t \in V</m>, such that
+The weak formulation of <a ref="eq:laplace"/> is: Find <m>T \in V</m>, such that
 <e id="eq:wlaplace">
-  \int_{\Omega} c\ \nabla t : \nabla s = 0, \quad \forall s \in V_0 \;.
+  \int_{\Omega} s \pdiff{T}{t} + \int_{\Omega} c\ \nabla T : \nabla s = 0,
+  \quad \forall s \in V_0 \;,
 </e>
-In the syntax used in SfePy input
-files, this can be written as
+where we assume no fluxes over <m>\partial \Omega \setminus \Gamma</m>.
+
+In the syntax used in SfePy input files, this can be written as
 <e id="eq:cpoisson">
-    \verb|dw_laplace.i1.Omega( coef, s, t ) = 0| \;,
+    \verb|dw_mass_scalar.i1.Omega( s, dT/dt ) + dw_laplace.i1.Omega( coef, s, T
+    ) = 0| \;,
 </e>
 which directly corresponds to the discrete version of <a ref="eq:wlaplace"/>:
-Find <m>\bm{t} \in V_h</m>, such that
+Find <m>\bm{T} \in V_h</m>, such that
 <e>
-  \bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T \bm{G}) \bm{t} = 0, \quad \forall \bm{s}
-  \in V_{h0} \;,
+  \bm{s}^T (\int_{\Omega_h} \bm{\phi}^T \bm{\phi}) \pdiff{\bm{T}}{t} +
+  \bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T \bm{G}) \bm{T} = 0, \quad \forall
+  \bm{s} \in V_{h0} \;,
 </e>
-where <m>\nabla u \approx \bm{G} \bm{u}</m>. The integral over the discrete
-domain <m>\Omega_h</m> is approximated by a numerical quadrature, that is named
+where <m>u \approx \bm{\phi} \bm{u}</m>, <m>\nabla u \approx \bm{G} \bm{u}</m>
+for <m>u \in \{s, T\}</m>. The integrals over the discrete
+domain <m>\Omega_h</m> are approximated by a numerical quadrature, that is
+named
 <m>\verb|i1|</m> in our case.
 </p>
 

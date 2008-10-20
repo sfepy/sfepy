@@ -54,9 +54,8 @@ integral_1 = {
 
 equations = {
     'Temperature' :
-    """  dw_laplace.i1.Omega( coef.val, s, T )
-       + dw_mass_scalar.i1.Omega( s, dT/dt )
-       = 0"""
+    """dw_mass_scalar.i1.Omega( s, dT/dt )
+     + dw_laplace.i1.Omega( coef.val, s, T ) = 0"""
 }
 
 solver_0 = {
