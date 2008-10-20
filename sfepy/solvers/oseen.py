@@ -31,10 +31,10 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
     ns['u'] = term.get_state_names()[0]
     ns['omega'] = term.region.name
     
-    term = problem.equations[eq_name1].terms['dw_grad']
+    term = problem.equations[eq_name1].terms['dw_stokes']
     ns['p'] = term.get_state_names()[0]
 
-    term = problem.equations[eq_name2].terms['dw_div']
+    term = problem.equations[eq_name2].terms['dw_stokes']
     ns['q'] = term.get_virtual_name()
 
     ii = {}
