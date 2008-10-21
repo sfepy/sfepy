@@ -165,28 +165,13 @@ def compute_density_volume_info( pb, volume_term, region_to_material ):
                    volumes = volumes,
                    densities = densities )
 
-def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
-                          eig_vectors, threshold, threshold_is_relative,
+def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
                           transform = None, pbar = None ):
-    """Eigenmomenta.
 
-    Valid == True means an eigenmomentum above threshold."""
     dim = pb.domain.mesh.dim
     n_dof, n_eigs = eig_vectors.shape
-    n_nod = n_dof / dim
 
-    u_name = conf_eigenmomentum['var']
-    rnames = conf_eigenmomentum['regions']
-    term = conf_eigenmomentum['term']
-    tt = []
-    for rname in rnames:
-        mat = pb.materials[region_to_material[rname]]
-        density = mat.get_data( rname, mat.igs[0], 'density' )
-        tt.append( term % (density, rname, u_name) )
-    em_eq = ' + '.join( tt )
-    output( 'eigenmomentum equation:', em_eq )
-
-    masses = nm.empty( (n_eigs, dim), dtype = nm.float64 )
+    eigenmomenta = nm.empty( (n_eigs, dim), dtype = nm.float64 )
 
     if pbar is not None:
         pbar.init( n_eigs - 1 )
@@ -205,16 +190,45 @@ def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
             vec_phi, is_zero = transform( eig_vectors[:,ii], (n_nod, dim) )
            
         if is_zero:
-            masses[ii,:] = 0.0
+            eigenmomenta[ii,:] = 0.0
+
         else:
             pb.variables[u_name].data_from_data( vec_phi.copy() )
-            val = eval_term_op( None, em_eq, pb )
-            masses[ii,:] = val
-#            print ii, ir, val
+            val = eval_term_op( None, em_equation, pb )
+            eigenmomenta[ii,:] = val
+
+    return eigenmomenta
+
+def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
+                          eig_vectors, threshold, threshold_is_relative,
+                          unweighted = False, transform = None, pbar = None ):
+    """Eigenmomenta.
+
+    unweighted = True: compute also unweighted eigenmomenta needed for applied
+    load tensor
+    
+    Valid == True means an eigenmomentum above threshold."""
+    dim = pb.domain.mesh.dim
+    n_dof, n_eigs = eig_vectors.shape
+    n_nod = n_dof / dim
+
+    u_name = conf_eigenmomentum['var']
+    rnames = conf_eigenmomentum['regions']
+    term = conf_eigenmomentum['term']
+    tt = []
+    for rname in rnames:
+        mat = pb.materials[region_to_material[rname]]
+        density = mat.get_data( rname, mat.igs[0], 'density' )
+        tt.append( term % (density, rname, u_name) )
+    em_eq = ' + '.join( tt )
+    output( 'equation:', em_eq )
+
+    eigenmomenta = compute_eigenmomenta( em_eq, u_name, pb, eig_vectors,
+                                         transform, pbar )
 
     mag = nm.zeros( (n_eigs,), dtype = nm.float64 )
     for ir in range( dim ):
-        mag += masses[:,ir] ** 2
+        mag += eigenmomenta[:,ir] ** 2
     mag = nm.sqrt( mag )
 
     if threshold_is_relative:
@@ -224,32 +238,45 @@ def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
         
     valid = nm.where( mag < tol, False, True )
     mask = nm.where( valid == False )[0]
-    masses[mask,:] = 0.0
+    eigenmomenta[mask,:] = 0.0
     n_zeroed = mask.shape[0]
 
     output( '%d of %d eigenmomenta zeroed (under %.2e)'\
             % (n_zeroed, n_eigs, tol) )
 ##     print valid
 ##     import pylab
-##     pylab.plot( masses )
+##     pylab.plot( eigenmomenta )
 ##     pylab.show()
-    
-    return n_zeroed, valid, masses
 
-def compute_generalized_mass( freq, masses, eigs, dv_info, squared ):
-    """Assumes that `masses`, `eigs` contain only valid resonances."""
-    dim = masses.shape[1]
+    if unweighted:
+        tt = []
+        for rname in rnames:
+            tt.append( term % (1.0, rname, u_name) )
+        uem_eq = ' + '.join( tt )
+        output( 'unweighted:', uem_eq )
+
+        ueigenmomenta = compute_eigenmomenta( uem_eq, u_name, pb, eig_vectors,
+                                     transform, pbar )
+        ueigenmomenta[mask,:] = 0.0
+        return n_zeroed, valid, eigenmomenta, ueigenmomenta
+
+    else:
+        return n_zeroed, valid, eigenmomenta
+
+def compute_generalized_mass( freq, eigenmomenta, eigs, dv_info, squared ):
+    """Assumes that `eigenmomenta`, `eigs` contain only valid resonances."""
+    dim = eigenmomenta.shape[1]
     fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
 
     for ir in range( dim ):
         for ic in range( dim ):
             if ir <= ic:
                 if squared:
-                    val = nm.sum( masses[:,ir] * masses[:,ic]\
+                    val = nm.sum( eigenmomenta[:,ir] * eigenmomenta[:,ic]\
                                   / (freq - eigs) )
                     fmass[ir,ic] += freq * val
                 else:
-                    val = nm.sum( masses[:,ir] * masses[:,ic]\
+                    val = nm.sum( eigenmomenta[:,ir] * eigenmomenta[:,ic]\
                                   / ((freq**2) - (eigs**2)) )
                     fmass[ir,ic] += (freq**2) * val
             else:
@@ -260,7 +287,29 @@ def compute_generalized_mass( freq, masses, eigs, dv_info, squared ):
 
     return mtx_mass
 
-def find_zero( f0, f1, masses, eigs, dv_info, opts, mode ):
+def compute_applied_load( freq, eigenmomenta, ueigenmomenta, eigs,
+                          dv_info, squared ):
+    """Assumes that `eigenmomenta`, 'ueigenmomenta', `eigs` contain only valid
+    resonances."""
+    dim = eigenmomenta.shape[1]
+    fload = nm.zeros( (dim, dim), dtype = nm.float64 )
+
+    for ir in range( dim ):
+        for ic in range( dim ):
+            if squared:
+                val = nm.sum( eigenmomenta[:,ir] * ueigenmomenta[:,ic]\
+                              / (freq - eigs) )
+                fload[ir,ic] += freq * val
+            else:
+                val = nm.sum( eigenmomenta[:,ir] * ueigenmomenta[:,ic]\
+                              / ((freq**2) - (eigs**2)) )
+                fload[ir,ic] += (freq**2) * val
+
+    eye = nm.eye( (dim, dim), dtype = nm.float64 )
+
+    mtx_load = eye - (fload / dv_info.total_volume)
+
+def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode ):
     """For f \in ]f0, f1[ find frequency f for which either the smallest
     (`mode` = 0) or the largest (`mode` = 1) eigenvalue of M is zero.
 
@@ -282,7 +331,7 @@ def find_zero( f0, f1, masses, eigs, dv_info, opts, mode ):
     ieig = {0 : 0, 1 : -1}[mode]
     while 1:
         f = 0.5 * (fm + fp)
-        mtx_mass = compute_generalized_mass( f, masses, eigs,
+        mtx_mass = compute_generalized_mass( f, eigenmomenta, eigs,
                                              dv_info, opts.squared )
         meigs = eig( mtx_mass, eigenvectors = False, method = method )
 ##         print meigs
@@ -585,11 +634,11 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
     output( 'mass matrix eigenmomenta...')
     pbar = MyBar( 'computing:' )
     tt = time.clock()
-    aux = compute_eigenmomenta( pb, opts.eigenmomentum,
+    aux = prepare_eigenmomenta( pb, opts.eigenmomentum,
                                 opts.region_to_material,
                                 eig_vectors, opts.teps, opts.teps_rel,
-                                wrap_transform, pbar )
-    n_zeroed, valid, masses = aux
+                                transform = wrap_transform, pbar = pbar )
+    n_zeroed, valid, eigenmomenta = aux
     output( '...done in %.2f s' % (time.clock() - tt) )
     aux = cut_freq_range( freq_range_initial, eigs, valid,
                           opts.freq_margins, opts.eig_range,
@@ -611,7 +660,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
     gaps = []
 
     df = opts.freq_step * (max_freq - min_freq)
-    valid_masses = masses[valid,:]
+    valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
     cgm = compute_generalized_mass
     for ii in xrange( freq_range.shape[0] + 1 ):
@@ -623,7 +672,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
         num = min( 1000, max( 20, (f1 - f0) / df ) )
         log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         for f in log_freqs:
-            mtx_mass = cgm( f, valid_masses, valid_eigs,
+            mtx_mass = cgm( f, valid_eigenmomenta, valid_eigs,
                             dv_info, opts.squared )
             meigs = eig( mtx_mass, eigenvectors = False, method = method )
             log.append( [f, meigs[0], meigs[-1]] )
@@ -638,9 +687,10 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
             alog = nm.array( log )
 
             output( 'finding zero of the largest eig...' )
-            smax, fmax, vmax = find_zero( f0, f1, valid_masses, valid_eigs,
+            smax, fmax, vmax = find_zero( f0, f1, valid_eigenmomenta,
+                                          valid_eigs,
                                           dv_info, opts, 1 )
-            mtx_mass = cgm( fmax, valid_masses, valid_eigs,
+            mtx_mass = cgm( fmax, valid_eigenmomenta, valid_eigs,
                             dv_info, opts.squared )
             meigs = eig( mtx_mass, eigenvectors = False, method = method )
             im = nm.searchsorted( alog[:,0], fmax )
@@ -650,9 +700,10 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
             if smax in [0, 2]:
                 output( 'finding zero of the smallest eig...' )
                 # having fmax instead of f0 does not work if feps is large.
-                smin, fmin, vmin = find_zero( f0, f1, valid_masses, valid_eigs,
+                smin, fmin, vmin = find_zero( f0, f1, valid_eigenmomenta,
+                                              valid_eigs,
                                               dv_info, opts, 0 )
-                mtx_mass = cgm( fmin, valid_masses, valid_eigs,
+                mtx_mass = cgm( fmin, valid_eigenmomenta, valid_eigs,
                                 dv_info, opts.squared )
                 meigs = eig( mtx_mass, eigenvectors = False, method = method )
                 im = nm.searchsorted( alog[:,0], fmin )
