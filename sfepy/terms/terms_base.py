@@ -1,6 +1,53 @@
 from terms import *
 
-class CouplingVectorScalar( Struct ):
+class InstantaneousBase( Struct ):
+    
+    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
+        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
+
+        fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
+
+        if call_mode is None:
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk, mode) )
+                yield out, chunk, status
+
+        elif call_mode == 'd_eval':
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = self.function( out, *fargs + (chunk,) )
+                out1 = nm.sum( out )
+                yield out1, chunk, status
+        else:
+            msg = 'unknown call_mode for %s' % self.name
+            raise ValueError( msg )
+
+class TimeHistoryBase( Struct ):
+    
+    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
+        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
+
+        fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
+        
+        if call_mode is None:
+            if mode == 1:
+                for out, chunk in self.char_fun( chunk_size, shape ):
+                    status = self.function( out, *fargs + (chunk, mode) )
+                    yield out, chunk, status
+            else:
+                iter_kernel = fargs
+                for out, chunk in self.char_fun( chunk_size, shape,
+                                                 zero = True ):
+                    out1 = nm.empty_like( out )
+                    for ii, fargs in iter_kernel():
+                        status = self.function( out1, *fargs + (chunk, mode) )
+                        out += out1
+                    yield out, chunk, status
+
+        else:
+            msg = 'unknown call_mode for %s' % self.name
+            raise ValueError( msg )
+
+class CouplingVectorScalar( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc ):
         """Set element data shape and checks dimensions of approximations."""
@@ -38,50 +85,6 @@ class CouplingVectorScalar( Struct ):
         else:
             raise StopIteration
 
-    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
-        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
 
-        fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
-
-        if call_mode is None:
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk, mode) )
-                yield out, chunk, status
-
-        elif call_mode == 'd_eval':
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk,) )
-                out1 = nm.sum( out )
-                yield out1, chunk, status
-
-
-        else:
-            msg = 'unknown call_mode for %s' % self.name
-            raise ValueError( msg )
-
-class CouplingVectorScalarTH( CouplingVectorScalar ):
-
-    def _call( self, diff_var = None, chunk_size = None, **kwargs ):
-        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
-
-        fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
-        
-        if call_mode is None:
-            if mode == 1:
-                for out, chunk in self.char_fun( chunk_size, shape ):
-                    status = self.function( out, *fargs + (chunk, mode) )
-                    yield out, chunk, status
-            else:
-                iter_kernel = fargs
-                for out, chunk in self.char_fun( chunk_size, shape,
-                                                 zero = True ):
-                    out1 = nm.empty_like( out )
-                    for ii, fargs in iter_kernel():
-                        status = self.function( out1, *fargs + (chunk, mode) )
-                        out += out1
-                    yield out, chunk, status
-
-        else:
-            msg = 'unknown call_mode for %s' % self.name
-            raise ValueError( msg )
-    
+class CouplingVectorScalarTH( TimeHistoryBase, CouplingVectorScalar ):
+    pass
