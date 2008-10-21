@@ -135,10 +135,13 @@ def get_method( options ):
         method = 'eig.sgscipy'
     return method
 
-def compute_average_density( pb, volume_term, region_to_material ):
-
+def compute_density_volume_info( pb, volume_term, region_to_material ):
+    """Computes volumes, densities of regions specified in
+    `region_to_material`, average density and total volume."""
     average_density = 0.0
     total_volume = 0.0
+    volumes = {}
+    densities = {}
     for region_name, mat_name in region_to_material.iteritems():
         mat = pb.materials[mat_name]
         assert_( region_name == mat.region.name )
@@ -146,13 +149,21 @@ def compute_average_density( pb, volume_term, region_to_material ):
         density = mat.get_data( region_name, mat.igs[0], 'density' )
         output( 'region %s: volume %f, density %f' % (region_name,
                                                       vol, density ) )
+
+        volumes[region_name] = vol
+        densities[region_name] = density
+
         average_density += vol * density
         total_volume += vol
     output( 'total volume:', total_volume )
 
     average_density /= total_volume
 
-    return average_density
+    return Struct( name = 'density_volume_info',
+                   average_density = average_density,
+                   total_volume = total_volume,
+                   volumes = volumes,
+                   densities = densities )
 
 def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
                           eig_vectors, threshold, threshold_is_relative,
@@ -225,10 +236,10 @@ def compute_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     
     return n_zeroed, valid, masses
 
-def compute_generalized_mass( freq, masses, eigs, average_density, squared ):
+def compute_generalized_mass( freq, masses, eigs, dv_info, squared ):
     """Assumes that `masses`, `eigs` contain only valid resonances."""
     dim = masses.shape[1]
-    mtx_mass = nm.eye( dim, dim, dtype = nm.float64 ) * average_density
+    fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
 
     for ir in range( dim ):
         for ic in range( dim ):
@@ -236,16 +247,20 @@ def compute_generalized_mass( freq, masses, eigs, average_density, squared ):
                 if squared:
                     val = nm.sum( masses[:,ir] * masses[:,ic]\
                                   / (freq - eigs) )
-                    mtx_mass[ir,ic] += - freq * val
+                    fmass[ir,ic] += freq * val
                 else:
                     val = nm.sum( masses[:,ir] * masses[:,ic]\
                                   / ((freq**2) - (eigs**2)) )
-                    mtx_mass[ir,ic] += - (freq**2) * val
+                    fmass[ir,ic] += (freq**2) * val
             else:
-                mtx_mass[ir,ic] = mtx_mass[ic,ir]
+                fmass[ir,ic] = fmass[ic,ir]
+
+    eye = nm.eye( dim, dim, dtype = nm.float64 )
+    mtx_mass = (eye * dv_info.average_density) - (fmass / dv_info.total_volume)
+
     return mtx_mass
 
-def find_zero( f0, f1, masses, eigs, average_density, opts, mode ):
+def find_zero( f0, f1, masses, eigs, dv_info, opts, mode ):
     """For f \in ]f0, f1[ find frequency f for which either the smallest
     (`mode` = 0) or the largest (`mode` = 1) eigenvalue of M is zero.
 
@@ -268,7 +283,7 @@ def find_zero( f0, f1, masses, eigs, average_density, opts, mode ):
     while 1:
         f = 0.5 * (fm + fp)
         mtx_mass = compute_generalized_mass( f, masses, eigs,
-                                             average_density, opts.squared )
+                                             dv_info, opts.squared )
         meigs = eig( mtx_mass, eigenvectors = False, method = method )
 ##         print meigs
 
@@ -544,10 +559,9 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
     method = get_method( conf.options )
     output( 'method:', method )
 
-    average_density = compute_average_density( pb,
-                                               opts.volume,
-                                               opts.region_to_material )
-    output( 'average density:', average_density )
+    dv_info = compute_density_volume_info( pb, opts.volume,
+                                           opts.region_to_material )
+    output( 'average density:', dv_info.average_density )
     
     if not opts.squared:
         eigs = nm.sqrt( eigs )
@@ -610,7 +624,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
         log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         for f in log_freqs:
             mtx_mass = cgm( f, valid_masses, valid_eigs,
-                            average_density, opts.squared )
+                            dv_info, opts.squared )
             meigs = eig( mtx_mass, eigenvectors = False, method = method )
             log.append( [f, meigs[0], meigs[-1]] )
 
@@ -625,9 +639,9 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
 
             output( 'finding zero of the largest eig...' )
             smax, fmax, vmax = find_zero( f0, f1, valid_masses, valid_eigs,
-                                          average_density, opts, 1 )
+                                          dv_info, opts, 1 )
             mtx_mass = cgm( fmax, valid_masses, valid_eigs,
-                            average_density, opts.squared )
+                            dv_info, opts.squared )
             meigs = eig( mtx_mass, eigenvectors = False, method = method )
             im = nm.searchsorted( alog[:,0], fmax )
             log.insert( im, (fmax, meigs[0], meigs[-1] ) )
@@ -637,9 +651,9 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
                 output( 'finding zero of the smallest eig...' )
                 # having fmax instead of f0 does not work if feps is large.
                 smin, fmin, vmin = find_zero( f0, f1, valid_masses, valid_eigs,
-                                              average_density, opts, 0 )
+                                              dv_info, opts, 0 )
                 mtx_mass = cgm( fmin, valid_masses, valid_eigs,
-                                average_density, opts.squared )
+                                dv_info, opts.squared )
                 meigs = eig( mtx_mass, eigenvectors = False, method = method )
                 im = nm.searchsorted( alog[:,0], fmin )
                 # +1 due to fmax already inserted before.
