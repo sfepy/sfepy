@@ -47,6 +47,27 @@ class TimeHistoryBase( Struct ):
             msg = 'unknown call_mode for %s' % self.name
             raise ValueError( msg )
 
+class VectorVector( InstantaneousBase ):
+
+    def set_data_shape( self, apr, apc = None ):
+
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+
+        assert_( apr.dim == (self.data_shape[2], 1) )
+
+    def get_shape( self, diff_var, chunk_size ):
+        n_el, n_qp, dim, n_ep = self.data_shape
+        
+        if diff_var is None:
+            return (chunk_size, 1, dim * n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, dim * n_ep, dim * n_ep), 1
+        else:
+            raise StopIteration
+
+class VectorVectorTH( TimeHistoryBase, VectorVector ):
+    pass
+
 class CouplingVectorScalar( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc ):

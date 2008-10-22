@@ -276,13 +276,11 @@ def iter_sym( dim ):
         for ic in xrange( ir + 1, dim ):
             yield ir, ic
 
-##
-# c: 05.05.2008, r: 05.05.2008
 def coef_e( problem, corrs_rs, pis ):
     """Homogenized elastic coefficient $E_{ijkl}$."""
     from sfepy.fem import eval_term_op
 
-    coef_term = 'd_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
+    coef_term = 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
 
     dim = problem.domain.mesh.dim
     sym = (dim + 1) * dim / 2
@@ -302,11 +300,10 @@ def coef_e( problem, corrs_rs, pis ):
             problem.variables['Pi2'].data_from_data( pi2 )
 
             # Variables have their data, so evaluate the term.
-            val = eval_term_op( None, coef_term, problem )
+            val = eval_term_op( None, coef_term, problem, call_mode = 'd_eval' )
 
             coef[ir,ic] = val
     return coef
-
 
 ##
 # c: 05.05.2008, r: 05.05.2008
