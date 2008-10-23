@@ -5,18 +5,34 @@ class InstantaneousBase( Struct ):
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
         call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
 
+        # Imaginary mode marks problem in complex numbers.
         fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
 
         if call_mode is None:
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk, mode) )
-                yield out, chunk, status
+            if nm.isreal( mode ):
+                for out, chunk in self.char_fun( chunk_size, shape ):
+                    status = self.function( out, *fargs + (chunk, mode) )
+                    yield out, chunk, status
+            else:
+                # For mode == 1, the matrix is the same both
+                # for real and imaginary part -> optimization possible.
+                for out_real, chunk in self.char_fun( chunk_size, shape ):
+                    out_imag = nm.zeros_like( out_real )
+                    status1 = self.function( out_real,
+                                             *fargs[0] + (chunk, mode.imag) )
+                    status2 = self.function( out_imag,
+                                             *fargs[1] + (chunk, mode.imag) )
+                    yield out_real + 1j * out_imag, chunk, status1 or status2
 
         elif call_mode == 'd_eval':
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk,) )
-                out1 = nm.sum( out )
-                yield out1, chunk, status
+            if nm.isreal( mode ):
+                for out, chunk in self.char_fun( chunk_size, shape ):
+                    status = self.function( out, *fargs + (chunk,) )
+                    out1 = nm.sum( out )
+                    yield out1, chunk, status
+            else:
+                raise NotImplementedError
+
         else:
             msg = 'unknown call_mode for %s' % self.name
             raise ValueError( msg )
@@ -66,6 +82,48 @@ class VectorVector( InstantaneousBase ):
             raise StopIteration
 
 class VectorVectorTH( TimeHistoryBase, VectorVector ):
+    pass
+
+class ScalarScalar( InstantaneousBase ):
+
+    def set_data_shape( self, apr, apc = None ):
+
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+
+        assert_( apr.dim == (1, 1) )
+
+    def get_shape( self, diff_var, chunk_size ):
+        n_el, n_qp, dim, n_ep = self.data_shape
+        
+        if diff_var is None:
+            return (chunk_size, 1, n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, n_ep, n_ep), 1
+        else:
+            raise StopIteration
+
+class ScalarScalarTH( TimeHistoryBase, ScalarScalar ):
+    pass
+
+class VectorOrScalar( InstantaneousBase ):
+
+    def set_data_shape( self, apr, apc = None ):
+
+        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        self.vdim = apr.dim[0]
+
+    def get_shape( self, diff_var, chunk_size ):
+        n_el, n_qp, dim, n_ep = self.data_shape
+        vdim = self.vdim
+        
+        if diff_var is None:
+            return (chunk_size, 1, vdim * n_ep, 1), 0
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, vdim * n_ep, vdim * n_ep), 1
+        else:
+            raise StopIteration
+    
+class VectorOrScalarTH( TimeHistoryBase, VectorOrScalar ):
     pass
 
 class CouplingVectorScalar( InstantaneousBase ):

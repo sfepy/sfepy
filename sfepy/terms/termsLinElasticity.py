@@ -113,13 +113,15 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
     geometry = [(Volume, 'virtual')]
     use_caches = {'cauchy_strain' : [['state', {'strain' : (-1,-1)}]]}
 
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.dw_lin_elastic )
+
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
-        n_el, n_qp, dim, n_ep = self.data_shape
 
         if (ts.step == 0) and (mode == 0):
             raise StopIteration

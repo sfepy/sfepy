@@ -1,4 +1,5 @@
 from terms import *
+from terms_base import VectorOrScalar, ScalarScalarTH
 from utils import fix_mat_qp_shape
 
 class IntegrateVolumeTerm( Term ):
@@ -316,97 +317,35 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
 
 ##
 # c: 05.03.2008
-class WDotProductVolumeTerm( Term ):
+class WDotProductVolumeTerm( VectorOrScalar, Term ):
     r""":description: Volume $L^2(\Omega)$ weighted dot product for both scalar
-    and  vector fields.
-    :definition: $\int_\Omega y p r$, $\int_\Omega y \ul{u} \cdot \ul{w}$
-    :arguments: material : weight function $y$"""
-    name = 'd_volume_wdot'
-    arg_types = ('material', 'parameter_1', 'parameter_2')
-    geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    use_caches = {'state_in_volume_qp' : [['parameter_1'], ['parameter_2']],
-                 'mat_in_qp' : [['material']]}
-
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
-    ##
-    # c: 05.03.2008, r: 05.03.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1 = cache( 'state', self.get_current_group(), 0,
-                      state = par1, get_vector = self.get_vector )
-        cache = self.get_cache( 'state_in_volume_qp', 1 )
-        vec2 = cache( 'state', self.get_current_group(), 0,
-                      state = par2, get_vector = self.get_vector )
-
-        if mat.ndim == 1:
-            mat = mat[...,nm.newaxis]
-
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                       mat = mat, ap = ap,
-                       assumed_shapes = [(1, n_qp, 1, 1),
-                                        (n_el, n_qp, 1, 1)],
-                       mode_in = None )
-
-        mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if vec1.shape[-1] > 1:
-                vec = mat_qp[chunk] * nm.sum( vec1[chunk] * vec2[chunk],
-                                             axis = -1 )
-            else:
-                vec = mat_qp[chunk] * vec1[chunk] * vec2[chunk]
-            status = vg.integrate_chunk( out, vec, chunk )
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-##
-# c: 05.03.2008
-class WDotProductVolumeOperatorTerm( Term ):
-    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
-    scalar and vector (not implemented!) fields.
-    :definition: $\int_\Omega y q p$, $\int_\Omega y \ul{v} \cdot \ul{u}$
+    and vector (not implemented in weak form!) fields. Can be evaluated. Can
+    use derivatives.
+    :definition: $\int_\Omega y q p$, $\int_\Omega y \ul{v} \cdot \ul{u}$,
+    $\int_\Omega y p r$, $\int_\Omega y \ul{u} \cdot \ul{w}$
     :arguments: material : weight function $y$"""
     name = 'dw_volume_wdot'
-    arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    use_caches = {'state_in_volume_qp' : [['state']],
-                 'mat_in_qp' : [['material']]}
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
+    modes = ('weak', 'eval')
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-
-    ##
-    # c: 05.03.2008, r: 05.03.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0,
-                     state = state, get_vector = self.get_vector )
-
-        vdim = vec.shape[-1]
-
-        if diff_var is None:
-            shape = (chunk_size, 1, vdim * n_ep, 1)
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, vdim * n_ep, vdim * n_ep)
-            mode = 1
-        else:
-            raise StopIteration
+        vec_qp = cache( 'state', self.get_current_group(), 0,
+                        state = state, get_vector = self.get_vector )
 
         if mat.ndim == 1:
             mat = mat[...,nm.newaxis]
+
+        n_el, n_qp, dim, n_ep = self.data_shape
 
         cache = self.get_cache( 'mat_in_qp', 0 )
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
@@ -418,63 +357,38 @@ class WDotProductVolumeOperatorTerm( Term ):
         mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
 
         bf = ap.get_base( 'v', 0, self.integral_name )
+
+        return (vec_qp, bf, mat_qp, vg), shape, mode
+
+    def dw_volume_wdot( self, out, vec_qp, bf, mat_qp, vg, chunk, mode ):
+        if self.vdim > 1:
+            raise NotImplementedError
+
         bf_t = bf.transpose( (0, 2, 1) )
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if vdim > 1:
-                raise NotImplementedError
-            else:
-                if mode == 0:
-                    vec = bf_t * mat_qp[chunk] * vec[chunk]
-                else:
-                    vec = bf_t * mat_qp[chunk] * bf
-            status = vg.integrate_chunk( out, vec, chunk )
-            yield out, chunk, status
+        if mode == 0:
+            vec = bf_t * mat_qp[chunk] * vec_qp[chunk]
+        else:
+            vec = bf_t * mat_qp[chunk] * bf
+        status = vg.integrate_chunk( out, vec, chunk )
+        return status
 
-##
-# c: 02.04.2008
-class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
-    r""":description: Volume $L^2(\Omega)$ weighted dot product operator for
-    scalar and vector (not implemented!) fields.
-    :definition: $\int_\Omega y q \frac{p - p_0}{\dt}$,
-    $\int_\Omega y \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}$
-    :arguments: material : weight function $y$"""
-    name = 'dw_volume_wdot_dt'
-    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    use_caches = {'state_in_volume_qp' : [['state', {'state' : (2,2)}]],
-                 'mat_in_qp' : [['material']]}
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par1, par2 = self.get_args( **kwargs )
+        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
 
-    ##
-    # c: 02.04.2008, r: 04.04.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mat, virtual, state, par = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        self.set_data_shape( ap )
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0,
-                     state = state, history = par, get_vector = self.get_vector )
-        if ts.step > 0:
-            vec0 = cache( 'state', self.get_current_group(), 1,
-                          state = state, history = par,
-                          get_vector = self.get_vector )
-            dvec = (vec - vec0) / ts.dt
-        vdim = vec.shape[-1]
-
-        if diff_var is None:
-            shape = (chunk_size, 1, vdim * n_ep, 1)
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, vdim * n_ep, vdim * n_ep)
-            mode = 1
-        else:
-            raise StopIteration
-
-        if (ts.step == 0) and (mode == 0):
-            raise StopIteration
+        vec1_qp = cache( 'state', self.get_current_group(), 0,
+                         state = par1, get_vector = self.get_vector )
+        cache = self.get_cache( 'state_in_volume_qp', 1 )
+        vec2_qp = cache( 'state', self.get_current_group(), 0,
+                         state = par2, get_vector = self.get_vector )
 
         if mat.ndim == 1:
             mat = mat[...,nm.newaxis]
+
+        n_el, n_qp, dim, n_ep = self.data_shape
 
         cache = self.get_cache( 'mat_in_qp', 0 )
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
@@ -485,79 +399,74 @@ class WDotProductVolumeOperatorDtTerm( WDotProductVolumeOperatorTerm ):
 
         mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
 
-        bf = ap.get_base( 'v', 0, self.integral_name )
-        bf_t = bf.transpose( (0, 2, 1) )
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if vdim > 1:
-                raise NotImplementedError
-            else:
-                if mode == 0:
-                    vec = bf_t * mat_qp[chunk] * dvec[chunk]
-                else:
-                    vec = bf_t * mat_qp[chunk] * bf / ts.dt
-            status = vg.integrate_chunk( out, vec, chunk )
-            yield out, chunk, status
+        return (vec1_qp, vec2_qp, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+
+    def d_volume_wdot( self, out, vec1_qp, vec2_qp, mat_qp, vg, chunk ):
+
+        if self.vdim > 1:
+            vec = mat_qp[chunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
+                                          axis = -1 )
+        else:
+            vec = mat_qp[chunk] * vec1_qp[chunk] * vec2_qp[chunk]
+        status = vg.integrate_chunk( out, vec, chunk )
+        return status
+
+    def set_arg_types( self ):
+        if self.mode == 'weak':
+            self.function = self.dw_volume_wdot
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+            self.use_caches = {'state_in_volume_qp' : [['state']],
+                               'mat_in_qp' : [['material']]}
+        else:
+            self.function = self.d_volume_wdot
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            self.use_caches = {'state_in_volume_qp' : [['parameter_1'],
+                                                       ['parameter_2']],
+                               'mat_in_qp' : [['material']]}
 
 ##
 # c: 03.04.2008
-class WDotProductVolumeOperatorTHTerm( Term ):
-    r""":definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
+class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
+    r""":description: Fading memory volume $L^2(\Omega)$ weighted dot product
+    for scalar fields. Can use derivatives.
+    :definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
     \difd{\tau} \right] q$"""
-    name = 'dw_volume_wdot_th'
-    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
+    name = 'dw_volume_wdot_scalar_th'
+    arg_types = ('ts', 'material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
-    ##
-    # c: 03.04.2008, r: 03.04.2008
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
 
-    ##
-    # c: 03.04.2008, r: 03.04.2008
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
-        n_el, n_qp, dim, n_ep = self.data_shape
-        if diff_var is None:
-            return (chunk_size, 1, n_ep, 1), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            return (chunk_size, 1, n_ep, n_ep), 1
-        else:
-            raise StopIteration
-
-    ##
-    # c: 03.04.2008, r: 18.06.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mats, virtual, state, history = self.get_args( **kwargs )
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        ts, mats, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-        shape, mode = self.get_shape( diff_var, chunk_size, ap )
-        n_el, n_qp, dim, n_ep = self.data_shape
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
 
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
+        n_qp = self.data_shape[1]
         bf = ap.get_base( 'v', 0, self.integral_name )
 
         if mode == 1:
+            aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, ts.dt, nm.empty( 0 ), bf,
-                                        mat_qp, vg, chunk, 1 )
-                yield out, chunk, status
+            return (ts.dt, aux, bf, mat_qp, vg), shape, mode
+
         else:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
-            for out, chunk in self.char_fun( chunk_size, shape, zero = True ):
-                out1 = nm.empty_like( out )
+            def iter_kernel():
                 for ii, mat in enumerate( mats ):
                     mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, history = history,
                                     get_vector = self.get_vector )
-                    status = self.function( out1, ts.dt, vec_qp, bf,
-                                            mat_qp, vg, chunk, 0 )
-                    out += out1
-                yield out, chunk, status
+                    yield ii, (ts.dt, vec_qp, bf, mat_qp, vg)
+            return iter_kernel, shape, mode
 
 class AverageVariableTerm( Term ):
     r""":description: Variable $y$ averaged in elements.

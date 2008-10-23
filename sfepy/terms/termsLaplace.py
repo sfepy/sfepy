@@ -1,7 +1,8 @@
 from terms import *
+from terms_base import ScalarScalar
 from utils import fix_scalar_constant, fix_scalar_in_el
 
-class LaplaceTerm( Term ):
+class LaplaceTerm( ScalarScalar, Term ):
     r""":description: Laplace term with $c$ constant or constant per element.
     :definition: $c \int_{\Omega}\nabla s \cdot \nabla r$
     or $\sum_{K \in \Tcal_h}\int_{T_K} c_K\ \nabla s \cdot \nabla r$
@@ -12,21 +13,14 @@ class LaplaceTerm( Term ):
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
-        n_el, n_qp, dim, n_ep = self.data_shape
-        if diff_var is None:
-            return (chunk_size, 1, n_ep, 1), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            return (chunk_size, 1, n_ep, n_ep), 1
-        else:
-            raise StopIteration
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
 
-    def build_c_fun_args( self, mat, state, ap, vg ):
-        vec = state()
+        vec = self.get_vector( state )
         mat_arg = fix_scalar_constant( mat, nm.float64 )
         if mat_arg is None:
             mat_arg = fix_scalar_in_el( mat, self.data_shape[0], nm.float64 )
@@ -40,47 +34,34 @@ class LaplaceTerm( Term ):
             ac = nm.ascontiguousarray
             fargs = [(ac( vec.real ), 0, mat_arg, vg, ap.econn),
                      (ac( vec.imag ), 0, mat_arg, vg, ap.econn)]
+            mode *= 1j
             
-        return fargs
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        material, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        return fargs, shape, mode
 
-        shape, mode = self.get_shape( diff_var, chunk_size, ap )
-        fargs = self.build_c_fun_args( material, state, ap, vg )
-        
-        if state.is_real():
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk, mode) )
-                yield out, chunk, status
-        else:
-            # For mode == 1, the matrix is the same both for real and imaginary
-            # part -> optimization possible.
-            for out_real, chunk in self.char_fun( chunk_size, shape ):
-                out_imag = nm.zeros_like( out_real )
-                status1 = self.function( out_real, *fargs[0] + (chunk, mode) )
-                status2 = self.function( out_imag, *fargs[1] + (chunk, mode) )
-                yield out_real + 1j * out_imag, chunk, status1 or status2
-            
-
-class DiffusionTerm( LaplaceTerm ):
+class DiffusionTerm( ScalarScalar, Term ):
     r""":description: General diffusion term with permeability $K_{ij}$
-    constant or given in mesh vertices.
-    :definition: $\int_{\Omega} K_{ij} \nabla_i q  \nabla_j p$
+    constant or  given in mesh vertices. Can be evaluated. Can use derivatives.
+
+    :definition: $\int_{\Omega} K_{ij} \nabla_i q \nabla_j p$, $\int_{\Omega}
+    K_{ij} \nabla_i \bar{p} \nabla_j r$
     """
     name = 'dw_diffusion'
-    arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
-    use_caches = {'mat_in_qp' : [['material']]}
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
+    modes = ('weak', 'eval')
     symbolic = {'expression': 'div( K * grad( u ) )',
                 'map' : {'u' : 'state', 'K' : 'material'}}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_diffusion )
-        
-    def build_c_fun_args( self, mat, state, ap, vg ):
-        vec = state()
+    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
+        vec = self.get_vector( state )
 
         n_el, n_qp, dim, n_ep = self.data_shape
         cache = self.get_cache( 'mat_in_qp', 0 )
@@ -89,32 +70,21 @@ class DiffusionTerm( LaplaceTerm ):
                         assumed_shapes = [(1, n_qp, dim, dim),
                                           (n_el, n_qp, dim, dim)],
                         mode_in = None )
-        return 1.0, vec, 0, mat_qp, vg, ap.econn
+        return (1.0, vec, 0, mat_qp, vg, ap.econn), shape, mode
 
-class DiffusionIntegratedTerm( Term ):
-    r""":description: Integrated general diffusion term with permeability
-    $K_{ij}$  constant or given in mesh vertices.
-    :definition: $\int_{\Omega} K_{ij} \nabla_i \bar{p}  \nabla_j r$
-    """
-    name = 'd_diffusion'
-    arg_types = ('material', 'parameter_1', 'parameter_2')
-    geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
-    use_caches = {'grad_scalar' : [['parameter_1'], ['parameter_2']],
-                 'mat_in_qp' : [['material']]}
-
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_diffusion )
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
-        shape = (chunk_size, 1, 1, 1)
+
+        self.set_data_shape( ap )
+        n_el, n_qp, dim, n_ep = self.data_shape
 
         cache = self.get_cache( 'grad_scalar', 0 )
-        gp1 = cache( 'grad', self.get_current_group(), 0, state = par1 )
+        gp1 = cache( 'grad', self.get_current_group(), 0,
+                     state = par1, get_vector = self.get_vector )
         cache = self.get_cache( 'grad_scalar', 1 )
-        gp2 = cache( 'grad', self.get_current_group(), 0, state = par2 )
+        gp2 = cache( 'grad', self.get_current_group(), 0,
+                     state = par2, get_vector = self.get_vector )
 
         cache = self.get_cache( 'mat_in_qp', 0 )
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
@@ -122,10 +92,20 @@ class DiffusionIntegratedTerm( Term ):
                         assumed_shapes = [(1, n_qp, dim, dim),
                                           (n_el, n_qp, dim, dim)],
                         mode_in = None )
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, 1.0, gp1, gp2, mat_qp, vg, chunk )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+
+        return (1.0, gp1, gp2, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+
+    def set_arg_types( self ):
+        if self.mode == 'weak':
+            self.function = terms.dw_diffusion
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+            self.use_caches = {'mat_in_qp' : [['material']]}
+        else:
+            self.function = terms.d_diffusion
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            self.use_caches = {'grad_scalar' : [['parameter_1'],
+                                                ['parameter_2']],
+                               'mat_in_qp' : [['material']]}
 
 class PermeabilityRTerm( Term ):
     r""":description: Special-purpose diffusion-like term with permeability

@@ -158,7 +158,7 @@ class Test( TestCommon ):
             expr = term.symbolic['expression']
             arg_map = term.symbolic['map']
             self.report( '%s( %s )' %\
-                         (term.name, ', '.join( term.arg_types )) )
+                         (term.name, ', '.join( term.ats )) )
             self.report( 'multiplicator: %f' % term.sign )
             self.report( '  symbolic:', expr )
             self.report( '  using argument map:', arg_map )

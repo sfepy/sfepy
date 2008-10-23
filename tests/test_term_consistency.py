@@ -82,9 +82,9 @@ test_terms = [
     ('%s_biot.i1.Omega( m.val, %s, %s )',
      ('dw', 'pv1', ('ps1', 'pv1'), ('tv', 'ps1', 'uv'), 'biot')),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
-     ('d', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
+     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
     ('%s_volume_wdot.i1.Omega( m.val, %s, %s )',
-     ('d', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m')),
+     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m')),
 ]
 
 import numpy as nm
