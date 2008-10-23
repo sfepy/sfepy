@@ -137,7 +137,7 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
             cache = self.get_cache( 'cauchy_strain', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
+                    mat_qp = mat[nm.newaxis,:,:].repeat( n_qp, 0 )
                     strain = cache( 'strain', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
                     yield ii, (ts.dt, strain, mat_qp, vg)

@@ -463,8 +463,7 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
                 for ii, mat in enumerate( mats ):
                     mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     vec_qp = cache( 'state', self.get_current_group(), ii,
-                                    state = state, history = history,
-                                    get_vector = self.get_vector )
+                                    state = state, get_vector = self.get_vector )
                     yield ii, (ts.dt, vec_qp, bf, mat_qp, vg)
             return iter_kernel, shape, mode
 

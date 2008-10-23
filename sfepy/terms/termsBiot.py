@@ -169,7 +169,7 @@ class BiotDivTH( CouplingVectorScalarTH ):
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-            return (ts.dt, aux, bf,  mat_qp, vgc), shape, mode
+            return (ts.dt, aux, bf, mat_qp, vgc), shape, mode
 
         else:
             cache = self.get_cache( 'cauchy_strain', 0 )
