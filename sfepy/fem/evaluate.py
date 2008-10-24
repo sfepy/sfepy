@@ -246,12 +246,11 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
         equation.describe_geometry( geometries, variables, integrals )
 
     variables.data_from_state( state )
-    # itype according to the first term in term_desc!
-    term = equation.terms[0]
     if 'call_mode' in kwargs:
         itype = kwargs['call_mode'].split( '_' )[0]
     else:
-        itype = term.itype
+        # itype according to the first term in term_desc!
+        itype = equation.terms[0].itype
 
     if itype == 'dw':
 
