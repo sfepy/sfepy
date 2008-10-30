@@ -4,6 +4,7 @@ from sfepy.base.base import *
 from sfepy.base.la import eig
 from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
+from sfepy.homogenization.utils import coor_to_sym
 
 def process_options( options, n_eigs ):
     try:
@@ -309,9 +310,58 @@ def compute_applied_load( freq, eigenmomenta, ueigenmomenta, eigs,
 
     mtx_load = eye - (fload / dv_info.total_volume)
 
-def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode ):
-    """For f \in ]f0, f1[ find frequency f for which either the smallest
-    (`mode` = 0) or the largest (`mode` = 1) eigenvalue of M is zero.
+def compute_cat( mtx_d, iw_dir ):
+    """Compute Christoffel acoustic tensor given the elasticity tensor and
+    incident wave direction (unit vector).
+
+    \Gamma_{ik} = D_{ijkl} n_j n_l
+    """
+    dim = iw_dir.shape[0]
+
+    cat = nm.zeros( (dim, dim), dtype = nm.float64 )
+    for ii in range( dim ):
+        for ij in range( dim ):
+            ir = coor_to_sym( ii, ij, dim )
+            for ik in range( dim ):
+                for il in range( dim ):
+                    ic = coor_to_sym( ik, il, dim )
+                    cat[ii,ik] += mtx_d[ir,ic] * iw_dir[ij] * iw_dir[il]
+
+    return cat
+
+def solve_mass_evp( freq, mtx_mass, method, squared, christoffel = None ):
+    """
+    Solve band gaps or dispersion eigenproblem P.
+    
+    If `christoffel` is None, P is
+      M w = \lambda w,
+    otherwise it is
+      omega^2 M w = \eta \Gamma w
+
+      `christoffel` : Christoffel acoustic tensor
+
+    """
+    if christoffel is None:
+        meigs = eig( mtx_mass, eigenvectors = False, method = method )
+    else:
+        if squared:
+            omega2 = freq
+        else:
+            omega2 = freq**2
+        meigs = eig( omega2 * mtx_mass, mtx_b = christoffel,
+                     eigenvectors = False, method = method )
+    return meigs
+
+def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode,
+               christoffel = None ):
+    """
+    For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
+    0) or the largest (`mode` = 1) eigenvalue of problem P is zero.
+
+    If christoffel is None, P is
+      M w = \lambda w,
+    otherwise it is
+      omega^2 M w = \eta \Gamma w
 
     Return:
 
@@ -333,7 +383,8 @@ def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode ):
         f = 0.5 * (fm + fp)
         mtx_mass = compute_generalized_mass( f, eigenmomenta, eigs,
                                              dv_info, opts.squared )
-        meigs = eig( mtx_mass, eigenvectors = False, method = method )
+        meigs = solve_mass_evp( f, mtx_mass, method, opts.squared,
+                                christoffel = christoffel )
 ##         print meigs
 
         val = meigs[ieig]
@@ -594,27 +645,13 @@ def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,
     freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
 
     return freq_range, freq_range_margins
-    
-def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
-    """Detect band gaps given solution to eigenproblem (eigs,
-    eig_vectors). Only valid resonance frequencies (e.i. those for which
-    corresponding eigenmomenta are above a given threshold) are taken into
-    account.
 
-    ??? make feps relative to ]f0, f1[ size ???
-    """
-    n_eigs = eigs.shape[0]
-    opts = process_options( conf.options, n_eigs )
-    method = get_method( conf.options )
-    output( 'method:', method )
-
+def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
+    """Setup density, volume info and eigenmomenta. Adjust frequency ranges."""
     dv_info = compute_density_volume_info( pb, opts.volume,
                                            opts.region_to_material )
     output( 'average density:', dv_info.average_density )
     
-    if not opts.squared:
-        eigs = nm.sqrt( eigs )
-
     if opts.fixed_eig_range is not None:
         mine, maxe = opts.fixed_eig_range
         ii = nm.where( (eigs > mine) & (eigs < maxe) )[0]
@@ -626,7 +663,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
             % tuple( freq_range_initial[[0,-1]] ) )
 
     if opts.eig_vector_transform is not None:
-        fun = getattr( conf.funmod, opts.eig_vector_transform[0] )
+        fun = getattr( funmod, opts.eig_vector_transform[0] )
         def wrap_transform( vec, shape ):
             return fun( vec, shape, *opts.eig_vector_transform[1:] )
     else:
@@ -652,10 +689,37 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
         # All masked.
         output( 'freq. range             : all masked!' )
 
-    min_freq, max_freq = freq_range_margins[0], freq_range_margins[-1]
+    freq_info = Struct( name = 'freq_info',
+                        freq_range_initial = freq_range_initial,
+                        freq_range = freq_range,
+                        freq_range_margins = freq_range_margins )
+
+    return dv_info, eigenmomenta, n_zeroed, valid, freq_info
+    
+def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
+                      christoffel = None ):
+    """Detect band gaps given solution to eigenproblem (eigs,
+    eig_vectors). Only valid resonance frequencies (e.i. those for which
+    corresponding eigenmomenta are above a given threshold) are taken into
+    account.
+
+    ??? make feps relative to ]f0, f1[ size ???
+    """
+    opts = process_options( options, eigs.shape[0] )
+    method = get_method( options )
+    output( 'method:', method )
+
+    if not opts.squared:
+        eigs = nm.sqrt( eigs )
+
+    aux = setup_band_gaps( pb, eigs, eig_vectors, opts, funmod )
+    dv_info, eigenmomenta, n_zeroed, valid, freq_info = aux
+
+    fm = freq_info.freq_range_margins
+    min_freq, max_freq = fm[0], fm[-1]
     output( 'freq. range with margins: [%8.3f, %8.3f]'\
             % (min_freq, max_freq) )
-        
+
     logs = []
     gaps = []
 
@@ -663,9 +727,9 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
     valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
     cgm = compute_generalized_mass
-    for ii in xrange( freq_range.shape[0] + 1 ):
+    for ii in xrange( freq_info.freq_range.shape[0] + 1 ):
 
-        f0, f1 = freq_range_margins[[ii, ii+1]]
+        f0, f1 = fm[[ii, ii+1]]
         output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
 
         log = []
@@ -674,7 +738,8 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
         for f in log_freqs:
             mtx_mass = cgm( f, valid_eigenmomenta, valid_eigs,
                             dv_info, opts.squared )
-            meigs = eig( mtx_mass, eigenvectors = False, method = method )
+            meigs = solve_mass_evp( f, mtx_mass, method, opts.squared,
+                                    christoffel = christoffel )
             log.append( [f, meigs[0], meigs[-1]] )
 
         log0, log1 = log[0], log[-1]
@@ -692,7 +757,8 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
                                           dv_info, opts, 1 )
             mtx_mass = cgm( fmax, valid_eigenmomenta, valid_eigs,
                             dv_info, opts.squared )
-            meigs = eig( mtx_mass, eigenvectors = False, method = method )
+            meigs = solve_mass_evp( fmax, mtx_mass, method, opts.squared,
+                                    christoffel = christoffel )
             im = nm.searchsorted( alog[:,0], fmax )
             log.insert( im, (fmax, meigs[0], meigs[-1] ) )
 
@@ -705,7 +771,8 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
                                               dv_info, opts, 0 )
                 mtx_mass = cgm( fmin, valid_eigenmomenta, valid_eigs,
                                 dv_info, opts.squared )
-                meigs = eig( mtx_mass, eigenvectors = False, method = method )
+                meigs = solve_mass_evp( fmin, mtx_mass, method, opts.squared,
+                                        christoffel = christoffel )
                 im = nm.searchsorted( alog[:,0], fmin )
                 # +1 due to fmax already inserted before.
                 log.insert( im+1, (fmin, meigs[0], meigs[-1] ) )
@@ -730,7 +797,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, conf, options ):
     return Struct( logs = logs, gaps = gaps, kinds = kinds,
                    valid = valid, eig_range = slice( *opts.eig_range ),
                    n_eigs = eigs.shape[0], n_zeroed = n_zeroed,
-                   freq_range_initial = freq_range_initial,
-                   freq_range = freq_range,
-                   freq_range_margins = freq_range_margins,
+                   freq_range_initial = freq_info.freq_range_initial,
+                   freq_range = freq_info.freq_range,
+                   freq_range_margins = freq_info.freq_range_margins,
                    opts = opts )

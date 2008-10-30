@@ -39,7 +39,14 @@ options = {
                             'Y2' : 'inclusion',},
     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
+
+    'coef_info' : 'coefs', # homogenized coefficients to compute
+    'dispersion' : 'simple',
+    'incident_wave_dir' : [1.0, 1.0],
 }
+
+dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 regions = {
     'Y' : ('all', {}),
@@ -48,13 +55,24 @@ regions = {
     'Y2_Surface': ('r.Y1 *n r.Y2', {'can_cells' : False}),
 }
 
+def get_pars( lam, mu, dim, full = False ):
+    if full:
+        sym = (dim + 1) * dim / 2
+        o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
+        oot = nm.outer( o, o )
+        return lam * oot + mu * nm.diag( o + 1.0 )
+    else:
+        return {'lambda' : lam, 'mu' : mu}
+
 material_1 = {
     'name' : 'matrix',
     'mode' : 'here',
     'region' : 'Y1',
 
-    # aluminium
-    'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
+    # aluminium, in 1e+10 Pa
+    'lame' : get_pars( 5.898, 2.681, dim ),
+    'D' : get_pars( 5.898, 2.681, dim , full = True ),
+
     'density' : 0.2799, # in 1e4 kg/m3
 }
 
@@ -63,13 +81,12 @@ material_2 = {
     'mode' : 'here',
     'region' : 'Y2',
 
-    # epoxy
-    'lame' : {'lambda' : 0.1798, 'mu' : 0.148}, # in 1e+10 Pa
+    # epoxy, in 1e+10 Pa
+    'lame' : get_pars( 0.1798, 0.148, dim ),
+    'D' : get_pars( 0.1798, 0.148, dim, full = True ),
+
     'density' : 0.1142, # in 1e4 kg/m3
 }
-
-dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
-geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 field_0 = {
     'name' : 'displacement_Y',
@@ -136,3 +153,7 @@ def select_in_plane( vec, shape, normal_direction, eps ):
         return nm.zeros_like( vec ), True
     else:
         return vec, False
+
+#from coefficients import define_input
+
+## locals().update( define_input( filename_mesh, dim, geom ) )

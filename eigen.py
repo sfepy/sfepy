@@ -11,7 +11,7 @@ from sfepy.base.la import eig
 from sfepy.fem import eval_term_op, ProblemDefinition, Equations
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import process_options, get_method,\
-     transform_plot_data, plot_logs, plot_gaps, detect_band_gaps
+     transform_plot_data, plot_logs, plot_gaps, detect_band_gaps, compute_cat
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
 from sfepy.base.plotutils import pylab
@@ -39,9 +39,52 @@ class AcousticBandGapsApp( SimpleApp ):
 
         if options.detect_band_gaps:
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
-                                   self.conf, options )
+                                   self.conf.options, self.conf.funmod )
 
             if options.plot:
+                plot_range, tlogs = transform_plot_data( bg.logs,
+                                                         bg.opts.plot_tranform,
+                                                         self.conf.funmod )
+
+                plot_rsc = bg.opts.plot_rsc
+                plot_opts =  bg.opts.plot_options
+                
+                pylab.rcParams.update( plot_rsc['params'] )
+
+                fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
+                                 bg.freq_range_margins, plot_range,
+                                 clear = True )
+                fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
+                                 bg.freq_range_initial,
+                                 plot_range, bg.opts.squared,
+                                 show = plot_opts['show'],
+                                 show_legend = plot_opts['legend'],
+                                 new_axes = True )
+
+                fig_name = bg.opts.fig_name
+                if fig_name is not None:
+                    fig.savefig( fig_name )
+
+        elif options.analyze_dispersion:
+            dim = self.problem.domain.mesh.dim
+
+            opts = self.conf.options
+            iw_dir = nm.array( opts.incident_wave_dir, dtype = nm.float64 )
+            assert_( dim == iw_dir.shape[0] )
+
+            iw_dir = iw_dir / nla.norm( iw_dir )
+
+            mtx_d = nm.ones( (3, 3), dtype = nm.float64 )
+            christoffel = compute_cat( mtx_d, iw_dir )
+            print iw_dir
+            print christoffel
+#            christoffel = nm.eye( dim, dtype = nm.float64 )
+            
+            bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
+                                   self.conf.options, self.conf.funmod,
+                                   christoffel = christoffel )
+            if options.plot:
+                # This will change...
                 plot_range, tlogs = transform_plot_data( bg.logs,
                                                          bg.opts.plot_tranform,
                                                          self.conf.funmod )
@@ -192,16 +235,17 @@ class AcousticBandGapsApp( SimpleApp ):
 
         return Struct( eigs = eigs, eig_vectors = eig_vectors )
 
-
 usage = """%prog [options] filename_in"""
 
 help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'detect_band_gaps' :
-    'detect frequency band gaps [default: %default]',
+    'detect frequency band gaps',
+    'analyze_dispersion' :
+    'analyze dispersion properties (low frequency domain)',
     'plot' :
-    'plot frequency band gaps [default: %default], assumes -b',
+    'plot frequency band gaps, assumes -b',
 }
 
 def main():
@@ -215,13 +259,20 @@ def main():
     parser.add_option( "-b", "--band-gaps",
                        action = "store_true", dest = "detect_band_gaps",
                        default = False, help = help['detect_band_gaps'] )
+    parser.add_option( "-d", "--dispersion",
+                       action = "store_true", dest = "analyze_dispersion",
+                       default = False, help = help['analyze_dispersion'] )
     parser.add_option( "-p", "--plot",
                        action = "store_true", dest = "plot",
                        default = False, help = help['plot'] )
 
     options, args = parser.parse_args()
     if options.plot:
-        options.detect_band_gaps = True
+        if pylab is None:
+            output( 'pylab cannot be imported, ignoring option -p!' )
+            options.plot = False
+        elif options.analyze_dispersion == False:
+            options.detect_band_gaps = True
 
     if (len( args ) == 1):
         filename_in = args[0];
