@@ -13,16 +13,14 @@ def build_op_pi( var_name, problem, ir, ic ):
 
     return pi
 
-##
-# c: 05.05.2008, r: 22.07.2008
-def createPis( problem, variables, varName ):
-    problem.setVariables( variables )
+def create_pis( problem, var_name ):
+    problem.select_variables( [var_name] )
 
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim, dim), dtype = nm.object )
     for ir in range( dim ):
         for ic in range( dim ):
-            pi = buildOpPi( varName, problem, ir, ic )
+            pi = build_op_pi( var_name, problem, ir, ic )
             pis[ir,ic] = pi
     return pis
 
