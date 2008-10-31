@@ -8,13 +8,24 @@ import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
-from sfepy.fem import eval_term_op, ProblemDefinition, Equations
+from sfepy.fem import eval_term_op, ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import process_options, get_method,\
      transform_plot_data, plot_logs, plot_gaps, detect_band_gaps, compute_cat
+from sfepy.homogenization.utils import create_pis
+from sfepy.homogenization.coefs import CorrectorsRS, CoefE
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
 from sfepy.base.plotutils import pylab
+
+def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
+    def save_phono_correctors( state, problem, ir, ic ):
+        get_state = problem.variables.get_state_part_view
+
+        problem.save_state( (base_name % (ir, ic)) + '.vtk', state,
+                            post_process_hook = post_process_hook,
+                            file_per_var = file_per_var )
+    return save_phono_correctors
 
 class AcousticBandGapsApp( SimpleApp ):
 
@@ -74,11 +85,11 @@ class AcousticBandGapsApp( SimpleApp ):
 
             iw_dir = iw_dir / nla.norm( iw_dir )
 
-            mtx_d = nm.ones( (3, 3), dtype = nm.float64 )
+            mtx_d = self.eval_coef_e( )
+
             christoffel = compute_cat( mtx_d, iw_dir )
             print iw_dir
             print christoffel
-#            christoffel = nm.eye( dim, dtype = nm.float64 )
             
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
                                    self.conf.options, self.conf.funmod,
@@ -86,7 +97,7 @@ class AcousticBandGapsApp( SimpleApp ):
             if options.plot:
                 # This will change...
                 plot_range, tlogs = transform_plot_data( bg.logs,
-                                                         bg.opts.plot_tranform,
+                                                         None,
                                                          self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
@@ -234,6 +245,37 @@ class AcousticBandGapsApp( SimpleApp ):
         fd.close()
 
         return Struct( eigs = eigs, eig_vectors = eig_vectors )
+
+
+    def eval_coef_e( self ):
+        dconf_raw = self.conf.options.dispersion_conf
+        dconf = ProblemConf.from_dict( *dconf_raw )
+
+        dconf.materials = self.conf.materials
+        dconf.fe = self.conf.fe
+        dconf.regions.update( self.conf.regions )
+
+        dproblem = ProblemDefinition.from_conf( dconf, init_variables = False )
+        print dproblem
+
+        req = dconf.requirements['pis']
+        pis = create_pis( dproblem, req['variables'][0] )
+
+        req = dconf.requirements['corrs_phono_rs']
+        crs = CorrectorsRS( dproblem, req )
+        print crs
+
+        fc = self.conf.options.file_conf
+        save_hook = make_save_hook( dproblem.ofn_trunk + fc['corrs_rs'],
+                                    self.post_process_hook )
+        corrs_rs = crs( pis, save_hook = save_hook )
+
+        print corrs_rs
+
+##         ce = CoefE( dproblem, coefs['E'] )
+##         mtx = ce( pis, corrs_u_rs, dv_info.total_volume )
+
+        return mtx
 
 usage = """%prog [options] filename_in"""
 

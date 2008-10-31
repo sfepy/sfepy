@@ -2,6 +2,7 @@
 import os
 import numpy as nm
 from sfepy.fem import MeshIO
+import coefficients as coefs
 
 #fileName_mesh = 'database/phono/cube_sphere.mesh'
 #fileName_mesh = 'database/phono/cube_cylinder.mesh'
@@ -9,6 +10,8 @@ filename_mesh = 'database/phono/mesh_circ21.mesh'
 #fileName_mesh = 'database/phono/mesh_circ21_small.mesh'
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
+dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 options = {
     'save_eig_vectors' : (10, 0),
@@ -28,6 +31,10 @@ options = {
     'output_dir' : os.path.join( cwd, 'output/' ),
 
     'fig_name' : 'band_gaps.pdf',
+    # filename = <output_dir>/<ofn_trunk><name>
+    'file_conf' : {
+      'corrs_rs' : '_phono_rs_%d%d',
+    },
     
 #    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
 
@@ -40,13 +47,10 @@ options = {
     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
-    'coef_info' : 'coefs', # homogenized coefficients to compute
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
+    'dispersion_conf' : (coefs.define_input( filename_mesh, dim, geom ), coefs),
 }
-
-dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
-geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 regions = {
     'Y' : ('all', {}),
@@ -153,7 +157,3 @@ def select_in_plane( vec, shape, normal_direction, eps ):
         return nm.zeros_like( vec ), True
     else:
         return vec, False
-
-#from coefficients import define_input
-
-## locals().update( define_input( filename_mesh, dim, geom ) )
