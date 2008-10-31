@@ -360,7 +360,8 @@ class Variables( Container ):
         ##
         # Assing EBC, PBC to variables and regions.
         self.bc_of_vars = self._list_bc_of_vars( ebc )
-        dict_extend( self.bc_of_vars, self._list_bc_of_vars( epbc, is_ebc = False ) )
+        dict_extend( self.bc_of_vars,
+                     self._list_bc_of_vars( epbc, is_ebc = False ) )
 
         ##
         # List EBC nodes/dofs for each variable.
@@ -448,20 +449,24 @@ class Variables( Container ):
         """Translate dofs to active dofs."""
         def _setup_a_dof_conns( iterable, adi ):
             adof_conns = dict_from_keys_init( [self[ii].name for ii in iterable],
-                                          Struct )
+                                              Struct )
             for ii in iterable:
                 var = self[ii]
                 indx = adi.indx[var.name]
                 eq = var.eq_map.eq
                 adof_conns[var.name].name = 'adof_conns'
                 it =  var.iter_dof_conns( 'volume' )
-                adof_conns[var.name].volume_d_cs = create_a_dof_conns( eq, it, indx )
+                adof_conns[var.name].volume_d_cs = create_a_dof_conns( eq, it,
+                                                                       indx )
                 it =  var.iter_dof_conns( 'surface' )
-                adof_conns[var.name].surface_d_cs = create_a_dof_conns( eq, it, indx )
+                adof_conns[var.name].surface_d_cs = create_a_dof_conns( eq, it,
+                                                                        indx )
                 it =  var.iter_dof_conns( 'edge' )
-                adof_conns[var.name].edge_d_cs = create_a_dof_conns( eq, it, indx )
+                adof_conns[var.name].edge_d_cs = create_a_dof_conns( eq, it,
+                                                                     indx )
                 it =  var.iter_dof_conns( 'point' )
-                adof_conns[var.name].point_d_cs = create_a_dof_conns( eq, it, indx )
+                adof_conns[var.name].point_d_cs = create_a_dof_conns( eq, it,
+                                                                      indx )
             return adof_conns
 
         self.adof_conns = _setup_a_dof_conns( self.state, self.adi )
@@ -1349,7 +1354,8 @@ class Variable( Struct ):
         eq_map.eq[eq_map.eq_ebc] = -2
         eq_map.eq[eq_map.master] = -1
         eq_map.eqi = nm.compress( eq_map.eq >= 0, eq_map.eq )
-        eq_map.eq[eq_map.eqi] = nm.arange( eq_map.eqi.shape[0], dtype = nm.int32 )
+        eq_map.eq[eq_map.eqi] = nm.arange( eq_map.eqi.shape[0],
+                                           dtype = nm.int32 )
         eq_map.eq[eq_map.master] = eq_map.eq[eq_map.slave]
         eq_map.n_eq = eq_map.eqi.shape[0]
         eq_map.n_ebc = eq_map.eq_ebc.shape[0]
