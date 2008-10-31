@@ -1,7 +1,7 @@
 import re
 
 from base import Struct, IndexedStruct, dict_to_struct, pause, output, copy,\
-     import_file, assert_
+     import_file, assert_, get_default
 from reader import Reader
 
 _required = ['filename_mesh', 'field_[0-9]+|fields',
@@ -25,9 +25,8 @@ def tuple_to_conf( name, vals, order ):
     return conf
 
 ##
-# Short syntax: key is suffixed with '_' to prevent collisions with long syntax
-# keys -> both cases can be used in a single input.
-
+# Short syntax: key is suffixed with '__<number>' to prevent collisions with
+# long syntax keys -> both cases can be used in a single input.
 def transform_variables( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
@@ -43,10 +42,10 @@ def transform_variables( adict ):
                     c2.like = conf[2]
                 if len( conf ) == 4:
                     c2.history = conf[3]
-            d2['variable__%d' % ii] = c2
+            d2['variable_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            d2[key] = c2
+            d2['variable_'+c2.name] = c2
     return d2
 
 ##
@@ -56,10 +55,10 @@ def transform_ebcs( adict ):
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf( key, conf, ['region', 'dofs'] )
-            d2['ebc__%d' % ii] = c2
+            d2['ebc_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            d2[key] = c2
+            d2['ebc_'+c2.name] = c2
     return d2
 
 ##
@@ -72,10 +71,11 @@ def transform_regions( adict ):
             for flag, val in c2.flags.iteritems():
                 setattr( c2, flag, val )
             delattr( c2, 'flags' )
-            d2['region__%d' % ii] = c2
+            d2['region_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            d2[key] = c2
+            d2['region_'+c2.name] = c2
+    print d2
     return d2
 
 ##
@@ -154,29 +154,48 @@ class ProblemConf( Struct ):
 
         obj.__dict__.update( define_dict )
 
-        other_missing = obj.validate( required = required, other = other )
-        for name in other_missing:
-            setattr( obj, name, None )
-        obj._filename = filename
+        obj.setup( define_dict, funmod, filename, required, other )
 
-        obj.transform_input_trivial()
-        obj._raw = {}
-        for key, val in define_dict.iteritems():
-            if isinstance( val, dict ):
-                obj._raw[key] = copy( val )
-
-        obj.transform_input()
-        obj.funmod = funmod
         return obj
     from_file = staticmethod( from_file )
 
-    ##
-    # 20.06.2007, c
     def from_module( module, required = None, other = None ):
         obj = ProblemConf()
         obj.__dict__.update( module.__dict__ )
+
+        obj.setup( funmod = module, required = required, other = other )
+
         return obj
     from_module = staticmethod( from_module )
+
+    def from_dict( dict_, funmod, required = None, other = None ):
+        obj = ProblemConf()
+        obj.__dict__.update( dict_ )
+
+        obj.setup( funmod = funmod, required = required, other = other )
+
+        return obj
+    from_dict = staticmethod( from_dict )
+
+    def setup( self, define_dict = None, funmod = None, filename = None,
+               required = None, other = None ):
+
+        define_dict = get_default( define_dict, self.__dict__ )
+
+        self._filename = filename
+
+        other_missing = self.validate( required = required, other = other )
+        for name in other_missing:
+            setattr( self, name, None )
+
+        self.transform_input_trivial()
+        self._raw = {}
+        for key, val in define_dict.iteritems():
+            if isinstance( val, dict ):
+                self._raw[key] = copy( val )
+
+        self.transform_input()
+        self.funmod = funmod
 
     ##
     # 27.10.2005, c
