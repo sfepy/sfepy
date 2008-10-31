@@ -126,6 +126,10 @@ class ProblemDefinition( Struct ):
 ##         pause()
         
 
+    def select_variables( self, variable_names ):
+        conf_variables = select_by_names( self.conf.variables, variable_names )
+        self.set_variables( conf_variables )
+
     def clear_equations( self ):
         self.integrals = None
         self.geometries = None
@@ -276,6 +280,25 @@ class ProblemDefinition( Struct ):
                         create_matrix )
         self.update_materials( ts, funmod, extra_mat_args )
         self.update_equations( ts )
+
+    def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
+                    lcbc_names = None ):
+        if ebc_names is not None:
+            conf_ebc = select_by_names( self.conf.ebcs, ebc_names )
+        else:
+            conf_ebc = None
+
+        if epbc_names is not None:
+            conf_epbc = select_by_names( self.conf.epbcs, epbc_names )
+        else:
+            conf_epbc = None
+
+        if lcbc_names is not None:
+            conf_lcbc = select_by_names( self.conf.lcbcs, lcbc_names )
+        else:
+            conf_lcbc = None
+
+        self.time_update( ts, conf_ebc, conf_epbc, conf_lcbc )
 
     def get_timestepper( self ):
         return self.ts
