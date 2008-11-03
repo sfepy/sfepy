@@ -1,4 +1,4 @@
-# c: 14.12.2007, r: 09.09.2008
+# c: 14.12.2007, r: 03.11.2008
 import os
 import numpy as nm
 from sfepy.base.base import output, set_output_prefix, pause, debug, Struct
@@ -7,6 +7,7 @@ from gen_mesh import gen_concentric
 
 is_3D = False
 generate_2D = False
+fig_suffix = '.png'
 
 if is_3D:
     filename_mesh = 'database/phono/cube_sphere.mesh'
@@ -60,10 +61,10 @@ options = {
     'squared' : False,
 
     #############################################
-    'parametric_hook' : 'vary_y3_size',
-#    'parametric_hook' : 'vary_teps',
+#    'parametric_hook' : 'vary_y3_size',
+    'parametric_hook' : 'vary_teps',
     'post_process_hook' : 'post_process',
-    'output_dir' : os.path.join( cwd, 'output/csstd' ),
+    'output_dir' : os.path.join( cwd, 'output/nectiny2008_color/unsym/teps' ),
     #############################################
 
     'eigenmomentum' : {'var' : 'up',
@@ -76,7 +77,7 @@ options = {
     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
-    'fig_name' : 'band_gaps_sym_025.pdf',
+    'fig_name' : 'band_gaps_sym_025' + fig_suffix,
     'plot_options' : {
         'show' : True, # Show figure.
         'legend' : False, # Show legend.
@@ -98,7 +99,7 @@ options = {
                     'legend.fontsize': 'large',
                     'xtick.labelsize': 'large',
                     'ytick.labelsize': 'large',
-                    'text.usetex': False},
+                    'text.usetex': True},
     },
     
 }
@@ -351,7 +352,7 @@ def vary_teps( problem ):
         opts.plot_options['show'] = False
         opts.fig_name = join( output_dir,
                               (('band_gaps_%s' % d_format)
-                               + '_teps_%3.2e.pdf') % (ii, teps) )
+                               + '_teps_%3.2e' + fig_suffix) % (ii, teps) )
         problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
 
         out = []
@@ -402,7 +403,7 @@ def vary_y3_size( problem ):
         opts.plot_options['show'] = False
         opts.fig_name = join( output_dir,
                               (('band_gaps_%s' % d_format)
-                               + '_y3_%03.2f.pdf') % (ii, diameter) )
+                               + '_y3_%03.2f' + fig_suffix) % (ii, diameter) )
         problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
         out = []
         yield problem, out
