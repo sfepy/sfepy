@@ -50,6 +50,15 @@ options = {
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
     'dispersion_conf' : (coefs.define_input( filename_mesh, dim, geom ), coefs),
+
+    'plot_rsc' : {
+        'params' : {'axes.labelsize': 'large',
+                    'text.fontsize': 'large',
+                    'legend.fontsize': 'large',
+                    'xtick.labelsize': 'large',
+                    'ytick.labelsize': 'large',
+                    'text.usetex': False},
+    }
 }
 
 regions = {

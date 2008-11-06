@@ -59,7 +59,7 @@ class CoefE( MiniAppBase ):
             problem.variables[var_names[0]].data_from_data( pi1 )
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                omega2 = vecs_rs.states_rs[irc,icc][indx]
+                omega2 = corrs_rs.states_rs[irc,icc][indx]
                 pi2 = pis[irc,icc] + omega2
                 problem.variables[var_names[1]].data_from_data( pi2 )
 

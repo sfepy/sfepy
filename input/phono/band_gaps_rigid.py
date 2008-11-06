@@ -7,7 +7,7 @@ from gen_mesh import gen_concentric
 
 is_3D = False
 generate_2D = False
-fig_suffix = '.png'
+fig_suffix = '.pdf'
 
 if is_3D:
     filename_mesh = 'database/phono/cube_sphere.mesh'
@@ -62,9 +62,9 @@ options = {
 
     #############################################
 #    'parametric_hook' : 'vary_y3_size',
-    'parametric_hook' : 'vary_teps',
+#    'parametric_hook' : 'vary_teps',
     'post_process_hook' : 'post_process',
-    'output_dir' : os.path.join( cwd, 'output/nectiny2008_color/unsym/teps' ),
+    'output_dir' : os.path.join( cwd, 'output/nectiny2008_color/' ),
     #############################################
 
     'eigenmomentum' : {'var' : 'up',
@@ -99,7 +99,7 @@ options = {
                     'legend.fontsize': 'large',
                     'xtick.labelsize': 'large',
                     'ytick.labelsize': 'large',
-                    'text.usetex': True},
+                    'text.usetex': False},
     },
     
 }

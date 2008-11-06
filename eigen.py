@@ -86,6 +86,7 @@ class AcousticBandGapsApp( SimpleApp ):
             iw_dir = iw_dir / nla.norm( iw_dir )
 
             mtx_d = self.eval_coef_e( )
+            print mtx_d
 
             christoffel = compute_cat( mtx_d, iw_dir )
             print iw_dir
@@ -256,24 +257,23 @@ class AcousticBandGapsApp( SimpleApp ):
         dconf.regions.update( self.conf.regions )
 
         dproblem = ProblemDefinition.from_conf( dconf, init_variables = False )
-        print dproblem
 
         req = dconf.requirements['pis']
         pis = create_pis( dproblem, req['variables'][0] )
 
         req = dconf.requirements['corrs_phono_rs']
-        crs = CorrectorsRS( dproblem, req )
-        print crs
+        solve_corrs = CorrectorsRS( dproblem, req )
 
         fc = self.conf.options.file_conf
         save_hook = make_save_hook( dproblem.ofn_trunk + fc['corrs_rs'],
                                     self.post_process_hook )
-        corrs_rs = crs( pis, save_hook = save_hook )
+        corrs_rs = solve_corrs( pis, save_hook = save_hook )
 
-        print corrs_rs
+        volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
 
-##         ce = CoefE( dproblem, coefs['E'] )
-##         mtx = ce( pis, corrs_u_rs, dv_info.total_volume )
+        cargs = dconf.coefs['E']
+        get_coef = CoefE( dproblem, cargs )
+        mtx = get_coef( pis, corrs_rs, volume )
 
         return mtx
 

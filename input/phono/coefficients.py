@@ -8,7 +8,7 @@ def define_input( filename, dim, geom ):
         'E' : {'requires' : ['pis', 'corrs_phono_rs'],
                'variables' : ['Pi1', 'Pi2'],
                'region' : 'Y1',
-               'expression' : 'dw_lin_elastic.i1.Y1( m.D, Pi1, Pi2 )'},
+               'expression' : 'dw_lin_elastic.i2.Y1( matrix.D, Pi1, Pi2 )'},
     }
 
     all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
