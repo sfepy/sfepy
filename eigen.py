@@ -67,7 +67,7 @@ class AcousticBandGapsApp( SimpleApp ):
                                  clear = True )
                 fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
-                                 plot_range, bg.opts.squared,
+                                 plot_range, False,
                                  show = plot_opts['show'],
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
@@ -111,7 +111,7 @@ class AcousticBandGapsApp( SimpleApp ):
                                  clear = True )
                 fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
-                                 plot_range, bg.opts.squared,
+                                 plot_range, False,
                                  show = plot_opts['show'],
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )

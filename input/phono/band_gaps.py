@@ -1,4 +1,4 @@
-# c: 25.09.2007, r: 10.09.2008
+# c: 25.09.2007, r: 07.11.2008
 import os
 import numpy as nm
 from sfepy.fem import MeshIO
@@ -26,7 +26,6 @@ options = {
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
 #    'plot_tranform' : ('clip', (-20, 20)),
     'plot_tranform' : ('normalize', (-1, 1)),
-    'squared' : False,
 
     'output_dir' : os.path.join( cwd, 'output/' ),
 

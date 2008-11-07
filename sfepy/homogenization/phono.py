@@ -8,9 +8,9 @@ from sfepy.homogenization.utils import coor_to_sym
 
 class AcousticMassTensor( Struct ):
 
-    def __init__( self, eigenmomenta, eigs, dv_info, squared ):
+    def __init__( self, eigenmomenta, eigs, dv_info ):
         Struct.__init__( self, eigenmomenta = eigenmomenta,
-                         eigs = eigs, dv_info = dv_info, squared = squared )
+                         eigs = eigs, dv_info = dv_info )
 
     def __call__( self, freq ):
         """`eigenmomenta`, `eigs` should contain only valid resonances."""
@@ -23,14 +23,9 @@ class AcousticMassTensor( Struct ):
         for ir in range( dim ):
             for ic in range( dim ):
                 if ir <= ic:
-                    if self.squared:
-                        val = nm.sum( ema[:,ir] * ema[:,ic] \
-                                      / (freq - eigs) )
-                        fmass[ir,ic] += freq * val
-                    else:
-                        val = nm.sum( ema[:,ir] * ema[:,ic] \
-                                      / ((freq**2) - (eigs**2)) )
-                        fmass[ir,ic] += (freq**2) * val
+                    val = nm.sum( ema[:,ir] * ema[:,ic] \
+                                  / ((freq**2) - (eigs)) )
+                    fmass[ir,ic] += (freq**2) * val
                 else:
                     fmass[ir,ic] = fmass[ic,ir]
 
@@ -42,9 +37,9 @@ class AcousticMassTensor( Struct ):
 
 class AppliedLoadTensor( Struct ):
 
-    def __init__( self, eigenmomenta, ueigenmomenta, eigs, dv_info, squared ):
+    def __init__( self, eigenmomenta, ueigenmomenta, eigs, dv_info ):
         Struct.__init__( self, eigenmomenta = eigenmomenta,
-                         eigs = eigs, dv_info = dv_info, squared = squared )
+                         eigs = eigs, dv_info = dv_info )
 
 
     def __call__( self, freq ):
@@ -57,14 +52,9 @@ class AppliedLoadTensor( Struct ):
 
         for ir in range( dim ):
             for ic in range( dim ):
-                if self.squared:
-                    val = nm.sum( ema[:,ir] * uema[:,ic]\
-                                  / (freq - self.eigs) )
-                    fload[ir,ic] += freq * val
-                else:
-                    val = nm.sum( ema[:,ir] * uema[:,ic]\
-                                  / ((freq**2) - (self.eigs**2)) )
-                    fload[ir,ic] += (freq**2) * val
+                val = nm.sum( ema[:,ir] * uema[:,ic]\
+                              / ((freq**2) - (self.eigs)) )
+                fload[ir,ic] += (freq**2) * val
 
         eye = nm.eye( (dim, dim), dtype = nm.float64 )
 
@@ -94,15 +84,8 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
                    eigenvectors = True, method = method )
         return [f, out]
 
-    def trace_full_squared_callback( f ):
-        out = eig( f * mass( f ), mtx_b = christoffel,
-                   eigenvectors = True, method = method )
-        return [sqrt( f ), out]
-
     if christoffel is not None:
         mode += '_full'
-        if mass.squared:
-            mode += '_squared'
 
     return eval( mode + '_callback' )
 
@@ -165,11 +148,6 @@ def process_options( options, n_eigs ):
         plot_tranform = options.plot_tranform
     except:
         plot_tranform = None
-
-    try:
-        squared = options.squared
-    except:
-        squared = True
 
     try:
         plot_options = options.plot_options
@@ -674,11 +652,11 @@ def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
     
     if opts.fixed_eig_range is not None:
         mine, maxe = opts.fixed_eig_range
-        ii = nm.where( (eigs > mine) & (eigs < maxe) )[0]
-        freq_range_initial = eigs[ii]
+        ii = nm.where( (eigs > (mine**2.)) & (eigs < (maxe**2.)) )[0]
+        freq_range_initial = nm.sqrt( eigs[ii] )
         opts.eig_range = (ii[0], ii[-1]+1) # +1 as it is a slice.
     else:
-        freq_range_initial = eigs[slice( *opts.eig_range )]
+        freq_range_initial = nm.sqrt( eigs[slice( *opts.eig_range )] )
     output( 'initial freq. range     : [%8.3f, %8.3f]'\
             % tuple( freq_range_initial[[0,-1]] ) )
 
@@ -729,9 +707,6 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
     method = get_method( options )
     output( 'method:', method )
 
-    if not opts.squared:
-        eigs = nm.sqrt( eigs )
-
     aux = setup_band_gaps( pb, eigs, eig_vectors, opts, funmod )
     dv_info, eigenmomenta, n_zeroed, valid, freq_info = aux
 
@@ -747,8 +722,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
     valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
 
-    mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs,
-                               dv_info, opts.squared )
+    mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
     fz_callback = get_callback( mass, method,
                                 christoffel = christoffel, mode = 'find_zero' )
     trace_callback = get_callback( mass, method,

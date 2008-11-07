@@ -58,7 +58,6 @@ options = {
 #    'plot_tranform' : ('clip', (-20, 20)),
     'plot_tranform' : ('normalize', (-2, 2)),
 #    'plot_tranform' : None,
-    'squared' : False,
 
     #############################################
 #    'parametric_hook' : 'vary_y3_size',
@@ -304,7 +303,7 @@ def save_log( filename, bg, log_item ):
     fd = open( filename, 'w' )
     freq_range = bg.freq_range_margins
     fd.write( log_item )
-    fd.write( 'squared: %s\n' % options['squared'] )
+    fd.write( 'squared: %s\n' % False )
     fd.write( 'n_zeroed: %d\n' % bg.n_zeroed )
     fd.write( 'n_eigs: %d\n' % bg.n_eigs )
     fd.write( 'f0 f1 flag_min f_min v_min flag_max f_max v_max'
