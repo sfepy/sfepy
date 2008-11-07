@@ -1,5 +1,4 @@
 # 03.10.2007, c
-# last revision: 25.02.2008
 filename_mesh = 'database/phono/mesh_circ21.mesh'
 
 # Whole domain $Y$.
@@ -24,17 +23,18 @@ region_2 = {
 region_3 = {
     'name' : 'Y3',
     'select' : 'nodes in (x > %f) & (x < %f) & (y > %f) & (y < %f)'\
-    % (0.2, 0.8, 0.01, 0.2),
+    % (-0.3, 0.3, -0.48, -0.3),
 }
 
+wx = wy = 0.499
 region_10 = {
     'name' : 'Bottom',
-    'select' : 'nodes in (y < %f)' % 1e-5,
+    'select' : 'nodes in (y < %f)' % -wy,
 }
 
 region_11 = {
     'name' : 'Top',
-    'select' : 'nodes in (y > %f)' % (1 - 1e-5),
+    'select' : 'nodes in (y > %f)' % wy,
 }
 
 material_1 = {
@@ -49,7 +49,6 @@ material_1 = {
 field_1 = {
     'name' : '2_displacement',
     'dim' : (2,1),
-    'flags' : (),
     'domain' : 'Y',
     'bases' : {'Y' : '2_3_P2'}
 }
