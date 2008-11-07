@@ -75,14 +75,20 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
         meigs = eig( mass( f ), eigenvectors = False, method = method )
         return meigs
 
+    def find_zero_full_callback( f ):
+        meigs = eig( (f**2) * mass( f ), mtx_b = christoffel,
+                     eigenvectors = False, method = method )
+        return meigs
+
     def trace_callback( f ):
         meigs = eig( mass( f ), eigenvectors = False, method = method )
         return [f, meigs[0], meigs[-1]]
 
     def trace_full_callback( f ):
-        out = eig( (f**2) * mass( f ), mtx_b = christoffel,
-                   eigenvectors = True, method = method )
-        return [f, out]
+        meigs, mvecs = eig( (f**2) * mass( f ), mtx_b = christoffel,
+                            eigenvectors = True, method = method )
+        
+        return [f, meigs[0], meigs[-1]]
 
     if christoffel is not None:
         mode += '_full'
