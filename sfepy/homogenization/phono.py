@@ -6,6 +6,106 @@ from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
 from sfepy.homogenization.utils import coor_to_sym
 
+class AcousticMassTensor( Struct ):
+
+    def __init__( self, eigenmomenta, eigs, dv_info, squared ):
+        Struct.__init__( self, eigenmomenta = eigenmomenta,
+                         eigs = eigs, dv_info = dv_info, squared = squared )
+
+    def __call__( self, freq ):
+        """`eigenmomenta`, `eigs` should contain only valid resonances."""
+        ema = self.eigenmomenta 
+        eigs = self.eigs
+
+        dim = ema.shape[1]
+        fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
+
+        for ir in range( dim ):
+            for ic in range( dim ):
+                if ir <= ic:
+                    if self.squared:
+                        val = nm.sum( ema[:,ir] * ema[:,ic] \
+                                      / (freq - eigs) )
+                        fmass[ir,ic] += freq * val
+                    else:
+                        val = nm.sum( ema[:,ir] * ema[:,ic] \
+                                      / ((freq**2) - (eigs**2)) )
+                        fmass[ir,ic] += (freq**2) * val
+                else:
+                    fmass[ir,ic] = fmass[ic,ir]
+
+        eye = nm.eye( dim, dim, dtype = nm.float64 )
+        mtx_mass = (eye * self.dv_info.average_density) \
+                   - (fmass / self.dv_info.total_volume)
+
+        return mtx_mass
+
+class AppliedLoadTensor( Struct ):
+
+    def __init__( self, eigenmomenta, ueigenmomenta, eigs, dv_info, squared ):
+        Struct.__init__( self, eigenmomenta = eigenmomenta,
+                         eigs = eigs, dv_info = dv_info, squared = squared )
+
+
+    def __call__( self, freq ):
+        """`eigenmomenta`, `ueigenmomenta`, `eigs` should contain only valid
+        resonances."""
+        ema, uema = self.eigenmomenta, self.ueigenmomenta
+
+        dim = ema.shape[1]
+        fload = nm.zeros( (dim, dim), dtype = nm.float64 )
+
+        for ir in range( dim ):
+            for ic in range( dim ):
+                if self.squared:
+                    val = nm.sum( ema[:,ir] * uema[:,ic]\
+                                  / (freq - self.eigs) )
+                    fload[ir,ic] += freq * val
+                else:
+                    val = nm.sum( ema[:,ir] * uema[:,ic]\
+                                  / ((freq**2) - (self.eigs**2)) )
+                    fload[ir,ic] += (freq**2) * val
+
+        eye = nm.eye( (dim, dim), dtype = nm.float64 )
+
+        mtx_load = eye - (fload / self.dv_info.total_volume)
+
+        return mtx_load
+
+def get_callback( mass, method, christoffel = None, mode = 'trace' ):
+    """
+    Return callback to solve band gaps or dispersion eigenproblem P.
+    
+    If christoffel is None, P is
+      M w = \lambda w,
+    otherwise it is
+      omega^2 M w = \eta \Gamma w"""
+
+    def find_zero_callback( f ):
+        meigs = eig( mass( f ), eigenvectors = False, method = method )
+        return meigs
+
+    def trace_callback( f ):
+        meigs = eig( mass( f ), eigenvectors = False, method = method )
+        return [f, meigs[0], meigs[-1]]
+
+    def trace_full_callback( f ):
+        out = eig( (f**2) * mass( f ), mtx_b = christoffel,
+                   eigenvectors = True, method = method )
+        return [f, out]
+
+    def trace_full_squared_callback( f ):
+        out = eig( f * mass( f ), mtx_b = christoffel,
+                   eigenvectors = True, method = method )
+        return [sqrt( f ), out]
+
+    if christoffel is not None:
+        mode += '_full'
+        if mass.squared:
+            mode += '_squared'
+
+    return eval( mode + '_callback' )
+
 def process_options( options, n_eigs ):
     try:
         save = options.save_eig_vectors
@@ -264,52 +364,6 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     else:
         return n_zeroed, valid, eigenmomenta
 
-def compute_generalized_mass( freq, eigenmomenta, eigs, dv_info, squared ):
-    """Assumes that `eigenmomenta`, `eigs` contain only valid resonances."""
-    dim = eigenmomenta.shape[1]
-    fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
-
-    for ir in range( dim ):
-        for ic in range( dim ):
-            if ir <= ic:
-                if squared:
-                    val = nm.sum( eigenmomenta[:,ir] * eigenmomenta[:,ic]\
-                                  / (freq - eigs) )
-                    fmass[ir,ic] += freq * val
-                else:
-                    val = nm.sum( eigenmomenta[:,ir] * eigenmomenta[:,ic]\
-                                  / ((freq**2) - (eigs**2)) )
-                    fmass[ir,ic] += (freq**2) * val
-            else:
-                fmass[ir,ic] = fmass[ic,ir]
-
-    eye = nm.eye( dim, dim, dtype = nm.float64 )
-    mtx_mass = (eye * dv_info.average_density) - (fmass / dv_info.total_volume)
-
-    return mtx_mass
-
-def compute_applied_load( freq, eigenmomenta, ueigenmomenta, eigs,
-                          dv_info, squared ):
-    """Assumes that `eigenmomenta`, 'ueigenmomenta', `eigs` contain only valid
-    resonances."""
-    dim = eigenmomenta.shape[1]
-    fload = nm.zeros( (dim, dim), dtype = nm.float64 )
-
-    for ir in range( dim ):
-        for ic in range( dim ):
-            if squared:
-                val = nm.sum( eigenmomenta[:,ir] * ueigenmomenta[:,ic]\
-                              / (freq - eigs) )
-                fload[ir,ic] += freq * val
-            else:
-                val = nm.sum( eigenmomenta[:,ir] * ueigenmomenta[:,ic]\
-                              / ((freq**2) - (eigs**2)) )
-                fload[ir,ic] += (freq**2) * val
-
-    eye = nm.eye( (dim, dim), dtype = nm.float64 )
-
-    mtx_load = eye - (fload / dv_info.total_volume)
-
 def compute_cat( mtx_d, iw_dir ):
     """Compute Christoffel acoustic tensor given the elasticity tensor and
     incident wave direction (unit vector).
@@ -329,39 +383,11 @@ def compute_cat( mtx_d, iw_dir ):
 
     return cat
 
-def solve_mass_evp( freq, mtx_mass, method, squared, christoffel = None ):
-    """
-    Solve band gaps or dispersion eigenproblem P.
-    
-    If `christoffel` is None, P is
-      M w = \lambda w,
-    otherwise it is
-      omega^2 M w = \eta \Gamma w
-
-      `christoffel` : Christoffel acoustic tensor
-
-    """
-    if christoffel is None:
-        meigs = eig( mtx_mass, eigenvectors = False, method = method )
-    else:
-        if squared:
-            omega2 = freq
-        else:
-            omega2 = freq**2
-        meigs = eig( omega2 * mtx_mass, mtx_b = christoffel,
-                     eigenvectors = False, method = method )
-    return meigs
-
-def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode,
-               christoffel = None ):
+def find_zero( f0, f1, callback, feps, zeps, mode ):
     """
     For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
-    0) or the largest (`mode` = 1) eigenvalue of problem P is zero.
-
-    If christoffel is None, P is
-      M w = \lambda w,
-    otherwise it is
-      omega^2 M w = \eta \Gamma w
+    0) or the largest (`mode` = 1) eigenvalue of problem P given by `callback`
+    is zero.
 
     Return:
 
@@ -374,17 +400,11 @@ def find_zero( f0, f1, eigenmomenta, eigs, dv_info, opts, mode,
     1    | 1    | f -> f1, largest eigenvalue < 0 and  -> +\infty
     1    | 2    | f -> f0, largest eigenvalue > 0
     """
-    feps, zeps = opts.feps, opts.zeps
-    method = get_method( opts )
-
     fm, fp = f0, f1
     ieig = {0 : 0, 1 : -1}[mode]
     while 1:
         f = 0.5 * (fm + fp)
-        mtx_mass = compute_generalized_mass( f, eigenmomenta, eigs,
-                                             dv_info, opts.squared )
-        meigs = solve_mass_evp( f, mtx_mass, method, opts.squared,
-                                christoffel = christoffel )
+        meigs = callback( f )
 ##         print meigs
 
         val = meigs[ieig]
@@ -726,7 +746,13 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
     df = opts.freq_step * (max_freq - min_freq)
     valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
-    cgm = compute_generalized_mass
+
+    mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs,
+                               dv_info, opts.squared )
+    fz_callback = get_callback( mass, method,
+                                christoffel = christoffel, mode = 'find_zero' )
+    trace_callback = get_callback( mass, method,
+                                   christoffel = christoffel, mode = 'trace' )
     for ii in xrange( freq_info.freq_range.shape[0] + 1 ):
 
         f0, f1 = fm[[ii, ii+1]]
@@ -736,11 +762,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
         num = min( 1000, max( 20, (f1 - f0) / df ) )
         log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         for f in log_freqs:
-            mtx_mass = cgm( f, valid_eigenmomenta, valid_eigs,
-                            dv_info, opts.squared )
-            meigs = solve_mass_evp( f, mtx_mass, method, opts.squared,
-                                    christoffel = christoffel )
-            log.append( [f, meigs[0], meigs[-1]] )
+            log.append( trace_callback( f ) )
 
         log0, log1 = log[0], log[-1]
         if log0[1] > 0.0: # No gaps.
@@ -752,30 +774,20 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
             alog = nm.array( log )
 
             output( 'finding zero of the largest eig...' )
-            smax, fmax, vmax = find_zero( f0, f1, valid_eigenmomenta,
-                                          valid_eigs,
-                                          dv_info, opts, 1 )
-            mtx_mass = cgm( fmax, valid_eigenmomenta, valid_eigs,
-                            dv_info, opts.squared )
-            meigs = solve_mass_evp( fmax, mtx_mass, method, opts.squared,
-                                    christoffel = christoffel )
+            smax, fmax, vmax = find_zero( f0, f1, fz_callback,
+                                          opts.feps, opts.zeps, 1 )
             im = nm.searchsorted( alog[:,0], fmax )
-            log.insert( im, (fmax, meigs[0], meigs[-1] ) )
+            log.insert( im, trace_callback( fmax ) )
 
             output( '...done' )
             if smax in [0, 2]:
                 output( 'finding zero of the smallest eig...' )
                 # having fmax instead of f0 does not work if feps is large.
-                smin, fmin, vmin = find_zero( f0, f1, valid_eigenmomenta,
-                                              valid_eigs,
-                                              dv_info, opts, 0 )
-                mtx_mass = cgm( fmin, valid_eigenmomenta, valid_eigs,
-                                dv_info, opts.squared )
-                meigs = solve_mass_evp( fmin, mtx_mass, method, opts.squared,
-                                        christoffel = christoffel )
+                smin, fmin, vmin = find_zero( f0, f1, fz_callback,
+                                              opts.feps, opts.zeps, 0 )
                 im = nm.searchsorted( alog[:,0], fmin )
                 # +1 due to fmax already inserted before.
-                log.insert( im+1, (fmin, meigs[0], meigs[-1] ) )
+                log.insert( im+1, trace_callback( fmin ) )
 
                 output( '...done' )
             elif smax == 1:
