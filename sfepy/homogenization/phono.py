@@ -20,11 +20,14 @@ class AcousticMassTensor( Struct ):
         dim = ema.shape[1]
         fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
 
+        de = (freq**2) - (eigs)
+        if not nm.isfinite( de ).all():
+            raise ValueError( 'frequency %e too close to resonance!' % freq )
+
         for ir in range( dim ):
             for ic in range( dim ):
                 if ir <= ic:
-                    val = nm.sum( ema[:,ir] * ema[:,ic] \
-                                  / ((freq**2) - (eigs)) )
+                    val = nm.sum( ema[:,ir] * ema[:,ic] / de )
                     fmass[ir,ic] += (freq**2) * val
                 else:
                     fmass[ir,ic] = fmass[ic,ir]
@@ -50,10 +53,13 @@ class AppliedLoadTensor( Struct ):
         dim = ema.shape[1]
         fload = nm.zeros( (dim, dim), dtype = nm.float64 )
 
+        de = (freq**2) - (eigs)
+        if not nm.isfinite( de ).all():
+            raise ValueError( 'frequency %e too close to resonance!' % freq )
+
         for ir in range( dim ):
             for ic in range( dim ):
-                val = nm.sum( ema[:,ir] * uema[:,ic]\
-                              / ((freq**2) - (self.eigs)) )
+                val = nm.sum( ema[:,ir] * uema[:,ic] / de )
                 fload[ir,ic] += (freq**2) * val
 
         eye = nm.eye( (dim, dim), dtype = nm.float64 )
@@ -65,7 +71,15 @@ class AppliedLoadTensor( Struct ):
 def get_callback( mass, method, christoffel = None, mode = 'trace' ):
     """
     Return callback to solve band gaps or dispersion eigenproblem P.
-    
+
+    Find zero callbacks return:
+      eigenvalues
+
+    Trace callbacks return:
+      (eigenvalues, )
+    or 
+      (eigenvalues, eigenvectors) (in full (dispoersion) mode)
+
     If christoffel is None, P is
       M w = \lambda w,
     otherwise it is
@@ -82,13 +96,13 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
 
     def trace_callback( f ):
         meigs = eig( mass( f ), eigenvectors = False, method = method )
-        return [f, meigs[0], meigs[-1]]
+        return meigs,
 
     def trace_full_callback( f ):
         meigs, mvecs = eig( (f**2) * mass( f ), mtx_b = christoffel,
                             eigenvectors = True, method = method )
         
-        return [f, meigs[0], meigs[-1]]
+        return meigs, mvecs
 
     if christoffel is not None:
         mode += '_full'
@@ -415,8 +429,6 @@ def find_zero( f0, f1, callback, feps, zeps, mode ):
         else:
             fm = f
 
-##
-# c: 27.09.2007, r: 08.04.2008
 def describe_gaps( gaps ):
     kinds = []
     for ii, (gmin, gmax) in enumerate( gaps ):
@@ -435,15 +447,11 @@ def describe_gaps( gaps ):
         elif (gmin[0] == 0) and (gmax[0] == 0):
             kind = ('swp', 'strong band gap + weak band gap + propagation zone')
         else:
-            output( 'impossible band gap combination:' )
-            output( gmin, gmax )
-            raise ValueError
+            msg = 'impossible band gap combination: %d, %d' % (gmin, gmax)
+            raise ValueError( msg )
         kinds.append( kind )
     return kinds
 
-##
-# created:       01.10.2007
-# last revision: 13.12.2007
 def transform_plot_data( datas, plot_tranform, funmod ):
     if plot_tranform is not None:
         fun = getattr( funmod, plot_tranform[0] )
@@ -453,9 +461,9 @@ def transform_plot_data( datas, plot_tranform, funmod ):
     for data in datas:
         tdata = data.copy()
         if plot_tranform is not None:
-            tdata[:,1:] = fun( tdata[:,1:], *plot_tranform[1:] )
-        dmin = min( dmin, tdata[:,1:].min() )
-        dmax = max( dmax, tdata[:,1:].max() )
+            tdata = fun( tdata, *plot_tranform[1:] )
+        dmin = min( dmin, tdata.min() )
+        dmax = max( dmax, tdata.max() )
         tdatas.append( tdata )
     dmin, dmax = min( dmax - 1e-8, dmin ), max( dmin + 1e-8, dmax )
     return (dmin, dmax), tdatas
@@ -502,7 +510,7 @@ def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
     return fig 
 
 def plot_logs( fig_num, plot_rsc,
-               logs, valid, freq_range, plot_range, squared,
+               freqs, logs, valid, freq_range, plot_range, squared,
                draw_eigs = True, show_legend = True, show = False,
                clear = False, new_axes = False ):
     """
@@ -521,13 +529,13 @@ def plot_logs( fig_num, plot_rsc,
     if draw_eigs:
         aux = plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range )
 
-    for log in logs:
-        l1 = ax.plot( log[:,0], log[:,1], **plot_rsc['eig_min'] )
-        l2 = ax.plot( log[:,0], log[:,2], **plot_rsc['eig_max'] )
+    for ii, log in enumerate( logs ):
+        l1 = ax.plot( freqs[ii], log[:,0], **plot_rsc['eig_min'] )
+        l2 = ax.plot( freqs[ii], log[:,-1], **plot_rsc['eig_max'] )
     l1[0].set_label( 'min eig($M^*$)' )
     l2[0].set_label( 'max eig($M^*$)' )
 
-    fmin, fmax = logs[0][0,0], logs[-1][-1,0]
+    fmin, fmax = freqs[0][0], freqs[-1][-1]
     ax.plot( [fmin, fmax], [0, 0], **plot_rsc['x_axis'] )
 
     if squared:
@@ -721,9 +729,6 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
     output( 'freq. range with margins: [%8.3f, %8.3f]'\
             % (min_freq, max_freq) )
 
-    logs = []
-    gaps = []
-
     df = opts.freq_step * (max_freq - min_freq)
     valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
@@ -733,41 +738,63 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
                                 christoffel = christoffel, mode = 'find_zero' )
     trace_callback = get_callback( mass, method,
                                    christoffel = christoffel, mode = 'trace' )
+
+    n_col = 1 + (christoffel is not None)
+    logs = [[] for ii in range( n_col + 1 )]
+    gaps = []
+
     for ii in xrange( freq_info.freq_range.shape[0] + 1 ):
 
         f0, f1 = fm[[ii, ii+1]]
         output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
 
-        log = []
-        num = min( 1000, max( 20, (f1 - f0) / df ) )
-        log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
-        for f in log_freqs:
-            log.append( trace_callback( f ) )
-
-        log0, log1 = log[0], log[-1]
-        if log0[1] > 0.0: # No gaps.
-            gap = ([2, f0, log0[1]], [2, f0, log0[2]])
-        elif log1[2] < 0.0: # Full interval strong gap.
-            gap = ([1, f1, log1[1]], [1, f1, log1[2]])
+        f_delta = f1 - f0
+        f_mid = 0.5 * (f0 + f1)
+        if (f1 - f0) > (2.0 * opts.feps):
+            num = min( 1000, max( 20, (f1 - f0) / df ) )
+            log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         else:
-            # Insert fmin, fmax into log.
-            alog = nm.array( log )
+            log_freqs = nm.array( [f_mid - 1e-8 * f_delta,
+                                   f_mid + 1e-8 * f_delta] )
+        log_mevp = [[] for ii in range( n_col )]
+        for f in log_freqs:
+            for ii, data in enumerate( trace_callback( f ) ):
+                log_mevp[ii].append( data )
 
+        # Get log for the first and last f in log_freqs.
+        lf0 = log_freqs[0]
+        lf1 = log_freqs[-1]
+
+        log0, log1 = log_mevp[0][0], log_mevp[0][-1]
+        min_eig0 = log0[0]
+        max_eig1 = log1[-1]
+        if min_eig0 > 0.0: # No gaps.
+            gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
+        elif max_eig1 < 0.0: # Full interval strong gap.
+            gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
+        else:
+            llog_freqs = list( log_freqs )
+            
+            # Insert fmin, fmax into log.
             output( 'finding zero of the largest eig...' )
-            smax, fmax, vmax = find_zero( f0, f1, fz_callback,
+            smax, fmax, vmax = find_zero( lf0, lf1, fz_callback,
                                           opts.feps, opts.zeps, 1 )
-            im = nm.searchsorted( alog[:,0], fmax )
-            log.insert( im, trace_callback( fmax ) )
+            im = nm.searchsorted( log_freqs, fmax )
+            llog_freqs.insert( im, fmax )
+            for ii, data in enumerate( trace_callback( fmax ) ):
+                log_mevp[ii].insert( im, data )
 
             output( '...done' )
             if smax in [0, 2]:
                 output( 'finding zero of the smallest eig...' )
                 # having fmax instead of f0 does not work if feps is large.
-                smin, fmin, vmin = find_zero( f0, f1, fz_callback,
+                smin, fmin, vmin = find_zero( lf0, lf1, fz_callback,
                                               opts.feps, opts.zeps, 0 )
-                im = nm.searchsorted( alog[:,0], fmin )
+                im = nm.searchsorted( log_freqs, fmin )
                 # +1 due to fmax already inserted before.
-                log.insert( im+1, trace_callback( fmin ) )
+                llog_freqs.insert( im+1, fmin )
+                for ii, data in enumerate( trace_callback( fmin ) ):
+                    log_mevp[ii].insert( im+1, data )
 
                 output( '...done' )
             elif smax == 1:
@@ -775,17 +802,22 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
                 fmin, vmin = fmax, vmax
 
             gap = ([smin, fmin, vmin], [smax, fmax, vmax])
-            
+
+            log_freqs = nm.array( llog_freqs )
 
         output( gap[0] )
         output( gap[1] )
 #        pause()
         gaps.append( gap )
-        logs.append( nm.array( log, dtype = nm.float64 ) )
+
+        logs[0].append( log_freqs )
+        for ii, data in enumerate( log_mevp ):
+            logs[ii+1].append( nm.array( data, dtype = nm.float64 ) )
+
         output( '...done' )
 
     kinds = describe_gaps( gaps )
-    
+
     return Struct( logs = logs, gaps = gaps, kinds = kinds,
                    valid = valid, eig_range = slice( *opts.eig_range ),
                    n_eigs = eigs.shape[0], n_zeroed = n_zeroed,

@@ -53,7 +53,7 @@ class AcousticBandGapsApp( SimpleApp ):
                                    self.conf.options, self.conf.funmod )
 
             if options.plot:
-                plot_range, tlogs = transform_plot_data( bg.logs,
+                plot_range, teigs = transform_plot_data( bg.logs[1],
                                                          bg.opts.plot_tranform,
                                                          self.conf.funmod )
 
@@ -65,7 +65,8 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
+                fig = plot_logs( 1, plot_rsc, bg.logs[0], teigs,
+                                 bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
                                  show = plot_opts['show'],
@@ -97,8 +98,8 @@ class AcousticBandGapsApp( SimpleApp ):
                                    christoffel = christoffel )
             if options.plot:
                 # This will change...
-                plot_range, tlogs = transform_plot_data( bg.logs,
-                                                         None,
+                plot_range, teigs = transform_plot_data( bg.logs[1],
+                                                         bg.opts.plot_tranform,
                                                          self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
@@ -109,7 +110,8 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, tlogs, bg.valid[bg.eig_range],
+                fig = plot_logs( 1, plot_rsc, bg.logs[0], teigs,
+                                 bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
                                  show = plot_opts['show'],
