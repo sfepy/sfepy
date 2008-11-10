@@ -381,6 +381,24 @@ def compute_cat( mtx_d, iw_dir ):
 
     return cat
 
+def compute_polarization_angles( iw_dir, wave_vectors ):
+    """Computes angle between incident wave direction `iw_dir` and wave
+    vectors. Vector length does not matter (can use eigenvectors directly)."""
+    pas = []
+
+    iw_dir = iw_dir / nla.norm( iw_dir )
+    idims = range( iw_dir.shape[0] )
+    for vecs in wave_vectors:
+        pa = nm.empty( vecs.shape[:-1], dtype = nm.float64 )
+        for ir, vec in enumerate( vecs ):
+            for ic in idims:
+                vv = vec[:,ic]
+                pa[ir,ic] = nm.arccos( nm.dot( iw_dir, vv ) / nla.norm( vv ) )
+
+        pas.append( pa )
+
+    return pas
+
 def find_zero( f0, f1, callback, feps, zeps, mode ):
     """
     For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
@@ -751,11 +769,14 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
         f_delta = f1 - f0
         f_mid = 0.5 * (f0 + f1)
         if (f1 - f0) > (2.0 * opts.feps):
-            num = min( 1000, max( 20, (f1 - f0) / df ) )
+            num = min( 1000, max( 100, (f1 - f0) / df ) )
             log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         else:
             log_freqs = nm.array( [f_mid - 1e-8 * f_delta,
                                    f_mid + 1e-8 * f_delta] )
+
+        output( 'n_logged: %d' % log_freqs.shape[0] )
+
         log_mevp = [[] for ii in range( n_col )]
         for f in log_freqs:
             for ii, data in enumerate( trace_callback( f ) ):

@@ -11,7 +11,8 @@ from sfepy.base.la import eig
 from sfepy.fem import eval_term_op, ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import process_options, get_method,\
-     transform_plot_data, plot_logs, plot_gaps, detect_band_gaps, compute_cat
+     transform_plot_data, plot_logs, plot_gaps, detect_band_gaps, compute_cat,\
+     compute_polarization_angles
 from sfepy.homogenization.utils import create_pis
 from sfepy.homogenization.coefs import CorrectorsRS, CoefE
 from sfepy.applications import SimpleApp
@@ -96,11 +97,17 @@ class AcousticBandGapsApp( SimpleApp ):
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
                                    self.conf.options, self.conf.funmod,
                                    christoffel = christoffel )
+
+            output( 'computing polarization angles...' )
+            pas = compute_polarization_angles( iw_dir, bg.logs[2] )
+            output( '...done' )
+
+            bg.polarization_angles = pas
+
             if options.plot:
-                # This will change...
-                plot_range, teigs = transform_plot_data( bg.logs[1],
-                                                         bg.opts.plot_tranform,
-                                                         self.conf.funmod )
+                plot_range, pas = transform_plot_data( pas,
+                                                       bg.opts.plot_tranform,
+                                                       self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
@@ -110,7 +117,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, bg.logs[0], teigs,
+                fig = plot_logs( 1, plot_rsc, bg.logs[0], pas,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
