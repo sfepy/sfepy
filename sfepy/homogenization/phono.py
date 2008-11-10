@@ -770,7 +770,11 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
         f_mid = 0.5 * (f0 + f1)
         if (f1 - f0) > (2.0 * opts.feps):
             num = min( 1000, max( 100, (f1 - f0) / df ) )
-            log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
+            a = nm.linspace( 0., 1., num )
+            log_freqs = f0 + opts.feps \
+                        + 0.5 * (nm.sin( (a - 0.5) * nm.pi ) + 1.0) \
+                        * (f1 - f0 - 2.0 * opts.feps)
+#            log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
         else:
             log_freqs = nm.array( [f_mid - 1e-8 * f_delta,
                                    f_mid + 1e-8 * f_delta] )
