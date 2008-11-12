@@ -23,7 +23,6 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
 from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
-from sfepy.homogenization.phono import process_options
 from sfepy.solvers import Solver
 
 ##
@@ -160,17 +159,17 @@ def solve_eigen_problem_n( conf, options ):
     vec_nr2 = vec_n * r
 
     n_eigs = eigs.shape[0]
-    opts = process_options( conf.options, n_eigs )
 
     mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
                        dtype = nm.float64 )
     for ii in xrange( n_eigs ):
         mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
 
+    save = get_default_attr( conf.options, 'save_eig_vectors', None )
     out = {}
     for ii in xrange( n_eigs ):
-        if opts.save is not None:
-            if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
+        if save is not None:
+            if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
         aux = pb.state_to_output( mtx_phi[:,ii] )
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
@@ -276,17 +275,17 @@ def solve_eigen_problem1( conf, options ):
 ##     plu.pylab.show()
 ##     pause()
     n_eigs = eigs.shape[0]
-    opts = process_options( conf.options, n_eigs )
 
     mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
                        dtype = nm.float64 )
     for ii in xrange( n_eigs ):
         mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
 
+    save = get_default_attr( conf.options, 'save_eig_vectors', None )
     out = {}
     for ii in xrange( n_eigs ):
-        if opts.save is not None:
-            if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
+        if save is not None:
+            if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
         aux = pb.state_to_output( mtx_phi[:,ii] )
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
