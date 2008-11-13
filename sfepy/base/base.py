@@ -500,6 +500,10 @@ def dict_extend( d1, d2 ):
     for key, val in d1.iteritems():
         val.extend( d2[key] )
 
+def set_defaults( dict_, defaults ):
+    for key, val in defaults.iteritems():
+        dict_.setdefault( key, val )
+
 ##
 # c: 12.03.2007, r: 04.04.2008
 def get_default( arg, default, msg_if_none = None ):
