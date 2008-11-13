@@ -109,131 +109,6 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
 
     return eval( mode + '_callback' )
 
-def process_options( options, n_eigs ):
-    try:
-        save = options.save_eig_vectors
-    except:
-        save = (n_eigs, n_eigs)
-
-    try:
-        eig_range = options.eig_range
-        if eig_range[-1] < 0:
-            eig_range[-1] += n_eigs + 1
-    except:
-        eig_range = (0, n_eigs)
-    assert_( eig_range[0] < (eig_range[1] - 1) )
-    assert_( eig_range[1] <= n_eigs )
-    
-    try:
-        freq_margins = 0.01 * nm.array( options.freq_margins, dtype = nm.float64 )
-    except:
-        freq_margins = nm.array( (0.05, 0.05), dtype = nm.float64 )
-
-    try:
-        fixed_eig_range = options.fixed_eig_range
-    except:
-        fixed_eig_range = None
-
-    try:
-        freq_step = 0.01 * options.freq_step
-    except:
-        freq_step = 0.05
-
-    try:
-        feps = options.feps
-    except:
-        feps = 1e-8
-
-    try:
-        zeps = options.zeps
-    except:
-        zeps = 1e-8
-
-    try:
-        teps = options.teps
-    except:
-        teps = 1e-4
-
-    try:
-        teps_rel = options.teps_rel
-    except:
-        teps_rel = True
-
-    try:
-        eig_vector_transform = options.eig_vector_transform
-    except:
-        eig_vector_transform = None
-
-    try:
-        plot_tranform = options.plot_tranform
-    except:
-        plot_tranform = None
-
-    try:
-        plot_options = options.plot_options
-    except:
-        plot_options = {
-            'show' : True,
-            'legend' : False,
-        }
-
-    try:
-        fig_name = options.fig_name
-    except:
-        fig_name = None
-
-    default_plot_rsc =  {
-        'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
-        'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
-        'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
-        'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--' },
-        'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-' },
-        'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
-        'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
-        'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
-        'params' : {'axes.labelsize': 'large',
-                    'text.fontsize': 'large',
-                    'legend.fontsize': 'large',
-                    'xtick.labelsize': 'large',
-                    'ytick.labelsize': 'large',
-                    'text.usetex': False},
-    }
-    try:
-        plot_rsc = options.plot_rsc
-        # Missing values are set to default.
-        for key, val in default_plot_rsc.iteritems():
-            if not key in plot_rsc:
-                plot_rsc[key] = val
-    except:
-        plot_rsc = default_plot_rsc
-    del default_plot_rsc
-
-    try:
-        eigenmomentum = options.eigenmomentum
-    except:
-        raise ValueError( 'missing key "eigenmomentum" in options!' )
-
-    try:
-        region_to_material = options.region_to_material
-    except:
-        raise ValueError( 'missing key "region_to_material" in options!' )
-
-    try:
-        volume = options.volume
-    except:
-        raise ValueError( 'missing key "volume" in options!' )
-    
-    return Struct( **locals() )
-
-##
-# c: 08.04.2008, r: 08.04.2008
-def get_method( options ):
-    if hasattr( options, 'method' ):
-        method = options.method
-    else:
-        method = 'eig.sgscipy'
-    return method
-
 def compute_density_volume_info( pb, volume_term, region_to_material ):
     """Computes volumes, densities of regions specified in
     `region_to_material`, average density and total volume."""
@@ -470,16 +345,16 @@ def describe_gaps( gaps ):
         kinds.append( kind )
     return kinds
 
-def transform_plot_data( datas, plot_tranform, funmod ):
-    if plot_tranform is not None:
-        fun = getattr( funmod, plot_tranform[0] )
+def transform_plot_data( datas, plot_transform, funmod ):
+    if plot_transform is not None:
+        fun = getattr( funmod, plot_transform[0] )
 
     dmin, dmax = 1e+10, -1e+10
     tdatas = []
     for data in datas:
         tdata = data.copy()
-        if plot_tranform is not None:
-            tdata = fun( tdata, *plot_tranform[1:] )
+        if plot_transform is not None:
+            tdata = fun( tdata, *plot_transform[1:] )
         dmin = min( dmin, tdata.min() )
         dmax = max( dmax, tdata.max() )
         tdatas.append( tdata )
@@ -726,7 +601,7 @@ def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
 
     return dv_info, eigenmomenta, n_zeroed, valid, freq_info
     
-def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
+def detect_band_gaps( pb, eigs, eig_vectors, opts, funmod,
                       christoffel = None ):
     """Detect band gaps given solution to eigenproblem (eigs,
     eig_vectors). Only valid resonance frequencies (e.i. those for which
@@ -735,9 +610,7 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
 
     ??? make feps relative to ]f0, f1[ size ???
     """
-    opts = process_options( options, eigs.shape[0] )
-    method = get_method( options )
-    output( 'method:', method )
+    output( 'eigensolver:', opts.eigensolver )
 
     aux = setup_band_gaps( pb, eigs, eig_vectors, opts, funmod )
     dv_info, eigenmomenta, n_zeroed, valid, freq_info = aux
@@ -752,9 +625,9 @@ def detect_band_gaps( pb, eigs, eig_vectors, options, funmod,
     valid_eigs = eigs[valid]
 
     mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
-    fz_callback = get_callback( mass, method,
+    fz_callback = get_callback( mass, opts.eigensolver,
                                 christoffel = christoffel, mode = 'find_zero' )
-    trace_callback = get_callback( mass, method,
+    trace_callback = get_callback( mass, opts.eigensolver,
                                    christoffel = christoffel, mode = 'trace' )
 
     n_col = 1 + (christoffel is not None)

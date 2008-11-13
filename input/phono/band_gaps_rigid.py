@@ -55,9 +55,9 @@ options = {
     'teps_rel' : True, # eigenmomentum threshold is relative w.r.t. largest one
     'freq_step' : 0.02, # in percent of freq_range
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
-#    'plot_tranform' : ('clip', (-20, 20)),
-    'plot_tranform' : ('normalize', (-2, 2)),
-#    'plot_tranform' : None,
+#    'plot_transform' : ('clip', (-20, 20)),
+    'plot_transform' : ('normalize', (-2, 2)),
+#    'plot_transform' : None,
 
     #############################################
 #    'parametric_hook' : 'vary_y3_size',

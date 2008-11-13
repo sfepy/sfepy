@@ -10,9 +10,8 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
 from sfepy.fem import eval_term_op, ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
-from sfepy.homogenization.phono import process_options, get_method,\
-     transform_plot_data, plot_logs, plot_gaps, detect_band_gaps, compute_cat,\
-     compute_polarization_angles
+from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
+     plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
 from sfepy.homogenization.utils import create_pis
 from sfepy.homogenization.coefs import CorrectorsRS, CoefE
 from sfepy.applications import SimpleApp
@@ -30,12 +29,96 @@ def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
 
 class AcousticBandGapsApp( SimpleApp ):
 
+    def process_options( options ):
+        """Application options setup. Sets default values for missing
+        non-compulsory options."""
+        eigensolver = get_default_attr( options, 'eigensolver', 'eig.sgscipy' )
+        eig_problem = get_default_attr( options, 'eig_problem', 'simple' )
+        schur = get_default_attr( options, 'schur', None )
+        dispersion_conf = get_default_attr( options, 'dispersion_conf', None )
+
+        save = get_default_attr( options, 'save_eig_vectors', (0, 0) )
+        eig_range = get_default_attr( options, 'eig_range', None )
+
+        freq_margins = get_default_attr( options, 'freq_margins', (5, 5) )
+        # Given in per cent.
+        freq_margins = 0.01 * nm.array( freq_margins, dtype = nm.float64 )
+
+        fixed_eig_range = get_default_attr( options, 'fixed_eig_range', None )
+
+        # Given in per cent.
+        freq_step = 0.01 * get_default_attr( options, 'freq_step', 5 )
+
+        feps = get_default_attr( options, 'feps', 1e-8 )
+        zeps = get_default_attr( options, 'zeps', 1e-8 )
+        teps = get_default_attr( options, 'teps', 1e-4 )
+        teps_rel = get_default_attr( options, 'teps_rel', True )
+
+        incident_wave_dir = get_default_attr( options, 'incident_wave_dir',
+                                              None )
+
+        eig_vector_transform = get_default_attr( options,
+                                                 'eig_vector_transform', None )
+        plot_transform = get_default_attr( options, 'plot_transform', None )
+
+        plot_options = get_default_attr( options, 'plot_options',
+                                         {'show' : True,'legend' : False,} )
+
+        fig_name = get_default_attr( options, 'fig_name', None )
+
+        default_plot_rsc =  {
+            'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
+            'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
+            'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
+            'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--' },
+            'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-' },
+            'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
+            'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
+            'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
+            'params' : {'axes.labelsize': 'large',
+                        'text.fontsize': 'large',
+                        'legend.fontsize': 'large',
+                        'xtick.labelsize': 'large',
+                        'ytick.labelsize': 'large',
+                        'text.usetex': False},
+        }
+        try:
+            plot_rsc = options.plot_rsc
+            # Missing values are set to default.
+            for key, val in default_plot_rsc.iteritems():
+                if not key in plot_rsc:
+                    plot_rsc[key] = val
+        except:
+            plot_rsc = default_plot_rsc
+        del default_plot_rsc
+
+        try:
+            eigenmomentum = options.eigenmomentum
+        except:
+            raise ValueError( 'missing key "eigenmomentum" in options!' )
+
+        try:
+            region_to_material = options.region_to_material
+        except:
+            raise ValueError( 'missing key "region_to_material" in options!' )
+
+        try:
+            volume = options.volume
+        except:
+            raise ValueError( 'missing key "volume" in options!' )
+
+        post_process_hook = get_default_attr( options,
+                                              'post_process_hook', None )
+
+        return Struct( **locals() )
+    process_options = staticmethod( process_options )
+
     def __init__( self, conf, options, output_prefix, **kwargs ):
         SimpleApp.__init__( self, conf, options, output_prefix,
                             init_equations = False )
 
-        opts = conf.options
-        post_process_hook = get_default_attr( opts, 'post_process_hook', None )
+        self.app_options = AcousticBandGapsApp.process_options( conf.options )
+        post_process_hook = self.app_options.post_process_hook
         if post_process_hook is not None:
             post_process_hook = getattr( conf.funmod, post_process_hook )
 
@@ -44,18 +127,20 @@ class AcousticBandGapsApp( SimpleApp ):
         output_dir = self.problem.output_dir
         shutil.copyfile( conf._filename,
                          op.join( output_dir, op.basename( conf._filename ) ) )
-        
+    
     def call( self ):
         options = self.options
         evp = self.solve_eigen_problem()
 
+        self.fix_eig_range( evp.eigs.shape[0] )
+
         if options.detect_band_gaps:
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
-                                   self.conf.options, self.conf.funmod )
+                                   self.app_options, self.conf.funmod )
 
             if options.plot:
                 plot_range, teigs = transform_plot_data( bg.logs[1],
-                                                         bg.opts.plot_tranform,
+                                                         bg.opts.plot_transform,
                                                          self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
@@ -81,8 +166,8 @@ class AcousticBandGapsApp( SimpleApp ):
         elif options.analyze_dispersion:
             dim = self.problem.domain.mesh.dim
 
-            opts = self.conf.options
-            iw_dir = nm.array( opts.incident_wave_dir, dtype = nm.float64 )
+            iw_dir = nm.array( self.app_options.incident_wave_dir,
+                               dtype = nm.float64 )
             assert_( dim == iw_dir.shape[0] )
 
             iw_dir = iw_dir / nla.norm( iw_dir )
@@ -95,7 +180,7 @@ class AcousticBandGapsApp( SimpleApp ):
             print christoffel
             
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
-                                   self.conf.options, self.conf.funmod,
+                                   self.app_options, self.conf.funmod,
                                    christoffel = christoffel )
 
             output( 'computing polarization angles...' )
@@ -106,7 +191,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
             if options.plot:
                 plot_range, pas = transform_plot_data( pas,
-                                                       bg.opts.plot_tranform,
+                                                       bg.opts.plot_transform,
                                                        self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
@@ -130,6 +215,15 @@ class AcousticBandGapsApp( SimpleApp ):
                     fig.savefig( fig_name )
 
         return evp, bg
+
+    def fix_eig_range( self, n_eigs ):
+        eig_range = get_default( self.app_options.eig_range, (0, n_eigs) )
+        if eig_range[-1] < 0:
+            eig_range[-1] += n_eigs + 1
+
+        assert_( eig_range[0] < (eig_range[1] - 1) )
+        assert_( eig_range[1] <= n_eigs )
+        self.app_options.eig_range = eig_range
     
     def solve_eigen_problem( self, ofn_trunk = None, post_process_hook = None ):
 
@@ -141,7 +235,7 @@ class AcousticBandGapsApp( SimpleApp ):
  
         conf = self.conf
         
-        eig_problem = get_default_attr( conf.options, 'eig_problem', 'simple' )
+        eig_problem = self.app_options.eig_problem
         if eig_problem == 'simple':
             problem.set_equations( conf.equations )
 
@@ -191,7 +285,7 @@ class AcousticBandGapsApp( SimpleApp ):
             mtx_m = mtx_m.toarray()
 
         eigs, mtx_s_phi = eig( mtx_a, mtx_m, return_time = tt,
-                               method = get_method( conf.options ) )
+                               method = self.app_options.eigensolver )
         output( '...done in %.2f s' % tt[0] )
         output( eigs )
         output( 'number of frequencies: %d' % eigs.shape[0] )
@@ -207,7 +301,6 @@ class AcousticBandGapsApp( SimpleApp ):
 ##         debug()
 
         n_eigs = eigs.shape[0]
-        opts = process_options( conf.options, n_eigs )
 
         mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
                            dtype = nm.float64 )
@@ -220,7 +313,7 @@ class AcousticBandGapsApp( SimpleApp ):
             
         elif eig_problem == 'schur':
             # Update also eliminated variables.
-            schur = conf.options.schur
+            schur = self.app_options.schur
             primary_var = schur['primary_var']
             eliminated_var = schur['eliminated_var']
 
@@ -238,9 +331,10 @@ class AcousticBandGapsApp( SimpleApp ):
             indx = problem.variables.get_indx( primary_var )
             eig_vectors = mtx_phi[indx,:]
 
+        save = self.app_options.save
         out = {}
         for ii in xrange( n_eigs ):
-            if (ii > opts.save[0]) and (ii < (n_eigs - opts.save[1])): continue
+            if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
             aux = problem.state_to_output( mtx_phi[:,ii] )
             for name, val in aux.iteritems():
                 out[name+'%03d' % ii] = val
@@ -258,7 +352,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
 
     def eval_coef_e( self ):
-        dconf_raw = self.conf.options.dispersion_conf
+        dconf_raw = self.app_options.dispersion_conf
         dconf = ProblemConf.from_dict( *dconf_raw )
 
         dconf.materials = self.conf.materials

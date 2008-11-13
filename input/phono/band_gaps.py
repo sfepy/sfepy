@@ -15,17 +15,17 @@ geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 options = {
     'save_eig_vectors' : (10, 0),
-    'eig_range' : (0, 30), # -> freq_range = eigs[slice(*eig_range)][[0, -1]]
+    'eig_range' : (0, 10), # -> freq_range = eigs[slice(*eig_range)][[0, -1]]
     'freq_margins' : (10, 10), # % of freq_range
 
-    'feps' : 1e-10, # frequency
+    'feps' : 1e-12, # frequency
     'zeps' : 1e-12, # zero finding
-    'teps' : 1e-1, # eigenmomentum threshold
+    'teps' : 1e-2, # eigenmomentum threshold
     'teps_rel' : True, # eigenmomentum threshold is relative w.r.t. largest one
-    'freq_step' : 0.01, # % of freq_range
+    'freq_step' : 0.0001, # % of freq_range
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
-#    'plot_tranform' : ('clip', (-20, 20)),
-    'plot_tranform' : ('normalize', (-1, 1)),
+#    'plot_transform' : ('clip', (-20, 20)),
+#    'plot_transform' : ('normalize', (-2, 2)),
 
     'output_dir' : os.path.join( cwd, 'output/' ),
 
