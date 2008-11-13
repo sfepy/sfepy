@@ -25,7 +25,7 @@ options = {
     'freq_step' : 0.0001, # % of freq_range
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
 #    'plot_transform' : ('clip', (-20, 20)),
-#    'plot_transform' : ('normalize', (-2, 2)),
+    'plot_transform' : ('normalize', (-2, 2)),
 
     'output_dir' : os.path.join( cwd, 'output/' ),
 
@@ -50,14 +50,25 @@ options = {
     'incident_wave_dir' : [1.0, 1.0],
     'dispersion_conf' : (coefs.define_input( filename_mesh, dim, geom ), coefs),
 
+    'plot_options' : {
+        'show' : True,
+        'legend' : True,
+    },
     'plot_rsc' : {
+        'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--'},
+        'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-'},
         'params' : {'axes.labelsize': 'large',
                     'text.fontsize': 'large',
                     'legend.fontsize': 'large',
                     'xtick.labelsize': 'large',
                     'ytick.labelsize': 'large',
                     'text.usetex': False},
-    }
+    },
+##     'plot_labels' : {
+##         'eig_min' : 'dir min eig',
+##         'eig_max' : 'dir max eig',
+##         'y_axis' : 'polarization angle',
+##     }
 }
 
 regions = {

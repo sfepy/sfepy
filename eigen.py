@@ -66,6 +66,20 @@ class AcousticBandGapsApp( SimpleApp ):
 
         fig_name = get_default_attr( options, 'fig_name', None )
 
+        default_plot_labels = {
+            'resonance' : 'eigenfrequencies',
+            'masked' : 'masked eigenfrequencies',
+            'eig_min' : 'min eig($M^*$)',
+            'eig_max' : 'max eig($M^*$)',
+            'y_axis' : 'eigenvalues of mass matrix $M^*$',
+        }
+        try:
+            plot_labels = options.plot_labels
+            set_defaults( plot_labels, default_plot_labels )
+        except:
+            plot_labels = default_plot_labels
+        del default_plot_labels
+
         default_plot_rsc =  {
             'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
             'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
@@ -84,10 +98,7 @@ class AcousticBandGapsApp( SimpleApp ):
         }
         try:
             plot_rsc = options.plot_rsc
-            # Missing values are set to default.
-            for key, val in default_plot_rsc.iteritems():
-                if not key in plot_rsc:
-                    plot_rsc[key] = val
+            set_defaults( plot_rsc, default_plot_rsc )
         except:
             plot_rsc = default_plot_rsc
         del default_plot_rsc
@@ -145,13 +156,14 @@ class AcousticBandGapsApp( SimpleApp ):
 
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
+                plot_labels =  bg.opts.plot_labels
                 
                 pylab.rcParams.update( plot_rsc['params'] )
 
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, bg.logs[0], teigs,
+                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs[0], teigs,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
@@ -196,13 +208,14 @@ class AcousticBandGapsApp( SimpleApp ):
 
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
+                plot_labels =  bg.opts.plot_labels
                 
                 pylab.rcParams.update( plot_rsc['params'] )
 
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, bg.logs[0], pas,
+                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs[0], pas,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,

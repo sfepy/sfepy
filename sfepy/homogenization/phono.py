@@ -361,7 +361,7 @@ def transform_plot_data( datas, plot_transform, funmod ):
     dmin, dmax = min( dmax - 1e-8, dmin ), max( dmin + 1e-8, dmax )
     return (dmin, dmax), tdatas
 
-def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
+def plot_eigs( fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
                show = False, clear = False, new_axes = False ):
     """
     Plot resonance/eigen-frequencies.
@@ -390,9 +390,9 @@ def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
             l1 = ax.plot( [f, f], plot_range, **plot_rsc['masked'] )[0]
  
     if l0:
-        l0.set_label( 'eigenfrequencies' )
+        l0.set_label( plot_labels['resonance'] )
     if l1:
-        l1.set_label( 'masked eigenfrequencies' )
+        l1.set_label( plot_labels['masked'] )
 
     if new_axes:
         ax.set_xlim( [freq_range[0], freq_range[-1]] )
@@ -402,7 +402,7 @@ def plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range,
         pylab.show()
     return fig 
 
-def plot_logs( fig_num, plot_rsc,
+def plot_logs( fig_num, plot_rsc, plot_labels,
                freqs, logs, valid, freq_range, plot_range, squared,
                draw_eigs = True, show_legend = True, show = False,
                clear = False, new_axes = False ):
@@ -420,13 +420,14 @@ def plot_logs( fig_num, plot_rsc,
         ax = fig.gca()
 
     if draw_eigs:
-        aux = plot_eigs( fig_num, plot_rsc, valid, freq_range, plot_range )
+        aux = plot_eigs( fig_num, plot_rsc, plot_labels, valid, freq_range,
+                         plot_range )
 
     for ii, log in enumerate( logs ):
         l1 = ax.plot( freqs[ii], log[:,0], **plot_rsc['eig_min'] )
         l2 = ax.plot( freqs[ii], log[:,-1], **plot_rsc['eig_max'] )
-    l1[0].set_label( 'min eig($M^*$)' )
-    l2[0].set_label( 'max eig($M^*$)' )
+    l1[0].set_label( plot_labels['eig_min'] )
+    l2[0].set_label( plot_labels['eig_max'] )
 
     fmin, fmax = freqs[0][0], freqs[-1][-1]
     ax.plot( [fmin, fmax], [0, 0], **plot_rsc['x_axis'] )
@@ -435,7 +436,8 @@ def plot_logs( fig_num, plot_rsc,
         ax.set_xlabel( r'$\lambda$, $\omega^2$' )
     else:
         ax.set_xlabel( r'$\sqrt{\lambda}$, $\omega$' )
-    ax.set_ylabel( r'eigenvalues of mass matrix $M^*$' )
+
+    ax.set_ylabel( plot_labels['y_axis'] )
 
     if new_axes:
         ax.set_xlim( [fmin, fmax] )
@@ -448,8 +450,8 @@ def plot_logs( fig_num, plot_rsc,
         pylab.show()
     return fig
     
-def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range, plot_range,
-               show = False, clear = False, new_axes = False ):
+def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
+               plot_range, show = False, clear = False, new_axes = False ):
     """ """
     if pylab is None: return
 
