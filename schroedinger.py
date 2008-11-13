@@ -169,7 +169,7 @@ def solve_eigen_problem_n( conf, options ):
     out = {}
     for ii in xrange( n_eigs ):
         if save is not None:
-            if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
+            if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
         aux = pb.state_to_output( mtx_phi[:,ii] )
         key = aux.keys()[0]
         out[key+'%03d' % ii] = aux[key]
