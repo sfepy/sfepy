@@ -203,7 +203,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
             if options.plot:
                 plot_range, pas = transform_plot_data( pas,
-                                                       bg.opts.plot_transform,
+                                                       None,
                                                        self.conf.funmod )
 
                 plot_rsc = bg.opts.plot_rsc
@@ -216,6 +216,21 @@ class AcousticBandGapsApp( SimpleApp ):
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
                 fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs[0], pas,
+                                 bg.valid[bg.eig_range],
+                                 bg.freq_range_initial,
+                                 plot_range, False,
+                                 show = False,
+                                 show_legend = plot_opts['legend'],
+                                 new_axes = True )
+
+                plot_range, teigs = transform_plot_data( bg.logs[1],
+                                                         bg.opts.plot_transform,
+                                                         self.conf.funmod )
+
+                fig = plot_gaps( 2, plot_rsc, bg.gaps, bg.kinds,
+                                 bg.freq_range_margins, plot_range,
+                                 clear = True )
+                fig = plot_logs( 2, plot_rsc, plot_labels, bg.logs[0], teigs,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
