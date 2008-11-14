@@ -1,8 +1,9 @@
 from base import *
 
 try:
-    import pylab
     import matplotlib as mpl
+    mpl.use('GTKAgg')
+    import pylab
 except (ImportError, RuntimeError):
     pylab = None
     #print 'matplotlib import failed!'

@@ -1,6 +1,11 @@
 import threading
 import atexit
 
+try:
+    import processing as multiprocessing
+except ImportError:
+    multiprocessing = None
+
 ##
 # Extended from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222.
 # 22.03.2007, c
@@ -35,7 +40,7 @@ class TaskThread( threading.Thread ):
     
     def run(self):
         while 1:
-            if self.finished.is_set(): return
+            if self.finished.isSet(): return
 
             if self.can_run:
                 self.task()
@@ -52,34 +57,7 @@ class TaskThread( threading.Thread ):
     def off( self ):
         self.can_run = False
 
-if __name__ == '__main__':
-    import pylab
 
-    # Make a figure interactively, so that a window appears.
-    pylab.ion()
-    fig = pylab.figure()
-    pylab.ioff()
-
-    # Start the redrawing thread. The redrawing is switched off.
-    thread = TaskThread( fig.canvas.draw )
-    thread.start()
-
-    # Switch off the redrawing (no-operation here...)
-    thread.off()
-    # Make some plots.
-    ax = fig.add_subplot( 111 )
-    ax.plot( range( 10 ) )
-    # Switch on the redrawing.
-    thread.on()
-
-    # Do some work.
-    for ii in xrange( 10000000 ):
-        if not( ii % 1e5 ):
-            print 'heavy work!', ii
-
-    # Finish the thread.
-    thread.shutdown()
-    thread.join()
-
-    # Show() the figure.
-    pylab.show()
+if multiprocessing is not None:
+    Process = multiprocessing.Process
+    Queue = multiprocessing.Queue
