@@ -1,5 +1,5 @@
 from base import *
-from sfepy.base.tasks import Process, Queue
+from sfepy.base.tasks import Process, Queue, Empty
 from sfepy.base.plotutils import pylab
 
 if pylab:
@@ -7,6 +7,10 @@ if pylab:
     from matplotlib.ticker import LogLocator, AutoLocator, LogFormatter
 else:
     LogFormatter = object
+
+## def output( *argc, **argv ):
+##     from sfepy.base.base import output
+    
 
 class MyLogFormatter( LogFormatter ):
     def __call__( self, x, pos = None ):
@@ -28,27 +32,44 @@ class MyLogFormatter( LogFormatter ):
 
 class ProcessPlotter( Struct ):
 
+    def process_command( self, command ):
+        print command[0]
+
+        if command[0] == 'axes':
+            self.ca = self.ax[command[1]]
+        elif command[0] == 'plot':
+            self.ca.cla()
+            self.ca.plot( command[1] )
+
+    def terminate( self ):
+        gobject.remove_source( self.gid )
+        pylab.close( 'all' )
+
     def poll_draw( self ):
 
         def call_back():
-#            gobject.timeout_add( 0, None )
+            ii = 0
+            while 1:
+                try:
+                    command = self.queue.get_nowait()
+                except Empty:
+                    break
 
-            command = self.queue.get()
-            print command[0]
+                if command is None:
+                    pylab.close( 'all' )
+                    output( 'ended.' )
+                    return False
+                else:
+                    self.process_command( command )
 
-            if command is None:
-                pylab.close( 'all' )
-                output( 'ended.' )
-                return False
-
-            elif command[0] == 'axes':
-                self.ca = self.ax[command[1]]
-            elif command[0] == 'plot':
-                self.ca.cla()
-                self.ca.plot( command[1] )
+                if ii >= 99:
+                    break
                 
+                ii += 1
+
             self.fig.canvas.draw()
- #           gobject.timeout_add( 100, self.poll_draw() )
+            output( 'processed %d commands' % ii )
+
             return True
 
         return call_back
@@ -69,9 +90,11 @@ class ProcessPlotter( Struct ):
             self.ax.append( self.fig.add_subplot( isub ) )
         self.ca = self.ax[0]
         
-        gobject.timeout_add( 100, self.poll_draw() )
+        self.gid = gobject.timeout_add( 100, self.poll_draw() )
 
         output( '...done' )
+
+        atexit.register( self.terminate )
 
         pylab.show()
 
@@ -109,6 +132,10 @@ class Log( Struct ):
             if kwargs.has_key( 'finished' ):
                 finished = kwargs['finished']
 
+        if finished:
+            self.terminate()
+            return
+
         yscales = self.yscales
                 
         ls = len( args ), self.n_arg
@@ -127,21 +154,26 @@ class Log( Struct ):
 
         if self.is_plot and (pylab is not None):
             if self.n_calls == 0:
+                atexit.register( self.terminate )
+
                 self.plot_queue = Queue()
                 self.plotter = ProcessPlotter()
                 self.plot_process = Process( target = self.plotter,
                                              args = (self.plot_queue,
                                                      self.n_gr) )
+                self.plot_process.daemon = True
                 self.plot_process.start()
 
             self.plot_data()
             
         self.n_calls += 1
 
-        print finished
-        if finished and self.is_plot and (pylab is not None):
+    def terminate( self ):
+        if self.is_plot and (pylab is not None):
             self.plot_queue.put( None )
             self.plot_process.join()
+            self.n_calls = 0
+            output( 'terminated' )
 
     def plot_data( self ):
 
@@ -149,7 +181,7 @@ class Log( Struct ):
         for ii, name in enumerate( self.seq_data_names ):
             try:
                 put( ['axes', self.igs[ii]] )
-                put( ['plot', self.data[name]] )
+                put( ['plot', nm.array( self.data[name] ) ] )
             except:
                 put( None )
                 self.plot_process.join()

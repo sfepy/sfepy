@@ -2,7 +2,7 @@ import threading
 import atexit
 
 try:
-    import processing as multiprocessing
+    import multiprocessing
 except ImportError:
     multiprocessing = None
 
@@ -59,5 +59,6 @@ class TaskThread( threading.Thread ):
 
 
 if multiprocessing is not None:
+    from Queue import Empty
     Process = multiprocessing.Process
     Queue = multiprocessing.Queue
