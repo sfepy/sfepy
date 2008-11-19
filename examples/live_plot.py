@@ -9,13 +9,15 @@ def main():
 
     log_conf = {
         'is_plot' : True,
+        'aggregate' : 200,
+        'yscales' : ['linear', 'log'],
     }
 
-    log = Log.from_conf( log_conf, (['sin(x)'],) )
+    log = Log.from_conf( log_conf, (['sin( x )', 'cos( x )'],['exp( x )']) )
 
     for x in nm.linspace( 0, 4.0 * nm.pi, 200 ):
         output( 'x: ', x )
-        log( nm.sin( x ) )
+        log( nm.sin( x ), nm.cos( x ), nm.exp( x ) )
 
     print log
     pause()
