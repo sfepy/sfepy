@@ -1,7 +1,7 @@
 # c: 14.12.2007, r: 03.11.2008
 import os
 import numpy as nm
-from sfepy.base.base import output, set_output_prefix, pause, debug, Struct
+from sfepy.base.base import output, default_printer, pause, debug, Struct
 from sfepy.fem import MeshIO
 from gen_mesh import gen_concentric
 
@@ -331,7 +331,7 @@ def vary_teps( problem ):
     """Vary eigenmomentum threshold."""
     from sfepy.solvers.ts import get_print_info
 
-    set_output_prefix( 'vary_teps:' )
+    default_printer.prefix = 'vary_teps:'
 
     if tepss_g is None:
         tepss = nm.logspace( -3, -1, 11 )
@@ -371,7 +371,7 @@ def vary_y3_size( problem ):
     from sfepy.fem import ProblemDefinition
     from sfepy.solvers.ts import get_print_info
     
-    set_output_prefix( 'vary_y3_size:' )
+    default_printer.prefix = 'vary_y3_size:'
 
     y3_diameters = [0.2, 0.25, 0.3, 0.35, 0.4]
     if diameters_g is None:

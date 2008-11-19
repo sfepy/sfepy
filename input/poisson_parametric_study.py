@@ -21,7 +21,7 @@ problem. However, the approach below is much more general.
 """
 import os
 import numpy as nm
-from sfepy.base.base import output, set_output_prefix, pause, debug
+from sfepy.base.base import output, default_printer, pause, debug
 
 # Mesh.
 filename_mesh = 'database/square_circ.vtk'
@@ -151,7 +151,7 @@ def vary_omega1_size( problem ):
     from sfepy.fem import ProblemDefinition
     from sfepy.solvers.ts import get_print_info
     
-    set_output_prefix( 'vary_omega1_size:' )
+    default_printer.prefix = 'vary_omega1_size:'
 
     diameters = nm.linspace( 0.1, 0.6, 7 ) + 0.001
     ofn_trunk, output_format = problem.ofn_trunk, problem.output_format

@@ -44,29 +44,6 @@ def import_file( filename ):
     mod = __import__( name )
     return mod
 
-##
-# c: 02.04.2008, r: 02.04.2008
-prefix = 'sfepy:'
-def set_output_prefix( prefix  = 'sfepy:' ):
-    globals()['prefix'] = prefix
-def get_output_prefix():
-    return prefix
-
-##
-# c: 05.06.2006, r: 02.04.2008
-level = 0
-def output( *argc, **argv ):
-    global level
-    format = ' %s' * len( argc )
-    msg =  format % argc
-
-    if msg.startswith( ' ...' ):
-        level -= 1
-
-    print prefix + ('  ' * level) + msg
-
-    if msg.endswith( '...' ):
-        level += 1
 
 def assert_( condition ):
     if not condition:
@@ -361,27 +338,40 @@ class OneTypeList( list ):
     def get_names( self ):
         return [ii.name for ii in self]
 
-##
-# 08.03.2005, c
-# 06.10.2005
-# 11.10.2005
-# 17.10.2005
-## def print_mem_stats():
-##     import ccore
-##     modules = [ii.__name__ for ii in vars( ccore ).values()
-##                if (type( ii ) == type( ccore ))]
-##     modules = sorted( [ii for ii in modules if '_' not in ii] )
 
-##     fd = open( 'memory.log', 'w' )
-##     for module in modules:
-##         fd.write( '*** ' + module + ':\n' )
-##         try:
-##             sys.modules[module].mem_print( fd, 0 )
-##         except:
-##             pass
+class Output( Struct ):
+    """Factory class providing output (print) functions."""
 
-##     fd.close()
-## atexit.register( print_mem_stats  )
+    def __init__( self, prefix, **kwargs ):
+        Struct.__init__( self, **kwargs )
+
+        self.prefix = prefix
+
+    def set_output_prefix( self, prefix ):
+        assert_( isinstance( prefix, str ) )
+        self._prefix = prefix
+        
+    def get_output_prefix( self ):
+        return self._prefix
+    prefix = property( get_output_prefix, set_output_prefix )
+
+    def get_output_function( self ):
+        self.level = 0
+        def output( *argc, **argv ):
+            format = ' %s' * len( argc )
+            msg =  format % argc
+
+            if msg.startswith( ' ...' ):
+                self.level -= 1
+
+            print self.prefix + ('  ' * self.level) + msg
+
+            if msg.endswith( '...' ):
+                self.level += 1
+        return output
+
+default_printer = Output( 'sfepy:' )
+output = default_printer.get_output_function()
 
 ##
 # 19.07.2005, c

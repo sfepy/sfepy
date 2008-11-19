@@ -1,5 +1,5 @@
-from sfepy.base.base import Struct, insert_as_static_method, get_output_prefix, \
-     set_output_prefix, pause, debug
+from sfepy.base.base import Struct, insert_as_static_method, default_printer, \
+     pause, debug
 
 class Application( Struct ):
     """Base class for applications.
@@ -13,7 +13,7 @@ class Application( Struct ):
                          conf = conf,
                          options = options,
                          output_prefix = output_prefix )
-	set_output_prefix( self.output_prefix )
+	default_printer.prefix = self.output_prefix
         self.restore()
         
     def __call__( self ):
@@ -36,10 +36,10 @@ class Application( Struct ):
                 mode = 'simple'
             self.problem = problem
 
-            generator_prefix = get_output_prefix()
-            set_output_prefix( self.output_prefix ) # Restore default.
+            generator_prefix = default_printer.prefix
+            default_printer.prefix = self.output_prefix # Restore default.
             out = self.call()
-            set_output_prefix( generator_prefix )
+            default_printer.prefix = generator_prefix
 
             if mode == 'coroutine':
                 # Pass application output to the generator.
