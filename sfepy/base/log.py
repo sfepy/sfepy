@@ -132,10 +132,15 @@ class Log( Struct ):
                 obj.seq_data_names.append( name )
         obj.n_arg = len( obj.igs )
         obj.n_gr = len( obj.data_names )
-        
-        obj.is_plot = conf.get( 'is_plot', True )
-        obj.yscales = conf.get( 'yscales', ['linear'] * obj.n_arg )
-        obj.aggregate = conf.get( 'aggregate', 100 )
+
+        if isinstance( conf, dict ):
+            get = conf.get
+        else:
+            get = conf.get_default_attr
+
+        obj.is_plot = get( 'is_plot', True )
+        obj.yscales = get( 'yscales', ['linear'] * obj.n_arg )
+        obj.aggregate = get( 'aggregate', 100 )
 
         return obj
     from_conf = staticmethod( from_conf )
