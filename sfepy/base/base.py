@@ -180,7 +180,11 @@ class Struct( object ):
     def to_dict( self ):
         return copy( self.__dict__ )
 
-##
+    def get_default_attr( self, key, default = None ):
+        """Behaves like dict.get()"""
+        return get_default_attr( self, key, default )
+
+#
 # 12.07.2007, c
 class IndexedStruct( Struct ):
 
