@@ -340,7 +340,16 @@ class OneTypeList( list ):
 
 
 class Output( Struct ):
-    """Factory class providing output (print) functions."""
+    """Factory class providing output (print) functions.
+
+    Example:
+
+    >>> printer = Output( 'sfepy:' )
+    >>> output = printer.get_output_function()
+    >>> output( 1, 2, 3, 'hello' )
+    >>> printer.prefix = 'my_cool_app:'
+    >>> output( 1, 2, 3, 'hello' )
+    """
 
     def __init__( self, prefix, **kwargs ):
         Struct.__init__( self, **kwargs )
@@ -355,9 +364,9 @@ class Output( Struct ):
         return self._prefix
     prefix = property( get_output_prefix, set_output_prefix )
 
-    def get_output_function( self ):
+    def get_output_function( self, filename = None ):
         self.level = 0
-        def output( *argc, **argv ):
+        def output_screen( *argc, **argv ):
             format = ' %s' * len( argc )
             msg =  format % argc
 
@@ -368,7 +377,28 @@ class Output( Struct ):
 
             if msg.endswith( '...' ):
                 self.level += 1
-        return output
+
+        def output_file( *argc, **argv ):
+            format = ' %s' * len( argc )
+            msg =  format % argc
+
+            if msg.startswith( ' ...' ):
+                self.level -= 1
+
+            fd = open( filename, 'a' )
+            print >>fd, self.prefix + ('  ' * self.level) + msg
+            fd.close()
+
+            if msg.endswith( '...' ):
+                self.level += 1
+
+        if filename is None:
+            return output_screen
+
+        else:
+            fd = open( filename, 'w' )
+            fd.close()
+            return output_file
 
 default_printer = Output( 'sfepy:' )
 output = default_printer.get_output_function()
