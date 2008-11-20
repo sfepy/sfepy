@@ -3,7 +3,7 @@ from sfepy.base.base import *
 ##
 # c: 28.02.2007, r: 13.02.2008
 def build_op_pi( var_name, problem, ir, ic ):
-    """\Pi^{rs}_i = \delta_{ri} y_s. """
+    """\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""
     var = problem.variables[var_name]
     coor = var.field.get_coor()[:,:-1]
 
@@ -14,6 +14,7 @@ def build_op_pi( var_name, problem, ir, ic ):
     return pi
 
 def create_pis( problem, var_name ):
+    """\Pi_i^{rs} = y_s \delta_{ir}, \ul{y} \in Y coordinates."""
     problem.select_variables( [var_name] )
 
     dim = problem.domain.mesh.dim
@@ -22,6 +23,18 @@ def create_pis( problem, var_name ):
         for ic in range( dim ):
             pi = build_op_pi( var_name, problem, ir, ic )
             pis[ir,ic] = pi
+    return pis
+
+def create_scalar_pis( problem, var_name ):
+    """\Pi^k = y_k, \ul{y} \in Y coordinates."""
+    problem.select_variables( [var_name] )
+    var = problem.variables[var_name]
+    coor = var.field.get_coor()[:,:-1]
+
+    dim = problem.domain.mesh.dim
+    pis = nm.zeros( (dim,), dtype = nm.object )
+    for ir in range( dim ):
+        pis[ir] = coor[:,ir]
     return pis
 
 def iter_sym( dim ):
