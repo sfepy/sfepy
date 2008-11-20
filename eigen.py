@@ -27,6 +27,15 @@ def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
                             file_per_var = file_per_var )
     return save_phono_correctors
 
+def try_set_defaults( obj, attr, defaults ):
+    try:
+        values = getattr( obj, attr )
+        set_defaults( values, defaults )
+    except:
+        values = defaults
+    return values
+    
+
 class AcousticBandGapsApp( SimpleApp ):
 
     def process_options( options ):
@@ -68,21 +77,34 @@ class AcousticBandGapsApp( SimpleApp ):
 
         fig_name = get( 'fig_name', None )
 
-        default_plot_labels = {
+        aux = {
             'resonance' : 'eigenfrequencies',
             'masked' : 'masked eigenfrequencies',
             'eig_min' : 'min eig($M^*$)',
             'eig_max' : 'max eig($M^*$)',
             'y_axis' : 'eigenvalues of mass matrix $M^*$',
         }
-        try:
-            plot_labels = options.plot_labels
-            set_defaults( plot_labels, default_plot_labels )
-        except:
-            plot_labels = default_plot_labels
-        del default_plot_labels
+        plot_labels = try_set_defaults( options, 'plot_labels', aux )
 
-        default_plot_rsc =  {
+        aux = {
+            'resonance' : 'eigenfrequencies',
+            'masked' : 'masked eigenfrequencies',
+            'eig_min' : r'$\kappa$(min)',
+            'eig_max' : r'$\kappa$(max)',
+            'y_axis' : 'polarization angles',
+        }
+        plot_labels_angle = try_set_defaults( options, 'plot_labels', aux )
+
+        aux = {
+            'resonance' : 'eigenfrequencies',
+            'masked' : 'masked eigenfrequencies',
+            'eig_min' : r'wave number (min)',
+            'eig_max' : r'wave number (max)',
+            'y_axis' : 'wave numbers',
+        }
+        plot_labels_wave = try_set_defaults( options, 'plot_labels', aux )
+
+        plot_rsc =  {
             'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
             'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
             'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
@@ -98,12 +120,7 @@ class AcousticBandGapsApp( SimpleApp ):
                         'ytick.labelsize': 'large',
                         'text.usetex': False},
         }
-        try:
-            plot_rsc = options.plot_rsc
-            set_defaults( plot_rsc, default_plot_rsc )
-        except:
-            plot_rsc = default_plot_rsc
-        del default_plot_rsc
+        plot_rsc = try_set_defaults( options, 'plot_rsc', plot_rsc )
 
         try:
             eigenmomentum = options.eigenmomentum
@@ -210,7 +227,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
-                plot_labels =  bg.opts.plot_labels
+                plot_labels =  bg.opts.plot_labels_angle
                 
                 pylab.rcParams.update( plot_rsc['params'] )
 
@@ -229,7 +246,9 @@ class AcousticBandGapsApp( SimpleApp ):
                                            bg.opts.plot_transform_wave,
                                            self.conf.funmod )
                 plot_range, teigs = aux
-                
+
+                plot_labels =  bg.opts.plot_labels_wave
+
                 fig = plot_gaps( 2, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
