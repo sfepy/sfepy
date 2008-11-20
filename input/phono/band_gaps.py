@@ -1,4 +1,4 @@
-# c: 25.09.2007, r: 07.11.2008
+# c: 25.09.2007, r: 20.11.2008
 import os
 import numpy as nm
 from sfepy.fem import MeshIO
@@ -24,8 +24,9 @@ options = {
     'teps_rel' : True, # eigenmomentum threshold is relative w.r.t. largest one
     'freq_step' : 0.0001, # % of freq_range
 #    'eig_vector_transform' : ('select_in_plane', 'z', 1e-1),
-    'plot_transform' : ('clip_sqrt', (-200, 200)),
-#    'plot_transform' : ('normalize', (-2, 2)),
+    'plot_transform_angle' : None,
+    'plot_transform_wave' : ('clip_sqrt', (0, 30)),
+    'plot_transform' : ('normalize', (-2, 2)),
 
     'output_dir' : os.path.join( cwd, 'output/' ),
 
@@ -52,7 +53,7 @@ options = {
 
     'plot_options' : {
         'show' : True,
-        'legend' : False,
+        'legend' : True,
     },
     'plot_rsc' : {
         'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--'},
@@ -64,11 +65,6 @@ options = {
                     'ytick.labelsize': 'large',
                     'text.usetex': False},
     },
-##     'plot_labels' : {
-##         'eig_min' : 'dir min eig',
-##         'eig_max' : 'dir max eig',
-##         'y_axis' : 'polarization angle',
-##     }
 }
 
 regions = {

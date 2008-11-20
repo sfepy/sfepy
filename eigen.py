@@ -32,39 +32,41 @@ class AcousticBandGapsApp( SimpleApp ):
     def process_options( options ):
         """Application options setup. Sets default values for missing
         non-compulsory options."""
-        eigensolver = get_default_attr( options, 'eigensolver', 'eig.sgscipy' )
-        eig_problem = get_default_attr( options, 'eig_problem', 'simple' )
-        schur = get_default_attr( options, 'schur', None )
-        dispersion_conf = get_default_attr( options, 'dispersion_conf', None )
+        get = options.get_default_attr
+        
+        eigensolver = get( 'eigensolver', 'eig.sgscipy' )
+        eig_problem = get( 'eig_problem', 'simple' )
+        schur = get( 'schur', None )
+        dispersion_conf = get( 'dispersion_conf', None )
 
-        save = get_default_attr( options, 'save_eig_vectors', (0, 0) )
-        eig_range = get_default_attr( options, 'eig_range', None )
+        save = get( 'save_eig_vectors', (0, 0) )
+        eig_range = get( 'eig_range', None )
 
-        freq_margins = get_default_attr( options, 'freq_margins', (5, 5) )
+        freq_margins = get( 'freq_margins', (5, 5) )
         # Given in per cent.
         freq_margins = 0.01 * nm.array( freq_margins, dtype = nm.float64 )
 
-        fixed_eig_range = get_default_attr( options, 'fixed_eig_range', None )
+        fixed_eig_range = get( 'fixed_eig_range', None )
 
         # Given in per cent.
-        freq_step = 0.01 * get_default_attr( options, 'freq_step', 5 )
+        freq_step = 0.01 * get( 'freq_step', 5 )
 
-        feps = get_default_attr( options, 'feps', 1e-8 )
-        zeps = get_default_attr( options, 'zeps', 1e-8 )
-        teps = get_default_attr( options, 'teps', 1e-4 )
-        teps_rel = get_default_attr( options, 'teps_rel', True )
+        feps = get( 'feps', 1e-8 )
+        zeps = get( 'zeps', 1e-8 )
+        teps = get( 'teps', 1e-4 )
+        teps_rel = get( 'teps_rel', True )
 
-        incident_wave_dir = get_default_attr( options, 'incident_wave_dir',
-                                              None )
+        incident_wave_dir = get( 'incident_wave_dir', None )
 
-        eig_vector_transform = get_default_attr( options,
-                                                 'eig_vector_transform', None )
-        plot_transform = get_default_attr( options, 'plot_transform', None )
+        eig_vector_transform = get( 'eig_vector_transform', None )
+        plot_transform = get( 'plot_transform', None )
+        plot_transform_wave = get( 'plot_transform_wave', None )
+        plot_transform_angle = get( 'plot_transform_angle', None )
 
-        plot_options = get_default_attr( options, 'plot_options',
+        plot_options = get( 'plot_options',
                                          {'show' : True,'legend' : False,} )
 
-        fig_name = get_default_attr( options, 'fig_name', None )
+        fig_name = get( 'fig_name', None )
 
         default_plot_labels = {
             'resonance' : 'eigenfrequencies',
@@ -118,8 +120,7 @@ class AcousticBandGapsApp( SimpleApp ):
         except:
             raise ValueError( 'missing key "volume" in options!' )
 
-        post_process_hook = get_default_attr( options,
-                                              'post_process_hook', None )
+        post_process_hook = get( 'post_process_hook', None )
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -202,10 +203,11 @@ class AcousticBandGapsApp( SimpleApp ):
             bg.polarization_angles = pas
 
             if options.plot:
-                plot_range, pas = transform_plot_data( pas,
-                                                       None,
-                                                       self.conf.funmod )
-
+                aux = transform_plot_data( pas,
+                                           bg.opts.plot_transform_angle,
+                                           self.conf.funmod )
+                plot_range, pas = aux
+                
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
                 plot_labels =  bg.opts.plot_labels
@@ -223,10 +225,11 @@ class AcousticBandGapsApp( SimpleApp ):
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
-                plot_range, teigs = transform_plot_data( bg.logs[1],
-                                                         bg.opts.plot_transform,
-                                                         self.conf.funmod )
-
+                aux = transform_plot_data( bg.logs[1],
+                                           bg.opts.plot_transform_wave,
+                                           self.conf.funmod )
+                plot_range, teigs = aux
+                
                 fig = plot_gaps( 2, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
