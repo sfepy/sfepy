@@ -81,8 +81,8 @@ class ProcessPlotter( Struct ):
 
                 self.ii += 1
 
-            self.fig.canvas.draw()
             if self.ii:
+                self.fig.canvas.draw()
                 self.output( 'processed %d commands' % self.ii )
 
             return True
