@@ -21,6 +21,7 @@ import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import eig
+from sfepy.base.log import Log
 from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
 from sfepy.solvers import Solver
@@ -57,7 +58,8 @@ def wrap_function( function, args ):
 itercount = 0
 ##
 # c: 22.02.2008, r: 03.03.2008
-def iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b, n_electron = 5 ):
+def iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b, log,
+             n_electron = 5 ):
     global itercount
     itercount += 1
     from sfepy.physics import dft
@@ -110,12 +112,14 @@ def iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b, n_electron = 5 ):
     #sphere = eval_term_op( dummy, conf.equations['sphere'], pb)
     #print sphere
 
+    norm = nla.norm( vec_vh + vec_vxc )
+    log( norm, norm )
+
     return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
 
 ##
 # c: 01.02.2008, r: 03.03.2008
 def solve_eigen_problem_n( conf, options ):
-
 
     pb = ProblemDefinition.from_conf( conf )
     dim = pb.domain.mesh.dim
@@ -144,16 +148,32 @@ def solve_eigen_problem_n( conf, options ):
 ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
 
+    if options.plot:
+        log_conf = {
+            'is_plot' : True,
+            'aggregate' : 1,
+            'yscales' : ['linear', 'log'],
+        }
+    else:
+        log_conf = {
+            'is_plot' : False,
+        }
+    log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)|$']) )
+
     eig_conf = pb.get_solver_conf( conf.options.eigen_solver )
     eig_solver = Solver.any_from_conf( eig_conf )
     vec_vhxc = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
-    ncalls, times, nonlin_v = wrap_function( iterate,
-                                           (pb, conf, eig_solver, n_eigs, mtx_b) )
-
+    aux = wrap_function( iterate,
+                         (pb, conf, eig_solver, n_eigs, mtx_b, log) )
+    ncalls, times, nonlin_v = aux
     vec_vhxc = broyden3( nonlin_v, vec_vhxc, verbose = True )
     out = iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b )
     eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
 
+    if options.plot:
+        log( finished = True )
+        pause()
+        
     coor = pb.domain.get_mesh_coors()
     r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
     vec_nr2 = vec_n * r
@@ -330,6 +350,7 @@ help = {
     "mesh": "creates a mesh",
     "dim": "Create a 2D mesh, instead of the default 3D",
     "dft": "Do a DFT calculation",
+    "plot": "plot convergence of DFT iterations (with --dft)",
 }
 
 ##
@@ -363,6 +384,9 @@ def main():
     parser.add_option( "--dft",
                        action = "store_true", dest = "dft",
                        default = False, help = help['dft'] )
+    parser.add_option( "-p", "--plot",
+                       action = "store_true", dest = "plot",
+                       default = False, help = help['plot'] )
 
     options, args = parser.parse_args()
 
@@ -454,6 +478,10 @@ def main():
     conf = ProblemConf.from_file( filename_in, required, other )
 
     if options.dft:
+        if options.plot:
+            from sfepy.base.plotutils import pylab
+            options.plot = pylab is not None
+            
         evp = solve_eigen_problem_n( conf, options )
     else:
         evp = solve_eigen_problem1( conf, options )
