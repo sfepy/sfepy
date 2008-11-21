@@ -122,15 +122,24 @@ class Log( Struct ):
     ProcessPlotter."""
 
     def from_conf( conf, data_names ):
+        """`data_names` ... tuple of names grouped by subplots:
+                            ([name1, name2, ...], [name3, name4, ...], ...)
+        where name<n> are strings to display in (sub)plot legends."""
+        if not isinstance( data_names, tuple ):
+            data_names = (data_names,)
+
         obj = Log( data_names = data_names, seq_data_names = [], igs = [],
                    data = {}, n_calls = 0 )
-        
+
+        ii = 0
         for ig, names in enumerate( obj.data_names ):
             for name in names:
-                obj.data[name] = []
+                obj.data[name + ('%d' % ii)] = []
                 obj.igs.append( ig )
                 obj.seq_data_names.append( name )
+                ii += 1
         obj.n_arg = len( obj.igs )
+            
         obj.n_gr = len( obj.data_names )
 
         if isinstance( conf, dict ):
@@ -157,7 +166,8 @@ class Log( Struct ):
 
         ls = len( args ), self.n_arg
         if ls[0] != ls[1]:
-            raise IndexError, '%d == %d' % ls
+            msg = 'log called with wrong number of arguments! (%d == %d)' % ls
+            raise IndexError( msg )
 
         for ii, name in enumerate( self.seq_data_names ):
             aux = args[ii]
@@ -167,7 +177,7 @@ class Log( Struct ):
                     aux = aux[0]
                 else:
                     raise ValueError, 'can log only scalars (%s)' % aux
-            self.data[name].append( aux )
+            self.data[name + ('%d' % ii)].append( aux )
 
         if self.is_plot and (pylab is not None):
             if self.n_calls == 0:
@@ -202,9 +212,9 @@ class Log( Struct ):
         for ii, name in enumerate( self.seq_data_names ):
             try:
                 put( ['iseq', ii] )
-                put( ['plot', nm.array( self.data[name] ) ] )
+                put( ['plot', nm.array( self.data[name + ('%d' % ii)] ) ] )
             except:
-                print ii, name, self.data[name]
+                print ii, name, self.data[name + ('%d' % ii)]
                 raise
         put( ['legends'] )
         put( ['continue'] )
