@@ -47,7 +47,10 @@ class AcousticBandGapsApp( SimpleApp ):
         eig_problem = get( 'eig_problem', 'simple' )
         schur = get( 'schur', None )
         dispersion_conf = get( 'dispersion_conf', None )
-
+        if dispersion_conf:
+            file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
+        else: file_conf = None
+    
         save = get( 'save_eig_vectors', (0, 0) )
         eig_range = get( 'eig_range', None )
 
@@ -142,11 +145,38 @@ class AcousticBandGapsApp( SimpleApp ):
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
+    def process_options_pv( options ):
+        """Application options setup for phase velocity computation. Sets
+        default values for missing non-compulsory options."""
+        get = options.get_default_attr
+        
+        eigensolver = get( 'eigensolver', 'eig.sgscipy' )
+
+        incident_wave_dir = get( 'incident_wave_dir', None )
+        dispersion_conf = get( 'dispersion_conf', None )
+        file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
+
+        try:
+            region_to_material = options.region_to_material
+        except:
+            raise ValueError( 'missing key "region_to_material" in options!' )
+
+        try:
+            volume = options.volume
+        except:
+            raise ValueError( 'missing key "volume" in options!' )
+
+        post_process_hook = get( 'post_process_hook', None )
+
+        return Struct( **locals() )
+    process_options_pv = staticmethod( process_options_pv )
+
     def __init__( self, conf, options, output_prefix, **kwargs ):
         SimpleApp.__init__( self, conf, options, output_prefix,
                             init_equations = False )
 
-        self.app_options = AcousticBandGapsApp.process_options( conf.options )
+        self.setup_options()
+        
         post_process_hook = self.app_options.post_process_hook
         if post_process_hook is not None:
             post_process_hook = getattr( conf.funmod, post_process_hook )
@@ -156,9 +186,25 @@ class AcousticBandGapsApp( SimpleApp ):
         output_dir = self.problem.output_dir
         shutil.copyfile( conf._filename,
                          op.join( output_dir, op.basename( conf._filename ) ) )
+
+    def setup_options( self ):
+        if self.options.phase_velocity:
+            process_options = AcousticBandGapsApp.process_options_pv
+        else:
+            process_options = AcousticBandGapsApp.process_options
+        self.app_options = process_options( self.conf.options )
     
     def call( self ):
+        """Application options have to be re-processed here to work with
+        paramtric hooks."""
+        self.setup_options()
+
         options = self.options
+
+        if options.phase_velocity:
+            # No band gaps in this case.
+            return self.compute_phase_velocity()
+
         evp = self.solve_eigen_problem()
 
         self.fix_eig_range( evp.eigs.shape[0] )
@@ -417,7 +463,7 @@ class AcousticBandGapsApp( SimpleApp ):
         req = dconf.requirements['corrs_phono_rs']
         solve_corrs = CorrectorsRS( dproblem, req )
 
-        fc = self.conf.options.file_conf
+        fc = self.app_options.file_conf
         save_hook = make_save_hook( dproblem.ofn_trunk + fc['corrs_rs'],
                                     self.post_process_hook )
         corrs_rs = solve_corrs( pis, save_hook = save_hook )
@@ -430,6 +476,39 @@ class AcousticBandGapsApp( SimpleApp ):
 
         return mtx
 
+    def compute_phase_velocity( self ):
+        from sfepy.homogenization.phono import compute_density_volume_info
+        opts = self.app_options
+        dim = self.problem.domain.mesh.dim
+
+        iw_dir = nm.array( opts.incident_wave_dir, dtype = nm.float64 )
+        assert_( dim == iw_dir.shape[0] )
+
+        iw_dir = iw_dir / nla.norm( iw_dir )
+
+        mtx_d = self.eval_coef_e( )
+        output( 'elastic tensor:' )
+        output( mtx_d )
+
+        christoffel = compute_cat( mtx_d, iw_dir )
+        output( 'incident wave direction:' )
+        output( iw_dir )
+        output( 'Christoffel acoustic tensor:' )
+        output( christoffel )
+
+        dv_info = compute_density_volume_info( self.problem, opts.volume,
+                                               opts.region_to_material )
+        output( 'average density:', dv_info.average_density )
+
+        eye = nm.eye( dim, dim, dtype = nm.float64 )
+        mtx_mass = eye * dv_info.average_density
+
+        meigs, mvecs = eig( mtx_mass, mtx_b = christoffel,
+                            eigenvectors = True, method = opts.eigensolver )
+        phase_velocity = nm.sqrt( meigs )
+
+        return phase_velocity
+    
 usage = """%prog [options] filename_in"""
 
 help = {
@@ -441,6 +520,8 @@ help = {
     'analyze dispersion properties (low frequency domain)',
     'plot' :
     'plot frequency band gaps, assumes -b',
+    'phase_velocity' :
+    'compute phase velocity (frequency-independet mass only)'
 }
 
 def main():
@@ -460,6 +541,9 @@ def main():
     parser.add_option( "-p", "--plot",
                        action = "store_true", dest = "plot",
                        default = False, help = help['plot'] )
+    parser.add_option( "--phase_velocity",
+                       action = "store_true", dest = "phase_velocity",
+                       default = False, help = help['phase_velocity'] )
 
     options, args = parser.parse_args()
     if options.plot:
@@ -477,6 +561,9 @@ def main():
 
     required, other = get_standard_keywords()
     required.remove( 'solver_[0-9]+|solvers' )
+    if options.phase_velocity:
+        required.remove( 'ebc_[0-9]+|ebcs' )
+        required.remove( 'equations' )
     conf = ProblemConf.from_file( filename_in, required, other )
 
     app = AcousticBandGapsApp( conf, options, 'eigen:' )
