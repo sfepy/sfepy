@@ -51,6 +51,10 @@ class ProcessPlotter( Struct ):
                 if self.xaxes[ig]:
                     self.ax[ig].set_xlabel( self.xaxes[ig] )
 
+        elif command[0] == 'save':
+            self.fig.savefig( command[1] )
+
+
     def terminate( self ):
         if self.ii:
             self.output( 'processed %d commands' % self.ii )
@@ -135,7 +139,7 @@ class Log( Struct ):
             data_names = (data_names,)
 
         obj = Log( data_names = data_names, seq_data_names = [], igs = [],
-                   data = {}, x_values = {}, n_calls = 0 )
+                   data = {}, x_values = {}, n_calls = 0, plot_queue = None )
 
         ii = 0
         for ig, names in enumerate( obj.data_names ):
@@ -165,12 +169,18 @@ class Log( Struct ):
     
     def __call__( self, *args, **kwargs ):
         finished = False
+        save_figure = ''
         x_values = None
         if kwargs:
             if 'finished' in kwargs:
                 finished = kwargs['finished']
+            if 'save_figure' in kwargs:
+                save_figure = kwargs['save_figure']
             if 'x' in kwargs:
                 x_values = kwargs['x']
+
+        if save_figure and (self.plot_queue is not None):
+            self.plot_queue.put( ['save', save_figure] )
 
         if finished:
             self.terminate()
