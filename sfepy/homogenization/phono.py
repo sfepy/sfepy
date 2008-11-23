@@ -118,7 +118,7 @@ def compute_density_volume_info( pb, volume_term, region_to_material ):
     densities = {}
     for region_name, mat_name in region_to_material.iteritems():
         mat = pb.materials[mat_name]
-        assert_( region_name == mat.region.name )
+#        assert_( region_name == mat.region.name )
         vol = eval_term_op( None, volume_term % region_name, pb )
         density = mat.get_data( region_name, mat.igs[0], 'density' )
         output( 'region %s: volume %f, density %f' % (region_name,
