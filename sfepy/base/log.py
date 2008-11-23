@@ -28,7 +28,7 @@ class ProcessPlotter( Struct ):
                 ax = self.ax[ig]
                 ax.set_yscale( self.yscales[ig] )
                 ax.yaxis.grid( True )
-                ax.plot( command[1] )
+                ax.plot( command[1], command[2] )
 
                 if self.yscales[ig] == 'log':
                     ymajor_formatter = ax.yaxis.get_major_formatter()
@@ -48,6 +48,8 @@ class ProcessPlotter( Struct ):
         elif command[0] == 'legends':
             for ig in range( self.n_gr ):
                 self.ax[ig].legend( self.data_names[ig] )
+                if self.xaxes[ig]:
+                    self.ax[ig].set_xlabel( self.xaxes[ig] )
 
     def terminate( self ):
         if self.ii:
@@ -89,7 +91,7 @@ class ProcessPlotter( Struct ):
 
         return call_back
     
-    def __call__( self, queue, data_names, igs, seq_data_names, yscales ):
+    def __call__( self, queue, data_names, igs, seq_data_names, yscales, xaxes ):
         """Sets-up the plotting window, sets GTK event loop timer callback to
         callback() returned by self.poll_draw(). The callback does the actual
         plotting, taking commands out of `queue`, and is called every second."""
@@ -101,6 +103,7 @@ class ProcessPlotter( Struct ):
         self.igs = igs
         self.seq_data_names = seq_data_names
         self.yscales = yscales
+        self.xaxes = xaxes
         self.n_gr = len( data_names )
 
         self.fig = pylab.figure()
@@ -117,6 +120,9 @@ class ProcessPlotter( Struct ):
 
         pylab.show()
 
+def name_to_key( name, ii ):
+    return name + (':%d' % ii)
+
 class Log( Struct ):
     """Log data and (optionally) plot them in the second process via
     ProcessPlotter."""
@@ -129,12 +135,14 @@ class Log( Struct ):
             data_names = (data_names,)
 
         obj = Log( data_names = data_names, seq_data_names = [], igs = [],
-                   data = {}, n_calls = 0 )
+                   data = {}, x_values = {}, n_calls = 0 )
 
         ii = 0
         for ig, names in enumerate( obj.data_names ):
+            obj.x_values[ig] = []
             for name in names:
-                obj.data[name + ('%d' % ii)] = []
+                key = name_to_key( name, ii )
+                obj.data[key] = []
                 obj.igs.append( ig )
                 obj.seq_data_names.append( name )
                 ii += 1
@@ -149,6 +157,7 @@ class Log( Struct ):
 
         obj.is_plot = get( 'is_plot', True )
         obj.yscales = get( 'yscales', ['linear'] * obj.n_arg )
+        obj.xaxes = get( 'xaxes', ['iteration'] * obj.n_arg )
         obj.aggregate = get( 'aggregate', 100 )
 
         return obj
@@ -156,9 +165,12 @@ class Log( Struct ):
     
     def __call__( self, *args, **kwargs ):
         finished = False
+        x_values = None
         if kwargs:
-            if kwargs.has_key( 'finished' ):
+            if 'finished' in kwargs:
                 finished = kwargs['finished']
+            if 'x' in kwargs:
+                x_values = kwargs['x']
 
         if finished:
             self.terminate()
@@ -177,7 +189,14 @@ class Log( Struct ):
                     aux = aux[0]
                 else:
                     raise ValueError, 'can log only scalars (%s)' % aux
-            self.data[name + ('%d' % ii)].append( aux )
+            key = name_to_key( name, ii )
+            self.data[key].append( aux )
+
+        for ig in range( self.n_gr ):
+            if (x_values is not None) and x_values[ig]:
+                self.x_values[ig].append( x_values[ig] )
+            else:
+                self.x_values[ig].append( self.n_calls )
 
         if self.is_plot and (pylab is not None):
             if self.n_calls == 0:
@@ -190,7 +209,8 @@ class Log( Struct ):
                                                      self.data_names,
                                                      self.igs,
                                                      self.seq_data_names,
-                                                     self.yscales) )
+                                                     self.yscales,
+                                                     self.xaxes) )
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
@@ -210,11 +230,14 @@ class Log( Struct ):
 
         put( ['clear'] )
         for ii, name in enumerate( self.seq_data_names ):
+            key = name_to_key( name, ii )
             try:
                 put( ['iseq', ii] )
-                put( ['plot', nm.array( self.data[name + ('%d' % ii)] ) ] )
+                put( ['plot',
+                      nm.array( self.x_values[self.igs[ii]] ),
+                      nm.array( self.data[key] )] )
             except:
-                print ii, name, self.data[name + ('%d' % ii)]
+                print ii, name, self.data[key]
                 raise
         put( ['legends'] )
         put( ['continue'] )
