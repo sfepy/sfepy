@@ -1,0 +1,15 @@
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+
+RELDISTFILES := $(DISTFILES)
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fpd $(DISTFILES) $(DESTDIR)
+
+reldist:
+	mkdir $(DESTDIR)
+	cp -fpd $(RELDISTFILES) $(DESTDIR)
