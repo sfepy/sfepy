@@ -12,6 +12,7 @@ def main():
         'aggregate' : 200,
         'yscales' : ['linear', 'log'],
         'xaxes' : ['angle', None],
+        'yaxes' : [None, 'a function'],
     }
 
     log = Log.from_conf( log_conf, (['sin( x )', 'cos( x )'],['exp( x )']) )

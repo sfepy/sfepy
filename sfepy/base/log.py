@@ -50,6 +50,8 @@ class ProcessPlotter( Struct ):
                 self.ax[ig].legend( self.data_names[ig] )
                 if self.xaxes[ig]:
                     self.ax[ig].set_xlabel( self.xaxes[ig] )
+                if self.yaxes[ig]:
+                    self.ax[ig].set_ylabel( self.yaxes[ig] )
 
         elif command[0] == 'save':
             self.fig.savefig( command[1] )
@@ -95,7 +97,8 @@ class ProcessPlotter( Struct ):
 
         return call_back
     
-    def __call__( self, queue, data_names, igs, seq_data_names, yscales, xaxes ):
+    def __call__( self, queue, data_names, igs, seq_data_names, yscales,
+                  xaxes, yaxes ):
         """Sets-up the plotting window, sets GTK event loop timer callback to
         callback() returned by self.poll_draw(). The callback does the actual
         plotting, taking commands out of `queue`, and is called every second."""
@@ -108,6 +111,7 @@ class ProcessPlotter( Struct ):
         self.seq_data_names = seq_data_names
         self.yscales = yscales
         self.xaxes = xaxes
+        self.yaxes = yaxes
         self.n_gr = len( data_names )
 
         self.fig = pylab.figure()
@@ -162,6 +166,7 @@ class Log( Struct ):
         obj.is_plot = get( 'is_plot', True )
         obj.yscales = get( 'yscales', ['linear'] * obj.n_arg )
         obj.xaxes = get( 'xaxes', ['iteration'] * obj.n_arg )
+        obj.yaxes = get( 'yaxes', [''] * obj.n_arg )
         obj.aggregate = get( 'aggregate', 100 )
 
         return obj
@@ -220,7 +225,7 @@ class Log( Struct ):
                                                      self.igs,
                                                      self.seq_data_names,
                                                      self.yscales,
-                                                     self.xaxes) )
+                                                     self.xaxes, self.yaxes) )
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
