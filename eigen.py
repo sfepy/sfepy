@@ -154,6 +154,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
         incident_wave_dir = get( 'incident_wave_dir', None )
         dispersion_conf = get( 'dispersion_conf', None )
+        homogeneous = get( 'homogeneous', False )
         file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
 
         try:
@@ -486,7 +487,15 @@ class AcousticBandGapsApp( SimpleApp ):
 
         iw_dir = iw_dir / nla.norm( iw_dir )
 
-        mtx_d = self.eval_coef_e( )
+        if opts.homogeneous:
+            rtm = opts.region_to_material
+            mat_region = rtm.keys()[0]
+            mat_name = rtm[mat_region]
+            
+            mat = self.problem.materials[mat_name]
+            mtx_d = mat.get_data( mat_region, 0, 'D' )
+        else:
+            mtx_d = self.eval_coef_e( )
         output( 'elastic tensor:' )
         output( mtx_d )
 
