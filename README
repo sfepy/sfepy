@@ -1,11 +1,15 @@
 See INSTALL for installation instructions.
 
 Documentation is in doc/sfepy_manual.pdf. It is automatically generated using
-the ./gen script. It depends on 'pexpect' and 'lxml' packages. If you want to
-update, or regenerate, the documentation and have the prerequisities installed,
-do "./gen".
+the ./gen script. To run the script 'pexpect' and 'lxml' packages are
+required. If you want to update, or regenerate, the documentation and have the
+prerequisities installed, do "$ ./gen".
 
-See also 'http://sfepy.org' or 'http://sfepy.kme.zcu.cz'.
+See also:
+ - 'http://sfepy.org' ... SfePy development (releases, mailing lists,
+                          issue tracking, mercurial repository, documentation,
+                          examples
+ - 'http://sfepy.kme.zcu.cz' ... projects solved within SfePy.
 
 License: BSD (http://www.opensource.org/licenses/bsd-license.php)
 
