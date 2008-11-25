@@ -514,7 +514,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
         meigs, mvecs = eig( mtx_mass, mtx_b = christoffel,
                             eigenvectors = True, method = opts.eigensolver )
-        phase_velocity = nm.sqrt( meigs )
+        phase_velocity = 1.0 / nm.sqrt( meigs )
 
         return phase_velocity
     
