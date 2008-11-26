@@ -462,17 +462,17 @@ class AcousticBandGapsApp( SimpleApp ):
         pis = create_pis( dproblem, req['variables'][0] )
 
         req = dconf.requirements['corrs_phono_rs']
-        solve_corrs = CorrectorsRS( dproblem, req )
+        solve_corrs = CorrectorsRS( 'steady rs correctors', dproblem, req )
 
         fc = self.app_options.file_conf
         save_hook = make_save_hook( dproblem.ofn_trunk + fc['corrs_rs'],
                                     self.post_process_hook )
-        corrs_rs = solve_corrs( pis, save_hook = save_hook )
+        corrs_rs = solve_corrs( data = pis, save_hook = save_hook )
 
         volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
 
         cargs = dconf.coefs['E']
-        get_coef = CoefE( dproblem, cargs )
+        get_coef = CoefE( 'homogenized elastic tensor', dproblem, cargs )
         mtx = get_coef( pis, corrs_rs, volume )
 
         return mtx

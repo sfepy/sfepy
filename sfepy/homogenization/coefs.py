@@ -3,40 +3,54 @@ from sfepy.fem import eval_term_op
 from utils import iter_sym
 
 class MiniAppBase( Struct ):
-    def __init__( self, problem, kwargs ):
-        Struct.__init__( self, problem = problem, **kwargs )
+    def __init__( self, name, problem, kwargs ):
+        Struct.__init__( self, name = name, problem = problem, **kwargs )
 
-class CorrectorsRS( MiniAppBase ):
+class CorrDimDim( MiniAppBase ):
+    """ __init__() kwargs:
+        {
+             'variables' : [],
+             'ebcs' : [],
+             'epbcs' : [],
+             'equations' : {},
+        },
+    """
 
-    def __call__( self, pis, problem = None, save_hook = None ):
+    def get_variables( self, ir, ic, data ):
+            raise StopIteration
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
         problem = get_default( problem, self.problem )
 
-        var_names = self.variables
-        pi_name = var_names[2]
-        problem.select_variables( var_names )
+        problem.select_variables( self.variables )
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
         dim = problem.domain.mesh.dim
-        states_rs = nm.zeros( (dim, dim), dtype = nm.object )
+        states = nm.zeros( (dim, dim), dtype = nm.object )
         for ir in range( dim ):
             for ic in range( dim ):
-                pi = pis[ir,ic]
-                problem.variables[pi_name].data_from_data( pi )
+                for name, val in self.get_variables( ir, ic, data ):
+                    problem.variables[name].data_from_data( val )
 
                 state = problem.create_state_vector()
                 problem.apply_ebc( state )
                 state = problem.solve()
                 assert_( problem.variables.has_ebc( state ) )
-                states_rs[ir,ic] = state
+                states[ir,ic] = state
 
                 if save_hook is not None:
                     save_hook( state, problem, ir, ic )
 
-        return Struct( name = 'Steady RS correctors',
-                       states_rs = states_rs,
+        return Struct( name = self.name,
+                       states = states,
                        di = problem.variables.di )
+
+class CorrectorsRS( CorrDimDim ):
+    def get_variables( self, ir, ic, data ):
+        """data: pis"""
+        yield (self.variables[2], data[ir,ic])
 
 class CoefE( MiniAppBase ):
 
@@ -54,12 +68,12 @@ class CoefE( MiniAppBase ):
         indx = corrs_rs.di.indx[u_name]
 
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-            omega1 = corrs_rs.states_rs[irr,icr][indx]
+            omega1 = corrs_rs.states[irr,icr][indx]
             pi1 = pis[irr,icr] + omega1
             problem.variables[var_names[0]].data_from_data( pi1 )
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                omega2 = corrs_rs.states_rs[irc,icc][indx]
+                omega2 = corrs_rs.states[irc,icc][indx]
                 pi2 = pis[irc,icc] + omega2
                 problem.variables[var_names[1]].data_from_data( pi2 )
 
