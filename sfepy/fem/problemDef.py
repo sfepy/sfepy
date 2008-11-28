@@ -347,6 +347,16 @@ class ProblemDefinition( Struct ):
         fea.set_mesh_coors( self.domain, self.fields, self.geometries,
                           coors, update_state )
 
+    def get_dim( self, get_sym = False ):
+        """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
+        True).
+        """
+        dim = self.domain.mesh.dim
+        if get_sym:
+            return dim, (dim + 1) * dim / 2
+        else:
+            return dim
+
     ##
     # c: 02.04.2008, r: 02.04.2008
     def init_time( self, ts ):
