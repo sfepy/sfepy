@@ -48,34 +48,30 @@ class CorrDimDim( MiniAppBase ):
                        di = problem.variables.di )
 
 class CorrectorsRS( CorrDimDim ):
+    """Steady state correctors $\bar{\omega}^{rs}$."""
+
     def get_variables( self, ir, ic, data ):
         """data: pis"""
         yield (self.variables[2], data[ir,ic])
 
-class CoefE( MiniAppBase ):
-
-    def __call__( self, pis, corrs_rs, volume, problem = None ):
+class CoefSymSym( MiniAppBase ):
+    
+    def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        var_names = self.variables
+        problem.select_variables( self.variables )
 
-        problem.select_variables( var_names )
-
-        dim = problem.domain.mesh.dim
-        sym = (dim + 1) * dim / 2
+        dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym, sym), dtype = nm.float64 )
 
-        u_name = problem.variables[var_names[0]].primary_var_name
-        indx = corrs_rs.di.indx[u_name]
-
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-            omega1 = corrs_rs.states[irr,icr][indx]
-            pi1 = pis[irr,icr] + omega1
-            problem.variables[var_names[0]].data_from_data( pi1 )
+            for name, val in self.get_variables( problem, irr, icr, data,
+                                                 'row' ):
+                problem.variables[name].data_from_data( val )
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                omega2 = corrs_rs.states[irc,icc][indx]
-                pi2 = pis[irc,icc] + omega2
-                problem.variables[var_names[1]].data_from_data( pi2 )
+                for name, val in self.get_variables( problem, irc, icc, data,
+                                                     'col' ):
+                    problem.variables[name].data_from_data( val )
 
                 val = eval_term_op( None, self.expression,
                                     problem, call_mode = 'd_eval' )
@@ -85,3 +81,20 @@ class CoefE( MiniAppBase ):
         coef /= volume
 
         return coef
+
+class ElasticCoef( CoefSymSym ):
+    """Homogenized elastic tensor $E_{ijkl}$."""
+
+    mode2var = {'row' : 0, 'col' : 1}
+
+    def get_variables( self, problem, ir, ic, data, mode ):
+        var_name = self.variables[self.mode2var[mode]]
+        u_name = problem.variables[var_name].primary_var_name
+
+        corrs, pis = data['corrs'], data['pis']
+        indx = corrs.di.indx[u_name]
+
+        omega = corrs.states[ir,ic][indx]
+        pi = pis[ir,ic] + omega
+
+        yield (var_name, pi)

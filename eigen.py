@@ -13,7 +13,7 @@ from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
 from sfepy.homogenization.utils import create_pis
-from sfepy.homogenization.coefs import CorrectorsRS, CoefE
+from sfepy.homogenization.coefs import CorrectorsRS, ElasticCoef
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
 from sfepy.base.plotutils import pylab
@@ -472,8 +472,8 @@ class AcousticBandGapsApp( SimpleApp ):
         volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
 
         cargs = dconf.coefs['E']
-        get_coef = CoefE( 'homogenized elastic tensor', dproblem, cargs )
-        mtx = get_coef( pis, corrs_rs, volume )
+        get_coef = ElasticCoef( 'homogenized elastic tensor', dproblem, cargs )
+        mtx = get_coef( volume, data = {'pis': pis, 'corrs' : corrs_rs} )
 
         return mtx
 
