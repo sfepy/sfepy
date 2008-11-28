@@ -163,11 +163,30 @@ integral_1 = {
 }
 
 ##
-# Steady state correctors $\bar{\omega}^{rs}$.
-equations = {
-    'eq_1' : 
-    """dw_lin_elastic.i3.Y( m.D, vc, uc )
-       = - dw_lin_elastic.i3.Y( m.D, vc, Pi )""",
+# Homogenized coefficients to compute.
+coefs = {
+    'E' : {'requires' : ['pis', 'corrs_rs'],
+           'variables' : ['Pi1', 'Pi2'],
+           'region' : 'Y',
+           'expression' : 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'},
+}
+
+##
+# Data required to compute the homogenized coefficients.
+all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
+requirements = {
+    'pis' : {
+        'variables' : ['uc'],
+    },
+    ##
+    # Steady state correctors $\bar{\omega}^{rs}$.
+    'corrs_rs' : {
+         'variables' : ['uc', 'vc', 'Pi'],
+         'ebcs' : ['fixed_u'],
+         'epbcs' : all_periodic,
+         'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
+                                = - dw_lin_elastic.i3.Y( m.D, vc, Pi )"""},
+    },
 }
 
 ##
@@ -206,112 +225,24 @@ solver_1 = {
 ############################################
 # Mini-application below, computing the homogenized elastic coefficients.
 
-##
-# c: 28.02.2007, r: 13.02.2008
-def build_op_pi( var_name, problem, ir, ic ):
-    """\Pi^{rs}_i = \delta_{ri} y_s. """
-    var = problem.variables[var_name]
-    coor = var.field.get_coor()[:,:-1]
+def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
+    """Returns function used to save the computed correctors."""
+    def save_correctors( state, problem, ir, ic ):
+        get_state = problem.variables.get_state_part_view
 
-    pi = nm.zeros_like( coor )
-    pi[:,ir] = coor[:,ic]
-    pi.shape = (pi.shape[0] * pi.shape[1],)
-
-    return pi
+        problem.save_state( (base_name % (ir, ic)) + '.vtk', state,
+                            post_process_hook = post_process_hook,
+                            file_per_var = file_per_var )
+    return save_correctors
 
 ##
-# c: 05.05.2008, r: 05.05.2008
-def create_pis( problem, variables, var_name ):
-    problem.set_variables( variables )
-
-    dim = problem.domain.mesh.dim
-    pis = nm.zeros( (dim, dim), dtype = nm.object )
-    for ir in range( dim ):
-        for ic in range( dim ):
-            pi = build_op_pi( var_name, problem, ir, ic )
-            pis[ir,ic] = pi
-    return pis
-
-##
-# c: 05.05.2008, r: 05.05.2008
-def  solve_steady_correctors_rs( problem, equations, variables, pis,
-                               ofn_trunk, post_process_hook = None,
-                               file_per_var = False ):
-    """Compute the steady state correctors $\bar{\omega}^{rs}$"""
-    from sfepy.base.base import Struct
-    
-    dim = problem.domain.mesh.dim
-
-    problem.set_variables( variables )
-    problem.set_equations( equations )
-
-    problem.time_update()
-
-    states_rs = nm.zeros( (dim, dim), dtype = nm.object )
-    for ir in range( dim ):
-        for ic in range( dim ):
-            pi = pis[ir,ic]
-            # Non-state variables must be assigned manually.
-            problem.variables['Pi'].data_from_data( pi )
-
-            state = problem.create_state_vector()
-            problem.apply_ebc( state )
-            state = problem.solve()
-            assert problem.variables.has_ebc( state )
-            states_rs[ir,ic] = state
-
-            problem.save_state( ofn_trunk + '_steady_rs_%d%d.vtk' % (ir, ic),
-                               state, post_process_hook = post_process_hook,
-                               file_per_var = file_per_var )
-    return Struct( name = 'Steady RS correctors',
-                   states_rs = states_rs,
-                   di = problem.variables.di )
-
-##
-# c: 05.03.2008, r: 05.03.2008
-def iter_sym( dim ):
-    for ii in xrange( dim ):
-        yield ii, ii
-    for ir in xrange( 0, dim ):
-        for ic in xrange( ir + 1, dim ):
-            yield ir, ic
-
-def coef_e( problem, corrs_rs, pis ):
-    """Homogenized elastic coefficient $E_{ijkl}$."""
-    from sfepy.fem import eval_term_op
-
-    coef_term = 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'
-
-    dim = problem.domain.mesh.dim
-    sym = (dim + 1) * dim / 2
-    coef = nm.zeros( (sym, sym), dtype = nm.float64 )
-
-    indx = corrs_rs.di.indx['uc']
-    for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-        omega1 = corrs_rs.states_rs[irr,icr][indx]
-        pi1 = pis[irr,icr] + omega1
-        # Non-state variables must be assigned manually.
-        problem.variables['Pi1'].data_from_data( pi1 )
-            
-        for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-            omega2 = corrs_rs.states_rs[irc,icc][indx]
-            pi2 = pis[irc,icc] + omega2
-            # Non-state variables must be assigned manually.
-            problem.variables['Pi2'].data_from_data( pi2 )
-
-            # Variables have their data, so evaluate the term.
-            val = eval_term_op( None, coef_term, problem, call_mode = 'd_eval' )
-
-            coef[ir,ic] = val
-    return coef
-
-##
-# c: 05.05.2008, r: 05.05.2008
+# c: 05.05.2008, r: 28.11.2008
 def main():
     from sfepy.base.base import spause
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem import ProblemDefinition
-    from sfepy.base.ioutils import get_trunk
+    from sfepy.fem import eval_term_op, ProblemDefinition
+    from sfepy.homogenization.utils import create_pis
+    from sfepy.homogenization.coefs import CorrectorsRS, ElasticCoef
 
     nm.set_printoptions( precision = 3 )
 
@@ -320,11 +251,12 @@ First, this file will be read in place of an input
 (problem description) file.
 Press 'q' to quit the example, press any other key to continue...""" )
     required, other = get_standard_keywords()
+    required.remove( 'equations' )
     # Use this file as the input file.
     conf = ProblemConf.from_file( __file__, required, other )
-    print conf
+    print conf.to_dict().keys()
     spause( r""">>>
-...the read input.
+...the read input as a dict (keys only for brevity).
 ['q'/other key to quit/continue...]""" )
 
     spause( r""">>>
@@ -344,30 +276,44 @@ The homogenized elastic coefficient $E_{ijkl}$ is expressed
 using $\Pi$ operators, computed now. In fact, those operators are permuted
 coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""" )
-    pis = create_pis( problem, conf.variables, 'Pi' )
+    req = conf.requirements['pis']
+    pis = create_pis( problem, req['variables'][0] )
     print pis
     spause( r""">>>
 ...the $\Pi$ operators.
 ['q'/other key to quit/continue...]""" )
 
-    ofn_trunk = get_trunk( conf.filename_mesh ) + '_out'
     spause( r""">>>
 Next, $E_{ijkl}$ needs so called steady state correctors $\bar{\omega}^{rs}$,
 computed now. The results will be saved in: %s_*.vtk
-['q'/other key to quit/continue...]""" % ofn_trunk )
+['q'/other key to quit/continue...]""" %  problem.ofn_trunk )
 
-    corrs_rs = solve_steady_correctors_rs( problem, conf.equations,
-                                        conf.variables, pis, ofn_trunk )
+    save_hook = make_save_hook( problem.ofn_trunk + '_rs_%d%d' )
+
+    req = conf.requirements['corrs_rs']
+    solve_corrs = CorrectorsRS( 'steady rs correctors', problem, req )
+    corrs_rs = solve_corrs( data = pis, save_hook = save_hook )
     print corrs_rs
     spause( r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
 ['q'/other key to quit/continue...]""" )
 
+    spause( r""">>>
+Then the volume of the domain is needed.
+['q'/other key to quit/continue...]""" )
+    volume = eval_term_op( None, 'd_volume.i3.Y( uc )', problem )
+    print volume
+
+    spause( r""">>>
+...the volume.
+['q'/other key to quit/continue...]""" )
 
     spause( r""">>>
 Finally, $E_{ijkl}$ can be computed.
 ['q'/other key to quit/continue...]""" )
-    c_e = coef_e( problem, corrs_rs, pis )
+    get_coef = ElasticCoef( 'homogenized elastic tensor',
+                            problem, conf.coefs['E'] )
+    c_e = get_coef( volume, data = {'pis': pis, 'corrs' : corrs_rs} )
     print r""">>>
 The homogenized elastic coefficient $E_{ijkl}$, symmetric storage
 with rows, columns in 11, 22, 12 ordering:"""
