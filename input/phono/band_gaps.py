@@ -13,6 +13,8 @@ cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
+matrix_region = 'Y1'
+
 options = {
     'save_eig_vectors' : (10, 0),
     'eig_range' : (0, 30), # -> freq_range = eigs[slice(*eig_range)][[0, -1]]
@@ -49,7 +51,8 @@ options = {
 
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
-    'dispersion_conf' : (coefs.define_input( filename_mesh, dim, geom ), coefs),
+    'dispersion_conf' : (coefs.define_input( filename_mesh,
+                                             matrix_region, dim, geom ), coefs),
 
     'plot_options' : {
         'show' : True,

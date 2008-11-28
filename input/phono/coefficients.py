@@ -1,14 +1,15 @@
 from sfepy.fem.periodic import *
 
-def define_input( filename, dim, geom ):
+def define_input( filename, region, dim, geom ):
     """Uses materials, fe of master file, merges regions."""
     filename_mesh = filename
     
     coefs = {
         'E' : {'requires' : ['pis', 'corrs_phono_rs'],
                'variables' : ['Pi1', 'Pi2'],
-               'region' : 'Y1',
-               'expression' : 'dw_lin_elastic.i2.Y1( matrix.D, Pi1, Pi2 )'},
+               'region' : region,
+               'expression' : 'dw_lin_elastic.i2.%s( matrix.D, Pi1, Pi2 )' \
+               % region},
     }
 
     all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
@@ -20,8 +21,9 @@ def define_input( filename, dim, geom ):
              'variables' : ['u1', 'v1', 'Pi'],
              'ebcs' : ['fixed_u'],
              'epbcs' : all_periodic,
-             'equations' : {'eq' : """dw_lin_elastic.i2.Y1( matrix.D, v1, u1 )
-                            + dw_lin_elastic.i2.Y1( matrix.D, v1, Pi ) = 0"""},
+             'equations' : {'eq' : """dw_lin_elastic.i2.%s( matrix.D, v1, u1 )
+                            + dw_lin_elastic.i2.%s( matrix.D, v1, Pi ) = 0""" \
+                            % (region, region)},
         
         },
     }
@@ -33,23 +35,27 @@ def define_input( filename, dim, geom ):
     }
 
     field_10 = {
-        'name' : 'displacement_Y1',
+        'name' : 'displacement_matrix',
         'dim' : (dim,1),
-        'domain' : 'Y1',
-        'bases' : {'Y1' : '%s_P1' % geom}
+        'domain' : region,
+        'bases' : {region : '%s_P1' % geom}
     }
 
     variables = {
-        'u1' : ('unknown field', 'displacement_Y1', 0),
-        'v1' : ('test field', 'displacement_Y1', 'u1'),
-        'Pi' : ('parameter field', 'displacement_Y1', 'u1'),
-        'Pi1' : ('parameter field', 'displacement_Y1', 'u1'),
-        'Pi2' : ('parameter field', 'displacement_Y1', 'u1'),
+        'u1' : ('unknown field', 'displacement_matrix', 0),
+        'v1' : ('test field', 'displacement_matrix', 'u1'),
+        'Pi' : ('parameter field', 'displacement_matrix', 'u1'),
+        'Pi1' : ('parameter field', 'displacement_matrix', 'u1'),
+        'Pi2' : ('parameter field', 'displacement_matrix', 'u1'),
     }
 
     if filename.find( 'mesh_circ21' ) >= 0:
         wx = 0.499
         wy = 0.499
+    elif filename.find( 'cube_cylinder_centered' ) >= 0:
+        wx = 0.499
+        wy = 0.499
+        wz = 0.499
 
     ebcs = {
         'fixed_u' : ('Corners', {'u1.all' : 0.0}),
@@ -58,6 +64,24 @@ def define_input( filename, dim, geom ):
     ##
     # Periodic boundary conditions.
     if dim == 3:
+        regions = {
+            'Near' : ('nodes in (y < -%.3f)' % wy, {}),
+            'Far' : ('nodes in (y > %.3f)' % wy, {}),
+            'Bottom' : ('nodes in (z < -%.3f)' % wz, {}),
+            'Top' : ('nodes in (z > %.3f)' % wz, {}),
+            'Left' : ('nodes in (x < -%.3f)' % wx, {}),
+            'Right' : ('nodes in (x > %.3f)' % wx, {}),
+            'Corners' : ("""nodes in
+                            ((x < -%.3f) & (y < -%.3f) & (z < -%.3f))
+                          | ((x >  %.3f) & (y < -%.3f) & (z < -%.3f))
+                          | ((x >  %.3f) & (y >  %.3f) & (z < -%.3f))
+                          | ((x < -%.3f) & (y >  %.3f) & (z < -%.3f))
+                          | ((x < -%.3f) & (y < -%.3f) & (z >  %.3f))
+                          | ((x >  %.3f) & (y < -%.3f) & (z >  %.3f))
+                          | ((x >  %.3f) & (y >  %.3f) & (z >  %.3f))
+                          | ((x < -%.3f) & (y >  %.3f) & (z >  %.3f))
+                          """ % ((wx, wy, wz) * 8), {}),
+        }
         epbc_10 = {
             'name' : 'periodic_x',
             'region' : ['Left', 'Right'],
