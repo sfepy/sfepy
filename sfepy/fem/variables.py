@@ -186,8 +186,8 @@ class Variables( Container ):
             try:
                 self[vvar.primary_var_name].dual_var_name = vvar.name
             except ValueError:
-                output( 'variable %s is not active!' % vvar.primary_var_name )
-                raise
+                msg = 'variable %s is not active!' % vvar.primary_var_name
+                raise ValueError( msg )
 
     def setup_dtype( self ):
         """Setup data types of state variables - all have to be of the same
@@ -346,8 +346,7 @@ class Variables( Container ):
         if self.has_lcbc:
             return self.op_lcbc
         else:
-            print 'no LCBC defined!'
-            raise ValueError
+            raise ValueError( 'no LCBC defined!' )
 
     ##
     # c: 01.11.2005, r: 12.05.2008
@@ -514,8 +513,8 @@ class Variables( Container ):
             elif kind == 'point':
                 dcs = adcs.point_d_cs
             else:
-                print 'uknown dof connectivity kind:', kind
-                raise ValueError
+                msg = 'uknown dof connectivity kind: %s' % kind
+                raise ValueError( msg )
             dc = dcs[(ig, region_name)]
         return dc
         
@@ -758,8 +757,8 @@ class Variables( Container ):
             if allow_dual and var.is_virtual():
                 var_name = var.primary_var_name
             else:
-                output( '%s is not a state part' % var_name )
-                raise IndexError
+                msg = '%s is not a state part' % var_name
+                raise IndexError( msg )
         
         if stripped:
             return self.adi.indx[var_name]
@@ -795,8 +794,8 @@ class Variables( Container ):
                 self[var_name].data_from_data( state,
                                                self.di.indx[var_name_state] )
             else:
-                output( '%s is not a state part' % var_name_state )
-                raise IndexError
+                msg = '%s is not a state part' % var_name_state
+                raise IndexError( msg )
 
 
     def state_to_output( self, vec, fill_value = None, var_info = None,
@@ -861,7 +860,7 @@ class Variables( Container ):
         field_names = {}
         for var_name in var_names:
             if not self.has_key( var_name ):
-                raise RuntimeError, 'undefined variable %s' % var_name
+                raise RuntimeError( 'undefined variable %s' % var_name )
             field_names[var_name] = self[var_name].field.name
         return field_names
 
@@ -909,37 +908,37 @@ class Variable( Struct ):
             if hasattr( conf, 'order' ):
                 obj._order = int( conf.order )
             else:
-                output( 'unnown variable %s: order missing' % conf.name )
-                raise ValueError
+                msg = 'unnown variable %s: order missing' % conf.name
+                raise ValueError( msg )
             obj.dof_name = obj.name
         elif kind == 'test':
             obj.flags.add( is_virtual )
             if hasattr( conf, 'dual' ):
                 obj.primary_var_name = conf.dual
             else:
-                output( 'test variable %s: related unknown missing' % conf.name )
-                raise ValueError
+                msg = 'test variable %s: related unknown missing' % conf.name
+                raise ValueError( msg )
             obj.dof_name = obj.primary_var_name
         elif kind == 'parameter':
             obj.flags.add( is_parameter )
             if hasattr( conf, 'like' ):
                 obj.primary_var_name = conf.like
             else:
-                output( 'parameter variable %s: related unknown missing'\
-                        % conf.name )
-                raise ValueError
+                msg = 'parameter variable %s: related unknown missing'\
+                        % conf.name
+                raise ValueError( msg )
             obj.dof_name = obj.primary_var_name
         else:
             obj.flags.add( is_other )
-            print 'unknown variable family: %s' % family
-            raise NotImplementedError
+            msg = 'unknown variable family: %s' % family
+            raise NotImplementedError( msg )
 
         if family == 'field':
             try:
                 fld = fields[conf.field]
             except:
-                output( 'field "%s" does not exist!' % conf.field )
-                raise
+                msg = 'field "%s" does not exist!' % conf.field
+                raise KeyError( msg )
 
             obj.set_field( fld )
 
@@ -1123,8 +1122,8 @@ class Variable( Struct ):
         elif kind == 'point':
             return self.dof_conns.point_d_cs.iteritems
         else:
-            print 'uknown dof connectivity kind:', kind
-            raise ValueError
+            msg = 'uknown dof connectivity kind: %s' % kind
+            raise ValueError( msg )
 
     ##
     # c: 25.02.2008, r: 25.02.2008
@@ -1200,8 +1199,8 @@ class Variable( Struct ):
                 mtx_r[2::dim,1] = -mcoor[:,0]
                 n_rigid_dof = 6
             else:
-                print 'dimension in [2,3]: %d' % dim
-                raise ValueError
+                msg = 'dimension in [2,3]: %d' % dim
+                raise ValueError( msg )
 
             op_lc = nm.hstack( (mtx_r, mtx_e) )
 ##             print op_lc, op_lc.shape
@@ -1264,8 +1263,8 @@ class Variable( Struct ):
             try:
                 region = regions[rname]
             except IndexError:
-                print "no region '%s' used in BC %s!" % (rname, bc)
-                raise
+                msg = "no region '%s' used in BC %s!" % (rname, bc)
+                raise IndexError( msg )
 
 ##             print ir, key, bc
 ##             debug()
@@ -1309,8 +1308,9 @@ class Variable( Struct ):
 ##                 print nmaster + 1
 ##                 print nslave + 1
                 if nmaster.shape != nslave.shape:
-                    raise 'EPBC list lengths do not match!\n(%s,\n %s)' %\
+                    msg = 'EPBC list lengths do not match!\n(%s,\n %s)' %\
                           (nmaster, nslave)
+                    raise ValueError( msg )
 
                 mcoor = field.get_coor( nmaster )
                 scoor = field.get_coor( nslave )
@@ -1392,8 +1392,8 @@ class Variable( Struct ):
             try:
                 region = regions[ic.region]
             except IndexError:
-                print "no region '%s' used in BC %s!" % (rname, bc)
-                raise
+                msg = "no region '%s' used in IC %s!" % (ic.region, ic)
+                raise IndexError( msg )
 
             fn = region.get_field_nodes( self.field )
             nod_list = self.clean_node_list( fn, 'IC', region.name,
@@ -1431,9 +1431,8 @@ class Variable( Struct ):
         try:
             return ap, geometries[g_key]
         except KeyError:
-            print g_key
-            print geometries
-            raise
+            msg = 'no geometry %s in %s' % (g_key, geometries)
+            raise KeyError( msg )
 
     ##
     # c: 28.11.2006, r: 15.01.2008
