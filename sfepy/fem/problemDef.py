@@ -281,6 +281,12 @@ class ProblemDefinition( Struct ):
         self.update_materials( ts, funmod, extra_mat_args )
         self.update_equations( ts )
 
+    def setup_ic( self, conf_ics = None, funmod = None ):
+        conf_ics = get_default( conf_ics, self.conf.ics )
+        funmod = get_default( funmod, self.conf.funmod )
+        self.variables.setup_initial_conditions( conf_ics,
+                                                 self.domain.regions, funmod  )
+
     def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
                     lcbc_names = None ):
         if ebc_names is not None:
@@ -308,7 +314,12 @@ class ProblemDefinition( Struct ):
     # 25.07.2006
     # 19.09.2006
     def apply_ebc( self, vec, force_values = None ):
+        """Apply essential (Dirichlet) boundary  conditions."""
         self.variables.apply_ebc( vec, force_values )
+
+    def apply_ic( self, vec, force_values = None ):
+        """Apply initial conditions."""
+        self.variables.apply_ic( vec, force_values )
 
     ##
     # 25.07.2006, c

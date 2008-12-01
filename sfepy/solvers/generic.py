@@ -128,7 +128,11 @@ def solve_evolutionary_op( problem,
 
     suffix, is_save = prepare_save_data( time_solver.ts,
 					 problem.conf )
+
     state0 = problem.create_state_vector()
+    problem.setup_ic()
+    problem.apply_ic( state0 )
+    
     ii = 0
     for ts, state in time_solver( state0 ):
 

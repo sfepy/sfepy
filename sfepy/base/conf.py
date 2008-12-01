@@ -9,7 +9,8 @@ _required = ['filename_mesh', 'field_[0-9]+|fields',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
              'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
              'solver_[0-9]+|solvers']
-_other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs', 'options']
+_other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
+          'ic_[0-9]+|ics', 'options']
 
 ##
 # c: 19.02.2008, r: 19.02.2008
@@ -61,6 +62,17 @@ def transform_ebcs( adict ):
             d2['ebc_'+c2.name] = c2
     return d2
 
+def transform_ics( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['region', 'dofs'] )
+            d2['ic_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1( conf )
+            d2['ic_'+c2.name] = c2
+    return d2
+
 ##
 # c: 02.05.2008, r: 06.05.2008
 def transform_regions( adict ):
@@ -96,13 +108,14 @@ transforms = {
     'opt'       : transform_to_struct_1,
     'fe'        : transform_to_struct_1,
     'regions'   : transform_regions,
-    'shape_opt'  : transform_to_struct_10,
+    'shape_opt' : transform_to_struct_10,
     'fields'    : transform_to_struct_01,
     'variables' : transform_variables,
     'ebcs'      : transform_ebcs,
     'epbcs'     : transform_to_struct_01,
     'nbcs'      : transform_to_struct_01,
     'lcbcs'     : transform_to_struct_01,
+    'ics'       : transform_ics,
 }
 
 ##

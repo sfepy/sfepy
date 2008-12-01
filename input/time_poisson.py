@@ -46,6 +46,18 @@ ebcs = {
     'T2': ('Gamma_Right', {'T.0' : -2.0}),
 }
 
+def get_ic( ic, coor ):
+    """Non-constant initial condition."""
+    import numpy as nm
+    # Normalize x coordinate.
+    mi, ma = coor[:,0].min(), coor[:,0].max()
+    nx = (coor[:,0] - mi) / (ma - mi)
+    return nm.where( (nx > 0.25) & (nx < 0.75 ), 8.0 * (nx - 0.5), 0.0 )
+    
+ics = {
+    'ic' : ('Omega', {'T.0' : 'get_ic'}),
+}
+
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',

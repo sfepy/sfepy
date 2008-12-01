@@ -397,6 +397,15 @@ class Variables( Container ):
         else:
             self.avdi = self.adi
 
+    def setup_initial_conditions( self, conf_ics, regions, funmod ):
+        self.ic_of_vars = self._list_bc_of_vars( conf_ics )
+
+        for var_name, ics in self.ic_of_vars.iteritems():
+            if len( ics ) == 0:
+                continue
+            var = self[var_name]
+            var.setup_initial_conditions( ics, regions, self.di, funmod )
+
     ##
     # c: 09.01.2008, r: 09.01.2008
     def get_nodes_of_global_dofs( self, igdofs ):
@@ -603,6 +612,7 @@ class Variables( Container ):
     # 19.09.2006
     # 18.10.2006
     def apply_ebc( self, vec, force_values = None ):
+        """Apply essential (Dirichlet) boundary conditions."""
         for var_name in self.bc_of_vars.iterkeys():
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
@@ -618,6 +628,19 @@ class Variables( Container ):
                     vec[ii] = force_values
             # EPBC.
             vec[i0+eq_map.master] = vec[i0+eq_map.slave]
+
+    def apply_ic( self, vec, force_values = None ):
+        """Apply initial conditions."""
+        for var in self.iter_state():
+            ii = self.di.indx[var.name]
+
+            if force_values is None:
+                vec[ii] = var.get_initial_condition()
+            else:
+                if isinstance( force_values, dict ):
+                    vec[ii] = force_values[var_name]
+                else:
+                    vec[ii] = force_values
 
     ##
     # 27.11.2005, c
@@ -937,6 +960,7 @@ class Variable( Struct ):
         self.current_ap = None
         self.step = 0
         self.dt = 1.0
+        self.initial_condition = None
 
         if self.is_virtual():
             self.data = None
@@ -1190,6 +1214,16 @@ class Variable( Struct ):
                        n_rigid_dof = n_rigid_dof,
                        dim = dim )
 
+    def clean_node_list( self, nod_list, ntype, region_name, warn = False ):
+        for nods in nod_list[:]:
+            if nods is None:
+                nod_list.remove( nods )
+                if warn:
+                    output( 'warning: ignoring nonexistent %s'\
+                            + ' node (%s) in %s'\
+                            % (ntype, self.name, region.name) )
+        return nod_list
+
     def equation_mapping( self, bcs, regions, di, ts, funmod, warn = False ):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
@@ -1236,15 +1270,10 @@ class Variable( Struct ):
 ##             print ir, key, bc
 ##             debug()
             # Get master region nodes.
-            master_nod_list = region.get_field_nodes( field )
-            for master in master_nod_list[:]:
-                if master is None:
-                    master_nod_list.remove( master )
-                    if warn:
-                        output( 'warning: ignoring nonexistent %s'\
-                                + ' node (%s) in %s'\
-                                % (ntype, self.name, region.name) )
 
+            fn = region.get_field_nodes( field )
+            master_nod_list = self.clean_node_list( fn, ntype, region.name,
+                                                    warn = warn )
             if len( master_nod_list ) == 0:
                 continue
 
@@ -1269,17 +1298,9 @@ class Variable( Struct ):
 
             else: # EPBC.
                 region = regions[bc.region[1]]
-                slave_nod_list = region.get_field_nodes( field )
-                for slave in slave_nod_list[:]:
-                    if slave is None:
-                        slave_nod_list.remove( slave )
-                        if warn:
-                            output( 'warning: ignoring nonexistent EPBC'\
-                                    + ' slave node (%s) in %s'\
-                                    % (self.name, region.name) )
-                if len( slave_nod_list ) == 0:
-                    continue
-
+                fn = region.get_field_nodes( field )
+                slave_nod_list = self.clean_node_list( fn, ntype, region.name,
+                                                       warn = warn )
 ##                 print master_nod_list
 ##                 print slave_nod_list
 
@@ -1363,6 +1384,39 @@ class Variable( Struct ):
 ##         print eq_map
 ##         pause()
 
+    def setup_initial_conditions( self, ics, regions, di, funmod, warn = False ):
+        """Setup of initial conditions."""
+        for key, ic in ics:
+            dofs, val = ic.dofs
+
+            try:
+                region = regions[ic.region]
+            except IndexError:
+                print "no region '%s' used in BC %s!" % (rname, bc)
+                raise
+
+            fn = region.get_field_nodes( self.field )
+            nod_list = self.clean_node_list( fn, 'IC', region.name,
+                                             warn = warn )
+            if len( nod_list ) == 0:
+                continue
+
+            vv = nm.empty( (0,), dtype = self.dtype )
+            nods = nm.unique1d( nm.hstack( nod_list ) )
+            coor = self.field.get_coor( nods )
+            if type( val ) == str:
+                fun = getattr( funmod, val )
+                vv = fun( ic, coor )
+            else:
+                vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
+
+            eq = self.expand_nodes_to_equations( nods, dofs )
+
+            ic_vec = nm.zeros( (di.n_dofs[self.name],), dtype = self.dtype )
+            ic_vec[eq] = vv
+            
+            self.initial_condition = ic_vec
+
     ##
     # c: 24.07.2006, r: 15.01.2008
     def get_approximation( self, key, kind = 'Volume' ):
@@ -1409,6 +1463,11 @@ class Variable( Struct ):
 ##            print self.name, step, dt
             return (self( step = step ) - self( step = step-1 )) / dt
             
+    def get_initial_condition( self ):
+        if self.initial_condition is None:
+            return 0.0
+        else:
+            return self.initial_condition
 
     def get_full_state( self, step = 0 ):
         return self.data[step]
