@@ -110,7 +110,7 @@ class MeshIO( Struct ):
 
     ##
     # c: 22.07.2008, r: 22.07.2008
-    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
+    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
@@ -159,8 +159,8 @@ class MeditMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
-        fd = open( self.fileName, 'r' )
+    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
+        fd = open( self.filename, 'r' )
 
         while 1:
             try:
@@ -178,8 +178,8 @@ class MeditMeshIO( MeshIO ):
                 else:
                     dim = int( fd.readline() )            
             elif (aux[0] == 'Vertices'):
-                num = int( readToken( fd ) )
-                nod = readArray( fd, num, dim + 1, nm.float64 )
+                num = int( read_token( fd ) )
+                nod = read_array( fd, num, dim + 1, nm.float64 )
                 break
 
         bbox = [ [nod[0][0]]*2, [nod[0][1]]*2, [nod[0][2]]*2 ]
@@ -406,13 +406,13 @@ class VTKMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundingBox( self, ret_fd = False, ret_dim = False ):
-        fd = open( self.fileName, 'r' )
+    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
+        fd = open( self.filename, 'r' )
         while 1:
             try:
                 line = fd.readline().split()
                 if line[0] == 'POINTS':
-                    nod = readArray( fd, 1, -1, nm.float64 )
+                    nod = read_array( fd, 1, -1, nm.float64 )
                     dim = nod.shape[1]
                     break
             except:
@@ -774,7 +774,7 @@ class TetgenMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundingBox( self ):
+    def read_boundin_box( self ):
         raise NotImplementedError
 
 
