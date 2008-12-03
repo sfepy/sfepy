@@ -101,6 +101,7 @@ class MeshIO( Struct ):
     # c: 05.02.2008, r: 05.02.2008
     def __init__( self, filename, **kwargs ):
         Struct.__init__( self, filename = filename, **kwargs )
+        self.set_float_format()
 
     ##
     # c: 03.07.2008, r: 03.07.2008
@@ -126,6 +127,12 @@ class MeshIO( Struct ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
+    def set_float_format( self, format = None ):
+        self.float_format = get_default( format, '%e' )
+
+    def get_vector_format( self, dim ):
+        return ' '.join( [self.float_format] * dim )
+            
 ##
 # c: 05.02.2008
 class MeditMeshIO( MeshIO ):
@@ -300,8 +307,6 @@ class MeditMeshIO( MeshIO ):
 
         return mesh
 
-    ##
-    # c: 19.01.2005, r: 08.02.2008
     def write( self, filename, mesh, out = None ):
         fd = open( filename, 'w' )
 
@@ -315,14 +320,10 @@ class MeditMeshIO( MeshIO ):
         fd.write( "MeshVersionFormatted 1\nDimension %d\n" % dim )
 
         fd.write( "Vertices\n%d\n" % n_nod )
-        if (dim == 2):
-            for ii in range( n_nod ):
-                nn = nod[ii]
-                fd.write( "%.8e %.8e %d\n" % (nn[0], nn[1], nn[2]) )
-        else:
-            for ii in range( n_nod ):
-                nn = nod[ii]
-                fd.write( "%.8e %.8e %.8e %d\n" % (nn[0], nn[1], nn[2], nn[3]) )
+        format = self.get_vector_format( dim ) + '%d\n'
+        for ii in range( n_nod ):
+            nn = nod[ii]
+            fd.write( format % tuple( nn ) )
 
         for ig, conn in enumerate( conns ):
             if (desc[ig] == "1_2"):
@@ -539,8 +540,6 @@ class VTKMeshIO( MeshIO ):
 
         return mesh
 
-    ##
-    # c: 15.12.2005, r: 07.05.2008
     def write( self, filename, mesh, out = None ):
 
         fd = open( filename, 'w' )
@@ -555,8 +554,10 @@ class VTKMeshIO( MeshIO ):
         aux = mesh.nod0[:,:dim]
         if dim == 2:
             aux = nm.hstack( (aux, nm.zeros( (n_nod, 1), dtype = nm.float64 ) ) )
+
+        format = self.get_vector_format( 3 ) + '\n'
         for row in aux:
-            fd.write( '%e %e %e\n' % tuple( row ) )
+            fd.write( format % tuple( row ) )
 
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
         total_size = nm.dot( n_els, n_e_ps + 1 )
@@ -582,11 +583,15 @@ class VTKMeshIO( MeshIO ):
         for key in point_keys:
             val = out[key]
             nr, nc = val.data.shape
+
             if nc == 1:
                 fd.write( '\nSCALARS %s float %d\n' % (key, nc) )
                 fd.write( 'LOOKUP_TABLE default\n' )
+
+                format = self.float_format + '\n'
                 for row in val.data:
-                    fd.write( '%e\n' % row )
+                    fd.write( format % row )
+
             elif nc == dim:
                 fd.write( '\nVECTORS %s float\n' % key )
                 if dim == 2:
@@ -594,8 +599,11 @@ class VTKMeshIO( MeshIO ):
                                       nm.zeros( (nr, 1), dtype = nm.float64 ) ) )
                 else:
                     aux = val.data
+
+                format = self.get_vector_format( 3 ) + '\n'
                 for row in aux:
-                    fd.write( '%e %e %e\n' % tuple( row ) )
+                    fd.write( format % tuple( row ) )
+
             else:
                 raise NotImplementedError, nc
 
@@ -605,11 +613,14 @@ class VTKMeshIO( MeshIO ):
         for key in cell_keys:
             val = out[key]
             ne, aux, nr, nc = val.data.shape
+
             if (nr == 1) and (nc == 1):
                 fd.write( '\nSCALARS %s float %d\n' % (key, nc) )
                 fd.write( 'LOOKUP_TABLE default\n' )
+                format = self.float_format + '\n'
                 for row in val.data.squeeze():
-                    fd.write( '%e\n' % row )
+                    fd.write( format % row )
+
             elif (nr == dim) and (nc == 1):
                 fd.write( '\nVECTORS %s float\n' % key )
                 if dim == 2:
@@ -617,14 +628,17 @@ class VTKMeshIO( MeshIO ):
                                       nm.zeros( (ne, 1), dtype = nm.float64 ) ) )
                 else:
                     aux = val.data
+
+                format = self.get_vector_format( 3 ) + '\n'
                 for row in aux:
-                    fd.write( '%e %e %e\n' % tuple( row.squeeze() ) )
+                    fd.write( format % tuple( row.squeeze() ) )
+
             elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
                      or ((nr == dim) and (nc == dim)):
                 # Below not tested!!!
                 fd.write( '\nTENSORS %s float\n' % key );
-                form = '%e %e %e\n%e %e %e\n%e %e %e\n\n';
                 data = val.data.squeeze()
+
                 if dim == 3:
                     if nr == sym:
                         aux = data[:,[0,3,4,3,1,5,4,5,2]]
@@ -632,6 +646,7 @@ class VTKMeshIO( MeshIO ):
                         aux = data[:,[0,3,4,6,1,5,7,8,2]]
                     else:
                         aux = data[:,[0,1,2,3,4,5,6,7,8]]
+
                 else:
                     zz = nm.zeros( (data.shape[0], 1), dtype = nm.float64 );
                     if nr == sym:
@@ -643,8 +658,11 @@ class VTKMeshIO( MeshIO ):
                     else:
                         aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
                                     zz, zz, zz, zz]
+
+                format = self.get_vector_format( 3 )
+                format = '\n'.join( [format] * 3 ) + '\n\n';
                 for row in aux:
-                    fd.write( form % tuple( row ) )
+                    fd.write( format % tuple( row ) )
 
             else:
                 raise NotImplementedError, (nr, nc)

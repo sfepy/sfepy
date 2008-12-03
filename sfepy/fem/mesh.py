@@ -502,7 +502,8 @@ class Mesh( Struct ):
     ##
     # c: 23.01.2006, r: 23.06.2008
     def write( self, filename = None, io = None,
-               coors = None, igs = None, out = None, **kwargs ):
+               coors = None, igs = None, out = None, float_format = None,
+               **kwargs ):
         """Write mesh + optional results in 'out'.
 
         'io' == 'auto' respects the extension of 'filename'
@@ -525,6 +526,7 @@ class Mesh( Struct ):
 
         aux_mesh = Mesh.from_data( self.name, coors,
                                  self.conns, self.mat_ids, self.descs, igs )
+        io.set_float_format( float_format )
         io.write( filename, aux_mesh, out, **kwargs )
 
     ##

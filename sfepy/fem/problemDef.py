@@ -157,10 +157,8 @@ class ProblemDefinition( Struct ):
         self.variables.setup_dof_conns()
 
         if cache_override is None:
-            if hasattr( self.conf.fe, 'cache_override' ):
-                cache_override = self.conf.fe.cache_override
-            else:
-                cache_override = True
+            cache_override = get_default_attr( self.conf.fe,
+                                               'cache_override', True )
         equations.set_cache_mode( cache_override )
 
         self.equations = equations
@@ -391,6 +389,9 @@ class ProblemDefinition( Struct ):
             if post_process_hook is not None:
                 out = post_process_hook( out, self, state, extend = extend )
 
+        float_format = get_default_attr( self.conf.options,
+                                         'float_format', None )
+
         if file_per_var:
             import os.path as op
 
@@ -409,9 +410,11 @@ class ProblemDefinition( Struct ):
                         vout[key] = val
                 base, suffix = op.splitext( filename )
                 mesh.write( base + '_' + var.name + suffix,
-                            io = 'auto', out = vout, **kwargs )
+                            io = 'auto', out = vout,
+                            float_format = float_format, **kwargs )
         else:
-            self.domain.mesh.write( filename, io = 'auto', out = out, **kwargs )
+            self.domain.mesh.write( filename, io = 'auto', out = out,
+                                    float_format = float_format, **kwargs )
 
     ##
     # c: 19.09.2006, r: 27.02.2008
