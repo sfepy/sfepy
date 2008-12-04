@@ -1,6 +1,6 @@
-# c: 19.01.2007, r: 25.11.2008
+# c: 19.01.2007, r: 04.12.2008
 
-This is not for faint of the heart!
+This is not for the faint of heart!
 
 Installation prerequisites:
     recent numpy, scipy (with umfpack support), swig
@@ -8,7 +8,7 @@ Installation prerequisites:
 Dependencies:
     matplotlib, pyparsing, umfpack, pytables
     schroedinger.py requires pysparse
-    log.py (live plotting) requires multiprocessing
+    log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
 
 For example in Debian:
   $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy

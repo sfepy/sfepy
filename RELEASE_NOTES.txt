@@ -1,5 +1,41 @@
 # created: 20.07.2007 (-1)
-# last revision: 02.09.2008
+# last revision: 04.12.2008
+
+from 00.50.00 to 2008.4
+- framework for running parametric studies
+- allow time derivatives of variables as term arguments
+  - example (transient diffusion):
+    """dw_mass_scalar.i1.Omega( s, dT/dt )
+     + dw_laplace.i1.Omega( coef.val, s, T ) = 0"""
+- initial conditions via ics, ic_<number> keywords
+- enhanced acoustic band gaps code
+  - dispersion analysis (polarization angle calculation)
+  - applied load tensor computation
+  - phase velocity computation for periodic perforated media with empty holes
+- term base classes
+  - actual term code reduced significantly
+  - adding new terms is even easier now
+- type of term arguments determined fully at run-time
+  - many terms were unified
+  - the same term can be used both for the finite element assembling and the
+  evaluation of the weak form for known fields (dw_ = d_)
+- live plotting using multiprocessing module
+  - assumes GTKAgg matplotlib backend
+  - support for setting x axis values and labels and y labels
+  - figure saving
+- printing messages: Output class
+- homogenized coefficients classes prototypes
+- improved schroedinger.py
+  - plotting DFT iterations
+- created sfepy/mechanics
+  - conversions of elastic constants and transformations to plane
+- float format used for saving results can be set by the 'float_format' option
+- new terms:
+  - dw_piezo_coupling (piezo-electric coupling term)
+  - dw_biot (Biot coupling term, former dw_biot_div, dw_biot_grad, ...)
+  - dw_stokes (Stokes coupling term, former dw_div, dw_grad, ...)
+  - dw_lin_elastic_th (linear elasticity fading memory, former dw_lin_viscous_th)
+  - dw_biot_th (Biot fading memory terms unified)
 
 from 00.46.02 to 00.50.00:
 ==========================

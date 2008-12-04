@@ -1,4 +1,9 @@
-See INSTALL for installation instructions.
+SfePy (Simple finite elements in Python)
+========================================
+
+A finite element analysis software based primarily on Numpy and SciPy.
+
+See the INSTALL file for installation instructions.
 
 Documentation is in doc/sfepy_manual.pdf. It is automatically generated using
 the ./gen script. To run the script 'pexpect' and 'lxml' packages are
@@ -11,7 +16,7 @@ See also:
                           examples
  - 'http://sfepy.kme.zcu.cz' ... projects solved within SfePy.
 
-License: BSD (http://www.opensource.org/licenses/bsd-license.php)
+License: New BSD License, see the LICENSE file.
 
 --
 Robert Cimrman
