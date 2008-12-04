@@ -26,7 +26,7 @@ $(LOCDIR)/_terms.so: $(DEPSD)
 SRC_LIBSWIG += $(LOCDIR)/_terms.so
 
 SRC_SRCC := $(shell ls $(LOCDIR)/*.c)
-SRC_SRCC := $(filter-out $(shell ls $(LOCDIR)/*_wrap.c), $(SRC_SRCC))
+SRC_SRCC := $(filter-out $(SRC_OBJSWIGC), $(SRC_SRCC))
 SRC_OBJC := $(SRC_SRCC:.c=.o)
 SRC_HDRC := $(shell ls $(LOCDIR)/*.h)
 
