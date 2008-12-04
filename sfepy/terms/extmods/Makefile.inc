@@ -13,7 +13,7 @@ SRC_OBJSWIGPY := $(SRC_SRCSWIG:.i=.py)
 
 FEMDEPSD = common_python.c fmfield.c geommech.c
 DEPSD := formSDCC.c terms.c termsBasic.c termsAdjointNavierStokes.c termsHDPM.c termsMass.c termsNavierStokes.c termsBiot.c termsLaplace.c termsLinElasticity.c termsHyperElasticity.c termsPiezo.c termsSurface.c termsVolume.c terms_wrap.c
-ifdef ISRELEASE
+ifndef ISFULL
   DEPSD := $(filter-out termsAdjointNavierStokes.c termsHDPM.c, $(DEPSD))
 endif
 DEPSD := $(addprefix $(FEMLOCDIR)/,$(FEMDEPSD:.c=.o)) $(addprefix $(LOCDIR)/,$(DEPSD:.c=.o))

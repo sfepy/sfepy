@@ -1,6 +1,6 @@
 # 14.12.2004, c
 # last revision: 24.11.2008
-VERSION := 00.52.00
+VERSION := 2008.4
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -31,9 +31,10 @@ EXT_INCL     := $(PYTHON_INCL)
 
 ###############
 
-ISRELEASE := 1
+ISRELEASE :=
+ISFULL :=
 MODULES := eldesc examples input sfepy sfepy/applications sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
-ifndef ISRELEASE
+ifdef ISFULL
   MODULES += sfepy/optimize
 endif
 VERSIONH := sfepy/fem/extmods/version.h
@@ -41,8 +42,8 @@ ALLTARGETS := version modules
 
 CUR_DIR := $(shell pwd)
 
-DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README
-RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL README RELEASE_NOTES.txt
+DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
+RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL LICENSE README RELEASE_NOTES.txt
 SUBDIRS = database doc eldesc examples input script sfepy tests
 RELSUBDIRS = database doc eldesc examples input script sfepy tests geom
 DATADIRS := database
@@ -72,7 +73,7 @@ INCL += $(patsubst %,-I%,$(MODULES))
 
 CFLAGS := $(OPTFLAGS) -D__SDIR__='"${LOCDIR}"' ${DEBUG_FLAGS} ${INCL} ${EXT_INCL} $(CARCHFLAGS)
 
-ifdef ISRELEASE
+ifndef ISFULL
   CFLAGS += -DISRELEASE
   SWIGFLAGS := -DISRELEASE
 endif
@@ -125,7 +126,11 @@ python_tags:
 	-etags -a $(SRCPYFILES)
 
 version:
-	echo $(VERSION)-$(shell hg identify -i) > 'VERSION'
+ifdef ISRELEASE
+	@echo $(VERSION)-release > 'VERSION'
+else
+	@echo $(VERSION)-$(shell hg identify -i) > 'VERSION'
+endif
 
 dist: version
 	-mkdir $(DISTDIR)
