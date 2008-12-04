@@ -1,11 +1,14 @@
+biot.py
+complex.py
 hyperelastic.py
 kostka.py
 le.py
 navier_stokes.py
 octahedron.py
 pfdpm_permeability.py
-phono.py
+piezo.py
 poisson.py
+poisson_parametric_study.py
 sinbc.py
 time_poisson.py
 valec.py

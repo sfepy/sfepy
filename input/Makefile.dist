@@ -1,6 +1,3 @@
-# 01.08.2006, c
-# last revision: 30.06.2008
-
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 

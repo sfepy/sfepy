@@ -63,7 +63,7 @@ options = {
 #    'parametric_hook' : 'vary_y3_size',
 #    'parametric_hook' : 'vary_teps',
     'post_process_hook' : 'post_process',
-    'output_dir' : os.path.join( cwd, 'output/nectiny2008_color/' ),
+    'output_dir' : os.path.join( cwd, 'output/' ),
     #############################################
 
     'eigenmomentum' : {'var' : 'up',
