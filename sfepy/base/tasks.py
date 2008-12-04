@@ -2,9 +2,10 @@ import threading
 import atexit
 
 try:
-    import multiprocessing
+    from multiprocessing import Process, Queue
+    from Queue import Empty
 except ImportError:
-    multiprocessing = None
+    Process = Queue = Empty = None
 
 ##
 # Extended from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222.
@@ -56,9 +57,3 @@ class TaskThread( threading.Thread ):
 
     def off( self ):
         self.can_run = False
-
-
-if multiprocessing is not None:
-    from Queue import Empty
-    Process = multiprocessing.Process
-    Queue = multiprocessing.Queue

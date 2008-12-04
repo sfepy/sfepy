@@ -169,6 +169,12 @@ class Log( Struct ):
         obj.yaxes = get( 'yaxes', [''] * obj.n_arg )
         obj.aggregate = get( 'aggregate', 100 )
 
+        obj.can_plot = (pylab is not None) and (Process is not None)
+
+        if obj.is_plot and (not obj.can_plot):
+            output( 'warning: log plot is disabled, install pylab (GTKAgg)' )
+            output( '         and multiprocessing' )
+
         return obj
     from_conf = staticmethod( from_conf )
     
@@ -213,7 +219,7 @@ class Log( Struct ):
             else:
                 self.x_values[ig].append( self.n_calls )
 
-        if self.is_plot and (pylab is not None):
+        if self.is_plot and self.can_plot:
             if self.n_calls == 0:
                 atexit.register( self.terminate )
 
@@ -234,7 +240,7 @@ class Log( Struct ):
         self.n_calls += 1
 
     def terminate( self ):
-        if self.is_plot and (pylab is not None):
+        if self.is_plot and self.can_plot:
             self.plot_queue.put( None )
             self.plot_process.join()
             self.n_calls = 0
