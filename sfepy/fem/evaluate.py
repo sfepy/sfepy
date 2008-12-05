@@ -215,16 +215,17 @@ def eval_term_op( state, term_desc, problem, **kwargs ):
     instance."""
     return eval_term( state, term_desc, problem.conf,
                       problem.domain, problem.variables, problem.materials,
+                      problem.get_timestepper(),
                       chunk_size = problem.domain.shape.n_el, **kwargs )
 
 ##
 # c: 03.01.2006, r: 05.03.2008
-def eval_term( state, term_desc, conf, domain, variables, materials,
-              funmod = None, chunk_size = 1000, term_prefixes = None,
-              caches = None, ret_caches = False,
-              override = True, new_geometries = True,
-              dw_mode = 'vector', tangent_matrix = None,
-              **kwargs ):
+def eval_term( state, term_desc, conf, domain, variables, materials, ts,
+               funmod = None, chunk_size = 1000, term_prefixes = None,
+               caches = None, ret_caches = False,
+               override = True, new_geometries = True,
+               dw_mode = 'vector', tangent_matrix = None,
+               **kwargs ):
     """Evaluate a term. May not succeed!"""
     if term_prefixes is None:
         term_prefixes = {}
@@ -253,8 +254,13 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
         itype = equation.terms[0].itype
 
     if itype == 'dw':
-
         variables.setup_dof_conns()
+        if not variables.has_eq_map:
+            variables.equation_mapping( conf.ebcs, conf.epbcs,
+                                        domain.regions, ts, funmod )
+            variables.setup_lcbc_operators( conf.lcbcs, domain.regions )
+            variables.setup_a_dof_conns() 
+
         if dw_mode == 'vector':
             residual = variables.create_stripped_state_vector()
             assemble_vector( residual, equation, variables, materials,
@@ -283,8 +289,9 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
             raise ValueError
 
     elif itype == 'd':
-        val = 0.0
+        kwargs.setdefault( 'call_mode', 'd_eval' )
 
+        val = 0.0
         for term in equation.terms:
             args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():
@@ -294,8 +301,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
             ret_val = val
 
     elif itype == 'di':
-        val = None
 
+        val = None
         for term in equation.terms:
             args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():
@@ -308,8 +315,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials,
             ret_val = val
 
     elif (itype == 'de') or (itype == 'dq'):
-        val = None
 
+        val = None
         for term in equation.terms:
             args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():

@@ -158,7 +158,8 @@ class Variables( Container ):
                          domain = fields[0].domain,
                          fields = fields,
                          has_virtual_d_cs = False,
-                         has_lcbc = False )
+                         has_lcbc = False,
+                         has_eq_map = False )
 
         indx = nm.array( [var._order
                           for var in obj.iter_state( ordered = False )] )
@@ -395,6 +396,8 @@ class Variables( Container ):
             self.avdi = _create_a_dof_info( self.vdi )
         else:
             self.avdi = self.adi
+
+        self.has_eq_map = True
 
     def setup_initial_conditions( self, conf_ics, regions, funmod ):
         self.ic_of_vars = self._list_bc_of_vars( conf_ics )

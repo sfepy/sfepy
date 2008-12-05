@@ -140,11 +140,11 @@ class Term( Struct ):
         self.step = 0
         self.dt = 1.0
         
-        itype = None
+        self.itype = itype = None
         aux = re.compile( '([a-z]+)_.*' ).match( name )
         if aux:
             itype = aux.group( 1 )
-        self.itype = itype
+        self.raw_itype = itype
         self.ats = list( self.arg_types )
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -155,20 +155,6 @@ class Term( Struct ):
         msg = 'base class method "_call" called for %s' % self.__class__.__name__
         raise RuntimeError( msg )
     
-    ##
-    # c: 21.03.2008, r: 21.03.2008
-    def get_shape( self, diff_var, apr, apc = None ):
-        msg = 'base class method "get_shape" called for %s'\
-              % self.__class__.__name__
-        raise RuntimeError( msg )
-
-    ##
-    # c: 21.03.2008, r: 21.03.2008
-    def build_c_fun_args( self, *args, **kwargs ):
-        msg = 'base class method "build_c_fun_args" called for %s'\
-              % self.__class__.__name__
-        raise RuntimeError( msg )
-
     ##
     # 16.11.2005, c
     def get_arg_names( self ):
@@ -241,6 +227,7 @@ class Term( Struct ):
                 raise ValueError( msg )
         else:
             arg_types = self.arg_types
+            self.mode = None
 
         # Set actual argument types.
         self.ats = list( arg_types )
@@ -281,6 +268,11 @@ class Term( Struct ):
                               % self.n_virtual )
 
         self.set_arg_types()
+
+        if (self.raw_itype == 'dw') and (self.mode == 'eval'):
+            self.itype = 'd'
+        else:
+            self.itype = self.raw_itype
 
     def set_arg_types( self ):
         pass
