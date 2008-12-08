@@ -82,6 +82,61 @@ class CoefSymSym( MiniAppBase ):
 
         return coef
 
+class CoefDimSym( MiniAppBase ):
+
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        dim, sym = problem.get_dim( get_sym = True )
+        coef = nm.zeros( (dim, sym), dtype = nm.float64 )
+
+        for ir in range( dim ):
+            for name, val in self.get_variables( problem, ir, None, data,
+                                                 'row' ):
+                problem.variables[name].data_from_data( val )
+
+            for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
+                for name, val in self.get_variables( problem, irc, icc, data,
+                                                     'col' ):
+                    problem.variables[name].data_from_data( val )
+
+                val = eval_term_op( None, self.expression,
+                                    problem, call_mode = 'd_eval' )
+
+                coef[ir,ic] = val
+
+        coef /= volume
+
+        return coef
+    
+class CoefDimDim( MiniAppBase ):
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        dim = problem.get_dim()
+        coef = nm.zeros( (dim, dim), dtype = nm.float64 )
+
+        for ir in range( dim ):
+            for name, val in self.get_variables( problem, ir, None, data,
+                                                 'row' ):
+                problem.variables[name].data_from_data( val )
+
+            for ic in range( dim ):
+                for name, val in self.get_variables( problem, None, ic, data,
+                                                     'col' ):
+                    problem.variables[name].data_from_data( val )
+
+                val = eval_term_op( None, self.expression,
+                                    problem, call_mode = 'd_eval' )
+
+                coef[ir,ic] = val
+
+        coef /= volume
+
+        return coef
+
 class ElasticCoef( CoefSymSym ):
     """Homogenized elastic tensor $E_{ijkl}$."""
 
@@ -98,3 +153,7 @@ class ElasticCoef( CoefSymSym ):
         pi = pis[ir,ic] + omega
 
         yield (var_name, pi)
+
+class PiezoCouplingCoef( CoefDimSym ):
+    """Homogenized piezoelectric coupling tensor $G_{kij}."""
+    pass
