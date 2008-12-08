@@ -125,20 +125,13 @@ class AcousticBandGapsApp( SimpleApp ):
         }
         plot_rsc = try_set_defaults( options, 'plot_rsc', plot_rsc )
 
-        try:
-            eigenmomentum = options.eigenmomentum
-        except:
-            raise ValueError( 'missing key "eigenmomentum" in options!' )
+        eigenmomentum = get( 'eigenmomentum', None,
+                             'missing "eigenmomentum" in options!' )
+        
+        region_to_material = get( 'region_to_material', None,
+                                  'missing "region_to_material" in options!' )
 
-        try:
-            region_to_material = options.region_to_material
-        except:
-            raise ValueError( 'missing key "region_to_material" in options!' )
-
-        try:
-            volume = options.volume
-        except:
-            raise ValueError( 'missing key "volume" in options!' )
+        volume = get( 'volume', None, 'missing "volume" in options!' )
 
         post_process_hook = get( 'post_process_hook', None )
 
@@ -157,15 +150,10 @@ class AcousticBandGapsApp( SimpleApp ):
         homogeneous = get( 'homogeneous', False )
         file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
 
-        try:
-            region_to_material = options.region_to_material
-        except:
-            raise ValueError( 'missing key "region_to_material" in options!' )
+        region_to_material = get( 'region_to_material', None,
+                                  'missing "region_to_material" in options!' )
 
-        try:
-            volume = options.volume
-        except:
-            raise ValueError( 'missing key "volume" in options!' )
+        volume = get( 'volume', None, 'missing "volume" in options!' )
 
         post_process_hook = get( 'post_process_hook', None )
 
