@@ -180,9 +180,9 @@ class Struct( object ):
     def to_dict( self ):
         return copy( self.__dict__ )
 
-    def get_default_attr( self, key, default = None ):
-        """Behaves like dict.get()"""
-        return get_default_attr( self, key, default )
+    def get_default_attr( self, key, default = None, msg_if_none = None ):
+        """Behaves like dict.get() if msg_if_none is None."""
+        return get_default_attr( self, key, default, msg_if_none )
 
 #
 # 12.07.2007, c
@@ -544,11 +544,15 @@ def get_default( arg, default, msg_if_none = None ):
 
 ##
 # c: 28.04.2008, r: 28.04.2008
-def get_default_attr( obj, attr, default ):
+def get_default_attr( obj, attr, default, msg_if_none = None ):
     if hasattr( obj, attr ):
         out = getattr( obj, attr )
     else:
         out = default
+
+    if (out is None) and (msg_if_none is not None):
+        raise ValueError( msg_if_none )
+
     return out
 
 ##
