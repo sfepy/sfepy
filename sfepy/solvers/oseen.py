@@ -108,6 +108,59 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
 class Oseen( NonlinearSolver ):
     name = 'nls.oseen'
 
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_1 = {
+            'name' : 'oseen',
+            'kind' : 'nls.oseen',
+
+            'adimensionalize' : False,
+            'check_navier_stokes_rezidual' : False,
+
+            'fluid_mat_name' : 'fluid',
+            'stabil_mat_name' : 'stabil',
+            'lin_convect_eq_name' : 'balance',
+            'div_eq_name' : 'incompressibility',
+
+            'i_max'      : 10,
+            'eps_a'      : 1e-8,
+            'eps_r'      : 1.0,
+            'macheps'   : 1e-16,
+            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+            'is_plot'    : False,
+        }
+        """
+        get = conf.get_default_attr
+
+        # Compulsory.
+        fluid_mat_name = get( 'fluid_mat_name', None,
+                              'missing "fluid_mat_name" in options!' )
+        stabil_mat_name = get( 'stabil_mat_name', None,
+                               'missing "stabil_mat_name" in options!' )
+        lin_convect_eq_name = get( 'lin_convect_eq_name', None,
+                                   'missing "lin_convect_eq_name" in options!' )
+        div_eq_name = get( 'div_eq_name', None,
+                           'missing "div_eq_name" in options!' )
+
+        # With defaults.
+        adimensionalize = get( 'adimensionalize', False )
+        check_navier_stokes_rezidual = get( 'check_navier_stokes_rezidual',
+                                            False )
+        i_max = get( 'i_max', 1 )
+        eps_a = get( 'eps_a', 1e-10 )
+        eps_r = get( 'eps_r', 1.0 )
+        macheps = get( 'macheps', nm.finfo( nm.float64 ).eps )
+        lin_red = get( 'lin_red', 1.0 )
+        is_plot = get( 'is_plot', False )
+
+        common = NonlinearSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
     ##
     # 10.10.2007, c
     def __init__( self, conf, **kwargs ):

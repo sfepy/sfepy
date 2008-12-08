@@ -80,6 +80,51 @@ def conv_test( conf, it, err, err0 ):
 class Newton( NonlinearSolver ):
     name = 'nls.newton'
 
+    def process_conf( conf ):
+        """
+        Missing items are set to default values for a linear problem.
+        
+        Example configuration, all items:
+        
+        solver_1 = {
+            'name' : 'newton',
+            'kind' : 'nls.newton',
+
+            'i_max'      : 2,
+            'eps_a'      : 1e-8,
+            'eps_r'      : 1e-2,
+            'macheps'   : 1e-16,
+            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+            'ls_red'     : 0.1,
+            'ls_red_warp' : 0.001,
+            'ls_on'      : 0.99999,
+            'ls_min'     : 1e-5,
+            'check'     : 0,
+            'delta'     : 1e-6,
+            'is_plot'    : False,
+            'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
+        }
+        """
+        get = conf.get_default_attr
+
+        i_max = get( 'i_max', 1 )
+        eps_a = get( 'eps_a', 1e-10 )
+        eps_r = get( 'eps_r', 1.0 )
+        macheps = get( 'macheps', nm.finfo( nm.float64 ).eps )
+        lin_red = get( 'lin_red', 1.0 )
+        ls_red = get( 'ls_red', 0.1 )
+        ls_red_warp = get( 'ls_red_warp', 0.001 )
+        ls_on = get( 'ls_on', 0.99999 )
+        ls_min = get( 'ls_min', 1e-5 )
+        check = get( 'check', 0 )
+        delta = get( 'delta', 1e-6)
+        is_plot = get( 'is_plot', False )
+        problem = get( 'problem', 'nonlinear' )
+
+        common = NonlinearSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
     ##
     # 10.10.2007, c
     def __init__( self, conf, **kwargs ):

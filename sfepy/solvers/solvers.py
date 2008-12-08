@@ -3,9 +3,21 @@ from sfepy.base.base import *
 ##
 # 10.10.2007, c
 class Solver( Struct ):
+    def process_conf( conf ):
+        """
+        Ensures conf contains 'name' and 'kind'.
+        """
+        get = conf.get_default_attr
+        name = get( 'name', None, 'missing "name" in options!' )
+        name = get( 'kind', None, 'missing "kind" in options!' )
+
+        return Struct( **locals() )
+    process_conf = staticmethod( process_conf )
+
     ##
     # 10.10.2007, c
     def __init__( self, conf, **kwargs ):
+        conf = self.__class__.process_conf( conf )
         Struct.__init__( self, conf = conf, **kwargs )
 
     ##

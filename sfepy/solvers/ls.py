@@ -65,6 +65,31 @@ class Umfpack( LinearSolver ):
 class ScipyIterative( LinearSolver ):
     name = 'ls.scipy_iterative'
 
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_110 = {
+            'name' : 'ls110',
+            'kind' : 'ls.scipy_iterative',
+
+            'method' : 'cg',
+            'i_max'   : 1000,
+            'eps_a'   : 1e-12,
+        }
+        """
+        get = conf.get_default_attr
+
+        method = get( 'method', 'cg' )
+        i_max = get( 'i_max', 100 )
+        eps_a = get( 'eps_a', 1e-8 )
+
+        common = LinearSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+    
     ##
     # c: 22.02.2008, r: 23.06.2008
     def __init__( self, conf, **kwargs ):
@@ -75,8 +100,16 @@ class ScipyIterative( LinearSolver ):
                 import scipy.splinalg.isolve as la
             else:
                 import scipy.sparse.linalg.isolve as la
-        solver = getattr( la, conf.method )
-        LinearSolver.__init__( self, conf, solver = solver, **kwargs )
+
+        LinearSolver.__init__( self, conf, **kwargs )
+
+        try:
+            solver = getattr( la, self.conf.method )
+        except AttributeError:
+            output( 'scipy solver %s does not exist!' % self.conf.method )
+            output( 'using cg instead' )
+            solver = la.cg
+        self.solver = solver
         
     ##
     # c: 22.02.2008, r: 22.02.2008
@@ -85,7 +118,8 @@ class ScipyIterative( LinearSolver ):
         mtx = get_default( mtx, self.mtx )
         status = get_default( status, self.status )
 
-        sol, info = self.solver( mtx, rhs, tol = conf.eps_a, maxiter = conf.i_max )
+        sol, info = self.solver( mtx, rhs, tol = conf.eps_a,
+                                 maxiter = conf.i_max )
         
         return sol
 
@@ -93,6 +127,29 @@ class ScipyIterative( LinearSolver ):
 # c: 02.05.2008, r: 02.05.2008
 class PyAMGSolver( LinearSolver ):
     name = 'ls.pyamg'
+
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_102 = {
+            'name' : 'ls102',
+            'kind' : 'ls.pyamg',
+
+            'method' : 'smoothed_aggregation_solver',
+            'eps_a'   : 1e-12,
+        }
+        """
+        get = conf.get_default_attr
+
+        method = get( 'method', 'smoothed_aggregation_solver' )
+        eps_a = get( 'eps_a', 1e-8 )
+
+        common = LinearSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
 
     ##
     # c: 02.05.2008, r: 02.05.2008
@@ -103,16 +160,15 @@ class PyAMGSolver( LinearSolver ):
             output( 'cannot import pyamg!' )
             raise
 
+        LinearSolver.__init__( self, conf, mg = None, **kwargs )
+
         try:
-            solver = getattr( pyamg, conf.method )
+            solver = getattr( pyamg, self.conf.method )
         except AttributeError:
-            output( 'pyamg.%s does not exist!' % conf.method )
+            output( 'pyamg.%s does not exist!' % self.conf.method )
             output( 'using pyamg.smoothed_aggregation_solver instead' )
             solver = pyamg.smoothed_aggregation_solver
-
-        LinearSolver.__init__( self, conf,
-                               solver = solver, mg = None,
-                               **kwargs )
+        self.solver = solver
 
         if hasattr( self, 'mtx' ):
             if self.mtx is not None:

@@ -141,6 +141,37 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
 class PysparseEigenvalueSolver( EigenvalueSolver ):
     name = 'eig.pysparse'
 
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_2 = {
+            'name' : 'eigen1',
+            'kind' : 'eig.pysparse',
+
+            'i_max' : 150,
+            'eps_a' : 1e-5,
+            'tau' : -10.0,
+            'method' : 'qmrs',
+            'verbosity' : 0,
+            'strategy' : 1,
+        }
+        """
+        get = conf.get_default_attr
+
+        i_max = get( 'i_max', 100 )
+        eps_a = get( 'eps_a', 1e-5 )
+        tau = get( 'tau', 0.0 )
+        method = get( 'method', 'qmrs' )
+        verbosity = get( 'verbosity', 0 )
+        strategy = get( 'strategy', 1 )
+
+        common = EigenvalueSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
     def _convert_mat(mtx):
         from pysparse import spmatrix
         A = spmatrix.ll_mat(*mtx.shape)
