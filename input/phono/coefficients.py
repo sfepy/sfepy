@@ -1,4 +1,5 @@
 from sfepy.fem.periodic import *
+from regions import get_box_regions
 
 def define_input( filename, region, dim, geom ):
     """Uses materials, fe of master file, merges regions."""
@@ -50,12 +51,11 @@ def define_input( filename, region, dim, geom ):
     }
 
     if filename.find( 'mesh_circ21' ) >= 0:
-        wx = 0.499
-        wy = 0.499
+        sizes = (0.499, 0.499)
     elif filename.find( 'cube_cylinder_centered' ) >= 0:
-        wx = 0.499
-        wy = 0.499
-        wz = 0.499
+        sizes = (0.499, 0.499, 0.499)
+
+    regions = get_box_regions( dim, sizes )
 
     ebcs = {
         'fixed_u' : ('Corners', {'u1.all' : 0.0}),
@@ -64,24 +64,6 @@ def define_input( filename, region, dim, geom ):
     ##
     # Periodic boundary conditions.
     if dim == 3:
-        regions = {
-            'Near' : ('nodes in (y < -%.3f)' % wy, {}),
-            'Far' : ('nodes in (y > %.3f)' % wy, {}),
-            'Bottom' : ('nodes in (z < -%.3f)' % wz, {}),
-            'Top' : ('nodes in (z > %.3f)' % wz, {}),
-            'Left' : ('nodes in (x < -%.3f)' % wx, {}),
-            'Right' : ('nodes in (x > %.3f)' % wx, {}),
-            'Corners' : ("""nodes in
-                            ((x < -%.3f) & (y < -%.3f) & (z < -%.3f))
-                          | ((x >  %.3f) & (y < -%.3f) & (z < -%.3f))
-                          | ((x >  %.3f) & (y >  %.3f) & (z < -%.3f))
-                          | ((x < -%.3f) & (y >  %.3f) & (z < -%.3f))
-                          | ((x < -%.3f) & (y < -%.3f) & (z >  %.3f))
-                          | ((x >  %.3f) & (y < -%.3f) & (z >  %.3f))
-                          | ((x >  %.3f) & (y >  %.3f) & (z >  %.3f))
-                          | ((x < -%.3f) & (y >  %.3f) & (z >  %.3f))
-                          """ % ((wx, wy, wz) * 8), {}),
-        }
         epbc_10 = {
             'name' : 'periodic_x',
             'region' : ['Left', 'Right'],
@@ -101,18 +83,6 @@ def define_input( filename, region, dim, geom ):
             'match' : 'match_z_plane',
         }
     else:
-        regions = {
-            'Bottom' : ('nodes in (y < -%.3f)' % wy, {}),
-            'Top' : ('nodes in (y > %.3f)' % wy, {}),
-            'Left' : ('nodes in (x < -%.3f)' % wx, {}),
-            'Right' : ('nodes in (x > %.3f)' % wx, {}),
-            'Corners' : ("""nodes in
-                              ((x < -%.3f) & (y < -%.3f))
-                            | ((x >  %.3f) & (y < -%.3f))
-                            | ((x >  %.3f) & (y >  %.3f))
-                            | ((x < -%.3f) & (y >  %.3f))
-                            """ % ((wx, wy) * 4), {}),
-        }
         epbc_10 = {
             'name' : 'periodic_x',
             'region' : ['Left', 'Right'],
@@ -136,18 +106,6 @@ def define_input( filename, region, dim, geom ):
         'kind' : 'nls.newton',
 
         'i_max'      : 2,
-        'eps_a'      : 1e-8,
-        'eps_r'      : 1e-2,
-        'macheps'   : 1e-16,
-        'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-        'ls_red'     : 0.1,
-        'ls_red_warp' : 0.001,
-        'ls_on'      : 0.99999,
-        'ls_min'     : 1e-5,
-        'check'     : 0,
-        'delta'     : 1e-6,
-        'is_plot'    : False,
-        'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
     }
 
     return locals()
