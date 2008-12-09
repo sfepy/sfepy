@@ -2,7 +2,7 @@
 import os
 import numpy as nm
 from sfepy.fem import MeshIO
-import coefficients as coefs
+import coef_conf_elastic as cconf
 
 #filename_mesh = 'database/phono/cube_sphere.mesh'
 #filename_mesh = 'database/phono/cube_cylinder.mesh'
@@ -51,8 +51,8 @@ options = {
 
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
-    'dispersion_conf' : (coefs.define_input( filename_mesh,
-                                             matrix_region, dim, geom ), coefs),
+    'dispersion_conf' : (cconf.define_input( filename_mesh,
+                                             matrix_region, dim, geom ), cconf),
 
     'plot_options' : {
         'show' : True,
