@@ -320,7 +320,7 @@ class MeditMeshIO( MeshIO ):
         fd.write( "MeshVersionFormatted 1\nDimension %d\n" % dim )
 
         fd.write( "Vertices\n%d\n" % n_nod )
-        format = self.get_vector_format( dim ) + '%d\n'
+        format = self.get_vector_format( dim ) + ' %d\n'
         for ii in range( n_nod ):
             nn = nod[ii]
             fd.write( format % tuple( nn ) )
