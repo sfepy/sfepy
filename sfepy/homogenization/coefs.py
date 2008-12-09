@@ -1,10 +1,25 @@
 from sfepy.base.base import *
 from sfepy.fem import eval_term_op
-from utils import iter_sym
+from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):
     def __init__( self, name, problem, kwargs ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
+        self.set_default_attr( 'requires', [] )
+
+class ShapeDimDim( MiniAppBase ):
+    
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        problem = get_default( problem, self.problem )
+
+        return create_pis( problem, self.variables[0] )
+
+class ShapeDim( MiniAppBase ):
+    
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        problem = get_default( problem, self.problem )
+
+        return create_scalar_pis( problem, self.variables[0] )
 
 class CorrDimDim( MiniAppBase ):
     """ __init__() kwargs:
@@ -42,6 +57,37 @@ class CorrDimDim( MiniAppBase ):
 
                 if save_hook is not None:
                     save_hook( state, problem, ir, ic )
+
+        return Struct( name = self.name,
+                       states = states,
+                       di = problem.variables.di )
+
+class CorrDim( MiniAppBase ):
+    def get_variables( self, ir, data ):
+            raise StopIteration
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        problem = get_default( problem, self.problem )
+
+        problem.select_variables( self.variables )
+        problem.set_equations( self.equations )
+
+        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        dim = problem.domain.mesh.dim
+        states = nm.zeros( (dim,), dtype = nm.object )
+        for ir in range( dim ):
+            for name, val in self.get_variables( ir, data ):
+                problem.variables[name].data_from_data( val )
+
+            state = problem.create_state_vector()
+            problem.apply_ebc( state )
+            state = problem.solve()
+            assert_( problem.variables.has_ebc( state ) )
+            states[ir] = state
+
+            if save_hook is not None:
+                save_hook( state, problem, ir )
 
         return Struct( name = self.name,
                        states = states,
