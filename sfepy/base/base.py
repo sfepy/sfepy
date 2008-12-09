@@ -184,6 +184,10 @@ class Struct( object ):
         """Behaves like dict.get() if msg_if_none is None."""
         return get_default_attr( self, key, default, msg_if_none )
 
+    def set_default_attr( self, key, default = None ):
+        """Behaves like dict.setdefault()."""
+        return self.__dict__.setdefault( key, default )
+
 #
 # 12.07.2007, c
 class IndexedStruct( Struct ):
