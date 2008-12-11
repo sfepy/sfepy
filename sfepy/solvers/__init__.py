@@ -5,10 +5,7 @@ from nls import *
 from oseen import *
 from ts import *
 from eigen import *
-try:
-    from optimize import *
-except:
-    pass
+from optimize import *
 
 ##
 # c: 16.10.2007, r: 03.03.2008
