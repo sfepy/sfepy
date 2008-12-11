@@ -34,7 +34,7 @@ def create_scalar_pis( problem, var_name ):
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim,), dtype = nm.object )
     for ir in range( dim ):
-        pis[ir] = coor[:,ir]
+        pis[ir] = nm.ascontiguousarray( coor[:,ir] )
     return pis
 
 def iter_sym( dim ):
