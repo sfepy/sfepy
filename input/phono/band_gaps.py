@@ -51,8 +51,11 @@ options = {
 
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
-    'dispersion_conf' : (cconf.define_input( filename_mesh,
-                                             matrix_region, dim, geom ), cconf),
+    'dispersion_conf' : {
+         'input' : cconf.define_input( filename_mesh,
+                                       matrix_region, dim, geom ),
+         'module' : cconf,
+    },
 
     'plot_options' : {
         'show' : True,
