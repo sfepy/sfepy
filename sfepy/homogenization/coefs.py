@@ -3,9 +3,19 @@ from sfepy.fem import eval_term_op
 from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):
+    def any_from_conf( name, problem, kwargs ):
+        cls = kwargs.get( 'class' )
+        obj = cls( name, problem, kwargs )
+        return obj
+    any_from_conf = staticmethod( any_from_conf )
+
     def __init__( self, name, problem, kwargs ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
         self.set_default_attr( 'requires', [] )
+
+    def make_save_hook( self, base_name, format,
+                        post_process_hook = None, file_per_var = None ):
+        return None
 
 class ShapeDimDim( MiniAppBase ):
     
@@ -62,6 +72,15 @@ class CorrDimDim( MiniAppBase ):
                        states = states,
                        di = problem.variables.di )
 
+    def make_save_hook( self, base_name, format,
+                        post_process_hook = None, file_per_var = None ):
+        def save_correctors( state, problem, ir, ic ):
+            problem.save_state( (base_name + '_%d%d.' % (ir, ic)) + format,
+                                state,
+                                post_process_hook = post_process_hook,
+                                file_per_var = file_per_var )
+        return save_correctors
+
 class CorrDim( MiniAppBase ):
     def get_variables( self, ir, data ):
             raise StopIteration
@@ -92,6 +111,15 @@ class CorrDim( MiniAppBase ):
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
+
+    def make_save_hook( self, base_name, format,
+                        post_process_hook = None, file_per_var = None ):
+        def save_correctors( state, problem, ir ):
+            problem.save_state( (base_name + '_%d.' % (ir,)) + format,
+                                state,
+                                post_process_hook = post_process_hook,
+                                file_per_var = file_per_var )
+        return save_correctors
 
 class CorrectorsRS( CorrDimDim ):
     """Steady state correctors $\bar{\omega}^{rs}$."""
