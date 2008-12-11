@@ -14,6 +14,7 @@ from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
 from sfepy.homogenization.utils import create_pis
 from sfepy.homogenization.coefs import CorrectorsRS, ElasticCoef
+from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
 from sfepy.base.plotutils import pylab
@@ -69,6 +70,7 @@ class AcousticBandGapsApp( SimpleApp ):
         teps_rel = get( 'teps_rel', True )
 
         incident_wave_dir = get( 'incident_wave_dir', None )
+        experimental = get( 'experimental', False )
 
         eig_vector_transform = get( 'eig_vector_transform', None )
         plot_transform = get( 'plot_transform', None )
@@ -433,12 +435,23 @@ class AcousticBandGapsApp( SimpleApp ):
 
     def eval_coef_e( self ):
         dconf_raw = self.app_options.dispersion_conf
-        dconf = ProblemConf.from_dict( *dconf_raw )
+        dconf = ProblemConf.from_dict( dconf_raw['input'], dconf_raw['module'] )
 
         dconf.materials = self.conf.materials
         dconf.fe = self.conf.fe
         dconf.regions.update( self.conf.regions )
 
+        volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
+
+        if self.app_options.experimental:
+            he = HomogenizationEngine( dconf, self.options, 'he:',
+                                       volume = volume )
+            print he
+            aux = he()
+            print aux
+            default_printer.prefix = self.output_prefix
+            return aux.C
+            
         dproblem = ProblemDefinition.from_conf( dconf, init_variables = False )
 
         req = dconf.requirements['pis']
@@ -452,7 +465,6 @@ class AcousticBandGapsApp( SimpleApp ):
                                     self.post_process_hook )
         corrs_rs = solve_corrs( data = pis, save_hook = save_hook )
 
-        volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
 
         cargs = dconf.coefs['E']
         get_coef = ElasticCoef( 'homogenized elastic tensor', dproblem, cargs )
