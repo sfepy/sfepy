@@ -237,23 +237,46 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     else:
         return n_zeroed, valid, eigenmomenta
 
-def compute_cat( mtx_d, iw_dir ):
-    """Compute Christoffel acoustic tensor given the elasticity tensor and
-    incident wave direction (unit vector).
+def compute_cat( coefs, iw_dir, mode = 'simple' ):
+    r"""Compute Christoffel acoustic tensor (cat) given the incident wave
+    direction (unit vector).
 
-    \Gamma_{ik} = D_{ijkl} n_j n_l
+    - if mode == 'simple', coefs.C is the elasticity tensor C and
+    cat := \Gamma_{ik} = C_{ijkl} n_j n_l
+
+    - if mode == 'piezo', coefs.C, .G, .D are the elasticity, piezo-coupling
+    and dielectric tensors C, G, D and
+    cat := H_{ik} = \Gamma_{ik} + \frac{1}{\xi} \gamma_i \gamma_j, where
+    \gamma_i = G_{kij} n_j n_k,
+    \xi = D_{kl} n_k n_l
     """
     dim = iw_dir.shape[0]
 
     cat = nm.zeros( (dim, dim), dtype = nm.float64 )
+
+    mtx_c = coefs.C
     for ii in range( dim ):
         for ij in range( dim ):
             ir = coor_to_sym( ii, ij, dim )
             for ik in range( dim ):
                 for il in range( dim ):
                     ic = coor_to_sym( ik, il, dim )
-                    cat[ii,ik] += mtx_d[ir,ic] * iw_dir[ij] * iw_dir[il]
-
+                    cat[ii,ik] += mtx_c[ir,ic] * iw_dir[ij] * iw_dir[il]
+#    print cat
+    
+    if mode =='piezo':
+        xi = nm.dot( nm.dot( coefs.D, iw_dir ), iw_dir )
+#        print xi
+        gamma = nm.zeros( (dim,), dtype = nm.float64 )
+        mtx_g = coefs.G
+        for ii in range( dim ):
+            for ij in range( dim ):
+                ir = coor_to_sym( ii, ij, dim )
+                for ik in range( dim ):
+                    gamma[ii] += mtx_g[ik,ir] * iw_dir[ij] * iw_dir[ik]
+#        print gamma
+        cat += nm.outer( gamma, gamma ) / xi
+        
     return cat
 
 def compute_polarization_angles( iw_dir, wave_vectors ):

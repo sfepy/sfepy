@@ -12,8 +12,6 @@ from sfepy.fem import eval_term_op, ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
-from sfepy.homogenization.utils import create_pis
-from sfepy.homogenization.coefs import CorrectorsRS, ElasticCoef
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
@@ -36,6 +34,11 @@ def try_set_defaults( obj, attr, defaults ):
         values = defaults
     return values
     
+def report_iw_cat( iw_dir, christoffel ):
+    output( 'incident wave direction:' )
+    output( iw_dir )
+    output( 'Christoffel acoustic tensor:' )
+    output( christoffel )
 
 class AcousticBandGapsApp( SimpleApp ):
 
@@ -47,11 +50,12 @@ class AcousticBandGapsApp( SimpleApp ):
         eigensolver = get( 'eigensolver', 'eig.sgscipy' )
         eig_problem = get( 'eig_problem', 'simple' )
         schur = get( 'schur', None )
+
+        incident_wave_dir = get( 'incident_wave_dir', None )
+        dispersion = get( 'dispersion', 'simple' )
         dispersion_conf = get( 'dispersion_conf', None )
-        if dispersion_conf:
-            file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
-        else: file_conf = None
-    
+        homogeneous = get( 'homogeneous', False )
+
         save = get( 'save_eig_vectors', (0, 0) )
         eig_range = get( 'eig_range', None )
 
@@ -69,9 +73,6 @@ class AcousticBandGapsApp( SimpleApp ):
         teps = get( 'teps', 1e-4 )
         teps_rel = get( 'teps_rel', True )
 
-        incident_wave_dir = get( 'incident_wave_dir', None )
-        experimental = get( 'experimental', False )
-
         eig_vector_transform = get( 'eig_vector_transform', None )
         plot_transform = get( 'plot_transform', None )
         plot_transform_wave = get( 'plot_transform_wave', None )
@@ -81,6 +82,8 @@ class AcousticBandGapsApp( SimpleApp ):
                                          {'show' : True,'legend' : False,} )
 
         fig_name = get( 'fig_name', None )
+        fig_name_wave = get( 'fig_name_wave', None )
+        fig_name_angle = get( 'fig_name_angle', None )
 
         aux = {
             'resonance' : 'eigenfrequencies',
@@ -148,9 +151,10 @@ class AcousticBandGapsApp( SimpleApp ):
         eigensolver = get( 'eigensolver', 'eig.sgscipy' )
 
         incident_wave_dir = get( 'incident_wave_dir', None )
+        dispersion = get( 'dispersion', 'simple' )
         dispersion_conf = get( 'dispersion_conf', None )
         homogeneous = get( 'homogeneous', False )
-        file_conf = get( 'file_conf', {'corrs_rs' : '_phono_rs_%d%d'} )
+        fig_suffix = get( 'fig_suffix', '.pdf' )
 
         region_to_material = get( 'region_to_material', None,
                                   'missing "region_to_material" in options!' )
@@ -167,6 +171,8 @@ class AcousticBandGapsApp( SimpleApp ):
                             init_equations = False )
 
         self.setup_options()
+
+        self.cached_coefs = None
         
         post_process_hook = self.app_options.post_process_hook
         if post_process_hook is not None:
@@ -239,13 +245,11 @@ class AcousticBandGapsApp( SimpleApp ):
 
             iw_dir = iw_dir / nla.norm( iw_dir )
 
-            mtx_d = self.eval_coef_e( )
-            print mtx_d
+            coefs = self.eval_homogenized_coefs()
+            christoffel = compute_cat( coefs, iw_dir,
+                                       self.app_options.dispersion )
+            report_iw_cat( iw_dir, christoffel )
 
-            christoffel = compute_cat( mtx_d, iw_dir )
-            print iw_dir
-            print christoffel
-            
             bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
                                    self.app_options, self.conf.funmod,
                                    christoffel = christoffel )
@@ -279,6 +283,10 @@ class AcousticBandGapsApp( SimpleApp ):
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
+                fig_name = bg.opts.fig_name_angle
+                if fig_name is not None:
+                    fig.savefig( fig_name )
+
                 aux = transform_plot_data( bg.logs[1],
                                            bg.opts.plot_transform_wave,
                                            self.conf.funmod )
@@ -297,7 +305,7 @@ class AcousticBandGapsApp( SimpleApp ):
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
-                fig_name = bg.opts.fig_name
+                fig_name = bg.opts.fig_name_wave
                 if fig_name is not None:
                     fig.savefig( fig_name )
 
@@ -432,45 +440,50 @@ class AcousticBandGapsApp( SimpleApp ):
 
         return Struct( eigs = eigs, eig_vectors = eig_vectors )
 
+    def eval_homogenized_coefs( self ):
+        if self.cached_coefs is not None:
+            return self.cached_coefs
 
-    def eval_coef_e( self ):
-        dconf_raw = self.app_options.dispersion_conf
-        dconf = ProblemConf.from_dict( dconf_raw['input'], dconf_raw['module'] )
+        opts = self.app_options
 
-        dconf.materials = self.conf.materials
-        dconf.fe = self.conf.fe
-        dconf.regions.update( self.conf.regions )
+        if opts.homogeneous:
+            rtm = opts.region_to_material
+            mat_region = rtm.keys()[0]
+            mat_name = rtm[mat_region]
+            
+            self.problem.update_materials()
 
-        volume = eval_term_op( None, 'd_volume.i1.Y( uy )', self.problem )
+            mat = self.problem.materials[mat_name]
+            if opts.dispersion == 'piezo':
+                coefs = Struct( C = mat.get_data( mat_region, 0, 'C' ),
+                                G = mat.get_data( mat_region, 0, 'B' ),
+                                D = mat.get_data( mat_region, 0, 'D' ) )
+            else:
+                coefs = Struct( C = mat.get_data( mat_region, 0, 'D' ) )
 
-        if self.app_options.experimental:
+        else:
+            dc = opts.dispersion_conf
+            dconf = ProblemConf.from_dict( dc['input'], dc['module'] )
+
+            dconf.materials = self.conf.materials
+            dconf.fe = self.conf.fe
+            dconf.regions.update( self.conf.regions )
+            dconf.options['output_dir'] = self.problem.output_dir
+
+            volume = eval_term_op( None, opts.volume % 'Y', self.problem )
+
             he = HomogenizationEngine( dconf, self.options, 'he:',
                                        volume = volume )
-            print he
-            aux = he()
-            print aux
-            default_printer.prefix = self.output_prefix
-            return aux.C
-            
-        dproblem = ProblemDefinition.from_conf( dconf, init_variables = False )
+            coefs = he()
 
-        req = dconf.requirements['pis']
-        pis = create_pis( dproblem, req['variables'][0] )
+##         print coefs
+##         pause()
+        
+        default_printer.prefix = self.output_prefix
 
-        req = dconf.requirements['corrs_phono_rs']
-        solve_corrs = CorrectorsRS( 'steady rs correctors', dproblem, req )
-
-        fc = self.app_options.file_conf
-        save_hook = make_save_hook( dproblem.ofn_trunk + fc['corrs_rs'],
-                                    self.post_process_hook )
-        corrs_rs = solve_corrs( data = pis, save_hook = save_hook )
-
-
-        cargs = dconf.coefs['E']
-        get_coef = ElasticCoef( 'homogenized elastic tensor', dproblem, cargs )
-        mtx = get_coef( volume, data = {'pis': pis, 'corrs' : corrs_rs} )
-
-        return mtx
+        self.cached_coefs = coefs
+        
+        return coefs
 
     def compute_phase_velocity( self ):
         from sfepy.homogenization.phono import compute_density_volume_info
@@ -482,24 +495,12 @@ class AcousticBandGapsApp( SimpleApp ):
 
         iw_dir = iw_dir / nla.norm( iw_dir )
 
-        if opts.homogeneous:
-            rtm = opts.region_to_material
-            mat_region = rtm.keys()[0]
-            mat_name = rtm[mat_region]
-            
-            mat = self.problem.materials[mat_name]
-            mtx_d = mat.get_data( mat_region, 0, 'D' )
-        else:
-            mtx_d = self.eval_coef_e( )
-        output( 'elastic tensor:' )
-        output( mtx_d )
+        coefs = self.eval_homogenized_coefs()
+        christoffel = compute_cat( coefs, iw_dir,
+                                   self.app_options.dispersion )
+        report_iw_cat( iw_dir, christoffel )
 
-        christoffel = compute_cat( mtx_d, iw_dir )
-        output( 'incident wave direction:' )
-        output( iw_dir )
-        output( 'Christoffel acoustic tensor:' )
-        output( christoffel )
-
+        self.problem.update_materials()
         dv_info = compute_density_volume_info( self.problem, opts.volume,
                                                opts.region_to_material )
         output( 'average density:', dv_info.average_density )
@@ -545,7 +546,7 @@ def main():
     parser.add_option( "-p", "--plot",
                        action = "store_true", dest = "plot",
                        default = False, help = help['plot'] )
-    parser.add_option( "--phase_velocity",
+    parser.add_option( "--phase-velocity",
                        action = "store_true", dest = "phase_velocity",
                        default = False, help = help['phase_velocity'] )
 
