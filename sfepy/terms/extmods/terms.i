@@ -304,6 +304,10 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			 int32 *elList, int32 elList_nRow,
 			 int32 mode );
 
+int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
+			FMField *mtxG, VolumeGeometry *vg,
+			int32 *elList, int32 elList_nRow );
+
 #ifndef ISRELEASE
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,

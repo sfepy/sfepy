@@ -88,3 +88,39 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "d_piezo_coupling"
+int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
+			FMField *mtxG, VolumeGeometry *vg,
+			int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *ge = 0, *gptge = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &ge, 1, nQP, dim, 1 );
+  fmf_createAlloc( &gptge, 1, nQP, 1, 1 );
+  
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( strain, iel );
+    FMF_SetCell( charge_grad, iel );
+
+    fmf_mulAB_nn( ge, mtxG, strain );
+    fmf_mulATB_nn( gptge, charge_grad, ge );
+    fmf_sumLevelsMulF( out, gptge, vg->det->val );
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &ge );
+  fmf_freeDestroy( &gptge );
+
+  return( ret );
+}
