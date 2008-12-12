@@ -163,15 +163,15 @@ class StokesDiv( CouplingVectorScalar ):
 class StokesEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_s, par_v = self.get_args( **kwargs )
-        apr, vgr = par_s.get_approximation( self.get_current_group(),
+        par_v, par_s = self.get_args( **kwargs )
+        aps, vgs = par_s.get_approximation( self.get_current_group(),
                                             'Volume' )
-        apc, vgc = par_v.get_approximation( self.get_current_group(),
+        apv, vgv = par_v.get_approximation( self.get_current_group(),
                                             'Volume' )
-        self.set_data_shape( apr, apc )
-        return (par_s, par_v, vgc), (chunk_size, 1, 1, 1), 0
+        self.set_data_shape( aps, apv )
+        return (par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
 
-    def d_eval( self, out, par_s, par_v, vgc, chunk ):
+    def d_eval( self, out, par_v, par_s, vgv, chunk ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0,
                      state = par_s, get_vector = self.get_vector )
@@ -180,7 +180,7 @@ class StokesEval( CouplingVectorScalar ):
 
         out_qp = vec[chunk] * div[chunk]
 
-        status = vgc.integrate_chunk( out, out_qp, chunk )
+        status = vgv.integrate_chunk( out, out_qp, chunk )
         
         return status
 
@@ -193,10 +193,10 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     name = 'dw_stokes'
     arg_types = (('virtual', 'state'),
                  ('state', 'virtual'),
-                 ('parameter_s', 'parameter_v'))
+                 ('parameter_v', 'parameter_s'))
     geometry = ([(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_s'), (Volume, 'parameter_v')])
+                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):

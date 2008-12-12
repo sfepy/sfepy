@@ -57,14 +57,14 @@ class BiotDiv( CouplingVectorScalar ):
 class BiotEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par_s, par_v = self.get_args( **kwargs )
-        apr, vgr = par_s.get_approximation( self.get_current_group(), 'Volume' )
-        apc, vgc = par_v.get_approximation( self.get_current_group(), 'Volume' )
+        mat, par_v, par_s = self.get_args( **kwargs )
+        aps, vgs = par_s.get_approximation( self.get_current_group(), 'Volume' )
+        apv, vgv = par_v.get_approximation( self.get_current_group(), 'Volume' )
 
-        self.set_data_shape( apr, apc )
-        return (mat, par_s, par_v, vgc), (chunk_size, 1, 1, 1), 0
+        self.set_data_shape( aps, apv )
+        return (mat, par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
 
-    def d_eval( self, out, mat, par_s, par_v, vgc, chunk ):
+    def d_eval( self, out, mat, par_v, par_s, vgv, chunk ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec_qp = cache( 'state', self.get_current_group(), 0,
                         state = par_s, get_vector = self.get_vector )
@@ -77,7 +77,7 @@ class BiotEval( CouplingVectorScalar ):
         mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
 
         function = terms.d_biot_div
-        status = function( out, 1.0, vec_qp, strain, mat_qp, vgc, chunk )
+        status = function( out, 1.0, vec_qp, strain, mat_qp, vgv, chunk )
         return status
 
 class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
@@ -92,10 +92,10 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
     name = 'dw_biot'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
-                 ('material', 'parameter_s', 'parameter_v'))
+                 ('material', 'parameter_v', 'parameter_s'))
     geometry = ([(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_s'), (Volume, 'parameter_v')])
+                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):
