@@ -78,9 +78,9 @@ def get_pars( ts, coor, region, ig, mode = None ):
 # mode)
 test_terms = [
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('ps1', 'pv1'), ('pv1', 'ts', 'us'), 'biot')),
+     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us'), 'biot')),
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'pv1', ('ps1', 'pv1'), ('tv', 'ps1', 'uv'), 'biot')),
+     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv'), 'biot')),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
     ('%s_volume_wdot.i1.Omega( m.val, %s, %s )',
