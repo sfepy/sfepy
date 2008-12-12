@@ -157,13 +157,15 @@ Material:m
 ##         print 'getting', name
 
         if name is None:
-            output( 'material arguments must use the dot notation!' )
-            output( '(material: %s, region: %s)' % (self.name, region_name) )
-            raise ValueError
+            msg = 'material arguments must use the dot notation!\n'\
+                  '(material: %s, region: %s)' % (self.name, region_name)
+            raise ValueError( msg )
 
         if self.mode == 'here':
             return getattr( self, name )
         else:
+            if self.datas is None:
+                raise ValueError( 'material data not set! (call time_update())' )
             ii = self.igs.index( ig )
             if isinstance( self.datas[ii], Struct ):
                 return getattr( self.datas[ii], name )
