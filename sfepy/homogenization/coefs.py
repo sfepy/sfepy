@@ -121,13 +121,6 @@ class CorrDim( MiniAppBase ):
                                 file_per_var = file_per_var )
         return save_correctors
 
-class CorrectorsRS( CorrDimDim ):
-    """Steady state correctors $\bar{\omega}^{rs}$."""
-
-    def get_variables( self, ir, ic, data ):
-        """data: pis"""
-        yield (self.variables[2], data[ir,ic])
-
 class CoefSymSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
@@ -210,24 +203,3 @@ class CoefDimDim( MiniAppBase ):
         coef /= volume
 
         return coef
-
-class ElasticCoef( CoefSymSym ):
-    """Homogenized elastic tensor $E_{ijkl}$."""
-
-    mode2var = {'row' : 0, 'col' : 1}
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-        var_name = self.variables[self.mode2var[mode]]
-        u_name = problem.variables[var_name].primary_var_name
-
-        corrs, pis = data['corrs'], data['pis']
-        indx = corrs.di.indx[u_name]
-
-        omega = corrs.states[ir,ic][indx]
-        pi = pis[ir,ic] + omega
-
-        yield (var_name, pi)
-
-class PiezoCouplingCoef( CoefDimSym ):
-    """Homogenized piezoelectric coupling tensor $G_{kij}."""
-    pass
