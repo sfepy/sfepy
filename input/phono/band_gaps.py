@@ -1,8 +1,9 @@
-# c: 25.09.2007, r: 20.11.2008
+# c: 25.09.2007, r: 16.12.2008
 import os
 import numpy as nm
 from sfepy.fem import MeshIO
 import coef_conf_elastic as cconf
+from parametric import vary_incident_wave_dir
 
 #filename_mesh = 'database/phono/cube_sphere.mesh'
 #filename_mesh = 'database/phono/cube_cylinder.mesh'
@@ -10,10 +11,17 @@ filename_mesh = 'database/phono/mesh_circ21.mesh'
 #filename_mesh = 'database/phono/mesh_circ21_small.mesh'
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
+
+homogeneous = False
+fig_suffix = '.pdf'
+
 dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
-matrix_region = 'Y1'
+if homogeneous:
+    matrix_region = 'Y'
+else:
+    matrix_region = 'Y1'
 
 options = {
     'save_eig_vectors' : (10, 0),
@@ -32,11 +40,9 @@ options = {
 
     'output_dir' : os.path.join( cwd, 'output/' ),
 
-    'fig_name' : 'band_gaps.pdf',
-    # filename = <output_dir>/<ofn_trunk><name>
-    'file_conf' : {
-      'corrs_rs' : '_phono_rs_%d%d',
-    },
+    'fig_name' : os.path.join( cwd, 'output', 'band_gaps.pdf' ),
+    'fig_name_angle' : os.path.join( cwd, 'output', 'band_gaps_angle.pdf' ),
+    'fig_name_wave' : os.path.join( cwd, 'output', 'band_gaps_wave.pdf' ),
     
 #    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
 
@@ -56,6 +62,10 @@ options = {
                                        matrix_region, dim, geom ),
          'module' : cconf,
     },
+
+    'homogeneous' : homogeneous,
+    'fig_suffix' : fig_suffix,
+#    'parametric_hook' : 'vary_incident_wave_dir',
 
     'plot_options' : {
         'show' : True,
@@ -81,11 +91,18 @@ regions = {
 }
 
 def get_pars( lam, mu, dim, full = False ):
+    from sfepy.mechanics.matcoefs import stiffness_tensor_lame, TransformToPlane
+    
     if full:
-        sym = (dim + 1) * dim / 2
-        o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
-        oot = nm.outer( o, o )
-        return lam * oot + mu * nm.diag( o + 1.0 )
+        c = stiffness_tensor_lame( 3, lam, mu )
+        if dim == 2:
+            tr = TransformToPlane()
+            try:
+                c = tr.tensor_plane_stress( c3 = c )
+            except:
+                sym = (dim + 1) * dim / 2
+                c = nm.zeros( (sym, sym), dtype = nm.float64 )
+        return c
     else:
         return {'lambda' : lam, 'mu' : mu}
 
@@ -112,6 +129,11 @@ material_2 = {
 
     'density' : 0.1142, # in 1e4 kg/m3
 }
+if homogeneous:
+    material_2['region'] = material_1['region'] = matrix_region
+    material_2['lame'] = material_1['lame']
+    material_2['D'] = material_1['D']
+    material_2['density'] = material_1['density']
 
 field_0 = {
     'name' : 'displacement_Y',
