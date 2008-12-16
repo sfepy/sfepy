@@ -150,12 +150,20 @@ Material:m
             except:
                 self.data = None
 
-    ##
-    # c: 02.08.2006, r: 02.05.2008
-    def get_data( self, region_name, ig, name = None ):
-        """Returns None in function mode if set_current_group() was not called."""
+    def get_data( self, region_name, ig, name ):
+        """`name` can be a dict - then a Struct instance with data as
+        attributes named as the dict keys is returned."""
 ##         print 'getting', name
 
+        if isinstance( name, str ):
+            return self._get_data( region_name, ig, name )
+        else:
+            out = Struct()
+            for key, item in name.iteritems():
+                setattr( out, key, self._get_data( region_name, ig, item ) )
+            return out
+                       
+    def _get_data( self, region_name, ig, name ):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
                   '(material: %s, region: %s)' % (self.name, region_name)
