@@ -338,14 +338,17 @@ class AcousticBandGapsApp( SimpleApp ):
         
         eig_problem = self.app_options.eig_problem
         if eig_problem == 'simple':
+            problem.set_equations( conf.equations )
+            problem.time_update()
 
             dummy = problem.create_state_vector()
             mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
-                                  dw_mode = 'matrix' )
+                                  dw_mode = 'matrix',
+                                  tangent_matrix = problem.mtx_a )
 
             mtx_m = eval_term_op( dummy, conf.equations['rhs'], problem,
                                   dw_mode = 'matrix',
-                                  tangent_matrix = mtx_a.copy() )
+                                  tangent_matrix = problem.mtx_a.copy() )
 
         elif eig_problem == 'schur':
             # A = K + B^T D^{-1} B.
