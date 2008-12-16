@@ -52,7 +52,8 @@ options = {
     # Used to compute average density.
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',},
-    'volume' : 'd_volume.i1.%s( uy )',
+    'tensor_names' : {'elastic' : 'D',},
+     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
     'dispersion' : 'simple',

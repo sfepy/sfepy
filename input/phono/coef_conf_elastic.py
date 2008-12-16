@@ -51,7 +51,6 @@ def define_input( filename, region, dim, geom ):
 
     coefs = {
         'elastic' : {
-            'mat_name' : 'C',
             'requires' : ['pis', 'corrs_phono_rs'],
             'variables' : ['Pi1', 'Pi2', 'pi1', 'pi2'],
             'expression' : expr_elastic % region,

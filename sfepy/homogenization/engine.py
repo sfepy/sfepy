@@ -77,7 +77,7 @@ class HomogenizationEngine( SimpleApp ):
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
             val = mini_app( self.volume, data = dependencies )
             print val
-            setattr( coefs, cargs['mat_name'], val )
+            setattr( coefs, coef_name, val )
 #            pause()
             output( '...done' )
 

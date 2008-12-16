@@ -241,11 +241,11 @@ def compute_cat( coefs, iw_dir, mode = 'simple' ):
     r"""Compute Christoffel acoustic tensor (cat) given the incident wave
     direction (unit vector).
 
-    - if mode == 'simple', coefs.C is the elasticity tensor C and
+    - if mode == 'simple', coefs.elastic is the elasticity tensor C and
     cat := \Gamma_{ik} = C_{ijkl} n_j n_l
 
-    - if mode == 'piezo', coefs.C, .G, .D are the elasticity, piezo-coupling
-    and dielectric tensors C, G, D and
+    - if mode == 'piezo', coefs.elastic, .coupling, .dielectric are the
+    elasticity, piezo-coupling and dielectric tensors C, G, D and
     cat := H_{ik} = \Gamma_{ik} + \frac{1}{\xi} \gamma_i \gamma_j, where
     \gamma_i = G_{kij} n_j n_k,
     \xi = D_{kl} n_k n_l
@@ -254,7 +254,7 @@ def compute_cat( coefs, iw_dir, mode = 'simple' ):
 
     cat = nm.zeros( (dim, dim), dtype = nm.float64 )
 
-    mtx_c = coefs.C
+    mtx_c = coefs.elastic
     for ii in range( dim ):
         for ij in range( dim ):
             ir = coor_to_sym( ii, ij, dim )
@@ -265,10 +265,10 @@ def compute_cat( coefs, iw_dir, mode = 'simple' ):
 #    print cat
     
     if mode =='piezo':
-        xi = nm.dot( nm.dot( coefs.D, iw_dir ), iw_dir )
+        xi = nm.dot( nm.dot( coefs.dielectric, iw_dir ), iw_dir )
 #        print xi
         gamma = nm.zeros( (dim,), dtype = nm.float64 )
-        mtx_g = coefs.G
+        mtx_g = coefs.coupling
         for ii in range( dim ):
             for ij in range( dim ):
                 ir = coor_to_sym( ii, ij, dim )

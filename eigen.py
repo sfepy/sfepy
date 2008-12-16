@@ -136,6 +136,9 @@ class AcousticBandGapsApp( SimpleApp ):
         region_to_material = get( 'region_to_material', None,
                                   'missing "region_to_material" in options!' )
 
+        tensor_names = get( 'tensor_names', None,
+                            'missing "tensor_names" in options!' )
+
         volume = get( 'volume', None, 'missing "volume" in options!' )
 
         post_process_hook = get( 'post_process_hook', None )
@@ -158,6 +161,9 @@ class AcousticBandGapsApp( SimpleApp ):
 
         region_to_material = get( 'region_to_material', None,
                                   'missing "region_to_material" in options!' )
+
+        tensor_names = get( 'tensor_names', None,
+                            'missing "tensor_names" in options!' )
 
         volume = get( 'volume', None, 'missing "volume" in options!' )
 
@@ -454,13 +460,8 @@ class AcousticBandGapsApp( SimpleApp ):
             self.problem.update_materials()
 
             mat = self.problem.materials[mat_name]
-            if opts.dispersion == 'piezo':
-                coefs = Struct( C = mat.get_data( mat_region, 0, 'C' ),
-                                G = mat.get_data( mat_region, 0, 'B' ),
-                                D = mat.get_data( mat_region, 0, 'D' ) )
-            else:
-                coefs = Struct( C = mat.get_data( mat_region, 0, 'D' ) )
-
+            coefs = mat.get_data( mat_region, 0, opts.tensor_names )
+            
         else:
             dc = opts.dispersion_conf
             dconf = ProblemConf.from_dict( dc['input'], dc['module'] )
