@@ -53,7 +53,7 @@ options = {
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',},
     'tensor_names' : {'elastic' : 'D',},
-     'volume' : 'd_volume.i1.%s( uy )',
+    'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
     'dispersion' : 'simple',

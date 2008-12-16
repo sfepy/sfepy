@@ -73,6 +73,7 @@ options = {
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',
                             'Y3' : 'rigid',},
+    'tensor_names' : {'elastic' : 'lame',},
     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
