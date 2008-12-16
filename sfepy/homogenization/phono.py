@@ -563,9 +563,9 @@ def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,
         prev_eig = min_freq - margins[0]
         next_eig = max_freq + margins[1]
         if eig_range[0] > 0:
-            prev_eig = max( eigs[eig_range[0]-1] + feps, prev_eig )
+            prev_eig = max( nm.sqrt( eigs[eig_range[0]-1] ) + feps, prev_eig )
         if eig_range[1] < n_eigs:
-            next_eig = min( eigs[eig_range[1]] - feps, next_eig )
+            next_eig = min( nm.sqrt( eigs[eig_range[1]] ) - feps, next_eig )
         prev_eig = max( feps, prev_eig )
         next_eig = max( feps, next_eig, prev_eig + feps )
     else:
