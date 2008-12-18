@@ -34,7 +34,7 @@ class LaplaceTerm( ScalarScalar, Term ):
             ac = nm.ascontiguousarray
             fargs = [(ac( vec.real ), 0, mat_arg, vg, ap.econn),
                      (ac( vec.imag ), 0, mat_arg, vg, ap.econn)]
-            mode *= 1j
+            mode += 1j
             
         return fargs, shape, mode
 

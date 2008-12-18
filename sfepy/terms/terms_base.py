@@ -16,12 +16,13 @@ class InstantaneousBase( Struct ):
             else:
                 # For mode == 1, the matrix is the same both
                 # for real and imaginary part -> optimization possible.
+                rmode = nm.int32( mode.real )
                 for out_real, chunk in self.char_fun( chunk_size, shape ):
                     out_imag = nm.zeros_like( out_real )
                     status1 = self.function( out_real,
-                                             *fargs[0] + (chunk, mode.imag) )
+                                             *fargs[0] + (chunk, rmode ) )
                     status2 = self.function( out_imag,
-                                             *fargs[1] + (chunk, mode.imag) )
+                                             *fargs[1] + (chunk, rmode) )
                     yield out_real + 1j * out_imag, chunk, status1 or status2
 
         elif call_mode == 'd_eval':

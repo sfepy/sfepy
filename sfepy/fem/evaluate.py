@@ -199,6 +199,7 @@ def assemble_matrix( mtx, equation, variables, materials,
 
                     else:
                         assert_( mtx.dtype == nm.complex128 )
+                        sign = nm.array( term.sign, dtype = nm.complex128 )
                         fem.assemble_matrix_complex( tmd[0].real, tmd[0].imag,
                                                      tmd[1], tmd[2],
                                                      mtx_in_els.real,
