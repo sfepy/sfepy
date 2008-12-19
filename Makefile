@@ -129,7 +129,7 @@ version:
 ifdef ISRELEASE
 	@echo $(VERSION)-release > 'VERSION'
 else
-	@echo $(VERSION)-$(shell hg identify -i) > 'VERSION'
+	@echo $(VERSION)-git-$(shell git log --pretty=format:'%h'  HEAD~1..HEAD) > 'VERSION'
 endif
 
 dist: version
