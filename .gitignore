@@ -1,3 +1,4 @@
+sfepy-projects/*
 Makefile
 site_cfg.py
 TAGS
