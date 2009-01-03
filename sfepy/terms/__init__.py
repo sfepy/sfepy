@@ -3,7 +3,7 @@ from glob import glob
 
 import terms
 import extmods
-from terms import Terms, Term
+from terms import Terms, Term, CharacteristicFunction, vector_chunk_generator
 from cache import DataCache, DataCaches
 
 def load_classes( filenames, is_class ):
