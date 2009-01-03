@@ -9,6 +9,7 @@
 #include "termsNavierStokes.h"
 #include "termsBiot.h"
 #include "termsPiezo.h"
+#include "termsElectric.h"
 #include "termsSurface.h"
 #include "termsMass.h"
 #include "termsVolume.h"
@@ -307,6 +308,14 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			FMField *mtxG, VolumeGeometry *vg,
 			int32 *elList, int32 elList_nRow );
+
+int32 dw_electric_source( FMField *out,
+			  FMField *state,
+			  FMField *coef, FMField *bf,
+			  VolumeGeometry *vgc,
+			  int32 *conn, int32 nEl, int32 nEP,
+			  int32 *elList, int32 elList_nRow,
+			  int32 mode );
 
 #ifndef ISRELEASE
 
