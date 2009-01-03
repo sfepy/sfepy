@@ -1,10 +1,9 @@
 try:
     from extmods import *
-except:
+except (ImportError, AttributeError):
     from sfepy.base.base import output
-    output( 'warning: sfepy extension modules are not compiled!' )
-    output( 'type "make"' )
-
+    msg = 'sfepy extension modules are not compiled!\ntype "make"'
+    raise ImportError( msg )
 
 from mesh import Mesh
 from domain import Domain
