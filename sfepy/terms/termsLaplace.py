@@ -1,6 +1,6 @@
-from terms import *
-from terms_base import ScalarScalar
-from utils import fix_scalar_constant, fix_scalar_in_el
+from sfepy.terms.terms import *
+from sfepy.terms.terms_base import ScalarScalar
+from sfepy.terms.utils import fix_scalar_constant, fix_scalar_in_el
 
 class LaplaceTerm( ScalarScalar, Term ):
     r""":description: Laplace term with $c$ constant or constant per element.

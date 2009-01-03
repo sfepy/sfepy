@@ -1,4 +1,4 @@
-from terms import *
+from sfepy.terms.terms import *
 
 class InstantaneousBase( Struct ):
     

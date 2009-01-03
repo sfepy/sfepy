@@ -1,5 +1,5 @@
-from terms import *
-from utils import fix_scalar_constant
+from sfepy.terms.terms import *
+from sfepy.terms.utils import fix_scalar_constant
 
 class LinearVolumeForceTerm( Term ):
     r""":description: Vector or scalar linear volume forces (weak form) --- a

@@ -1,6 +1,6 @@
-from terms import *
-from terms_base import CouplingVectorScalar
-from utils import fix_mat_shape
+from sfepy.terms.terms import *
+from sfepy.terms.terms_base import CouplingVectorScalar
+from sfepy.terms.utils import fix_mat_shape
 
 class PiezoCouplingGrad( CouplingVectorScalar ):
 

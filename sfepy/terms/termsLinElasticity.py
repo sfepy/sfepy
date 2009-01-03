@@ -1,5 +1,5 @@
-from terms import *
-from terms_base import VectorVector, VectorVectorTH
+from sfepy.terms.terms import *
+from sfepy.terms.terms_base import VectorVector, VectorVectorTH
 
 ## expr = """
 ## e = 1/2 * (grad( vec( u ) ) + grad( vec( u ) ).T)

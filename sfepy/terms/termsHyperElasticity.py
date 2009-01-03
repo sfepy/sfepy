@@ -1,5 +1,5 @@
-from terms import *
-from utils import fix_mat_qp_shape
+from sfepy.terms.terms import *
+from sfepy.terms.utils import fix_mat_qp_shape
 
 class HyperElasticBase( Term ):
     """Base class for all hyperelastic terms in TL formulation. This is not a

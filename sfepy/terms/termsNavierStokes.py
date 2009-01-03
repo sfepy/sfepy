@@ -1,6 +1,6 @@
-from terms import *
-from terms_base import CouplingVectorScalar
-from utils import fix_scalar_in_el
+from sfepy.terms.terms import *
+from sfepy.terms.terms_base import CouplingVectorScalar
+from sfepy.terms.utils import fix_scalar_in_el
 
 class DivGradTerm( Term ):
     r""":description: Diffusion term.
@@ -282,7 +282,7 @@ class GradDivStabilizationTerm( Term ):
 
 ##
 # 31.07.2007, c
-from termsLaplace import LaplaceTerm
+from sfepy.terms.termsLaplace import LaplaceTerm
 class PSPGPStabilizationTerm( LaplaceTerm ):
     r""":description: PSPG stabilization term, pressure part ($\tau$ is a local
     stabilization parameter), alias to Laplace term dw_laplace.

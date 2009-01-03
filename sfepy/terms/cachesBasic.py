@@ -1,6 +1,6 @@
 import numpy as nm
-import extmods.terms as terms
-from cache import DataCache
+from sfepy.terms.extmods import terms
+from sfepy.terms.cache import DataCache
 from sfepy.base.base import pause, debug
 
 class StateInVolumeQPDataCache( DataCache ):

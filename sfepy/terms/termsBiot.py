@@ -1,5 +1,5 @@
-from terms import *
-from terms_base import CouplingVectorScalar, CouplingVectorScalarTH
+from sfepy.terms.terms import *
+from sfepy.terms.terms_base import CouplingVectorScalar, CouplingVectorScalarTH
 
 class BiotGrad( CouplingVectorScalar ):
 

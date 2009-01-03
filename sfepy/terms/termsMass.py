@@ -1,5 +1,5 @@
-from terms import *
-from utils import choose_scalar_or_in_el
+from sfepy.terms.terms import *
+from sfepy.terms.utils import choose_scalar_or_in_el
 
 class MassTerm( Term ):
     r""":description: Inertial forces term (constant density).
