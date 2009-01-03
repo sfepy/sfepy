@@ -1460,7 +1460,10 @@ class Variable( Struct ):
         if derivative is None:
             return self.data[step][self.indx]
         else:
-            assert_( self.history is not None )
+            if self.history is None:
+                msg = 'set history type of variable %s to use derivatives!'\
+                      % self.name
+                raise ValueError( msg )
             dt = get_default( dt, self.dt )
 ##            print self.name, step, dt
             return (self( step = step ) - self( step = step-1 )) / dt
