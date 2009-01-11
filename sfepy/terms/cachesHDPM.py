@@ -1,5 +1,5 @@
-import extmods.terms as terms
-from cache import DataCache
+from sfepy.terms.extmods import terms
+from sfepy.terms.cache import DataCache
 
 ##
 # 11.06.2007, c

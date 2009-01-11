@@ -1,5 +1,5 @@
-from terms import *
-from termsLaplace import DiffusionVelocityTerm
+from sfepy.terms.terms import *
+from sfepy.terms.termsLaplace import DiffusionVelocityTerm
 
 class HDPMGDPTerm( Term ):
     name = 'dw_hdpm_gdp'
