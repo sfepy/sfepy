@@ -1,6 +1,6 @@
-from terms import *
-from termsNavierStokes import DivGradTerm
-from utils import fix_scalar_in_el
+from sfepy.terms.terms import *
+from sfepy.terms.termsNavierStokes import DivGradTerm
+from sfepy.terms.utils import fix_scalar_in_el
 
 class AdjDivGrad1Term( DivGradTerm ):
     """Uses material.viscosity as viscosity."""
