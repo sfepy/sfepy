@@ -1,4 +1,3 @@
-# c: 02.05.2008, r: 02.05.2008
 filename_mesh = 'database/phono/cube_cylinder.mesh'
 
 material_2 = {
@@ -62,6 +61,17 @@ solver_102 = {
     'eps_a'   : 1e-12,
 }
 
+solver_120 = {
+    'name' : 'ls120',
+    'kind' : 'ls.petsc',
+
+    'method' : 'cg', # ksp_type
+    'precond' : 'icc', # pc_type
+    'eps_a' : 1e-12, # abstol
+    'eps_r' : 1e-12, # rtol
+    'i_max' : 1000, # maxits
+}
+
 solver_110 = {
     'name' : 'ls110',
     'kind' : 'ls.scipy_iterative',
@@ -97,7 +107,7 @@ solver_1 = {
     'eps_a'      : 1e-10,
     'eps_r'      : 1.0,
     'macheps'   : 1e-16,
-    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+    'lin_red'    : 1e-1, # Linear system error < (eps_a * lin_red).
     'ls_red'     : 0.1,
     'ls_red_warp' : 0.001,
     'ls_on'      : 1.1,
@@ -122,7 +132,7 @@ output_name = 'test_linear_solvers_%s.vtk'
 ##
 # c: 02.05.2008
 class Test( TestCommon ):
-    can_fail = ['ls.pyamg']
+    can_fail = ['ls.pyamg', 'ls.petsc']
 
     ##
     # c: 02.05.2008, r: 02.05.2008
@@ -151,7 +161,7 @@ class Test( TestCommon ):
     ##
     # c: 02.05.2008, r: 07.05.2008
     def test_solvers( self ):
-        from sfepy.base.base import IndexedStruct
+        from sfepy.base.base import IndexedStruct, get_default_attr
         import os.path as op
 
         solver_confs = self._list_linear_solvers( self.problem.solver_confs )
@@ -159,11 +169,10 @@ class Test( TestCommon ):
         ok = True
         tt = []
         for solver_conf in solver_confs:
-            if hasattr( solver_conf, 'method' ):
-                method = solver_conf.method
-            else:
-                method = ''
-            name = ' '.join( (solver_conf.name, solver_conf.kind, method) )
+            method = get_default_attr( solver_conf, 'method', '' )
+            precond = get_default_attr( solver_conf, 'precond', '' )
+            name = ' '.join( (solver_conf.name, solver_conf.kind,
+                              method, precond) ).rstrip()
             self.report( name )
             self.report( 'matrix size:', self.problem.mtx_a.shape )
             self.report( '        nnz:', self.problem.mtx_a.nnz )
@@ -186,7 +195,7 @@ class Test( TestCommon ):
                     self.report( '%10s: %7.2f [s]' % kv )
                 self.report( 'condition: %d, err0: %.3e, err: %.3e'\
                              % (status.condition, status.err0, status.err) )
-                tt.append( [name, status.time_stats['solve']] )
+                tt.append( [name, status.time_stats['solve'], status.err] )
 
                 fname = op.join( self.options.out_dir,
                                 op.split( self.conf.output_name )[1] ) % name
@@ -198,8 +207,8 @@ class Test( TestCommon ):
 
 
         tt.sort( cmp = lambda a, b: cmp( a[1], b[1] ) )
-        self.report( 'solution times:' )
+        self.report( 'solution times (rezidual norms):' )
         for row in tt:
-            self.report( '%.2f' % row[1], ':', row[0] )
+            self.report( '%.2f [s]' % row[1], '(%.3e)' % row[2], ':', row[0] )
 
         return ok
