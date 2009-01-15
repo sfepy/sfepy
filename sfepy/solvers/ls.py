@@ -157,8 +157,8 @@ class PyAMGSolver( LinearSolver ):
         try:
             import pyamg
         except ImportError:
-            output( 'cannot import pyamg!' )
-            raise
+            msg =  'cannot import pyamg!'
+            raise ImportError( msg )
 
         LinearSolver.__init__( self, conf, mg = None, **kwargs )
 
@@ -183,6 +183,7 @@ class PyAMGSolver( LinearSolver ):
 
         if (self.mg is None) or (mtx is not self.mtx):
             self.mg = self.solver( mtx )
+            self.mtx = mtx
 
         sol = self.mg.solve( rhs, tol = conf.eps_a )
         
