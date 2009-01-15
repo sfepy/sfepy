@@ -163,7 +163,8 @@ def solve_stationary_op( problem, save_results = True, ts = None,
 
     return state, data
     
-def solve_direct( conf, options, problem = None ):
+def solve_direct( conf, options, problem = None, step_hook = None,
+                  post_process_hook = None ):
     """Generic (simple) problem solver."""
     if problem is None:
 	problem = ProblemDefinition.from_conf( conf )
@@ -174,14 +175,6 @@ def solve_direct( conf, options, problem = None ):
 	    problem.output_format = options.output_format
     ofn_trunk = problem.ofn_trunk
     
-    opts = conf.options
-    if hasattr( opts, 'post_process_hook' ) and \
-           opts.post_process_hook is not None:
-        # User postprocessing.
-        post_process_hook = getattr( conf.funmod, opts.post_process_hook )
-    else:
-        post_process_hook = None
-
     save_names = Struct( ebc = None, regions = None, field_meshes = None,
                          region_field_meshes = None )
     if options.save_ebc:
@@ -208,7 +201,8 @@ def solve_direct( conf, options, problem = None ):
         ##
         # Time-dependent problem.
         out = solve_evolutionary_op( problem, options,
-				     post_process_hook = post_process_hook )
+				     post_process_hook = post_process_hook,
+                                     step_hook = step_hook )
     else:
         ##
         # Stationary problem.

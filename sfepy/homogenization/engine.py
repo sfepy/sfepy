@@ -22,19 +22,15 @@ class HomogenizationEngine( SimpleApp ):
                             init_variables = False, init_equations = False )
 
         self.volume = volume
-    
-        self.app_options = self.process_options( self.conf.options )
+        self.setup_options()
 
-        post_process_hook = self.app_options.post_process_hook
-        if post_process_hook is not None:
-            post_process_hook = getattr( conf.funmod, post_process_hook )
-
-        self.post_process_hook = post_process_hook
+    def setup_options( self ):
+        SimpleApp.setup_options( self )
+        po = HomogenizationEngine.process_options
+        self.app_options += po( self.conf.options )
 
     def call( self ):
-        """Application options have to be re-processed here to work with
-        paramtric hooks."""
-        opts = self.app_options = self.process_options( self.conf.options )
+        opts = self.app_options
 
         problem = self.problem
 

@@ -177,31 +177,22 @@ class AcousticBandGapsApp( SimpleApp ):
                             init_equations = False )
 
         self.setup_options()
-
         self.cached_coefs = None
-        
-        post_process_hook = self.app_options.post_process_hook
-        if post_process_hook is not None:
-            post_process_hook = getattr( conf.funmod, post_process_hook )
-
-        self.post_process_hook = post_process_hook
 
         output_dir = self.problem.output_dir
         shutil.copyfile( conf._filename,
                          op.join( output_dir, op.basename( conf._filename ) ) )
 
     def setup_options( self ):
+        SimpleApp.setup_options( self )
+        
         if self.options.phase_velocity:
             process_options = AcousticBandGapsApp.process_options_pv
         else:
             process_options = AcousticBandGapsApp.process_options
-        self.app_options = process_options( self.conf.options )
+        self.app_options += process_options( self.conf.options )
     
     def call( self ):
-        """Application options have to be re-processed here to work with
-        paramtric hooks."""
-        self.setup_options()
-
         options = self.options
 
         if options.phase_velocity:

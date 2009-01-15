@@ -15,6 +15,9 @@ class Application( Struct ):
                          output_prefix = output_prefix )
 	default_printer.prefix = self.output_prefix
         self.restore()
+
+    def setup_options( self ):
+        pass
         
     def __call__( self ):
         """
@@ -38,7 +41,12 @@ class Application( Struct ):
 
             generator_prefix = default_printer.prefix
             default_printer.prefix = self.output_prefix # Restore default.
+
+            """Application options have to be re-processed here as they can
+            change in the parametric hook."""
+            self.setup_options()
             out = self.call()
+
             default_printer.prefix = generator_prefix
 
             if mode == 'coroutine':
