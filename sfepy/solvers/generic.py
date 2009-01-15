@@ -95,6 +95,9 @@ def time_step_function( ts, state0, problem, data ):
             else:
                 output( 'initial residual evaluation failed, giving up...' )
                 raise ValueError
+        else:
+            # Just initialize data of state variables.
+            problem.variables.data_from_state( state )
 
         if problem.is_linear():
             # Assemble linear system matrix for all
