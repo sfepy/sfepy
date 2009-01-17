@@ -1,6 +1,6 @@
 from sfepy.base.base import *
-from sfepy.homogenization.coefs import CoefSymSym, CoefDimSym, CoefDimDim
-from sfepy.homogenization.coefs import CorrDimDim, CorrDim, ShapeDimDim, ShapeDim
+from sfepy.homogenization.coefs_base import CoefSymSym, CoefDimSym, CoefDimDim, \
+     CorrDimDim, CorrDim, ShapeDimDim, ShapeDim
 
 class CorrectorsPiezoRS( CorrDimDim ):
 
