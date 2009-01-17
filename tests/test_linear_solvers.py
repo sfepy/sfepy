@@ -203,7 +203,7 @@ class Test( TestCommon ):
             else:
                 self.report( 'solver failed:' )
                 self.report( exc )
-                tt.append( [name, 1e10] )
+                tt.append( [name, 1e10, 1e10] )
 
 
         tt.sort( cmp = lambda a, b: cmp( a[1], b[1] ) )
