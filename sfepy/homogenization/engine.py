@@ -1,6 +1,6 @@
 from sfepy.base.base import *
 from sfepy.applications import SimpleApp
-from coefs import MiniAppBase
+from coefs_base import MiniAppBase
 
 class HomogenizationEngine( SimpleApp ):
 
