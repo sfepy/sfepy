@@ -3,6 +3,7 @@ import sys
 sys.path.append( '.' )
 
 from sfepy.fem.periodic import *
+from sfepy.homogenization.utils import define_box_regions
 
 # c: 05.05.2008, r: 05.05.2008
 def define_regions( filename ):
@@ -22,17 +23,8 @@ def define_regions( filename ):
 
     regions['Yc'] = ('r.Y -e r.Ym', {})
 
-    # Sides.
-    regions['Left'] = ('nodes in (x < -%.3f)' % wx, {})
-    regions['Right'] = ('nodes in (x > %.3f)' % wx, {})
-    regions['Bottom'] = ('nodes in (y < -%.3f)' % wy, {})
-    regions['Top'] = ('nodes in (y > %.3f)' % wy, {})
-    regions['Corners'] = ("""nodes in
-                            ((x < -%.3f) & (y < -%.3f))
-                          | ((x >  %.3f) & (y < -%.3f))
-                          | ((x >  %.3f) & (y >  %.3f))
-                          | ((x < -%.3f) & (y >  %.3f))
-                          """ % ((wx, wy) * 4), {})
+    # Sides and corners.
+    regions.update( define_box_regions( 2, (wx, wy) ) )
     return is3d, regions, mat_ids
 
 ##
@@ -167,7 +159,6 @@ integral_1 = {
 coefs = {
     'E' : {'requires' : ['pis', 'corrs_rs'],
            'variables' : ['Pi1', 'Pi2'],
-           'region' : 'Y',
            'expression' : 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'},
 }
 
@@ -181,11 +172,13 @@ requirements = {
     ##
     # Steady state correctors $\bar{\omega}^{rs}$.
     'corrs_rs' : {
+         'requires' : ['pis'],
          'variables' : ['uc', 'vc', 'Pi'],
          'ebcs' : ['fixed_u'],
          'epbcs' : all_periodic,
          'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
                                 = - dw_lin_elastic.i3.Y( m.D, vc, Pi )"""},
+         'save_name' : 'corrs_elastic',
     },
 }
 
@@ -225,24 +218,14 @@ solver_1 = {
 ############################################
 # Mini-application below, computing the homogenized elastic coefficients.
 
-def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
-    """Returns function used to save the computed correctors."""
-    def save_correctors( state, problem, ir, ic ):
-        get_state = problem.variables.get_state_part_view
-
-        problem.save_state( (base_name % (ir, ic)) + '.vtk', state,
-                            post_process_hook = post_process_hook,
-                            file_per_var = file_per_var )
-    return save_correctors
-
 ##
 # c: 05.05.2008, r: 28.11.2008
 def main():
+    import os
     from sfepy.base.base import spause
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem import eval_term_op, ProblemDefinition
-    from sfepy.homogenization.utils import create_pis
-    from sfepy.homogenization.coefs import CorrectorsRS, ElasticCoef
+    import sfepy.homogenization.coefs_elastic as ce
 
     nm.set_printoptions( precision = 3 )
 
@@ -277,7 +260,8 @@ using $\Pi$ operators, computed now. In fact, those operators are permuted
 coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""" )
     req = conf.requirements['pis']
-    pis = create_pis( problem, req['variables'][0] )
+    mini_app = ce.ShapeDimDim( 'pis', problem, req )
+    pis = mini_app()
     print pis
     spause( r""">>>
 ...the $\Pi$ operators.
@@ -285,18 +269,22 @@ coordinates of the mesh nodes.
 
     spause( r""">>>
 Next, $E_{ijkl}$ needs so called steady state correctors $\bar{\omega}^{rs}$,
-computed now. The results will be saved in: %s_*.vtk
-['q'/other key to quit/continue...]""" %  problem.ofn_trunk )
-
-    save_hook = make_save_hook( problem.ofn_trunk + '_rs_%d%d' )
-
+computed now.
+['q'/other key to quit/continue...]""" )
     req = conf.requirements['corrs_rs']
-    solve_corrs = CorrectorsRS( 'steady rs correctors', problem, req )
-    corrs_rs = solve_corrs( data = pis, save_hook = save_hook )
+
+    save_name = req.get( 'save_name', '' )
+    cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
+    name = os.path.join( cwd, save_name )
+
+    mini_app = ce.CorrectorsElasticRS( 'steady rs correctors', problem, req )
+    save_hook = mini_app.make_save_hook( name, problem.output_format )
+    corrs_rs = mini_app( data = {'pis': pis}, save_hook = save_hook )
     print corrs_rs
     spause( r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
-['q'/other key to quit/continue...]""" )
+The results are saved in: %s*.%s
+['q'/other key to quit/continue...]""" % (name, problem.output_format) )
 
     spause( r""">>>
 Then the volume of the domain is needed.
@@ -311,9 +299,9 @@ Then the volume of the domain is needed.
     spause( r""">>>
 Finally, $E_{ijkl}$ can be computed.
 ['q'/other key to quit/continue...]""" )
-    get_coef = ElasticCoef( 'homogenized elastic tensor',
-                            problem, conf.coefs['E'] )
-    c_e = get_coef( volume, data = {'pis': pis, 'corrs' : corrs_rs} )
+    mini_app = ce.ElasticCoef( 'homogenized elastic tensor',
+                               problem, conf.coefs['E'] )
+    c_e = mini_app( volume, data = {'pis': pis, 'corrs_rs' : corrs_rs} )
     print r""">>>
 The homogenized elastic coefficient $E_{ijkl}$, symmetric storage
 with rows, columns in 11, 22, 12 ordering:"""
