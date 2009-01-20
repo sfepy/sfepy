@@ -1166,9 +1166,17 @@ class Mesh3DMeshIO( MeshIO ):
         nodes = nm.c_[(nm.array(nodes, dtype = nm.float64),
                        nm.zeros(len(nodes), dtype = nm.float64))].copy()
         # substract 1 from all elements, because we count from 0:
-        conns = [hexes - 1]
-        mat_ids = [[6]*len(hexes)]
-        descs = ["3_8"]
+        conns = []
+        mat_ids = []
+        descs = []
+        if len(tetras) > 0:
+            conns.append(tetras - 1)
+            mat_ids.append([0]*len(hexes))
+            descs.append("3_4")
+        if len(hexes) > 0:
+            conns.append(hexes - 1)
+            mat_ids.append([0]*len(hexes))
+            descs.append("3_8")
         mesh._set_data( nodes, conns, mat_ids, descs )
         return mesh
 
