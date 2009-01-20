@@ -3,7 +3,6 @@ from sfepy.base.reader import Reader
 from geomElement import GeomElement
 from region import Region, sort_by_dependency
 import fea
-import sfepy.base.la as la
 import extmods.meshutils as mu
 
 ##
@@ -472,7 +471,7 @@ class Domain( Struct ):
                         
                     flag = dm_mark_surface_faces( fa, nfa )
                     ii = nm.where( flag > 0 )[0]
-                    aux = la.unique1d( fa.data[ii,3:].ravel() )
+                    aux = nm.unique1d( fa.data[ii,3:].ravel() )
                     if aux[0] == -1: # Triangular faces have -1 as 4. point.
                         aux = aux[1:]
                     region.can_cells = False

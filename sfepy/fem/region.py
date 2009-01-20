@@ -1,5 +1,4 @@
 from sfepy.base.base import *
-import sfepy.base.la as la
 
 ##
 # 15.06.2006, c
@@ -109,7 +108,7 @@ class Region( Struct ):
             rcells = self.cells[ig]
             conn = group.conn
             nods = conn[rcells,:].ravel()
-            aux = la.unique1d( nods )
+            aux = nm.unique1d( nods )
             self.vertices[ig] = aux
             self.all_vertices = nm.unique1d( nm.r_[self.all_vertices, aux] )
         

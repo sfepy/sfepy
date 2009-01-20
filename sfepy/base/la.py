@@ -2,48 +2,6 @@ from base import *
 from sfepy.solvers import Solver
 
 ##
-# Intersection of 1D arrays with unique elements.
-# 01.11.2005, c
-def intersect1d( array1, array2 ):
-    aux = nm.sort( nm.concatenate( (array1, array2 ) ) )
-    return nm.compress( (aux[1:] - aux[:-1]) == 0, aux )
-
-##
-# Intersection of 1D arrays with any elements.
-# 01.11.2005, c
-def intersect1d_nu( array1, array2 ):
-    aux = nm.sort( nm.concatenate( (unique1d( array1 ), unique1d( array2  )) ) )
-    return nm.compress( (aux[1:] - aux[:-1]) == 0, aux )
-
-##
-# Unique elements of 1D array.
-# 01.11.2005, c
-# 02.11.2005
-# 16.12.2005
-def unique1d( array1, ret_indx = False ):
-    if len( array1 ) == 0:
-        if ret_indx:
-            return array1.copy(), array1.copy()
-        else:
-            return array1.copy()
-            
-    ar = nm.array( array1 ).flat
-    if ret_indx:
-        perm = nm.argsort( ar )
-        aux = nm.take( ar, perm )
-        ic = nm.empty( aux.shape, dtype = aux.dtype )
-        ic[-1] = 1
-        ic[:-1] = (aux[1:] - aux[:-1])
-        flag = ic != 0
-        return nm.compress( flag, perm ), nm.compress( flag, aux )
-    else:
-        aux = nm.sort( ar )
-        ic = nm.empty( aux.shape, dtype = aux.dtype )
-        ic[-1] = 1
-        ic[:-1] = (aux[1:] - aux[:-1])
-        return nm.compress( ic != 0, aux )
-        
-##
 # 18.02.2005, c
 # 21.02.2005
 # 22.02.2005
