@@ -1,3 +1,5 @@
+import numpy as np
+
 from sfepy.base.base import *
 from sfepy.base.ioutils import skip_read_line, read_token, read_array, read_list, pt
 import sfepy.base.la as la
@@ -10,6 +12,7 @@ supported_formats = {
     '.node' : 'tetgen',
     '.txt'  : 'comsol',
     '.h5'   : 'hdf5',
+    '.mesh3d'   : 'mesh3d',
 }
 
 ##
@@ -1144,6 +1147,82 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
 
         return ths
+
+class Mesh3DMeshIO( MeshIO ):
+    format = "mesh3d"
+
+    def read(self, mesh, **kwargs):
+        f = open(self.filename)
+        # read the whole file:
+        vertices = self._read_section(f, integer=False)
+        tetras = self._read_section(f)
+        hexes = self._read_section(f)
+        prisms = self._read_section(f)
+        tris = self._read_section(f)
+        quads = self._read_section(f)
+
+        nodes = vertices
+        # append 0. at the end of each row in nodes
+        nodes = nm.c_[(nm.array(nodes, dtype = nm.float64),
+                       nm.zeros(len(nodes), dtype = nm.float64))].copy()
+        # substract 1 from all elements, because we count from 0:
+        conns = [hexes - 1]
+        mat_ids = [[6]*len(hexes)]
+        descs = ["3_8"]
+        mesh._set_data( nodes, conns, mat_ids, descs )
+        return mesh
+
+    def read_dimension(self):
+        return 3
+
+    def _read_line(self, f):
+        """
+        Reads one non empty line (if it's a comment, it skips it).
+        """
+        l = f.readline().strip()
+        while l == "" or l[0] == "#": # comment or an empty line
+            l = f.readline().strip()
+        return l
+
+    def _read_section(self, f, integer=True):
+        """
+        Reads one section from the mesh3d file.
+
+        integer ... if True, all numbers are passed to int(), otherwise to
+            float(), before returning
+
+        Some examples how a section can look like:
+
+        2
+        1 2 5 4 7 8 11 10
+        2 3 6 5 8 9 12 11
+
+        or
+
+        5
+        1 2 3 4     1
+        1 2 6 5     1
+        2 3 7 6     1
+        3 4 8 7     1
+        4 1 5 8     1
+
+        or
+
+        0
+
+        """
+        if integer:
+            dtype=int
+        else:
+            dtype=float
+        l = self._read_line(f)
+        N = int(l)
+        rows = []
+        for i in range(N):
+            l = self._read_line(f)
+            row = np.fromstring(l, sep=" ", dtype=dtype)
+            rows.append(row)
+        return np.array(rows)
 
 ##
 # c: 05.02.2008, r: 05.02.2008
