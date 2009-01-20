@@ -95,6 +95,29 @@ def join_conn_groups( conns, descs, mat_ids, concat = False ):
 ##
 # c: 05.02.2008
 class MeshIO( Struct ):
+    """
+    The abstract class for importing and exporting meshes.
+
+    Read the docstring of the Mesh() class. Basically all you need to do is to
+    implement the read() method:
+
+    def read(self, mesh, **kwargs):
+        nodes = ...
+        conns = ...
+        mat_ids = ...
+        descs = ...
+        mesh._set_data(nodes, conns, mat_ids, descs)
+        return mesh
+
+    See the Mesh() class's docstring how the nodes, conns, mat_ids and descs
+    should look like. You just need to read them from your specific format from
+    disk.
+
+    To write a mesh to disk, just implement the write() method and use the
+    information from the mesh instance (e.g. nodes, conns, mat_ids and descs)
+    to construct your specific format.
+
+    """
     format = None
 
     ##
