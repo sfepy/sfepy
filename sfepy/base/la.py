@@ -1,6 +1,34 @@
 from base import *
 from sfepy.solvers import Solver
 
+def norm_l2_along_axis(ar, axis=1, n_item=None):
+    """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
+
+    n_item ... use only the first n_item columns/rows
+    """
+    assert_(axis in [0, 1])
+    assert_(ar.ndim == 2)
+
+    other = 1 - axis
+    vec = nm.zeros((ar.shape[other],), dtype=nm.float64)
+
+    if n_item is None:
+        n_item = ar.shape[axis]
+    else:
+        n_item = min( n_item, ar.shape[axis] )
+
+    if axis == 1:
+        for ii in xrange( n_item ):
+            vec += ar[:,ii]**2
+    else:
+        for ii in xrange( n_item ):
+            vec += ar[ii,:]**2
+
+    vec = nm.sqrt( vec )
+
+    return vec
+
+
 ##
 # 18.02.2005, c
 # 21.02.2005
