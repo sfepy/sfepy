@@ -118,6 +118,9 @@ class MeshIO( Struct ):
     information from the mesh instance (e.g. nodes, conns, mat_ids and descs)
     to construct your specific format.
 
+    The methods read_dimension(), read_bounding_box() should be implemented in
+    subclasses, as it is often possible to get that kind of information without
+    reading the whole mesh file.
     """
     format = None
 
@@ -135,7 +138,7 @@ class MeshIO( Struct ):
 
     ##
     # c: 22.07.2008, r: 22.07.2008
-    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
+    def read_bounding_box( self, ret_fd = False, ret_dim = False ):
         print 'called an abstract MeshIO instance!'
         raise ValueError
 
@@ -190,7 +193,7 @@ class MeditMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
+    def read_bounding_box( self, ret_fd = False, ret_dim = False ):
         fd = open( self.filename, 'r' )
 
         while 1:
@@ -431,7 +434,7 @@ class VTKMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundin_box( self, ret_fd = False, ret_dim = False ):
+    def read_bounding_box( self, ret_fd = False, ret_dim = False ):
         fd = open( self.filename, 'r' )
         while 1:
             try:
@@ -816,7 +819,7 @@ class TetgenMeshIO( MeshIO ):
 
     ##
     # c: 22.07.2008
-    def read_boundin_box( self ):
+    def read_bounding_box( self ):
         raise NotImplementedError
 
 
