@@ -1,7 +1,7 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
 DISTDIRS := applications base fem homogenization mechanics optimize physics solvers terms
 
 RELDISTFILES := $(DISTFILES)

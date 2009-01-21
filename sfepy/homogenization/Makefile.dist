@@ -1,7 +1,7 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
 
 RELDISTFILES := __init__.py coefs.py phono.py utils.py Makefile.dist Makefile.inc
 

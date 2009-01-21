@@ -2,7 +2,7 @@
 # last revision: 09.03.2007
 LOCDIR := sfepy/homogenization
 
-SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
+SRC_SRCPY := $(wildcard $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
 
 #######

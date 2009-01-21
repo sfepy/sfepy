@@ -6,7 +6,7 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := Makefile.dist
 
-RELDISTFILES := $(DISTFILES) $(shell ls *.mesh) $(shell ls *.vtk)
+RELDISTFILES := $(DISTFILES) $(wildcard *.mesh) $(wildcard *.vtk)
 
 dist:
 #	echo $(DESTDIR)

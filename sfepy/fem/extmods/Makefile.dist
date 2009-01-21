@@ -4,8 +4,8 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(shell ls *.py *.c *.h *.i *.in) Makefile.dist Makefile.inc
-DISTFILES := $(filter-out $(shell ls *_wrap.c), $(DISTFILES))
+DISTFILES := $(wildcard *.py *.c *.h *.i *.in) Makefile.dist Makefile.inc
+DISTFILES := $(filter-out $(wildcard *_wrap.c), $(DISTFILES))
 
 dist:
 #	echo $(DESTDIR)

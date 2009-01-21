@@ -4,7 +4,7 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(shell ls *.py) Makefile.dist Makefile.inc
+DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
 DISTDIRS := extmods
 
 RELDISTFILES := $(filter-out termsAdjointNavierStokes.py termsHDPM.py cachesHDPM.py, $(DISTFILES))

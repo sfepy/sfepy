@@ -1,7 +1,7 @@
 # 19.09.2006, c
 LOCDIR := input
 
-SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
+SRC_SRCPY := $(wildcard $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
 
 #######

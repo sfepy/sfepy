@@ -1,6 +1,6 @@
 LOCDIR := sfepy/mechanics
 
-SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
+SRC_SRCPY := $(wildcard $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
 
 #######
