@@ -1,5 +1,5 @@
 # 14.12.2004, c
-# last revision: 24.11.2008
+# last revision: 21.01.2009
 VERSION := 2008.4
 PROJECTNAME := sfepy
 
@@ -12,17 +12,18 @@ DATE        := date +%Y_%m_%d
 
 CARCHFLAGS   := -Wall -c
 CARCHOUT     := -o
+RUNCONFIG    := python script/config.py
 
 ################ Do not edit below! ##############################
 
 #  OPTFLAGS     := -g -pg -fPIC -DPIC
-OPTFLAGS     := $(shell script/config.py opt_flags)
+OPTFLAGS     := $(shell $(RUNCONFIG) opt_flags)
 #DEBUG_FLAGS := -DDEBUG_FMF -DDEBUG_MESH
-DEBUG_FLAGS := $(shell script/config.py debug_flags)
+DEBUG_FLAGS := $(shell $(RUNCONFIG) debug_flags)
 #DEBUG_FLAGS :=
-PYVER := $(shell script/config.py python_version)
-ARCHLIB := $(shell script/config.py archlib)
-NUMPYINCLUDE := $(shell script/config.py numpy_include)
+PYVER := $(shell $(RUNCONFIG) python_version)
+ARCHLIB := $(shell $(RUNCONFIG) archlib)
+NUMPYINCLUDE := $(shell $(RUNCONFIG) numpy_include)
 
 PYTHON_INCL  := -I/usr/include/python$(PYVER) -I$(NUMPYINCLUDE)
 #  SWIG_LIB     := -lswigpy
@@ -31,10 +32,12 @@ EXT_INCL     := $(PYTHON_INCL)
 
 ###############
 
-ISRELEASE :=
-ISFULL :=
+ISRELEASE := 1
+ISOPT :=
+ISPOROUS :=
+
 MODULES := eldesc examples input sfepy sfepy/applications sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
-ifdef ISFULL
+ifdef ISOPT
   MODULES += sfepy/optimize
 endif
 VERSIONH := sfepy/fem/extmods/version.h
@@ -72,10 +75,21 @@ include $(patsubst %,%/Makefile.inc,$(MODULES))
 INCL += $(patsubst %,-I%,$(MODULES))
 
 CFLAGS := $(OPTFLAGS) -D__SDIR__='"${LOCDIR}"' ${DEBUG_FLAGS} ${INCL} ${EXT_INCL} $(CARCHFLAGS)
+SWIGFLAGS :=
 
-ifndef ISFULL
+ifdef ISRELEASE
   CFLAGS += -DISRELEASE
-  SWIGFLAGS := -DISRELEASE
+  SWIGFLAGS += -DISRELEASE
+  ISOPT :=
+  ISPOROUS :=
+endif
+ifdef ISOPT
+  CFLAGS += -DISOPT
+  SWIGFLAGS += -DISOPT
+endif
+ifdef ISPOROUS
+  CFLAGS += -DISPOROUS
+  SWIGFLAGS += -DISPOROUS
 endif
 
 ####### Implicit rules

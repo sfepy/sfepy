@@ -13,8 +13,10 @@
 #include "termsSurface.h"
 #include "termsMass.h"
 #include "termsVolume.h"
-#ifndef ISRELEASE
+#ifdef ISOPT
   #include "termsAdjointNavierStokes.h"
+#endif
+#ifdef ISPOROUS
   #include "termsHDPM.h"
 #endif
 %}
@@ -317,7 +319,7 @@ int32 dw_electric_source( FMField *out,
 			  int32 *elList, int32 elList_nRow,
 			  int32 mode );
 
-#ifndef ISRELEASE
+#ifdef ISOPT
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
 		       FMField *velocity, int32 voffset, FMField *bf,
@@ -474,7 +476,9 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
+#endif // ISOPT
 
+#ifdef ISPOROUS
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       FMField *mtxD, SurfaceGeometry *sg,
 		       int32 *fis, int32 nFa, int32 nFP,
@@ -482,4 +486,4 @@ int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       int32 *conn, int32 nEl, int32 nEP,
 		       int32 *elList, int32 elList_nRow );
 
-#endif // ISRELEASE
+#endif // ISPOROUS

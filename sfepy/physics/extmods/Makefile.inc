@@ -1,7 +1,7 @@
 FEMLOCDIR := sfepy/fem/extmods
 LOCDIR := sfepy/physics/extmods
 
-LINKFLAGS := $(shell script/config.py link_flags)
+LINKFLAGS := $(shell $(RUNCONFIG) link_flags)
 
 SRC_SRCPY := $(shell ls $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)
