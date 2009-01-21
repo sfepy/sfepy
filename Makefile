@@ -9,6 +9,8 @@ C++         := gcc
 CC          := gcc
 SWIG        := swig
 DATE        := date +%Y_%m_%d
+PWDCOMMAND  := pwd
+CATCOMMAND  := cat
 
 CARCHFLAGS   := -Wall -c
 CARCHOUT     := -o
@@ -43,7 +45,7 @@ endif
 VERSIONH := sfepy/fem/extmods/version.h
 ALLTARGETS := version modules
 
-CUR_DIR := $(shell pwd)
+CUR_DIR := $(shell $(PWDCOMMAND))
 
 DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
 RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL LICENSE README RELEASE_NOTES.txt
@@ -122,7 +124,7 @@ modules: sfepy/fem/extmods/version.h $(SRC_LIBSWIG)
 #	$(CC) -shared -fPIC -DPIC $< $(SRC_OBJC) $(SWIG_LIB) -o $@
 #
 $(VERSIONH) : Makefile
-	sed "s|^\(#define VERSION\) \".*\"|\1 \"$(shell cat VERSION)\"|;" $(VERSIONH).in > $(VERSIONH)
+	sed "s|^\(#define VERSION\) \".*\"|\1 \"$(shell $(CATCOMMAND) VERSION)\"|;" $(VERSIONH).in > $(VERSIONH)
 
 clean:
 	-rm -f *.o *.bak *~ *% *tgz #*

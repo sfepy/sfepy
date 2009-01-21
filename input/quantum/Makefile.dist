@@ -3,7 +3,7 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := Makefile.dist Makefile.inc $(wildcard *.py)
 
-RELDISTFILES := $(DISTFILES) $(wildcard *.py)
+RELDISTFILES := $(DISTFILES)
 
 dist:
 #	echo $(DESTDIR)

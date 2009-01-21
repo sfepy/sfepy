@@ -5,7 +5,7 @@ DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc MANIFEST
 DISTDIRS := bones pfdpm phono quantum
 
 RELDISTFILES := Makefile.dist Makefile.inc MANIFEST $(shell cat MANIFEST)
-RELDISTDIRS := $(DISTDIRS)
+RELDISTDIRS := phono quantum
 
 dist:
 #	echo $(DESTDIR)
