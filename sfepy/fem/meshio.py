@@ -1,5 +1,3 @@
-import numpy as np
-
 from sfepy.base.base import *
 from sfepy.base.ioutils import skip_read_line, read_token, read_array, read_list, pt
 import sfepy.base.la as la
@@ -1228,9 +1226,9 @@ class Mesh3DMeshIO( MeshIO ):
         rows = []
         for i in range(N):
             l = self._read_line(f)
-            row = np.fromstring(l, sep=" ", dtype=dtype)
+            row = nm.fromstring(l, sep=" ", dtype=dtype)
             rows.append(row)
-        return np.array(rows)
+        return nm.array(rows)
 
 ##
 # c: 05.02.2008, r: 05.02.2008
