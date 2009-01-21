@@ -1,7 +1,9 @@
 filename_meshes = ['database/simple.mesh',
                    'database/simple.vtk',
                    'database/t.1.node',
-                   'database/maillage.txt']
+                   'database/maillage.txt',
+                   'database/tests/hex4.mesh3d',
+                   'database/tests/tetra8.mesh3d']
 same = [(0, 1)]
 
 from sfepy.base.testing import TestCommon, assert_

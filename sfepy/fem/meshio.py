@@ -1172,7 +1172,7 @@ class Mesh3DMeshIO( MeshIO ):
         descs = []
         if len(tetras) > 0:
             conns.append(tetras - 1)
-            mat_ids.append([0]*len(hexes))
+            mat_ids.append([0]*len(tetras))
             descs.append("3_4")
         if len(hexes) > 0:
             conns.append(hexes - 1)
