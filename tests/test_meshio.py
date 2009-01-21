@@ -4,7 +4,7 @@ filename_meshes = ['database/simple.mesh',
                    'database/maillage.txt']
 same = [(0, 1)]
 
-from sfepy.base.testing import TestCommon
+from sfepy.base.testing import TestCommon, assert_
 
 ##
 # c: 05.02.2008
@@ -28,6 +28,15 @@ class Test( TestCommon ):
         for ii, filename in enumerate( filename_meshes ):
             self.report( '%d. mesh: %s' % (ii + 1, filename) )
             mesh = Mesh.from_file( filename )
+
+            assert_(mesh.dim == (mesh.nod0.shape[1]-1))
+            assert_(mesh.n_nod == (mesh.nod0.shape[0]))
+            assert_(mesh.n_el == sum(mesh.n_els))
+            for ig, conn in enumerate( mesh.conns ):
+                assert_(conn.shape[0] == len(mesh.mat_ids[ig]))
+                assert_(conn.shape[0] == mesh.n_els[ig])
+                assert_(conn.shape[1] == mesh.n_e_ps[ig])
+                
             self.report( 'read ok' )
             meshes[filename] = mesh
 
