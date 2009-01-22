@@ -466,14 +466,13 @@ class AcousticBandGapsApp( SimpleApp ):
             dconf.options['output_dir'] = self.problem.output_dir
 
             volume = eval_term_op( None, opts.volume % 'Y', self.problem )
-
-            he = HomogenizationEngine( dconf, self.options, 'he:',
-                                       volume = volume )
+            problem = ProblemDefinition.from_conf( dconf,
+                                                   init_variables = False )
+            he = HomogenizationEngine( problem, self.options, volume = volume )
             coefs = he()
 
 ##         print coefs
 ##         pause()
-        
         default_printer.prefix = self.output_prefix
 
         self.cached_coefs = coefs

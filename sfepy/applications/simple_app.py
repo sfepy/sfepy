@@ -37,21 +37,9 @@ class SimpleApp( Application ):
         Application.__init__( self, conf, options, output_prefix )
         self.setup_options()
 
-        if options.output_filename_trunk is None:
-            ofn_trunk = op.join( self.app_options.output_dir,
-                                 io.get_trunk( conf.filename_mesh ) )
-	    options.output_filename_trunk = ofn_trunk
-	else:
-            ofn_trunk = options.output_filename_trunk
-
         self.problem = ProblemDefinition.from_conf( conf, **kwargs )
-        self.problem.ofn_trunk = ofn_trunk
-        self.problem.output_dir = self.app_options.output_dir
 
-        if hasattr( options, 'output_format' ):
-            self.problem.output_format = options.output_format
-        else:
-            self.problem.output_format = self.app_options.output_format
+        self.setup_output_info( self.problem, self.options )
 
     def setup_options( self ):
         self.app_options = SimpleApp.process_options( self.conf.options )
@@ -71,6 +59,23 @@ class SimpleApp( Application ):
         if hook is not None:
             hook = getattr( funmod, hook )
         self.post_process_hook_final = hook
+
+    def setup_output_info( self, problem, options ):
+        """Modifies both problem and options!"""
+        if options.output_filename_trunk is None:
+            ofn_trunk = op.join( self.app_options.output_dir,
+                                 io.get_trunk( self.conf.filename_mesh ) )
+	    options.output_filename_trunk = ofn_trunk
+	else:
+            ofn_trunk = options.output_filename_trunk
+
+        problem.ofn_trunk = ofn_trunk
+        problem.output_dir = self.app_options.output_dir
+
+        if hasattr( options, 'output_format' ):
+            problem.output_format = options.output_format
+        else:
+            problem.output_format = self.app_options.output_format
 
     def call( self ):
         opts = self.app_options
