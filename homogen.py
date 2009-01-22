@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # 11.07.2006, c 
 import os.path as op
+import shutil
 from optparse import OptionParser
 
 import init_sfepy
@@ -9,8 +10,21 @@ from sfepy.base.conf import ProblemConf
 from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.fem.evaluate import eval_term_op
 import sfepy.homogenization.pfdpm as pfdpm
+from sfepy.homogenization.coefs_base import MiniAppBase
+from sfepy.homogenization.engine import HomogenizationEngine
+from sfepy.applications import SimpleApp
 from sfepy.base.conf import get_standard_keywords
 from sfepy.solvers.generic import solve_evolutionary_op, solve_stationary_op
+
+class Volume( MiniAppBase ):
+
+    def __call__( self, problem = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        volume = eval_term_op( None, self.expression, problem )
+
+        return volume
 
 def get_evp( key, cache_evp, problem, conf, equivalence = None ):
     """
@@ -63,11 +77,82 @@ def build_evp_equivalence( equivs_in ):
                 out[item] = set( equiv )
     return out
 
-def compute_micro_coefficients( conf, options, ret_all = False ):
-    volume = eval_term_op( None, opts.volume % 'Y', self.problem )
-    he = HomogenizationEngine( conf, options, 'he:',
-                               volume = volume )
-    coefs = he()
+class PorousMediaHomogenizationApp( SimpleApp ):
+
+    def process_options( options ):
+        """Application options setup. Sets default values for missing
+        non-compulsory options."""
+        get = options.get_default_attr
+        
+        print_digits = get( 'print_digits', 3 )
+        n_eigs = get( 'n_eigs', 0 )
+        
+        check = get( 'check', {'diagonalization' : True,
+                               'time_correctors' : True,} )
+
+        float_format = get( 'float_format', '%8.3e' )
+        coef_save_name = get( 'coef_save_name', 'coefs' )
+
+        eig_problem = get( 'eig_problem', None,
+                           'missing "eig_problem" in options!' )
+        coefs = get( 'coefs', None, 'missing "coefs" in options!' )
+        requirements = get( 'requirements', None,
+                            'missing "requirements" in options!' )
+        volume = get( 'volume', None, 'missing "volume" in options!' )
+
+        return Struct( **locals() )
+    process_options = staticmethod( process_options )
+
+    def __init__( self, conf, options, output_prefix, **kwargs ):
+        SimpleApp.__init__( self, conf, options, output_prefix,
+                            init_equations = False )
+
+        self.setup_options()
+        self.cached_coefs = None
+
+        output_dir = self.problem.output_dir
+        shutil.copyfile( conf._filename,
+                         op.join( output_dir, op.basename( conf._filename ) ) )
+
+    def setup_options( self ):
+        SimpleApp.setup_options( self )
+        po = PorousMediaHomogenizationApp.process_options
+        self.app_options += po( self.conf.options )
+    
+    def call( self, ret_all = False ):
+        opts = self.app_options
+        
+        volume = Volume( 'volume', self.problem, opts.volume )()
+        output( 'volume: %.2f' % volume )
+        
+        he = HomogenizationEngine( self.problem, self.options, volume = volume )
+
+        aux = he( ret_all = ret_all)
+        if ret_all:
+            coefs, dependencies = aux
+        else:
+            coefs = aux
+
+        coefs = pfdpm.Coefficients( **coefs.to_dict() )
+        coefs.volume = volume
+        
+        prec = nm.get_printoptions()[ 'precision']
+        if hasattr( opts, 'print_digits' ):
+            nm.set_printoptions( precision = opts.print_digits )
+        print coefs
+        nm.set_printoptions( precision = prec )
+##        pause()
+
+        coef_save_name = op.join( opts.output_dir, opts.coef_save_name )
+        coefs.to_file_hdf5( coef_save_name + '.h5' )
+        coefs.to_file_txt( coef_save_name + '.txt',
+                           self.conf.options.tex_names,
+                           opts.float_format )
+
+        if ret_all:
+            return coefs, dependencies
+        else:
+            return coefs
 
 
 def compute_micro_coefficients_old( conf, options, ret_all = False ):
@@ -447,12 +532,13 @@ def main():
         else:
             output( 'ok!' )
     else:
-        coefs = compute_micro_coefficients_old( conf, options )
-#        coefs = compute_micro_cefficients( conf, options )
-
-        coefs.to_file_hdf5( 'coefs.h5' )
-        coefs.to_file_txt( 'coefs.txt',
-                           conf.options.tex_names, conf.options.float_format )
+        app = PorousMediaHomogenizationApp( conf, options, 'homogen:' )
+        opts = conf.options
+        if hasattr( opts, 'parametric_hook' ): # Parametric study.
+            parametric_hook = getattr( conf, opts.parametric_hook )
+            app.parametrize( parametric_hook )
+        app()
+#        coefs = compute_micro_coefficients_old( conf, options )
 
 if __name__ == '__main__':
     main()
