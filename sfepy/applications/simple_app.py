@@ -14,6 +14,9 @@ class SimpleApp( Application ):
         get = options.get_default_attr
 
         save_results = get( 'save_results', True )
+        # Save each variable into a separate file, using the region of its
+        # definition only.
+        file_per_var = get( 'file_per_var', False )
         output_format = get( 'output_format', 'vtk' )
 
         output_dir = get( 'output_dir', '.' )

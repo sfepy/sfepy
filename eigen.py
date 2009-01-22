@@ -141,8 +141,6 @@ class AcousticBandGapsApp( SimpleApp ):
 
         volume = get( 'volume', None, 'missing "volume" in options!' )
 
-        post_process_hook = get( 'post_process_hook', None )
-
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
@@ -166,8 +164,6 @@ class AcousticBandGapsApp( SimpleApp ):
                             'missing "tensor_names" in options!' )
 
         volume = get( 'volume', None, 'missing "volume" in options!' )
-
-        post_process_hook = get( 'post_process_hook', None )
 
         return Struct( **locals() )
     process_options_pv = staticmethod( process_options_pv )

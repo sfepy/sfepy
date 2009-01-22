@@ -8,9 +8,6 @@ class HomogenizationEngine( SimpleApp ):
     def process_options( options ):
         get = options.get_default_attr
         
-        post_process_hook = get( 'post_process_hook', None )
-        file_per_var = get( 'file_per_var', False )
-
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
         requirements = get( 'requirements', None,
                             'missing "requirements" in options!' )
