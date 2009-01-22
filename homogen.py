@@ -63,7 +63,14 @@ def build_evp_equivalence( equivs_in ):
                 out[item] = set( equiv )
     return out
 
-def compute_micro_cefficients( conf, options, ret_all = False ):
+def compute_micro_coefficients( conf, options, ret_all = False ):
+    volume = eval_term_op( None, opts.volume % 'Y', self.problem )
+    he = HomogenizationEngine( conf, options, 'he:',
+                               volume = volume )
+    coefs = he()
+
+
+def compute_micro_coefficients_old( conf, options, ret_all = False ):
     """Dependencies must be listed in a correct order."""
     aux = get_default_attr( conf, 'evp_equivalence', None )
     evp_equivalence = build_evp_equivalence( aux )
@@ -398,21 +405,6 @@ usage = """%prog [options] filename_in"""
 help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
-    'steady' :
-    'steady state solution',
-    'impact' :
-    'impact loading solution',
-    'micro' :
-    'microproblem solution',
-    'debug_micro' :
-    'debug microproblem solution (requires -m) [default: %default]',
-    'variant' :
-    'Y_1 or Y_2 variant of alpha correctors (requires -m) [default: both]',
-    'recovery' :
-    'microproblem solution recovery using macroscopic problem solution'
-    ' [default: %default]',
-    'new_micro' :
-    'new microproblem solution',
     'verify_steady' :
     'verify steady state',
 }
@@ -427,27 +419,6 @@ def main():
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename_trunk",
                        default = None, help = help['filename'] )
-    parser.add_option( "-s", "--steady",
-                       action = "store_true", dest = "steady",
-                       default = False, help = help['steady'] )
-    parser.add_option( "-i", "--impact",
-                       action = "store_true", dest = "impact",
-                       default = False, help = help['impact'] )
-    parser.add_option( "-m", "--micro",
-                       action = "store_true", dest = "micro",
-                       default = False, help = help['micro'] )
-    parser.add_option( "-r", "--recovery",
-                       action = "store_true", dest = "recovery",
-                       default = False, help = help['recovery'] )
-    parser.add_option( "", "--debug-micro",
-                       action = "store_true", dest = "debug_micro",
-                       default = False, help = help['debug_micro'] )
-    parser.add_option( "", "--variant", type = "int", metavar = '1 or 2',
-                       action = "store", dest = "variant",
-                       default = 0, help = help['variant'] )
-    parser.add_option( "-n", "--new-micro",
-                       action = "store_true", dest = "new_micro",
-                       default = False, help = help['new_micro'] )
     parser.add_option( "-v", "--verify-steady",
                        action = "store_true", dest = "verify_steady",
                        default = False, help = help['verify_steady'] )
@@ -459,74 +430,29 @@ def main():
         parser.print_help(),
         return
 
-    if options.impact: options.steady = True
-
-    if ((options.debug_micro and not options.micro)
-        or (options.variant and not options.micro)) :
-        output( 'assuming microproblem solution' )
-        options.micro = True
-        options.steady = options.impact = False
-        
-
     required, other = get_standard_keywords()
 
-    if options.steady:
-        required.remove( 'save_steps' )
-        required.remove( 'equations' )
-        required += ['equations_steady_u', 'equations_steady_p',
-                     'steady_state_n_time']
-    elif options.micro:
-        required.remove( 'save_steps' )
-        required.remove( 'equations' )
-        other.remove( 'epbc' )
-        other.remove( 'options' )
-        required += ['epbc', 'equations_steady_rs', 'equations_steady_alpha',
-                     'equations_time_variant', 'options']
-    if options.recovery:
-        required.remove( 'save_steps' )
-        required += ['macro_solution', 'micro_correctors']
 
-    if options.impact:
-        required += ['equations_impact']
-
-    if options.new_micro:
+    if not options.verify_steady:
         required.remove( 'equations' )
 
     conf = ProblemConf.from_file( filename_in, required, other )
 ##     print conf
 ##     pause()
 
-    if options.steady:
-        out = solve_steady( conf, options )
-        if options.impact:
-            solve_impact( conf, options, *out )
-    elif options.micro:
-        micro_solution, coefs = solve_micro( conf, options )
-        coefs.to_file_hdf5( 'coefs.h5' )
-        print coefs
-        pause()
-        c2 = pfdpm.Coefficients.from_file_hdf5( 'coefs.h5' )
-        print c2
-    elif options.recovery:
-        macro_solution = conf.macro_solution
-        micro_correctors = conf.micro_correctors
-        solve_recovery( conf, options, macro_solution, micro_correctors )
-    elif options.new_micro:
-        coefs = compute_micro_cefficients( conf, options )
-
-        coefs.to_file_hdf5( 'coefs.h5' )
-        coefs.to_file_txt( 'coefs.txt',
-                           conf.options.tex_names, conf.options.float_format )
-    elif options.verify_steady:
+    if options.verify_steady:
         ok = verify_steady_solution( conf, options )
         if not ok:
             output( 'failed!' )
         else:
             output( 'ok!' )
     else:
-        solve_evolutionary( conf, options )
+        coefs = compute_micro_coefficients_old( conf, options )
+#        coefs = compute_micro_cefficients( conf, options )
 
-    
+        coefs.to_file_hdf5( 'coefs.h5' )
+        coefs.to_file_txt( 'coefs.txt',
+                           conf.options.tex_names, conf.options.float_format )
 
 if __name__ == '__main__':
     main()
