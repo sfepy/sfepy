@@ -19,16 +19,16 @@ class Application( Struct ):
     def setup_options( self ):
         pass
         
-    def __call__( self ):
+    def __call__( self, **kwargs ):
         """
         This is either call_basic() or call_parametrized().
         """
         pass
         
-    def call_basic( self ):
-        return self.call()
+    def call_basic( self, **kwargs ):
+        return self.call( **kwargs )
 
-    def call_parametrized( self ):
+    def call_parametrized( self, **kwargs ):
         generator = self.parametric_hook( self.problem )
         for aux in generator:
             if isinstance( aux, tuple ) and (len( aux ) == 2):
@@ -45,7 +45,7 @@ class Application( Struct ):
             """Application options have to be re-processed here as they can
             change in the parametric hook."""
             self.setup_options()
-            out = self.call()
+            out = self.call( **kwargs )
 
             default_printer.prefix = generator_prefix
 
