@@ -4,7 +4,10 @@ from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):
     def any_from_conf( name, problem, kwargs ):
-        cls = kwargs.get( 'class' )
+        try:
+            cls = kwargs['class']
+        except KeyError:
+            raise KeyError("set 'class' for MiniApp %s!" % name)
         obj = cls( name, problem, kwargs )
         return obj
     any_from_conf = staticmethod( any_from_conf )
