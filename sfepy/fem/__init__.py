@@ -15,3 +15,4 @@ from integrals import Integrals, Integral
 from problemDef import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
 from evaluate import eval_term_op
+from utils import extend_cell_data
