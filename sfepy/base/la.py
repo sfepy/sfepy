@@ -1,10 +1,11 @@
 from base import *
 from sfepy.solvers import Solver
 
-def norm_l2_along_axis(ar, axis=1, n_item=None):
+def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
     """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
 
     n_item ... use only the first n_item columns/rows
+    squared ... if True, return the norm squared
     """
     assert_(axis in [0, 1])
     assert_(ar.ndim == 2)
@@ -24,7 +25,8 @@ def norm_l2_along_axis(ar, axis=1, n_item=None):
         for ii in xrange( n_item ):
             vec += ar[ii,:]**2
 
-    vec = nm.sqrt( vec )
+    if not squared:
+        vec = nm.sqrt( vec )
 
     return vec
 
