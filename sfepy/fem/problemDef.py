@@ -223,7 +223,7 @@ class ProblemDefinition( Struct ):
     def update_bc( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
                   create_matrix = False ):
         """Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
-        create_matrix to True"""
+        create_matrix to True."""
         self.variables.equation_mapping( conf_ebc, conf_epbc,
                                         self.domain.regions, ts, funmod )
         self.variables.setup_lcbc_operators( conf_lcbc, self.domain.regions )
@@ -312,7 +312,7 @@ class ProblemDefinition( Struct ):
     # 25.07.2006
     # 19.09.2006
     def apply_ebc( self, vec, force_values = None ):
-        """Apply essential (Dirichlet) boundary  conditions."""
+        """Apply essential (Dirichlet) boundary conditions."""
         self.variables.apply_ebc( vec, force_values )
 
     def apply_ic( self, vec, force_values = None ):
@@ -341,7 +341,8 @@ class ProblemDefinition( Struct ):
         corresponding to the unknown variables, each transformed to shape
         (n_mesh_nod, n_dof per node) - all values in extra nodes are removed.
         """
-        return self.variables.state_to_output( vec, fill_value, var_info, extend )
+        return self.variables.state_to_output( vec, fill_value,
+                                               var_info, extend )
 
     ##
     # 26.07.2006, c
@@ -445,7 +446,8 @@ class ProblemDefinition( Struct ):
             output( name )
             aux = Mesh.from_region( region, self.domain.mesh, self.domain.ed,
                                    self.domain.fa )
-            aux.write( '%s_%s.mesh' % (filename_trunk, region.name), io = 'auto' )
+            aux.write( '%s_%s.mesh' % (filename_trunk, region.name),
+                       io = 'auto' )
         output( '...done' )
 
     ##
@@ -483,7 +485,7 @@ class ProblemDefinition( Struct ):
     def get_evaluator( self, from_nls = False, **kwargs ):
         """
         Either create a new Evaluator instance (from_nls == False),
-        or return an existing instace, created in a preceding call to
+        or return an existing instance, created in a preceding call to
         ProblemDefinition.init_solvers().
         """
         if from_nls:
@@ -505,7 +507,8 @@ class ProblemDefinition( Struct ):
     # c: 04.04.2008, r: 04.04.2008
     def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
                      mtx = None, **kwargs ):
-        ls_conf = get_default( ls_conf, self.ls_conf, 'you must set linear solver!' )
+        ls_conf = get_default( ls_conf, self.ls_conf,
+                               'you must set linear solver!' )
 
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
@@ -582,7 +585,7 @@ class ProblemDefinition( Struct ):
         self.variables.init_state( state )
 
     def get_output_name( self, suffix = None ):
-        """Return default ouput file name."""
+        """Return default output file name."""
         if suffix is None:
             return '.'.join( (self.ofn_trunk, self.output_format) )
         else:
