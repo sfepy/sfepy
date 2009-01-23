@@ -20,21 +20,19 @@ from scipy.optimize.nonlin import excitingmixing
 import init_sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.base.la import eig
+from sfepy.base.la import eig, norm_l2_along_axis
 from sfepy.base.log import Log
+from sfepy.applications import SimpleApp
 from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
 from sfepy.solvers import Solver
 
-##
-# c: 22.02.2008, r: 22.02.2008
 def update_state_to_output( out, pb, vec, name, fill_value = None ):
+    """Convert 'vec' to output for saving and insert it into 'out'. """
     aux = pb.state_to_output( vec, fill_value )
     key = aux.keys()[0]
     out[name] = aux[key]
 
-##
-# c: 22.02.2008, r: 22.02.2008
 def wrap_function( function, args ):
     ncalls = [0]
     times = []
@@ -55,269 +53,298 @@ def wrap_function( function, args ):
         return vec_vh + vec_vxc
     return ncalls, times, function_wrapper
 
-itercount = 0
-##
-# c: 22.02.2008, r: 03.03.2008
-def iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b, log,
-             n_electron = 5 ):
-    global itercount
-    itercount += 1
-    from sfepy.physics import dft
+class SchroedingerApp( SimpleApp ):
 
-    pb.update_materials( extra_mat_args = {'mat_v' : {'vhxc' : vec_vhxc}} )
-
-    dummy = pb.create_state_vector()
-
-    output( 'assembling lhs...' )
-    tt = time.clock()
-    mtx_a = eval_term_op( dummy, conf.equations['lhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
-    output( '...done in %.2f s' % (time.clock() - tt) )
-
-
-    print 'computing the Ax=Blx Kohn-Sham problem...'
-    eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b, conf.options.n_eigs )
-
-    if len(eigs) < n_electron:
-        print len(eigs)
-        print eigs
-        raise Exception("Not enough eigenvalues have converged. Exiting.")
-
-    print "saving solutions, iter=%d" % itercount
-    out = {}
-    var_name = pb.variables.get_names( kind = 'state' )[0]
-    for ii in xrange( len(eigs) ):
-        vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
-        update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
-    pb.save_state( "tmp/iter%d.vtk" % itercount, out = out )
-    print "solutions saved"
-
-    vec_phi = nm.zeros_like( vec_vhxc )
-    vec_n = nm.zeros_like( vec_vhxc )
-    for ii in xrange( n_electron ):
-        vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
-        vec_n += vec_phi ** 2
-
-
-    vec_vxc = nm.zeros_like( vec_vhxc )
-    for ii, val in enumerate( vec_n ):
-        vec_vxc[ii] = dft.getvxc( val/(4*pi), 0 )
-
-    pb.set_equations( conf.equations_vh )
-    pb.time_update()
-    pb.variables['n'].data_from_data( vec_n )
-    print "Solving Ax=b Poisson equation"
-    vec_vh = pb.solve()
-
-    #sphere = eval_term_op( dummy, conf.equations['sphere'], pb)
-    #print sphere
-
-    norm = nla.norm( vec_vh + vec_vxc )
-    log( norm, norm )
-
-    return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
-
-##
-# c: 01.02.2008, r: 03.03.2008
-def solve_eigen_problem_n( conf, options ):
-
-    pb = ProblemDefinition.from_conf( conf )
-    dim = pb.domain.mesh.dim
-
-    pb.time_update()
-
-    dummy = pb.create_state_vector()
-
-    output( 'assembling rhs...' )
-    tt = time.clock()
-    mtx_b = eval_term_op( dummy, conf.equations['rhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a.copy() )
-    output( '...done in %.2f s' % (time.clock() - tt) )
-
-    #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
-    #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )
-
-    try:
-        n_eigs = conf.options.n_eigs
-    except AttributeError:
-        n_eigs = mtx_a.shape[0]
-
-    if n_eigs is None:
-        n_eigs = mtx_a.shape[0]
-
-##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
-
-    if options.plot:
-        log_conf = {
-            'is_plot' : True,
-            'aggregate' : 1,
-            'yscales' : ['linear', 'log'],
-        }
-    else:
-        log_conf = {
-            'is_plot' : False,
-        }
-    log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)|$']) )
-
-    eig_conf = pb.get_solver_conf( conf.options.eigen_solver )
-    eig_solver = Solver.any_from_conf( eig_conf )
-    vec_vhxc = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
-    aux = wrap_function( iterate,
-                         (pb, conf, eig_solver, n_eigs, mtx_b, log) )
-    ncalls, times, nonlin_v = aux
-    vec_vhxc = broyden3( nonlin_v, vec_vhxc, verbose = True )
-    out = iterate( vec_vhxc, pb, conf, eig_solver, n_eigs, mtx_b )
-    eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
-
-    if options.plot:
-        log( finished = True )
-        pause()
+    def process_options( options ):
+        """Application options setup. Sets default values for missing
+        non-compulsory options."""
+        get = options.get_default_attr
         
-    coor = pb.domain.get_mesh_coors()
-    r = coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2
-    vec_nr2 = vec_n * r
+        eigen_solver = get( 'eigen_solver', None,
+                            'missing "eigensolver" in options!' )
+        n_eigs = get( 'n_eigs', 5 )
+        n_electron = get( 'n_electron', 5 )
+        # None -> save all.
+        save_eig_vectors = get( 'save_eig_vectors', None )
 
-    n_eigs = eigs.shape[0]
+        return Struct( **locals() )
+    process_options = staticmethod( process_options )
 
-    mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
-                       dtype = nm.float64 )
-    for ii in xrange( n_eigs ):
-        mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+    def __init__( self, conf, options, output_prefix, **kwargs ):
+        SimpleApp.__init__( self, conf, options, output_prefix,
+                            init_equations = False )
 
-    save = get_default_attr( conf.options, 'save_eig_vectors', None )
-    out = {}
-    for ii in xrange( n_eigs ):
-        if save is not None:
-            if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
-        aux = pb.state_to_output( mtx_phi[:,ii] )
-        key = aux.keys()[0]
-        out[key+'%03d' % ii] = aux[key]
+        self.setup_options()
+        output_dir = self.problem.output_dir
 
-    update_state_to_output( out, pb, vec_n, 'n' )
-    update_state_to_output( out, pb, vec_nr2, 'nr2' )
-    update_state_to_output( out, pb, vec_vh, 'vh' )
-    update_state_to_output( out, pb, vec_vxc, 'vxc' )
+    def setup_options( self ):
+        SimpleApp.setup_options( self )
+        self.app_options += SchroedingerApp.process_options( self.conf.options )
+    
+    def call( self ):
+        options = self.options
 
-    ofn_trunk = options.output_filename_trunk
-    pb.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
+        if options.dft:
+            if options.plot:
+                from sfepy.base.plotutils import pylab
+                options.plot = pylab is not None
 
-    fd = open( ofn_trunk + '_eigs.txt', 'w' )
-    eigs.tofile( fd, ' ' )
-    fd.close()
+            evp = self.solve_eigen_problem_n()
+        else:
+            evp = self.solve_eigen_problem_1()
 
-    return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+        output( "solution saved to %s" % self.problem.get_output_name() )
+        output( "in %s" % self.app_options.output_dir )
+        return evp
 
-##
-# c: 01.02.2008, r: 03.03.2008
-def solve_eigen_problem1( conf, options ):
+    def iterate( self, vec_vhxc, eig_solver, mtx_b, log, n_electron = None ):
+        from sfepy.physics import dft
+
+        self.itercount += 1
+
+        pb = self.problem
+        opts = self.app_options
+
+        n_electron = get_default( n_electron, opts.n_electron )
+        
+        pb.update_materials( extra_mat_args = {'mat_v' : {'vhxc' : vec_vhxc}} )
+
+        dummy = pb.create_state_vector()
+
+        output( 'assembling lhs...' )
+        tt = time.clock()
+        mtx_a = eval_term_op( dummy, pb.conf.equations['lhs'], pb,
+                              dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
+        output( '...done in %.2f s' % (time.clock() - tt) )
 
 
-    pb = ProblemDefinition.from_conf( conf )
-    dim = pb.domain.mesh.dim
+        output( 'computing the Ax=Blx Kohn-Sham problem...' )
+        eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b, opts.n_eigs )
+        output( '...done' )
 
-    pb.time_update()
+        if len(eigs) < n_electron:
+            print len(eigs)
+            print eigs
+            raise Exception("Not enough eigenvalues have converged. Exiting.")
 
-    dummy = pb.create_state_vector()
+        output( "saving solutions, iter=%d..." % self.itercount )
+        out = {}
+        var_name = pb.variables.get_names( kind = 'state' )[0]
+        for ii in xrange( len(eigs) ):
+            vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+            update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
+        name = op.join( opts.output_dir, "iter%d" % self.itercount )
+        pb.save_state('.'.join((name, opts.output_format)), out=out)
+        output( "...solutions saved" )
 
-    output( 'assembling lhs...' )
-    tt = time.clock()
-    mtx_a = eval_term_op( dummy, conf.equations['lhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
-    output( '...done in %.2f s' % (time.clock() - tt) )
+        vec_phi = nm.zeros_like( vec_vhxc )
+        vec_n = nm.zeros_like( vec_vhxc )
+        for ii in xrange( n_electron ):
+            vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+            vec_n += vec_phi ** 2
 
-    output( 'assembling rhs...' )
-    tt = time.clock()
-    mtx_b = eval_term_op( dummy, conf.equations['rhs'], pb,
-                       dw_mode = 'matrix', tangent_matrix = pb.mtx_a.copy() )
-    output( '...done in %.2f s' % (time.clock() - tt) )
+        vec_vxc = nm.zeros_like( vec_vhxc )
+        for ii, val in enumerate( vec_n ):
+            vec_vxc[ii] = dft.getvxc( val/(4*pi), 0 )
 
-    #mtxA.save( 'tmp/a.txt', format='%d %d %.12f\n' )
-    #mtxB.save( 'tmp/b.txt', format='%d %d %.12f\n' )
-    try:
-        n_eigs = conf.options.n_eigs
-    except AttributeError:
-        n_eigs = mtx_a.shape[0]
+        pb.set_equations( pb.conf.equations_vh )
+        pb.time_update()
+        pb.variables['n'].data_from_data( vec_n )
+        output( "solving Ax=b Poisson equation" )
+        vec_vh = pb.solve()
 
-    if n_eigs is None:
-        n_eigs = mtx_a.shape[0]
+        #sphere = eval_term_op( dummy, pb.conf.equations['sphere'], pb)
+        #print sphere
 
-##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
-    print 'computing resonance frequencies...'
-    eig = Solver.any_from_conf( pb.get_solver_conf( conf.options.eigen_solver ) )
-    eigs, mtx_s_phi = eig( mtx_a, mtx_b, conf.options.n_eigs )
-    from sfepy.fem.mesh import Mesh
-    bounding_box = Mesh.from_file("tmp/mesh.vtk").get_bounding_box()
-    # this assumes a box (3D), or a square (2D):
-    a = bounding_box[1][0] - bounding_box[0][0]
-    E_exact = None
-    if options.hydrogen or options.boron:
-        if options.hydrogen:
-            Z = 1
-        elif options.boron:
-            Z = 5
-        if options.dim == 2:
-            E_exact = [-float(Z)**2/2/(n-0.5)**2/4 for n in [1]+[2]*3+[3]*5 +\
-                    [4]*8 + [5]*15]
-        elif options.dim == 3:
-            E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
-    if options.well:
-        if options.dim == 2:
-            E_exact = [pi**2/(2*a**2)*x for x in [2, 5, 5, 8, 10, 10, 13, 13,
-                17, 17, 18, 20, 20 ] ]
-        elif options.dim == 3:
-            E_exact = [pi**2/(2*a**2)*x for x in [3, 6, 6, 6, 9, 9, 9, 11, 11,
-                11, 12, 14, 14, 14, 14, 14, 14, 17, 17, 17] ]
-    if options.oscillator:
-        if options.dim == 2:
-            E_exact = [1] + [2]*2 + [3]*3 + [4]*4 + [5]*5 + [6]*6
-        elif options.dim == 3:
-            E_exact = [float(1)/2+x for x in [1]+[2]*3+[3]*6+[4]*10 ]
-    if E_exact is not None:
-        print "a=%f" % a
-        print "Energies:"
-        print     "n      exact         FEM      error"
+        norm = nla.norm( vec_vh + vec_vxc )
+        log( norm, norm )
 
-        for i, e in enumerate(eigs):
-            from numpy import NaN
-            if i < len(E_exact):
-                exact = E_exact[i]
-                err = 100*abs((exact - e)/exact)
-            else:
-                exact = NaN
-                err = NaN
-            print "%d:  %.8f   %.8f  %5.2f%%" % (i, exact, e, err)
-    else:
-        print eigs
-##     import sfepy.base.plotutils as plu
-##     plu.spy( mtx_b, eps = 1e-12 )
-##     plu.pylab.show()
-##     pause()
-    n_eigs = eigs.shape[0]
+        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
 
-    mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
-                       dtype = nm.float64 )
-    for ii in xrange( n_eigs ):
-        mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+    def solve_eigen_problem_n( self ):
+        opts = self.app_options
+        pb = self.problem
 
-    save = get_default_attr( conf.options, 'save_eig_vectors', None )
-    out = {}
-    for ii in xrange( n_eigs ):
-        if save is not None:
-            if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
-        aux = pb.state_to_output( mtx_phi[:,ii] )
-        key = aux.keys()[0]
-        out[key+'%03d' % ii] = aux[key]
+        dim = pb.domain.mesh.dim
 
-    ofn_trunk = options.output_filename_trunk
-    pb.domain.mesh.write( ofn_trunk + '.vtk', io = 'auto', out = out )
+        pb.set_equations( pb.conf.equations )
+        pb.time_update()
 
-    fd = open( ofn_trunk + '_eigs.txt', 'w' )
-    eigs.tofile( fd, ' ' )
-    fd.close()
+        dummy = pb.create_state_vector()
 
-    return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+        output( 'assembling rhs...' )
+        tt = time.clock()
+        mtx_b = eval_term_op( dummy, pb.conf.equations['rhs'], pb,
+                              dw_mode = 'matrix',
+                              tangent_matrix = pb.mtx_a.copy() )
+        output( '...done in %.2f s' % (time.clock() - tt) )
+
+        n_eigs = get_default( opts.n_eigs, pb.mtx_a.shape[0] )
+##         mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
+##         mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+
+        if self.options.plot:
+            log_conf = {
+                'is_plot' : True,
+                'aggregate' : 1,
+                'yscales' : ['linear', 'log'],
+            }
+        else:
+            log_conf = {
+                'is_plot' : False,
+            }
+        log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)|$']) )
+
+        eig_conf = pb.get_solver_conf( opts.eigen_solver )
+        eig_solver = Solver.any_from_conf( eig_conf )
+
+        vec_vhxc = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
+
+        self.itercount = 0
+        ncalls, times, nonlin_v = wrap_function( self.iterate,
+                                                 (eig_solver, mtx_b, log) )
+        vec_vhxc = broyden3( nonlin_v, vec_vhxc, verbose = True )
+
+        out = self.iterate( vec_vhxc, eig_solver, mtx_b, log )
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
+
+        if self.options.plot:
+            log( finished = True )
+            pause()
+
+        coor = pb.domain.get_mesh_coors()
+        r2 = norm_l2_along_axis(coor, n_item=dim, squared=True)
+        vec_nr2 = vec_n * r2
+
+        mtx_phi = self.make_full( mtx_s_phi )
+        out = {}
+        update_state_to_output( out, pb, vec_n, 'n' )
+        update_state_to_output( out, pb, vec_nr2, 'nr2' )
+        update_state_to_output( out, pb, vec_vh, 'vh' )
+        update_state_to_output( out, pb, vec_vxc, 'vxc' )
+        self.save_results( eigs, mtx_phi, out = out )
+
+        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+
+    def solve_eigen_problem_1( self ):
+        from sfepy.fem import Mesh
+
+        options = self.options
+        opts = self.app_options
+        pb = self.problem
+
+        dim = pb.domain.mesh.dim
+
+        pb.set_equations( pb.conf.equations )
+        pb.time_update()
+
+        dummy = pb.create_state_vector()
+
+        output( 'assembling lhs...' )
+        tt = time.clock()
+        mtx_a = eval_term_op( dummy, pb.conf.equations['lhs'], pb,
+                              dw_mode = 'matrix',
+                              tangent_matrix = pb.mtx_a )
+        output( '...done in %.2f s' % (time.clock() - tt) )
+
+        output( 'assembling rhs...' )
+        tt = time.clock()
+        mtx_b = eval_term_op( dummy, pb.conf.equations['rhs'], pb,
+                              dw_mode = 'matrix',
+                              tangent_matrix = pb.mtx_a.copy() )
+        output( '...done in %.2f s' % (time.clock() - tt) )
+
+        n_eigs = get_default( opts.n_eigs, mtx_a.shape[0] )
+##         mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
+##         mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+
+        output( 'computing resonance frequencies...' )
+        eig = Solver.any_from_conf( pb.get_solver_conf( opts.eigen_solver ) )
+        eigs, mtx_s_phi = eig( mtx_a, mtx_b, n_eigs )
+        output( '...done' )
+
+        bounding_box = Mesh.from_file(pb.conf.filename_mesh).get_bounding_box()
+        # this assumes a box (3D), or a square (2D):
+        a = bounding_box[1][0] - bounding_box[0][0]
+        E_exact = None
+        if options.hydrogen or options.boron:
+            if options.hydrogen:
+                Z = 1
+            elif options.boron:
+                Z = 5
+            if options.dim == 2:
+                E_exact = [-float(Z)**2/2/(n-0.5)**2/4
+                           for n in [1]+[2]*3+[3]*5 + [4]*8 + [5]*15]
+            elif options.dim == 3:
+                E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
+        if options.well:
+            if options.dim == 2:
+                E_exact = [pi**2/(2*a**2)*x
+                           for x in [2, 5, 5, 8, 10, 10, 13, 13,
+                                     17, 17, 18, 20, 20 ] ]
+            elif options.dim == 3:
+                E_exact = [pi**2/(2*a**2)*x
+                           for x in [3, 6, 6, 6, 9, 9, 9, 11, 11,
+                                     11, 12, 14, 14, 14, 14, 14,
+                                     14, 17, 17, 17] ]
+        if options.oscillator:
+            if options.dim == 2:
+                E_exact = [1] + [2]*2 + [3]*3 + [4]*4 + [5]*5 + [6]*6
+            elif options.dim == 3:
+                E_exact = [float(1)/2+x for x in [1]+[2]*3+[3]*6+[4]*10 ]
+        if E_exact is not None:
+            print "a=%f" % a
+            print "Energies:"
+            print     "n      exact         FEM      error"
+
+            for i, e in enumerate(eigs):
+                from numpy import NaN
+                if i < len(E_exact):
+                    exact = E_exact[i]
+                    err = 100*abs((exact - e)/exact)
+                else:
+                    exact = NaN
+                    err = NaN
+                print "%d:  %.8f   %.8f  %5.2f%%" % (i, exact, e, err)
+        else:
+            print eigs
+##         import sfepy.base.plotutils as plu
+##         plu.spy( mtx_b, eps = 1e-12 )
+##         plu.pylab.show()
+##         pause()
+
+        mtx_phi = self.make_full( mtx_s_phi )
+        self.save_results( eigs, mtx_phi )
+
+        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+
+    def make_full( self, mtx_s_phi ):
+        pb = self.problem
+
+        mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
+                            dtype = nm.float64 )
+        for ii in xrange( mtx_s_phi.shape[1] ):
+            mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+
+        return mtx_phi
+
+    def save_results( self, eigs, mtx_phi, out = None ):
+        pb = self.problem
+
+        save = self.app_options.save_eig_vectors
+        out = get_default( out, {} )
+        for ii in xrange( eigs.shape[0] ):
+            if save is not None:
+                if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
+            aux = pb.state_to_output( mtx_phi[:,ii] )
+            key = aux.keys()[0]
+            out[key+'%03d' % ii] = aux[key]
+
+        pb.domain.mesh.write( pb.get_output_name(), io = 'auto', out = out )
+
+        fd = open( pb.ofn_trunk + '_eigs.txt', 'w' )
+        eigs.tofile( fd, ' ' )
+        fd.close()
 
 
 usage = """%prog [options] filename_in
@@ -353,8 +380,6 @@ help = {
     "plot": "plot convergence of DFT iterations (with --dft)",
 }
 
-##
-# c: 01.02.2008, r: 21.03.2008
 def main():
     version = open( op.join( init_sfepy.install_dir,
                              'VERSION' ) ).readlines()[0][:-1]
@@ -477,16 +502,12 @@ def main():
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file( filename_in, required, other )
 
-    if options.dft:
-        if options.plot:
-            from sfepy.base.plotutils import pylab
-            options.plot = pylab is not None
-            
-        evp = solve_eigen_problem_n( conf, options )
-    else:
-        evp = solve_eigen_problem1( conf, options )
-
-    print "Solution saved to %s.vtk" % options.output_filename_trunk
+    app = SchroedingerApp(conf, options, 'schroedinger:')
+    opts = conf.options
+    if hasattr( opts, 'parametric_hook' ): # Parametric study.
+        parametric_hook = getattr( conf, opts.parametric_hook )
+        app.parametrize( parametric_hook )
+    app()
 
 if __name__ == '__main__':
     main()
