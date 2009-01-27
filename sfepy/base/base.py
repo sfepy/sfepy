@@ -366,19 +366,21 @@ class Output( Struct ):
 
     def set_output_prefix( self, prefix ):
         assert_( isinstance( prefix, str ) )
+        if len( prefix ) > 0:
+            prefix += ' '
         self._prefix = prefix
         
     def get_output_prefix( self ):
         return self._prefix
     prefix = property( get_output_prefix, set_output_prefix )
 
-    def get_output_function( self, filename = None ):
+    def get_output_function( self, filename = None, combined = False ):
         self.level = 0
         def output_screen( *argc, **argv ):
-            format = ' %s' * len( argc )
+            format = '%s' + ' %s' * (len( argc ) - 1)
             msg =  format % argc
 
-            if msg.startswith( ' ...' ):
+            if msg.startswith( '...' ):
                 self.level -= 1
 
             print self.prefix + ('  ' * self.level) + msg
@@ -387,10 +389,10 @@ class Output( Struct ):
                 self.level += 1
 
         def output_file( *argc, **argv ):
-            format = ' %s' * len( argc )
+            format = '%s' + ' %s' * (len( argc ) - 1)
             msg =  format % argc
 
-            if msg.startswith( ' ...' ):
+            if msg.startswith( '...' ):
                 self.level -= 1
 
             fd = open( filename, 'a' )
@@ -400,13 +402,20 @@ class Output( Struct ):
             if msg.endswith( '...' ):
                 self.level += 1
 
+        def output_combined( *argc, **argv ):
+            output_screen( *argc, **argv )
+            output_file( *argc, **argv )
+            
         if filename is None:
             return output_screen
 
         else:
             fd = open( filename, 'w' )
             fd.close()
-            return output_file
+            if combined:
+                return output_combined
+            else:
+                return output_file
 
 default_printer = Output( 'sfepy:' )
 output = default_printer.get_output_function()
