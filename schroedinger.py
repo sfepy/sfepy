@@ -41,11 +41,13 @@ def wrap_function( function, args ):
         tt = time.time()
         out = function( x, *args )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
-        print "-"*70
-        print "eigs",eigs
-        print "V_H",vec_vh
-        print "V_XC",vec_vxc
-        print "-"*70
+
+        file_output = args[-1]
+        file_output("-"*70)
+        file_output("eigs",eigs)
+        file_output("V_H",vec_vh)
+        file_output("V_XC",vec_vxc)
+        file_output("-"*70)
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
@@ -67,6 +69,8 @@ class SchroedingerApp( SimpleApp ):
         # None -> save all.
         save_eig_vectors = get( 'save_eig_vectors', None )
 
+        log_filename = get( 'log_filename', 'log.txt' )
+
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
@@ -75,7 +79,10 @@ class SchroedingerApp( SimpleApp ):
                             init_equations = False )
 
         self.setup_options()
+        
         output_dir = self.problem.output_dir
+        self.app_options.log_filename = op.join( output_dir,
+                                                 self.app_options.log_filename )
 
     def setup_options( self ):
         SimpleApp.setup_options( self )
@@ -97,7 +104,8 @@ class SchroedingerApp( SimpleApp ):
         output( "in %s" % self.app_options.output_dir )
         return evp
 
-    def iterate( self, vec_vhxc, eig_solver, mtx_b, log, n_electron = None ):
+    def iterate( self, vec_vhxc, eig_solver, mtx_b, log, file_output,
+                 n_electron = None ):
         from sfepy.physics import dft
 
         self.itercount += 1
@@ -158,7 +166,8 @@ class SchroedingerApp( SimpleApp ):
 
         norm = nla.norm( vec_vh + vec_vxc )
         log( norm, norm )
-
+        file_output( '%d: norm VH+VXC: %f' % (self.itercount, norm) )
+        
         return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
 
     def solve_eigen_problem_n( self ):
@@ -195,6 +204,9 @@ class SchroedingerApp( SimpleApp ):
             }
         log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)|$']) )
 
+        file_output = Output('').get_output_function( opts.log_filename,
+                                                      combined = True )
+
         eig_conf = pb.get_solver_conf( opts.eigen_solver )
         eig_solver = Solver.any_from_conf( eig_conf )
 
@@ -202,10 +214,11 @@ class SchroedingerApp( SimpleApp ):
 
         self.itercount = 0
         ncalls, times, nonlin_v = wrap_function( self.iterate,
-                                                 (eig_solver, mtx_b, log) )
+                                                 (eig_solver, mtx_b,
+                                                  log, file_output) )
         vec_vhxc = broyden3( nonlin_v, vec_vhxc, verbose = True )
 
-        out = self.iterate( vec_vhxc, eig_solver, mtx_b, log )
+        out = self.iterate( vec_vhxc, eig_solver, mtx_b, log, file_output )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
 
         if self.options.plot:
