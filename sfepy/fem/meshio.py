@@ -11,6 +11,7 @@ supported_formats = {
     '.txt'  : 'comsol',
     '.h5'   : 'hdf5',
     '.inp'  : 'avs_ucd',
+    '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
 }
 
@@ -1312,6 +1313,49 @@ class AVSUCDMeshIO( MeshIO ):
             elif line[2] == 'hex':
                 mat_hexas.append( int( line[1] ) )
                 hexas.append( [int( ic ) for ic in line[3:]] )
+
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+                                     tetras, mat_tetras,
+                                     hexas, mat_hexas )
+
+        self.fd = None
+        return mesh
+
+    def read_dimension(self):
+        return 3
+
+    def write( self, filename, mesh, out = None ):
+        raise NotImplementedError
+
+class HypermeshAsciiMeshIO( MeshIO ):
+    format = 'hmascii'
+
+    def read( self, mesh, **kwargs ):
+        self.fd = fd = open( self.filename, 'r' )
+
+        ids = []
+        coors = []
+        tetras = []
+        mat_tetras = []
+        hexas = []
+        mat_hexas = []
+
+        for line in fd:
+            if line and (line[0] == '*'):
+                if line[1:5] == 'node':
+                    line = line.strip()[6:-1].split(',')
+                    ids.append( int( line[0] ) )
+                    coors.append( [float( coor ) for coor in line[1:4]] )
+
+                elif line[1:7] == 'tetra4':
+                    line = line.strip()[8:-1].split(',')
+                    mat_tetras.append( int( line[1] ) )
+                    tetras.append( [int( ic ) for ic in line[2:6]] )
+
+                elif line[1:6] == 'hexa8':
+                    line = line.strip()[7:-1].split(',')
+                    mat_hexas.append( int( line[1] ) )
+                    hexas.append( [int( ic ) for ic in line[2:10]] )
 
         mesh = mesh_from_tetra_hexa( mesh, ids, coors,
                                      tetras, mat_tetras,
