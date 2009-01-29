@@ -52,7 +52,7 @@ def wrap_function( function, args ):
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
         times.append( tt2 - tt )
-        return vec_vh + vec_vxc
+        return vec_vh + vec_vxc - x
     return ncalls, times, function_wrapper
 
 class SchroedingerApp( SimpleApp ):
@@ -70,6 +70,7 @@ class SchroedingerApp( SimpleApp ):
         save_eig_vectors = get( 'save_eig_vectors', None )
 
         log_filename = get( 'log_filename', 'log.txt' )
+        iter_fig_name = get( 'iter_fig_name', 'iterations.pdf' )
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -81,8 +82,10 @@ class SchroedingerApp( SimpleApp ):
         self.setup_options()
         
         output_dir = self.problem.output_dir
-        self.app_options.log_filename = op.join( output_dir,
-                                                 self.app_options.log_filename )
+
+        opts = self.app_options
+        opts.log_filename = op.join( output_dir, opts.log_filename )
+        opts.iter_fig_name = op.join( output_dir, opts.iter_fig_name )
 
     def setup_options( self ):
         SimpleApp.setup_options( self )
@@ -165,8 +168,11 @@ class SchroedingerApp( SimpleApp ):
         #print sphere
 
         norm = nla.norm( vec_vh + vec_vxc )
-        log( norm, norm )
-        file_output( '%d: norm VH+VXC: %f' % (self.itercount, norm) )
+        dnorm = abs(norm - self.norm_vhxc0)
+        log( norm, max(dnorm,1e-20) ) # logplot of pure 0 fails.
+        file_output( '%d: F(x) = |VH+VXC|: %f' % (self.itercount, norm) )
+        file_output( '  abs(F(x) - F(x_prev)): %e' % dnorm )
+        self.norm_vhxc0 = norm
         
         return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
 
@@ -202,7 +208,7 @@ class SchroedingerApp( SimpleApp ):
             log_conf = {
                 'is_plot' : False,
             }
-        log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)|$']) )
+        log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)-x|$']) )
 
         file_output = Output('').get_output_function( opts.log_filename,
                                                       combined = True )
@@ -212,17 +218,19 @@ class SchroedingerApp( SimpleApp ):
 
         vec_vhxc = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
 
+        self.norm_vhxc0 = nla.norm( vec_vhxc )
         self.itercount = 0
         ncalls, times, nonlin_v = wrap_function( self.iterate,
                                                  (eig_solver, mtx_b,
                                                   log, file_output) )
-        vec_vhxc = broyden3( nonlin_v, vec_vhxc, verbose = True )
+        vec_vhxc = broyden3( nonlin_v, vec_vhxc,
+                             alpha = 0.8, iter = 20, verbose = True )
 
         out = self.iterate( vec_vhxc, eig_solver, mtx_b, log, file_output )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
 
         if self.options.plot:
-            log( finished = True )
+            log( save_figure = opts.iter_fig_name, finished = True )
             pause()
 
         coor = pb.domain.get_mesh_coors()
