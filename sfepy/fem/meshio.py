@@ -10,6 +10,7 @@ supported_formats = {
     '.node' : 'tetgen',
     '.txt'  : 'comsol',
     '.h5'   : 'hdf5',
+    '.inp'  : 'avs_ucd',
     '.mesh3d'   : 'mesh3d',
 }
 
@@ -26,6 +27,20 @@ def sort_by_mat_id( conns_in ):
 
         conns.append( conn[:,:-1].copy() )
         mat_ids.append( conn[:,-1].copy() )
+    return conns, mat_ids
+
+def sort_by_mat_id2( conns_in, mat_ids_in ):
+
+    # Sort by mat_id within a group, preserve order.
+    conns = []
+    mat_ids = []
+    for ig, conn in enumerate( conns_in ):
+        mat_id = mat_ids_in[ig]
+
+        ii = nm.argsort( mat_id, kind = 'mergesort' )
+        conns.append( conn[ii] )
+        mat_ids.append( mat_id[ii] )
+
     return conns, mat_ids
 
 ##
@@ -1232,6 +1247,84 @@ class Mesh3DMeshIO( MeshIO ):
             row = nm.fromstring(l, sep=" ", dtype=dtype)
             rows.append(row)
         return nm.array(rows)
+
+def mesh_from_tetra_hexa( mesh, ids, coors,
+                          tetras, mat_tetras,
+                          hexas, mat_hexas ):
+    ids = nm.asarray( ids, dtype = nm.int32 )
+    coors = nm.asarray( coors, dtype = nm.float64 )
+
+    n_nod = coors.shape[0]
+    
+    remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
+    remap[ids] = nm.arange( n_nod, dtype=nm.int32 )
+
+    nod = nm.concatenate( (coors,
+                           nm.zeros( (n_nod, 1), dtype = nm.int32 ) ), 1 )
+    nod = nm.ascontiguousarray( nod )
+
+    tetras = remap[nm.array( tetras, dtype = nm.int32 )]
+    hexas = remap[nm.array( hexas, dtype = nm.int32 )]
+
+    conns = [tetras, hexas]
+    mat_ids = [nm.array( ar, dtype = nm.int32 )
+               for ar in [mat_tetras, mat_hexas]]
+    descs = ['3_4', '3_8']
+
+    conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
+    conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
+    mesh._set_data( nod, conns, mat_ids, descs )
+    return mesh
+
+class AVSUCDMeshIO( MeshIO ):
+    format = 'avs_ucd'
+
+    def read( self, mesh, **kwargs ):
+        self.fd = fd = open( self.filename, 'r' )
+
+        # Skip all comments.
+        while 1:
+            line = fd.readline()
+            if line and (line[0] != '#'):
+                break
+
+        header = [int(ii) for ii in line.split()]
+        n_nod, n_el = header[0:2]
+
+        ids = nm.zeros( (n_nod,), dtype = nm.int32 )
+        dim = 3
+        coors = nm.zeros( (n_nod, dim), dtype = nm.float64 )
+        for ii in xrange( n_nod ):
+            line = fd.readline().split()
+            ids[ii] = int( line[0] )
+            coors[ii] = [float( coor ) for coor in line[1:]]
+
+        
+        mat_tetras = []
+        tetras = []
+        mat_hexas = []
+        hexas = []
+        for ii in xrange( n_el ):
+            line = fd.readline().split()
+            if line[2] == 'tet':
+                mat_tetras.append( int( line[1] ) )
+                tetras.append( [int( ic ) for ic in line[3:]] )
+            elif line[2] == 'hex':
+                mat_hexas.append( int( line[1] ) )
+                hexas.append( [int( ic ) for ic in line[3:]] )
+
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+                                     tetras, mat_tetras,
+                                     hexas, mat_hexas )
+
+        self.fd = None
+        return mesh
+
+    def read_dimension(self):
+        return 3
+
+    def write( self, filename, mesh, out = None ):
+        raise NotImplementedError
 
 ##
 # c: 05.02.2008, r: 05.02.2008
