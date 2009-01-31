@@ -14,7 +14,7 @@ import os.path as op
 from optparse import OptionParser
 from math import pi
 
-from scipy.optimize import broyden3
+from scipy.optimize import broyden3, bisection
 from scipy.optimize.nonlin import excitingmixing
 
 import init_sfepy
@@ -26,6 +26,73 @@ from sfepy.applications import SimpleApp
 from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
 from sfepy.solvers import Solver
+
+def guess_n_eigs( n_electron, n_eigs = None ):
+    """
+    Guess the number of eigenvalues (energies) to compute so that the smearing
+    iteration converges. Passing n_eigs overrides the guess.
+    """
+    if n_eigs is not None: return n_eigs
+    
+    if n_electron > 2:
+        n_eigs = int(1.2 * ((0.5 * n_electron) + 5))
+    else:
+        n_eigs = n_electron
+    return n_eigs
+
+def smear( energies, e_f, width, exponent ):
+    energies = nm.atleast_1d( energies )
+
+    e1, e2 = e_f - width, e_f + width
+
+    val = nm.zeros_like( energies )
+
+    ii = nm.where( energies <= e1 )[0]
+    val[ii] = 2.0
+
+    ii = nm.where( (energies > e1) & (energies <= e_f) )[0]
+    val[ii] = 2.0 - nm.power((energies[ii] - e1) / width, exponent)
+
+    ii = nm.where( (energies > e_f) & (energies < e2) )[0]
+    val[ii] = 0.0 + nm.power((e2 - energies[ii]) / width, exponent)
+
+    return val
+
+def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
+
+    def objective( e_f ):
+        r = nm.sum( smear( eigs, e_f, width, exponent ) ) - n_electron
+#        print e_f, r
+        return r
+
+##     import pylab
+##     x = nm.linspace(eigs[0], eigs[-1], 1000)
+##     pylab.plot( x, smear( x, -3, width, exponent ) )
+##     pylab.show()
+
+##     import pylab
+##     x = nm.linspace(eigs[0], eigs[-1], 1000)
+##     pylab.plot( x, [objective(y) for y in x] )
+##     pylab.show()
+
+    try:
+        e_f = bisection( objective, eigs[0], eigs[-1], xtol = 1e-12 )
+    except AssertionError:
+        debug()
+##     print eigs
+##     print e_f, e_f - width, e_f + width
+##     print objective(e_f)
+##     debug()
+
+    def smear_tuned( energies ):
+        return smear( energies, e_f, width, exponent )
+
+##     import pylab
+##     x = nm.linspace(eigs[0], eigs[-1], 1000)
+##     pylab.plot( x, smear_tuned( x ) )
+##     pylab.show()
+
+    return smear_tuned
 
 def update_state_to_output( out, pb, vec, name, fill_value = None ):
     """Convert 'vec' to output for saving and insert it into 'out'. """
@@ -66,8 +133,8 @@ class SchroedingerApp( SimpleApp ):
         
         eigen_solver = get( 'eigen_solver', None,
                             'missing "eigensolver" in options!' )
-        n_eigs = get( 'n_eigs', 5 )
         n_electron = get( 'n_electron', 5 )
+        n_eigs = guess_n_eigs( n_electron, n_eigs = get( 'n_eigs', None ) )
         # None -> save all.
         save_eig_vectors = get( 'save_eig_vectors', None )
 
@@ -140,26 +207,36 @@ class SchroedingerApp( SimpleApp ):
         eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b, opts.n_eigs )
         output( '...done' )
 
-        if len(eigs) < n_electron:
-            print len(eigs)
+        n_eigs_ok = len(eigs)
+        
+        if n_eigs_ok < n_electron:
+            print n_eigs_ok
             print eigs
             raise Exception("Not enough eigenvalues have converged. Exiting.")
 
         output( "saving solutions, iter=%d..." % self.itercount )
         out = {}
         var_name = pb.variables.get_names( kind = 'state' )[0]
-        for ii in xrange( len(eigs) ):
+        for ii in xrange( n_eigs_ok ):
             vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
             update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
         name = op.join( opts.output_dir, "iter%d" % self.itercount )
         pb.save_state('.'.join((name, opts.output_format)), out=out)
         output( "...solutions saved" )
 
+        output( 'setting-up smearing...' )
+        smear_tuned = setup_smearing( eigs, opts.n_electron )
+        weights = smear_tuned(eigs)
+        output( 'smearing weights:' )
+        output( weights )
+        output( '...done' )
+
         vec_phi = nm.zeros_like( vec_vhxc )
         vec_n = nm.zeros_like( vec_vhxc )
-        for ii in xrange( n_electron ):
+
+        for ii in xrange( n_eigs_ok ):
             vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
-            vec_n += vec_phi ** 2
+            vec_n += weights[ii] * vec_phi ** 2
 
         vec_vxc = nm.zeros_like( vec_vhxc )
         for ii, val in enumerate( vec_n ):
