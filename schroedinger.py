@@ -124,6 +124,7 @@ class SchroedingerApp( SimpleApp ):
 
         n_electron = get_default( n_electron, opts.n_electron )
         
+        pb.select_bcs( ebc_names = ['ZeroSurface'] )
         pb.update_materials( extra_mat_args = {'mat_v' : {'vhxc' : vec_vhxc}} )
 
         dummy = pb.create_state_vector()
@@ -165,7 +166,7 @@ class SchroedingerApp( SimpleApp ):
             vec_vxc[ii] = dft.getvxc( val/(4*pi), 0 )
 
         pb.set_equations( pb.conf.equations_vh )
-        pb.time_update()
+        pb.select_bcs( ebc_names = ['VHSurface'] )
         pb.variables['n'].data_from_data( vec_n )
         output( "solving Ax=b Poisson equation" )
         vec_vh = pb.solve()
@@ -189,7 +190,7 @@ class SchroedingerApp( SimpleApp ):
         dim = pb.domain.mesh.dim
 
         pb.set_equations( pb.conf.equations )
-        pb.time_update()
+        pb.select_bcs( ebc_names = ['ZeroSurface'] )
 
         dummy = pb.create_state_vector()
 
@@ -242,6 +243,7 @@ class SchroedingerApp( SimpleApp ):
         r2 = norm_l2_along_axis(coor, n_item=dim, squared=True)
         vec_nr2 = vec_n * r2
 
+        pb.select_bcs( ebc_names = ['ZeroSurface'] )
         mtx_phi = self.make_full( mtx_s_phi )
         out = {}
         update_state_to_output( out, pb, vec_n, 'n' )
