@@ -78,7 +78,7 @@ def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
     try:
         e_f = bisection( objective, eigs[0], eigs[-1], xtol = 1e-12 )
     except AssertionError:
-        debug()
+        e_f = None
 ##     print eigs
 ##     print e_f, e_f - width, e_f + width
 ##     print objective(e_f)
@@ -92,7 +92,7 @@ def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
 ##     pylab.plot( x, smear_tuned( x ) )
 ##     pylab.show()
 
-    return smear_tuned
+    return e_f, smear_tuned
 
 def update_state_to_output( out, pb, vec, name, fill_value = None ):
     """Convert 'vec' to output for saving and insert it into 'out'. """
@@ -208,11 +208,21 @@ class SchroedingerApp( SimpleApp ):
         output( '...done' )
 
         n_eigs_ok = len(eigs)
+
+        output( 'setting-up smearing...' )
+        e_f, smear_tuned = setup_smearing( eigs, n_electron )
+        output( 'Fermi energy:', e_f )
+        if e_f is None:
+            raise Exception("cannot find Fermi energy - exiting.")
+        weights = smear_tuned(eigs)
+        output( 'smearing weights:' )
+        output( weights )
+        output( '...done' )
         
-        if n_eigs_ok < n_electron:
+        if (weights[-1] > 1e-12):
             print n_eigs_ok
             print eigs
-            raise Exception("Not enough eigenvalues have converged. Exiting.")
+            raise Exception("not enough eigenvalues have converged - exiting.")
 
         output( "saving solutions, iter=%d..." % self.itercount )
         out = {}
@@ -223,13 +233,6 @@ class SchroedingerApp( SimpleApp ):
         name = op.join( opts.output_dir, "iter%d" % self.itercount )
         pb.save_state('.'.join((name, opts.output_format)), out=out)
         output( "...solutions saved" )
-
-        output( 'setting-up smearing...' )
-        smear_tuned = setup_smearing( eigs, opts.n_electron )
-        weights = smear_tuned(eigs)
-        output( 'smearing weights:' )
-        output( weights )
-        output( '...done' )
 
         vec_phi = nm.zeros_like( vec_vhxc )
         vec_n = nm.zeros_like( vec_vhxc )
