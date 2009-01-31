@@ -36,24 +36,26 @@ def update_state_to_output( out, pb, vec, name, fill_value = None ):
 def wrap_function( function, args ):
     ncalls = [0]
     times = []
+    results = []
     def function_wrapper( x ):
         ncalls[0] += 1
         tt = time.time()
-        out = function( x, *args )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
+        results[:] = function( x, *args )
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
 
         file_output = args[-1]
         file_output("-"*70)
-        file_output("eigs",eigs)
-        file_output("V_H",vec_vh)
-        file_output("V_XC",vec_vxc)
+        file_output("eigs:", eigs)
+        file_output("|N|:   ", nla.norm(vec_n))
+        file_output("|V_H|: ", nla.norm(vec_vh))
+        file_output("|V_XC|:", nla.norm(vec_vxc))
         file_output("-"*70)
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
         times.append( tt2 - tt )
         return vec_vh + vec_vxc - x
-    return ncalls, times, function_wrapper
+    return ncalls, times, function_wrapper, results
 
 class SchroedingerApp( SimpleApp ):
 
@@ -86,6 +88,10 @@ class SchroedingerApp( SimpleApp ):
         opts = self.app_options
         opts.log_filename = op.join( output_dir, opts.log_filename )
         opts.iter_fig_name = op.join( output_dir, opts.iter_fig_name )
+        self.mesh_results_name = op.join( opts.output_dir,
+                                          self.problem.get_output_name() )
+        self.eig_results_name = op.join( opts.output_dir,
+                                         self.problem.ofn_trunk + '_eigs.txt' )
 
     def setup_options( self ):
         SimpleApp.setup_options( self )
@@ -170,8 +176,8 @@ class SchroedingerApp( SimpleApp ):
         norm = nla.norm( vec_vh + vec_vxc )
         dnorm = abs(norm - self.norm_vhxc0)
         log( norm, max(dnorm,1e-20) ) # logplot of pure 0 fails.
-        file_output( '%d: F(x) = |VH+VXC|: %f' % (self.itercount, norm) )
-        file_output( '  abs(F(x) - F(x_prev)): %e' % dnorm )
+        file_output( '%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
+                     % (self.itercount, norm, dnorm) )
         self.norm_vhxc0 = norm
         
         return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
@@ -220,15 +226,14 @@ class SchroedingerApp( SimpleApp ):
 
         self.norm_vhxc0 = nla.norm( vec_vhxc )
         self.itercount = 0
-        ncalls, times, nonlin_v = wrap_function( self.iterate,
-                                                 (eig_solver, mtx_b,
-                                                  log, file_output) )
+        aux = wrap_function( self.iterate,
+                             (eig_solver, mtx_b, log, file_output) )
+        ncalls, times, nonlin_v, results = aux
+
         vec_vhxc = broyden3( nonlin_v, vec_vhxc,
-                             alpha = 0.8, iter = 20, verbose = True )
-
-        out = self.iterate( vec_vhxc, eig_solver, mtx_b, log, file_output )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = out
-
+                             alpha = 0.9, iter = 10, verbose = True )
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
+        
         if self.options.plot:
             log( save_figure = opts.iter_fig_name, finished = True )
             pause()
@@ -361,9 +366,9 @@ class SchroedingerApp( SimpleApp ):
             key = aux.keys()[0]
             out[key+'%03d' % ii] = aux[key]
 
-        pb.domain.mesh.write( pb.get_output_name(), io = 'auto', out = out )
+        pb.save_state(self.mesh_results_name, out=out)
 
-        fd = open( pb.ofn_trunk + '_eigs.txt', 'w' )
+        fd = open(self.eig_results_name, 'w')
         eigs.tofile( fd, ' ' )
         fd.close()
 
