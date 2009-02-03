@@ -77,7 +77,20 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
             else:
                 out = (eigs,)
         else:
-            out = sc.splinalg.eigen_symmetric( mtx_a, k = n_eigs, M = mtx_b )
+            try:
+                from scipy.splinalg import eigen_symmetric
+            except ImportError:
+                eigen_symmetric = None
+
+            try:
+                from scipy.sparse.linalg.eigen.arpack import eigen_symmetric
+            except ImportError:
+                eigen_symmetric = None
+
+            if eigen_symmetric is None:
+                raise ImportError('cannot import eigen_symmetric!')
+                
+            out = eigen_symmetric( mtx_a, k = n_eigs, M = mtx_b )
 
         if status is not None:
             status['time'] = time.clock() - tt
@@ -90,6 +103,27 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
     """Solver for symmetric problems."""
     name = 'eig.sgscipy'
     
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+       solver_20 = {
+            'name' : 'eigen2',
+            'kind' : 'eig.sgscipy',
+
+            'force_n_eigs' : True,
+        }
+        """
+        get = conf.get_default_attr
+
+        force_n_eigs = get( 'force_n_eigs', False )
+
+        common = EigenvalueSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
     ##
     # c: 08.04..2008, r: 08.04..2008
     def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
@@ -104,7 +138,7 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
         status = get_default( status, self.status )
 
         tt = time.clock()
-        if n_eigs is None:
+        if (n_eigs is None) or (conf.force_n_eigs):
             mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
             if nm.iscomplexobj( mtx_a ):
                 if mtx_b is None:
@@ -123,16 +157,95 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
                 out = fun( mtx_a, mtx_b )
 
             if not eigenvectors:
-                out = out[0]
+                if n_eigs is None:
+                    out = out[0]
+                else:
+                    out = out[0][:n_eigs]
             else:
-                out = out[:-1]
-            
+                if n_eigs is None:
+                    out = out[:-1]
+                else:
+                    out = (out[0][:n_eigs], out[1][:,:n_eigs])
+                    
         else:
             out = ScipyEigenvalueSolver.__call__( self, mtx_a, mtx_b, n_eigs,
                   eigenvectors, status = None )
 
         if status is not None:
             status['time'] = time.clock() - tt
+
+        return out
+
+
+class LOBPCGEigenvalueSolver( EigenvalueSolver ):
+    name = 'eig.scipy_lobpcg'
+
+    def process_conf( conf ):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_2 = {
+            'name' : 'lobpcg',
+            'kind' : 'eig.scipy_lobpcg',
+
+            'i_max' : 20,
+            'n_eigs' : 5,
+            'eps_a' : None,
+            'largest' : True,
+            'precond' : None,
+            'verbosity' : 0,
+        }
+        """
+        get = conf.get_default_attr
+
+        i_max = get( 'i_max', 20 )
+        n_eigs = get( 'n_eigs', None )
+        eps_a = get( 'eps_a', None )
+        largest = get( 'largest', True )
+        precond = get( 'precond', None )
+        verbosity = get( 'verbosity', 0 )
+
+        common = EigenvalueSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
+    def __init__( self, conf, **kwargs ):
+        EigenvalueSolver.__init__( self, conf, **kwargs )
+
+        from scipy.sparse.linalg.eigen import lobpcg
+        self.lobpcg = lobpcg
+
+    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+                  eigenvectors = None, status = None, conf = None ):
+        conf = get_default( conf, self.conf )
+        mtx_a = get_default( mtx_a, self.mtx_a )
+        mtx_b = get_default( mtx_b, self.mtx_b )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        eigenvectors = get_default( eigenvectors, self.eigenvectors )
+        status = get_default( status, self.status )
+
+        if n_eigs is None:
+            n_eigs = mtx_a.shape[0]
+        else:
+            n_eigs = min(n_eigs, mtx_a.shape[0])
+
+        tt = time.clock()
+
+        x = nm.zeros( (mtx_a.shape[0], n_eigs), dtype = nm.float64 )
+        x[:n_eigs] = nm.eye( n_eigs, dtype = nm.float64 )
+        out = self.lobpcg( mtx_a, x, mtx_b,
+                           M = conf.precond,
+                           tol = conf.eps_a, maxiter = conf.i_max,
+                           largest = conf.largest,
+                           verbosityLevel = conf.verbosity )
+
+        if status is not None:
+            status['time'] = time.clock() - tt
+
+        if not eigenvectors:
+            out = out[0]
 
         return out
 
