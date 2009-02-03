@@ -198,8 +198,10 @@ class SchroedingerApp( SimpleApp ):
 
 
         output( 'computing the Ax=Blx Kohn-Sham problem...' )
-        eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b, opts.n_eigs )
-        output( '...done' )
+        tt = time.clock()
+        eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b,
+                                      opts.n_eigs, eigenvectors = True )
+        output( '...done in %.2f s' % (time.clock() - tt) )
 
         n_eigs_ok = len(eigs)
 
@@ -209,8 +211,6 @@ class SchroedingerApp( SimpleApp ):
         if e_f is None:
             raise Exception("cannot find Fermi energy - exiting.")
         weights = smear_tuned(eigs)
-        output( 'smearing weights:' )
-        output( weights )
         output( '...done' )
         
         if (weights[-1] > 1e-12):
@@ -255,6 +255,8 @@ class SchroedingerApp( SimpleApp ):
                      % (self.itercount, norm, dnorm) )
 
         file_output("-"*70)
+        file_output('Fermi energy:', e_f)
+        file_output("----------------------------------------")
         file_output(" #  |  eigs           | smearing")
         file_output("----|-----------------|-----------------")
         for ii in xrange( n_eigs_ok ):
