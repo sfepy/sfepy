@@ -53,7 +53,7 @@ def main():
     x0 = centre - 0.5 * dims
     dd = dims / (shape - 1)
 
-    grid = nm.zeros( shape, dtype = nm.float64 )
+    grid = nm.zeros( shape, dtype = nm.int32 )
     n_nod = nm.prod( shape )
     coors = nm.zeros( (n_nod, dim + 1), dtype = nm.float64 )
 
