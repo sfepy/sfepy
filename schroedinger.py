@@ -196,13 +196,13 @@ class SchroedingerApp( SimpleApp ):
                               dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
         output( '...done in %.2f s' % (time.clock() - tt) )
 
+        assert_( nm.alltrue( nm.isfinite( mtx_a.data ) ) )
 
         output( 'computing the Ax=Blx Kohn-Sham problem...' )
         tt = time.clock()
         eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b,
                                       opts.n_eigs, eigenvectors = True )
         output( '...done in %.2f s' % (time.clock() - tt) )
-
         n_eigs_ok = len(eigs)
 
         output( 'setting-up smearing...' )
@@ -289,6 +289,7 @@ class SchroedingerApp( SimpleApp ):
                               dw_mode = 'matrix',
                               tangent_matrix = pb.mtx_a.copy() )
         output( '...done in %.2f s' % (time.clock() - tt) )
+        assert_( nm.alltrue( nm.isfinite( mtx_b.data ) ) )
 
         n_eigs = get_default( opts.n_eigs, pb.mtx_a.shape[0] )
 ##         mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
@@ -321,7 +322,7 @@ class SchroedingerApp( SimpleApp ):
         ncalls, times, nonlin_v, results = aux
 
         vec_vhxc = broyden3( nonlin_v, vec_vhxc,
-                             alpha = 0.9, iter = 10, verbose = True )
+                             alpha = 0.9, iter = 20, verbose = True )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
         
         if self.options.plot:
