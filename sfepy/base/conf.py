@@ -198,8 +198,6 @@ class ProblemConf( Struct ):
         self._filename = filename
 
         other_missing = self.validate( required = required, other = other )
-        for name in other_missing:
-            setattr( self, name, None )
 
         self.transform_input_trivial()
         self._raw = {}
