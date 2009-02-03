@@ -107,16 +107,10 @@ def wrap_function( function, args ):
     def function_wrapper( x ):
         ncalls[0] += 1
         tt = time.time()
+
         results[:] = function( x, *args )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
 
-        file_output = args[-1]
-        file_output("-"*70)
-        file_output("eigs:", eigs)
-        file_output("|N|:   ", nla.norm(vec_n))
-        file_output("|V_H|: ", nla.norm(vec_vh))
-        file_output("|V_XC|:", nla.norm(vec_vxc))
-        file_output("-"*70)
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
@@ -259,6 +253,19 @@ class SchroedingerApp( SimpleApp ):
         log( norm, max(dnorm,1e-20) ) # logplot of pure 0 fails.
         file_output( '%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
                      % (self.itercount, norm, dnorm) )
+
+        file_output("-"*70)
+        file_output(" #  |  eigs           | smearing")
+        file_output("----|-----------------|-----------------")
+        for ii in xrange( n_eigs_ok ):
+            file_output("% 3d | %-15s | %-15s" % (ii+1, eigs[ii], weights[ii]))
+        file_output("----------------------------------------")
+        file_output("|N|:   ", nla.norm(vec_n))
+        file_output("|V_H|: ", nla.norm(vec_vh))
+        file_output("|V_XC|:", nla.norm(vec_vxc))
+        file_output("-"*70)
+
+
         self.norm_vhxc0 = norm
         
         return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
