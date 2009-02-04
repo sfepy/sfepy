@@ -127,7 +127,7 @@ class Region( Struct ):
         self.igs = []
         self.cells = {}
         for ig, rcells in cells.iteritems():
-            self.cells[ig] = nm.array( rcells, ndmin = 1 )
+            self.cells[ig] = nm.array( rcells, dtype = nm.int32, ndmin = 1 )
             self.igs.append( ig )
         self.update_vertices()
         self.is_complete = False
