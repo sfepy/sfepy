@@ -81,14 +81,13 @@ class SimpleApp( Application ):
             problem.output_format = self.app_options.output_format
 
     def call( self ):
-        opts = self.app_options
 	dpb, vec_dp, data = solve_direct( self.conf, self.options,
 					  problem = self.problem,
-                                          step_hook = opts.step_hook,
+                                          step_hook = self.step_hook,
                                           post_process_hook = \
-                                          opts.post_process_hook )
+                                          self.post_process_hook )
 
-	if opts.post_process_hook_final is not None: # User postprocessing.
-	    opts.post_process_hook_final( dpb, vec_dp, data )
+	if self.post_process_hook_final is not None: # User postprocessing.
+	    self.post_process_hook_final( dpb, vec_dp, data )
 
 	return dpb, vec_dp, data
