@@ -13,6 +13,34 @@ except:
 def get_trunk( filename ):
     return op.splitext( op.basename( filename ) )[0]
 
+def get_print_info(n_step, fill=None):
+    """
+    Returns the max. number of digits in range(n_step) and the corresponding
+    format string.
+    
+    Examples:
+    
+    >>> get_print_info(11)
+    (2, '%2d')
+    >>> get_print_info(8)
+    (1, '%1d')
+    >>> get_print_info(100)
+    (2, '%2d')
+    >>> get_print_info(101)
+    (3, '%3d')
+    >>> get_print_info(101, fill='0')
+    (3, '%03d')
+    """    
+    if n_step > 1:
+        n_digit = int(nm.log10(n_step - 1) + 1)
+        if fill is None:
+            format = '%%%dd' % n_digit
+        else:
+            format = '%%%s%dd' % (fill, n_digit)
+    else:
+        n_digit, format = 0, None
+    return n_digit, format
+
 ##
 # c: 20.03.2008, r: 20.03.2008
 def skip_read_line( fd ):
