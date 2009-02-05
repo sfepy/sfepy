@@ -520,3 +520,27 @@ class Region( Struct ):
             offs[ig] = off
             off += self.shape[ig].n_cell
         return offs
+
+    def get_charfun( self, by_cell = False, val_by_id = False ):
+        """
+        Return the characteristic function of the region as a vector of values
+        defined either in the mesh nodes (by_cell == False) or cells. The
+        values are either 1 (val_by_id == False) or sequential id + 1.
+        """
+        if by_cell:
+            chf = nm.zeros( (self.domain.shape.n_el,), dtype = nm.float64 )
+            offs = self.get_cell_offsets()
+            for ig, cells in self.cells.iteritems():
+                iel = offs[ig] + cells
+                if val_by_id:
+                    chf[iel] = iel + 1
+                else:
+                    chf[iel] = 1.0
+        else:
+            chf = nm.zeros( (self.domain.shape.n_nod,), dtype = nm.float64 )
+            if val_by_id:
+                chf[self.all_vertices] = self.all_vertices + 1
+            else:
+                chf[self.all_vertices] = 1.0
+
+        return chf
