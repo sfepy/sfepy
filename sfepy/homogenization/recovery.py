@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.base.ioutils import get_print_info
 from sfepy.homogenization.utils import coor_to_sym
 
 shared = Struct()
@@ -20,11 +21,11 @@ def convolve_field_scalar( fvars, pvars, iel, ts ):
     """
 
     step0 = max( 0, ts.step - fvars.steps[-1] )
-    print step0, ts.step
+##     print step0, ts.step
 
     val = nm.zeros_like( fvars[0] )
     for ik in xrange( step0, ts.step + 1 ):
-        print ' ', ik, ts.step-ik
+##         print ' ', ik, ts.step-ik
         vf = fvars[ts.step-ik]
         vp = pvars[ik][iel,0,0,0]
         val += vf * vp * ts.dt
@@ -44,11 +45,11 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
     """
 
     step0 = max( 0, ts.step - fvars[0,0][var_name].steps[-1] )
-    print step0, ts.step
+##     print step0, ts.step
 
     val = nm.zeros_like( fvars[0,0][var_name][0] )
     for ik in xrange( step0, ts.step + 1 ):
-        print ' ', ik, ts.step-ik
+##         print ' ', ik, ts.step-ik
         for ir in range( dim ):
             for ic in range( dim ):
                 ii = coor_to_sym( ir, ic, dim )
@@ -118,7 +119,7 @@ def compute_u_from_macro( strain, coor, iel ):
             um[ir::dim] = strain[iel,0,ii,0] * coor[:,ic]
     return um
 
-def recover_bones( problem, micro_problem,
+def recover_bones( problem, micro_problem, region,
                    ts, strain, dstrains, pressure, pressures,
                    corrs_rs, corrs_pressure,
                    corrs_time_rs, corrs_time_pressure ):
@@ -127,31 +128,42 @@ def recover_bones( problem, micro_problem,
     -> from time correctors only 'u', 'dp' are needed.
     """
     
-    print strain
-    print strain.shape
-    print dstrains
-    print pressure
-    print pressure.shape
-    print pressures
+##     print strain
+##     print strain.shape
+##     print dstrains
+##     print pressure
+##     print pressure.shape
+##     print pressures
 
     dim = problem.domain.mesh.dim
-    var = micro_problem.variables['uc']
-    micro_coor = var.field.get_coor()[:,:-1]
 
-    for iel in xrange( len( pressures ) ):
-        print 'iel:', iel
+    micro_u = micro_problem.variables['uc']
+    micro_coor = micro_u.field.get_coor()[:,:-1]
+
+    micro_n_nod = micro_problem.domain.mesh.n_nod
+    micro_p = micro_problem.variables['pc']
+
+    to_output = micro_problem.variables.state_to_output
+
+    join = os.path.join
+    format = get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
+
+    # single group only!!!
+    cells = region.cells[0]
+    for ii, iel in enumerate( cells ):
+        print 'ii: %d, iel: %d' % (ii, iel)
         u_corr_steady = compute_u_corr_steady( corrs_rs, strain,
                                                corrs_pressure, pressure,
-                                               dim, iel )
+                                               dim, ii )
         u_corr_time = compute_u_corr_time( corrs_time_rs, dstrains,
                                            corrs_time_pressure, pressures,
-                                           dim, iel, ts )
+                                           dim, ii, ts )
 
-        p_corr_steady = compute_p_corr_steady( corrs_pressure, pressure, iel )
+        p_corr_steady = compute_p_corr_steady( corrs_pressure, pressure, ii )
 
         p_corr_time = compute_p_corr_time( corrs_time_rs, dstrains,
                                            corrs_time_pressure, pressures,
-                                           dim, iel, ts )
+                                           dim, ii, ts )
 ##     print u_corr_steady
 ##     print u_corr_time
 ##     print p_coor_steady
@@ -160,7 +172,22 @@ def recover_bones( problem, micro_problem,
         u_corr = u_corr_steady + u_corr_time
         p_corr = p_corr_steady + p_corr_time
 
-        u_mic = compute_u_from_macro( strain, micro_coor, iel ) + u_corr
+        u_mic = compute_u_from_macro( strain, micro_coor, ii ) + u_corr
+        p_mic = micro_p.extend_data( p_corr[:,nm.newaxis], micro_n_nod,
+                                     val = pressure[ii,0,0,0] ).squeeze()
 
-        debug()
+##         print u_mic
+##         print p_mic
     
+        out = {}
+        out.update( to_output( u_mic, var_info = {'uc' : (True, 'uc')},
+                               extend = True ) )
+        out.update( to_output( p_corr, var_info = {'pc' : (True, 'pc')},
+                               extend = True,
+                               fill_value = pressure[ii,0,0,0] ) )
+
+        suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
+        micro_name = micro_problem.get_output_name( suffix = suffix )
+        filename = join( problem.output_dir, 'recovered_' + micro_name )
+
+        micro_problem.save_state( filename, out = out )
