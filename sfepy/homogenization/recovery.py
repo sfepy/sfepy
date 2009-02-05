@@ -122,7 +122,8 @@ def compute_u_from_macro( strain, coor, iel ):
 def recover_bones( problem, micro_problem, region,
                    ts, strain, dstrains, pressure, pressures,
                    corrs_rs, corrs_pressure,
-                   corrs_time_rs, corrs_time_pressure ):
+                   corrs_time_rs, corrs_time_pressure,
+                   naming_scheme = 'step_iel' ):
     """
     note that \tilde{\pi}^P(0) is in corrs_pressure
     -> from time correctors only 'u', 'dp' are needed.
@@ -186,7 +187,10 @@ def recover_bones( problem, micro_problem, region,
                                extend = True,
                                fill_value = pressure[ii,0,0,0] ) )
 
-        suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
+        if naming_scheme == 'step_iel':
+            suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
+        else:
+            suffix = '.'.join( (format % iel, ts.suffix % ts.step) )
         micro_name = micro_problem.get_output_name( suffix = suffix )
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
