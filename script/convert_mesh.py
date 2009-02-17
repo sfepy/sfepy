@@ -3,7 +3,7 @@ import sys
 sys.path.append('.')
 
 from optparse import OptionParser
-import numpy as nm 
+from sfepy.base.base import nm, output
 from sfepy.fem import Mesh
 
 usage = """%prog [options] filename_in filename_out
@@ -35,10 +35,15 @@ def main():
     scale = options.scale
     if scale is not None:
         try:
-            scale = float(scale)
-        except ValueError:
-            scale = [float(ii) for ii in scale.split(',')]
-        scale = nm.array(scale, dtype=nm.float64, ndmin=1)
+            try:
+                scale = float(scale)
+            except ValueError:
+                scale = [float(ii) for ii in scale.split(',')]
+            scale = nm.array(scale, dtype=nm.float64, ndmin=1)
+        except:
+            output('bad scale! (%s)' % scale)
+            parser.print_help()
+            sys.exit(1)
         
     filename_in, filename_out = args
     
@@ -49,9 +54,13 @@ def main():
             tr = nm.eye(mesh.dim, dtype=nm.float64) * scale
         elif len(scale) == mesh.dim:
             tr = nm.diag(scale)
+        else:
+            raise ValueError('bad scale! (%s)' % scale)
         mesh.transform_coords(tr)
 
+    output('writing %s...' % filename_out)
     mesh.write(filename_out, io='auto')
+    output('...done')
 
 if __name__ == '__main__':
     main()
