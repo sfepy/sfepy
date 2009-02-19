@@ -202,7 +202,7 @@ class Domain( Struct ):
         n_gr = len( self.mesh.conns )
         n_nod, dim = self.mesh.nod0.shape
         self.shape = Struct( n_gr = len( self.mesh.conns ), n_el = 0,
-                             n_nod = n_nod, dim = dim )
+                             n_nod = n_nod, dim = dim - 1 )
         self.groups = {}
         for ii in range( self.shape.n_gr ):
             gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
