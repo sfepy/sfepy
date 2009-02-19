@@ -371,7 +371,7 @@ class Output( Struct ):
         self._prefix = prefix
         
     def get_output_prefix( self ):
-        return self._prefix
+        return self._prefix[:-1]
     prefix = property( get_output_prefix, set_output_prefix )
 
     def get_output_function( self, filename = None, combined = False ):
@@ -383,7 +383,7 @@ class Output( Struct ):
             if msg.startswith( '...' ):
                 self.level -= 1
 
-            print self.prefix + ('  ' * self.level) + msg
+            print self._prefix + ('  ' * self.level) + msg
 
             if msg.endswith( '...' ):
                 self.level += 1
@@ -396,7 +396,7 @@ class Output( Struct ):
                 self.level -= 1
 
             fd = open( filename, 'a' )
-            print >>fd, self.prefix + ('  ' * self.level) + msg
+            print >>fd, self._prefix + ('  ' * self.level) + msg
             fd.close()
 
             if msg.endswith( '...' ):
