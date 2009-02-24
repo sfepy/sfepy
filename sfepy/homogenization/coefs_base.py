@@ -237,3 +237,28 @@ class CoefDimDim( MiniAppBase ):
         coef /= volume
 
         return coef
+
+class CoefSym( MiniAppBase ):
+    
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        dim, sym = problem.get_dim( get_sym = True )
+        coef = nm.zeros( (sym,), dtype = nm.float64 )
+
+        for name, val in self.get_variables( problem, None, None, data, 'col' ):
+            problem.variables[name].data_from_data( val )
+
+        for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
+            for name, val in self.get_variables( problem, ir, ic, data, 'row' ):
+                problem.variables[name].data_from_data( val )
+
+                val = eval_term_op( None, self.expression,
+                                    problem, call_mode = 'd_eval' )
+
+                coef[ii] = val
+
+        coef /= volume
+
+        return coef
