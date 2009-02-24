@@ -1,5 +1,6 @@
 from sfepy.base.base import *
-from sfepy.homogenization.coefs_base import CoefSymSym, CorrDimDim, ShapeDimDim
+from sfepy.homogenization.coefs_base import CoefSymSym, CorrDimDim,\
+     ShapeDimDim, TSTimes
 
 class CorrectorsElasticRS( CorrDimDim ):
 

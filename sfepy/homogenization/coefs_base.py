@@ -149,6 +149,12 @@ class CorrDim( MiniAppBase ):
                                 file_per_var = file_per_var )
         return save_correctors
 
+class TSTimes( MiniAppBase ):
+    """Coefficient-like class, returns times of the time stepper."""
+    def __call__( self, volume = None, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        return problem.get_time_solver().ts.times
+
 class CoefSymSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
