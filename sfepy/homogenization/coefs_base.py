@@ -149,6 +149,42 @@ class CorrDim( MiniAppBase ):
                                 file_per_var = file_per_var )
         return save_correctors
 
+class CorrOne( MiniAppBase ):
+    def get_variables( self, data ):
+            raise StopIteration
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        problem = get_default( problem, self.problem )
+
+        problem.select_variables( self.variables )
+        problem.set_equations( self.equations )
+
+        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        for name, val in self.get_variables( data ):
+            problem.variables[name].data_from_data( val )
+
+        state = problem.create_state_vector()
+        problem.apply_ebc( state )
+        state = problem.solve()
+        assert_( problem.variables.has_ebc( state ) )
+
+        if save_hook is not None:
+            save_hook( state, problem )
+
+        return Struct( name = self.name,
+                       state = state,
+                       di = problem.variables.di )
+
+    def make_save_hook( self, base_name, format,
+                        post_process_hook = None, file_per_var = None ):
+        def save_correctors( state, problem ):
+            problem.save_state( '.'.join( (base_name, format) ),
+                                state,
+                                post_process_hook = post_process_hook,
+                                file_per_var = file_per_var )
+        return save_correctors
+
 class TSTimes( MiniAppBase ):
     """Coefficient-like class, returns times of the time stepper."""
     def __call__( self, volume = None, problem = None, data = None ):
@@ -250,14 +286,45 @@ class CoefSym( MiniAppBase ):
         for name, val in self.get_variables( problem, None, None, data, 'col' ):
             problem.variables[name].data_from_data( val )
 
+        if isinstance( self.expression, tuple ):
+            coef[:] = eval_term_op( None, self.expression[0],
+                                    problem, shape = (sym,), mode = 'const' )
+            expression = self.expression[1]
+        else:
+            expression = self.expression
+
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
             for name, val in self.get_variables( problem, ir, ic, data, 'row' ):
                 problem.variables[name].data_from_data( val )
 
-                val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval' )
+            val = eval_term_op( None, expression,
+                                problem, call_mode = 'd_eval' )
+            coef[ii] += val
 
-                coef[ii] = val
+        coef /= volume
+
+        return coef
+
+class CoefOne( MiniAppBase ):
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        coef = nm.zeros( (1,), dtype = nm.float64 )
+
+        for name, val in self.get_variables( problem, None, None, data ):
+            problem.variables[name].data_from_data( val )
+
+        if isinstance( self.expression, tuple ):
+            coef[:] = eval_term_op( None, self.expression[0],
+                                    problem, shape = (1,), mode = 'const' )
+            expression = self.expression[1]
+        else:
+            expression = self.expression
+
+        val = eval_term_op( None, expression,
+                            problem, call_mode = 'd_eval' )
+        coef += val
 
         coef /= volume
 
