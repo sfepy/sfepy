@@ -65,7 +65,7 @@ class ElasticBiotCoef( CoefSym ):
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""
 
-    def get_variables( self, problem, ir, ic, data ):
+    def get_variables( self, problem, data ):
 
         var_name = self.variables[0]
         one_var = problem.variables[var_name]

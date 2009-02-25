@@ -85,8 +85,6 @@ class CorrDimDim( MiniAppBase ):
                 for name, val in self.get_variables( ir, ic, data ):
                     problem.variables[name].data_from_data( val )
 
-                state = problem.create_state_vector()
-                problem.apply_ebc( state )
                 state = problem.solve()
                 assert_( problem.variables.has_ebc( state ) )
                 states[ir,ic] = state
@@ -127,8 +125,6 @@ class CorrDim( MiniAppBase ):
             for name, val in self.get_variables( ir, data ):
                 problem.variables[name].data_from_data( val )
 
-            state = problem.create_state_vector()
-            problem.apply_ebc( state )
             state = problem.solve()
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
@@ -164,8 +160,6 @@ class CorrOne( MiniAppBase ):
         for name, val in self.get_variables( data ):
             problem.variables[name].data_from_data( val )
 
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
         state = problem.solve()
         assert_( problem.variables.has_ebc( state ) )
 
@@ -330,7 +324,7 @@ class CoefOne( MiniAppBase ):
 
         coef = nm.zeros( (1,), dtype = nm.float64 )
 
-        for name, val in self.get_variables( problem, None, None, data ):
+        for name, val in self.get_variables( problem, data ):
             problem.variables[name].data_from_data( val )
 
         if isinstance( self.expression, tuple ):
