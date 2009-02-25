@@ -191,6 +191,24 @@ class TSTimes( MiniAppBase ):
         problem = get_default( problem, self.problem )
         return problem.get_time_solver().ts.times
 
+class VolumeFractions( MiniAppBase ):
+    """Coefficient-like class, returns volume fractions of given regions within
+    the whole domain."""
+    def __call__( self, volume = None, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        vf = {}
+        for region_name in self.regions:
+            vkey = 'volume_%s' % region_name
+            key = 'fraction_%s' % region_name
+
+            val = eval_term_op( None, self.expression % region_name, problem )
+            vf[vkey] = nm.asarray( val, dtype = nm.float64 )
+            vf[key] = vf[vkey] / volume
+
+        return vf
+
 class CoefSymSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
