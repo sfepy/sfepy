@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
-     PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
+     PressureEigenvalueProblem, TCorrectorsViaPressureEVP, CoefFMSymSym,\
      TSTimes, VolumeFractions
 
 class CorrectorsElasticRS( CorrDimDim ):
@@ -112,6 +112,32 @@ class ElasticCoef( CoefSymSym ):
         omega = corrs.states[ir,ic][indx]
         pi = pis[ir,ic] + omega
         yield (var_name, pi)
+
+class ViscousFMCoef( CoefFMSymSym ):
+    """Homogenized viscous fading memory tensor $H_{ijkl}$."""
+ 
+    def get_filename( self, data, ir, ic ):
+        tcorrs = data[self.requires[1]]
+        return tcorrs.filenames[ir,ic]
+
+    def get_variables( self, problem, io, step, ir, ic, data, mode ):
+
+        corrs = data[self.requires[0]]
+
+        if mode == 'row':
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+            indx = corrs.di.indx[c_name]
+            dpc = io.read_data( step )['dp'].data
+            yield var_name, dpc
+
+        else:
+            var_name = self.variables[1]
+            c_name = problem.variables[var_name].primary_var_name
+            indx = corrs.di.indx[c_name]
+            pc = corrs.states[ir,ic][indx]
+            yield var_name, pc
+
 
 class ElasticBiotCoef( CoefSym ):
     """Homogenized elastic Biot coefficient."""

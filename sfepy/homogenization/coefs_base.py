@@ -497,6 +497,43 @@ class CoefSymSym( MiniAppBase ):
 
         return coef
 
+class CoefFMSymSym( MiniAppBase ):
+    """
+    Base class for fading memory dim x dim coefficients.
+    """
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        dim, sym = problem.get_dim( get_sym = True )
+
+        aux = self.get_filename( data, 0, 0 )
+        ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
+
+        coef = nm.zeros( (ts.n_step, sym, sym), dtype = nm.float64 )
+
+        gvars = self.get_variables
+        for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
+            io = HDF5MeshIO( self.get_filename( data, irr, icr ) )
+            for step, time in ts:
+                for name, val in gvars( problem, io, step, None, None,
+                                        data, 'row' ):
+                    problem.variables[name].data_from_data( val )
+
+                for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
+                    for name, val in gvars( problem, None, None, irc, icc,
+                                            data, 'col' ):
+                        problem.variables[name].data_from_data( val )
+
+                    val = eval_term_op( None, self.expression,
+                                        problem, call_mode = 'd_eval' )
+
+                    coef[step,ir,ic] = val
+
+        coef /= volume
+
+        return coef
+
 class CoefDimSym( MiniAppBase ):
 
     def __call__( self, volume, problem = None, data = None ):
