@@ -87,7 +87,8 @@ class HomogenizationEngine( SimpleApp ):
             mini_app = MiniAppBase.any_from_conf( req, problem, rargs )
             save_hook = mini_app.make_save_hook( name,
                                                  problem.output_format,
-                                                 self.post_process_hook )
+                                                 self.post_process_hook,
+                                                 opts.file_per_var )
 
             dep = mini_app( data = dependencies, save_hook = save_hook )
 

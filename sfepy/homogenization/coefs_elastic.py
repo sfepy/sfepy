@@ -1,7 +1,8 @@
 from sfepy.base.base import *
 from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
-     PressureEigenvalueProblem, TSTimes, VolumeFractions
+     PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
+     TSTimes, VolumeFractions
 
 class CorrectorsElasticRS( CorrDimDim ):
 
@@ -38,7 +39,7 @@ class CorrectorsPermeability( CorrDim ):
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
-        dim = problem.domain.mesh.dim
+        dim = problem.get_dim()
         states = nm.zeros( (dim,), dtype = nm.object )
         for ir in range( dim ):
             state = problem.solve( ir = ir )
@@ -57,6 +58,43 @@ class CorrectorsPermeability( CorrDim ):
         return CorrDim.make_save_hook( self, base_name, format,
                                        post_process_hook = None,
                                        file_per_var = None )
+
+class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        """data: corrs_rs, evp"""
+        problem = get_default( problem, self.problem )
+        ts = problem.get_time_solver().ts
+
+        corrs, evp = [data[ii] for ii in self.requires]
+
+        assert_( evp.ebcs == self.ebcs )
+        assert_( evp.epbcs == self.epbcs )
+
+        dim = problem.get_dim()
+        
+        filenames = nm.zeros( (dim, dim), dtype = nm.object )
+
+        solve = self.compute_correctors
+        for ir in range( dim ):
+            for ic in range( dim ):
+                filename = self.save_name + ("_%d%d" % (ir,ic)) + '.h5'
+                solve( evp, -corrs.states[ir,ic], ts, filename, save_hook )
+                filenames[ir,ic] = os.path.join( problem.output_dir, filename )
+
+        if self.check:
+            output( 'verifying correctors %s...' % self.name )
+            verify = self.verify_correctors
+            ok = True
+            for ir in range( dim ):
+                for ic in range( dim ):
+                    oo = verify( -corrs.states[ir,ic], filenames[ir,ic] )
+                    ok = ok and oo
+            output( '...done, ok: %s' % ok )
+
+        return Struct( name = self.name,
+                       filenames = filenames )
+
 
 class ElasticCoef( CoefSymSym ):
     """Homogenized elastic tensor $E_{ijkl}$."""
