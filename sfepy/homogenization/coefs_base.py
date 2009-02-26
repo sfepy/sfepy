@@ -281,6 +281,7 @@ class PressureEigenvalueProblem( MiniAppBase ):
     def __call__( self, problem = None, data = None, save_hook = None ):
         problem = get_default( problem, self.problem )
 
+        problem.select_variables( self.variables )
         mtx = assemble_by_blocks( self.equations, problem,
                                   ebcs = self.ebcs, epbcs = self.epbcs,
                                   restore_variables = False )
