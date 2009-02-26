@@ -1,8 +1,8 @@
 from sfepy.base.base import *
 from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
-     PressureEigenvalueProblem, TCorrectorsViaPressureEVP, CoefFMSymSym,\
-     TSTimes, VolumeFractions
+     PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
+     CoefFMSymSym, CoefFMSym, TSTimes, VolumeFractions
 
 class CorrectorsElasticRS( CorrDimDim ):
 
@@ -125,11 +125,8 @@ class ViscousFMCoef( CoefFMSymSym ):
         corrs = data[self.requires[0]]
 
         if mode == 'row':
-            var_name = self.variables[0]
-            c_name = problem.variables[var_name].primary_var_name
-            indx = corrs.di.indx[c_name]
             dpc = io.read_data( step )['dp'].data
-            yield var_name, dpc
+            yield self.variables[0], dpc
 
         else:
             var_name = self.variables[1]
@@ -137,7 +134,6 @@ class ViscousFMCoef( CoefFMSymSym ):
             indx = corrs.di.indx[c_name]
             pc = corrs.states[ir,ic][indx]
             yield var_name, pc
-
 
 class ElasticBiotCoef( CoefSym ):
     """Homogenized elastic Biot coefficient."""
@@ -158,6 +154,32 @@ class ElasticBiotCoef( CoefSym ):
             indx = corrs.di.indx[c_name]
             omega = corrs.states[ir,ic][indx]
             yield var_name, omega
+
+class BiotFMCoef( CoefFMSym ):
+    """Fading memory Biot coefficient."""
+
+    def get_filename( self, data, ir, ic ):
+        tcorrs = data[self.requires[0]]
+        return tcorrs.filenames[ir,ic]
+
+    def get_variables( self, problem, io, step, data, mode ):
+
+        if mode == 'col':
+            var_name = self.variables[0]
+            one_var = problem.variables[var_name]
+            one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
+            yield var_name, one
+
+            var_name = self.variables[1]
+            one_var = problem.variables[var_name]
+            one_m = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
+            yield var_name, one_m
+
+        else:
+            step_data = io.read_data( step )
+
+            yield self.variables[2], step_data['u'].data
+            yield self.variables[3], step_data['dp'].data
 
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""

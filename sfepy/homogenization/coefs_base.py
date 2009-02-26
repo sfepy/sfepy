@@ -621,6 +621,37 @@ class CoefSym( MiniAppBase ):
 
         return coef
 
+class CoefFMSym( MiniAppBase ):
+    
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        dim, sym = problem.get_dim( get_sym = True )
+
+        aux = self.get_filename( data, 0, 0 )
+        ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
+
+        coef = nm.zeros( (ts.n_step, sym), dtype = nm.float64 )
+
+        gvars = self.get_variables
+        for name, val in self.get_variables( problem, None, None, data, 'col' ):
+            problem.variables[name].data_from_data( val )
+
+        for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
+            io = HDF5MeshIO( self.get_filename( data, ir, ic ) )
+            for step, time in ts:
+                for name, val in gvars( problem, io, step, data, 'row' ):
+                    problem.variables[name].data_from_data( val )
+
+                val = eval_term_op( None, self.expression,
+                                    problem, call_mode = 'd_eval' )
+                coef[step,ii] = val
+
+        coef /= volume
+
+        return coef
+
 class CoefOne( MiniAppBase ):
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
