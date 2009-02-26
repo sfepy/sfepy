@@ -85,16 +85,10 @@ class PorousMediaHomogenizationApp( SimpleApp ):
         get = options.get_default_attr
         
         print_digits = get( 'print_digits', 3 )
-        n_eigs = get( 'n_eigs', 0 )
-        
-        check = get( 'check', {'diagonalization' : True,
-                               'time_correctors' : True,} )
 
         float_format = get( 'float_format', '%8.3e' )
         coef_save_name = get( 'coef_save_name', 'coefs' )
 
-        eig_problem = get( 'eig_problem', None,
-                           'missing "eig_problem" in options!' )
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
         requirements = get( 'requirements', None,
                             'missing "requirements" in options!' )

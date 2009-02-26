@@ -1,5 +1,7 @@
 from sfepy.base.base import *
-from sfepy.fem import eval_term_op
+from sfepy.fem import eval_term_op, assemble_by_blocks
+from sfepy.solvers import Solver
+from sfepy.base.la import MatrixAction, eig
 from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):
@@ -178,6 +180,118 @@ class CorrOne( MiniAppBase ):
                                 post_process_hook = post_process_hook,
                                 file_per_var = file_per_var )
         return save_correctors
+
+class PressureEigenvalueProblem( MiniAppBase ):
+    """Pressure eigenvalue problem solver for time-dependent correctors."""
+
+    def presolve( self, mtx ):
+        """Prepare A^{-1} B^T for the Schur complement."""
+
+        mtx_a = mtx['A']
+        mtx_bt = mtx['BT']
+        output( 'full A size: %.3f MB' % (8.0 * nm.prod( mtx_a.shape ) / 1e6) )
+        output( 'full B size: %.3f MB' % (8.0 * nm.prod( mtx_bt.shape ) / 1e6) )
+
+        ls = Solver.any_from_conf( self.problem.ls_conf,
+                                   presolve = True, mtx = mtx_a )
+        if self.mode == 'explicit':
+            tt = time.clock()
+            mtx_aibt = nm.zeros( mtx_bt.shape, dtype = mtx_bt.dtype )
+            for ic in xrange( mtx_bt.shape[1] ):
+                mtx_aibt[:,ic] = ls( mtx_bt[:,ic].toarray().squeeze() )
+            output( 'mtx_aibt: %.2f s' % (time.clock() - tt) )
+            action_aibt = MatrixAction.from_array( mtx_aibt )
+        else:
+            ##
+            # c: 30.08.2007, r: 13.02.2008
+            def fun_aibt( vec ):
+                # Fix me for sparse mtx_bt...
+                rhs = sc.dot( mtx_bt, vec )
+                out = ls( rhs )
+                return out
+            action_aibt = MatrixAction.from_function( fun_aibt,
+                                                    (mtx_a.shape[0],
+                                                     mtx_bt.shape[1]),
+                                                    nm.float64 )
+        mtx['action_aibt'] = action_aibt
+
+    def solve_pressure_eigenproblem( self, mtx, eig_problem = None,
+                                     n_eigs = 0, check = False ):
+        """G = B*AI*BT or B*AI*BT+D"""
+
+        def get_slice( n_eigs, nn ):
+            if n_eigs > 0:
+                ii = slice( 0, n_eigs )
+            elif n_eigs < 0:
+                ii = slice( nn + n_eigs, nn )
+            else:
+                ii = slice( 0, 0 )
+            return ii
+
+        eig_problem = get_default( eig_problem, self.eig_problem )
+        n_eigs = get_default( n_eigs, self.n_eigs )
+        check = get_default( check, self.check )
+
+        mtx_c, mtx_b, action_aibt = mtx['C'], mtx['B'], mtx['action_aibt']
+        mtx_g = mtx_b * action_aibt.to_array() # mtx_b must be sparse!
+        if eig_problem == 'B*AI*BT+D':
+            mtx_g += mtx['D'].toarray()
+
+        mtx['G'] = mtx_g
+        output( mtx_c.shape, mtx_g.shape )
+
+        eigs, mtx_q = eig( mtx_c.toarray(), mtx_g, method = 'eig.sgscipy' )
+
+        if check:
+            ee = nm.diag( sc.dot( mtx_q.T * mtx_c, mtx_q ) ).squeeze()
+            oo = nm.diag( sc.dot( sc.dot( mtx_q.T,  mtx_g ), mtx_q ) ).squeeze()
+            try:
+                assert_( nm.allclose( ee, eigs ) )
+                assert_( nm.allclose( oo, nm.ones_like( eigs ) ) )
+            except ValueError:
+                debug()
+
+        nn = mtx_c.shape[0]
+        if isinstance( n_eigs, tuple ):
+            output( 'required number of eigenvalues: (%d, %d)' % n_eigs )
+            if sum( n_eigs ) < nn:
+                ii0 = get_slice( n_eigs[0], nn )
+                ii1 = get_slice( -n_eigs[1], nn )
+                eigs = nm.concatenate( (eigs[ii0], eigs[ii1] ) )
+                mtx_q = nm.concatenate( (mtx_q[:,ii0], mtx_q[:,ii1]), 1 ) 
+        else:
+            output( 'required number of eigenvalues: %d' % n_eigs )
+            if (n_eigs != 0) and (abs( n_eigs ) < nn):
+                ii = get_slice( n_eigs, nn )
+                eigs = eigs[ii]
+                mtx_q = mtx_q[:,ii]
+
+##         from sfepy.base.plotutils import pylab, iplot
+##         pylab.semilogy( eigs )
+##         pylab.figure( 2 )
+##         iplot( eigs )
+##         pylab.show()
+##         debug()
+
+        out = Struct( eigs = eigs, mtx_q = mtx_q )
+        return out
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        problem = get_default( problem, self.problem )
+
+        mtx = assemble_by_blocks( self.equations, problem,
+                                  ebcs = self.ebcs, epbcs = self.epbcs,
+                                  restore_variables = False )
+        self.presolve( mtx )
+
+        evp = self.solve_pressure_eigenproblem( mtx )
+        return Struct( name = self.name,
+                       ebcs = self.ebcs, epbcs = self.epbcs,
+                       mtx = mtx, evp = evp )
+
+    def make_save_hook( self, base_name, format,
+                        post_process_hook = None, file_per_var = None ):
+        return None
 
 class TSTimes( MiniAppBase ):
     """Coefficient-like class, returns times of the time stepper."""
