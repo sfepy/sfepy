@@ -4,6 +4,12 @@ from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
      CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions
 
+def generate_ones( problem, var_names ):
+    for var_name in var_names:
+        one_var = problem.variables[var_name]
+        one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
+        yield var_name, one
+
 class CorrectorsElasticRS( CorrDimDim ):
 
     def get_variables( self, ir, ic, data ):
@@ -15,16 +21,7 @@ class CorrectorsPressure( CorrOne ):
 
     def get_variables( self, data ):
         """data: None"""
-        vv = self.problem.variables
-
-        name_y = self.variables[-2]
-        name_ym = self.variables[-1]
-
-        one = nm.ones( (vv[name_y].field.n_nod,), dtype = nm.float64 )
-        yield name_y, one
-
-        one_m = nm.ones( (vv[name_ym].field.n_nod,), dtype = nm.float64 )
-        yield name_ym, one_m
+        return generate_ones( self.problem, self.variables[-2:] )
 
 class CorrectorsPermeability( CorrDim ):
 
@@ -166,16 +163,15 @@ class ElasticBiotCoef( CoefSym ):
     def get_variables( self, problem, ir, ic, data, mode ):
 
         if mode == 'col':
-            var_name = self.variables[0]
-            one_var = problem.variables[var_name]
-            one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-            yield var_name, one
+            for var_name, val in  generate_ones( self.problem,
+                                                 self.variables[0:1] ):
+                yield var_name, val
 
         else:
             var_name = self.variables[1]
             c_name = problem.variables[var_name].primary_var_name
 
-            corrs = [data[ii] for ii in self.requires][0]
+            corrs = data[self.requires[0]]
             indx = corrs.di.indx[c_name]
             omega = corrs.states[ir,ic][indx]
             yield var_name, omega
@@ -190,15 +186,9 @@ class BiotFMCoef( CoefFMSym ):
     def get_variables( self, problem, io, step, data, mode ):
 
         if mode == 'col':
-            var_name = self.variables[0]
-            one_var = problem.variables[var_name]
-            one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-            yield var_name, one
-
-            var_name = self.variables[1]
-            one_var = problem.variables[var_name]
-            one_m = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-            yield var_name, one_m
+            for var_name, val in  generate_ones( self.problem,
+                                                 self.variables[0:2] ):
+                yield var_name, val
 
         else:
             step_data = io.read_data( step )
@@ -211,17 +201,11 @@ class IRBiotModulus( CoefOne ):
 
     def get_variables( self, problem, data ):
 
-        var_name = self.variables[0]
-        one_var = problem.variables[var_name]
-        one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-        yield var_name, one
-
-        var_name = self.variables[1]
-        one_var = problem.variables[var_name]
-        one_m = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-        yield var_name, one_m
+        for var_name, val in  generate_ones( self.problem,
+                                             self.variables[0:2] ):
+            yield var_name, val
         
-        corrs = [data[ii] for ii in self.requires][0]
+        corrs = data[self.requires[0]]
 
         for ii in [2, 3]:
             # omega and pp.
@@ -241,15 +225,9 @@ class FMRBiotModulus( CoefFMOne ):
     def get_variables( self, problem, io, step, data, mode ):
 
         if mode == 'col':
-            var_name = self.variables[0]
-            one_var = problem.variables[var_name]
-            one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-            yield var_name, one
-
-            var_name = self.variables[1]
-            one_var = problem.variables[var_name]
-            one_m = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-            yield var_name, one_m
+            for var_name, val in  generate_ones( self.problem,
+                                                 self.variables[0:2] ):
+                yield var_name, val
 
         else:
             step_data = io.read_data( step )
@@ -268,7 +246,7 @@ class DiffusionCoef( CoefDimDim ):
         pressure = problem.variables[self.variables[0]]
         coor = pressure.field.get_coor()
         
-        corrs = [data[ii] for ii in self.requires][0]
+        corrs = data[self.requires[0]]
 
         var_name = self.variables[self.mode2var[mode]]
         c_name = problem.variables[var_name].primary_var_name
