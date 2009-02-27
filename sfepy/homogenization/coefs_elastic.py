@@ -196,6 +196,29 @@ class BiotFMCoef( CoefFMSym ):
             yield self.variables[2], step_data['u'].data
             yield self.variables[3], step_data['dp'].data
 
+class BiotFM2Coef( CoefFMSym ):
+    """Fading memory Biot coefficient, alternative form."""
+
+    def get_filename( self, data, ir, ic ):
+        tcorrs = data[self.requires[1]]
+        return tcorrs.filenames[ir,ic]
+
+    def get_variables( self, problem, io, step, data, mode ):
+
+        if mode == 'col':
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+
+            corrs = data[self.requires[0]]
+            indx = corrs.di.indx[c_name]
+            p0 = corrs.state[indx]
+            yield var_name, p0
+
+        else:
+            step_data = io.read_data( step )
+
+            yield self.variables[1], step_data['p'].data
+
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""
 
