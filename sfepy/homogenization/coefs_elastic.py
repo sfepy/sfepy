@@ -95,6 +95,31 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
         return Struct( name = self.name,
                        filenames = filenames )
 
+class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
+
+    def __call__( self, problem = None, data = None, save_hook = None ):
+        """data: corrs_pressure, evp"""
+        problem = get_default( problem, self.problem )
+        ts = problem.get_time_solver().ts
+
+        corrs, evp = [data[ii] for ii in self.requires]
+
+        assert_( evp.ebcs == self.ebcs )
+        assert_( evp.epbcs == self.epbcs )
+
+        solve = self.compute_correctors
+        filename = self.save_name + '.h5'
+        solve( evp, corrs.state, ts, filename, save_hook )
+        filename = os.path.join( problem.output_dir, filename )
+
+        if self.check:
+            output( 'verifying correctors %s...' % self.name )
+            verify = self.verify_correctors
+            ok = verify( corrs.state, filename )
+            output( '...done, ok: %s' % ok )
+
+        return Struct( name = self.name,
+                       filename = filename )
 
 class ElasticCoef( CoefSymSym ):
     """Homogenized elastic tensor $E_{ijkl}$."""
