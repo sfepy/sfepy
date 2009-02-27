@@ -676,3 +676,30 @@ class CoefOne( MiniAppBase ):
         coef /= volume
 
         return coef
+
+class CoefFMOne( MiniAppBase ):
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        aux = self.get_filename( data )
+        io = HDF5MeshIO( self.get_filename( data ) )
+        ts = TimeStepper( *io.read_time_stepper() )
+
+        coef = nm.zeros( (ts.n_step, 1), dtype = nm.float64 )
+
+        gvars = self.get_variables
+        for name, val in self.get_variables( problem, None, None, data, 'col' ):
+            problem.variables[name].data_from_data( val )
+
+        for step, time in ts:
+            for name, val in gvars( problem, io, step, data, 'row' ):
+                problem.variables[name].data_from_data( val )
+
+            val = eval_term_op( None, self.expression,
+                                problem, call_mode = 'd_eval' )
+            coef[step] = val
+
+        coef /= volume
+
+        return coef
