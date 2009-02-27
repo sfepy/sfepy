@@ -21,7 +21,7 @@ def insert_sub_reqs( reqs, levels, req_info ):
 
         if sub_reqs:
             levels.append( req )
-            all_reqs = insert_sub_reqs( sub_reqs, levels, req_info )
+            all_reqs.extend( insert_sub_reqs( sub_reqs, levels, req_info ) )
             levels.pop()
             
         if req in all_reqs:
