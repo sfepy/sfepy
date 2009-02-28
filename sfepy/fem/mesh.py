@@ -108,6 +108,43 @@ def make_mesh( coor, conns, mesh_in ):
                              mat_ids, mesh_in.descs )
     return mesh_out
 
+def make_inverse_connectivity( conns, n_nod, combine_groups = False ):
+    """
+    For each mesh node referenced in the connectivity conns, make a list of
+    elements it belongs to. If combine_groups is True, elements are referenced
+    by (ig, iel), otherwise by iel only.
+    """
+    if combine_groups:
+        iconn = [[] for ii in xrange( n_nod )]
+        for ig, conn in enumerate( conns ):
+            for iel, row in enumerate( conn ):
+                for node in row:
+                    iconn[node].append( (ig, iel) )
+        return iconn
+
+    else:
+        iconns = []
+        for ig, conn in enumerate( conns ):
+            iconn = [[] for ii in xrange( n_nod )]
+            for iel, row in enumerate( conn ):
+                for node in row:
+                    iconn[node].append( iel )
+            iconns.append( iconn )
+        return iconns
+
+def find_closest_nodes( x1, x2, num = 1 ):
+    """
+    For the point x2 find num closest points in x1. Naive algorithm!
+    """
+    dist = la.norm_l2_along_axis( x1 - x2 )
+    ii = dist.argsort()
+
+    out = ii[:num]
+    if num == 1:
+        out = out[0]
+
+    return out
+    
 ##
 # 30.08.2007, c
 # 31.08.2007
@@ -128,14 +165,8 @@ def find_refinement( coor, conns, fcoor, fconns, eps, check_refined = True ):
     # Inverted connectivity for the refined mesh (= eonlist in mesh_graph()!).
     # Elements are numbered locally per group.
     print fcoor.shape[0]
-    iconns = []
-    for ig, conn in enumerate( fconns ):
-        iconn = [[] for ii in xrange( fcoor.shape[0] )]
-        for iel, row in enumerate( conn ):
-            for node in row:
-                iconn[node].append( iel )
-        iconns.append( iconn )
-##    print iconn
+    iconns = make_inverse_connectivity( fconns, fcoor.shape[0] )
+##    print iconns
 
     ##
     # Create element -> fine elements map.
