@@ -1,3 +1,4 @@
+from scipy.optimize import fsolve
 from base import *
 from sfepy.solvers import Solver
 
@@ -172,14 +173,55 @@ def combine( seqs ):
             for perm in combine( seqs[1:] ):
                 yield [ii] + perm
 
+def inverse_element_mapping( coors, e_coors, base_fun,
+                             suppress_errors = False ):
+    """
+    Given spatial element coordinates, find the inverse mapping for
+    points with coordinats X = X(xi), i.e. xi = xi(X).
+        Return:
+            xi : reference element coordinates
+    """
+    n_v, dim = e_coors.shape
+    n_c, dim2 = coors.shape
+
+    assert_( dim == dim2 )
+
+    if n_v == (dim + 1): # Simplex.
+        bc = barycentric_coors( coors, e_coors )
+        xi = nm.dot( bc.T, e_coors )
+        
+    else: # Tensor-product and other.
+        def residual( xi ):
+            bf = base_fun.value( xi[nm.newaxis,:], base_fun.nodes,
+                                 suppress_errors = suppress_errors ).squeeze()
+            res = coors - nm.dot( bf, e_coors )
+            return res.squeeze()
+        
+        def matrix( xi ):
+            bfg = base_fun.value( xi[nm.newaxis,:], base_fun.nodes,
+                                  base_fun.var_set,
+                                  suppress_errors = suppress_errors ).squeeze()
+            mtx = - nm.dot( bfg, e_coors )
+            return mtx
+
+        xi0 = nm.array([0.0, 0.0, 0.0])
+        xi = fsolve( residual, xi0, fprime = matrix, warning = False )
+
+    return xi
+
 ##
 # 01.09.2007, c
 def barycentric_coors( coors, s_coors ):
+    """
+    Simplex elements:
+        Return:
+            bc : barycentric (area in 2D, volume in 3D) coordinates
+        Then reference element coordinates xi = dot(bc.T, ref_coors).
+    """
     n_v, dim = s_coors.shape
     n_c, dim2 = coors.shape
     assert_( dim == dim2 )
-    assert_( ((dim + 1) * dim / 2) == n_v )
-
+    assert_( n_v == (dim + 1) )
     mtx = nm.ones( (n_v, n_v), nm.float64 )
     mtx[0:n_v-1,:] = s_coors.T
     rhs = nm.empty( (n_v,n_c), nm.float64 )
