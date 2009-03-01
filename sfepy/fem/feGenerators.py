@@ -333,7 +333,8 @@ def ap_bfgen_lagrange( *args ):
             self.rhs = nm.ones( (self.n_v,), nm.float64 )
             
         # 01.09.2007
-        def __call__( self, coors, node, iv = None, suppress_errors = False ):
+        def __call__( self, coors, node, iv = None,
+                      suppress_errors = False, eps = 1e-15 ):
 
             # Barycentric coordinates.
             bc = nm.zeros( (self.n_v, coors.shape[0]), nm.float64 )
@@ -343,12 +344,12 @@ def ap_bfgen_lagrange( *args ):
                 error = False
                 for ii, val in enumerate( bc[:,ic] ):
                     if val < 0.:
-                        if val > (-2e-16):
+                        if val > (-eps):
                             bc[ii,ic] = 0.
                         else:
                             error = True
                     if val > 1.:
-                        if val < (1 + 2e-16):
+                        if val < (1 + eps):
                             bc[ii,ic] = 1.
                         else:
                             error = True
