@@ -173,6 +173,23 @@ def combine( seqs ):
             for perm in combine( seqs[1:] ):
                 yield [ii] + perm
 
+def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
+    x = x0
+    ii = 0
+    while ii < i_max:
+        r = fun( x )
+        err = nla.norm( r )
+        if err < eps: break
+
+        mtx = dfun( x )
+        try:
+            dx = nm.dot( nla.inv( mtx.T ), r )
+        except:
+            break
+        x = x - dx
+        
+    return x
+
 def inverse_element_mapping( coors, e_coors, base_fun,
                              suppress_errors = False ):
     """
@@ -205,8 +222,11 @@ def inverse_element_mapping( coors, e_coors, base_fun,
             return mtx
 
         xi0 = nm.array([0.0, 0.0, 0.0])
-        xi = fsolve( residual, xi0, fprime = matrix, warning = False )
-
+        xi = mini_newton( residual, xi0, matrix )
+##         print xi
+##         xi = fsolve( residual, xi0, fprime = matrix, warning = False )
+##         print xi
+        
     return xi
 
 ##
