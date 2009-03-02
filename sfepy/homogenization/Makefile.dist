@@ -3,7 +3,8 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
 
-RELDISTFILES := __init__.py coefs.py phono.py utils.py Makefile.dist Makefile.inc
+RELDISTFILES := __init__.py coefs_base.py coefs_elastic.py engine.py phono.py utils.py Makefile.dist Makefile.inc
+
 
 dist:
 #	echo $(DESTDIR)
