@@ -354,10 +354,11 @@ def ap_bfgen_lagrange( *args ):
                         else:
                             error = True
                     if error and not suppress_errors:
-                        print 'quadrature point outside of element!'
-                        print ic, coor, node, iv
-                        print bc
-                        raise AssertionError
+                        msg = 'quadrature point outside of element!'
+                        msg += '\nic: %s coor: %s node: %s iv: %s'\
+                               % (ic, coor, node, iv)
+                        msg += '\nbc: %s' % bc
+                        raise AssertionError(msg)
 
             if iv is None:
                 val = nm.ones( (coors.shape[0],), nm.float64 )
