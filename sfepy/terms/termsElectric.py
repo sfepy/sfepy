@@ -3,7 +3,10 @@ from sfepy.terms.utils import fix_scalar_in_el
 
 class ElectricSourceTerm( Term ):
     r""":description: Electric source term.
-    :definition: $\int_{\Omega} {\rm electric_conductivity} s (\nabla \phi)^2$
+    :definition: $\int_{\Omega} c s (\nabla \phi)^2$
+    :arguments: material : $c$ (electric conductivity),
+    virtual : $s$ (test function),
+    parameter : $\phi$ (given electric potential)
     """
     name = 'dw_electric_source'
     arg_types = ('material', 'virtual', 'parameter')
