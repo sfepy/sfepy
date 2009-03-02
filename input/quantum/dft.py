@@ -1,22 +1,22 @@
-def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
+import os
+cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
+
+def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
     assert dim in [2, 3]
     filename_mesh = mesh
     options = {
         'save_eig_vectors' : None,
         'n_eigs' : 10,
+        'n_electron' : n_electron,
         'eigen_solver' : 'eigen1',
+        'output_dir' : os.path.join( cwd, 'output/' ),
+        'log_filename' : 'log.txt',
+        'iter_fig_name' : 'iterations.pdf',
     }
 
-    # Whole domain $Y$.
-    region_1000 = {
-        'name' : 'Omega',
-        'select' : 'all',
-    }
-
-    # Domain $Y_2$.
-    region_2 = {
-        'name' : 'Surface',
-        'select' : 'nodes of surface',
+    regions = {
+        'Omega' : ('all', {}),
+        'Surface' : ('nodes of surface', {'can_cells' : False}),
     }
 
     #def get_sphere( x, y, z, mode ):
@@ -56,7 +56,6 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
     field_0 = {
         'name' : 'field_Psi',
         'dim' : (1,1),
-        'flags' : (),
         'domain' : 'Omega',
         'bases' : {'Omega' : base_approx}
     }
@@ -97,10 +96,9 @@ def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
         'like' : 'Psi',
     }
 
-    ebc_1 = {
-        'name' : 'ZeroSurface',
-        'region' : 'Surface',
-        'dofs' : {'Psi.0' : 0.0},
+    ebcs = {
+        'ZeroSurface' : ('Surface', {'Psi.0' : 0.0}),
+        'VHSurface' : ('Surface', {'Psi.0' : 'core_pot'})
     }
 
     equations = {

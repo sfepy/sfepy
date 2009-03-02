@@ -1,7 +1,10 @@
 from dft import common
 
+n_electron = 5
+n_eigs = None
+
 def define():
-    l = common(dim=3, n_eigs=7)
+    l = common(dim=3, n_eigs=n_eigs, n_electron=n_electron, tau=-10)
     return l
 
 def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
@@ -18,3 +21,9 @@ def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
 
     out['V'] = V
     return out
+
+def core_pot(bc, ts, coor):
+    from sfepy.base.la import norm_l2_along_axis
+    
+    r = norm_l2_along_axis(coor, n_item=coor.shape[1]-1)
+    return n_electron / r
