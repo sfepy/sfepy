@@ -1,37 +1,12 @@
 from sfepy.fem.periodic import *
-from sfepy.homogenization.coefs import CorrDimDim, ShapeDimDim, CoefSymSym
-
-from regions import get_box_regions
+import sfepy.homogenization.coefs_elastic as ce
+from sfepy.homogenization.utils import define_box_regions
 
 def expand_regions( eqs, expand ):
     out = {}
     for key, val in eqs.iteritems():
         out[key] = val % expand
     return out
-
-class CorrectorsRS( CorrDimDim ):
-    """Steady state correctors $\bar{\omega}^{rs}$."""
-
-    def get_variables( self, ir, ic, data ):
-        """data: pis"""
-        pis = data[self.requires[0]]
-        yield (self.variables[-1], pis[ir,ic])
-
-class ElasticCoef( CoefSymSym ):
-    """Homogenized elastic tensor $E_{ijkl}$."""
-
-    mode2var = {'row' : 0, 'col' : 1}
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-        pis, corrs = [data[ii] for ii in self.requires]
-
-        var_name = self.variables[self.mode2var[mode]]
-        u_name = problem.variables[var_name].primary_var_name
-
-        indx = corrs.di.indx[u_name]
-        omega = corrs.states[ir,ic][indx]
-        pi = pis[ir,ic] + omega
-        yield (var_name, pi)
 
 expr_elastic = """dw_lin_elastic.i2.%s( matrix.D, Pi1, Pi2 )"""
 
@@ -54,7 +29,7 @@ def define_input( filename, region, dim, geom ):
             'requires' : ['pis', 'corrs_phono_rs'],
             'variables' : ['Pi1', 'Pi2', 'pi1', 'pi2'],
             'expression' : expr_elastic % region,
-            'class' : ElasticCoef,
+            'class' : ce.ElasticCoef,
         },
     }
 
@@ -63,7 +38,7 @@ def define_input( filename, region, dim, geom ):
     requirements = {
         'pis' : {
             'variables' : ['u1'],
-            'class' : ShapeDimDim,
+            'class' : ce.ShapeDimDim,
         },
         'corrs_phono_rs' : {
             'requires' : ['pis'],
@@ -71,7 +46,7 @@ def define_input( filename, region, dim, geom ):
             'ebcs' : ['fixed_u'],
             'epbcs' : all_periodic,
             'equations' : expand_regions( eq_rs, (region, region) ),
-            'class' : CorrectorsRS,
+            'class' : ce.CorrectorsElasticRS,
             'save_name' : 'corrs_phono',
         },
     }
@@ -102,7 +77,7 @@ def define_input( filename, region, dim, geom ):
     elif filename.find( 'cube_cylinder_centered' ) >= 0:
         sizes = (0.499, 0.499, 0.499)
 
-    regions = get_box_regions( dim, sizes )
+    regions = define_box_regions( dim, sizes )
 
     ebcs = {
         'fixed_u' : ('Corners', {'u1.all' : 0.0}),

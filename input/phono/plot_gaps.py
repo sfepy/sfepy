@@ -15,9 +15,11 @@ help = {
     'output figure name [default: %default]',
     'same_dir' :
     'put figure into the directory of input files',
+    'grey' :
+    'use grey-scale colors only',
 }
 
-plot_rsc = { # Resources for all plots.
+plot_rsc_color = { # Resources for all plots.
     'resonance' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '-' },
     'masked' : {'linewidth' : 0.2, 'color' : 'k', 'linestyle' : ':' },
     'x_axis' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '-' },
@@ -26,15 +28,37 @@ plot_rsc = { # Resources for all plots.
     'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
     'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
     'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
-##     'strong_gap' : {'linewidth' : 0, 'facecolor' : (0.6, 0.6, 0.6) },
-##     'weak_gap' : {'linewidth' : 0, 'facecolor' : (0.8, 0.8, 0.8) },
-##     'propagation' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
     'params' : {'axes.labelsize': 'x-large',
                 'text.fontsize': 'large',
                 'legend.fontsize': 'large',
                 'xtick.labelsize': 'large',
                 'ytick.labelsize': 'large',
                 'text.usetex': False},
+}
+
+plot_rsc_grey = { # Resources for all plots.
+    'resonance' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '-' },
+    'masked' : {'linewidth' : 0.2, 'color' : 'k', 'linestyle' : ':' },
+    'x_axis' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '-' },
+    'eig_min' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '--' },
+    'eig_max' : {'linewidth' : 1, 'color' : 'k', 'linestyle' : '-' },
+    'strong_gap' : {'linewidth' : 0, 'facecolor' : (0.6, 0.6, 0.6) },
+    'weak_gap' : {'linewidth' : 0, 'facecolor' : (0.8, 0.8, 0.8) },
+    'propagation' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
+    'params' : {'axes.labelsize': 'x-large',
+                'text.fontsize': 'large',
+                'legend.fontsize': 'large',
+                'xtick.labelsize': 'large',
+                'ytick.labelsize': 'large',
+                'text.usetex': False},
+}
+
+plot_labels = {
+    'resonance' : 'eigenfrequencies',
+    'masked' : 'masked eigenfrequencies',
+    'eig_min' : 'min eig($M^*$)',
+    'eig_max' : 'max eig($M^*$)',
+    'y_axis' : 'eigenvalues of mass matrix $M^*$',
 }
 
 def main():
@@ -54,7 +78,15 @@ def main():
     parser.add_option( "-d", "--same-dir", metavar = 'same_dir',
                        action = "store_true", dest = "same_dir",
                        default = False, help = help['same_dir'] )
+    parser.add_option( "-g", "--grey", metavar = 'grey',
+                       action = "store_true", dest = "grey",
+                       default = False, help = help['grey'] )
     options, args = parser.parse_args()
+
+    if options.grey:
+        plot_rsc = plot_rsc_grey
+    else:
+        plot_rsc = plot_rsc_color
 
     n_strips = len( args )
 
@@ -115,7 +147,8 @@ def main():
 ##         print kinds
 
         plot_gaps( 1, plot_rsc, gaps, kinds, freq_range, [ii-0.4, ii+0.4] )
-        plot_eigs( 1, plot_rsc, valid, resonances, [ii-0.4, ii+0.4] )
+        plot_eigs( 1, plot_rsc, plot_labels, valid, resonances,
+                   [ii-0.4, ii+0.4] )
 
     ax = fig.gca()
     ax.set_xlim( [freq_range[0], freq_range[-1]] )
