@@ -2,6 +2,7 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
+from sfepy.fem.mesh import make_inverse_connectivity, find_closest_nodes
 from extmods.fem import raw_graph
 
 is_state = 0
@@ -1519,7 +1520,50 @@ class Variable( Struct ):
         indx = self.field.remap[cnt_vn[cnt_vn >= 0]]
         newdata = data[indx]
         return newdata
-        
+
+    def interp_to_points( self, points, mesh, iconn=None ):
+        """
+        Interpolate self into given points. Works for scalar variables only!
+        """
+        if iconn is None:
+            iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                              combine_groups=True)
+        field = self.field
+        vdim = field.dim[0]
+
+        vals = nm.empty((vdim, len(points)), dtype=self.dtype)
+        coor = mesh.nod0[:,:-1]
+        conns = mesh.conns
+        for ii, point in enumerate(points):
+##             print ii, point
+            ic = find_closest_nodes(coor, point)
+
+            els = iconn[ic]
+            for ig, iel in els:
+##                 print ig, iel
+                nodes = conns[ig][iel]
+                ecoor = coor[nodes]
+##                 print ecoor
+
+                interp = field.aps[ig].interp
+                base_fun = interp.base_funs['v'].fun
+
+                xi = la.inverse_element_mapping(point, ecoor, base_fun,
+                                                suppress_errors=True)
+                try:
+                    # Verify that we are inside the element.
+                    bf = base_fun.value(xi[nm.newaxis,:], base_fun.nodes,
+                                        suppress_errors=False)
+                except AssertionError:
+                    continue
+                break
+##             print xi, bf
+
+            # For scalar fields only!!!
+            vals[:,ii] = nm.dot(bf,self()[nodes])
+
+        return vals
+
 ## ##
 ## # 11.07.2006, c
 ## class FEVariable( Variable ):
