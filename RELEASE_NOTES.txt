@@ -1,6 +1,43 @@
 # created: 20.07.2007 (-1)
 # last revision: 04.12.2008
 
+from 2008.4 to 2009.1
+- new solvers:
+  - simple backtracking steepest descent optimization solver
+  - PETSc Krylov solvers via petsc4py, sequential mode
+  - LOBPCG eigenvalue solver (SciPy implementation)
+- new mesh readers:
+   - mesh3d (hermes3d)
+   - AVS UCD ascii mesh
+   - Hypermesh ascii mesh
+- homogenization: 
+  - MiniAppBase base class for "mini-applications": micro-problem correctors,
+    homogenized coefficients
+  - unified approach to resolve data dependencies: HomogenizationEngine class
+- applications:
+    - phononic materials:
+      - dispersion analysis, phase velocity computation for phononic materials
+      - homogenized coefficients computed via the HomogenizationEngine
+      - caching of coefficients to speed up parametric runs
+    - schroedinger.py:
+      - all functionality moved into SchroedingerApp class
+      - inherits from SimpleApp -> can be parametrized
+      - fixed DFT iterations, iteration plot saving
+      - basic smearing around Fermi limit
+- scripts:
+  - convert_mesh.py:
+    - --scale option, support different scaling for each axis
+- general:
+  - terms, caches now imported dynamically by load_classes()
+    - to add a new term/cache module just put it into sfepy/terms/
+  - better setup of Application options
+    - automatic option update in parametric studies
+  - default configuration options for the linear, nonlinear and eigen- solvers
+  - various 64bit fixes
+  - allow empty output prefix, combined output to file and terminal
+- new terms:
+    - dw_electric_source (electric source term)
+
 from 00.50.00 to 2008.4
 - framework for running parametric studies
 - allow time derivatives of variables as term arguments
