@@ -59,49 +59,49 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
     return val
 
 def compute_u_corr_steady( corrs_rs, strain, corrs_pressure, pressure,
-                           dim, iel ):
+                           vu, dim, iel ):
     """
     $\sum_{ij}\left [ \bar\omegabf^{ij}e_{ij}(\ub(t)) \right ]
     + \omegabf^{*,P} p(t)$
 
     iel = element number
     """
-    u_corr = corrs_pressure['u'].data * pressure[iel,0,0,0]
+    u_corr = corrs_pressure[vu].data * pressure[iel,0,0,0]
     for ir in range( dim ):
         for ic in range( dim ):
             ii = coor_to_sym( ir, ic, dim )
-            u_corr += corrs_rs[ir,ic]['u'].data * strain[iel,0,ii,0]
+            u_corr += corrs_rs[ir,ic][vu].data * strain[iel,0,ii,0]
     return u_corr
 
 def compute_u_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
-                         dim, iel, ts ):
+                         vu, dim, iel, ts ):
     """
     $\sum_{ij}\left [ \int_0^t \tilde\omegabf^{ij}(t-s)
     \dt{}{s}e_{ij}(\ub(s))\,ds\right ]
     + \int_0^t \tilde\omegabf^P(t-s)\,p(s)\,ds\right ]$
     """
-    u_corr = convolve_field_scalar( corrs_pressure['u'], pressures,
+    u_corr = convolve_field_scalar( corrs_pressure[vu], pressures,
                                     iel, ts )
-    u_corr += convolve_field_sym_tensor( corrs_rs, dstrains, 'u',
+    u_corr += convolve_field_sym_tensor( corrs_rs, dstrains, vu,
                                          dim, iel, ts )
     return u_corr
 
-def compute_p_corr_steady( corrs_pressure, pressure, iel ):
+def compute_p_corr_steady( corrs_pressure, pressure, vp, iel ):
     """
     $\tilde\pi^P(0)p(t)$
     """
-    p_corr = corrs_pressure['p'].data * pressure[iel,0,0,0]
+    p_corr = corrs_pressure[vp].data * pressure[iel,0,0,0]
     return p_corr
 
 def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
-                         dim, iel, ts ):
+                         vdp, dim, iel, ts ):
     """
     $\sum_{ij} \int_0^t \dt{}{t}\tilde\pi^{ij}(t-s) \dt{}{s}e_{ij}(\ub(s))\,ds
     + \int_0^t \dt{}{t}\tilde\pi^P(t-s)\,p(s)\,ds$
     """
-    p_corr = convolve_field_scalar( corrs_pressure['dp'], pressures,
+    p_corr = convolve_field_scalar( corrs_pressure[vdp], pressures,
                                     iel, ts )
-    p_corr += convolve_field_sym_tensor( corrs_rs, dstrains, 'dp',
+    p_corr += convolve_field_sym_tensor( corrs_rs, dstrains, vdp,
                                          dim, iel, ts )
     return p_corr
 
@@ -123,7 +123,7 @@ def recover_bones( problem, micro_problem, region,
                    ts, strain, dstrains, pressure, pressures,
                    corrs_rs, corrs_pressure,
                    corrs_time_rs, corrs_time_pressure,
-                   naming_scheme = 'step_iel' ):
+                   var_names, naming_scheme = 'step_iel' ):
     """
     note that \tilde{\pi}^P(0) is in corrs_pressure
     -> from time correctors only 'u', 'dp' are needed.
@@ -138,11 +138,14 @@ def recover_bones( problem, micro_problem, region,
 
     dim = problem.domain.mesh.dim
 
-    micro_u = micro_problem.variables['uc']
+    vu, vp = var_names
+    vdp = 'd' + vp
+
+    micro_u = micro_problem.variables[vu]
     micro_coor = micro_u.field.get_coor()[:,:-1]
 
     micro_n_nod = micro_problem.domain.mesh.n_nod
-    micro_p = micro_problem.variables['pc']
+    micro_p = micro_problem.variables[vp]
 
     to_output = micro_problem.variables.state_to_output
 
@@ -155,16 +158,16 @@ def recover_bones( problem, micro_problem, region,
         print 'ii: %d, iel: %d' % (ii, iel)
         u_corr_steady = compute_u_corr_steady( corrs_rs, strain,
                                                corrs_pressure, pressure,
-                                               dim, ii )
+                                               vu, dim, ii )
         u_corr_time = compute_u_corr_time( corrs_time_rs, dstrains,
                                            corrs_time_pressure, pressures,
-                                           dim, ii, ts )
+                                           vu, dim, ii, ts )
 
-        p_corr_steady = compute_p_corr_steady( corrs_pressure, pressure, ii )
+        p_corr_steady = compute_p_corr_steady( corrs_pressure, pressure, vp, ii )
 
         p_corr_time = compute_p_corr_time( corrs_time_rs, dstrains,
                                            corrs_time_pressure, pressures,
-                                           dim, ii, ts )
+                                           vdp, dim, ii, ts )
 ##     print u_corr_steady
 ##     print u_corr_time
 ##     print p_coor_steady
@@ -181,9 +184,9 @@ def recover_bones( problem, micro_problem, region,
 ##         print p_mic
     
         out = {}
-        out.update( to_output( u_mic, var_info = {'uc' : (True, 'uc')},
+        out.update( to_output( u_mic, var_info = {vu : (True, vu)},
                                extend = True ) )
-        out.update( to_output( p_corr, var_info = {'pc' : (True, 'pc')},
+        out.update( to_output( p_corr, var_info = {vp : (True, vp)},
                                extend = True,
                                fill_value = pressure[ii,0,0,0] ) )
 
