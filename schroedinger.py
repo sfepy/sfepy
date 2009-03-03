@@ -134,6 +134,8 @@ class SchroedingerApp( SimpleApp ):
 
         log_filename = get( 'log_filename', 'log.txt' )
         iter_fig_name = get( 'iter_fig_name', 'iterations.pdf' )
+        # Called after DFT iteration, can do anything, no return value.
+        iter_hook = get( 'iter_hook', None )
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -157,6 +159,13 @@ class SchroedingerApp( SimpleApp ):
     def setup_options( self ):
         SimpleApp.setup_options( self )
         self.app_options += SchroedingerApp.process_options( self.conf.options )
+
+        funmod = self.conf.funmod
+
+        hook = self.app_options.iter_hook
+        if hook is not None:
+            hook = getattr( funmod, hook )
+        self.iter_hook = hook
     
     def call( self ):
         options = self.options
@@ -172,6 +181,10 @@ class SchroedingerApp( SimpleApp ):
 
         output( "solution saved to %s" % self.problem.get_output_name() )
         output( "in %s" % self.app_options.output_dir )
+
+	if self.post_process_hook_final is not None: # User postprocessing.
+	    self.post_process_hook_final( self.problem, evp = evp )
+
         return evp
 
     def iterate( self, vec_vhxc, eig_solver, mtx_b, log, file_output,
@@ -267,6 +280,10 @@ class SchroedingerApp( SimpleApp ):
         file_output("|V_XC|:", nla.norm(vec_vxc))
         file_output("-"*70)
 
+	if self.iter_hook is not None: # User postprocessing.
+            data = Struct( eigs = eigs, mtx_s_phi = mtx_s_phi,
+                           vec_n = vec_n, vec_vh = vec_vh, vec_vxc = vec_vxc )
+	    self.iter_hook( self.problem, data = data )
 
         self.norm_vhxc0 = norm
         
@@ -342,7 +359,9 @@ class SchroedingerApp( SimpleApp ):
         update_state_to_output( out, pb, vec_vxc, 'vxc' )
         self.save_results( eigs, mtx_phi, out = out )
 
-        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi,
+                       vec_n = vec_n, vec_nr2 = vec_nr2,
+                       vec_vh = vec_vh, vec_vxc = vec_vxc )
 
     def solve_eigen_problem_1( self ):
         from sfepy.fem import Mesh
