@@ -41,25 +41,76 @@ class MiniAppBase( Struct ):
 
             output( '...done in %.2f s' % (time.clock() - tt) )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        return None
+class CorrMiniApp( MiniAppBase ):
 
-class ShapeDimDim( MiniAppBase ):
+    def __init__( self, name, problem, kwargs ):
+        MiniAppBase.__init__( self, name, problem, kwargs )
+        self.output_dir = self.problem.output_dir
+        self.set_default_attr( 'save_name', '(not_set)' )
+        self.set_default_attr( 'dump_name', self.save_name )
+
+        self.save_name = os.path.normpath( os.path.join( self.output_dir,
+                                                         self.save_name ) )
+        self.dump_name = os.path.normpath( os.path.join( self.output_dir,
+                                                         self.dump_name ) )
+
+    def setup_output( self, save_format = None, dump_format = None,
+                      post_process_hook = None, file_per_var = None ):
+        """Instance attributes have precedence!"""
+        self.set_default_attr( 'dump_format', dump_format )
+        self.set_default_attr( 'save_format', save_format )
+        self.set_default_attr( 'post_process_hook', post_process_hook )
+        self.set_default_attr( 'file_per_var', file_per_var )
+
+    def get_save_name_base( self ):
+        return self.save_name
+
+    def get_dump_name_base( self ):
+        return self.get_save_name_base()
+
+    def get_save_name( self ):
+        return '.'.join( (self.get_save_name_base(), self.save_format))
+
+    def get_dump_name( self ):
+        if self.dump_format is not None:
+            return '.'.join( (self.get_dump_name_base(), self.dump_format))
+        else:
+            return None
+
+    def get_dump( self, state ):
+        get_state = self.problem.variables.get_state_part_view
+        out = {}
+        for dvar in self.dump_variables:
+            out[dvar] = Struct( name = 'dump', mode = 'nodes',
+                                data = get_state( state, dvar ),
+                                dofs = None, var_name = dvar )
+        return out
+
+    def save( self, state, problem, save_name, dump_name = None ):
+        problem.save_state( save_name,
+                            state,
+                            post_process_hook = self.post_process_hook,
+                            file_per_var = self.file_per_var )
+        if dump_name is not None:
+            problem.save_state( dump_name,
+                                out = self.get_dump( state ),
+                                file_per_var = False )
+
+class ShapeDimDim( CorrMiniApp ):
     
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         return create_pis( problem, self.variables[0] )
 
-class ShapeDim( MiniAppBase ):
+class ShapeDim( CorrMiniApp ):
     
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         return create_scalar_pis( problem, self.variables[0] )
 
-class CorrDimDim( MiniAppBase ):
+class CorrDimDim( CorrMiniApp ):
     """ __init__() kwargs:
         {
              'variables' : [],
@@ -72,7 +123,7 @@ class CorrDimDim( MiniAppBase ):
     def get_variables( self, ir, ic, data ):
             raise StopIteration
 
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         problem.select_variables( self.variables )
@@ -93,27 +144,25 @@ class CorrDimDim( MiniAppBase ):
                 assert_( problem.variables.has_ebc( state ) )
                 states[ir,ic] = state
 
-                if save_hook is not None:
-                    save_hook( state, problem, ir, ic )
+                self.save( state, problem, ir, ic )
 
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        def save_correctors( state, problem, ir, ic ):
-            problem.save_state( (base_name + '_%d%d.' % (ir, ic)) + format,
-                                state,
-                                post_process_hook = post_process_hook,
-                                file_per_var = file_per_var )
-        return save_correctors
+    def get_save_name_base( self ):
+        return self.save_name + '_%d%d'
+        
+    def save( self, state, problem, ir, ic ):
+        CorrMiniApp.save( self, state, problem,
+                          self.get_save_name() % (ir, ic),
+                          self.get_dump_name() % (ir, ic) )
 
-class CorrDim( MiniAppBase ):
+class CorrDim( CorrMiniApp ):
     def get_variables( self, ir, data ):
             raise StopIteration
 
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         problem.select_variables( self.variables )
@@ -133,27 +182,25 @@ class CorrDim( MiniAppBase ):
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
 
-            if save_hook is not None:
-                save_hook( state, problem, ir )
-
+            self.save( state, problem, ir )
+            
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        def save_correctors( state, problem, ir ):
-            problem.save_state( (base_name + '_%d.' % (ir,)) + format,
-                                state,
-                                post_process_hook = post_process_hook,
-                                file_per_var = file_per_var )
-        return save_correctors
+    def get_save_name_base( self ):
+        return self.save_name + '_%d'
+        
+    def save( self, state, problem, ir ):
+        CorrMiniApp.save( self, state, problem,
+                          self.get_save_name() % ir,
+                          self.get_dump_name() % ir )
 
-class CorrOne( MiniAppBase ):
+class CorrOne( CorrMiniApp ):
     def get_variables( self, data ):
             raise StopIteration
 
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         problem.select_variables( self.variables )
@@ -167,23 +214,18 @@ class CorrOne( MiniAppBase ):
         state = problem.solve()
         assert_( problem.variables.has_ebc( state ) )
 
-        if save_hook is not None:
-            save_hook( state, problem )
+        self.save( state, problem )
 
         return Struct( name = self.name,
                        state = state,
                        di = problem.variables.di )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        def save_correctors( state, problem ):
-            problem.save_state( '.'.join( (base_name, format) ),
-                                state,
-                                post_process_hook = post_process_hook,
-                                file_per_var = file_per_var )
-        return save_correctors
+    def save( self, state, problem ):
+        CorrMiniApp.save( self, state, problem,
+                          self.get_save_name(),
+                          self.get_dump_name() )
 
-class PressureEigenvalueProblem( MiniAppBase ):
+class PressureEigenvalueProblem( CorrMiniApp ):
     """Pressure eigenvalue problem solver for time-dependent correctors."""
 
     def presolve( self, mtx ):
@@ -278,7 +320,7 @@ class PressureEigenvalueProblem( MiniAppBase ):
         out = Struct( eigs = eigs, mtx_q = mtx_q )
         return out
 
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         problem.select_variables( self.variables )
@@ -292,17 +334,12 @@ class PressureEigenvalueProblem( MiniAppBase ):
                        ebcs = self.ebcs, epbcs = self.epbcs,
                        mtx = mtx, evp = evp )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        return None
+class TCorrectorsViaPressureEVP( CorrMiniApp ):
+    """
+    Time correctors via the pressure eigenvalue problem.
+    """
 
-
-class TCorrectorsViaPressureEVP( MiniAppBase ):
-    """Time correctors via the pressure eigenvalue problem.
-
-    TODO: get rid of hard-coded variable names."""
-
-    def compute_correctors( self, evp, state0, ts, filename, save_hook,
+    def compute_correctors( self, evp, state0, ts, dump_name, save_name,
                             problem = None, vec_g = None ):
         problem = get_default( problem, self.problem )
         problem.select_variables( self.variables )
@@ -326,7 +363,8 @@ class TCorrectorsViaPressureEVP( MiniAppBase ):
         # follow_epbc = False -> R1 = - R2 as required. ? for other correctors?
         sstate0 = problem.variables.strip_state_vector( state0,
                                                         follow_epbc = False )
-        vec_p0 = get_state( sstate0, 'pc', True )
+        vu, vp = self.dump_variables
+        vec_p0 = get_state( sstate0, vp, True )
 ##         print state0
 ##         print vec_p0
 ##         print vec_p0.min(), vec_p0.max(), nla.norm( vec_p0 )
@@ -357,15 +395,48 @@ class TCorrectorsViaPressureEVP( MiniAppBase ):
             vec_u = action_aibt( vec_dp )
 ##             bbb = sc.dot( vec_dp.T, - mtx['C'] * vec_p0 )
 
-            vec_u = make_full_vec( vec_u, 'uc', None )
-            vec_p = make_full_vec( vec_p, 'pc', None )
+            vec_u = make_full_vec( vec_u, vu, None )
+            vec_p = make_full_vec( vec_p, vp, None )
             # BC nodes - time derivative of constant is zero!
-            vec_dp = make_full_vec( vec_dp, 'pc', 0.0 )
+            vec_dp = make_full_vec( vec_dp, vp, 0.0 )
 ##             aaa = sc.dot( vec_xi0.T, eigs * (eigs * e_e_qp) )
 ##             print aaa
 ##             print bbb
 
-            save_hook( filename, vec_u, vec_p, vec_dp, ts, problem )
+            self.save( dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem )
+
+    def save( self, dump_name, save_name, vec_u, vec_p, vec_dp, ts, problem ):
+        """
+        1. saves raw correctors into hdf5 files (filename)
+        2. saves correctors transformed to output for visualization
+        """
+        vu, vp = self.dump_variables
+        out = {vu : Struct( name = 'dump', mode = 'nodes', data = vec_u,
+                            dofs = None, var_name = vu ),
+               vp : Struct( name = 'dump', mode = 'nodes', data = vec_p,
+                            dofs = None, var_name = vp ),
+               'd'+vp : Struct( name = 'dump', mode = 'nodes', data = vec_dp,
+                                dofs = None, var_name = vp )}
+
+        problem.save_state( dump_name, out = out, file_per_var = False, ts = ts )
+
+        # For visualization...
+        out = {}
+        extend = not self.file_per_var
+        to_output = problem.variables.state_to_output
+        out.update( to_output( vec_u, var_info = {vu : (True, vu)},
+                               extend = extend ) )
+        out.update( to_output( vec_p, var_info = {vp : (True, vp)},
+                               extend = extend ) )
+        out.update( to_output( vec_dp, var_info = {vp : (True, 'd'+vp)},
+                               extend = extend ) )
+        if self.post_process_hook is not None:
+            out = self.post_process_hook( out, problem,
+                                          {vu : vec_u,
+                                           vp : vec_p, 'd'+vp : vec_dp},
+                                          extend = extend )
+        problem.save_state( save_name, out = out,
+                            file_per_var = self.file_per_var, ts = ts )
 
     def verify_correctors( self, initial_state, filename, problem = None ):
 
@@ -377,7 +448,10 @@ class TCorrectorsViaPressureEVP( MiniAppBase ):
         ts = TimeStepper( *io.read_time_stepper() )
 
         get_state = problem.variables.get_state_part_view
-        p0 = get_state( initial_state, 'pc' )
+        vu, vp = self.dump_variables
+        vdp = self.verify_variables[-1]
+        
+        p0 = get_state( initial_state, vp )
 
         format = '====== time %%e (step %%%dd of %%%dd) ====='\
                  % ((ts.n_digit,) * 2)
@@ -388,14 +462,14 @@ class TCorrectorsViaPressureEVP( MiniAppBase ):
 
             data = io.read_data( step )
             if step == 0:
-                assert_( nm.allclose( data['p'].data, p0 ) )
+                assert_( nm.allclose( data[vp].data, p0 ) )
 
             problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
             state0 = problem.create_state_vector()
-            state0[vv.di.indx['uc']] = data['u'].data
-            state0[vv.di.indx['pc']] = data['p'].data
-            vv['pp1'].data_from_data( data['dp'].data )
+            state0[vv.di.indx[vu]] = data[vu].data
+            state0[vv.di.indx[vp]] = data[vp].data
+            vv[vdp].data_from_data( data['d'+vp].data )
 
             state = problem.solve( state0 = state0, ts = ts )
             err = nla.norm( state - state0 )
@@ -407,44 +481,6 @@ class TCorrectorsViaPressureEVP( MiniAppBase ):
             problem.advance( ts )
 
         return ok
-
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        def dump_save_correctors( filename, vec_u, vec_p, vec_dp, ts, problem ):
-            """
-            1. saves raw correctors into hdf5 files (filename)
-            2. saves correctors transformed to output for visualization
-            """
-            out = {'u' : Struct( name = 'dump', mode = 'nodes', data = vec_u,
-                                 dofs = None, var_name = 'uc' ),
-                   'p' : Struct( name = 'dump', mode = 'nodes', data = vec_p,
-                                 dofs = None, var_name = 'pc' ),
-                   'dp' : Struct( name = 'dump', mode = 'nodes', data = vec_dp,
-                                  dofs = None, var_name = 'pc' )}
-
-            dirname = problem.output_dir
-            problem.save_state( os.path.join( dirname, filename ),
-                                out = out, file_per_var = False, ts = ts )
-            # For visualization...
-            out = {}
-            extend = not file_per_var
-            to_output = problem.variables.state_to_output
-            out.update( to_output( vec_u, var_info = {'uc' : (True, 'uc')},
-                                   extend = extend ) )
-            out.update( to_output( vec_p, var_info = {'pc' : (True, 'pc')},
-                                   extend = extend ) )
-            out.update( to_output( vec_dp, var_info = {'pc' : (True, 'dpc')},
-                                   extend = extend ) )
-            if post_process_hook is not None:
-                out = post_process_hook( out, problem,
-                                         {'u' : vec_u,
-                                          'p' : vec_p, 'dp' : vec_dp},
-                                         extend = extend )
-            vfilename = '_vis'.join( os.path.splitext( filename ) )
-            problem.save_state( os.path.join( dirname,vfilename ), out = out,
-                                file_per_var = file_per_var, ts = ts )
-        return dump_save_correctors
-
 
 class TSTimes( MiniAppBase ):
     """Coefficient-like class, returns times of the time stepper."""

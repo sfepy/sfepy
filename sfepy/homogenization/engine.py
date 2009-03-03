@@ -42,6 +42,9 @@ class HomogenizationEngine( SimpleApp ):
         requirements = get( 'requirements', None,
                             'missing "requirements" in options!' )
 
+        save_format = get( 'save_format', 'vtk' )
+        dump_format = get( 'dump_format', 'h5' )
+
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
@@ -65,7 +68,7 @@ class HomogenizationEngine( SimpleApp ):
         po = HomogenizationEngine.process_options
         self.app_options += po( self.conf.options )
 
-    def compute_requirements( self, requirements, dependencies ):
+    def compute_requirements( self, requirements, dependencies, store ):
         problem = self.problem
 
         opts = self.app_options
@@ -81,16 +84,14 @@ class HomogenizationEngine( SimpleApp ):
 
             rargs = req_info[req]
 
-            save_name = rargs.get( 'save_name', '' )
-            name = os.path.join( problem.output_dir, save_name )
-
             mini_app = MiniAppBase.any_from_conf( req, problem, rargs )
-            save_hook = mini_app.make_save_hook( name,
-                                                 problem.output_format,
-                                                 self.post_process_hook,
-                                                 opts.file_per_var )
-
-            dep = mini_app( data = dependencies, save_hook = save_hook )
+            mini_app.setup_output( save_format = opts.save_format,
+                                   dump_format = opts.dump_format,
+                                   post_process_hook = self.post_process_hook,
+                                   file_per_var = opts.file_per_var )
+            store( mini_app )
+            
+            dep = mini_app( data = dependencies )
 
             dependencies[req] = dep
             output( '...done' )
@@ -103,14 +104,20 @@ class HomogenizationEngine( SimpleApp ):
         opts = self.app_options
         coef_info = getattr( self.conf, opts.coefs )
 
+        store_filenames = coef_info.pop('filenames', None) is not None
+
         dependencies = {}
+        save_names = {}
+        dump_names = {}
+        def store_filenames( app ):
+            save_names[app.name] = app.get_save_name_base()
+            dump_names[app.name] = app.get_dump_name_base()
 
         coefs = Struct()
-
         for coef_name, cargs in coef_info.iteritems():
             output( 'computing %s...' % coef_name )
             requires = cargs.get( 'requires', [] )
-            self.compute_requirements( requires, dependencies )
+            self.compute_requirements( requires, dependencies, store_filenames )
 
 #            debug()
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
@@ -120,6 +127,11 @@ class HomogenizationEngine( SimpleApp ):
 #            pause()
             output( '...done' )
 
+        # Store filenames of all requirements as a "coefficient".
+        if store_filenames:
+            coefs.save_names = save_names
+            coefs.dump_names = dump_names
+            
         if ret_all:
             return coefs, dependencies
         else:

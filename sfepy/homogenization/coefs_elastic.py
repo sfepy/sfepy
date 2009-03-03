@@ -43,22 +43,22 @@ class CorrectorsPermeability( CorrDim ):
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
 
-            if save_hook is not None:
-                save_hook( state, problem, ir )
+            self.save( state, problem, ir )
 
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
 
-    def make_save_hook( self, base_name, format,
-                        post_process_hook = None, file_per_var = None ):
-        return CorrDim.make_save_hook( self, base_name, format,
-                                       post_process_hook = None,
-                                       file_per_var = None )
 
 class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
 
-    def __call__( self, problem = None, data = None, save_hook = None ):
+    def get_save_name_base( self ):
+        return self.save_name + '_%d%d'
+
+    def get_dump_name_base( self ):
+        return self.dump_name + '_%d%d'
+
+    def __call__( self, problem = None, data = None ):
         """data: corrs_rs, evp"""
         problem = get_default( problem, self.problem )
         ts = problem.get_time_solver().ts
@@ -75,9 +75,11 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
         solve = self.compute_correctors
         for ir in range( dim ):
             for ic in range( dim ):
-                filename = self.save_name + ("_%d%d" % (ir,ic)) + '.h5'
-                solve( evp, -corrs.states[ir,ic], ts, filename, save_hook )
-                filenames[ir,ic] = os.path.join( problem.output_dir, filename )
+                filenames[ir,ic] = self.get_dump_name() % (ir,ic)
+                savename = self.get_save_name() % (ir,ic)
+                solve( evp, -corrs.states[ir,ic], ts,
+                       filenames[ir,ic], savename )
+
 
         if self.check:
             output( 'verifying correctors %s...' % self.name )
@@ -94,6 +96,12 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
 
 class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
 
+    def get_save_name_base( self ):
+        return self.save_name
+
+    def get_dump_name_base( self ):
+        return self.dump_name
+
     def __call__( self, problem = None, data = None, save_hook = None ):
         """data: corrs_pressure, evp"""
         problem = get_default( problem, self.problem )
@@ -104,10 +112,11 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         assert_( evp.ebcs == self.ebcs )
         assert_( evp.epbcs == self.epbcs )
 
+        filename = self.get_dump_name()
+        savename = self.get_save_name()
+
         solve = self.compute_correctors
-        filename = self.save_name + '.h5'
-        solve( evp, corrs.state, ts, filename, save_hook )
-        filename = os.path.join( problem.output_dir, filename )
+        solve( evp, corrs.state, ts, filename, savename )
 
         if self.check:
             output( 'verifying correctors %s...' % self.name )
@@ -147,8 +156,10 @@ class ViscousFMCoef( CoefFMSymSym ):
         corrs = data[self.requires[0]]
 
         if mode == 'row':
-            dpc = io.read_data( step )['dp'].data
-            yield self.variables[0], dpc
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+            dpc = io.read_data( step )['d'+c_name].data
+            yield var_name, dpc
 
         else:
             var_name = self.variables[1]
@@ -193,8 +204,13 @@ class BiotFMCoef( CoefFMSym ):
         else:
             step_data = io.read_data( step )
 
-            yield self.variables[2], step_data['u'].data
-            yield self.variables[3], step_data['dp'].data
+            var_name = self.variables[2]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data[c_name].data
+
+            var_name = self.variables[3]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data['d'+c_name].data
 
 class BiotFM2Coef( CoefFMSym ):
     """Fading memory Biot coefficient, alternative form."""
@@ -217,7 +233,9 @@ class BiotFM2Coef( CoefFMSym ):
         else:
             step_data = io.read_data( step )
 
-            yield self.variables[1], step_data['p'].data
+            var_name = self.variables[1]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data[c_name].data
 
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""
@@ -255,9 +273,13 @@ class FMRBiotModulus( CoefFMOne ):
         else:
             step_data = io.read_data( step )
 
-            yield self.variables[2], step_data['u'].data
-            yield self.variables[3], step_data['dp'].data
+            var_name = self.variables[2]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data[c_name].data
 
+            var_name = self.variables[3]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data['d'+c_name].data
 
 class DiffusionCoef( CoefDimDim ):
     """Homogenized diffusion coefficient."""
