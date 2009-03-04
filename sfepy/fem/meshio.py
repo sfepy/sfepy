@@ -10,7 +10,8 @@ supported_formats = {
     '.node' : 'tetgen',
     '.txt'  : 'comsol',
     '.h5'   : 'hdf5',
-    '.inp'  : 'avs_ucd',
+     # Order is important, avs_ucd does not guess -> it is the default.
+    '.inp'  : ('abaqus', 'avs_ucd'),
     '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
 }
@@ -1280,6 +1281,10 @@ def mesh_from_tetra_hexa( mesh, ids, coors,
 class AVSUCDMeshIO( MeshIO ):
     format = 'avs_ucd'
 
+    def guess( filename ):
+        return True
+    guess = staticmethod( guess )
+    
     def read( self, mesh, **kwargs ):
         fd = open( self.filename, 'r' )
 
@@ -1369,6 +1374,98 @@ class HypermeshAsciiMeshIO( MeshIO ):
     def write( self, filename, mesh, out = None ):
         raise NotImplementedError
 
+class AbaqusMeshIO( MeshIO ):
+    format = 'abaqus'
+
+    def guess( filename ):
+        ok = False
+
+        fd = open( filename, 'r' )
+        line = fd.readline().strip()
+        if line == '*NODE':
+            ok = True
+        fd.close()
+        
+        return ok
+    guess = staticmethod( guess )
+
+
+    def read( self, mesh, **kwargs ):
+        fd = open( self.filename, 'r' )
+
+        ids = []
+        coors = []
+        tetras = []
+        mat_tetras = []
+        hexas = []
+        mat_hexas = []
+
+        line = fd.readline().split(',')
+        while 1:
+            if not line[0]: break
+
+            if line[0].strip() == '*NODE':
+                while 1:
+                    line = fd.readline().split(',')
+                    if line[0][0] == '*': break
+                    ids.append( int( line[0] ) )
+                    coors.append( [float( coor ) for coor in line[1:4]] )
+
+            elif line[0].strip() == '*Element':
+
+                if line[1].find( 'C3D8' ) >= 0:
+                    while 1:
+                        line = fd.readline().split(',')
+                        if line[0][0] == '*': break
+                        mat_hexas.append( 0 )
+                        hexas.append( [int( ic ) for ic in line[1:9]] )
+
+                elif line[1].find( '???' ) >= 0:
+                    while 1:
+                        line = fd.readline().split(',')
+                        if line[0][0] == '*': break
+                        mat_tetras.append( 0 )
+                        tetras.append( [int( ic ) for ic in line[1:5]] )
+
+                else:
+                    raise ValueError('unknown element type! (%s)' % line[1])
+
+            else:
+                line = fd.readline().split(',')
+                
+        fd.close()
+
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+                                     tetras, mat_tetras,
+                                     hexas, mat_hexas )
+
+        return mesh
+
+    def read_dimension(self):
+        return 3
+
+    def write( self, filename, mesh, out = None ):
+        raise NotImplementedError
+    
+
+def guess_format( filename, ext, formats, io_table ):
+    """
+    Guess the format of filename, candidates are in formats.
+    """
+    ok = False
+    for format in formats:
+        output( 'guessing %s' % format )
+        try:
+            ok = io_table[format].guess( filename )
+        except AttributeError:
+            pass
+        if ok: break
+
+    else:
+        raise NotImplementedError('cannot guess format of a *%s file!' % ext)
+
+    return format
+
 ##
 # c: 05.02.2008, r: 05.02.2008
 var_dict = vars().items()
@@ -1382,11 +1479,11 @@ for key, var in var_dict:
         pass
 del var_dict
 
-##
-# c: 05.02.2008, r: 05.02.2008
 def any_from_filename( filename ):
     aux, ext = op.splitext( filename )
     format = supported_formats[ext]
+    if isinstance(format, tuple):
+        format = guess_format( filename, ext, format, io_table )
     try:
         return io_table[format]( filename )
     except KeyError:

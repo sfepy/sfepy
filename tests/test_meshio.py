@@ -2,6 +2,8 @@ filename_meshes = ['database/simple.mesh',
                    'database/simple.vtk',
                    'database/t.1.node',
                    'database/maillage.txt',
+                   'database/tests/abaqus_hex.inp',
+                   'database/tests/abaqus_tet.inp',
                    'database/tests/hex4.mesh3d',
                    'database/tests/tetra8.mesh3d']
 same = [(0, 1)]
