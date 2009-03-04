@@ -429,7 +429,7 @@ int32 orient_elements( int32 *flag, int32 flag_n_row,
   float64 v0[3], v1[3], v2[3], v3[3], cross[3], dot[1];
 
   nc = coors_n_col;
-  if (nc == 4) { // 3D.
+  if (nc == 3) { // 3D.
     for (iel = 0; iel < conn_n_row; iel++) {
       flag[iel] = 0;
 
@@ -459,7 +459,7 @@ int32 orient_elements( int32 *flag, int32 flag_n_row,
       }
 /*     sys_pause(); */
     }
-  } else if (nc == 3) { // 2D.
+  } else if (nc == 2) { // 2D.
     for (iel = 0; iel < conn_n_row; iel++) {
       flag[iel] = 0;
 

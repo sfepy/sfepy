@@ -60,12 +60,8 @@ def find_map( x1, x2, eps = 1e-8, allow_double = False, join = True ):
     else:
         return i1, i2
 
-##
-# 23.05.2007, updated from matlab version
-# 24.05.2007
-# 25.05.2007
-# 28.05.2007
-def merge_mesh( x1, conns1, x2, conns2, cmap, eps = 1e-8 ):
+def merge_mesh( x1, ngroups1, conns1, x2, ngroups2, conns2, cmap, eps = 1e-8 ):
+    """Merge two meshes in common coordinates found in x1, x2."""
     nc = cmap.shape[0]
     n1 = x1.shape[0]
     n2 = x2.shape[0]
@@ -85,27 +81,25 @@ def merge_mesh( x1, conns1, x2, conns2, cmap, eps = 1e-8 ):
     i2 = nm.setdiff1d( nm.arange(  n2, dtype = nm.int32 ),
                        cmap[:,1] )
     xx = nm.r_[x1, x2[i2]]
+    ngroups = nm.r_[ngroups1, ngroups2[i2]]
 
     conns = []
     for ii in xrange( len( conns1 ) ):
         conn = nm.vstack( (conns1[ii], remap[conns2[ii]]) )
         conns.append( conn )
     
-    return xx, conns
+    return xx, ngroups, conns
 
-##
-# 24.05.2007, c
-def make_mesh( coor, conns, mesh_in ):
-    nod0 = nm.c_[coor, nm.zeros( (coor.shape[0],), dtype = nm.float64 )]
-
+def make_mesh( coor, ngroups, conns, mesh_in ):
+    """Create a mesh reusing mat_ids and descs of mesh_in."""
     mat_ids = []
     for ii, conn in enumerate( conns ):
         mat_id = nm.empty( (conn.shape[0],), dtype = nm.int32 )
         mat_id.fill( mesh_in.mat_ids[ii][0] )
         mat_ids.append( mat_id )
         
-    mesh_out = Mesh.from_data( 'merged mesh', nod0, conns,
-                             mat_ids, mesh_in.descs )
+    mesh_out = Mesh.from_data( 'merged mesh', coor, ngroups, conns,
+                               mat_ids, mesh_in.descs )
     return mesh_out
 
 def make_inverse_connectivity( conns, n_nod, combine_groups = False ):
@@ -250,95 +244,102 @@ class Mesh( Struct ):
 
     Example of creating and working with a mesh:
 
-    >>> from sfepy.fem import Mesh
-    >>> m = Mesh.from_file("database/simple.vtk")
+    In [1]: from sfepy.fem import Mesh
+    In [2]: m = Mesh.from_file("database/simple.vtk")
     sfepy: reading mesh (database/simple.vtk)...
-    sfepy: ...done in 0.06 s
-    >>> m.nod0
-    array([[  1.00000000e-01,   2.00000000e-02,  -1.22460635e-18,
-              0.00000000e+00],
-           [  1.00000000e-01,   1.80193774e-02,   8.67767478e-03,
-              0.00000000e+00],
-           [  1.00000000e-01,   1.24697960e-02,   1.56366296e-02,
-              0.00000000e+00],
-           ..., 
-           [  8.00298527e-02,   5.21598617e-03,  -9.77772215e-05,
-              0.00000000e+00],
-           [  7.02544004e-02,   3.61610291e-04,  -1.16903153e-04,
-              0.00000000e+00],
-           [  3.19633596e-02,  -1.00335972e-02,   9.60460305e-03,
-              0.00000000e+00]])
-    >>> m.conns
+    sfepy: ...done in 0.04 s
+
+    In [3]: m.coors
+    Out[3]:
+    array([[  1.00000000e-01,   2.00000000e-02,  -1.22460635e-18],
+           [  1.00000000e-01,   1.80193774e-02,   8.67767478e-03],
+           [  1.00000000e-01,   1.24697960e-02,   1.56366296e-02],
+           ...,
+           [  8.00298527e-02,   5.21598617e-03,  -9.77772215e-05],
+           [  7.02544004e-02,   3.61610291e-04,  -1.16903153e-04],
+           [  3.19633596e-02,  -1.00335972e-02,   9.60460305e-03]])
+
+    In [4]: m.ngroups
+    Out[4]: array([0, 0, 0, ..., 0, 0, 0])
+
+    In [5]: m.conns
+    Out[5]:
     [array([[ 28,  60,  45,  29],
            [ 28,  60,  57,  45],
            [ 28,  57,  27,  45],
-           ..., 
+           ...,
            [353, 343, 260, 296],
            [353, 139, 181, 140],
            [353, 295, 139, 140]])]
-    >>> m.mat_ids
-    [array([6, 6, 6, ..., 6, 6, 6])]
-    >>> m.descs
-    ['3_4']
-    >>> m
+
+    In [6]: m.mat_ids
+    Out[6]: [array([6, 6, 6, ..., 6, 6, 6])]
+
+    In [7]: m.descs
+    Out[7]: ['3_4']
+
+    In [8]: m
+    Out[8]: Mesh:database/simple
+
+    In [9]: print m
     Mesh:database/simple
-    >>> print m
-    Mesh:database/simple
-      n_e_ps:
-        [4]
+      setup_done:
+        0
       dim:
         3
-      n_el:
-        1348
       name:
         database/simple
+      n_el:
+        1348
       descs:
         ['3_4']
-      n_nod:
-        354
-      mat_ids:
-        [array([6, 6, 6, ..., 6, 6, 6])]
+      ngroups:
+        [0 0 0 ..., 0 0 0]
+      el_offsets:
+        [   0 1348]
       n_els:
         [1348]
-      nod0:
-        [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18   0.00000000e+00]
-         [  1.00000000e-01   1.80193774e-02   8.67767478e-03   0.00000000e+00]
-         [  1.00000000e-01   1.24697960e-02   1.56366296e-02   0.00000000e+00]
-         ..., 
-         [  8.00298527e-02   5.21598617e-03  -9.77772215e-05   0.00000000e+00]
-         [  7.02544004e-02   3.61610291e-04  -1.16903153e-04   0.00000000e+00]
-         [  3.19633596e-02  -1.00335972e-02   9.60460305e-03   0.00000000e+00]]
+      n_nod:
+        354
       io:
         None
       conns:
         [array([[ 28,  60,  45,  29],
                [ 28,  60,  57,  45],
                [ 28,  57,  27,  45],
-               ..., 
+               ...,
                [353, 343, 260, 296],
                [353, 139, 181, 140],
                [353, 295, 139, 140]])]
-      setup_done:
-        0
-      el_offsets:
-        [   0 1348]
+      coors:
+        [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18]
+         [  1.00000000e-01   1.80193774e-02   8.67767478e-03]
+         [  1.00000000e-01   1.24697960e-02   1.56366296e-02]
+         ...,
+         [  8.00298527e-02   5.21598617e-03  -9.77772215e-05]
+         [  7.02544004e-02   3.61610291e-04  -1.16903153e-04]
+         [  3.19633596e-02  -1.00335972e-02   9.60460305e-03]]
+      n_e_ps:
+        [4]
+      mat_ids:
+        [array([6, 6, 6, ..., 6, 6, 6])]
 
+    The Mesh().coors is an array of node coordinates and Mesh().conns is the
+    list of elements of each type (see Mesh().desc), so for example if you want
+    to know the coordinates of the nodes of the fifth finite element of the
+    type 3_4 do:
 
-    The Mesh().nod0 is an array of nodes and Mesh().conns is the list of
-    elements of each type (see Mesh().desc), so for example if you want to know
-    the coordinates of the nodes of the fifth finite element of the type 3_4 do:
-
-    In [1]: a.descs
-    Out[1]: ['3_4']
+    In [10]: m.descs
+    Out[10]: ['3_4']
 
     So now you know that the finite elements of the type 3_4 are in a.conns[0]:
 
-    In [2]: [a.nod0[n] for n in a.conns[0][4]]
-    Out[2]:
-    [array([ 3.0877856 , -4.40913864, -1.58148163,  0.        ]),
-     array([ 3.28954489, -4.53265378, -2.07926241,  0.        ]),
-     array([ 3.00343981, -4.09445003, -2.14632505,  0.        ]),
-     array([ 3.51217117, -4.05946689, -1.68843294,  0.        ])]
+    In [11]: m.coors[m.conns[0][4]]
+    Out[11]:
+    array([[  1.00000000e-01,   1.80193774e-02,  -8.67767478e-03],
+           [  1.00000000e-01,   1.32888539e-02,  -4.35893200e-04],
+           [  1.00000000e-01,   2.00000000e-02,  -1.22460635e-18],
+           [  9.22857574e-02,   1.95180454e-02,  -4.36416134e-03]])
 
     The element ids are of the form "<dimension>_<number of nodes>", i.e.:
 
@@ -350,18 +351,14 @@ class Mesh( Struct ):
     3_8 ... hexahedron
 
     """
-    ##
-    # 19.01.2005, c
-    # 03.03.2005
-    # 08.03.2005
-    # 05.10.2005
-    # 04.08.2006
-    # 29.08.2007
-    def from_surface( surf_faces, mesh_in ):
 
+    def from_surface( surf_faces, mesh_in ):
+        """
+        Create a mesh given a set of surface faces and the original mesh.
+        """
         inod = la.as_unique_set( surf_faces )
         n_nod = len( inod )
-        n_nod_m, n_col = mesh_in.nod0.shape
+        n_nod_m, dim = mesh_in.coors.shape
 
         aux = nm.arange( n_nod )
         remap = nm.zeros( (n_nod_m,), nm.int32 )
@@ -369,7 +366,8 @@ class Mesh( Struct ):
 
         mesh = Mesh( mesh_in.name + "_surf" )
 
-        mesh.nod0 = mesh_in.nod0[inod,:n_col]
+        mesh.coors = mesh_in.coors[inod]
+        mesh.ngroups = mesh_in.ngroups[inod]
 
         sfm = {3 : "2_3", 4 : "2_4"}
         mesh.conns = []
@@ -421,7 +419,8 @@ class Mesh( Struct ):
     # c: 17.02.2006, r: 28.04.2008
     def from_region( region, mesh_in, ed = None, fa = None, localize = None ):
         mesh = Mesh( mesh_in.name + "_reg" )
-        mesh.nod0 = mesh_in.nod0.copy()
+        mesh.coors = mesh_in.coors.copy()
+        mesh.ngroups = mesh_in.ngroups.copy()
         
         mesh.conns = []
         mesh.descs = []
@@ -476,7 +475,8 @@ class Mesh( Struct ):
         nodes = region.get_field_nodes( field, merge = True )
 
         aux = field.get_extra_nodes_as_simplices( nodes )
-        mesh.nod0 = field.aps.coors
+        mesh.coors = field.aps.coors
+        mesh.ngroups = nm.zeros( (mesh.coors.shape[0],), dtype = nm.int32 )
         mesh.descs.append( aux[0] )
         mesh.mat_ids.append( aux[1] )
         mesh.conns.append( aux[2] )
@@ -486,13 +486,15 @@ class Mesh( Struct ):
         return mesh
     from_region_and_field = staticmethod( from_region_and_field )
 
-    ##
-    # c: 21.02.2007, r: 08.02.2008
-    def from_data( name, coors, conns, mat_ids, descs, igs = None ):
+    def from_data( name, coors, ngroups, conns, mat_ids, descs, igs = None ):
+        """
+        Create a mesh from mesh data.
+        """
         if igs is None:
             igs = range( len( conns ) )
         mesh = Mesh( name = name,
-                     nod0 = coors,
+                     coors = coors,
+                     ngroups = ngroups,
                      conns = [conns[ig] for ig in igs],
                      mat_ids = [mat_ids[ig] for ig in igs],
                      descs = [descs[ig] for ig in igs] )
@@ -515,17 +517,34 @@ class Mesh( Struct ):
     # 04.08.2006, c
     # 29.09.2006
     def _set_shape_info( self ):
-        self.n_nod = self.nod0.shape[0]
-        self.dim = self.nod0.shape[1] - 1
+        self.n_nod, self.dim = self.coors.shape
         self.n_els = nm.array( [conn.shape[0] for conn in self.conns] )
         self.n_e_ps = nm.array( [conn.shape[1] for conn in self.conns] )
         self.el_offsets = nm.cumsum( nm.r_[0, self.n_els] )
         self.n_el = nm.sum( self.n_els )
 
-    ##
-    # c: 15.02.2008, r: 15.02.2008
-    def _set_data( self, coors, conns, mat_ids, descs ):
-        self.nod0 = coors
+    def _set_data( self, coors, ngroups, conns, mat_ids, descs ):
+        """
+        Set mesh data.
+        
+        Parameters
+        ----------
+        coors : array
+            Coordinates of mesh nodes.
+        ngroups : array
+            Node groups.
+        conns : list of arrays
+            The array of mesh elements (connectivities) for each element group.
+        mat_ids : list of arrays
+            The array of material ids for each element group.
+        descs: list of strings
+            The element type for each element group.
+        """
+        self.coors = nm.ascontiguousarray(coors)
+        if ngroups is None:
+            self.ngroups = nm.zeros( (self.coors.shape[0],), dtype = nm.int32 )
+        else:
+            self.ngroups = nm.ascontiguousarray(ngroups)
         self.conns = conns
         self.mat_ids = mat_ids
         self.descs = descs
@@ -550,21 +569,21 @@ class Mesh( Struct ):
                 io = MeshIO.any_from_filename( filename )
 
         if coors is None:
-            coors = self.nod0
+            coors = self.coors
 
         if igs is None:
             igs = range( len( self.conns ) )
 
-        aux_mesh = Mesh.from_data( self.name, coors,
-                                 self.conns, self.mat_ids, self.descs, igs )
+        aux_mesh = Mesh.from_data( self.name, coors, self.ngroups,
+                                   self.conns, self.mat_ids, self.descs, igs )
         io.set_float_format( float_format )
         io.write( filename, aux_mesh, out, **kwargs )
 
     ##
     # 23.05.2007, c
     def get_bounding_box( self ):
-        return nm.array( [nm.amin( self.nod0[:,:-1], 0 ),
-                          nm.amax( self.nod0[:,:-1], 0 )] )
+        return nm.array( [nm.amin( self.coors, 0 ),
+                          nm.amax( self.coors, 0 )] )
 
 
     ##
@@ -572,11 +591,12 @@ class Mesh( Struct ):
     def localize( self, inod ):
         """Strips nodes not in inod and remaps connectivities.
         TODO: fix the case when remap[conn] contains -1..."""
-        remap = nm.empty( (self.nod0.shape[0],), dtype = nm.int32 )
+        remap = nm.empty( (self.n_nod,), dtype = nm.int32 )
         remap.fill( -1 )
         remap[inod] = nm.arange( inod.shape[0], dtype = nm.int32 )
 
-        self.nod0 = self.nod0[inod]
+        self.coors = self.coors[inod]
+        self.ngroups = self.ngroups[inod]
         conns = []
         for conn in self.conns:
             conns.append( remap[conn] )
@@ -585,9 +605,9 @@ class Mesh( Struct ):
 
     ##
     # c: 18.01.2008, r: 18.01.2008
-    def transform_coords( self, mtx_t, ref_coords = None ):
+    def transform_coors( self, mtx_t, ref_coors = None ):
         """x = T * x."""
-        if ref_coords is None:
-            ref_coords = self.nod0[:,:-1]
+        if ref_coors is None:
+            ref_coors = self.coors
 
-        self.nod0[:,:-1] = nm.dot( ref_coords, mtx_t.T )
+        self.coors[:] = nm.dot( ref_coors, mtx_t.T )

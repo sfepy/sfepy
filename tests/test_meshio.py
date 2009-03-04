@@ -33,8 +33,9 @@ class Test( TestCommon ):
             self.report( '%d. mesh: %s' % (ii + 1, filename) )
             mesh = Mesh.from_file( filename )
 
-            assert_(mesh.dim == (mesh.nod0.shape[1]-1))
-            assert_(mesh.n_nod == (mesh.nod0.shape[0]))
+            assert_(mesh.dim == (mesh.coors.shape[1]))
+            assert_(mesh.n_nod == (mesh.coors.shape[0]))
+            assert_(mesh.n_nod == (mesh.ngroups.shape[0]))
             assert_(mesh.n_el == sum(mesh.n_els))
             for ig, conn in enumerate( mesh.conns ):
                 assert_(conn.shape[0] == len(mesh.mat_ids[ig]))
@@ -87,15 +88,20 @@ class Test( TestCommon ):
                 self.report( 'element types failed!' )
             oks.append( ok0 )
 
-            ok0 = nm.allclose( mesh0.nod0, mesh1.nod0 )
+            ok0 = nm.allclose( mesh0.coors, mesh1.coors )
             if not ok0:
                 self.report( 'nodes failed!' )
+            oks.append( ok0 )
+
+            ok0 = nm.all( mesh0.ngroups == mesh1.ngroups )
+            if not ok0:
+                self.report( 'node groups failed!' )
             oks.append( ok0 )
 
             for ii in range( len( mesh0.mat_ids ) ):
                 ok0 = nm.all( mesh0.mat_ids[ii] == mesh1.mat_ids[ii] )
                 if not ok0:
-                    self.report( 'mat_ids failed!' )
+                    self.report( 'material ids failed!' )
                 oks.append( ok0 )
 
             for ii in range( len( mesh0.mat_ids ) ):

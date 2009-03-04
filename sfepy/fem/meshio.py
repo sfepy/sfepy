@@ -347,26 +347,25 @@ class MeditMeshIO( MeshIO ):
             descs[ic:ic] = desc
 
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
-        mesh._set_data( nod, conns, mat_ids, descs )
+        mesh._set_data( nod[:,:-1], nod[:,-1], conns, mat_ids, descs )
 
         return mesh
 
     def write( self, filename, mesh, out = None ):
         fd = open( filename, 'w' )
 
-        nod = mesh.nod0
+        coors = mesh.coors
         conns, desc = join_conn_groups( mesh.conns, mesh.descs,
                                       mesh.mat_ids, concat = True )
 
-        n_nod, dim = nod.shape
-        dim -= 1
+        n_nod, dim = coors.shape
 
         fd.write( "MeshVersionFormatted 1\nDimension %d\n" % dim )
 
         fd.write( "Vertices\n%d\n" % n_nod )
         format = self.get_vector_format( dim ) + ' %d\n'
         for ii in range( n_nod ):
-            nn = nod[ii]
+            nn = tuple( coors[ii] ) + (mesh.ngroups[ii],)
             fd.write( format % tuple( nn ) )
 
         for ig, conn in enumerate( conns ):
@@ -492,7 +491,7 @@ class VTKMeshIO( MeshIO ):
         fd = open( self.filename, 'r' )
         mode = 'header'
         mode_status = 0
-        nod = conns = desc = mat_id = None
+        coors = conns = desc = mat_id = None
         while 1:
             try:
                 line = fd.readline()
@@ -518,7 +517,7 @@ class VTKMeshIO( MeshIO ):
                 line = line.split()
                 if line[0] == 'POINTS':
                     n_nod = int( line[1] )
-                    nod = read_array( fd, n_nod, -1, nm.float64 )
+                    coors = read_array( fd, n_nod, -1, nm.float64 )
                     mode = 'cells'
 
             elif mode == 'cells':
@@ -557,14 +556,10 @@ class VTKMeshIO( MeshIO ):
             mat_id = [[0]] * n_el
 
         dim = vtk_dims[cell_types[0,0]]
-        if dim == 3:
-            nod = nm.concatenate( (nod, nm.zeros( (n_nod,1), dtype = nm.int32 ) ),
-                                  1 )
-        else:
-            nod[:,2] = 0.0
-        nod = nm.ascontiguousarray( nod )
+        if dim == 2:
+            coors = coors[:,:2]
+        coors = nm.ascontiguousarray( coors )
 
-        dim = nod.shape[1] - 1
         cell_types = cell_types.squeeze()
 
         dconns = {}
@@ -580,7 +575,8 @@ class VTKMeshIO( MeshIO ):
 
         conns_in, mat_ids = sort_by_mat_id( conns )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, desc )
-        mesh._set_data( nod, conns, mat_ids, descs )
+
+        mesh._set_data( coors, None, conns, mat_ids, descs )
 
         return mesh
 
@@ -589,15 +585,14 @@ class VTKMeshIO( MeshIO ):
         fd = open( filename, 'w' )
         fd.write( vtk_header % op.basename( sys.argv[0] ) )
 
-        n_nod, nc = mesh.nod0.shape
-        dim = nc - 1
+        n_nod, dim = mesh.coors.shape
         sym = dim * (dim + 1) / 2
 
         fd.write( '\nPOINTS %d float\n' % n_nod )
 
-        aux = mesh.nod0[:,:dim]
+        aux = mesh.coors
         if dim == 2:
-            aux = nm.hstack( (aux, nm.zeros( (n_nod, 1), dtype = nm.float64 ) ) )
+            aux = nm.hstack( (aux, mesh.ngroups[:,nm.newaxis]) )
 
         format = self.get_vector_format( 3 ) + '\n'
         for row in aux:
@@ -728,15 +723,13 @@ class TetgenMeshIO( MeshIO ):
         descs = []
         conns = []
         mat_ids = []
-        nodes = nm.c_[(nm.array(nodes, dtype = nm.float64),
-                       nm.zeros(len(nodes), dtype = nm.float64))].copy()
         elements = nm.array( elements, dtype = nm.int32 )-1
         for key, value in regions.iteritems():
             descs.append( "3_4" )
             mat_ids.append( nm.ones_like(value) * key )
             conns.append( elements[nm.array(value)-1].copy() )
 
-        mesh._set_data( nodes, conns, mat_ids, descs )
+        mesh._set_data( nodes, None, conns, mat_ids, descs )
         return mesh
 
     ##
@@ -839,7 +832,6 @@ class TetgenMeshIO( MeshIO ):
     def read_bounding_box( self ):
         raise NotImplementedError
 
-
 ##
 # c: 20.03.2008
 class ComsolMeshIO( MeshIO ):
@@ -857,7 +849,7 @@ class ComsolMeshIO( MeshIO ):
         self.fd = fd = open( self.filename, 'r' )
         mode = 'header'
 
-        nod = conns = desc = None
+        coors = conns = desc = None
         while 1:
             if mode == 'header':
                 line = skip_read_line( fd )
@@ -879,7 +871,7 @@ class ComsolMeshIO( MeshIO ):
                 mode = 'points'
 
             elif mode == 'points':
-                nod = read_array( fd, n_nod, dim, nm.float64 )
+                coors = read_array( fd, n_nod, dim, nm.float64 )
                 mode = 'cells'
 
             elif mode == 'cells':
@@ -927,19 +919,13 @@ class ComsolMeshIO( MeshIO ):
         fd.close()
         self.fd = None
 
-        nod = nm.concatenate( (nod, nm.zeros( (n_nod,1), dtype = nm.int32 ) ),
-                              1 )
-        nod = nm.ascontiguousarray( nod )
-
-        dim = nod.shape[1] - 1
-
         conns2 = []
         for ii, conn in enumerate( conns ):
             conns2.append( nm.c_[conn, mat_ids[ii]] )
 
         conns_in, mat_ids = sort_by_mat_id( conns2 )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
-        mesh._set_data( nod, conns, mat_ids, descs )
+        mesh._set_data( coors, None, conns, mat_ids, descs )
         
         return mesh
 
@@ -965,7 +951,8 @@ class HDF5MeshIO( MeshIO ):
         mesh_group = fd.root.mesh
 
         mesh.name = mesh_group.name.read()
-        nodes = mesh_group.nod0.read()
+        coors = mesh_group.coors.read()
+        ngroups = mesh_group.ngroups.read()
 
         n_gr =  mesh_group.n_gr.read()
 
@@ -980,7 +967,7 @@ class HDF5MeshIO( MeshIO ):
             descs.append( group.desc.read() )
 
         fd.close()
-        mesh._set_data( nodes, conns, mat_ids, descs )
+        mesh._set_data( coors, ngroups, conns, mat_ids, descs )
 
         return mesh
 
@@ -1000,7 +987,8 @@ class HDF5MeshIO( MeshIO ):
             mesh_group = fd.createGroup( '/', 'mesh', 'mesh' )
 
             fd.createArray( mesh_group, 'name', mesh.name, 'name' )
-            fd.createArray( mesh_group, 'nod0', mesh.nod0, 'vertices' )
+            fd.createArray( mesh_group, 'coors', mesh.coors, 'coors' )
+            fd.createArray( mesh_group, 'ngroups', mesh.ngroups, 'ngroups' )
             fd.createArray( mesh_group, 'n_gr', len( mesh.conns ), 'n_gr' )
             for ig, conn in enumerate( mesh.conns ):
                 conn_group = fd.createGroup( mesh_group, 'group%d' % ig,
@@ -1179,10 +1167,6 @@ class Mesh3DMeshIO( MeshIO ):
         tris = self._read_section(f)
         quads = self._read_section(f)
 
-        nodes = vertices
-        # append 0. at the end of each row in nodes
-        nodes = nm.c_[(nm.array(nodes, dtype = nm.float64),
-                       nm.zeros(len(nodes), dtype = nm.float64))].copy()
         # substract 1 from all elements, because we count from 0:
         conns = []
         mat_ids = []
@@ -1195,7 +1179,7 @@ class Mesh3DMeshIO( MeshIO ):
             conns.append(hexes - 1)
             mat_ids.append([0]*len(hexes))
             descs.append("3_8")
-        mesh._set_data( nodes, conns, mat_ids, descs )
+        mesh._set_data( vertices, None, conns, mat_ids, descs )
         return mesh
 
     def read_dimension(self):
@@ -1250,7 +1234,7 @@ class Mesh3DMeshIO( MeshIO ):
             rows.append(row)
         return nm.array(rows)
 
-def mesh_from_tetra_hexa( mesh, ids, coors,
+def mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
                           tetras, mat_tetras,
                           hexas, mat_hexas ):
     ids = nm.asarray( ids, dtype = nm.int32 )
@@ -1260,10 +1244,6 @@ def mesh_from_tetra_hexa( mesh, ids, coors,
     
     remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
     remap[ids] = nm.arange( n_nod, dtype=nm.int32 )
-
-    nod = nm.concatenate( (coors,
-                           nm.zeros( (n_nod, 1), dtype = nm.int32 ) ), 1 )
-    nod = nm.ascontiguousarray( nod )
 
     tetras = remap[nm.array( tetras, dtype = nm.int32 )]
     hexas = remap[nm.array( hexas, dtype = nm.int32 )]
@@ -1275,7 +1255,7 @@ def mesh_from_tetra_hexa( mesh, ids, coors,
 
     conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
     conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
-    mesh._set_data( nod, conns, mat_ids, descs )
+    mesh._set_data( coors, ngroups, conns, mat_ids, descs )
     return mesh
 
 class AVSUCDMeshIO( MeshIO ):
@@ -1320,7 +1300,7 @@ class AVSUCDMeshIO( MeshIO ):
                 hexas.append( [int( ic ) for ic in line[3:]] )
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
         return mesh
@@ -1362,7 +1342,7 @@ class HypermeshAsciiMeshIO( MeshIO ):
                     hexas.append( [int( ic ) for ic in line[2:10]] )
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
 
@@ -1435,7 +1415,7 @@ class AbaqusMeshIO( MeshIO ):
                 
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors,
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
 

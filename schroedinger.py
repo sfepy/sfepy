@@ -347,7 +347,7 @@ class SchroedingerApp( SimpleApp ):
             pause()
 
         coor = pb.domain.get_mesh_coors()
-        r2 = norm_l2_along_axis(coor, n_item=dim, squared=True)
+        r2 = norm_l2_along_axis(coor, squared=True)
         vec_nr2 = vec_n * r2
 
         pb.select_bcs( ebc_names = ['ZeroSurface'] )

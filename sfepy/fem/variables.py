@@ -1182,7 +1182,7 @@ class Variable( Struct ):
 ##             print meq, meq.shape
 ##             print nm.where( eq_lcbc )[0]
             
-            mcoor = self.field.get_coor( nmaster )[:,:-1]
+            mcoor = self.field.get_coor( nmaster )
             n_nod, dim = mcoor.shape
 
 #            print mcoor, mcoor.shape
@@ -1532,7 +1532,7 @@ class Variable( Struct ):
         vdim = field.dim[0]
 
         vals = nm.empty((vdim, len(points)), dtype=self.dtype)
-        coor = mesh.nod0[:,:-1]
+        coor = mesh.coors
         conns = mesh.conns
         for ii, point in enumerate(points):
 ##             print ii, point

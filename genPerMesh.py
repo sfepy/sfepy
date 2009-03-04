@@ -25,7 +25,7 @@ def test():
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def fix_double_nodes( coor, conns, eps ):
+def fix_double_nodes( coor, ngroups, conns, eps ):
     n_nod, dim = coor.shape
     cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps, allow_double = True )
     if cmap.size:
@@ -47,6 +47,7 @@ def fix_double_nodes( coor, conns, eps ):
             remap[scmap[:,1]] = eq[scmap[:,0]]
             print coor.shape
             coor = coor[eqi]
+            ngroups = ngroups[eqi]
             print coor.shape
             ccs = []
             for conn in conns:
@@ -55,7 +56,7 @@ def fix_double_nodes( coor, conns, eps ):
             cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps,
                             allow_double = True )
         print '...done'
-    return coor, conns
+    return coor, ngroups, conns
 
 ##
 # c: 25.05.2007, r: 05.05.2008
@@ -185,10 +186,12 @@ def main():
     scale = nm.array( options.scale, dtype = nm.float64 )
 
     # Normalize original coordinates.
-    coor0 = (mesh_in.nod0[:,:-1] - centre0) / (mscale)
+    coor0 = (mesh_in.coors - centre0) / (mscale)
     dim = mesh_in.dim
 
-    coor0, mesh_in.conns = fix_double_nodes( coor0, mesh_in.conns, options.eps )
+    aux = fix_double_nodes( coor0, mesh_in.ngroups, mesh_in.conns, options.eps )
+    coor0, ngroups0, mesh_in.conns = aux
+    
     if not options.nomvd:
         mes0 = get_min_edge_size( coor0, mesh_in.conns )
         mvd0 = get_min_vertex_distance( coor0, mes0 )
@@ -206,9 +209,11 @@ def main():
 
         if aindx.sum() == 0:
             coor = coor0 + centre
+            ngroups = ngroups0
             conns = mesh_in.conns
         else:
             coor1 = coor0 + centre
+            ngroups1 = ngroups0
             conns1 = mesh_in.conns
 
             cmap = find_map( coor, coor1, eps = options.eps )
@@ -217,8 +222,9 @@ def main():
 #                raise ValueError
             else:
                 print cmap.size / 2
-            coor, conns = merge_mesh( coor, conns, coor1, conns1, cmap,
-                                     eps = options.eps )
+            coor, ngroups, conns = merge_mesh( coor, ngroups, conns,
+                                               coor1, ngroups1, conns1,
+                                               cmap, eps = options.eps )
 
     if not options.nomvd:
         mes = get_min_edge_size( coor, conns )
@@ -244,7 +250,7 @@ def main():
     print 'renormalizing...'
     coor = (coor * mscale) / scale
     print 'saving...'
-    mesh_out = make_mesh( coor, conns, mesh_in )
+    mesh_out = make_mesh( coor, ngroups, conns, mesh_in )
     mesh_out.write( filename_out, io = 'auto' )
     print 'done.'
     

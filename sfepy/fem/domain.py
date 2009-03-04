@@ -184,7 +184,6 @@ class Domain( Struct ):
         obj.mat_ids_to_i_gs = {}
         for ig, mat_id in enumerate( mesh.mat_ids ):
             obj.mat_ids_to_i_gs[mat_id[0]] = ig
-#        obj.n_nod = obj.mesh.nod0.shape[0]
         
         return obj
     from_mesh = staticmethod( from_mesh )
@@ -200,9 +199,9 @@ class Domain( Struct ):
             ginterp.setup( gel )
 
         n_gr = len( self.mesh.conns )
-        n_nod, dim = self.mesh.nod0.shape
+        n_nod, dim = self.mesh.coors.shape
         self.shape = Struct( n_gr = len( self.mesh.conns ), n_el = 0,
-                             n_nod = n_nod, dim = dim - 1 )
+                             n_nod = n_nod, dim = dim )
         self.groups = {}
         for ii in range( self.shape.n_gr ):
             gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
@@ -254,7 +253,7 @@ class Domain( Struct ):
     ##
     # 22.08.2006, c
     def get_mesh_coors( self ):
-        return self.mesh.nod0[:,:-1]
+        return self.mesh.coors
 
     ##
     # 30.08.2007, c
@@ -267,7 +266,7 @@ class Domain( Struct ):
     # 17.07.2006
     def fix_element_orientation( self ):
 
-        coors = self.mesh.nod0
+        coors = self.mesh.coors
         for ii, group in self.groups.iteritems():
 
             ori, conn = group.gel.orientation, group.conn
@@ -279,8 +278,8 @@ class Domain( Struct ):
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
                 mu.orient_elements( flag, conn, coors,
-                                   ori.v_roots, ori.v_vecs,
-                                   ori.swap_from, ori.swap_to )
+                                    ori.v_roots, ori.v_vecs,
+                                    ori.swap_from, ori.swap_to )
     #            print flag
                 if nm.alltrue( flag == 0 ):
                     if itry > 0: output( '...corrected' )
@@ -336,7 +335,7 @@ class Domain( Struct ):
                 obj = Struct()
                 obj.data, obj.gptr, obj.eptr \
                           = dm_create_list( self.groups,
-                                           self.mesh.nod0.shape[0], mode, 1 )
+                                            self.mesh.n_nod, mode, 1 )
 
 #                print "t = ", time.clock() - tt
                 ii = nm.arange( obj.data.shape[0], dtype = nm.int32 );
@@ -441,20 +440,21 @@ class Domain( Struct ):
                             region = aux
 
                 elif token == 'KW_All':
-                    region.set_vertices( nm.arange( domain.mesh.nod0.shape[0],
-                                                   dtype = nm.int32 ) )
+                    region.set_vertices( nm.arange( domain.mesh.n_nod,
+                                                    dtype = nm.int32 ) )
                 elif token == 'E_NIR':
                     where = details[2]
                     
                     if where[0] == '[':
                         out = nm.array( eval( where ), dtype = nm.int32 )
                         assert_( nm.amin( out ) >= 0 )
-                        assert_( nm.amax( out ) < domain.mesh.nod0.shape[0] )
+                        assert_( nm.amax( out ) < domain.mesh.n_nod )
                     else:
-                        x = domain.mesh.nod0[:,0]
-                        y = domain.mesh.nod0[:,1]
+                        coors = domain.get_mesh_coors()
+                        x = coors[:,0]
+                        y = coors[:,1]
                         if domain.mesh.dim == 3:
-                            z = domain.mesh.nod0[:,2]
+                            z = coors[:,2]
                         else:
                             z = None
                         coor_dict = {'x' : x, 'y' : y, 'z': z}
@@ -479,12 +479,13 @@ class Domain( Struct ):
 
                 elif token == 'E_NBF':
                     where = details[2]
-                    
-                    x = domain.mesh.nod0[:,0]
+
+                    coors = domain.get_mesh_coors()
+                    x = coors[:,0]
                     if domain.shape.dim > 1:
-                        y = domain.mesh.nod0[:,1]
+                        y = coors[:,1]
                         if domain.shape.dim > 2:
-                            z = domain.mesh.nod0[:,2]
+                            z = coors[:,2]
                         else:
                             z = None
                     else:
@@ -666,7 +667,7 @@ class Domain( Struct ):
 
         fa = Struct()
         fa.data, fa.gptr, fa.eptr \
-                 = dm_create_list( self.groups, self.mesh.nod0.shape[0], 1, 0 )
+                 = dm_create_list( self.groups, self.mesh.n_nod, 1, 0 )
 
         flag = dm_mark_surface_faces( fa, self.nfa )
 

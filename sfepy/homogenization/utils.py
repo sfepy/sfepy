@@ -5,7 +5,7 @@ from sfepy.base.base import *
 def build_op_pi( var_name, problem, ir, ic ):
     """\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""
     var = problem.variables[var_name]
-    coor = var.field.get_coor()[:,:-1]
+    coor = var.field.get_coor()
 
     pi = nm.zeros_like( coor )
     pi[:,ir] = coor[:,ic]
@@ -29,7 +29,7 @@ def create_scalar_pis( problem, var_name ):
     """\Pi^k = y_k, \ul{y} \in Y coordinates."""
     problem.select_variables( [var_name] )
     var = problem.variables[var_name]
-    coor = var.field.get_coor()[:,:-1]
+    coor = var.field.get_coor()
 
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim,), dtype = nm.object )

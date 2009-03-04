@@ -86,7 +86,8 @@ def main():
     if (filename_in != '-'):
         file_in.close()
 
-    domain = Domain.from_mesh( mesh, op.join( init_sfepy.install_dir, 'eldesc' ) )
+    domain = Domain.from_mesh( mesh,
+                               op.join( init_sfepy.install_dir, 'eldesc' ) )
     domain.setup_groups()
 
     if domain.has_faces():
@@ -104,8 +105,7 @@ def main():
         if options.no_surface:
             return
 
-        n_nod = mesh.nod0.shape[0]
-        gr_s = surface_graph( surf_faces, n_nod )
+        gr_s = surface_graph( surf_faces, mesh.n_nod )
 ##         import sfepy.base.plotutils as plu
 ##         plu.spy( gr_s )
 ##         plu.pylab.show()

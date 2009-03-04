@@ -5,11 +5,8 @@ from quadratures import collect_quadratures
 import extmods.meshutils as mu
 import extmods.geometry as gm
 
-##
-# created:       26.01.2006
-# last revision: 21.12.2007
 def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
-    domain.mesh.nod0[:,:-1] = coors
+    domain.mesh.coors = coors.copy()
     if update_state:
         fields.setup_coors()
         for field in fields:
@@ -310,7 +307,7 @@ class Approximation( Struct ):
     # 13.02.2007
     # 20.02.2007
     def eval_extra_coor( self, coors, mesh ):
-        """The last coors column (id) is not evaluated."""
+        """Evaluate coordinates of extra nodes."""
         node_offsets = self.node_offsets
         n_nod = nm.sum( node_offsets[1:,1] - node_offsets[1:,0] )
 #        print self.name
@@ -352,7 +349,8 @@ class Approximation( Struct ):
         region = self.region
         group = region.domain.groups[self.ig]
         cells = region.get_cells( self.ig )
-        mu.interp_vertex_data( coors, econn, mesh.nod0, group.conn[cells], bf, 1 )
+        mu.interp_vertex_data( coors, econn, mesh.coors,
+                               group.conn[cells], bf, 0 )
 
     ##
     # 24.07.2006, c
@@ -882,8 +880,7 @@ class Approximations( Container ):
         noft = self.node_offset_table
 
         n_nod = noft[-1,-1]
-        self.coors = nm.empty( (n_nod, mesh.dim + 1), nm.float64 )
-        self.coors[:,-1] = 1.0
+        self.coors = nm.empty( (n_nod, mesh.dim), nm.float64 )
 #        print n_nod
 
         # Mesh vertex nodes.
@@ -891,9 +888,9 @@ class Approximations( Container ):
 #        print inod
         if inod:
             indx = cnt_vn[cnt_vn >= 0]
-            self.coors[inod,:] = mesh.nod0[indx,:]
+            self.coors[inod,:] = mesh.coors[indx,:]
 ##         print self.coors
-##         print mesh.nod0
+##         print mesh.coors
 ##         pause()
         for region_name, ig, ap in self.iter_aps():
             ap.eval_extra_coor( self.coors, mesh )
@@ -935,7 +932,7 @@ class Approximations( Container ):
                 else:
 ##                print 'new geometry: %s of %s' % (geom_key, ap.name)
                     geom = ap.describe_geometry( field, geom_request, integral,
-                                                self.coors[:,:-1].copy() )
+                                                 self.coors )
                     self.geometries[geom_key] = geometries[geom_key] = geom
 
         if over_write:
@@ -951,7 +948,7 @@ class Approximations( Container ):
             integral = ap.integrals[iname]
             geom_request = Struct( gtype = gtype, region = regions[tregion_name] )
             geom = ap.describe_geometry( field, geom_request, integral,
-                                        self.coors[:,:-1].copy() )
+                                         self.coors )
             self.geometries[geom_key] = geometries[geom_key] = geom
             
     ##

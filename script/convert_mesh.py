@@ -56,7 +56,7 @@ def main():
             tr = nm.diag(scale)
         else:
             raise ValueError('bad scale! (%s)' % scale)
-        mesh.transform_coords(tr)
+        mesh.transform_coors(tr)
 
     output('writing %s...' % filename_out)
     mesh.write(filename_out, io='auto')

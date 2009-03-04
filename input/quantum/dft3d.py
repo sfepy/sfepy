@@ -25,5 +25,5 @@ def fun_v( ts, coor, region, ig, mode = None, vhxc = None ):
 def core_pot(bc, ts, coor):
     from sfepy.base.la import norm_l2_along_axis
     
-    r = norm_l2_along_axis(coor, n_item=coor.shape[1]-1)
+    r = norm_l2_along_axis(coor)
     return n_electron / r
