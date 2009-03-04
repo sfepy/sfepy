@@ -923,6 +923,9 @@ class ComsolMeshIO( MeshIO ):
                         skip_read_line( fd )
                 break
 
+        fd.close()
+        self.fd = None
+
         nod = nm.concatenate( (nod, nm.zeros( (n_nod,1), dtype = nm.int32 ) ),
                               1 )
         nod = nm.ascontiguousarray( nod )
@@ -936,10 +939,7 @@ class ComsolMeshIO( MeshIO ):
         conns_in, mat_ids = sort_by_mat_id( conns2 )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
         mesh._set_data( nod, conns, mat_ids, descs )
-
-#        mesh.write( 'pokus.mesh', io = 'auto' )
-
-        self.fd = None
+        
         return mesh
 
     ##
@@ -1281,7 +1281,7 @@ class AVSUCDMeshIO( MeshIO ):
     format = 'avs_ucd'
 
     def read( self, mesh, **kwargs ):
-        self.fd = fd = open( self.filename, 'r' )
+        fd = open( self.filename, 'r' )
 
         # Skip all comments.
         while 1:
@@ -1313,12 +1313,11 @@ class AVSUCDMeshIO( MeshIO ):
             elif line[2] == 'hex':
                 mat_hexas.append( int( line[1] ) )
                 hexas.append( [int( ic ) for ic in line[3:]] )
+        fd.close()
 
         mesh = mesh_from_tetra_hexa( mesh, ids, coors,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
-
-        self.fd = None
         return mesh
 
     def read_dimension(self):
@@ -1331,7 +1330,7 @@ class HypermeshAsciiMeshIO( MeshIO ):
     format = 'hmascii'
 
     def read( self, mesh, **kwargs ):
-        self.fd = fd = open( self.filename, 'r' )
+        fd = open( self.filename, 'r' )
 
         ids = []
         coors = []
@@ -1356,12 +1355,12 @@ class HypermeshAsciiMeshIO( MeshIO ):
                     line = line.strip()[7:-1].split(',')
                     mat_hexas.append( int( line[1] ) )
                     hexas.append( [int( ic ) for ic in line[2:10]] )
+        fd.close()
 
         mesh = mesh_from_tetra_hexa( mesh, ids, coors,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
 
-        self.fd = None
         return mesh
 
     def read_dimension(self):
