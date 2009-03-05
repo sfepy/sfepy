@@ -233,15 +233,7 @@ class MeditMeshIO( MeshIO ):
                 nod = read_array( fd, num, dim + 1, nm.float64 )
                 break
 
-        bbox = [ [nod[0][0]]*2, [nod[0][1]]*2, [nod[0][2]]*2 ]
-
-        for inod in nod[1:]:
-            for idim in range( dim ):
-                if inod[idim] < bbox[idim][0]:
-                    bbox[idim][0] = inod[idim]
-                if inod[idim] > bbox[idim][1]:
-                    bbox[idim][1] = inod[idim]
-
+        bbox = nm.vstack( (nm.amin( nod, 0 ), nm.amax( nod, 0 )) )
 
         if ret_dim:
             if ret_fd:
@@ -463,14 +455,7 @@ class VTKMeshIO( MeshIO ):
                 output( "reading " + fd.name + " failed!" )
                 raise
 
-        bbox = [ [nod[0][0]]*2, [nod[0][1]]*2, [nod[0][2]]*2 ]
-
-        for inod in nod[1:]:
-            for idim in range( dim ):
-                if inod[idim] < bbox[idim][0]:
-                    bbox[idim][0] = inod[idim]
-                if inod[idim] > bbox[idim][1]:
-                    bbox[idim][1] = inod[idim]
+        bbox = nm.vstack( (nm.amin( nod, 0 ), nm.amax( nod, 0 )) )
 
         if ret_dim:
             if ret_fd:

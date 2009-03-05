@@ -582,9 +582,7 @@ class Mesh( Struct ):
     ##
     # 23.05.2007, c
     def get_bounding_box( self ):
-        return nm.array( [nm.amin( self.coors, 0 ),
-                          nm.amax( self.coors, 0 )] )
-
+        return nm.vstack( (nm.amin( self.coors, 0 ), nm.amax( self.coors, 0 )) )
 
     ##
     # c: 02.01.2008, r: 02.01.2008
