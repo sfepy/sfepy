@@ -1379,6 +1379,8 @@ class AbaqusMeshIO( MeshIO ):
         mat_tetras = []
         hexas = []
         mat_hexas = []
+        nsets = {}
+        ing = 1
 
         line = fd.readline().split(',')
         while 1:
@@ -1387,7 +1389,7 @@ class AbaqusMeshIO( MeshIO ):
             if line[0].strip() == '*NODE':
                 while 1:
                     line = fd.readline().split(',')
-                    if line[0][0] == '*': break
+                    if (not line[0]) or (line[0][0] == '*'): break
                     ids.append( int( line[0] ) )
                     coors.append( [float( coor ) for coor in line[1:4]] )
 
@@ -1396,29 +1398,44 @@ class AbaqusMeshIO( MeshIO ):
                 if line[1].find( 'C3D8' ) >= 0:
                     while 1:
                         line = fd.readline().split(',')
-                        if line[0][0] == '*': break
+                        if (not line[0]) or (line[0][0] == '*'): break
                         mat_hexas.append( 0 )
                         hexas.append( [int( ic ) for ic in line[1:9]] )
 
                 elif line[1].find( '???' ) >= 0:
                     while 1:
                         line = fd.readline().split(',')
-                        if line[0][0] == '*': break
+                        if (not line[0]) or (line[0][0] == '*'): break
                         mat_tetras.append( 0 )
                         tetras.append( [int( ic ) for ic in line[1:5]] )
 
                 else:
                     raise ValueError('unknown element type! (%s)' % line[1])
 
+            elif line[0].strip() == '*NSET':
+
+                if line[-1].strip() == 'GENERATE':
+                    line = fd.readline().split(',')
+                    continue
+                while 1:
+                    line = fd.readline().split(',')
+                    if (not line[0]) or (line[0][0] == '*'): break
+                    aux = [int( ic ) for ic in line[:-1]]
+                    nsets.setdefault(ing, []).extend( aux )
+                ing += 1
+
             else:
                 line = fd.readline().split(',')
                 
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
+        ngroups = nm.zeros( (len(coors),), dtype = nm.int32 )
+        for ing, ii in nsets.iteritems():
+            ngroups[nm.array(ii)-1] = ing
+
+        mesh = mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
                                      tetras, mat_tetras,
                                      hexas, mat_hexas )
-
         return mesh
 
     def read_dimension(self):
