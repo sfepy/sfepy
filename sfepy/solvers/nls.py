@@ -6,12 +6,12 @@ import sfepy.base.plotutils as plu
 # 13.12.2005, c
 # 14.12.2005
 # 02.10.2007
-def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
+def check_tangent_matrix( conf, vec_x0, mtx_a0, fun, fun_grad ):
     vec_x = vec_x0.copy()
     delta = conf.delta
 
-    vec_r, status = evaluator.eval_residual( vec_x ) # Update state.
-    mtx_a0, status = evaluator.eval_tangent_matrix( vec_x, mtx_a0 )
+    vec_r = fun( vec_x ) # Update state.
+    mtx_a0 = fun_grad( vec_x, mtx_a0 )
 
     mtx_a = mtx_a0.tocsc()
     mtx_d = mtx_a.copy()
@@ -21,14 +21,12 @@ def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
 
     for ic in range( vec_dx.shape[0] ):
         vec_dx[ic] = delta
-        xx = vec_x.copy()
-        evaluator.update_vec( xx, vec_dx )
-        vec_r1, status = evaluator.eval_residual( xx )
+        xx = vec_x.copy() - vec_dx
+        vec_r1 = fun( xx )
 
         vec_dx[ic] = -delta
-        xx = vec_x.copy()
-        evaluator.update_vec( xx, vec_dx )
-        vec_r2, status = evaluator.eval_residual( xx )
+        xx = vec_x.copy() - vec_dx
+        vec_r2 = fun( xx )
 
         vec_dx[ic] = 0.0;
 
@@ -42,7 +40,7 @@ def check_tangent_matrix( conf, vec_x0, mtx_a0, evaluator ):
         mtx_d.data[mtx_a.indptr[ic]:mtx_a.indptr[ic+1]] = vec[ir]
 
 
-    vec_r, status = evaluator.eval_residual( vec_x ) # Restore.
+    vec_r = fun( vec_x ) # Restore.
 
     tt = time.clock()
     print mtx_a, '.. analytical'
@@ -133,13 +131,14 @@ class Newton( NonlinearSolver ):
     ##
     # c: 02.12.2005, r: 04.04.2008
     # 10.10.2007, from newton()
-    def __call__( self, vec_x0, conf = None, evaluator = None,
+    def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
                   lin_solver = None, status = None ):
         """setting conf.problem == 'linear' means 1 iteration and no rezidual
         check!
         """
         conf = get_default( conf, self.conf )
-        evaluator = get_default( evaluator, self.evaluator )
+        fun = get_default( fun, self.fun )
+        fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
         status = get_default( status, self.status )
 
@@ -158,9 +157,15 @@ class Newton( NonlinearSolver ):
             vec_dx0 = vec_dx;
             while 1:
                 tt = time.clock()
-                vec_r, ret = evaluator.eval_residual( vec_x )
+                try:
+                    vec_r = fun( vec_x )
+                except ValueError:
+                    ok = False
+                else:
+                    ok = True
+                    
                 time_stats['rezidual'] = time.clock() - tt
-                if ret == 0: # OK.
+                if ok:
                     try:
                         err = nla.norm( vec_r )
                     except:
@@ -182,7 +187,7 @@ class Newton( NonlinearSolver ):
                         raise RuntimeError, 'giving up...'
 
                 if ls < conf.ls_min:
-                    if ret != 0:
+                    if not ok:
                         raise RuntimeError, 'giving up...'
                     output( 'linesearch failed, continuing anyway' )
                     break
@@ -190,8 +195,7 @@ class Newton( NonlinearSolver ):
                 ls *= red;
 
                 vec_dx = ls * vec_dx0;
-                vec_x = vec_x_last.copy()
-                evaluator.update_vec( vec_x, vec_dx )
+                vec_x = vec_x_last.copy() - vec_dx
             # End residual loop.
 
             err_last = err;
@@ -203,16 +207,21 @@ class Newton( NonlinearSolver ):
 
             tt = time.clock()
             if conf.problem == 'nonlinear':
-                mtx_a, ret = evaluator.eval_tangent_matrix( vec_x )
+                try:
+                    mtx_a = fun_grad( vec_x )
+                except ValueError:
+                    ok = False
+                else:
+                    ok = True
             else:
-                mtx_a, ret = evaluator.mtx, 0
+                mtx_a, ok = fun_grad( 'linear' ), True
             time_stats['matrix'] = time.clock() - tt
-            if ret != 0:
+            if not ok:
                 raise RuntimeError, 'giving up...'
 
             if conf.check:
                 tt = time.clock()
-                wt = check_tangent_matrix( conf, vec_x, mtx_a, evaluator )
+                wt = check_tangent_matrix( conf, vec_x, mtx_a, fun, fun_grad )
                 time_stats['check'] = time.clock() - tt - wt
     ##            if conf.check == 2: pause()
 
@@ -229,7 +238,7 @@ class Newton( NonlinearSolver ):
                 output( 'linear system not solved! (err = %e)' % lerr )
     #            raise RuntimeError, 'linear system not solved! (err = %e)' % lerr
 
-            evaluator.update_vec( vec_x, vec_dx )
+            vec_x -= vec_dx
 
             if conf.is_plot:
                 plu.pylab.ion()
@@ -251,23 +260,6 @@ class Newton( NonlinearSolver ):
                 pause()
 
             it += 1
-
-##         import pylab as p
-##         problem = evaluator.problem
-##         r0 = problem.variables.make_full_vec( vec_r, force_value = 0.0 )
-##         dx = nm.zeros_like( vec_dx )
-##         ii = problem.variables.get_indx( 'r', stripped = True )
-##         dx[ii] = 1.0
-##         r1 = problem.variables.make_full_vec( mtx_a * dx, force_value = 0.0 )
-##         p.plot( r0 )
-##         p.plot( r1 )
-
-##         vv = nm.where( nm.abs( r1 ) > 1e-12, 1.0, 0.0 )
-##         problem.save_state_to_vtk( 'sd.vtk', vv )
-##         nodes = problem.variables.get_nodes_of_global_dofs( nm.where( vv > 0.5 )[0] )
-##         print nodes
-## #        problem.save_regions( 'asdsd' )
-##         p.show()
 
         if status is not None:
             status['time_stats'] = time_stats

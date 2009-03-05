@@ -88,13 +88,15 @@ def time_step_function( ts, state0, problem, data ):
         if problem.equations.caches:
             # Initialize caches.
             ev = problem.get_evaluator( ts = ts, **data )
-            vec_r, ret = ev.eval_residual( state )
-            if ret == 0: # OK.
+            try:
+                vec_r = ev.eval_residual( state, is_full = True )
+            except ValueError:
+                output( 'initial residual evaluation failed, giving up...' )
+                raise
+            else:
                 err = nla.norm( vec_r )
                 output( 'initial residual: %e' % err )
-            else:
-                output( 'initial residual evaluation failed, giving up...' )
-                raise ValueError
+
         else:
             # Just initialize data of state variables.
             problem.variables.data_from_state( state )
@@ -103,10 +105,11 @@ def time_step_function( ts, state0, problem, data ):
             # Assemble linear system matrix for all
             # time steps.
             ev = problem.get_evaluator( ts = ts, mtx = problem.mtx_a, **data )
-            mtx_a, ret = ev.eval_tangent_matrix( state )
-            if ret != 0:
+            try:
+                mtx_a = ev.eval_tangent_matrix( state, is_full = True )
+            except ValueError:
                 output( 'matrix evaluation failed, giving up...' )
-                raise ValueError
+                raise
         else:
             mtx_a = None
 

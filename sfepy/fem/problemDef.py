@@ -480,33 +480,31 @@ class ProblemDefinition( Struct ):
             field.write_mesh( filename_trunk + '_%s' )
         output( '...done' )
 
-    ##
-    # c: 17.01.2008, r: 11.04.2008
-    def get_evaluator( self, from_nls = False, **kwargs ):
+    def get_evaluator( self, reuse = False, **kwargs ):
         """
-        Either create a new Evaluator instance (from_nls == False),
+        Either create a new Evaluator instance (reuse == False),
         or return an existing instance, created in a preceding call to
         ProblemDefinition.init_solvers().
         """
-        if from_nls:
-            solvers = self.get_solvers()
+        if reuse:
             try:
-                ev = solvers.nls.evaluator
+                ev = self.evaluator
             except AttributeError:
-                output( 'call ProblemDefinition.init_solvers() or'
-                        ' set from_nls to False!' )
-                raise
+                raise AttributeError('call ProblemDefinition.init_solvers() or'\
+                      ' set reuse to False!')
         else:
             if self.variables.has_lcbc:
                 ev = LCBCEvaluator( self, **kwargs )
             else:
                 ev = BasicEvaluator( self, **kwargs )
+
+        self.evaluator = ev
+        
         return ev
 
-    ##
-    # c: 04.04.2008, r: 04.04.2008
     def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
-                     mtx = None, **kwargs ):
+                      mtx = None, **kwargs ):
+        """Create and initialize solvers."""
         ls_conf = get_default( ls_conf, self.ls_conf,
                                'you must set linear solver!' )
 
@@ -515,8 +513,9 @@ class ProblemDefinition( Struct ):
         
         ev = self.get_evaluator( **kwargs )
         ls = Solver.any_from_conf( ls_conf, mtx = mtx )
-        nls = Solver.any_from_conf( nls_conf, evaluator = ev,
-                                  lin_solver = ls, status = nls_status )
+        nls = Solver.any_from_conf( nls_conf, fun = ev.eval_residual,
+                                    fun_grad = ev.eval_tangent_matrix,
+                                    lin_solver = ls, status = nls_status )
         self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
 
     ##
@@ -545,8 +544,6 @@ class ProblemDefinition( Struct ):
         else:
             nls_conf.problem = 'nonlinear'
 
-    ##
-    # c: 03.10.2007, r: 11.04.2008
     def solve( self, state0 = None, nls_status = None,
                ls_conf = None, nls_conf = None, force_values = None,
                **kwargs ):
@@ -557,7 +554,7 @@ class ProblemDefinition( Struct ):
             solvers = self.get_solvers()
         else:
             if kwargs:
-                ev = self.get_evaluator( from_nls = True )
+                ev = self.get_evaluator( reuse = True )
                 ev.set_term_args( **kwargs )
             
         if state0 is None:
@@ -567,8 +564,12 @@ class ProblemDefinition( Struct ):
 
         self.apply_ebc( state, force_values = force_values )
 
-        state = solvers.nls( state )
+        ev = self.evaluator
 
+        vec0 = ev.strip_state_vector( state )
+        vec = solvers.nls( vec0 )
+        state = ev.make_full_vec( vec )
+        
         return state
 
     ##

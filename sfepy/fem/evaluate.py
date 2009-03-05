@@ -27,30 +27,27 @@ class BasicEvaluator( Evaluator ):
     def set_term_args( self, **kwargs ):
         self.data = kwargs
 
-    ##
-    # 02.12.2005, c
-    # 25.07.2006
-    # 02.10.2007
-    def eval_residual( self, vec ):
-        status = 0
+    def eval_residual( self, vec, is_full = False ):
+        if not is_full:
+            vec = self.make_full_vec( vec )
         try:
             pb = self.problem
             vec_r = eval_residuals( vec, pb.equations, pb.conf.fe.chunk_size,
                                     **self.data )
         except StopIteration, exc:
-            vec_r = None
             status = exc.args[0]
-            print 'error %d in term "%s" of equation "%s"!'\
-                  % (status, exc.args[1].name, exc.args[2].desc)
+            output( 'error %d in term "%s" of equation "%s"!'\
+                    % (status, exc.args[1].name, exc.args[2].desc) )
+            raise ValueError
 
-        return vec_r, status
+        return vec_r
             
-    ##
-    # 02.12.2005, c
-    # 25.07.2006
-    # 02.10.2007
-    def eval_tangent_matrix( self, vec, mtx = None ):
-        status = 0
+    def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
+        if isinstance( vec, str ) and vec == 'linear':
+            return get_default( mtx, self.mtx )
+        
+        if not is_full:
+            vec = self.make_full_vec( vec )
         try:
             pb = self.problem
             if mtx is None:
@@ -61,11 +58,13 @@ class BasicEvaluator( Evaluator ):
                                          **self.data )
         except StopIteration, exc:
             status = exc.args[0]
-            print ('error %d in term "%s" of derivative of equation "%s"'
-                   + ' with respect to variable "%s"!')\
-                  % (status, exc.args[1].name, exc.args[2].desc, exc.args[3] )
+            output( ('error %d in term "%s" of derivative of equation "%s"'
+                     + ' with respect to variable "%s"!')\
+                    % (status,
+                       exc.args[1].name, exc.args[2].desc, exc.args[3] ) )
+            raise ValueError
 
-        return mtx, status
+        return mtx
 
     ##
     # 02.12.2005, c
@@ -74,6 +73,13 @@ class BasicEvaluator( Evaluator ):
     # 02.10.2007
     def update_vec( self, vec, delta ):
         self.problem.update_vec( vec, delta )
+
+    def strip_state_vector( self, vec ):
+        return self.problem.variables.strip_state_vector( vec,
+                                                          follow_epbc = False )
+
+    def make_full_vec( self, vec ):
+        return self.problem.variables.make_full_vec( vec )
 
 ##
 # 04.10.2007, c
@@ -87,15 +93,23 @@ class LCBCEvaluator( BasicEvaluator ):
 
     ##
     # 04.10.2007, c
-    def eval_residual( self, vec ):
-        vec_r, status = BasicEvaluator.eval_residual( self, vec )
+    def eval_residual( self, vec, is_full = False ):
+        if not is_full:
+            vec = self.make_full_vec( vec )
+        vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
         vec_rr = self.op_lcbc.T * vec_r
-        return vec_rr, status
+        return vec_rr
             
     ##
     # 04.10.2007, c
-    def eval_tangent_matrix( self, vec, mtx = None ):
-        mtx, status = BasicEvaluator.eval_tangent_matrix( self, vec, mtx )
+    def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
+        if isinstance( vec, str ) and vec == 'linear':
+            return get_default( mtx, self.mtx )
+
+        if not is_full:
+            vec = self.make_full_vec( vec )
+        mtx = BasicEvaluator.eval_tangent_matrix( self, vec, mtx = mtx,
+                                                  is_full = True )
         mtx_r = self.op_lcbc.T * mtx * self.op_lcbc
         mtx_r = mtx_r.tocsr()
         mtx_r.sort_indices()
@@ -104,7 +118,7 @@ class LCBCEvaluator( BasicEvaluator ):
 ##         spy( mtx_r )
 ##         pylab.show()
         print mtx_r.__repr__()
-        return mtx_r, status
+        return mtx_r
 
     ##
     # 04.10.2007, c
@@ -112,6 +126,10 @@ class LCBCEvaluator( BasicEvaluator ):
         delta = self.op_lcbc * delta_r
         BasicEvaluator.update_vec( self, vec, delta )
 
+    def strip_state_vector( self, vec ):
+        vec = BasicEvaluator.strip_state_vector( self, vec )
+        return self.op_lcbc.T * vec
+    
 def assemble_vector( vec, equation, variables, materials,
                      chunk_size = 1000, **kwargs ):
     get_a_dof_conn = variables.get_a_dof_conn

@@ -46,9 +46,9 @@ class LinearSolver( Solver ):
 class NonlinearSolver( Solver ):
     ##
     # 10.10.2007, c
-    def __init__( self, conf, evaluator = None, lin_solver = None,
+    def __init__( self, conf, fun = None, fun_grad = None, lin_solver = None,
                   status = None, **kwargs ):
-        Solver.__init__( self, conf = conf, evaluator = evaluator,
+        Solver.__init__( self, conf = conf, fun = fun, fun_grad = fun_grad,
                          lin_solver = lin_solver, status = status,
                          **kwargs )
     
