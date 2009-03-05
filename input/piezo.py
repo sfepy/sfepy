@@ -14,21 +14,20 @@ omega_squared = omega**2
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 
-dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+io = MeshIO.any_from_filename( filename_mesh )
+bbox, dim = io.read_bounding_box( ret_dim = True )
+
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
-if dim == 2:
-    x_left, x_right = 0.0001,  0.9999
-else:
-    x_left, x_right = -0.4999,  0.4999
-    
+x_left, x_right = bbox[:,0]
+
 regions = {
     'Y' : ('all', {}),
     'Y1' : ('elements of group 1', {}),
     'Y2' : ('elements of group 2', {}),
     'Y2_Surface': ('r.Y1 *n r.Y2', {'can_cells' : False}),
-    'Left' : ('nodes in (x < %f)' % x_left, {}),
-    'Right' : ('nodes in (x > %f)' % x_right, {}),
+    'Left' : ('nodes in (x < %f)' % (x_left + 1e-3), {}),
+    'Right' : ('nodes in (x > %f)' % (x_right - 1e-3), {}),
 }
 
 material_1 = {
