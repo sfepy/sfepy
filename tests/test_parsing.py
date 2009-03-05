@@ -54,24 +54,27 @@ class Test( TestCommon ):
         from sfepy.fem.parseReg import create_bnf, _test_strs
 
         test_strs = ['nodes of surface -n r.Omega',
-                    'r.Y_2 +n copy r.Y_1',
-                    'nodes in (y <= 0.00001) & (x < 0.11)',
-                    'nodes in ((y <= 0.00001) & (x < 0.11))',
-                    'nodes in (((y <= 0.00001) & (x < 0.11)))',
-                    'nodes in (((0.00001 < y) & (x < 0.11)))',
-                    'all -n nodes in (y == 0.00001)',
-                    'all -n nodes of surface',
-                    'all -e r.DOmega_100',
-                    'r.Y_1 -n nodes of surface *e r.Z_8 *n nodes in (y > 0)',
-                    'nodes of surface +n nodes by pokus( x, y, z )',
-                    'elements of group 6 +e nodes by fn2_3c( x )',
-                    """r.Y_1 *n (r.Y_2 +e (nodes in (y > 0) *n r.Y_32))
-                    -n nodes of surface -e r.Y_5""",
-                    'nodes by noargs()',
-                    'nodes by extraargs( x, y, z, abc,3 )',
-                    'node in r.Gamma_3',
-                    'node 10',
-                    'elements by afun( domain )']
+                     'r.Y_2 +n copy r.Y_1',
+                     'nodes in (y <= 0.00001) & (x < 0.11)',
+                     'nodes in ((y <= 0.00001) & (x < 0.11))',
+                     'nodes in (((y <= 0.00001) & (x < 0.11)))',
+                     'nodes in (((0.00001 < y) & (x < 0.11)))',
+                     'nodes of group 0',
+                     """nodes of group 0 +n nodes of group 1
+                     +e elements by afun( domain )""",
+                     'all -n nodes in (y == 0.00001)',
+                     'all -n nodes of surface',
+                     'all -e r.DOmega_100',
+                     'r.Y_1 -n nodes of surface *e r.Z_8 *n nodes in (y > 0)',
+                     'nodes of surface +n nodes by pokus( x, y, z )',
+                     'elements of group 6 +e nodes by fn2_3c( x )',
+                     """r.Y_1 *n (r.Y_2 +e (nodes in (y > 0) *n r.Y_32))
+                     -n nodes of surface -e r.Y_5""",
+                     'nodes by noargs()',
+                     'nodes by extraargs( x, y, z, abc,3 )',
+                     'node in r.Gamma_3',
+                     'node 10',
+                     'elements by afun( domain )']
 
         stack = []
         bnf = create_bnf( stack )

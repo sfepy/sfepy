@@ -517,6 +517,13 @@ class Domain( Struct ):
                     group = domain.groups[ig]
                     region.set_from_group( ig, group.vertices, group.shape.n_el )
 
+                elif token == 'E_NOG':
+
+                    group = int( details[3] )
+
+                    group_nodes = nm.where( domain.mesh.ngroups == group )[0]
+                    region.set_vertices( group_nodes )
+
                 elif token == 'E_ONIR':
                     aux = regions[details[3][2:]]
                     region.set_vertices( aux.all_vertices[0:1] )

@@ -9,7 +9,8 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
 
 op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
-eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_ONIR', 'E_NI']
+eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_NOG',
+              'E_ONIR', 'E_NI']
 kw_codes = ['KW_All', 'KW_Region']
 
 ##
@@ -161,6 +162,8 @@ def create_bnf( stack ):
         replace( 'E_EBF', keep = True ) )
     eog = Group( elements + _of + group + Word( nums ) ).setParseAction( \
         replace( 'E_EOG', keep = True ) )
+    nog = Group( nodes + _of + group + Word( nums ) ).setParseAction( \
+        replace( 'E_NOG', keep = True ) )
     onir = Group( node + _in + region ).setParseAction( \
         replace_with_region( 'E_ONIR', 2 ) )
     ni = Group( node + inumber ).setParseAction( \
@@ -168,7 +171,7 @@ def create_bnf( stack ):
 
     region_expression = Forward()
 
-    atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog)
+    atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog | nog)
     atom1.setParseAction( to_stack( stack ) )
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)
