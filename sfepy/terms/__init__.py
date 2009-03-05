@@ -10,9 +10,9 @@ def load_classes( filenames, is_class ):
     table = {}
     for filename in filenames:
         name = os.path.splitext( filename )[0]
-#        print filename, name
-        mod = __import__( name )
-#        print mod
+        parts = name.split( os.path.sep )
+        mod, name = '.'.join( parts ), parts[-1:]
+        mod = __import__( mod, globals(), locals(), name )
         for key, var in mod.__dict__.iteritems():
             if is_class( key ):
                 table[var.name] = var
