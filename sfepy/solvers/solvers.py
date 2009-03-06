@@ -54,7 +54,7 @@ class NonlinearSolver( Solver ):
     
     ##
     # 10.10.2007, c
-    def __call__( self, state0, conf = None, evaluator = None,
+    def __call__( self, state0, conf = None, fun = None, fun_grad = None,
                   lin_solver = None, status = None ):
         print 'called an abstract NonlinearSolver instance!'
         raise ValueError
