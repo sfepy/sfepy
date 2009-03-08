@@ -127,6 +127,7 @@ class SchroedingerApp( SimpleApp ):
         
         eigen_solver = get( 'eigen_solver', None,
                             'missing "eigensolver" in options!' )
+
         n_electron = get( 'n_electron', 5 )
         n_eigs = guess_n_eigs( n_electron, n_eigs = get( 'n_eigs', None ) )
         # None -> save all.
@@ -140,12 +141,21 @@ class SchroedingerApp( SimpleApp ):
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
+    def process_dft_options( options ):
+        """Application DFT options setup. Sets default values for missing
+        non-compulsory options."""
+        get = options.get_default_attr
+        
+        dft_solver = get( 'dft_solver', None,
+                          'missing "dft" in options!' )
+
+        return Struct( **locals() )
+    process_dft_options = staticmethod( process_dft_options )
+
     def __init__( self, conf, options, output_prefix, **kwargs ):
         SimpleApp.__init__( self, conf, options, output_prefix,
                             init_equations = False )
 
-        self.setup_options()
-        
         output_dir = self.problem.output_dir
 
         opts = self.app_options
@@ -158,7 +168,10 @@ class SchroedingerApp( SimpleApp ):
 
     def setup_options( self ):
         SimpleApp.setup_options( self )
-        self.app_options += SchroedingerApp.process_options( self.conf.options )
+        opts = SchroedingerApp.process_options( self.conf.options )
+        if self.options.dft:
+            opts += SchroedingerApp.process_dft_options( self.conf.options )
+        self.app_options += opts
 
         funmod = self.conf.funmod
 
@@ -338,9 +351,14 @@ class SchroedingerApp( SimpleApp ):
                              (eig_solver, mtx_b, log, file_output) )
         ncalls, times, nonlin_v, results = aux
 
-        vec_vhxc = broyden3( nonlin_v, vec_vhxc,
-                             alpha = 0.9, iter = 20, verbose = True )
+        # Create and call the DFT solver.
+        dft_conf = pb.get_solver_conf( opts.dft_solver )
+        dft_status = {}
+        dft_solver = Solver.any_from_conf( dft_conf, fun = nonlin_v,
+                                           status = dft_status )
+        vec_vhxc = dft_solver( vec_vhxc )
         eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
+        output( 'DFT iteration time [s]:', dft_status['time_stats'] )
         
         if self.options.plot:
             log( save_figure = opts.iter_fig_name, finished = True )
