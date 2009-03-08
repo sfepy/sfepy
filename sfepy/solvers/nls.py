@@ -268,3 +268,82 @@ class Newton( NonlinearSolver ):
             status['condition'] = condition
 
         return vec_x
+
+class ScipyBroyden( NonlinearSolver ):
+    """Interface to Broyden and Anderson solvers from scipy.optimize."""
+
+    name = 'nls.scipy_broyden_like'
+
+    def process_conf( conf ):
+        """
+        Missing items are left to scipy defaults. Unused options are ignored.
+        
+        Example configuration, all items:
+        
+        solver_1 = {
+            'name' : 'broyden',
+            'kind' : 'nls.scipy_broyden_like',
+
+            'method'  : 'broyden3',
+            'i_max'   : 10,
+            'alpha'   : 0.9,
+            'M'       : 5,
+            'w0'      : 0.1,
+            'verbose' : True,
+        }
+        """
+        get = conf.get_default_attr
+
+        method = get( 'method', 'broyden3' )
+        i_max = get( 'i_max' )
+        alpha = get( 'alpha' )
+        M = get( 'M' )
+        w0 = get( 'w0' )
+        verbose = get( 'verbose' )
+
+        common = NonlinearSolver.process_conf( conf )
+        return Struct( **locals() ) + common
+    process_conf = staticmethod( process_conf )
+
+    def __init__( self, conf, **kwargs ):
+        NonlinearSolver.__init__( self, conf, **kwargs )
+        self.set_method( self.conf )
+
+    def set_method( self, conf ):
+        import scipy.optimize as so
+
+        try:
+            solver = getattr( so, conf.method )
+        except AttributeError:
+            output( 'scipy solver %s does not exist!' % conf.method )
+            output( 'using broyden3 instead' )
+            solver = so.broyden3
+        self.solver = solver
+
+    def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
+                  lin_solver = None, status = None ):
+        if conf is not None:
+            self.set_method( conf )
+        else:
+            conf = self.conf
+        fun = get_default( fun, self.fun )
+        status = get_default( status, self.status )
+
+        tt = time.clock()
+
+        kwargs = {'iter' : conf.i_max,
+                  'alpha' : conf.alpha,
+                  'verbose' : conf.verbose}
+
+        if conf.method == 'broyden_generalized':
+            kwargs.update( {'M' : conf.M} )
+
+        elif conf.method in ['anderson', 'anderson2']:
+            kwargs.update( {'M' : conf.M, 'w0' : conf.w0} )
+
+        vec_x = self.solver( fun, vec_x0, **kwargs )
+        
+        if status is not None:
+            status['time_stats'] = time.clock() - tt
+
+        return vec_x
