@@ -125,6 +125,34 @@ def group_chains( chain_list ):
 
     return chains
 
+def create_lcbc_rigid( coors ):
+    """Create transformation matrix for rigid LCBCs."""
+    n_nod, dim = coors.shape
+
+    mtx_e = nm.tile( nm.eye( dim, dtype = nm.float64 ), (n_nod, 1) )
+
+    if dim == 2:
+        mtx_r = nm.empty( (dim * n_nod, 1), dtype = nm.float64 )
+        mtx_r[0::dim,0] = -coors[:,1]
+        mtx_r[1::dim,0] = coors[:,0]
+        n_rigid_dof = 3
+
+    elif dim == 3:
+        mtx_r = nm.zeros( (dim * n_nod, dim), dtype = nm.float64 )
+        mtx_r[0::dim,1] = coors[:,2]
+        mtx_r[0::dim,2] = -coors[:,1]
+        mtx_r[1::dim,0] = -coors[:,2]
+        mtx_r[1::dim,2] = coors[:,0]
+        mtx_r[2::dim,0] = coors[:,1]
+        mtx_r[2::dim,1] = -coors[:,0]
+        n_rigid_dof = 6
+
+    else:
+        msg = 'dimension in [2,3]: %d' % dim
+        raise ValueError( msg )
+
+    return n_rigid_dof, nm.hstack( (mtx_r, mtx_e) )
+
 ##
 # 19.07.2006
 class DofInfo( Struct ):
@@ -288,56 +316,56 @@ class Variables( Container ):
 
         # Assume disjoint regions.
         lcbc_ops = {}
+        offset = 0
         for var_name, bcs in lcbc_of_vars.iteritems():
             var = self[var_name]
-            lcbc_ops[var_name] = var.create_lcbc_operators( bcs, regions )
+            lcbc_op = var.create_lcbc_operators( bcs, regions, offset )
+            lcbc_ops[var_name] = lcbc_op
+            if lcbc_op is not None:
+                offset += lcbc_op.n_op
 
-        ops_lc = []
         n_dof = self.adi.ptr[-1]
         eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
-        n_groups = 0
+        n_dof_new = 0
         for var_name, lcbc_op in lcbc_ops.iteritems():
-##            print var_name, lcbc_op
+#            print var_name, lcbc_op
             if lcbc_op is None: continue
+
             indx = self.adi.indx[var_name]
-            dim = self[var_name].field.dim[0]
-
             eq_lcbc[indx] = lcbc_op.eq_lcbc
-            ops_lc.extend( lcbc_op.ops_lc )
 
-            n_rigid_dof = lcbc_op.n_rigid_dof
-            n_groups += lcbc_op.n_groups
+            n_dof_new += nm.sum( lcbc_op.n_transformed_dof )
 
-        if n_groups == 0:
+        if n_dof_new == 0:
             self.has_lcbc = False
             return
             
         ii = nm.nonzero( eq_lcbc )[0]
         n_constrained = ii.shape[0]
-        n_dof_not_rigid = n_dof - n_constrained
-        n_dof_reduced = n_dof_not_rigid + n_groups * n_rigid_dof
-        output( n_dof, n_dof_reduced, n_constrained, n_dof_not_rigid )
-
+        n_dof_free = n_dof - n_constrained
+        n_dof_reduced = n_dof_free + n_dof_new
+        output( 'dofs: total %d, free %d, constrained %d, new %d -> reduced %d'\
+                % (n_dof, n_constrained, n_dof_free, n_dof_new, n_dof_reduced) )
         mtx_lc = sp.lil_matrix( (n_dof, n_dof_reduced), dtype = nm.float64 )
         ir = nm.where( eq_lcbc == 0 )[0]
         ic = nm.arange( n_dof_reduced, dtype = nm.int32 )
         mtx_lc[ir,ic] = 1.0
-        for ii, op_lc in enumerate( ops_lc ):
-            indx = nm.where( eq_lcbc == (ii + 1) )[0]
-            icols = slice( n_dof_not_rigid + n_rigid_dof * ii,
-                           n_dof_not_rigid + n_rigid_dof * (ii + 1) )
-            mtx_lc[indx,icols] = op_lc
+
+        for var_name, lcbc_op in lcbc_ops.iteritems():
+            if lcbc_op is None: continue
+            for ii, op_lc in enumerate( lcbc_op.ops_lc ):
+                indx = nm.where( eq_lcbc == lcbc_op.markers[ii] )[0]
+                icols = slice( n_dof_free + lcbc_op.ics[ii],
+                               n_dof_free + lcbc_op.ics[ii+1] )
+                mtx_lc[indx,icols] = op_lc
 
         mtx_lc = mtx_lc.tocsr()
+
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
 ##         spy( mtx_lc )
 ##         print mtx_lc
 ##         pylab.show()
-        
-        nnz = n_dof - n_constrained + n_constrained * dim
-        print nnz, mtx_lc.getnnz()
-        assert_( nnz >= mtx_lc.getnnz() )
 
         self.op_lcbc = mtx_lc
 
@@ -1154,16 +1182,17 @@ class Variable( Struct ):
 
     ##
     # c: 03.10.2007, r: 25.02.2008
-    def create_lcbc_operators( self, bcs, regions ):
+    def create_lcbc_operators( self, bcs, regions, offset ):
         if len( bcs ) == 0: return None
 
         eq = self.eq_map.eq
         n_dof = self.eq_map.n_eq
         
-        n_groups = len( bcs )
         eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
         
         ops_lc = []
+        n_transformed_dof = []
+        markers = []
         for ii, (key, bc) in enumerate( bcs ):
             print self.name, bc.name
 
@@ -1176,45 +1205,30 @@ class Variable( Struct ):
             dofs, kind = bc.dofs
             meq = eq[self.expand_nodes_to_equations( nmaster, dofs )]
             assert_( nm.all( meq >= 0 ) )
-            
-            eq_lcbc[meq] = ii + 1
+
+            markers.append( offset + ii + 1 )
+            eq_lcbc[meq] = markers[-1]
 ##             print meq, meq.shape
 ##             print nm.where( eq_lcbc )[0]
             
-            mcoor = self.field.get_coor( nmaster )
-            n_nod, dim = mcoor.shape
-
-#            print mcoor, mcoor.shape
-
-            mtx_e = nm.tile( nm.eye( dim, dtype = nm.float64 ), (n_nod, 1) )
-            if dim == 2:
-                mtx_r = nm.empty( (dim * n_nod, 1), dtype = nm.float64 )
-                mtx_r[0::dim,0] = -mcoor[:,1]
-                mtx_r[1::dim,0] = mcoor[:,0]
-                n_rigid_dof = 3
-            elif dim == 3:
-                mtx_r = nm.zeros( (dim * n_nod, dim), dtype = nm.float64 )
-                mtx_r[0::dim,1] = mcoor[:,2]
-                mtx_r[0::dim,2] = -mcoor[:,1]
-                mtx_r[1::dim,0] = -mcoor[:,2]
-                mtx_r[1::dim,2] = mcoor[:,0]
-                mtx_r[2::dim,0] = mcoor[:,1]
-                mtx_r[2::dim,1] = -mcoor[:,0]
-                n_rigid_dof = 6
+            if kind == 'rigid':
+                mcoor = self.field.get_coor( nmaster )
+                n_dof, op_lc = create_lcbc_rigid( mcoor )
             else:
-                msg = 'dimension in [2,3]: %d' % dim
-                raise ValueError( msg )
+                raise ValueError( 'unknown LCBC kind! (%s)' % kind )
 
-            op_lc = nm.hstack( (mtx_r, mtx_e) )
-##             print op_lc, op_lc.shape
-
+            n_transformed_dof.append( n_dof )
             ops_lc.append( op_lc )
 
+        ics = nm.cumsum( nm.r_[0, n_transformed_dof]  )
+        n_op = len( ops_lc )
+        
         return Struct( eq_lcbc = eq_lcbc,
                        ops_lc = ops_lc,
-                       n_groups = n_groups,
-                       n_rigid_dof = n_rigid_dof,
-                       dim = dim )
+                       n_op = n_op,
+                       ics = ics,
+                       markers = markers,
+                       n_transformed_dof = n_transformed_dof )
 
     def clean_node_list( self, nod_list, ntype, region_name, warn = False ):
         for nods in nod_list[:]:
