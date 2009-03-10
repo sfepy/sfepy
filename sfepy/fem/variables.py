@@ -153,6 +153,61 @@ def create_lcbc_rigid( coors ):
 
     return n_rigid_dof, nm.hstack( (mtx_r, mtx_e) )
 
+def create_lcbc_no_penetration( eqs, normals ):
+##     print eqs
+##     print normals
+    ii = nm.abs( normals ).argmax( 1 )
+##     print ii
+
+    n_nod, dim = normals.shape
+
+    irs = set( range( dim ) )
+
+    data = []
+    rows = []
+    cols = []
+    for idim in xrange( dim ):
+        ic = nm.where( ii == idim )[0]
+        if len( ic ) == 0: continue
+##         print ic
+##         print idim
+
+        ir = list( irs.difference( [idim] ) )
+        nn = - normals[:,ir] / normals[:,[idim]]
+
+        irn = dim * ic + idim
+        ics = [(dim - 1) * ic + ik for ik in xrange( dim - 1 )]
+        for ik in xrange( dim - 1 ):
+            rows.append( irn )
+            cols.append( ics[ik] )
+            data.append( nn[:,ik] )
+
+        ones = nm.ones( (nn.shape[0],), dtype = nm.float64 )
+        for ik, il in enumerate( ir ):
+            rows.append( dim * ic + il )
+            cols.append( ics[ik] )
+            data.append( ones )
+            
+##     print rows
+##     print cols
+##     print data
+        
+    rows = nm.concatenate( rows )
+    cols = nm.concatenate( cols )
+    data = nm.concatenate( data )
+
+    n_np_dof = n_nod * (dim - 1)
+    op = sp.coo_matrix( (data, (rows, cols)), shape = (n_nod * dim, n_np_dof) )
+    op = op.tocsr()
+
+##     import pylab
+##     from sfepy.base.plotutils import spy
+##     spy( op )
+##     print op
+##     pylab.show()
+
+    return n_np_dof, op
+
 ##
 # 19.07.2006
 class DofInfo( Struct ):
@@ -1214,6 +1269,16 @@ class Variable( Struct ):
             if kind == 'rigid':
                 mcoor = self.field.get_coor( nmaster )
                 n_dof, op_lc = create_lcbc_rigid( mcoor )
+
+            elif kind == 'no_penetration':
+                dim = self.field.dim[0]
+                assert_( len( dofs ) == dim )
+                normals = nm.zeros( (nmaster.shape[0], dim),
+                                    dtype = nm.float64 )
+                normals[:,1] = 1.0
+                meq2 = meq.reshape( (dim, nmaster.shape[0]) ).T
+                n_dof, op_lc = create_lcbc_no_penetration( meq2, normals )
+
             else:
                 raise ValueError( 'unknown LCBC kind! (%s)' % kind )
 
