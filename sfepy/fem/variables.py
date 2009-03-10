@@ -293,32 +293,30 @@ class Variables( Container ):
             lcbc_ops[var_name] = var.create_lcbc_operators( bcs, regions )
 
         ops_lc = []
-        eq_lcbc = nm.empty( (0,), dtype = nm.int32 )
+        n_dof = self.adi.ptr[-1]
+        eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
         n_groups = 0
         for var_name, lcbc_op in lcbc_ops.iteritems():
+##            print var_name, lcbc_op
             if lcbc_op is None: continue
-#            print var_name, lcbc_op
-
             indx = self.adi.indx[var_name]
-            aux = nm.where( lcbc_op.eq_lcbc >= 0, indx.start, 0 )
-            eq_lcbc = nm.hstack( (eq_lcbc, lcbc_op.eq_lcbc + aux) )
+            dim = self[var_name].field.dim[0]
+
+            eq_lcbc[indx] = lcbc_op.eq_lcbc
             ops_lc.extend( lcbc_op.ops_lc )
 
             n_rigid_dof = lcbc_op.n_rigid_dof
-            dim = lcbc_op.dim
             n_groups += lcbc_op.n_groups
 
         if n_groups == 0:
             self.has_lcbc = False
             return
             
-        n_dof = self.adi.ptr[-1]
-
         ii = nm.nonzero( eq_lcbc )[0]
         n_constrained = ii.shape[0]
         n_dof_not_rigid = n_dof - n_constrained
         n_dof_reduced = n_dof_not_rigid + n_groups * n_rigid_dof
-        print n_dof, n_dof_reduced, n_constrained, n_dof_not_rigid
+        output( n_dof, n_dof_reduced, n_constrained, n_dof_not_rigid )
 
         mtx_lc = sp.lil_matrix( (n_dof, n_dof_reduced), dtype = nm.float64 )
         ir = nm.where( eq_lcbc == 0 )[0]
@@ -334,8 +332,9 @@ class Variables( Container ):
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
 ##         spy( mtx_lc )
-##         pylab.show()
 ##         print mtx_lc
+##         pylab.show()
+        
         nnz = n_dof - n_constrained + n_constrained * dim
         print nnz, mtx_lc.getnnz()
         assert_( nnz >= mtx_lc.getnnz() )
