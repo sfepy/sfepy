@@ -49,29 +49,25 @@ def transform_variables( adict ):
             d2['variable_'+c2.name] = c2
     return d2
 
-##
-# c: 10.04.2008, r: 06.05.2008
-def transform_ebcs( adict ):
+def transform_conditions( adict, prefix ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf( key, conf, ['region', 'dofs'] )
-            d2['ebc_%s__%d' % (c2.name, ii)] = c2
+            d2['%s_%s__%d' % (prefix, c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            d2['ebc_'+c2.name] = c2
+            d2['%s_%s' % (prefix, c2.name)] = c2
     return d2
+    
+def transform_ebcs( adict ):
+    return transform_conditions( adict, 'ebc' )
 
 def transform_ics( adict ):
-    d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['region', 'dofs'] )
-            d2['ic_%s__%d' % (c2.name, ii)] = c2
-        else:
-            c2 = transform_to_struct_1( conf )
-            d2['ic_'+c2.name] = c2
-    return d2
+    return transform_conditions( adict, 'ic' )
+
+def transform_lcbcs( adict ):
+    return transform_conditions( adict, 'lcbc' )
 
 ##
 # c: 02.05.2008, r: 06.05.2008
@@ -114,7 +110,7 @@ transforms = {
     'ebcs'      : transform_ebcs,
     'epbcs'     : transform_to_struct_01,
     'nbcs'      : transform_to_struct_01,
-    'lcbcs'     : transform_to_struct_01,
+    'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
 }
 
