@@ -239,8 +239,6 @@ def compute_nodal_normals( nodes, region, field ):
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
 
-        counts[econn] += 1
-
         integral = Integral( name = 'i', kind = 's',
                              quad_name = 'custom',
                              mode = 'custom' )
@@ -258,13 +256,21 @@ def compute_nodal_normals( nodes, region, field ):
         sg.describe( field.aps.coors, econn, bf_sg, weights )
 
         e_normals = sg.variable( 0 ).squeeze()
-        normals[imap[econn]] += e_normals
+
+        # counts[econn] += 1
+        # normals[imap[econn]] += e_normals
+        im = imap[econn]
+        for ii, en in enumerate( e_normals ):
+            counts[econn[ii]] += 1
+            normals[im[ii]] += en
 
     # All nodes must have a normal.
     if not nm.all( counts[nodes] > 0 ):
         raise ValueError( 'region %s has not complete faces!' % region.name )
 
     normals /= counts[nodes][:,nm.newaxis]
+
+    normals /= la.norm_l2_along_axis( normals )[:,nm.newaxis]
 
     return normals
         
