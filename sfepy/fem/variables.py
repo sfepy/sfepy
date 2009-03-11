@@ -3,7 +3,9 @@ from collections import deque
 from sfepy.base.base import *
 import sfepy.base.la as la
 from sfepy.fem.mesh import make_inverse_connectivity, find_closest_nodes
+from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph
+from extmods.geometry import SurfaceGeometry
 
 is_state = 0
 is_virtual = 1
@@ -158,7 +160,6 @@ def create_lcbc_no_penetration( eqs, normals ):
 ##     print normals
     ii = nm.abs( normals ).argmax( 1 )
 ##     print ii
-
     n_nod, dim = normals.shape
 
     irs = set( range( dim ) )
@@ -173,8 +174,10 @@ def create_lcbc_no_penetration( eqs, normals ):
 ##         print idim
 
         ir = list( irs.difference( [idim] ) )
-        nn = - normals[:,ir] / normals[:,[idim]]
-
+        nn = nm.empty( (len( ic ), dim - 1), dtype = nm.float64 )
+        for ik, il in enumerate( ir ):
+            nn[:,ik] = - normals[ic,il] / normals[ic,idim]
+        
         irn = dim * ic + idim
         ics = [(dim - 1) * ic + ik for ik in xrange( dim - 1 )]
         for ik in xrange( dim - 1 ):
@@ -208,6 +211,63 @@ def create_lcbc_no_penetration( eqs, normals ):
 
     return n_np_dof, op
 
+def compute_nodal_normals( nodes, region, field ):
+    """Nodal normals are computed by simple averaging of element normals of
+    elements every node is contained in. """
+    dim = field.dim[0]
+
+    fa = region.domain.get_neighbour_lists( True )[2]
+    region.setup_face_indices( fa )
+    region.select_cells_of_surface()
+
+    normals = nm.zeros( (nodes.shape[0], dim),
+                        dtype = nm.float64 )
+    counts = nm.zeros( (nodes.max()+1,), dtype = nm.int32 )
+    imap = nm.empty_like( counts )
+    imap.fill( nodes.shape[0] ) # out-of-range index for normals.
+    imap[nodes] = nm.arange( nodes.shape[0], dtype = nm.int32 )
+    
+    for ig, fis in region.fis.iteritems():
+        ap = field.aps[ig]
+        n_fa = fis.shape[0]
+        n_fp = ap.efaces.shape[1]
+        face_type = 's%d' % n_fp
+
+        faces = ap.efaces[fis[:,1]]
+        ee = ap.econn[fis[:,0]]
+        econn = nm.empty( faces.shape, dtype = nm.int32 )
+        for ir, face in enumerate( faces ):
+            econn[ir] = ee[ir,face]
+
+        counts[econn] += 1
+
+        integral = Integral( name = 'i', kind = 's',
+                             quad_name = 'custom',
+                             mode = 'custom' )
+        integral.vals = ap.interp.nodes[face_type].bar_coors
+        # Unit normals -> weights = ones.
+        integral.weights = nm.ones( (n_fp,), dtype = nm.float64 )
+        integral.setup()
+        integral.create_qp()
+
+        bf_sg, weights = ap.get_base( face_type, 1,
+                                      integral = integral,
+                                      base_only = False )
+
+        sg = SurfaceGeometry( n_fa, n_fp, dim, n_fp )
+        sg.describe( field.aps.coors, econn, bf_sg, weights )
+
+        e_normals = sg.variable( 0 ).squeeze()
+        normals[imap[econn]] += e_normals
+
+    # All nodes must have a normal.
+    if not nm.all( counts[nodes] > 0 ):
+        raise ValueError( 'region %s has not complete faces!' % region.name )
+
+    normals /= counts[nodes][:,nm.newaxis]
+
+    return normals
+        
 ##
 # 19.07.2006
 class DofInfo( Struct ):
@@ -415,7 +475,6 @@ class Variables( Container ):
                 mtx_lc[indx,icols] = op_lc
 
         mtx_lc = mtx_lc.tocsr()
-
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
 ##         spy( mtx_lc )
@@ -1273,10 +1332,10 @@ class Variable( Struct ):
             elif kind == 'no_penetration':
                 dim = self.field.dim[0]
                 assert_( len( dofs ) == dim )
-                normals = nm.zeros( (nmaster.shape[0], dim),
-                                    dtype = nm.float64 )
-                normals[:,1] = 1.0
+
+                normals = compute_nodal_normals( nmaster, region, self.field )
                 meq2 = meq.reshape( (dim, nmaster.shape[0]) ).T
+
                 n_dof, op_lc = create_lcbc_no_penetration( meq2, normals )
 
             else:
