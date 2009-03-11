@@ -1309,7 +1309,6 @@ class Variable( Struct ):
         markers = []
         for ii, (key, bc) in enumerate( bcs ):
             print self.name, bc.name
-
             region = regions[bc.region]
             print region.name
 
@@ -1334,6 +1333,16 @@ class Variable( Struct ):
                 assert_( len( dofs ) == dim )
 
                 normals = compute_nodal_normals( nmaster, region, self.field )
+
+                if hasattr( bc, 'filename' ):
+                    mesh = self.field.domain.mesh
+                    nn = nm.zeros_like( mesh.coors )
+                    nmax = region.all_vertices.shape[0]
+                    nn[nmaster[:nmax]] = normals[:nmax]
+                    out = {'normals' : Struct( name = 'output_data',
+                                               mode = 'vertex', data = nn )}
+                    mesh.write( bc.filename, out = out, io = 'auto' )
+
                 meq2 = meq.reshape( (dim, nmaster.shape[0]) ).T
 
                 n_dof, op_lc = create_lcbc_no_penetration( meq2, normals )
