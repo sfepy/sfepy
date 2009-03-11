@@ -54,6 +54,8 @@ def transform_conditions( adict, prefix ):
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf( key, conf, ['region', 'dofs'] )
+            if len( conf ) == 3:
+                c2.filename = conf[2]
             d2['%s_%s__%d' % (prefix, c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
