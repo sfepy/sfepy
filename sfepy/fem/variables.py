@@ -222,8 +222,8 @@ def compute_nodal_normals( nodes, region, field ):
 
     normals = nm.zeros( (nodes.shape[0], dim),
                         dtype = nm.float64 )
-    counts = nm.zeros( (nodes.max()+1,), dtype = nm.int32 )
-    imap = nm.empty_like( counts )
+    mask = nm.zeros( (nodes.max()+1,), dtype = nm.int32 )
+    imap = nm.empty_like( mask )
     imap.fill( nodes.shape[0] ) # out-of-range index for normals.
     imap[nodes] = nm.arange( nodes.shape[0], dtype = nm.int32 )
     
@@ -238,6 +238,7 @@ def compute_nodal_normals( nodes, region, field ):
         econn = nm.empty( faces.shape, dtype = nm.int32 )
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
+        mask[econn] += 1
 
         integral = Integral( name = 'i', kind = 's',
                              quad_name = 'custom',
@@ -257,18 +258,14 @@ def compute_nodal_normals( nodes, region, field ):
 
         e_normals = sg.variable( 0 ).squeeze()
 
-        # counts[econn] += 1
         # normals[imap[econn]] += e_normals
         im = imap[econn]
         for ii, en in enumerate( e_normals ):
-            counts[econn[ii]] += 1
             normals[im[ii]] += en
 
     # All nodes must have a normal.
-    if not nm.all( counts[nodes] > 0 ):
+    if not nm.all( mask[nodes] > 0 ):
         raise ValueError( 'region %s has not complete faces!' % region.name )
-
-    normals /= counts[nodes][:,nm.newaxis]
 
     normals /= la.norm_l2_along_axis( normals )[:,nm.newaxis]
 
