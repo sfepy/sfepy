@@ -16,10 +16,13 @@ class Probe(Struct):
 
 class LineProbe(Probe):
     """Probe variables along a line."""
+
     def __init__(self, p0, p1, n_point, mesh):
         p0 = nm.array(p0, dtype=nm.float64)
         p1 = nm.array(p1, dtype=nm.float64)
-        Probe.__init__(self, p0=p0, p1=p1, n_point=n_point, mesh=mesh)
+        name = '[%s, %s] / %d' % (p0, p1, n_point)
+
+        Probe.__init__(self, name=name, p0=p0, p1=p1, n_point=n_point, mesh=mesh)
 
         iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
                                           combine_groups=True)
