@@ -179,6 +179,7 @@ def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
     while ii < i_max:
         r = fun( x )
         err = nla.norm( r )
+##         print ii, x, r, err
         if err < eps: break
 
         mtx = dfun( x )
@@ -187,10 +188,10 @@ def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
         except:
             break
         x = x - dx
-        
+        ii += 1
     return x
 
-def inverse_element_mapping( coors, e_coors, base_fun,
+def inverse_element_mapping( coors, e_coors, base_fun, ref_coors,
                              suppress_errors = False ):
     """
     Given spatial element coordinates, find the inverse mapping for
@@ -205,7 +206,7 @@ def inverse_element_mapping( coors, e_coors, base_fun,
 
     if n_v == (dim + 1): # Simplex.
         bc = barycentric_coors( coors, e_coors )
-        xi = nm.dot( bc.T, e_coors )
+        xi = nm.dot( bc.T, ref_coors )
         
     else: # Tensor-product and other.
         def residual( xi ):

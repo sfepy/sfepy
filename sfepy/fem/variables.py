@@ -1695,9 +1695,11 @@ class Variable( Struct ):
 ##                 print ecoor
 
                 interp = field.aps[ig].interp
+                ref_coors = interp.nodes['v'].bar_coors
                 base_fun = interp.base_funs['v'].fun
 
                 xi = la.inverse_element_mapping(point, ecoor, base_fun,
+                                                ref_coors,
                                                 suppress_errors=True)
                 try:
                     # Verify that we are inside the element.
