@@ -687,6 +687,65 @@ class VTKMeshIO( MeshIO ):
 
         fd.close()
 
+    def read_data( self, step, filename = None ):
+        """Point data only!"""
+        filename = get_default( filename, self.filename )
+
+        out = {}
+        
+        fd = open( self.filename, 'r' )
+        while 1:
+            line = fd.readline().split()
+            if not line: continue
+            if line[0] == 'POINT_DATA':
+                break
+
+        n_nod = int(line[1])
+        
+        line = fd.readline()
+        while 1:
+            if not line:
+                break
+            # Skip empty lines.
+            line = line.split()
+            while not line:
+                line = fd.readline().split()
+
+            if line[0] == 'SCALARS':
+                name, dtype, nc = line[1:]
+                assert_(int(nc) == 1)
+                fd.readline() # skip lookup table line
+                
+                data = nm.zeros((n_nod,), dtype=nm.float64)
+                ii = 0
+                while ii < n_nod:
+                    data[ii] = float(fd.readline())
+                    ii += 1
+
+                out[name] = Struct( name = name,
+                                    mode = 'vertex',
+                                    data = data,
+                                    dofs = None )
+
+            elif line[0] == 'VECTORS':
+                name, dtype = line[1:]
+                data = []
+                ii = 0
+                while ii < n_nod:
+                    data.append([float(val) for val in fd.readline().split()])
+                    ii += 1
+
+                out[name] = Struct( name = name,
+                                    mode = 'vertex',
+                                    data = nm.array(data, dtype=nm.float64),
+                                    dofs = None )
+
+            line = fd.readline()
+
+        fd.close()
+
+        return out
+
 ##
 # c: 15.02.2008
 class TetgenMeshIO( MeshIO ):
