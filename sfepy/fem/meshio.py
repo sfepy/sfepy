@@ -127,7 +127,7 @@ class MeshIO( Struct ):
         mesh._set_data(nodes, conns, mat_ids, descs)
         return mesh
 
-    See the Mesh() class's docstring how the nodes, conns, mat_ids and descs
+    See the Mesh() class' docstring how the nodes, conns, mat_ids and descs
     should look like. You just need to read them from your specific format from
     disk.
 
@@ -138,38 +138,32 @@ class MeshIO( Struct ):
     The methods read_dimension(), read_bounding_box() should be implemented in
     subclasses, as it is often possible to get that kind of information without
     reading the whole mesh file.
+
+    Optionally, subclasses can implement read_data() to read also computation
+    results. This concerns mainly the subclasses with implemented write()
+    supporting the 'out' kwarg.
     """
     format = None
+    call_msg = 'called an abstract MeshIO instance!'
 
-    ##
-    # c: 05.02.2008, r: 05.02.2008
     def __init__( self, filename, **kwargs ):
         Struct.__init__( self, filename = filename, **kwargs )
         self.set_float_format()
 
-    ##
-    # c: 03.07.2008, r: 03.07.2008
     def read_dimension( self, ret_fd = False ):
-        print 'called an abstract MeshIO instance!'
-        raise ValueError
+        raise ValueError(MeshIO.call_msg)
 
-    ##
-    # c: 22.07.2008, r: 22.07.2008
     def read_bounding_box( self, ret_fd = False, ret_dim = False ):
-        print 'called an abstract MeshIO instance!'
-        raise ValueError
+        raise ValueError(MeshIO.call_msg)
 
-    ##
-    # c: 05.02.2008, r: 26.03.2008
     def read( self, mesh, *args, **kwargs ):
-        print 'called an abstract MeshIO instance!'
-        raise ValueError
+        raise ValueError(MeshIO.call_msg)
 
-    ##
-    # c: 05.02.2008, r: 26.03.2008
     def write( self, filename, mesh, *args, **kwargs ):
-        print 'called an abstract MeshIO instance!'
-        raise ValueError
+        raise ValueError(MeshIO.call_msg)
+
+    def read_data( self, step, filename = None ):
+        raise ValueError(MeshIO.call_msg)
 
     def set_float_format( self, format = None ):
         self.float_format = get_default( format, '%e' )
