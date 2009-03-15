@@ -25,7 +25,11 @@
   (FMField *mtx_r),
   (FMField *mtxInEls_r),
   (FMField *mtx_i),
-  (FMField *mtxInEls_i)
+  (FMField *mtxInEls_i),
+  (FMField *out),
+  (FMField *coors),
+  (FMField *e_coors),
+  (FMField *ref_coors)
 };
 %apply (int32 *array, int32 n_row, int32 n_col) {
   (int32 *conn, int32 nEl, int32 nEP),
@@ -121,5 +125,9 @@ int32 raw_graph( int32 *p_nRow, int32 **p_prow,
 		 int32 nRow, int32 nCol, int32 nGr,
 		 int32 *nElR, int32 *nEPR, int32 **connR,
 		 int32 *nElC, int32 *nEPC, int32 **connC );
+
+int32 inverse_element_mapping( FMField *out,
+			       FMField *coors, FMField *e_coors,
+			       FMField *ref_coors, int32 i_max, float64 eps );
 
 #endif

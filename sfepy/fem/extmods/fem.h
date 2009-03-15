@@ -43,6 +43,10 @@ int32 raw_graph( int32 *p_nRow, int32 **p_prow,
 		int32 *nElR, int32 *nEPR, int32 **connR,
 		int32 *nElC, int32 *nEPC, int32 **connC );
 
+int32 inverse_element_mapping( FMField *out,
+			       FMField *coors, FMField *e_coors,
+			       FMField *ref_coors, int32 i_max, float64 eps );
+
 END_C_DECLS
 
 #endif /* Header */

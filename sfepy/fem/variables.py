@@ -2,9 +2,10 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
-from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, TreeItem
+from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
+     TreeItem
 from sfepy.fem.integrals import Integral
-from extmods.fem import raw_graph
+from extmods.fem import raw_graph, inverse_element_mapping
 from extmods.geometry import SurfaceGeometry
 
 is_state = 0
@@ -1712,9 +1713,14 @@ class Variable( Struct ):
                 tts[2] += time.clock() - tt1
 
                 tt = time.clock()
-                xi = la.inverse_element_mapping(point, ecoor, base_fun,
-                                                ref_coors,
-                                                suppress_errors=True)
+##                 xi = la.inverse_element_mapping(point, ecoor, base_fun,
+##                                                 ref_coors,
+##                                                 suppress_errors=True)
+##                 print xi
+                xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
+                inverse_element_mapping(xi, point, ecoor, ref_coors, 10, 1e-8)
+##                 print xi
+##                 debug()
                 tts[1] += time.clock() - tt
                 try:
                     # Verify that we are inside the element.
@@ -1728,6 +1734,7 @@ class Variable( Struct ):
             # For scalar fields only!!!
             vals[:,ii] = nm.dot(bf,self()[nodes])
         tts[-1] = time.clock() - tt0
+        print tts
 #        print tts[0], tts[3]
         
         return vals

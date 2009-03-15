@@ -25,7 +25,7 @@ $(LOCDIR)/_geometry.so: $(DEPSC)
 	@echo $(DEPSC)
 	$(CC) $(LINKFLAGS) $(DEPSC) $(SWIG_LIB) -o $@
 
-DEPSE := fmfield.c fem.c fem_wrap.c sort.c common_python.c
+DEPSE := fmfield.c fem.c fem_wrap.c geommech.c sort.c common_python.c
 DEPSE := $(addprefix $(LOCDIR)/,$(DEPSE:.c=.o))
 $(LOCDIR)/fem_wrap.c : $(LOCDIR)/common.i $(LOCDIR)/array.i $(LOCDIR)/fmfield.i
 $(LOCDIR)/_fem.so: $(DEPSE)

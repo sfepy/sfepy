@@ -1,4 +1,5 @@
 #include "fem.h"
+#include "geommech.h"
 #include "sort.h"
 
 #undef __FUNC__
@@ -470,4 +471,237 @@ int32 raw_graph( int32 *p_nRow, int32 **p_prow,
   *p_nRow = nRow + 1;
 
   return( RET_OK );
+}
+
+const int32 mapTo2D1[8] = {0, 0,
+			   1, 0,
+			   1, 1,
+			   0, 1};
+const int32 mapTo3D1[3*8] = {0, 0, 0,
+			    1, 0, 0,
+			    1, 1, 0,
+			    0, 1, 0,
+			    0, 0, 1,
+			    1, 0, 1,
+			    1, 1, 1,
+			    0, 1, 1};
+
+const float64  lag1x[2] = {-0.5, 0.5};
+
+float64 lagrange1( float64 x, int32 which )
+{
+  switch( which ) {
+  case 0:
+    return( 0.5 * (1.0 - x) );
+    break;
+  case 1:
+    return( 0.5 * (1.0 + x) );
+    break;
+  default:
+    errput( "lagrange1(): wrong function number!" );
+    return( 0.0 );
+  }
+}
+
+float64 lagrange1x( float64 x, int32 which )
+{
+  switch( which ) {
+  case 0:
+  case 1:
+    return( lag1x[which] );
+    break;
+  default:
+    errput( "lagrange1x(): wrong function number!" );
+    return( 0.0 );
+  }
+}
+
+float64 baseBiL( float64 x, float64 y, int32 which )
+{
+  int32 i, j;
+
+  if ((which < 0) || (which > 3)) {
+    errput( "baseBiL(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo2D1[2*which];
+  j = mapTo2D1[2*which+1];
+  return( lagrange1( x, i ) * lagrange1( y, j ) );
+}
+
+float64 baseBiLx( float64 x, float64 y, int32 which )
+{
+  int32 i, j;
+
+  if ((which < 0) || (which > 3)) {
+    errput( "baseBiLx(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo2D1[2*which];
+  j = mapTo2D1[2*which+1];
+  return( lag1x[i] * lagrange1( y, j ) );
+}
+
+float64 baseBiLy( float64 x, float64 y, int32 which )
+{
+  int32 i, j;
+
+  if ((which < 0) || (which > 3)) {
+    errput( "baseBiLy(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo2D1[2*which];
+  j = mapTo2D1[2*which+1];
+  return( lagrange1( x, i ) * lag1x[j] );
+}
+
+float64 baseTriL( float64 x, float64 y, float64 z, int32 which )
+{
+  int32 i, j, k;
+
+  if ((which < 0) || (which > 7)) {
+    errput( "baseTriL(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo3D1[3*which];
+  j = mapTo3D1[3*which+1];
+  k = mapTo3D1[3*which+2];
+  return( lagrange1( x, i ) * lagrange1( y, j ) * lagrange1( z, k ) );
+}
+
+float64 baseTriLx( float64 x, float64 y, float64 z, int32 which )
+{
+  int32 i, j, k;
+
+  if ((which < 0) || (which > 7)) {
+    errput( "baseTriL(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo3D1[3*which];
+  j = mapTo3D1[3*which+1];
+  k = mapTo3D1[3*which+2];
+  return( lag1x[i] * lagrange1( y, j ) * lagrange1( z, k ) );
+}
+
+float64 baseTriLy( float64 x, float64 y, float64 z, int32 which )
+{
+  int32 i, j, k;
+
+  if ((which < 0) || (which > 7)) {
+    errput( "baseTriLy(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo3D1[3*which];
+  j = mapTo3D1[3*which+1];
+  k = mapTo3D1[3*which+2];
+  return( lagrange1( x, i ) * lag1x[j] * lagrange1( z, k ) );
+}
+
+float64 baseTriLz( float64 x, float64 y, float64 z, int32 which )
+{
+  int32 i, j, k;
+
+  if ((which < 0) || (which > 7)) {
+    errput( "baseTriLz(): wrong function number!" );
+    return( 0.0 );
+  }
+  i = mapTo3D1[3*which];
+  j = mapTo3D1[3*which+1];
+  k = mapTo3D1[3*which+2];
+  return( lagrange1( x, i ) * lagrange1( y, j ) * lag1x[k] );
+}
+
+void rezidual( FMField *res, FMField *xi, FMField *coors, FMField *e_coors,
+	       FMField *bf, FMField *xint )
+{
+  int32 iep;
+
+  if (xi->nCol == 3) {
+    for (iep = 0; iep < bf->nCol; iep++) {
+      bf->val[iep] = baseTriL( xi->val[0], xi->val[1], xi->val[2], iep );
+    }
+  } else {
+    for (iep = 0; iep < bf->nCol; iep++) {
+      bf->val[iep] = baseBiL( xi->val[0], xi->val[1], iep );
+    }
+  }
+  // X(xi).
+  fmf_mulAB_n1( xint, bf, e_coors );
+  // Rezidual.
+  fmf_subAB_nn( res, coors, xint );
+}
+
+void matrix( FMField *mtx, FMField *xi, FMField *e_coors, FMField *bfg )
+{
+  int32 nEP = bfg->nCol, dim = bfg->nRow, iep;
+
+  if (dim == 3) {
+    for (iep = 0; iep < nEP; iep++) {
+      bfg->val[0*nEP+iep] = baseTriLx( xi->val[0], xi->val[1], xi->val[2], iep );
+      bfg->val[1*nEP+iep] = baseTriLy( xi->val[0], xi->val[1], xi->val[2], iep );
+      bfg->val[2*nEP+iep] = baseTriLz( xi->val[0], xi->val[1], xi->val[2], iep );
+    }
+  } else {
+    for (iep = 0; iep < nEP; iep++) {
+      bfg->val[0*nEP+iep] = baseBiLx( xi->val[0], xi->val[1], iep );
+      bfg->val[1*nEP+iep] = baseBiLy( xi->val[0], xi->val[1], iep );
+    }
+  }
+  // - Matrix.
+  fmf_mulAB_n1( mtx, bfg, e_coors );
+}
+
+#undef __FUNC__
+#define __FUNC__ "inverse_element_mapping"
+int32 inverse_element_mapping( FMField *out,
+			       FMField *coors, FMField *e_coors,
+			       FMField *ref_coors, int32 i_max, float64 eps )
+{
+  int32 ii, id, dim, nEP, ret = RET_OK;
+  float64 err;
+  FMField *bf = 0, *bfg = 0, *res = 0, *mtx = 0, *imtx = 0, *xint = 0;
+
+  dim = ref_coors->nCol;
+  nEP = ref_coors->nRow;
+
+  fmf_createAlloc( &bf, 1, 1, 1, nEP );
+  fmf_createAlloc( &bfg, 1, 1, dim, nEP );
+  fmf_createAlloc( &res, 1, 1, 1, dim );
+  fmf_createAlloc( &mtx, 1, 1, dim, dim );
+  fmf_createAlloc( &imtx, 1, 1, dim, dim );
+  fmf_createAlloc( &xint, 1, 1, 1, dim );
+
+  fmf_fillC( out, 0.0 );
+  ii = 0;
+  while (ii < i_max) {
+    rezidual( res, out, coors, e_coors, bf, xint );
+    err = 0.0;
+    for (id = 0; id < dim; id++) {
+      err += res->val[id] * res->val[id];
+    }
+    err = sqrt( err );
+/*     fmf_print( bf, stdout, 0 ); */
+/*     printf( "%d %f\n", ii, err ); */
+    if (err < eps) break;
+
+    matrix( mtx, out, e_coors, bfg );
+/*     fmf_print( bfg, stdout, 0 ); */
+/*     fmf_print( mtx, stdout, 0 ); */
+    geme_invert3x3( imtx, mtx );
+    ERR_CheckGo( ret );
+
+    fmf_mulAB_nn( xint, res, imtx );
+    fmf_addAB_nn( out, out, xint );
+    ii += 1;
+  }
+
+ end_label:
+  fmf_freeDestroy( &bf );
+  fmf_freeDestroy( &bfg );
+  fmf_freeDestroy( &res );
+  fmf_freeDestroy( &mtx );
+  fmf_freeDestroy( &imtx );
+  fmf_freeDestroy( &xint );
+
+  return( ret );
 }
