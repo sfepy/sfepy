@@ -2,7 +2,7 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
-from sfepy.fem.mesh import make_inverse_connectivity, find_closest_nodes, TreeItem
+from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, TreeItem
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph
 from extmods.geometry import SurfaceGeometry
@@ -1684,23 +1684,18 @@ class Variable( Struct ):
         coor = mesh.coors
         conns = mesh.conns
 
-        if ctree is None:
-            ctree = TreeItem.build_tree(coor, 4, 2)
-
         tts = [0.0, 0.0, 0.0, 0.0]
         tt0 = time.clock()
         for ii, point in enumerate(points):
-#            print ii, point
-            tt = time.clock()
-#            ic = find_closest_nodes(coor, point)
-#            print ic1
-            ic = ctree.find_closest_node(coor, point)
-#            print ic
-##             if ic1 != ic:
-##                 print nla.norm(coor[ic1] - point)
-##                 print nla.norm(coor[ic] - point)
-##                 debug()
-            tts[0] += time.clock() - tt
+##             print ii, point
+            if ctree is None:
+                tt = time.clock()
+                ic = find_nearest_nodes(coor, point)
+                tts[0] += time.clock() - tt
+            else:
+                tt = time.clock()
+                ic = ctree.find_nearest_node(coor, point)
+                tts[0] += time.clock() - tt
 
             els = iconn[ic]
 #            print len(els)
@@ -1733,7 +1728,7 @@ class Variable( Struct ):
             # For scalar fields only!!!
             vals[:,ii] = nm.dot(bf,self()[nodes])
         tts[-1] = time.clock() - tt0
-        print tts
+#        print tts[0], tts[3]
         
         return vals
 

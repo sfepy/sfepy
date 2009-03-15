@@ -127,7 +127,11 @@ def make_inverse_connectivity( conns, n_nod, combine_groups = False ):
         return iconns
 
 class TreeItem(Struct):
+    """Spatial tree class for searching a nearest node."""
+    
     def build_tree(coor, n_lev, n_div):
+        """First, the whole empty tree is constructed, then the points with
+        coor are inserted in one by one. Linear but slow."""
         TreeItem.n_lev = n_lev
         TreeItem.n_div = n_div
         TreeItem.dim = dim = coor.shape[1]
@@ -152,9 +156,14 @@ class TreeItem(Struct):
             return item
 
         cmin, cmax = coor.min(0), coor.max(0)
+        tt = time.clock()
         root = gen_tree(None, cmin, cmax, None, 0)
+        print time.clock() - tt
+        tt = time.clock()
         for ii, cx in enumerate(coor):
             root.insert_point(ii, cx)
+        print time.clock() - tt
+        root.setup()
 
         aux = root.get_sub_indx()
         if not nm.all(nm.sort(aux) == nm.arange(coor.shape[0])):
@@ -164,13 +173,17 @@ class TreeItem(Struct):
     build_tree = staticmethod(build_tree)
     
     def __init__(self, cmin, cmax):
-        name = '%s:%s' % (cmin, cmax)
+        name = '%s' % (zip(cmin, cmax))
         Struct.__init__(self, name=name, cmin=cmin, cmax=cmax,
-                        indx=[], parent=None, has_children=False)
+                        indx=[], parent=None, has_children=False, has_indx=False)
 
     def add_child(self, other, cc):
+        """Add a child item to the partial address cc."""
         other.parent = self
-        other.cc = cc
+        if self.parent:
+            other.address = self.address + [list(cc)]
+        else:
+            other.address = [list(cc)]
 
         if not self.has_children:
             self.children = nm.empty((self.n_div,)*self.dim, dtype=nm.object)
@@ -178,22 +191,99 @@ class TreeItem(Struct):
 
         self.children[tuple(cc)] = other
 
+    def setup(self):
+        """For each tree item set its address (unique location identifier) and
+        has_indx flag."""
+        if self.parent:
+            self.address = nm.array(self.address).T
+
+        if self.has_children:
+            for child in self.children.flat:
+                child.setup()
+                if child.has_indx:
+                    self.has_indx = True
+        else:
+            if self.indx:
+                self.has_indx = True
+
+    def get_address(self, cc):
+        """Get address of an item which as self.address with the final part
+        replaced by cc.
+
+        Over- and under-flows (= sub-tree crossing) are properly handled.
+        Used within search neighbours across sub-trees."""
+        row = nm.zeros_like(self.address[0])
+        def get_1d(address, ii):
+            delta = ii - address[-1]
+            row[:] = address
+            for ir in range(row.shape[0]-1, -1, -1):
+#                print ir, ii, row
+                if ii == -1:
+                    row[ir] = self.n_div - 1
+                elif ii == self.n_div:
+                    row[ir] = 0
+                else:
+                    row[ir] = ii
+                    break
+
+                if ir >= 1:
+                    ii = row[ir-1] + delta
+                else:
+                    return None
+
+            else:
+                return None
+
+            return row
+
+        address = nm.zeros_like(self.address)
+        for ii, ad in enumerate(self.address):
+            aux = get_1d(ad, cc[ii])
+            if aux is not None:
+                address[ii] = aux
+            else:
+                return None
+            
+        return address
+    
+    def get_item(self, address):
+        """Get tree item given by address. Any item can in this way access any
+        other item."""
+        root = self
+        while root.parent:
+            root = root.parent
+
+        item = root
+        ii = 0
+        while ii < address.shape[1]:
+            item = item.children[tuple(address[:,ii])]
+            ii += 1
+
+        return item
+
     def get_neighbours(self):
-        """TODO: make it wor across parent boundaries."""
+        """Works accross sub-tree boundaries."""
         if self.parent is None:
             return None
 
         else:
-            cc0 = nm.clip(self.cc - 1, 0, self.cc.max())
-            cc1 = nm.clip(self.cc + 1, self.cc.min(), self.n_div-1)
+            cc0 = self.address[:,-1] - 1
+            cc1 = self.address[:,-1] + 1
             neighbours = []
             for ii in la.cycle(cc1 - cc0 + 1):
                 cc = cc0 + ii
-                neighbours.append(self.parent.children[tuple(cc)])
+                ca = self.get_address(cc)
+##                 print cc
+##                 print ca
+                if ca is None: continue # border item.
+                nb = self.get_item(ca)
+                neighbours.append(nb)
 
+#            debug()
             return neighbours
         
     def seek_child(self, coor):
+        """Seek a child item containing with coor in its bounding box."""
         ic = []
         for idim in range(self.dim):
             ii = nm.searchsorted(self.dc[:,idim], coor[idim]) - 1
@@ -203,6 +293,7 @@ class TreeItem(Struct):
         return tuple(ic)
     
     def insert_point(self, ip, coor):
+        """Insert point with the index ip and coordinates coor."""
         if not self.has_children:
             self.indx.append(ip)
 
@@ -218,36 +309,48 @@ class TreeItem(Struct):
             self.children[ic].insert_point(ip, coor)
 
     def contains(self, coor):
+        """Test if coor is in the bounding box."""
         return nm.all((coor >= self.cmin) & (coor <= self.cmax))
 
     def get_sub_indx(self):
+        """Get indices of nodes in the sub-tree."""
         indx = []
-        indx.extend(self.indx)
-        if self.has_children:
-            for child in self.children.flat:
-                indx.extend(child.get_sub_indx())
+        if self.has_indx:
+            indx.extend(self.indx)
+
+            if self.has_children:
+                for child in self.children.flat:
+                    if child.has_indx:
+                        indx.extend(child.get_sub_indx())
         return indx
 
     def get_indx(self, coor, neighbours=True):
+        """Get indices of the nodes close to the point coor."""
         if not self.has_children:
-            if neighbours:
-                neighbours = self.get_neighbours()
+            item = self
+            while not item.has_indx:
+                item = item.parent
+
+            if neighbours and item.parent:
+                neighbours = item.get_neighbours()
                 indx = []
                 for nb in neighbours:
-                    indx.extend(nb.indx)
+                    indx.extend(nb.get_sub_indx())
                 return indx
 
             else:
-                return self.indx
+                return item.get_sub_indx()
 
         else:
             ic = self.seek_child(coor)
             indx = self.children[ic].get_indx(coor, neighbours)
-            if not indx:
-                indx = self.get_sub_indx()
+
             return indx
 
-    def find_closest_node(self, x1, x2):
+    def find_nearest_node(self, x1, x2):
+        """ For the point x2 find the nearest point in x1.
+
+        The coordinates x1 must be the same as those passed to build_tree()."""
         nodes = self.get_indx(x2[0], neighbours=True)
         dist = la.norm_l2_along_axis( x1[nodes] - x2 )
         ii = dist.argsort()
@@ -268,9 +371,9 @@ def gen_coor_hash(coor, n_div = 5, max_level = 2):
 
     return chash, full_hash_fun
     
-def find_closest_nodes_hashed(x1, x2, chash, hash_fun):
+def find_nearest_nodes_hashed(x1, x2, chash, hash_fun):
     """
-    For the point x2 find the closest point in x1. Simple hash algorithm.
+    For the point x2 find the nearest point in x1. Simple hash algorithm.
     """
 #    debug()
     key = hash_fun(x2[0])
@@ -285,9 +388,9 @@ def find_closest_nodes_hashed(x1, x2, chash, hash_fun):
 
     return out
 
-def find_closest_nodes( x1, x2, num = 1 ):
+def find_nearest_nodes( x1, x2, num = 1 ):
     """
-    For the point x2 find num closest points in x1. Naive algorithm!
+    For the point x2 find num nearest points in x1. Naive algorithm!
     """
     dist = la.norm_l2_along_axis( x1 - x2 )
     ii = dist.argsort()
