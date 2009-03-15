@@ -126,6 +126,165 @@ def make_inverse_connectivity( conns, n_nod, combine_groups = False ):
             iconns.append( iconn )
         return iconns
 
+class TreeItem(Struct):
+    def build_tree(coor, n_lev, n_div):
+        TreeItem.n_lev = n_lev
+        TreeItem.n_div = n_div
+        TreeItem.dim = dim = coor.shape[1]
+
+        def gen_tree(parent, cmin, cmax, cc, level):
+##             print cmin, cmax, level
+            item = TreeItem(cmin, cmax)
+            if parent:
+                parent.add_child(item, cc)
+            if level == n_lev: return
+
+            dc = []
+            idim = range(dim)
+            for ii in idim:
+                dc.append(nm.linspace(cmin[ii], cmax[ii], n_div+1))
+            dc = nm.array(dc).T
+            item.dc = dc
+            for ii in la.cycle([n_div] * dim):
+                ii = nm.array(ii)
+                ccmin, ccmax = dc[ii,idim], dc[ii+1,idim]
+                gen_tree(item, ccmin, ccmax, ii, level+1)
+            return item
+
+        cmin, cmax = coor.min(0), coor.max(0)
+        root = gen_tree(None, cmin, cmax, None, 0)
+        for ii, cx in enumerate(coor):
+            root.insert_point(ii, cx)
+
+        aux = root.get_sub_indx()
+        if not nm.all(nm.sort(aux) == nm.arange(coor.shape[0])):
+            debug()
+        return root
+
+    build_tree = staticmethod(build_tree)
+    
+    def __init__(self, cmin, cmax):
+        name = '%s:%s' % (cmin, cmax)
+        Struct.__init__(self, name=name, cmin=cmin, cmax=cmax,
+                        indx=[], parent=None, has_children=False)
+
+    def add_child(self, other, cc):
+        other.parent = self
+        other.cc = cc
+
+        if not self.has_children:
+            self.children = nm.empty((self.n_div,)*self.dim, dtype=nm.object)
+            self.has_children = True
+
+        self.children[tuple(cc)] = other
+
+    def get_neighbours(self):
+        """TODO: make it wor across parent boundaries."""
+        if self.parent is None:
+            return None
+
+        else:
+            cc0 = nm.clip(self.cc - 1, 0, self.cc.max())
+            cc1 = nm.clip(self.cc + 1, self.cc.min(), self.n_div-1)
+            neighbours = []
+            for ii in la.cycle(cc1 - cc0 + 1):
+                cc = cc0 + ii
+                neighbours.append(self.parent.children[tuple(cc)])
+
+            return neighbours
+        
+    def seek_child(self, coor):
+        ic = []
+        for idim in range(self.dim):
+            ii = nm.searchsorted(self.dc[:,idim], coor[idim]) - 1
+            ii = max(min(ii, self.n_div-1), 0)
+            ic.append(ii)
+            
+        return tuple(ic)
+    
+    def insert_point(self, ip, coor):
+        if not self.has_children:
+            self.indx.append(ip)
+
+        else:
+            ic = self.seek_child(coor)
+            
+            if not self.children[ic].contains(coor):
+                print ic
+                print coor
+                print self.children[ic].name
+                debug()
+
+            self.children[ic].insert_point(ip, coor)
+
+    def contains(self, coor):
+        return nm.all((coor >= self.cmin) & (coor <= self.cmax))
+
+    def get_sub_indx(self):
+        indx = []
+        indx.extend(self.indx)
+        if self.has_children:
+            for child in self.children.flat:
+                indx.extend(child.get_sub_indx())
+        return indx
+
+    def get_indx(self, coor, neighbours=True):
+        if not self.has_children:
+            if neighbours:
+                neighbours = self.get_neighbours()
+                indx = []
+                for nb in neighbours:
+                    indx.extend(nb.indx)
+                return indx
+
+            else:
+                return self.indx
+
+        else:
+            ic = self.seek_child(coor)
+            indx = self.children[ic].get_indx(coor, neighbours)
+            if not indx:
+                indx = self.get_sub_indx()
+            return indx
+
+    def find_closest_node(self, x1, x2):
+        nodes = self.get_indx(x2[0], neighbours=True)
+        dist = la.norm_l2_along_axis( x1[nodes] - x2 )
+        ii = dist.argsort()
+
+        return nodes[ii[0]]
+        
+def gen_coor_hash(coor, n_div = 5, max_level = 2):
+
+    aux = nm.fix(((coor - cmin) / dc * 9))
+    hash_fun = lambda x: ''.join('%1d' % ii for ii in x)
+    keys = nm.apply_along_axis( hash_fun, 1, aux)
+
+    chash = {}
+    for ii, key in enumerate(keys):
+        chash.setdefault(key, []).append(ii)
+
+    full_hash_fun = lambda x: hash_fun(nm.fix((x - cmin) / dc * 9))
+
+    return chash, full_hash_fun
+    
+def find_closest_nodes_hashed(x1, x2, chash, hash_fun):
+    """
+    For the point x2 find the closest point in x1. Simple hash algorithm.
+    """
+#    debug()
+    key = hash_fun(x2[0])
+    try:
+        nodes = chash[key]
+    except KeyError:
+        debug()
+    dist = la.norm_l2_along_axis( x1[nodes] - x2 )
+    ii = dist.argsort()
+
+    out = nodes[ii[0]]
+
+    return out
+
 def find_closest_nodes( x1, x2, num = 1 ):
     """
     For the point x2 find num closest points in x1. Naive algorithm!
@@ -406,7 +565,7 @@ class Mesh( Struct ):
         else:
             trunk = io.filename
 
-        output( 'reading mesh (%s)...' % (filename) )
+        output( 'reading mesh (%s)...' % (io.filename) )
         tt = time.clock()
         mesh = Mesh( trunk )
         mesh = io.read( mesh )

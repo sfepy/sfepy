@@ -1,6 +1,5 @@
 from sfepy.base.base import *
-from sfepy.fem.mesh import make_inverse_connectivity
-
+from sfepy.fem.mesh import make_inverse_connectivity, TreeItem
 class Probe(Struct):
 
     def __call__(self, variable):
@@ -9,7 +8,8 @@ class Probe(Struct):
     def probe(self, variable):
         tt = time.clock()
         points = self.get_points()
-        vals = variable.interp_to_points(points, self.mesh, self.iconn)
+        vals = variable.interp_to_points(points, self.mesh,
+                                         ctree=self.ctree, iconn=self.iconn)
         print time.clock() - tt
 
         return vals
@@ -24,9 +24,15 @@ class LineProbe(Probe):
 
         Probe.__init__(self, name=name, p0=p0, p1=p1, n_point=n_point, mesh=mesh)
 
+        tt = time.clock()
         iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
                                           combine_groups=True)
         self.iconn = iconn
+        output('iconn: %f s' % (time.clock()-tt))
+
+        tt = time.clock()
+        self.ctree = TreeItem.build_tree(mesh.coors, 5, 2)
+        output('ctree: %f s' % (time.clock()-tt))
 
         dirvec = self.p1 - self.p0
         self.length = nm.linalg.norm(dirvec)

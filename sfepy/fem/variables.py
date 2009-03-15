@@ -2,7 +2,7 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
-from sfepy.fem.mesh import make_inverse_connectivity, find_closest_nodes
+from sfepy.fem.mesh import make_inverse_connectivity, find_closest_nodes, TreeItem
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph
 from extmods.geometry import SurfaceGeometry
@@ -1670,7 +1670,7 @@ class Variable( Struct ):
         newdata = data[indx]
         return newdata
 
-    def interp_to_points( self, points, mesh, iconn=None ):
+    def interp_to_points( self, points, mesh, ctree = None, iconn=None ):
         """
         Interpolate self into given points. Works for scalar variables only!
         """
@@ -1683,13 +1683,30 @@ class Variable( Struct ):
         vals = nm.empty((vdim, len(points)), dtype=self.dtype)
         coor = mesh.coors
         conns = mesh.conns
+
+        if ctree is None:
+            ctree = TreeItem.build_tree(coor, 4, 2)
+
+        tts = [0.0, 0.0, 0.0, 0.0]
+        tt0 = time.clock()
         for ii, point in enumerate(points):
-##             print ii, point
-            ic = find_closest_nodes(coor, point)
+#            print ii, point
+            tt = time.clock()
+#            ic = find_closest_nodes(coor, point)
+#            print ic1
+            ic = ctree.find_closest_node(coor, point)
+#            print ic
+##             if ic1 != ic:
+##                 print nla.norm(coor[ic1] - point)
+##                 print nla.norm(coor[ic] - point)
+##                 debug()
+            tts[0] += time.clock() - tt
 
             els = iconn[ic]
+#            print len(els)
             for ig, iel in els:
-##                 print ig, iel
+##                 print ic, ig, iel
+                tt1 = time.clock()
                 nodes = conns[ig][iel]
                 ecoor = coor[nodes]
 ##                 print ecoor
@@ -1697,10 +1714,13 @@ class Variable( Struct ):
                 interp = field.aps[ig].interp
                 ref_coors = interp.nodes['v'].bar_coors
                 base_fun = interp.base_funs['v'].fun
+                tts[2] += time.clock() - tt1
 
+                tt = time.clock()
                 xi = la.inverse_element_mapping(point, ecoor, base_fun,
                                                 ref_coors,
                                                 suppress_errors=True)
+                tts[1] += time.clock() - tt
                 try:
                     # Verify that we are inside the element.
                     bf = base_fun.value(xi[nm.newaxis,:], base_fun.nodes,
@@ -1709,10 +1729,12 @@ class Variable( Struct ):
                     continue
                 break
 ##             print xi, bf
-
+            
             # For scalar fields only!!!
             vals[:,ii] = nm.dot(bf,self()[nodes])
-
+        tts[-1] = time.clock() - tt0
+        print tts
+        
         return vals
 
 ## ##
