@@ -1,9 +1,15 @@
+try:
+    from scipy.spatial import KDTree
+except ImportError:
+    KDTree = None
+
 from sfepy.base.base import *
 from sfepy.fem.mesh import make_inverse_connectivity, TreeItem
 
 class Probe(Struct):
     iconn = None
     ctree = None
+    cttype = None
     
     def __call__(self, variable):
         return self.probe(variable)
@@ -39,13 +45,24 @@ class LineProbe(Probe):
         output('iconn: %f s' % (time.clock()-tt))
 
         if use_tree:
+            
             tt = time.clock()
             if share_mesh and Probe.ctree:
                 self.ctree = Probe.ctree
+                self.cttype = Probe.cttype
             else:
-                self.ctree = TreeItem.build_tree(mesh.coors, use_tree, 2)
-                Probe.ctree = self.ctree
-            output('ctree: %f s' % (time.clock()-tt))
+                if (use_tree == 1) and (KDTree is not None):
+                    tt = time.clock()                    
+                    ctree = KDTree(mesh.coors)
+                    cttype = 'scipy.kdtree'
+                else:
+                    tt = time.clock()                    
+                    ctree = TreeItem.build_tree(mesh.coors, use_tree, 2)
+                    cttype = 'builtin (slow)'
+                Probe.ctree = self.ctree = ctree
+                Probe.cttype = self.cttype = cttype
+            output('ctree (%s): %f s' % (self.cttype, time.clock()-tt))
+                
         else:
             self.ctree = None
             

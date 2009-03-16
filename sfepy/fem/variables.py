@@ -1695,7 +1695,10 @@ class Variable( Struct ):
                 tts[0] += time.clock() - tt
             else:
                 tt = time.clock()
-                ic = ctree.find_nearest_node(coor, point)
+                if isinstance(ctree, TreeItem):
+                    ic = ctree.find_nearest_node(coor, point)
+                else:
+                    ic = ctree.query(point)[1]
                 tts[0] += time.clock() - tt
 
             els = iconn[ic]
@@ -1713,18 +1716,19 @@ class Variable( Struct ):
                 tts[2] += time.clock() - tt1
 
                 tt = time.clock()
-##                 xi = la.inverse_element_mapping(point, ecoor, base_fun,
-##                                                 ref_coors,
-##                                                 suppress_errors=True)
-##                 print xi
-                xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
-                inverse_element_mapping(xi, point, ecoor, ref_coors, 10, 1e-8)
-##                 print xi
-##                 debug()
+                n_v, dim = ecoor.shape
+                if n_v == (dim + 1):
+                    bc = la.barycentric_coors(point, ecoor)
+                    xi = nm.dot(bc.T, ref_coors)
+                else: # Tensor-product and other.
+                    xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
+                    inverse_element_mapping(xi, point, ecoor, ref_coors,
+                                            100, 1e-8)
                 tts[1] += time.clock() - tt
+
                 try:
                     # Verify that we are inside the element.
-                    bf = base_fun.value(xi[nm.newaxis,:], base_fun.nodes,
+                    bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
                                         suppress_errors=False)
                 except AssertionError:
                     continue

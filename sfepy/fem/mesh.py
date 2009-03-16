@@ -156,13 +156,13 @@ class TreeItem(Struct):
             return item
 
         cmin, cmax = coor.min(0), coor.max(0)
-        tt = time.clock()
+##         tt = time.clock()
         root = gen_tree(None, cmin, cmax, None, 0)
-        print time.clock() - tt
-        tt = time.clock()
+##         print time.clock() - tt
+##         tt = time.clock()
         for ii, cx in enumerate(coor):
             root.insert_point(ii, cx)
-        print time.clock() - tt
+##         print time.clock() - tt
         root.setup()
 
         aux = root.get_sub_indx()
