@@ -1728,7 +1728,7 @@ class Variable( Struct ):
                 tts[0] += time.clock() - tt
 
             els = iconn[ic]
-#            print len(els)
+            bf = None
             for ig, iel in els:
 ##                 print ic, ig, iel
                 tt1 = time.clock()
@@ -1760,9 +1760,13 @@ class Variable( Struct ):
                     continue
                 break
 ##             print xi, bf
-            
-            # For scalar fields only!!!
-            vals[:,ii] = nm.dot(bf,self()[nodes])
+
+            if bf is None:
+                # Point outside the mesh.
+                vals[:,ii] = nm.nan
+            else:
+                # For scalar fields only!!!
+                vals[:,ii] = nm.dot(bf,self()[nodes])
         tts[-1] = time.clock() - tt0
         print tts
 #        print tts[0], tts[3]
