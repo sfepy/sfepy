@@ -156,8 +156,7 @@ def create_lcbc_rigid( coors ):
 
     return n_rigid_dof, nm.hstack( (mtx_r, mtx_e) )
 
-def create_lcbc_no_penetration( eqs, normals ):
-##     print eqs
+def create_lcbc_no_penetration( normals ):
 ##     print normals
     ii = nm.abs( normals ).argmax( 1 )
 ##     print ii
@@ -463,22 +462,43 @@ class Variables( Container ):
         n_constrained = ii.shape[0]
         n_dof_free = n_dof - n_constrained
         n_dof_reduced = n_dof_free + n_dof_new
-        output( 'dofs: total %d, free %d, constrained %d, new %d -> reduced %d'\
-                % (n_dof, n_constrained, n_dof_free, n_dof_new, n_dof_reduced) )
+        output( 'dofs: total %d, free %d, constrained %d, new %d'\
+                % (n_dof, n_dof_free, n_constrained, n_dof_new) )
+        output( ' -> reduced %d' % (n_dof_reduced) )
         mtx_lc = sp.lil_matrix( (n_dof, n_dof_reduced), dtype = nm.float64 )
         ir = nm.where( eq_lcbc == 0 )[0]
         ic = nm.arange( n_dof_reduced, dtype = nm.int32 )
         mtx_lc[ir,ic] = 1.0
 
+        rows = []
+        cols = []
+        data = []
         for var_name, lcbc_op in lcbc_ops.iteritems():
             if lcbc_op is None: continue
             for ii, op_lc in enumerate( lcbc_op.ops_lc ):
                 indx = nm.where( eq_lcbc == lcbc_op.markers[ii] )[0]
-                icols = slice( n_dof_free + lcbc_op.ics[ii],
-                               n_dof_free + lcbc_op.ics[ii+1] )
-                mtx_lc[indx,icols] = op_lc
+                icols = nm.arange(n_dof_free + lcbc_op.ics[ii],
+                                  n_dof_free + lcbc_op.ics[ii+1])
 
-        mtx_lc = mtx_lc.tocsr()
+                if isinstance(op_lc, sp.spmatrix):
+                    lr, lc, lv = sp.find(op_lc)
+                    rows.append(indx[lr])
+                    cols.append(icols[lc])
+                    data.append(lv)
+
+                else:
+                    irs, ics = nm.meshgrid(indx, icols)
+                    rows.append(irs.ravel())
+                    cols.append(ics.ravel())
+                    data.append(op_lc.T.ravel())
+
+        rows = nm.concatenate(rows)
+        cols = nm.concatenate(cols)
+        data = nm.concatenate(data)
+
+        mtx_lc2 = sp.coo_matrix((data, (rows, cols)), shape=mtx_lc.shape)
+        mtx_lc = (mtx_lc + mtx_lc2).tocsr()
+
 ##         import pylab
 ##         from sfepy.base.plotutils import spy
 ##         spy( mtx_lc )
@@ -1332,6 +1352,14 @@ class Variable( Struct ):
                 mcoor = self.field.get_coor( nmaster )
                 n_dof, op_lc = create_lcbc_rigid( mcoor )
 
+                # Strip unconstrained dofs.
+                n_nod, dim = mcoor.shape
+                aux = dim * nm.arange(n_nod)
+                indx = [aux + self.dofs.index(dof) for dof in dofs]
+                indx = nm.array(indx).T.ravel()
+
+                op_lc = op_lc[indx]
+
             elif kind == 'no_penetration':
                 dim = self.field.dim[0]
                 assert_( len( dofs ) == dim )
@@ -1347,9 +1375,7 @@ class Variable( Struct ):
                                                mode = 'vertex', data = nn )}
                     mesh.write( bc.filename, out = out, io = 'auto' )
 
-                meq2 = meq.reshape( (dim, nmaster.shape[0]) ).T
-
-                n_dof, op_lc = create_lcbc_no_penetration( meq2, normals )
+                n_dof, op_lc = create_lcbc_no_penetration( normals )
 
             else:
                 raise ValueError( 'unknown LCBC kind! (%s)' % kind )
