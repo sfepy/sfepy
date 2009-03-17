@@ -227,7 +227,8 @@ class MeditMeshIO( MeshIO ):
                 nod = read_array( fd, num, dim + 1, nm.float64 )
                 break
 
-        bbox = nm.vstack( (nm.amin( nod, 0 ), nm.amax( nod, 0 )) )
+        bbox = nm.vstack( (nm.amin( nod[:,:dim], 0 ),
+                           nm.amax( nod[:,:dim], 0 )) )
 
         if ret_dim:
             if ret_fd:
@@ -437,19 +438,22 @@ class VTKMeshIO( MeshIO ):
     ##
     # c: 22.07.2008
     def read_bounding_box( self, ret_fd = False, ret_dim = False ):
+        dim = self.read_dimension()
+        
         fd = open( self.filename, 'r' )
         while 1:
             try:
                 line = fd.readline().split()
+                if not line: continue
                 if line[0] == 'POINTS':
                     nod = read_array( fd, 1, -1, nm.float64 )
-                    dim = nod.shape[1]
                     break
             except:
                 output( "reading " + fd.name + " failed!" )
                 raise
 
-        bbox = nm.vstack( (nm.amin( nod, 0 ), nm.amax( nod, 0 )) )
+        bbox = nm.vstack( (nm.amin( nod[:,:dim], 0 ),
+                           nm.amax( nod[:,:dim], 0 )) )
 
         if ret_dim:
             if ret_fd:
