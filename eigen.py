@@ -78,8 +78,7 @@ class AcousticBandGapsApp( SimpleApp ):
         plot_transform_wave = get( 'plot_transform_wave', None )
         plot_transform_angle = get( 'plot_transform_angle', None )
 
-        plot_options = get( 'plot_options',
-                                         {'show' : True,'legend' : False,} )
+        plot_options = get( 'plot_options', {'show' : True,'legend' : False,} )
 
         fig_name = get( 'fig_name', None )
         fig_name_wave = get( 'fig_name_wave', None )
@@ -89,6 +88,7 @@ class AcousticBandGapsApp( SimpleApp ):
             'resonance' : 'eigenfrequencies',
             'masked' : 'masked eigenfrequencies',
             'eig_min' : 'min eig($M^*$)',
+            'eig_mid' : 'mid eig($M^*$)',
             'eig_max' : 'max eig($M^*$)',
             'y_axis' : 'eigenvalues of mass matrix $M^*$',
         }
@@ -98,25 +98,28 @@ class AcousticBandGapsApp( SimpleApp ):
             'resonance' : 'eigenfrequencies',
             'masked' : 'masked eigenfrequencies',
             'eig_min' : r'$\kappa$(min)',
+            'eig_mid' : r'$\kappa$(mid)',
             'eig_max' : r'$\kappa$(max)',
             'y_axis' : 'polarization angles',
         }
-        plot_labels_angle = try_set_defaults( options, 'plot_labels', aux )
+        plot_labels_angle = try_set_defaults( options, 'plot_labels_angle', aux )
 
         aux = {
             'resonance' : 'eigenfrequencies',
             'masked' : 'masked eigenfrequencies',
             'eig_min' : r'wave number (min)',
+            'eig_mid' : r'wave number (mid)',
             'eig_max' : r'wave number (max)',
             'y_axis' : 'wave numbers',
         }
-        plot_labels_wave = try_set_defaults( options, 'plot_labels', aux )
+        plot_labels_wave = try_set_defaults( options, 'plot_labels_wave', aux )
 
         plot_rsc =  {
             'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
             'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
             'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
             'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--' },
+            'eig_mid' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-.' },
             'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-' },
             'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
             'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },

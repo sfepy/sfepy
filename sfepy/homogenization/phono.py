@@ -286,9 +286,13 @@ def compute_polarization_angles( iw_dir, wave_vectors ):
 
     iw_dir = iw_dir / nla.norm( iw_dir )
     idims = range( iw_dir.shape[0] )
+    signs0 = nm.sign(wave_vectors[0][0][0])[nm.newaxis,:]
     for vecs in wave_vectors:
         pa = nm.empty( vecs.shape[:-1], dtype = nm.float64 )
         for ir, vec in enumerate( vecs ):
+            signs = nm.sign(vec[0])[nm.newaxis,:]
+            # Ensure all the wave vectors have the same leading sign.
+            vec = signs * signs0 * vec
             for ic in idims:
                 vv = vec[:,ic]
                 pa[ir,ic] = nm.arccos( nm.dot( iw_dir, vv ) / nla.norm( vv ) )
@@ -430,7 +434,7 @@ def plot_logs( fig_num, plot_rsc, plot_labels,
                draw_eigs = True, show_legend = True, show = False,
                clear = False, new_axes = False ):
     """
-    Plot logs of min/max eigs of M.
+    Plot logs of min/middle/max eigs of M.
     """
     if pylab is None: return
 
@@ -449,8 +453,15 @@ def plot_logs( fig_num, plot_rsc, plot_labels,
     for ii, log in enumerate( logs ):
         l1 = ax.plot( freqs[ii], log[:,0], **plot_rsc['eig_min'] )
         l2 = ax.plot( freqs[ii], log[:,-1], **plot_rsc['eig_max'] )
+        if log.shape[1] == 3:
+            l3 = ax.plot( freqs[ii], log[:,1], **plot_rsc['eig_mid'] )
+        else:
+            l3 = None
+            
     l1[0].set_label( plot_labels['eig_min'] )
     l2[0].set_label( plot_labels['eig_max'] )
+    if l3:
+        l3[0].set_label( plot_labels['eig_mid'] )
 
     fmin, fmax = freqs[0][0], freqs[-1][-1]
     ax.plot( [fmin, fmax], [0, 0], **plot_rsc['x_axis'] )
