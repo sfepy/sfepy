@@ -47,9 +47,13 @@ class AcousticBandGapsApp( SimpleApp ):
         non-compulsory options."""
         get = options.get_default_attr
         
+        clear_cache = get( 'clear_cache', {} )
         eigensolver = get( 'eigensolver', 'eig.sgscipy' )
         eig_problem = get( 'eig_problem', 'simple' )
         schur = get( 'schur', None )
+
+        elasticity_contrast = get( 'elasticity_contrast', 1.0 )
+        scale_epsilon = get( 'scale_epsilon', 1.0 )
 
         incident_wave_dir = get( 'incident_wave_dir', None )
         dispersion = get( 'dispersion', 'simple' )
@@ -151,7 +155,8 @@ class AcousticBandGapsApp( SimpleApp ):
         """Application options setup for phase velocity computation. Sets
         default values for missing non-compulsory options."""
         get = options.get_default_attr
-        
+
+        clear_cache = get( 'clear_cache', {} )
         eigensolver = get( 'eigensolver', 'eig.sgscipy' )
 
         incident_wave_dir = get( 'incident_wave_dir', None )
@@ -177,6 +182,9 @@ class AcousticBandGapsApp( SimpleApp ):
 
         self.setup_options()
         self.cached_coefs = None
+        self.cached_iw_dir = None
+        self.cached_christoffel = None
+        self.cached_evp = None
 
         output_dir = self.problem.output_dir
         shutil.copyfile( conf._filename,
@@ -194,6 +202,10 @@ class AcousticBandGapsApp( SimpleApp ):
     def call( self ):
         options = self.options
 
+        for key, val in self.app_options.clear_cache.iteritems():
+            if val and key.startswith('cached_'):
+                setattr(self, key, None)
+
         if options.phase_velocity:
             # No band gaps in this case.
             return self.compute_phase_velocity()
@@ -203,11 +215,12 @@ class AcousticBandGapsApp( SimpleApp ):
         self.fix_eig_range( evp.eigs.shape[0] )
 
         if options.detect_band_gaps:
-            bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
+            bg = detect_band_gaps( self.problem, evp.eigs_rescaled,
+                                   evp.eig_vectors,
                                    self.app_options, self.conf.funmod )
 
             if options.plot:
-                plot_range, teigs = transform_plot_data( bg.logs[1],
+                plot_range, teigs = transform_plot_data( bg.logs.eigs,
                                                          bg.opts.plot_transform,
                                                          self.conf.funmod )
 
@@ -220,7 +233,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs[0], teigs,
+                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs.freqs, teigs,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
@@ -233,28 +246,22 @@ class AcousticBandGapsApp( SimpleApp ):
                     fig.savefig( fig_name )
 
         elif options.analyze_dispersion:
-            dim = self.problem.domain.mesh.dim
+            christoffel, iw_dir = self.compute_cat(ret_iw_dir=True)
 
-            iw_dir = nm.array( self.app_options.incident_wave_dir,
-                               dtype = nm.float64 )
-            assert_( dim == iw_dir.shape[0] )
-
-            iw_dir = iw_dir / nla.norm( iw_dir )
-
-            coefs = self.eval_homogenized_coefs()
-            christoffel = compute_cat( coefs, iw_dir,
-                                       self.app_options.dispersion )
-            report_iw_cat( iw_dir, christoffel )
-
-            bg = detect_band_gaps( self.problem, evp.eigs, evp.eig_vectors,
+            bg = detect_band_gaps( self.problem, evp.eigs_rescaled,
+                                   evp.eig_vectors,
                                    self.app_options, self.conf.funmod,
                                    christoffel = christoffel )
 
             output( 'computing polarization angles...' )
-            pas = compute_polarization_angles( iw_dir, bg.logs[2] )
+            pas = compute_polarization_angles( iw_dir, bg.logs.eig_vectors )
             output( '...done' )
 
             bg.polarization_angles = pas
+
+            output( 'computing phase velocity...' )
+            bg.phase_velocity = self.compute_phase_velocity()
+            output( '...done' )
 
             if options.plot:
                 aux = transform_plot_data( pas,
@@ -271,7 +278,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs[0], pas,
+                fig = plot_logs( 1, plot_rsc, plot_labels, bg.logs.freqs, pas,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
@@ -283,7 +290,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 if fig_name is not None:
                     fig.savefig( fig_name )
 
-                aux = transform_plot_data( bg.logs[1],
+                aux = transform_plot_data( bg.logs.eigs,
                                            bg.opts.plot_transform_wave,
                                            self.conf.funmod )
                 plot_range, teigs = aux
@@ -293,7 +300,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 fig = plot_gaps( 2, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
                                  clear = True )
-                fig = plot_logs( 2, plot_rsc, plot_labels, bg.logs[0], teigs,
+                fig = plot_logs( 2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
@@ -317,6 +324,9 @@ class AcousticBandGapsApp( SimpleApp ):
         self.app_options.eig_range = eig_range
     
     def solve_eigen_problem( self, ofn_trunk = None, post_process_hook = None ):
+
+        if self.cached_evp is not None:
+            return self.cached_evp
 
         problem = self.problem
         ofn_trunk = get_default( ofn_trunk, problem.ofn_trunk,
@@ -373,11 +383,17 @@ class AcousticBandGapsApp( SimpleApp ):
         if isinstance( mtx_m, sc.sparse.spmatrix ):
             mtx_m = mtx_m.toarray()
 
-        eigs, mtx_s_phi = eig( mtx_a, mtx_m, return_time = tt,
-                               method = self.app_options.eigensolver )
+            eigs, mtx_s_phi = eig( mtx_a, mtx_m, return_time = tt,
+                                        method = self.app_options.eigensolver )
         output( '...done in %.2f s' % tt[0] )
+        output( 'original eigenfrequencies:' )        
         output( eigs )
-        output( 'number of frequencies: %d' % eigs.shape[0] )
+        opts = self.app_options
+        epsilon2 = opts.scale_epsilon * opts.scale_epsilon
+        eigs_rescaled = (opts.elasticity_contrast / epsilon2)  * eigs
+        output( 'rescaled eigenfrequencies:' )        
+        output( eigs_rescaled )
+        output( 'number of eigenfrequencies: %d' % eigs.shape[0] )
 
         try:
             assert_( nm.isfinite( eigs ).all() )
@@ -437,7 +453,11 @@ class AcousticBandGapsApp( SimpleApp ):
         eigs.tofile( fd, ' ' )
         fd.close()
 
-        return Struct( eigs = eigs, eig_vectors = eig_vectors )
+        evp = Struct( eigs = eigs, eigs_rescaled = eigs_rescaled,
+                      eig_vectors = eig_vectors )
+        self.cached_evp = evp
+
+        return evp
 
     def eval_homogenized_coefs( self ):
         if self.cached_coefs is not None:
@@ -478,20 +498,40 @@ class AcousticBandGapsApp( SimpleApp ):
         
         return coefs
 
+    def compute_cat( self, ret_iw_dir=False ):
+        """Compute the Christoffel acoustic tensor, given the incident wave
+        direction."""
+        opts = self.app_options
+        iw_dir = nm.array( opts.incident_wave_dir, dtype = nm.float64 )
+
+        dim = self.problem.get_dim()
+        assert_( dim == iw_dir.shape[0] )
+
+        iw_dir = iw_dir / nla.norm( iw_dir )
+
+        if self.cached_christoffel is not None:
+            christoffel = self.cached_christoffel
+
+        else:
+            coefs = self.eval_homogenized_coefs()
+            christoffel = compute_cat( coefs, iw_dir,
+                                       self.app_options.dispersion )
+            report_iw_cat( iw_dir, christoffel )
+
+            self.cached_christoffel = christoffel
+
+        if ret_iw_dir:
+            return christoffel, iw_dir
+
+        else:
+            return christoffel
+
     def compute_phase_velocity( self ):
         from sfepy.homogenization.phono import compute_density_volume_info
         opts = self.app_options
         dim = self.problem.domain.mesh.dim
 
-        iw_dir = nm.array( opts.incident_wave_dir, dtype = nm.float64 )
-        assert_( dim == iw_dir.shape[0] )
-
-        iw_dir = iw_dir / nla.norm( iw_dir )
-
-        coefs = self.eval_homogenized_coefs()
-        christoffel = compute_cat( coefs, iw_dir,
-                                   self.app_options.dispersion )
-        report_iw_cat( iw_dir, christoffel )
+        christoffel = self.compute_cat()
 
         self.problem.update_materials()
         dv_info = compute_density_volume_info( self.problem, opts.volume,
