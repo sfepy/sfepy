@@ -286,16 +286,17 @@ def compute_polarization_angles( iw_dir, wave_vectors ):
 
     iw_dir = iw_dir / nla.norm( iw_dir )
     idims = range( iw_dir.shape[0] )
-    signs0 = nm.sign(wave_vectors[0][0][0])[nm.newaxis,:]
+    pi2 = 0.5 * nm.pi
     for vecs in wave_vectors:
         pa = nm.empty( vecs.shape[:-1], dtype = nm.float64 )
         for ir, vec in enumerate( vecs ):
-            signs = nm.sign(vec[0])[nm.newaxis,:]
-            # Ensure all the wave vectors have the same leading sign.
-            vec = signs * signs0 * vec
             for ic in idims:
                 vv = vec[:,ic]
-                pa[ir,ic] = nm.arccos( nm.dot( iw_dir, vv ) / nla.norm( vv ) )
+                # Ensure the angle is in [0, pi/2].
+                val = nm.arccos( nm.dot( iw_dir, vv ) / nla.norm( vv ) )
+                if val > pi2:
+                    val = nm.pi - val
+                pa[ir,ic] = val
 
         pas.append( pa )
 
@@ -752,7 +753,12 @@ def detect_band_gaps( pb, eigs, eig_vectors, opts, funmod,
 
     kinds = describe_gaps( gaps )
 
-    return Struct( logs = logs, gaps = gaps, kinds = kinds,
+    slogs = Struct(freqs = logs[0],
+                   eigs = logs[1])
+    if n_col == 2:
+        slogs.eig_vectors = logs[2]
+
+    return Struct( logs = slogs, gaps = gaps, kinds = kinds,
                    valid = valid, eig_range = slice( *opts.eig_range ),
                    n_eigs = eigs.shape[0], n_zeroed = n_zeroed,
                    freq_range_initial = freq_info.freq_range_initial,
