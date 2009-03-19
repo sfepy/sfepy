@@ -921,7 +921,7 @@ class Approximations( Container ):
                 pass
 
             geom_key = (integral.name, geom_request.gtype,
-                       geom_request.region.name, ap.name)
+                        geom_request.region.name, ap.name)
 ##            print field.name, geom_key
 
             if geometries.has_key( geom_key ):
@@ -934,6 +934,12 @@ class Approximations( Container ):
                     geom = ap.describe_geometry( field, geom_request, integral,
                                                  self.coors )
                     self.geometries[geom_key] = geometries[geom_key] = geom
+                    # Make an alias Surface -> SurfaceExtra.
+                    if geom_request.gtype == 'SurfaceExtra':
+                        key2 = list(geom_key)
+                        key2[1] = 'Surface'
+                        key2 = tuple(key2)
+                        self.geometries[key2] = geometries[key2] = geom
 
         if over_write:
             self.geometries = geometries
