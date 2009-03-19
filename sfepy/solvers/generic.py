@@ -157,8 +157,15 @@ def solve_evolutionary_op( problem,
 def solve_stationary_op( problem, save_results = True, ts = None,
                          post_process_hook = None ):
     data = {}
+
+    if ts is None:
+        try:
+            ts = problem.get_time_solver().ts
+        except ValueError:
+            pass
+
     problem.time_update( ts )
-    state = problem.solve()
+    state = problem.solve(ts=ts)
 
     if save_results:
         problem.save_state( problem.get_output_name(), state,
