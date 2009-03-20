@@ -200,6 +200,14 @@ class AcousticBandGapsApp( SimpleApp ):
         self.app_options += process_options( self.conf.options )
     
     def call( self ):
+        """In parametric runs, cached data (homogenized coefficients,
+        Christoffel acoustic tensor and eigenvalue problem solution) are
+        cleared according to 'clear_cache' aplication options.
+
+        Example:
+
+        clear_cache = {'cached_christoffel' : True, 'cached_evp' : True}
+        """
         options = self.options
 
         for key, val in self.app_options.clear_cache.iteritems():
@@ -264,16 +272,16 @@ class AcousticBandGapsApp( SimpleApp ):
             output( '...done' )
 
             if options.plot:
+                plot_rsc = bg.opts.plot_rsc
+                plot_opts =  bg.opts.plot_options
+                pylab.rcParams.update( plot_rsc['params'] )
+
                 aux = transform_plot_data( pas,
                                            bg.opts.plot_transform_angle,
                                            self.conf.funmod )
                 plot_range, pas = aux
                 
-                plot_rsc = bg.opts.plot_rsc
-                plot_opts =  bg.opts.plot_options
                 plot_labels =  bg.opts.plot_labels_angle
-                
-                pylab.rcParams.update( plot_rsc['params'] )
 
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
