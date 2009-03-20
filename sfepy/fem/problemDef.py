@@ -503,7 +503,7 @@ class ProblemDefinition( Struct ):
         return ev
 
     def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
-                      mtx = None, **kwargs ):
+                      mtx = None, presolve = False, **kwargs ):
         """Create and initialize solvers."""
         ls_conf = get_default( ls_conf, self.ls_conf,
                                'you must set linear solver!' )
@@ -512,7 +512,7 @@ class ProblemDefinition( Struct ):
                               'you must set nonlinear solver!' )
         
         ev = self.get_evaluator( **kwargs )
-        ls = Solver.any_from_conf( ls_conf, mtx = mtx )
+        ls = Solver.any_from_conf( ls_conf, mtx = mtx, presolve = presolve )
         nls = Solver.any_from_conf( nls_conf, fun = ev.eval_residual,
                                     fun_grad = ev.eval_tangent_matrix,
                                     lin_solver = ls, status = nls_status )

@@ -15,6 +15,27 @@ class MiniAppBase( Struct ):
     def __init__( self, name, problem, kwargs ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
         self.set_default_attr( 'requires', [] )
+        self.set_default_attr( 'is_linear', False )
+
+    def init_solvers(self, problem):
+        """For linear problems, assemble the matrix and try to presolve the
+        linear system."""
+        if self.is_linear:
+            output('linear problem, trying to presolve...')
+            tt = time.clock()
+
+            ev = problem.get_evaluator( mtx = problem.mtx_a )
+
+            state = problem.create_state_vector()
+            try:
+                mtx_a = ev.eval_tangent_matrix( state, is_full = True )
+            except ValueError:
+                raise ValueError('matrix evaluation failed, giving up...')
+
+            problem.set_linear(True)
+            problem.init_solvers(mtx=mtx_a, presolve=True)
+
+            output( '...done in %.2f s' % (time.clock() - tt) )
 
     def make_save_hook( self, base_name, format,
                         post_process_hook = None, file_per_var = None ):
@@ -54,6 +75,8 @@ class CorrDimDim( MiniAppBase ):
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        self.init_solvers(problem)
 
         dim = problem.domain.mesh.dim
         states = nm.zeros( (dim, dim), dtype = nm.object )
@@ -95,6 +118,8 @@ class CorrDim( MiniAppBase ):
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        self.init_solvers(problem)
 
         dim = problem.domain.mesh.dim
         states = nm.zeros( (dim,), dtype = nm.object )
