@@ -1,5 +1,6 @@
 from sfepy.terms.terms import *
 from sfepy.terms.utils import choose_scalar_or_in_el
+from sfepy.terms.terms_base import ScalarScalar
 
 class MassTerm( Term ):
     r""":description: Inertial forces term (constant density).
@@ -64,7 +65,7 @@ class MassVectorTerm( MassTerm ):
         bf = ap.get_base( 'v', 0, self.integral_name )
         return mat, vec, 0, bf, vg, ap.econn
 
-class MassScalarTerm( Term ):
+class MassScalarTerm( ScalarScalar, Term ):
     r""":description: Scalar field mass matrix/rezidual.
     :definition: $\int_{\Omega} q p$
     """
@@ -74,48 +75,26 @@ class MassScalarTerm( Term ):
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar )
-        
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
-        n_el, n_qp, dim, n_ep = self.data_shape
 
-        if diff_var is None:
-            return (chunk_size, 1, n_ep, 1), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            return (chunk_size, 1, n_ep, n_ep), 1
-        else:
-            raise StopIteration
-        
-    def build_c_fun_args( self, state, ap, vg, **kwargs ):
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
         vec = self.get_vector( state )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
         if state.is_real():
-            return vec, 0, bf, vg, ap.econn
+            fargs = vec, 0, bf, vg, ap.econn
         else:
             ac = nm.ascontiguousarray
-            return [(ac( vec.real ), 0, bf, vg, ap.econn),
-                    (ac( vec.imag ), 0, bf, vg, ap.econn)]
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-
-        shape, mode = self.get_shape( diff_var, chunk_size, ap )
-        fargs = self.build_c_fun_args( state, ap, vg, **kwargs )
-
-        if state.is_real():
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = self.function( out, *fargs + (chunk, mode) )
-                yield out, chunk, status
-        else:
-            # For mode == 1, the matrix is the same both for real and imaginary
-            # part -> optimization possible.
-            for out_real, chunk in self.char_fun( chunk_size, shape ):
-                out_imag = nm.zeros_like( out_real )
-                status1 = self.function( out_real, *fargs[0] + (chunk, mode) )
-                status2 = self.function( out_imag, *fargs[1] + (chunk, mode) )
-                yield out_real + 1j * out_imag, chunk, status1 or status2
+            fargs = [(ac( vec.real ), 0, bf, vg, ap.econn),
+                     (ac( vec.imag ), 0, bf, vg, ap.econn)]
+            mode += 1j
+            
+        return fargs, shape, mode
 
 class MassScalarVariableTerm( MassScalarTerm ):
     r""":description: Scalar field mass matrix/rezidual with coefficient $c$
@@ -130,19 +109,28 @@ class MassScalarVariableTerm( MassScalarTerm ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar_variable )
         
-    def build_c_fun_args( self, state, ap, vg, **kwargs ):
-        n_el, n_qp = self.data_shape[:2]
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        fargs, shape, mode = MassScalarTerm.get_fargs(self, diff_var,
+                                                      chunk_size, **kwargs)
+        n_el, n_qp, dim, n_ep = self.data_shape
         
-        mat, = self.get_args( ['material'], **kwargs )
+        mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+
         cache = self.get_cache( 'mat_in_qp', 0 )
         mat_qp = cache( 'matqp', self.get_current_group(), 0,
                         mat = mat, ap = ap,
                         assumed_shapes = [(n_el, n_qp, 1, 1)],
                         mode_in = 'vertex' )
 
-        vec = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
-        return mat_qp, vec, 0, bf, vg, ap.econn
+        if virtual.is_real():
+            fargs = (mat_qp,) + fargs
+
+        else:
+            fargs[0] = (mat_qp,) + fargs[0]
+            fargs[1] = (mat_qp,) + fargs[1]
+            
+        return fargs, shape, mode
 
 class MassScalarFineCoarseTerm( Term ):
     r""":description: Scalar field mass matrix/rezidual for coarse to fine grid
