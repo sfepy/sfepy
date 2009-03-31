@@ -1,5 +1,4 @@
 # 14.12.2004, c
-# last revision: 14.03.2009
 VERSION := 2009.1
 PROJECTNAME := sfepy
 
@@ -200,8 +199,6 @@ htmldocs:
 	-rm -rf doc/html
 	-rm -f doc/doxygenrc
 	-mkdir doc/aux
-	-pythfilter.py . doc/aux/
-	sed "s|^\(PROJECT_NUMBER         = \)NUMBER|\1$(VERSION)|;"\
-	doc/doxygen.config > doc/doxygenrc
+	sed "s|^\(PROJECT_NUMBER[ ]*= \)X.Y|\1$(VERSION)|;" doc/doxygen.config > doc/doxygenrc
 	doxygen doc/doxygenrc
 	-rm -rf doc/aux
