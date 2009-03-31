@@ -13,7 +13,6 @@ filename_mesh = None
 field_1 = {
     'name' : '3_displacement',
     'dim' : (3,1),
-    'flags' : (),
     'domain' : 'Omega',
     'bases' : None
 }
@@ -163,7 +162,12 @@ class Test( TestCommon ):
             fname = filename_meshes[ii]
 
             self.conf.filename_mesh = fname
-            self.conf.fields['field_1'].bases = bases
+            fields = {'field_1' :
+                       {'name' : '3_displacement',
+                        'dim' : (3,1),
+                        'domain' : 'Omega',
+                        'bases' : bases}}
+            self.conf.edit('fields', fields)
             self.report( 'mesh: %s, base: %s' % (fname, bases) )
             status = IndexedStruct()
 
