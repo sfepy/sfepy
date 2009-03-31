@@ -2,18 +2,22 @@ from sfepy.base.base import *
 from sfepy.solvers.solvers import LinearSolver
 
 import scipy
-if scipy.version.version < '0.7.0.dev3861':
-    import scipy.linsolve.umfpack as um
-else:
-    try:
-        if scipy.version.version < '0.7.0.dev3998':
-            import scipy.splinalg.dsolve.umfpack as um
-        else:
-            import scipy.sparse.linalg.dsolve.umfpack as um
-    except (ImportError, AttributeError):
-        import scikits.umfpack as um
 
-um.configure( assume_sorted_indices = True )
+imports = ['import scipy.linsolve.umfpack as um',
+           'import scipy.splinalg.dsolve.umfpack as um',
+           'import scipy.sparse.linalg.dsolve.umfpack as um',
+           'import scikits.umfpack as um']
+for imp in imports:
+    try:
+        exec imp
+        break
+    except:
+        pass
+else:
+    um = None
+
+if um is not None:
+    um.configure( assume_sorted_indices = True )
 
 class Umfpack( LinearSolver ):
     name = 'ls.umfpack'
