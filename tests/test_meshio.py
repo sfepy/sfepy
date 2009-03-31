@@ -5,7 +5,8 @@ filename_meshes = ['database/simple.mesh',
                    'database/tests/abaqus_hex.inp',
                    'database/tests/abaqus_tet.inp',
                    'database/tests/hex4.mesh3d',
-                   'database/tests/tetra8.mesh3d']
+                   'database/tests/tetra8.mesh3d',
+		   'database/tests/cube.bdf']
 same = [(0, 1)]
 
 from sfepy.base.testing import TestCommon, assert_

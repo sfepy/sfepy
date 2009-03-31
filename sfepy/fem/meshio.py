@@ -14,6 +14,7 @@ supported_formats = {
     '.inp'  : ('abaqus', 'avs_ucd'),
     '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
+    '.bdf'  : 'nastran'
 }
 
 ##
@@ -1486,6 +1487,118 @@ class AbaqusMeshIO( MeshIO ):
     def write( self, filename, mesh, out = None ):
         raise NotImplementedError
     
+class BDFMeshIO( MeshIO ):
+    format = 'nastran'
+
+    def read_dimension( self, ret_fd = False ):
+        fd = open( self.filename, 'r' )
+        el3d = 0
+        while 1:
+            try:
+                line = fd.readline()
+            except:
+                output( "reading " + fd.name + " failed!" )
+                raise
+            if len( line ) == 1: continue
+            if line[0] == '$': continue
+            aux = line.split()
+            
+            if aux[0] == 'CHEXA':
+                el3d += 1
+            elif row[0] == 'CTETRA':
+                el3d += 1
+
+        if el3d > 0:
+            dim = 3
+        else:
+            dim = 2
+
+        if ret_fd:
+            return dim, fd
+        else:
+            fd.close()
+            return dim
+
+    def read( self, mesh, **kwargs ):
+        import string
+        fd = open( self.filename, 'r' )
+
+        el = {'3_8' : [], '3_4' : [], '2_4' : [], '2_3' : []}
+        nod = []
+        cmd = ''
+
+        conns_in = []
+        descs = []
+        while 1:
+            try:
+                line = fd.readline()
+            except EOFError:
+                break
+            except:
+                output( "reading " + fd.name + " failed!" )
+                raise
+
+            if (len( line ) == 0): break
+            if len( line ) == 1: continue
+            if line[0] == '$': continue
+
+            row = line.strip().split()
+
+            if row[0] == 'GRID*':
+                aux = row[1:4];
+                cmd = 'GRIDX';
+            elif row[0] == 'CHEXA':
+                aux = [int(ii)-1 for ii in row[3:9]]
+                aux2 = int(row[2])
+                aux3 = row[9]
+                cmd ='CHEXAX'
+            elif row[0] == 'CTETRA':
+                aux = [int(ii)-1 for ii in row[3:]]
+                aux.append( int(row[2]) )
+                el['3_4'].append( aux )
+            elif row[0] == 'CQUAD4':
+                aux = [int(ii)-1 for ii in row[3:]]
+                aux.append( int(row[2]) )
+                el['2_4'].append( aux )
+            elif row[0] == 'CTRIA3':
+                aux = [int(ii)-1 for ii in row[3:]]
+                aux.append( int(row[2]) )
+                el['2_3'].append( aux )
+            elif cmd == 'GRIDX':
+                cmd = ''
+                aux2 = row[1]
+                if aux2[-1] == '0':
+                    aux2 = aux2[:-1]
+                    aux3 = aux[1:]
+                    aux3.append( aux2 )
+                    nod.append( [float(ii) for ii in aux3] );
+            elif cmd == 'CHEXAX':
+                cmd = ''
+                aux4 = row[0]
+                aux5 = string.find( aux4, aux3 )
+                aux.append( int(aux4[(aux5+len(aux3)):])-1 )
+                aux.extend( [int(ii)-1 for ii in row[1:]] )
+                aux.append( aux2 )
+                el['3_8'].append( aux )
+
+        for elem in el.keys():
+            if len(el[elem]) > 0:
+                conns_in.append( el[elem] )
+                descs.append( elem )
+
+        fd.close()
+
+        nod = nm.array( nod, nm.float64 )
+        conns_in = nm.array( conns_in, nm.int32 )
+        
+        conns_in, mat_ids = sort_by_mat_id( conns_in )
+        conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
+        mesh._set_data( nod, None, conns, mat_ids, descs )
+
+        return mesh
+
+    def write( self, filename, mesh, out = None ):
+        raise NotImplementedError
 
 def guess_format( filename, ext, formats, io_table ):
     """
