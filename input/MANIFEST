@@ -4,6 +4,7 @@ complex.py
 hyperelastic.py
 kostka.py
 le.py
+linear_elastic.py
 navier_stokes.py
 octahedron.py
 pfdpm_permeability.py

@@ -71,8 +71,6 @@ def transform_ics( adict ):
 def transform_lcbcs( adict ):
     return transform_conditions( adict, 'lcbc' )
 
-##
-# c: 02.05.2008, r: 06.05.2008
 def transform_regions( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
@@ -85,7 +83,57 @@ def transform_regions( adict ):
         else:
             c2 = transform_to_struct_1( conf )
             d2['region_'+c2.name] = c2
-    print d2
+    return d2
+
+def transform_integrals( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['kind', 'quadrature'] )
+            d2['integral_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1( conf )
+            d2['integral_'+c2.name] = c2
+    return d2
+
+def transform_fields( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['dim', 'domain','bases'] )
+            d2['field_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1( conf )
+            d2['field_'+c2.name] = c2
+    return d2
+
+def transform_materials( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['mode', 'region', 'params'] )
+            dpar = {}
+            dpar['name'] = key
+            dpar['mode'] = c2.mode
+            dpar['region'] = c2.region
+            dpar.update( c2.params )
+            d2['material_%s__%d' % (c2.name, ii)] = dpar
+        else:
+            d2['material_'+conf['name']] = conf
+    return d2
+
+def transform_solvers( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['kind','params'] )
+            for param, val in c2.params.iteritems():
+                setattr( c2, param, val )
+            delattr( c2, 'params' )
+            d2['solvers_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1( conf )
+            d2['solvers_'+c2.name] = c2
     return d2
 
 ##
@@ -101,19 +149,20 @@ def transform_to_struct_10( adict ):
 
 transforms = {
     'options'   : transform_to_i_struct_1,
-    'solvers'   : transform_to_struct_01,
-    'integrals' : transform_to_struct_01,
+    'solvers'   : transform_solvers,
+    'integrals' : transform_integrals,
     'opt'       : transform_to_struct_1,
     'fe'        : transform_to_struct_1,
     'regions'   : transform_regions,
     'shape_opt' : transform_to_struct_10,
-    'fields'    : transform_to_struct_01,
+    'fields'    : transform_fields,
     'variables' : transform_variables,
     'ebcs'      : transform_ebcs,
     'epbcs'     : transform_to_struct_01,
     'nbcs'      : transform_to_struct_01,
     'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
+    'materials' : transform_materials,
 }
 
 ##
@@ -152,7 +201,6 @@ class ProblemConf( Struct ):
                     'name' : 'Surface',
                     'select' : 'nodes of surface',
                 }
-                ...
                 return locals()
 
         """
