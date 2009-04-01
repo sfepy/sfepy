@@ -1309,9 +1309,12 @@ class Variable( Struct ):
 
     ##
     # c: 18.10.2006, r: 15.04.2008
-    def expand_nodes_to_equations( self, nods, dofs ):
+    def expand_nodes_to_equations( self, nods, dofs=None ):
         """dofs must be already canonized - it is done in
         Variables._list_bc_of_vars()"""
+        if dofs is None:
+            dofs = self.dofs
+            
         eq = nm.array( [], dtype = nm.int32 )
         for dof in dofs:
             idof = self.dofs.index( dof )

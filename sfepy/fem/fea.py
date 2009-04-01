@@ -541,7 +541,12 @@ class Approximation( Struct ):
                 bf_s = self.get_base( sd.face_type, 0, integral = integral,
                                     from_geometry = True )
 ##                 print bf_s
-                bkey = self.create_bqp( sd.face_type, bf_s, weights, integral.name )
+                bkey = self.create_bqp( sd.face_type, bf_s, weights,
+                                        integral.name )
+                # Store bkey in SurfaceData, so that base function can be
+                # queried later.
+                sd.bkey = bkey
+
                 bf_bg = self.get_base( bkey, 1, integral = integral )
 ##                 print bf_bg
                 sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
