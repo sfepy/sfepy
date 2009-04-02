@@ -185,7 +185,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     r""":definition: $\int_{\Gamma} q$"""
 
     name = 'dw_surface_integrate'
-    arg_types = ('material', 'virtual',)
+    arg_types = ('virtual',)
     geometry = [(Surface, 'virtual')]
 
     ##
@@ -198,7 +198,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     ##
     # 30.06.2008, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, = self.get_args( **kwargs )
+        virtual, = self.get_args( **kwargs )
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
                                                      self.region.name )
@@ -215,7 +215,6 @@ class IntegrateSurfaceOperatorTerm( Term ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
             status = sg.integrate_chunk( out, bf_t, lchunk, 1 )
 
-            out = out*mat
             yield out, lchunk, 0
 
 ##

@@ -154,6 +154,78 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dw_surf_mass_scalar"
+/*!
+  @par Revision history:
+  - 09.03.2009, c
+*/
+int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
+			   FMField *bf, SurfaceGeometry *sg,
+			   int32 *conn, int32 nEl, int32 nEP,
+			   int32 *elList, int32 elList_nRow,
+			   int32 isDiff )
+{
+  int32 ii, iel, nFP, ret = RET_OK;
+  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0;
+
+  nFP = bf->nCol;
+
+/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+
+  if (isDiff) {
+    fmf_createAlloc( &ftf, 1, sg->nQP, nFP, nFP );
+
+    fmf_mulATB_nn( ftf, bf, bf );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+      
+      FMF_SetCell( out, ii );
+      FMF_SetCell( sg->det, ii );
+
+      fmf_sumLevelsMulF( out, ftf, sg->det->val );
+
+      ERR_CheckGo( ret );
+    }
+  } else {
+    state->val = FMF_PtrFirst( state ) + offset;
+
+    fmf_createAlloc( &st, 1, 1, 1, nFP );
+    fmf_createAlloc( &fp, 1, sg->nQP, 1, 1 );
+    fmf_createAlloc( &ftfp, 1, sg->nQP, nFP, 1 );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( sg->det, ii );
+
+      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
+
+      bf_act( fp, bf, st );
+      bf_actt( ftfp, bf, fp );
+      fmf_sumLevelsMulF( out, ftfp, sg->det->val );
+
+      ERR_CheckGo( ret );
+    }
+  }
+  
+/*   fmf_print(state, stdout, 0); */
+/*   fmf_print(out, stdout, 0); */
+
+end_label:
+  if (isDiff) {
+    fmf_freeDestroy( &ftf );
+  } else {
+    fmf_freeDestroy( &st );
+    fmf_freeDestroy( &fp );
+    fmf_freeDestroy( &ftfp );
+  }
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_mass_scalar_variable"
 /*!
   @par Revision history:

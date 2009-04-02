@@ -11,6 +11,8 @@ class InstantaneousBase( Struct ):
         if call_mode is None:
             if nm.isreal( mode ):
                 for out, chunk in self.char_fun( chunk_size, shape ):
+                    if self.dof_conn_type == 'surface':
+                        chunk = self.char_fun.get_local_chunk()
                     status = self.function( out, *fargs + (chunk, mode) )
                     yield out, chunk, status
             else:
@@ -18,6 +20,8 @@ class InstantaneousBase( Struct ):
                 # same both for real and imaginary part.
                 rmode = int( mode.real )
                 for out_real, chunk in self.char_fun( chunk_size, shape ):
+                    if self.dof_conn_type == 'surface':
+                        chunk = self.char_fun.get_local_chunk()
                     status1 = self.function( out_real,
                                              *fargs[0] + (chunk, rmode ) )
                     if rmode == 0:
@@ -71,8 +75,12 @@ class TimeHistoryBase( Struct ):
 class VectorVector( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc = None ):
-
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
+    
+        if self.dof_conn_type == 'surface':
+            self.data_shape = apr.get_s_data_shape( self.integral_name,
+                                                    self.region.name )
+        else:
+            self.data_shape = apr.get_v_data_shape( self.integral_name )
 
         assert_( apr.dim == (self.data_shape[2], 1) )
 
@@ -93,7 +101,11 @@ class ScalarScalar( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc = None ):
 
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        if self.dof_conn_type == 'surface':
+            self.data_shape = apr.get_s_data_shape( self.integral_name,
+                                                    self.region.name )
+        else:
+            self.data_shape = apr.get_v_data_shape( self.integral_name )
 
         assert_( apr.dim == (1, 1) )
 
@@ -114,7 +126,12 @@ class VectorOrScalar( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc = None ):
 
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        if self.dof_conn_type == 'surface':
+            self.data_shape = apr.get_s_data_shape( self.integral_name,
+                                                    self.region.name )
+        else:
+            self.data_shape = apr.get_v_data_shape( self.integral_name )
+
         self.vdim = apr.dim[0]
 
     def get_shape( self, diff_var, chunk_size ):
@@ -135,8 +152,14 @@ class CouplingVectorScalar( InstantaneousBase ):
 
     def set_data_shape( self, apr, apc ):
         """Set element data shape and checks dimensions of approximations."""
-        self.data_shape_r = apr.get_v_data_shape( self.integral_name ) 
-        self.data_shape_c = apc.get_v_data_shape( self.integral_name ) 
+        if self.dof_conn_type == 'surface':
+            self.data_shape_r = apr.get_s_data_shape( self.integral_name,
+                                                      self.region.name )
+            self.data_shape_c = apc.get_s_data_shape( self.integral_name,
+                                                      self.region.name )
+        else:
+            self.data_shape_r = apr.get_v_data_shape( self.integral_name )
+            self.data_shape_c = apc.get_v_data_shape( self.integral_name )
 
         if self.mode == 'grad':
             dim_c = (1, 1)

@@ -23,6 +23,12 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
+int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
+			   FMField *bf, SurfaceGeometry *sg,
+			   int32 *conn, int32 nEl, int32 nEP,
+			   int32 *elList, int32 elList_nRow,
+			   int32 isDiff );
+
 int32 dw_mass_scalar_variable( FMField *out, FMField *coef,
 			       FMField *state, int32 offset,
 			       FMField *bf, VolumeGeometry *vg,

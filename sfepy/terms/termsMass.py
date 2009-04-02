@@ -96,6 +96,41 @@ class MassScalarTerm( ScalarScalar, Term ):
             
         return fargs, shape, mode
 
+class MassScalarSurfaceTerm( ScalarScalar, Term ):
+    r""":description: Scalar field mass matrix/rezidual.
+    :definition: $\int_{\Gamma} q p$
+    """
+    name = 'dw_surface_mass_scalar'
+    arg_types = ('virtual', 'state')
+    geometry = [(Surface, 'virtual')]
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.dw_surf_mass_scalar )
+        self.dof_conn_type = 'surface'
+
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
+        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
+        vec = self.get_vector( state )
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+
+        n_ep = bf.shape[2]
+        leconn = sd.leconn[:,:n_ep].copy()
+        if state.is_real():
+            fargs = vec, 0, bf, sg, leconn
+        else:
+            ac = nm.ascontiguousarray
+            fargs = [(ac( vec.real ), 0, bf, sg, leconn),
+                     (ac( vec.imag ), 0, bf, sg, leconn)]
+            mode += 1j
+        
+        return fargs, shape, mode
+
 class MassScalarVariableTerm( MassScalarTerm ):
     r""":description: Scalar field mass matrix/rezidual with coefficient $c$
     defined in nodes.
@@ -114,7 +149,7 @@ class MassScalarVariableTerm( MassScalarTerm ):
                                                       chunk_size, **kwargs)
         n_el, n_qp, dim, n_ep = self.data_shape
         
-        mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
+        mat, virtual = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         cache = self.get_cache( 'mat_in_qp', 0 )
