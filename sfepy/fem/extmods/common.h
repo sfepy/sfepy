@@ -125,5 +125,6 @@ void sys_pause( void );
 extern int32 g_error;
 
 #define Max(a,b) (((a) > (b)) ? (a) : (b))
+#define Min(a,b) (((a) < (b)) ? (a) : (b))
 
 #endif /* !SIC_COMMON_H */
