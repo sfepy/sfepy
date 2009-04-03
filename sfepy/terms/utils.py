@@ -62,11 +62,11 @@ def fix_mat_shape( mat, n_qp ):
         mat = nm.tile( mat, (n_qp, 1, 1) )
     return mat
 
-def check_strain(strain, info):
-    is_finite = nm.isfinite(strain)
+def check_finiteness(data, info):
+    is_finite = nm.isfinite(data)
     if not is_finite.all():
         ii = nm.where(is_finite == False)
         print ii
-        print strain[ii]
-        msg = 'infinite strains (%s)!, see above' % info
+        print data[ii]
+        msg = 'infinite %s!, see above' % info
         raise ValueError(msg)
