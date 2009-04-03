@@ -63,9 +63,9 @@ def define():
         'Temperature' :
         """%s * dw_mass_scalar.i1.Omega( q, p )
               - dw_laplace.i1.Omega( ac.one, q, p )
-         = %s * dw_surface_integrate.isurf.Gamma_Left( ac.v_n, q ) """ \
+         = %s * dw_surface_integrate.isurf.Gamma_Left( q ) """ \
         % (ac['k'],
-           1j * ac['omega'] * ac['rho'])
+           1j * ac['omega'] * ac['rho'] * ac['v_n'])
     }
  #         1j * ac['omega'] / ac['c'],
  #         - %s * dw_surface_dot.isurf.Gamma_Right( q, p )
