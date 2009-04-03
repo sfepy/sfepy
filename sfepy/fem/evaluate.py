@@ -117,7 +117,7 @@ class LCBCEvaluator( BasicEvaluator ):
 ##         from sfepy.base.plotutils import spy
 ##         spy( mtx_r )
 ##         pylab.show()
-        print mtx_r.__repr__()
+##         print mtx_r.__repr__()
         return mtx_r
 
     ##

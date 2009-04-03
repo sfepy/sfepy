@@ -2,16 +2,15 @@ from sfepy.base.base import *
 from sfepy.solvers.solvers import NonlinearSolver
 import sfepy.base.plotutils as plu
 
-##
-# 13.12.2005, c
-# 14.12.2005
-# 02.10.2007
-def check_tangent_matrix( conf, vec_x0, mtx_a0, fun, fun_grad ):
+def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
+    """Verify the correctness of the tangent matrix as computed by fun_grad()
+    by comparing it with its finite difference approximation evaluated by
+    repeatedly calling fun() with vec_x items perturbed by a small delta."""
     vec_x = vec_x0.copy()
     delta = conf.delta
 
     vec_r = fun( vec_x ) # Update state.
-    mtx_a0 = fun_grad( vec_x, mtx_a0 )
+    mtx_a0 = fun_grad( vec_x )
 
     mtx_a = mtx_a0.tocsc()
     mtx_d = mtx_a.copy()
@@ -221,7 +220,7 @@ class Newton( NonlinearSolver ):
 
             if conf.check:
                 tt = time.clock()
-                wt = check_tangent_matrix( conf, vec_x, mtx_a, fun, fun_grad )
+                wt = check_tangent_matrix( conf, vec_x, fun, fun_grad )
                 time_stats['check'] = time.clock() - tt - wt
     ##            if conf.check == 2: pause()
 
