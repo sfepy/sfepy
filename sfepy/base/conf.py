@@ -1,4 +1,5 @@
 import re
+import numpy as nm
 
 from base import Struct, IndexedStruct, dict_to_struct, pause, output, copy,\
      import_file, assert_, get_default
@@ -97,10 +98,13 @@ def transform_integrals( adict ):
     return d2
 
 def transform_fields( adict ):
+    dtypes = {'real' : nm.float64, 'complex' : nm.complex128}
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['dim', 'domain','bases'] )
+            c2 = tuple_to_conf( key, conf, ['dim', 'type', 'domain','bases'] )
+            setattr( c2, 'dtype', dtypes[c2.type] )
+            delattr( c2, 'type' )
             d2['field_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
