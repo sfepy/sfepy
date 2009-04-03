@@ -119,16 +119,14 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base( sd.face_type, 0, self.integral_name )
 
-        n_ep = bf.shape[2]
-        leconn = sd.leconn[:,:n_ep].copy()
         if state.is_real():
-            fargs = vec, 0, bf, sg, leconn
+            fargs = vec, 0, bf, sg, sd.econn
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, bf, sg, leconn),
-                     (ac( vec.imag ), 0, bf, sg, leconn)]
+            fargs = [(ac( vec.real ), 0, bf, sg, sd.econn),
+                     (ac( vec.imag ), 0, bf, sg, sd.econn)]
             mode += 1j
-        
+
         return fargs, shape, mode
 
 class MassScalarVariableTerm( MassScalarTerm ):

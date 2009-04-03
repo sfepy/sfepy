@@ -181,7 +181,7 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
       iel = elList[ii];
       
       FMF_SetCell( out, ii );
-      FMF_SetCell( sg->det, ii );
+      FMF_SetCell( sg->det, iel );
 
       fmf_sumLevelsMulF( out, ftf, sg->det->val );
 
@@ -198,10 +198,9 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( sg->det, ii );
+      FMF_SetCell( sg->det, iel );
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-
       bf_act( fp, bf, st );
       bf_actt( ftfp, bf, fp );
       fmf_sumLevelsMulF( out, ftfp, sg->det->val );
@@ -210,9 +209,6 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
     }
   }
   
-/*   fmf_print(state, stdout, 0); */
-/*   fmf_print(out, stdout, 0); */
-
 end_label:
   if (isDiff) {
     fmf_freeDestroy( &ftf );
