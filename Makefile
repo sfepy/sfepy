@@ -46,8 +46,8 @@ ALLTARGETS := version modules
 
 CUR_DIR := $(shell $(PWDCOMMAND))
 
-DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
-RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL LICENSE README RELEASE_NOTES.txt
+DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
+RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL LICENSE README RELEASE_NOTES.txt
 SUBDIRS = database doc eldesc examples input script sfepy tests
 RELSUBDIRS = database doc eldesc examples input script sfepy tests geom
 DATADIRS := database

@@ -2,10 +2,10 @@ CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
-DISTDIRS := applications base fem homogenization mechanics optimize physics solvers terms
+DISTDIRS := applications base fem homogenization mechanics optimize physics postprocess solvers terms
 
 RELDISTFILES := $(DISTFILES)
-RELDISTDIRS := applications base fem homogenization mechanics physics solvers terms
+RELDISTDIRS := applications base fem homogenization mechanics physics postprocess solvers terms
 
 dist:
 #	echo $(DESTDIR)

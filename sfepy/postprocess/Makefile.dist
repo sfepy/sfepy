@@ -1,0 +1,10 @@
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
+
+dist:
+	mkdir $(DESTDIR)
+	cp -fpd $(DISTFILES) $(DESTDIR)
+
+reldist: dist
