@@ -16,8 +16,7 @@ import sys
 import os.path as op
 from optparse import OptionParser
 
-import init_sfepy
-
+import sfepy
 from sfepy.base.base import *
 from sfepy.fem import Mesh, Domain
 from sfepy.fem.extmods.fem import raw_graph
@@ -52,13 +51,10 @@ usage = """%prog [options] filename_in|- filename_out|-
 
 '-' is for stdin, stdout"""
 
-# 17.10.2005
-version = open( op.join( init_sfepy.install_dir, 'VERSION' ) ).readlines()[0][:-1]
-
 ##
 # c: 05.10.2005, r: 09.07.2008
 def main():
-    parser = OptionParser( usage = usage, version = "%prog " + version )
+    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
     parser.add_option( "-m", "--mesh",
                        action = "store_true", dest = "save_mesh",
                        default = True,

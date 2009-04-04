@@ -3,7 +3,7 @@
 import os.path as op
 from optparse import OptionParser
 
-import init_sfepy
+import sfepy
 from sfepy.base.base import *
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import HDF5MeshIO
@@ -143,10 +143,7 @@ help = {
 ##
 # c: 26.09.2006, r: 23.06.2008
 def main():
-    version = open( op.join( init_sfepy.install_dir,
-                             'VERSION' ) ).readlines()[0][:-1]
-
-    parser = OptionParser( usage = usage, version = "%prog " + version )
+    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename_trunk",
                        default = None, help = help['filename'] )
