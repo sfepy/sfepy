@@ -116,7 +116,7 @@ class Region( Struct ):
     # 15.06.2006, c
     def set_vertices( self, vertices ):
 
-        self.all_vertices = vertices
+        self.all_vertices = nm.array(vertices, dtype=nm.int32)
         self.update_groups( force = True )
         self.is_complete = False
 
