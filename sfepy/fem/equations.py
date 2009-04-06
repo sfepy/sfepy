@@ -38,22 +38,32 @@ def parse_terms( regions, desc, itps ):
         arg_names = []
         arg_steps = {}
         arg_derivatives = {}
+        arg_traces = {}
         for arg in td.args:
-            if len( arg ) == 2:
+            trace = False
+            derivative = None
+
+            if isinstance(arg[1], int):
                 name, step = arg
-                derivative = None
+
             else:
+                kind = arg[0]
                 name, step = arg[1]
-                derivative = arg[2]
+                if kind == 'd':
+                    derivative = arg[2]
+                elif kind == 'tr':
+                    trace = True
 
             arg_names.append( name )
             arg_steps[name] = step
             arg_derivatives[name] = derivative
+            arg_traces[name] = trace
 
         term = constructor( region, td.name, td.sign )
         term.arg_names = arg_names
         term.arg_steps = arg_steps
         term.arg_derivatives = arg_derivatives
+        term.arg_traces = arg_traces
         term.integral_name = td.integral
 
         terms.append( term )
@@ -70,26 +80,39 @@ def setup_term_args( terms, variables, materials, user = None ):
         vns = term.get_variable_names()
         for name in vns:
             if name not in variables.names:
-                output( 'variable "%s" not found' % name )
-                raise IndexError
+                msg = 'variable "%s" not found' % name
+                raise IndexError(msg)
+
             field = variables[name].field
-            if not set( igs ).issubset( set( field.aps.igs ) ):
-                output( ('%s: incompatible regions: (term, field)'
-                         + ' (%s(%s) in %s(%s)') %\
-                        (term.name, igs, name, field.igs(), field.name) )
-                raise ValueError
+
+            if term.arg_traces[name]:
+                if not nm.all(nm.setmember1d(term.region.all_vertices,
+                                             field.region.all_vertices)):
+                    msg = ('%s: incompatible regions: (term, trace of field %s)'
+                           + '(%s in %s)') %\
+                           (term.name, field.name,
+                            term.region.all_vertices, field.region.all_vertices)
+                    raise ValueError(msg)
+            else:
+                if not set( igs ).issubset( set( field.aps.igs ) ):
+                    msg = ('%s: incompatible regions: (term, field)'
+                           + ' (%s(%s) in %s(%s)') %\
+                             (term.name, igs, name, field.igs(), field.name)
+                    raise ValueError(msg)
 
         mns = term.get_material_names()
         for name in mns:
             if name not in materials.names:
                 output( 'material "%s" not found' % name )
                 raise IndexError
+
             mat = materials[name]
+
             if not set( igs ).issubset( set( mat.igs ) ):
-                output( ('%s: incompatible regions: (term, material)'
-                         + ' (%s(%s) in %s(%s)') %\
-                        (term.name, igs, name, mat.igs, mat.name) )
-                raise ValueError
+                msg= ('%s: incompatible regions: (term, material)'
+                      + ' (%s(%s) in %s(%s)') %\
+                      (term.name, igs, name, mat.igs, mat.name)
+                raise ValueError(msg)
 
     if user is None:
         return

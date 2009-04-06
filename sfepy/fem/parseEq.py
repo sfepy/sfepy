@@ -67,7 +67,10 @@ def create_bnf( term_descs, itps ):
     derivative = Group( Literal( 'd' ) + variable\
                  + Literal( '/' ).suppress() + Literal( 'dt' ) )
 
-    var_der = derivative | variable
+    trace = Group( Literal( 'tr' ) + Literal( '(' ).suppress() + variable\
+                   + Literal( ')' ).suppress() )
+    
+    generalized_var = derivative | trace | variable
 
     flag = Literal( 'a' )
 
@@ -80,7 +83,7 @@ def create_bnf( term_descs, itps ):
                                   ident( "integral" ) + "." + ident( "region" ) |
                                   ident( "region" )
                                   )))( "term_desc" ) + "("\
-                                  + Optional( delimitedList( var_der ),
+                                  + Optional( delimitedList( generalized_var ),
                                 default = [] )( "args" ) + ")"
     term.setParseAction( collect_term( term_descs, lc, itps ) )
 

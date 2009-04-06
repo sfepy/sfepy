@@ -25,7 +25,8 @@ class Test( TestCommon ):
             """no_args() = 0""",
             """+ something( a, b, c ) = + something_else( c, a, d[-1] )""",
             """term_.a.a( u )""",
-            """term.i1.Omega( v, du/dt ) + term2.i2.Gamma( v, dphi/dt)"""
+            """term.i1.Omega( v, du/dt ) + term2.i2.Gamma( v, dphi/dt)""",
+            """dw_jump.isurf.Gamma12_1( jump1.val, q1, p1, tr(p2) )""",
         ]
 
         n_fail = 0
