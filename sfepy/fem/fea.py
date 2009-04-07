@@ -492,12 +492,16 @@ class Approximation( Struct ):
     def describe_geometry( self, field, geom_request, integral, coors ):
         gtype = geom_request.gtype
         if gtype == 'Volume':
+            shape = self.get_v_data_shape( integral.name )
+            if shape[0] == 0:
+                return None
+            
             bf_vg, weights = self.get_base( 'v', 1, integral = integral,
                                           base_only = False )
 
 ##             print bf_vg, weights
 ##             pause()
-            vg = gm.VolumeGeometry( *self.get_v_data_shape( integral.name ) )
+            vg = gm.VolumeGeometry( *shape )
             vg.mode = gm.GM_Material
             try:
                 vg.describe( coors, self.econn, bf_vg, weights )
@@ -643,11 +647,9 @@ class Approximations( Container ):
 
         self.clear_geometries()
 
-    ##
-    # created:       21.12.2007
-    # last revision: 21.12.2007
     def clear_geometries( self ):
         self.geometries = {}
+        self.trace_geometries = {}
 
     ##
     # c: 23.11.2007, r: 15.01.2008
@@ -904,12 +906,51 @@ class Approximations( Container ):
 ##         print self.coors.shape
 ##         pause()
 
-    ##
-    # c: 12.10.2005, r: 15.01.2008
     def describe_geometry( self, field, geometries, geom_request, integral,
-                          over_write = False ):
+                           is_trace = False, over_write = False ):
+        """Computes jacobians, element volumes and base function derivatives
+        for Volume-type geometries, and jacobians, normals and base function
+        derivatives for Surface-type geometries.
 
-        for region_name, ig, ap in self.iter_aps( igs = geom_request.region.igs ):
+        If is_trace == True, the trace geometry is computed using the mirror
+        region.
+        """
+        if is_trace:
+            if geom_request.gtype != 'Surface':
+                raise ValueError('trace on non-surface geometry!')
+
+            trace_geometries = {}
+            ig_map = {}
+            
+            igs = []
+            region = geom_request.region
+            for igr in region.igs:
+                for igc in field.region.igs:
+                    if nm.all(nm.setmember1d(region.vertices[igr],
+                                             field.region.vertices[igc])):
+                        igs.append(igc)
+                        ig_map[igc] = igr
+                        break
+                else:
+                    raise ValueError('trace: cannot find group! (%s)' \
+                                     % geom_request)
+            for ii, ig in enumerate(igs):
+                for reg in field.domain.regions:
+                    if not ig in reg.igs: continue
+
+                    vv = region.vertices[region.igs[ii]]
+                    if nm.all(vv == reg.vertices[ig]):
+                        mirror_region = reg
+                        break
+                else:
+                    raise ValueError('trace: cannot mirror region! (%s)' \
+                                     % geom_request)
+            gr0 = geom_request
+            geom_request = Struct(gtype = gr0.gtype, region = mirror_region )
+        else:
+            igs = geom_request.region.igs
+
+        for region_name, ig, ap in self.iter_aps(igs=igs):
 ##             print region_name, ig, ap.name
 
             # Store integral for possible future base function request.
@@ -945,6 +986,17 @@ class Approximations( Container ):
                         key2[1] = 'Surface'
                         key2 = tuple(key2)
                         self.geometries[key2] = geometries[key2] = geom
+
+            if is_trace:
+                # Make a mirror-region alias to SurfaceData.
+                sd = ap.surface_data
+                sd[gr0.region.name] = sd[geom_request.region.name]
+
+                trace_key = ('isurf', gr0.region.name, ig_map[ig])
+                trace_geometries[trace_key] = (ap, self.geometries[geom_key])
+
+        if is_trace:
+            self.trace_geometries = trace_geometries
 
         if over_write:
             self.geometries = geometries

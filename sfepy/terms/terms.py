@@ -382,15 +382,17 @@ class Term( Struct ):
 
             variable = variables[var_name]
             field = variable.field
-            assert_( field.region.contains( self.region ) )
-            
+            if not self.arg_traces[var_name]:
+                assert_( field.region.contains( self.region ) )
+
 ##             print field.name, field.region_name
 ##             print field.bases
 
             if tgs.has_key( var_name ):
 ##                 print tgs[var_name]
                 field.aps.describe_geometry( field, geometries,
-                                             tgs[var_name], integral )
+                                             tgs[var_name], integral,
+                                             self.arg_traces[var_name] )
 
 ##             print field.aps.aps_per_group
 ##             pause()
@@ -462,3 +464,9 @@ class Term( Struct ):
         name = variable.name
         return variable( step = self.arg_steps[name],
                          derivative = self.arg_derivatives[name] )
+
+    def get_approximation(self, variable, kind = 'Volume' ):
+        out = variable.get_approximation(self.get_current_group(),
+                                         kind=kind,
+                                         is_trace=self.arg_traces[variable.name])
+        return out
