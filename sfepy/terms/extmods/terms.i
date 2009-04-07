@@ -45,6 +45,8 @@
     (FMField *stateP),
     (FMField *stateQ),
     (FMField *stateR),
+    (FMField *state1),
+    (FMField *state2),
     (FMField *vecMV),
     (FMField *mtxD),
     (FMField *mtxG),
@@ -79,6 +81,8 @@
     (int32 *conn_p, int32 nEl_p, int32 nEP_p),
     (int32 *conn_r, int32 nEl_r, int32 nEP_r),
     (int32 *conn_mv, int32 nEl_mv, int32 nEP_mv),
+    (int32 *conn1, int32 nEl1, int32 nEP1),
+    (int32 *conn2, int32 nEl2, int32 nEP2),
     (int32 *fis, int32 nFa, int32 nFP)
 };
 %apply (int32 *array, int32 len) {
@@ -185,6 +189,12 @@ int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
 		      FMField *traction, SurfaceGeometry *sg,
 		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow );
+
+int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
+	       FMField *bf, SurfaceGeometry *sg,
+	       int32 *conn1, int32 nEl1, int32 nEP1,
+	       int32 *conn2, int32 nEl2, int32 nEP2,
+	       int32 *elList, int32 elList_nRow, int32 mode );
 
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
 		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow );
