@@ -103,11 +103,17 @@ class Struct( object ):
         
     # 08.03.2005
     def __str__( self ):
+        """Print instance class, name and items in alphabetical order."""
         ss = "%s" % self.__class__.__name__
         if hasattr( self, 'name' ):
             ss += ":%s" % self.name
         ss += '\n'
-        for key, val in self.__dict__.iteritems():
+
+        keys, vals = self.__dict__.keys(), self.__dict__.values()
+        order = nm.argsort(keys)
+        for ii in order:
+            key, val = keys[ii], vals[ii]
+
             if issubclass( val.__class__, Struct ):
                 ss += "  %s:\n    %s" % (key, val.__class__.__name__)
                 if hasattr( val, 'name' ):
@@ -432,6 +438,14 @@ def print_structs(objs):
             print_structs(vals)
     else:
         print objs
+
+def iter_dict_of_lists(dol, return_keys=False):
+    for key, vals in dol.iteritems():
+        for ii, val in enumerate(vals):
+            if return_keys:
+                yield key, ii, val
+            else:
+                yield val
 
 ##
 # 19.07.2005, c
