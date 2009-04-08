@@ -420,6 +420,19 @@ class Output( Struct ):
 default_printer = Output( 'sfepy:' )
 output = default_printer.get_output_function()
 
+def print_structs(objs):
+    """Print Struct instances in a container, works recursively. Debugging
+    utility function."""
+    if isinstance(objs, dict):
+        for key, vals in objs.iteritems():
+            print key
+            print_structs(vals)
+    elif isinstance(objs, list):
+        for vals in objs:
+            print_structs(vals)
+    else:
+        print objs
+
 ##
 # 19.07.2005, c
 # 26.05.2006
