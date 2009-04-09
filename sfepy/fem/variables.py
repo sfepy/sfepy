@@ -14,10 +14,8 @@ is_parameter = 2
 is_other = 3
 is_field = 10
 
-##
-# 11.07.2007, c
-# 19.07.2007
-def create_dof_conn( conn, dpn, imax ):
+def create_dof_conn(conn, dpn):
+    """Given element a node connectivity, create the dof connectivity."""
     if dpn == 1:
         dc = conn.copy()
     else:
@@ -31,29 +29,15 @@ def create_dof_conn( conn, dpn, imax ):
             iloc = n_ep * idof + inod # Hack: For DBD order.
             dc[:,iloc] = dpn * conn[:,inod] + idof
 
-    try:
-        imax = max( imax, nm.amax( dc.ravel() ) )
-    except: # empty dc (a non-first point dc - e.g. springs)
-        pass
+    return dc
 
-    return dc, imax
-
-##
-# c: 11.07.2007, r: 04.02.2008
-def create_a_dof_conns( eq, iterator, indx ):
-    adcs = {}
-    for key, dc in iterator():
-        if isinstance( dc, dict ):
-            adcss = create_a_dof_conns( eq, dc.iteritems, indx )
-            for subkey, subdc in adcss.iteritems():
-                adcs[(key, subkey)] = subdc
-        elif dc is not None:
-            aux = eq[dc]
-            adcs[key] = aux + nm.asarray( nm.where( aux >= 0, indx.start, 0 ),
-					  dtype = nm.int32 )
-        else:
-            adcs[key] = None
-    return adcs
+def create_a_dof_conn(eq, dc, indx):
+    """Given a dof connectivity and equation mapping, create the active dof
+    connectivity."""
+    aux = eq[dc]
+    adc = aux + nm.asarray( nm.where( aux >= 0, indx.start, 0 ),
+                            dtype = nm.int32 )
+    return adc
 
 ##
 # c: 26.07.2006, r: 15.04.2008
@@ -304,7 +288,7 @@ class Variables( Container ):
                          other = other,
                          domain = fields[0].domain,
                          fields = fields,
-                         has_virtual_d_cs = False,
+                         has_virtual_dcs = False,
                          has_lcbc = False,
                          has_eq_map = False )
 
@@ -329,6 +313,7 @@ class Variables( Container ):
     ##
     # c: 05.09.2007, r: 10.04.2008
     def link_duals( self ):
+        self.dual_map = {}
         for ii in self.virtual:
             vvar = self[ii]
             try:
@@ -336,6 +321,8 @@ class Variables( Container ):
             except ValueError:
                 msg = 'variable %s is not active!' % vvar.primary_var_name
                 raise ValueError( msg )
+
+            self.dual_map[vvar.name] = vvar.primary_var_name
 
     def setup_dtype( self ):
         """Setup data types of state variables - all have to be of the same
@@ -534,7 +521,7 @@ class Variables( Container ):
         for var_name, bcs in self.bc_of_vars.iteritems():
             var = self[var_name]
             var.equation_mapping( bcs, regions, self.di, ts, funmod )
-            if self.has_virtual_d_cs:
+            if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
                 vvar.equation_mapping( bcs, vregions, self.vdi, ts, funmod )
 
@@ -558,7 +545,7 @@ class Variables( Container ):
             return adi
 
         self.adi = _create_a_dof_info( self.di )
-        if self.has_virtual_d_cs:
+        if self.has_virtual_dcs:
             self.avdi = _create_a_dof_info( self.vdi )
         else:
             self.avdi = self.adi
@@ -595,96 +582,128 @@ class Variables( Container ):
 ##             pause()
         return nods
 
-    ##
-    # c: 23.11.2005, r: 26.02.2008
-    def setup_dof_conns( self, make_virtual = False ):
-        output( 'setting up dof connectivities...' )
+    def get_mirror_region(self, region,
+                          return_ig_map=False, return_ig_map_i=False):
+        for info in iter_dict_of_lists(self.conn_info):
+            if isinstance(region, str):
+                out = info.mirror_map[region]
+            else:
+                out = info.mirror_map[region.name]
+
+            if return_ig_map and return_ig_map_i:
+                return out
+
+            if return_ig_map:
+                return out[:2]
+
+            elif return_ig_map_i:
+                return (out[0], out[2])
+
+            else:
+                return out[0]
+
+    def _setup_extra_data(self, var, info, is_trace, shared):
+        dct = info.dc_type[0]
+
+        if dct == 'surface':
+            reg = info.get_region()
+            if reg.name not in shared:
+                shared.add(reg.name)
+
+                fa = self.domain.get_neighbour_lists(force_faces=True)[2]
+                reg.setup_face_indices(fa)
+                reg.select_cells_of_surface()
+
+            var.field.aps.setup_surface_data(reg)
+
+        elif dct == 'edge':
+            raise NotImplementedError('dof connectivity type %s' % dct)
+
+        elif dct == 'point':
+            var.field.aps.setup_point_data(var.field, info.region)
+
+        elif dct != 'volume':
+            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+            
+    def setup_dof_conns(self, make_virtual=False):
+        """Dof connectivity key = (variable.name, region.name, type, ig) """
+        output('setting up dof connectivities...')
         tt = time.clock()
 
-        for ii in self.state:
-            var = self[ii]
-            var.setup_dof_conns()
+        self.has_virtual_dcs = make_virtual == True
 
-        if make_virtual:
-            for ii in self.virtual:
-                var = self[ii]
-                var.setup_dof_conns()
-            self.has_virtual_d_cs = True
-        else:
-            self.has_virtual_d_cs = False
+        dof_conns = {}
+        surface_regions = set()
+        for key, ii, info in iter_dict_of_lists(self.conn_info,
+                                                return_keys=True):
+##             print key, ii
+##             print info
 
+            if info.state is not None:
+                self._setup_extra_data(self[info.state], info, info.is_trace,
+                                       surface_regions)
+
+            if (info.virtual is not None) and (ii == 0):
+                # This is needed regardless make_virtual.
+                self._setup_extra_data(self[info.virtual], info, False,
+                                       surface_regions)
+
+            if make_virtual and (ii == 0):
+                var = self[info.virtual]
+                var.setup_dof_conns(dof_conns,
+                                    info.dc_type,
+                                    info.get_region(can_trace=False))
+
+            if info.state is None:
+                var = self[info.virtual]
+                var_name = var.primary_var_name
+
+            else:
+                var = self[info.state]
+                var_name = var.name
+
+            var.setup_dof_conns(dof_conns, info.dc_type, info.get_region(),
+                                var_name=var_name)
+
+##         print dof_conns
+##         pause()
+        
+        self.dof_conns = dof_conns
         output( '...done in %.2f s' % (time.clock() - tt) )
 
-    ##
-    # 08.08.2006, c
-    # 11.10.2006
-    # 20.02.2007
-    # 22.02.2007
-    # 11.07.2007
-    # 05.09.2007
     def setup_a_dof_conns( self ):
         """Translate dofs to active dofs."""
-        def _setup_a_dof_conns( iterable, adi ):
-            adof_conns = dict_from_keys_init( [self[ii].name for ii in iterable],
-                                              Struct )
-            for ii in iterable:
-                var = self[ii]
-                indx = adi.indx[var.name]
-                eq = var.eq_map.eq
-                adof_conns[var.name].name = 'adof_conns'
-                it =  var.iter_dof_conns( 'volume' )
-                adof_conns[var.name].volume_d_cs = create_a_dof_conns( eq, it,
-                                                                       indx )
-                it =  var.iter_dof_conns( 'surface' )
-                adof_conns[var.name].surface_d_cs = create_a_dof_conns( eq, it,
-                                                                        indx )
-                it =  var.iter_dof_conns( 'edge' )
-                adof_conns[var.name].edge_d_cs = create_a_dof_conns( eq, it,
-                                                                     indx )
-                it =  var.iter_dof_conns( 'point' )
-                adof_conns[var.name].point_d_cs = create_a_dof_conns( eq, it,
-                                                                      indx )
-            return adof_conns
+        adof_conns = {}
+        for key, dc in self.dof_conns.iteritems():
+            var = self[key[0]]
+            indx = self.adi.indx[var.name]
+            eq = var.eq_map.eq
+            adof_conns[key] = create_a_dof_conn(eq, dc, indx)
 
-        self.adof_conns = _setup_a_dof_conns( self.state, self.adi )
-        if self.has_virtual_d_cs:
-            self.avdof_conns = _setup_a_dof_conns( self.virtual, self.avdi )
-        else:
-            self.avdof_conns = self.adof_conns
-
-##         print self.adof_conns.values()[0]
+##         print adof_conns
 ##         pause()
 
-    ##
-    # c: 10.12.2007, r: 15.01.2008
-    def get_a_dof_conn( self, var_name, is_dual, dc_type, ig ):
-        """Note that primary and dual variables must have same Region!"""
-        kind, region_name = dc_type
+        self.adof_conns = adof_conns
 
-        var = self[var_name]
-        if is_dual:
-            if not self.has_virtual_d_cs:
-                var_name = var.primary_var_name
-            adcs = self.avdof_conns[var_name]
-        else:
-            adcs = self.adof_conns[var_name]
+    def get_a_dof_conn(self, var_name, is_dual, dc_type, ig, is_trace=False):
+        """Get active dof connectivity of a variable.
+        
+        Note that primary and dual variables must have same Region!"""
+        if is_dual and not self.has_virtual_dcs:
+            var_name = self.dual_map[var_name]
 
-        if kind == 'volume':
-            try:
-                dc = adcs.volume_d_cs[ig]
-            except:
-                debug()
+        if not is_trace:
+            key = (var_name, dc_type[1], dc_type[0], ig)
+
         else:
-            if kind == 'surface':
-                dcs = adcs.surface_d_cs
-            elif kind == 'edge':
-                dcs = adcs.edge_d_cs
-            elif kind == 'point':
-                dcs = adcs.point_d_cs
-            else:
-                msg = 'uknown dof connectivity kind: %s' % kind
-                raise ValueError( msg )
-            dc = dcs[(ig, region_name)]
+            region, ig_map = self.get_mirror_region(dc_type[1],
+                                                    return_ig_map_i=True)
+            key = (var_name, region.name, dc_type[0], ig_map[ig])
+
+        try:
+            dc = self.adof_conns[key]
+        except:
+            debug()
         return dc
         
     ##
@@ -701,43 +720,46 @@ class Variables( Container ):
         Create tangent matrix graph. Order of dof connectivities is not
         important here...
         """
-        def _prepare_dc_lists( adof_conns, var_names = None ):
-            if var_names is None:
-                var_names = adof_conns.iterkeys()
-
-            gdcs = {}
-            for var_name in var_names:
-                adcs = adof_conns[var_name]
-                for ig, dc in adcs.volume_d_cs.iteritems():
-##                     print dc
-                    gdcs.setdefault( ig, [] ).append( dc )
-            return gdcs
-
         shape = (self.avdi.ptr[-1], self.adi.ptr[-1])
         output( 'matrix shape:', shape )
         if nm.prod( shape ) == 0:
             output( 'no matrix!' )
             return None
 
-        cgdcs = _prepare_dc_lists( self.adof_conns, var_names )
-##         print cgdcs
-##         pause()
-        if self.has_virtual_d_cs:
-            rgdcs = _prepare_dc_lists( self.avdof_conns, vvar_names )
-        else:
-            rgdcs = cgdcs
+        adcs = self.adof_conns
 
-        ##
-        # Make all permutations per element group.
+        # Only volume dof connectivities are used, with the exception of trace
+        # surface dof connectivities.
+        shared = set()
         rdcs = []
         cdcs = []
-        for ig in rgdcs.iterkeys():
-            rgdc, cgdc = rgdcs[ig], cgdcs[ig]
-            for perm in la.cycle( [len( rgdc ), len( cgdc )] ):
-                rdcs.append( rgdc[perm[0]] )
-                cdcs.append( cgdc[perm[1]] )
-#                print ' ', perm, '->', rdcs[-1].shape, cdcs[-1].shape
+        for key, ii, info in iter_dict_of_lists(self.conn_info,
+                                                return_keys=True):
+            dct = info.dc_type[0]
+            if not (dct == 'volume' or info.is_trace):
+                continue
 
+            rn, cn = info.virtual, info.state
+            rreg = info.get_region(can_trace=False)
+            creg = info.get_region()
+
+            for rig, cig in info.iter_igs():
+                rkey = (self.dual_map[rn], rreg.name, dct, rig)
+                ckey = (cn, creg.name, dct, cig)
+                
+                dc_key = (rkey, ckey)
+##                 print dc_key
+                if not dc_key in shared:
+                    try:
+                        rdcs.append(adcs[rkey])
+                        cdcs.append(adcs[ckey])
+                    except:
+                        debug()
+                    shared.add(dc_key)
+##         print rdcs
+##         print cdcs
+##         print shared
+            
         output( 'assembling matrix graph...' )
         tt = time.clock()
 
@@ -1225,74 +1247,46 @@ class Variable( Struct ):
         self.flags.add( is_field )
         self.dtype = field.dtype
 
-    ##
-    # c: 08.08.2006, r: 15.01.2008
-    def setup_dof_conns( self ):
+    def setup_dof_conns(self, dof_conns, dc_type, region, var_name=None):
+        """Setup dof connectivities of various kinds as needed by terms."""
         dpn = self.dpn
         field = self.field
+        dct = dc_type[0]
 
-        dof_conns = Struct( name = 'dof_conns', volume_d_cs = {},
-                           surface_d_cs = {}, edge_d_cs = {}, point_d_cs = {} )
-        imax = -1
+        if var_name is None:
+            var_name = self.name
+
         ##
         # Expand nodes into dofs.
-        for region_name, ig, ap in field.aps.iter_aps():
+        can_point = True
+        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
+            region_name = region.name # True region name.
+            key = (var_name, region_name, dct, ig)
+            if key in dof_conns: continue
 
-            dc, imax = create_dof_conn( ap.econn, dpn, imax )
-            dof_conns.volume_d_cs[ig] = dc
+            if dct == 'volume':
+                dc = create_dof_conn(ap.econn, dpn)
+                dof_conns[key] = dc
 
-            if ap.surface_data:
-                dcs = {}
-                for key, sd in ap.surface_data.iteritems():
-                    dc, imax2 = create_dof_conn( sd.econn, dpn, 0 )
-                    assert_( imax2 <= imax )
-                    dcs[key] = dc
-                dof_conns.surface_d_cs[ig] = dcs
+            elif dct == 'surface':
+                sd = ap.surface_data[region_name]
+                dc = create_dof_conn(sd.econn, dpn)
+                dof_conns[key] = dc
 
-            else:
-                dof_conns.surface_d_cs[ig] = None
-
-            if ap.edge_data:
-                raise NotImplementedError
-            else:
-                dof_conns.edge_d_cs[ig] = None
-
-            if ap.point_data:
-                dcs = {}
-                for key, conn in ap.point_data.iteritems():
-                    dc, imax2 = create_dof_conn( conn, dpn, 0 )
-                    # imax2 can be greater than imax, as all spring nodes
-                    # are assigned to the first group!!!
-##                     print conn
-##                     print dc
-##                     print key, dc.shape
-##                     pause()
-                    dcs[key] = dc
-                dof_conns.point_d_cs[ig] = dcs
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
+                
+            elif dct == 'point':
+                if can_point:
+                    # Point data only in the first group to avoid multiple
+                    # assembling of nodes on group boundaries.
+                    conn = ap.point_data[region_name]
+                    dc = create_dof_conn(conn, dpn)
+                    dof_conns[key] = dc
+                    can_point = False
 
             else:
-                dof_conns.point_d_cs[ig] = None
-
-##         print dof_conns
-##         pause()
-        self.dof_conns = dof_conns
-        assert_( self.i_dof_max >= imax )
-
-    ##
-    # 20.02.2007, c
-    # 11.07.2007
-    def iter_dof_conns( self, kind ):
-        if kind == 'volume':
-            return self.dof_conns.volume_d_cs.iteritems
-        elif kind == 'surface':
-            return self.dof_conns.surface_d_cs.iteritems
-        elif kind == 'edge':
-            return self.dof_conns.edge_d_cs.iteritems
-        elif kind == 'point':
-            return self.dof_conns.point_d_cs.iteritems
-        else:
-            msg = 'uknown dof connectivity kind: %s' % kind
-            raise ValueError( msg )
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     ##
     # c: 25.02.2008, r: 25.02.2008
@@ -1604,15 +1598,17 @@ class Variable( Struct ):
         aps = self.field.aps
         geometries = aps.geometries
 
+        iname, region_name, ig = key
+
         if is_trace:
+            g_key = (iname, kind, region_name, ig)
             try:
-                ap, geometry = aps.trace_geometries[key]
+                ap, geometry = aps.geometries[g_key]
             except KeyError:
-                msg = 'no trace geometry %s in %s' % (key, aps.trace_geometries)
+                msg = 'no trace geometry %s in %s' % (key, aps.geometries)
                 raise KeyError( msg )
 
         else:
-            iname, region_name, ig = key
             ap = aps.aps_per_group[ig]
             g_key = (iname, kind, region_name, ap.name)
 

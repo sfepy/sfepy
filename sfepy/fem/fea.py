@@ -486,11 +486,12 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    ##
-    # 05.09.2006, c
-    # 03.05.2007
-    def describe_geometry( self, field, geom_request, integral, coors ):
-        gtype = geom_request.gtype
+    def describe_geometry( self, field, gtype, region, integral, coors ):
+        """Compute jacobians, element volumes and base function derivatives
+        for Volume-type geometries, and jacobians, normals and base function
+        derivatives for Surface-type geometries.
+        """
+
         if gtype == 'Volume':
             shape = self.get_v_data_shape( integral.name )
             if shape[0] == 0:
@@ -512,14 +513,6 @@ class Approximation( Struct ):
             return vg
 
         elif (gtype == 'Surface') or (gtype == 'SurfaceExtra'):
-##             print self.name
-##             print geom_request
-            region = geom_request.region
-            fa = region.domain.get_neighbour_lists( True )[2]
-            region.setup_face_indices( fa )
-            region.select_cells_of_surface()
-            self.setup_surface_data( region )
-            
             sd = self.surface_data[region.name]
 ##             print sd
 ##             print integral
@@ -561,17 +554,10 @@ class Approximation( Struct ):
             return sg
 
         elif gtype == 'Point':
-            region = geom_request.region
-##             print gtype, region.name, self.ig
-##             pause()
-            if self.ig == region.igs[0]:
-                # Point data only in the first group to avoid multiple
-                # assembling of nodes on group boundaries.
-                self.setup_point_data( field, region )
-
+            pass
+        
         else:
-            print 'unknown geometry type:', gtype
-            raise ValueError
+            raise ValueError('unknown geometry type: %s' % gtype)
 
     ##
     #
@@ -649,7 +635,6 @@ class Approximations( Container ):
 
     def clear_geometries( self ):
         self.geometries = {}
-        self.trace_geometries = {}
 
     ##
     # c: 23.11.2007, r: 15.01.2008
@@ -906,51 +891,30 @@ class Approximations( Container ):
 ##         print self.coors.shape
 ##         pause()
 
-    def describe_geometry( self, field, geometries, geom_request, integral,
-                           is_trace = False, over_write = False ):
-        """Computes jacobians, element volumes and base function derivatives
-        for Volume-type geometries, and jacobians, normals and base function
-        derivatives for Surface-type geometries.
+    def setup_surface_data(self, region):
+        for region_name, ig, ap in self.iter_aps(igs=region.igs):
+            ap.setup_surface_data(region)
 
-        If is_trace == True, the trace geometry is computed using the mirror
-        region.
+    def setup_point_data(self, field, region):
+        # Point data only in the first group to avoid multiple
+        # assembling of nodes on group boundaries.
+        for region_name, ig, ap in self.iter_aps(igs=region.igs[:1]):
+            ap.setup_point_data(field, region)
+
+
+    def describe_geometry(self, field, geometries, gtype, region, term_region,
+                          integral, ig_map=None, over_write=False):
+        """For all groups of approximations, compute jacobians, element volumes
+        and base function derivatives for Volume-type geometries, and
+        jacobians, normals and base function derivatives for Surface-type
+        geometries.
+
+        Usually, region is term_region. Only if is_trace is True, then region
+        is the mirror region and term_region is the true term region.
         """
-        if is_trace:
-            if geom_request.gtype != 'Surface':
-                raise ValueError('trace on non-surface geometry!')
+        is_trace = region is not term_region
 
-            trace_geometries = {}
-            ig_map = {}
-            
-            igs = []
-            region = geom_request.region
-            for igr in region.igs:
-                for igc in field.region.igs:
-                    if nm.all(nm.setmember1d(region.vertices[igr],
-                                             field.region.vertices[igc])):
-                        igs.append(igc)
-                        ig_map[igc] = igr
-                        break
-                else:
-                    raise ValueError('trace: cannot find group! (%s)' \
-                                     % geom_request)
-            for ii, ig in enumerate(igs):
-                for reg in field.domain.regions:
-                    if not ig in reg.igs: continue
-
-                    vv = region.vertices[region.igs[ii]]
-                    if nm.all(vv == reg.vertices[ig]):
-                        mirror_region = reg
-                        break
-                else:
-                    raise ValueError('trace: cannot mirror region! (%s)' \
-                                     % geom_request)
-            gr0 = geom_request
-            geom_request = Struct(gtype = gr0.gtype, region = mirror_region )
-        else:
-            igs = geom_request.region.igs
-
-        for region_name, ig, ap in self.iter_aps(igs=igs):
+        for region_name, ig, ap in self.iter_aps(igs=region.igs):
 ##             print region_name, ig, ap.name
 
             # Store integral for possible future base function request.
@@ -959,29 +923,29 @@ class Approximations( Container ):
 
             ##
             # Prepare common bases.
-            gtype = geom_request.gtype
             if gtype == 'Volume':
                 ap.get_base( 'v', 0, integral = integral )
                 ap.get_base( 'v', 1, integral = integral )
             elif (gtype == 'Surface') or (gtype == 'SurfaceExtra'):
                 pass
 
-            geom_key = (integral.name, geom_request.gtype,
-                        geom_request.region.name, ap.name)
-##            print field.name, geom_key
+            geom_key = (integral.name, gtype, region.name, ap.name)
+##             print field.name, geom_key
 
-            if geometries.has_key( geom_key ):
+            if geom_key in geometries:
                 self.geometries[geom_key] = geometries[geom_key]
+
             else:
-                if self.geometries.has_key( geom_key ):
+                if geom_key in self.geometries:
                     geometries[geom_key] = self.geometries[geom_key]
+
                 else:
-##                print 'new geometry: %s of %s' % (geom_key, ap.name)
-                    geom = ap.describe_geometry( field, geom_request, integral,
+##                     print 'new geometry: %s of %s' % (geom_key, ap.name)
+                    geom = ap.describe_geometry( field, gtype, region, integral,
                                                  self.coors )
                     self.geometries[geom_key] = geometries[geom_key] = geom
                     # Make an alias Surface -> SurfaceExtra.
-                    if geom_request.gtype == 'SurfaceExtra':
+                    if gtype == 'SurfaceExtra':
                         key2 = list(geom_key)
                         key2[1] = 'Surface'
                         key2 = tuple(key2)
@@ -990,13 +954,10 @@ class Approximations( Container ):
             if is_trace:
                 # Make a mirror-region alias to SurfaceData.
                 sd = ap.surface_data
-                sd[gr0.region.name] = sd[geom_request.region.name]
+                sd[term_region.name] = sd[region.name]
 
-                trace_key = ('isurf', gr0.region.name, ig_map[ig])
-                trace_geometries[trace_key] = (ap, self.geometries[geom_key])
-
-        if is_trace:
-            self.trace_geometries = trace_geometries
+                trace_key = (integral.name, gtype, term_region.name, ig_map[ig])
+                self.geometries[trace_key] = (ap, self.geometries[geom_key])
 
         if over_write:
             self.geometries = geometries

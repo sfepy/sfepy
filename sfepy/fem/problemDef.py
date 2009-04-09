@@ -143,18 +143,19 @@ class ProblemDefinition( Struct ):
         equations.setup_terms( self.domain.regions, self.variables,
                                self.materials, user )
 
+        # This uses the actual conn_info created in equations.setup_terms().
+        self.variables.setup_dof_conns()
+
         i_names = equations.get_term_integral_names()
         self.integrals = Integrals.from_conf( self.conf.integrals, i_names )
         self.integrals.set_quadratures( fea.collect_quadratures() )
 
         self.geometries = {}
         equations.describe_geometry( self.geometries, self.variables,
-                                    self.integrals )
+                                     self.integrals )
 
 ##         print self.geometries
 ##         pause()
-        # Call after describe_geometry(), as it sets ap.surface_data.
-        self.variables.setup_dof_conns()
 
         if cache_override is None:
             cache_override = get_default_attr( self.conf.fe,

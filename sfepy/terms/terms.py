@@ -297,6 +297,9 @@ class Term( Struct ):
     ##
     # c: 24.07.2006, r: 04.07.2008
     def get_virtual_name( self, variables = None ):
+        if not self.names.virtual:
+            return None
+        
         name = self.names.virtual[0]
         if variables is None:
             return name
@@ -382,20 +385,28 @@ class Term( Struct ):
 
             variable = variables[var_name]
             field = variable.field
-            if not self.arg_traces[var_name]:
+
+            is_trace = self.arg_traces[variable.name]
+            if not is_trace:
                 assert_( field.region.contains( self.region ) )
 
 ##             print field.name, field.region_name
 ##             print field.bases
 
             if tgs.has_key( var_name ):
-##                 print tgs[var_name]
-                field.aps.describe_geometry( field, geometries,
-                                             tgs[var_name], integral,
-                                             self.arg_traces[var_name] )
+##                 print ':', tgs[var_name]
 
-##             print field.aps.aps_per_group
-##             pause()
+                if is_trace:
+                    aux = variables.get_mirror_region(self.region,
+                                                      return_ig_map=True)
+                    region, ig_map = aux
+
+                else:
+                    region, ig_map = self.region, None
+                    
+                field.aps.describe_geometry(field, geometries,
+                                            tgs[var_name], region, self.region,
+                                            integral, ig_map=ig_map)
 
     def get_geometry( self ):
         geom = self.geometry
@@ -403,15 +414,12 @@ class Term( Struct ):
             out = {}
             for (gtype, arg_type) in geom:
                 arg_name = self.get_arg_name( arg_type )
-                out[arg_name] = Struct( gtype = gtype,
-                                        region = self.region )
+                out[arg_name] = gtype
             return out
         else:
             return None
 
-    ##
-    # c: 28.08.2006, r: 15.01.2008
-    def get_current_group( self ):
+    def get_current_group(self):
         return (self.integral_name, self.region.name, self.char_fun.ig)
 
     ##
@@ -466,7 +474,7 @@ class Term( Struct ):
                          derivative = self.arg_derivatives[name] )
 
     def get_approximation(self, variable, kind = 'Volume' ):
-        out = variable.get_approximation(self.get_current_group(),
-                                         kind=kind,
-                                         is_trace=self.arg_traces[variable.name])
+        is_trace = self.arg_traces[variable.name]
+        key = self.get_current_group()
+        out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
         return out

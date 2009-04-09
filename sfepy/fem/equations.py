@@ -137,6 +137,20 @@ def build_args( term, variables, materials, **kwargs ):
         args[mn] = materials[mn]
     return args
 
+class ConnInfo(Struct):
+    mirror_map = {}
+
+    def get_region(self, can_trace=True):
+        if self.is_trace and can_trace:
+            return self.mirror_region
+        else:
+            return self.region
+
+    def iter_igs(self):
+        for ig in self.region.igs:
+            ii = self.virtual_igs.index(ig)
+            yield self.virtual_igs[ii], self.state_igs[ii]
+
 ##
 # 21.07.2006, c
 class Equations( Container ):
@@ -178,9 +192,17 @@ class Equations( Container ):
         self.materials = materials
         self.variables = variables
 
+        conn_info = {}
+
         for eq in self:
             eq.setup_terms( regions, variables, materials, self.caches, user )
+            eq.collect_conn_info(conn_info, variables)
 
+##         print_structs(conn_info)
+##         pause()
+        
+        variables.conn_info = conn_info
+        
     ##
     # c: ??, r: 26.02.2008
     def describe_geometry( self, geometries, variables, integrals ):
@@ -342,6 +364,94 @@ class Equation( Struct ):
         self.setup_term_args( variables, materials, user )
         self.assign_term_caches( caches )
 
+    def collect_conn_info(self, conn_info, variables):
+
+        for term in self.terms:
+            key = (self.name, term.name, term.integral_name, term.region.name)
+
+            vn = term.get_virtual_name()
+            sns = term.get_state_names()
+##             if not (sns or vn): # eval mode -> no state or virtual variables
+##                 sns = term.get_parameter_names()
+                
+            dc_type = term.get_dof_conn_type()
+            tgs = term.get_geometry()
+
+            if vn is not None:
+                v_igs = variables[vn].field.igs()
+                v_tg = tgs[vn]
+            else:
+                v_igs = v_tg = None
+
+            region = term.region
+
+            is_any_trace = reduce(lambda x, y: x or y, term.arg_traces.values())
+            if is_any_trace:
+                for reg in region.domain.regions:
+                    if (reg is not region) and \
+                           (len(reg.igs) == len(region.igs)) and \
+                           nm.all(region.all_vertices == reg.all_vertices):
+                        mirror_region = reg
+                        break
+                else:
+                    raise ValueError('trace: cannot find mirror region! (%s)' \
+                                     % region)
+
+                ig_map = {}
+                ig_map_i = {}
+                for igr in region.igs:
+                    for igc in mirror_region.igs:
+                        if nm.all(region.vertices[igr] ==
+                                  mirror_region.vertices[igc]):
+                            ig_map[igc] = igr
+                            ig_map_i[igr] = igc
+                            break
+                    else:
+                        raise ValueError('trace: cannot find group! (%s)' \
+                                         % geom_request)
+            else:
+                mirror_region = ig_map = ig_map_i = None
+                
+            vals = []
+            for sn in sns:
+                s_igs = variables[sn].field.igs()
+                is_trace = term.arg_traces[sn]
+
+                if sn in tgs:
+                    s_tg = tgs[sn]
+                else:
+                    s_tg = v_tg
+
+                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                               state = sn, state_igs = s_igs,
+                               has_state = True,
+                               is_trace = is_trace,
+                               dc_type = dc_type,
+                               virtual_geometry = v_tg,
+                               state_geometry = s_tg,
+                               region = region,
+                               mirror_region = mirror_region,
+                               ig_map = ig_map, ig_map_i = ig_map_i)
+                ConnInfo.mirror_map[region.name] = (mirror_region,
+                                                    ig_map, ig_map_i)
+                vals.append(val)
+
+            if not sns:
+                sn = variables[vn].primary_var_name
+                # No state variables, just the virtual one.
+                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                               state = sn, state_igs = v_igs,
+                               has_state = False,
+                               is_trace = False,
+                               dc_type = dc_type,
+                               virtual_geometry = v_tg,
+                               state_geometry = None,
+                               region = region,
+                               mirror_region = None,
+                               ig_map = None, ig_map_i = None)
+                vals.append(val)
+
+            conn_info[key] = vals
     ##
     #
     def describe_geometry( self, geometries, variables, integrals ):

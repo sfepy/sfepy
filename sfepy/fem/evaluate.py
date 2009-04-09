@@ -183,7 +183,7 @@ def assemble_matrix( mtx, equation, variables, materials,
     get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
-#        print '>>>>>>', term.name, term.sign
+##         print '>>>>>>', term.name, term.sign
         var_names = term.get_variable_names()
         args = build_args( term, variables, materials, **kwargs )
         vn = term.get_virtual_name( variables = variables )
@@ -194,7 +194,9 @@ def assemble_matrix( mtx, equation, variables, materials,
             rdc = get_a_dof_conn( vn, True, dc_type, ig )
 #            print vn, rdc.shape
             for sn in sns:
-                cdc = get_a_dof_conn( sn, False, dc_type, ig )
+                is_trace = term.arg_traces[sn]
+##                 print sn, dc_type, ig, is_trace
+                cdc = get_a_dof_conn( sn, False, dc_type, ig, is_trace=is_trace )
 #                print sn, cdc.shape
 #                pause()
                 for mtx_in_els, iels, status in term( diff_var = sn,
