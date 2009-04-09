@@ -133,8 +133,6 @@ int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
     fmf_createAlloc( &out_qp, 1, nQP, nEP, nEP );
   }
 
-
-
   for (ii = 0; ii < elList_nRow; ii++) {
     iel = elList[ii];
 
@@ -159,6 +157,10 @@ int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
     fmf_sumLevelsMulF( out, out_qp, sg->det->val );
     ERR_CheckGo( ret );
   } 
+
+  if (mode == 2) {
+    fmfc_mulC( out, -1.0 );
+  }
 
  end_label:
   fmf_freeDestroy( &st1 ); 
