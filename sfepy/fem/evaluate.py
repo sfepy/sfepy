@@ -255,11 +255,22 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
     equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
     equation.setup_terms( domain.regions, variables, materials, caches, kwargs )
+    variables.conn_info = {}
+    equation.collect_conn_info(variables.conn_info, variables)
 
     for cache in caches.itervalues():
         cache.set_mode( override = override )
 
+    if 'call_mode' in kwargs:
+        itype = kwargs['call_mode'].split( '_' )[0]
+    else:
+        # itype according to the first term in term_desc!
+        itype = equation.terms[0].itype
+
     if new_geometries:
+        if itype == 'dw':
+            variables.setup_dof_conns()
+
         i_names = equation.get_term_integral_names()
         integrals = Integrals.from_conf( conf.integrals, i_names )
         integrals.set_quadratures( quadratures )
@@ -268,14 +279,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         equation.describe_geometry( geometries, variables, integrals )
 
     variables.data_from_state( state )
-    if 'call_mode' in kwargs:
-        itype = kwargs['call_mode'].split( '_' )[0]
-    else:
-        # itype according to the first term in term_desc!
-        itype = equation.terms[0].itype
 
     if itype == 'dw':
-        variables.setup_dof_conns()
         if not variables.has_eq_map:
             variables.equation_mapping( conf.ebcs, conf.epbcs,
                                         domain.regions, ts, funmod )

@@ -78,9 +78,9 @@ def get_pars( ts, coor, region, ig, mode = None ):
 # mode)
 test_terms = [
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us'), 'biot')),
+     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv'), 'biot')),
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv'), 'biot')),
+     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us'), 'biot')),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
     ('%s_volume_wdot.i1.Omega( m.val, %s, %s )',
@@ -143,10 +143,11 @@ class Test( TestCommon ):
                 
             self.report( '%s: %s' % (term1, val1) )
             
-            term2 = term_template % (('dw',) + dw_vars[:-1])
+            term2 = term_template % (('dw',) + dw_vars[:2])
 
             vec = eval_term_op( dummy, term2, pb )
-            val2 = nm.dot( vecs[par_name], vec )
+            pvec = pb.variables.get_state_part_view(vec, dw_vars[2])
+            val2 = nm.dot( vecs[par_name], pvec )
             self.report( '%s: %s' % (term2, val2) )
 
             err = nm.abs( val1 - val2 ) / nm.abs( val1 )

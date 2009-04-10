@@ -349,6 +349,22 @@ class Variables( Container ):
             names = [var.name for var in self if var.is_kind( kind )]
         return names
 
+    def get_primary_names(self, var_names):
+        """Return a dictionary of names of primary variables corresponding
+        to the variables named in var_names."""
+        primary_names = {}
+        for name in var_names:
+            var = self[name]
+            if var.is_state():
+                primary_names[name] = var.name
+            else:
+                primary_names[name] = var.primary_var_name
+
+        return primary_names
+
+    def has_virtuals(self):
+        return len(self.virtual) > 0
+
     ##
     # c: 07.10.2005, r: 22.05.2008
     def setup_dof_info( self, make_virtual = False ):
@@ -626,7 +642,7 @@ class Variables( Container ):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
             
     def setup_dof_conns(self, make_virtual=False):
-        """Dof connectivity key = (variable.name, region.name, type, ig) """
+        """Dof connectivity key = (field.name, region.name, type, ig)"""
         output('setting up dof connectivities...')
         tt = time.clock()
 
@@ -639,31 +655,21 @@ class Variables( Container ):
 ##             print key, ii
 ##             print info
 
-            if info.state is not None:
-                self._setup_extra_data(self[info.state], info, info.is_trace,
-                                       surface_regions)
+            self._setup_extra_data(self[info.primary], info, info.is_trace,
+                                   surface_regions)
 
-            if (info.virtual is not None) and (ii == 0):
+            if info.has_virtual and (ii == 0):
                 # This is needed regardless make_virtual.
                 self._setup_extra_data(self[info.virtual], info, False,
                                        surface_regions)
 
-            if make_virtual and (ii == 0):
-                var = self[info.virtual]
-                var.setup_dof_conns(dof_conns,
-                                    info.dc_type,
-                                    info.get_region(can_trace=False))
+                if make_virtual:
+                    var = self[info.virtual]
+                    var.setup_dof_conns(dof_conns, info.dc_type,
+                                        info.get_region(can_trace=False))
 
-            if info.state is None:
-                var = self[info.virtual]
-                var_name = var.primary_var_name
-
-            else:
-                var = self[info.state]
-                var_name = var.name
-
-            var.setup_dof_conns(dof_conns, info.dc_type, info.get_region(),
-                                var_name=var_name)
+            var = self[info.primary]
+            var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
 
 ##         print dof_conns
 ##         pause()
@@ -672,13 +678,16 @@ class Variables( Container ):
         output( '...done in %.2f s' % (time.clock() - tt) )
 
     def setup_a_dof_conns( self ):
-        """Translate dofs to active dofs."""
+        """Translate dofs to active dofs.
+        Active dof connectivity key = (variable.name, region.name, type, ig)"""
         adof_conns = {}
         for key, dc in self.dof_conns.iteritems():
-            var = self[key[0]]
-            indx = self.adi.indx[var.name]
-            eq = var.eq_map.eq
-            adof_conns[key] = create_a_dof_conn(eq, dc, indx)
+            for var in self.iter_state():
+                if var.field.name == key[0]:
+                    indx = self.adi.indx[var.name]
+                    eq = var.eq_map.eq
+                    akey = (var.name,) + key[1:]
+                    adof_conns[akey] = create_a_dof_conn(eq, dc, indx)
 
 ##         print adof_conns
 ##         pause()
@@ -700,10 +709,7 @@ class Variables( Container ):
                                                     return_ig_map_i=True)
             key = (var_name, region.name, dc_type[0], ig_map[ig])
 
-        try:
-            dc = self.adof_conns[key]
-        except:
-            debug()
+        dc = self.adof_conns[key]
         return dc
         
     ##
@@ -720,6 +726,10 @@ class Variables( Container ):
         Create tangent matrix graph. Order of dof connectivities is not
         important here...
         """
+        if not self.has_virtuals():
+            output( 'no matrix!' )
+            return None
+
         shape = (self.avdi.ptr[-1], self.adi.ptr[-1])
         output( 'matrix shape:', shape )
         if nm.prod( shape ) == 0:
@@ -740,6 +750,9 @@ class Variables( Container ):
                 continue
 
             rn, cn = info.virtual, info.state
+            if (rn is None) or (cn is None):
+                continue
+            
             rreg = info.get_region(can_trace=False)
             creg = info.get_region()
 
@@ -759,7 +772,12 @@ class Variables( Container ):
 ##         print rdcs
 ##         print cdcs
 ##         print shared
-            
+
+        if not shared:
+            # No virtual, state variable -> no matrix.
+            output( 'no matrix!' )
+            return None
+        
         output( 'assembling matrix graph...' )
         tt = time.clock()
 
@@ -1247,21 +1265,18 @@ class Variable( Struct ):
         self.flags.add( is_field )
         self.dtype = field.dtype
 
-    def setup_dof_conns(self, dof_conns, dc_type, region, var_name=None):
+    def setup_dof_conns(self, dof_conns, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""
         dpn = self.dpn
         field = self.field
         dct = dc_type[0]
-
-        if var_name is None:
-            var_name = self.name
 
         ##
         # Expand nodes into dofs.
         can_point = True
         for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
             region_name = region.name # True region name.
-            key = (var_name, region_name, dct, ig)
+            key = (field.name, region_name, dct, ig)
             if key in dof_conns: continue
 
             if dct == 'volume':

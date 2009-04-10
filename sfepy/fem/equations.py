@@ -368,20 +368,23 @@ class Equation( Struct ):
 
         for term in self.terms:
             key = (self.name, term.name, term.integral_name, term.region.name)
+            key += tuple(term.arg_names)
 
             vn = term.get_virtual_name()
             sns = term.get_state_names()
-##             if not (sns or vn): # eval mode -> no state or virtual variables
-##                 sns = term.get_parameter_names()
+            pns = term.get_parameter_names()
+
+            pn_map = variables.get_primary_names(term.get_variable_names())
+##             print key
+##             print vn, sns, pns
+##             pause()
                 
             dc_type = term.get_dof_conn_type()
-            tgs = term.get_geometry()
 
             if vn is not None:
                 v_igs = variables[vn].field.igs()
-                v_tg = tgs[vn]
             else:
-                v_igs = v_tg = None
+                v_igs = None
 
             region = term.region
 
@@ -413,22 +416,23 @@ class Equation( Struct ):
                 mirror_region = ig_map = ig_map_i = None
                 
             vals = []
+            aux_pns = []
             for sn in sns:
+                # Allow only true state variables.
+                if not variables[sn].is_state():
+                    aux_pns.append(sn)
+                    continue
+                
                 s_igs = variables[sn].field.igs()
                 is_trace = term.arg_traces[sn]
 
-                if sn in tgs:
-                    s_tg = tgs[sn]
-                else:
-                    s_tg = v_tg
-
                 val = ConnInfo(virtual = vn, virtual_igs = v_igs,
                                state = sn, state_igs = s_igs,
+                               primary = sn, primary_igs = s_igs,
+                               has_virtual = True,
                                has_state = True,
                                is_trace = is_trace,
                                dc_type = dc_type,
-                               virtual_geometry = v_tg,
-                               state_geometry = s_tg,
                                region = region,
                                mirror_region = mirror_region,
                                ig_map = ig_map, ig_map_i = ig_map_i)
@@ -436,21 +440,39 @@ class Equation( Struct ):
                                                     ig_map, ig_map_i)
                 vals.append(val)
 
-            if not sns:
-                sn = variables[vn].primary_var_name
-                # No state variables, just the virtual one.
+            pns += aux_pns
+            for pn in pns:
+                p_igs = variables[pn].field.igs()
+                is_trace = term.arg_traces[pn]
+
                 val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                               state = sn, state_igs = v_igs,
+                               state = None, state_igs = [],
+                               primary = pn_map[pn], primary_igs = p_igs,
+                               has_virtual = vn is not None,
+                               has_state = False,
+                               is_trace = is_trace,
+                               dc_type = dc_type,
+                               region = region,
+                               mirror_region = mirror_region,
+                               ig_map = ig_map, ig_map_i = ig_map_i)
+                ConnInfo.mirror_map[region.name] = (mirror_region,
+                                                    ig_map, ig_map_i)
+                vals.append(val)
+
+            if vn and (len(vals) == 0):
+                # No state, parameter variables, just the virtual one.
+                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                               state = pn_map[vn], state_igs = v_igs,
+                               primary = pn_map[vn], primary_igs = v_igs,
+                               has_virtual = True,
                                has_state = False,
                                is_trace = False,
                                dc_type = dc_type,
-                               virtual_geometry = v_tg,
-                               state_geometry = None,
                                region = region,
                                mirror_region = None,
                                ig_map = None, ig_map_i = None)
                 vals.append(val)
-
+            
             conn_info[key] = vals
     ##
     #

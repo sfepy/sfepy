@@ -893,13 +893,15 @@ class Approximations( Container ):
 
     def setup_surface_data(self, region):
         for region_name, ig, ap in self.iter_aps(igs=region.igs):
-            ap.setup_surface_data(region)
+            if region.name not in ap.surface_data:
+                ap.setup_surface_data(region)
 
     def setup_point_data(self, field, region):
         # Point data only in the first group to avoid multiple
         # assembling of nodes on group boundaries.
         for region_name, ig, ap in self.iter_aps(igs=region.igs[:1]):
-            ap.setup_point_data(field, region)
+            if region.name not in ap.point_data:
+                ap.setup_point_data(field, region)
 
 
     def describe_geometry(self, field, geometries, gtype, region, term_region,
