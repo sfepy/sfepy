@@ -25,7 +25,7 @@ def add_glyphs(obj, position, scale_factor='auto', color=None):
     if scale_factor == 'auto':
         rng = glyphs.glyph.glyph.range
         delta = rng[1] - rng[0]
-        scale_factor = 0.01 * delta
+        scale_factor = 0.02 * delta
 
     glyphs.glyph.color_mode = 'color_by_vector'
     glyphs.glyph.scale_mode = 'scale_by_vector'
@@ -57,7 +57,9 @@ class Viewer(Struct):
         scene = mlab.figure(bgcolor=(1,1,1), size=(600,800))
 
         source = mlab.pipeline.open(self.filename)
-
+        bbox = nm.array(source.reader.unstructured_grid_output.bounds)
+        dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
+        
         scalar_names = sorted( source._point_scalars_list[:-1] )
         vector_names = sorted( source._point_vectors_list[:-1] )
         names = [['scalar', name] for name in scalar_names]
@@ -78,8 +80,10 @@ class Viewer(Struct):
             if ii == n_data: break
             kind, name = names[ii]
             
-            position = [ic, n_row - ir - 1, 0]
-            print position
+            position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
+            position[:2] -= bbox[:2]
+            
+            output(kind, name, position)
             field_chooser = mlab.pipeline.set_active_attribute(source)
             if kind == 'scalar':
                 field_chooser.point_scalars_name = name
@@ -104,6 +108,9 @@ class Viewer(Struct):
 
             else:
                 raise ValueError('bad kind! (%s)' % kind)
+
+            position[2] = 0.5 * dx[2]
+            text = add_text(field_chooser, position, name)
 
             scene.scene.reset_zoom()
 
