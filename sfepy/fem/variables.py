@@ -618,10 +618,10 @@ class Variables( Container ):
             else:
                 return out[0]
 
-    def _setup_extra_data(self, var, info, is_trace, shared):
+    def _setup_extra_data(self, var, geometry, info, is_trace, shared):
         dct = info.dc_type[0]
 
-        if dct == 'surface':
+        if (dct == 'surface') or (geometry.find('Surface') >= 0):
             reg = info.get_region()
             if reg.name not in shared:
                 shared.add(reg.name)
@@ -655,13 +655,13 @@ class Variables( Container ):
 ##             print key, ii
 ##             print info
 
-            self._setup_extra_data(self[info.primary], info, info.is_trace,
-                                   surface_regions)
+            self._setup_extra_data(self[info.primary], info.ps_tg,
+                                   info, info.is_trace, surface_regions)
 
             if info.has_virtual and (ii == 0):
                 # This is needed regardless make_virtual.
-                self._setup_extra_data(self[info.virtual], info, False,
-                                       surface_regions)
+                self._setup_extra_data(self[info.virtual], info.v_tg, info,
+                                       False, surface_regions)
 
                 if make_virtual:
                     var = self[info.virtual]

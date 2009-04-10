@@ -380,11 +380,13 @@ class Equation( Struct ):
 ##             pause()
                 
             dc_type = term.get_dof_conn_type()
-
+            tgs = term.get_geometry()
+            
             if vn is not None:
                 v_igs = variables[vn].field.igs()
+                v_tg = tgs[vn]
             else:
-                v_igs = None
+                v_igs = v_tg = None
 
             region = term.region
 
@@ -426,6 +428,11 @@ class Equation( Struct ):
                 s_igs = variables[sn].field.igs()
                 is_trace = term.arg_traces[sn]
 
+                if sn in tgs:
+                    ps_tg = tgs[sn]
+                else:
+                    ps_tg = v_tg
+
                 val = ConnInfo(virtual = vn, virtual_igs = v_igs,
                                state = sn, state_igs = s_igs,
                                primary = sn, primary_igs = s_igs,
@@ -433,6 +440,8 @@ class Equation( Struct ):
                                has_state = True,
                                is_trace = is_trace,
                                dc_type = dc_type,
+                               v_tg = v_tg,
+                               ps_tg = ps_tg,
                                region = region,
                                mirror_region = mirror_region,
                                ig_map = ig_map, ig_map_i = ig_map_i)
@@ -445,6 +454,11 @@ class Equation( Struct ):
                 p_igs = variables[pn].field.igs()
                 is_trace = term.arg_traces[pn]
 
+                if pn in tgs:
+                    ps_tg = tgs[pn]
+                else:
+                    ps_tg = v_tg
+
                 val = ConnInfo(virtual = vn, virtual_igs = v_igs,
                                state = None, state_igs = [],
                                primary = pn_map[pn], primary_igs = p_igs,
@@ -452,6 +466,8 @@ class Equation( Struct ):
                                has_state = False,
                                is_trace = is_trace,
                                dc_type = dc_type,
+                               v_tg = v_tg,
+                               ps_tg = ps_tg,
                                region = region,
                                mirror_region = mirror_region,
                                ig_map = ig_map, ig_map_i = ig_map_i)
@@ -468,6 +484,8 @@ class Equation( Struct ):
                                has_state = False,
                                is_trace = False,
                                dc_type = dc_type,
+                               v_tg = v_tg,
+                               ps_tg = v_tg,
                                region = region,
                                mirror_region = None,
                                ig_map = None, ig_map_i = None)
