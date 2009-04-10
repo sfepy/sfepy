@@ -147,7 +147,7 @@ class MassScalarVariableTerm( MassScalarTerm ):
                                                       chunk_size, **kwargs)
         n_el, n_qp, dim, n_ep = self.data_shape
         
-        mat, virtual = self.get_args( **kwargs )
+        mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         cache = self.get_cache( 'mat_in_qp', 0 )
