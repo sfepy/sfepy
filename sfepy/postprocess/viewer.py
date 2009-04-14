@@ -19,13 +19,18 @@ def add_scalar_cut_plane(obj, position, normal, opacity=1.0):
 
     return scp
     
-def add_glyphs(obj, position, scale_factor='auto', color=None):
+def add_glyphs(obj, position, bbox, rel_scaling=None,
+               scale_factor='auto', color=None):
+
     glyphs = mlab.pipeline.glyph(obj, mode='2darrow', scale_mode='vector',
                                  color=color, opacity=1.0) 
     if scale_factor == 'auto':
         rng = glyphs.glyph.glyph.range
         delta = rng[1] - rng[0]
-        scale_factor = 0.02 * delta
+        dx = nm.min((bbox[1::2] - bbox[:-1:2]))
+        if rel_scaling is None:
+            rel_scaling = 0.02 # -> delta fits 50x into dx.
+        scale_factor = rel_scaling * dx / delta
 
     glyphs.glyph.color_mode = 'color_by_vector'
     glyphs.glyph.scale_mode = 'scale_by_vector'
@@ -51,7 +56,7 @@ class Viewer(Struct):
                         auto_screenshot = auto_screenshot,
                         mlab = mlab)
 
-    def __call__(self, show=True, is_3d=False):
+    def __call__(self, show=True, is_3d=False, rel_scaling=None):
         """By default, plot all found data."""
         mlab.options.offscreen = self.offscreen
         scene = mlab.figure(bgcolor=(1,1,1), size=(600,800))
@@ -104,7 +109,8 @@ class Viewer(Struct):
             elif kind == 'vector':
                 field_chooser.point_vectors_name = name
 
-                glyphs = add_glyphs(field_chooser, position)
+                glyphs = add_glyphs(field_chooser, position, bbox,
+                                    rel_scaling=rel_scaling)
 
             else:
                 raise ValueError('bad kind! (%s)' % kind)
