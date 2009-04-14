@@ -411,9 +411,14 @@ class Approximation( Struct ):
         n_fa, n_fp = face_indices.shape[0], faces.shape[1]
         face_type = 's%d' % n_fp
 
+        # Store bkey in SurfaceData, so that base function can be
+        # queried later.
+        bkey = 'b%s' % face_type[1:]
+
         sd = Struct( name = 'surface_data_%s' % region.name,
                      econn = econn, fis = face_indices, n_fa = n_fa, n_fp = n_fp,
-                     nodes = nodes, leconn = leconn, face_type = face_type )
+                     nodes = nodes, leconn = leconn, face_type = face_type,
+                     bkey = bkey )
         self.surface_data[region.name] = sd
         return sd
 
@@ -535,16 +540,8 @@ class Approximation( Struct ):
             if gtype == 'SurfaceExtra':
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
 
-                bf_s = self.get_base( sd.face_type, 0, integral = integral,
-                                    from_geometry = True )
-##                 print bf_s
-                bkey = self.create_bqp( sd.face_type, bf_s, weights,
-                                        integral.name )
-                # Store bkey in SurfaceData, so that base function can be
-                # queried later.
-                sd.bkey = bkey
-
-                bf_bg = self.get_base( bkey, 1, integral = integral )
+                self.create_bqp( region.name, integral )
+                bf_bg = self.get_base( sd.bkey, 1, integral = integral )
 ##                 print bf_bg
                 sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
 
@@ -561,7 +558,7 @@ class Approximation( Struct ):
 
     ##
     #
-    def create_bqp( self, skey, bf_s, weights, iname ):
+    def _create_bqp( self, skey, bf_s, weights, iname ):
         interp = self.interp
         gd = interp.gel.data['v']
         bkey = 'b%s' % skey[1:]
@@ -575,6 +572,18 @@ class Approximation( Struct ):
         interp.nodes[bkey] = interp.nodes['v']
         interp.base_funs[bkey] = interp.base_funs['v']
         return bkey
+
+    def create_bqp(self, region_name, integral ):
+        sd = self.surface_data[region_name]
+        bqpkey = (integral.name, sd.bkey)
+        if not bqpkey in self.qp_coors:
+            bf_s = self.get_base( sd.face_type, 0, integral = integral,
+                                  from_geometry = True )
+            qp = self.get_qp( sd.face_type, None, integral )
+
+            bkey = self._create_bqp( sd.face_type, bf_s, qp.weights,
+                                     integral.name )
+            assert_(bkey == sd.bkey)
 
 ##
 # 14.07.2006, c
@@ -936,11 +945,13 @@ class Approximations( Container ):
 
             if geom_key in geometries:
                 self.geometries[geom_key] = geometries[geom_key]
+                if gtype == 'SurfaceExtra':
+                    ap.create_bqp( region.name, integral )
 
             else:
                 if geom_key in self.geometries:
                     geometries[geom_key] = self.geometries[geom_key]
-
+ 
                 else:
 ##                     print 'new geometry: %s of %s' % (geom_key, ap.name)
                     geom = ap.describe_geometry( field, gtype, region, integral,
