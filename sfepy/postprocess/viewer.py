@@ -27,7 +27,7 @@ def add_glyphs(obj, position, bbox, rel_scaling=None,
     if scale_factor == 'auto':
         rng = glyphs.glyph.glyph.range
         delta = rng[1] - rng[0]
-        dx = nm.min((bbox[1::2] - bbox[:-1:2]))
+        dx = nm.max((bbox[1::2] - bbox[:-1:2]))
         if rel_scaling is None:
             rel_scaling = 0.02 # -> delta fits 50x into dx.
         scale_factor = rel_scaling * dx / delta
