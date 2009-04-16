@@ -512,11 +512,18 @@ class ProblemDefinition( Struct ):
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
         
-        ev = self.get_evaluator( **kwargs )
         ls = Solver.any_from_conf( ls_conf, mtx = mtx, presolve = presolve )
+
+        if get_default_attr(nls_conf, 'needs_problem_instance', False):
+            extra_args = {'problem' : self}
+        else:
+            extra_args = {}
+        ev = self.get_evaluator( **kwargs )
         nls = Solver.any_from_conf( nls_conf, fun = ev.eval_residual,
                                     fun_grad = ev.eval_tangent_matrix,
-                                    lin_solver = ls, status = nls_status )
+                                    lin_solver = ls, status = nls_status,
+                                    **extra_args )
+
         self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
 
     ##

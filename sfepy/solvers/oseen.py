@@ -30,9 +30,11 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
     ns['b'] = term.get_parameter_names()[0]
     ns['u'] = term.get_state_names()[0]
     ns['omega'] = term.region.name
+    ns['i2'] = term.integral_name
     
     term = problem.equations[eq_name1].terms['dw_stokes']
     ns['p'] = term.get_state_names()[0]
+    ns['i1'] = term.integral_name
 
     term = problem.equations[eq_name2].terms['dw_stokes']
     ns['q'] = term.get_virtual_name()
@@ -137,6 +139,11 @@ class Oseen( NonlinearSolver ):
         get = conf.get_default_attr
 
         # Compulsory.
+        needs_problem_instance = get('needs_problem_instance', True)
+        if not needs_problem_instance:
+            msg = 'set solver option "needs_problem_instance" to True!'
+            raise ValueError(msg)
+        
         fluid_mat_name = get( 'fluid_mat_name', None,
                               'missing "fluid_mat_name" in options!' )
         stabil_mat_name = get( 'stabil_mat_name', None,
@@ -166,21 +173,20 @@ class Oseen( NonlinearSolver ):
     def __init__( self, conf, **kwargs ):
         NonlinearSolver.__init__( self, conf, **kwargs )
 
-    ##
-    # 26.07.2007, c
-    # 31.07.2007
-    # 01.08.2007
-    # 11.10.2007, from oseen()
-    # 29.10.2007
-    # 30.10.2007
-    # 31.10.2007
-    def __call__( self, vec_x0, conf = None, evaluator = None,
-                  lin_solver = None, status = None ):
-        """"""
+    def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
+                  lin_solver = None, status = None, problem = None ):
+        """Oseen solver is problem-specific - it requires a ProblemDefinition
+        instance."""
         conf = get_default( conf, self.conf )
-        evaluator = get_default( evaluator, self.evaluator )
+        fun = get_default( fun, self.fun )
+        fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
         status = get_default( status, self.status )
+        problem = get_default( problem, self.problem )
+
+        if problem is None:
+            msg = 'set solver option "needs_problem_instance" to True!'
+            raise ValueError(msg)
 
         if hasattr( conf, 'fixed_data' ):
             fixed_data = conf.fixed_data
@@ -189,13 +195,12 @@ class Oseen( NonlinearSolver ):
 
         time_stats = {}
 
-        problem = evaluator.problem
-
         stabil, ns, ii = create_stabil_data( problem, conf.fluid_mat_name,
                                            conf.stabil_mat_name,
                                            conf.lin_convect_eq_name,
                                            conf.div_eq_name )
         update_var = problem.variables.non_state_data_from_state
+        make_full_vec = problem.variables.make_full_vec
 
         print 'problem size:'
         print '    velocity: %s' % ii['us']
@@ -208,12 +213,15 @@ class Oseen( NonlinearSolver ):
         err0 = -1.0
         it = 0
         while 1:
-            update_var( ns['b'], vec_x_prev, ns['u'] )
-            vec_b = vec_x_prev[ii['u']]
+            vec_x_prev_f = make_full_vec( vec_x_prev )
+            update_var( ns['b'], vec_x_prev_f, ns['u'] )
+
+            vec_b = vec_x_prev_f[ii['u']]
             b_norm = nla.norm( vec_b, nm.inf )
             print '|b|_max: %.12e' % b_norm
 
-            vec_u = vec_x[ii['u']]
+            vec_x_f = make_full_vec( vec_x )
+            vec_u = vec_x_f[ii['u']]
             u_norm = nla.norm( vec_u, nm.inf )
             print '|u|_max: %.2e' % u_norm
 
@@ -235,32 +243,42 @@ class Oseen( NonlinearSolver ):
                 adimensionalize = False
 
             tt = time.clock()
-            vec_r, ret = evaluator.eval_residual( vec_x )
+            try:
+                vec_r = fun( vec_x )
+            except ValueError:
+                ok = False
+            else:
+                ok = True
             time_stats['rezidual'] = time.clock() - tt
-            if ret == 0: # OK.
+            if ok:
                 err = nla.norm( vec_r )
                 if it == 0:
                     err0 = err;
                 else:
                     err += nla.norm( vec_dx )
             else: # Failure.
-                print 'rezidual computation failed for iter %d!' % it
-                raise RuntimeError, 'giving up...'
+                output( 'rezidual computation failed for iter %d!' % it )
+                raise RuntimeError( 'giving up...' )
 
             condition = conv_test( conf, it, err, err0 )
             if condition >= 0:
                 break
 
             if adimensionalize:
-                print 'adimensionalizing'
+                output( 'adimensionalizing' )
                 mat.viscosity = viscosity / b_norm
                 vec_r[indx_us] /= b_norm
 
             tt = time.clock()
-            mtx_a, ret = evaluator.eval_tangent_matrix( vec_x )
+            try:
+                mtx_a = fun_grad( vec_x )
+            except ValueError:
+                ok = False
+            else:
+                ok = True
             time_stats['matrix'] = time.clock() - tt
-            if ret != 0:
-                raise RuntimeError, 'giving up...'
+            if not ok:
+                raise RuntimeError( 'giving up...' )
 
             tt = time.clock() 
             vec_dx = lin_solver( vec_r, mtx = mtx_a )
@@ -269,22 +287,20 @@ class Oseen( NonlinearSolver ):
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm( vec_e )
             if lerr > (conf.eps_a * conf.lin_red):
-                print 'linear system not solved! (err = %e)' % lerr
-    #            raise RuntimeError, 'linear system not solved! (err = %e)' % lerr
+                output( 'linear system not solved! (err = %e)' % lerr )
 
             if adimensionalize:
-                print 'restoring pressure...'
+                output( 'restoring pressure...' )
                 vec_dx[indx_ps] *= b_norm
 
             dx_norm = nla.norm( vec_dx )
-            print '||dx||: %.2e' % dx_norm
+            output( '||dx||: %.2e' % dx_norm )
 
             for kv in time_stats.iteritems():
-                print '%10s: %7.2f [s]' % kv
-
+                output( '%10s: %7.2f [s]' % kv )
 
             vec_x_prev = vec_x.copy()
-            evaluator.update_vec( vec_x, vec_dx )
+            vec_x -= vec_dx
 
             if conf.is_plot:
                 plu.pylab.ion()
@@ -315,22 +331,29 @@ class Oseen( NonlinearSolver ):
     ##         print '"Oseen" rezidual: %.8e' % err_ns
 
 
-            t1 = '+ dw_div_grad.%s( %s, %s, %s )' % (ns['omega'],
-                                                     ns['fluid'],
-                                                     ns['v'], ns['u'])
+            t1 = '+ dw_div_grad.%s.%s( %s.viscosity, %s, %s )' \
+                 % (ns['i2'], ns['omega'], ns['fluid'], ns['v'], ns['u'])
 ##             t2 = '+ dw_lin_convect.%s( %s, %s, %s )' % (ns['omega'],
 ##                                                         ns['v'], b_name, ns['u'])
-            t2 = '+ dw_convect.%s( %s, %s )' % (ns['omega'], ns['v'], ns['u'])
-            t3 = '- dw_grad.%s( %s, %s )' % (ns['omega'], ns['v'], ns['p'])
-            t4 = 'dw_div.%s( %s, %s )' % (ns['omega'], ns['q'], ns['u'])
+            t2 = '+ dw_convect.%s.%s( %s, %s )' % (ns['i2'], ns['omega'],
+                                                   ns['v'], ns['u'])
+            t3 = '- dw_stokes.%s.%s( %s, %s )' % (ns['i1'], ns['omega'],
+                                                  ns['v'], ns['p'])
+            t4 = 'dw_stokes.%s.%s( %s, %s )' % (ns['i1'], ns['omega'],
+                                                ns['u'], ns['q'])
             equations = {
                 'balance' : ' '.join( (t1, t2, t3) ),
                 'incompressibility' : t4,
             }
             problem.set_equations( equations )
-            vec_rns0, ret = evaluator.eval_residual( vec_x0 )
-            vec_rns, ret = evaluator.eval_residual( vec_x )
-            if ret:
+            try:
+                vec_rns0 = fun( vec_x0 )
+                vec_rns = fun( vec_x )
+            except ValueError:
+                ok = False
+            else:
+                ok = True
+            if not ok:
                 print 'Navier-Stokes rezidual computation failed!'
                 err_ns = err_ns0 = None
             else:

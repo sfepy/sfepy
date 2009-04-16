@@ -239,8 +239,8 @@ int32 vg_getElementDiameters( VolumeGeometry *obj, FMField *out,
     return( RET_Fail );
   }
 
-  output( "%d %d %d %d %d %d %d\n",
-	  edges_nRow, edges_nCol, nNod, dim, nEl, nEP, elList_nRow );
+/*   output( "%d %d %d %d %d %d %d\n", */
+/* 	  edges_nRow, edges_nCol, nNod, dim, nEl, nEP, elList_nRow ); */
 
   nd = obj->bfGM->nRow; // Can be <> dim.
   exponent = 1.0 / ((float64) dim);
