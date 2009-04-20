@@ -722,8 +722,11 @@ class Mesh( Struct ):
             mesh.conns.append( make_point_cells( region.all_vertices, mesh_in.dim ) )
 
         if localize:
+            mesh._set_shape_info()
             mesh.localize( region.all_vertices )
+
         mesh._set_shape_info()
+        
         return mesh
     from_region = staticmethod( from_region )
 
