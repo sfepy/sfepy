@@ -138,13 +138,15 @@ class ProblemDefinition( Struct ):
     ##
     # c: 18.04.2006, r: 13.06.2008
     def set_equations( self, conf_equations, user = None, cache_override = None,
-                      keep_solvers = False ):
+                       keep_solvers = False, make_virtual = False,
+                       single_term = False ):
         equations = Equations.from_conf( conf_equations )
         equations.setup_terms( self.domain.regions, self.variables,
                                self.materials, user )
 
         # This uses the actual conn_info created in equations.setup_terms().
-        self.variables.setup_dof_conns()
+        self.variables.setup_dof_conns(make_virtual=make_virtual,
+                                       single_term=single_term)
 
         i_names = equations.get_term_integral_names()
         self.integrals = Integrals.from_conf( self.conf.integrals, i_names )

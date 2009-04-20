@@ -641,7 +641,7 @@ class Variables( Container ):
         elif dct != 'volume':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
             
-    def setup_dof_conns(self, make_virtual=False):
+    def setup_dof_conns(self, make_virtual=False, single_term=False):
         """Dof connectivity key = (field.name, region.name, type, ig)"""
         output('setting up dof connectivities...')
         tt = time.clock()
@@ -655,21 +655,21 @@ class Variables( Container ):
 ##             print key, ii
 ##             print info
 
-            self._setup_extra_data(self[info.primary], info.ps_tg,
-                                   info, info.is_trace, surface_regions)
+            if info.primary is not None:
+                self._setup_extra_data(self[info.primary], info.ps_tg,
+                                       info, info.is_trace, surface_regions)
+                var = self[info.primary]
+                var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
 
             if info.has_virtual and (ii == 0):
                 # This is needed regardless make_virtual.
                 self._setup_extra_data(self[info.virtual], info.v_tg, info,
                                        False, surface_regions)
 
-                if make_virtual:
+                if make_virtual or single_term or (info.primary is None):
                     var = self[info.virtual]
                     var.setup_dof_conns(dof_conns, info.dc_type,
                                         info.get_region(can_trace=False))
-
-            var = self[info.primary]
-            var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
 
 ##         print dof_conns
 ##         pause()

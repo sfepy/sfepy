@@ -148,8 +148,12 @@ class ConnInfo(Struct):
 
     def iter_igs(self):
         for ig in self.region.igs:
-            ii = self.virtual_igs.index(ig)
-            yield self.virtual_igs[ii], self.state_igs[ii]
+            ir = self.virtual_igs.index(ig)
+            if not self.is_trace:
+                ic = self.state_igs.index(ig)
+            else:
+                ic = self.state_igs.index(self.ig_map_i[ig])
+            yield self.virtual_igs[ir], self.state_igs[ic]
 
 ##
 # 21.07.2006, c

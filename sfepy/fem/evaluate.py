@@ -420,23 +420,32 @@ def eval_tangent_matrices( state, tangent_matrix, equations, chunk_size = 1000,
     return tangent_matrix
 
 def assemble_by_blocks( conf_equations, problem,
-                        conf_ebc = None, conf_epbc = None,
+                        ebcs = None, epbcs = None,
                         dw_mode = 'matrix', restore_variables = True ):
     """Instead of a global matrix, return its building blocks as defined in
     `conf_equations`. The name and row/column variables of each block have to
     be encoded in the equation's name, as in:
 
+    ebcs, epbcs must be either lists of BC names, or BC configuration
+    dictionaries 
+
     conf_equations = {
       'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
     }
     """
+    if isinstance( ebcs, list ) and isinstance( epbcs, list ):
+        bc_mode = 0
+    elif isinstance( ebcs, dict ) and isinstance( epbcs, dict ):
+        bc_mode = 1
+    else:
+        raise TypeError('bad BC!')
+    
     equations = Equations.from_conf( conf_equations )
     equations.setup_terms( problem.domain.regions, problem.variables,
                            problem.materials )
 
     var_names = equations.get_variable_names()
-    conf_variables = select_by_names( problem.conf.variables, var_names )
-    problem.set_variables( conf_variables )
+    problem.select_variables( var_names )
 
     dummy = problem.create_state_vector()
 
@@ -447,8 +456,12 @@ def assemble_by_blocks( conf_equations, problem,
         mtx_name, var_names = ks[0], ks[1:]
         output( mtx_name, var_names )
 
-        problem.set_equations( {'eq': mtx_term} )
-        problem.time_update( conf_ebc = conf_ebc, conf_epbc = conf_epbc )
+        problem.set_equations( {'eq': mtx_term}, single_term=True )
+
+        if bc_mode == 0:
+            problem.select_bcs( ebc_names = ebcs, epbc_names = epbcs )
+        else:
+            problem.time_update( conf_ebc = ebcs, conf_epbc = epbcs )
 
         ir = indx( var_names[0], stripped = True, allow_dual = True )
         ic = indx( var_names[1], stripped = True, allow_dual = True )
