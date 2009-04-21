@@ -48,6 +48,7 @@ class CorrMiniApp( MiniAppBase ):
         self.output_dir = self.problem.output_dir
         self.set_default_attr( 'save_name', '(not_set)' )
         self.set_default_attr( 'dump_name', self.save_name )
+        self.set_default_attr( 'dump_variables', [] )
 
         self.save_name = os.path.normpath( os.path.join( self.output_dir,
                                                          self.save_name ) )
@@ -121,7 +122,7 @@ class CorrDimDim( CorrMiniApp ):
     """
 
     def get_variables( self, ir, ic, data ):
-            raise StopIteration
+        return iter([])
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
@@ -159,8 +160,9 @@ class CorrDimDim( CorrMiniApp ):
                           self.get_dump_name() % (ir, ic) )
 
 class CorrDim( CorrMiniApp ):
+
     def get_variables( self, ir, data ):
-            raise StopIteration
+        return iter([])
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
@@ -197,8 +199,9 @@ class CorrDim( CorrMiniApp ):
                           self.get_dump_name() % ir )
 
 class CorrOne( CorrMiniApp ):
+
     def get_variables( self, data ):
-            raise StopIteration
+        return iter([])
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
@@ -357,7 +360,9 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
         nr, nc = mtx_q.shape
 
         if vec_g is not None:
-            output( 'nonzero pressure EBC' )
+            output( 'nonzero pressure EBC: max = %e, min = %e' \
+                    % (vec_g.max(), vec_g.min()) )
+            one = nm.ones( (nc,), dtype = nm.float64 )
 
         ##
         # follow_epbc = False -> R1 = - R2 as required. ? for other correctors?

@@ -2,7 +2,9 @@ from sfepy.base.base import *
 from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
      PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
-     CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions
+     CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions, \
+     CorrMiniApp
+from sfepy.fem import eval_term_op
 
 def generate_ones( problem, var_names ):
     for var_name in var_names:
@@ -22,6 +24,9 @@ class CorrectorsPressure( CorrOne ):
     def get_variables( self, data ):
         """data: None"""
         return generate_ones( self.problem, self.variables[-2:] )
+
+class CorrectorsAlpha( CorrOne ):
+    pass
 
 class CorrectorsPermeability( CorrDim ):
 
@@ -49,6 +54,23 @@ class CorrectorsPermeability( CorrDim ):
                        states = states,
                        di = problem.variables.di )
 
+class PressureRHSVector( CorrMiniApp ):
+    
+    def __call__( self, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+
+        problem.select_variables( self.variables )
+        problem.set_equations( self.equations )
+        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        state = problem.create_state_vector()
+        problem.apply_ebc( state )
+        
+        vec = eval_term_op( state, self.equations.values()[0],
+                            problem, dw_mode = 'vector' )
+##         print vec.max(), vec.min()
+
+        return vec
 
 class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
 
@@ -103,11 +125,15 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         return self.dump_name
 
     def __call__( self, problem = None, data = None, save_hook = None ):
-        """data: corrs_pressure, evp"""
+        """data: corrs_pressure, evp, optionally vec_g"""
         problem = get_default( problem, self.problem )
         ts = problem.get_time_solver().ts
 
-        corrs, evp = [data[ii] for ii in self.requires]
+        corrs, evp = [data[ii] for ii in self.requires[:2]]
+        if len(self.requires) == 3:
+            vec_g = data[self.requires[2]]
+        else:
+            vec_g = None
 
         assert_( evp.ebcs == self.ebcs )
         assert_( evp.epbcs == self.epbcs )
@@ -116,7 +142,7 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         savename = self.get_save_name()
 
         solve = self.compute_correctors
-        solve( evp, corrs.state, ts, filename, savename )
+        solve( evp, corrs.state, ts, filename, savename, vec_g = vec_g )
 
         if self.check:
             output( 'verifying correctors %s...' % self.name )
@@ -167,6 +193,71 @@ class ViscousFMCoef( CoefFMSymSym ):
             indx = corrs.di.indx[c_name]
             pc = corrs.states[ir,ic][indx]
             yield var_name, pc
+
+class PBiotCoef( CoefSym ):
+    """Homogenized Biot-like coefficient."""
+
+    def get_variables( self, problem, ir, ic, data, mode ):
+
+        pis, corrs = [data[ii] for ii in self.requires]
+
+        if mode == 'col':
+            # omega.
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+
+            indx = corrs.di.indx[c_name]
+            omega = corrs.state[indx]
+            yield (var_name, omega)
+
+        else:
+            var_name = self.variables[1]
+            yield var_name, pis[ir,ic]
+
+            var_name = self.variables[2]
+            c_name = problem.variables[var_name].primary_var_name
+
+            indx = corrs.di.indx[c_name]
+            pc = corrs.state[indx]
+
+            if ir == ic:
+                yield (var_name, pc)
+            else:
+                yield (var_name, nm.zeros_like(pc))
+
+class RBiotCoef( CoefFMSym ):
+    """Homogenized fading memory Biot-like coefficient."""
+
+    def get_filename( self, data, ir, ic ):
+        tcorrs = data[self.requires[1]]
+        self.ir, self.ic = ir, ic
+        return tcorrs.filename
+
+    def get_variables( self, problem, io, step, data, mode ):
+
+        if mode == 'col':
+            return
+        
+        else:
+            pis = data[self.requires[0]]
+            step_data = io.read_data( step )
+
+            # omega.
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+            yield var_name, step_data[c_name].data
+
+            var_name = self.variables[1]
+            yield var_name, pis[self.ir,self.ic]
+
+            var_name = self.variables[2]
+            c_name = problem.variables[var_name].primary_var_name
+            pc = step_data['d'+c_name].data
+
+            if self.ir == self.ic:
+                yield (var_name, pc)
+            else:
+                yield (var_name, nm.zeros_like(pc))
 
 class ElasticBiotCoef( CoefSym ):
     """Homogenized elastic Biot coefficient."""
@@ -236,6 +327,59 @@ class BiotFM2Coef( CoefFMSym ):
             var_name = self.variables[1]
             c_name = problem.variables[var_name].primary_var_name
             yield var_name, step_data[c_name].data
+
+class GBarCoef( CoefOne ):
+    """
+    Asymptotic Barenblatt coefficient.
+
+    data = [p^{\infty}]
+
+    Note:
+
+    solving "dw_diffusion.i1.Y3( m.K, qc, pc ) = 0" solve, in fact
+    "C p^{\infty} = \hat{C} \hat{\pi}" with the result "\hat{p^{\infty}}",
+    where the rhs comes from E(P)BC.
+    - it is preferable to computing directly by
+    "\hat{p^{\infty}} = \hat{C^-1 \strip(\hat{C} \hat{\pi})}", as it checks
+    explicitly the rezidual.
+    """
+
+    def __call__( self, volume, problem = None, data = None ):
+        expression, region_name = self.expression
+
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+        problem.set_equations( {'eq' : expression} )
+        problem.time_update( conf_ebc = {}, conf_epbc = {}, conf_lcbc = {} )
+
+        pi_inf = data[self.requires[0]]
+
+        coef = nm.zeros( (1,), dtype = nm.float64 )
+
+        vec = eval_term_op( pi_inf.state, expression,
+                            problem, new_geometries = False, dw_mode = 'vector' )
+
+        reg = problem.domain.regions[region_name]
+        field = problem.variables[self.variables[1]].field
+        nods = reg.get_field_nodes( field, merge = True )
+        coef[0] = vec[nods].sum()
+
+        coef /= volume
+
+        return coef
+
+class GStarCoef( CoefOne ):
+    """Barenblatt-like G^* coefficient for incompressible interface Y_3."""
+
+    def get_variables( self, problem, data ):
+        # omega.
+        var_name = self.variables[0]
+        c_name = problem.variables[var_name].primary_var_name
+
+        corrs = data[self.requires[0]]
+        indx = corrs.di.indx[c_name]
+        val = corrs.state[indx]
+        yield var_name, val
 
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""
