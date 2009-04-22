@@ -5,6 +5,8 @@ from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions, \
      CorrMiniApp
 from sfepy.fem import eval_term_op
+from sfepy.fem.meshio import HDF5MeshIO
+from sfepy.solvers.ts import TimeStepper
 
 def generate_ones( problem, var_names ):
     for var_name in var_names:
@@ -380,6 +382,76 @@ class GStarCoef( CoefOne ):
         indx = corrs.di.indx[c_name]
         val = corrs.state[indx]
         yield var_name, val
+
+def eval_boundary_diff_vel_grad( problem, uc, pc, equation, region_name,
+                                 pi = None ):
+    set_state = problem.variables.set_state_part
+    get_state = problem.variables.get_state_part_view
+
+    problem.set_equations( {'eq_2' : equation} )
+
+    state = problem.create_state_vector()
+    set_state( state, uc, 'uc' )
+    set_state( state, pc, 'pc' )
+    if pi is not None:
+        problem.variables['Pi'].data_from_data( pi )
+
+    problem.time_update( conf_ebc = {}, conf_epbc = {} )
+    
+    problem.apply_ebc( state )
+    aux = problem.get_evaluator().eval_residual( state )
+
+    pc = get_state( aux, 'pc', True )
+    pc = problem.variables.make_full_vec( pc, 'pc', 0 )
+
+    field = problem.variables['pc'].field
+
+    reg = problem.domain.regions[region_name]
+    nods = reg.get_field_nodes( field, merge = True )
+    val = pc[nods].sum()
+
+#    assert nm.all( problem.variables.di.ptr == problem.variables.adi.ptr )
+#    problem.time_update() # Restore EBC.
+
+    return val
+
+class GPlusCoef( CoefFMOne ):
+
+    def get_filename( self, data ):
+        tcorrs = data[self.requires[0]]
+        return tcorrs.filename
+
+    def __call__( self, volume, problem = None, data = None ):
+        expression, region_name, aux_eq = self.expression
+
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        aux = self.get_filename( data )
+        io = HDF5MeshIO( self.get_filename( data ) )
+        ts = TimeStepper( *io.read_time_stepper() )
+
+        coef = nm.zeros( (ts.n_step, 1), dtype = nm.float64 )
+        
+        for step, time in ts:
+            step_data = io.read_data( step )
+
+            var_name = self.variables[0]
+            c_name = problem.variables[var_name].primary_var_name
+            omega = step_data[c_name].data
+            problem.variables[var_name].data_from_data( omega )
+
+            val1 = eval_term_op( None, expression,
+                                problem, call_mode = 'd_eval' )
+
+            pc = step_data[self.variables[3]].data
+            val2 = eval_boundary_diff_vel_grad( problem, omega, pc, aux_eq,
+                                                region_name )
+            coef[step] = val1 + val2
+
+        coef /= volume
+
+        return coef
 
 class IRBiotModulus( CoefOne ):
     """Homogenized instantaneous reciprocal Biot modulus."""
