@@ -19,9 +19,10 @@ def match_grid_line( coor1, coor2, which ):
     i2 = nm.argsort( c2 )
 
     if not nm.all( nm.abs(c1[i1] - c2[i2]) < eps ):
-        print 'cannot match nodes\n(%s,\n %s), %e' % \
-              (c1[i1], c2[i2], nm.abs(c1[i1] - c2[i2]).max())
-        raise ValueError
+        print c1[i1]
+        print c2[i2]
+        print nm.abs(c1[i1] - c2[i2]).max()
+        raise ValueError('cannot match nodes!')
 
     return i1, i2
 
@@ -51,12 +52,13 @@ def match_grid_plane( coor1, coor2, which ):
     i1, i2 = find_map( coor1, aux, join = False )
 
     if i1.shape[0] != coor1.shape[0]:
-        print 'cannot match nodes\n(%s,\n %s)' % (coor1[i1], coor2[i2])
-        print i1
-        print coor1
-        print i2
-        print coor2
-        raise ValueError
+        print coor1[i1]
+        print coor2[i2]
+        print nm.abs(coor1[i1] - coor2[i2]).max(0)
+        ii = nm.setdiff1d(nm.arange(coor1.shape[0]), i1)
+        print coor1[ii]
+        print coor2[ii]
+        raise ValueError('cannot match nodes!')
 
     return i1, i2
 
