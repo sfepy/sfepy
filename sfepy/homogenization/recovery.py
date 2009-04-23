@@ -58,6 +58,16 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
                 val += vf * vp * ts.dt
     return val
 
+def add_strain_rs( corrs_rs, strain, vu, dim, iel, out = None ):
+    if out is None:
+        out = nm.zeros_like( corrs_rs[0,0][vu][0] )
+
+    for ir in range( dim ):
+        for ic in range( dim ):
+            ii = coor_to_sym( ir, ic, dim )
+            out += corrs_rs[ir,ic][vu].data * strain[iel,0,ii,0]
+    return out
+
 def compute_u_corr_steady( corrs_rs, strain, corrs_pressure, pressure,
                            vu, dim, iel ):
     """
@@ -67,10 +77,7 @@ def compute_u_corr_steady( corrs_rs, strain, corrs_pressure, pressure,
     iel = element number
     """
     u_corr = corrs_pressure[vu].data * pressure[iel,0,0,0]
-    for ir in range( dim ):
-        for ic in range( dim ):
-            ii = coor_to_sym( ir, ic, dim )
-            u_corr += corrs_rs[ir,ic][vu].data * strain[iel,0,ii,0]
+    add_strain_rs( corrs_rs, strain, vu, dim, iel, out = u_corr )
     return u_corr
 
 def compute_u_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
@@ -142,7 +149,7 @@ def recover_bones( problem, micro_problem, region,
     vdp = 'd' + vp
 
     micro_u = micro_problem.variables[vu]
-    micro_coor = micro_u.field.get_coor()[:,:-1]
+    micro_coor = micro_u.field.get_coor()
 
     micro_n_nod = micro_problem.domain.mesh.n_nod
     micro_p = micro_problem.variables[vp]
@@ -194,6 +201,81 @@ def recover_bones( problem, micro_problem, region,
             suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
         else:
             suffix = '.'.join( (format % iel, ts.suffix % ts.step) )
+        micro_name = micro_problem.get_output_name( suffix = suffix )
+        filename = join( problem.output_dir, 'recovered_' + micro_name )
+
+        micro_problem.save_state( filename, out = out )
+
+def recover_paraflow( problem, micro_problem, region,
+                      ts, strain, dstrains, pressures1, pressures2,
+                      corrs_rs, corrs_time_rs,
+                      corrs_alpha1, corrs_time_alpha1,
+                      corrs_alpha2, corrs_time_alpha2,
+                      var_names, naming_scheme = 'step_iel' ):
+
+    dim = problem.domain.mesh.dim
+
+    vu, vp = var_names
+    vdp = 'd' + vp
+
+    micro_u = micro_problem.variables[vu]
+    micro_coor = micro_u.field.get_coor()
+
+    micro_n_nod = micro_problem.domain.mesh.n_nod
+    micro_p = micro_problem.variables[vp]
+
+    nodes_y1 = micro_problem.domain.regions['Y1'].all_vertices
+    nodes_y2 = micro_problem.domain.regions['Y2'].all_vertices
+
+    to_output = micro_problem.variables.state_to_output
+
+    join = os.path.join
+    format = get_print_info( problem.domain.shape.n_gr, fill = '0' )[1] \
+             + '_' + get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
+
+    for ig, ii, iel in region.iter_cells():
+        print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
+
+        p1, p2 = pressures1[-1][ii,0,0,0], pressures2[-1][ii,0,0,0]
+
+        us = corrs_alpha1[vu].data * p1 + corrs_alpha2[vu].data * p2
+        add_strain_rs( corrs_rs, strain, vu, dim, ii, out = us )
+
+        ut = convolve_field_scalar( corrs_time_alpha1[vu], pressures1, ii, ts )
+        ut += convolve_field_scalar( corrs_time_alpha2[vu], pressures2, ii, ts )
+        ut += convolve_field_sym_tensor( corrs_time_rs, dstrains, vu,
+                                         dim, ii, ts )
+
+        u_corr = us + ut
+        u_mic = compute_u_from_macro( strain, micro_coor, ii ) + u_corr
+
+        ps = corrs_alpha1[vp].data * p1 + corrs_alpha2[vp].data * p2
+
+
+        pt = convolve_field_scalar( corrs_time_alpha1[vdp], pressures1,
+                                    ii, ts )
+        pt += convolve_field_scalar( corrs_time_alpha2[vdp], pressures2,
+                                     ii, ts )
+        pt += convolve_field_sym_tensor( corrs_time_rs, dstrains, vdp,
+                                         dim, ii, ts )
+
+        p_corr = ps + pt
+
+        p_mic = micro_p.extend_data( p_corr[:,nm.newaxis], micro_n_nod )
+        p_mic[nodes_y1] = p1
+        p_mic[nodes_y2] = p2
+        
+        out = {}
+        out.update( to_output( u_mic, var_info = {vu : (True, vu)},
+                               extend = True ) )
+        out[vp] = Struct( name = 'output_data',
+                          mode = 'vertex', data = p_mic,
+                          var_name = vp, dofs = micro_p.dofs )
+
+        if naming_scheme == 'step_iel':
+            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
+        else:
+            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
         micro_name = micro_problem.get_output_name( suffix = suffix )
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
