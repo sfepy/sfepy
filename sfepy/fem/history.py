@@ -10,17 +10,19 @@ class Histories( Container ):
         """TODO: do not read entire file, provide data on demand."""
         io = HDF5MeshIO( filename )
         ts = TimeStepper( *io.read_time_stepper() )
+        steps = nm.arange( ts.n_step, dtype = nm.int32 )
+
         ths = io.read_variables_time_history( var_names, ts )
 
-        steps = nm.arange( ts.n_step, dtype = nm.int32 )
         objs = OneTypeList( History )
         for name, th in ths.iteritems():
             hist = History( name,
                             steps = steps,
+                            times = ts.times,
                             th = th )
             objs.append( hist )
             
-        obj = Histories( objs,
+        obj = Histories( objs, dt = ts.dt,
                          name = ' '.join( var_names ) )
         return obj
     from_file_hdf5 = staticmethod( from_file_hdf5 )
