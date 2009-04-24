@@ -446,6 +446,13 @@ class Region( Struct ):
     # 05.06.2007, c
     def get_cells( self, ig ):
         return self.cells[ig]
+
+    def iter_cells(self):
+        ii = 0
+        for ig, cells in self.cells.iteritems():
+            for iel in cells:
+                yield ig, ii, iel
+                ii += 1
         
     ##
     # created:       28.05.2007
