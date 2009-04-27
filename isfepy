@@ -8,6 +8,8 @@
 
        >>> from sfepy.base.base import *
        >>> from sfepy.fem import *
+       >>> from sfepy.applications import pde_solve
+       >>> from sfepy.postprocess import Viewer
 
    So starting 'isfepy' is equivalent to starting Python (or IPython)
    and executing the above commands by hand. It is intended for easy
@@ -47,6 +49,13 @@ startup_message = """\
 These commands were executed:
 >>> from sfepy.base.base import *
 >>> from sfepy.fem import *
+>>> from sfepy.applications import pde_solve
+>>> from sfepy.postprocess import Viewer
+
+Try:
+>>> pb, vec, data = pde_solve('input/poisson.py')
+>>> view = Viewer(pb.get_output_name())
+>>> view()
 
 Documentation can be found at http://sfepy.org
 """

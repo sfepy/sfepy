@@ -1,5 +1,7 @@
 from sfepy.base.base import *
 from sfepy.fem import *
+from sfepy.applications import pde_solve
+from sfepy.postprocess import Viewer
 
 def init_session(session, message=None, argv=[]):
     """Initialize embedded IPython or Python session. """
