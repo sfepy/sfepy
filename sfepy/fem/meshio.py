@@ -1429,14 +1429,15 @@ class AbaqusMeshIO( MeshIO ):
         while 1:
             if not line[0]: break
 
-            if line[0].strip() == '*NODE':
+            token = line[0].strip().lower()
+            if token == '*node':
                 while 1:
                     line = fd.readline().split(',')
                     if (not line[0]) or (line[0][0] == '*'): break
                     ids.append( int( line[0] ) )
                     coors.append( [float( coor ) for coor in line[1:4]] )
 
-            elif line[0].strip() == '*Element':
+            elif token == '*element':
 
                 if line[1].find( 'C3D8' ) >= 0:
                     while 1:
@@ -1445,7 +1446,7 @@ class AbaqusMeshIO( MeshIO ):
                         mat_hexas.append( 0 )
                         hexas.append( [int( ic ) for ic in line[1:9]] )
 
-                elif line[1].find( '???' ) >= 0:
+                elif line[1].find( 'C3D4' ) >= 0:
                     while 1:
                         line = fd.readline().split(',')
                         if (not line[0]) or (line[0][0] == '*'): break
@@ -1455,15 +1456,17 @@ class AbaqusMeshIO( MeshIO ):
                 else:
                     raise ValueError('unknown element type! (%s)' % line[1])
 
-            elif line[0].strip() == '*NSET':
+            elif token == '*nset':
 
                 if line[-1].strip() == 'GENERATE':
-                    line = fd.readline().split(',')
+                    line = fd.readline()
                     continue
+
                 while 1:
-                    line = fd.readline().split(',')
+                    line = fd.readline().strip().split(',')
                     if (not line[0]) or (line[0][0] == '*'): break
-                    aux = [int( ic ) for ic in line[:-1]]
+                    if not line[-1]: line = line[:-1]
+                    aux = [int( ic ) for ic in line]
                     nsets.setdefault(ing, []).extend( aux )
                 ing += 1
 
