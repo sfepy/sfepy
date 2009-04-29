@@ -56,7 +56,22 @@ class Viewer(Struct):
                         auto_screenshot = auto_screenshot,
                         mlab = mlab)
 
-    def __call__(self, show=True, is_3d=False, rel_scaling=None):
+        if mlab is None:
+            output('mlab cannot be imported, check your installation!')
+            insert_as_static_method(self.__class__, '__call__', self.call_empty)
+        else:
+            insert_as_static_method(self.__class__, '__call__', self.call_mlab)
+            
+    def __call__(self, *args, **kwargs):
+        """
+        This is either call_mlab() or call_empty().
+        """
+        pass
+            
+    def call_empty(self, *args, **kwargs):
+        pass
+    
+    def call_mlab(self, show=True, is_3d=False, rel_scaling=None):
         """By default, plot all found data."""
         mlab.options.offscreen = self.offscreen
         scene = mlab.figure(bgcolor=(1,1,1), size=(600,800))
