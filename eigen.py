@@ -500,7 +500,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
 ##         print coefs
 ##         pause()
-        default_printer.prefix = self.output_prefix
+        output.prefix = self.output_prefix
 
         self.cached_coefs = coefs
         

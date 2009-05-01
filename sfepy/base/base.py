@@ -352,35 +352,32 @@ class OneTypeList( list ):
     def get_names( self ):
         return [ii.name for ii in self]
 
-
 class Output( Struct ):
     """Factory class providing output (print) functions.
 
     Example:
 
-    >>> printer = Output( 'sfepy:' )
-    >>> output = printer.get_output_function()
+    >>> output = Output( 'sfepy:' )
     >>> output( 1, 2, 3, 'hello' )
-    >>> printer.prefix = 'my_cool_app:'
+    >>> output.prefix = 'my_cool_app:'
     >>> output( 1, 2, 3, 'hello' )
     """
 
-    def __init__( self, prefix, **kwargs ):
-        Struct.__init__( self, **kwargs )
+    def __init__(self, prefix, filename=None, combined=False, **kwargs):
+        Struct.__init__(self, **kwargs)
 
         self.prefix = prefix
 
-    def set_output_prefix( self, prefix ):
-        assert_( isinstance( prefix, str ) )
-        if len( prefix ) > 0:
-            prefix += ' '
-        self._prefix = prefix
+        self.set_output(filename, combined)
         
-    def get_output_prefix( self ):
-        return self._prefix[:-1]
-    prefix = property( get_output_prefix, set_output_prefix )
+    def __call__(self, *argc, **argv):
+        self.output_function(*argc, **argv)
 
-    def get_output_function( self, filename = None, combined = False ):
+    def set_output(self, filename=None, combined=False):
+        """Set the output function - all SfePy printing is accomplished by
+        it. If filename is None, output is to screen only, otherwise it is to
+        the specified file, moreover, if combined is True, both the ways are
+        used."""
         self.level = 0
         def output_screen( *argc, **argv ):
             format = '%s' + ' %s' * (len( argc ) - 1)
@@ -411,20 +408,32 @@ class Output( Struct ):
         def output_combined( *argc, **argv ):
             output_screen( *argc, **argv )
             output_file( *argc, **argv )
-            
+    
         if filename is None:
-            return output_screen
+            self.output_function = output_screen
 
         else:
             fd = open( filename, 'w' )
             fd.close()
             if combined:
-                return output_combined
+                self.output_function = output_combined
             else:
-                return output_file
+                self.output_function = output_file
 
-default_printer = Output( 'sfepy:' )
-output = default_printer.get_output_function()
+    def get_output_function(self):
+        return self.output_function
+
+    def set_output_prefix( self, prefix ):
+        assert_( isinstance( prefix, str ) )
+        if len( prefix ) > 0:
+            prefix += ' '
+        self._prefix = prefix
+        
+    def get_output_prefix( self ):
+        return self._prefix[:-1]
+    prefix = property( get_output_prefix, set_output_prefix )
+    
+output = Output( 'sfepy:' )
 
 def print_structs(objs):
     """Print Struct instances in a container, works recursively. Debugging

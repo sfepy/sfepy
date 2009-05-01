@@ -4,11 +4,11 @@ Various parametric hooks.
 import os
 import numpy as nm
 
-from sfepy.base.base import pause, output, default_printer
+from sfepy.base.base import pause, output
 from sfepy.base.log import Log
 
 def vary_incident_wave_dir( problem ):
-    default_printer.prefix = 'vary_incident_wave_dir:'
+    output.prefix = 'vary_incident_wave_dir:'
 
     log_conf = {
         'is_plot' : True,

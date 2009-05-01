@@ -337,8 +337,7 @@ class SchroedingerApp( SimpleApp ):
             }
         log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)-x|$']) )
 
-        file_output = Output('').get_output_function( opts.log_filename,
-                                                      combined = True )
+        file_output = Output('', opts.log_filename, combined = True)
 
         eig_conf = pb.get_solver_conf( opts.eigen_solver )
         eig_solver = Solver.any_from_conf( eig_conf )

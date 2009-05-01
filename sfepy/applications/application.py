@@ -1,4 +1,4 @@
-from sfepy.base.base import Struct, insert_as_static_method, default_printer, \
+from sfepy.base.base import Struct, output, insert_as_static_method, \
      pause, debug
 
 class Application( Struct ):
@@ -13,7 +13,7 @@ class Application( Struct ):
                          conf = conf,
                          options = options,
                          output_prefix = output_prefix )
-	default_printer.prefix = self.output_prefix
+	output.prefix = self.output_prefix
         self.restore()
 
     def setup_options( self ):
@@ -39,15 +39,15 @@ class Application( Struct ):
                 mode = 'simple'
             self.problem = problem
 
-            generator_prefix = default_printer.prefix
-            default_printer.prefix = self.output_prefix # Restore default.
+            generator_prefix = output.prefix
+            output.prefix = self.output_prefix # Restore default.
 
             """Application options have to be re-processed here as they can
             change in the parametric hook."""
             self.setup_options()
             out = self.call( **kwargs )
 
-            default_printer.prefix = generator_prefix
+            output.prefix = generator_prefix
 
             if mode == 'coroutine':
                 # Pass application output to the generator.

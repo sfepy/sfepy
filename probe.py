@@ -46,7 +46,7 @@ def main():
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file( filename_input, required, other )
     opts = conf.options
-    default_printer.prefix = get_default_attr( opts, 'output_prefix', 'probe:' )
+    output.prefix = get_default_attr( opts, 'output_prefix', 'probe:' )
 
     io = MeshIO.any_from_filename(filename_results)
     data = io.read_data(0)
