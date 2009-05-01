@@ -5,9 +5,11 @@ from sfepy.applications import SimpleApp
 def pde_solve(conf_filename, options=None):
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file(conf_filename, required, other)
-
     opts = conf.options
-    output_prefix = opts.get_default_attr('output_prefix', 'sfepy:')
+
+    output_prefix = opts.get_default_attr('output_prefix', None)
+    if output_prefix is None:
+        output_prefix = output.prefix 
 
     if options is None:
         options = Struct(output_filename_trunk = None,

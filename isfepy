@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 """Python shell for SfePy.
 
    This is just a normal Python shell (IPython shell if you have the
@@ -11,9 +10,13 @@
        >>> from sfepy.applications import pde_solve
        >>> from sfepy.postprocess import Viewer
 
-   So starting 'isfepy' is equivalent to starting Python (or IPython)
-   and executing the above commands by hand. It is intended for easy
+   So starting 'isfepy' is roughly (*) equivalent to starting Python (or
+   IPython) and executing the above commands by hand. It is intended for easy
    and quick experimentation with SfePy.
+
+   (*) Advantages of using isfepy instead of IPython directly are:
+       - all SfePy messages are logged into ~/.sfepy/isfepy.log;
+       - it is possible to silence the messages printed on screen.
 
    COMMAND LINE OPTIONS
    --------------------
@@ -28,6 +31,10 @@
    -q, --quiet
 
      Print only Python's and SfePy's versions to stdout at startup.
+
+   -s, --silent
+
+     Silence the messages printed to screen.
 
    -- IPython's options
 
@@ -72,6 +79,8 @@ help = {
     'select type of interactive session: ipython | python [default: %default]',
     'quiet' :
     'print only version information at startup',
+    'silent' :
+    'silence the messages printed on screen',
 }
 
 
@@ -83,12 +92,15 @@ def main():
                       default='ipython', help=help['console'])
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
                       default=False, help=help['quiet'])
+    parser.add_option('-s', '--silent', dest='silent', action='store_true',
+                      default=False, help=help['silent'])
     options, ipy_args = parser.parse_args()
 
     session = options.console.lower()
 
     args = {
-        'argv'        : ipy_args,
+        'argv'   : ipy_args,
+        'silent' : options.silent
     }
     if not options.quiet:
         args['message'] = startup_message

@@ -373,11 +373,17 @@ class Output( Struct ):
     def __call__(self, *argc, **argv):
         self.output_function(*argc, **argv)
 
-    def set_output(self, filename=None, combined=False):
+    def set_output(self, filename=None, combined=False, append=False):
         """Set the output function - all SfePy printing is accomplished by
         it. If filename is None, output is to screen only, otherwise it is to
         the specified file, moreover, if combined is True, both the ways are
-        used."""
+        used.
+
+        Arguments:
+                filename - print into this file
+                combined - print both on screen and into a file
+                append - append to an existing file instead of overwriting it
+        """
         self.level = 0
         def output_screen( *argc, **argv ):
             format = '%s' + ' %s' * (len( argc ) - 1)
@@ -413,8 +419,10 @@ class Output( Struct ):
             self.output_function = output_screen
 
         else:
-            fd = open( filename, 'w' )
-            fd.close()
+            if not append:
+                fd = open( filename, 'w' )
+                fd.close()
+
             if combined:
                 self.output_function = output_combined
             else:

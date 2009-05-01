@@ -3,9 +3,13 @@ from sfepy.fem import *
 from sfepy.applications import pde_solve
 from sfepy.postprocess import Viewer
 
-def init_session(session, message=None, argv=[]):
+sfepy_config_dir = os.path.expanduser('~/.sfepy')
+if not os.path.exists(sfepy_config_dir):
+    os.makedirs(sfepy_config_dir)
+
+def init_session(session, message=None, silent=False, argv=[]):
     """Initialize embedded IPython or Python session. """
-    import os, sys
+    import os, sys, atexit
 
     def init_IPython():
         return IPython.Shell.make_IPython(argv)
@@ -17,12 +21,9 @@ def init_session(session, message=None, argv=[]):
             def __init__(self):
                 code.InteractiveConsole.__init__(self)
 
-                history = os.path.expanduser('~/.sfepy/history')
-                if not os.path.exists(history):
-                    os.makedirs(os.path.dirname(history))
-
+                history = os.path.join(sfepy_config_dir, 'history')
                 try:
-                    import readline, atexit
+                    import readline
 
                     readline.parse_and_bind('tab: complete')
 
@@ -64,6 +65,11 @@ def init_session(session, message=None, argv=[]):
             ip = init_Python()
 
     ip.runcode(ip.compile("from sfepy.interactive import *"))
+
+    output.set_output(filename=os.path.join(sfepy_config_dir, 'isfepy.log'),
+                      combined=silent == False,
+                      append=True)
+    atexit.register(output, 'isfepy finished\n' + '*' * 55)
 
     if not in_ipyshell:
         import sfepy
