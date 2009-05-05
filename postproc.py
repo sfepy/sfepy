@@ -13,16 +13,21 @@ help = {
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
     ' [default: %default]',
+    'clamping' :
+    'glyph clamping mode',
 }
 
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option( "--3d",
-                       action = "store_true", dest = "is_3d",
-                       default = False, help = help['is_3d'] )
-    parser.add_option( "-s", "--scale-glyphs", type='float', metavar = 'float',
-                       action = "store", dest = "rel_scaling",
-                       default = 0.05, help = help['rel_scaling'] )
+    parser.add_option("--3d",
+                      action="store_true", dest="is_3d",
+                      default=False, help=help['is_3d'])
+    parser.add_option("-s", "--scale-glyphs", type='float', metavar='float',
+                      action="store", dest="rel_scaling",
+                      default=0.05, help=help['rel_scaling'])
+    parser.add_option("--clamping",
+                      action="store_true", dest="clamping",
+                      default=False, help=help['clamping'])
     options, args = parser.parse_args()
 
     if (len(args) == 1):
@@ -32,7 +37,8 @@ def main():
         return
 
     view = Viewer(filename)
-    view(is_3d=options.is_3d, rel_scaling=options.rel_scaling)
+    view(is_3d=options.is_3d, rel_scaling=options.rel_scaling,
+         clamping=options.clamping)
 
 if __name__ == '__main__':
     main()
