@@ -230,7 +230,8 @@ def recover_paraflow( problem, micro_problem, region,
     to_output = micro_problem.variables.state_to_output
 
     join = os.path.join
-    format = get_print_info( problem.domain.shape.n_gr, fill = '0' )[1] \
+    aux = max(problem.domain.shape.n_gr, 2)
+    format = get_print_info( aux, fill = '0' )[1] \
              + '_' + get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
 
     for ig, ii, iel in region.iter_cells():
