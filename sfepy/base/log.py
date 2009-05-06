@@ -138,41 +138,44 @@ class Log( Struct ):
         if not isinstance( data_names, tuple ):
             data_names = (data_names,)
 
-        obj = Log( data_names = data_names, seq_data_names = [], igs = [],
-                   data = {}, x_values = {}, n_calls = 0, plot_pipe = None )
-
-        ii = 0
-        for ig, names in enumerate( obj.data_names ):
-            obj.x_values[ig] = []
-            for name in names:
-                key = name_to_key( name, ii )
-                obj.data[key] = []
-                obj.igs.append( ig )
-                obj.seq_data_names.append( name )
-                ii += 1
-        obj.n_arg = len( obj.igs )
-            
-        obj.n_gr = len( obj.data_names )
-
-        if isinstance( conf, dict ):
-            get = conf.get
-        else:
-            get = conf.get_default_attr
-
-        obj.is_plot = get( 'is_plot', True )
-        obj.yscales = get( 'yscales', ['linear'] * obj.n_arg )
-        obj.xaxes = get( 'xaxes', ['iteration'] * obj.n_arg )
-        obj.yaxes = get( 'yaxes', [''] * obj.n_arg )
-        obj.aggregate = get( 'aggregate', 100 )
-
-        obj.can_plot = (pylab is not None) and (Process is not None)
-
-        if obj.is_plot and (not obj.can_plot):
-            output( 'warning: log plot is disabled, install pylab (GTKAgg)' )
-            output( '         and multiprocessing' )
+        obj = Log(data_names, **conf)
 
         return obj
     from_conf = staticmethod( from_conf )
+
+    def __init__(self, data_names, is_plot=True, aggregate=200, yscales=None,
+                 xaxes=None, yaxes=None):
+        """`data_names` ... tuple of names grouped by subplots:
+                            ([name1, name2, ...], [name3, name4, ...], ...)
+        where name<n> are strings to display in (sub)plot legends."""
+        Struct.__init__(self, data_names = data_names, seq_data_names = [],
+                        igs = [], data = {}, x_values = {}, n_calls = 0,
+                        plot_pipe = None)
+
+        ii = 0
+        for ig, names in enumerate( self.data_names ):
+            self.x_values[ig] = []
+            for name in names:
+                key = name_to_key( name, ii )
+                self.data[key] = []
+                self.igs.append( ig )
+                self.seq_data_names.append( name )
+                ii += 1
+        self.n_arg = len( self.igs )
+            
+        self.n_gr = len( self.data_names )
+
+        self.is_plot = get_default( is_plot, True )
+        self.yscales = get_default( yscales, ['linear'] * self.n_arg )
+        self.xaxes = get_default( xaxes, ['iteration'] * self.n_arg )
+        self.yaxes = get_default( yaxes, [''] * self.n_arg )
+        self.aggregate = get_default( aggregate, 100 )
+
+        self.can_plot = (pylab is not None) and (Process is not None)
+
+        if self.is_plot and (not self.can_plot):
+            output( 'warning: log plot is disabled, install pylab (GTKAgg)' )
+            output( '         and multiprocessing' )
     
     def __call__( self, *args, **kwargs ):
         finished = False
