@@ -68,11 +68,10 @@ class ProcessPlotter( Struct ):
             self.ii = 0
             
             while 1:
-                try:
-                    command = self.pipe.recv()
-                except Empty:
+                if not self.pipe.poll():
                     break
 
+                command = self.pipe.recv()
                 can_break = False
 
                 if command is None:
@@ -123,8 +122,6 @@ class ProcessPlotter( Struct ):
         self.gid = gobject.timeout_add( 1000, self.poll_draw() )
 
         self.output( '...done' )
-
-
         pylab.show()
 
 def name_to_key( name, ii ):
