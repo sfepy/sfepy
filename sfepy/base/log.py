@@ -1,5 +1,5 @@
 from base import *
-from sfepy.base.tasks import Process, Queue, Empty
+from sfepy.base.tasks import Process, Pipe
 from sfepy.base.plotutils import pylab
 
 if pylab:
@@ -69,7 +69,7 @@ class ProcessPlotter( Struct ):
             
             while 1:
                 try:
-                    command = self.queue.get_nowait()
+                    command = self.pipe.recv()
                 except Empty:
                     break
 
@@ -96,15 +96,15 @@ class ProcessPlotter( Struct ):
 
         return call_back
     
-    def __call__( self, queue, data_names, igs, seq_data_names, yscales,
+    def __call__( self, pipe, data_names, igs, seq_data_names, yscales,
                   xaxes, yaxes ):
         """Sets-up the plotting window, sets GTK event loop timer callback to
         callback() returned by self.poll_draw(). The callback does the actual
-        plotting, taking commands out of `queue`, and is called every second."""
+        plotting, taking commands out of `pipe`, and is called every second."""
         self.output( 'starting plotter...' )
 #        atexit.register( self.terminate )
 
-        self.queue = queue
+        self.pipe = pipe
         self.data_names = data_names
         self.igs = igs
         self.seq_data_names = seq_data_names
@@ -142,7 +142,7 @@ class Log( Struct ):
             data_names = (data_names,)
 
         obj = Log( data_names = data_names, seq_data_names = [], igs = [],
-                   data = {}, x_values = {}, n_calls = 0, plot_queue = None )
+                   data = {}, x_values = {}, n_calls = 0, plot_pipe = None )
 
         ii = 0
         for ig, names in enumerate( obj.data_names ):
@@ -189,8 +189,8 @@ class Log( Struct ):
             if 'x' in kwargs:
                 x_values = kwargs['x']
 
-        if save_figure and (self.plot_queue is not None):
-            self.plot_queue.put( ['save', save_figure] )
+        if save_figure and (self.plot_pipe is not None):
+            self.plot_pipe.send( ['save', save_figure] )
 
         if finished:
             self.terminate()
@@ -222,10 +222,10 @@ class Log( Struct ):
             if self.n_calls == 0:
                 atexit.register( self.terminate )
 
-                self.plot_queue = Queue()
+                self.plot_pipe, plotter_pipe = Pipe()
                 self.plotter = ProcessPlotter( self.aggregate )
                 self.plot_process = Process( target = self.plotter,
-                                             args = (self.plot_queue,
+                                             args = (plotter_pipe,
                                                      self.data_names,
                                                      self.igs,
                                                      self.seq_data_names,
@@ -240,24 +240,24 @@ class Log( Struct ):
 
     def terminate( self ):
         if self.is_plot and self.can_plot:
-            self.plot_queue.put( None )
+            self.plot_pipe.send( None )
             self.plot_process.join()
             self.n_calls = 0
             output( 'terminated' )
 
     def plot_data( self ):
-        put =  self.plot_queue.put
+        send =  self.plot_pipe.send
 
-        put( ['clear'] )
+        send( ['clear'] )
         for ii, name in enumerate( self.seq_data_names ):
             key = name_to_key( name, ii )
             try:
-                put( ['iseq', ii] )
-                put( ['plot',
+                send( ['iseq', ii] )
+                send( ['plot',
                       nm.array( self.x_values[self.igs[ii]] ),
                       nm.array( self.data[key] )] )
             except:
                 print ii, name, self.data[key]
                 raise
-        put( ['legends'] )
-        put( ['continue'] )
+        send( ['legends'] )
+        send( ['continue'] )

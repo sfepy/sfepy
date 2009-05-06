@@ -2,10 +2,10 @@ import threading
 import atexit
 
 try:
-    from multiprocessing import Process, Queue
+    from multiprocessing import Process, Queue, Pipe
     from Queue import Empty
 except ImportError:
-    Process = Queue = Empty = None
+    Process = Queue = Pipe = Empty = None
 
 ##
 # Extended from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/65222.
