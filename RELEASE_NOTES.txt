@@ -1,7 +1,73 @@
 # created: 20.07.2007 (-1)
-# last revision: 02.03.2009
+# last revision: 11.05.2009
 
-from 2008.4 to 2009.1
+from 2009.1 to 2009.2:
+======================
+- scripts:
+  - added probe.py - a script to probe and plot results saved in result files
+    - data probes along geometrical objects (e.g. lines, rays) intersecting the
+      mesh
+  - added postproc.py - a script to visualize results saved in result files
+    - added Viewer class - 3D plots using mayavi2
+    - rudimentary automatic mode only
+  - added isfepy (interactive sfepy) IPython shell
+    - uses new pde_solve(), pre-imports mayavi2 based Viewer
+- short input syntax for LCBC conditions, fields, integrals, materials and
+  solvers
+- automatic html documentation generation via doxygen
+- new mesh readers:
+  - Nastran (.bdf) format
+  - Abaqus ascii (.inp)
+- new example problems:
+  - subdomains.py + test - test dw_jump interface term
+  - stabilized_navier_stokes.py input + test - test Oseen solver
+  - acoustics.py + test - compute complex acoustic pressure
+- solvers:
+  - changed API of nonlinear solvers so that scipy solvers can be used
+  - added Broyden and Anderson nonlinear solvers (SciPy implementation)
+  - updated Oseen solver 
+- major rewrite of handling of dof connectivities, matrix graph and term
+  geometries:
+  - lots of dof connectivity related code was simplified/removed
+  - extra connectivity data (surface, point) computed on demand in
+    Variables.setup_dof_conns()
+  - support for terms with traces of variables on interface regions
+  - surface data computation for terms of volume dof_conn and Surface geometry
+- extended syntax of equations to allow boundary traces of variables:
+  - to use when a field value at an interface boundary is needed from the
+    neighbouring subdomain side and the field is not defined there
+  - example: dw_jump.isurf.Gamma12_1( jump1.val, q1, p1, tr(p2) )
+- refactored linear combination boundary conditions (LCBC) code:
+  - fixed rigid LCBC for multi-field problems
+  - added no penetration LCBC
+  - major speed-up (several orders) of LCBC operator construction
+    - assembled via the coo_matrix instead of the lil_matrix
+  - fixed check_tangent_matrix() for LCBC
+- applications:
+  - homogenization:
+    - prefactorize the matrix for linear corrector problems - major speed-up
+  - phononic materials:
+    - plot also middle eigenvalues in 3D, fixed plot labels, polarization angles
+    - caching of eigenvalue problem solution and Christoffel acoustic tensor
+  - schroedinger.py:
+    - choose and call DFT solver via solver interface
+- general:
+  - fixed boundary quadrature points for multi-field problems
+  - fixed complex assembling
+  - fixed live plotting (ProcessPlotter) for multi-core machines
+  - improved Output class, simplified its usage
+  - Struct.__str__() prints in alphabetical order
+  - unified version information by introducing sfepy.__version__
+  - polished MeshIO class
+  - implemented region selection by node groups
+  - refactored Mesh nodes, lots of simplifications
+  - many small fixes and updates
+- new terms:
+    - dw_jump (scalar interface jump term)
+    - dw_surface_mass_scalar (scalar mass on a surface boundary)
+
+from 2008.4 to 2009.1:
+======================
 - new solvers:
   - simple backtracking steepest descent optimization solver
   - PETSc Krylov solvers via petsc4py, sequential mode
@@ -38,7 +104,8 @@ from 2008.4 to 2009.1
 - new terms:
     - dw_electric_source (electric source term)
 
-from 00.50.00 to 2008.4
+from 00.50.00 to 2008.4:
+========================
 - framework for running parametric studies
 - allow time derivatives of variables as term arguments
   - example (transient diffusion):

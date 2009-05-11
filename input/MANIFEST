@@ -1,6 +1,6 @@
+acoustics.py
 biot.py
 biot_npbc.py
-complex.py
 hyperelastic.py
 kostka.py
 le.py
@@ -12,5 +12,7 @@ piezo.py
 poisson.py
 poisson_parametric_study.py
 sinbc.py
+stabilized_navier_stokes.py
+subdomains.py
 time_poisson.py
 valec.py
