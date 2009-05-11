@@ -622,7 +622,7 @@ class Mesh( Struct ):
         n_nod = len( inod )
         n_nod_m, dim = mesh_in.coors.shape
 
-        aux = nm.arange( n_nod )
+        aux = nm.arange( n_nod, dtype=nm.int32 )
         remap = nm.zeros( (n_nod_m,), nm.int32 )
         remap[inod] = aux
 
