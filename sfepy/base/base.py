@@ -7,10 +7,8 @@ import scipy.sparse as sp
 import pdb
 
 import glob, re, time, sys, os
-from copy import *
-from sets import Set
+from copy import copy, deepcopy
 from types import MethodType, UnboundMethodType
-
 from getch import getch
 
 import atexit
