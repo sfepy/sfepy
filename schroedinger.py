@@ -618,7 +618,7 @@ def main():
                 os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
             else:
                 print "Dimension: 3"
-                import geom
+                import sfepy.geom as geom
                 from sfepy.fem.mesh import Mesh
                 try:
                     from site_cfg import tetgen_path

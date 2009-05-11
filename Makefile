@@ -37,7 +37,7 @@ ISRELEASE := 1
 ISOPT :=
 ISPOROUS :=
 
-MODULES := examples input sfepy sfepy/applications sfepy/base sfepy/fem sfepy/fem/extmods sfepy/homogenization sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
+MODULES := examples input sfepy sfepy/applications sfepy/base sfepy/eldesc sfepy/fem sfepy/fem/extmods sfepy/geom sfepy/homogenization sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
 ifdef ISOPT
   MODULES += sfepy/optimize
 endif
@@ -47,9 +47,9 @@ ALLTARGETS := version modules
 CUR_DIR := $(shell $(PWDCOMMAND))
 
 DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py init_sfepy.py shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
-RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py convert.py INSTALL LICENSE README RELEASE_NOTES.txt
+RELDISTFILES_TOP := btrace_python Makefile VERSION init_sfepy.py extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py INSTALL LICENSE README RELEASE_NOTES.txt
 SUBDIRS = database doc examples input script sfepy tests
-RELSUBDIRS = database doc examples input script sfepy tests geom
+RELSUBDIRS = database doc examples input script sfepy tests
 DATADIRS := database
 DATADISTDIR := $(PROJECTNAME)-data-$(shell $(DATE))
 DISTDIR := $(PROJECTNAME)-$(VERSION)
