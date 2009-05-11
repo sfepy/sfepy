@@ -1,6 +1,4 @@
-# 14.12.2004, c
-
-LOCDIR := eldesc
+LOCDIR := sfepy/eldesc
 
 SRC_SRCPY := $(wildcard $(LOCDIR)/*.py)
 SRC_OBJPY := $(SRC_SRCPY:.py=.pyc)

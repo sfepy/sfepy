@@ -1,5 +1,6 @@
 import os.path as op
 
+import sfepy
 from sfepy.base.base import *
 
 import sfepy.base.ioutils as io
@@ -14,7 +15,6 @@ import fea as fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
-from init_sfepy import install_dir
 
 ##
 # 29.01.2006, c
@@ -34,7 +34,7 @@ class ProblemDefinition( Struct ):
 
         mesh = Mesh.from_file( conf.filename_mesh )
 
-        eldesc_dir = op.join( install_dir, 'eldesc' )
+        eldesc_dir = op.join( sfepy.base_dir, 'eldesc' )
         domain = Domain.from_mesh( mesh, eldesc_dir )
         domain.setup_groups()
         domain.fix_element_orientation()

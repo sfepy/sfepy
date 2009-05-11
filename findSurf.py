@@ -82,8 +82,7 @@ def main():
     if (filename_in != '-'):
         file_in.close()
 
-    domain = Domain.from_mesh( mesh,
-                               op.join( init_sfepy.install_dir, 'eldesc' ) )
+    domain = Domain.from_mesh( mesh, op.join( sfepy.base_dir, 'eldesc' ) )
     domain.setup_groups()
 
     if domain.has_faces():
