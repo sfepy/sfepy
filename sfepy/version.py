@@ -1,8 +1,15 @@
 import os.path as op
 
-top_dir = op.normpath(op.join(op.dirname(__file__), '..'))
+# If installed, up_dir is '.', otherwise (in (git) source directory) '..'.
+for up_dir in ['..', '.']:
+    top_dir = op.normpath(op.join(op.dirname(__file__), up_dir))
+    version_file = op.join(top_dir, 'VERSION')
+    if op.isfile(version_file):
+        break
+else:
+    raise RuntimeError('cannot find VERSION file!')
 
-fd = open(op.join(top_dir, 'VERSION'), 'r')
+fd = open(version_file, 'r')
 version = fd.readline().strip()
 fd.close()
 
@@ -12,6 +19,6 @@ if op.isfile(master):
     version += ' (%s)' % fd.readline().strip()
     fd.close()
 else:
-    version = ''
+    version += ''
 
-del fd
+del fd, up_dir
