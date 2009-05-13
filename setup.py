@@ -13,6 +13,8 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 
+VERSION = '2009.2-release'
+
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
@@ -81,6 +83,11 @@ def setup_package():
     os.chdir(local_path)
     sys.path.insert(0, local_path)
     sys.path.insert(0, os.path.join(local_path, 'sfepy')) # to retrive version
+
+    # Write the version file.
+    fd = open('VERSION', 'w')
+    fd.write(VERSION)
+    fd.close()
 
     main_scripts = [
         'eigen.py',
