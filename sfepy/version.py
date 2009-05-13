@@ -21,4 +21,6 @@ if op.isfile(master):
 else:
     version += ''
 
+in_source_tree = up_dir == '..'
+
 del fd, up_dir

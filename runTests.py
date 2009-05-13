@@ -157,7 +157,7 @@ def wrap_run_tests( options ):
 usage = """%prog [options] [test_filename]"""
 
 help = {
-    'dir' : 'directory with tests [default: %default]',
+    'dir' : 'directory with tests [default: <top_dir>/tests]',
     'out_dir' : 'directory for storing test results and temporary files'
     ' [default: %default]',
     'debug' : 'raise silenced exceptions to see what was wrong',
@@ -176,7 +176,7 @@ def main():
                        default = False, help = help['print-doc'] )
     parser.add_option( "-d", "--dir", metavar = 'directory',
                        action = "store", dest = "test_dir",
-                       default = "tests", help = help['dir'] )
+                       default = None, help = help['dir'] )
     parser.add_option( "-o", "--output", metavar = 'directory',
                        action = "store", dest = "out_dir",
                        default = "output-tests", help = help['out_dir'] )
@@ -198,6 +198,9 @@ def main():
         print __doc__
         return
 
+    if options.test_dir is None:
+        options.test_dir = os.path.join(sfepy.top_dir, 'tests')
+    
     if len( args ) > 1:
         parser.print_help(),
         return
