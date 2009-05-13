@@ -10,7 +10,6 @@ on NumPy and SciPy packages.
 
 DOCLINES = __doc__.split("\n")
 
-from distutils.core import Command
 import os
 import sys
 
@@ -35,35 +34,6 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
 os.environ['NO_SFEPY_IMPORT']='SfePy/setup.py'
 
-class install_scripts(Command):
-    """Install SfePy scripts."""
-
-    description = "Install SfePy scripts."
-    user_options = []  # distutils complains if this is not here.
-
-    def __init__(self, *args):
-        self.args = args[0] # so we can pass it to other classes
-        Command.__init__(self, *args)
-
-    def initialize_options(self):  # distutils wants this
-        pass
-
-    def finalize_options(self):    # this too
-        pass
-
-    # we use py.test like architecture:
-    #
-    # o collector   -- collects benchmarks
-    # o runner      -- executes benchmarks
-    # o presenter   -- displays benchmarks results
-    #
-    # this is done in sympy.utilities.benchmarking on top of py.test
-    def run(self):
-        scripts = self.args.scripts
-        print scripts
-        raw_input()
-
-
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
     config = Configuration(None, parent_package, top_path)
@@ -73,9 +43,29 @@ def configuration(parent_package='',top_path=None):
                        quiet=True)
 
     config.add_subpackage('sfepy')
+    aux_scripts = [
+        'blockgen.py',
+        'config.py',
+        'convert.py',
+        'convert_doc.py',
+        'convert_mesh.py',
+        'edit_identifiers.py',
+        'edit_neu.py',
+        'evalForms.py',
+        'eval_tl_forms.py',
+        'genDocsXML.py',
+        'hfm3_mesh.py',
+        'mesh_to_vtk.py',
+        'neu_mesh.py',
+        'sfepyconverter.py',
+        'spymatrix.py',
+    ]
+    aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
+
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'RELEASE_NOTES.txt',
                                      'site_cfg_template.py')))
+    config.add_data_files(('../../../share/sfepy', aux_scripts))
 
     config.get_version('sfepy/version.py') # sets config.version
     print config
@@ -106,24 +96,6 @@ def setup_package():
         'schroedinger.py',
         'simple.py'
     ]
-    aux_scripts = [
-        'blockgen.py',
-        'config.py',
-        'convert.py',
-        'convert_doc.py',
-        'convert_mesh.py',
-        'edit_identifiers.py',
-        'edit_neu.py',
-        'evalForms.py',
-        'eval_tl_forms.py',
-        'genDocsXML.py',
-        'hfm3_mesh.py',
-        'mesh_to_vtk.py',
-        'neu_mesh.py',
-        'sfepyconverter.py',
-        'spymatrix.py',
-    ]
-    aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
 
     try:
         setup(name = 'sfepy',
@@ -136,7 +108,7 @@ def setup_package():
               license = 'BSD',
               classifiers = filter(None, CLASSIFIERS.split('\n')),
               platforms = ["Linux", "Mac OS-X"],
-              scripts = main_scripts + aux_scripts,
+              scripts = main_scripts,
 #              cmdclass = {'install_scripts' : install_scripts},
               configuration = configuration)
     finally:
