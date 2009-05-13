@@ -4,6 +4,7 @@ import sfepy
 from sfepy.base.base import *
 
 import sfepy.base.ioutils as io
+from sfepy.base.conf import ProblemConf, get_standard_keywords
 from mesh import Mesh
 from domain import Domain
 from fields import Fields
@@ -26,6 +27,29 @@ class ProblemDefinition( Struct ):
     Contains: mesh, domain, materials, fields, variables, equations, solvers
     """
 
+    def from_conf_file(conf_filename,
+                       required=None, other=None,
+                       init_fields = True,
+                       init_variables = True,
+                       init_equations = True,
+                       init_solvers = True):
+
+        _required, _other = get_standard_keywords()
+        if required is None:
+            required = _required
+        if other is None:
+            other = _other
+            
+        conf = ProblemConf.from_file(conf_filename, required, other)
+
+        obj = ProblemDefinition.from_conf(conf,
+                                          init_fields=init_fields,
+                                          init_variables=init_variables,
+                                          init_equations=init_equations,
+                                          init_solvers=init_solvers)
+        return obj
+    from_conf_file = staticmethod(from_conf_file)
+    
     def from_conf( conf,
                    init_fields = True,
                    init_variables = True,
