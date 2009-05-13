@@ -17,7 +17,6 @@ def configuration(parent_package='',top_path=None):
         'homogenization',
         'interactive',
         'mechanics',
-        'optimize',
         'physics',
         'postprocess',
         'solvers',
