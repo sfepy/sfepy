@@ -83,6 +83,8 @@ help = {
     'silence the messages printed on screen',
     'no_viewer' :
     'do not attempt to import Viewer',
+    'no_wx' :
+    'do not try using the threaded Wx ipython shell',
 }
 
 
@@ -98,6 +100,8 @@ def main():
                       default=False, help=help['silent'])
     parser.add_option('', '--no-viewer', dest='is_viewer', action='store_false',
                       default=True, help=help['no_viewer'])
+    parser.add_option('', '--no-wx', dest='is_wx', action='store_false',
+                      default=True, help=help['no_wx'])
     options, ipy_args = parser.parse_args()
 
     session = options.console.lower()
@@ -106,6 +110,7 @@ def main():
         'argv'   : ipy_args,
         'silent' : options.silent,
         'is_viewer' : options.is_viewer,
+        'is_wx' : options.is_wx,
     }
     if not options.quiet:
         args['message'] = startup_message

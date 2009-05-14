@@ -11,7 +11,8 @@ sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-def init_session(session, message=None, silent=False, is_viewer=True, argv=[]):
+def init_session(session, message=None, silent=False,
+                 is_viewer=True, is_wx=True, argv=[]):
     """Initialize embedded IPython or Python session. """
     import os, sys, atexit
 
@@ -47,6 +48,7 @@ def init_session(session, message=None, silent=False, is_viewer=True, argv=[]):
         raise ValueError("'%s' is not a valid session name" % session)
 
     in_ipyshell = False
+    has_ipython = True
 
     try:
         import IPython
@@ -61,12 +63,12 @@ def init_session(session, message=None, silent=False, is_viewer=True, argv=[]):
             if session == 'ipython':
                 ip = init_IPython()
             else:
-                ip = init_Python()
+                ip, has_ipython = init_Python(), False
     except ImportError:
         if session == 'ipython':
             raise
         else:
-            ip = init_Python()
+            ip, has_ipython = init_Python(), False
 
     ip.runcode(ip.compile("from sfepy.interactive import *"))
     ip.runcode(ip.compile("locals().update(conditional_import(%s))" \
@@ -89,7 +91,13 @@ def init_session(session, message=None, silent=False, is_viewer=True, argv=[]):
         else:
             message = welcome + '\n'
 
-        ip.interact(message)
+        if has_ipython and is_wx:
+            from IPython.Shell import IPShellWX
+            ipwx = IPShellWX(argv, user_ns=ip.user_ns,
+                             user_global_ns=ip.user_global_ns)
+            ipwx.mainloop(banner=message)
+        else:
+            ip.interact(message)
         sys.exit('Exiting ...')
     else:
         def shutdown_hook(self):
