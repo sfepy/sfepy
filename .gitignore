@@ -37,4 +37,5 @@ doc/tex/*.pdf
 doc/doxygenrc
 doc/html/
 tmp/*
-
+build/*
+sfepy/__config__.py
