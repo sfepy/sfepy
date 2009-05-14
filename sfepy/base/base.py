@@ -63,10 +63,10 @@ def pause( msg = None ):
     ff = f.f_code
     if (msg):
         print '%s, %d: %s(), %d: %s' % (ff.co_filename, ff.co_firstlineno,
-                                          ff.co_name, f.f_lineno, msg)
+                                        ff.co_name, f.f_lineno, msg)
     else:
         print '%s, %d: %s(), %d' % (ff.co_filename, ff.co_firstlineno,
-                                      ff.co_name, f.f_lineno)
+                                    ff.co_name, f.f_lineno)
     spause()
 
 ##
