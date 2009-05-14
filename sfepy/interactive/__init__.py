@@ -1,13 +1,17 @@
 from sfepy.base.base import *
 from sfepy.fem import *
 from sfepy.applications import pde_solve
-from sfepy.postprocess import Viewer
+
+def conditional_import(is_viewer):
+    if is_viewer:
+        from sfepy.postprocess import Viewer
+    return locals()
 
 sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
 
-def init_session(session, message=None, silent=False, argv=[]):
+def init_session(session, message=None, silent=False, is_viewer=True, argv=[]):
     """Initialize embedded IPython or Python session. """
     import os, sys, atexit
 
@@ -65,6 +69,8 @@ def init_session(session, message=None, silent=False, argv=[]):
             ip = init_Python()
 
     ip.runcode(ip.compile("from sfepy.interactive import *"))
+    ip.runcode(ip.compile("locals().update(conditional_import(%s))" \
+                          % (is_viewer)))
 
     output.set_output(filename=os.path.join(sfepy_config_dir, 'isfepy.log'),
                       combined=silent == False,

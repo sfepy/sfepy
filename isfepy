@@ -81,6 +81,8 @@ help = {
     'print only version information at startup',
     'silent' :
     'silence the messages printed on screen',
+    'no_viewer' :
+    'do not attempt to import Viewer',
 }
 
 
@@ -94,13 +96,16 @@ def main():
                       default=False, help=help['quiet'])
     parser.add_option('-s', '--silent', dest='silent', action='store_true',
                       default=False, help=help['silent'])
+    parser.add_option('', '--no-viewer', dest='is_viewer', action='store_false',
+                      default=True, help=help['no_viewer'])
     options, ipy_args = parser.parse_args()
 
     session = options.console.lower()
 
     args = {
         'argv'   : ipy_args,
-        'silent' : options.silent
+        'silent' : options.silent,
+        'is_viewer' : options.is_viewer,
     }
     if not options.quiet:
         args['message'] = startup_message
