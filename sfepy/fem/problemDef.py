@@ -14,7 +14,7 @@ from equations import Equations
 from integrals import Integrals
 import fea as fea
 from sfepy.solvers.ts import TimeStepper
-from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator
+from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, eval_term_op
 from sfepy.solvers import Solver
 
 ##
@@ -605,6 +605,35 @@ class ProblemDefinition( Struct ):
         state = ev.make_full_vec( vec )
         
         return state
+
+    def evaluate(self, expression, state=None, **kwargs):
+        """
+        Evaluate an expression, convenience wrapper of eval_term_op().
+
+        Parameters
+        ----------
+        state .. state vector
+        kwargs .. dictionary of {variable_name : data vector}, and other
+        arguments supported by eval_term()
+
+
+        Examples
+        --------
+        >>> problem.evaluate("di_volume_integrate.i1.Omega(Psi)",
+        ... Psi=data['n'].data)
+        array([ 5.68437535])
+        """
+        if state is None:
+            vargs = {}
+            for key, val in kwargs.iteritems():
+                if self.variables.has_key(key):
+                    vargs[key] = val
+            out = eval_term_op(vargs, expression, self, **kwargs)
+
+        else:
+            out = eval_term_op(state, expression, self, **kwargs)
+            
+        return out
 
     ##
     # c: 06.02.2008, r: 04.04.2008

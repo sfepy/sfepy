@@ -797,15 +797,6 @@ class Variables( Container ):
 
         return matrix
 
-    ##
-    # 24.07.2006, c
-    # 25.07.2006
-    # 04.08.2006
-    def data_from_state( self, state = None ):
-        for ii in self.state:
-            var = self[ii]
-            var.data_from_state( state, self.di.indx[var.name] )
-
     def create_state_vector( self ):
         vec = nm.zeros( (self.di.ptr[-1],), dtype = self.dtype )
         return vec
@@ -987,6 +978,41 @@ class Variables( Container ):
     # 26.07.2007
     def set_state_part( self, state, part, var_name, stripped = False ):
         state[self.get_indx( var_name, stripped )] = part
+
+
+    def set_data(self, data, step = 0):
+        """Set data (vectors of values) of variables.
+
+        Arguments:
+        data .. state vector or dictionary of {variable_name : data vector}
+        step .. time history step, 0 = current.
+        """
+        if data is None: return
+        
+        if isinstance(data, dict):
+
+            for key, val in data.iteritems():
+                try:
+                    var = self[key]
+                except (ValueError, IndexError):
+                    raise KeyError('unknown variable! (%s)' % key)
+
+                var.data_from_any(val, step=step)
+
+        elif isinstance(data, nm.ndarray):
+            self.data_from_state(data)
+
+        else:
+            raise ValueError('unknown data class! (%s)' % data.__class__)
+
+    ##
+    # 24.07.2006, c
+    # 25.07.2006
+    # 04.08.2006
+    def data_from_state( self, state = None ):
+        for ii in self.state:
+            var = self[ii]
+            var.data_from_state( state, self.di.indx[var.name] )
 
     ##
     # 26.07.2006, c
@@ -1236,13 +1262,14 @@ class Variable( Struct ):
         """step: 0 = current,  """
         if (not self.is_state()) or (state is None): return
 
-        self.indx = slice( int( indx.start ), int( indx.stop ) )
-        self.n_dof = indx.stop - indx.start
-        self.data[step] = state
+        self.data_from_any(state, indx, step)
 
     def data_from_data( self, data = None, indx = None, step = 0 ):
         if (not self.is_non_state_field()) or (data is None): return
 
+        self.data_from_any(data, indx, step)
+
+    def data_from_any( self, data = None, indx = None, step = 0 ):
         self.data[step] = data
         if indx is None:
             self.indx = slice( 0, len( data ) )

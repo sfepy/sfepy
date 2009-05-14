@@ -278,7 +278,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         geometries = {}
         equation.describe_geometry( geometries, variables, integrals )
 
-    variables.data_from_state( state )
+    variables.set_data( state )
 
     if itype == 'dw':
         if not variables.has_eq_map:
