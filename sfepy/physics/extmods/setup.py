@@ -16,6 +16,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_dft',
                          sources=src,
                          depends=[],
+                         extra_compile_args=['-O2'],
                          include_dirs=[auto_dir, '../../fem/extmods'],
                          define_macros=defines)
 

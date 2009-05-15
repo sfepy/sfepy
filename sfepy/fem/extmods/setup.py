@@ -17,6 +17,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_fem',
                          sources=src,
                          depends=[],
+                         extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
@@ -25,6 +26,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_meshutils',
                          sources=src,
                          depends=[],
+                         extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
@@ -33,6 +35,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_geometry',
                          sources=src,
                          depends=[],
+                         extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
