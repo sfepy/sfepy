@@ -501,6 +501,9 @@ class SchroedingerApp( SimpleApp ):
         fd.close()
 
 
+def fix_path(filename):
+    return op.join(sfepy.data_dir, filename)
+
 usage = """%prog [options] filename_in
 
 Solver for electronic structure problems. 
@@ -568,43 +571,39 @@ def main():
 
     if len( args ) == 1:
         filename_in = args[0];
+        auto_mesh_name = False
+        
     elif len( args ) == 0:
+        auto_mesh_name = True
+        if not options.mesh:
+            io = MeshIO.any_from_filename("tmp/mesh.vtk")
+            options.dim = dim = io.read_dimension()
+            print "Dimension:", dim
+
         if options.oscillator:
-            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                filename_in = "input/quantum/oscillator2d.py"
+                filename_in = fix_path("input/quantum/oscillator2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = "input/quantum/oscillator3d.py"
-            options.dim = dim
-            print "Dimension:", dim
+                filename_in = fix_path("input/quantum/oscillator3d.py")
         elif options.well:
-            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                filename_in = "input/quantum/well2d.py"
+                filename_in = fix_path("input/quantum/well2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = "input/quantum/well3d.py"
-            options.dim = dim
-            print "Dimension:", dim
+                filename_in = fix_path("input/quantum/well3d.py")
         elif options.hydrogen:
-            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                filename_in = "input/quantum/hydrogen2d.py"
+                filename_in = fix_path("input/quantum/hydrogen2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = "input/quantum/hydrogen3d.py"
-            options.dim = dim
-            print "Dimension:", dim
+                filename_in = fix_path("input/quantum/hydrogen3d.py")
         elif options.boron:
-            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
-                filename_in = "input/quantum/boron2d.py"
+                filename_in = fix_path("input/quantum/boron2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = "input/quantum/boron3d.py"
-            options.dim = dim
-            print "Dimension:", dim
+                filename_in = fix_path("input/quantum/boron3d.py")
         elif options.mesh:
             try:
                 os.makedirs("tmp")
@@ -613,9 +612,11 @@ def main():
                     raise
             if options.dim2:
                 print "Dimension: 2"
-                os.system("cp database/quantum/square.geo tmp/mesh.geo")
+                gp = fix_path('database/quantum/square.geo')
+                os.system("cp %s tmp/mesh.geo" % gp)
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
-                os.system("script/mesh_to_vtk.py tmp/mesh.mesh tmp/mesh.vtk")
+                mtv = fix_path('script/mesh_to_vtk.py')
+                os.system("%s tmp/mesh.mesh tmp/mesh.vtk" % mtv)
             else:
                 print "Dimension: 3"
                 import sfepy.geom as geom
@@ -624,25 +625,23 @@ def main():
                     from site_cfg import tetgen_path
                 except ImportError:
                     tetgen_path = '/usr/bin/tetgen'
-                os.system("gmsh -0 database/box.geo -o tmp/x.geo")
+                gp = fix_path('database/box.geo')
+                os.system("gmsh -0 %s -o tmp/x.geo" % gp)
                 g = geom.read_gmsh("tmp/x.geo")
                 g.printinfo()
                 geom.write_tetgen(g, "tmp/t.poly")
-                geom.runtetgen("tmp/t.poly", a=0.03, Q=1.0, quadratic=False,
-                        tetgenpath=tetgen_path)
+                geom.runtetgen("tmp/t.poly", a=0.03, Q=1.0,
+                               quadratic=False, tetgenpath=tetgen_path)
                 m = Mesh.from_file("tmp/t.1.node")
                 m.write("tmp/mesh.vtk", io="auto")
             print "Mesh written to tmp/mesh.vtk"
             return
         elif options.dft:
-            dim = MeshIO.any_from_filename("tmp/mesh.vtk").read_dimension()
             if dim == 2:
                 filename_in = "input/quantum/dft2d.py"
             else:
                 assert_( dim == 3 )
                 filename_in = "input/quantum/dft3d.py"
-            print "Dimension:", dim
-            options.dim = dim
         else:
             parser.print_help()
             return
@@ -652,6 +651,10 @@ def main():
 
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file( filename_in, required, other )
+
+    if auto_mesh_name and not sfepy.in_source_tree:
+        conf.filename_mesh = "tmp/mesh.vtk"
+        conf.options.absolute_mesh_path = True
 
     app = SchroedingerApp(conf, options, 'schroedinger:')
     opts = conf.options

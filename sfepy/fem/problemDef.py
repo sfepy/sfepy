@@ -55,8 +55,11 @@ class ProblemDefinition( Struct ):
                    init_variables = True,
                    init_equations = True,
                    init_solvers = True ):
-
-        conf_dir = op.dirname(conf.funmod.__file__)
+        if conf.options.get_default_attr('absolute_mesh_path', False):
+            conf_dir = None
+        else:
+            conf_dir = op.dirname(conf.funmod.__file__)
+            
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
         eldesc_dir = op.join( sfepy.base_dir, 'eldesc' )
