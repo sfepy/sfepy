@@ -1,6 +1,6 @@
 # 05.10.2007, c
 # last revision: 25.02.2008
-filename_mesh = 'database/phono/cube_sphere.mesh'
+filename_mesh = '../database/phono/cube_sphere.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

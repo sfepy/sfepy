@@ -1,7 +1,7 @@
 # 26.02.2007, c
 # last revision: 25.02.2008
 
-filename_mesh = 'database/pul_klikatak2.mesh'
+filename_mesh = '../database/pul_klikatak2.mesh'
 
 options = {
     'nls' : 'newton',

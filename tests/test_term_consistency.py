@@ -1,5 +1,5 @@
 # c: 19.05.2008, r: 19.05.2008
-filename_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = '../database/phono/mesh_circ21.mesh'
 
 is3d = False
 

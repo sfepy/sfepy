@@ -1,7 +1,7 @@
 import os
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 
-def common(mesh='tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
+def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
     assert dim in [2, 3]
     filename_mesh = mesh
     options = {

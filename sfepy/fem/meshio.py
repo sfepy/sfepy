@@ -1634,7 +1634,10 @@ for key, var in var_dict:
         pass
 del var_dict
 
-def any_from_filename( filename ):
+def any_from_filename(filename, prefix_dir=None):
+    if prefix_dir is not None:
+        filename = op.normpath(op.join(prefix_dir, filename))
+
     aux, ext = op.splitext( filename )
     format = supported_formats[ext]
     if isinstance(format, tuple):

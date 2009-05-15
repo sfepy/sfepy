@@ -1,12 +1,12 @@
-filename_meshes = ['database/simple.mesh',
-                   'database/simple.vtk',
-                   'database/t.1.node',
-                   'database/maillage.txt',
-                   'database/tests/abaqus_hex.inp',
-                   'database/tests/abaqus_tet.inp',
-                   'database/tests/hex4.mesh3d',
-                   'database/tests/tetra8.mesh3d',
-		   'database/tests/cube.bdf']
+filename_meshes = ['../database/simple.mesh',
+                   '../database/simple.vtk',
+                   '../database/t.1.node',
+                   '../database/maillage.txt',
+                   '../database/tests/abaqus_hex.inp',
+                   '../database/tests/abaqus_tet.inp',
+                   '../database/tests/hex4.mesh3d',
+                   '../database/tests/tetra8.mesh3d',
+		   '../database/tests/cube.bdf']
 same = [(0, 1)]
 
 from sfepy.base.testing import TestCommon, assert_
@@ -27,12 +27,14 @@ class Test( TestCommon ):
     # c: 05.02.2008, r: 05.02.2008
     def test_read_meshes( self ):
         """Try to read all listed meshes."""
+        import os.path as op
         from sfepy.fem import Mesh
 
+        conf_dir = op.dirname(__file__)
         meshes = {}
         for ii, filename in enumerate( filename_meshes ):
             self.report( '%d. mesh: %s' % (ii + 1, filename) )
-            mesh = Mesh.from_file( filename )
+            mesh = Mesh.from_file(filename, prefix_dir=conf_dir)
 
             assert_(mesh.dim == (mesh.coors.shape[1]))
             assert_(mesh.n_nod == (mesh.coors.shape[0]))

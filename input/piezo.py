@@ -3,18 +3,17 @@ import os
 import numpy as nm
 from sfepy.fem import MeshIO
 
-#filename_mesh = 'database/phono/cube_sphere.mesh'
-#filename_mesh = 'database/phono/cube_cylinder.mesh'
-filename_mesh = 'database/phono/mesh_circ21.mesh'
-#filename_mesh = 'database/phono/mesh_circ21_small.mesh'
+#filename_mesh = '../database/phono/cube_sphere.mesh'
+#filename_mesh = '../database/phono/cube_cylinder.mesh'
+filename_mesh = '../database/phono/mesh_circ21.mesh'
+#filename_mesh = '../database/phono/mesh_circ21_small.mesh'
 
 
 omega = 1
 omega_squared = omega**2
 
-cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
-
-io = MeshIO.any_from_filename( filename_mesh )
+conf_dir = os.path.dirname(__file__)
+io = MeshIO.any_from_filename(filename_mesh, prefix_dir=conf_dir)
 bbox, dim = io.read_bounding_box( ret_dim = True )
 
 geom = {3 : '3_4', 2 : '2_3'}[dim]

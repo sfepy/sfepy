@@ -56,7 +56,8 @@ class ProblemDefinition( Struct ):
                    init_equations = True,
                    init_solvers = True ):
 
-        mesh = Mesh.from_file( conf.filename_mesh )
+        conf_dir = op.dirname(conf.funmod.__file__)
+        mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
         eldesc_dir = op.join( sfepy.base_dir, 'eldesc' )
         domain = Domain.from_mesh( mesh, eldesc_dir )

@@ -1,7 +1,7 @@
 # c: 10.10.2008
 import numpy as nm
 
-filename_mesh = 'database/kostka_medium.mesh'
+filename_mesh = '../database/kostka_medium.mesh'
 
 regions = {
     'Omega' : ('all', {}),

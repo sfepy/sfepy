@@ -6,7 +6,7 @@ discretisations of the generalised Oseen problem. Number 2007-02 in Preprint
 Series of Institut fuer Numerische und Angewandte Mathematik,
 Georg-August-Universitaet Goettingen, 2007.
 """
-filename_mesh = 'database/pul_klikatak2.mesh'
+filename_mesh = '../database/pul_klikatak2.mesh'
 
 options = {
     'solution' : 'steady',

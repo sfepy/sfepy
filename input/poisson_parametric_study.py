@@ -24,7 +24,7 @@ import numpy as nm
 from sfepy.base.base import output, pause, debug
 
 # Mesh.
-filename_mesh = 'database/square_circ.vtk'
+filename_mesh = '../database/square_circ.vtk'
 
 # Options. The value of 'parametric_hook' is the function that does the
 # parametric study.

@@ -417,7 +417,7 @@ class SchroedingerApp( SimpleApp ):
         eigs, mtx_s_phi = eig( mtx_a, mtx_b, n_eigs )
         output( '...done' )
 
-        bounding_box = Mesh.from_file(pb.conf.filename_mesh).get_bounding_box()
+        bounding_box = pb.domain.mesh.get_bounding_box()
         # this assumes a box (3D), or a square (2D):
         a = bounding_box[1][0] - bounding_box[0][0]
         E_exact = None

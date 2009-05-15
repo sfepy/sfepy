@@ -1,7 +1,7 @@
 # 04.06.2007, c
 # last revision: 25.02.2008
 
-filename_mesh = 'database/tests/small3d.mesh'
+filename_mesh = '../database/tests/small3d.mesh'
 
 material_1 = {
     'name' : 'coef',

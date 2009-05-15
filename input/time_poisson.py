@@ -1,6 +1,6 @@
 ##
 # c: 05.02.2008
-filename_mesh = 'database/simple.mesh'
+filename_mesh = '../database/simple.mesh'
 
 t0 = 0.0
 t1 = 0.1

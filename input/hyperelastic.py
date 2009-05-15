@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as nm
 
-filename_mesh = 'database/simple.vtk'
+filename_mesh = '../database/simple.vtk'
 
 options = {
     'nls' : 'newton',

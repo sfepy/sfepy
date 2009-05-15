@@ -3,7 +3,7 @@
 \Delta p_2 = g_2 in Omega_2
 p_1 = p_2 + c on \Gamma_{12}
 """
-filename_mesh = 'database/acoustics.mesh'
+filename_mesh = '../database/acoustics.mesh'
 
 options = {
     'nls' : 'newton',

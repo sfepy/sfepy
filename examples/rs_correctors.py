@@ -55,7 +55,7 @@ def get_pars( ts, coor, region, ig, mat_ids = [] ):
     
 ##
 # Mesh file.
-filename_mesh = 'examples/osteonT1_11.mesh'
+filename_mesh = 'osteonT1_11.mesh'
 
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...

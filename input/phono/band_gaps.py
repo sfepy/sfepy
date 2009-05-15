@@ -5,17 +5,19 @@ from sfepy.fem import MeshIO
 import coef_conf_elastic as cconf
 from parametric import vary_incident_wave_dir
 
-#filename_mesh = 'database/phono/cube_sphere.mesh'
-#filename_mesh = 'database/phono/cube_cylinder.mesh'
-filename_mesh = 'database/phono/mesh_circ21.mesh'
-#filename_mesh = 'database/phono/mesh_circ21_small.mesh'
+#filename_mesh = '../../database/phono/cube_sphere.mesh'
+#filename_mesh = '../../database/phono/cube_cylinder.mesh'
+filename_mesh = '../../database/phono/mesh_circ21.mesh'
+#filename_mesh = '../../database/phono/mesh_circ21_small.mesh'
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 
 homogeneous = False
 fig_suffix = '.pdf'
 
-dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+conf_dir = os.path.dirname(__file__)
+dim = MeshIO.any_from_filename(filename_mesh,
+                               prefix_dir=conf_dir).read_dimension()
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 if homogeneous:

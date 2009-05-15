@@ -15,7 +15,7 @@
 
 #! Mesh
 #! ----
-filename_mesh = 'database/simple.vtk'
+filename_mesh = '../database/simple.vtk'
 #! Regions
 #! -------
 #! Whole domain 'Omega', left and right ends.

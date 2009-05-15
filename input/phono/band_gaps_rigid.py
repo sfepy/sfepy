@@ -10,8 +10,8 @@ generate_2D = False
 fig_suffix = '.pdf'
 
 if is_3D:
-    filename_mesh = 'database/phono/cube_sphere.mesh'
-##     filename_mesh = 'database/phono/cube_cylinder.mesh'
+    filename_mesh = '../../database/phono/cube_sphere.mesh'
+##     filename_mesh = '../../database/phono/cube_cylinder.mesh'
     out_groups = [1]
     in_groups = [2]
     diameters_g = None
@@ -19,9 +19,9 @@ if is_3D:
     default_y3_diameter = 0.1
     diameters_g = nm.linspace( 0.075, 0.26, 11 )
 else:
-    #filename_mesh = 'database/phono/mesh_circ21.mesh'
-    #filename_mesh = 'database/phono/mesh_circ21_small.mesh'
-    filename_mesh = 'database/phono/mesh_circ.vtk'
+    #filename_mesh = '../../database/phono/mesh_circ21.mesh'
+    #filename_mesh = '../../database/phono/mesh_circ21_small.mesh'
+    filename_mesh = '../../database/phono/mesh_circ.vtk'
 
     out_groups = [1]
     if generate_2D:
@@ -147,7 +147,9 @@ material_3 = {
     'density' : 1.1340, # in 1e4 kg/m3
 }
 
-dim = MeshIO.any_from_filename( filename_mesh ).read_dimension()
+conf_dir = os.path.dirname(__file__)
+dim = MeshIO.any_from_filename(filename_mesh,
+                               prefix_dir=conf_dir).read_dimension()
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 field_0 = {

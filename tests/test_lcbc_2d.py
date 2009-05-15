@@ -1,5 +1,5 @@
 # 03.10.2007, c
-filename_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = '../database/phono/mesh_circ21.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

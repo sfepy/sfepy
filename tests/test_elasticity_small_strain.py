@@ -1,9 +1,9 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
 
-filename_meshes = ['database/kostka_medium_tetra.mesh',
-                   'database/kostka_medium_tetra.mesh',
-                   'database/kostka_medium.mesh']
+filename_meshes = ['../database/kostka_medium_tetra.mesh',
+                   '../database/kostka_medium_tetra.mesh',
+                   '../database/kostka_medium.mesh']
 all_your_bases = [{'Omega' : '3_4_P1'},
                 {'Omega' : '3_4_P2'},
                 {'Omega' : '3_8_Q1'}]

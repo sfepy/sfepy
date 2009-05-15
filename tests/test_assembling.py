@@ -1,7 +1,7 @@
 # c: 14.04.2008, r: 14.04.2008
 from sfepy.fem.periodic import *
 
-filename_mesh = 'database/tests/plane.mesh'
+filename_mesh = '../database/tests/plane.mesh'
 
 material_2 = {
     'name' : 'm',

@@ -1,5 +1,5 @@
-#filename_mesh = 'database/kostka_big.mesh'
-filename_mesh = 'database/kostka_medium.mesh'
+#filename_mesh = '../database/kostka_big.mesh'
+filename_mesh = '../database/kostka_medium.mesh'
 
 ############# Laplace.
 
@@ -10,7 +10,7 @@ material_1 = {
     'val' : 1.0
 }
 
-if filename_mesh == 'database/kostka_medium.mesh':
+if filename_mesh == '../database/kostka_medium.mesh':
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 0',
@@ -32,7 +32,7 @@ if filename_mesh == 'database/kostka_medium.mesh':
         'kind' : 'ls.umfpack',
     }
 
-elif filename_mesh == 'database/kostka_big.mesh':
+elif filename_mesh == '../database/kostka_big.mesh':
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 6',

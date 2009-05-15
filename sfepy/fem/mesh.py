@@ -651,16 +651,27 @@ class Mesh( Struct ):
         return mesh
     from_surface = staticmethod( from_surface )
 
-    ##
-    # c: 25.01.2006, r: 23.06.2008
-    def from_file( filename = None, io = 'auto' ):
-        """passing *MeshIO instance has precedence over filename"""
+    def from_file(filename = None, io = 'auto', prefix_dir=None):
+        """
+        Read a mesh from a file.
+
+        Parameters
+        ----------
+        filename : string like
+            The filename.
+
+        io : *MeshIO instance
+            Passing *MeshIO instance has precedence over filename.
+
+        prefix_dir: string like
+            If not None, the filename is relative to that directory.
+        """
         if io == 'auto':
             if filename is None:
                 output( 'filename or io must be specified!' )
                 raise ValueError
             else:
-                io = MeshIO.any_from_filename( filename )
+                io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
                 if isinstance( filename, file ):
                     trunk = 'from_descriptor'
                 else:

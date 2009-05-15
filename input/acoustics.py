@@ -1,4 +1,4 @@
-filename_mesh = 'database/acoustics.mesh'
+filename_mesh = '../database/acoustics.mesh'
 
 v_n = 1.0 # m/s
 w = 1000.0

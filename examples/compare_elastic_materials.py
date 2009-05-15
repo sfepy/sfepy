@@ -10,7 +10,7 @@ from sfepy.base.base import *
 def define():
     """Define the problem to solve."""
 
-    filename_mesh = 'examples/el3.mesh'
+    filename_mesh = 'el3.mesh'
 
     options = {
         'nls' : 'newton',

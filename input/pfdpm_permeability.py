@@ -2,9 +2,9 @@
 # last revision: 25.02.2008
 from sfepy.fem.periodic import *
 
-#fileName_mesh = 'database/micro/perf_symm638t.mesh'
-filename_mesh = 'database/micro/perf_symm944t.mesh'
-#fileName_mesh = 'database/micro/perf_symm748t.mesh'
+#fileName_mesh = '../database/micro/perf_symm638t.mesh'
+filename_mesh = '../database/micro/perf_symm944t.mesh'
+#fileName_mesh = '../database/micro/perf_symm748t.mesh'
 
 if filename_mesh.find( 'symm' ):
     region_1 = {

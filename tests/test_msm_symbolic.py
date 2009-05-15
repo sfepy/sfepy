@@ -1,5 +1,5 @@
 # c: 07.05.2007, r: 08.07.2008
-filename_mesh = 'database/phono/mesh_circ21.mesh'
+filename_mesh = '../database/phono/mesh_circ21.mesh'
 
 dim = 2
 

@@ -7,7 +7,7 @@
 
 #! Mesh
 #! ----
-filename_mesh = 'database/simple.mesh'
+filename_mesh = '../database/simple.mesh'
 
 #! Materials
 #! ---------

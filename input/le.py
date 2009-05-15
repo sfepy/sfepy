@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # last revision: 25.02.2008
-filename_mesh = 'database/simple.vtk'
+filename_mesh = '../database/simple.vtk'
 
 ###############################
 #
