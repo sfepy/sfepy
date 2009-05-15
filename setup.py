@@ -67,7 +67,7 @@ def configuration(parent_package='',top_path=None):
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'RELEASE_NOTES.txt',
                                      'site_cfg_template.py')))
-    config.add_data_files(('../../../share/sfepy/scripts', aux_scripts))
+    config.add_data_files(('../../../share/sfepy/script', aux_scripts))
     config.add_data_files(('../../../share/sfepy/examples', 'examples/*'))
     config.add_data_dir(('../../../share/sfepy/database', 'database'))
     config.add_data_dir(('../../../share/sfepy/input', 'input'))
