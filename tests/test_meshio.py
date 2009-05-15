@@ -9,6 +9,7 @@ filename_meshes = ['../database/simple.mesh',
 		   '../database/tests/cube.bdf']
 same = [(0, 1)]
 
+import os.path as op
 from sfepy.base.testing import TestCommon, assert_
 
 ##
@@ -27,7 +28,6 @@ class Test( TestCommon ):
     # c: 05.02.2008, r: 05.02.2008
     def test_read_meshes( self ):
         """Try to read all listed meshes."""
-        import os.path as op
         from sfepy.fem import Mesh
 
         conf_dir = op.dirname(__file__)
@@ -119,16 +119,17 @@ class Test( TestCommon ):
     # c: 03.07.2008, r: 03.07.2008
     def test_read_dimension( self ):
         from sfepy.fem import MeshIO
-        meshes = {'database/tests/small2d.mesh' : 2,
-                  'database/tests/small2d.vtk' : 2,
-                  'database/tests/small3d.mesh' : 3,
-                  'database/simple.mesh' : 3,
-                  'database/simple.vtk' : 3}
+        meshes = {'../database/tests/small2d.mesh' : 2,
+                  '../database/tests/small2d.vtk' : 2,
+                  '../database/tests/small3d.mesh' : 3,
+                  '../database/simple.mesh' : 3,
+                  '../database/simple.vtk' : 3}
 
         ok = True
+        conf_dir = op.dirname(__file__)
         for filename, adim in meshes.iteritems():
             self.report( 'mesh: %s, dimension %d' % (filename, adim) )
-            io = MeshIO.any_from_filename( filename )
+            io = MeshIO.any_from_filename(filename, prefix_dir=conf_dir)
             dim = io.read_dimension()
             if dim != adim:
                 self.report( 'read dimension %d -> failed' % dim )

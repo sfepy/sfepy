@@ -1,4 +1,4 @@
-input_name = 'input/acoustics.py'
+input_name = '../input/acoustics.py'
 output_name = 'test_acoustics.vtk'
 
 from testsBasic import TestInput

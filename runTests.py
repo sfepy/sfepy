@@ -154,6 +154,14 @@ def wrap_run_tests( options ):
 
     return run_tests
 
+def get_dir(default):
+    if sfepy.in_source_tree:
+        out = default
+    else:
+        share_path = '../../../../share/sfepy'
+        out = op.normpath(op.join(sfepy.top_dir, share_path, default))
+    return out
+
 usage = """%prog [options] [test_filename]"""
 
 help = {
@@ -176,10 +184,12 @@ def main():
                        default = False, help = help['print-doc'] )
     parser.add_option( "-d", "--dir", metavar = 'directory',
                        action = "store", dest = "test_dir",
-                       default = None, help = help['dir'] )
+                       default = get_dir('tests'),
+                       help = help['dir'] )
     parser.add_option( "-o", "--output", metavar = 'directory',
                        action = "store", dest = "out_dir",
-                       default = "output-tests", help = help['out_dir'] )
+                       default = get_dir('output-tests'),
+                       help = help['out_dir'] )
     parser.add_option( "", "--debug",
                        action = "store_true", dest = "debug",
                        default = False, help = help['debug'] )
@@ -198,9 +208,6 @@ def main():
         print __doc__
         return
 
-    if options.test_dir is None:
-        options.test_dir = os.path.join(sfepy.top_dir, 'tests')
-    
     if len( args ) > 1:
         parser.print_help(),
         return

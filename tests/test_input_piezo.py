@@ -1,4 +1,4 @@
-input_name = 'input/piezo.py'
+input_name = '../input/piezo.py'
 output_name = 'test_piezo.vtk'
 
 

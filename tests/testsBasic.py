@@ -17,7 +17,8 @@ class TestInput( TestCommon ):
         from sfepy.base.conf import ProblemConf, get_standard_keywords
 
         required, other = get_standard_keywords()
-        test_conf = ProblemConf.from_file( conf.input_name, required, other )
+        input_name = op.join(op.dirname(__file__), conf.input_name)
+        test_conf = ProblemConf.from_file( input_name, required, other )
 
         if cls is None:
             cls = TestInput
