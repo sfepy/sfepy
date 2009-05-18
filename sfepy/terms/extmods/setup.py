@@ -18,9 +18,13 @@ def configuration(parent_package='', top_path=None):
            'termsMass.c', 'termsNavierStokes.c', 'termsBiot.c', 'termsLaplace.c',
            'termsLinElasticity.c', 'termsHyperElasticity.c', 'termsPiezo.c',
            'termsSurface.c', 'termsVolume.c', 'terms.i']
+
+    depends=['array.i', 'common.i', 'fmfield.i']
+    depends = [op.join('../../fem/extmods', ii) for ii in depends]
+
     config.add_extension('_terms',
                          sources=src + fem_src,
-                         depends=[],
+                         depends=depends,
                          extra_compile_args=['-O2'],
                          include_dirs=[auto_dir, '../../fem/extmods'],
                          define_macros=defines)

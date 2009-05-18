@@ -16,7 +16,7 @@ def configuration(parent_package='', top_path=None):
            'common_python.c']
     config.add_extension('_fem',
                          sources=src,
-                         depends=[],
+                         depends=['array.i', 'common.i', 'fmfield.i'],
                          extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
@@ -25,7 +25,7 @@ def configuration(parent_package='', top_path=None):
            'sort.c']
     config.add_extension('_meshutils',
                          sources=src,
-                         depends=[],
+                         depends=['array.i', 'common.i'],
                          extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
@@ -34,7 +34,7 @@ def configuration(parent_package='', top_path=None):
            'common_python.c']
     config.add_extension('_geometry',
                          sources=src,
-                         depends=[],
+                         depends=['array.i', 'common.i', 'fmfield.i'],
                          extra_compile_args=['-O2'],
                          include_dirs=[auto_dir],
                          define_macros=defines)
