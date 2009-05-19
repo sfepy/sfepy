@@ -254,7 +254,7 @@ def compute_nodal_normals( nodes, region, field ):
     normals /= la.norm_l2_along_axis( normals )[:,nm.newaxis]
 
     return normals
-        
+
 ##
 # 19.07.2006
 class DofInfo( Struct ):
@@ -1277,11 +1277,54 @@ class Variable( Struct ):
             self.indx = slice( int( indx.start ), int( indx.stop ) )
         self.n_dof = self.indx.stop - self.indx.start
 
+    def data_from_qp(self, data_qp, integral_name, step=0):
+        """u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
+               = \sum_e \int_{volume_e} u / \sum volume_e"""
+        domain = self.field.domain
+        if domain.shape.n_el != data_qp.shape[0]:
+            msg = 'incomatible shape! (%d == %d)' % (domain.shape.n_el,
+                                                     data_qp.shape[0])
+            raise ValueError(msg)
+
+        n_vertex = domain.shape.n_nod
+        dim = data_qp.shape[2]
+
+        nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
+        data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
+        for region_name, ig, ap in self.field.aps.iter_aps():
+            ap_key = (integral_name, region_name, ig)
+            aux, vg = self.get_approximation(ap_key, 'Volume')
+
+            volume = nm.squeeze(vg.variable(2))
+            iels = domain.regions[region_name].cells[ig]
+            
+            data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
+            vg.integrate(data_e, data_qp[iels])
+
+            ir = nm.arange(dim, dtype=nm.int32)
+
+            conn = domain.groups[ig].conn
+            for ii, cc in enumerate(conn):
+                # Assumes unique nodes in cc!
+                ind2, ind1 = nm.meshgrid(ir, cc)
+                data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
+                nod_vol[cc] += volume[ii]
+        data_vertex /= nod_vol[:,nm.newaxis]
+
+        ##
+        # Field nodes values - TODO!.
+        #        data = self.field.interp_v_vals_to_n_vals(data_vertex)
+        data = data_vertex.squeeze()
+        self.indx = slice(0, len(data))
+
+        self.data[step] = data
+
     def set_field( self, field ):
         """Takes reference to a Field instance. Sets dtype according to
         field.dtype."""
         self.field = field
         self.dpn = nm.product( field.dim )
+        self.n_nod = field.n_nod
 
         if self.dof_name is None:
             dof_name = 'aux'
