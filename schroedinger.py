@@ -254,20 +254,51 @@ class SchroedingerApp( SimpleApp ):
         pb.save_state('.'.join((name, opts.output_format)), out=out)
         output( "...solutions saved" )
 
-        vec_phi = nm.zeros_like( vec_vhxc )
-        vec_n = nm.zeros_like( vec_vhxc )
-
+##        vec_n = nm.zeros_like( vec_vhxc )
+        # Just to get the shape. Assumes one element group only!!!
+        n_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
+                           Psi=vec_phi)
+        n_qp.fill(0.0)
         for ii in xrange( n_eigs_ok ):
             vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
-            vec_n += weights[ii] * vec_phi ** 2
+            phi_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
+                                 Psi=vec_phi)
+            n_qp += weights[ii] * phi_qp ** 2
+##            vec_n += weights[ii] * vec_phi ** 2
+
+##        charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
+##        print charge
+
+        var = pb.variables['Psi']
+        ap, vg = var.get_approximation(('i1', 'Omega', 0), 'Volume')
+
+        det = vg.variable(1)
+        charge = (det * n_qp).sum()
+##         Same as above.
+##         out = nm.zeros((n_qp.shape[0], 1, 1, 1), dtype=nm.float64)
+##         vg.integrate(out, n_qp)
+##         charge = out.sum()
+
+##         pb.variables['n'].data_from_data( vec_n )
+        pb.variables['n'].data_from_qp(n_qp, 'i1')
+        vec_n = pb.variables['n']()
+
+        charge_n = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
 
         vec_vxc = nm.zeros_like( vec_vhxc )
         for ii, val in enumerate( vec_n ):
-            vec_vxc[ii] = dft.getvxc( val/(4*pi), 0 )
+##             print ii, val
+##             assert nm.isfinite(val)
+            vec_vxc[ii] = dft.getvxc(val/(4*pi), 0)
+##             print vec_vxc[ii] 
+##             assert nm.isfinite(vec_vxc[ii])
+
+
+        assert_(nm.isfinite(vec_vxc).all())
 
         pb.set_equations( pb.conf.equations_vh )
         pb.select_bcs( ebc_names = ['VHSurface'] )
-        pb.variables['n'].data_from_data( vec_n )
+
         output( "solving Ax=b Poisson equation" )
         vec_vh = pb.solve()
 
@@ -288,9 +319,12 @@ class SchroedingerApp( SimpleApp ):
         for ii in xrange( n_eigs_ok ):
             file_output("% 3d | %-15s | %-15s" % (ii+1, eigs[ii], weights[ii]))
         file_output("----------------------------------------")
-        file_output("|N|:   ", nla.norm(vec_n))
-        file_output("|V_H|: ", nla.norm(vec_vh))
-        file_output("|V_XC|:", nla.norm(vec_vxc))
+        file_output("charge_qp: ", charge)
+        file_output("charge_n:  ", charge_n)
+        file_output("----------------------------------------")
+        file_output("|N|:       ", nla.norm(vec_n))
+        file_output("|V_H|:     ", nla.norm(vec_vh))
+        file_output("|V_XC|:    ", nla.norm(vec_vxc))
         file_output("-"*70)
 
 	if self.iter_hook is not None: # User postprocessing.
