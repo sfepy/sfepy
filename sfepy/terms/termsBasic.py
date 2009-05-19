@@ -492,3 +492,66 @@ class AverageVariableTerm( Term ):
             status = vg.integrate_chunk( out, vec[chunk], chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
+
+class StateVQTerm(Term):
+    r""":description: State interpolated into volume quadrature points.
+    :definition: $\ul{u}|_{qp}, p|_{qp}$
+    """
+    name = 'dq_state_in_volume_qp'
+    arg_types = ('state',)
+    geometry = [(Volume, 'state')]
+
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign, terms.dq_state_in_qp)
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        """Ignores chunk_size."""
+        state, = self.get_args(**kwargs)
+        ap, vg = state.get_approximation(self.get_current_group(), 'Volume')
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+
+        if diff_var is None:
+            shape = (n_el, n_qp, state.dpn, 1)
+        else:
+            raise StopIteration
+
+        vec = self.get_vector(state)
+        bf = ap.get_base('v', 0, self.integral_name)
+
+        out = nm.empty(shape, dtype=nm.float64)
+        self.function(out, vec, 0, bf, ap.econn)
+
+        yield out, nm.arange(n_el, dtype=nm.int32), 0
+
+class StateSQTerm(Term):
+    r""":description: State interpolated into surface quadrature points.
+    :definition: $\ul{u}|_{qp}, p|_{qp}$
+    """
+    name = 'dq_state_in_surface_qp'
+    arg_types = ('state',)
+    geometry = [(Surface, 'state')]
+
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign, terms.dq_state_in_qp)
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        """Ignores chunk_size."""
+        state, = self.get_args(**kwargs)
+        ap, sg = virtual.get_approximation(self.get_current_group(), 'Surface')
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+                                                    self.region.name)
+
+        if diff_var is None:
+            shape = (chunk_size, n_qp, state.dpn, 1)
+        else:
+            raise StopIteration
+
+        vec = self.get_vector(state)
+
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+
+        out = nm.empty(shape, dtype=nm.float64)
+        self.function(out, vec, 0, bf, sd.econn)
+
+        yield out, nm.arange(n_fa, dtype=nm.int32), 0
