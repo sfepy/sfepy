@@ -7,7 +7,8 @@ if pylab:
     from matplotlib.ticker import LogLocator, AutoLocator
 
 class ProcessPlotter( Struct ):
-    output = Output( 'plotter:', filename='plotter.log' )
+    output = Output('plotter:',
+                    filename=os.path.join(sfepy_config_dir,'plotter.log'))
     output = staticmethod( output )
 
     def __init__( self, aggregate = 100 ):

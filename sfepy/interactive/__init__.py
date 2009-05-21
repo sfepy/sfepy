@@ -7,10 +7,6 @@ def conditional_import(is_viewer):
         from sfepy.postprocess import Viewer
     return locals()
 
-sfepy_config_dir = os.path.expanduser('~/.sfepy')
-if not os.path.exists(sfepy_config_dir):
-    os.makedirs(sfepy_config_dir)
-
 def init_session(session, message=None, silent=False,
                  is_viewer=True, is_wx=True, argv=[]):
     """Initialize embedded IPython or Python session. """

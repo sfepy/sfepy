@@ -18,6 +18,10 @@ complex_types = [nm.complex128]
 
 nm.set_printoptions( threshold = 100 )
 
+sfepy_config_dir = os.path.expanduser('~/.sfepy')
+if not os.path.exists(sfepy_config_dir):
+    os.makedirs(sfepy_config_dir)
+
 ##
 # 22.09.2005, c
 # 24.10.2005
