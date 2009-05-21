@@ -1,23 +1,19 @@
+import scipy
+
 from sfepy.base.base import *
 from sfepy.solvers.solvers import LinearSolver
 
-import scipy
-
-imports = ['import scipy.linsolve.umfpack as um',
-           'import scipy.splinalg.dsolve.umfpack as um',
-           'import scipy.sparse.linalg.dsolve.umfpack as um',
-           'import scikits.umfpack as um']
-for imp in imports:
-    try:
-        exec imp
-        break
-    except:
-        pass
-else:
-    um = None
-
-if um is not None:
-    um.configure( assume_sorted_indices = True )
+def try_imports(imports, fail_msg=None):
+    for imp in imports:
+        try:
+            exec imp
+            break
+        except:
+            pass
+        else:
+            if fail_msg is not None:
+                raise ValueError(failmsg)
+    return locals()
 
 class ScipyDirect(LinearSolver):
     name = 'ls.scipy_direct'
@@ -50,29 +46,37 @@ class ScipyDirect(LinearSolver):
     def __init__(self, conf, **kwargs):
         LinearSolver.__init__(self, conf, **kwargs)
 
-        imports = ['import scipy.linsolve as sls',
-                   'import scipy.splinalg.dsolve as sls',
-                   'import scipy.sparse.linalg.dsolve as sls']
-        for imp in imports:
-            try:
-                exec imp
-                break
-            except:
-                pass
-        else:
-            raise ValueError('cannot import scipy sparse direct solvers!')
-
-        self.sls = sls
-
-        if conf.method == 'superlu':
-            self.sls.use_solver(useUmfpack=False)
-        elif conf.method == 'umfpack':
-            is_umfpack = hasattr(self.sls.umfpack, 'UMFPACK_OK')
-            if not is_umfpack and conf.warn:
-                output('umfpack not available, using superlu!')
-        elif conf.method != 'auto':
-            raise ValueError('uknown solution method! (%s)' % conf.method)
+        um = self.sls = None
         
+        aux = try_imports(['import scipy.linsolve as sls',
+                           'import scipy.splinalg.dsolve as sls',
+                           'import scipy.sparse.linalg.dsolve as sls'],
+                          'cannot import scipy sparse direct solvers!')
+        self.sls = aux['sls']
+        aux = try_imports(['import scipy.linsolve.umfpack as um',
+                           'import scipy.splinalg.dsolve.umfpack as um',
+                           'import scipy.sparse.linalg.dsolve.umfpack as um',
+                           'import scikits.umfpack as um'])
+        um = aux['um']
+
+        if um is not None:
+            is_umfpack = hasattr(um, 'UMFPACK_OK')
+        else:
+            is_umfpack = False
+
+        method = self.conf.method
+        if method == 'superlu':
+            self.sls.use_solver(useUmfpack=False)
+        elif method == 'umfpack':
+            if not is_umfpack and self.conf.warn:
+                output('umfpack not available, using superlu!')
+        elif method != 'auto':
+            raise ValueError('uknown solution method! (%s)' % method)
+
+        if method != 'superlu' and is_umfpack:
+            self.sls.use_solver(useUmfpack=True,
+                                assumeSortedIndices=True)
+
         self.solve = None
         if self._presolve() and hasattr(self, 'mtx'):
             if self.mtx is not None:
