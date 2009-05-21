@@ -19,50 +19,93 @@ else:
 if um is not None:
     um.configure( assume_sorted_indices = True )
 
-class Umfpack( LinearSolver ):
-    name = 'ls.umfpack'
-    _family = {nm.dtype( 'float64' ) : 'di',
-               nm.dtype( 'complex128' ) : 'zi'}
+class ScipyDirect(LinearSolver):
+    name = 'ls.scipy_direct'
 
-    def __init__( self, conf, **kwargs ):
-        LinearSolver.__init__( self, conf, **kwargs )
+    def process_conf(conf):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_1100 = {
+            'name' : 'dls1100',
+            'kind' : 'ls.scipy_direct',
 
-        self.umfpack = None
-        if self._presolve() and hasattr( self, 'mtx' ):
+            'method' : 'superlu',
+            'presolve' : False,
+            'warn' : True,
+        }
+        """
+        get = conf.get_default_attr
+
+        method = get('method', 'auto')
+        presolve = get('presolve', False)
+        warn = get('warn', True)
+
+        common = LinearSolver.process_conf(conf)
+        return Struct(**locals()) + common
+    process_conf = staticmethod(process_conf)
+
+    def __init__(self, conf, **kwargs):
+        LinearSolver.__init__(self, conf, **kwargs)
+
+        imports = ['import scipy.linsolve as sls',
+                   'import scipy.splinalg.dsolve as sls',
+                   'import scipy.sparse.linalg.dsolve as sls']
+        for imp in imports:
+            try:
+                exec imp
+                break
+            except:
+                pass
+        else:
+            raise ValueError('cannot import scipy sparse direct solvers!')
+
+        self.sls = sls
+
+        if conf.method == 'superlu':
+            self.sls.use_solver(useUmfpack=False)
+        elif conf.method == 'umfpack':
+            is_umfpack = hasattr(self.sls.umfpack, 'UMFPACK_OK')
+            if not is_umfpack and conf.warn:
+                output('umfpack not available, using superlu!')
+        elif conf.method != 'auto':
+            raise ValueError('uknown solution method! (%s)' % conf.method)
+        
+        self.solve = None
+        if self._presolve() and hasattr(self, 'mtx'):
             if self.mtx is not None:
-                family = Umfpack._family[self.mtx.dtype]
-                self.umfpack = um.UmfpackContext( family = family )
-                self.umfpack.numeric( self.mtx )
+                self.solve = self.sls.factorized(self.mtx)
 
-    def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = get_default( conf, self.conf )
-        mtx = get_default( mtx, self.mtx )
-        status = get_default( status, self.status )
+    def __call__(self, rhs, conf=None, mtx=None, status=None):
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
 
-        family = Umfpack._family[mtx.dtype]
-        self.umfpack = get_default( self.umfpack,
-                                    um.UmfpackContext( family = family ) )
-
-##     umfpack.control[um.UMFPACK_PRL] = 4
-##     umfpack.control[um.UMFPACK_IRSTEP] = 10
-##     umfpack.report_control()
-        sol = self.umfpack( um.UMFPACK_A, mtx, rhs, autoTranspose = True )
-##     umfpack.report_info()
-##    tt = time.clock()
-##    vec_dx2 = umfpack( um.UMFPACK_At, mtx_a, vec_r )
-##    print "solve = ", time.clock() - tt
-##    print nla.norm( vec_dx1 - vec_dx ), nla.norm( vec_dx2 - vec_dx )
-    
-        return sol
-
-    def _presolve( self ):
-        if hasattr( self, 'presolve' ):
+        if self.solve is not None:
+            # Matrix is already prefactorized.
+            return self.solve(rhs)
+        else:
+            return self.sls.spsolve(mtx, rhs)
+                
+    def _presolve(self):
+        if hasattr(self, 'presolve'):
             return self.presolve
         else:
             try:
                 return self.conf.presolve
             except:
                 return False
+
+class Umfpack(ScipyDirect):
+    """This class stays for compatability with old input files. Use ScipyDirect
+    isntead."""
+    name = 'ls.umfpack'
+
+    def __init__(self, conf, **kwargs):
+        conf.method = 'umfpack'
+        ScipyDirect.__init__(self, conf, **kwargs)
 
 ##
 # c: 22.02.2008
