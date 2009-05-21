@@ -93,7 +93,7 @@ def define():
     # Solvers etc.
     solver_0 = {
         'name' : 'ls',
-        'kind' : 'ls.umfpack',
+        'kind' : 'ls.scipy_direct',
     }
 
     solver_1 = {

@@ -138,7 +138,6 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
         'check'     : 0,
         'delta'     : 1e-6,
         'is_plot'    : False,
-        'matrix'    : 'internal', # 'external' or 'internal'
         'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
     }
 

@@ -111,7 +111,7 @@ solver_1 = {
 
 solver_2 = {
     'name' : 'ls',
-    'kind' : 'ls.umfpack',
+    'kind' : 'ls.scipy_direct',
 }
 
 ##

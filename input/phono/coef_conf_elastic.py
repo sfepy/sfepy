@@ -120,7 +120,7 @@ def define_input( filename, region, dim, geom ):
 
     solver_0 = {
         'name' : 'ls',
-        'kind' : 'ls.umfpack', # Direct solver.
+        'kind' : 'ls.scipy_direct', # Direct solver.
     }
 
     solver_1 = {

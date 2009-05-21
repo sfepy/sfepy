@@ -29,7 +29,7 @@ if filename_mesh == '../database/kostka_medium.mesh':
     }
     solver_0 = {
         'name' : 'ls',
-        'kind' : 'ls.umfpack',
+        'kind' : 'ls.scipy_direct',
     }
 
 elif filename_mesh == '../database/kostka_big.mesh':

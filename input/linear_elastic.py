@@ -75,7 +75,7 @@ equations = {
 #! Even linear problems are solved by a nonlinear solver (KISS rule) - only one
 #! iteration is needed and the final rezidual is obtained for free.
 solvers = {
-    'ls' : ('ls.umfpack', {}),
+    'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton',
                 { 'i_max'      : 1,
                   'eps_a'      : 1e-10,
