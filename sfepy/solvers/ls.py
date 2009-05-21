@@ -57,7 +57,8 @@ class ScipyDirect(LinearSolver):
                            'import scipy.splinalg.dsolve.umfpack as um',
                            'import scipy.sparse.linalg.dsolve.umfpack as um',
                            'import scikits.umfpack as um'])
-        um = aux['um']
+        if um in aux:
+            um = aux['um']
 
         if um is not None:
             is_umfpack = hasattr(um, 'UMFPACK_OK')
