@@ -112,36 +112,47 @@ def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
                                          dim, iel, ts )
     return p_corr
 
-def compute_u_from_macro( strain, coor, iel ):
+def compute_u_from_macro(strain, coor, iel, centre=None):
     """
     Macro-induced displacements.
     
-    e_{ij}^x(\ub(t))\,y_j
+    e_{ij}^x(\ub(t))\,(y_j - y_j^c)
     """
+    if centre is None:
+        centre = nm.zeros((dim,), dtype=nm.float64)
+
     n_nod, dim = coor.shape
-    um = nm.empty( (n_nod * dim,), dtype = nm.float64 )
-    for ir in range( dim ):
-        for ic in range( dim ):
-            ii = coor_to_sym( ir, ic, dim )
-            um[ir::dim] = strain[iel,0,ii,0] * coor[:,ic]
+    um = nm.zeros((n_nod * dim,), dtype=nm.float64)
+    for ir in range(dim):
+        for ic in range(dim):
+            ii = coor_to_sym(ir, ic, dim)
+            um[ir::dim] += strain[iel,0,ii,0] * (coor[:,ic] - centre[ic])
     return um
 
-def recover_bones( problem, micro_problem, region,
-                   ts, strain, dstrains, pressure, pressures,
-                   corrs_rs, corrs_pressure,
-                   corrs_time_rs, corrs_time_pressure,
+def compute_p_from_macro(p_grad, coor, iel, centre=None):
+    """
+    Macro-induced pressure.
+    
+    \partial_j^xp(t)\,(y_j - y_j^c)
+    """
+    if centre is None:
+        centre = nm.zeros((dim,), dtype=nm.float64)
+
+    n_nod, dim = coor.shape
+    pm = nm.zeros((n_nod,), dtype=nm.float64)
+    for ic in range(dim):
+        pm += p_grad[iel,0,ic,0] * (coor[:,ic] - centre[ic])
+    return pm
+
+def recover_bones( problem, micro_problem, region, eps0,
+                   ts, strain, dstrains, p_grad, pressures,
+                   corrs_permeability, corrs_rs, corrs_time_rs,
+                   corrs_pressure, corrs_time_pressure,
                    var_names, naming_scheme = 'step_iel' ):
     """
     note that \tilde{\pi}^P(0) is in corrs_pressure
     -> from time correctors only 'u', 'dp' are needed.
     """
-    
-##     print strain
-##     print strain.shape
-##     print dstrains
-##     print pressure
-##     print pressure.shape
-##     print pressures
 
     dim = problem.domain.mesh.dim
 
@@ -154,48 +165,61 @@ def recover_bones( problem, micro_problem, region,
     micro_n_nod = micro_problem.domain.mesh.n_nod
     micro_p = micro_problem.variables[vp]
 
+    nodes_yc = micro_problem.domain.regions['Yc'].all_vertices
+
     to_output = micro_problem.variables.state_to_output
 
     join = os.path.join
-    format = get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
+    aux = max(problem.domain.shape.n_gr, 2)
+    format = get_print_info( aux, fill = '0' )[1] \
+             + '_' + get_print_info( problem.domain.mesh.n_el, fill = '0' )[1]
 
-    # single group only!!!
-    cells = region.cells[0]
-    for ii, iel in enumerate( cells ):
-        print 'ii: %d, iel: %d' % (ii, iel)
-        u_corr_steady = compute_u_corr_steady( corrs_rs, strain,
-                                               corrs_pressure, pressure,
-                                               vu, dim, ii )
-        u_corr_time = compute_u_corr_time( corrs_time_rs, dstrains,
-                                           corrs_time_pressure, pressures,
-                                           vu, dim, ii, ts )
+    for ig, ii, iel in region.iter_cells():
+        print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
 
-        p_corr_steady = compute_p_corr_steady( corrs_pressure, pressure, vp, ii )
+        pressure = pressures[-1][ii,0,0,0]
 
-        p_corr_time = compute_p_corr_time( corrs_time_rs, dstrains,
-                                           corrs_time_pressure, pressures,
-                                           vdp, dim, ii, ts )
-##     print u_corr_steady
-##     print u_corr_time
-##     print p_coor_steady
-##     print p_corr_time
+        us = corrs_pressure[vu].data * pressure
+        add_strain_rs(corrs_rs, strain, vu, dim, ii, out=us)
 
-        u_corr = u_corr_steady + u_corr_time
-        p_corr = p_corr_steady + p_corr_time
+        ut = convolve_field_scalar(corrs_time_pressure[vu], pressures, ii, ts)
+        ut += convolve_field_sym_tensor(corrs_time_rs, dstrains, vu,
+                                        dim, ii, ts)
+        u1 = us  + ut
 
-        u_mic = compute_u_from_macro( strain, micro_coor, ii ) + u_corr
-        p_mic = micro_p.extend_data( p_corr[:,nm.newaxis], micro_n_nod,
-                                     val = pressure[ii,0,0,0] ).squeeze()
+        u_mic = compute_u_from_macro(strain, micro_coor, ii ) + u1
 
+        ps = corrs_presure[vp].data * pressure
+
+        pt = convolve_field_scalar(corrs_pressure[vdp], pressures, ii, ts)
+        pt += convolve_field_sym_tensor(corrs_time_rs, dstrains, vdp,
+                                        dim, ii, ts)
+##     print us
+##     print ut
+##     print ps
+##     print pt
+
+        p_hat = ps  + pt
+
+        p1 = corrs_permeability[0] * p_grad[0]
+        for ir in range(1, dim):
+            p1 += corrs_permeability[ir] * p_grad[ir]
+        
+
+        p_hat_e = micro_p.extend_data(p_hat[:,nm.newaxis], micro_n_nod, val=0.0)
+        p_mic = compute_p_from_macro(p_grad, micro_coor, ii) + p_hat_e / eps0
+        p_mic = p_hat_e / eps0
+        p_mic[nodes_yc] = p1
+        
 ##         print u_mic
 ##         print p_mic
     
         out = {}
         out.update( to_output( u_mic, var_info = {vu : (True, vu)},
                                extend = True ) )
-        out.update( to_output( p_corr, var_info = {vp : (True, vp)},
-                               extend = True,
-                               fill_value = pressure[ii,0,0,0] ) )
+        out[vp] = Struct( name = 'output_data',
+                          mode = 'vertex', data = p_mic,
+                          var_name = vp, dofs = micro_p.dofs )
 
         if naming_scheme == 'step_iel':
             suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
