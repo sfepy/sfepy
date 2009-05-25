@@ -270,6 +270,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
     if new_geometries:
         if itype == 'dw':
             variables.setup_dof_conns()
+        else:
+            variables.setup_extra_data()
 
         i_names = equation.get_term_integral_names()
         integrals = Integrals.from_conf( conf.integrals, i_names )

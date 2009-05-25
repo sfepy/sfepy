@@ -378,7 +378,9 @@ class Equation( Struct ):
             sns = term.get_state_names()
             pns = term.get_parameter_names()
 
-            pn_map = variables.get_primary_names(term.get_variable_names())
+            term_var_names = term.get_variable_names()
+            pn_map = variables.get_primary_names(term_var_names)
+
 ##             print key
 ##             print vn, sns, pns
 ##             pause()
@@ -448,6 +450,7 @@ class Equation( Struct ):
                                ps_tg = ps_tg,
                                region = region,
                                mirror_region = mirror_region,
+                               all_vars = term_var_names,
                                ig_map = ig_map, ig_map_i = ig_map_i)
                 ConnInfo.mirror_map[region.name] = (mirror_region,
                                                     ig_map, ig_map_i)
@@ -474,6 +477,7 @@ class Equation( Struct ):
                                ps_tg = ps_tg,
                                region = region,
                                mirror_region = mirror_region,
+                               all_vars = term_var_names,
                                ig_map = ig_map, ig_map_i = ig_map_i)
                 ConnInfo.mirror_map[region.name] = (mirror_region,
                                                     ig_map, ig_map_i)
@@ -492,6 +496,7 @@ class Equation( Struct ):
                                ps_tg = v_tg,
                                region = region,
                                mirror_region = None,
+                               all_vars = term_var_names,
                                ig_map = None, ig_map_i = None)
                 vals.append(val)
             

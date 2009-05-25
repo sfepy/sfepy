@@ -165,9 +165,13 @@ class ProblemDefinition( Struct ):
     
     ##
     # c: 18.04.2006, r: 13.06.2008
-    def set_equations( self, conf_equations, user = None, cache_override = None,
+    def set_equations( self, conf_equations = None, user = None,
+                       cache_override = None,
                        keep_solvers = False, make_virtual = False,
                        single_term = False ):
+        conf_equations = get_default( conf_equations,
+                                      self.conf.get_default_attr('equations',
+                                                                 None) )
         equations = Equations.from_conf( conf_equations )
         equations.setup_terms( self.domain.regions, self.variables,
                                self.materials, user )

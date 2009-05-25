@@ -20,6 +20,7 @@ field_1 = {
 variables = {
     'p' : ('unknown field', 'pressure', 0),
     'q' : ('test field', 'pressure', 'p'),
+    'r' : ('parameter field', 'pressure', 'p'),
 }
 
 region_1000 = {
@@ -68,6 +69,12 @@ integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
     'quadrature' : 'gauss_o2_d2',
+}
+
+integral_2 = {
+    'name' : 'isurf',
+    'kind' : 's',
+    'quadrature' : 'gauss_o1_d1',
 }
 
 equations = {
@@ -131,6 +138,11 @@ class Test( TestCommon ):
         from sfepy.fem import eval_term_op
         problem  = self.problem
 
+        problem.conf.edit('variables', self.conf.get_raw('variables'))
+        problem.set_variables()
+        problem.set_equations()
+        problem.time_update()
+
         state = problem.create_state_vector()
         problem.apply_ebc( state )
 
@@ -152,3 +164,34 @@ class Test( TestCommon ):
             self.report( 'variable %s: failed' % var_name )
 
         return ret
+
+    def test_surface_evaluate(self):
+        problem = self.problem
+        
+        problem.conf.edit('variables', {'p' : ('unknown field', 'pressure', 0)})
+        problem.set_variables()
+##         print self.conf.variables
+##         print problem.variables.names
+        
+        p = problem.create_state_vector()
+        p.fill(1.0)
+
+        expr = 'd_surface_integrate.isurf.Left( p )'
+        val = problem.evaluate(expr, p=p)
+        ok1 = nm.abs(val - 1.0) < 1e-15
+        self.report('with unknown: %s, value: %s, ok: %s' \
+                    % (expr, val, ok1))
+
+        problem.conf.edit('variables',
+                          {'r' : ('parameter field', 'pressure', 'p')})
+        problem.set_variables()
+##         print self.conf.variables
+##         print problem.variables.names
+
+        expr = 'd_surface_integrate.isurf.Left( r )'
+        val = problem.evaluate(expr, r=p)
+        ok2 = nm.abs(val - 1.0) < 1e-15
+        self.report('with parameter: %s, value: %s, ok: %s' \
+                    % (expr, val, ok2))
+
+        return ok1 and ok2

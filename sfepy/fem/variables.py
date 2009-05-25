@@ -640,6 +640,17 @@ class Variables( Container ):
 
         elif dct != 'volume':
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def setup_extra_data(self):
+        """Dof connectivity key = (field.name, region.name, type, ig)"""
+        surface_regions = set()
+        for key, ii, info in iter_dict_of_lists(self.conn_info,
+                                                return_keys=True):
+##             print key, ii
+##             print info
+            for var_name in info.all_vars:
+                self._setup_extra_data(self[var_name], info.ps_tg,
+                                       info, info.is_trace, surface_regions)
             
     def setup_dof_conns(self, make_virtual=False, single_term=False):
         """Dof connectivity key = (field.name, region.name, type, ig)"""
