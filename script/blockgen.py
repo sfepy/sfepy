@@ -55,7 +55,7 @@ def main():
 
     grid = nm.zeros( shape, dtype = nm.int32 )
     n_nod = nm.prod( shape )
-    coors = nm.zeros( (n_nod, dim + 1), dtype = nm.float64 )
+    coors = nm.zeros( (n_nod, dim), dtype = nm.float64 )
 
     # This is 3D only...
     bar = MyBar( "       nodes:" )
@@ -63,7 +63,7 @@ def main():
     for ii, ic in enumerate( cycle( shape ) ):
         ix, iy, iz = ic
         grid[ix,iy,iz] = ii
-        coors[ii,:-1] = x0 + ic * dd
+        coors[ii] = x0 + ic * dd
         if not (ii % 100):
             bar.update( ii )
     print
@@ -83,7 +83,7 @@ def main():
     desc = '3_8'
 
     mesh = Mesh.from_data( options.output_filename,
-                          coors, [conn], [mat_id], [desc] )
+                          coors, None, [conn], [mat_id], [desc] )
     mesh.write( options.output_filename, io = 'auto' )
 
 if __name__ == '__main__':
