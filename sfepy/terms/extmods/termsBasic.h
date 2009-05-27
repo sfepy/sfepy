@@ -25,6 +25,11 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff );
 
+int32 d_volume_surface( FMField *out, FMField *in,
+			FMField *bf, SurfaceGeometry *sg,
+			int32 *conn, int32 nEl, int32 nEP,
+			int32 *elList, int32 elList_nRow );
+
 END_C_DECLS
 
 #endif /* Header */

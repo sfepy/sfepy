@@ -86,8 +86,6 @@ class IntegrateSurfaceTerm( Term ):
         ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
         shape = (chunk_size, 1, 1, 1)
 
-        sd = ap.surface_data[self.region.name]
-
         cache = self.get_cache( 'state_in_surface_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0, state = par )
         
@@ -242,6 +240,34 @@ class VolumeTerm( Term ):
         volume = cache( 'volume', self.get_current_group(), 0,
                         region = self.char_fun.region, field = par.field )
         yield volume, 0, 0
+
+class VolumeSurfaceTerm( Term ):
+    r""":description: Volume of a domain - using surface integral.
+    Uses approximation of the parameter.
+    :definition: $\int_\Gamma \ul{x} \cdot \ul{n}$"""
+    name = 'd_volume_surface'
+    arg_types = ('parameter',)
+    geometry = [(Surface, 'parameter')]
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.d_volume_surface )
+        self.dof_conn_type = 'surface'
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        par, = self.get_args( **kwargs )
+        ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
+        shape = (chunk_size, 1, 1, 1)
+
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        coor = par.field.get_coor()
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
+            status = self.function( out, coor, bf,
+                                    sg, sd.econn.copy(), lchunk )
+
+            out1 = nm.sum( out )
+            yield out1, chunk, status
 
 ##
 # c: 06.05.2008

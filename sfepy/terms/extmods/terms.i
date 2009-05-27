@@ -102,6 +102,11 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );
 
+int32 d_volume_surface( FMField *out, FMField *in,
+			FMField *bf, SurfaceGeometry *sg,
+			int32 *conn, int32 nEl, int32 nEP,
+			int32 *elList, int32 elList_nRow );
+
 int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 			   FMField *trC, FMField *in2C, FMField *vecInvCS,
 			   FMField *vecES,

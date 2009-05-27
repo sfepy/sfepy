@@ -173,3 +173,46 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "d_volume_surface"
+
+int32 d_volume_surface( FMField *out, FMField *in,
+			FMField *bf, SurfaceGeometry *sg,
+			int32 *conn, int32 nEl, int32 nEP,
+			int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, nQP, nFP, ret = RET_OK;
+  FMField *lcoor, *aux, *aux2;
+  float64 val;
+
+  nFP = bf->nCol;
+  nQP = sg->det->nLev;
+  dim = sg->normal->nRow;
+  val = 1.0/dim;
+
+  fmf_createAlloc( &lcoor, 1, 1, nFP, dim );
+  fmf_createAlloc( &aux, 1, nQP, 1, dim );
+  fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( sg->normal, iel );
+    FMF_SetCell( sg->det, iel );
+
+    ele_extractNodalValuesNBN( lcoor, in, conn + nEP * iel );
+    fmf_mulAB_n1( aux, bf, lcoor );
+    fmf_mulABT_nn( aux2, aux, sg->normal );    
+    fmf_sumLevelsMulF( out, aux2, sg->det->val );
+    fmf_mulC( out, val );
+  }  /* for (ii) */
+
+ end_label:
+  fmf_freeDestroy( &aux );
+  fmf_freeDestroy( &aux2 );
+  fmf_freeDestroy( &lcoor );
+
+  return( ret );
+}
