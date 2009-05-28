@@ -6,7 +6,7 @@ class MassTerm( Term ):
     r""":description: Inertial forces term (constant density).
     :definition: $\int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} -
     \ul{u}_0}{\dt}$
-    :arguments: material.rho : $\rho$, ts.dt : $\dt$, parameter : $\ul{u}_0$"""
+    :arguments: material : $\rho$, ts.dt : $\dt$, parameter : $\ul{u}_0$"""
     name = 'dw_mass'
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
@@ -129,6 +129,37 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
         return fargs, shape, mode
 
+    
+class BCNewtonTerm(MassScalarSurfaceTerm):
+    r""":description: Newton boundary condition term.
+    :definition: $\int_{\Gamma} \alpha q (p - p_{\rm outer})$
+    :arguments: material_1 : $\alpha$, material_2 : $p_{\rm outer}$,
+    virtual : $q$, state : $p$
+    """
+    name = 'dw_bc_newton'
+    arg_types = ('material_1', 'material_2', 'virtual', 'state')
+    geometry = [(Surface, 'virtual'), (Surface, 'state')]
+
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        shift, = self.get_args(['material_2'], **kwargs)
+        call = MassScalarSurfaceTerm.get_fargs
+        fargs, shape, mode = call(self, diff_var, chunk_size, **kwargs)
+
+        if nm.isreal(mode):
+            fargs = (fargs[0] - shift,) + fargs[1:]
+        else:
+            raise NotImplementedError
+        
+        return fargs, shape, mode
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        coef, = self.get_args(['material_1'], **kwargs)
+
+        call = MassScalarSurfaceTerm.__call__
+        for out, chunk, status in call(self, diff_var, chunk_size, **kwargs):
+            out = coef * out
+            yield out, chunk, status
+    
 class MassScalarVariableTerm( MassScalarTerm ):
     r""":description: Scalar field mass matrix/rezidual with coefficient $c$
     defined in nodes.
