@@ -57,7 +57,7 @@ class ScipyDirect(LinearSolver):
                            'import scipy.splinalg.dsolve.umfpack as um',
                            'import scipy.sparse.linalg.dsolve.umfpack as um',
                            'import scikits.umfpack as um'])
-        if um in aux:
+        if 'um' in aux:
             um = aux['um']
 
         if um is not None:
@@ -98,10 +98,7 @@ class ScipyDirect(LinearSolver):
         if hasattr(self, 'presolve'):
             return self.presolve
         else:
-            try:
-                return self.conf.presolve
-            except:
-                return False
+            return self.conf.presolve
 
 class Umfpack(ScipyDirect):
     """This class stays for compatability with old input files. Use ScipyDirect

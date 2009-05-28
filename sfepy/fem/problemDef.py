@@ -538,7 +538,7 @@ class ProblemDefinition( Struct ):
         return ev
 
     def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
-                      mtx = None, presolve = False, **kwargs ):
+                      mtx = None, **kwargs ):
         """Create and initialize solvers."""
         ls_conf = get_default( ls_conf, self.ls_conf,
                                'you must set linear solver!' )
@@ -546,7 +546,7 @@ class ProblemDefinition( Struct ):
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
         
-        ls = Solver.any_from_conf( ls_conf, mtx = mtx, presolve = presolve )
+        ls = Solver.any_from_conf( ls_conf, mtx = mtx )
 
         if get_default_attr(nls_conf, 'needs_problem_instance', False):
             extra_args = {'problem' : self}
