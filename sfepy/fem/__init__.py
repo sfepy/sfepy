@@ -6,6 +6,7 @@ except (ImportError, AttributeError):
     raise ImportError( msg )
 
 from mesh import Mesh
+from mesh_generators import gen_block_mesh, gen_cylinder_mesh
 from domain import Domain
 from fields import Fields, Field
 from variables import Variables, Variable

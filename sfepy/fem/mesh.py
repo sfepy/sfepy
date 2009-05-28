@@ -768,12 +768,12 @@ class Mesh( Struct ):
         """
         if igs is None:
             igs = range( len( conns ) )
-        mesh = Mesh( name = name,
-                     coors = coors,
-                     ngroups = ngroups,
-                     conns = [conns[ig] for ig in igs],
-                     mat_ids = [mat_ids[ig] for ig in igs],
-                     descs = [descs[ig] for ig in igs] )
+        mesh = Mesh(name)
+        mesh._set_data(coors = coors,
+                       ngroups = ngroups,
+                       conns = [conns[ig] for ig in igs],
+                       mat_ids = [mat_ids[ig] for ig in igs],
+                       descs = [descs[ig] for ig in igs])
         mesh._set_shape_info()
         return mesh
     from_data = staticmethod( from_data )
