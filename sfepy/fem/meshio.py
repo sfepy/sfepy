@@ -1402,11 +1402,15 @@ class AbaqusMeshIO( MeshIO ):
 
     def guess( filename ):
         ok = False
-
         fd = open( filename, 'r' )
-        line = fd.readline().strip()
-        if line == '*NODE':
-            ok = True
+        for ii in xrange(100):
+            try:
+                line = fd.readline().strip().split(',')
+            except:
+                break
+            if line[0] == '*NODE':
+                ok = True
+                break
         fd.close()
         
         return ok
@@ -1639,6 +1643,8 @@ def any_from_filename(filename, prefix_dir=None):
         filename = op.normpath(op.join(prefix_dir, filename))
 
     aux, ext = op.splitext( filename )
+    ext = ext.lower()
+
     format = supported_formats[ext]
     if isinstance(format, tuple):
         format = guess_format( filename, ext, format, io_table )
