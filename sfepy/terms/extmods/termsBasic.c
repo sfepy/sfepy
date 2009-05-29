@@ -204,7 +204,7 @@ int32 d_volume_surface( FMField *out, FMField *in,
 
     ele_extractNodalValuesNBN( lcoor, in, conn + nEP * iel );
     fmf_mulAB_n1( aux, bf, lcoor );
-    fmf_mulABT_nn( aux2, aux, sg->normal );    
+    fmf_mulAB_nn( aux2, aux, sg->normal );    
     fmf_sumLevelsMulF( out, aux2, sg->det->val );
     fmf_mulC( out, val );
   }  /* for (ii) */
