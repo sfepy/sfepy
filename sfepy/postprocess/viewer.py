@@ -75,64 +75,97 @@ class Viewer(Struct):
                   clamping=False):
         """By default, plot all found data."""
         mlab.options.offscreen = self.offscreen
-        scene = mlab.figure(bgcolor=(1,1,1), size=(600,800))
+        scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(600,800))
 
         source = mlab.pipeline.open(self.filename)
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
         dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
         
-        scalar_names = sorted( source._point_scalars_list[:-1] )
-        vector_names = sorted( source._point_vectors_list[:-1] )
-        names = [['scalar', name] for name in scalar_names]
-        names += [['vector', name] for name in vector_names]
-        
-        output(scalar_names)
-        output(vector_names)
+        point_scalar_names = sorted( source._point_scalars_list[:-1] )
+        point_vector_names = sorted( source._point_vectors_list[:-1] )
+        point_tensor_names = sorted( source._point_tensors_list[:-1] )
+        cell_scalar_names = sorted( source._cell_scalars_list[:-1] )
+        cell_vector_names = sorted( source._cell_vectors_list[:-1] )
+        cell_tensor_names = sorted( source._cell_tensors_list[:-1] )
 
-        n_scalar = len(scalar_names)
-        n_vector = len(vector_names)
+        p_names = [['point', 'scalars', name] for name in point_scalar_names]
+        p_names += [['point', 'vectors', name] for name in point_vector_names]
+        p_names += [['point', 'tensors', name] for name in point_tensor_names]
+        c_names = [['cell', 'scalars', name] for name in cell_scalar_names]
+        c_names += [['cell', 'vectors', name] for name in cell_vector_names]
+        c_names += [['cell', 'tensors', name] for name in cell_tensor_names]
 
-        n_data = n_scalar + n_vector
+        names = p_names + c_names
+        n_data = len(names)
         n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
         n_row = int(nm.ceil(n_data / n_col))
         n_col = int(n_col)
 
+        if c_names:
+            ctp = mlab.pipeline.cell_to_point_data(source)
+
         for ii, (ir, ic) in enumerate(cycle((n_row, n_col))):
             if ii == n_data: break
-            kind, name = names[ii]
+            family, kind, name = names[ii]
             
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
             position[:2] -= bbox[:2]
             
-            output(kind, name, position)
-            field_chooser = mlab.pipeline.set_active_attribute(source)
-            if kind == 'scalar':
-                field_chooser.point_scalars_name = name
+            output(family, kind, name, position)
+            if kind == 'scalars':
+                active = mlab.pipeline.set_active_attribute(source)
+                active.point_scalars_name = name
+#                setattr(active, '%s_%s_name' % (family, kind), name)
 
                 if is_3d:
-                    scp = add_scalar_cut_plane(field_chooser,
+                    scp = add_scalar_cut_plane(active,
                                                position, [1, 0, 0],
                                                opacity=0.5)
-                    scp = add_scalar_cut_plane(field_chooser,
+                    scp = add_scalar_cut_plane(active,
                                                position, [0, 1, 0],
                                                opacity=0.5 )
-                    scp = add_scalar_cut_plane(field_chooser,
+                    scp = add_scalar_cut_plane(active,
                                                position, [0, 0, 1],
                                                opacity=0.5 )
                 else:
-                    surf = add_surf(field_chooser, position)
+                    surf = add_surf(active, position)
                 
-            elif kind == 'vector':
-                field_chooser.point_vectors_name = name
+            elif kind == 'vectors':
+                if family == 'point':
+                    active = mlab.pipeline.set_active_attribute(source)
+                else:
+                    active = mlab.pipeline.set_active_attribute(ctp)
+                active.point_vectors_name = name
 
-                glyphs = add_glyphs(field_chooser, position, bbox,
+                glyphs = add_glyphs(active, position, bbox,
                                     rel_scaling=rel_scaling, clamping=clamping)
+
+            elif kind == 'tensors':
+                if family == 'point':
+                    active = mlab.pipeline.set_active_attribute(source)
+                else:
+                    active = mlab.pipeline.set_active_attribute(ctp)
+                active.point_tensors_name = name
+
+                active = mlab.pipeline.extract_tensor_components(active)
+                if is_3d:
+                    scp = add_scalar_cut_plane(active,
+                                               position, [1, 0, 0],
+                                               opacity=0.5)
+                    scp = add_scalar_cut_plane(active,
+                                               position, [0, 1, 0],
+                                               opacity=0.5 )
+                    scp = add_scalar_cut_plane(active,
+                                               position, [0, 0, 1],
+                                               opacity=0.5 )
+                else:
+                    surf = add_surf(active, position)
 
             else:
                 raise ValueError('bad kind! (%s)' % kind)
 
             position[2] = 0.5 * dx[2]
-            text = add_text(field_chooser, position, name)
+            text = add_text(active, position, name)
 
             scene.scene.reset_zoom()
 
