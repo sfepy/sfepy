@@ -2,6 +2,13 @@ from sfepy.base.base import *
 from sfepy.fem import *
 from sfepy.applications import pde_solve
 
+try:
+    import matplotlib as mpl
+    mpl.use('WXAgg')
+    from matplotlib.pyplot import *
+except:
+    pass
+
 def conditional_import(is_viewer):
     if is_viewer:
         from sfepy.postprocess import Viewer
@@ -13,7 +20,13 @@ def init_session(session, message=None, silent=False,
     import os, sys, atexit
 
     def init_IPython():
-        return IPython.Shell.make_IPython(argv)
+        if is_wx:
+            from IPython.Shell import IPShellWX
+            ip = IPShellWX(argv, user_ns=conditional_import(is_viewer),
+                           user_global_ns=globals())
+        else:
+            ip = IPython.Shell.make_IPython(argv)
+        return ip
 
     def init_Python():
         import code
@@ -66,10 +79,6 @@ def init_session(session, message=None, silent=False,
         else:
             ip, has_ipython = init_Python(), False
 
-    ip.runcode(ip.compile("from sfepy.interactive import *"))
-    ip.runcode(ip.compile("locals().update(conditional_import(%s))" \
-                          % (is_viewer)))
-
     output.set_output(filename=os.path.join(sfepy_config_dir, 'isfepy.log'),
                       combined=silent == False,
                       append=True)
@@ -88,11 +97,11 @@ def init_session(session, message=None, silent=False,
             message = welcome + '\n'
 
         if has_ipython and is_wx:
-            from IPython.Shell import IPShellWX
-            ipwx = IPShellWX(argv, user_ns=ip.user_ns,
-                             user_global_ns=ip.user_global_ns)
-            ipwx.mainloop(banner=message)
+            ip.mainloop(banner=message)
         else:
+            ip.runcode(ip.compile("from sfepy.interactive import *"))
+            ip.runcode(ip.compile("locals().update(conditional_import(%s))" \
+                                  % (is_viewer)))
             ip.interact(message)
         sys.exit('Exiting ...')
     else:

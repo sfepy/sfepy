@@ -176,7 +176,7 @@ def solve_branch( problem, options, branch_function ):
 def main():
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem import ProblemDefinition
-    from sfepy.base.plotutils import pylab
+    from sfepy.base.plotutils import plt
 
     required, other = get_standard_keywords()
     # Use this file as the input file.
@@ -208,23 +208,23 @@ def main():
         displacements[key] = nm.r_[u_c[key][::-1], u_t[key]]
     load = nm.r_[load_c[::-1], load_t]
 
-    if pylab is None:
-        print 'pylab cannot be imported, printing raw data!'
+    if plt is None:
+        print 'matplotlib cannot be imported, printing raw data!'
         print displacements
         print load
     else:
         legend = []
         for key, val in displacements.iteritems():
-            pylab.plot( load, val )
+            plt.plot( load, val )
             legend.append( key )
 
-        pylab.legend( legend, loc = 2 )
-        pylab.xlabel( 'tension [kPa]' )
-        pylab.ylabel( 'displacement [mm]' )
-        pylab.grid( True )
+        plt.legend( legend, loc = 2 )
+        plt.xlabel( 'tension [kPa]' )
+        plt.ylabel( 'displacement [mm]' )
+        plt.grid( True )
 
-        pylab.gcf().savefig( 'pressure_displacement.png' )
-        pylab.show()
+        plt.gcf().savefig( 'pressure_displacement.png' )
+        plt.show()
 
 if __name__ == '__main__':
     main()

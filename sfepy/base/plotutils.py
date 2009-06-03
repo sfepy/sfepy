@@ -1,11 +1,9 @@
 from base import *
 
 try:
-    import matplotlib as mpl
-    mpl.use('GTKAgg')
-    import pylab
+    import matplotlib.pyplot as plt
 except (ImportError, RuntimeError):
-    pylab = None
+    plt = None
     #print 'matplotlib import failed!'
 
 ##
@@ -31,14 +29,14 @@ def spy( mtx, eps = None, color = 'b', **kwargs ):
     if n_item:
         args = {'marker' : '.', 'markersize' : 0.5, 'markeredgewidth' : 0.1}
         args.update( kwargs )
-        pylab.plot( ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle = 'None',
+        plt.plot( ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle = 'None',
                     **args )
-    pylab.axis( [-0.5, n_row+0.5, -0.5, n_col+0.5] )
-    pylab.axis( 'image' )
-    pylab.xlabel( '%d x %d: %d nnz, %.2f\%% fill'
+    plt.axis( [-0.5, n_row+0.5, -0.5, n_col+0.5] )
+    plt.axis( 'image' )
+    plt.xlabel( '%d x %d: %d nnz, %.2f\%% fill'
                   % (n_row, n_col, n_item, 100. * n_item /
                      (float( n_row ) * float( n_col )) ) )
-    ax = pylab.gca()
+    ax = plt.gca()
     ax.set_ylim( ax.get_ylim()[::-1] )
 
 ##
@@ -107,36 +105,36 @@ def plot_matrix_diff( mtx1, mtx2, delta, legend, mode ):
     if mode < 2: return
     
     h = 100
-    pylab.figure( h ); pylab.clf
+    plt.figure( h ); plt.clf()
 
-    pylab.axes( [0.04, 0.6, 0.3, 0.3], frameon = True )
+    plt.axes( [0.04, 0.6, 0.3, 0.3], frameon = True )
     spy( mtx_da, epsilon )
-    pylab.title( 'absolute diff' )
+    plt.title( 'absolute diff' )
 
-    pylab.axes( [0.68, 0.6, 0.3, 0.3], frameon = True )
+    plt.axes( [0.68, 0.6, 0.3, 0.3], frameon = True )
     iia = nm.where( mtx_dr.data )[0]
     mtx_dr.data[nm.setdiff1d( iia, iin )] = 0.0
     spy( mtx_dr, epsilon )
-    pylab.title( 'relative diff' )
+    plt.title( 'relative diff' )
 
-    pylab.axes( [0.36, 0.6, 0.3, 0.3], frameon = True )
+    plt.axes( [0.36, 0.6, 0.3, 0.3], frameon = True )
     mtx = mtx_dr.copy()
     mtx.data[:] = 0.0
     ii = nm.intersect1d( nm.where( mtx_dr.data > epsilon )[0],
                            nm.where( mtx_da.data > epsilon )[0] )
     mtx.data[ii] = 1.0
     spy( mtx, epsilon )
-    pylab.title( 'a-r intersection' )
+    plt.title( 'a-r intersection' )
 
-    pylab.axes( [0.04, 0.08, 0.42, 0.42], frameon = True )
+    plt.axes( [0.04, 0.08, 0.42, 0.42], frameon = True )
     spy( mtx1, epsilon )
-    pylab.title( legend[0] )
+    plt.title( legend[0] )
 
-    pylab.axes( [0.54, 0.08, 0.42, 0.42], frameon = True )
+    plt.axes( [0.54, 0.08, 0.42, 0.42], frameon = True )
     spy( mtx2, epsilon )
-    pylab.title( legend[1] )
+    plt.title( legend[1] )
 
-    pylab.show()
+    plt.show()
 
 ##
 # 02.05.2006, c
@@ -153,8 +151,8 @@ def font_size( size ):
 ##
 # 28.08.2007, c
 def iplot( *args, **kwargs ):
-    pylab.ion()
-    pylab.plot( *args, **kwargs )
-    pylab.draw()
-    pylab.ioff()
+    plt.ion()
+    plt.plot( *args, **kwargs )
+    plt.draw()
+    plt.ioff()
     pause()

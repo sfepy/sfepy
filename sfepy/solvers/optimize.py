@@ -1,6 +1,5 @@
 from sfepy.base.base import *
 from sfepy.solvers.solvers import OptimizationSolver
-from sfepy.base.log import Log
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
@@ -181,6 +180,7 @@ class FMinSteepestDescent( OptimizationSolver ):
         time_stats = {'of' : tt_of, 'ofg': tt_ofg, 'check' : []}
 
         if conf.log:
+            from sfepy.base.log import Log
             log = Log.from_conf( conf, ([r'of'], [r'$||$ofg$||$'], [r'alpha']) )
         else:
             log = None

@@ -1,11 +1,15 @@
 from base import *
 from sfepy.base.tasks import Process, Pipe
-from sfepy.base.plotutils import pylab
 
-if pylab:
+try:
     import gobject
+    import matplotlib as mpl
+    mpl.use('GTKAgg')
+    import matplotlib.pyplot as plt
     from matplotlib.ticker import LogLocator, AutoLocator
-
+except:
+    plt = None
+    
 class ProcessPlotter( Struct ):
     output = Output('plotter:',
                     filename=os.path.join(sfepy_config_dir,'plotter.log'))
@@ -61,7 +65,7 @@ class ProcessPlotter( Struct ):
         if self.ii:
             self.output( 'processed %d commands' % self.ii )
         self.output( 'ended.' )
-        pylab.close( 'all' )
+        plt.close( 'all' )
 
     def poll_draw( self ):
 
@@ -113,7 +117,7 @@ class ProcessPlotter( Struct ):
         self.yaxes = yaxes
         self.n_gr = len( data_names )
 
-        self.fig = pylab.figure()
+        self.fig = plt.figure()
 
         self.ax = []
         for ig in range( self.n_gr ):
@@ -123,7 +127,7 @@ class ProcessPlotter( Struct ):
         self.gid = gobject.timeout_add( 1000, self.poll_draw() )
 
         self.output( '...done' )
-        pylab.show()
+        plt.show()
 
 def name_to_key( name, ii ):
     return name + (':%d' % ii)
@@ -172,11 +176,11 @@ class Log( Struct ):
         self.yaxes = get_default( yaxes, [''] * self.n_arg )
         self.aggregate = get_default( aggregate, 100 )
 
-        self.can_plot = (pylab is not None) and (Process is not None)
+        self.can_plot = (plt is not None) and (Process is not None)
 
         if self.is_plot and (not self.can_plot):
-            output( 'warning: log plot is disabled, install pylab (GTKAgg)' )
-            output( '         and multiprocessing' )
+            output('warning: log plot is disabled, install matplotlib (GTKAgg)')
+            output('         and multiprocessing')
     
     def __call__( self, *args, **kwargs ):
         finished = False

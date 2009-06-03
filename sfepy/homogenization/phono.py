@@ -1,4 +1,4 @@
-from sfepy.base.plotutils import pylab
+from sfepy.base.plotutils import plt
 
 from sfepy.base.base import *
 from sfepy.base.la import eig
@@ -218,9 +218,9 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     output( '%d of %d eigenmomenta zeroed (under %.2e)'\
             % (n_zeroed, n_eigs, tol) )
 ##     print valid
-##     import pylab
-##     pylab.plot( eigenmomenta )
-##     pylab.show()
+##     import plt
+##     plt.plot( eigenmomenta )
+##     plt.show()
 
     if unweighted:
         tt = []
@@ -399,10 +399,10 @@ def plot_eigs( fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
     resonances : red
     masked resonances: dotted red
     """
-    if pylab is None: return
+    if plt is None: return
     assert_( len( valid ) == len( freq_range ) )
 
-    fig = pylab.figure( fig_num )
+    fig = plt.figure( fig_num )
     if clear:
         fig.clf()
     if new_axes:
@@ -427,7 +427,7 @@ def plot_eigs( fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
         ax.set_ylim( plot_range )
 
     if show:
-        pylab.show()
+        plt.show()
     return fig 
 
 def plot_logs( fig_num, plot_rsc, plot_labels,
@@ -437,9 +437,9 @@ def plot_logs( fig_num, plot_rsc, plot_labels,
     """
     Plot logs of min/middle/max eigs of M.
     """
-    if pylab is None: return
+    if plt is None: return
 
-    fig = pylab.figure( fig_num )
+    fig = plt.figure( fig_num )
     if clear:
         fig.clf()
     if new_axes:
@@ -482,20 +482,20 @@ def plot_logs( fig_num, plot_rsc, plot_labels,
         ax.legend()
 
     if show:
-        pylab.show()
+        plt.show()
     return fig
     
 def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
                plot_range, show = False, clear = False, new_axes = False ):
     """ """
-    if pylab is None: return
+    if plt is None: return
 
     def draw_rect( ax, x, y, rsc ):
         ax.fill( nm.asarray( x )[[0,1,1,0]],
                  nm.asarray( y )[[0,0,1,1]],
                  **rsc )
 
-    fig = pylab.figure( fig_num )
+    fig = plt.figure( fig_num )
     if clear:
         fig.clf()
     if new_axes:
@@ -548,7 +548,7 @@ def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
         ax.set_ylim( plot_range )
 
     if show:
-        pylab.show()
+        plt.show()
     return fig
 
 def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,

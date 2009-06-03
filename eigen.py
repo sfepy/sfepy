@@ -15,7 +15,7 @@ from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver
-from sfepy.base.plotutils import pylab
+from sfepy.base.plotutils import plt
 
 def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
     def save_phono_correctors( state, problem, ir, ic ):
@@ -236,7 +236,7 @@ class AcousticBandGapsApp( SimpleApp ):
                 plot_opts =  bg.opts.plot_options
                 plot_labels =  bg.opts.plot_labels
                 
-                pylab.rcParams.update( plot_rsc['params'] )
+                plt.rcParams.update( plot_rsc['params'] )
 
                 fig = plot_gaps( 1, plot_rsc, bg.gaps, bg.kinds,
                                  bg.freq_range_margins, plot_range,
@@ -274,7 +274,7 @@ class AcousticBandGapsApp( SimpleApp ):
             if options.plot:
                 plot_rsc = bg.opts.plot_rsc
                 plot_opts =  bg.opts.plot_options
-                pylab.rcParams.update( plot_rsc['params'] )
+                plt.rcParams.update( plot_rsc['params'] )
 
                 aux = transform_plot_data( pas,
                                            bg.opts.plot_transform_angle,
@@ -376,9 +376,9 @@ class AcousticBandGapsApp( SimpleApp ):
         else:
             raise NotImplementedError
 
-##     from sfepy.base.plotutils import spy, pylab
+##     from sfepy.base.plotutils import spy, plt
 ##     spy( mtx_b, eps = 1e-12 )
-##     pylab.show()
+##     plt.show()
 ##     mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
 ##     mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
 ##     pause()
@@ -590,8 +590,8 @@ def main():
 
     options, args = parser.parse_args()
     if options.plot:
-        if pylab is None:
-            output( 'pylab cannot be imported, ignoring option -p!' )
+        if plt is None:
+            output( 'matplotlib.pyplot cannot be imported, ignoring option -p!' )
             options.plot = False
         elif options.analyze_dispersion == False:
             options.detect_band_gaps = True

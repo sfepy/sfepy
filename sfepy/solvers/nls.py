@@ -1,6 +1,5 @@
 from sfepy.base.base import *
 from sfepy.solvers.solvers import NonlinearSolver
-import sfepy.base.plotutils as plu
 
 def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
     """Verify the correctness of the tangent matrix as computed by fun_grad()
@@ -44,6 +43,7 @@ def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
     tt = time.clock()
     print mtx_a, '.. analytical'
     print mtx_d, '.. difference'
+    import sfepy.base.plotutils as plu
     plu.plot_matrix_diff( mtx_d, mtx_a, delta, ['difference', 'analytical'],
                         conf.check )
 
@@ -135,6 +135,7 @@ class Newton( NonlinearSolver ):
         """setting conf.problem == 'linear' means 1 iteration and no rezidual
         check!
         """
+        import sfepy.base.plotutils as plu
         conf = get_default( conf, self.conf )
         fun = get_default( fun, self.fun )
         fun_grad = get_default( fun_grad, self.fun_grad )

@@ -1,7 +1,6 @@
 from sfepy.base.base import *
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test
-import sfepy.base.plotutils as plu
 
 ##
 # 26.07.2007, c
@@ -177,6 +176,8 @@ class Oseen( NonlinearSolver ):
                   lin_solver = None, status = None, problem = None ):
         """Oseen solver is problem-specific - it requires a ProblemDefinition
         instance."""
+        import sfepy.base.plotutils as plu
+
         conf = get_default( conf, self.conf )
         fun = get_default( fun, self.fun )
         fun_grad = get_default( fun_grad, self.fun_grad )

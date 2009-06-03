@@ -185,8 +185,8 @@ class SchroedingerApp( SimpleApp ):
 
         if options.dft:
             if options.plot:
-                from sfepy.base.plotutils import pylab
-                options.plot = pylab is not None
+                from sfepy.base.plotutils import plt
+                options.plot = plt is not None
 
             evp = self.solve_eigen_problem_n()
         else:
@@ -498,7 +498,7 @@ class SchroedingerApp( SimpleApp ):
             print eigs
 ##         import sfepy.base.plotutils as plu
 ##         plu.spy( mtx_b, eps = 1e-12 )
-##         plu.pylab.show()
+##         plu.plt.show()
 ##         pause()
 
         mtx_phi = self.make_full( mtx_s_phi )
