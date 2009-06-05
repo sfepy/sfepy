@@ -114,3 +114,12 @@ class RayProbe(Probe):
             pars = nm.concatenate((-pars0[::-1], pars))
             points = nm.concatenate((points0[::-1], points))
         return pars, points
+
+class IntegralProbe(Struct):
+    """Evaluate integral expressions."""
+    def __init__(self, name, problem, expressions, labels):
+        Struct.__init__(self, name=name, problem=problem,
+                        expressions=expressions, labels=labels)
+
+    def __call__(self, ip, state=None, **kwargs):
+        return self.problem.evaluate(self.expressions[ip], state, **kwargs)

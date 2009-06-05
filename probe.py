@@ -54,10 +54,11 @@ def main():
         parser.print_help(),
         return
     
+    output.prefix = 'probe:'
+
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file( filename_input, required, other )
     opts = conf.options
-    output.prefix = get_default_attr( opts, 'output_prefix', 'probe:' )
 
     if options.auto_dir:
         output_dir = get_default_attr( opts, 'output_dir', '.' )
@@ -76,7 +77,7 @@ def main():
     gen_probes = getattr(conf.funmod, conf.options.gen_probes)
     probe_hook = getattr(conf.funmod, conf.options.probe_hook)
     
-    probes, labels = gen_probes(problem.domain.mesh)
+    probes, labels = gen_probes(problem)
 
     if options.output_filename_trunk is None:
 	    options.output_filename_trunk = problem.ofn_trunk
@@ -91,9 +92,10 @@ def main():
         output(ip, probe.name)
         fig = probe_hook(data, probe, labels[ip], problem)
 
-        filename = filename_template % ip
-        fig.savefig(filename)
-        output('->', os.path.normpath(filename))
+        if fig is not None:
+            filename = filename_template % ip
+            fig.savefig(filename)
+            output('->', os.path.normpath(filename))
 
 if __name__ == '__main__':
     main()
