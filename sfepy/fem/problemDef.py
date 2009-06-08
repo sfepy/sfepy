@@ -568,10 +568,10 @@ class ProblemDefinition( Struct ):
     ##
     # c: 04.04.2008, r: 04.04.2008
     def is_linear( self ):
-        nls_conf = get_default( None, self.nls_conf,
-                              'you must set nonlinear solver!' )
-
-        if nls_conf.problem == 'linear':
+        nls_conf = get_default(None, self.nls_conf,
+                               'you must set nonlinear solver!')
+        aux = Solver.any_from_conf(nls_conf)
+        if aux.conf.problem == 'linear':
             return True
         else:
             return False
