@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.base.ioutils import get_print_info
+from sfepy.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
 
 shared = Struct()
@@ -68,6 +69,27 @@ def add_strain_rs( corrs_rs, strain, vu, dim, iel, out = None ):
             out += corrs_rs[ir,ic][vu].data * strain[iel,0,ii,0]
     return out
 
+def combine_scalar_grad(corrs, grad, vn, ii, shift_coors=None):
+    """
+    $\eta_k \partial_k^x p$
+    or
+    $(y_k + \eta_k) \partial_k^x p$
+    """
+    dim = grad.shape[2]
+    
+    if shift_coors is None:
+        out = corrs[0][vn].data * grad[ii,0,0,0]
+        for ir in range(1, dim):
+            out += corrs[ir][vn].data * grad[ii,0,ir,0]
+
+    else:        
+        out = (shift_coors[:,0] + corrs[0][vn].data) * grad[ii,0,0,0]
+        for ir in range(1, dim):
+            out += (shift_coors[:,ir] + corrs[ir][vn].data) * grad[ii,0,ir,0]
+
+    return out
+
+
 def compute_u_corr_steady( corrs_rs, strain, corrs_pressure, pressure,
                            vu, dim, iel ):
     """
@@ -118,6 +140,8 @@ def compute_u_from_macro(strain, coor, iel, centre=None):
     
     e_{ij}^x(\ub(t))\,(y_j - y_j^c)
     """
+    n_nod, dim = coor.shape
+
     if centre is None:
         centre = nm.zeros((dim,), dtype=nm.float64)
 
@@ -133,8 +157,10 @@ def compute_p_from_macro(p_grad, coor, iel, centre=None):
     """
     Macro-induced pressure.
     
-    \partial_j^xp(t)\,(y_j - y_j^c)
+    \partial_j^x p(t)\,(y_j - y_j^c)
     """
+    n_nod, dim = coor.shape
+
     if centre is None:
         centre = nm.zeros((dim,), dtype=nm.float64)
 
@@ -156,9 +182,9 @@ def recover_bones( problem, micro_problem, region, eps0,
 
     dim = problem.domain.mesh.dim
 
-    vu, vp = var_names
+    vu, vp, vn, vpp1, vppp1 = var_names
     vdp = 'd' + vp
-
+    
     micro_u = micro_problem.variables[vu]
     micro_coor = micro_u.field.get_coor()
 
@@ -168,6 +194,8 @@ def recover_bones( problem, micro_problem, region, eps0,
     nodes_yc = micro_problem.domain.regions['Yc'].all_vertices
 
     to_output = micro_problem.variables.state_to_output
+
+    micro_problem.update_materials()
 
     join = os.path.join
     aux = max(problem.domain.shape.n_gr, 2)
@@ -189,9 +217,9 @@ def recover_bones( problem, micro_problem, region, eps0,
 
         u_mic = compute_u_from_macro(strain, micro_coor, ii ) + u1
 
-        ps = corrs_presure[vp].data * pressure
+        ps = corrs_pressure[vp].data * pressure
 
-        pt = convolve_field_scalar(corrs_pressure[vdp], pressures, ii, ts)
+        pt = convolve_field_scalar(corrs_time_pressure[vdp], pressures, ii, ts)
         pt += convolve_field_sym_tensor(corrs_time_rs, dstrains, vdp,
                                         dim, ii, ts)
 ##     print us
@@ -201,30 +229,50 @@ def recover_bones( problem, micro_problem, region, eps0,
 
         p_hat = ps  + pt
 
-        p1 = corrs_permeability[0] * p_grad[0]
-        for ir in range(1, dim):
-            p1 += corrs_permeability[ir] * p_grad[ir]
-        
+        # \eta_k \partial_k^x p
+        p1 = combine_scalar_grad(corrs_permeability, p_grad, vn, ii)
 
         p_hat_e = micro_p.extend_data(p_hat[:,nm.newaxis], micro_n_nod, val=0.0)
         p_mic = compute_p_from_macro(p_grad, micro_coor, ii) + p_hat_e / eps0
         p_mic = p_hat_e / eps0
-        p_mic[nodes_yc] = p1
+        p_mic[nodes_yc] = p1[:,nm.newaxis]
         
 ##         print u_mic
 ##         print p_mic
-    
+
+        # (y_k + \eta_k) \partial_k^x p
+        p_aux = combine_scalar_grad(corrs_permeability, p_grad, vn, ii,
+                                    shift_coors=micro_coor[nodes_yc])
+
+        meval = micro_problem.evaluate
+
+        dvel_m1 = meval('de_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
+                        **{vppp1 : p_aux})
+
+        dvel_m2 = meval('de_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
+                        **{vpp1 : p_hat}) * eps0
+        
         out = {}
         out.update( to_output( u_mic, var_info = {vu : (True, vu)},
                                extend = True ) )
-        out[vp] = Struct( name = 'output_data',
-                          mode = 'vertex', data = p_mic,
-                          var_name = vp, dofs = micro_p.dofs )
+        out[vp] = Struct(name = 'output_data',
+                         mode = 'vertex', data = p_mic,
+                         var_name = vp, dofs = micro_p.dofs)
+
+        aux = extend_cell_data(dvel_m1, micro_problem.domain, 'Yc')
+        out['dvel_m1'] = Struct(name = 'output_data',
+                                mode = 'cell', data = aux,
+                                dofs = None)
+
+        aux = extend_cell_data(dvel_m2, micro_problem.domain, 'Ym')
+        out['dvel_m2'] = Struct(name = 'output_data',
+                                mode = 'cell', data = aux,
+                                dofs = None)
 
         if naming_scheme == 'step_iel':
-            suffix = '.'.join( (ts.suffix % ts.step, format % iel) )
+            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
         else:
-            suffix = '.'.join( (format % iel, ts.suffix % ts.step) )
+            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
         micro_name = micro_problem.get_output_name( suffix = suffix )
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
