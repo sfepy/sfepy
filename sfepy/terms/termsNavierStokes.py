@@ -243,6 +243,38 @@ class GradQTerm( Term ):
             status = self.function( out, vec, 0, vg, apc.econn, chunk )
             yield out, chunk, status
 
+class GradETerm( Term ):
+    r""":description: Gradient term (weak form) in averaged in elements.
+    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \nabla p /
+    \int_{T_K} 1$ or $\int_{T_K} \nabla \ul{w} /
+    \int_{T_K} 1$
+    """
+    name = 'de_grad'
+    arg_types = ('state',)
+    geometry = [(Volume, 'state')]
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.de_grad )
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        state, = self.get_args( **kwargs )
+        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+
+        vdim = ap.dim[0]
+        
+        if diff_var is None:
+            shape = (chunk_size, 1, dim, vdim )
+            mode = 0
+        else:
+            raise StopIteration
+
+        vec = state()
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, vec, 0, vg, ap.econn, chunk )
+            out1 = out / vg.variable( 2 )[chunk]
+            yield out1, chunk, status
+
 ##
 # 26.07.2007, c
 class GradDivStabilizationTerm( Term ):

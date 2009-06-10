@@ -98,6 +98,10 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
 int32 dq_grad( FMField *out, FMField *state, int32 offset,
 	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP );
 
+int32 de_grad( FMField *out, FMField *state, int32 offset,
+	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP,
+	       int32 *elList, int32 elList_nRow );
+
 int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );

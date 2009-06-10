@@ -70,6 +70,43 @@ int32 dq_grad( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
+#define __FUNC__ "de_grad"
+int32 de_grad( FMField *out, FMField *state, int32 offset,
+	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP,
+	       int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *st = 0, *out_qp = 0;
+
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &st, 1, 1, nEP, out->nCol );
+  fmf_createAlloc( &out_qp, 1, nQP, dim, out->nCol );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+
+    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    fmf_mulAB_n1( out_qp, vg->bfGM, st );
+    fmf_sumLevelsMulF( out, out_qp, vg->det->val );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &out_qp );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_div_vector"
 /*!
   @par Revision history:
