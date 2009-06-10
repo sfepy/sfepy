@@ -143,7 +143,7 @@ class PermeabilityRTerm( Term ):
 
 class DiffusionVelocityTerm( Term ):
     r""":description: Diffusion velocity averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} K_{ij} \nabla_j r
+    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} -K_{ij} \nabla_j r
     / \int_{T_K} 1$
     """
     name = 'de_diffusion_velocity'
