@@ -228,7 +228,7 @@ class GradQTerm( Term ):
         Term.__init__( self, region, name, sign, terms.dq_grad )
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state = self.get_args( **kwargs )
+        state, = self.get_args( **kwargs )
         ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
@@ -240,7 +240,7 @@ class GradQTerm( Term ):
 
         vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, vg, apc.econn, chunk )
+            status = self.function( out, vec, 0, vg, ap.econn[chunk] )
             yield out, chunk, status
 
 class GradETerm( Term ):

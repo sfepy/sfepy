@@ -195,3 +195,32 @@ class Test( TestCommon ):
                     % (expr, val, ok2))
 
         return ok1 and ok2
+
+    def test_dq_de(self):
+        problem = self.problem
+
+        problem.conf.edit('variables', self.conf.get_raw('variables'))
+        problem.set_variables()
+
+        p = problem.create_state_vector()
+        p[:] = nm.arange(p.shape[0], dtype=p.dtype)
+
+        
+        val1 = problem.evaluate('de_grad.i1.Omega( p )', p)
+        self.report('de_grad: min, max:', val1.min(), val1.max())
+
+        # Works with one group only, which is the case here.
+        ap, vg = problem.variables['p'].get_approximation(('i1', 'Omega', 0))
+        aux1 = problem.evaluate('dq_grad.i1.Omega( p )', p)
+        aux2 = nm.zeros((aux1.shape[0], 1) + aux1.shape[2:], dtype=aux1.dtype)
+        vg.integrate(aux2, aux1)
+        val2 = aux2 /  vg.variable(2)
+        self.report('dq_grad: min, max:', val2.min(), val2.max())
+
+        ok = self.compare_vectors( val1, val2,
+                                   label1 = 'de mode',
+                                   label2 = 'dq mode' )
+        if not ok:
+            self.report( 'variable %s: failed' % var_name )
+
+        return ok
