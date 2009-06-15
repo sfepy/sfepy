@@ -668,8 +668,7 @@ class VTKMeshIO( MeshIO ):
                     elif nr == (dim * dim):
                         aux = data[:,[0,3,4,6,1,5,7,8,2]]
                     else:
-                        aux = data[:,[0,1,2,3,4,5,6,7,8]]
-
+                        aux = data.reshape((data.shape[0], dim*dim))
                 else:
                     zz = nm.zeros( (data.shape[0], 1), dtype = nm.float64 );
                     if nr == sym:
