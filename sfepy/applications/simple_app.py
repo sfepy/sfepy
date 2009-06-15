@@ -40,7 +40,10 @@ class SimpleApp( Application ):
         Application.__init__( self, conf, options, output_prefix )
         self.setup_options()
 
-        self.problem = ProblemDefinition.from_conf( conf, **kwargs )
+        is_vars = hasattr(options, 'solve_not') and not options.solve_not
+        self.problem = ProblemDefinition.from_conf( conf,
+                                                    init_variables=is_vars,
+                                                    **kwargs )
 
         self.setup_output_info( self.problem, self.options )
 

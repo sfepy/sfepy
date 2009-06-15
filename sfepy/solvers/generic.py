@@ -177,7 +177,9 @@ def solve_direct( conf, options, problem = None, step_hook = None,
                   post_process_hook = None ):
     """Generic (simple) problem solver."""
     if problem is None:
-	problem = ProblemDefinition.from_conf( conf )
+        is_vars = not options.solve_not
+	problem = ProblemDefinition.from_conf( conf,
+                                               init_variables=is_vars )
 	if options.output_filename_trunk:
 	    ofn_trunk = options.output_filename_trunk
 	    problem.ofn_trunk = ofn_trunk
@@ -202,7 +204,7 @@ def solve_direct( conf, options, problem = None, step_hook = None,
             is_extra_save = True
             break
     if is_extra_save:
-        save_only( conf, save_names )
+        save_only( conf, save_names, problem=problem )
 
     if options.solve_not:
         return None, None, None
