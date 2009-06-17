@@ -12,6 +12,8 @@ Cylinder mesh generator.
 help = {
     'filename' :
     'output file name [default: %default]',
+    'axis' :
+    'axis of the cylinder, one of x, y, z [default: %default]',
     'dims' :
     'dimensions of the cylinder: inner surface semi-axes a1, b1, outer'\
     ' surface semi-axes a2, b2, length [default: %default]',
@@ -37,6 +39,9 @@ def main():
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename",
                        default = 'out.vtk', help = help['filename'] )
+    parser.add_option( "-a", "--axis", metavar = 'axis',
+                       action = "store", dest = "axis",
+                       default = 'x', help = help['axis'] )
     parser.add_option( "-d", "--dims", metavar = 'dims',
                        action = "store", dest = "dims",
                        default = '[1.0, 1.0, 2.0, 2.0, 3.0]',
@@ -70,6 +75,7 @@ def main():
     print centre
 
     mesh = gen_cylinder_mesh(dims, shape, centre,
+                             axis=options.axis,
                              force_hollow=options.force_hollow,
                              is_open=options.is_open,
                              open_angle=options.open_angle,

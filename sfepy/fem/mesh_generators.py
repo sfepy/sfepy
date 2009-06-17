@@ -61,15 +61,18 @@ def gen_block_mesh(dims, shape, centre, name='block'):
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
     return mesh
 
-def gen_cylinder_mesh(dims, shape, centre, force_hollow=False,
+def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                       is_open=False, open_angle=0.0, non_uniform=False,
                       name='cylinder'):
-    """Generate a cylindrical mesh along the x axis. Its cross-section can be
+    """Generate a cylindrical mesh along an axis. Its cross-section can be
     ellipsoidal.
 
     Parameters
     ----------
 
+    axis: one of 'x', 'y', 'z'
+        The axis of the cylinder.
+        
     dims : array of 5 floats
         Dimensions of the cylinder: inner surface semi-axes a1, b1, outer
         surface semi-axes a2, b2, length.
@@ -198,6 +201,11 @@ def gen_cylinder_mesh(dims, shape, centre, force_hollow=False,
 
 ##     print n_nod, n_el, conn.max()
     assert_(n_nod == (conn.max() + 1))
+
+    if axis == 'z':
+        coors = coors[:,[1,2,0]]
+    elif axis == 'y':
+        coors = coors[:,[2,0,1]]
 
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
     return mesh
