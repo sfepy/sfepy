@@ -576,7 +576,7 @@ class VTKMeshIO( MeshIO ):
 
         aux = mesh.coors
         if dim == 2:
-            aux = nm.hstack( (aux, mesh.ngroups[:,nm.newaxis]) )
+            aux = nm.hstack((aux, nm.zeros((aux.shape[0], 1), dtype=aux.dtype)))
 
         format = self.get_vector_format( 3 ) + '\n'
         for row in aux:
@@ -598,11 +598,18 @@ class VTKMeshIO( MeshIO ):
         fd.write( '\nCELL_TYPES %d\n' % n_el )
         fd.write( ''.join( ['%d\n' % ii for ii in ct] ) )
 
-        if out is None: return
+        fd.write( '\nPOINT_DATA %d\n' % n_nod )
 
-        point_keys = [key for key, val in out.iteritems() if val.mode == 'vertex']
-        if len( point_keys ):
-            fd.write( '\nPOINT_DATA %d\n' % n_nod );
+        # node groups
+        fd.write( '\nSCALARS node_groups int 1\nLOOKUP_TABLE default\n' )
+        fd.write( ''.join( ['%d\n' % ii for ii in mesh.ngroups] ) )
+
+        if out is not None:
+            point_keys = [key for key, val in out.iteritems()
+                          if val.mode == 'vertex']
+        else:
+            point_keys = {}
+            
         for key in point_keys:
             val = out[key]
             nr, nc = val.data.shape
@@ -630,9 +637,19 @@ class VTKMeshIO( MeshIO ):
             else:
                 raise NotImplementedError, nc
 
-        cell_keys = [key for key, val in out.iteritems() if val.mode == 'cell']
-        if len( cell_keys ):
-            fd.write( '\nCELL_DATA %d\n' % n_el );
+        if out is not None:
+            cell_keys = [key for key, val in out.iteritems()
+                         if val.mode == 'cell']
+        else:
+            cell_keys = {}
+            
+        fd.write( '\nCELL_DATA %d\n' % n_el )
+
+        # cells - mat_id
+        fd.write( 'SCALARS mat_id int 1\nLOOKUP_TABLE default\n' )
+        aux = nm.hstack(mesh.mat_ids).tolist() 
+        fd.write( ''.join( ['%d\n' % ii for ii in aux] ) )
+
         for key in cell_keys:
             val = out[key]
             ne, aux, nr, nc = val.data.shape
@@ -1532,6 +1549,7 @@ class BDFMeshIO( MeshIO ):
         el = {'3_8' : [], '3_4' : [], '2_4' : [], '2_3' : []}
         nod = []
         cmd = ''
+        dim = 2
 
         conns_in = []
         descs = []
@@ -1562,6 +1580,7 @@ class BDFMeshIO( MeshIO ):
                 aux = [int(ii)-1 for ii in row[3:]]
                 aux.append( int(row[2]) )
                 el['3_4'].append( aux )
+                dim = 3
             elif row[0] == 'CQUAD4':
                 aux = [int(ii)-1 for ii in row[3:]]
                 aux.append( int(row[2]) )
@@ -1586,7 +1605,8 @@ class BDFMeshIO( MeshIO ):
                 aux.extend( [int(ii)-1 for ii in row[1:]] )
                 aux.append( aux2 )
                 el['3_8'].append( aux )
-
+                dim = 3
+                
         for elem in el.keys():
             if len(el[elem]) > 0:
                 conns_in.append( el[elem] )
@@ -1595,6 +1615,8 @@ class BDFMeshIO( MeshIO ):
         fd.close()
 
         nod = nm.array( nod, nm.float64 )
+        if dim == 2:
+            nod = nod[:,:2].copy()
         conns_in = nm.array( conns_in, nm.int32 )
         
         conns_in, mat_ids = sort_by_mat_id( conns_in )
