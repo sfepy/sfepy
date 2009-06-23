@@ -46,6 +46,20 @@ def add_text(obj, position, text, color=(0, 0, 0)):
                   z=position[2], color=color, width=0.02 * len(text))
     return t
 
+def get_position_counts(n_data, layout):
+    n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
+    n_row = int(nm.ceil(n_data / n_col))
+    n_col = int(n_col)
+    if layout == 'colrow':
+        n_row, n_col = n_col, n_row
+    elif layout == 'row':
+        n_row, n_col = 1, n_data
+    elif layout == 'col':
+        n_row, n_col = n_data, 1
+    else: # layout == 'rowcol':
+        pass
+    return n_row, n_col
+    
 class Viewer(Struct):
     def __init__(self, filename, output_dir='.', offscreen=False,
                  auto_screenshot=True):
@@ -72,10 +86,18 @@ class Viewer(Struct):
         pass
     
     def call_mlab(self, show=True, is_3d=False, rel_scaling=None,
-                  clamping=False):
+                  clamping=False, layout='rowcol', fig_filename='view.png'):
         """By default, plot all found data."""
         mlab.options.offscreen = self.offscreen
-        scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(600,800))
+        if layout == 'rowcol':
+            size = (800, 600)
+        elif layout == 'row':
+            size = (1000, 600)
+        elif layout == 'col':
+            size = (600, 1000)
+        else:
+            size = (600, 800)
+        scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=size)
 
         source = mlab.pipeline.open(self.filename)
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
@@ -97,9 +119,7 @@ class Viewer(Struct):
 
         names = p_names + c_names
         n_data = len(names)
-        n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
-        n_row = int(nm.ceil(n_data / n_col))
-        n_col = int(n_col)
+        n_row, n_col = get_position_counts(n_data, layout)
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
@@ -114,8 +134,8 @@ class Viewer(Struct):
             output(family, kind, name, position)
             if kind == 'scalars':
                 active = mlab.pipeline.set_active_attribute(source)
-                active.point_scalars_name = name
-#                setattr(active, '%s_%s_name' % (family, kind), name)
+#                active.point_scalars_name = name
+                setattr(active, '%s_%s_name' % (family, kind), name)
 
                 if is_3d:
                     scp = add_scalar_cut_plane(active,
@@ -177,8 +197,20 @@ class Viewer(Struct):
         else:
             mlab.view(0, 0)
 
+        scene.scene.camera.position = [-5.4866716106930751, 0.0566700543618055, 6.3572483432775275]
+        scene.scene.camera.focal_point = [0.25975237786769872, 1.3821513891220085, -1.4603137970055759e-05]
+        scene.scene.camera.view_angle = 30.0
+        scene.scene.camera.view_up = [0.33673638824741464, 0.8135851363886345, 0.47401247945341413]
+        scene.scene.camera.clipping_range = [6.4333569504480508, 11.509538470373471]
+        scene.scene.camera.compute_view_plane_normal()
+        scene.scene.render()
+
+
         if self.auto_screenshot:
-            scene.scene.save(os.path.join(self.output_dir, 'view.png'))
+            name = os.path.join(self.output_dir, fig_filename)
+            output('saving %s...' % name)
+            scene.scene.save(name)
+            output('...done')
 
         if show:
             mlab.show()

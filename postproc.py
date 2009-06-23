@@ -15,6 +15,12 @@ help = {
     ' [default: %default]',
     'clamping' :
     'glyph clamping mode',
+    'layout' :
+    'layout for multi-field plots' \
+    ' [default: %default]',
+    'filename' :
+    'view image file name' \
+    ' [default: %default]',
 }
 
 def main():
@@ -28,6 +34,12 @@ def main():
     parser.add_option("--clamping",
                       action="store_true", dest="clamping",
                       default=False, help=help['clamping'])
+    parser.add_option("--layout",
+                      action="store", dest="layout",
+                      default='rowcol', help=help['layout'])
+    parser.add_option("-o",
+                      action="store", dest="filename",
+                      default='view.png', help=help['filename'])
     options, args = parser.parse_args()
 
     if (len(args) == 1):
@@ -38,7 +50,8 @@ def main():
 
     view = Viewer(filename)
     view(is_3d=options.is_3d, rel_scaling=options.rel_scaling,
-         clamping=options.clamping)
+         clamping=options.clamping, layout=options.layout,
+         fig_filename=options.filename)
 
 if __name__ == '__main__':
     main()
