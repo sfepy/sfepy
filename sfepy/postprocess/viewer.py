@@ -50,7 +50,7 @@ def get_position_counts(n_data, layout):
     n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
     n_row = int(nm.ceil(n_data / n_col))
     n_col = int(n_col)
-    if layout == 'colrow':
+    if layout == 'rowcol':
         n_row, n_col = n_col, n_row
     elif layout == 'row':
         n_row, n_col = 1, n_data
@@ -90,7 +90,7 @@ class Viewer(Struct):
                   filter_names=None):
         """By default, plot all found data."""
         if filter_names is None:
-            filter_names=[]
+            filter_names = ['node_groups', 'mat_id']
 
         mlab.options.offscreen = self.offscreen
         if layout == 'rowcol':
@@ -106,6 +106,7 @@ class Viewer(Struct):
         source = mlab.pipeline.open(self.filename)
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
         dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
+        view3d = abs(dx[2]) > (10.0 * nm.finfo(nm.float64).eps)
         
         point_scalar_names = sorted( source._point_scalars_list[:-1] )
         point_vector_names = sorted( source._point_vectors_list[:-1] )
@@ -122,16 +123,24 @@ class Viewer(Struct):
         c_names += [['cell', 'tensors', name] for name in cell_tensor_names]
 
         names = p_names + c_names
+        names = [ii for ii in names if ii[2] not in filter_names]
+        
         n_data = len(names)
         n_row, n_col = get_position_counts(n_data, layout)
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
 
-        for ii, (ir, ic) in enumerate(cycle((n_row, n_col))):
+        if layout[:3] == 'col':
+            iterator = enumerate(cycle((n_col, n_row)))
+        else:
+            iterator = enumerate(cycle((n_row, n_col)))
+
+        for ii, (ir, ic) in iterator:
+            if layout[:3] == 'col':
+                ir, ic = ic, ir
             if ii == n_data: break
             family, kind, name = names[ii]
-            if name in filter_names: continue
 
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
             position[:2] -= bbox[:2]
@@ -198,7 +207,7 @@ class Viewer(Struct):
         scene.scene.camera.zoom(1.0)
 
         if view is None:
-            if is_3d:
+            if is_3d or view3d:
                 mlab.view(45, 45)
             else:
                 mlab.view(0, 0)
