@@ -85,9 +85,13 @@ class Viewer(Struct):
     def call_empty(self, *args, **kwargs):
         pass
     
-    def call_mlab(self, show=True, is_3d=False, rel_scaling=None,
-                  clamping=False, layout='rowcol', fig_filename='view.png'):
+    def call_mlab(self, show=True, is_3d=False, view=None, rel_scaling=None,
+                  clamping=False, layout='rowcol', fig_filename='view.png',
+                  filter_names=None):
         """By default, plot all found data."""
+        if filter_names is None:
+            filter_names=[]
+
         mlab.options.offscreen = self.offscreen
         if layout == 'rowcol':
             size = (800, 600)
@@ -127,7 +131,8 @@ class Viewer(Struct):
         for ii, (ir, ic) in enumerate(cycle((n_row, n_col))):
             if ii == n_data: break
             family, kind, name = names[ii]
-            
+            if name in filter_names: continue
+
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
             position[:2] -= bbox[:2]
             
@@ -192,19 +197,14 @@ class Viewer(Struct):
         scene.scene.reset_zoom()
         scene.scene.camera.zoom(1.0)
 
-        if is_3d:
-            mlab.view(45, 45)
+        if view is None:
+            if is_3d:
+                mlab.view(45, 45)
+            else:
+                mlab.view(0, 0)
         else:
-            mlab.view(0, 0)
-
-        scene.scene.camera.position = [-5.4866716106930751, 0.0566700543618055, 6.3572483432775275]
-        scene.scene.camera.focal_point = [0.25975237786769872, 1.3821513891220085, -1.4603137970055759e-05]
-        scene.scene.camera.view_angle = 30.0
-        scene.scene.camera.view_up = [0.33673638824741464, 0.8135851363886345, 0.47401247945341413]
-        scene.scene.camera.clipping_range = [6.4333569504480508, 11.509538470373471]
-        scene.scene.camera.compute_view_plane_normal()
-        scene.scene.render()
-
+            view = tuple(float(ii) for ii in view.split(','))
+            mlab.view(*view)
 
         if self.auto_screenshot:
             name = os.path.join(self.output_dir, fig_filename)
