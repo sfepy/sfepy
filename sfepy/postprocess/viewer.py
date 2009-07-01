@@ -77,7 +77,7 @@ class Viewer(Struct):
     def __init__(self, filename, output_dir='.', offscreen=False,
                  auto_screenshot=True):
         Struct.__init__(self,
-                        filename = filename,
+                        filename = os.path.realpath(filename),
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
