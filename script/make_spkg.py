@@ -5,6 +5,7 @@ import sfepy
 spkg_skeleton_dir = sys.argv[1]
 femhub_dir = sys.argv[2]
 make_dist = int(sys.argv[3])
+install = int(sys.argv[4])
 
 if make_dist:
     os.system('python setup.py sdist')
@@ -16,8 +17,8 @@ unpacked_name = os.path.join('dist', 'sfepy-%s' % version)
 release_name = unpacked_name + '.tar.gz'
 
 target_dir = os.path.join(spkg_skeleton_dir, 'src')
-spkg_name = os.path.basename(spkg_skeleton_dir) + '.spkg'
-femhub_target = os.path.join(femhub_dir, 'spkg/optional', spkg_name)
+spkg_name = os.path.basename(os.path.normpath(spkg_skeleton_dir)) + '.spkg'
+femhub_target = os.path.join(femhub_dir, 'spkg/standard', spkg_name)
 
 print version
 print major
@@ -41,3 +42,10 @@ try:
 except:
     pass
 os.rename(spkg_name, femhub_target)
+
+if install:
+    package_name = os.path.splitext(spkg_name)[0]
+    os.remove(os.path.join(femhub_dir, 'spkg/installed', package_name))
+    cmd = ' '.join([os.path.join(femhub_dir, 'spd'), '-i', package_name])
+    print cmd
+    os.system(cmd)
