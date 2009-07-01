@@ -61,6 +61,19 @@ def get_position_counts(n_data, layout):
     return n_row, n_col
     
 class Viewer(Struct):
+    """Class to automate visualization of various data using Mayavi. It can be
+    used via postproc.py or isfepy the most easily.
+
+    It can use any format that mlab.pipeline.open() handles, e.g. a VTK format.
+    After opening a data file, all data (point, cell, scalars, vectors,
+    tensors) are plotted in a grid layout.
+
+    Examples
+    --------
+    >>> view = Viewer('file.vtk')
+    >>> view() # view with default parameters
+    >>> view(layout='col') # use column layout
+    """
     def __init__(self, filename, output_dir='.', offscreen=False,
                  auto_screenshot=True):
         Struct.__init__(self,
@@ -85,10 +98,38 @@ class Viewer(Struct):
     def call_empty(self, *args, **kwargs):
         pass
     
-    def call_mlab(self, show=True, is_3d=False, view=None, rel_scaling=None,
-                  clamping=False, layout='rowcol', fig_filename='view.png',
-                  filter_names=None):
-        """By default, plot all found data."""
+    def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
+                  layout='rowcol', rel_scaling=None, clamping=False,
+                  fig_filename='view.png', filter_names=None):
+        """By default, all data (point, cell, scalars, vectors, tensors) are
+        plotted in a grid layout, except data named 'node_groups', 'mat_id' which
+        are usually not interesting.
+
+        Parameters
+        ----------
+        show : bool
+            Call mlab.show().
+        is_3d : bool
+            If True, use scalar cut planes instead of surface for certain
+            datasets. Also sets 3D view mode.
+        view : tuple
+            Azimuth, elevation angles as in mlab.view().
+        roll : float
+            Roll angle tuple as in mlab.roll().
+        layout : str
+            Grid layout for placing the datasets. Possible values are:
+            'row', 'col', 'rowcol', 'colrow'.
+        rel_scaling : float
+            Relative scaling of glyphs for vector datasets.
+        clamping : bool
+            Clamping for vector datasets.
+        fig_filename : str
+            File name for saving the resulting scene figure, if
+            self.auto_screenshot is True.
+        filter_names : list of strings
+            Omit the listed datasets. If None, it is initialized to
+            ['node_groups', 'mat_id']. Pass [] if you need no filtering.
+        """
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
 
@@ -212,8 +253,8 @@ class Viewer(Struct):
             else:
                 mlab.view(0, 0)
         else:
-            view = tuple(float(ii) for ii in view.split(','))
             mlab.view(*view)
+        mlab.roll(roll)
 
         if self.auto_screenshot:
             name = os.path.join(self.output_dir, fig_filename)

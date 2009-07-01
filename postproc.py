@@ -8,18 +8,22 @@ from sfepy.postprocess import Viewer
 usage = """%prog [options] filename"""
 
 help = {
+    'no_show' :
+    'do not call mlab.show()',
     'is_3d' :
     '3d plot mode',
     'view' :
     'camera view angles [default: if --3d is True: "45,45", else: "0,0"]',
+    'roll' :
+    'camera roll angle [default: %default]',
+    'layout' :
+    'layout for multi-field plots' \
+    ' [default: %default]',
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
     ' [default: %default]',
     'clamping' :
     'glyph clamping mode',
-    'layout' :
-    'layout for multi-field plots' \
-    ' [default: %default]',
     'filename' :
     'view image file name' \
     ' [default: %default]',
@@ -27,23 +31,34 @@ help = {
     'draw all data (normally, node_groups and mat_id are omitted)',
 }
 
+def parse_view(option, opt, value, parser):
+    val = tuple(float(ii) for ii in value.split(','))
+    setattr(parser.values, option.dest, val)
+
+
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
+    parser.add_option("--no-show",
+                      action="store_false", dest="show",
+                      default=True, help=help['no_show'])
     parser.add_option("--3d",
                       action="store_true", dest="is_3d",
                       default=False, help=help['is_3d'])
     parser.add_option("--view",
-                      action="store", dest="view",
-                      default=None, help=help['view'])
+                      action="callback", type='str', dest="view",
+                      callback=parse_view, help=help['view'])
+    parser.add_option("--roll",
+                      action="store", dest="roll", type='float',
+                      default=0.0, help=help['roll'])
+    parser.add_option("--layout",
+                      action="store", dest="layout",
+                      default='rowcol', help=help['layout'])
     parser.add_option("-s", "--scale-glyphs", type='float', metavar='float',
                       action="store", dest="rel_scaling",
                       default=0.05, help=help['rel_scaling'])
     parser.add_option("--clamping",
                       action="store_true", dest="clamping",
                       default=False, help=help['clamping'])
-    parser.add_option("--layout",
-                      action="store", dest="layout",
-                      default='rowcol', help=help['layout'])
     parser.add_option("-o",
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
@@ -63,10 +78,11 @@ def main():
     else:
         filter_names = []
 
-    view = Viewer(filename)
-    view(is_3d=options.is_3d, view=options.view,
-         rel_scaling=options.rel_scaling,
-         clamping=options.clamping, layout=options.layout,
+    view = Viewer(filename, offscreen=not options.show)
+    view(show=options.show,
+         is_3d=options.is_3d, view=options.view, roll=options.roll,
+         layout=options.layout, rel_scaling=options.rel_scaling,
+         clamping=options.clamping,
          fig_filename=options.filename, filter_names=filter_names)
 
 if __name__ == '__main__':
