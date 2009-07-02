@@ -983,9 +983,8 @@ class Approximations( Container ):
             iname, gtype, tregion_name, ap_name = geom_key
             ap = self[ap_name]
             integral = ap.integrals[iname]
-            geom_request = Struct( gtype = gtype, region = regions[tregion_name] )
-            geom = ap.describe_geometry( field, geom_request, integral,
-                                         self.coors )
+            geom = ap.describe_geometry( field, gtype, regions[tregion_name],
+                                         integral, self.coors )
             self.geometries[geom_key] = geometries[geom_key] = geom
             
     ##

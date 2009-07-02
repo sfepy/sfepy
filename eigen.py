@@ -360,7 +360,9 @@ class AcousticBandGapsApp( SimpleApp ):
 
         elif eig_problem == 'schur':
             # A = K + B^T D^{-1} B.
-            mtx = assemble_by_blocks( conf.equations, self.problem )
+            mtx = assemble_by_blocks( conf.equations, self.problem,
+                                      ebcs = conf.ebcs,
+                                      epbcs = conf.epbcs )
             problem.set_equations( conf.equations )
             problem.time_update()
 
