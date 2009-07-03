@@ -94,6 +94,20 @@ def setup_package():
     fd.write(VERSION)
     fd.close()
 
+    # Create version.h file.
+    filename_in = 'sfepy/fem/extmods/version.h.in'
+    filename_out = 'sfepy/fem/extmods/version.h'
+    fdi = open(filename_in, 'r')
+    fdo = open(filename_out, 'w')
+    for line in fdi:
+        if line.find('VERSION "0.0.0"') >= 0:
+            aux = line.split()
+            aux[2] = VERSION
+            line = ' '.join(aux) + '\n'
+        fdo.write(line)
+    fdi.close()
+    fdo.close()
+
     main_scripts = [
         'eigen.py',
         'extractor.py',

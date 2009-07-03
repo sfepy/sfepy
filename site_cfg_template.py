@@ -5,6 +5,10 @@
 # Tetgen executable path.
 tetgen_path = '/usr/bin/tetgen'
 
+# Operating system - one of 'posix', 'windows' or None for automatic
+# determination.
+system = None
+
 # 'lib' or 'lib64' depending on your architecture (32bit or 64bit)
 archlib = 'lib'
 

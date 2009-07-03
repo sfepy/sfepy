@@ -1,5 +1,5 @@
-#ifndef _TYPES_H_
-#define _TYPES_H_
+#ifndef _SFEPY_TYPES_H_
+#define _SFEPY_TYPES_H_
 
 #include <string.h>
 

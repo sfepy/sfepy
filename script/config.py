@@ -39,6 +39,10 @@ sys.path.append( '.' )
 import os
 import shutil
 
+msg_unknown_os = """could not determine operating system!
+try setting it in site_cfg.py manually, see site_cfg_template.py"""
+
+
 try:
     import site_cfg
 except:
@@ -70,6 +74,17 @@ class Config( object ):
         else:
             return "%d.%d" % tuple(sys.version_info[:2])
     
+    def system( self ):
+        if has_attr( site_cfg, 'system' ) and site_cfg.system is not None:
+            return site_cfg.system
+        else:
+            if os.name in ['posix']:
+                return 'posix'
+            elif os.name in ['nt']:
+                return 'windows'
+            else:
+                raise ValueError(msg_unknown_os)
+
     def archlib( self ):
         if has_attr( site_cfg, 'archlib' ):
             return site_cfg.archlib

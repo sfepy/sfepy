@@ -427,8 +427,10 @@ int32 mem_freeGarbage()
   return( RET_Fail );
 }
 
+#if SFEPY_PLATFORM == 0
 #include <termios.h> /* tcgetattr(), tcsetattr() */
 #include <unistd.h> /* read() */
+#endif
 
 #undef __FUNC__
 #define __FUNC__ "sys_getch"
@@ -439,13 +441,18 @@ int32 mem_freeGarbage()
 int sys_getch( void )
 {
   char ch = 0;
+#if SFEPY_PLATFORM == 0
   if (read (STDERR_FILENO, &ch, 1) < 0) {
     return( RET_Fail );
   }
+#endif
   return( ch );
 }
 
+#if SFEPY_PLATFORM == 0
 static struct termios term;
+#endif
+
 #undef __FUNC__
 #define __FUNC__ "sys_keyboardEnableRaw"
 /*!
@@ -456,6 +463,7 @@ static struct termios term;
 */
 void sys_keyboardEnableRaw()
 {
+#if SFEPY_PLATFORM == 0
   // set to non canonical mode, echo off, ignore signals
   struct termios current;
   // save current terminal settings
@@ -467,6 +475,7 @@ void sys_keyboardEnableRaw()
   current.c_cc[VMIN] = 1;
   current.c_cc[VTIME] = 0;
   tcsetattr (STDERR_FILENO, TCSAFLUSH, &current);
+#endif
 }
 
 #undef __FUNC__
@@ -477,8 +486,10 @@ void sys_keyboardEnableRaw()
 */
 void sys_keyboardDisableRaw()
 {
+#if SFEPY_PLATFORM == 0
   // Restore old terminal settings
   tcsetattr (STDERR_FILENO, TCSAFLUSH, &term);
+#endif
 }
 
 #undef __FUNC__

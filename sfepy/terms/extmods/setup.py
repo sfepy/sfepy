@@ -5,12 +5,20 @@ def configuration(parent_package='', top_path=None):
     from numpy.distutils.misc_util import Configuration
     import os.path as op
 
+    import sys;
+    if 'script' not in sys.path:
+        sys.path.append('script')
+    from config import Config
+    system = Config().system()
+    os_flag = {'posix' : 0, 'windows' : 1}
+
     auto_dir = op.dirname(__file__)
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('DEBUGFMF', None)]
+               ('DEBUGFMF', None),
+               ('SFEPY_PLATFORM', os_flag[system])]
 
     fem_src = ['common_python.c', 'fmfield.c', 'geommech.c']
     fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
