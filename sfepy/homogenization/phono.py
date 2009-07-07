@@ -14,21 +14,21 @@ class AcousticMassTensor( Struct ):
 
     def __call__( self, freq ):
         """`eigenmomenta`, `eigs` should contain only valid resonances."""
-        ema = self.eigenmomenta 
+        ema = self.eigenmomenta
         eigs = self.eigs
 
         dim = ema.shape[1]
         fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
 
-        de = (freq**2) - (eigs)
-        if not nm.isfinite( de ).all():
-            raise ValueError( 'frequency %e too close to resonance!' % freq )
+        num, denom = self.get_coefs(freq)
+        if not nm.isfinite(denom).all():
+            raise ValueError('frequency %e too close to resonance!' % freq)
 
         for ir in range( dim ):
             for ic in range( dim ):
                 if ir <= ic:
-                    val = nm.sum( ema[:,ir] * ema[:,ic] / de )
-                    fmass[ir,ic] += (freq**2) * val
+                    val = nm.sum((num / denom) * (ema[:,ir] * ema[:,ic]))
+                    fmass[ir,ic] += val
                 else:
                     fmass[ir,ic] = fmass[ic,ir]
 
@@ -38,6 +38,29 @@ class AcousticMassTensor( Struct ):
 
         return mtx_mass
 
+    def get_coefs(self, freq):
+        """Get frequency-dependent coefficients."""
+        f2 = freq*freq
+        de = f2 - self.eigs
+        return f2, de
+        
+class AcousticMassLiquidTensor(AcousticMassTensor):
+
+    def __init__(self, eigenmomenta, eigs, dv_info, gamma, eta):
+        Struct.__init__(self, eigenmomenta = eigenmomenta,
+                        eigs = eigs, dv_info = dv_info,
+                        gamma = gamma, eta = eta)
+
+    def get_coefs(self, freq):
+        """Get frequency-dependent coefficients."""
+        eigs = self.eigs
+
+        f2 = freq*freq
+        aux = (f2 - self.gamma * eigs)
+        num = f2 * aux
+        denom = aux*aux + f2*(self.eta*self.eta)*nm.power(eigs, 2.0)
+        return num, denom
+    
 class AppliedLoadTensor( Struct ):
 
     def __init__( self, eigenmomenta, ueigenmomenta, eigs, dv_info ):
@@ -352,25 +375,38 @@ def find_zero( f0, f1, callback, feps, zeps, mode ):
 
 def describe_gaps( gaps ):
     kinds = []
-    for ii, (gmin, gmax) in enumerate( gaps ):
-
-        if (gmin[0] == 2) and (gmax[0] == 2):
-            kind = ('p', 'propagation zone')
-        elif (gmin[0] == 1) and (gmax[0] == 2):
-            kind = ('w', 'full weak band gap')
-        elif (gmin[0] == 0) and (gmax[0] == 2):
-            kind = ('wp', 'weak band gap + propagation zone')
-        elif (gmin[0] == 1) and (gmax[0] == 1):
-            kind = ('s', 'full strong band gap (due to end of freq. range or'
-                    ' too large thresholds)')
-        elif (gmin[0] == 1) and (gmax[0] == 0):
-            kind = ('sw', 'strong band gap + weak band gap')
-        elif (gmin[0] == 0) and (gmax[0] == 0):
-            kind = ('swp', 'strong band gap + weak band gap + propagation zone')
+    for ii, gap in enumerate(gaps):
+        if isinstance(gap, list):
+            subkinds = []
+            for gmin, gmax in gap:
+                if (gmin[0] == 2) and (gmax[0] == 2):
+                    kind = ('p', 'propagation zone')
+                elif (gmin[0] == 1) and (gmax[0] == 1):
+                    kind = ('is', 'inner strong band gap')
+                elif (gmin[0] == 0) and (gmax[0] == 2):
+                    kind = ('iw', 'inner weak band gap')
+                subkinds.append(kind)
+            kinds.append(subkinds)
         else:
-            msg = 'impossible band gap combination: %d, %d' % (gmin, gmax)
-            raise ValueError( msg )
-        kinds.append( kind )
+            gmin, gmax = gap
+
+            if (gmin[0] == 2) and (gmax[0] == 2):
+                kind = ('p', 'propagation zone')
+            elif (gmin[0] == 1) and (gmax[0] == 2):
+                kind = ('w', 'full weak band gap')
+            elif (gmin[0] == 0) and (gmax[0] == 2):
+                kind = ('wp', 'weak band gap + propagation zone')
+            elif (gmin[0] == 1) and (gmax[0] == 1):
+                kind = ('s', 'full strong band gap (due to end of freq. range or'
+                        ' too large thresholds)')
+            elif (gmin[0] == 1) and (gmax[0] == 0):
+                kind = ('sw', 'strong band gap + weak band gap')
+            elif (gmin[0] == 0) and (gmax[0] == 0):
+                kind = ('swp', 'strong band gap + weak band gap + propagation zone')
+            else:
+                msg = 'impossible band gap combination: %d, %d' % (gmin, gmax)
+                raise ValueError( msg )
+            kinds.append( kind )
     return kinds
 
 def transform_plot_data( datas, plot_transform, funmod ):
@@ -484,16 +520,59 @@ def plot_logs( fig_num, plot_rsc, plot_labels,
     if show:
         plt.show()
     return fig
-    
-def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
-               plot_range, show = False, clear = False, new_axes = False ):
-    """ """
-    if plt is None: return
 
+
+def plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax, plot_range, plot_rsc):
     def draw_rect( ax, x, y, rsc ):
         ax.fill( nm.asarray( x )[[0,1,1,0]],
                  nm.asarray( y )[[0,0,1,1]],
                  **rsc )
+
+    # Colors.
+    strong = plot_rsc['strong_gap']
+    weak = plot_rsc['weak_gap']
+    propagation = plot_rsc['propagation']
+
+    if kind == 'p':
+        draw_rect( ax, (f0, f1), plot_range, propagation )
+        info = [(f0, f1)]
+    elif kind == 'w':
+        draw_rect( ax, (f0, f1), plot_range, weak )
+        info = [(f0, f1)]
+    elif kind == 'wp':
+        draw_rect( ax, (f0, gmin[1]), plot_range, weak )
+        draw_rect( ax, (gmin[1], f1), plot_range, propagation )
+        info = [(f0, gmin[1]), (gmin[1], f1)]
+    elif kind == 's':
+        draw_rect( ax, (f0, f1), plot_range, strong )
+        info = [(f0, f1)]
+    elif kind == 'sw':
+        draw_rect( ax, (f0, gmax[1]), plot_range, strong )
+        draw_rect( ax, (gmax[1], f1), plot_range, weak )
+        info = [(f0, gmax[1]), (gmax[1], f1)]
+    elif kind == 'swp':
+        draw_rect( ax, (f0, gmax[1]), plot_range, strong )
+        draw_rect( ax, (gmax[1], gmin[1]), plot_range, weak )
+        draw_rect( ax, (gmin[1], f1), plot_range, propagation )
+        info = [(f0, gmax[1]), (gmax[1], gmin[1]), (gmin[1], f1)]
+    elif kind == 'is':
+        draw_rect( ax, (gmin[1], gmax[1]), plot_range, strong )
+        info = [(gmin[1], gmax[1])]
+    elif kind == 'iw':
+        draw_rect( ax, (gmin[1], gmax[1]), plot_range, weak )
+        info = [(gmin[1], gmax[1])]
+    else:
+        output( 'impossible band gap combination:' )
+        output( gmin, gmax )
+        raise ValueError
+
+    output( ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1 )
+    output( ' -> %s\n    %s' %(kind_desc, info) )
+
+def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
+               plot_range, show = False, clear = False, new_axes = False ):
+    """ """
+    if plt is None: return
 
     fig = plt.figure( fig_num )
     if clear:
@@ -503,45 +582,19 @@ def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
     else:
         ax = fig.gca()
 
-    # Colors.
-    strong = plot_rsc['strong_gap']
-    weak = plot_rsc['weak_gap']
-    propagation = plot_rsc['propagation']
-
     for ii in xrange( len( freq_range ) - 1 ):
         f0, f1 = freq_range[[ii, ii+1]]
-        gmin, gmax = gaps[ii]
-        kind, kind_desc = kinds[ii]
-
-        if kind == 'p':
-            draw_rect( ax, (f0, f1), plot_range, propagation )
-            info = [(f0, f1)]
-        elif kind == 'w':
-            draw_rect( ax, (f0, f1), plot_range, weak )
-            info = [(f0, f1)]
-        elif kind == 'wp':
-            draw_rect( ax, (f0, gmin[1]), plot_range, weak )
-            draw_rect( ax, (gmin[1], f1), plot_range, propagation )
-            info = [(f0, gmin[1]), (gmin[1], f1)]
-        elif kind == 's':
-            draw_rect( ax, (f0, f1), plot_range, strong )
-            info = [(f0, f1)]
-        elif kind == 'sw':
-            draw_rect( ax, (f0, gmax[1]), plot_range, strong )
-            draw_rect( ax, (gmax[1], f1), plot_range, weak )
-            info = [(f0, gmax[1]), (gmax[1], f1)]
-        elif kind == 'swp':
-            draw_rect( ax, (f0, gmax[1]), plot_range, strong )
-            draw_rect( ax, (gmax[1], gmin[1]), plot_range, weak )
-            draw_rect( ax, (gmin[1], f1), plot_range, propagation )
-            info = [(f0, gmax[1]), (gmax[1], gmin[1]), (gmin[1], f1)]
+        gap = gaps[ii]
+        if isinstance(gap, list):
+            for ig, (gmin, gmax) in enumerate(gap):
+                kind, kind_desc = kinds[ii][ig]
+                plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax,
+                         plot_range, plot_rsc)
         else:
-            output( 'impossible band gap combination:' )
-            output( gmin, gmax )
-            raise ValueError
-
-        output( ii, gmin[0], gmax[0], '%.8f' % f0, '%.8f' % f1 )
-        output( ' -> %s\n    %s' %(kind_desc, info) )
+            gmin, gmax = gap
+            kind, kind_desc = kinds[ii]
+            plot_gap(ax, ii, f0, f1, kind, kind_desc, gmin, gmax,
+                     plot_range, plot_rsc)
 
     if new_axes:
         ax.set_xlim( [freq_range[0], freq_range[-1]] )
@@ -593,7 +646,7 @@ def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
     dv_info = compute_density_volume_info( pb, opts.volume,
                                            opts.region_to_material )
     output( 'average density:', dv_info.average_density )
-    
+
     if opts.fixed_eig_range is not None:
         mine, maxe = opts.fixed_eig_range
         ii = nm.where( (eigs > (mine**2.)) & (eigs < (maxe**2.)) )[0]
@@ -601,6 +654,7 @@ def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
         opts.eig_range = (ii[0], ii[-1]+1) # +1 as it is a slice.
     else:
         freq_range_initial = nm.sqrt( eigs[slice( *opts.eig_range )] )
+
     output( 'initial freq. range     : [%8.3f, %8.3f]'\
             % tuple( freq_range_initial[[0,-1]] ) )
 
@@ -637,8 +691,23 @@ def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
                         freq_range_margins = freq_range_margins )
 
     return dv_info, eigenmomenta, n_zeroed, valid, freq_info
+
+def split_chunks(indx):
+    """Split index vector to chunks of consecutive numbers."""
+    if not len(indx): return []
     
-def detect_band_gaps( pb, eigs, eig_vectors, opts, funmod,
+    delta = nm.ediff1d(indx, to_end=2)
+    ir = nm.where(delta > 1)[0]
+
+    chunks = []
+    ic0 = 0
+    for ic in ir:
+        chunk = indx[ic0:ic+1]
+        ic0 = ic + 1
+        chunks.append(chunk)
+    return chunks
+    
+def detect_band_gaps( pb, evp_kind, eigs, eig_vectors, opts, funmod,
                       christoffel = None ):
     """Detect band gaps given solution to eigenproblem (eigs,
     eig_vectors). Only valid resonance frequencies (e.i. those for which
@@ -661,7 +730,17 @@ def detect_band_gaps( pb, eigs, eig_vectors, opts, funmod,
     valid_eigenmomenta = eigenmomenta[valid,:]
     valid_eigs = eigs[valid]
 
-    mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
+    if evp_kind != 'simple_liquid':
+        mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
+    else:
+        mat_name = opts.region_to_material[opts.liquid_region]
+        mat = pb.materials[mat_name]
+        gamma = mat.get_data(opts.liquid_region, mat.igs[0], 'gamma')
+        eta = mat.get_data(opts.liquid_region, mat.igs[0], 'eta')
+
+        mass = AcousticMassLiquidTensor(valid_eigenmomenta, valid_eigs,
+                                        dv_info, gamma, eta)
+        
     fz_callback = get_callback( mass, opts.eigensolver,
                                 christoffel = christoffel, mode = 'find_zero' )
     trace_callback = get_callback( mass, opts.eigensolver,
@@ -703,47 +782,77 @@ def detect_band_gaps( pb, eigs, eig_vectors, opts, funmod,
         log0, log1 = log_mevp[0][0], log_mevp[0][-1]
         min_eig0 = log0[0]
         max_eig1 = log1[-1]
-        if min_eig0 > 0.0: # No gaps.
-            gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
-        elif max_eig1 < 0.0: # Full interval strong gap.
-            gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
-        else:
-            llog_freqs = list( log_freqs )
-            
-            # Insert fmin, fmax into log.
-            output( 'finding zero of the largest eig...' )
-            smax, fmax, vmax = find_zero( lf0, lf1, fz_callback,
-                                          opts.feps, opts.zeps, 1 )
-            im = nm.searchsorted( log_freqs, fmax )
-            llog_freqs.insert( im, fmax )
-            for ii, data in enumerate( trace_callback( fmax ) ):
-                log_mevp[ii].insert( im, data )
+        if evp_kind == 'simple_liquid':
+            mevp = nm.array(log_mevp, dtype=nm.float64).squeeze()
+            si = nm.where(mevp[:,0] < 0.0)[0]
+            li = nm.where(mevp[:,-1] < 0.0)[0]
+            wi = nm.setdiff1d(si, li)
 
-            output( '...done' )
-            if smax in [0, 2]:
-                output( 'finding zero of the smallest eig...' )
-                # having fmax instead of f0 does not work if feps is large.
-                smin, fmin, vmin = find_zero( lf0, lf1, fz_callback,
-                                              opts.feps, opts.zeps, 0 )
-                im = nm.searchsorted( log_freqs, fmin )
-                # +1 due to fmax already inserted before.
-                llog_freqs.insert( im+1, fmin )
-                for ii, data in enumerate( trace_callback( fmin ) ):
-                    log_mevp[ii].insert( im+1, data )
+            if si.shape[0] == 0: # No gaps.
+                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
+                gaps.append(gap)
+
+            elif li.shape[0] == mevp.shape[0]: # Full interval strong gap.
+                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
+                gaps.append(gap)
+
+            else:
+                subgaps = []
+                for chunk in split_chunks(li): # Strong gaps.
+                    i0, i1 = chunk[0], chunk[-1]
+                    fmin, fmax = log_freqs[i0], log_freqs[i1]
+                    gap = ([1, fmin, mevp[i0,-1]], [1, fmax, mevp[i1,-1]])
+                    subgaps.append(gap)
+                    
+                for chunk in split_chunks(wi): # Weak gaps.
+                    i0, i1 = chunk[0], chunk[-1]
+                    fmin, fmax = log_freqs[i0], log_freqs[i1]
+                    gap = ([0, fmin, mevp[i0,-1]], [2, fmax, mevp[i1,-1]])
+                    subgaps.append(gap)
+                gaps.append(subgaps)
+                
+        else:
+            if min_eig0 > 0.0: # No gaps.
+                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
+            elif max_eig1 < 0.0: # Full interval strong gap.
+                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
+            else:
+                llog_freqs = list( log_freqs )
+
+                # Insert fmin, fmax into log.
+                output( 'finding zero of the largest eig...' )
+                smax, fmax, vmax = find_zero( lf0, lf1, fz_callback,
+                                              opts.feps, opts.zeps, 1 )
+                im = nm.searchsorted( log_freqs, fmax )
+                llog_freqs.insert( im, fmax )
+                for ii, data in enumerate( trace_callback( fmax ) ):
+                    log_mevp[ii].insert( im, data )
 
                 output( '...done' )
-            elif smax == 1:
-                smin = 1 # both are negative everywhere.
-                fmin, vmin = fmax, vmax
+                if smax in [0, 2]:
+                    output( 'finding zero of the smallest eig...' )
+                    # having fmax instead of f0 does not work if feps is large.
+                    smin, fmin, vmin = find_zero( lf0, lf1, fz_callback,
+                                                  opts.feps, opts.zeps, 0 )
+                    im = nm.searchsorted( log_freqs, fmin )
+                    # +1 due to fmax already inserted before.
+                    llog_freqs.insert( im+1, fmin )
+                    for ii, data in enumerate( trace_callback( fmin ) ):
+                        log_mevp[ii].insert( im+1, data )
 
-            gap = ([smin, fmin, vmin], [smax, fmax, vmax])
+                    output( '...done' )
+                elif smax == 1:
+                    smin = 1 # both are negative everywhere.
+                    fmin, vmin = fmax, vmax
 
-            log_freqs = nm.array( llog_freqs )
+                gap = ([smin, fmin, vmin], [smax, fmax, vmax])
 
-        output( gap[0] )
-        output( gap[1] )
-#        pause()
-        gaps.append( gap )
+                log_freqs = nm.array( llog_freqs )
+
+            output( gap[0] )
+            output( gap[1] )
+            #        pause()
+            gaps.append( gap )
 
         logs[0].append( log_freqs )
         for ii, data in enumerate( log_mevp ):

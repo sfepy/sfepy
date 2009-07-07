@@ -148,6 +148,12 @@ class AcousticBandGapsApp( SimpleApp ):
 
         volume = get( 'volume', None, 'missing "volume" in options!' )
 
+        if eig_problem == 'simple_liquid':
+            liquid_region = get('liquid_region', None,
+                                'missing "liquid_region" in options!')
+        else:
+            liquid_region = None
+
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
@@ -223,8 +229,8 @@ class AcousticBandGapsApp( SimpleApp ):
         self.fix_eig_range( evp.eigs.shape[0] )
 
         if options.detect_band_gaps:
-            bg = detect_band_gaps( self.problem, evp.eigs_rescaled,
-                                   evp.eig_vectors,
+            bg = detect_band_gaps( self.problem, evp.kind,
+                                   evp.eigs_rescaled, evp.eig_vectors,
                                    self.app_options, self.conf.funmod )
 
             if options.plot:
@@ -256,8 +262,8 @@ class AcousticBandGapsApp( SimpleApp ):
         elif options.analyze_dispersion:
             christoffel, iw_dir = self.compute_cat(ret_iw_dir=True)
 
-            bg = detect_band_gaps( self.problem, evp.eigs_rescaled,
-                                   evp.eig_vectors,
+            bg = detect_band_gaps( self.problem, evp.kind,
+                                   evp.eigs_rescaled, evp.eig_vectors,
                                    self.app_options, self.conf.funmod,
                                    christoffel = christoffel )
 
@@ -320,6 +326,9 @@ class AcousticBandGapsApp( SimpleApp ):
                 if fig_name is not None:
                     fig.savefig( fig_name )
 
+        else:
+            bg = None
+
         return evp, bg
 
     def fix_eig_range( self, n_eigs ):
@@ -345,7 +354,7 @@ class AcousticBandGapsApp( SimpleApp ):
         conf = self.conf
         
         eig_problem = self.app_options.eig_problem
-        if eig_problem == 'simple':
+        if eig_problem in ['simple', 'simple_liquid']:
             problem.set_equations( conf.equations )
             problem.time_update()
 
@@ -393,8 +402,9 @@ class AcousticBandGapsApp( SimpleApp ):
         if isinstance( mtx_m, sc.sparse.spmatrix ):
             mtx_m = mtx_m.toarray()
 
-            eigs, mtx_s_phi = eig( mtx_a, mtx_m, return_time = tt,
-                                        method = self.app_options.eigensolver )
+        eigs, mtx_s_phi = eig(mtx_a, mtx_m, return_time=tt,
+                              method=self.app_options.eigensolver)
+        eigs[eigs<0.0] = 0.0
         output( '...done in %.2f s' % tt[0] )
         output( 'original eigenfrequencies:' )        
         output( eigs )
@@ -421,7 +431,7 @@ class AcousticBandGapsApp( SimpleApp ):
                            dtype = nm.float64 )
 
         make_full = problem.variables.make_full_vec
-        if eig_problem == 'simple':
+        if eig_problem in ['simple', 'simple_liquid']:
             for ii in xrange( n_eigs ):
                 mtx_phi[:,ii] = make_full( mtx_s_phi[:,ii] )
             eig_vectors = mtx_phi
@@ -463,7 +473,8 @@ class AcousticBandGapsApp( SimpleApp ):
         eigs.tofile( fd, ' ' )
         fd.close()
 
-        evp = Struct( eigs = eigs, eigs_rescaled = eigs_rescaled,
+        evp = Struct( kind = eig_problem,
+                      eigs = eigs, eigs_rescaled = eigs_rescaled,
                       eig_vectors = eig_vectors )
         self.cached_evp = evp
 
