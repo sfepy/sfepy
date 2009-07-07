@@ -212,7 +212,7 @@ def compute_nodal_normals( nodes, region, field ):
     imap[nodes] = nm.arange( nodes.shape[0], dtype = nm.int32 )
     
     for ig, fis in region.fis.iteritems():
-        ap = field.aps[ig]
+        ap = field.aps.aps_per_group[ig]
         n_fa = fis.shape[0]
         n_fp = ap.efaces.shape[1]
         face_type = 's%d' % n_fp
@@ -223,7 +223,6 @@ def compute_nodal_normals( nodes, region, field ):
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
         mask[econn] += 1
-
         integral = Integral( name = 'i', kind = 's',
                              quad_name = 'custom',
                              mode = 'custom' )
@@ -1463,7 +1462,7 @@ class Variable( Struct ):
                     mesh = self.field.domain.mesh
                     nn = nm.zeros_like( mesh.coors )
                     nmax = region.all_vertices.shape[0]
-                    nn[nmaster[:nmax]] = normals[:nmax]
+                    nn[region.all_vertices] = normals[:nmax]
                     out = {'normals' : Struct( name = 'output_data',
                                                mode = 'vertex', data = nn )}
                     mesh.write( bc.filename, out = out, io = 'auto' )
