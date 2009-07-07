@@ -40,10 +40,11 @@ def add_glyphs(obj, position, bbox, rel_scaling=None,
     glyphs.actor.actor.position = position
     return glyphs
 
-def add_text(obj, position, text, color=(0, 0, 0)):
-
+def add_text(obj, position, text, width=None, color=(0, 0, 0)):
+    if width is None:
+        width = 0.02 * len(text)
     t = mlab.text(x=position[0], y=position[1], text=text,
-                  z=position[2], color=color, width=0.02 * len(text))
+                  z=position[2], color=color, width=width)
     return t
 
 def get_position_counts(n_data, layout):
@@ -100,6 +101,7 @@ class Viewer(Struct):
     
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', rel_scaling=None, clamping=False,
+                  rel_text_width=None,
                   fig_filename='view.png', filter_names=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
@@ -133,6 +135,9 @@ class Viewer(Struct):
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
 
+        if rel_text_width is None:
+            rel_text_width = 0.02
+
         mlab.options.offscreen = self.offscreen
         if layout == 'rowcol':
             size = (800, 600)
@@ -144,10 +149,13 @@ class Viewer(Struct):
             size = (600, 800)
         scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=size)
 
+        float_eps = nm.finfo(nm.float64).eps
+
         source = mlab.pipeline.open(self.filename)
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
         dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
-        view3d = abs(dx[2]) > (10.0 * nm.finfo(nm.float64).eps)
+        view3d = abs(dx[2]) > (10.0 * float_eps)
+        maxdx = dx.max()
         
         point_scalar_names = sorted( source._point_scalars_list[:-1] )
         point_vector_names = sorted( source._point_vectors_list[:-1] )
@@ -239,8 +247,9 @@ class Viewer(Struct):
             else:
                 raise ValueError('bad kind! (%s)' % kind)
 
-            position[2] = 0.5 * dx[2]
-            text = add_text(active, position, name)
+            if rel_text_width > (10 * float_eps):
+                position[2] = 0.5 * dx[2]
+                text = add_text(active, position, name, rel_text_width * maxdx)
 
             scene.scene.reset_zoom()
 

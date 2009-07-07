@@ -17,13 +17,15 @@ help = {
     'roll' :
     'camera roll angle [default: %default]',
     'layout' :
-    'layout for multi-field plots' \
+    'layout for multi-field plots, one of: rowcol, colrow, row, col' \
     ' [default: %default]',
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
     ' [default: %default]',
     'clamping' :
     'glyph clamping mode',
+    'rel_text_width' :
+    'relative text annotation width [default: %default]',
     'filename' :
     'view image file name' \
     ' [default: %default]',
@@ -44,22 +46,25 @@ def main():
     parser.add_option("--3d",
                       action="store_true", dest="is_3d",
                       default=False, help=help['is_3d'])
-    parser.add_option("--view",
-                      action="callback", type='str', dest="view",
+    parser.add_option("--view", type='str', metavar='angle,angle',
+                      action="callback", dest="view",
                       callback=parse_view, help=help['view'])
-    parser.add_option("--roll",
-                      action="store", dest="roll", type='float',
+    parser.add_option("--roll", type='float', metavar='angle',
+                      action="store", dest="roll",
                       default=0.0, help=help['roll'])
-    parser.add_option("--layout",
+    parser.add_option("--layout", metavar='layout',
                       action="store", dest="layout",
                       default='rowcol', help=help['layout'])
-    parser.add_option("-s", "--scale-glyphs", type='float', metavar='float',
+    parser.add_option("-s", "--scale-glyphs", type='float', metavar='scale',
                       action="store", dest="rel_scaling",
                       default=0.05, help=help['rel_scaling'])
     parser.add_option("--clamping",
                       action="store_true", dest="clamping",
                       default=False, help=help['clamping'])
-    parser.add_option("-o",
+    parser.add_option("--rel-text-width", type='float', metavar='width',
+                      action="store", dest="rel_text_width",
+                      default=0.02, help=help['rel_text_width'])
+    parser.add_option("-o", metavar='filename',
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
     parser.add_option("-a", "--all",
@@ -82,7 +87,7 @@ def main():
     view(show=options.show,
          is_3d=options.is_3d, view=options.view, roll=options.roll,
          layout=options.layout, rel_scaling=options.rel_scaling,
-         clamping=options.clamping,
+         clamping=options.clamping, rel_text_width=options.rel_text_width,
          fig_filename=options.filename, filter_names=filter_names)
 
 if __name__ == '__main__':
