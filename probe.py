@@ -28,6 +28,8 @@ help = {
     '"output_dir" option in input file options',
     'same_dir' :
     'store the probe figures in the directory of the results file',
+    'only_names' :
+    'probe only named data',
 }
 
 def main():
@@ -44,6 +46,9 @@ def main():
     parser.add_option("-f", "--format", metavar='format',
                       action="store", dest="output_format",
                       default="png", help=help['output_format'])
+    parser.add_option("--only-names", metavar='list of names',
+                      action="store", dest="only_names",
+                      default=None, help=help['only_names'])
 
     options, args = parser.parse_args()
 #    print options; pause()
@@ -53,6 +58,9 @@ def main():
     else:
         parser.print_help(),
         return
+
+    if options.only_names is not None:
+        options.only_names = options.only_names.split(',')
     
     output.prefix = 'probe:'
 
@@ -67,8 +75,16 @@ def main():
     output('results in: %s' % filename_results)
 
     io = MeshIO.any_from_filename(filename_results)
-    data = io.read_data(0)
-    output('loaded:', data.keys())
+    all_data = io.read_data(0)
+    output('loaded:', all_data.keys())
+
+    if options.only_names is None:
+        data = all_data
+    else:
+        data = {}
+        for key, val in all_data.iteritems():
+            if key in options.only_names:
+                data[key] = val
 
     problem = ProblemDefinition.from_conf(conf, options,
                                           init_equations=False,
