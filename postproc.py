@@ -31,6 +31,10 @@ help = {
     ' [default: %default]',
     'all' :
     'draw all data (normally, node_groups and mat_id are omitted)',
+    'list_names' :
+    'do not plot, only list all dataset names',
+    'only_names' :
+    'draw only named data',
 }
 
 def parse_view(option, opt, value, parser):
@@ -70,6 +74,12 @@ def main():
     parser.add_option("-a", "--all",
                       action="store_true", dest="all",
                       default=False, help=help['all'])
+    parser.add_option("--list-names",
+                      action="store_true", dest="list_names",
+                      default=False, help=help['list_names'])
+    parser.add_option("--only-names", metavar='list of names',
+                      action="store", dest="only_names",
+                      default=None, help=help['only_names'])
     options, args = parser.parse_args()
 
     if (len(args) == 1):
@@ -84,11 +94,21 @@ def main():
         filter_names = []
 
     view = Viewer(filename, offscreen=not options.show)
-    view(show=options.show,
-         is_3d=options.is_3d, view=options.view, roll=options.roll,
-         layout=options.layout, rel_scaling=options.rel_scaling,
-         clamping=options.clamping, rel_text_width=options.rel_text_width,
-         fig_filename=options.filename, filter_names=filter_names)
+
+    if options.list_names:
+        for line in view.get_data_names():
+            print line
+
+    else:
+        if options.only_names is not None:
+            options.only_names = options.only_names.split(',')
+
+        view(show=options.show,
+             is_3d=options.is_3d, view=options.view, roll=options.roll,
+             layout=options.layout, rel_scaling=options.rel_scaling,
+             clamping=options.clamping, rel_text_width=options.rel_text_width,
+             fig_filename=options.filename, filter_names=filter_names,
+             only_names=options.only_names)
 
 if __name__ == '__main__':
     main()

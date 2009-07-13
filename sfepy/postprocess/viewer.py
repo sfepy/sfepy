@@ -18,6 +18,11 @@ def add_scalar_cut_plane(obj, position, normal, opacity=1.0):
     scp.implicit_plane.normal = normal
 
     return scp
+
+def add_iso_surface(obj, position, contours=10, opacity=1.0):
+    obj = mlab.pipeline.iso_surface(obj, contours=contours, opacity=opacity)
+    obj.actor.actor.position = position
+    return obj
     
 def add_glyphs(obj, position, bbox, rel_scaling=None,
                scale_factor='auto', clamping=False, color=None):
@@ -90,6 +95,31 @@ class Viewer(Struct):
         else:
             insert_as_static_method(self.__class__, '__call__', self.call_mlab)
             
+    def get_data_names(self, source=None, detailed=False):
+        if source is None:
+            mlab.options.offscreen = self.offscreen
+            scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(0, 0))
+            source = mlab.pipeline.open(self.filename)
+        point_scalar_names = sorted( source._point_scalars_list[:-1] )
+        point_vector_names = sorted( source._point_vectors_list[:-1] )
+        point_tensor_names = sorted( source._point_tensors_list[:-1] )
+        cell_scalar_names = sorted( source._cell_scalars_list[:-1] )
+        cell_vector_names = sorted( source._cell_vectors_list[:-1] )
+        cell_tensor_names = sorted( source._cell_tensors_list[:-1] )
+
+        p_names = [['point', 'scalars', name] for name in point_scalar_names]
+        p_names += [['point', 'vectors', name] for name in point_vector_names]
+        p_names += [['point', 'tensors', name] for name in point_tensor_names]
+        c_names = [['cell', 'scalars', name] for name in cell_scalar_names]
+        c_names += [['cell', 'vectors', name] for name in cell_vector_names]
+        c_names += [['cell', 'tensors', name] for name in cell_tensor_names]
+
+        if detailed:
+            return p_names, c_names
+        else:
+            return p_names + c_names
+
+
     def __call__(self, *args, **kwargs):
         """
         This is either call_mlab() or call_empty().
@@ -102,7 +132,7 @@ class Viewer(Struct):
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', rel_scaling=None, clamping=False,
                   rel_text_width=None,
-                  fig_filename='view.png', filter_names=None):
+                  fig_filename='view.png', filter_names=None, only_names=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -131,6 +161,9 @@ class Viewer(Struct):
         filter_names : list of strings
             Omit the listed datasets. If None, it is initialized to
             ['node_groups', 'mat_id']. Pass [] if you need no filtering.
+        only_names : list of strings
+            Draw only the listed datasets. If None, it is initialized all names
+            besides those in filter_names.
         """
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
@@ -155,27 +188,23 @@ class Viewer(Struct):
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
         dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
         view3d = abs(dx[2]) > (10.0 * float_eps)
-        maxdx = dx.max()
-        
-        point_scalar_names = sorted( source._point_scalars_list[:-1] )
-        point_vector_names = sorted( source._point_vectors_list[:-1] )
-        point_tensor_names = sorted( source._point_tensors_list[:-1] )
-        cell_scalar_names = sorted( source._cell_scalars_list[:-1] )
-        cell_vector_names = sorted( source._cell_vectors_list[:-1] )
-        cell_tensor_names = sorted( source._cell_tensors_list[:-1] )
 
-        p_names = [['point', 'scalars', name] for name in point_scalar_names]
-        p_names += [['point', 'vectors', name] for name in point_vector_names]
-        p_names += [['point', 'tensors', name] for name in point_tensor_names]
-        c_names = [['cell', 'scalars', name] for name in cell_scalar_names]
-        c_names += [['cell', 'vectors', name] for name in cell_vector_names]
-        c_names += [['cell', 'tensors', name] for name in cell_tensor_names]
-
+        p_names, c_names = self.get_data_names(source, detailed=True)
         names = p_names + c_names
-        names = [ii for ii in names if ii[2] not in filter_names]
-        
+        if only_names is None:
+            names = [ii for ii in names if ii[2] not in filter_names]
+        else:
+            _names = [ii for ii in names if ii[2] in only_names]
+            if len(_names) != len(only_names):
+                output('warning: some names were not found!')
+            if not len(_names):
+                raise ValueError('no names were found! (%s not in %s)' \
+                                 % (only_names, [name[2] for name in names]))
+            names = _names
         n_data = len(names)
         n_row, n_col = get_position_counts(n_data, layout)
+
+        max_label_width = nm.max([len(ii[2]) for ii in names])
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
@@ -210,6 +239,7 @@ class Viewer(Struct):
                     scp = add_scalar_cut_plane(active,
                                                position, [0, 0, 1],
                                                opacity=0.5 )
+                    iso = add_iso_surface(active, position, opacity=0.3)
                 else:
                     surf = add_surf(active, position)
                 
@@ -249,7 +279,9 @@ class Viewer(Struct):
 
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
-                text = add_text(active, position, name, rel_text_width * maxdx)
+                text = add_text(active, position, name,
+                                rel_text_width * float(len(name))
+                                / max_label_width )
 
             scene.scene.reset_zoom()
 
