@@ -6,8 +6,6 @@ class Functions(Container):
     def from_conf(conf):
         objs = OneTypeList(Function)
         for key, fc in conf.iteritems():
-            print key
-            print fc
             fun = Function(name = fc.name,
                            function = fc.function,
                            is_constant = False)
@@ -30,7 +28,7 @@ class ConstantFunction(Function):
 
         name = '_'.join(['get_constants'] + values.keys())
 
-        def get_constants(ts, coor, **kwargs):
+        def get_constants(ts, coors, **kwargs):
             out = {}
             for key, val in values.iteritems():
                 out[key] = val

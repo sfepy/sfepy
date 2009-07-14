@@ -94,7 +94,7 @@ class Material( Struct ):
         self.region = region 
 
     def time_update(self, ts, domain):
-        """coor is in region.vertices[ig] order (i.e. sorted by node number)"""
+        """coors is in region.vertices[ig] order (i.e. sorted by node number)"""
         self.data = None
 
         if (self.datas is None) or \
@@ -105,8 +105,8 @@ class Material( Struct ):
             args = dict(ts=ts, region=self.region)
 
             for ig in self.igs:
-                coor = domain.get_mesh_coors()[self.region.get_vertices(ig)]
-                args.update({'coor' : coor, 'ig' : ig})
+                coors = domain.get_mesh_coors()[self.region.get_vertices(ig)]
+                args.update({'coors' : coors, 'ig' : ig})
                 self.datas.append(self.function(**args))
 
     ##

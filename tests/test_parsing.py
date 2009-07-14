@@ -62,20 +62,19 @@ class Test( TestCommon ):
                      'nodes in (((0.00001 < y) & (x < 0.11)))',
                      'nodes of group 0',
                      """nodes of group 0 +n nodes of group 1
-                     +e elements by afun( domain )""",
+                     +e elements by afun""",
                      'all -n nodes in (y == 0.00001)',
                      'all -n nodes of surface',
                      'all -e r.DOmega_100',
                      'r.Y_1 -n nodes of surface *e r.Z_8 *n nodes in (y > 0)',
-                     'nodes of surface +n nodes by pokus( x, y, z )',
-                     'elements of group 6 +e nodes by fn2_3c( x )',
+                     'nodes of surface +n nodes by pokus',
+                     'elements of group 6 +e nodes by fn2_3c',
                      """r.Y_1 *n (r.Y_2 +e (nodes in (y > 0) *n r.Y_32))
                      -n nodes of surface -e r.Y_5""",
-                     'nodes by noargs()',
-                     'nodes by extraargs( x, y, z, abc,3 )',
+                     'nodes by afun',
                      'node in r.Gamma_3',
                      'node 10',
-                     'elements by afun( domain )']
+                     'elements by afun']
 
         stack = []
         bnf = create_bnf( stack )

@@ -2,30 +2,36 @@
 import numpy as nm
 filename_mesh = '../database/tests/plane.mesh'
 
-def get_pars(ts, coor, region=None, ig=None, extra_arg=None):
+def get_pars(ts, coors, region=None, ig=None, extra_arg=None):
     print extra_arg
     if extra_arg == 'hello!':
         ic = 0
     else:
         ic = 1
-    return {('x_%s' % ic) : coor[:,ic]}
+    return {('x_%s' % ic) : coors[:,ic]}
 
-def get_p_edge(ts, coor, bc=None):
+def get_p_edge(ts, coors, bc=None):
     if bc.name == 'p_left':
-        return nm.sin(nm.pi * coor[:,1])
+        return nm.sin(nm.pi * coors[:,1])
     else:
-        return nm.cos(nm.pi * coor[:,1])
+        return nm.cos(nm.pi * coors[:,1])
+
+def get_circle(coors, domain=None):
+    r = nm.sqrt(coors[:,0]**2.0 + coors[:,1]**2.0)
+    return nm.where(r < 0.2)[0]
 
 functions = {
-    'get_pars1' : (lambda ts, coor, region=None, ig=None:
-                   get_pars(ts, coor, region, ig, extra_arg='hello!'),),
+    'get_pars1' : (lambda ts, coors, region=None, ig=None:
+                   get_pars(ts, coors, region, ig, extra_arg='hello!'),),
     'get_p_edge' : (get_p_edge,),
+    'get_circle' : (get_circle,),
 }
 
+# Just another way of adding a function, besides 'functions' keyword.
 function_1 = {
     'name' : 'get_pars2',
-    'function' : lambda ts, coor, region=None, ig=None:
-        get_pars(ts, coor, region, ig, extra_arg='hi!'),
+    'function' : lambda ts, coors, region=None, ig=None:
+        get_pars(ts, coors, region, ig, extra_arg='hi!'),
 }
 
 materials = {
@@ -48,6 +54,7 @@ regions = {
     'Omega' : ('all', {}),
     'Left' : ('nodes in (x < -%.3f)' % wx, {}),
     'Right' : ('nodes in (x > %.3f)' % wx, {}),
+    'Circle' : ('nodes by get_circle', {}),
 }
 
 integrals = {
@@ -96,13 +103,13 @@ class Test( TestCommon ):
         ts = problem.get_default_ts(step=0)
         problem.materials.time_update(ts, problem)
 
-        coor = problem.domain.get_mesh_coors()
+        coors = problem.domain.get_mesh_coors()
         
         mat1 = problem.materials['mf1']
-        assert_(nm.all(coor[:,0] == mat1.datas[0]['x_0']))
+        assert_(nm.all(coors[:,0] == mat1.datas[0]['x_0']))
 
         mat2 = problem.materials['mf2']
-        assert_(nm.all(coor[:,1] == mat2.datas[0]['x_1']))
+        assert_(nm.all(coors[:,1] == mat2.datas[0]['x_1']))
 
         mat3 = problem.materials['mf3']
         assert_(mat3.datas[0]['a'] == 1.0)
@@ -128,13 +135,13 @@ class Test( TestCommon ):
         domain = problem.domain
 
         iv = domain.regions['Left'].get_vertices(0)
-        coor = domain.get_mesh_coors()[iv]
-        ok = ok and self.compare_vectors(vec[iv], nm.sin(nm.pi * coor[:,1]),
+        coors = domain.get_mesh_coors()[iv]
+        ok = ok and self.compare_vectors(vec[iv], nm.sin(nm.pi * coors[:,1]),
                                          label1='state_left', label2='bc_left')
 
         iv = domain.regions['Right'].get_vertices(0)
-        coor = domain.get_mesh_coors()[iv]
-        ok = ok and self.compare_vectors(vec[iv], nm.cos(nm.pi * coor[:,1]),
+        coors = domain.get_mesh_coors()[iv]
+        ok = ok and self.compare_vectors(vec[iv], nm.cos(nm.pi * coors[:,1]),
                                          label1='state_right', label2='bc_right')
 
         return ok

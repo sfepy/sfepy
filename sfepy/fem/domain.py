@@ -399,9 +399,7 @@ class Domain( Struct ):
         else:
             return self.ed, self.ned, self.fa, self.nfa
 
-    ##
-    # c: 31.10.2005, r: 20.02.2008
-    def create_regions( self, region_defs, funmod = None ):
+    def create_regions(self, region_defs, functions=None):
         from sfepy.fem.parseReg import create_bnf, visit_stack, print_stack,\
              ParseException
 
@@ -417,7 +415,7 @@ class Domain( Struct ):
         # 02.05.2007
         # 30.05.2007
         # 05.06.2007
-        def region_leaf( domain, rdef, funmod ):
+        def region_leaf(domain, rdef, functions):
             def _region_leaf( level, op ):
 
                 token, details = op['token'], op['orig']
@@ -481,32 +479,20 @@ class Domain( Struct ):
                     where = details[2]
 
                     coors = domain.get_mesh_coors()
-                    x = coors[:,0]
-                    if domain.shape.dim > 1:
-                        y = coors[:,1]
-                        if domain.shape.dim > 2:
-                            z = coors[:,2]
-                        else:
-                            z = None
-                    else:
-                        y = None
-                    aux = {'x' : x, 'y' : y, 'z': z}
                         
-                    fun = 'funmod.' + where
-#                    print fun
-                    out = nm.where( eval( fun, {'funmod' : funmod}, aux ) )[0]
+                    fun = functions[where]
+                    out = fun(coors, domain=domain)
 
                     region.set_vertices( out )
 
                 elif token == 'E_EBF':
                     where = details[2]
                     
-                    aux = {'domain' : domain}
-                        
-                    fun = 'funmod.' + where
-#                    print fun
-                    out = eval( fun, {'funmod' : funmod}, aux )
-                    print out
+                    coors = domain.get_mesh_coors()
+
+                    fun = functions[where]
+                    out = fun(coors, domain=domain)
+
                     region.set_cells( out )
 
                 elif token == 'E_EOG':
@@ -542,7 +528,7 @@ class Domain( Struct ):
         ##
         # 14.06.2006, c
         # 15.06.2006
-        def region_op( domain, rdef, funmod ):
+        def region_op( domain, rdef, functions ):
             def _region_op( level, op, item1, item2 ):
 
                 token = op['token']
@@ -607,8 +593,9 @@ class Domain( Struct ):
 
 #            print_stack( copy( stack ) )
 
-            region = visit_stack( stack, region_op( self, rdef.select, funmod ),
-                                 region_leaf( self, rdef.select, funmod ) )
+            region = visit_stack(stack,
+                                 region_op(self, rdef.select, functions),
+                                 region_leaf(self, rdef.select, functions))
             if hasattr( rdef, 'forbid' ):
                 fb = re.compile( '^group +\d+(\s+\d+)*$' ).match( rdef.forbid )
                 if fb:
