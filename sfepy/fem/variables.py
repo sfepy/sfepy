@@ -517,10 +517,8 @@ class Variables( Container ):
         else:
             raise ValueError( 'no LCBC defined!' )
 
-    ##
-    # c: 01.11.2005, r: 12.05.2008
-    def equation_mapping( self, ebc, epbc, regions, ts, funmod,
-                         vregions = None ):
+    def equation_mapping(self, ebc, epbc, regions, ts, functions,
+                         vregions=None):
 
         if vregions is None:
             vregions = regions
@@ -535,10 +533,10 @@ class Variables( Container ):
         # List EBC nodes/dofs for each variable.
         for var_name, bcs in self.bc_of_vars.iteritems():
             var = self[var_name]
-            var.equation_mapping( bcs, regions, self.di, ts, funmod )
+            var.equation_mapping(bcs, regions, self.di, ts, functions)
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
-                vvar.equation_mapping( bcs, vregions, self.vdi, ts, funmod )
+                vvar.equation_mapping(bcs, vregions, self.vdi, ts, functions)
 
 ##             print var.eq_map
 ##             pause()
@@ -567,14 +565,14 @@ class Variables( Container ):
 
         self.has_eq_map = True
 
-    def setup_initial_conditions( self, conf_ics, regions, funmod ):
+    def setup_initial_conditions(self, conf_ics, regions, functions):
         self.ic_of_vars = self._list_bc_of_vars( conf_ics )
 
         for var_name, ics in self.ic_of_vars.iteritems():
             if len( ics ) == 0:
                 continue
             var = self[var_name]
-            var.setup_initial_conditions( ics, regions, self.di, funmod )
+            var.setup_initial_conditions(ics, regions, self.di, functions)
 
     ##
     # c: 09.01.2008, r: 09.01.2008
@@ -1495,7 +1493,7 @@ class Variable( Struct ):
                             % (ntype, self.name, region.name) )
         return nod_list
 
-    def equation_mapping( self, bcs, regions, di, ts, funmod, warn = False ):
+    def equation_mapping(self, bcs, regions, di, ts, functions, warn = False):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though)."""
         # Sort by ebc definition name.
@@ -1556,8 +1554,8 @@ class Variable( Struct ):
                 nods = nm.unique1d( nm.hstack( master_nod_list ) )
                 coor = field.get_coor( nods )
                 if type( val ) == str:
-                    fun = getattr( funmod, val )
-                    vv = fun( bc, ts, coor )
+                    fun = functions[val]
+                    vv = fun(ts, coor, bc = bc)
                 else:
                     vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 ##                 print nods
@@ -1586,8 +1584,8 @@ class Variable( Struct ):
 
                 mcoor = field.get_coor( nmaster )
                 scoor = field.get_coor( nslave )
-                fun = getattr( funmod, bc.match )
-                i1, i2 = fun( mcoor, scoor )
+                fun = functions[bc.match]
+                i1, i2 = fun(None, mcoor, scoor=scoor)
 ##                print nm.c_[mcoor[i1], scoor[i2]]
 ##                print nm.c_[nmaster[i1], nslave[i2]] + 1
 
@@ -1656,7 +1654,7 @@ class Variable( Struct ):
 ##         print eq_map
 ##         pause()
 
-    def setup_initial_conditions( self, ics, regions, di, funmod, warn = False ):
+    def setup_initial_conditions(self, ics, regions, di, functions, warn=False):
         """Setup of initial conditions."""
         for key, ic in ics:
             dofs, val = ic.dofs
@@ -1677,8 +1675,8 @@ class Variable( Struct ):
             nods = nm.unique1d( nm.hstack( nod_list ) )
             coor = self.field.get_coor( nods )
             if type( val ) == str:
-                fun = getattr( funmod, val )
-                vv = fun( ic, coor )
+                fun = functions[val]
+                vv = fun(0.0, coor, ic=ic)
             else:
                 vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 

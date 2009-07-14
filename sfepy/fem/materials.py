@@ -1,19 +1,39 @@
 from sfepy.base.base import *
+from functions import ConstantFunction
+
 
 ##
 # 21.07.2006, c
 class Materials( Container ):
-    ##
-    # 24.07.2006, c
-    def from_conf( conf, wanted = None ):
 
+    def from_conf(conf, functions, wanted=None):
+        """Construct Materials instance from configuration."""
         if wanted is None:
             wanted = conf.keys()
 
-        objs = OneTypeList( Material )
-        for key, val in conf.iteritems():
-            if key in wanted:
-                objs.append( Material( **val ) )
+        objs = OneTypeList(Material)
+        for key, mc in conf.iteritems():
+            if key not in wanted: continue
+
+            fun = get_default_attr(mc, 'function', None)
+            vals = get_default_attr(mc, 'values', None)
+            if (fun is not None) and (vals is not None):
+                msg = 'material can have function or values but not both! (%s)' \
+                      % mc
+                raise ValueError(msg)
+            elif vals is not None: # => fun is None
+                fun = ConstantFunction(vals, functions = functions)
+            else: # => vals is None
+                fun = functions[fun]
+
+            if (fun is None):
+                msg = 'material has no values! (%s)' % mc
+                raise ValueError(msg)
+
+            kind = get_default_attr(mc, 'kind', 'time-dependent')
+            mat =  Material(mc.name, mc.region, kind, fun)
+            objs.append(mat)
+
         obj = Materials( objs )
         return obj
     from_conf = staticmethod( from_conf )
@@ -24,16 +44,12 @@ class Materials( Container ):
         for mat in self:
             mat.setup_regions( regions )
 
-    ##
-    # c: 01.08.2006, r: 20.02.2008
-    def time_update( self, ts, funmod, domain, extra_mat_args = None ):
-        extra_mat_args = get_default( extra_mat_args, {} )
+    def time_update(self, ts, domain):
         output( 'updating materials...' )
         tt = time.clock()
         for mat in self:
             output( ' ', mat.name )
-            extra_args = extra_mat_args.setdefault( mat.name, {} )
-            mat.time_update( ts, funmod, domain, **extra_args )
+            mat.time_update(ts, domain)
         output( '...done in %.2f s' % (time.clock() - tt) )
 
     ##
@@ -52,41 +68,23 @@ class Material( Struct ):
 
     material_2 = {
        'name' : 'm',
-       'mode' : 'here',
        'region' : 'Omega',
-       'E' : 1.0,
+       'values' : {'E' : 1.0},
     }
 
     Material parameters are passed to terms using the dot notation,
     i.e. 'm.E' in our example case.
-
-    >>> mat = Material( **material_2 )
-    >>> print mat
-Material:m
-  E:
-    1.0
-  name:
-    m
-  region:
-    None
-  extra_args:
-    {}
-  mode:
-    here
-  region_name:
-    Omega
     
     """
-    ##
-    # c: 22.08.2006, r: 02.07.2008
-    def __init__( self, **kwargs ):
-        kwargs.setdefault( 'extra_args', {} )
-        Struct.__init__( self, **kwargs )
+    def __init__(self, name, region_name, kind, function):
+        Struct.__init__(self, name = name,
+                        region_name = region_name,
+                        kind = kind,
+                        function = function)
 
-        self.region_name = self.region
         self.region = None
         self.datas = None
-        self.kind = get_default_attr( self, 'kind', 'time-dependent' )
+        self.data = None
 
     ##
     # 22.08.2006, c
@@ -95,30 +93,21 @@ Material:m
         self.igs = region.igs
         self.region = region 
 
-    ##
-    # c: 01.08.2006, r: 02.07.2008
-    def time_update( self, ts, funmod, domain, **extra_args ):
+    def time_update(self, ts, domain):
         """coor is in region.vertices[ig] order (i.e. sorted by node number)"""
-        if self.mode == 'function':
-            self.data = None
-            if (self.datas is not None) and (self.kind == 'stationary'):
-                return
-            
+        self.data = None
+
+        if (self.datas is None) or \
+           not (self.function.is_constant and (self.kind == 'stationary')):
+
             self.datas = []
 
-            if isinstance( self.function, str ):
-                fun = getattr( funmod, self.function )
-            else:
-                fun = self.function
-
-            kwargs = copy( self.extra_args )
-            kwargs.update( extra_args )
-            args = dict( ts = ts, region = self.region, **kwargs )
+            args = dict(ts=ts, region=self.region)
 
             for ig in self.igs:
-                coor = domain.get_mesh_coors()[self.region.get_vertices( ig )]
-                args.update( {'coor' : coor, 'ig' : ig} )
-                self.datas.append( fun( **args ) )
+                coor = domain.get_mesh_coors()[self.region.get_vertices(ig)]
+                args.update({'coor' : coor, 'ig' : ig})
+                self.datas.append(self.function(**args))
 
     ##
     # 31.07.2007, c
@@ -130,7 +119,6 @@ Material:m
     ##
     # 01.08.2007, c
     def set_function( self, function ):
-        self.mode =  'function'
         self.function = function
 
     ##
@@ -169,16 +157,13 @@ Material:m
                   '(material: %s, region: %s)' % (self.name, region_name)
             raise ValueError( msg )
 
-        if self.mode == 'here':
-            return getattr( self, name )
+        if self.datas is None:
+            raise ValueError( 'material data not set! (call time_update())' )
+        ii = self.igs.index( ig )
+        if isinstance( self.datas[ii], Struct ):
+            return getattr( self.datas[ii], name )
         else:
-            if self.datas is None:
-                raise ValueError( 'material data not set! (call time_update())' )
-            ii = self.igs.index( ig )
-            if isinstance( self.datas[ii], Struct ):
-                return getattr( self.datas[ii], name )
-            else:
-                return self.datas[ii][name]
+            return self.datas[ii][name]
 
     ##
     # 01.08.2007, c
