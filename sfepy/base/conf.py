@@ -11,7 +11,7 @@ _required = ['filename_mesh', 'field_[0-9]+|fields',
              'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
              'solver_[0-9]+|solvers']
 _other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
-          'ic_[0-9]+|ics', 'options']
+          'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options']
 
 ##
 # c: 19.02.2008, r: 19.02.2008
@@ -141,6 +141,17 @@ def transform_solvers( adict ):
             d2['solvers_'+c2.name] = c2
     return d2
 
+def transform_functions(adict):
+    d2 = {}
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['function'])
+            d2['function_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1(conf)
+            d2['function_'+c2.name] = c2
+    return d2
+
 ##
 # c: 20.06.2007, r: 18.02.2008
 def transform_to_struct_1( adict ):
@@ -168,6 +179,7 @@ transforms = {
     'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
     'materials' : transform_materials,
+    'functions' : transform_functions,
 }
 
 ##
