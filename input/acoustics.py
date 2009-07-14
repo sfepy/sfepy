@@ -11,7 +11,7 @@ options = {
 }
 
 materials = {
-    'one' : ('here', 'Omega', {'one' : 1.0} ),
+    'one' : ('Omega', {'one' : 1.0} ),
 }
 
 regions = {

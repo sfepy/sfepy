@@ -18,8 +18,8 @@ regions = {
     'Omega' : ('all', {}),
     'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
                {'can_cells' : False}),
-    'Inlet' : ('nodes by cinc( x, y, z, 0 )', {'can_cells' : False}),
-    'Outlet' : ('nodes by cinc( x, y, z, 1 )', {'can_cells' : False}),
+    'Inlet' : ('nodes by cinc0', {'can_cells' : False}),
+    'Outlet' : ('nodes by cinc1', {'can_cells' : False}),
 }
 
 fields = {
@@ -41,10 +41,10 @@ ebcs = {
 }
 
 materials = {
-    'fluid' : ('here', 'Omega',
+    'fluid' : ('Omega',
                {'viscosity' : 1.25e-5,
                 'density' : 1e0}),
-    'stabil' : ('here', 'Omega',
+    'stabil' : ('Omega',
                 {'gamma' : None,
                  'delta' : None,
                  'tau'   : None,
@@ -124,3 +124,9 @@ import os.path as op
 trunk = op.splitext( op.basename( filename_mesh ) )[0]
 cinc = eval( 'cinc_' + trunk )
 del op, trunk
+
+functions = {
+    'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
+    'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
+}
+

@@ -39,13 +39,14 @@ ebcs = {
 
 material_1 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'Lame' : {'lambda' : 1.7, 'mu' : 0.3},
-    'alpha' : nm.array( [0.132, 0.132, 0.132, 0.092, 0.092, 0.092],
+    'values' : {
+        'Lame' : {'lambda' : 1.7, 'mu' : 0.3},
+        'alpha' : nm.array( [0.132, 0.132, 0.132, 0.092, 0.092, 0.092],
+                            dtype = nm.float64 ),
+        'K' : nm.array( [[2.0, 0.2, 0.0], [0.2, 1.0, 0.0], [0.0, 0.0, 0.5]],
                         dtype = nm.float64 ),
-    'K' : nm.array( [[2.0, 0.2, 0.0], [0.2, 1.0, 0.0], [0.0, 0.0, 0.5]],
-                    dtype = nm.float64 ),
+    }
 }
 
 integral_1 = {

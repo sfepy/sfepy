@@ -145,3 +145,13 @@ class Test( TestCommon ):
                                          label1='state_right', label2='bc_right')
 
         return ok
+
+    def test_region_functions(self):
+        import os.path as op
+        problem = self.problem
+
+        name = op.join(self.options.out_dir,
+                       op.splitext(op.basename(__file__))[0])
+        problem.save_regions(name, ['Circle'])
+
+        return True

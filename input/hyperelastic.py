@@ -21,12 +21,12 @@ field_1 = {
 
 material_1 = {
     'name' : 'solid',
-    'mode' : 'here',
     'region' : 'Omega',
-
-    'K'  : 1e3, # bulk modulus
-    'mu' : 20e0, # shear modulus of neoHookean term
-    'kappa' : 10e0, # shear modulus of Mooney-Rivlin term
+    'values' : {
+        'K'  : 1e3, # bulk modulus
+        'mu' : 20e0, # shear modulus of neoHookean term
+        'kappa' : 10e0, # shear modulus of Mooney-Rivlin term
+    }
 }
 
 variables = {
@@ -49,7 +49,7 @@ ebcs = {
 
 centre = nm.array( [0, 0], dtype = nm.float64 )
 
-def rotate_yz( bc, ts, coor ):
+def rotate_yz(ts, coor, bc):
     from sfepy.base.la import rotation_matrix2d
     from sfepy.base.base import debug
     
@@ -64,6 +64,10 @@ def rotate_yz( bc, ts, coor ):
     displacement = vec_rotated - vec
     
     return displacement.T.flat
+
+functions = {
+    'rotate_yz' : (rotate_yz,),
+}
 
 def stress_strain( out, problem, state, extend = False ):
     from sfepy.base.base import Struct, debug

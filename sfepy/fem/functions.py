@@ -8,7 +8,8 @@ class Functions(Container):
         for key, fc in conf.iteritems():
             fun = Function(name = fc.name,
                            function = fc.function,
-                           is_constant = False)
+                           is_constant = False,
+                           extra_args = {})
             objs.append(fun)
 
         obj = Functions(objs)
@@ -18,17 +19,34 @@ class Functions(Container):
 class Function(Struct):
     """Base class for user-defined functions."""
 
+    def __init__(self, name, function, is_constant=False, extra_args=None):
+        Struct.__init__(self, name = name, function = function,
+                        is_constant = is_constant)
+        if extra_args is None:
+            extra_args = {}
+        self.extra_args = extra_args
+
     def __call__(self, *args, **kwargs):
-        return self.function(*args, **kwargs)
+        _kwargs = dict(kwargs)
+        _kwargs.update(self.extra_args)
+        return self.function(*args, **_kwargs)
+
+    def set_function(self, function, is_constant=False):
+        self.function = function
+        self.is_constant = is_constant
+
+    def set_extra_args(self, **extra_args):
+        self.extra_args = extra_args
 
 class ConstantFunction(Function):
+    """Function with constant values."""
 
     def __init__(self, values, functions=None):
         """Make a function out of a dictionary of constant values."""
 
         name = '_'.join(['get_constants'] + values.keys())
 
-        def get_constants(ts, coors, **kwargs):
+        def get_constants(ts=None, coors=None, **kwargs):
             out = {}
             for key, val in values.iteritems():
                 out[key] = val

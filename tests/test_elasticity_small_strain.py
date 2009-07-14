@@ -31,17 +31,19 @@ def get_pars( dim, full = False ):
 
 material_1 = {
     'name' : 'solid',
-    'mode' : 'here',
     'region' : 'Omega',
-    'lame' : get_pars( 3 ),
-    'Dijkl' : get_pars( 3, True ),
+    'values' : {
+        'lame' : get_pars( 3 ),
+        'Dijkl' : get_pars( 3, True ),
+    }
 }
 
 material_2 = {
     'name' : 'spring',
-    'mode' : 'here',
     'region' : 'Omega',
-    'pars' : {'stiffness' : 1e0, 'projection' : None},
+    'values' : {
+        'pars' : {'stiffness' : 1e0, 'projection' : None},
+    }
 }
 
 variable_1 = {

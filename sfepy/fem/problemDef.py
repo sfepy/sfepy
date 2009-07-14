@@ -312,11 +312,11 @@ class ProblemDefinition( Struct ):
         self.update_materials(ts)
         self.update_equations(ts)
 
-    def setup_ic( self, conf_ics = None, funmod = None ):
-        conf_ics = get_default( conf_ics, self.conf.ics )
-        funmod = get_default( funmod, self.conf.funmod )
-        self.variables.setup_initial_conditions( conf_ics,
-                                                 self.domain.regions, funmod  )
+    def setup_ic( self, conf_ics = None, functions = None ):
+        conf_ics = get_default(conf_ics, self.conf.ics)
+        functions = get_default(functions, self.functions)
+        self.variables.setup_initial_conditions(conf_ics,
+                                                self.domain.regions, functions)
 
     def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
                     lcbc_names = None ):

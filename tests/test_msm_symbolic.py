@@ -35,18 +35,17 @@ integral_1 = {
 
 material_1 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 12.0,
-    'K' : [[1.0, 0.3], [0.3, 2.0]]
+    'values' : {
+        'val' : 12.0,
+        'K' : [[1.0, 0.3], [0.3, 2.0]],
+    }
 }
 
 material_2 = {
     'name' : 'rhs',
-    'mode' : 'function',
     'region' : 'Omega',
     'function' : 'rhs',
-    'extra_args' : {'expression' : None},
 }
 
 equations = {
@@ -64,7 +63,6 @@ equations_rhs = {
     """= - dw_volume_lvf.i1.Omega( rhs.val, s )""",
 }
 
-val = material_1['val']
 solutions = {
     'sincos' : ('t', 'sin( 3.0 * x ) * cos( 4.0 * y )'),
     'poly' : ('t', '(x**2) + (y**2)'),
@@ -112,19 +110,24 @@ output_name = 'test_msm_symbolic_%s.vtk'
 ##
 # c: 07.05.2007, r: 09.05.2008
 solution = ['']
-def ebc( bc, ts, coor, solution = solution ):
+def ebc(ts, coor, bc, solution=None):
     expression = solution[0]
     val = TestCommon.eval_coor_expression( expression, coor )
     return nm.atleast_1d( val )
 
 ##
 # c: 07.05.2007, r: 09.05.2008
-def rhs( ts, coor, region, ig, expression = None ):
+def rhs(ts, coor, region, ig, expression=None):
     if expression is None:
         expression = '0.0 * x'
-
+    
     val = TestCommon.eval_coor_expression( expression, coor )
     return {'val' : nm.atleast_1d( val )}
+
+functions = {
+    'ebc' : (lambda ts, coor, bc: ebc(ts, coor, bc, solution=solution),),
+    'rhs' : (rhs,),
+}
 
 ##
 # c: 07.05.2008
@@ -214,10 +217,13 @@ class Test( TestCommon ):
             return True
 
         problem  = self.problem
+        rhs_mat = problem.materials['rhs']
 
         # update data so that build_args() works...
-        mat_args = {'rhs' : {'expression' : '0 * x'}} 
-        problem.update_materials( extra_mat_args = mat_args )
+        rhs_mat.function.set_extra_args(expression='0 * x')
+#        problem.time_update()
+        
+        problem.update_materials()
 
         ok = True
         for eq_name, equation in equations.iteritems():
@@ -233,9 +239,9 @@ class Test( TestCommon ):
 
                 self.report( 'sol:', sol_expr )
                 self.report( 'rhs:', rhs_expr )
-                mat_args = {'rhs' : {'expression' : rhs_expr}} 
                 globals()['solution'][0] = sol_expr
-                problem.time_update( extra_mat_args = mat_args )
+                rhs_mat.function.set_extra_args(expression=rhs_expr)
+                problem.time_update()
                 problem.equations.reset_term_caches()
                 vec = problem.solve()
                 coor = problem.variables[var_name].field.get_coor()

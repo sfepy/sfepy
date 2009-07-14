@@ -4,9 +4,8 @@ filename_mesh = '../database/tests/triquad.mesh'
 
 material_1 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {'val' : 1.0},
 }
 
 region_1000 = {
@@ -125,9 +124,14 @@ fe = {
 }
 
 import numpy as nm
-def ebc_sin( bc, ts, coor ):
+def ebc_sin(ts, coor, bc):
     val = 2 * nm.sin( coor[:,0] * 5. * nm.pi )
     return val
+
+functions = {
+    'ebc_sin' : (ebc_sin,),
+}
+
 
 from sfepy.base.testing import TestCommon
 

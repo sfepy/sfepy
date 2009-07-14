@@ -34,9 +34,11 @@ material_1 = {
     'name' : 'solid',
     'mode' : 'here',
     'region' : 'Y',
-
-    'lame' : {'lambda' : 1e1, 'mu' : 1e0},
-    'density' : 1e-1,
+    
+    'values' : {
+        'lame' : {'lambda' : 1e1, 'mu' : 1e0},
+        'density' : 1e-1,
+    },
 }
 
 field_1 = {

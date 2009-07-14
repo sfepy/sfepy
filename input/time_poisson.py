@@ -8,9 +8,8 @@ n_step = 11
 
 material_2 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 0.01,
+    'values' : {'val' : 0.01},
     'kind' : 'stationary', # 'stationary' or 'time-dependent'
 }
 
@@ -46,13 +45,17 @@ ebcs = {
     'T2': ('Gamma_Right', {'T.0' : -2.0}),
 }
 
-def get_ic( ic, coor ):
+def get_ic(coor, ic):
     """Non-constant initial condition."""
     import numpy as nm
     # Normalize x coordinate.
     mi, ma = coor[:,0].min(), coor[:,0].max()
     nx = (coor[:,0] - mi) / (ma - mi)
     return nm.where( (nx > 0.25) & (nx < 0.75 ), 8.0 * (nx - 0.5), 0.0 )
+
+functions = {
+    'get_ic' : (get_ic,),
+}
     
 ics = {
     'ic' : ('Omega', {'T.0' : 'get_ic'}),

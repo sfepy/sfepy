@@ -5,9 +5,8 @@ filename_mesh = '../database/tests/plane.mesh'
 
 material_2 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'K' : [[3.0, 0.1], [0.3, 1.0]],
+    'values' : {'K' : [[3.0, 0.1], [0.3, 1.0]]},
 }
 
 field_1 = {
@@ -63,6 +62,10 @@ epbc_10 = {
     'region' : ['LeftStrip', 'RightStrip'],
     'dofs' : {'p.0' : 'p.0'},
     'match' : 'match_y_line',
+}
+
+functions = {
+    'match_y_line' : (match_y_line,),
 }
 
 integral_1 = {

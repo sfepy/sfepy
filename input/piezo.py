@@ -31,24 +31,24 @@ regions = {
 
 material_1 = {
     'name' : 'matrix',
-    'mode' : 'here',
     'region' : 'Y1',
 
     # aluminium
-    'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
-    'density' : 0.2799, # in 1e4 kg/m3
+    'values' : { 
+        'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
+        'density' : 0.2799, # in 1e4 kg/m3
+    },
 }
 
 material_2 = {
     'name' : 'inclusion',
-    'mode' : 'function',
     'region' : 'Y',
 
     # epoxy
     'function' : 'get_inclusion_pars',
 }
 
-def get_inclusion_pars( ts, coor, region, ig ):
+def get_inclusion_pars(ts, coor, region, ig):
     """TODO: implement proper 3D -> 2D transformation of constitutive
     matrices."""
     n_nod, dim = coor.shape
@@ -69,6 +69,10 @@ def get_inclusion_pars( ts, coor, region, ig ):
         'density' : 0.1142, # in 1e4 kg/m3
     }
     return out
+
+functions = {
+    'get_inclusion_pars' : (get_inclusion_pars,),
+}
 
 field_0 = {
     'name' : 'displacement',

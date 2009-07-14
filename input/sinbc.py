@@ -3,9 +3,8 @@ filename_mesh = '../database/maillage.txt'
 
 material_1 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {'val' : 1.0},
 }
 
 region_1000 = {
@@ -100,12 +99,17 @@ fe = {
 import numpy as nm
 
 amplitude = 2.0
-def ebc_sin( bc, ts, coor ):
+def ebc_sin(ts, coor, bc):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 2. * nm.pi )
     return val
 
-def ebc_sin2( bc, ts, coor ):
+def ebc_sin2(ts, coor, bc):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 3. * nm.pi )
     return val
+
+functions = {
+    'ebc_sin' : (ebc_sin,),
+    'ebc_sin2' : (ebc_sin2,),
+}

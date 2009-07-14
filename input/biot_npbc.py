@@ -20,13 +20,13 @@ def coors_in_cylinder(x, y, z, centre, axis, radius, length, inside=True):
     dl = nm.dot(axis, vec)
 
     if inside:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius), 1, 0)
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius))[0]
     else:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius), 1, 0)
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius))[0]
 
     return out
 
-def cinc_simple(x, y, z, mode):
+def cinc_simple(coors, mode):
     axis = nm.array([1, 0, 0], nm.float64)
     if mode == 0: # In
         centre = nm.array([-0.00001, 0.0, 0.0], nm.float64).reshape((3,1))
@@ -43,7 +43,8 @@ def cinc_simple(x, y, z, mode):
     else:
         raise ValueError('unknown mode %s!' % mode)
 
-    return coors_in_cylinder(x, y, z, centre, axis, radius, length)
+    return coors_in_cylinder(coors[:,0], coors[:,1], coors[:,2],
+                             centre, axis, radius, length)
 
 def define_regions(filename):
     if filename.find('simple.mesh'):
@@ -52,11 +53,9 @@ def define_regions(filename):
             'Omega' : ('all', {}),
             'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
                        {'can_cells' : True}),
-            'Inlet' : ('nodes by cinc_simple( x, y, z, 0 )',
-                       {'can_cells' : False}),
-            'Outlet' : ('nodes by cinc_simple( x, y, z, 1 )',
-                        {'can_cells' : False}),
-            'Rigid' : ('nodes by cinc_simple( x, y, z, 2 )', {}),
+            'Inlet' : ('nodes by cinc_simple0', {'can_cells' : False}),
+            'Outlet' : ('nodes by cinc_simple1', {'can_cells' : False}),
+            'Rigid' : ('nodes by cinc_simple2', {}),
         }
 
     else:
@@ -109,6 +108,16 @@ def define_input(filename, output_dir):
         'nls' : 'newton',
     }
 
+    functions = {
+        'cinc_simple0' : (lambda coors, domain:
+                          cinc_simple(coors, 0),),
+        'cinc_simple1' : (lambda coors, domain:
+                          cinc_simple(coors, 1),),
+        'cinc_simple2' : (lambda coors, domain:
+                          cinc_simple(coors, 2),),
+        'get_pars' : (lambda ts, coors, region=None, ig=None:
+                      get_pars(ts, coors, region, ig, output_dir=output_dir),),
+    }
     regions, dim, geom = define_regions(filename_mesh)
 
     field_1 = {
@@ -143,10 +152,8 @@ def define_input(filename, output_dir):
 
     material_1 = {
         'name' : 'm',
-        'mode' : 'function',
         'region' : 'Omega',
         'function' : 'get_pars',
-        'extra_args' : {'output_dir' : output_dir},
     }
 
     integral_1 = {

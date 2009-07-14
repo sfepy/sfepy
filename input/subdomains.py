@@ -21,9 +21,9 @@ regions = {
 }
 
 materials = {
-    'one1' : ('here', 'Omega1', {'one' : 1.0} ),
-    'one2' : ('here', 'Omega2', {'one' : 1.0} ),
-    'jump'  : ('here', 'Gamma12', {'val' : 1.0} ),
+    'one1' : ('Omega1', {'one' : 1.0} ),
+    'one2' : ('Omega2', {'one' : 1.0} ),
+    'jump'  : ('Gamma12', {'val' : 1.0} ),
 }
 
 fields = {

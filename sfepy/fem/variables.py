@@ -1585,7 +1585,7 @@ class Variable( Struct ):
                 mcoor = field.get_coor( nmaster )
                 scoor = field.get_coor( nslave )
                 fun = functions[bc.match]
-                i1, i2 = fun(None, mcoor, scoor=scoor)
+                i1, i2 = fun(mcoor, scoor)
 ##                print nm.c_[mcoor[i1], scoor[i2]]
 ##                print nm.c_[nmaster[i1], nslave[i2]] + 1
 
@@ -1676,7 +1676,7 @@ class Variable( Struct ):
             coor = self.field.get_coor( nods )
             if type( val ) == str:
                 fun = functions[val]
-                vv = fun(0.0, coor, ic=ic)
+                vv = fun(coor, ic=ic)
             else:
                 vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 

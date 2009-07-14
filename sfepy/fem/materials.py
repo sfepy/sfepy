@@ -52,12 +52,6 @@ class Materials( Container ):
             mat.time_update(ts, domain)
         output( '...done in %.2f s' % (time.clock() - tt) )
 
-    ##
-    # 22.08.2006, c
-    def set_current_group( self, ig ):
-        for mat in self:
-            mat.set_current_group( ig )
-
 ##
 # 21.07.2006, c
 class Material( Struct ):
@@ -102,12 +96,11 @@ class Material( Struct ):
 
             self.datas = []
 
-            args = dict(ts=ts, region=self.region)
-
             for ig in self.igs:
                 coors = domain.get_mesh_coors()[self.region.get_vertices(ig)]
-                args.update({'coors' : coors, 'ig' : ig})
-                self.datas.append(self.function(**args))
+                self.datas.append(self.function(ts, coors,
+                                                region=self.region,
+                                                ig=ig))
 
     ##
     # 31.07.2007, c
@@ -126,18 +119,6 @@ class Material( Struct ):
     def set_extra_args( self, extra_args ):
         self.extra_args = extra_args
         
-    ##
-    # 22.08.2006, c
-    # 22.02.2007
-    # 31.07.2007
-    def set_current_group( self, ig ):
-        if (self.mode == 'function') or (self.mode == 'user'):
-            try:
-                ii = self.igs.index( ig )
-                self.data = self.datas[ii]
-            except:
-                self.data = None
-
     def get_data( self, region_name, ig, name ):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
@@ -159,7 +140,12 @@ class Material( Struct ):
 
         if self.datas is None:
             raise ValueError( 'material data not set! (call time_update())' )
-        ii = self.igs.index( ig )
+
+        if self.function.is_constant:
+            ii = 0
+        else:
+            ii = self.igs.index( ig )
+
         if isinstance( self.datas[ii], Struct ):
             return getattr( self.datas[ii], name )
         else:

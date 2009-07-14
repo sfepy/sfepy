@@ -17,9 +17,8 @@ filename_mesh = '../database/simple.mesh'
 
 material_2 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {'val' : 1.0},
 }
 
 #! Fields

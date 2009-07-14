@@ -36,12 +36,12 @@ region_0 = {
 }
 region_1 = {
     'name' : 'Inlet',
-    'select' : 'nodes by cinc( x, y, z, 0 )', # In
+    'select' : 'nodes by cinc0', # In
     'can_cells' : False,
 }
 region_2 = {
     'name' : 'Outlet',
-    'select' : 'nodes by cinc( x, y, z, 1 )', # Out
+    'select' : 'nodes by cinc1', # Out
     'can_cells' : False,
 }
 
@@ -58,10 +58,11 @@ ebc_2 = {
 
 material_1 = {
     'name' : 'fluid',
-    'mode' : 'here',
     'region' : 'Omega',
-    'viscosity' : 1.25e-3,
-    'density' : 1e0,
+    'values' : {
+        'viscosity' : 1.25e-3,
+        'density' : 1e0,
+    },
 }
 
 variable_1 = {
@@ -190,3 +191,8 @@ print trunk
 cinc = eval( 'cinc_' + trunk )
 print cinc
 del op, trunk
+
+functions = {
+    'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
+    'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
+}

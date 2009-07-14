@@ -5,6 +5,7 @@ except (ImportError, AttributeError):
     msg = 'sfepy extension modules are not compiled!\ntype "make"'
     raise ImportError( msg )
 
+from functions import Functions, Function
 from mesh import Mesh
 from mesh_generators import gen_block_mesh, gen_cylinder_mesh
 from domain import Domain

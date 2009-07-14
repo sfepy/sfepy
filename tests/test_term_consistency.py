@@ -73,6 +73,11 @@ def get_pars( ts, coor, region, ig, mode = None ):
 
     return {'val' : val}
 
+functions = {
+    'get_pars' : (get_pars,),
+}
+
+
 # (eval term prefix, parameter corresponding to test variable, 'd' variables,
 # 'dw' variables (test must be paired with unknown, which should be last!), mat
 # mode)
@@ -110,7 +115,7 @@ class Test( TestCommon ):
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
         from sfepy.base.base import select_by_names
-        from sfepy.fem import eval_term_op
+        from sfepy.fem import eval_term_op, Function
 
         ok = True
         pb = self.problem
@@ -132,8 +137,8 @@ class Test( TestCommon ):
             term1 = term_template % ((prefix,) + d_vars)
             pb.set_equations( {'eq': term1} )
 
-            mat_args = {'m' : {'mode' : mat_mode}} 
-            pb.time_update( extra_mat_args = mat_args )
+            pb.materials['m'].function.set_extra_args(mode = mat_mode)
+            pb.time_update()
 
             dummy = pb.create_state_vector()
             if prefix == 'd':
