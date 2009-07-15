@@ -19,6 +19,9 @@ help = {
     'layout' :
     'layout for multi-field plots, one of: rowcol, colrow, row, col' \
     ' [default: %default]',
+    'scalar_mode' :
+    'mode for plotting scalars with --3d, one of: cut_plane, iso_surface,'\
+    ' both [default: %default]',
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
     ' [default: %default]',
@@ -59,6 +62,9 @@ def main():
     parser.add_option("--layout", metavar='layout',
                       action="store", dest="layout",
                       default='rowcol', help=help['layout'])
+    parser.add_option("--scalar-mode", metavar='mode',
+                      action="store", dest="scalar_mode",
+                      default='iso_surface', help=help['scalar_mode'])
     parser.add_option("-s", "--scale-glyphs", type='float', metavar='scale',
                       action="store", dest="rel_scaling",
                       default=0.05, help=help['rel_scaling'])
@@ -103,9 +109,9 @@ def main():
         if options.only_names is not None:
             options.only_names = options.only_names.split(',')
 
-        view(show=options.show,
-             is_3d=options.is_3d, view=options.view, roll=options.roll,
-             layout=options.layout, rel_scaling=options.rel_scaling,
+        view(show=options.show, is_3d=options.is_3d, view=options.view,
+             roll=options.roll, layout=options.layout,
+             scalar_mode=options.scalar_mode, rel_scaling=options.rel_scaling,
              clamping=options.clamping, rel_text_width=options.rel_text_width,
              fig_filename=options.filename, filter_names=filter_names,
              only_names=options.only_names)

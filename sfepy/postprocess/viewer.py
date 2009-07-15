@@ -130,8 +130,8 @@ class Viewer(Struct):
         pass
     
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
-                  layout='rowcol', rel_scaling=None, clamping=False,
-                  rel_text_width=None,
+                  layout='rowcol', scalar_mode=None,
+                  rel_scaling=None, clamping=False, rel_text_width=None,
                   fig_filename='view.png', filter_names=None, only_names=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
@@ -151,6 +151,9 @@ class Viewer(Struct):
         layout : str
             Grid layout for placing the datasets. Possible values are:
             'row', 'col', 'rowcol', 'colrow'.
+        scalar_mode : str
+             Mode for plotting scalars and tensor magnitudes, one of
+             'cut_plane', 'iso_surface', 'both'. 
         rel_scaling : float
             Relative scaling of glyphs for vector datasets.
         clamping : bool
@@ -170,6 +173,11 @@ class Viewer(Struct):
 
         if rel_text_width is None:
             rel_text_width = 0.02
+
+        if scalar_mode == 'both':
+            scalar_mode = ('cut_plane', 'iso_surface')
+        else:
+            scalar_mode = (scalar_mode,)
 
         mlab.options.offscreen = self.offscreen
         if layout == 'rowcol':
@@ -204,7 +212,7 @@ class Viewer(Struct):
         n_data = len(names)
         n_row, n_col = get_position_counts(n_data, layout)
 
-        max_label_width = nm.max([len(ii[2]) for ii in names])
+        max_label_width = nm.max([len(ii[2]) for ii in names]) + 2
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
@@ -220,6 +228,7 @@ class Viewer(Struct):
             if ii == n_data: break
             family, kind, name = names[ii]
 
+            is_magnitude = False
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
             position[:2] -= bbox[:2]
             
@@ -230,16 +239,18 @@ class Viewer(Struct):
                 setattr(active, '%s_%s_name' % (family, kind), name)
 
                 if is_3d:
-                    scp = add_scalar_cut_plane(active,
-                                               position, [1, 0, 0],
-                                               opacity=0.5)
-                    scp = add_scalar_cut_plane(active,
-                                               position, [0, 1, 0],
-                                               opacity=0.5 )
-                    scp = add_scalar_cut_plane(active,
-                                               position, [0, 0, 1],
-                                               opacity=0.5 )
-                    iso = add_iso_surface(active, position, opacity=0.3)
+                    if 'cut_plane' in scalar_mode:
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [1, 0, 0],
+                                                   opacity=0.5)
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [0, 1, 0],
+                                                   opacity=0.5 )
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [0, 0, 1],
+                                                   opacity=0.5 )
+                    if 'iso_surface' in scalar_mode:
+                        iso = add_iso_surface(active, position, opacity=0.3)
                 else:
                     surf = add_surf(active, position)
                 
@@ -261,16 +272,20 @@ class Viewer(Struct):
                 active.point_tensors_name = name
 
                 active = mlab.pipeline.extract_tensor_components(active)
+                is_magnitude = True
                 if is_3d:
-                    scp = add_scalar_cut_plane(active,
-                                               position, [1, 0, 0],
-                                               opacity=0.5)
-                    scp = add_scalar_cut_plane(active,
-                                               position, [0, 1, 0],
-                                               opacity=0.5 )
-                    scp = add_scalar_cut_plane(active,
-                                               position, [0, 0, 1],
-                                               opacity=0.5 )
+                    if 'cut_plane' in scalar_mode:
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [1, 0, 0],
+                                                   opacity=0.5)
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [0, 1, 0],
+                                                   opacity=0.5 )
+                        scp = add_scalar_cut_plane(active,
+                                                   position, [0, 0, 1],
+                                                   opacity=0.5 )
+                    if 'iso_surface' in scalar_mode:
+                        iso = add_iso_surface(active, position, opacity=0.3)
                 else:
                     surf = add_surf(active, position)
 
@@ -279,9 +294,11 @@ class Viewer(Struct):
 
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
+                if is_magnitude:
+                    name = '|%s|' % name
                 text = add_text(active, position, name,
-                                rel_text_width * float(len(name))
-                                / max_label_width )
+                                float(rel_text_width * len(name))
+                                / float(max_label_width))
 
             scene.scene.reset_zoom()
 
