@@ -761,6 +761,9 @@ class VTKMeshIO( MeshIO ):
                                     data = nm.array(data, dtype=nm.float64),
                                     dofs = None )
 
+            elif line[0] == 'CELL_DATA':
+                break
+
             line = fd.readline()
 
         fd.close()
