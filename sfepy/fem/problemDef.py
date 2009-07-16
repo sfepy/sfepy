@@ -288,7 +288,8 @@ class ProblemDefinition( Struct ):
         if ts is None:
             ts = self.get_default_ts(step=0)
 
-        self.materials.time_update(ts, self.domain)
+        self.materials.time_update(ts, self.domain,
+                                   self.equations, self.variables)
 
     def update_equations( self, ts = None ):
         if ts is None:

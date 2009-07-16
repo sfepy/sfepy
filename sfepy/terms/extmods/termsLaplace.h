@@ -12,7 +12,7 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 int32 dw_laplace( FMField *out, FMField *state, int32 offset,
-		  float64 coef, VolumeGeometry *vg,
+		  FMField *coef, VolumeGeometry *vg,
 		  int32 *conn, int32 nEl, int32 nEP,
 		  int32 *elList, int32 elList_nRow,
 		  int32 isDiff );

@@ -13,6 +13,9 @@ class LaplaceTerm( ScalarScalar, Term ):
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
 
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign, terms.dw_laplace)
+
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -21,19 +24,13 @@ class LaplaceTerm( ScalarScalar, Term ):
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        mat_arg = fix_scalar_constant( mat, nm.float64 )
-        if mat_arg is None:
-            mat_arg = fix_scalar_in_el( mat, self.data_shape[0], nm.float64 )
-            self.function = terms.dw_st_pspg_p
-        else:
-            self.function = terms.dw_laplace
 
         if state.is_real():
-            fargs = vec, 0, mat_arg, vg, ap.econn
+            fargs = vec, 0, mat, vg, ap.econn
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, mat_arg, vg, ap.econn),
-                     (ac( vec.imag ), 0, mat_arg, vg, ap.econn)]
+            fargs = [(ac( vec.real ), 0, mat, vg, ap.econn),
+                     (ac( vec.imag ), 0, mat, vg, ap.econn)]
             mode += 1j
             
         return fargs, shape, mode

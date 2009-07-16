@@ -44,12 +44,12 @@ class Materials( Container ):
         for mat in self:
             mat.setup_regions( regions )
 
-    def time_update(self, ts, domain):
+    def time_update(self, ts, domain, equations, variables):
         output( 'updating materials...' )
         tt = time.clock()
         for mat in self:
             output( ' ', mat.name )
-            mat.time_update(ts, domain)
+            mat.time_update(ts, domain, equations, variables)
         output( '...done in %.2f s' % (time.clock() - tt) )
 
 ##
@@ -87,20 +87,31 @@ class Material( Struct ):
         self.igs = region.igs
         self.region = region 
 
-    def time_update(self, ts, domain):
+    def time_update(self, ts, domain, equations, variables):
         """coors is in region.vertices[ig] order (i.e. sorted by node number)"""
         self.data = None
+        if (self.datas is not None) and (self.kind != 'stationary'): return
 
-        if (self.datas is None) or \
-           not (self.function.is_constant and (self.kind == 'stationary')):
+        self.datas = {}
+        for equation in equations:
+            for term in equation.terms:
+                names = [ii.split('.')[0] for ii in term.names.material]
+                if self.name not in names: continue
 
-            self.datas = []
+                order = term.get_quadrature_orders(variables)
+                key = (term.region.name, order)
+                if key in self.datas: continue
 
-            for ig in self.igs:
-                coors = domain.get_mesh_coors()[self.region.get_vertices(ig)]
-                self.datas.append(self.function(ts, coors,
-                                                region=self.region,
-                                                ig=ig))
+                qps = variables.get_physical_qps(self.region)
+
+                for ig in self.igs:
+                    self.datas.append(self.function(ts, qps.values[ig],
+                                                    region=self.region,
+                                                    ig=ig))
+##                 for var_name in term.names.variable:
+##                     var = variables[var_name]
+                    
+                    debug()
 
     ##
     # 31.07.2007, c
