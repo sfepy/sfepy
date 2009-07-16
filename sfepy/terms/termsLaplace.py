@@ -70,8 +70,14 @@ class DiffusionTerm( ScalarScalar, Term ):
                         assumed_shapes = [(1, n_qp, dim, dim),
                                           (n_el, n_qp, dim, dim)],
                         mode_in = None )
-        return (1.0, vec, 0, mat_qp, vg, ap.econn), shape, mode
-
+        if state.is_real():
+            return (1.0, vec, 0, mat_qp, vg, ap.econn), shape, mode
+        else:
+            ac = nm.ascontiguousarray
+            mode += 1j
+            return [(1.0, ac(vec.real), 0, mat_qp, vg, ap.econn),
+                    (1.0, ac(vec.imag), 0, mat_qp, vg, ap.econn)], shape, mode
+    
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
