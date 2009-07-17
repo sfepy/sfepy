@@ -42,14 +42,21 @@ class ConstantFunction(Function):
     """Function with constant values."""
 
     def __init__(self, values, functions=None):
-        """Make a function out of a dictionary of constant values."""
+        """Make a function out of a dictionary of constant values. When
+        called with coors argument, the values are repeated for each
+        coordinate."""
 
         name = '_'.join(['get_constants'] + values.keys())
 
         def get_constants(ts=None, coors=None, **kwargs):
             out = {}
             for key, val in values.iteritems():
-                out[key] = val
+                if coors is None:
+                    out[key] = val
+                else:
+                    val = nm.array(val, dtype=nm.float64, ndmin=4)
+                    out[key] = nm.tile(val, (coors.shape[0], 1, 1, 1))
+                    
             return out
         
         Function.__init__(self, name = name, function = get_constants,

@@ -98,20 +98,23 @@ class Material( Struct ):
                 names = [ii.split('.')[0] for ii in term.names.material]
                 if self.name not in names: continue
 
-                order = term.get_quadrature_orders(variables)
-                key = (term.region.name, order)
+                key = (term.region.name, term.integral.name)
                 if key in self.datas: continue
 
-                qps = variables.get_physical_qps(self.region)
+                # Any term has at least one variable, all variables used
+                # in a term share the same integral.
+                var_name = term.names.variable[0]
+                var = variables[var_name]
+
+                aps = var.field.aps
+
+                qps = aps.get_physical_qps(self.region, term.integral)
 
                 for ig in self.igs:
-                    self.datas.append(self.function(ts, qps.values[ig],
-                                                    region=self.region,
-                                                    ig=ig))
-##                 for var_name in term.names.variable:
-##                     var = variables[var_name]
-                    
-                    debug()
+                    datas = self.datas.setdefault(key, [])
+                    datas.append(self.function(ts, qps.values[ig],
+                                               region=self.region,
+                                               ig=ig))
 
     ##
     # 31.07.2007, c
@@ -130,20 +133,20 @@ class Material( Struct ):
     def set_extra_args( self, extra_args ):
         self.extra_args = extra_args
         
-    def get_data( self, region_name, ig, name ):
+    def get_data( self, key, ig, name ):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
 ##         print 'getting', name
 
         if isinstance( name, str ):
-            return self._get_data( region_name, ig, name )
+            return self._get_data( key, ig, name )
         else:
             out = Struct()
             for key, item in name.iteritems():
-                setattr( out, key, self._get_data( region_name, ig, item ) )
+                setattr( out, key, self._get_data( key, ig, item ) )
             return out
                        
-    def _get_data( self, region_name, ig, name ):
+    def _get_data( self, key, ig, name ):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
                   '(material: %s, region: %s)' % (self.name, region_name)
@@ -152,19 +155,18 @@ class Material( Struct ):
         if self.datas is None:
             raise ValueError( 'material data not set! (call time_update())' )
 
-        if self.function.is_constant:
-            ii = 0
-        else:
-            ii = self.igs.index( ig )
+        ii = self.igs.index( ig )
+        datas = self.datas[key]
 
-        if isinstance( self.datas[ii], Struct ):
-            return getattr( self.datas[ii], name )
+        if isinstance( datas[ii], Struct ):
+            return getattr( datas[ii], name )
         else:
-            return self.datas[ii][name]
+            return datas[ii][name]
 
     ##
     # 01.08.2007, c
     def reduce_on_datas( self, reduce_fun, init = 0.0 ):
+        """FIX ME!"""
         out = {}.fromkeys( self.datas[0].keys(), init )
 
         for data in self.datas:

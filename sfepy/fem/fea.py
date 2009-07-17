@@ -993,3 +993,33 @@ class Approximations( Container ):
     def purge_surface_data( self ):
         for ap in self:
             ap.surface_data = {}
+
+
+    def get_physical_qps(self, region, integral, merge=False):
+        """TODO: surface qps"""
+        phys_qps = Struct(values = [], group_indx = {})
+        ii = 0
+        for ig in region.igs:
+            ap = self.aps_per_group[ig]
+
+            bf = ap.get_base(integral.kind, 0, integral.name, from_geometry=True)
+            coors = region.domain.get_mesh_coors()[region.all_vertices]
+            if integral.kind == 'v':
+                cells = region.cells[ig]
+                conn = region.domain.groups[ig].conn
+                
+                qps = nm.dot(bf.squeeze(), coors[conn[cells]])
+                debug()
+
+            elif integral.kind[0] == 's':
+                raise NotImplementedError
+
+            phys_qps.values.append(qps)
+            phys_qps.group_indx[ig] = nm.arange(ii, ii + qps.shape[0],
+                                                dtype=nm.int32)
+            ii += qps.shape[0]
+
+        if merge:
+            phys_qps.values = nm.vstack(phys_qps.values)
+
+        return phys_qps

@@ -114,7 +114,7 @@ ebc_2 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'quadrature' : 'gauss_o2_d3',
 }
 
 equations = {
