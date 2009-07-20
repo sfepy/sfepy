@@ -1,5 +1,37 @@
 # created: 20.07.2007 (-1)
-# last revision: 11.05.2009
+# last revision: 20.07.2009
+
+from 2009.2 to 2009.3
+=====================
+- basic support for Windows installation via numpy distutils (finally!):
+  - installation using standard "python setup.py install"...
+- postproc.py:
+  - quite usable now for fast first glance at the results
+  - plots point, cell data of all kinds (scalar, vector, tensor)
+  - draw iso-surface in 3D mode
+  - fixed filename in Viewer for femhub notebook
+  - new options: --scalar-mode, --list-names, --only-names,
+    --rel-text-width, --no-show, --roll, --view, --all, --layout, -o
+- cylindergen.py:
+  - cylindrical mesh generator
+- probe.py:
+  - can probe selected quantities only
+  - new options: --only-names, --auto-dir, --same-dir
+- isfepy:
+  - new options: --no-wx, --no-viewer
+- phono: basic support for liquid inclusions
+  - support for inner band gaps detection (brute force) and plotting
+- homogenization: added new-style piezo-elastic corrector and coefficient classes
+- schroedinger: fixed charge density computation
+- solvers:
+  - added SciPy direct sparse solvers (ls.scipy_direct) - unified
+  umfpack, superlu
+- new terms:
+  - de_grad (element average of gradient)
+  - d_volume_surface (compute volume using surface integral)
+  - dw_bc_newton (Newton boundary condition)
+  - dq_state_in_volume_qp, dq_state_in_surface_qp (interpolating state
+    into quadrature points)
 
 from 2009.1 to 2009.2:
 ======================

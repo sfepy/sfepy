@@ -1,4 +1,4 @@
-# c: 19.01.2007, r: 11.05.2009
+# c: 19.01.2007, r: 20.07.2009
 
 This is not for the faint of heart!
 
@@ -7,31 +7,44 @@ Installation prerequisites:
 
 Dependencies:
     matplotlib, pyparsing, umfpack, pytables
-    schroedinger.py requires pysparse, gmsh (2D) , tetgen (3D)
+    schroedinger.py requires pysparse, gmsh (2D), tetgen (3D)
     log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-    isfepy requires ipython
+    isfepy requires ipython, matplotlib with WXAgg
     postproc.py requires mayavi2
 
 For example in Debian:
   $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
 
-SfePy is known to work on various flavours of Linux, and on Intel Macs. Not
-tested on Windows.
+SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
 
-Compiling:
-----------
-1. Look at site_cfg_template.py and follow the instructions therein.
-2. (Optionally) edit the Makefile:
-  - compiler, swig command, ...
-3. 'make'
+It can be used without any installation (see In-place compilation...) by
+running the scripts from the top-level directory of the distribution
+(TOPDIR) (see Examples), or can be installed locally or system-wide (see
+Installation).
+
+In-place compilation of C extension modules:
+--------------------------------------------
+Using the Makefile (Linux, Mac OS X):
+  1. Look at site_cfg_template.py and follow the instructions therein.
+  2. (Optionally) edit the Makefile:
+    - compiler, swig command, ...
+  3. 'make'
+
+Using distutils (all platforms):
+  python setup.py build-ext --inplace
 
 Installation:
 -------------
-None. Run the executable script './simple.py' in the top-level directory of the
-distribution (TOPDIR).
+
+system-wide: 'python setup.py install'
+local: 'python setup.py install --root=<installation prefix>'
 
 Examples:
 ---------
+
+Run the executable script 'simple.py' in the top-level directory of the
+distribution (TOPDIR). The unix-style calls are used below, use 'python
+<script>' in place of './<script>' on windows.
 
 Basic usage:
 './simple.py input/poisson.py' ... creates simple.vtk

@@ -1,5 +1,5 @@
 # 14.12.2004, c
-VERSION := 2009.2
+VERSION := 2009.3
 PROJECTNAME := sfepy
 
 ############### Edit here. #######################################
@@ -46,8 +46,8 @@ ALLTARGETS := version modules
 
 CUR_DIR := $(shell $(PWDCOMMAND))
 
-DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py isfepy shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py TODO INSTALL README LICENSE
-RELDISTFILES_TOP := btrace_python Makefile VERSION isfepy extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py INSTALL LICENSE README RELEASE_NOTES.txt
+DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py isfepy shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py setup.py TODO INSTALL README LICENSE
+RELDISTFILES_TOP := btrace_python Makefile VERSION isfepy extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py eigen.py site_cfg_template.py setup.py INSTALL LICENSE README RELEASE_NOTES.txt
 SUBDIRS = database doc examples input script sfepy tests
 RELSUBDIRS = database doc examples input script sfepy tests
 DATADIRS := database

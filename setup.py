@@ -19,13 +19,14 @@ CLASSIFIERS = """\
 Development Status :: 3 - Alpha
 Intended Audience :: Science/Research
 Intended Audience :: Developers
-License :: OSI Approved
+License :: OSI Approved :: BSD License
 Programming Language :: C
 Programming Language :: Python
 Topic :: Software Development
 Topic :: Scientific/Engineering
 Operating System :: POSIX
 Operating System :: MacOS :: MacOS X
+Operating System :: Microsoft :: Windows
 """
 
 DOWNLOAD_URL = "http://code.google.com/p/sfepy/wiki/Downloads?tm=2"
@@ -33,8 +34,6 @@ DOWNLOAD_URL = "http://code.google.com/p/sfepy/wiki/Downloads?tm=2"
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
-
-os.environ['NO_SFEPY_IMPORT']='SfePy/setup.py'
 
 def configuration(parent_package='',top_path=None):
     from numpy.distutils.misc_util import Configuration
@@ -133,7 +132,7 @@ def setup_package():
               download_url = DOWNLOAD_URL,
               license = 'BSD',
               classifiers = filter(None, CLASSIFIERS.split('\n')),
-              platforms = ["Linux", "Mac OS-X"],
+              platforms = ["Linux", "Mac OS-X", 'Windows'],
               scripts = main_scripts,
 #              cmdclass = {'install_scripts' : install_scripts},
               configuration = configuration)
