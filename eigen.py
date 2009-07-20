@@ -251,13 +251,14 @@ class AcousticBandGapsApp( SimpleApp ):
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
-                                 show = plot_opts['show'],
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
                 fig_name = bg.opts.fig_name
                 if fig_name is not None:
                     fig.savefig( fig_name )
+                if plot_opts['show']:
+                    plt.show()
 
         elif options.analyze_dispersion:
             christoffel, iw_dir = self.compute_cat(ret_iw_dir=True)
@@ -296,7 +297,6 @@ class AcousticBandGapsApp( SimpleApp ):
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
-                                 show = False,
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
@@ -318,13 +318,14 @@ class AcousticBandGapsApp( SimpleApp ):
                                  bg.valid[bg.eig_range],
                                  bg.freq_range_initial,
                                  plot_range, False,
-                                 show = plot_opts['show'],
                                  show_legend = plot_opts['legend'],
                                  new_axes = True )
 
                 fig_name = bg.opts.fig_name_wave
                 if fig_name is not None:
                     fig.savefig( fig_name )
+                if plot_opts['show']:
+                    plt.show()
 
         else:
             bg = None

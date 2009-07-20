@@ -3,12 +3,24 @@ from sfepy.base.tasks import Process, Pipe
 
 try:
     import gobject
+except ImportError:
+    pass
+
+try:
     import matplotlib as mpl
-    mpl.use('GTKAgg')
     import matplotlib.pyplot as plt
     from matplotlib.ticker import LogLocator, AutoLocator
 except:
     plt = None
+
+if (mpl is not None) and mpl.rcParams['backend'] == 'GTKAgg':
+    can_live_plot = True
+else:
+    can_live_plot = False
+
+_msg_no_live = """warning: log plot is disabled, install matplotlib
+         (use GTKAgg backend) and multiprocessing"""
+
     
 class ProcessPlotter( Struct ):
     output = Output('plotter:',
@@ -176,11 +188,11 @@ class Log( Struct ):
         self.yaxes = get_default( yaxes, [''] * self.n_arg )
         self.aggregate = get_default( aggregate, 100 )
 
-        self.can_plot = (plt is not None) and (Process is not None)
+        self.can_plot = (can_live_plot and (plt is not None)
+                         and (Process is not None))
 
         if self.is_plot and (not self.can_plot):
-            output('warning: log plot is disabled, install matplotlib (GTKAgg)')
-            output('         and multiprocessing')
+            output(_msg_no_live)
     
     def __call__( self, *args, **kwargs ):
         finished = False
