@@ -1,23 +1,34 @@
-# c: 19.01.2007, r: 20.07.2009
-
-This is not for the faint of heart!
+This is not for the faint of heart! But it gets better.
 
 Installation prerequisites:
+---------------------------
     recent numpy, scipy (with umfpack wrapper, or umfpack scikit), swig
 
 Dependencies:
+-------------
     matplotlib, pyparsing, umfpack, pytables
     schroedinger.py requires pysparse, gmsh (2D), tetgen (3D)
     log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
     isfepy requires ipython, matplotlib with WXAgg
     postproc.py requires mayavi2
 
-For example in Debian:
-  $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
-
 SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
 
-It can be used without any installation (see In-place compilation...) by
+On Linux, consult the package manager of your favourite distribution.
+For example in Gentoo:
+  $ emerge -va pytables pyparsing numpy scipy matplotlib ipython
+in Debian:
+  $ apt-get install python-tables python-pyparsing python-matplotlib python-scipy
+
+On Windows, all the required packages are part of the Enthought Python
+Distribution (EPD) [1] which is free for academic purposes. A completely
+free Python(x,y) [2] can be used too, but pyparsing has to be installed
+manually.
+
+[1] http://www.enthought.com/products/epd.php
+[2] http://www.pythonxy.com/foreword.php
+
+SfePy can be used without any installation (see In-place compilation...) by
 running the scripts from the top-level directory of the distribution
 (TOPDIR) (see Examples), or can be installed locally or system-wide (see
 Installation).
@@ -31,7 +42,7 @@ Using the Makefile (Linux, Mac OS X):
   3. 'make'
 
 Using distutils (all platforms):
-  python setup.py build-ext --inplace
+  python setup.py build_ext --inplace
 
 Installation:
 -------------
@@ -43,8 +54,8 @@ Examples:
 ---------
 
 Run the executable script 'simple.py' in the top-level directory of the
-distribution (TOPDIR). The unix-style calls are used below, use 'python
-<script>' in place of './<script>' on windows.
+distribution (TOPDIR). The unix-style calls are used below,
+on windows use 'python <script>' in place of './<script>'.
 
 Basic usage:
 './simple.py input/poisson.py' ... creates simple.vtk
@@ -55,7 +66,7 @@ Basic usage:
 Surface extraction:
 './findSurf.py database/t.1.node -' ... creates surf_t.1.mesh
 
-Applications:
+Applications (look at the Dependencies!):
 - phononic materials:
   './eigen.py -p input/phono/band_gaps.py' ... see input/phono/output/
 - schroedinger.py (order is important below):

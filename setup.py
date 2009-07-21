@@ -13,7 +13,7 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 
-VERSION = '2009.2-release'
+VERSION = '2009.3-release'
 
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha

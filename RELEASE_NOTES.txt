@@ -1,5 +1,5 @@
 # created: 20.07.2007 (-1)
-# last revision: 20.07.2009
+# last revision: 20.07.2009 (+1)
 
 from 2009.2 to 2009.3
 =====================
@@ -32,6 +32,7 @@ from 2009.2 to 2009.3
   - dw_bc_newton (Newton boundary condition)
   - dq_state_in_volume_qp, dq_state_in_surface_qp (interpolating state
     into quadrature points)
+  - dw_surface_integrate_variable (weak surface term with variable coefficient)
 
 from 2009.1 to 2009.2:
 ======================
