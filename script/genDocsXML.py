@@ -122,7 +122,7 @@ def items_per_sections( table, sec_name_prefix, omit_list ):
         omit_list = omit_list.split()
 
     ips = {}
-    for name, cls in table.iteritems():
+    for name, cls in ordered_iteritems(table):
         module = cls.__module__.split( '.' )[-1]
         if module in omit_list: continue
         sec_name = '%s in %s' % (sec_name_prefix, module)
@@ -243,7 +243,7 @@ def typeset( fd, items_per_section, item_table, typeset_syntax ):
     current_section = [None]
     bnf = create_bnf( sec_list, current_section )
 
-    for sec_name, item_names in items_per_section.iteritems():
+    for sec_name, item_names in ordered_iteritems(items_per_section):
         fd.write( r'<section><title>%s</title>' % sec_name )
         fd.write( '\n\n' )
 

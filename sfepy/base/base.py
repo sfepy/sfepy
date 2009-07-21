@@ -633,3 +633,10 @@ def select_by_names( objs_all, names, replace = None, simple = True ):
                     setattr( new_val, replace[0], new_attr )
                 objs[key] = new_val
     return objs
+
+def ordered_iteritems(adict):
+    keys = adict.keys()
+    order = nm.argsort(keys)
+    for ii in order:
+        key = keys[ii]
+        yield key, adict[key]
