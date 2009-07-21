@@ -187,7 +187,7 @@ class MatInQPDataCache( DataCache ):
         self.shape = {}
         self.mode_in = {}
         self.mode_out = {}
-
+        
     def init_data( self, key, ckey, **kwargs ):
         mat, ap, assumed_shapes, mode_in = self.get_args( **kwargs )
         if mode_in is None:
@@ -217,34 +217,43 @@ class MatInQPDataCache( DataCache ):
             else:
                 raise ValueError
 
-        shape = None
-        for ashape in assumed_shapes:
-            if ashape[0] == 1:
-                if ashape[1] == 1:
-                    mode_out = 'const'
-                else:
-                    mode_out = 'const_in_qp'
-            else:
-                if ashape[1] == 1:
-                    mode_out = 'variable'
-                else:
-                    mode_out = 'variable_in_qp'
+        if 'mode_out' in kwargs:
+            mode_out = kwargs['mode_out']
+            shape = assumed_shapes[0]
 
-            if mode_in == 'const':
-                shape = ashape
-                break
-            elif mode_in == 'element_avg':
-                if mode_out in ['variable_in_qp', 'variable']:
+        else:
+            shape = None
+            for ashape in assumed_shapes:
+                if ashape[0] == 1:
+                    if ashape[1] == 1:
+                        mode_out = 'const'
+                    else:
+                        mode_out = 'const_in_qp'
+                else:
+                    if ashape[1] == 1:
+                        mode_out = 'variable'
+                    else:
+                        mode_out = 'variable_in_qp'
+
+                if mode_in == 'const':
                     shape = ashape
                     break
-            elif mode_in == 'vertex':
-                if mode_out in ['variable_in_qp']:
-                    shape = ashape
-                    break
+                elif mode_in == 'element_avg':
+                    if mode_out in ['variable_in_qp', 'variable']:
+                        shape = ashape
+                        break
+                elif mode_in == 'vertex':
+                    if mode_out in ['variable_in_qp']:
+                        shape = ashape
+                        break
 
         if shape is None:
             raise ValueError
 
+        self.dtype = mat.dtype
+        self.geometry = kwargs.get('geometry', 'volume')
+        self.region_name = kwargs.get('region_name', None)
+        
         self.mode_in[ckey] = mode_in
         self.mode_out[ckey] = mode_out
         self.shape[ckey] = shape
@@ -264,11 +273,17 @@ class MatInQPDataCache( DataCache ):
         elif self.mode_in[ckey] == 'vertex':
             """no group.lconn, so it is built here..."""
             iname, ig = ckey[0], ckey[-1]
-            
-            gbf = ap.get_base( 'v', 0, iname, from_geometry = True )
-            group = ap.region.domain.groups[ig]
-            conn = group.conn
 
+
+            if self.geometry == 'volume':
+                gbf = ap.get_base( 'v', 0, iname, from_geometry = True )
+                group = ap.region.domain.groups[ig]
+                conn = group.conn
+            else:
+                sd = ap.surface_data[self.region_name]
+                gbf = ap.get_base(sd.face_type, 0, iname, from_geometry=True)
+                conn = sd.leconn
+                
             # dq_state_in_qp() works for vectors -> make a view of
             # shape (n_el, n_qp, n_row * n_col, 1).
             vshape = shape[0:2] + (nm.prod( mat.shape[1:] ), 1)
@@ -278,14 +293,23 @@ class MatInQPDataCache( DataCache ):
 ##             print self.data[key][ckey][ih].shape
 ##             debug()
             mat_qp = self.data[key][ckey][ih].reshape( vshape )
-            if ap.region.n_v_max > group.shape.n_vertex:
+            if ((self.geometry == 'volume')
+                and (ap.region.n_v_max > group.shape.n_vertex)):
                 remap = nm.zeros( (ap.region.n_v_max,), dtype = nm.int32 )
                 remap[group.vertices] = nm.arange( group.shape.n_vertex,
                                                    dtype = nm.int32 )
                 lconn = remap[conn]
             else:
                 lconn = conn
-            self.function( mat_qp, mat, 0, gbf, lconn )
 
+            if mat.dtype == nm.float64:
+                self.function( mat_qp, mat, 0, gbf, lconn )
+            else: # complex128
+                ac = nm.ascontiguousarray
+                val_r = nm.zeros_like(mat_qp.real)
+                val_i = nm.zeros_like(mat_qp.imag)
+                self.function(val_r, ac(mat.real), 0, gbf, lconn)
+                self.function(val_i, ac(mat.imag), 0, gbf, lconn)
+                mat_qp.flat[:] = val_r + 1j * val_i
         else:
             raise NotImplementedError

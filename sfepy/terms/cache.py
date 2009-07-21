@@ -55,6 +55,10 @@ class DataCache( Struct ):
         self.merge_history_sizes( history_sizes )
         self.step = 0
 
+        self.dtype = nm.float64
+        self.geometry = 'volume'
+        self.region_name = None
+
     ##
     # 28.11.2006, c
     def keys( self ):
@@ -133,7 +137,7 @@ class DataCache( Struct ):
         
         # Current time data.
         data[ckey] = deque()
-        arr = nm.empty( shape, dtype = nm.float64 )
+        arr = nm.empty(shape, dtype=self.dtype)
         data[ckey].append( arr )
             
         # History data.

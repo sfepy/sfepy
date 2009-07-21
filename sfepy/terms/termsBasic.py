@@ -215,6 +215,58 @@ class IntegrateSurfaceOperatorTerm( Term ):
 
             yield out, lchunk, 0
 
+class IntegrateSurfaceVariableOperatorTerm(Term):
+    r""":description: Surface integral of a test function with variable
+    coefficient.
+    :definition: $\int_\Gamma c q$"""
+    name = 'dw_surface_integrate_variable'
+    arg_types = ('material', 'virtual')
+    geometry = [(Surface, 'virtual')]
+    use_caches = {'mat_in_qp' : [['material']]}
+
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign)
+        self.dof_conn_type = 'surface'
+        
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        mat, virtual = self.get_args(**kwargs)
+        ap, sg = virtual.get_approximation(self.get_current_group(), 'Surface')
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+                                                    self.region.name)
+        if diff_var is None:
+            shape = (chunk_size, 1, n_fp, 1)
+        else:
+            raise StopIteration
+
+        cache = self.get_cache('mat_in_qp', 0)
+        mat_qp = cache('matqp', self.get_current_group(), 0,
+                       mat=mat, ap=ap,
+                       assumed_shapes = [(n_fa, n_qp, 1, 1)],
+                       mode_in='vertex', mode_out='variable_in_qp',
+                       geometry='surface', region_name=self.region.name)
+        mat_qp = fix_mat_qp_shape(mat_qp, chunk_size)
+
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+
+        ac = nm.ascontiguousarray
+
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
+            bf_t = nm.tile(bf.transpose((0, 2, 1) ), (chunk.shape[0], 1, 1, 1))
+            val =  mat_qp[lchunk] * bf_t
+            if virtual.is_real:
+                status = sg.integrate_chunk(out, val, lchunk, 1)
+            else:
+                status_r = sg.integrate_chunk(out, ac(val.real), lchunk, 1)
+                out_imag = nm.zeros_like(out)
+                status_i = sg.integrate_chunk(out_imag, ac(val.imag), lchunk, 1)
+
+                status = status_r or status_i
+                out = out + 1j * out_imag
+                
+            yield out, lchunk, status
+
 ##
 # 16.07.2007, c
 class VolumeTerm( Term ):
