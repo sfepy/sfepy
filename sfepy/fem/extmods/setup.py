@@ -15,6 +15,7 @@ def configuration(parent_package='', top_path=None):
     auto_dir = op.dirname(__file__)
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
+    config.add_data_files(('sfepy/fem/extmods', ('version.h.in',)))
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
                ('DEBUGFMF', None),
