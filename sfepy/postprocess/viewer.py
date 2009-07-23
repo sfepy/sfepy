@@ -130,7 +130,7 @@ class Viewer(Struct):
         pass
     
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
-                  layout='rowcol', scalar_mode=None,
+                  layout='rowcol', scalar_mode='iso_surface',
                   rel_scaling=None, clamping=False, rel_text_width=None,
                   fig_filename='view.png', filter_names=None, only_names=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
@@ -176,8 +176,11 @@ class Viewer(Struct):
 
         if scalar_mode == 'both':
             scalar_mode = ('cut_plane', 'iso_surface')
-        else:
+        elif scalar_mode in ('cut_plane', 'iso_surface'):
             scalar_mode = (scalar_mode,)
+        else:
+            raise ValueError('bad value of scalar_mode parameter! (%s)'
+                             % scalar_mode)
 
         mlab.options.offscreen = self.offscreen
         if layout == 'rowcol':
@@ -206,7 +209,7 @@ class Viewer(Struct):
             if len(_names) != len(only_names):
                 output('warning: some names were not found!')
             if not len(_names):
-                raise ValueError('no names were found! (%s not in %s)' \
+                raise ValueError('no names were found! (%s not in %s)'
                                  % (only_names, [name[2] for name in names]))
             names = _names
         n_data = len(names)
