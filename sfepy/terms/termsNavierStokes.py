@@ -269,12 +269,25 @@ class GradETerm( Term ):
         else:
             raise StopIteration
 
+        ac = nm.ascontiguousarray
+
         vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, vg, ap.econn, chunk )
+            if state.is_real():
+                status = self.function( out, vec, 0, vg, ap.econn, chunk )
+            else:
+                status_r = self.function(out, ac(vec.real), 0,
+                                         vg, ap.econn, chunk)
+                out_imag = nm.zeros_like(out)
+                status_i = self.function(out_imag, ac(vec.imag), 0,
+                                         vg, ap.econn, chunk)
+
+                status = status_r or status_i
+                out = out + 1j * out_imag
+
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
-
+                
 ##
 # 26.07.2007, c
 class GradDivStabilizationTerm( Term ):
