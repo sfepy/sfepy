@@ -132,7 +132,8 @@ class Viewer(Struct):
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
                   rel_scaling=None, clamping=False, rel_text_width=None,
-                  fig_filename='view.png', filter_names=None, only_names=None):
+                  fig_filename='view.png', resolution = None,
+                  filter_names=None, only_names=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -161,6 +162,9 @@ class Viewer(Struct):
         fig_filename : str
             File name for saving the resulting scene figure, if
             self.auto_screenshot is True.
+        resolution : tuple
+            Scene and figure resolution. If None, it is set
+            automatically according to the layout.
         filter_names : list of strings
             Omit the listed datasets. If None, it is initialized to
             ['node_groups', 'mat_id']. Pass [] if you need no filtering.
@@ -183,7 +187,9 @@ class Viewer(Struct):
                              % scalar_mode)
 
         mlab.options.offscreen = self.offscreen
-        if layout == 'rowcol':
+        if resolution is not None:
+            size = resolution
+        elif layout == 'rowcol':
             size = (800, 600)
         elif layout == 'row':
             size = (1000, 600)

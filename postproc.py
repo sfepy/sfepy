@@ -32,6 +32,9 @@ help = {
     'filename' :
     'view image file name' \
     ' [default: %default]',
+    'resolution' :
+    'image resolution in NxN format [default: shorter axis: 600;'\
+    ' depends on layout: for rowcol it is 800x600]',
     'all' :
     'draw all data (normally, node_groups and mat_id are omitted)',
     'list_names' :
@@ -44,10 +47,15 @@ def parse_view(option, opt, value, parser):
     val = tuple(float(ii) for ii in value.split(','))
     setattr(parser.values, option.dest, val)
 
-
+def parse_resolution(option, opt, value, parser):
+    if value is not None:
+        print value
+        setattr(parser.values, option.dest,
+                tuple([int(r) for r in value.split('x')]))
+                
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
-    parser.add_option("--no-show",
+    parser.add_option("-n", "--no-show",
                       action="store_false", dest="show",
                       default=True, help=help['no_show'])
     parser.add_option("--3d",
@@ -77,6 +85,9 @@ def main():
     parser.add_option("-o", metavar='filename',
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
+    parser.add_option("-r", "--resolution", type='str', metavar='resolution',
+                      action="callback", dest="resolution",
+                      callback=parse_resolution, help=help['resolution'])
     parser.add_option("-a", "--all",
                       action="store_true", dest="all",
                       default=False, help=help['all'])
@@ -113,8 +124,8 @@ def main():
              roll=options.roll, layout=options.layout,
              scalar_mode=options.scalar_mode, rel_scaling=options.rel_scaling,
              clamping=options.clamping, rel_text_width=options.rel_text_width,
-             fig_filename=options.filename, filter_names=filter_names,
-             only_names=options.only_names)
+             fig_filename=options.filename, resolution=options.resolution,
+             filter_names=filter_names, only_names=options.only_names)
 
 if __name__ == '__main__':
     main()
