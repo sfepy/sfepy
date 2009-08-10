@@ -35,8 +35,11 @@ help = {
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'filename' :
-    'view image file name' \
-    ' [default: %default]',
+    'view image file name [default: %default]',
+    'anim_file_type' :
+    'if set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is' \
+    ' installed and results of multiple time steps are given, an animation is' \
+    ' created in the same directory as the view images',
     'resolution' :
     'image resolution in NxN format [default: shorter axis: 600;'\
     ' depends on layout: for rowcol it is 800x600]',
@@ -130,13 +133,16 @@ def main():
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
-    parser.add_option("-o", metavar='filename',
+    parser.add_option("-o", "--output", metavar='filename',
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
+    parser.add_option("-a", "--animation", metavar='<ffmpeg-suuported format>',
+                      action="store", dest="anim_file_type",
+                      default=None, help=help['anim_file_type'])
     parser.add_option("-r", "--resolution", type='str', metavar='resolution',
                       action="callback", dest="resolution",
                       callback=parse_resolution, help=help['resolution'])
-    parser.add_option("-a", "--all",
+    parser.add_option("--all",
                       action="store_true", dest="all",
                       default=False, help=help['all'])
     parser.add_option("--list-names",
@@ -173,12 +179,24 @@ def main():
         base, ext = os.path.splitext(fig_filename)
 
         n_digit, fmt, suffix = get_print_info(len(filenames))
-        print options.ranges
+
         view = None
         for ii, filename in enumerate(filenames):
             output('%d: %s' % (ii, filename))
             options.filename = '.'.join((base, suffix % ii, ext[1:]))
             view = view_single_file(filename, filter_names, options, view)
+
+        if options.anim_file_type is not None:
+            anim_name = '.'.join((base, options.anim_file_type))
+            cmd = 'ffmpeg -i %s %s' % ('.'.join((base, suffix, ext[1:])),
+                                       anim_name)
+            output('creating animation "%s"...' % anim_name)
+            try:
+                os.system(cmd) 
+            except:
+                output('...warning: animation not created, is ffmpeg installed?')
+            else:
+                output('...done')
 
 if __name__ == '__main__':
     main()
