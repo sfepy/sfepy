@@ -119,7 +119,17 @@ class Viewer(Struct):
         else:
             return p_names + c_names
 
+    def set_source_filename(self, filename):
+        self.filename = filename
+        self.source.base_file_name = filename
 
+
+    def save_image(self, filename):
+        name = os.path.join(self.output_dir, filename)
+        output('saving %s...' % name)
+        self.scene.scene.save(name)
+        output('...done')
+        
     def __call__(self, *args, **kwargs):
         """
         This is either call_mlab() or call_empty().
@@ -131,9 +141,10 @@ class Viewer(Struct):
     
     def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
-                  rel_scaling=None, clamping=False, rel_text_width=None,
+                  rel_scaling=None, clamping=False,
+                  ranges=None, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
-                  filter_names=None, only_names=None):
+                  filter_names=None, only_names=None, anti_aliasing=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -159,6 +170,10 @@ class Viewer(Struct):
             Relative scaling of glyphs for vector datasets.
         clamping : bool
             Clamping for vector datasets.
+        ranges : dict
+            List of data ranges in the form {name : (min, max), ...}.
+        rel_text_width : float
+            Relative text width.
         fig_filename : str
             File name for saving the resulting scene figure, if
             self.auto_screenshot is True.
@@ -171,6 +186,8 @@ class Viewer(Struct):
         only_names : list of strings
             Draw only the listed datasets. If None, it is initialized all names
             besides those in filter_names.
+        anti_aliasing : int
+            Value of anti-aliasing.
         """
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
@@ -197,11 +214,14 @@ class Viewer(Struct):
             size = (600, 1000)
         else:
             size = (600, 800)
-        scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=size)
+
+        self.scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=size)
+        scene = self.scene
+        scene.scene.disable_render = True
 
         float_eps = nm.finfo(nm.float64).eps
 
-        source = mlab.pipeline.open(self.filename)
+        self.source = source = mlab.pipeline.open(self.filename)
         bbox = nm.array(source.reader.unstructured_grid_output.bounds)
         dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
         view3d = abs(dx[2]) > (10.0 * float_eps)
@@ -301,6 +321,17 @@ class Viewer(Struct):
             else:
                 raise ValueError('bad kind! (%s)' % kind)
 
+            if (ranges is not None) and (name in ranges):
+                mm = active.children[0]
+
+                if (kind == 'scalars') or (kind == 'tensors'):
+                    mm.scalar_lut_manager.use_default_range = False
+                    mm.scalar_lut_manager.data_range = ranges[name]
+
+                else: # kind == 'vectors': 
+                    mm.vector_lut_manager.use_default_range = False
+                    mm.vector_lut_manager.data_range = ranges[name]
+
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
                 if is_magnitude:
@@ -323,11 +354,12 @@ class Viewer(Struct):
             mlab.view(*view)
         mlab.roll(roll)
 
-        if self.auto_screenshot:
-            name = os.path.join(self.output_dir, fig_filename)
-            output('saving %s...' % name)
-            scene.scene.save(name)
-            output('...done')
+        scene.scene.disable_render = False
+        if anti_aliasing is not None:
+            scene.scene.anti_aliasing_frames = anti_aliasing
 
+        if self.auto_screenshot:
+            self.save_image(fig_filename)
+            
         if show:
             mlab.show()

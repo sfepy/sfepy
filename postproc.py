@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 from optparse import OptionParser
+import os
+import glob
 
 import sfepy
-from sfepy.base.base import pause
+from sfepy.base.base import pause, output
 from sfepy.postprocess import Viewer
+from sfepy.solvers.ts import get_print_info
 
 usage = """%prog [options] filename"""
 
@@ -27,6 +30,8 @@ help = {
     ' [default: %default]',
     'clamping' :
     'glyph clamping mode',
+    'ranges' :
+    'force data ranges [default: automatic from data]',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'filename' :
@@ -41,6 +46,8 @@ help = {
     'do not plot, only list all dataset names',
     'only_names' :
     'draw only named data',
+    'anti_aliasing' :
+    'value of anti-aliasing [default: mayavi2 default]',
 }
 
 def parse_view(option, opt, value, parser):
@@ -52,6 +59,43 @@ def parse_resolution(option, opt, value, parser):
         print value
         setattr(parser.values, option.dest,
                 tuple([int(r) for r in value.split('x')]))
+
+def parse_ranges(option, opt, value, parser):
+    if value is not None:
+        print value
+        ranges = {}
+        for rng in value.split(':'):
+            aux = rng.split(',')
+            ranges[aux[0]] = (float(aux[1]), float(aux[2]))
+        setattr(parser.values, option.dest, ranges)
+
+def view_single_file(filename, filter_names, options, view=None):
+    if view is None:
+        view = Viewer(filename, offscreen=not options.show)
+
+        if options.list_names:
+            for line in view.get_data_names():
+                print line
+
+        else:
+            if options.only_names is not None:
+                options.only_names = options.only_names.split(',')
+
+            view(show=options.show, is_3d=options.is_3d, view=options.view,
+                 roll=options.roll, layout=options.layout,
+                 scalar_mode=options.scalar_mode,
+                 rel_scaling=options.rel_scaling,
+                 clamping=options.clamping, ranges=options.ranges,
+                 rel_text_width=options.rel_text_width,
+                 fig_filename=options.filename, resolution=options.resolution,
+                 filter_names=filter_names, only_names=options.only_names,
+                 anti_aliasing=options.anti_aliasing)
+    else:
+        view.set_source_filename(filename)
+        view.save_image(options.filename)
+
+    return view
+
                 
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
@@ -79,6 +123,10 @@ def main():
     parser.add_option("--clamping",
                       action="store_true", dest="clamping",
                       default=False, help=help['clamping'])
+    parser.add_option("--ranges", type='str',
+                      metavar='name1,min1,max1:name2,min2,max2:...',
+                      action="callback", dest="ranges",
+                      callback=parse_ranges, help=help['ranges'])
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
@@ -97,10 +145,17 @@ def main():
     parser.add_option("--only-names", metavar='list of names',
                       action="store", dest="only_names",
                       default=None, help=help['only_names'])
+    parser.add_option("--anti-aliasing", type='int', metavar='value',
+                      action="store", dest="anti_aliasing",
+                      default=None, help=help['anti_aliasing'])
     options, args = parser.parse_args()
 
-    if (len(args) == 1):
-        filename = args[0]
+    if len(args) >= 1:
+        if len(args) == 1:
+            filenames = glob.glob(args[0])
+            filenames.sort()
+        else:
+            filenames = args
     else:
         parser.print_help(),
         return
@@ -110,22 +165,20 @@ def main():
     else:
         filter_names = []
 
-    view = Viewer(filename, offscreen=not options.show)
-
-    if options.list_names:
-        for line in view.get_data_names():
-            print line
+    if len(filenames) == 1:
+        view_single_file(filenames[0], filter_names, options)        
 
     else:
-        if options.only_names is not None:
-            options.only_names = options.only_names.split(',')
+        fig_filename=options.filename
+        base, ext = os.path.splitext(fig_filename)
 
-        view(show=options.show, is_3d=options.is_3d, view=options.view,
-             roll=options.roll, layout=options.layout,
-             scalar_mode=options.scalar_mode, rel_scaling=options.rel_scaling,
-             clamping=options.clamping, rel_text_width=options.rel_text_width,
-             fig_filename=options.filename, resolution=options.resolution,
-             filter_names=filter_names, only_names=options.only_names)
+        n_digit, fmt, suffix = get_print_info(len(filenames))
+        print options.ranges
+        view = None
+        for ii, filename in enumerate(filenames):
+            output('%d: %s' % (ii, filename))
+            options.filename = '.'.join((base, suffix % ii, ext[1:]))
+            view = view_single_file(filename, filter_names, options, view)
 
 if __name__ == '__main__':
     main()
