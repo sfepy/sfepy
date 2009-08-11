@@ -159,11 +159,11 @@ class Newton( NonlinearSolver ):
                 tt = time.clock()
                 try:
                     vec_r = fun( vec_x )
-                except ValueError:
+                except ValueError, exc:
                     ok = False
                 else:
                     ok = True
-                    
+
                 time_stats['rezidual'] = time.clock() - tt
                 if ok:
                     try:
@@ -184,11 +184,11 @@ class Newton( NonlinearSolver ):
                     output(  'rezidual computation failed for iter %d'
                              ' (new ls: %e)!' % (it, red * ls) )
                     if (it == 0):
-                        raise RuntimeError, 'giving up...'
+                        raise
 
                 if ls < conf.ls_min:
                     if not ok:
-                        raise RuntimeError, 'giving up...'
+                        raise RuntimeError('giving up...')
                     output( 'linesearch failed, continuing anyway' )
                     break
 
@@ -217,7 +217,7 @@ class Newton( NonlinearSolver ):
                 mtx_a, ok = fun_grad( 'linear' ), True
             time_stats['matrix'] = time.clock() - tt
             if not ok:
-                raise RuntimeError, 'giving up...'
+                raise RuntimeError('giving up...')
 
             if conf.check:
                 tt = time.clock()
@@ -236,7 +236,6 @@ class Newton( NonlinearSolver ):
             lerr = nla.norm( vec_e )
             if lerr > (conf.eps_a * conf.lin_red):
                 output( 'linear system not solved! (err = %e)' % lerr )
-    #            raise RuntimeError, 'linear system not solved! (err = %e)' % lerr
 
             vec_x -= vec_dx
 
