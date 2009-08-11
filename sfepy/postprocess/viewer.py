@@ -142,7 +142,7 @@ class Viewer(Struct):
     def call_empty(self, *args, **kwargs):
         pass
     
-    def call_mlab(self, show=True, is_3d=False, view=None, roll=None,
+    def call_mlab(self, scene=None, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
                   rel_scaling=None, clamping=False,
                   ranges=None, rel_text_width=None,
@@ -218,8 +218,13 @@ class Viewer(Struct):
         else:
             size = (600, 800)
 
-        self.scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=size)
-        scene = self.scene
+        if scene is None:
+            self.scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
+                                     size=size)
+            scene = self.scene
+        else:
+            self.scene = scene
+
         scene.scene.disable_render = True
 
         float_eps = nm.finfo(nm.float64).eps
