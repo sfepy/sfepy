@@ -2,10 +2,11 @@ from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.applications import SimpleApp
 
-def pde_solve(conf_filename, options=None):
+def pde_solve(conf_filename, options=None, **app_options):
     required, other = get_standard_keywords()
     conf = ProblemConf.from_file(conf_filename, required, other)
-    opts = conf.options
+
+    opts = conf.options = dict_to_struct(app_options, flag=(1,)) + conf.options
 
     output_prefix = opts.get_default_attr('output_prefix', None)
     if output_prefix is None:
