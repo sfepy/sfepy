@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys
 import os
+from threading import Thread
+from time import sleep
 import numpy as np
 
 from enthought.traits.api import HasTraits, Range, Instance, File, Str,\
@@ -8,6 +10,8 @@ from enthought.traits.api import HasTraits, Range, Instance, File, Str,\
 from enthought.traits.ui.api import View, Item, Group, TextEditor, \
      FileEditor, DirectoryEditor
 from enthought.tvtk.pyface.scene_editor import SceneEditor
+from enthought.pyface.gui import GUI
+from enthought.pyface.timer.api import do_later
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.pipeline_base import PipelineBase
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
@@ -15,6 +19,17 @@ from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 from sfepy.applications import pde_solve
 from sfepy.fem import ProblemDefinition
 from sfepy.postprocess import Viewer
+
+def assign_solution_to_gui(gui, sol):
+    def _assign():
+        gui.problem, gui.vec, gui.data = sol
+    return _assign
+
+class SolveThread(Thread):
+    def run(self):
+        sol = pde_solve(self.gui.input_filename,
+                        output_dir=self.gui.output_dir)
+        do_later(assign_solution_to_gui(self.gui, sol))
 
 class SfePyGUI(HasTraits):
     """Mayavi2-based GUI."""
@@ -25,6 +40,9 @@ class SfePyGUI(HasTraits):
     output_dir = Directory(os.path.join(os.getcwd(), 'output'),
                            label='output directory')
     problem = Instance(ProblemDefinition)
+    vec = Instance(np.ndarray)
+    data = Instance(dict)
+    solve_thread = Instance(SolveThread)
 
     @on_trait_change('input_filename')
     def solve(self):
@@ -32,10 +50,10 @@ class SfePyGUI(HasTraits):
         if not self.scene._renderer: return
         if not os.path.isfile(self.input_filename): return
 
-        aux = pde_solve(self.input_filename, output_dir=self.output_dir)
-        self.problem, self.vec, self.data = aux
-        print self.vec
-        self.problem, self.vec, self.data = aux
+        if not (self.solve_thread and self.solve_thread.isAlive()):
+            self.solve_thread = SolveThread()
+            self.solve_thread.gui = self
+            self.solve_thread.start()
         
     def _run_fired(self):
         self.solve()
@@ -62,7 +80,11 @@ class SfePyGUI(HasTraits):
         resizable=True,
     )
 
-gui = SfePyGUI()
-if len(sys.argv) > 1:
-    gui.input_filename = sys.argv[1]
-gui.configure_traits()
+if __name__ == '__main__':
+
+    gui = SfePyGUI()
+
+    if len(sys.argv) > 1:
+        gui.input_filename = sys.argv[1]
+
+    gui.configure_traits()
