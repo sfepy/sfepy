@@ -103,8 +103,8 @@ def setup_term_args( terms, variables, materials, user = None ):
         mns = term.get_material_names()
         for name in mns:
             if name not in materials.names:
-                output( 'material "%s" not found' % name )
-                raise IndexError
+                msg = 'material "%s" not found' % name
+                raise IndexError(msg)
 
             mat = materials[name]
 
