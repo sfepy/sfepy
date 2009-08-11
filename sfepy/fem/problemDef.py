@@ -291,11 +291,13 @@ class ProblemDefinition( Struct ):
         funmod = get_default( funmod, self.conf.funmod )
         self.materials.time_update( ts, funmod, self.domain, extra_mat_args )
 
-    def update_equations( self, ts = None ):
+    def update_equations( self, ts = None, funmod = None ):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
+        funmod = get_default( funmod, self.conf.funmod )
+
         self.equations.time_update( ts )
-        self.variables.time_update( ts )
+        self.variables.time_update( ts, funmod )
 
     def time_update( self, ts = None,
                      conf_ebc = None, conf_epbc = None, conf_lcbc = None,
@@ -312,7 +314,7 @@ class ProblemDefinition( Struct ):
         self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
                         create_matrix )
         self.update_materials( ts, funmod, extra_mat_args )
-        self.update_equations( ts )
+        self.update_equations( ts, funmod )
 
     def setup_ic( self, conf_ics = None, funmod = None ):
         conf_ics = get_default( conf_ics, self.conf.ics )

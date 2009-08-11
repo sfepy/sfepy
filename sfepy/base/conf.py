@@ -41,7 +41,11 @@ def transform_variables( adict ):
                 elif kind == 'test':
                     c2.dual = conf[2]
                 elif kind == 'parameter':
-                    c2.like = conf[2]
+                    if isinstance(conf[2], str):
+                        c2.like = conf[2]
+                    else:
+                        c2.like = None
+                        c2.special = conf[2]
                 if len( conf ) == 4:
                     c2.history = conf[3]
             d2['variable_%s__%d' % (c2.name, ii)] = c2

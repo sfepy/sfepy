@@ -1125,9 +1125,11 @@ class Variables( Container ):
         for var in self.iter_state():
             var.init_state( state, self.di.indx[var.name] )
 
-    def time_update( self, ts ):
+    def time_update( self, ts, funmod ):
+        output('updating variables...')
         for var in self:
-            var.time_update( ts )
+            var.time_update( ts, funmod )
+        output('...done')
 
     def advance( self, ts ):
         for var in self.iter_state():
@@ -1173,6 +1175,10 @@ class Variable( Struct ):
                         % conf.name
                 raise ValueError( msg )
             obj.dof_name = obj.primary_var_name
+
+            if hasattr(conf, 'special'):
+                obj.special = conf.special
+
         else:
             obj.flags.add( is_other )
             msg = 'unknown variable family: %s' % family
@@ -1256,8 +1262,24 @@ class Variable( Struct ):
         self.step = 0
         self.data_from_state( state, indx, step = 0 )
 
-    def time_update( self, ts ):
+    def time_update( self, ts, funmod ):
+        """Store time step, set variable data for variables with the
+        setter function."""
         self.dt = ts.dt
+
+        if hasattr(self, 'special') and ('setter' in self.special):
+            setter_name = self.special['setter']
+            setter = getattr(funmod, setter_name)
+
+            region = self.field.region
+            fn = region.get_field_nodes(self.field)
+            nod_list = self.clean_node_list(fn, 'field', region.name,
+                                            warn=False)
+            nods = nm.unique1d(nm.hstack(nod_list))
+
+            coor = self.field.get_coor(nods)
+            self.data_from_any(setter(ts, coor, region))
+            output('data of %s set by %s()' % (self.name, setter_name))
 
     def advance( self, ts ):
         if self.history is None: return
