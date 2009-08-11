@@ -6,6 +6,13 @@ try:
 except ImportError:
     mlab = None
 
+def get_glyphs_scale_factor(rng, rel_scaling, bbox):
+    delta = rng[1] - rng[0]
+    dx = nm.max((bbox[1::2] - bbox[:-1:2]))
+    if rel_scaling is None:
+        rel_scaling = 0.02 # -> delta fits 50x into dx.
+    return rel_scaling * dx / delta
+
 def add_surf(obj, position, opacity=1.0):
     surf = mlab.pipeline.surface(obj, opacity=opacity)
     surf.actor.actor.position = position
@@ -31,11 +38,7 @@ def add_glyphs(obj, position, bbox, rel_scaling=None,
                                  color=color, opacity=1.0) 
     if scale_factor == 'auto':
         rng = glyphs.glyph.glyph.range
-        delta = rng[1] - rng[0]
-        dx = nm.max((bbox[1::2] - bbox[:-1:2]))
-        if rel_scaling is None:
-            rel_scaling = 0.02 # -> delta fits 50x into dx.
-        scale_factor = rel_scaling * dx / delta
+        scale_factor = get_glyphs_scale_factor(rng, rel_scaling, bbox)
 
     glyphs.glyph.color_mode = 'color_by_vector'
     glyphs.glyph.scale_mode = 'scale_by_vector'
@@ -122,7 +125,7 @@ class Viewer(Struct):
     def set_source_filename(self, filename):
         self.filename = filename
         self.source.base_file_name = filename
-
+#        self.mlab.pipeline.update()
 
     def save_image(self, filename):
         name = os.path.join(self.output_dir, filename)
@@ -292,6 +295,10 @@ class Viewer(Struct):
 
                 glyphs = add_glyphs(active, position, bbox,
                                     rel_scaling=rel_scaling, clamping=clamping)
+
+                if (ranges is not None) and (name in ranges):
+                    sf = get_glyphs_scale_factor(ranges[name], rel_scaling, bbox)
+                    glyphs.glyph.glyph.scale_factor = sf
 
             elif kind == 'tensors':
                 if family == 'point':

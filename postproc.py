@@ -8,7 +8,42 @@ from sfepy.base.base import pause, output
 from sfepy.postprocess import Viewer
 from sfepy.solvers.ts import get_print_info
 
-usage = """%prog [options] filename"""
+usage = """%prog [options] filename
+
+This is a script for quick Mayavi-based visualizations of finite element
+computations results.
+
+Examples
+--------
+  The examples assume that runTests.py has been run successfully and the
+  resulting data files are present.
+
+  - view data in output-tests/test_navier_stokes.vtk
+
+    $ python postproc.py output-tests/test_navier_stokes.vtk
+    $ python postproc.py output-tests/test_navier_stokes.vtk --3d
+
+  - create animation (forces offscreen rendering) from
+    output-tests/test_time_poisson.*.vtk
+    
+    $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
+
+  - create animation (forces offscreen rendering) from
+    output-tests/test_hyperelastic.*.vtk
+
+    The range specification for the displacements 'u' is required, as
+    output-tests/test_hyperelastic.00.vtk contains only zero
+    displacements which leads to invisible glyph size.
+    
+    $ python postproc.py output-tests/test_hyperelastic.*.vtk \
+                         --ranges=u,0,0.02 -a mov 
+
+  - same as above, but slower frame rate
+
+    $ python postproc.py output-tests/test_hyperelastic.*.vtk \
+                         --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
+
+"""
 
 help = {
     'no_show' :
@@ -40,6 +75,8 @@ help = {
     'if set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is' \
     ' installed and results of multiple time steps are given, an animation is' \
     ' created in the same directory as the view images',
+    'ffmpeg_options' :
+    'ffmpeg animation encoding options (enclose in "") [default: %default]',
     'resolution' :
     'image resolution in NxN format [default: shorter axis: 600;'\
     ' depends on layout: for rowcol it is 800x600]',
@@ -136,9 +173,13 @@ def main():
     parser.add_option("-o", "--output", metavar='filename',
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
-    parser.add_option("-a", "--animation", metavar='<ffmpeg-suuported format>',
+    parser.add_option("-a", "--animation", metavar='<ffmpeg-supported format>',
                       action="store", dest="anim_file_type",
                       default=None, help=help['anim_file_type'])
+    parser.add_option("", "--ffmpeg-options", metavar='"<ffmpeg options>"',
+                      action="store", dest="ffmpeg_options",
+                      default='-r 10 -sameq',
+                      help=help['ffmpeg_options'])
     parser.add_option("-r", "--resolution", type='str', metavar='resolution',
                       action="callback", dest="resolution",
                       callback=parse_resolution, help=help['resolution'])
@@ -175,6 +216,10 @@ def main():
         view_single_file(filenames[0], filter_names, options)        
 
     else:
+        if options.anim_file_type is not None:
+            # Force the offscreen rendering when saving an animation.
+            options.show = False
+
         fig_filename=options.filename
         base, ext = os.path.splitext(fig_filename)
 
@@ -188,8 +233,9 @@ def main():
 
         if options.anim_file_type is not None:
             anim_name = '.'.join((base, options.anim_file_type))
-            cmd = 'ffmpeg -i %s %s' % ('.'.join((base, suffix, ext[1:])),
-                                       anim_name)
+            cmd = 'ffmpeg %s -i %s %s' % (options.ffmpeg_options,
+                                          '.'.join((base, suffix, ext[1:])),
+                                          anim_name)
             output('creating animation "%s"...' % anim_name)
             try:
                 os.system(cmd) 
