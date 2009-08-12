@@ -90,7 +90,7 @@ class Material( Struct ):
     def time_update(self, ts, domain, equations, variables):
         """coors is in region.vertices[ig] order (i.e. sorted by node number)"""
         self.data = None
-        if (self.datas is not None) and (self.kind != 'stationary'): return
+        if self.datas and (self.kind == 'stationary'): return
 
         self.datas = {}
         for equation in equations:
@@ -109,12 +109,21 @@ class Material( Struct ):
                 aps = var.field.aps
 
                 qps = aps.get_physical_qps(self.region, term.integral)
-
                 for ig in self.igs:
                     datas = self.datas.setdefault(key, [])
-                    datas.append(self.function(ts, qps.values[ig],
-                                               region=self.region,
-                                               ig=ig))
+                    data = self.function(ts, qps.values[ig],
+                                        region=self.region, ig=ig)
+                    # Restore shape to (n_el, n_qp, ...) until the C
+                    # core is rewritten to work with a bunch of physical
+                    # point values only.
+                    if qps.is_uniform:
+                        n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
+                        for key, val in data.iteritems():
+                            val.shape = (val.shape[0] / n_qp, n_qp,
+                                         val.shape[1], val.shape[2])
+                    else:
+                        raise NotImplementedError
+                    datas.append(data)
 
     ##
     # 31.07.2007, c

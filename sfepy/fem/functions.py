@@ -54,8 +54,8 @@ class ConstantFunction(Function):
                 if coors is None:
                     out[key] = val
                 else:
-                    val = nm.array(val, dtype=nm.float64, ndmin=4)
-                    out[key] = nm.tile(val, (coors.shape[0], 1, 1, 1))
+                    val = nm.array(val, dtype=nm.float64, ndmin=3)
+                    out[key] = nm.tile(val, (coors.shape[0],1,1))
                     
             return out
         

@@ -241,7 +241,7 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
-    fmf_print( coef, stdout, 0 );
+/*     fmf_print( coef, stdout, 0 ); */
 /*     fmf_print( vg->bfGM, stdout, 0 ); */
 /*     fmf_print( vg->det, stdout, 0 ); */
 

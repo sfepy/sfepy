@@ -997,7 +997,10 @@ class Approximations( Container ):
 
     def get_physical_qps(self, region, integral, merge=False):
         """TODO: surface qps"""
-        phys_qps = Struct(values = [], group_indx = {})
+        phys_qps = Struct(values = [],
+                          group_indx = {},
+                          el_indx = {},
+                          n_qp = {})
         ii = 0
         for ig in region.igs:
             ap = self.aps_per_group[ig]
@@ -1009,15 +1012,24 @@ class Approximations( Container ):
                 conn = region.domain.groups[ig].conn
                 
                 qps = nm.dot(bf.squeeze(), coors[conn[cells]])
-                debug()
 
             elif integral.kind[0] == 's':
                 raise NotImplementedError
 
-            phys_qps.values.append(qps)
-            phys_qps.group_indx[ig] = nm.arange(ii, ii + qps.shape[0],
+            phys_qps.is_uniform = True
+            phys_qps.n_qp[ig] = n_qp = qps.shape[0] * qps.shape[1]
+
+            phys_qps.group_indx[ig] = nm.arange(ii, ii + n_qp,
                                                 dtype=nm.int32)
-            ii += qps.shape[0]
+
+            aux = nm.tile(nm.array(qps.shape[0], dtype=nm.int32), n_qp + 1)
+            aux[0] = 0
+            phys_qps.el_indx[ig] = nm.cumsum(aux)
+            
+            ii += n_qp
+
+            qps.shape = (n_qp, qps.shape[2])
+            phys_qps.values.append(qps)
 
         if merge:
             phys_qps.values = nm.vstack(phys_qps.values)
