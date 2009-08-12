@@ -10,7 +10,6 @@ from enthought.traits.api import HasTraits, Range, Instance, File, Str,\
 from enthought.traits.ui.api import View, Item, Group, TextEditor, \
      FileEditor, DirectoryEditor
 from enthought.tvtk.pyface.scene_editor import SceneEditor
-from enthought.pyface.gui import GUI
 from enthought.pyface.timer.api import do_later
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.pipeline_base import PipelineBase
@@ -21,15 +20,13 @@ from sfepy.fem import ProblemDefinition
 from sfepy.postprocess import Viewer
 
 def assign_solution_to_gui(gui, sol):
-    def _assign():
-        gui.problem, gui.vec, gui.data = sol
-    return _assign
+    gui.problem, gui.vec, gui.data = sol
 
 class SolveThread(Thread):
     def run(self):
         sol = pde_solve(self.gui.input_filename,
                         output_dir=self.gui.output_dir)
-        do_later(assign_solution_to_gui(self.gui, sol))
+        do_later(assign_solution_to_gui, self.gui, sol)
 
 class SfePyGUI(HasTraits):
     """Mayavi2-based GUI."""
@@ -46,7 +43,6 @@ class SfePyGUI(HasTraits):
 
     @on_trait_change('input_filename')
     def solve(self):
-#        import pdb; pdb.set_trace()
         if not self.scene._renderer: return
         if not os.path.isfile(self.input_filename): return
 
