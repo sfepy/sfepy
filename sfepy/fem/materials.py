@@ -78,6 +78,7 @@ class Material( Struct ):
 
         self.region = None
         self.datas = None
+        self.special_names = set()
         self.data = None
 
     ##
@@ -93,6 +94,7 @@ class Material( Struct ):
         if self.datas and (self.kind == 'stationary'): return
 
         self.datas = {}
+        # Quadrature point function values.
         for equation in equations:
             for term in equation.terms:
                 names = [ii.split('.')[0] for ii in term.names.material]
@@ -111,19 +113,26 @@ class Material( Struct ):
                 qps = aps.get_physical_qps(self.region, term.integral)
                 for ig in self.igs:
                     datas = self.datas.setdefault(key, [])
-                    data = self.function(ts, qps.values[ig],
-                                        region=self.region, ig=ig)
+                    data = self.function(ts, qps.values[ig], mode='qp',
+                                         region=self.region, ig=ig)
                     # Restore shape to (n_el, n_qp, ...) until the C
                     # core is rewritten to work with a bunch of physical
                     # point values only.
                     if qps.is_uniform:
                         n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
-                        for key, val in data.iteritems():
+                        for val in data.itervalues():
                             val.shape = (val.shape[0] / n_qp, n_qp,
                                          val.shape[1], val.shape[2])
                     else:
                         raise NotImplementedError
                     datas.append(data)
+
+        # Special function values (e.g. flags).
+        datas = self.function(ts, domain.get_mesh_coors(), mode='special',
+                              region=self.region)
+        if datas is not None:
+            self.datas['special'] = datas
+            self.special_names.update(datas.keys())
 
     ##
     # 31.07.2007, c
@@ -164,13 +173,18 @@ class Material( Struct ):
         if self.datas is None:
             raise ValueError( 'material data not set! (call time_update())' )
 
-        ii = self.igs.index( ig )
-        datas = self.datas[key]
+        if name in self.special_names:
+            # key, ig ignored.
+            return self.datas['special'][name]
 
-        if isinstance( datas[ii], Struct ):
-            return getattr( datas[ii], name )
         else:
-            return datas[ii][name]
+            ii = self.igs.index( ig )
+            datas = self.datas[key]
+
+            if isinstance( datas[ii], Struct ):
+                return getattr( datas[ii], name )
+            else:
+                return datas[ii][name]
 
     ##
     # 01.08.2007, c

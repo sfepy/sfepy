@@ -2,13 +2,13 @@
 import numpy as nm
 filename_mesh = '../database/tests/plane.mesh'
 
-def get_pars(ts, coors, region=None, ig=None, extra_arg=None):
-    print extra_arg
-    if extra_arg == 'hello!':
-        ic = 0
-    else:
-        ic = 1
-    return {('x_%s' % ic) : coors[:,ic]}
+def get_pars(ts, coors, mode=None, region=None, ig=None, extra_arg=None):
+    if mode == 'special':
+        if extra_arg == 'hello!':
+            ic = 0
+        else:
+            ic = 1
+        return {('x_%s' % ic) : coors[:,ic]}
 
 def get_p_edge(ts, coors, bc=None):
     if bc.name == 'p_left':
@@ -21,8 +21,8 @@ def get_circle(coors, domain=None):
     return nm.where(r < 0.2)[0]
 
 functions = {
-    'get_pars1' : (lambda ts, coors, region=None, ig=None:
-                   get_pars(ts, coors, region, ig, extra_arg='hello!'),),
+    'get_pars1' : (lambda ts, coors, mode=None, region=None, ig=None:
+                   get_pars(ts, coors, mode, region, ig, extra_arg='hello!'),),
     'get_p_edge' : (get_p_edge,),
     'get_circle' : (get_circle,),
 }
@@ -30,14 +30,15 @@ functions = {
 # Just another way of adding a function, besides 'functions' keyword.
 function_1 = {
     'name' : 'get_pars2',
-    'function' : lambda ts, coors, region=None, ig=None:
-        get_pars(ts, coors, region, ig, extra_arg='hi!'),
+    'function' : lambda ts, coors,mode=None,  region=None, ig=None:
+        get_pars(ts, coors, mode, region, ig, extra_arg='hi!'),
 }
 
 materials = {
     'mf1' : ('Omega', None, 'get_pars1'),
     'mf2' : ('Omega', None, 'get_pars2'),
-    'mf3' : ('Omega', {'a' : 1.0, 'b' : 2.0}),
+    # Dot denotes a special value, that is not propagated to all QP.
+    'mf3' : ('Omega', {'a' : 10.0, 'b' : 2.0, '.c' : 'ahoj'}),
 }
 
 fields = {
@@ -101,19 +102,23 @@ class Test( TestCommon ):
     def test_material_functions(self):
         problem = self.problem
         ts = problem.get_default_ts(step=0)
-        problem.materials.time_update(ts, problem)
+
+        problem.materials.time_update(ts,
+                                      problem.domain,
+                                      problem.equations,
+                                      problem.variables)
 
         coors = problem.domain.get_mesh_coors()
-        
         mat1 = problem.materials['mf1']
-        assert_(nm.all(coors[:,0] == mat1.datas[0]['x_0']))
+        assert_(nm.all(coors[:,0] == mat1.get_data(None, None, 'x_0')))
 
         mat2 = problem.materials['mf2']
-        assert_(nm.all(coors[:,1] == mat2.datas[0]['x_1']))
+        assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
 
         mat3 = problem.materials['mf3']
-        assert_(mat3.datas[0]['a'] == 1.0)
-        assert_(mat3.datas[0]['b'] == 2.0)
+        assert_(nm.all(mat3.get_data(('Omega', 'i1'), 0, 'a') == 10.0))
+        assert_(nm.all(mat3.get_data(('Omega', 'i1'), 0, 'b') == 2.0))
+        assert_(mat3.get_data(None, None, 'c') == 'ahoj')
 
         return True
 #        mat.time_update(ts, problem)
