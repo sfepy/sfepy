@@ -248,43 +248,45 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, want_bar_coors = 0 ):
     nodes = nm.zeros( (n_nod, 2 * dim), nm.int32 )
     nts = nm.zeros( (n_nod, 2), nm.int32 )
 
-##     print n_nod, gd
-
-    iseq = 0
-    ##
-    # Vertex nodes.
-    nts[0:n_v,0] = 0
-    nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
-    aux = ao * nm.identity( n_v, dtype = nm.int32 )
-    if dim == 3:
-        for ii in range( n_v ):
-            i1, i2, i3 = vertex_map[ii]
-            nodes[iseq,:] = [ao - i1, i1, ao - i2, i2, ao - i3, i3]
-            iseq += 1
-    elif dim == 2:
-        for ii in range( n_v ):
-            i1, i2 = vertex_map[ii]
-            nodes[iseq,:] = [ao - i1, i1, ao - i2, i2]
-            iseq += 1
+    if ao == 0:
+        nts[0,:] = [3, 0]
+        nodes[0,:] = nm.zeros( (n_v,), nm.int32 )
     else:
-        for ii in range( n_v ):
-            i1 = vertex_map[ii]
-            nodes[iseq,:] = [ao - i1, i1]
-            iseq += 1
+        iseq = 0
+        ##
+        # Vertex nodes.
+        nts[0:n_v,0] = 0
+        nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
+        aux = ao * nm.identity( n_v, dtype = nm.int32 )
+        if dim == 3:
+            for ii in range( n_v ):
+                i1, i2, i3 = vertex_map[ii]
+                nodes[iseq,:] = [ao - i1, i1, ao - i2, i2, ao - i3, i3]
+                iseq += 1
+        elif dim == 2:
+            for ii in range( n_v ):
+                i1, i2 = vertex_map[ii]
+                nodes[iseq,:] = [ao - i1, i1, ao - i2, i2]
+                iseq += 1
+        else:
+            for ii in range( n_v ):
+                i1 = vertex_map[ii]
+                nodes[iseq,:] = [ao - i1, i1]
+                iseq += 1
 
-    if dim == 1:
-        iseq = gen_edges( nodes, nts, iseq, 3, [[0, 1]], ao )
-    elif dim == 2:
-        iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
-        iseq = gen_faces( nodes, nts, iseq, 3, [[0, 1, 2, 3]], ao )
-    elif dim == 3:
-        iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
-        iseq = gen_faces( nodes, nts, iseq, 2, gd.faces, ao )
-        iseq = gen_bubble( nodes, nts, iseq, 3, ao )
-    else:
-        raise NotImplementedError
+        if dim == 1:
+            iseq = gen_edges( nodes, nts, iseq, 3, [[0, 1]], ao )
+        elif dim == 2:
+            iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+            iseq = gen_faces( nodes, nts, iseq, 3, [[0, 1, 2, 3]], ao )
+        elif dim == 3:
+            iseq = gen_edges( nodes, nts, iseq, 1, gd.edges, ao )
+            iseq = gen_faces( nodes, nts, iseq, 2, gd.faces, ao )
+            iseq = gen_bubble( nodes, nts, iseq, 3, ao )
+        else:
+            raise NotImplementedError
         
-#    print nm.concatenate( (nts, nodes), 1 )
+##     print nm.concatenate( (nts, nodes), 1 )
 
 ##     print nodes
 ##     print nts
@@ -299,14 +301,20 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, want_bar_coors = 0 ):
     if want_bar_coors:
         ##
         # Barycentric coordinates.
-        c_min = nm.amin( gd.coors, 0 )
-        c_max = nm.amax( gd.coors, 0 )
-##         print gd.coors
-##         print c_min, c_max
+        if ao == 0:
+            tmp = nm.ones( (n_nod, n_v), nm.int32 )
+            bar_coors = nm.dot( tmp, gd.coors ) / n_v
 
-        cr = nm.arange( 2 * dim )
-        bar_coors = (nodes[:,cr[::2]] * c_min + nodes[:,cr[1::2]] * c_max) / ao
-##         print bar_coors
+        else:
+            c_min = nm.amin( gd.coors, 0 )
+            c_max = nm.amax( gd.coors, 0 )
+    ##         print gd.coors
+    ##         print c_min, c_max
+
+            cr = nm.arange( 2 * dim )
+            bar_coors = (nodes[:,cr[::2]] * c_min
+                         + nodes[:,cr[1::2]] * c_max) / ao
+##             print bar_coors
         
         return (nts, nodes, bar_coors)
     else:

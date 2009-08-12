@@ -504,15 +504,23 @@ class Approximation( Struct ):
             
             bf_vg, weights = self.get_base( 'v', 1, integral = integral,
                                           base_only = False )
+            if nm.allclose(bf_vg, 0.0): # Constant bubble.
+                bf_vg, weights = self.get_base( 'v', 1, integral = integral,
+                                                base_only = False,
+                                                from_geometry = True )
+                domain = self.region.domain
+                group = domain.groups[self.ig]
+                coors = domain.get_mesh_coors()
+                gconn = group.conn
+                shape = shape[:3] + (group.shape.n_ep,)
+            else:
+                gconn = self.econn
 
-##             print bf_vg, weights
-##             pause()
             vg = gm.VolumeGeometry( *shape )
             vg.mode = gm.GM_Material
             try:
-                vg.describe( coors, self.econn, bf_vg, weights )
+                vg.describe( coors, gconn, bf_vg, weights )
             except:
-#                pdb.set_trace()
                 gm.errclear()
                 raise
             return vg
@@ -530,7 +538,6 @@ class Approximation( Struct ):
             sg.mode = gm.GM_Material
 
 ##             print sg
-            
             try:
                 sg.describe( coors, sd.econn, bf_sg, weights )
             except:
@@ -542,7 +549,6 @@ class Approximation( Struct ):
 
                 self.create_bqp( region.name, integral )
                 bf_bg = self.get_base( sd.bkey, 1, integral = integral )
-##                 print bf_bg
                 sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
 
 ##                 sg.str( sys.stdout, 0 )
