@@ -76,6 +76,19 @@ def transform_ics( adict ):
 def transform_lcbcs( adict ):
     return transform_conditions( adict, 'lcbc' )
 
+def transform_epbcs( adict ):
+    d2 = {}
+    for ii, (key, conf) in enumerate( adict.iteritems() ):
+        if isinstance( conf, tuple ):
+            c2 = tuple_to_conf( key, conf, ['region', 'dofs', 'match'] )
+            if len( conf ) == 3:
+                c2.filename = conf[2]
+            d2['epbcs_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1( conf )
+            d2['epbcs_%s' % c2.name] = c2
+    return d2
+
 def transform_regions( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
@@ -167,7 +180,7 @@ transforms = {
     'fields'    : transform_fields,
     'variables' : transform_variables,
     'ebcs'      : transform_ebcs,
-    'epbcs'     : transform_to_struct_01,
+    'epbcs'     : transform_epbcs,
     'nbcs'      : transform_to_struct_01,
     'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
@@ -215,6 +228,7 @@ class ProblemConf( Struct ):
         """
         funmod = import_file( filename )
         obj = ProblemConf()
+
         if "define" in funmod.__dict__:
             define_dict = funmod.__dict__["define"]()
         else:
