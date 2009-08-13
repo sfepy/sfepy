@@ -431,6 +431,9 @@ def assemble_by_blocks( conf_equations, problem,
     ebcs, epbcs must be either lists of BC names, or BC configuration
     dictionaries 
 
+    Caveat: problem.variables must already contain all the variables used in
+    conf_equations!
+
     conf_equations = {
       'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
     }

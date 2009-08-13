@@ -3,6 +3,36 @@ from sfepy.applications import SimpleApp, Application
 from sfepy.fem import eval_term_op
 from coefs_base import MiniAppBase
 
+def insert_sub_reqs( reqs, levels, req_info ):
+    """Recursively build all requirements in correct order."""
+    all_reqs = []
+##     print '>', levels, reqs
+    for ii, req in enumerate( reqs ):
+        try:
+            rargs = req_info[req]
+        except KeyError:
+            raise ValueError('requirement "%s" is not defined!' % req)    
+
+        sub_reqs = rargs.get( 'requires', [] )
+##         print '*', ii, req, sub_reqs
+
+        if req in levels:
+            raise ValueError('circular requirement "%s"!' % (req))
+
+        if sub_reqs:
+            levels.append( req )
+            all_reqs.extend( insert_sub_reqs( sub_reqs, levels, req_info ) )
+            levels.pop()
+            
+        if req in all_reqs:
+            raise ValueError('circular requirement "%s"!' % (req))
+        else:
+            all_reqs.append( req )
+
+##     print all_reqs
+##     pause()
+    return all_reqs
+
 class HomogenizationEngine( SimpleApp ):
 
     def process_options( options ):
@@ -11,6 +41,9 @@ class HomogenizationEngine( SimpleApp ):
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
         requirements = get( 'requirements', None,
                             'missing "requirements" in options!' )
+
+        save_format = get( 'save_format', 'vtk' )
+        dump_format = get( 'dump_format', 'h5' )
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -34,47 +67,59 @@ class HomogenizationEngine( SimpleApp ):
         SimpleApp.setup_options( self )
         po = HomogenizationEngine.process_options
         self.app_options += po( self.conf.options )
-    
+
+    def compute_requirements( self, requirements, dependencies, store ):
+        problem = self.problem
+
+        opts = self.app_options
+        req_info = getattr( self.conf, opts.requirements )
+
+        requires = insert_sub_reqs( copy( requirements ), [], req_info )
+        
+        for req in requires:
+            if req in dependencies and (dependencies[req] is not None):
+                continue
+
+            output( 'computing dependency %s...' % req )
+
+            rargs = req_info[req]
+
+            mini_app = MiniAppBase.any_from_conf( req, problem, rargs )
+            mini_app.setup_output( save_format = opts.save_format,
+                                   dump_format = opts.dump_format,
+                                   post_process_hook = self.post_process_hook,
+                                   file_per_var = opts.file_per_var )
+            store( mini_app )
+            
+            dep = mini_app( data = dependencies )
+
+            dependencies[req] = dep
+            output( '...done' )
+
+        return dependencies
+        
     def call( self, ret_all = False ):
         problem = self.problem
 
         opts = self.app_options
         coef_info = getattr( self.conf, opts.coefs )
-        req_info = getattr( self.conf, opts.requirements )
+
+        store_filenames = coef_info.pop('filenames', None) is not None
 
         dependencies = {}
+        save_names = {}
+        dump_names = {}
+        def store_filenames( app ):
+            save_names[app.name] = app.get_save_name_base()
+            dump_names[app.name] = app.get_dump_name_base()
 
         coefs = Struct()
-
         for coef_name, cargs in coef_info.iteritems():
             output( 'computing %s...' % coef_name )
             requires = cargs.get( 'requires', [] )
-            
-            for req in requires:
-                if req in dependencies and (dependencies[req] is not None):
-                    continue
+            self.compute_requirements( requires, dependencies, store_filenames )
 
-                output( 'computing dependency %s...' % req )
-
-                rargs = req_info[req]
-
-                save_name = rargs.get( 'save_name', '' )
-                name = os.path.join( problem.output_dir, save_name )
-
-                mini_app = MiniAppBase.any_from_conf( req, problem, rargs )
-                save_hook = mini_app.make_save_hook( name,
-                                                     problem.output_format,
-                                                     self.post_process_hook )
-
-#                print mini_app
-                dep = mini_app( data = dependencies, save_hook = save_hook )
-
-                dependencies[req] = dep
-                output( '...done' )
-
-#                print dep
-#                pause()
-
+#            debug()
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
             val = mini_app( self.volume, data = dependencies )
             print val
@@ -82,6 +127,11 @@ class HomogenizationEngine( SimpleApp ):
 #            pause()
             output( '...done' )
 
+        # Store filenames of all requirements as a "coefficient".
+        if store_filenames:
+            coefs.save_names = save_names
+            coefs.dump_names = dump_names
+            
         if ret_all:
             return coefs, dependencies
         else:
