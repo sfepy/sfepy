@@ -7,7 +7,7 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
 DISTDIRS := extmods
 
-RELDISTFILES := $(filter-out termsAdjointNavierStokes.py termsHDPM.py cachesHDPM.py, $(DISTFILES))
+RELDISTFILES := $(filter-out termsAdjointNavierStokes.py, $(DISTFILES))
 
 dist:
 #	echo $(DESTDIR)

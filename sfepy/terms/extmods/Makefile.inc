@@ -16,9 +16,6 @@ DEPSD := formSDCC.c terms.c termsBasic.c termsAdjointNavierStokes.c termsElectri
 ifndef ISOPT
   DEPSD := $(filter-out termsAdjointNavierStokes.c, $(DEPSD))
 endif
-ifndef ISPOROUS
-  DEPSD := $(filter-out termsHDPM.c, $(DEPSD))
-endif
 DEPSD := $(addprefix $(FEMLOCDIR)/,$(FEMDEPSD:.c=.o)) $(addprefix $(LOCDIR)/,$(DEPSD:.c=.o))
 $(LOCDIR)/terms_wrap.c : $(FEMLOCDIR)/common.i $(FEMLOCDIR)/array.i $(FEMLOCDIR)/fmfield.i
 $(LOCDIR)/_terms.so: $(DEPSD)

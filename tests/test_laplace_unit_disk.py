@@ -1,7 +1,7 @@
 # 31.05.2007, c
 # last revision: 25.02.2008
 
-filename_mesh = 'database/tests/circle_sym.mesh'
+filename_mesh = '../database/tests/circle_sym.mesh'
 
 material_1 = {
     'name' : 'coef',
@@ -152,7 +152,7 @@ class Test( TestCommon ):
 
         problem.apply_ebc( state )
         ev = BasicEvaluator( problem )
-        aux = ev.eval_residual( state )[0]
+        aux = ev.eval_residual( state )
 
         field = problem.variables['t'].field
 

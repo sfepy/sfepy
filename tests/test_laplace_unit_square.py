@@ -1,7 +1,7 @@
 # 30.05.2007, c
 # last revision: 25.02.2008
 
-filename_mesh = 'database/tests/plane.mesh'
+filename_mesh = '../database/tests/plane.mesh'
 
 material_1 = {
     'name' : 'coef',
@@ -202,19 +202,19 @@ class Test( TestCommon ):
 
         problem.apply_ebc( state )
         ev = BasicEvaluator( problem )
-        aux = ev.eval_residual( state )[0]
+        aux = ev.eval_residual( state )
 
         field = problem.variables['t'].field
 
         name = op.join( self.options.out_dir,
                         op.split( problem.domain.mesh.name )[1] + '_%02d.mesh' ) 
 
-        orig_coords = problem.get_mesh_coors().copy()
+        orig_coors = problem.get_mesh_coors().copy()
         ok = True
         for ia, angle in enumerate( angles ):
             self.report( '%d: mesh rotation %d degrees' % (ia, angle) )
-            problem.domain.mesh.transform_coords( rotation_matrix2d( angle ),
-                                                 ref_coords = orig_coords )
+            problem.domain.mesh.transform_coors( rotation_matrix2d( angle ),
+                                                 ref_coors = orig_coors )
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name

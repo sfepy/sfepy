@@ -7,7 +7,7 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 DISTFILES := $(wildcard *.py *.c *.h *.i *.in) Makefile.dist Makefile.inc
 DISTFILES := $(filter-out $(wildcard *_wrap.c), $(DISTFILES))
 
-RELDISTFILES := $(filter-out  $(wildcard termsAdjointNavierStokes.*) $(wildcard termsHDPM.*), $(DISTFILES))
+RELDISTFILES := $(filter-out  $(wildcard termsAdjointNavierStokes.*), $(DISTFILES))
 
 dist:
 #	echo $(DESTDIR)
