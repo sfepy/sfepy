@@ -41,7 +41,7 @@ def transform_variables( adict ):
                 elif kind == 'test':
                     c2.dual = conf[2]
                 elif kind == 'parameter':
-                    if isinstance(conf[2], str):
+                    if isinstance(conf[2], str) or (conf[2] is None):
                         c2.like = conf[2]
                     else:
                         c2.like = None
