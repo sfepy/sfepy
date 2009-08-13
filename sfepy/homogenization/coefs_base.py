@@ -55,7 +55,7 @@ class ShapeDim( MiniAppBase ):
 
         return create_scalar_pis( problem, self.variables[0] )
 
-class CorrDimDim( MiniAppBase ):
+class CorrNN( MiniAppBase ):
     """ __init__() kwargs:
         {
              'variables' : [],
@@ -64,6 +64,10 @@ class CorrDimDim( MiniAppBase ):
              'equations' : {},
         },
     """
+
+    def __init__( self, Ndim, name, problem, kwargs ):
+        MiniAppBase.__init__( self, name, problem, kwargs )
+        self.set_default_attr( 'Ndim', Ndim )
 
     def get_variables( self, ir, ic, data ):
             raise StopIteration
@@ -78,10 +82,9 @@ class CorrDimDim( MiniAppBase ):
 
         self.init_solvers(problem)
 
-        dim = problem.domain.mesh.dim
-        states = nm.zeros( (dim, dim), dtype = nm.object )
-        for ir in range( dim ):
-            for ic in range( dim ):
+        states = nm.zeros( (self.Ndim, self.Ndim), dtype = nm.object )
+        for ir in range( self.Ndim ):
+            for ic in range( self.Ndim ):
                 for name, val in self.get_variables( ir, ic, data ):
                     problem.variables[name].data_from_data( val )
 
@@ -107,9 +110,13 @@ class CorrDimDim( MiniAppBase ):
                                 file_per_var = file_per_var )
         return save_correctors
 
-class CorrDim( MiniAppBase ):
+class CorrN( MiniAppBase ):
     def get_variables( self, ir, data ):
             raise StopIteration
+
+    def __init__( self, Ndim, name, problem, kwargs ):
+        MiniAppBase.__init__( self, name, problem, kwargs )
+        self.set_default_attr( 'Ndim', Ndim )
 
     def __call__( self, problem = None, data = None, save_hook = None ):
         problem = get_default( problem, self.problem )
@@ -121,9 +128,8 @@ class CorrDim( MiniAppBase ):
 
         self.init_solvers(problem)
 
-        dim = problem.domain.mesh.dim
-        states = nm.zeros( (dim,), dtype = nm.object )
-        for ir in range( dim ):
+        states = nm.zeros( (self.Ndim,), dtype = nm.object )
+        for ir in range( self.Ndim ):
             for name, val in self.get_variables( ir, data ):
                 problem.variables[name].data_from_data( val )
 
@@ -149,6 +155,18 @@ class CorrDim( MiniAppBase ):
                                 file_per_var = file_per_var )
         return save_correctors
 
+class CorrDimDim( CorrNN ):
+
+    def __init__( self, name, problem, kwargs ):
+        CorrNN.__init__( self, problem.domain.mesh.dim,
+                         name, problem, kwargs )
+
+class CorrDim( CorrN ):
+
+    def __init__( self, name, problem, kwargs ):
+        CorrN.__init__( self, problem.domain.mesh.dim,
+                        name, problem, kwargs )
+
 class CoefSymSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
@@ -157,7 +175,7 @@ class CoefSymSym( MiniAppBase ):
 
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym, sym), dtype = nm.float64 )
-
+        
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
             for name, val in self.get_variables( problem, irr, icr, data,
                                                  'row' ):
@@ -205,20 +223,24 @@ class CoefDimSym( MiniAppBase ):
 
         return coef
     
-class CoefDimDim( MiniAppBase ):
+class CoefNN( MiniAppBase ):
+
+    def __init__( self, Ndim, name, problem, kwargs ):
+        MiniAppBase.__init__( self, name, problem, kwargs )
+        self.set_default_attr( 'Ndim', Ndim )
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
         problem.select_variables( self.variables )
 
-        dim = problem.get_dim()
-        coef = nm.zeros( (dim, dim), dtype = nm.float64 )
+        coef = nm.zeros( (self.Ndim, self.Ndim), dtype = nm.float64 )
 
-        for ir in range( dim ):
+        for ir in range( self.Ndim ):
             for name, val in self.get_variables( problem, ir, None, data,
                                                  'row' ):
                 problem.variables[name].data_from_data( val )
 
-            for ic in range( dim ):
+            for ic in range( self.Ndim ):
                 for name, val in self.get_variables( problem, None, ic, data,
                                                      'col' ):
                     problem.variables[name].data_from_data( val )
@@ -231,3 +253,39 @@ class CoefDimDim( MiniAppBase ):
         coef /= volume
 
         return coef
+
+class CoefN( MiniAppBase ):
+
+    def __init__( self, Ndim, name, problem, kwargs ):
+        MiniAppBase.__init__( self, name, problem, kwargs )
+        self.set_default_attr( 'Ndim', Ndim )
+
+    def __call__( self, volume, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        problem.select_variables( self.variables )
+
+        coef = nm.zeros( (self.Ndim, ), dtype = nm.float64 )
+
+        for ir in range( self.Ndim ):
+            for name, val in self.get_variables( problem, ir, data ):
+                problem.variables[name].data_from_data( val )
+
+            val = eval_term_op( None, self.expression,
+                                problem, call_mode = 'd_eval' )
+            coef[ir] = val
+
+        coef /= volume
+
+        return coef
+
+class CoefDimDim( CoefNN ):
+
+    def __init__( self, name, problem, kwargs ):
+        CoefNN.__init__( self, problem.domain.mesh.dim,
+                         name, problem, kwargs )
+
+class CoefDim( CoefN ):
+
+    def __init__( self, name, problem, kwargs ):
+        CoefN.__init__( self, problem.domain.mesh.dim,
+                        name, problem, kwargs )
