@@ -414,22 +414,37 @@ vtk_inverse_cell_types = {(3, 2) : '2_2', (9, 2) : '2_4', (5, 2) : '2_3',
 class VTKMeshIO( MeshIO ):
     format = 'vtk'
 
-    ##
-    # c: 03.07.2008, r: 15.07.2008
-    def read_dimension( self, ret_fd = False ):
+    def read_coors(self, ret_fd=False):
         fd = open( self.filename, 'r' )
         while 1:
             try:
                 line = fd.readline().split()
                 if not line: continue
-                if line[0] == 'CELL_TYPES':
-                    cell_types = read_array( fd, 1, -1, nm.int32 )
-                    dim = vtk_dims[cell_types[0,0]]
+                if line[0] == 'POINTS':
+                    n_nod = int( line[1] )
+                    coors = read_array( fd, n_nod, -1, nm.float64 )
                     break
             except:
                 output( "reading " + fd.name + " failed!" )
                 raise
 
+        if ret_fd:
+            return coors, fd
+        else:
+            fd.close()
+            return coors
+        
+    def get_dimension(self, coors):
+        dz = nm.diff(coors[:,2])
+        if nm.allclose(dz, 0.0):
+            dim = 2
+        else:
+            dim = 3
+        return dim
+
+    def read_dimension( self, ret_fd = False ):
+        coors, fd = self.read_coors(ret_fd=True)
+        dim = self.get_dimension(coors)
         if ret_fd:
             return dim, fd
         else:
@@ -439,22 +454,11 @@ class VTKMeshIO( MeshIO ):
     ##
     # c: 22.07.2008
     def read_bounding_box( self, ret_fd = False, ret_dim = False ):
-        dim = self.read_dimension()
+        coors, fd = self.read_coors(ret_fd=ret_fd)
+        dim = self.get_dimension(coors)
         
-        fd = open( self.filename, 'r' )
-        while 1:
-            try:
-                line = fd.readline().split()
-                if not line: continue
-                if line[0] == 'POINTS':
-                    nod = read_array( fd, 1, -1, nm.float64 )
-                    break
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
-
-        bbox = nm.vstack( (nm.amin( nod[:,:dim], 0 ),
-                           nm.amax( nod[:,:dim], 0 )) )
+        bbox = nm.vstack( (nm.amin( coors[:,:dim], 0 ),
+                           nm.amax( coors[:,:dim], 0 )) )
 
         if ret_dim:
             if ret_fd:
@@ -539,7 +543,7 @@ class VTKMeshIO( MeshIO ):
         if mat_id is None:
             mat_id = [[0]] * n_el
 
-        dim = vtk_dims[cell_types[0,0]]
+        dim = self.get_dimension(coors)
         if dim == 2:
             coors = coors[:,:2]
         coors = nm.ascontiguousarray( coors )
@@ -548,7 +552,13 @@ class VTKMeshIO( MeshIO ):
 
         dconns = {}
         for iel, row in enumerate( raw_conn ):
-            ct = vtk_inverse_cell_types[(cell_types[iel],dim)]
+            ct = cell_types[iel]
+            key = (ct, dim)
+            if key not in vtk_inverse_cell_types:
+                continue
+            if (ct == 3) or (vtk_dims[ct] != dim): # No bar elements yet.
+                continue
+            ct = vtk_inverse_cell_types[key]
             dconns.setdefault( ct, [] ).append( row[1:] + mat_id[iel] )
 
         desc = []
