@@ -102,41 +102,73 @@ def integrate_in_time( coef, ts, scheme = 'forward' ):
     
     return icoef
 
-def define_box_regions( dim, sizes ):
-    
+def define_box_regions( dim, lbn, rtf, eps = 1.0e-3 ):
+
     if dim == 3:
-        wx, wy, wz = sizes
+        lbnx, lbny, lbnz = lbn
+        rtfx, rtfy, rtfz = rtf
+        dx = abs(rtfx-lbnx)
+        dy = abs(rtfy-lbny)
+        dz = abs(rtfz-lbnz)
+        lbnx, lbny, lbnz = (lbnx+dx*eps, lbny+dy*eps, lbnz+dz*eps)
+        rtfx, rtfy, rtfz = (rtfx-dx*eps, rtfy-dy*eps, rtfz-dz*eps)
         regions = {
-            'Near' : ('nodes in (y < -%.3f)' % wy, {}),
-            'Far' : ('nodes in (y > %.3f)' % wy, {}),
-            'Bottom' : ('nodes in (z < -%.3f)' % wz, {}),
-            'Top' : ('nodes in (z > %.3f)' % wz, {}),
-            'Left' : ('nodes in (x < -%.3f)' % wx, {}),
-            'Right' : ('nodes in (x > %.3f)' % wx, {}),
+            'Near' : ('nodes in (y < %.3f)' % lbny, {}),
+            'Far' : ('nodes in (y > %.3f)' % rtfy, {}),
+            'Bottom' : ('nodes in (z < %.3f)' % lbnz, {}),
+            'Top' : ('nodes in (z > %.3f)' % rtfz, {}),
+            'Left' : ('nodes in (x < %.3f)' % lbnx, {}),
+            'Right' : ('nodes in (x > %.3f)' % rtfx, {}),
             'Corners' : ("""nodes in
-                            ((x < -%.3f) & (y < -%.3f) & (z < -%.3f))
-                          | ((x >  %.3f) & (y < -%.3f) & (z < -%.3f))
-                          | ((x >  %.3f) & (y >  %.3f) & (z < -%.3f))
-                          | ((x < -%.3f) & (y >  %.3f) & (z < -%.3f))
-                          | ((x < -%.3f) & (y < -%.3f) & (z >  %.3f))
-                          | ((x >  %.3f) & (y < -%.3f) & (z >  %.3f))
-                          | ((x >  %.3f) & (y >  %.3f) & (z >  %.3f))
-                          | ((x < -%.3f) & (y >  %.3f) & (z >  %.3f))
-                          """ % ((wx, wy, wz) * 8), {}),
+                            ((x < %.3f) & (y < %.3f) & (z < %.3f))
+                          | ((x > %.3f) & (y < %.3f) & (z < %.3f))
+                          | ((x > %.3f) & (y > %.3f) & (z < %.3f))
+                          | ((x < %.3f) & (y > %.3f) & (z < %.3f))
+                          | ((x < %.3f) & (y < %.3f) & (z > %.3f))
+                          | ((x > %.3f) & (y < %.3f) & (z > %.3f))
+                          | ((x > %.3f) & (y > %.3f) & (z > %.3f))
+                          | ((x < %.3f) & (y > %.3f) & (z > %.3f))
+                          """ % ( lbnx, lbny, lbnz,
+                                  rtfx, lbny, lbnz,
+                                  rtfx, rtfy, lbnz,
+                                  lbnx, rtfy, lbnz,
+                                  lbnx, lbny, rtfz,
+                                  rtfx, lbny, rtfz,
+                                  rtfx, rtfy, rtfz,
+                                  lbnx, rtfy, rtfz ), {} ),
         }
     else:
-        wx, wy = sizes
+        lbnx, lbny, = lbn
+        rtfx, rtfy, = rtf
+        dx = abs(rtfx-lbnx)
+        dy = abs(rtfy-lbny)
+        lbnx, lbny = (lbnx+dx*eps, lbny+dy*eps,)
+        rtfx, rtfy = (rtfx-dx*eps, rtfy-dy*eps,)
         regions = {
-            'Bottom' : ('nodes in (y < -%.3f)' % wy, {}),
-            'Top' : ('nodes in (y > %.3f)' % wy, {}),
-            'Left' : ('nodes in (x < -%.3f)' % wx, {}),
-            'Right' : ('nodes in (x > %.3f)' % wx, {}),
+            'Bottom' : ('nodes in (y < %.3f)' % lbny, {}),
+            'Top' : ('nodes in (y > %.3f)' % rtfy, {}),
+            'Left' : ('nodes in (x < %.3f)' % lbnx, {}),
+            'Right' : ('nodes in (x > %.3f)' % rtfx, {}),
             'Corners' : ("""nodes in
-                              ((x < -%.3f) & (y < -%.3f))
-                            | ((x >  %.3f) & (y < -%.3f))
-                            | ((x >  %.3f) & (y >  %.3f))
-                            | ((x < -%.3f) & (y >  %.3f))
-                            """ % ((wx, wy) * 4), {}),
+                              ((x < %.3f) & (y < %.3f))
+                            | ((x > %.3f) & (y < %.3f))
+                            | ((x > %.3f) & (y > %.3f))
+                            | ((x < %.3f) & (y > %.3f))
+                            """ % ( lbnx, lbny,
+                                    rtfx, lbny,
+                                    rtfx, rtfy,
+                                    lbnx, rtfy ), {}),
         }
 
     return regions
+
+def get_box_volume( dim, lbn, rtf ):
+    
+    if dim == 3:
+        lbnx, lbny, lbnz = lbn
+        rtfx, rtfy, rtfz = rtf
+        return abs(rtfx-lbnx)*abs(rtfy-lbny)*abs(rtfz-lbnz)
+    else:
+        lbnx, lbny, = lbn
+        rtfx, rtfy, = rtf
+        return abs(rtfx-lbnx)*abs(rtfy-lbny)
