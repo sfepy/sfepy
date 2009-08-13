@@ -102,7 +102,29 @@ def integrate_in_time( coef, ts, scheme = 'forward' ):
     
     return icoef
 
-def define_box_regions( dim, lbn, rtf, eps = 1.0e-3 ):
+def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
+    """Define sides and corner regions for a box aligned with coordinate
+    axes.
+
+    Parameters
+    ----------
+    dim : int
+        Space dimension
+    lbn : tuple
+        Left bottom near point coordinates if rtf is not None. If rtf is
+        None, lbn are the (positive) distances from the origin.
+    rtf : tuple
+        Right top far point coordinates.
+    eps : float
+        A parameter, that should be smaller than the smallest mesh node distance.
+
+    Returns
+    -------
+    regions : dict
+        The box regions.
+    """
+    if rtf is None:
+        lbn, rtf = -nm.array(lbn), lbn
 
     if dim == 3:
         lbnx, lbny, lbnz = lbn
@@ -113,21 +135,21 @@ def define_box_regions( dim, lbn, rtf, eps = 1.0e-3 ):
         lbnx, lbny, lbnz = (lbnx+dx*eps, lbny+dy*eps, lbnz+dz*eps)
         rtfx, rtfy, rtfz = (rtfx-dx*eps, rtfy-dy*eps, rtfz-dz*eps)
         regions = {
-            'Near' : ('nodes in (y < %.3f)' % lbny, {}),
-            'Far' : ('nodes in (y > %.3f)' % rtfy, {}),
-            'Bottom' : ('nodes in (z < %.3f)' % lbnz, {}),
-            'Top' : ('nodes in (z > %.3f)' % rtfz, {}),
-            'Left' : ('nodes in (x < %.3f)' % lbnx, {}),
-            'Right' : ('nodes in (x > %.3f)' % rtfx, {}),
+            'Near' : ('nodes in (y < %f)' % lbny, {}),
+            'Far' : ('nodes in (y > %f)' % rtfy, {}),
+            'Bottom' : ('nodes in (z < %f)' % lbnz, {}),
+            'Top' : ('nodes in (z > %f)' % rtfz, {}),
+            'Left' : ('nodes in (x < %f)' % lbnx, {}),
+            'Right' : ('nodes in (x > %f)' % rtfx, {}),
             'Corners' : ("""nodes in
-                            ((x < %.3f) & (y < %.3f) & (z < %.3f))
-                          | ((x > %.3f) & (y < %.3f) & (z < %.3f))
-                          | ((x > %.3f) & (y > %.3f) & (z < %.3f))
-                          | ((x < %.3f) & (y > %.3f) & (z < %.3f))
-                          | ((x < %.3f) & (y < %.3f) & (z > %.3f))
-                          | ((x > %.3f) & (y < %.3f) & (z > %.3f))
-                          | ((x > %.3f) & (y > %.3f) & (z > %.3f))
-                          | ((x < %.3f) & (y > %.3f) & (z > %.3f))
+                            ((x < %f) & (y < %f) & (z < %f))
+                          | ((x > %f) & (y < %f) & (z < %f))
+                          | ((x > %f) & (y > %f) & (z < %f))
+                          | ((x < %f) & (y > %f) & (z < %f))
+                          | ((x < %f) & (y < %f) & (z > %f))
+                          | ((x > %f) & (y < %f) & (z > %f))
+                          | ((x > %f) & (y > %f) & (z > %f))
+                          | ((x < %f) & (y > %f) & (z > %f))
                           """ % ( lbnx, lbny, lbnz,
                                   rtfx, lbny, lbnz,
                                   rtfx, rtfy, lbnz,
@@ -145,15 +167,15 @@ def define_box_regions( dim, lbn, rtf, eps = 1.0e-3 ):
         lbnx, lbny = (lbnx+dx*eps, lbny+dy*eps,)
         rtfx, rtfy = (rtfx-dx*eps, rtfy-dy*eps,)
         regions = {
-            'Bottom' : ('nodes in (y < %.3f)' % lbny, {}),
-            'Top' : ('nodes in (y > %.3f)' % rtfy, {}),
-            'Left' : ('nodes in (x < %.3f)' % lbnx, {}),
-            'Right' : ('nodes in (x > %.3f)' % rtfx, {}),
+            'Bottom' : ('nodes in (y < %f)' % lbny, {}),
+            'Top' : ('nodes in (y > %f)' % rtfy, {}),
+            'Left' : ('nodes in (x < %f)' % lbnx, {}),
+            'Right' : ('nodes in (x > %f)' % rtfx, {}),
             'Corners' : ("""nodes in
-                              ((x < %.3f) & (y < %.3f))
-                            | ((x > %.3f) & (y < %.3f))
-                            | ((x > %.3f) & (y > %.3f))
-                            | ((x < %.3f) & (y > %.3f))
+                              ((x < %f) & (y < %f))
+                            | ((x > %f) & (y < %f))
+                            | ((x > %f) & (y > %f))
+                            | ((x < %f) & (y > %f))
                             """ % ( lbnx, lbny,
                                     rtfx, lbny,
                                     rtfx, rtfy,
@@ -162,7 +184,26 @@ def define_box_regions( dim, lbn, rtf, eps = 1.0e-3 ):
 
     return regions
 
-def get_box_volume( dim, lbn, rtf ):
+def get_box_volume(dim, lbn, rtf=None):
+    """Volume of a box aligned with coordinate axes.
+
+    Parameters
+    ----------
+    dim : int
+        Space dimension
+    lbn : tuple
+        Left bottom near point coordinates if rtf is not None. If rtf is
+        None, lbn are the (positive) distances from the origin.
+    rtf : tuple
+        Right top far point coordinates.
+
+    Returns
+    -------
+    volume : float
+        The box volume.
+    """
+    if rtf is None:
+        lbn, rtf = -nm.array(lbn), lbn
     
     if dim == 3:
         lbnx, lbny, lbnz = lbn

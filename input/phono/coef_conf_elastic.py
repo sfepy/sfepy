@@ -77,7 +77,7 @@ def define_input( filename, region, dim, geom ):
     elif filename.find( 'cube_cylinder_centered' ) >= 0:
         sizes = (0.499, 0.499, 0.499)
 
-    regions = define_box_regions( dim, -sizes, sizes )
+    regions = define_box_regions( dim, sizes )
 
     ebcs = {
         'fixed_u' : ('Corners', {'u1.all' : 0.0}),
