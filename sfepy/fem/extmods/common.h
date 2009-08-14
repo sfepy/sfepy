@@ -30,7 +30,7 @@ typedef enum ReturnStatus {
 
 void output( const char *what, ... );
 void errput( const char *what, ... );
-void errclear();
+void errclear( void );
 
 #define AL_CookieValue   0xf0e0d0c9
 #define AL_AlreadyFreed  0x0f0e0d9c
@@ -82,12 +82,12 @@ void mem_statistics( int lineNo, char *funName,
 		     char *fileName, char *dirName );
 int32 mem_print( FILE *file, int32 mode );
 int32 mem_printSome( FILE *file, int32 mode, int32 num );
-int32 mem_freeGarbage();
+int32 mem_freeGarbage( void );
 
 int sys_getch( void );
-void sys_keyboardEnableRaw();
-void sys_keyboardDisableRaw();
-void sys_pause();
+void sys_keyboardEnableRaw( void );
+void sys_keyboardDisableRaw( void );
+void sys_pause( void );
 
 /*!
   @par Revision history:
