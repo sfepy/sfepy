@@ -61,13 +61,7 @@ class DiffusionTerm( ScalarScalar, Term ):
         vec = self.get_vector( state )
 
         n_el, n_qp, dim, n_ep = self.data_shape
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = nm.asarray( mat ), ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                          (n_el, n_qp, dim, dim)],
-                        mode_in = None )
-        return (1.0, vec, 0, mat_qp, vg, ap.econn), shape, mode
+        return (1.0, vec, 0, mat, vg, ap.econn), shape, mode
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
@@ -83,26 +77,17 @@ class DiffusionTerm( ScalarScalar, Term ):
         gp2 = cache( 'grad', self.get_current_group(), 0,
                      state = par2, get_vector = self.get_vector )
 
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = mat, ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                          (n_el, n_qp, dim, dim)],
-                        mode_in = None )
-
-        return (1.0, gp1, gp2, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+        return (1.0, gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
 
     def set_arg_types( self ):
         if self.mode == 'weak':
             self.function = terms.dw_diffusion
             use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-            self.use_caches = {'mat_in_qp' : [['material']]}
         else:
             self.function = terms.d_diffusion
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'grad_scalar' : [['parameter_1'],
-                                                ['parameter_2']],
-                               'mat_in_qp' : [['material']]}
+                                                ['parameter_2']]}
 
 class PermeabilityRTerm( Term ):
     r""":description: Special-purpose diffusion-like term with permeability

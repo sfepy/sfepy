@@ -63,22 +63,25 @@ def define_regions(filename):
 
     return regions, dim, geom
 
-def get_pars(ts, coor, region, ig, output_dir='.'):
-    n_nod, dim = coor.shape
-    sym = (dim + 1) * dim / 2
+def get_pars(ts, coor, mode, region, ig, output_dir='.'):
+    if mode == 'qp':
+        n_nod, dim = coor.shape
+        sym = (dim + 1) * dim / 2
 
-    out = {}
-    out['D'] = stiffness_tensor_lame(dim, lam=1.7, mu=0.3)
+        out = {}
+        out['D'] = nm.tile(stiffness_tensor_lame(dim, lam=1.7, mu=0.3),
+                           (coor.shape[0], 1, 1))
 
-    aa = nm.zeros((sym,), dtype=nm.float64)
-    aa[:dim] = 0.132
-    aa[dim:sym] = 0.092
-    out['alpha'] = aa
-    
-    perm = nm.eye(dim, dtype=nm.float64)
-    out['K'] = perm
-    
-    return out
+        aa = nm.zeros((sym,1), dtype=nm.float64)
+        aa[:dim] = 0.132
+        aa[dim:sym] = 0.092
+        out['alpha'] = nm.tile(aa, (coor.shape[0], 1, 1))
+
+        perm = nm.eye(dim, dtype=nm.float64)
+        out['K'] = nm.tile(perm, (coor.shape[0], 1, 1))
+
+        print coor.shape, region.name, ig
+        return out
 
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
@@ -115,8 +118,9 @@ def define_input(filename, output_dir):
                           cinc_simple(coors, 1),),
         'cinc_simple2' : (lambda coors, domain:
                           cinc_simple(coors, 2),),
-        'get_pars' : (lambda ts, coors, region=None, ig=None:
-                      get_pars(ts, coors, region, ig, output_dir=output_dir),),
+        'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
+                      get_pars(ts, coors, mode, region, ig,
+                               output_dir=output_dir),),
     }
     regions, dim, geom = define_regions(filename_mesh)
 

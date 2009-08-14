@@ -35,7 +35,7 @@ class LinearElasticTerm( VectorVector, Term ):
     def check_mat_shape( self, mat ):
         dim = self.data_shape[2]
         sym = (dim + 1) * dim / 2
-        assert_( mat.shape == (sym, sym) )
+        assert_(mat.shape == (self.data_shape[0], self.data_shape[1], sym, sym))
 
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
@@ -53,9 +53,8 @@ class LinearElasticTerm( VectorVector, Term ):
             strain = aux
 
         self.check_mat_shape( mat )
-        mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
 
-        return (1.0, strain, mat_qp, vg), shape, mode
+        return (1.0, strain, mat, vg), shape, mode
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
@@ -64,8 +63,6 @@ class LinearElasticTerm( VectorVector, Term ):
         self.set_data_shape( ap )
 
         self.check_mat_shape( mat )
-        mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
-#        print mat_qp
 
         cache = self.get_cache( 'cauchy_strain', 0 )
         strain1 = cache( 'strain', self.get_current_group(), 0,
@@ -74,7 +71,7 @@ class LinearElasticTerm( VectorVector, Term ):
         strain2 = cache( 'strain', self.get_current_group(), 0,
                          state = par2, get_vector = self.get_vector )
 
-        return (1.0, strain1, strain2, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+        return (1.0, strain1, strain2, mat, vg), (chunk_size, 1, 1, 1), 0
 
     def set_arg_types( self ):
         if self.mode == 'weak':

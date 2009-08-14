@@ -21,12 +21,9 @@ class BiotGrad( CouplingVectorScalar ):
         else:
             vec_qp = aux
 
-        n_qp = self.data_shape_r[1]
-        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-#        print mat_qp
         bf = apc.get_base( 'v', 0, self.integral_name )
 
-        return (1.0, vec_qp, bf, mat_qp, vgr), shape, mode
+        return (1.0, vec_qp, bf, mat, vgr), shape, mode
 
 class BiotDiv( CouplingVectorScalar ):
 
@@ -48,11 +45,9 @@ class BiotDiv( CouplingVectorScalar ):
         else:
             strain = aux
 
-        n_qp = self.data_shape_r[1]
-        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
         bf = apr.get_base( 'v', 0, self.integral_name )
 
-        return (1.0, strain, bf, mat_qp, vgc), shape, mode
+        return (1.0, strain, bf, mat, vgc), shape, mode
 
 class BiotEval( CouplingVectorScalar ):
 
@@ -73,11 +68,8 @@ class BiotEval( CouplingVectorScalar ):
         strain = cache( 'strain', self.get_current_group(), 0,
                         state = par_v, get_vector = self.get_vector )
 
-        n_qp = self.data_shape_r[1]
-        mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-
         function = terms.d_biot_div
-        status = function( out, 1.0, vec_qp, strain, mat_qp, vgv, chunk )
+        status = function( out, 1.0, vec_qp, strain, mat, vgv, chunk )
         return status
 
 class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
