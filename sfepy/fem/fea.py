@@ -1011,7 +1011,7 @@ class Approximations( Container ):
                 cells = region.cells[ig]
                 conn = region.domain.groups[ig].conn
                 
-                qps = nm.dot(bf.squeeze(), coors[conn[cells]])
+                qps = nm.dot(nm.atleast_2d(bf.squeeze()), coors[conn[cells]])
 
             elif integral.kind[0] == 's':
                 raise NotImplementedError
