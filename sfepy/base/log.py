@@ -215,8 +215,12 @@ class Log( Struct ):
 
         ls = len( args ), self.n_arg
         if ls[0] != ls[1]:
-            msg = 'log called with wrong number of arguments! (%d == %d)' % ls
-            raise IndexError( msg )
+            if kwargs:
+                return
+            else:
+                msg = 'log called with wrong number of arguments! (%d == %d)' \
+                      % ls
+                raise IndexError( msg )
 
         for ii, name in enumerate( self.seq_data_names ):
             aux = args[ii]
