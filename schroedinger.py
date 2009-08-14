@@ -109,7 +109,7 @@ def wrap_function( function, args ):
         tt = time.time()
 
         results[:] = function( x, *args )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot = results
 
         tt2 = time.time()
         if tt2 < tt:
@@ -302,6 +302,8 @@ class SchroedingerApp( SimpleApp ):
         output( "solving Ax=b Poisson equation" )
         vec_vh = pb.solve()
 
+        vec_pot = pb.materials['mat_v'].get_data('Omega', 0, 'pot')
+        
         #sphere = eval_term_op( dummy, pb.conf.equations['sphere'], pb)
         #print sphere
 
@@ -323,18 +325,20 @@ class SchroedingerApp( SimpleApp ):
         file_output("charge_n:  ", charge_n)
         file_output("----------------------------------------")
         file_output("|N|:       ", nla.norm(vec_n))
+        file_output("|Pot|:     ", nla.norm(vec_pot))
         file_output("|V_H|:     ", nla.norm(vec_vh))
         file_output("|V_XC|:    ", nla.norm(vec_vxc))
         file_output("-"*70)
 
 	if self.iter_hook is not None: # User postprocessing.
             data = Struct( eigs = eigs, mtx_s_phi = mtx_s_phi,
-                           vec_n = vec_n, vec_vh = vec_vh, vec_vxc = vec_vxc )
+                           vec_n = vec_n, vec_vh = vec_vh,
+                           vec_vxc = vec_vxc, vec_pot = vec_pot )
 	    self.iter_hook( self.problem, data = data )
 
         self.norm_vhxc0 = norm
         
-        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc
+        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot
 
     def solve_eigen_problem_n( self ):
         opts = self.app_options
@@ -390,12 +394,13 @@ class SchroedingerApp( SimpleApp ):
         dft_solver = Solver.any_from_conf( dft_conf, fun = nonlin_v,
                                            status = dft_status )
         vec_vhxc = dft_solver( vec_vhxc )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc = results
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot = results
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
         
         if self.options.plot:
-            log( save_figure = opts.iter_fig_name, finished = True )
+            log( save_figure = opts.iter_fig_name )
             pause()
+            log(finished=True)
 
         coor = pb.domain.get_mesh_coors()
         r2 = norm_l2_along_axis(coor, squared=True)
@@ -408,6 +413,8 @@ class SchroedingerApp( SimpleApp ):
         update_state_to_output( out, pb, vec_nr2, 'nr2' )
         update_state_to_output( out, pb, vec_vh, 'vh' )
         update_state_to_output( out, pb, vec_vxc, 'vxc' )
+        update_state_to_output( out, pb, vec_pot, 'pot' )
+        update_state_to_output( out, pb, vec_pot + vec_vh + vec_vxc, 'v' )
         self.save_results( eigs, mtx_phi, out = out )
 
         return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi,
