@@ -62,6 +62,9 @@
     (FMField *charge_grad),
     (FMField *pressure_qp),
     (FMField *state_qp),
+    (FMField *lam),
+    (FMField *mu),
+    (FMField *viscosity),
     (FMField *stress),
     (FMField *tan_mod),
     (FMField *mtxF),
@@ -171,7 +174,7 @@ int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
 			     int32 *elList, int32 elList_nRow );
 
 int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
-			  float64 lam, float64 mu, VolumeGeometry *vg,
+			  FMField *lam, FMField *mu, VolumeGeometry *vg,
 			  int32 *conn, int32 nEl, int32 nEP,
 			  int32 *elList, int32 elList_nRow,
 			  int32 isDiff );
@@ -242,7 +245,7 @@ int32 dw_mass_scalar_fine_coarse( FMField *out, FMField *state, int32 offset,
 				  int32 isDiff );
 
 int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
-			    float64 viscosity, VolumeGeometry *vg,
+			    FMField *viscosity, VolumeGeometry *vg,
 			    int32 *conn, int32 nEl, int32 nEP,
 			    int32 *elList, int32 elList_nRow,
 			    int32 isDiff );

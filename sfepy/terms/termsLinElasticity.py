@@ -91,21 +91,21 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
     \lambda \ \delta_{ij} \delta_{kl}$ 
     """
     name = 'dw_lin_elastic_iso'
-    arg_types = ('material', 'virtual', 'state')
+    arg_types = ('material_1', 'material_2', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_lin_elastic_iso )
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
+        lam, mu, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        lam, mu = map( nm.float64, [mat[ii] for ii in ['lambda', 'mu']] )
+
         return (vec, 0, lam, mu, vg, ap.econn), shape, mode
 
 class LinearElasticTHTerm( VectorVectorTH, Term ):

@@ -19,7 +19,7 @@ int32 convect_build_vtbg( FMField *out, FMField *gc, FMField *fv );
 int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv );
 
 int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
-			  float64 viscosity, VolumeGeometry *vg,
+			  FMField *viscosity, VolumeGeometry *vg,
 			  int32 *conn, int32 nEl, int32 nEP,
 			  int32 *elList, int32 elList_nRow,
 			  int32 isDiff );

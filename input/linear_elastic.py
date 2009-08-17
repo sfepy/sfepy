@@ -29,7 +29,7 @@ regions = {
 #! The linear elastic material model is used. Properties are
 #! specified as Lame parameters.
 materials = {
-    'solid' : ('Omega', {'lame' : {'lambda' : 1e1, 'mu' : 1e0}}),
+    'solid' : ('Omega', {'lam' : 1e1, 'mu' : 1e0}),
 }
 #! Fields
 #! ------
@@ -67,7 +67,8 @@ ebcs = {
 #! ---------
 #! The weak formulation of the linear elastic problem.
 equations = {
-    'balance_of_forces' : """dw_lin_elastic_iso.i1.Omega( solid.lame, v, u ) = 0""",
+    'balance_of_forces' :
+    """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 #! Solvers
 #! -------

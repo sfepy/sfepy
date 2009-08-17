@@ -42,7 +42,8 @@ material_1 = {
     'region' : 'Y',
 
     'values' : {
-        'lame' : {'lambda' : 1e1, 'mu' : 1e0},
+        'lam' : 1e1,
+        'mu' : 1e0,
         'density' : 1e-1,
     },
 }
@@ -96,7 +97,7 @@ integral_1 = {
 }
 
 equations = {
-    'balance' : """dw_lin_elastic_iso.i1.Y( solid.lame, v, u ) = 0""",
+    'balance' : """dw_lin_elastic_iso.i1.Y( solid.lam, solid.mu, v, u ) = 0""",
 }
 
 solver_0 = {

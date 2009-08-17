@@ -113,6 +113,7 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
     FMF_SetCell( vg->det, iel );
       
     if (isDiff == 1) {
+      drow->val = mtxD->val;
       form_sdcc_actOpG_RM3( dtg, drow, vg->bfGM );
       fmf_mulATB_nn( ftdtg, bf, dtg );
       fmf_sumLevelsMulF( out, ftdtg, vg->det->val );

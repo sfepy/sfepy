@@ -14,7 +14,7 @@ class DivGradTerm( Term ):
         Term.__init__( self, region, name, sign, terms.term_ns_asm_div_grad )
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        material, virtual, state = self.get_args( **kwargs )
+        mat, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
@@ -29,7 +29,7 @@ class DivGradTerm( Term ):
 
         vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, nm.float64( material ),
+            status = self.function( out, vec, 0, mat,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 

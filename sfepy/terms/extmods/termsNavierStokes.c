@@ -453,10 +453,10 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
   - 14.12.2005
 */
 int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
-			  float64 viscosity, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff )
+			    FMField *viscosity, VolumeGeometry *vg,
+			    int32 *conn, int32 nEl, int32 nEP,
+			    int32 *elList, int32 elList_nRow,
+			    int32 isDiff )
 {
   int32 ii, iel, dim, nQP, ret = RET_OK;
   FMField *st = 0, *gtg = 0, *gu = 0, *gtgu = 0;
@@ -485,13 +485,14 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
 /*     output( "%d\n", iel ); */
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( viscosity, iel );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
     if (isDiff) {
       divgrad_build_gtg( gtg, vg->bfGM );
       fmf_sumLevelsMulF( out, gtg, vg->det->val );
-      fmf_mulC( out, viscosity );
+      fmf_mul( out, viscosity->val );
 /*       fmf_print( gtg, stdout, 0 ); */
 /*       sys_pause(); */
     } else {
@@ -503,13 +504,12 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
       divgrad_act_g_m( gu, vg->bfGM, stv );
       divgrad_act_gt_m( gtgu, vg->bfGM, gu );
       fmf_sumLevelsMulF( out, gtgu, vg->det->val );
-      fmf_mulC( out, viscosity );
+      fmf_mul( out, viscosity->val );
 
       if (ii == 0) {
 /* 	fmf_print( st, stdout, 0 ); */
 /* 	fmf_print( vg->det, stdout, 0 ); */
 /* 	fmf_print( out, stdout, 0 ); */
-/* 	output( "%f\n", viscosity ); */
       }
 /*       sys_pause(); */
     }

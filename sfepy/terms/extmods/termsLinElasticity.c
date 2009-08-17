@@ -11,26 +11,30 @@
   - 06.02.2006
   - 07.03.2006, adopted from mafest1
 */
-int32 mat_le_tanModuli11( FMField *mtx, float64 lam, float64 mu, int32 mode  )
+int32 mat_le_tanModuli11( FMField *mtx, FMField *lam, FMField *mu, int32 mode  )
 #define MAT_LE_AuxMacro1_3D \
     do { for (iqp = 0; iqp < nQP; iqp++) { \
-      pd[0] = lam + 2.0 * mu; \
-      pd[1] = lam; \
-      pd[2] = lam; \
-      pd[6] = lam; \
-      pd[7] = lam + 2.0 * mu; \
-      pd[8] = lam; \
-      pd[12] = lam; \
-      pd[13] = lam; \
-      pd[14] = lam + 2.0 * mu; \
-      pd[21] = mu; \
-      pd[28] = mu; \
-      pd[35] = mu; \
+      _lam = lam->val[iqp]; \
+      _mu = mu->val[iqp]; \
+      pd[0] = _lam + 2.0 * _mu; \
+      pd[1] = _lam; \
+      pd[2] = _lam; \
+      pd[6] = _lam; \
+      pd[7] = _lam + 2.0 * _mu; \
+      pd[8] = _lam; \
+      pd[12] = _lam; \
+      pd[13] = _lam; \
+      pd[14] = _lam + 2.0 * _mu; \
+      pd[21] = _mu; \
+      pd[28] = _mu; \
+      pd[35] = _mu; \
       pd += 36; \
     } } while (0)
 #define MAT_LE_AuxMacro2_3D \
     do { for (iqp = 0; iqp < nQP; iqp++) { \
-      mu23 = mu * (2.0/3.0); \
+      _lam = lam->val[iqp]; \
+      _mu = mu->val[iqp]; \
+      mu23 = _mu * (2.0/3.0); \
       mu43 = 2.0 * mu23; \
       pd[0] = mu43; \
       pd[1] = -mu23; \
@@ -41,33 +45,38 @@ int32 mat_le_tanModuli11( FMField *mtx, float64 lam, float64 mu, int32 mode  )
       pd[12] = -mu23; \
       pd[13] = -mu23; \
       pd[14] = mu43; \
-      pd[21] = mu; \
-      pd[28] = mu; \
-      pd[35] = mu; \
+      pd[21] = _mu; \
+      pd[28] = _mu; \
+      pd[35] = _mu; \
       pd += 36; \
     } } while (0)
 #define MAT_LE_AuxMacro1_2D \
     do { for (iqp = 0; iqp < nQP; iqp++) { \
-      pd[0] = lam + 2.0 * mu; \
-      pd[1] = lam; \
-      pd[3] = lam; \
-      pd[4] = lam + 2.0 * mu; \
-      pd[8] = mu; \
+      _lam = lam->val[iqp]; \
+      _mu = mu->val[iqp]; \
+      pd[0] = _lam + 2.0 * _mu; \
+      pd[1] = _lam; \
+      pd[3] = _lam; \
+      pd[4] = _lam + 2.0 * _mu; \
+      pd[8] = _mu; \
       pd += 9; \
     } } while (0)
 #define MAT_LE_AuxMacro2_2D \
     do { for (iqp = 0; iqp < nQP; iqp++) { \
-      mu23 = mu * (2.0/3.0); \
+      _lam = lam->val[iqp]; \
+      _mu = mu->val[iqp]; \
+      mu23 = _mu * (2.0/3.0); \
       mu43 = 2.0 * mu23; \
       pd[0] = mu43; \
       pd[1] = -mu23; \
       pd[3] = -mu23; \
       pd[4] = mu43; \
-      pd[8] = mu; \
+      pd[8] = _mu; \
       pd += 9; \
     } } while (0)
 {
   float64 *pd;
+  float64 _lam, _mu;
   int32 nQP, iqp, sym;
 
   nQP = mtx->nLev;
@@ -109,12 +118,13 @@ int32 mat_le_tanModuli11( FMField *mtx, float64 lam, float64 mu, int32 mode  )
   - 06.02.2006
   - 07.03.2006, adopted from mafest1
 */
-int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
+int32 mat_le_stress( FMField *stress, FMField *strain,
+		     FMField *lam, FMField *mu )
 {
   int32 iell, iqp;
   int32 sym, nQP;
   float64 *pstress, *pstrain;
-  float64 mu23, mu43, l2m;
+  float64 _lam, _mu, mu23, mu43, l2m;
 
   nQP = stress->nLev;
   sym = stress->nRow;
@@ -125,26 +135,30 @@ int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
       pstrain = FMF_PtrCell( strain, iell );
       if (1) {
 	for (iqp = 0; iqp < nQP; iqp++) {
-	  l2m = 2.0 * mu + lam;
-	  pstress[0] = l2m * pstrain[0] + lam * (pstrain[1] + pstrain[2]);
-	  pstress[1] = l2m * pstrain[1] + lam * (pstrain[0] + pstrain[2]);
-	  pstress[2] = l2m * pstrain[2] + lam * (pstrain[0] + pstrain[1]);
-	  pstress[3] = mu * pstrain[3];
-	  pstress[4] = mu * pstrain[4];
-	  pstress[5] = mu * pstrain[5];
+	  _lam = lam->val[iqp];
+	  _mu = mu->val[iqp];
+	  l2m = 2.0 * _mu + _lam;
+	  pstress[0] = l2m * pstrain[0] + _lam * (pstrain[1] + pstrain[2]);
+	  pstress[1] = l2m * pstrain[1] + _lam * (pstrain[0] + pstrain[2]);
+	  pstress[2] = l2m * pstrain[2] + _lam * (pstrain[0] + pstrain[1]);
+	  pstress[3] = _mu * pstrain[3];
+	  pstress[4] = _mu * pstrain[4];
+	  pstress[5] = _mu * pstrain[5];
 	  pstress += sym;
 	  pstrain += sym;
 	}
       } else {
 	for (iqp = 0; iqp < nQP; iqp++) {
-	  mu23 = mu * (2.0/3.0);
+	  _lam = lam->val[iqp];
+	  _mu = mu->val[iqp];
+	  mu23 = _mu * (2.0/3.0);
 	  mu43 = 2.0 * mu23;
 	  pstress[0] = mu43 * pstrain[0] - mu23 * (pstrain[1] + pstrain[2]);
 	  pstress[1] = mu43 * pstrain[1] - mu23 * (pstrain[0] + pstrain[2]);
 	  pstress[2] = mu43 * pstrain[2] - mu23 * (pstrain[0] + pstrain[1]);
-	  pstress[3] = mu * pstrain[3];
-	  pstress[4] = mu * pstrain[4];
-	  pstress[5] = mu * pstrain[5];
+	  pstress[3] = _mu * pstrain[3];
+	  pstress[4] = _mu * pstrain[4];
+	  pstress[5] = _mu * pstrain[5];
 	  pstress += sym;
 	  pstrain += sym;
 	}
@@ -156,20 +170,24 @@ int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
       pstrain = FMF_PtrCell( strain, iell );
       if (1) {
 	for (iqp = 0; iqp < nQP; iqp++) {
-	  l2m = 2.0 * mu + lam;
-	  pstress[0] = l2m * pstrain[0] + lam * (pstrain[1]);
-	  pstress[1] = l2m * pstrain[1] + lam * (pstrain[0]);
-	  pstress[2] = mu * pstrain[2];
+	  _lam = lam->val[iqp];
+	  _mu = mu->val[iqp];
+	  l2m = 2.0 * _mu + _lam;
+	  pstress[0] = l2m * pstrain[0] + _lam * (pstrain[1]);
+	  pstress[1] = l2m * pstrain[1] + _lam * (pstrain[0]);
+	  pstress[2] = _mu * pstrain[2];
 	  pstress += sym;
 	  pstrain += sym;
 	}
       } else {
 	for (iqp = 0; iqp < nQP; iqp++) {
-	  mu23 = mu * (2.0/3.0);
+	  _lam = lam->val[iqp];
+	  _mu = mu->val[iqp];
+	  mu23 = _mu * (2.0/3.0);
 	  mu43 = 2.0 * mu23;
 	  pstress[0] = mu43 * pstrain[0] - mu23 * pstrain[1];
 	  pstress[1] = mu43 * pstrain[1] - mu23 * pstrain[0];
-	  pstress[2] = mu * pstrain[2];
+	  pstress[2] = _mu * pstrain[2];
 	  pstress += sym;
 	  pstrain += sym;
 	}
@@ -187,7 +205,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain, float64 lam, float64 mu )
   - 07.03.2006, c
 */
 int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
-			  float64 lam, float64 mu, VolumeGeometry *vg,
+			  FMField *lam, FMField *mu, VolumeGeometry *vg,
 			  int32 *conn, int32 nEl, int32 nEP,
 			  int32 *elList, int32 elList_nRow,
 			  int32 isDiff )
@@ -210,6 +228,8 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( lam, iel );
+      FMF_SetCell( mu, iel );
       FMF_SetCell( vg->bfGM, iel );
       FMF_SetCell( vg->det, iel );
 
@@ -236,6 +256,8 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
+      FMF_SetCell( lam, iel );
+      FMF_SetCell( mu, iel );
       FMF_SetCell( strain, ii );
       FMF_SetCell( vg->bfGM, iel );
 

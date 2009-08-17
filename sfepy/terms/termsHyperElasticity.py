@@ -31,24 +31,6 @@ class HyperElasticBase( Term ):
         else:
             raise StopIteration
 
-    def mat_to_qp( self, mat, ap ):
-        n_el, n_qp, dim, n_ep = self.data_shape
-
-        mat = nm.asarray( mat )
-        if mat.ndim == 0:
-            mat = mat[nm.newaxis,nm.newaxis]
-
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = mat, ap = ap,
-                        assumed_shapes =  [(1, n_qp, 1, 1),
-                                           (n_el, n_qp, 1, 1)],
-                        mode_in = None )
-
-        mat_qp = fix_mat_qp_shape( mat_qp, n_el )
-
-        return mat_qp
-
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
@@ -104,8 +86,7 @@ class NeoHookeanTerm( HyperElasticBase ):
     name = 'dw_tl_he_neohook'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'finite_strain_tl' : [['state']],
-                  'mat_in_qp' : [['material']]}
+    use_caches = {'finite_strain_tl' : [['state']]}
 
     family_data_names = ['detF', 'trC', 'invC']
 
@@ -120,8 +101,6 @@ class NeoHookeanTerm( HyperElasticBase ):
     def compute_crt_data( self, family_data, ap, vg, mode, **kwargs ):
         mat = self.get_args( ['material'], **kwargs )[0]
 
-        mat_qp = self.mat_to_qp( mat, ap )
-
         detF, trC, invC = family_data
 
         if mode == 0:
@@ -133,7 +112,7 @@ class NeoHookeanTerm( HyperElasticBase ):
             out = nm.empty( shape, dtype = nm.float64 )
             fun = self.function['tangent_modulus']
 
-        fun( out, mat_qp, detF, trC, invC )
+        fun( out, mat, detF, trC, invC )
 
         return out
 
@@ -147,8 +126,7 @@ class MooneyRivlinTerm( HyperElasticBase ):
     name = 'dw_tl_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'finite_strain_tl' : [['state']],
-                  'mat_in_qp' : [['material']]}
+    use_caches = {'finite_strain_tl' : [['state']]}
 
     family_data_names = ['detF', 'trC', 'invC', 'C', 'in2C']
 
@@ -163,8 +141,6 @@ class MooneyRivlinTerm( HyperElasticBase ):
     def compute_crt_data( self, family_data, ap, vg, mode, **kwargs ):
         mat = self.get_args( ['material'], **kwargs )[0]
 
-        mat_qp = self.mat_to_qp( mat, ap )
-
         detF, trC, invC, vecC, in2C = family_data
 
         if mode == 0:
@@ -176,7 +152,7 @@ class MooneyRivlinTerm( HyperElasticBase ):
             out = nm.empty( shape, dtype = nm.float64 )
             fun = self.function['tangent_modulus']
 
-        fun( out, mat_qp, detF, trC, invC, vecC, in2C )
+        fun( out, mat, detF, trC, invC, vecC, in2C )
 
         return out
 
@@ -189,8 +165,7 @@ class BulkPenaltyTerm( HyperElasticBase ):
     name = 'dw_tl_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'finite_strain_tl' : [['state']],
-                  'mat_in_qp' : [['material']]}
+    use_caches = {'finite_strain_tl' : [['state']]}
 
     family_data_names = ['detF', 'invC']
 
@@ -205,8 +180,6 @@ class BulkPenaltyTerm( HyperElasticBase ):
     def compute_crt_data( self, family_data, ap, vg, mode, **kwargs ):
         mat = self.get_args( ['material'], **kwargs )[0]
 
-        mat_qp = self.mat_to_qp( mat, ap )
-
         detF, invC = family_data
         
         if mode == 0:
@@ -218,6 +191,6 @@ class BulkPenaltyTerm( HyperElasticBase ):
             out = nm.empty( shape, dtype = nm.float64 )
             fun = self.function['tangent_modulus']
 
-        fun( out, mat_qp, detF, invC )
+        fun( out, mat, detF, invC )
 
         return out

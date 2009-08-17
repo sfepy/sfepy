@@ -72,7 +72,7 @@ def get_pars(ts, coor, mode, region, ig, output_dir='.'):
         out['D'] = nm.tile(stiffness_tensor_lame(dim, lam=1.7, mu=0.3),
                            (coor.shape[0], 1, 1))
 
-        aa = nm.zeros((sym,1), dtype=nm.float64)
+        aa = nm.zeros((sym, 1), dtype=nm.float64)
         aa[:dim] = 0.132
         aa[dim:sym] = 0.092
         out['alpha'] = nm.tile(aa, (coor.shape[0], 1, 1))

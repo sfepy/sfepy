@@ -27,7 +27,7 @@ field_1 = {
 material_1 = {
     'name' : 'solid',
     'region' : 'Y',
-    'values' : {'lame' : {'lambda' : 1e1, 'mu' : 1e0}},
+    'values' : {'lam' : 1e1, 'mu' : 1e0},
 }
 
 variable_1 = {
@@ -85,7 +85,8 @@ integral_1 = {
     'quadrature' : 'gauss_o1_d3',
 }
 equations = {
-    'balance_of_forces' : """dw_lin_elastic_iso.i1.Y( solid.lame, v, u ) = 0""",
+    'balance_of_forces' :
+    """dw_lin_elastic_iso.i1.Y( solid.lam, solid.mu, v, u ) = 0""",
 }
 
 solver_0 = {
