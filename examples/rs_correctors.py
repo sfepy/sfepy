@@ -29,29 +29,33 @@ def define_regions( filename ):
 
 ##
 # c: 05.05.2008, r: 05.05.2008
-def get_pars( ts, coor, region, ig, mat_ids = [] ):
+def get_pars(ts, coor, mode=None, region=None, ig=None, mat_ids = []):
     """Define material parameters:
          $D_ijkl$ (elasticity),
        in a given region."""
-    dim = coor.shape[1]
-    sym = (dim + 1) * dim / 2
+    if mode == 'qp':
+        dim = coor.shape[1]
+        sym = (dim + 1) * dim / 2
 
-    m2i = region.domain.mat_ids_to_i_gs
-    matrix_igs = [m2i[im] for im in mat_ids]
+        m2i = region.domain.mat_ids_to_i_gs
+        matrix_igs = [m2i[im] for im in mat_ids]
 
-    out = {}
+        out = {}
 
-    # in 1e+10 [Pa]
-    lam = 1.7
-    mu = 0.3
-    o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
-    oot = nm.outer( o, o )
-    out['D'] = lam * oot + mu * nm.diag( o + 1.0 )
+        # in 1e+10 [Pa]
+        lam = 1.7
+        mu = 0.3
+        o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
+        oot = nm.outer( o, o )
+        out['D'] = lam * oot + mu * nm.diag( o + 1.0 )
 
-    if ig not in matrix_igs: # channels
-        out['D'] *= 1e-1
+        if ig not in matrix_igs: # channels
+            out['D'] *= 1e-1
 
-    return out
+        for key, val in out.iteritems():
+            out[key] = nm.tile(val, (coor.shape[0], 1, 1))
+
+        return out
     
 ##
 # Mesh file.
@@ -61,6 +65,16 @@ filename_mesh = 'osteonT1_11.mesh'
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
 # depending on a mesh used.
 is3d, regions, mat_ids = define_regions( filename_mesh )
+
+functions = {
+    'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
+                  get_pars(ts, coors, mode, region, ig, mat_ids=mat_ids),),
+    'match_x_plane' : (match_x_plane,),
+    'match_y_plane' : (match_y_plane,),
+    'match_z_plane' : (match_z_plane,),
+    'match_x_line' : (match_x_line,),
+    'match_y_line' : (match_y_line,),
+}
 
 if is3d:
     dim, geom = 3, '3_4'
@@ -140,10 +154,8 @@ ebcs = {
 # Material defining constitutive parameters of the microproblem.
 material_1 = {
     'name' : 'm',
-    'mode' : 'function',
     'region' : 'Y',
     'function' : 'get_pars',
-    'extra_args' : {'mat_ids' : mat_ids},
 }
 
 ##

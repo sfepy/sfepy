@@ -19,6 +19,12 @@ def define():
         'save_steps' : -1,
     }
 
+    functions = {
+        'linear_tension' : (linear_tension,),
+        'linear_compression' : (linear_compression,),
+        'empty' : (lambda ts, coor, mode, region, ig: None,),
+    }
+
     field_1 = {
         'name' : 'displacement',
         'dim' : (3,1),
@@ -31,22 +37,22 @@ def define():
     # Young modulus = 10 kPa, Poisson's ratio = 0.3
     material_1 = {
         'name' : 'solid',
-        'mode' : 'here',
         'region' : 'Omega',
 
-        'K'  : 8.333, # bulk modulus
-        'mu_nh' : 3.846, # shear modulus of neoHookean term
-        'mu_mr' : 1.923, # shear modulus of Mooney-Rivlin term
-        'kappa' : 1.923, # second modulus of Mooney-Rivlin term
-        'lame' : {'lambda' : 5.769, 'mu' : 3.846}, # Lame coefficients for LE
-                                                   # term
+        'values' : {
+            'K'  : 8.333, # bulk modulus
+            'mu_nh' : 3.846, # shear modulus of neoHookean term
+            'mu_mr' : 1.923, # shear modulus of Mooney-Rivlin term
+            'kappa' : 1.923, # second modulus of Mooney-Rivlin term
+            'lam' : 5.769, # Lame coefficients for LE term
+            'mu_le' : 3.846,
+        }
     }
 
     material_2 = {
         'name' : 'load',
-        'mode' : 'function',
         'region' : 'Top',
-        'function' : None,
+        'function' : 'empty'
     }
 
     variables = {
@@ -74,11 +80,11 @@ def define():
     }
     integral_3 = {
         'name' : 'isurf',
-        'kind' : 's',
+        'kind' : 's4',
         'quadrature' : 'gauss_o2_d2',
     }
     equations = {
-        'linear' : """dw_lin_elastic_iso.i1.Omega( solid.lame, v, u )
+        'linear' : """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu_le, v, u )
                       = dw_surface_ltr.isurf.Top( load.val, v )""",
         'neoHookean' : """dw_tl_he_neohook.i1.Omega( solid.mu_nh, v, u )
                         + dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )
@@ -136,15 +142,15 @@ def define():
 
 ##
 # Pressure tractions.
-def linear_tension( ts, coor, region = None, ig = None ):
-    val = nm.empty_like( coor[:,0] )
-    val.fill( 0.1 * ts.step )
-    return {'val' : val}
+def linear_tension(ts, coor, mode=None, region=None, ig=None):
+    if mode == 'qp':
+        val = nm.tile(0.1 * ts.step, (coor.shape[0], 1, 1))
+        return {'val' : val}
 
-def linear_compression( ts, coor, region = None, ig = None ):
-    val = nm.empty_like( coor[:,0] )
-    val.fill( - 0.1 * ts.step )
-    return {'val' : val}
+def linear_compression(ts, coor, mode=None, region=None, ig=None):
+    if mode == 'qp':
+        val = nm.tile(-0.1 * ts.step, (coor.shape[0], 1, 1))
+        return {'val' : val}
 
 
 def store_top_u( displacements ):
@@ -195,12 +201,12 @@ def main():
 
     # Get pressure load by calling linear_*() for each time step.
     ts = problem.get_timestepper()
-    load_t = nm.array( [linear_tension( ts, nm.array( [[0.0]] ) )['val']
-                        for aux in ts.iter_from( 0 )],
-                       dtype = nm.float64 ).squeeze()
-    load_c = nm.array( [linear_compression( ts, nm.array( [[0.0]] ) )['val']
-                        for aux in ts.iter_from( 0 )],
-                       dtype = nm.float64 ).squeeze()
+    load_t = nm.array([linear_tension(ts, nm.array([[0.0]]), 'qp')['val']
+                       for aux in ts.iter_from( 0 )],
+                      dtype=nm.float64).squeeze()
+    load_c = nm.array([linear_compression(ts, nm.array([[0.0]]), 'qp')['val']
+                       for aux in ts.iter_from( 0 )],
+                      dtype=nm.float64).squeeze()
 
     # Join the branches.
     displacements = {}
