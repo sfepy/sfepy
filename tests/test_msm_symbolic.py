@@ -117,12 +117,14 @@ def ebc(ts, coor, bc, solution=None):
 
 ##
 # c: 07.05.2007, r: 09.05.2008
-def rhs(ts, coor, region, ig, expression=None):
-    if expression is None:
-        expression = '0.0 * x'
-    
-    val = TestCommon.eval_coor_expression( expression, coor )
-    return {'val' : nm.atleast_1d( val )}
+def rhs(ts, coor, mode=None, region=None, ig=None, expression=None):
+    if mode == 'qp':
+        if expression is None:
+            expression = '0.0 * x'
+
+        val = TestCommon.eval_coor_expression( expression, coor )
+        val.shape = (val.shape[0], 1, 1)
+        return {'val' : val}
 
 functions = {
     'ebc' : (lambda ts, coor, bc: ebc(ts, coor, bc, solution=solution),),
@@ -189,10 +191,12 @@ class Test( TestCommon ):
             if val == 'state':
                 env[key] = sol
             else:
+                term.set_current_group(0)
                 env[key] = term.get_args( [val], **args )[0]
 
             if val[:8] == 'material':
-                aux = nm.array( env[key] )
+                # Take the first value - constant in all QPs.
+                aux = env[key][0,0]
                 if nm.prod( aux.shape ) == 1:
                     env[key] = aux.squeeze()
                 else:
@@ -223,11 +227,11 @@ class Test( TestCommon ):
         rhs_mat.function.set_extra_args(expression='0 * x')
 #        problem.time_update()
         
-        problem.update_materials()
-
         ok = True
         for eq_name, equation in equations.iteritems():
             problem.set_equations( {eq_name : equation} )
+            problem.update_materials()
+
             rhss = self._build_rhs( problem.equations[eq_name],
                                    self.conf.solutions )
             erhs = problem.conf.equations_rhs[eq_name]  

@@ -29,17 +29,6 @@ regions = {
     'Right' : ('nodes in (x > %f)' % (x_right - 1e-3), {}),
 }
 
-material_1 = {
-    'name' : 'matrix',
-    'region' : 'Y1',
-
-    # aluminium
-    'values' : { 
-        'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
-        'density' : 0.2799, # in 1e4 kg/m3
-    },
-}
-
 material_2 = {
     'name' : 'inclusion',
     'region' : 'Y',
@@ -48,27 +37,32 @@ material_2 = {
     'function' : 'get_inclusion_pars',
 }
 
-def get_inclusion_pars(ts, coor, region, ig):
+def get_inclusion_pars(ts, coor, mode=None, region=None, ig=None):
     """TODO: implement proper 3D -> 2D transformation of constitutive
     matrices."""
-    n_nod, dim = coor.shape
-    sym = (dim + 1) * dim / 2
+    if mode == 'qp':
+        n_nod, dim = coor.shape
+        sym = (dim + 1) * dim / 2
 
-    dielectric = nm.eye( dim, dtype = nm.float64 )
-    # !!!
-    coupling = nm.ones( (dim, sym), dtype = nm.float64 )
-#    coupling[0,1] = 0.2
-    
-    out = {
-        # Lame coefficients.
-        'lame' : {'lambda' : 0.1798, 'mu' : 0.148}, # in 1e+10 Pa
-        # dielectric tensor
-        'dielectric' : dielectric,
-        # piezoelectric coupling
-        'coupling' : coupling,
-        'density' : 0.1142, # in 1e4 kg/m3
-    }
-    return out
+        dielectric = nm.eye( dim, dtype = nm.float64 )
+        # !!!
+        coupling = nm.ones( (dim, sym), dtype = nm.float64 )
+        #    coupling[0,1] = 0.2
+
+        out = {
+            # Lame coefficients in 1e+10 Pa.
+            'lam' : 0.1798,
+            'mu' : 0.148,
+            # dielectric tensor
+            'dielectric' : dielectric,
+            # piezoelectric coupling
+            'coupling' : coupling,
+            'density' : 0.1142, # in 1e4 kg/m3
+        }
+
+        for key, val in out.iteritems():
+            out[key] = nm.tile(val, (coor.shape[0], 1, 1))
+        return out
 
 functions = {
     'get_inclusion_pars' : (get_inclusion_pars,),
@@ -109,7 +103,7 @@ integral_1 = {
 
 equations = {
     '1' : """- %f * dw_mass_vector.i1.Y( inclusion.density, v, u )
-             + dw_lin_elastic_iso.i1.Y( inclusion.lame, v, u )
+             + dw_lin_elastic_iso.i1.Y( inclusion.lam, inclusion.mu, v, u )
              - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
            = 0""" % omega_squared,
     '2' : """dw_diffusion.i1.Y( inclusion.dielectric, psi, phi )

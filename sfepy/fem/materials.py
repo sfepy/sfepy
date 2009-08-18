@@ -89,7 +89,7 @@ class Material( Struct ):
         self.region = region 
 
     def time_update(self, ts, domain, equations, variables):
-        """coors is in region.vertices[ig] order (i.e. sorted by node number)"""
+        """All material parameters are evaluated in all physical QPs."""
         self.data = None
         if self.datas and (self.kind == 'stationary'): return
 
@@ -110,22 +110,26 @@ class Material( Struct ):
 
                 aps = var.field.aps
 
-                qps = aps.get_physical_qps(self.region, term.integral)
+                qps = aps.get_physical_qps(term.region, term.integral)
                 for ig in self.igs:
-                    datas = self.datas.setdefault(key, [])
+                    if ig not in term.igs(): continue
+                    if (qps.n_qp[ig] == 0): continue
+                    
+                    datas = self.datas.setdefault(key, {})
                     data = self.function(ts, qps.values[ig], mode='qp',
                                          region=self.region, ig=ig)
                     # Restore shape to (n_el, n_qp, ...) until the C
                     # core is rewritten to work with a bunch of physical
                     # point values only.
                     if qps.is_uniform:
-                        n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
-                        for val in data.itervalues():
-                            val.shape = (val.shape[0] / n_qp, n_qp,
-                                         val.shape[1], val.shape[2])
+                        if data is not None:
+                            n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
+                            for val in data.itervalues():
+                                val.shape = (val.shape[0] / n_qp, n_qp,
+                                             val.shape[1], val.shape[2])
                     else:
                         raise NotImplementedError
-                    datas.append(data)
+                    datas[ig] = data
 
         # Special function values (e.g. flags).
         datas = self.function(ts, domain.get_mesh_coors(), mode='special',
@@ -145,6 +149,7 @@ class Material( Struct ):
     # 01.08.2007, c
     def set_function( self, function ):
         self.function = function
+        self.special_names = {}
 
     ##
     # 01.08.2007, c
@@ -154,7 +159,7 @@ class Material( Struct ):
     def get_data( self, key, ig, name ):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
-##         print 'getting', name
+##         print 'getting', self.name, name
 
         if isinstance( name, str ):
             return self._get_data( key, ig, name )
@@ -178,22 +183,21 @@ class Material( Struct ):
             return self.datas['special'][name]
 
         else:
-            ii = self.igs.index( ig )
             datas = self.datas[key]
 
-            if isinstance( datas[ii], Struct ):
-                return getattr( datas[ii], name )
+            if isinstance( datas[ig], Struct ):
+                return getattr( datas[ig], name )
             else:
-                return datas[ii][name]
+                return datas[ig][name]
 
     ##
     # 01.08.2007, c
     def reduce_on_datas( self, reduce_fun, init = 0.0 ):
-        """FIX ME!"""
-        out = {}.fromkeys( self.datas[0].keys(), init )
-
-        for data in self.datas:
-            for key, val in data.iteritems():
-                out[key] = reduce_fun( out[key], val )
+        """For non-special values only!"""
+        out = {}.fromkeys(self.datas[self.datas.keys()[0]][0].keys(), init)
+        for datas in self.datas.itervalues():
+            for data in datas.itervalues():
+                for key, val in data.iteritems():
+                    out[key] = reduce_fun(out[key], val)
 
         return out

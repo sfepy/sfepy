@@ -1,9 +1,8 @@
 from sfepy.terms.terms import *
-from sfepy.terms.utils import choose_scalar_or_in_el
 from sfepy.terms.terms_base import ScalarScalar
 
 class MassTerm( Term ):
-    r""":description: Inertial forces term (constant density).
+    r""":description: Inertial forces term.
     :definition: $\int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} -
     \ul{u}_0}{\dt}$
     :arguments: material : $\rho$, ts.dt : $\dt$, parameter : $\ul{u}_0$"""
@@ -12,7 +11,7 @@ class MassTerm( Term ):
     geometry = [(Volume, 'virtual')]
 
     def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
+        Term.__init__( self, region, name, sign, terms.dw_mass )
 
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
@@ -26,10 +25,6 @@ class MassTerm( Term ):
             raise StopIteration
         
     def build_c_fun_args( self, mat, state, ap, vg ):
-        # terms.dw_mass_rho_in_el is missing
-        mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
-                                                     terms.dw_mass,
-                                                     NotImplemented )
         ts, state0 = self.get_args( ['ts', 'parameter'], **kwargs )
 
         dvec = state() - state0()
@@ -58,9 +53,6 @@ class MassVectorTerm( MassTerm ):
     geometry = [(Volume, 'virtual')]
 
     def build_c_fun_args( self, mat, state, ap, vg ):
-        mat, self.function = choose_scalar_or_in_el( mat, nm.float64,
-                                                     terms.dw_mass,
-                                                     NotImplemented )
         vec = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         return mat, vec, 0, bf, vg, ap.econn
@@ -168,7 +160,6 @@ class MassScalarVariableTerm( MassScalarTerm ):
     name = 'dw_mass_scalar_variable'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar_variable )
@@ -181,18 +172,12 @@ class MassScalarVariableTerm( MassScalarTerm ):
         mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = mat, ap = ap,
-                        assumed_shapes = [(n_el, n_qp, 1, 1)],
-                        mode_in = 'vertex' )
-
         if virtual.is_real():
-            fargs = (mat_qp,) + fargs
+            fargs = (mat,) + fargs
 
         else:
-            fargs[0] = (mat_qp,) + fargs[0]
-            fargs[1] = (mat_qp,) + fargs[1]
+            fargs[0] = (mat,) + fargs[0]
+            fargs[1] = (mat,) + fargs[1]
             
         return fargs, shape, mode
 

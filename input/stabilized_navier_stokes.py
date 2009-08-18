@@ -45,17 +45,17 @@ materials = {
                {'viscosity' : 1.25e-5,
                 'density' : 1e0}),
     'stabil' : ('Omega',
-                {'gamma' : None,
-                 'delta' : None,
-                 'tau'   : None,
-                 'tau_red' : 1.0e-0, # <= 1.0; if tau is None: tau = tau_red *
+                {'.gamma' : None,
+                 '.delta' : None,
+                 '.tau'   : None,
+                 '.tau_red' : 1.0e-0, # <= 1.0; if tau is None: tau = tau_red *
                                      # delta
-                 'tau_mul'   : 1.0,
-                 'delta_mul' : 1.0e-0,
-                 'gamma_mul' : 1.0e0,
+                 '.tau_mul'   : 1.0,
+                 '.delta_mul' : 1.0e-0,
+                 '.gamma_mul' : 1.0e0,
                  # 'edge': longest edge, 'volume': volume-based, 'max': max. of
                  # previous
-                 'diameter_mode' : 'max'}), # 'edge', 'volume', 'max'
+                 '.diameter_mode' : 'max'}), # 'edge', 'volume', 'max'
 }
 
 integrals = {

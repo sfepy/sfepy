@@ -1688,30 +1688,7 @@ class Variable( Struct ):
             self.initial_condition = ic_vec
 
     def get_approximation( self, key, kind = 'Volume', is_trace = False ):
-        aps = self.field.aps
-        geometries = aps.geometries
-
-        iname, region_name, ig = key
-
-        if is_trace:
-            g_key = (iname, kind, region_name, ig)
-            try:
-                ap, geometry = aps.geometries[g_key]
-            except KeyError:
-                msg = 'no trace geometry %s in %s' % (key, aps.geometries)
-                raise KeyError( msg )
-
-        else:
-            ap = aps.aps_per_group[ig]
-            g_key = (iname, kind, region_name, ap.name)
-
-            try:
-                geometry = geometries[g_key]
-            except KeyError:
-                msg = 'no geometry %s in %s' % (g_key, geometries)
-                raise KeyError( msg )
-
-        return ap, geometry
+        return self.field.aps.get_approximation(key, kind, is_trace)
 
     ##
     # c: 28.11.2006, r: 15.01.2008

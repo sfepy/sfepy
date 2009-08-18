@@ -1,6 +1,5 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import CouplingVectorScalar
-from sfepy.terms.utils import fix_scalar_in_el
 
 class DivGradTerm( Term ):
     r""":description: Diffusion term.
@@ -308,7 +307,7 @@ class GradDivStabilizationTerm( Term ):
 
         vec = state()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, float( gamma ),
+            status = self.function( out, vec, 0, gamma,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
@@ -355,14 +354,12 @@ class PSPGCStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        tau_in_el = fix_scalar_in_el( tau, n_el, nm.float64 )
-            
         vec1 = par()
         vec2 = state()
         bf = apc.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
-                                    tau_in_el, bf, vgr, vgc,
+                                    tau, bf, vgr, vgc,
                                     apc.econn, chunk, mode )
             yield out, chunk, status
 
@@ -399,14 +396,12 @@ class SUPGPStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
-            
         vec1 = par()
         vec2 = state()
         bf = apr.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
-                                    delta_in_el, bf, vgr, vgc,
+                                    delta, bf, vgr, vgc,
                                     apr.econn, apc.econn, chunk, mode )
             yield out, chunk, status
 
@@ -441,13 +436,11 @@ class SUPGCStabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        delta_in_el = fix_scalar_in_el( delta, n_el, nm.float64 )
-            
         vec1 = par()
         vec2 = state()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
-                                    delta_in_el, bf, vg,
+                                    delta, bf, vg,
                                     ap.econn, chunk, mode )
             yield out, chunk, status

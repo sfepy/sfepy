@@ -48,7 +48,7 @@ equations = {
 solutions = {
     'sincos' : ('t', 'sin( 3.0 * x ) * cos( 4.0 * y )',
                 '-25.0 * %s * sin( 3.0 * x ) * cos( 4.0 * y )' % coef),
-    'poly' : ('t', '(x**2) + (y**2)', '[4.0 * %s]' % coef),
+    'poly' : ('t', '(x**2) + (y**2)', '4.0 * %s' % coef),
     'polysin' : ('t', '((x - 0.5)**3) * sin( 5.0 * y )',
                  '%s * (6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y ))' % coef),
 }
@@ -96,12 +96,15 @@ def ebc(ts, coor, bc):
 
 ##
 # c: 07.05.2007, r: 09.05.2008
-def rhs(ts, coor, region, ig, expression=None):
-    if expression is None:
-        expression = '0.0 * x'
+def rhs(ts, coor, mode=None, region=None, ig=None, expression=None):
+    if mode == 'qp':
+        if expression is None:
+            expression = '0.0 * x'
 
-    val = TestCommon.eval_coor_expression( expression, coor )
-    return {'val' : nm.atleast_1d( val )}
+        val = TestCommon.eval_coor_expression( expression, coor )
+        val.shape = (val.shape[0], 1, 1)
+
+        return {'val' : val}
 
 functions = {
     'ebc' : (ebc,),

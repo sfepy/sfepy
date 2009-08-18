@@ -8,7 +8,7 @@
   @par Revision history:
   - 21.11.2006, c
 */
-int32 dw_mass( FMField *out, float64 coef, FMField *state, int32 offset,
+int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
 	       FMField *bf, VolumeGeometry *vg,
 	       int32 *conn, int32 nEl, int32 nEP,
 	       int32 *elList, int32 elList_nRow,
@@ -26,7 +26,6 @@ int32 dw_mass( FMField *out, float64 coef, FMField *state, int32 offset,
     fmf_createAlloc( &ftf1, 1, nQP, nEP, nEP );
 
     fmf_mulATB_nn( ftf1, bf, bf );
-    bf_buildFTF( ftf, ftf1 );
 
 /*     fmf_print( bf, stdout, 0 ); */
 /*     fmf_print( ftf1, stdout, 0 ); */
@@ -37,8 +36,11 @@ int32 dw_mass( FMField *out, float64 coef, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( coef, iel );
       FMF_SetCell( vg->det, iel );
 
+      bf_buildFTF( ftf, ftf1 );
+      fmf_mul( ftf, coef->val );
       fmf_sumLevelsMulF( out, ftf, vg->det->val );
 /*       fmf_print( out, stdout, 0 ); */
 /*       sys_pause(); */
@@ -56,20 +58,21 @@ int32 dw_mass( FMField *out, float64 coef, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( coef, iel );
       FMF_SetCell( vg->det, iel );
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
 
       bf_act( fu, bf, st );
       bf_actt( ftfu, bf, fu );
+
+      fmf_mul( ftfu, coef->val );
       fmf_sumLevelsMulF( out, ftfu, vg->det->val );
 
       ERR_CheckGo( ret );
     }
   }
 
-  // E.g. 1/dt.
-  fmfc_mulC( out, coef );
 
  end_label:
   if (isDiff) {

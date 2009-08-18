@@ -112,13 +112,13 @@ int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
 
 #undef __FUNC__
 #define __FUNC__ "dw_jump"
-int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
+int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,
 	       FMField *bf, SurfaceGeometry *sg,
 	       int32 *conn1, int32 nEl1, int32 nEP1,
 	       int32 *conn2, int32 nEl2, int32 nEP2,
 	       int32 *elList, int32 elList_nRow, int32 mode )
 {
-  int32 ii, iel, ic, nQP, nEP = nEP1, ret = RET_OK;
+  int32 ii, iel, ic, iqp, nQP, nEP = nEP1, ret = RET_OK;
   FMField *st1 = 0, *st2 = 0, *fp = 0, *out_qp = 0;
 
   nQP = sg->det->nLev;
@@ -137,6 +137,7 @@ int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( coef, iel );
     FMF_SetCell( sg->det, iel );
 
     if (mode == 0) {
@@ -144,10 +145,15 @@ int32 dw_jump( FMField *out, float64 coef, FMField *state1, FMField *state2,
       ele_extractNodalValuesNBN( st2, state2, conn2 + nEP * iel );
 
       for (ic = 0; ic < nEP; ic++) {
-	st1->val[ic] = st1->val[ic] - st2->val[ic] - coef;
+	st1->val[ic] = st1->val[ic] - st2->val[ic];
       }
 
       fmf_mulAB_n1( fp, bf, st1 );
+
+      for (iqp = 0; iqp < nQP; iqp++) {
+	fp->val[iqp] -= coef->val[iqp];
+      }
+
       fmf_mulATB_nn( out_qp, bf, fp );
     } else {
 
