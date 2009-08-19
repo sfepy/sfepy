@@ -7,14 +7,13 @@ from optparse import OptionParser
 import sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.base.la import eig
 from sfepy.fem import eval_term_op, ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.applications import SimpleApp
-from sfepy.solvers import Solver
+from sfepy.solvers import Solver, eig
 from sfepy.base.plotutils import plt
 
 def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):

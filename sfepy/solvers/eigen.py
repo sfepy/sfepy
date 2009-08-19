@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from sfepy.solvers.solvers import EigenvalueSolver
+from sfepy.solvers.solvers import Solver, EigenvalueSolver
 
 ##
 # c: 25.09.2007, r: 08.04.2008

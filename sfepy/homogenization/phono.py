@@ -1,7 +1,7 @@
 from sfepy.base.plotutils import plt
 
 from sfepy.base.base import *
-from sfepy.base.la import eig
+from sfepy.solvers import eig
 from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
 from sfepy.homogenization.utils import coor_to_sym
