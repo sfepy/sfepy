@@ -250,7 +250,7 @@ def ap_nodegen_lagrange_tensor111( ao, key, nod, gel, want_bar_coors = 0 ):
 
     if ao == 0:
         nts[0,:] = [3, 0]
-        nodes[0,:] = nm.zeros( (n_v,), nm.int32 )
+        nodes[0,:] = nm.zeros( (n_nod,), nm.int32 )
     else:
         iseq = 0
         ##

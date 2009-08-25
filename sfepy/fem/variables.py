@@ -619,8 +619,13 @@ class Variables( Container ):
 
     def _setup_extra_data(self, var, geometry, info, is_trace, shared):
         dct = info.dc_type[0]
-
-        if (dct == 'surface') or (geometry.find('Surface') >= 0):
+        
+        if geometry != None:
+            geometry_flag = geometry.find('Surface') >= 0
+        else:
+            geometry_flag = False     
+            
+        if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
             if reg.name not in shared:
                 shared.add(reg.name)
