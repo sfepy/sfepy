@@ -172,6 +172,22 @@ class ElasticCoef( CoefSymSym ):
         pi = pis[ir,ic] + omega
         yield (var_name, pi)
 
+class ElasticPCoef( CoefSymSym ):
+    """Homogenized elastic tensor $E_{ijkl}$ - only pressure part."""
+
+    mode2var = {'row' : 0, 'col' : 1}
+
+    def get_variables( self, problem, ir, ic, data, mode ):
+
+        corrs = data[self.requires[0]]
+
+        var_name = self.variables[self.mode2var[mode]]
+        c_name = problem.variables[var_name].primary_var_name
+
+        indx = corrs.di.indx[c_name]
+        omega = corrs.states[ir,ic][indx]
+        yield (var_name, omega)
+
 class ViscousFMCoef( CoefFMSymSym ):
     """Homogenized viscous fading memory tensor $H_{ijkl}$."""
  
