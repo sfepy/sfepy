@@ -1,32 +1,32 @@
-name = '3_4_P0'
+name = '3_8_Q0'
 
 desc = {
-    'family'      : 'Lagrange',
+    'family'      : 'LagrangeTensor111',
     'approx_order' : 0
 }
 
-geometry = '3_4'
+geometry = '3_8'
 
 nodes = {
     'v' : {
         'mode'  : 'generate',
         'order' : 'mesi'
     },
-    's3' : {
+    's4' : {
         'mode'  : 'generate',
         'order' : 'mei'
     }
 }
 
 # geometry key : qp key
-key_map = {'v' : 'v', 's3' : 's3'}
+key_map = {'v' : 'v', 's4' : 's4'}
 
 base_funs = {
     'v' : {
         'mode' : 'generate',
         'grad' : 1
     },
-    's3' : {
+    's4' : {
         'mode' : 'generate',
         'grad' : 1
     }
