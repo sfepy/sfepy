@@ -54,7 +54,6 @@ class CorrMiniApp( MiniAppBase ):
                                                          self.save_name ) )
         self.dump_name = os.path.normpath( os.path.join( self.output_dir,
                                                          self.dump_name ) )
-
     def setup_output( self, save_format = None, dump_format = None,
                       post_process_hook = None, file_per_var = None ):
         """Instance attributes have precedence!"""
@@ -123,7 +122,7 @@ class CorrNN( CorrMiniApp ):
 
     def __init__( self, name, problem, kwargs ):
         """When corr_dim is not in kwargs, problem dimension is used."""
-        MiniAppBase.__init__( self, name, problem, kwargs )
+        CorrMiniApp.__init__( self, name, problem, kwargs )
         self.set_default_attr( 'corr_dim', problem.get_dim() )
 
     def get_variables( self, ir, ic, data ):
@@ -167,7 +166,7 @@ class CorrN( CorrMiniApp ):
 
     def __init__( self, name, problem, kwargs ):
         """When corr_dim is not in kwargs, problem dimension is used."""
-        MiniAppBase.__init__( self, name, problem, kwargs )
+        CorrMiniApp.__init__( self, name, problem, kwargs )
         self.set_default_attr( 'corr_dim', problem.get_dim() )
 
     def get_variables( self, ir, data ):
