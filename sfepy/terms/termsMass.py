@@ -70,13 +70,18 @@ class MassScalarTerm( ScalarScalar, Term ):
     :definition: $\int_{\Omega} q p$
     """
     name = 'dw_mass_scalar'
-    arg_types = ('virtual', 'state')
-    geometry = [(Volume, 'virtual')]
+    arg_types = (('virtual', 'state'),
+                 ('parameter_1', 'parameter_2')) 
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
+    modes = ('weak', 'eval')
+    functions = {'weak': terms.dw_mass_scalar,
+                 'eval': terms.d_mass_scalar}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_mass_scalar )
+#    def __init__( self, region, name = name, sign = 1 ):
+#        Term.__init__( self, region, name, sign, terms.dw_mass_scalar )
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
@@ -95,6 +100,22 @@ class MassScalarTerm( ScalarScalar, Term ):
             mode += 1j
             
         return fargs, shape, mode
+
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        par1, par2 = self.get_args( **kwargs )
+        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        self.set_data_shape( ap )
+        bf = ap.get_base( 'v', 0, self.integral_name )
+
+        return (par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
+
+    def set_arg_types( self ):
+        if self.mode == 'weak':
+            self.function = self.functions['weak']
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+        else:
+            self.function = self.functions['eval']
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
 
 class MassScalarSurfaceTerm( ScalarScalar, Term ):
     r""":description: Scalar field mass matrix/rezidual.
