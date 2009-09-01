@@ -115,7 +115,8 @@ class Material( Struct ):
                     
                     datas = self.datas.setdefault(key, {})
                     data = self.function(ts, qps.values[ig], mode='qp',
-                                         region=self.region, ig=ig)
+                                         region=self.region, ig=ig,
+                                         **self.extra_args)
                     # Restore shape to (n_el, n_qp, ...) until the C
                     # core is rewritten to work with a bunch of physical
                     # point values only.
@@ -158,10 +159,12 @@ class Material( Struct ):
         self.special_names = set()
         self.constant_names = set()
         self.data = None
+        self.extra_args = {}
 
     ##
     # 01.08.2007, c
-    def set_extra_args( self, extra_args ):
+    def set_extra_args(self, **extra_args):
+        """Extra arguments passed tu the material function."""
         self.extra_args = extra_args
         
     def get_data( self, key, ig, name ):
