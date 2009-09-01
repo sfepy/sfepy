@@ -489,6 +489,7 @@ int32 de_cauchy_stress( FMField *out, FMField *strain,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( mtxD, ii );
     FMF_SetCell( strain, iel );
     FMF_SetCell( vg->det, iel );
 

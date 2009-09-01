@@ -1,6 +1,5 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import VectorOrScalar, ScalarScalarTH
-from sfepy.terms.utils import fix_mat_qp_shape
 
 class IntegrateVolumeTerm( Term ):
     r""":definition: $\int_\Omega y$,  $\int_\Omega \ul{y}$"""
@@ -222,7 +221,6 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
     name = 'dw_surface_integrate_variable'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
-    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__(self, region, name=name, sign=1):
         Term.__init__(self, region, name, sign)
@@ -238,14 +236,6 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
         else:
             raise StopIteration
 
-        cache = self.get_cache('mat_in_qp', 0)
-        mat_qp = cache('matqp', self.get_current_group(), 0,
-                       mat=mat, ap=ap,
-                       assumed_shapes = [(n_fa, n_qp, 1, 1)],
-                       mode_in='vertex', mode_out='variable_in_qp',
-                       geometry='surface', region_name=self.region.name)
-        mat_qp = fix_mat_qp_shape(mat_qp, chunk_size)
-
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base(sd.face_type, 0, self.integral_name)
 
@@ -254,7 +244,7 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             bf_t = nm.tile(bf.transpose((0, 2, 1) ), (chunk.shape[0], 1, 1, 1))
-            val =  mat_qp[lchunk] * bf_t
+            val =  mat[lchunk] * bf_t
             if virtual.is_real:
                 status = sg.integrate_chunk(out, val, lchunk, 1)
             else:
@@ -334,7 +324,6 @@ class AverageVolumeMatTerm( Term ):
     name = 'de_volume_average_mat'
     arg_types = ('material', 'parameter', 'shape', 'mode')
     geometry = [(Volume, 'parameter')]
-    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign )
@@ -346,25 +335,17 @@ class AverageVolumeMatTerm( Term ):
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                       mat = mat, ap = ap,
-                       assumed_shapes = [(1, n_qp) + mat_shape,
-                                        (n_el, n_qp) + mat_shape],
-                       mode_in = mode )
+        shape = (chunk_size, 1) + mat.shape[2:]
 
-        mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
-        shape = (chunk_size, 1) + mat_qp.shape[2:]
-
-        return vg, mat_qp, shape
+        return vg, mat, shape
 
     ##
     # c: 06.05.2008, r: 14.07.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        vg, mat_qp, shape = self.prepare_data( chunk_size, **kwargs )
+        vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, mat_qp[chunk], chunk )
+            status = vg.integrate_chunk( out, mat[chunk], chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
 
@@ -384,10 +365,10 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     # c: 05.03.2008, r: 06.05.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat_shape, = self.get_args( ['shape'], **kwargs )
-        vg, mat_qp, shape = self.prepare_data( chunk_size, **kwargs )
+        vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, mat_qp[chunk], chunk )
+            status = vg.integrate_chunk( out, mat[chunk], chunk )
             out1 = nm.sum( out, 0 )
             out1.shape = mat_shape
             yield out1, chunk, status
@@ -450,13 +431,13 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
 
         return (vec1_qp, vec2_qp, mat, vg), (chunk_size, 1, 1, 1), 0
 
-    def d_volume_wdot( self, out, vec1_qp, vec2_qp, mat_qp, vg, chunk ):
+    def d_volume_wdot( self, out, vec1_qp, vec2_qp, mat, vg, chunk ):
 
         if self.vdim > 1:
-            vec = mat_qp[chunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
+            vec = mat[chunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
                                           axis = -1 )
         else:
-            vec = mat_qp[chunk] * vec1_qp[chunk] * vec2_qp[chunk]
+            vec = mat[chunk] * vec1_qp[chunk] * vec2_qp[chunk]
         status = vg.integrate_chunk( out, vec, chunk )
         return status
 
@@ -501,17 +482,16 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-            return (ts.dt, aux, bf, mat_qp, vg), shape, mode
+            mat = mats[0]
+            return (ts.dt, aux, bf, mat, vg), shape, mode
 
         else:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
-                    yield ii, (ts.dt, vec_qp, bf, mat_qp, vg)
+                    yield ii, (ts.dt, vec_qp, bf, mat, vg)
             return iter_kernel, shape, mode
 
 class AverageVariableTerm( Term ):

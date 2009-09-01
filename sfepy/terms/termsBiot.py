@@ -127,17 +127,16 @@ class BiotGradTH( CouplingVectorScalarTH ):
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-            return (ts.dt, aux, bf, mat_qp, vgr), shape, mode
+            mat = mats[0]
+            return (ts.dt, aux, bf, mat, vgr), shape, mode
 
         else:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
-                    yield ii, (ts.dt, vec_qp, bf, mat_qp, vgr)
+                    yield ii, (ts.dt, vec_qp, bf, mat, vgr)
             return iter_kernel, shape, mode
 
 class BiotDivTH( CouplingVectorScalarTH ):
@@ -160,17 +159,16 @@ class BiotDivTH( CouplingVectorScalarTH ):
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat_qp = mats[0][nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
-            return (ts.dt, aux, bf, mat_qp, vgc), shape, mode
+            mat = mats[0]
+            return (ts.dt, aux, bf, mat, vgc), shape, mode
 
         else:
             cache = self.get_cache( 'cauchy_strain', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    mat_qp = mat[nm.newaxis,:,nm.newaxis].repeat( n_qp, 0 )
                     strain = cache( 'strain', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
-                    yield ii, (ts.dt, strain, bf, mat_qp, vgc)
+                    yield ii, (ts.dt, strain, bf, mat, vgc)
             return iter_kernel, shape, mode
 
 class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):

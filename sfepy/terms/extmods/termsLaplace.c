@@ -426,7 +426,7 @@ int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
     if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, iel );
+      FMF_SetCell( mtxD, ii );
     }
 
     fmf_mulATB_nn( gtd, vg->bfGM, mtxD );
@@ -472,7 +472,7 @@ int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
     if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, iel );
+      FMF_SetCell( mtxD, ii );
     }
 
     ele_extractNodalValuesNBN( st, state, conn + nEP * iel );

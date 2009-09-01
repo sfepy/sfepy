@@ -33,7 +33,7 @@ int32 dw_electric_source( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vgc->bfGM, iel );
     FMF_SetCell( vgc->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesNBN( p, state, conn + nEPC * iel );
     fmf_mulAB_n1( gp, vgc->bfGM, p );

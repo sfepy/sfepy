@@ -134,17 +134,16 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat_qp = mats[0][nm.newaxis,:,:].repeat( n_qp, 0 )
-            return (ts.dt, aux, mat_qp, vg), shape, mode
+            mat = mats[0]
+            return (ts.dt, aux, mat, vg), shape, mode
 
         else:
             cache = self.get_cache( 'cauchy_strain', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    mat_qp = mat[nm.newaxis,:,:].repeat( n_qp, 0 )
                     strain = cache( 'strain', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
-                    yield ii, (ts.dt, strain, mat_qp, vg)
+                    yield ii, (ts.dt, strain, mat, vg)
             return iter_kernel, shape, mode
 
 class CauchyStrainTerm( Term ):
@@ -199,9 +198,8 @@ class CauchyStressTerm( CauchyStrainTerm ):
 
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         mat, = self.get_args( ['material'], **kwargs )
-        mat_qp = mat[nm.newaxis,:,:].repeat( self.data_shape[1], 0 )
         cache = self.get_cache( 'cauchy_strain', 0 )
         strain = cache( 'strain', self.get_current_group(), 0,
                         state = state, get_vector = self.get_vector )
-        return strain, mat_qp, vg
+        return strain, mat, vg
 

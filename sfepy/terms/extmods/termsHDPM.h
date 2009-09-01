@@ -11,11 +11,6 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_hdpm_cache( FMField *out, FMField *state, int32 offset,
-		     FMField *bf, VolumeGeometry *vg,
-		     int32 *conn, int32 nEl, int32 nEP,
-		     int32 mode );
-
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       FMField *mtxD, SurfaceGeometry *sg,
 		       int32 *fis, int32 nFa, int32 nFP,

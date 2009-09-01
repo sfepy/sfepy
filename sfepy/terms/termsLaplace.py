@@ -1,6 +1,5 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import ScalarScalar
-from sfepy.terms.utils import fix_scalar_constant, fix_scalar_in_el
 
 class LaplaceTerm( ScalarScalar, Term ):
     r""":description: Laplace term with $c$ constant or constant per element.
@@ -118,15 +117,8 @@ class PermeabilityRTerm( Term ):
         else:
             raise StopIteration
 
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = mat, ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                        (n_el, n_qp, dim, dim)],
-                        mode_in = None )
-        mat_qp = nm.ascontiguousarray( mat_qp[...,index:index+1] )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, mat_qp, vg, ap.econn, chunk )
+            status = self.function( out, mat, vg, ap.econn, chunk )
             yield out, chunk, status
 
 class DiffusionVelocityTerm( Term ):
@@ -154,14 +146,8 @@ class DiffusionVelocityTerm( Term ):
             raise StopIteration
 
         vec = parameter()
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = nm.asarray( mat ), ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                          (n_el, n_qp, dim, dim)],
-                        mode_in = None )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, 0,
-                                    mat_qp, vg, ap.econn, chunk )
+                                    mat, vg, ap.econn, chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status

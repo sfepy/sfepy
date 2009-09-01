@@ -1,5 +1,4 @@
 from sfepy.terms.terms import *
-from sfepy.terms.utils import fix_scalar_in_el
 
 class ElectricSourceTerm( Term ):
     r""":description: Electric source term.
@@ -29,10 +28,8 @@ class ElectricSourceTerm( Term ):
         else:
             raise StopIteration
 
-        mat_in_el = fix_scalar_in_el( mat, n_el, nm.float64 )
-
         bfr = apr.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, parameter(), mat_in_el, bfr, vgc,
+            status = self.function( out, parameter(), mat, bfr, vgc,
                                     apc.econn, chunk, mode )
             yield out, chunk, status
