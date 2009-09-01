@@ -212,7 +212,24 @@ class SchroedingerApp( SimpleApp ):
         n_electron = get_default( n_electron, opts.n_electron )
         
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
-        pb.update_materials( extra_mat_args = {'mat_v' : {'vhxc' : vec_vhxc}} )
+
+        vec_vhxc = nm.array(vec_vhxc, dtype=nm.float64)
+
+        # Interpolate V_hxc into QP and pass it to mat_v material.
+##         print vec_vhxc.min(), vec_vhxc.max()
+        vhxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
+                              Psi=vec_vhxc)
+        sh = vhxc_qp.shape
+        vhxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
+##         print vhxc_qp.min(), vhxc_qp.max()
+        pb.materials['mat_v'].set_extra_args(vhxc=vhxc_qp)
+        pb.set_equations(pb.conf.equations)
+        pb.update_materials()
+
+        # Interpolate core potential from QP to nodes.
+        pot_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'pot')
+        pb.variables['V'].data_from_qp(pot_qp, 'i1')
+        vec_pot = pb.variables['V']()
 
         dummy = pb.create_state_vector()
 
@@ -301,11 +318,6 @@ class SchroedingerApp( SimpleApp ):
 
         output( "solving Ax=b Poisson equation" )
         vec_vh = pb.solve()
-
-        vec_pot = pb.materials['mat_v'].get_data('Omega', 0, 'pot')
-        
-        #sphere = eval_term_op( dummy, pb.conf.equations['sphere'], pb)
-        #print sphere
 
         norm = nla.norm( vec_vh + vec_vxc )
         dnorm = abs(norm - self.norm_vhxc0)
