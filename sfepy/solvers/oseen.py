@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.fem.functions import Function
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test
 
@@ -43,19 +44,26 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
     ii['us'] = problem.variables.get_indx( ns['u'], stripped = True )
     ii['ps'] = problem.variables.get_indx( ns['p'], stripped = True )
 
-    stabil = problem.materials[stabil_name]
-    mat = problem.materials[ns['fluid']]
+    stabil_mat = problem.materials[stabil_name]
+    stabil = dict_to_struct(stabil_mat.datas['special'], flag=(1,))
 
-    viscosity = mat.viscosity
+    mat = problem.materials[ns['fluid']]
+    viscosity = mat.function()['viscosity']
 
     c_friedrichs = problem.domain.get_diameter()
     sigma = 1e-12 # 1 / dt.
 
 #    print c_friedrichs
 
-    def mat_fun( ts, coor, region, ig, b_norm = 1.0, fixed_data = None ):
+    def mat_fun( ts, coor, mode=None, region=None, ig=None,
+                 b_norm = 1.0, fixed_data = None ):
+        if mode == 'special': return
+
         if fixed_data is not None:
-            return fixed_data[ig]
+            out = {}
+            for key, val in fixed_data[ig].iteritems():
+                out[key] = nm.tile(val, (coor.shape[0], 1, 1))
+            return out
 
         print '|b|_max (mat_fun):', b_norm
         gamma = viscosity + b_norm * c_friedrichs
@@ -66,7 +74,7 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
         else:
             data['gamma'] = nm.asarray( stabil.gamma_mul * stabil.gamma,
                                         dtype = nm.float64 )
-        
+        data['gamma'] = nm.tile(data['gamma'], (coor.shape[0], 1, 1))
 
         if stabil.delta is None:
             term = problem.equations[eq_name1].terms['dw_lin_convect']
@@ -77,7 +85,7 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
             ap, vg = var.get_approximation( term.get_current_group(), 'Volume' )
             delta = 1.0
             mode = _dimater_modes[stabil.diameter_mode]
-            cells = stabil.region.get_cells( ig )
+            cells = region.get_cells( ig )
             diameters2 = problem.domain.get_element_diameters( ig, cells, vg,
                                                              mode )
             val1 = min( 1.0, 1.0 / sigma )
@@ -85,24 +93,29 @@ def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
             val3 = (b_norm**2) * min( (c_friedrichs**2) / viscosity, 1.0 / sigma )
 #            print val1, gamma, val2, val3
             delta = stabil.delta_mul * val1 * diameters2 / (gamma + val2 + val3)
-            data['diameters2'] = diameters2
-            data['delta'] = delta
+
+            n_qp = coor.shape[0] / diameters2.shape[0]
+            data['diameters2'] = nm.repeat(diameters2, n_qp)
+            data['diameters2'].shape = data['diameters2'].shape + (1, 1)
+
+            data['delta'] = nm.repeat(delta, n_qp)
+            data['delta'].shape = data['delta'].shape + (1, 1)
         else:
             val = stabil.delta_mul * stabil.delta
-            for ii in range( len( stabil.igs ) ):
-                data['delta'] = nm.asarray( val, dtype = nm.float64 )
+            data['delta'] = nm.tile(data['delta'], (coor.shape[0], 1, 1))
         
         if stabil.tau is None:
             data['tau'] = stabil.tau_red * data['delta']
         else:
             data['tau'] = nm.asarray( stabil.tau_mul * stabil.tau,
                                       dtype = nm.float64 )
+            data['tau'] = nm.tile(data['tau'], (coor.shape[0], 1, 1))
 
         return data
 
-    stabil.set_function( mat_fun )
+    stabil_mat.set_function(Function('stabil', mat_fun))
 
-    return stabil, ns, ii
+    return stabil_mat, ns, ii
 
 ##
 # 11.10.2007, c
@@ -226,8 +239,10 @@ class Oseen( NonlinearSolver ):
             u_norm = nla.norm( vec_u, nm.inf )
             print '|u|_max: %.2e' % u_norm
 
-            stabil.time_update( None, None, problem.domain,
-                               b_norm = b_norm, fixed_data = fixed_data )
+            stabil.function.set_extra_args(b_norm = b_norm,
+                                           fixed_data = fixed_data)
+            stabil.time_update(None, problem.domain, problem.equations,
+                               problem.variables)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
             print 'stabilization parameters:'
             print '                   gamma: %.12e' % max_pars['gamma']

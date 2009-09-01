@@ -131,11 +131,7 @@ def create_bnf( stack ):
     variable = Word( 'xyz', max = 1 ) | Literal( 'domain' )
     any_var = Word( alphas + '_', alphanums + '_' ) | fnumber
 
-    args = delimitedList( variable, combine = True )\
-           + ZeroOrMore( Literal( ',' ) + any_var )
-
-    function = Word( alphas, alphanums + '_' )\
-               + Literal( '(' ) + Optional( args ) + Literal( ')' )
+    function = Word( alphas, alphanums + '_' )
     function = Group( function ).setParseAction( join_tokens )
 
     region = Combine( Literal( 'r.' ) + Word( alphas, '_' + alphas + nums ) )
@@ -198,15 +194,13 @@ _test_strs = ['nodes of surface -n r.egion_1',
              'all -n nodes of surface',
              'all -e r.egion_100',
              'r.egion_1 -n nodes of surface *e r.egion_8 *n nodes in (y > 0)',
-             'nodes of surface +n nodes by pokus( x, y, z )',
-             'elements of group 6 +e nodes by fn2_3c( x )',
+             'nodes of surface +n nodes by pokus',
+             'elements of group 6 +e nodes by fn2_3c',
              """r.egion_1 *n (r.egion_2 +e (nodes in (y > 0) *n r.egion_32))
              -n nodes of surface -e r.egion_5""",
-             'nodes by noargs()',
-             'nodes by extraargs( x, y, z, abc,3 )',
              'node in r.region_3',
              'node 10',
-             'elements by afun( domain )']
+             'elements by afun']
 
 if __name__ == "__main__":
     test_strs = _test_strs

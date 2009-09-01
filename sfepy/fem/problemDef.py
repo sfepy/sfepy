@@ -5,6 +5,7 @@ from sfepy.base.base import *
 
 import sfepy.base.ioutils as io
 from sfepy.base.conf import ProblemConf, get_standard_keywords
+from functions import Functions
 from mesh import Mesh
 from domain import Domain
 from fields import Fields
@@ -59,6 +60,8 @@ class ProblemDefinition( Struct ):
             conf_dir = None
         else:
             conf_dir = op.dirname(conf.funmod.__file__)
+
+        functions = Functions.from_conf(conf.functions)
             
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
@@ -69,6 +72,7 @@ class ProblemDefinition( Struct ):
         domain.setup_neighbour_lists()
 
         obj = ProblemDefinition( conf = conf,
+                                 functions = functions,
                                  domain = domain,
                                  eldesc_dir = eldesc_dir )
 
@@ -76,7 +80,7 @@ class ProblemDefinition( Struct ):
 	obj.ofn_trunk = io.get_trunk( conf.filename_mesh )
         obj.output_format = 'vtk'
 
-        obj.set_regions( conf.regions, conf.materials, conf.funmod )
+        obj.set_regions(conf.regions, conf.materials, obj.functions)
 
         if init_fields:
             obj.set_fields( conf.fields )
@@ -111,16 +115,16 @@ class ProblemDefinition( Struct ):
                 obj.__dict__[key] = copy( val )
         return obj
 
-    def set_regions( self, conf_regions = None,
-                     conf_materials = None, funmod = None):
-        conf_regions = get_default( conf_regions, self.conf.regions )
-        conf_materials = get_default( conf_materials, self.conf.materials )
-        funmod = get_default( funmod, self.conf.funmod )
+    def set_regions( self, conf_regions=None,
+                     conf_materials=None, functions=None):
+        conf_regions = get_default(conf_regions, self.conf.regions)
+        conf_materials = get_default(conf_materials, self.conf.materials)
+        functions = get_default(functions, self.functions)
 
-        self.domain.create_regions( conf_regions, funmod )
+        self.domain.create_regions(conf_regions, functions)
 
-        materials = Materials.from_conf( conf_materials )
-        materials.setup_regions( self.domain.regions )
+        materials = Materials.from_conf(conf_materials, functions)
+        materials.setup_regions(self.domain.regions)
         self.materials = materials
 
     ##
@@ -253,15 +257,13 @@ class ProblemDefinition( Struct ):
     def create_state_vector( self ):
         return self.variables.create_state_vector()
 
-    ##
-    # c: 08.08.2006, r: 14.04.2008
-    def update_bc( self, ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
-                  create_matrix = False ):
+    def update_bc( self, ts, conf_ebc, conf_epbc, conf_lcbc, functions,
+                   create_matrix = False ):
         """Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
         create_matrix to True."""
-        self.variables.equation_mapping( conf_ebc, conf_epbc,
-                                        self.domain.regions, ts, funmod )
-        self.variables.setup_lcbc_operators( conf_lcbc, self.domain.regions )
+        self.variables.equation_mapping(conf_ebc, conf_epbc,
+                                        self.domain.regions, ts, functions)
+        self.variables.setup_lcbc_operators(conf_lcbc, self.domain.regions)
                 
         self.variables.setup_a_dof_conns()
         if (self.mtx_a is None) or create_matrix:
@@ -282,14 +284,12 @@ class ProblemDefinition( Struct ):
         ts.set_step( step )
         return ts
 
-    ##
-    # c: 22.02.2008, r: 13.06.2008
-    def update_materials( self, ts = None, funmod = None,
-                          extra_mat_args = None ):
+    def update_materials(self, ts=None):
         if ts is None:
-            ts = self.get_default_ts( step = 0 )
-        funmod = get_default( funmod, self.conf.funmod )
-        self.materials.time_update( ts, funmod, self.domain, extra_mat_args )
+            ts = self.get_default_ts(step=0)
+
+        self.materials.time_update(ts, self.domain,
+                                   self.equations, self.variables)
 
     def update_equations( self, ts = None, funmod = None ):
         if ts is None:
@@ -301,8 +301,7 @@ class ProblemDefinition( Struct ):
 
     def time_update( self, ts = None,
                      conf_ebc = None, conf_epbc = None, conf_lcbc = None,
-                     funmod = None, create_matrix = False,
-                     extra_mat_args = None ):
+                     functions = None, create_matrix = False ):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
 
@@ -310,17 +309,17 @@ class ProblemDefinition( Struct ):
         conf_ebc = get_default( conf_ebc, self.conf.ebcs )
         conf_epbc = get_default( conf_epbc, self.conf.epbcs )
         conf_lcbc = get_default( conf_lcbc, self.conf.lcbcs )
-        funmod = get_default( funmod, self.conf.funmod )
-        self.update_bc( ts, conf_ebc, conf_epbc, conf_lcbc, funmod,
-                        create_matrix )
-        self.update_materials( ts, funmod, extra_mat_args )
-        self.update_equations( ts, funmod )
+        functions = get_default(functions, self.functions)
+        self.update_bc(ts, conf_ebc, conf_epbc, conf_lcbc, functions,
+                       create_matrix)
+        self.update_materials(ts)
+        self.update_equations(ts)
 
-    def setup_ic( self, conf_ics = None, funmod = None ):
-        conf_ics = get_default( conf_ics, self.conf.ics )
-        funmod = get_default( funmod, self.conf.funmod )
-        self.variables.setup_initial_conditions( conf_ics,
-                                                 self.domain.regions, funmod  )
+    def setup_ic( self, conf_ics = None, functions = None ):
+        conf_ics = get_default(conf_ics, self.conf.ics)
+        functions = get_default(functions, self.functions)
+        self.variables.setup_initial_conditions(conf_ics,
+                                                self.domain.regions, functions)
 
     def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
                     lcbc_names = None ):

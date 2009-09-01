@@ -24,6 +24,14 @@ def define_input( filename, region, dim, geom ):
         'requirements' : 'requirements',
     }
 
+    functions = {
+        'match_x_plane' : (match_x_plane,),
+        'match_y_plane' : (match_y_plane,),
+        'match_z_plane' : (match_z_plane,),
+        'match_x_line' : (match_x_line,),
+        'match_y_line' : (match_y_line,),
+    }
+
     coefs = {
         'elastic' : {
             'requires' : ['pis', 'corrs_phono_rs'],

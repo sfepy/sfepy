@@ -345,7 +345,9 @@ class Term( Struct ):
                 im = self.names.material.index( name )
                 split = self.names.material_split[im]
                 mat = kwargs[split[0]]
-                args.append( mat.get_data( region_name, ig, split[1] ) )
+                mat_data = mat.get_data((region_name, self.integral_name),
+                                        ig, split[1])
+                args.append(mat_data)
             else:
                 args.append( kwargs[name] )
 
@@ -371,7 +373,8 @@ class Term( Struct ):
     ##
     # c: 29.11.2007, r: 10.04.2008
     def describe_geometry( self, geometries, variables, integrals ):
-
+        """Takes reference to the used integral."""
+        
         try:
             integral = integrals[self.integral_name]
         except ValueError:
@@ -379,6 +382,8 @@ class Term( Struct ):
             raise ValueError( msg )
             
         integral.create_qp()
+        self.integral = integral
+        
         tgs = self.get_geometry()
         for var_name in self.get_variable_names():
 ##             print '>>>>>', self.name, var_name
@@ -478,3 +483,7 @@ class Term( Struct ):
         key = self.get_current_group()
         out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
         return out
+
+##     def get_quadrature_orders(self):
+##         """Curently, it just takes the order of the term integral."""
+##         return self.integral.order

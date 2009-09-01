@@ -1,19 +1,40 @@
 from sfepy.base.base import *
+from functions import ConstantFunction
+
 
 ##
 # 21.07.2006, c
 class Materials( Container ):
-    ##
-    # 24.07.2006, c
-    def from_conf( conf, wanted = None ):
 
+    def from_conf(conf, functions, wanted=None):
+        """Construct Materials instance from configuration."""
         if wanted is None:
             wanted = conf.keys()
 
-        objs = OneTypeList( Material )
-        for key, val in conf.iteritems():
-            if key in wanted:
-                objs.append( Material( **val ) )
+        objs = OneTypeList(Material)
+        for key, mc in conf.iteritems():
+            if key not in wanted: continue
+
+            fun = get_default_attr(mc, 'function', None)
+            vals = get_default_attr(mc, 'values', None)
+            if (fun is not None) and (vals is not None):
+                msg = 'material can have function or values but not both! (%s)' \
+                      % mc
+                raise ValueError(msg)
+            elif vals is not None: # => fun is None
+                fun = ConstantFunction(vals, functions = functions)
+            else: # => vals is None
+                fun = functions[fun]
+
+            if (fun is None):
+                msg = 'material has no values! (%s)' % mc
+                raise ValueError(msg)
+
+            kind = get_default_attr(mc, 'kind', 'time-dependent')
+            flags = get_default_attr(mc, 'flags', {})
+            mat =  Material(mc.name, mc.region, kind, fun, flags)
+            objs.append(mat)
+
         obj = Materials( objs )
         return obj
     from_conf = staticmethod( from_conf )
@@ -24,23 +45,13 @@ class Materials( Container ):
         for mat in self:
             mat.setup_regions( regions )
 
-    ##
-    # c: 01.08.2006, r: 20.02.2008
-    def time_update( self, ts, funmod, domain, extra_mat_args = None ):
-        extra_mat_args = get_default( extra_mat_args, {} )
+    def time_update(self, ts, domain, equations, variables):
         output( 'updating materials...' )
         tt = time.clock()
         for mat in self:
             output( ' ', mat.name )
-            extra_args = extra_mat_args.setdefault( mat.name, {} )
-            mat.time_update( ts, funmod, domain, **extra_args )
+            mat.time_update(ts, domain, equations, variables)
         output( '...done in %.2f s' % (time.clock() - tt) )
-
-    ##
-    # 22.08.2006, c
-    def set_current_group( self, ig ):
-        for mat in self:
-            mat.set_current_group( ig )
 
 ##
 # 21.07.2006, c
@@ -52,42 +63,22 @@ class Material( Struct ):
 
     material_2 = {
        'name' : 'm',
-       'mode' : 'here',
        'region' : 'Omega',
-       'E' : 1.0,
+       'values' : {'E' : 1.0},
     }
 
     Material parameters are passed to terms using the dot notation,
     i.e. 'm.E' in our example case.
-
-    >>> mat = Material( **material_2 )
-    >>> print mat
-Material:m
-  E:
-    1.0
-  name:
-    m
-  region:
-    None
-  extra_args:
-    {}
-  mode:
-    here
-  region_name:
-    Omega
     
     """
-    ##
-    # c: 22.08.2006, r: 02.07.2008
-    def __init__( self, **kwargs ):
-        kwargs.setdefault( 'extra_args', {} )
-        Struct.__init__( self, **kwargs )
-
-        self.region_name = self.region
-        self.region = None
-        self.datas = None
-        self.kind = get_default_attr( self, 'kind', 'time-dependent' )
-
+    def __init__(self, name, region_name, kind, function, flags):
+        Struct.__init__(self, name = name,
+                        region_name = region_name,
+                        kind = kind,
+                        function = function,
+                        flags = flags,
+                        region = None)
+        self._reset()
     ##
     # 22.08.2006, c
     def setup_regions( self, regions ):
@@ -95,30 +86,61 @@ Material:m
         self.igs = region.igs
         self.region = region 
 
-    ##
-    # c: 01.08.2006, r: 02.07.2008
-    def time_update( self, ts, funmod, domain, **extra_args ):
-        """coor is in region.vertices[ig] order (i.e. sorted by node number)"""
-        if self.mode == 'function':
-            self.data = None
-            if (self.datas is not None) and (self.kind == 'stationary'):
-                return
-            
-            self.datas = []
+    def time_update(self, ts, domain, equations, variables):
+        """All material parameters are evaluated in all physical QPs."""
+        self.data = None
+        if self.datas and (self.kind == 'stationary'): return
 
-            if isinstance( self.function, str ):
-                fun = getattr( funmod, self.function )
-            else:
-                fun = self.function
+        self.datas = {}
+        # Quadrature point function values.
+        for equation in equations:
+            for term in equation.terms:
+                names = [ii.split('.')[0] for ii in term.names.material]
+                if self.name not in names: continue
 
-            kwargs = copy( self.extra_args )
-            kwargs.update( extra_args )
-            args = dict( ts = ts, region = self.region, **kwargs )
+                key = (term.region.name, term.integral.name)
+                if key in self.datas: continue
 
-            for ig in self.igs:
-                coor = domain.get_mesh_coors()[self.region.get_vertices( ig )]
-                args.update( {'coor' : coor, 'ig' : ig} )
-                self.datas.append( fun( **args ) )
+                # Any term has at least one variable, all variables used
+                # in a term share the same integral.
+                var_name = term.names.variable[0]
+                var = variables[var_name]
+
+                aps = var.field.aps
+
+                qps = aps.get_physical_qps(term.region, term.integral)
+                for ig in self.igs:
+                    if ig not in term.igs(): continue
+                    if (qps.n_qp[ig] == 0): continue
+                    
+                    datas = self.datas.setdefault(key, {})
+                    data = self.function(ts, qps.values[ig], mode='qp',
+                                         region=self.region, ig=ig)
+                    # Restore shape to (n_el, n_qp, ...) until the C
+                    # core is rewritten to work with a bunch of physical
+                    # point values only.
+                    if qps.is_uniform:
+                        if data is not None:
+                            n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
+                            for val in data.itervalues():
+                                val.shape = (val.shape[0] / n_qp, n_qp,
+                                             val.shape[1], val.shape[2])
+                    else:
+                        raise NotImplementedError
+                    datas[ig] = data
+
+        # Special function values (e.g. flags).
+        datas = self.function(ts, domain.get_mesh_coors(), mode='special',
+                              region=self.region)
+        if datas is not None:
+            self.datas['special'] = datas
+            self.special_names.update(datas.keys())
+
+        # Special constant values.
+        if self.flags.get('special_constant'):
+            datas = self.function(None, None)
+            self.datas['special_constant'] = datas
+            self.constant_names.update(datas.keys())
 
     ##
     # 31.07.2007, c
@@ -127,66 +149,72 @@ Material:m
         self.datas = datas
         self.data = None
 
-    ##
-    # 01.08.2007, c
-    def set_function( self, function ):
-        self.mode =  'function'
+    def set_function(self, function):
         self.function = function
+        self._reset()
+
+    def _reset(self):
+        self.datas = None
+        self.special_names = set()
+        self.constant_names = set()
+        self.data = None
 
     ##
     # 01.08.2007, c
     def set_extra_args( self, extra_args ):
         self.extra_args = extra_args
         
-    ##
-    # 22.08.2006, c
-    # 22.02.2007
-    # 31.07.2007
-    def set_current_group( self, ig ):
-        if (self.mode == 'function') or (self.mode == 'user'):
-            try:
-                ii = self.igs.index( ig )
-                self.data = self.datas[ii]
-            except:
-                self.data = None
-
-    def get_data( self, region_name, ig, name ):
+    def get_data( self, key, ig, name ):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
-##         print 'getting', name
+##         print 'getting', self.name, name
 
         if isinstance( name, str ):
-            return self._get_data( region_name, ig, name )
+            return self._get_data( key, ig, name )
         else:
             out = Struct()
             for key, item in name.iteritems():
-                setattr( out, key, self._get_data( region_name, ig, item ) )
+                setattr( out, key, self._get_data( key, ig, item ) )
             return out
                        
-    def _get_data( self, region_name, ig, name ):
+    def _get_data( self, key, ig, name ):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
                   '(material: %s, region: %s)' % (self.name, region_name)
             raise ValueError( msg )
 
-        if self.mode == 'here':
-            return getattr( self, name )
+        if self.datas is None:
+            raise ValueError( 'material data not set! (call time_update())' )
+
+        if name in self.special_names:
+            # key, ig ignored.
+            return self.datas['special'][name]
+
         else:
-            if self.datas is None:
-                raise ValueError( 'material data not set! (call time_update())' )
-            ii = self.igs.index( ig )
-            if isinstance( self.datas[ii], Struct ):
-                return getattr( self.datas[ii], name )
+            datas = self.datas[key]
+
+            if isinstance( datas[ig], Struct ):
+                return getattr( datas[ig], name )
             else:
-                return self.datas[ii][name]
+                return datas[ig][name]
+
+    def get_constant_data(self, name):
+        """Get constant data by name."""
+        if name in self.constant_names:
+            # no key, ig.
+            return self.datas['special_constant'][name]
+        else:
+            raise ValueError('material %s has now constant %s!'
+                             % (self.name, name))
 
     ##
     # 01.08.2007, c
     def reduce_on_datas( self, reduce_fun, init = 0.0 ):
-        out = {}.fromkeys( self.datas[0].keys(), init )
-
-        for data in self.datas:
-            for key, val in data.iteritems():
-                out[key] = reduce_fun( out[key], val )
+        """For non-special values only!"""
+        out = {}.fromkeys(self.datas[self.datas.keys()[0]][0].keys(), init)
+        for datas in self.datas.itervalues():
+            for data in datas.itervalues():
+                for key, val in data.iteritems():
+                    out[key] = reduce_fun(out[key], val)
 
         return out

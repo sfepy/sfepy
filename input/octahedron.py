@@ -3,10 +3,9 @@ filename_mesh = '../database/octahedron.node'
 
 material_2 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'K' : [[1.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 1.0]],
-    'val' : 1.0,
+    'values' : {'K' : [[1.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 1.0]],
+                'val' : 1.0},
 }
 
 field_1 = {
@@ -36,22 +35,30 @@ region_1000 = {
     'select' : 'all',
 }
 
-def get_line( x, y, z, mode ):
+def get_line(x, y, mode):
     import numpy as nm
+
     if mode == 0:
-        val = nm.where( (x + y) >= 3.5, 1, 0 )
+        val = nm.where((x + y) >= 3.5)[0]
     elif mode == 1:
-        val = nm.where( (x + y) <= -3.5, 1, 0 )
+        val = nm.where((x + y) <= -3.5)[0]
     print mode, val
     return val
 
+functions = {
+    'get_line0' : (lambda coors, domain=None:
+                   get_line(coors[:,0], coors[:,1], 0),),
+    'get_line1' : (lambda coors, domain=None:
+                   get_line(coors[:,0], coors[:,1], 1),),
+}
+
 region_03 = {
     'name' : 'Gamma_Left',
-    'select' : 'nodes by get_line( x, y, z, 0 )',
+    'select' : 'nodes by get_line0',
 }
 region_4 = {
     'name' : 'Gamma_Right',
-    'select' : 'nodes by get_line( x, y, z, 1 )',
+    'select' : 'nodes by get_line1',
 }
 
 ebc_1 = {

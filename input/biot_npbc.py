@@ -20,13 +20,13 @@ def coors_in_cylinder(x, y, z, centre, axis, radius, length, inside=True):
     dl = nm.dot(axis, vec)
 
     if inside:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius), 1, 0)
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius))[0]
     else:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius), 1, 0)
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius))[0]
 
     return out
 
-def cinc_simple(x, y, z, mode):
+def cinc_simple(coors, mode):
     axis = nm.array([1, 0, 0], nm.float64)
     if mode == 0: # In
         centre = nm.array([-0.00001, 0.0, 0.0], nm.float64).reshape((3,1))
@@ -43,7 +43,8 @@ def cinc_simple(x, y, z, mode):
     else:
         raise ValueError('unknown mode %s!' % mode)
 
-    return coors_in_cylinder(x, y, z, centre, axis, radius, length)
+    return coors_in_cylinder(coors[:,0], coors[:,1], coors[:,2],
+                             centre, axis, radius, length)
 
 def define_regions(filename):
     if filename.find('simple.mesh'):
@@ -52,11 +53,9 @@ def define_regions(filename):
             'Omega' : ('all', {}),
             'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
                        {'can_cells' : True}),
-            'Inlet' : ('nodes by cinc_simple( x, y, z, 0 )',
-                       {'can_cells' : False}),
-            'Outlet' : ('nodes by cinc_simple( x, y, z, 1 )',
-                        {'can_cells' : False}),
-            'Rigid' : ('nodes by cinc_simple( x, y, z, 2 )', {}),
+            'Inlet' : ('nodes by cinc_simple0', {'can_cells' : False}),
+            'Outlet' : ('nodes by cinc_simple1', {'can_cells' : False}),
+            'Rigid' : ('nodes by cinc_simple2', {}),
         }
 
     else:
@@ -64,22 +63,25 @@ def define_regions(filename):
 
     return regions, dim, geom
 
-def get_pars(ts, coor, region, ig, output_dir='.'):
-    n_nod, dim = coor.shape
-    sym = (dim + 1) * dim / 2
+def get_pars(ts, coor, mode, region, ig, output_dir='.'):
+    if mode == 'qp':
+        n_nod, dim = coor.shape
+        sym = (dim + 1) * dim / 2
 
-    out = {}
-    out['D'] = stiffness_tensor_lame(dim, lam=1.7, mu=0.3)
+        out = {}
+        out['D'] = nm.tile(stiffness_tensor_lame(dim, lam=1.7, mu=0.3),
+                           (coor.shape[0], 1, 1))
 
-    aa = nm.zeros((sym,), dtype=nm.float64)
-    aa[:dim] = 0.132
-    aa[dim:sym] = 0.092
-    out['alpha'] = aa
-    
-    perm = nm.eye(dim, dtype=nm.float64)
-    out['K'] = perm
-    
-    return out
+        aa = nm.zeros((sym, 1), dtype=nm.float64)
+        aa[:dim] = 0.132
+        aa[dim:sym] = 0.092
+        out['alpha'] = nm.tile(aa, (coor.shape[0], 1, 1))
+
+        perm = nm.eye(dim, dtype=nm.float64)
+        out['K'] = nm.tile(perm, (coor.shape[0], 1, 1))
+
+        print coor.shape, region.name, ig
+        return out
 
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
@@ -109,6 +111,17 @@ def define_input(filename, output_dir):
         'nls' : 'newton',
     }
 
+    functions = {
+        'cinc_simple0' : (lambda coors, domain:
+                          cinc_simple(coors, 0),),
+        'cinc_simple1' : (lambda coors, domain:
+                          cinc_simple(coors, 1),),
+        'cinc_simple2' : (lambda coors, domain:
+                          cinc_simple(coors, 2),),
+        'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
+                      get_pars(ts, coors, mode, region, ig,
+                               output_dir=output_dir),),
+    }
     regions, dim, geom = define_regions(filename_mesh)
 
     field_1 = {
@@ -143,10 +156,8 @@ def define_input(filename, output_dir):
 
     material_1 = {
         'name' : 'm',
-        'mode' : 'function',
         'region' : 'Omega',
         'function' : 'get_pars',
-        'extra_args' : {'output_dir' : output_dir},
     }
 
     integral_1 = {

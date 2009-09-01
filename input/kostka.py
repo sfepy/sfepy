@@ -5,9 +5,8 @@ filename_mesh = '../database/kostka_medium.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0
+    'values' : {'val' : 1.0},
 }
 
 if filename_mesh == '../database/kostka_medium.mesh':

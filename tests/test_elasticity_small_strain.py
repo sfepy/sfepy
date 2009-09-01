@@ -27,21 +27,24 @@ def get_pars( dim, full = False ):
     if full:
         return lam * oot + mu * nm.diag( o + 1.0 )
     else:
-        return {'lambda' : lam, 'mu' : mu}
+        return lam, mu
 
 material_1 = {
     'name' : 'solid',
-    'mode' : 'here',
     'region' : 'Omega',
-    'lame' : get_pars( 3 ),
-    'Dijkl' : get_pars( 3, True ),
+    'values' : {
+        'lam' : get_pars( 3 )[0],
+        'mu' : get_pars( 3 )[1],
+        'Dijkl' : get_pars( 3, True ),
+    }
 }
 
 material_2 = {
     'name' : 'spring',
-    'mode' : 'here',
     'region' : 'Omega',
-    'pars' : {'stiffness' : 1e0, 'projection' : None},
+    'values' : {
+        '.pars' : {'stiffness' : 1e0, 'projection' : None},
+    }
 }
 
 variable_1 = {
@@ -85,7 +88,7 @@ integral_1 = {
 
 equations_iso = {
     'balance_of_forces' :
-    """dw_lin_elastic_iso.i1.Omega( solid.lame, v, u )
+    """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u )
      = dw_point_lspring.i1.Bottom( spring.pars, v, u )""",
 }
 equations_general = {

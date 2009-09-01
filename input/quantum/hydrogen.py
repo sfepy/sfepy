@@ -1,5 +1,22 @@
 # hydrogen atom
 
+def fun_v(ts, coor, mode, dim):
+    if mode == 'qp':
+        from numpy import sqrt
+
+        out = {}
+        C = 0.5
+        if dim == 2:
+            r = sqrt( coor[:,0]**2 + coor[:,1]**2 )
+        else:
+            r = sqrt( coor[:,0]**2 + coor[:,1]**2 + coor[:,2]**2 )
+
+        V = - C * 1.0 / r
+        V.shape = (V.shape[0], 1, 1)
+        
+        out['V'] = V
+        return out
+
 def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
     assert dim in [2, 3]
     filename_mesh = mesh
@@ -21,21 +38,25 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, tau=-1.0):
         'select' : 'nodes of surface',
     }
 
+    functions = {
+        'fun_v' : (lambda ts, coor, mode=None, region=None, ig=None:
+                   fun_v(ts, coor, mode, dim),),
+    }
+    
     material_1 = {
         'name' : 'm',
-        'mode' : 'here',
         'region' : 'Omega',
 
-        'val' : 0.5,
+        'values' : {
+            'val' : 0.5,
+        },
     }
 
     material_2 = {
         'name' : 'mat_v',
-        'mode' : 'function',
         'region' : 'Omega',
 
         'function' : 'fun_v',
-        'extra_args' : {'mode' : 'r^2'},
     }
 
     if dim == 3:

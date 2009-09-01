@@ -104,47 +104,59 @@ options = {
     
 }
 
+functions = {
+    'select_y3_circ' : (lambda coors, domain=None, diameter=None:
+                        select_y3_circ(coors, diameter=default_y3_diameter),),
+}
+
 regions = {
     'Y' : ('all', {}),
     'Y1' : (' +e '.join( ('elements of group %d' % ig)
                          for ig in out_groups ), {}),
     'Y23' : (' +e '.join( ('elements of group %d' % ig)
                           for ig in in_groups ), {}),
-    'Y3' : ('nodes by select_y3_circ( x, y, z, %f )' % default_y3_diameter, {}),
+    'Y3' : ('nodes by select_y3_circ', {}),
     'Y2' : ('r.Y23 -e r.Y3', {}),
     'Y23_Surface': ('r.Y1 *n r.Y23', {'can_cells' : False}),
 }
 
 material_1 = {
     'name' : 'matrix',
-    'mode' : 'here',
     'region' : 'Y1',
 
     # aluminium
-    'lame' : {'lambda' : 5.898, 'mu' : 2.681}, # in 1e+10 Pa
-    'density' : 0.2799, # in 1e4 kg/m3
+    'values' : {
+        'lam' : 5.898,
+        'mu' : 2.681,
+        'density' : 0.2799, # in 1e4 kg/m3
+    },
+    'flags' : {'special_constant' : True},
 }
 
 material_2 = {
     'name' : 'inclusion',
-    'mode' : 'here',
     'region' : 'Y2',
 
-    # epoxy
-    'lame' : {'lambda' : 0.1798, 'mu' : 0.148}, # in 1e+10 Pa
-    'density' : 0.1142, # in 1e4 kg/m3
+    # epoxy, in 1e+10 Pa
+    'values' : {
+        'lam' : 0.1798,
+        'mu' : 0.148,
+        'density' : 0.1142, # in 1e4 kg/m3
+    },
+    'flags' : {'special_constant' : True},
 }
 
 material_3 = {
     'name' : 'rigid',
-    'mode' : 'here',
     'region' : 'Y3',
 
-    # lead
-#    'lame' : {'lambda' : 0.1798, 'mu' : 0.148}, # in 1e+10 Pa
-    'lame' : {'lambda' : 4.074 , 'mu' : 0.5556}, # in 1e+10 Pa, does not matter
-#    'density' : 0.1142, # in 1e4 kg/m3
-    'density' : 1.1340, # in 1e4 kg/m3
+    # lead, in 1e+10 Pa, does not matter
+    'values' : {
+        'lam' : 4.074 ,
+        'mu' : 0.5556,
+        'density' : 1.1340, # in 1e4 kg/m3
+    },
+    'flags' : {'special_constant' : True},
 }
 
 conf_dir = os.path.dirname(__file__)
@@ -195,8 +207,8 @@ integral_1 = {
 # Eigenproblem equations.
 # dw_lin_elastic_iso.i1.Y3( rigid.lame, v, u ) should have no effect!
 equations = {
-    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )
-             + dw_lin_elastic_iso.i1.Y3( rigid.lame, v, u )""",
+    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lam, inclusion.mu, v, u )
+             + dw_lin_elastic_iso.i1.Y3( rigid.lam, rigid.mu, v, u )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )
              + dw_mass_vector.i1.Y3( rigid.density, v, u )""",
 }
@@ -229,32 +241,15 @@ def select_in_plane( vec, shape, normal_direction, eps ):
     else:
         return vec, False
 
-def select_rigid( x, y, z ):
-
-    if filename_mesh.find( 'cube_' ) >= 0:
-        out = nm.where( (x > -0.1) & (x < 0.1) &\
-                        (y > -0.1) & (y < 0.1) &\
-                        (z > -0.1) & (z < 0.1),
-                        1, 0 )
-    elif filename_mesh.find( 'mesh_circ.vtk' ) >= 0:
-        out = nm.where( (x > -0.2) & (x < 0.2) &\
-                        (y > -0.2) & (y < 0.2),
-                        1, 0 )
-    else:
-        out = nm.where( (x > 0.4) & (x < 0.6) & (y > 0.4) & (y < 0.6),
-                        1, 0 )
-    return out
-
-def select_y3_circ( x, y, z, diameter ):
-    r = x**2 + y**2
+def select_y3_circ(coors, diameter=None):
+    r = coors[:,0]**2 + coors[:,1]**2
     if dim == 3:
-        r += z**2
+        r += coors[:,2]**2
     r = nm.sqrt( r )
 
-    out = nm.where( r < diameter, 1, 0 )
+    out = nm.where(r < diameter)[0]
 
-    n = nm.where( out == 1 )[0].shape[0]
-    if n <= 3:
+    if out.shape[0] <= 3:
         raise ValueError( 'too few nodes selected! (%d)' % n )
 
     return out

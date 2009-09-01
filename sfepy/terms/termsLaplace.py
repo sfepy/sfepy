@@ -13,6 +13,9 @@ class LaplaceTerm( ScalarScalar, Term ):
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
 
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign, terms.dw_laplace)
+
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -21,19 +24,13 @@ class LaplaceTerm( ScalarScalar, Term ):
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        mat_arg = fix_scalar_constant( mat, nm.float64 )
-        if mat_arg is None:
-            mat_arg = fix_scalar_in_el( mat, self.data_shape[0], nm.float64 )
-            self.function = terms.dw_st_pspg_p
-        else:
-            self.function = terms.dw_laplace
 
         if state.is_real():
-            fargs = vec, 0, mat_arg, vg, ap.econn
+            fargs = vec, 0, mat, vg, ap.econn
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, mat_arg, vg, ap.econn),
-                     (ac( vec.imag ), 0, mat_arg, vg, ap.econn)]
+            fargs = [(ac( vec.real ), 0, mat, vg, ap.econn),
+                     (ac( vec.imag ), 0, mat, vg, ap.econn)]
             mode += 1j
             
         return fargs, shape, mode
@@ -64,19 +61,13 @@ class DiffusionTerm( ScalarScalar, Term ):
         vec = self.get_vector( state )
 
         n_el, n_qp, dim, n_ep = self.data_shape
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = nm.asarray( mat ), ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                          (n_el, n_qp, dim, dim)],
-                        mode_in = None )
         if state.is_real():
-            return (1.0, vec, 0, mat_qp, vg, ap.econn), shape, mode
+            return (1.0, vec, 0, mat, vg, ap.econn), shape, mode
         else:
             ac = nm.ascontiguousarray
             mode += 1j
-            return [(1.0, ac(vec.real), 0, mat_qp, vg, ap.econn),
-                    (1.0, ac(vec.imag), 0, mat_qp, vg, ap.econn)], shape, mode
+            return [(1.0, ac(vec.real), 0, mat, vg, ap.econn),
+                    (1.0, ac(vec.imag), 0, mat, vg, ap.econn)], shape, mode
     
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
@@ -92,26 +83,17 @@ class DiffusionTerm( ScalarScalar, Term ):
         gp2 = cache( 'grad', self.get_current_group(), 0,
                      state = par2, get_vector = self.get_vector )
 
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                        mat = mat, ap = ap,
-                        assumed_shapes = [(1, n_qp, dim, dim),
-                                          (n_el, n_qp, dim, dim)],
-                        mode_in = None )
-
-        return (1.0, gp1, gp2, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+        return (1.0, gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
 
     def set_arg_types( self ):
         if self.mode == 'weak':
             self.function = terms.dw_diffusion
             use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-            self.use_caches = {'mat_in_qp' : [['material']]}
         else:
             self.function = terms.d_diffusion
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'grad_scalar' : [['parameter_1'],
-                                                ['parameter_2']],
-                               'mat_in_qp' : [['material']]}
+                                                ['parameter_2']]}
 
 class PermeabilityRTerm( Term ):
     r""":description: Special-purpose diffusion-like term with permeability

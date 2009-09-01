@@ -208,7 +208,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
   - 09.12.2005
 */
 int32 dw_laplace( FMField *out, FMField *state, int32 offset,
-		  float64 coef, VolumeGeometry *vg,
+		  FMField *coef, VolumeGeometry *vg,
 		  int32 *conn, int32 nEl, int32 nEP,
 		  int32 *elList, int32 elList_nRow,
 		  int32 isDiff )
@@ -237,16 +237,18 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
 /*     output( "%d\n", iel ); */
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( coef, iel );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
+/*     fmf_print( coef, stdout, 0 ); */
 /*     fmf_print( vg->bfGM, stdout, 0 ); */
 /*     fmf_print( vg->det, stdout, 0 ); */
 
     if (isDiff) {
       laplace_build_gtg( gtg, vg->bfGM );
+      fmf_mulAF( gtg, gtg, coef->val );
       fmf_sumLevelsMulF( out, gtg, vg->det->val );
-      fmf_mulC( out, coef );
 /*       fmf_print( out, stdout, 0 ); */
 /*       sys_pause(); */
     } else {
@@ -257,8 +259,8 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
 
       laplace_act_g_m( gu, vg->bfGM, st );
       laplace_act_gt_m( gtgu, vg->bfGM, gu );
+      fmf_mulAF( gtgu, gtgu, coef->val );
       fmf_sumLevelsMulF( out, gtgu, vg->det->val );
-      fmf_mulC( out, coef );
 
 /*       fmf_print( stv, stdout, 0 ); */
 /*       fmf_print( gu, stdout, 0 ); */

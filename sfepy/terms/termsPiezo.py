@@ -22,10 +22,6 @@ class PiezoCouplingGrad( CouplingVectorScalar ):
         else:
             p_grad  = aux
 
-        n_qp = self.data_shape_r[1]
-        mat = nm.asarray( mat, dtype = nm.float64 )
-        mat = fix_mat_shape( mat, n_qp )
-
         return (aux, p_grad, mat, vgr), shape, mode
 
 class PiezoCouplingDiv( CouplingVectorScalar ):
@@ -49,10 +45,6 @@ class PiezoCouplingDiv( CouplingVectorScalar ):
         else:
             strain = aux
 
-        n_qp = self.data_shape_r[1]
-        mat = nm.asarray( mat, dtype = nm.float64 )
-        mat = fix_mat_shape( mat, n_qp )
-
         return (strain, aux, mat, vgc), shape, mode + 2
 
 class  PiezoCouplingEval( CouplingVectorScalar ):
@@ -73,10 +65,6 @@ class  PiezoCouplingEval( CouplingVectorScalar ):
                         state = par_v, get_vector = self.get_vector )
         cache = self.get_cache( 'grad_scalar', 0 )
         p_grad = cache( 'grad', self.get_current_group(), 0, state = par_s )
-
-        n_qp = self.data_shape_r[1]
-        mat = nm.asarray( mat, dtype = nm.float64 )
-        mat = fix_mat_shape( mat, n_qp )
 
         return (strain, p_grad, mat, vgv), (chunk_size, 1, 1, 1), 0
 

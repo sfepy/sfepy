@@ -1,6 +1,5 @@
 from scipy.optimize import fsolve
 from base import *
-from sfepy.solvers import Solver
 
 def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
     """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
@@ -91,23 +90,6 @@ def split_range( n_item, step ):
     if aux < n_item:
         out.append( n_item - aux )
 
-    return out
-
-##
-# c: 25.09.2007, r: 08.04.2008
-def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
-         return_time = None, method = 'eig.scipy', **ckwargs ):
-
-    kwargs = {'name' : 'aux', 'kind' : method}
-    kwargs.update( ckwargs )
-    conf = Struct( **kwargs )
-    solver = Solver.any_from_conf( conf )
-
-    status = {}
-    out = solver( mtx_a, mtx_b, num, eigenvectors, status )
-    if return_time is not None:
-        return_time[0] = status['time']
-        
     return out
 
 ##

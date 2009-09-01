@@ -453,10 +453,10 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
   - 14.12.2005
 */
 int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
-			  float64 viscosity, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff )
+			    FMField *viscosity, VolumeGeometry *vg,
+			    int32 *conn, int32 nEl, int32 nEP,
+			    int32 *elList, int32 elList_nRow,
+			    int32 isDiff )
 {
   int32 ii, iel, dim, nQP, ret = RET_OK;
   FMField *st = 0, *gtg = 0, *gu = 0, *gtgu = 0;
@@ -485,13 +485,14 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
 /*     output( "%d\n", iel ); */
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( viscosity, iel );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
     if (isDiff) {
       divgrad_build_gtg( gtg, vg->bfGM );
+      fmf_mul( gtg, viscosity->val );
       fmf_sumLevelsMulF( out, gtg, vg->det->val );
-      fmf_mulC( out, viscosity );
 /*       fmf_print( gtg, stdout, 0 ); */
 /*       sys_pause(); */
     } else {
@@ -502,14 +503,13 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
 
       divgrad_act_g_m( gu, vg->bfGM, stv );
       divgrad_act_gt_m( gtgu, vg->bfGM, gu );
+      fmf_mul( gtgu, viscosity->val );
       fmf_sumLevelsMulF( out, gtgu, vg->det->val );
-      fmf_mulC( out, viscosity );
 
       if (ii == 0) {
 /* 	fmf_print( st, stdout, 0 ); */
 /* 	fmf_print( vg->det, stdout, 0 ); */
 /* 	fmf_print( out, stdout, 0 ); */
-/* 	output( "%f\n", viscosity ); */
       }
 /*       sys_pause(); */
     }
@@ -862,73 +862,6 @@ int32 dw_grad( FMField *out, float64 coef, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_st_pspg_p"
-/*!
-  @par Revision history:
-  - 09.01.2006, c
-  - 10.01.2006
-  - 31.07.2007
-*/
-int32 dw_st_pspg_p( FMField *out, FMField *state, int32 offset,
-		    FMField *coef, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
-		    int32 isDiff )
-{
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *gtg = 0, *gp = 0, *gtgp = 0, *st = 0;
-  FMField stv[1];
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-  state->val = FMF_PtrFirst( state ) + offset;
-  if (isDiff == 1) { 
-    fmf_createAlloc( &gtg, 1, nQP, nEP, nEP );
-  } else {
-    fmf_createAlloc( &gp, 1, nQP, dim, 1 );
-    fmf_createAlloc( &gtgp, 1, nQP, nEP, 1 );
-    fmf_createAlloc( &st, 1, 1, 1, nEP );
-    stv->nAlloc = -1;
-    fmf_pretend( stv, 1, 1, nEP, 1, st->val );
-  }
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-    FMF_SetCell( coef, iel );
-      
-    if (isDiff == 1) { 
-      fmf_mulATB_nn( gtg, vg->bfGM, vg->bfGM );
-      fmf_sumLevelsMulF( out, gtg, vg->det->val );
-    } else {
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-
-      fmf_mulAB_n1( gp, vg->bfGM, stv );
-      fmf_mulATB_nn( gtgp, vg->bfGM, gp );
-      fmf_sumLevelsMulF( out, gtgp, vg->det->val );
-    }
-    fmf_mulC( out, coef->val[0] );
-
-    ERR_CheckGo( ret );
-  }
-
- end_label:
-  if (isDiff) {
-    fmf_freeDestroy( &gtg );
-  } else {
-    fmf_freeDestroy( &st );
-    fmf_freeDestroy( &gp );
-    fmf_freeDestroy( &gtgp );
-  }
-
-  return( ret );
-}
-
-#undef __FUNC__
 #define __FUNC__ "dw_st_pspg_c"
 /*!
   @par Revision history:
@@ -985,15 +918,16 @@ int32 dw_st_pspg_c( FMField *out,
       
     if (isDiff == 1) { 
       fmf_mulATB_nn( gtbtg, vg_p->bfGM, btg );
+      fmf_mul( gtbtg, coef->val );
       fmf_sumLevelsMulF( out, gtbtg, vg_u->det->val );
     } else {
       ele_extractNodalValuesDBD( stu, stateU, conn + nEP * iel );
 
       fmf_mulAB_n1( btgu, btg, stuv );
       fmf_mulATB_nn( gtbtgu, vg_p->bfGM, btgu );
+      fmf_mul( gtbtgu, coef->val );
       fmf_sumLevelsMulF( out, gtbtgu, vg_u->det->val );
     }
-    fmf_mulC( out, coef->val[0] );
 
     ERR_CheckGo( ret );
   }
@@ -1070,15 +1004,16 @@ int32 dw_st_supg_p( FMField *out,
       
     if (isDiff == 1) { 
       fmf_mulATB_nn( gtbg, btg, vg_p->bfGM );
+      fmf_mul( gtbg, coef->val );
       fmf_sumLevelsMulF( out, gtbg, vg_u->det->val );
     } else {
       ele_extractNodalValuesDBD( stp, stateP, conn_p + nEP_p * iel );
 
       fmf_mulAB_n1( gp, vg_p->bfGM, stpv );
       fmf_mulATB_nn( gtbgp, btg, gp );
+      fmf_mul( gtbgp, coef->val );
       fmf_sumLevelsMulF( out, gtbgp, vg_u->det->val );
     }
-    fmf_mulC( out, coef->val[0] );
 
     ERR_CheckGo( ret );
   }
@@ -1152,15 +1087,16 @@ int32 dw_st_supg_c( FMField *out,
       
     if (isDiff == 1) { 
       fmf_mulATB_nn( gtbbtg, btg, btg );
+      fmf_mul( gtbbtg, coef->val );
       fmf_sumLevelsMulF( out, gtbbtg, vg->det->val );
     } else {
       ele_extractNodalValuesDBD( stu, stateU, conn + nEP * iel );
 
       fmf_mulAB_n1( btgu, btg, stuv );
       fmf_mulATB_nn( gtbbtgu, btg, btgu );
+      fmf_mul( gtbbtgu, coef->val );
       fmf_sumLevelsMulF( out, gtbbtgu, vg->det->val );
     }
-    fmf_mulC( out, coef->val[0] );
 
     ERR_CheckGo( ret );
   }
@@ -1187,7 +1123,7 @@ int32 dw_st_supg_c( FMField *out,
   - 26.07.2007, c
 */
 int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
-		      float64 gamma, VolumeGeometry *vg,
+		      FMField *coef, VolumeGeometry *vg,
 		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff )
@@ -1218,22 +1154,24 @@ int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( coef, iel );
     FMF_SetCell( gcl, iel );
     FMF_SetCell( vg->det, iel );
       
     if (isDiff == 1) { 
       fmf_mulATB_nn( gtg, gcl, gcl );
+      fmf_mul( gtg, coef->val );
       fmf_sumLevelsMulF( out, gtg, vg->det->val );
     } else {
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
 
       fmf_mulAB_n1( gu, gcl, stv );
       fmf_mulATB_nn( gtgu, gcl, gu );
+      fmf_mul( gtgu, coef->val );
       fmf_sumLevelsMulF( out, gtgu, vg->det->val );
     }
     ERR_CheckGo( ret );
   }
-  fmfc_mulC( out, gamma );
 
  end_label:
   if (isDiff) {

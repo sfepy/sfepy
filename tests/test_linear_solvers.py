@@ -2,9 +2,8 @@ filename_mesh = '../database/phono/cube_cylinder.mesh'
 
 material_2 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {'val' : 1.0},
 }
 
 field_1 = {

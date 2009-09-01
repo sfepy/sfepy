@@ -21,9 +21,10 @@ regions = {
 }
 
 materials = {
-    'one1' : ('here', 'Omega1', {'one' : 1.0} ),
-    'one2' : ('here', 'Omega2', {'one' : 1.0} ),
-    'jump'  : ('here', 'Gamma12', {'val' : 1.0} ),
+    'one1' : ('Omega1', {'one' : 1.0} ),
+    'one2' : ('Omega2', {'one' : 1.0} ),
+    'jump1'  : ('Gamma12_1', {'val' : 1.0} ),
+    'jump2'  : ('Gamma12_2', {'val' : 1.0} ),
 }
 
 fields = {
@@ -45,17 +46,17 @@ ebcs = {
 
 integrals = {
     'ivol' : ('v', 'gauss_o2_d2'),
-    'isurf' : ('s', 'gauss_o2_d1'),
+    'isurf' : ('s2', 'gauss_o2_d1'),
 }
 
 equations = {
     'eq_1' :
     """dw_laplace.ivol.Omega1( one1.one, q1, p1 )
-     + dw_jump.isurf.Gamma12_1( jump.val, q1, p1, tr(p2) )
+     + dw_jump.isurf.Gamma12_1( jump1.val, q1, p1, tr(p2) )
      = 0""",
     'eq_2' :
     """dw_laplace.ivol.Omega2( one2.one, q2, p2 )
-     + dw_jump.isurf.Gamma12_2( jump.val, q2, tr(p1), p2 )
+     + dw_jump.isurf.Gamma12_2( jump2.val, q2, tr(p1), p2 )
      = 0""",
 }
 

@@ -39,13 +39,16 @@ ebcs = {
 
 material_1 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'Lame' : {'lambda' : 1.7, 'mu' : 0.3},
-    'alpha' : nm.array( [0.132, 0.132, 0.132, 0.092, 0.092, 0.092],
+    'values' : {
+        'lam' : 1.7,
+        'mu' : 0.3,
+        'alpha' : nm.array( [[0.132], [0.132], [0.132],
+                             [0.092], [0.092], [0.092]],
+                            dtype = nm.float64 ),
+        'K' : nm.array( [[2.0, 0.2, 0.0], [0.2, 1.0, 0.0], [0.0, 0.0, 0.5]],
                         dtype = nm.float64 ),
-    'K' : nm.array( [[2.0, 0.2, 0.0], [0.2, 1.0, 0.0], [0.0, 0.0, 0.5]],
-                    dtype = nm.float64 ),
+    }
 }
 
 integral_1 = {
@@ -62,7 +65,7 @@ integral_2 = {
 
 equations = {
     'eq_1' :
-    """dw_lin_elastic_iso.i2.Omega( m.Lame, v, u )
+    """dw_lin_elastic_iso.i2.Omega( m.lam, m.mu, v, u )
      - dw_biot.i1.Omega( m.alpha, v, p )
        = 0""",
     'eq_2' :

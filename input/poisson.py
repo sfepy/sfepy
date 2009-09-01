@@ -17,9 +17,8 @@ filename_mesh = '../database/simple.mesh'
 
 material_2 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {'val' : 1.0},
 }
 
 #! Fields
@@ -115,7 +114,7 @@ ebc_2 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'quadrature' : 'gauss_o2_d3',
 }
 
 equations = {

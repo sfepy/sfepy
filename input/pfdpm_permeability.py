@@ -126,10 +126,11 @@ equations = {
 
 material_1 = {
     'name' : 'fluid',
-    'mode' : 'here',
     'region' : 'Y1Y2',
-    'viscosity' : 1.0,
-    'density' : 1e0,
+    'values' : {
+        'viscosity' : 1.0,
+        'density' : 1e0,
+    },
 }
 
 ebc_1 = {
@@ -153,6 +154,10 @@ epbc_1 = {
     'region' : ['Left', 'Right'],
     'dofs' : {'u.all' : 'u.all', 'p.0' : 'p.0'},
     'match' : 'match_y_line',
+}
+
+functions = {
+    'match_y_line' : (match_y_line,),
 }
 
 ##

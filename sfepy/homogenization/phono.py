@@ -1,7 +1,7 @@
 from sfepy.base.plotutils import plt
 
 from sfepy.base.base import *
-from sfepy.base.la import eig
+from sfepy.solvers import eig
 from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
 from sfepy.homogenization.utils import coor_to_sym
@@ -143,7 +143,7 @@ def compute_density_volume_info( pb, volume_term, region_to_material ):
         mat = pb.materials[mat_name]
 #        assert_( region_name == mat.region.name )
         vol = eval_term_op( None, volume_term % region_name, pb )
-        density = mat.get_data( region_name, mat.igs[0], 'density' )
+        density = mat.get_constant_data('density')
         output( 'region %s: volume %f, density %f' % (region_name,
                                                       vol, density ) )
 
@@ -215,7 +215,7 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     tt = []
     for rname in rnames:
         mat = pb.materials[region_to_material[rname]]
-        density = mat.get_data( rname, mat.igs[0], 'density' )
+        density = mat.get_constant_data('density')
         tt.append( term % (density, rname, u_name) )
     em_eq = ' + '.join( tt )
     output( 'equation:', em_eq )

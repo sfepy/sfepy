@@ -1,5 +1,22 @@
 from sfepy.base.base import *
-from sfepy.solvers.solvers import EigenvalueSolver
+from sfepy.solvers.solvers import Solver, EigenvalueSolver
+
+##
+# c: 25.09.2007, r: 08.04.2008
+def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
+         return_time = None, method = 'eig.scipy', **ckwargs ):
+
+    kwargs = {'name' : 'aux', 'kind' : method}
+    kwargs.update( ckwargs )
+    conf = Struct( **kwargs )
+    solver = Solver.any_from_conf( conf )
+
+    status = {}
+    out = solver( mtx_a, mtx_b, num, eigenvectors, status )
+    if return_time is not None:
+        return_time[0] = status['time']
+        
+    return out
 
 ##
 # c: 03.03.2008, r: 03.03.2008

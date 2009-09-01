@@ -11,19 +11,18 @@ _required = ['filename_mesh', 'field_[0-9]+|fields',
              'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
              'solver_[0-9]+|solvers']
 _other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
-          'ic_[0-9]+|ics', 'options']
+          'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options']
 
 ##
 # c: 19.02.2008, r: 19.02.2008
 def get_standard_keywords():
     return copy( _required ), copy( _other )
 
-##
-# c: 10.04.2008, r: 10.04.2008
-def tuple_to_conf( name, vals, order ):
-    conf = Struct( name = name )
-    for ii, key in enumerate( order ):
-        setattr( conf, key, vals[ii] )
+def tuple_to_conf(name, vals, order):
+    """Items in order at indices outside the length of vals are ignored."""
+    conf = Struct(name = name)
+    for ii, key in enumerate(order[:len(vals)]):
+        setattr(conf, key, vals[ii])
     return conf
 
 ##
@@ -133,15 +132,14 @@ def transform_materials( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['mode', 'region', 'params'] )
-            dpar = {}
-            dpar['name'] = key
-            dpar['mode'] = c2.mode
-            dpar['region'] = c2.region
-            dpar.update( c2.params )
-            d2['material_%s__%d' % (c2.name, ii)] = dpar
+            c2 = tuple_to_conf( key, conf,
+                                ['region', 'values', 'function', 'kind'] )
+            if len(conf) == 5:
+                c2.flags = conf[4]
+            d2['material_%s__%d' % (c2.name, ii)] = c2
         else:
-            d2['material_'+conf['name']] = conf
+            c2 = transform_to_struct_1(conf)
+            d2['material_'+conf['name']] = c2
     return d2
 
 def transform_solvers( adict ):
@@ -156,6 +154,17 @@ def transform_solvers( adict ):
         else:
             c2 = transform_to_struct_1( conf )
             d2['solvers_'+c2.name] = c2
+    return d2
+
+def transform_functions(adict):
+    d2 = {}
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf, ['function'])
+            d2['function_%s__%d' % (c2.name, ii)] = c2
+        else:
+            c2 = transform_to_struct_1(conf)
+            d2['function_'+c2.name] = c2
     return d2
 
 ##
@@ -185,6 +194,7 @@ transforms = {
     'lcbcs'     : transform_lcbcs,
     'ics'       : transform_ics,
     'materials' : transform_materials,
+    'functions' : transform_functions,
 }
 
 ##

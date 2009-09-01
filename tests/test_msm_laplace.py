@@ -33,19 +33,10 @@ integral_1 = {
     'quadrature' : 'gauss_o2_d2',
 }
 
-material_1 = {
-    'name' : 'coef',
-    'mode' : 'here',
-    'region' : 'Omega',
-    'val' : 2.0,
-}
-
-material_2 = {
-    'name' : 'rhs',
-    'mode' : 'function',
-    'region' : 'Omega',
-    'function' : 'rhs',
-    'extra_args' : {'expression' : None},
+coef = 2.0
+materials = {
+    'coef' : ('Omega', {'val' : coef}),
+    'rhs' : ('Omega', None, 'rhs'),
 }
 
 equations = {
@@ -54,13 +45,12 @@ equations = {
        = - dw_volume_lvf.i1.Omega( rhs.val, s )""",
 }
 
-val = material_1['val']
 solutions = {
     'sincos' : ('t', 'sin( 3.0 * x ) * cos( 4.0 * y )',
-                '-25.0 * %s * sin( 3.0 * x ) * cos( 4.0 * y )' % val),
-    'poly' : ('t', '(x**2) + (y**2)', '[4.0 * %s]' % val),
+                '-25.0 * %s * sin( 3.0 * x ) * cos( 4.0 * y )' % coef),
+    'poly' : ('t', '(x**2) + (y**2)', '4.0 * %s' % coef),
     'polysin' : ('t', '((x - 0.5)**3) * sin( 5.0 * y )',
-                 '%s * (6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y ))' % val),
+                 '%s * (6.0 * (x - 0.5) * sin( 5.0 * y ) - 25.0 * ((x - 0.5)**3) * sin( 5.0 * y ))' % coef),
 }
 
 solver_0 = {
@@ -99,19 +89,27 @@ output_name = 'test_msm_laplace_%s.vtk'
 ##
 # c: 07.05.2007, r: 09.05.2008
 solution = ['']
-def ebc( bc, ts, coor, solution = solution ):
+def ebc(ts, coor, bc):
     expression = solution[0]
     val = TestCommon.eval_coor_expression( expression, coor )
     return nm.atleast_1d( val )
 
 ##
 # c: 07.05.2007, r: 09.05.2008
-def rhs( ts, coor, region, ig, expression = None ):
-    if expression is None:
-        expression = '0.0 * x'
+def rhs(ts, coor, mode=None, region=None, ig=None, expression=None):
+    if mode == 'qp':
+        if expression is None:
+            expression = '0.0 * x'
 
-    val = TestCommon.eval_coor_expression( expression, coor )
-    return {'val' : nm.atleast_1d( val )}
+        val = TestCommon.eval_coor_expression( expression, coor )
+        val.shape = (val.shape[0], 1, 1)
+
+        return {'val' : val}
+
+functions = {
+    'ebc' : (ebc,),
+    'rhs' : (rhs,),
+}
 
 ##
 # c: 07.05.2008
@@ -141,10 +139,6 @@ class Test( TestCommon ):
         import os.path as op
         problem  = self.problem
 
-        # update data so that build_args() works...
-        mat_args = {'rhs' : {'expression' : '0 * x'}} 
-        problem.update_materials( extra_mat_args = mat_args )
-
         sols = self._build_rhs( self.conf.solutions )
 
         ok = True
@@ -154,9 +148,9 @@ class Test( TestCommon ):
 
             self.report( 'sol:', sol_expr )
             self.report( 'rhs:', rhs_expr )
-            mat_args = {'rhs' : {'expression' : rhs_expr}} 
             globals()['solution'][0] = sol_expr
-            problem.time_update( extra_mat_args = mat_args )
+            problem.materials['rhs'].function.set_extra_args(expression=rhs_expr)
+            problem.time_update()
             problem.equations.reset_term_caches()
             vec = problem.solve()
             coor = problem.variables[var_name].field.get_coor()

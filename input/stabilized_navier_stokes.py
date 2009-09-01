@@ -18,8 +18,8 @@ regions = {
     'Omega' : ('all', {}),
     'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
                {'can_cells' : False}),
-    'Inlet' : ('nodes by cinc( x, y, z, 0 )', {'can_cells' : False}),
-    'Outlet' : ('nodes by cinc( x, y, z, 1 )', {'can_cells' : False}),
+    'Inlet' : ('nodes by cinc0', {'can_cells' : False}),
+    'Outlet' : ('nodes by cinc1', {'can_cells' : False}),
 }
 
 fields = {
@@ -41,21 +41,21 @@ ebcs = {
 }
 
 materials = {
-    'fluid' : ('here', 'Omega',
+    'fluid' : ('Omega',
                {'viscosity' : 1.25e-5,
                 'density' : 1e0}),
-    'stabil' : ('here', 'Omega',
-                {'gamma' : None,
-                 'delta' : None,
-                 'tau'   : None,
-                 'tau_red' : 1.0e-0, # <= 1.0; if tau is None: tau = tau_red *
+    'stabil' : ('Omega',
+                {'.gamma' : None,
+                 '.delta' : None,
+                 '.tau'   : None,
+                 '.tau_red' : 1.0e-0, # <= 1.0; if tau is None: tau = tau_red *
                                      # delta
-                 'tau_mul'   : 1.0,
-                 'delta_mul' : 1.0e-0,
-                 'gamma_mul' : 1.0e0,
+                 '.tau_mul'   : 1.0,
+                 '.delta_mul' : 1.0e-0,
+                 '.gamma_mul' : 1.0e0,
                  # 'edge': longest edge, 'volume': volume-based, 'max': max. of
                  # previous
-                 'diameter_mode' : 'max'}), # 'edge', 'volume', 'max'
+                 '.diameter_mode' : 'max'}), # 'edge', 'volume', 'max'
 }
 
 integrals = {
@@ -124,3 +124,9 @@ import os.path as op
 trunk = op.splitext( op.basename( filename_mesh ) )[0]
 cinc = eval( 'cinc_' + trunk )
 del op, trunk
+
+functions = {
+    'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
+    'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
+}
+

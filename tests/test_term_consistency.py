@@ -56,22 +56,28 @@ fe = {
 
 ##
 # c: 19.05.2008, r: 19.05.2008
-def get_pars( ts, coor, region, ig, mode = None ):
-    n_nod, dim = coor.shape
-    sym = (dim + 1) * dim / 2
+def get_pars( ts, coor, mode=None, region=None, ig=None, term = None ):
+    if mode == 'qp':
+        n_nod, dim = coor.shape
+        sym = (dim + 1) * dim / 2
 
-    if mode == 'biot':
-        val = nm.zeros( (sym,), dtype = nm.float64 )
-        val[:dim] = 0.132
-        val[dim:sym] = 0.092
-    elif mode == 'biot_m':
-        val = 1.0 / nm.array( [3.8], dtype = nm.float64 )
-    elif mode == 'permeability':
-        val = nm.eye( dim, dtype = nm.float64 )
-    else:
-        raise ValueError
+        if term == 'biot':
+            val = nm.zeros( (sym, 1), dtype = nm.float64 )
+            val[:dim] = 0.132
+            val[dim:sym] = 0.092
+        elif term == 'biot_m':
+            val = 1.0 / nm.array( [3.8], dtype = nm.float64 )
+        elif term == 'permeability':
+            val = nm.eye( dim, dtype = nm.float64 )
+        else:
+            raise ValueError
 
-    return {'val' : val}
+        return {'val' : nm.tile(val, (coor.shape[0], 1, 1))}
+
+functions = {
+    'get_pars' : (get_pars,),
+}
+
 
 # (eval term prefix, parameter corresponding to test variable, 'd' variables,
 # 'dw' variables (test must be paired with unknown, which should be last!), mat
@@ -110,7 +116,7 @@ class Test( TestCommon ):
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
         from sfepy.base.base import select_by_names
-        from sfepy.fem import eval_term_op
+        from sfepy.fem import eval_term_op, Function
 
         ok = True
         pb = self.problem
@@ -132,8 +138,8 @@ class Test( TestCommon ):
             term1 = term_template % ((prefix,) + d_vars)
             pb.set_equations( {'eq': term1} )
 
-            mat_args = {'m' : {'mode' : mat_mode}} 
-            pb.time_update( extra_mat_args = mat_args )
+            pb.materials['m'].function.set_extra_args(term = mat_mode)
+            pb.time_update()
 
             dummy = pb.create_state_vector()
             if prefix == 'd':

@@ -5,9 +5,8 @@ filename_mesh = '../database/tests/small2d.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'coef' : 1.0,
+    'values' : {'coef' : 1.0},
 }
 
 region_1000 = {
@@ -91,6 +90,12 @@ fe = {
 }
 
 from sfepy.fem.periodic import *
+
+functions = {
+    'match_x_line' : (match_x_line,),
+    'match_y_line' : (match_y_line,),
+}
+
 from sfepy.base.testing import TestCommon
 
 ##
@@ -114,9 +119,9 @@ class Test( TestCommon ):
         problem  = self.problem
         conf = self.conf
         
-        problem.variables.equation_mapping( conf.ebcs, conf.epbcs,
+        problem.variables.equation_mapping(conf.ebcs, conf.epbcs,
                                            problem.domain.regions,
-                                           None, conf.funmod )
+                                           None, problem.functions)
         state = problem.create_state_vector()
         problem.apply_ebc( state )
         return problem.variables.has_ebc( state )

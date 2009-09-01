@@ -37,6 +37,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( mtxD, iel );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
       
@@ -107,10 +108,12 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( mtxD, iel );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
       
     if (isDiff == 1) {
+      drow->val = mtxD->val;
       form_sdcc_actOpG_RM3( dtg, drow, vg->bfGM );
       fmf_mulATB_nn( ftdtg, bf, dtg );
       fmf_sumLevelsMulF( out, ftdtg, vg->det->val );
@@ -162,6 +165,7 @@ int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
+    FMF_SetCell( mtxD, iel );
     FMF_SetCell( vg->det, iel );
     FMF_SetCell( state, iel );
     FMF_SetCell( strain, iel );

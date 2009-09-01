@@ -419,33 +419,19 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
         vec_qp = cache( 'state', self.get_current_group(), 0,
                         state = state, get_vector = self.get_vector )
 
-        if mat.ndim == 1:
-            mat = mat[...,nm.newaxis]
-
-        n_el, n_qp, dim, n_ep = self.data_shape
-
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                       mat = mat, ap = ap,
-                       assumed_shapes = [(1, n_qp, 1, 1),
-                                        (n_el, n_qp, 1, 1)],
-                       mode_in = None )
-
-        mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
-
         bf = ap.get_base( 'v', 0, self.integral_name )
 
-        return (vec_qp, bf, mat_qp, vg), shape, mode
+        return (vec_qp, bf, mat, vg), shape, mode
 
-    def dw_volume_wdot( self, out, vec_qp, bf, mat_qp, vg, chunk, mode ):
+    def dw_volume_wdot( self, out, vec_qp, bf, mat, vg, chunk, mode ):
         if self.vdim > 1:
             raise NotImplementedError
 
         bf_t = bf.transpose( (0, 2, 1) )
         if mode == 0:
-            vec = bf_t * mat_qp[chunk] * vec_qp[chunk]
+            vec = bf_t * mat[chunk] * vec_qp[chunk]
         else:
-            vec = bf_t * mat_qp[chunk] * bf
+            vec = bf_t * mat[chunk] * bf
         status = vg.integrate_chunk( out, vec, chunk )
         return status
 
@@ -462,21 +448,7 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
         vec2_qp = cache( 'state', self.get_current_group(), 0,
                          state = par2, get_vector = self.get_vector )
 
-        if mat.ndim == 1:
-            mat = mat[...,nm.newaxis]
-
-        n_el, n_qp, dim, n_ep = self.data_shape
-
-        cache = self.get_cache( 'mat_in_qp', 0 )
-        mat_qp = cache( 'matqp', self.get_current_group(), 0,
-                       mat = mat, ap = ap,
-                       assumed_shapes = [(1, n_qp, 1, 1),
-                                        (n_el, n_qp, 1, 1)],
-                       mode_in = None )
-
-        mat_qp = fix_mat_qp_shape( mat_qp, chunk_size )
-
-        return (vec1_qp, vec2_qp, mat_qp, vg), (chunk_size, 1, 1, 1), 0
+        return (vec1_qp, vec2_qp, mat, vg), (chunk_size, 1, 1, 1), 0
 
     def d_volume_wdot( self, out, vec1_qp, vec2_qp, mat_qp, vg, chunk ):
 
@@ -492,14 +464,12 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
         if self.mode == 'weak':
             self.function = self.dw_volume_wdot
             use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['state']],
-                               'mat_in_qp' : [['material']]}
+            self.use_caches = {'state_in_volume_qp' : [['state']]}
         else:
             self.function = self.d_volume_wdot
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['parameter_1'],
-                                                       ['parameter_2']],
-                               'mat_in_qp' : [['material']]}
+                                                       ['parameter_2']]}
 
 ##
 # c: 03.04.2008

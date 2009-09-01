@@ -659,6 +659,41 @@ class Approximations( Container ):
                 if not ig in igs: continue
             yield self.region_names_per_group[ig], ig, ap
 
+    def get_approximation(self, key, kind='Volume', is_trace=False,
+                          return_geometry=True):
+        """
+        Returns
+        -------
+            Approximation instance for the given key: (integral name,
+            region name, ig).
+        """ 
+        geometries = self.geometries
+
+        iname, region_name, ig = key
+
+        if is_trace:
+            g_key = (iname, kind, region_name, ig)
+            try:
+                ap, geometry = geometries[g_key]
+            except KeyError:
+                msg = 'no trace geometry %s in %s' % (key, geometries)
+                raise KeyError( msg )
+
+        else:
+            ap = self.aps_per_group[ig]
+            if return_geometry:
+                g_key = (iname, kind, region_name, ap.name)
+                try:
+                    geometry = geometries[g_key]
+                except KeyError:
+                    msg = 'no geometry %s in %s' % (g_key, geometries)
+                    raise KeyError( msg )
+
+        if return_geometry:
+            return ap, geometry
+        else:
+            return ap
+
     ##
     # c: 19.07.2006, r: 15.01.2008
     def describe_nodes( self ):
@@ -999,3 +1034,59 @@ class Approximations( Container ):
     def purge_surface_data( self ):
         for ap in self:
             ap.surface_data = {}
+
+
+    def get_physical_qps(self, region, integral, merge=False, is_trace=False):
+        """Get quadrature points in the physical domain."""
+        phys_qps = Struct(group_indx = {},
+                          el_indx = {},
+                          n_qp = {})
+        kinds = {'v' : 'Volume', 's' : 'Surface'}
+        ii = 0
+        values = []
+        d_values = {}
+        for ig in region.igs:
+            ap = self.get_approximation((integral.name, region.name, ig),
+                                        kind=kinds[integral.kind[0]],
+                                        is_trace=is_trace,
+                                        return_geometry=False)
+
+            bf = ap.get_base(integral.kind, 0, integral.name,
+                             from_geometry=True)
+            if integral.kind == 'v':
+                coors = region.domain.get_mesh_coors()
+                cells = region.cells[ig]
+                conn = region.domain.groups[ig].conn
+                el_coors = coors[conn[cells]]
+
+            elif integral.kind[0] == 's':
+                coors = region.domain.get_mesh_coors()[region.all_vertices]
+                conn = ap.surface_data[region.name].leconn[:,:bf.shape[2]]
+                el_coors = coors[conn]
+
+            qps = nm.dot(nm.atleast_2d(bf.squeeze()), el_coors)
+            # reorder so that qps are really element by element
+            qps = nm.ascontiguousarray(nm.swapaxes(qps, 0, 1))
+
+            phys_qps.is_uniform = True
+            phys_qps.n_qp[ig] = n_qp = qps.shape[0] * qps.shape[1]
+
+            phys_qps.group_indx[ig] = nm.arange(ii, ii + n_qp,
+                                                dtype=nm.int32)
+
+            aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_qp + 1)
+            aux[0] = 0
+            phys_qps.el_indx[ig] = nm.cumsum(aux)
+            
+            ii += n_qp
+
+            qps.shape = (n_qp, qps.shape[2])
+            values.append(qps)
+            d_values[ig] = qps
+            
+        if merge:
+            phys_qps.values = nm.vstack(values)
+        else:
+            phys_qps.values = d_values
+
+        return phys_qps

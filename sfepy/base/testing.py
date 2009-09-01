@@ -74,6 +74,11 @@ class TestCommon( Struct ):
 
         env = {'x' : x, 'y' : y, 'z' : z}
         out = eval( expression, nm.__dict__, env )
+
+        if isinstance(out, float):
+            aux = nm.empty(coor.shape[0], dtype=nm.float64)
+            aux.fill(out)
+            out = aux
         
         return out
     eval_coor_expression = staticmethod( eval_coor_expression )

@@ -107,36 +107,39 @@ def get_pars( lam, mu, dim, full = False ):
                 c = nm.zeros( (sym, sym), dtype = nm.float64 )
         return c
     else:
-        return {'lambda' : lam, 'mu' : mu}
+        return lam, mu
 
 material_1 = {
     'name' : 'matrix',
-    'mode' : 'here',
     'region' : 'Y1',
 
     # aluminium, in 1e+10 Pa
-    'lame' : get_pars( 5.898, 2.681, dim ),
-    'D' : get_pars( 5.898, 2.681, dim, full = True ),
-
-    'density' : 0.2799, # in 1e4 kg/m3
+    'values' : {
+        'lam' : get_pars( 5.898, 2.681, dim )[0],
+        'mu' : get_pars( 5.898, 2.681, dim )[1],
+        'D' : get_pars( 5.898, 2.681, dim, full = True ),
+        'density' : 0.2799, # in 1e4 kg/m3
+    },
+    'flags' : {'special_constant' : True},
 }
 
 material_2 = {
     'name' : 'inclusion',
-    'mode' : 'here',
     'region' : 'Y2',
 
     # epoxy, in 1e+10 Pa
-    'lame' : get_pars( 0.1798, 0.148, dim ),
-    'D' : get_pars( 0.1798, 0.148, dim, full = True ),
-
-    'density' : 0.1142, # in 1e4 kg/m3
+    'values' : {
+        'lam' : get_pars( 0.1798, 0.148, dim )[0],
+        'mu' : get_pars( 0.1798, 0.148, dim )[1],
+        'D' : get_pars( 0.1798, 0.148, dim, full = True ),
+        'density' : 0.1142, # in 1e4 kg/m3
+    },
+    'flags' : {'special_constant' : True},
 }
+
 if homogeneous:
     material_2['region'] = material_1['region'] = matrix_region
-    material_2['lame'] = material_1['lame']
-    material_2['D'] = material_1['D']
-    material_2['density'] = material_1['density']
+    material_2['values'] = material_1['values']
 
 field_0 = {
     'name' : 'displacement_Y',
@@ -172,7 +175,7 @@ integral_1 = {
 }
 
 equations = {
-    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )""",
+    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lam, inclusion.mu, v, u )""",
     'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
 }
 
