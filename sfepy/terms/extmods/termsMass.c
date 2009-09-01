@@ -36,12 +36,13 @@ int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( coef, iel );
+      FMF_SetCell( coef, ii );
       FMF_SetCell( vg->det, iel );
 
       bf_buildFTF( ftf, ftf1 );
       fmf_mul( ftf, coef->val );
       fmf_sumLevelsMulF( out, ftf, vg->det->val );
+/*       printf("%d %d\n", ii, iel); */
 /*       fmf_print( out, stdout, 0 ); */
 /*       sys_pause(); */
 
@@ -58,7 +59,7 @@ int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( coef, iel );
+      FMF_SetCell( coef, ii );
       FMF_SetCell( vg->det, iel );
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );

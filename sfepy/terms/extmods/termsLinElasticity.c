@@ -228,8 +228,8 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( lam, iel );
-      FMF_SetCell( mu, iel );
+      FMF_SetCell( lam, ii );
+      FMF_SetCell( mu, ii );
       FMF_SetCell( vg->bfGM, iel );
       FMF_SetCell( vg->det, iel );
 
@@ -256,8 +256,8 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
-      FMF_SetCell( lam, iel );
-      FMF_SetCell( mu, iel );
+      FMF_SetCell( lam, ii );
+      FMF_SetCell( mu, ii );
       FMF_SetCell( strain, ii );
       FMF_SetCell( vg->bfGM, iel );
 
