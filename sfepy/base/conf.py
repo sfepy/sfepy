@@ -117,6 +117,8 @@ def transform_materials( adict ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf( key, conf,
                                 ['region', 'values', 'function', 'kind'] )
+            if len(conf) == 5:
+                c2.flags = conf[4]
             d2['material_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1(conf)
