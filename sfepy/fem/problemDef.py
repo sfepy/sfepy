@@ -291,13 +291,13 @@ class ProblemDefinition( Struct ):
         self.materials.time_update(ts, self.domain,
                                    self.equations, self.variables)
 
-    def update_equations( self, ts = None, funmod = None ):
+    def update_equations(self, ts=None, functions=None):
         if ts is None:
-            ts = self.get_default_ts( step = 0 )
-        funmod = get_default( funmod, self.conf.funmod )
+            ts = self.get_default_ts(step=0)
+        functions = get_default(functions, self.functions)
 
-        self.equations.time_update( ts )
-        self.variables.time_update( ts, funmod )
+        self.equations.time_update(ts)
+        self.variables.time_update(ts, functions)
 
     def time_update( self, ts = None,
                      conf_ebc = None, conf_epbc = None, conf_lcbc = None,

@@ -1128,10 +1128,10 @@ class Variables( Container ):
         for var in self.iter_state():
             var.init_state( state, self.di.indx[var.name] )
 
-    def time_update( self, ts, funmod ):
+    def time_update(self, ts, functions):
         output('updating variables...')
         for var in self:
-            var.time_update( ts, funmod )
+            var.time_update(ts, functions)
         output('...done')
 
     def advance( self, ts ):
@@ -1265,14 +1265,14 @@ class Variable( Struct ):
         self.step = 0
         self.data_from_state( state, indx, step = 0 )
 
-    def time_update( self, ts, funmod ):
+    def time_update(self, ts, functions):
         """Store time step, set variable data for variables with the
         setter function."""
         self.dt = ts.dt
 
         if hasattr(self, 'special') and ('setter' in self.special):
             setter_name = self.special['setter']
-            setter = getattr(funmod, setter_name)
+            setter = functions[setter_name]
 
             region = self.field.region
             fn = region.get_field_nodes(self.field)
