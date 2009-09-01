@@ -102,7 +102,7 @@ class MassScalarTerm( ScalarScalar, Term ):
         return fargs, shape, mode
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args( **kwargs )
+        par1, par2 = self.get_args(['parameter_1', 'parameter_2'], **kwargs)
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
         self.set_data_shape( ap )
         bf = ap.get_base( 'v', 0, self.integral_name )
@@ -195,8 +195,8 @@ class MassScalarVariableTerm( MassScalarTerm ):
         Term.__init__( self, region, name, sign, terms.dw_mass_scalar_variable )
         
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        fargs, shape, mode = MassScalarTerm.get_fargs(self, diff_var,
-                                                      chunk_size, **kwargs)
+        fargs, shape, mode = MassScalarTerm.get_fargs_weak(self, diff_var,
+                                                           chunk_size, **kwargs)
         n_el, n_qp, dim, n_ep = self.data_shape
         
         mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
@@ -214,8 +214,11 @@ class MassScalarVariableTerm( MassScalarTerm ):
         else:
             fargs[0] = (mat_qp,) + fargs[0]
             fargs[1] = (mat_qp,) + fargs[1]
-            
+
         return fargs, shape, mode
+
+    def set_arg_types(self):
+        pass
 
 class MassScalarFineCoarseTerm( Term ):
     r""":description: Scalar field mass matrix/rezidual for coarse to fine grid
