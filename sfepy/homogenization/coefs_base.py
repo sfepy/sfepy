@@ -2,8 +2,8 @@ from sfepy.base.base import *
 from sfepy.fem import eval_term_op, assemble_by_blocks
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.meshio import HDF5MeshIO
-from sfepy.solvers import Solver
-from sfepy.base.la import MatrixAction, eig
+from sfepy.solvers import Solver, eig
+from sfepy.base.la import MatrixAction
 from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):

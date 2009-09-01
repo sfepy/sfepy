@@ -5,15 +5,17 @@ filename_mesh = '../database/tests/circle_sym.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {
+        'val' : 1.0,
+    },
 }
 material_2 = {
     'name' : 'm',
-    'mode' : 'here',
     'region' : 'Omega',
-    'K' : [[1.0, 0.0], [0.0, 1.0]],
+    'values' : {
+        'K' : [[1.0, 0.0], [0.0, 1.0]],
+    },
 }
 
 field_1 = {
@@ -72,7 +74,7 @@ integral_1 = {
 
 integral_2 = {
     'name' : 'i2',
-    'kind' : 'v',
+    'kind' : 's3',
     'quadrature' : 'gauss_o1_d1',
 }
 
@@ -159,7 +161,7 @@ class Test( TestCommon ):
         ok = True
         for ii, region_name in enumerate( region_names ):
             flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
-            val1 = eval_term_op( None, flux_term, problem )
+            val1 = eval_term_op(None, flux_term, problem, update_materials=True)
 
             rvec = get_state( aux, 't', True )
             reg = problem.domain.regions[region_name]

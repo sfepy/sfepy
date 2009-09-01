@@ -118,12 +118,10 @@ class HDPMDiffusionVelocitySIntegratedTerm( Term ):
         sd = ap.surface_data[self.region.name]
 
         vec = par()
-        mat = nm.asarray( mat, dtype = nm.float64  )
-        mat_qp = mat[nm.newaxis,:,:].repeat( n_qp, 0 )
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             status = self.function( out, vec, 0,
-                                    mat_qp, sg, sd.fis, lchunk, ap.econn, chunk )
+                                    mat, sg, sd.fis, lchunk, ap.econn, chunk )
             out1 = nm.sum( out )
             yield out1, chunk, status
 
