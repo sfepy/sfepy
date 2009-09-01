@@ -263,7 +263,7 @@ class SchroedingerApp( SimpleApp ):
             vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
             phi_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
                                  Psi=vec_phi)
-            n_qp += weights[ii] * phi_qp ** 2
+            n_qp += weights[ii] * (phi_qp ** 2)
 ##            vec_n += weights[ii] * vec_phi ** 2
 
 ##        charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
@@ -328,6 +328,7 @@ class SchroedingerApp( SimpleApp ):
         file_output("|Pot|:     ", nla.norm(vec_pot))
         file_output("|V_H|:     ", nla.norm(vec_vh))
         file_output("|V_XC|:    ", nla.norm(vec_vxc))
+        file_output("|V_HXC|:   ", nla.norm(vec_vh + vec_vxc))
         file_output("-"*70)
 
 	if self.iter_hook is not None: # User postprocessing.
