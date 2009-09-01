@@ -1,7 +1,7 @@
 from sfepy.terms.terms import *
-from sfepy.terms.terms_base import ScalarScalar
+from sfepy.terms.terms_base import VectorVector, ScalarScalar
 
-class MassTerm( Term ):
+class MassTerm( VectorVector, Term ):
     r""":description: Inertial forces term.
     :definition: $\int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} -
     \ul{u}_0}{\dt}$
@@ -13,36 +13,19 @@ class MassTerm( Term ):
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_mass )
 
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
-        n_el, n_qp, dim, n_ep = self.data_shape
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        ts, mat, virtual, state, state0 = self.get_args(**kwargs)        
+        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
 
-        if diff_var is None:
-            return (chunk_size, 1, dim * n_ep, 1), 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            return (chunk_size, 1, dim * n_ep, dim * n_ep), 1
-        else:
-            raise StopIteration
-        
-    def build_c_fun_args( self, mat, state, ap, vg ):
-        ts, state0 = self.get_args( ['ts', 'parameter'], **kwargs )
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
 
         dvec = state() - state0()
         rhodt = mat / ts.dt
-        bf = ap.get_base( 'v', 0, self.integral_name )
-        return rhodt, dvec, 0, bf, vg, ap.econn
+        bf = ap.get_base('v', 0, self.integral_name)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( ['material', 'virtual', 'state'],
-                                             **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-
-        shape, mode = self.get_shape( diff_var, chunk_size, ap )
-        fargs = self.build_c_fun_args( mat, state, ap, vg )
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk, mode) )
-            yield out, chunk, status
+        fargs = (rhodt, dvec, 0, bf, vg, ap.econn)
+        return fargs, shape, mode
 
 class MassVectorTerm( MassTerm ):
     r""":description: Vector field mass matrix/rezidual.
@@ -52,10 +35,18 @@ class MassVectorTerm( MassTerm ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def build_c_fun_args( self, mat, state, ap, vg ):
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        mat, virtual, state = self.get_args(**kwargs)        
+        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
+
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
         vec = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
-        return mat, vec, 0, bf, vg, ap.econn
+        bf = ap.get_base('v', 0, self.integral_name)
+
+        fargs = (mat, vec, 0, bf, vg, ap.econn)
+        return fargs, shape, mode
 
 class MassScalarTerm( ScalarScalar, Term ):
     r""":description: Scalar field mass matrix/rezidual.
