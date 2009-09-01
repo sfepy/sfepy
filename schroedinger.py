@@ -20,12 +20,12 @@ from scipy.optimize.nonlin import excitingmixing
 import sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.base.la import eig, norm_l2_along_axis
+from sfepy.base.la import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
 from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
-from sfepy.solvers import Solver
+from sfepy.solvers import Solver, eig
 
 def guess_n_eigs( n_electron, n_eigs = None ):
     """
