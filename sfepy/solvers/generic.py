@@ -83,23 +83,25 @@ def time_step_function( ts, state0, problem, data ):
     if ts.step == 0:
         problem.apply_ebc( state0 )
         state = state0.copy()
-        problem.init_time( ts )
 
-        if problem.equations.caches:
-            # Initialize caches.
-            ev = problem.get_evaluator( ts = ts, **data )
-            try:
-                vec_r = ev.eval_residual( state, is_full = True )
-            except ValueError:
-                output( 'initial residual evaluation failed, giving up...' )
-                raise
+        if not ts.is_quasistatic:
+            problem.init_time( ts )
+
+            if problem.equations.caches:
+                # Initialize caches.
+                ev = problem.get_evaluator( ts = ts, **data )
+                try:
+                    vec_r = ev.eval_residual( state, is_full = True )
+                except ValueError:
+                    output( 'initial residual evaluation failed, giving up...' )
+                    raise
+                else:
+                    err = nla.norm( vec_r )
+                    output( 'initial residual: %e' % err )
+
             else:
-                err = nla.norm( vec_r )
-                output( 'initial residual: %e' % err )
-
-        else:
-            # Just initialize data of state variables.
-            problem.variables.data_from_state( state )
+                # Just initialize data of state variables.
+                problem.variables.data_from_state( state )
 
         if problem.is_linear():
             # Assemble linear system matrix for all
@@ -115,8 +117,14 @@ def time_step_function( ts, state0, problem, data ):
 
         # Initialize solvers (and possibly presolve the matrix).
         problem.init_solvers( ts = ts, mtx = mtx_a, **data )
-        # Initialize variables with history.
-        problem.init_variables( state0 )
+
+        if ts.is_quasistatic:
+            # Ordinary solve.
+            state = problem.solve(state0=state0, ts=ts, **data)
+
+        else:
+            # Initialize variables with history.
+            problem.init_variables( state0 )
 
     else:
         state = problem.solve( state0 = state0, ts = ts, **data )

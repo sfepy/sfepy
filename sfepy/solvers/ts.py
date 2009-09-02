@@ -89,6 +89,8 @@ class SimpleTimeSteppingSolver( TimeSteppingSolver ):
         TimeSteppingSolver.__init__( self, conf, **kwargs )
 
         self.ts = TimeStepper.from_conf( conf )
+        self.ts.is_quasistatic = conf.get_default_attr('quasistatic', False)
+
         nd = self.ts.n_digit
         format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)
 
