@@ -1281,7 +1281,7 @@ class Variable( Struct ):
             nods = nm.unique1d(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
-            self.data_from_any(setter(ts, coor, region))
+            self.data_from_any(setter(ts, coor, region=region))
             output('data of %s set by %s()' % (self.name, setter_name))
 
     def advance( self, ts ):
