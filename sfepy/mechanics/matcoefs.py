@@ -11,7 +11,7 @@ def youngpoisson_to_lame( young, poisson, plane = 'stress' ):
         lam = young*poisson/((1.0 + poisson)*(1.0 - 2.0*poisson))
         mu = young/(2.0*(1.0 + poisson))
 
-    return {'lambda' : lam, 'mu' : mu }
+    return lam, mu
 
 ##
 # c: 22.07.2008
@@ -27,9 +27,9 @@ def stiffness_tensor_lame( dim, lam, mu ):
 # c: 22.07.2008
 def stiffness_tensor_youngpoisson( dim, young, poisson, plane = 'stress' ):
 
-    lame = youngpoisson_to_lame( young, poisson, plane )
+    lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
-    return stiffness_tensor_lame( dim, lame['lambda'], lame['mu'] )
+    return stiffness_tensor_lame( dim, lam, mu )
  
 ##
 # c: 10.08.2009
@@ -45,9 +45,9 @@ def stiffness_tensor_lame_mixed( dim, lam, mu ):
 # c: 10.08.2009
 def stiffness_tensor_youngpoisson_mixed( dim, young, poisson, plane = 'stress' ):
 
-    lame = youngpoisson_to_lame( young, poisson, plane )
+    lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
-    return stiffness_tensor_lame_mixed( dim, lame['lambda'], lame['mu'] )
+    return stiffness_tensor_lame_mixed( dim, lam, mu )
 
 ##
 # c: 10.08.2009
@@ -59,9 +59,9 @@ def bulk_modulus_lame( lam, mu ):
 # c: 10.08.2009
 def bulk_modulus_youngpoisson( young, poisson, plane = 'stress' ):
 
-    lame = youngpoisson_to_lame( young, poisson, plane )
+    lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
-    return bulk_modulus_lame( lame['lambda'], lame['mu'] )
+    return bulk_modulus_lame( lam, mu )
 
 class TransformToPlane( Struct ):
     """Transformmations of constitutive law coefficients of 3D problems to 2D."""
