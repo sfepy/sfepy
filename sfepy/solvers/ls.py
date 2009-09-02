@@ -331,5 +331,6 @@ class PETScKrylovSolver( LinearSolver ):
         self.rhs[...] = rhs
         ksp.solve( self.rhs, self.sol )
         sol = self.sol[...].copy()
+        output('KSP convergence: %s' % ksp.reason)
         
         return sol
