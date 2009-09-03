@@ -100,5 +100,5 @@ solvers = {
 #! function call. Higher values mean faster assembling, but also more memory
 #! usage.
 fe = {
-    'chunk_size' : 1000
+    'chunk_size' : 10000
 }

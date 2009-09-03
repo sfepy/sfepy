@@ -42,9 +42,8 @@ class MassVectorTerm( MassTerm ):
         self.set_data_shape(ap)
         shape, mode = self.get_shape(diff_var, chunk_size)
 
-        vec = state()
+        vec = self.get_vector(state)
         bf = ap.get_base('v', 0, self.integral_name)
-
         fargs = (mat, vec, 0, bf, vg, ap.econn)
         return fargs, shape, mode
 
