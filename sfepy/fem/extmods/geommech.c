@@ -167,6 +167,55 @@ int32 geme_trace3x3( float64 *tr, FMField *mtx )
 }
 
 #undef __FUNC__
+#define __FUNC__ "geme_invar1"
+int32 geme_invar1( float64 *invar, FMField *mtx )
+{
+  int32 il, dim;
+  float64 *j;
+
+  dim = mtx->nRow;
+  for (il = 0; il < mtx->nLev; il++) {
+    j = mtx->val + dim*dim*il;
+    switch (dim) {
+    case 2: /* plain strain */
+      invar[il] = 1.0 + j[0] + j[3];
+      break;
+    case 3:
+      invar[il] = j[0] +j[4] + j[8];
+      break;
+    default:
+      errput( ErrHead "ERR_Switch\n" );
+    }
+  }
+  return( RET_OK );
+}
+
+#undef __FUNC__
+#define __FUNC__ "geme_invar2"
+int32 geme_invar2( float64 *invar, FMField *mtx )
+{
+  int32 il, dim;
+  float64 *j;
+
+  dim = mtx->nRow;
+  for (il = 0; il < mtx->nLev; il++) {
+    j = mtx->val + dim*dim*il;
+    switch (dim) {
+    case 2: /* plain strain */
+      invar[il] = j[0]*j[1] + j[0] + j[1] - j[2]*j[2];
+      break;
+    case 3:
+      invar[il] = j[0]*j[1] + j[1]*j[2] + j[2]*j[1]
+	- j[5]*j[5] - j[4]*j[4] - j[3]*j[3];
+      break;
+    default:
+      errput( ErrHead "ERR_Switch\n" );
+    }
+  }
+  return( RET_OK );
+}
+
+#undef __FUNC__
 #define __FUNC__ "geme_norm3"
 /*!
   @par Revision history:
@@ -318,11 +367,16 @@ int32 geme_mulAVSB3( FMField *out, FMField *vs, FMField *in )
   - 14.11.2001, c
   - 15.11.2001
 */
-int32 t2i[] = {0, 1, 2, 0, 0, 1};
-int32 t2j[] = {0, 1, 2, 1, 2, 2};
-int32 t4s[] = {0, 3, 4,
-	       3, 1, 5,
-	       4, 5, 2};
+int32 t2i3D[] = {0, 1, 2, 0, 0, 1};
+int32 t2j3D[] = {0, 1, 2, 1, 2, 2};
+int32 t4s3D[] = {0, 3, 4,
+		 3, 1, 5,
+		 4, 5, 2};
+
+int32 t2i2D[] = {0, 1, 0};
+int32 t2j2D[] = {0, 1, 1};
+int32 t4s2D[] = {0, 2,
+		 2, 1};
 
 #undef __FUNC__
 #define __FUNC__ "geme_mulT2ST2S_T4S_ikjl"
@@ -334,8 +388,26 @@ int32 t4s[] = {0, 3, 4,
 int32 geme_mulT2ST2S_T4S_ikjl( FMField *t4, FMField *t21, FMField *t22 )
 {
   int32 iqp, ir, ic, ii, ij, ik, il, s1, s2;
-  int32 sym = t4->nRow;
+  int32 sym = t4->nRow, dim;
   float64 *pt4, *pt21, *pt22;
+  int32 *t2i = 0, *t2j = 0, *t4s = 0;
+
+  dim = sym2dim( sym );
+
+  switch (dim) {
+  case 2:
+    t2i = t2i2D;
+    t2j = t2j2D;
+    t4s = t4s2D;
+    break;
+  case 3:
+    t2i = t2i3D;
+    t2j = t2j3D;
+    t4s = t4s3D;
+    break;
+  default:
+    errput( ErrHead "ERR_Switch\n" );
+  }
 
   for (iqp = 0; iqp < t4->nLev; iqp++) {
     pt4 = FMF_PtrLevel( t4, iqp );
@@ -347,8 +419,8 @@ int32 geme_mulT2ST2S_T4S_ikjl( FMField *t4, FMField *t21, FMField *t22 )
 	ij = t2j[ir];
 	ik = t2i[ic];
 	il = t2j[ic];
-	s1 = t4s[3*ii+ik];
-	s2 = t4s[3*ij+il];
+	s1 = t4s[dim*ii+ik];
+	s2 = t4s[dim*ij+il];
 	pt4[sym*ir+ic] = pt21[s1] * pt22[s2];
       }
     }
@@ -367,8 +439,26 @@ int32 geme_mulT2ST2S_T4S_ikjl( FMField *t4, FMField *t21, FMField *t22 )
 int32 geme_mulT2ST2S_T4S_iljk( FMField *t4, FMField *t21, FMField *t22 )
 {
   int32 iqp, ir, ic, ii, ij, ik, il, s1, s2;
-  int32 sym = t4->nRow;
+  int32 sym = t4->nRow, dim;
   float64 *pt4, *pt21, *pt22;
+  int32 *t2i = 0, *t2j = 0, *t4s = 0;
+
+  dim = sym2dim( sym );
+
+  switch (dim) {
+  case 2:
+    t2i = t2i2D;
+    t2j = t2j2D;
+    t4s = t4s2D;
+    break;
+  case 3:
+    t2i = t2i3D;
+    t2j = t2j3D;
+    t4s = t4s3D;
+    break;
+  default:
+    errput( ErrHead "ERR_Switch\n" );
+  }
 
   for (iqp = 0; iqp < t4->nLev; iqp++) {
     pt4 = FMF_PtrLevel( t4, iqp );
@@ -380,11 +470,49 @@ int32 geme_mulT2ST2S_T4S_iljk( FMField *t4, FMField *t21, FMField *t22 )
 	ij = t2j[ir];
 	ik = t2i[ic];
 	il = t2j[ic];
-	s1 = t4s[3*ii+il];
-	s2 = t4s[3*ij+ik];
+	s1 = t4s[dim*ii+il];
+	s2 = t4s[dim*ij+ik];
 	pt4[sym*ir+ic] = pt21[s1] * pt22[s2];
       }
     }
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
+#define __FUNC__ "geme_mulT2S_AA"
+/*! @f$ R_{ij} = A_{ik} * A_{kj} */
+int32 geme_mulT2S_AA( FMField *R, FMField *A )
+{
+  int32 il, sym;
+  float64 *pr, *pa;
+
+  sym = R->nRow;
+
+  pr = R->val;
+  pa = A->val;
+
+  for ( il = 0; il < R->nLev; il++ ) {
+    switch( sym ) {
+    case 3:
+      pr[0] = pa[0]*pa[0] + pa[2]*pa[2];
+      pr[1] = pa[2]*pa[2] + pa[1]*pa[1];
+      pr[2] = pa[2]*pa[0] + pa[1]*pa[2];
+      break;
+    case 6:
+      pr[0] = pa[0]*pa[0] + pa[5]*pa[5] + pa[4]*pa[4];
+      pr[1] = pa[5]*pa[5] + pa[1]*pa[1] + pa[3]*pa[3];
+      pr[2] = pa[4]*pa[4] + pa[3]*pa[3] + pa[2]*pa[2];
+      pr[3] = pa[4]*pa[5] + pa[1]*pa[3] + pa[2]*pa[3];
+      pr[4] = pa[0]*pa[4] + pa[5]*pa[3] + pa[4]*pa[2];
+      pr[5] = pa[0]*pa[5] + pa[5]*pa[1] + pa[4]*pa[3];
+      break;
+    default:
+      errput( ErrHead "ERR_Switch\n" );
+    } /* switch */
+    pr += sym;
+    pa += sym;
   }
 
   return( RET_OK );
