@@ -205,8 +205,8 @@ int32 geme_invar2( float64 *invar, FMField *mtx )
       invar[il] = j[0]*j[1] + j[0] + j[1] - j[2]*j[2];
       break;
     case 3:
-      invar[il] = j[0]*j[1] + j[1]*j[2] + j[2]*j[1]
-	- j[5]*j[5] - j[4]*j[4] - j[3]*j[3];
+      invar[il] = invar[il] = j[0]*j[4] + j[0]*j[8] + j[4]*j[8]
+	- j[1]*j[1] - j[2]*j[2] - j[5]*j[5];
       break;
     default:
       errput( ErrHead "ERR_Switch\n" );

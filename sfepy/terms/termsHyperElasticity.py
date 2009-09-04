@@ -145,12 +145,12 @@ class MooneyRivlinTLTerm( HyperElasticTLBase ):
 
         if mode == 0:
             out = nm.empty_like( invC )
-            fun = self.functions['stress']
+            fun = self.term_function['stress']
         else:
             shape = list( invC.shape )
             shape[-1] = shape[-2]
             out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.functions['tangent_modulus']
+            fun = self.term_function['tangent_modulus']
 
         fun( out, mat, detF, trC, invC, vecC, in2C )
 

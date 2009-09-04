@@ -289,8 +289,10 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     FMF_SetCell( trC, ii );
     FMF_SetCell( in2C, ii );
     FMF_SetCell( vecES, ii );
-    if ( vecInvCS > 0 )
+    if ( vecInvCS > 0 ) {
       FMF_SetCell( vecInvCS, ii );
+    }
+
     // Deformation gradient.
     ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
     fmf_mulATBT_1n( mtxF, st, vg->bfGM );
@@ -312,37 +314,25 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     if (mode_ul) {
       // Left Cauchy-Green tensor b = F F^T.
       fmf_mulABT_nn( mtx1, mtxF, mtxF );
-    }
-    else{
+    } else {
       // Right Cauchy-Green tensor C = F^T F.
       fmf_mulATB_nn( mtx1, mtxF, mtxF );
     }
     geme_tensor2vectorS3( vecCS, mtx1 );
     // trace C.
-    //    geme_trace3x3( trC->val, mtx1 );
+/*     geme_trace3x3( trC->val, mtx1 ); */
     geme_invar1( trC->val, mtx1 );
     // I_2 of C.
-    //    fmf_mulATB_nn( mtx2, mtx1, mtx1 );
-    //    geme_trace3x3( in2C->val, mtx2 );
-      geme_invar2( in2C->val, mtx1 );
-    for (iqp = 0; iqp < nQP; iqp++) {
-      in2C->val[iqp] = 0.5 * (trC->val[iqp] *  trC->val[iqp]
-			      - in2C->val[iqp]);
-    }
+    geme_invar2( in2C->val, mtx1 );
     // C^{-1} as a vector, symmetric storage.
     geme_invert3x3( mtx2, mtx1 );
-    if ( vecInvCS > 0 )
+    if ( vecInvCS > 0 ) {
       geme_tensor2vectorS3( vecInvCS, mtx2 );
-
-/*     if (mode_ul) {     */
-/*       output( "NOT IMPLEMENTED!!!\n"); */
-/*       return(1); */
-/*     else */
-      form_tlcc_strainGreen_VS( vecES, mtxF );
+    }
+    form_tlcc_strainGreen_VS( vecES, mtxF );
 
     ERR_CheckGo( ret );
   }
-
  end_label:
   fmf_freeDestroy( &mtx1 ); 
   fmf_freeDestroy( &mtx2 ); 
