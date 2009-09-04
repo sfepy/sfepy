@@ -42,6 +42,7 @@
     (FMField *stateP),
     (FMField *stateQ),
     (FMField *stateR),
+    (FMField *state0),
     (FMField *state1),
     (FMField *state2),
     (FMField *vecMV),
@@ -68,6 +69,9 @@
     (FMField *in2C),
     (FMField *vecInvCS),
     (FMField *vecES),
+    (FMField *vecBS),
+    (FMField *trB),
+    (FMField *in2B),
     (FMField *mat)
 };
 
@@ -114,32 +118,58 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 			   FMField *state, int32 offset, VolumeGeometry *vg,
 			   int32 *conn, int32 nEl, int32 nEP );
 
+int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
+			   FMField *trB, FMField *in2B, FMField *vecES,
+			   FMField *state, FMField *state0,
+			   int32 offset, VolumeGeometry *vg,
+			   int32 *conn, int32 nEl, int32 nEP );
+
 int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
 			    FMField *detF, FMField *vecInvCS );
 
+int32 dq_ul_he_stress_bulk( FMField *out,FMField *mat,
+			    FMField *detF );
+
 int32 dq_tl_he_stress_neohook( FMField *out, FMField *mat,
 			       FMField *detF, FMField *trC, FMField *vecInvCS );
+
+int32 dq_ul_he_stress_neohook( FMField *out, FMField *mat,
+			       FMField *detF, FMField *trB, FMField *vecBS );
 
 int32 dq_tl_he_stress_mooney_rivlin( FMField *out, FMField *mat,
 				     FMField *detF, FMField *trC,
 				     FMField *vecInvCS, FMField *vecCS,
 				     FMField *in2C );
 
+int32 dq_ul_he_stress_mooney_rivlin( FMField *out, FMField *mat,
+				     FMField *detF, FMField *trB,
+				     FMField *vecBS, FMField *in2B );
+
 int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
 			     FMField *detF, FMField *vecInvCS );
 
+int32 dq_ul_he_tan_mod_bulk( FMField *out, FMField *mat, FMField *detF );
+
 int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
 				FMField *detF, FMField *trC, FMField *vecInvCS );
+
+int32 dq_ul_he_tan_mod_neohook( FMField *out, FMField *mat,
+				FMField *detF, FMField *trB, FMField *vecBS );
 
 int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 				      FMField *detF, FMField *trC,
 				      FMField *vecInvCS, FMField *vecCS,
 				      FMField *in2C );
 
-int32 dw_tl_he_rtm( FMField *out,
-		    FMField *stress, FMField *tan_mod, FMField *mtxF,
-		    VolumeGeometry *vg,
-		    int32 *elList, int32 elList_nRow, int32 isDiff );
+int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
+				      FMField *detF, FMField *trB,
+				      FMField *vecBS, FMField *in2B );
+
+int32 dw_he_rtm( FMField *out,
+		 FMField *stress, FMField *tan_mod,
+		 FMField *mtxF, FMField *detF,
+		 VolumeGeometry *vg,
+		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul );
 
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,

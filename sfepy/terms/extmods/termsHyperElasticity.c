@@ -1,11 +1,25 @@
 #include "termsHyperElasticity.h"
 #include "terms.h"
+#include "formSDCC.h"
 
 /*
   notes: disG -> mtxF => removed '1.0 +' in form_tlcc_buildOpB_VS3()
 */
 
-static float64 trace[6] = {1.0, 1.0, 1.0, 0.0, 0.0, 0.0};
+static float64 trace3d[6] = {1.0, 1.0, 1.0, 0.0, 0.0, 0.0};
+static float64 trace2d[3] = {1.0, 1.0, 0.0};
+
+#undef __FUNC__
+#define __FUNC__ "get_trace"
+float64 *get_trace( int32 sym )
+{
+  if (sym == 3)
+    return( trace2d );
+  if (sym == 6)
+    return( trace3d );
+  
+  return( NULL );
+}
 
 #undef __FUNC__
 #define __FUNC__ "form_tlcc_strainGreen_VS"
@@ -24,6 +38,20 @@ int32 form_tlcc_strainGreen_VS( FMField *strain, FMField *mtxF )
   int32 sym = strain->nRow;
   int32 dim = mtxF->nRow;
   float64 *pstrain, *pf;
+  int32 *t2i = 0, *t2j = 0;
+
+  switch (dim) {
+  case 2:
+    t2i = t2i2D;
+    t2j = t2j2D;
+    break;
+  case 3:
+    t2i = t2i3D;
+    t2j = t2j3D;
+    break;
+  default:
+    errput( ErrHead "ERR_Switch\n" );
+  }
 
   for (iqp = 0; iqp < strain->nLev; iqp++) {
     pstrain = FMF_PtrLevel( strain, iqp );
@@ -57,74 +85,109 @@ int32 form_tlcc_strainGreen_VS( FMField *strain, FMField *mtxF )
 */
 int32 form_tlcc_buildOpB_VS3( FMField *out, FMField *mtxF, FMField *gc )
 {
-  int32 iqp, iep, nQP, nEP;
+  int32 iqp, iep, nQP, nEP, dim;
   float64 *pgc, *pout, *pd, *pg[3];
 
   nQP = gc->nLev;
   nEP = gc->nCol;
+  dim = gc->nRow;
 
   fmf_fillC( out, 0.0 );
-  for (iqp = 0; iqp < nQP; iqp++) {
-    pgc = FMF_PtrLevel( gc, iqp );
-    pg[0] = pgc;
-    pg[1] = pgc + nEP;
-    pg[2] = pgc + 2 * nEP;
-
-    pd = FMF_PtrLevel( mtxF, iqp );
-
-    // Row 1.
-    pout = FMF_PtrLevel( out, iqp );
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[0]) * pg[0][iep];
-      pout[iep+nEP] = (pd[3]) * pg[0][iep];
-      pout[iep+2*nEP] = (pd[6]) * pg[0][iep];
-    }
-    // Row 2.
-    pout += 3 * nEP;
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[1]) * pg[1][iep];
-      pout[iep+nEP] = (pd[4]) * pg[1][iep];
-      pout[iep+2*nEP] = (pd[7]) * pg[1][iep];
-    }
-    // Row 3.
-    pout += 3 * nEP;
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[2]) * pg[2][iep];
-      pout[iep+nEP] = (pd[5]) * pg[2][iep];
-      pout[iep+2*nEP] = (pd[8]) * pg[2][iep];
-    }
-    // Row 4.
-    pout += 3 * nEP;
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[1]) * pg[0][iep]
-	+ (pd[0]) * pg[1][iep];
-      pout[iep+nEP] = (pd[4]) * pg[0][iep]
-	+ (pd[3]) * pg[1][iep];
-      pout[iep+2*nEP] = (pd[7]) * pg[0][iep]
-	+ (pd[6]) * pg[1][iep];
-    }
-    // Row 5.
-    pout += 3 * nEP;
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[2]) * pg[0][iep]
-	+ (pd[0]) * pg[2][iep];
-      pout[iep+nEP] = (pd[5]) * pg[0][iep]
-	+ (pd[3]) * pg[2][iep];
-      pout[iep+2*nEP] = (pd[8]) * pg[0][iep]
-	+ (pd[6]) * pg[2][iep];
-    }
-    // Row 6.
-    pout += 3 * nEP;
-    for (iep = 0; iep < nEP; iep++) {
-      pout[iep] = (pd[2]) * pg[1][iep]
-	+ (pd[1]) * pg[2][iep];
-      pout[iep+nEP] = (pd[5]) * pg[1][iep]
-	+ (pd[4]) * pg[2][iep];
-      pout[iep+2*nEP] = (pd[8]) * pg[1][iep]
-	+ (pd[7]) * pg[2][iep];
-    }
-  }
-
+  switch (dim) {
+  case 3:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+      pg[1] = pgc + nEP;
+      pg[2] = pgc + 2 * nEP;
+      
+      pd = FMF_PtrLevel( mtxF, iqp );
+      
+      // Row 1.
+      pout = FMF_PtrLevel( out, iqp );
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[0]) * pg[0][iep];
+	pout[iep+nEP] = (pd[3]) * pg[0][iep];
+	pout[iep+2*nEP] = (pd[6]) * pg[0][iep];
+      }
+      // Row 2.
+      pout += 3 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[1]) * pg[1][iep];
+	pout[iep+nEP] = (pd[4]) * pg[1][iep];
+	pout[iep+2*nEP] = (pd[7]) * pg[1][iep];
+      }
+      // Row 3.
+      pout += 3 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[2]) * pg[2][iep];
+	pout[iep+nEP] = (pd[5]) * pg[2][iep];
+	pout[iep+2*nEP] = (pd[8]) * pg[2][iep];
+      }
+      // Row 4.
+      pout += 3 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[1]) * pg[0][iep]
+	  + (pd[0]) * pg[1][iep];
+	pout[iep+nEP] = (pd[4]) * pg[0][iep]
+	  + (pd[3]) * pg[1][iep];
+	pout[iep+2*nEP] = (pd[7]) * pg[0][iep]
+	  + (pd[6]) * pg[1][iep];
+      }
+      // Row 5.
+      pout += 3 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[2]) * pg[0][iep]
+	  + (pd[0]) * pg[2][iep];
+	pout[iep+nEP] = (pd[5]) * pg[0][iep]
+	  + (pd[3]) * pg[2][iep];
+	pout[iep+2*nEP] = (pd[8]) * pg[0][iep]
+	  + (pd[6]) * pg[2][iep];
+      }
+      // Row 6.
+      pout += 3 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[2]) * pg[1][iep]
+	  + (pd[1]) * pg[2][iep];
+	pout[iep+nEP] = (pd[5]) * pg[1][iep]
+	  + (pd[4]) * pg[2][iep];
+	pout[iep+2*nEP] = (pd[8]) * pg[1][iep]
+	  + (pd[7]) * pg[2][iep];
+      }
+    } /* for (iqp) */
+    break;
+  case 2:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+      pg[1] = pgc + nEP;
+      
+      pd = FMF_PtrLevel( mtxF, iqp );
+      
+      // Row 1.
+      pout = FMF_PtrLevel( out, iqp );
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[0]) * pg[0][iep];
+	pout[iep+nEP] = (pd[2]) * pg[0][iep];
+      }
+      // Row 2.
+      pout += 2 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[1]) * pg[1][iep];
+	pout[iep+nEP] = (pd[3]) * pg[1][iep];
+      }
+      // Row 3.
+      pout += 2 * nEP;
+      for (iep = 0; iep < nEP; iep++) {
+	pout[iep] = (pd[1]) * pg[0][iep]
+	  + (pd[0]) * pg[1][iep];
+	pout[iep+nEP] = (pd[3]) * pg[0][iep]
+	  + (pd[2]) * pg[1][iep];
+      }
+    } /* for (iqp) */
+    break;
+  } /* switch */
+    
   return( RET_OK );
 }
 
@@ -137,49 +200,74 @@ int32 form_tlcc_buildOpB_VS3( FMField *out, FMField *mtxF, FMField *gc )
 */
 int32 form_tlcc_buildOpKtsC_VS3( FMField *out, FMField *tau, FMField *gc )
 {
-  int32 iqp, ir, ic, nQP, nEP;
+  int32 iqp, ir, ic, nQP, nEP, dim;
   float64 *pgc, *pout, *ptau, *pg[3];
 
   nQP = gc->nLev;
   nEP = gc->nCol;
+  dim = gc->nRow;
 
   fmf_fillC( out, 0.0 );
-  for (iqp = 0; iqp < nQP; iqp++) {
-    pgc = FMF_PtrLevel( gc, iqp );
-    pg[0] = pgc;
-    pg[1] = pgc + nEP;
-    pg[2] = pgc + 2 * nEP;
-
-    ptau = FMF_PtrLevel( tau, iqp );
-
-    pout = FMF_PtrLevel( out, iqp );
-    for (ir = 0; ir < nEP; ir++) {
-      for (ic = 0; ic < nEP; ic++) {
-	pout[ic]
-	  = ptau[0] * pg[0][ir] * pg[0][ic]
-	  + ptau[3] * pg[1][ir] * pg[0][ic]
-	  + ptau[4] * pg[2][ir] * pg[0][ic]
-	  + ptau[3] * pg[0][ir] * pg[1][ic]
-	  + ptau[1] * pg[1][ir] * pg[1][ic]
-	  + ptau[5] * pg[2][ir] * pg[1][ic]
-	  + ptau[4] * pg[0][ir] * pg[2][ic]
-	  + ptau[5] * pg[1][ir] * pg[2][ic]
-	  + ptau[2] * pg[2][ir] * pg[2][ic];
+  switch (dim) {
+  case 3:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+      pg[1] = pgc + nEP;
+      pg[2] = pgc + 2 * nEP;
+      
+      ptau = FMF_PtrLevel( tau, iqp );
+      
+      pout = FMF_PtrLevel( out, iqp );
+      for (ir = 0; ir < nEP; ir++) {
+	for (ic = 0; ic < nEP; ic++) {
+	  pout[ic]
+	    = ptau[0] * pg[0][ir] * pg[0][ic]
+	    + ptau[3] * pg[1][ir] * pg[0][ic]
+	    + ptau[4] * pg[2][ir] * pg[0][ic]
+	    + ptau[3] * pg[0][ir] * pg[1][ic]
+	    + ptau[1] * pg[1][ir] * pg[1][ic]
+	    + ptau[5] * pg[2][ir] * pg[1][ic]
+	    + ptau[4] * pg[0][ir] * pg[2][ic]
+	    + ptau[5] * pg[1][ir] * pg[2][ic]
+	    + ptau[2] * pg[2][ir] * pg[2][ic];
+	}
+	pout += nEP;
       }
-      pout += nEP;
-    }
+    } /* for (iqp) */
+    break;
+  case 2:
+    for (iqp = 0; iqp < nQP; iqp++) {
+      pgc = FMF_PtrLevel( gc, iqp );
+      pg[0] = pgc;
+      pg[1] = pgc + nEP;
+      
+      ptau = FMF_PtrLevel( tau, iqp );
+      
+      pout = FMF_PtrLevel( out, iqp );
+      for (ir = 0; ir < nEP; ir++) {
+	for (ic = 0; ic < nEP; ic++) {
+	  pout[ic]
+	    = ptau[0] * pg[0][ir] * pg[0][ic]
+	    + ptau[2] * pg[1][ir] * pg[0][ic]
+	    + ptau[2] * pg[0][ir] * pg[1][ic]
+	    + ptau[1] * pg[1][ir] * pg[1][ic];
+	}
+	pout += nEP;
+      }
+    } /* for (iqp) */
+    break;
   }
-
   return( RET_OK );
 }
 
 #undef __FUNC__
-#define __FUNC__ "dq_finite_strain_tl"
-int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
-			   FMField *trC, FMField *in2C, FMField *vecInvCS,
-			   FMField *vecES,
-			   FMField *state, int32 offset, VolumeGeometry *vg,
-			   int32 *conn, int32 nEl, int32 nEP )
+#define __FUNC__ "dq_finite_strain"
+int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
+			FMField *trC, FMField *in2C, FMField *vecInvCS,
+			FMField *vecES,
+			FMField *state, int32 offset, VolumeGeometry *vg,
+			int32 *conn, int32 nEl, int32 nEP, int32 mode_ul)
 {
   int32 ii, id, iqp, nQP, dim, ret = RET_OK;
   FMField *st = 0, *mtx1 = 0, *mtx2 = 0;
@@ -200,9 +288,9 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
     FMF_SetCell( vecCS, ii );
     FMF_SetCell( trC, ii );
     FMF_SetCell( in2C, ii );
-    FMF_SetCell( vecInvCS, ii );
     FMF_SetCell( vecES, ii );
-
+    if ( vecInvCS > 0 )
+      FMF_SetCell( vecInvCS, ii );
     // Deformation gradient.
     ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
     fmf_mulATBT_1n( mtxF, st, vg->bfGM );
@@ -221,23 +309,36 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 		detF->val[iqp], ii, iqp );
       }
     }
-    // Right Cauchy-Green tensor C = F^T F.
-    fmf_mulATB_nn( mtx1, mtxF, mtxF );
+    if (mode_ul) {
+      // Left Cauchy-Green tensor b = F F^T.
+      fmf_mulABT_nn( mtx1, mtxF, mtxF );
+    }
+    else{
+      // Right Cauchy-Green tensor C = F^T F.
+      fmf_mulATB_nn( mtx1, mtxF, mtxF );
+    }
     geme_tensor2vectorS3( vecCS, mtx1 );
     // trace C.
-    geme_trace3x3( trC->val, mtx1 );
+    //    geme_trace3x3( trC->val, mtx1 );
+    geme_invar1( trC->val, mtx1 );
     // I_2 of C.
-    fmf_mulATB_nn( mtx2, mtx1, mtx1 );
-    geme_trace3x3( in2C->val, mtx2 );
+    //    fmf_mulATB_nn( mtx2, mtx1, mtx1 );
+    //    geme_trace3x3( in2C->val, mtx2 );
+      geme_invar2( in2C->val, mtx1 );
     for (iqp = 0; iqp < nQP; iqp++) {
       in2C->val[iqp] = 0.5 * (trC->val[iqp] *  trC->val[iqp]
 			      - in2C->val[iqp]);
     }
     // C^{-1} as a vector, symmetric storage.
     geme_invert3x3( mtx2, mtx1 );
-    geme_tensor2vectorS3( vecInvCS, mtx2 );
+    if ( vecInvCS > 0 )
+      geme_tensor2vectorS3( vecInvCS, mtx2 );
 
-    form_tlcc_strainGreen_VS( vecES, mtxF );
+/*     if (mode_ul) {     */
+/*       output( "NOT IMPLEMENTED!!!\n"); */
+/*       return(1); */
+/*     else */
+      form_tlcc_strainGreen_VS( vecES, mtxF );
 
     ERR_CheckGo( ret );
   }
@@ -250,20 +351,63 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_tl_he_rtm"
-int32 dw_tl_he_rtm( FMField *out,
-		    FMField *stress, FMField *tan_mod, FMField *mtxF,
-		    VolumeGeometry *vg,
-		    int32 *elList, int32 elList_nRow, int32 isDiff )
+#define __FUNC__ "dq_finite_strain_tl"
+int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
+			   FMField *trC, FMField *in2C, FMField *vecInvCS,
+			   FMField *vecES,
+			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, iel, sym, nRow, nQP, ret = RET_OK;
-  FMField *mtxB = 0, *out_qp = 0, *btd = 0, *btdb = 0, *ktsc = 0, *iktsc = 0;
+  return( dq_finite_strain( mtxF, detF, vecCS, trC, in2C, vecInvCS, vecES,
+			    state, offset, vg, conn, nEl, nEP, 0 ) );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_finite_strain_ul"
+int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
+			   FMField *trB, FMField *in2B, FMField *vecES,
+			   FMField *state, FMField *state0,
+			   int32 offset, VolumeGeometry *vg,
+			   int32 *conn, int32 nEl, int32 nEP )
+{
+  FMField *du = 0;
+  int32 ret;
+
+  fmf_createAlloc( &du, 1, 1, state->nCol, state->nRow );
+
+  /* relative displacement */
+  fmf_subAB_nn( du, state, state0 );
+  
+  ret = dq_finite_strain( mtxF, detF, vecBS, trB, in2B, 0, vecES,
+			  du, offset, vg, conn, nEl, nEP, 1 );
+
+  fmf_freeDestroy( &du );
+ 
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_he_rtm"
+int32 dw_he_rtm( FMField *out,
+		 FMField *stress, FMField *tan_mod,
+		 FMField *mtxF, FMField *detF,
+		 VolumeGeometry *vg,
+		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul )
+{
+  int32 ii, iel, j, sym, nRow, nQP, ret = RET_OK, dim;
+  FMField *aux = 0, *out_qp = 0, *btd = 0, *btdb = 0, *ktsc = 0, *iktsc = 0;
 
   nQP = vg->bfGM->nLev;
   sym = stress->nRow;
   nRow = out->nRow; // dim * nEP.
+  dim = vg->dim;
 
-  fmf_createAlloc( &mtxB, 1, nQP, sym, nRow );
+  if (mode_ul) {
+    fmf_createAlloc( &aux, 1, 1, 1, nQP );
+  }
+  else {
+    fmf_createAlloc( &aux, 1, nQP, sym, nRow );
+  }
 
   if (isDiff) {
     int32 nEP = vg->nEP;
@@ -279,23 +423,41 @@ int32 dw_tl_he_rtm( FMField *out,
       FMF_SetCell( out, ii );
       FMF_SetCell( stress, iel );
       FMF_SetCell( tan_mod, iel );
-      FMF_SetCell( mtxF, iel );
       FMF_SetCell( vg->bfGM, iel );
+
       FMF_SetCell( vg->det, iel );
 
       /* B^T D B. */
-      form_tlcc_buildOpB_VS3( mtxB, mtxF, vg->bfGM );
-      fmf_mulATB_nn( btd, mtxB, tan_mod );
-      fmf_mulAB_nn( btdb, btd, mtxB );
-      fmf_sumLevelsMulF( out, btdb, vg->det->val );
+      if (mode_ul) {
+	/* ULF */
+	FMF_SetCell( detF, iel );
+	for (j = 0; j < nQP; j++) /* det/J */
+	  aux->val[j] = vg->det->val[j] / detF->val[j];
 
-      /* + K_{t\sigma}. */
-      form_tlcc_buildOpKtsC_VS3( ktsc, stress, vg->bfGM );
-      fmf_sumLevelsMulF( iktsc, ktsc, vg->det->val );
+	form_sdcc_actOpGT_M3( btd, vg->bfGM, tan_mod );
+	form_sdcc_actOpG_RM3( btdb, btd, vg->bfGM );
+	fmf_sumLevelsMulF( out, btdb, aux->val );
+	/* + K_{t\sigma}. */
+	form_tlcc_buildOpKtsC_VS3( ktsc, stress, vg->bfGM );
+	fmf_sumLevelsMulF( iktsc, ktsc, aux->val );
+      }
+      else {
+	/* TLF */
+	FMF_SetCell( mtxF, iel );
+	form_tlcc_buildOpB_VS3( aux, mtxF, vg->bfGM );
+	fmf_mulATB_nn( btd, aux, tan_mod );
+	fmf_mulAB_nn( btdb, btd, aux );
+	fmf_sumLevelsMulF( out, btdb, vg->det->val );
+
+	/* + K_{t\sigma}. */
+	form_tlcc_buildOpKtsC_VS3( ktsc, stress, vg->bfGM );
+	fmf_sumLevelsMulF( iktsc, ktsc, vg->det->val );
+      }
 
       fmfr_addA_blockNC( out, iktsc, 0, 0 );
       fmfr_addA_blockNC( out, iktsc, nEP, nEP );
-      fmfr_addA_blockNC( out, iktsc, 2 * nEP, 2 * nEP );
+      if (dim == 3)
+	fmfr_addA_blockNC( out, iktsc, 2 * nEP, 2 * nEP );
 
       ERR_CheckGo( ret );
     }
@@ -307,20 +469,33 @@ int32 dw_tl_he_rtm( FMField *out,
 
       FMF_SetCell( out, ii );
       FMF_SetCell( stress, iel );
-      FMF_SetCell( mtxF, iel );
       FMF_SetCell( vg->bfGM, iel );
       FMF_SetCell( vg->det, iel );
 
-      form_tlcc_buildOpB_VS3( mtxB, mtxF, vg->bfGM );
-      fmf_mulATB_nn( out_qp, mtxB, stress );
-      fmf_sumLevelsMulF( out, out_qp, vg->det->val );
+      if (mode_ul) {
+	/* ULF */
+	FMF_SetCell( detF, iel );
+	for (j = 0; j < nQP; j++) /* det/J */
+	  aux->val[j] = vg->det->val[j] / detF->val[j];
+
+	form_sdcc_actOpGT_M3( out_qp, vg->bfGM, stress );
+	fmf_sumLevelsMulF( out, out_qp, aux->val );
+      }
+      else {
+	/* TLF */
+	FMF_SetCell( mtxF, iel );
+	form_tlcc_buildOpB_VS3( aux, mtxF, vg->bfGM );
+	fmf_mulATB_nn( out_qp, aux, stress );
+	fmf_sumLevelsMulF( out, out_qp, vg->det->val );
+      }
 
       ERR_CheckGo( ret );
     }
   }
 
  end_label:
-  fmf_freeDestroy( &mtxB );
+
+  fmf_freeDestroy( &aux );
 
   if (isDiff) {
     fmf_freeDestroy( &btd );
@@ -335,35 +510,125 @@ int32 dw_tl_he_rtm( FMField *out,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dq_tl_he_stress_bulk"
-int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
-			    FMField *detF, FMField *vecInvCS )
+#define __FUNC__ "dq_he_stress_bulk"
+int32 dq_he_stress_bulk( FMField *out,FMField *mat,
+			 FMField *detF, FMField *vecCG,
+			 int32 mode_ul )
 {
   int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
-  float64 *pbulk, *pstress, *pinvC, *pdetF;
+  float64 *pbulk, *pstress, *pCG, *pdetF, *ptrace;
 
   nQP = detF->nLev;
   sym = out->nRow;
-  
-  if (sym != 6) errput( "Hyperelastic materials are 3D only!\n" );
-  ERR_CheckGo( ret );
+  ptrace = get_trace( sym );
 
   for (ii = 0; ii < out->nCell; ii++) {
     pdetF = FMF_PtrCell( detF, ii );
-    pinvC = FMF_PtrCell( vecInvCS, ii );
 
     pstress = FMF_PtrCell( out, ii );
     pbulk = FMF_PtrCell( mat, ii );
 
-    for (iqp = 0; iqp < nQP; iqp++) {
-      // Volumetric part.
-      for (ir = 0; ir < sym; ir++) {
-	pstress[ir]
-	  = pbulk[iqp] * pdetF[iqp] * (pdetF[iqp] - 1.0) * pinvC[ir];
+    if (mode_ul) {
+      /* ULF */
+      for (iqp = 0; iqp < nQP; iqp++) {
+	// Volumetric part.
+	for (ir = 0; ir < sym; ir++) {
+	  /* Crisfield II., (13.35) */
+	  pstress[ir]
+	    = pbulk[iqp] * pdetF[iqp] * (pdetF[iqp] - 1.0) * ptrace[ir];
+	}
+	pstress += sym;
       }
-      pstress += sym;
-      pinvC += sym;
     }
+    else {
+      /* TLF */
+      pCG = FMF_PtrCell( vecCG, ii );
+      for (iqp = 0; iqp < nQP; iqp++) {
+	// Volumetric part.
+	for (ir = 0; ir < sym; ir++) {
+	  /* Crisfield II., (13.35) */
+	  pstress[ir]
+	    = pbulk[iqp] * pdetF[iqp] * (pdetF[iqp] - 1.0) * pCG[ir];
+	}
+	pstress += sym;
+	pCG += sym;
+      }
+    } /* if (mode_ul) */
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_tl_he_stress_bulk"
+int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
+			    FMField *detF, FMField *vecInvCS )
+{
+  return( dq_he_stress_bulk( out, mat, detF, vecInvCS, 0 ) );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_ul_he_stress_bulk"
+int32 dq_ul_he_stress_bulk( FMField *out,FMField *mat,
+			    FMField *detF )
+{
+  return( dq_he_stress_bulk( out, mat, detF, NULL, 1 ) );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_he_stress_neohook"
+int32 dq_he_stress_neohook( FMField *out, FMField *mat,
+			    FMField *detF, FMField *trC, FMField *vecCG,
+			    int32 mode_ul )
+{
+  int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
+  float64 detF23;
+  float64 *pmu, *pstress, *ptrC, *pCG, *pdetF, *ptrace;
+
+  nQP = detF->nLev;
+  sym = out->nRow;
+  ptrace = get_trace( sym );
+
+  /*   output( "%d\n", sym ); */
+  for (ii = 0; ii < out->nCell; ii++) {
+    pdetF = FMF_PtrCell( detF, ii );
+    ptrC = FMF_PtrCell( trC, ii );
+    pCG = FMF_PtrCell( vecCG, ii );
+
+    pstress = FMF_PtrCell( out, ii );
+    pmu = FMF_PtrCell( mat, ii );
+
+    if (mode_ul) {
+      /* ULF */
+      for (iqp = 0; iqp < nQP; iqp++) {
+	detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
+	for (ir = 0; ir < sym; ir++) {
+	  /* Crisfield II., (13.35) */
+	  pstress[ir]
+	    = pmu[iqp] * detF23 * (pCG[ir] - ptrC[iqp]/3.0 * ptrace[ir]);
+	}
+	pstress += sym;
+	pCG += sym;
+      }
+    }
+    else {
+      /* TLF */
+      for (iqp = 0; iqp < nQP; iqp++) {
+	detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
+	for (ir = 0; ir < sym; ir++) {
+	  /* Crisfield II., (13.35) */
+	  pstress[ir]
+	    = pmu[iqp] * detF23 * (ptrace[ir] - ptrC[iqp]/3.0 * pCG[ir]);
+	  /* 	output( "%d %d %d %f %f %f %f\n", ii, iqp, ir, */
+	  /* 		pmu[iqp], ptrC[iqp], pinvC[ir], pstress[ir] ); */
+	}
+	pstress += sym;
+	pCG += sym;
+      }
+    } /* if (mode_ul) */
+    ERR_CheckGo( ret );
   }
 
  end_label:
@@ -375,39 +640,15 @@ int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
 int32 dq_tl_he_stress_neohook( FMField *out, FMField *mat,
 			       FMField *detF, FMField *trC, FMField *vecInvCS )
 {
-  int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
-  float64 detF23;
-  float64 *pmu, *pstress, *ptrC, *pinvC, *pdetF;
+  return ( dq_he_stress_neohook( out, mat, detF, trC, vecInvCS, 0 ) );
+}
 
-  nQP = detF->nLev;
-  sym = out->nRow;
-  
-  if (sym != 6) errput( "Hyperelastic materials are 3D only!\n" );
-  ERR_CheckGo( ret );
-
-/*   output( "%d\n", sym ); */
-  for (ii = 0; ii < out->nCell; ii++) {
-    pdetF = FMF_PtrCell( detF, ii );
-    ptrC = FMF_PtrCell( trC, ii );
-    pinvC = FMF_PtrCell( vecInvCS, ii );
-
-    pstress = FMF_PtrCell( out, ii );
-    pmu = FMF_PtrCell( mat, ii );
-    for (iqp = 0; iqp < nQP; iqp++) {
-      detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
-      for (ir = 0; ir < sym; ir++) {
-	pstress[ir]
-	  = pmu[iqp] * detF23 * (trace[ir] - ptrC[iqp]/3.0 * pinvC[ir]);
-/* 	output( "%d %d %d %f %f %f %f\n", ii, iqp, ir, */
-/* 		pmu[iqp], ptrC[iqp], pinvC[ir], pstress[ir] ); */
-      }
-      pstress += sym;
-      pinvC += sym;
-    }
-  }
-
- end_label:
-  return( ret );
+#undef __FUNC__
+#define __FUNC__ "dq_ul_he_stress_neohook"
+int32 dq_ul_he_stress_neohook( FMField *out, FMField *mat,
+			       FMField *detF, FMField *trB, FMField *vecBS )
+{
+  return ( dq_he_stress_neohook( out, mat, detF, trB, vecBS, 1 ) );
 }
 
 #undef __FUNC__
@@ -419,14 +660,11 @@ int32 dq_tl_he_stress_mooney_rivlin( FMField *out, FMField *mat,
 {
   int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
   float64 detF23;
-  float64 *pkappa, *pstress, *ptrC, *pinvC, *pdetF, *pC, *pin2C;
+  float64 *pkappa, *pstress, *ptrC, *pinvC, *pdetF, *pC, *pin2C, *ptrace;
 
   nQP = detF->nLev;
   sym = out->nRow;
-  
-  if (sym != 6) errput( "Hyperelastic materials are 3D only!\n" );
-  ERR_CheckGo( ret );
-
+  ptrace = get_trace( sym );
 
 /*   output( "%d\n", sym ); */
   for (ii = 0; ii < out->nCell; ii++) {
@@ -443,16 +681,76 @@ int32 dq_tl_he_stress_mooney_rivlin( FMField *out, FMField *mat,
       for (ir = 0; ir < sym; ir++) {
 	pstress[ir]
 	  = pkappa[iqp] * detF23 * detF23
-	  * (ptrC[iqp] * trace[ir] - pC[ir]
+	  * (ptrC[iqp] * ptrace[ir] - pC[ir]
 	     - (2.0/3.0) * pin2C[iqp] * pinvC[ir]);
       }
       pstress += sym;
       pinvC += sym;
       pC += sym;
     }
+    ERR_CheckGo( ret );
   }
 
  end_label:
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_ul_he_stress_mooney_rivlin"
+/*!
+  Mooney-Rivlin ( c1, c2 )
+  Kirchhoff stress tensor
+  tau =  B1 * b + B2 * b*b + B3 * I
+*/
+
+int32 dq_ul_he_stress_mooney_rivlin( FMField *out, FMField *mat,
+				     FMField *detF, FMField *trB,
+				     FMField *vecBS, FMField *in2B )
+{
+  int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
+  float64 detF23, detF43, B1, B2, B3;
+  float64 *pkappa, *pstress, *ptrB, *pB, *pBB, *pdetF,  *pin2B, *ptrace;
+  FMField *vecBB;
+
+  nQP = detF->nLev;
+  sym = out->nRow;
+  ptrace = get_trace( sym );
+
+  fmf_createAlloc( &vecBB, 1, nQP, sym, 1 );
+  pBB = vecBB->val0;
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    pdetF = FMF_PtrCell( detF, ii );
+    ptrB = FMF_PtrCell( trB, ii );
+    pin2B = FMF_PtrCell( in2B, ii );
+    pB = FMF_PtrCell( vecBS, ii );
+
+    FMF_SetCell( vecBS, ii );
+    geme_mulT2S_AA( vecBB, vecBS );
+    
+    pstress = FMF_PtrCell( out, ii );
+    pkappa = FMF_PtrCell( mat, ii );
+    for (iqp = 0; iqp < nQP; iqp++) {
+      detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
+      detF43 = detF23 * detF23;
+      B1 = 2*pkappa[0] * detF23 + 2*pkappa[0] * detF43 * ptrB[iqp];
+      B2 = -2*pkappa[1] * detF43;
+      B3 = -(2.0/3.0)*(pkappa[0] * detF23 * ptrB[iqp]
+		       + 2*pkappa[1] * detF43 * pin2B[iqp]);
+      for (ir = 0; ir < sym; ir++) {
+	pstress[ir] = B1 * pB[ir] + B2 * pBB[ir] + B3 * ptrace[ir];
+      }
+      pstress += sym;
+      pBB += sym;
+      pB += sym;
+      pkappa += 2;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &vecBB );
+
   return( ret );
 }
 
@@ -478,9 +776,9 @@ int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
   pinvC2_iljk = FMF_PtrCurrent( invC2_iljk );
 
   for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vecInvCS, ii );
     pdetF = FMF_PtrCell( detF, ii );
     pinvC = FMF_PtrCell( vecInvCS, ii );
-    FMF_SetCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
     pbulk = FMF_PtrCell( mat, ii );
 
@@ -488,7 +786,7 @@ int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
 
     for (iqp = 0; iqp < nQP; iqp++) {
-      cbulk21 = pbulk[iqp] * (pdetF[iqp] * (pdetF[iqp] - 1.0));
+      cbulk21 = pbulk[iqp] * pdetF[iqp] * (pdetF[iqp] - 1.0);
       cbulk22 = pbulk[iqp] * pdetF[iqp] * pdetF[iqp];
       for (ir = 0; ir < sym; ir++) {
 	for (ic = 0; ic < sym; ic++) {
@@ -511,6 +809,61 @@ int32 dq_tl_he_tan_mod_bulk( FMField *out, FMField *mat,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dq_ul_he_tan_mod_bulk"
+int32 dq_ul_he_tan_mod_bulk( FMField *out, FMField *mat, FMField *detF )
+{
+  int32 ii, nQP, ir, ic, iqp, sym, ret = RET_OK;
+  float64 cbulk21, cbulk22;
+  float64 *pd;
+  float64 *pbulk;
+  float64 *pdetF, *p_ikjl, *p_iljk, *ptrace;
+  FMField *ikjl = 0, *iljk = 0;
+  FMField traceVec[1];
+
+  sym = out->nRow;
+  nQP = out->nLev;
+  ptrace = get_trace( sym );
+
+  fmf_createAlloc( &ikjl, 1, 1, sym, sym );
+  fmf_createAlloc( &iljk, 1, 1, sym, sym );
+  traceVec->nAlloc = -1;
+  fmf_pretend( traceVec, 1, 1, sym, 1, ptrace );
+
+  p_ikjl = FMF_PtrCurrent( ikjl );
+  p_iljk = FMF_PtrCurrent( iljk );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    pdetF = FMF_PtrCell( detF, ii );
+    pd = FMF_PtrCell( out, ii );
+    pbulk = FMF_PtrCell( mat, ii );
+
+    geme_mulT2ST2S_T4S_ikjl( ikjl, traceVec, traceVec );
+    geme_mulT2ST2S_T4S_iljk( iljk, traceVec, traceVec );
+    
+    for (iqp = 0; iqp < nQP; iqp++) {
+      cbulk21 = pbulk[iqp] * pdetF[iqp] * (pdetF[iqp] - 1.0);
+      cbulk22 = pbulk[iqp] * pdetF[iqp] * pdetF[iqp];
+      for (ir = 0; ir < sym; ir++) {
+	for (ic = 0; ic < sym; ic++) {
+	  pd[sym*ir+ic]
+	    = (cbulk21 + cbulk22) * ptrace[ir] * ptrace[ic]
+	    - cbulk21 * (p_ikjl[sym*ir+ic]
+			+ p_iljk[sym*ir+ic]);
+	}
+      }
+      pd += sym * sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &ikjl );
+  fmf_freeDestroy( &iljk );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_tl_he_tan_mod_neohook"
 int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
 				FMField *detF, FMField *trC, FMField *vecInvCS )
@@ -519,11 +872,12 @@ int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
   float64 cc, c1, c2, c3, detF23;
   float64 *pd;
   float64 *pmu;
-  float64 *pinvC, *ptrC, *pdetF, *pinvC2_ikjl, *pinvC2_iljk;
+  float64 *pinvC, *ptrC, *pdetF, *pinvC2_ikjl, *pinvC2_iljk, *ptrace;
   FMField *invC2_ikjl = 0, *invC2_iljk = 0;
 
   sym = out->nRow;
   nQP = out->nLev;
+  ptrace = get_trace( sym );
 
   fmf_createAlloc( &invC2_ikjl, 1, nQP, sym, sym );
   fmf_createAlloc( &invC2_iljk, 1, nQP, sym, sym );
@@ -532,16 +886,15 @@ int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
   pinvC2_iljk = FMF_PtrCurrent( invC2_iljk );
 
   for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vecInvCS, ii );
     pdetF = FMF_PtrCell( detF, ii );
     ptrC = FMF_PtrCell( trC, ii );
     pinvC = FMF_PtrCell( vecInvCS, ii );
-    FMF_SetCell( vecInvCS, ii );
     pd = FMF_PtrCell( out, ii );
     pmu = FMF_PtrCell( mat, ii );
 
     geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
     geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
-
 
     for (iqp = 0; iqp < nQP; iqp++) {
       detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
@@ -553,8 +906,8 @@ int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
 	for (ic = 0; ic < sym; ic++) {
 	  pd[sym*ir+ic]
 	    = c1 * pinvC[sym*iqp+ir] * pinvC[sym*iqp+ic]
-	    + c2 * ((pinvC[sym*iqp+ir] * trace[ic])
-		  + (pinvC[sym*iqp+ic] * trace[ir]))
+	    + c2 * ((pinvC[sym*iqp+ir] * ptrace[ic])
+		  + (pinvC[sym*iqp+ic] * ptrace[ir]))
 	    + c3 * (pinvC2_ikjl[sym*(sym*iqp+ir)+ic]
 		    + pinvC2_iljk[sym*(sym*iqp+ir)+ic]);
 	}
@@ -572,6 +925,70 @@ int32 dq_tl_he_tan_mod_neohook( FMField *out, FMField *mat,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dq_ul_he_tan_mod_neohook"
+int32 dq_ul_he_tan_mod_neohook( FMField *out, FMField *mat,
+				FMField *detF, FMField *trB, FMField *vecBS )
+{
+  int32 ii, nQP, ir, ic, iqp, sym, ret = RET_OK;
+  float64 cc, c1, c2, c3, detF23;
+  float64 *pd;
+  float64 *pmu;
+  float64 *pBG, *ptrB, *pdetF, *pd_ikjl, *pd_iljk, *ptrace;
+  FMField *d_ikjl = 0, *d_iljk = 0;
+  FMField traceVec[1];
+
+  sym = out->nRow;
+  nQP = out->nLev;
+  ptrace = get_trace( sym );
+
+  fmf_createAlloc( &d_ikjl, 1, 1, sym, sym );
+  fmf_createAlloc( &d_iljk, 1, 1, sym, sym );
+  traceVec->nAlloc = -1;
+  fmf_pretend( traceVec, 1, 1, sym, 1, ptrace );
+
+  pd_ikjl = FMF_PtrCurrent( d_ikjl );
+  pd_iljk = FMF_PtrCurrent( d_iljk );
+
+  geme_mulT2ST2S_T4S_ikjl( d_ikjl, traceVec, traceVec );
+  geme_mulT2ST2S_T4S_iljk( d_iljk, traceVec, traceVec );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vecBS, ii );
+    pdetF = FMF_PtrCell( detF, ii );
+    ptrB = FMF_PtrCell( trB, ii );
+    pBG = FMF_PtrCell( vecBS, ii );
+    pd = FMF_PtrCell( out, ii );
+    pmu = FMF_PtrCell( mat, ii );
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
+      cc = pmu[iqp] * detF23;
+      c1 = 2.0/9.0 * cc * ptrB[iqp];
+      c2 = - 2.0/3.0 * cc;
+      c3 = cc / 3.0 * ptrB[iqp];
+      for (ir = 0; ir < sym; ir++) {
+	for (ic = 0; ic < sym; ic++) {
+	  pd[sym*ir+ic]
+	    = c1 * ptrace[ir] * ptrace[ic]
+	    + c2 * ((pBG[sym*iqp+ir] * ptrace[ic])
+		  + (pBG[sym*iqp+ic] * ptrace[ir]))
+	    + c3 * (pd_ikjl[sym*ir+ic]
+		    + pd_iljk[sym*ir+ic]);
+	}
+      }
+      pd += sym * sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &d_ikjl );
+  fmf_freeDestroy( &d_iljk );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dq_tl_he_tan_mod_mooney_rivlin"
 int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 				      FMField *detF, FMField *trC,
@@ -581,13 +998,14 @@ int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
   int32 ii, nQP, ir, ic, iqp, sym, dim, ret = RET_OK;
   float64 c1, c2, c3, c4, c5, c6, detF23, detF43;
   float64 *pd;
-  float64 *pkappa;
+  float64 *pkappa, *ptrace;
   float64 *pinvC, *ptrC, *pdetF, *pC, *pin2C, *pinvC2_ikjl, *pinvC2_iljk;
   FMField *invC2_ikjl = 0, *invC2_iljk = 0;
 
-  dim = 3;
   sym = out->nRow;
   nQP = out->nLev;
+  dim = sym2dim( sym );
+  ptrace = get_trace( sym );
 
   fmf_createAlloc( &invC2_ikjl, 1, nQP, sym, sym );
   fmf_createAlloc( &invC2_iljk, 1, nQP, sym, sym );
@@ -621,11 +1039,11 @@ int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 	for (ic = 0; ic < sym; ic++) {
 	  pd[sym*ir+ic]
 	    = c1 * pinvC[sym*iqp+ir] * pinvC[sym*iqp+ic]
-	    + c2 * ((pinvC[sym*iqp+ir] * trace[ic])
-		  + (pinvC[sym*iqp+ic] * trace[ir]))
+	    + c2 * ((pinvC[sym*iqp+ir] * ptrace[ic])
+		  + (pinvC[sym*iqp+ic] * ptrace[ir]))
 	    + c3 * (pinvC2_ikjl[sym*(sym*iqp+ir)+ic]
 		  + pinvC2_iljk[sym*(sym*iqp+ir)+ic])
-            + c4 * (trace[ir] * trace[ic])
+            + c4 * (ptrace[ir] * ptrace[ic])
             + c6 * ((pC[sym*iqp+ir] * pinvC[sym*iqp+ic])
 		  + (pC[sym*iqp+ic] * pinvC[sym*iqp+ir]))
           ;
@@ -637,7 +1055,7 @@ int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
       for (ir = dim; ir < sym; ir++) {
         pd[sym*ir+ir] += c5;
       }
-      pd += 36;
+      pd += sym*sym;
     }
     ERR_CheckGo( ret );
   }
@@ -645,6 +1063,95 @@ int32 dq_tl_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
  end_label:
   fmf_freeDestroy( &invC2_ikjl );
   fmf_freeDestroy( &invC2_iljk );
+
+  return( ret );
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "dq_ul_he_tan_mod_mooney_rivlin"
+int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
+				      FMField *detF, FMField *trB,
+				      FMField *vecBS, FMField *in2B )
+{
+  int32 ii, nQP, ir, ic, iqp, sym, dim, ret = RET_OK;
+  float64 F1, F2, F3, F4, F5, F6, detF23, detF43;
+  float64 *pd, *pkappa, *ptrace;
+  float64 *ptrB, *pdetF, *pB, *pin2B, *pB_ikjl, *pB_iljk, *pd_ikjl, *pd_iljk, *pBB;
+  FMField *B_ikjl = 0, *B_iljk = 0, *d_ikjl = 0, *d_iljk = 0, *vecBB = 0;
+  FMField traceVec[1];
+
+  sym = out->nRow;
+  nQP = out->nLev;
+  dim = sym2dim( sym );
+  ptrace = get_trace( sym );
+
+  fmf_createAlloc( &B_ikjl, 1, nQP, sym, sym );
+  fmf_createAlloc( &B_iljk, 1, nQP, sym, sym );
+  fmf_createAlloc( &d_ikjl, 1, 1, sym, sym );
+  fmf_createAlloc( &d_iljk, 1, 1, sym, sym );
+  traceVec->nAlloc = -1;
+  fmf_pretend( traceVec, 1, 1, sym, 1, ptrace );
+  fmf_createAlloc( &vecBB, 1, nQP, sym, 1 );
+  pBB = vecBB->val0;
+
+  pB_ikjl = FMF_PtrCurrent( B_ikjl );
+  pB_iljk = FMF_PtrCurrent( B_iljk );
+  pd_ikjl = FMF_PtrCurrent( d_ikjl );
+  pd_iljk = FMF_PtrCurrent( d_iljk );
+
+  geme_mulT2ST2S_T4S_ikjl( d_ikjl, traceVec, traceVec );
+  geme_mulT2ST2S_T4S_iljk( d_iljk, traceVec, traceVec );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    pdetF = FMF_PtrCell( detF, ii );
+    ptrB = FMF_PtrCell( trB, ii );
+    pin2B = FMF_PtrCell( in2B, ii );
+    pB = FMF_PtrCell( vecBS, ii );
+    FMF_SetCell( vecBS, ii );
+    pd = FMF_PtrCell( out, ii );
+    pkappa = FMF_PtrCell( mat, ii );
+
+    geme_mulT2ST2S_T4S_ikjl( B_ikjl, vecBS, vecBS );
+    geme_mulT2ST2S_T4S_iljk( B_iljk, vecBS, vecBS );
+    geme_mulT2S_AA( vecBB, vecBS );
+
+    /* Crisfield II., (13.40), (13.41), (13.100) */
+    for (iqp = 0; iqp < nQP; iqp++) {
+      detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
+      detF43 = detF23 * detF23;
+      F1 = 4.0/9.0 * (pkappa[0] * detF23 * ptrB[iqp]
+		      + 4.0 * pkappa[1] * detF43 * pin2B[iqp]);
+      F2 = -4.0/3.0 * (pkappa[0] * detF23
+		       + 2.0 * pkappa[1] * detF43 * ptrB[iqp]);
+      F3 = 2.0/3.0 * (pkappa[0] * detF23 * ptrB[iqp]
+		      + 2.0 * pkappa[1] * detF43 * pin2B[iqp]);
+      F4 = 4.0 * pkappa[1] * detF43;
+      F5 = -2.0 * pkappa[1] * detF43;
+      F6 = 8.0/3.0 * pkappa[1] * detF43;
+      for (ir = 0; ir < sym; ir++) {
+	for (ic = 0; ic < sym; ic++) {
+	  pd[sym*ir+ic]
+	    = F1 * ptrace[ir] * ptrace[ic]
+	    + F2 * (pB[ir] * ptrace[ic] + ptrace[ir] * pB[ic])
+	    + F3 * (pd_ikjl[sym*ir+ic] + pd_iljk[sym*ir+ic])
+	    + F4 * pB[ir] * pB[ic]
+	    + F5 * (pB_ikjl[sym*(sym*iqp+ir)+ic] + pB_iljk[sym*(sym*iqp+ir)+ic])
+	    + F6 * (pBB[ir] * ptrace[ic] + pBB[ic] * ptrace[ir]);
+	}
+      }
+      pd += sym*sym;
+      pkappa += 2;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &B_ikjl );
+  fmf_freeDestroy( &B_iljk );
+  fmf_freeDestroy( &d_ikjl );
+  fmf_freeDestroy( &d_iljk );
+  fmf_freeDestroy( &vecBB );
 
   return( ret );
 }
