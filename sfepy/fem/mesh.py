@@ -785,6 +785,8 @@ class Mesh( Struct ):
 
         Parameters
         ----------
+        name : str
+            Object name.
         filename : str
             Loads a mesh from the specified file, if not None.
         prefix_dir : str

@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 from sfepy.base.reader import Reader
 from geomElement import GeomElement
-from region import Region, sort_by_dependency
+from region import Region, get_dependency_graph, sort_by_dependency
 import fea
 import extmods.meshutils as mu
 
@@ -154,11 +154,19 @@ class Domain( Struct ):
     Domain is divided into groups, whose purpose is to have homogeneous
     data shapes."""
 
-    ##
-    # 17.07.2006, c
-    def from_mesh( mesh, component_dir ):
+    def __init__(self, name, mesh, component_dir=None):
+        """Create a Domain.
 
-        read = Reader( component_dir )
+        Parameters
+        ----------
+        name : str
+            Object name.
+        mesh : Mesh
+            A mesh defining the domain.
+        component_dir : str
+            A directory with element definitions, the default is 'sfepy/eldesc'.
+        """
+        read = Reader(get_default(component_dir,'sfepy/eldesc'))
 
         geom_els = OneTypeList( GeomElement )
         for desc in mesh.descs:
@@ -169,24 +177,27 @@ class Domain( Struct ):
 
         interps = {}
         for gel in geom_els:
-            name = gel.interpolation
+            key = gel.interpolation
 
-            if interps.has_key( name ):
-                gel.interp = interps[name]
+            if interps.has_key( key ):
+                gel.interp = interps[key]
             else:
-                gel.interp = read( fea.Interpolant, name )
-                interps[name] = gel.interp
+                gel.interp = read( fea.Interpolant, key )
+                interps[key] = gel.interp
 
-        obj = Domain( name = mesh.name,
-                      mesh = mesh,
-                      geom_els = geom_els,
-                      geom_interps = interps )
-        obj.mat_ids_to_i_gs = {}
+        Struct.__init__(self,
+                        name = name,
+                        mesh = mesh,
+                        geom_els = geom_els,
+                        geom_interps = interps)
+        self.mat_ids_to_i_gs = {}
         for ig, mat_id in enumerate( mesh.mat_ids ):
-            obj.mat_ids_to_i_gs[mat_id[0]] = ig
-        
-        return obj
-    from_mesh = staticmethod( from_mesh )
+            self.mat_ids_to_i_gs[mat_id[0]] = ig
+
+        self.setup_groups()
+        self.fix_element_orientation()
+        self.setup_neighbour_lists()
+        self.reset_regions()
 
     def setup_groups( self ):
 
@@ -399,6 +410,10 @@ class Domain( Struct ):
         else:
             return self.ed, self.ned, self.fa, self.nfa
 
+    def reset_regions(self):
+        """Reset the list of regions associated with the domain."""
+        self.regions = OneTypeList(Region)
+
     def create_regions(self, region_defs, functions=None):
         from sfepy.fem.parseReg import create_bnf, visit_stack, print_stack,\
              ParseException
@@ -553,29 +568,8 @@ class Domain( Struct ):
 
         ##
         # Sort region definitions by dependencies.
-        depends = re.compile( 'r\.([a-zA-Z_0-9]+)' ).search
-        graph = {}
-        name_to_sort_name = {}
-        for sort_name, rdef in region_defs.iteritems():
-            name, sel = rdef.name, rdef.select
-#            print sort_name, name, sel
-            if name_to_sort_name.has_key( name ):
-                raise 'region %s/%s already defined!' % (sort_name, name)
-            name_to_sort_name[name] = sort_name
-
-            if not graph.has_key( name ):
-                graph[name] = [0]
-
-            while len( sel ):
-                aux = depends( sel )
-                if aux:
-                    graph[name].append( aux.group()[2:] )
-                    sel = sel[aux.end():]
-                else:
-                    sel = ''
-#        print graph
-
-        sorted_regions = sort_by_dependency( graph )
+        graph, name_to_sort_name = get_dependency_graph(region_defs)
+        sorted_regions = sort_by_dependency(graph)
 #        print sorted_regions
         
         ##

@@ -9,6 +9,7 @@ from functions import Functions, Function
 from mesh import Mesh
 from mesh_generators import gen_block_mesh, gen_cylinder_mesh
 from domain import Domain
+from region import Region
 from fields import Fields, Field
 from variables import Variables, Variable
 from materials import Materials, Material

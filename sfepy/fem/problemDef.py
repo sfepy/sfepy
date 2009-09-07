@@ -66,10 +66,7 @@ class ProblemDefinition( Struct ):
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
         eldesc_dir = op.join( sfepy.base_dir, 'eldesc' )
-        domain = Domain.from_mesh( mesh, eldesc_dir )
-        domain.setup_groups()
-        domain.fix_element_orientation()
-        domain.setup_neighbour_lists()
+        domain = Domain(mesh.name, mesh, eldesc_dir)
 
         obj = ProblemDefinition( conf = conf,
                                  functions = functions,

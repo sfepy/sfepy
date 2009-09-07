@@ -1,5 +1,33 @@
 from sfepy.base.base import *
 
+_depends = re.compile( 'r\.([a-zA-Z_0-9]+)' ).findall
+
+def get_parents(selector):
+    """Given a region selector, return names of regions it is based on."""
+    parents = _depends(selector)
+
+    return parents
+
+def get_dependency_graph(region_defs):
+    """Return a dependency graph and a name-sort name mapping for given
+    region definitions."""
+    graph = {}
+    name_to_sort_name = {}
+    for sort_name, rdef in region_defs.iteritems():
+        name, sel = rdef.name, rdef.select
+##         print sort_name, name, sel
+        if name_to_sort_name.has_key( name ):
+            raise 'region %s/%s already defined!' % (sort_name, name)
+        name_to_sort_name[name] = sort_name
+
+        if not graph.has_key( name ):
+            graph[name] = [0]
+
+        for parent in get_parents(sel):
+            graph[name].append(parent)
+##     print graph
+    return graph, name_to_sort_name
+
 ##
 # 15.06.2006, c
 # 17.07.2006
