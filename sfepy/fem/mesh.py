@@ -663,7 +663,7 @@ class Mesh( Struct ):
         io : *MeshIO instance
             Passing *MeshIO instance has precedence over filename.
 
-        prefix_dir: string like
+        prefix_dir : str
             If not None, the filename is relative to that directory.
         """
         if io == 'auto':
@@ -779,15 +779,40 @@ class Mesh( Struct ):
     from_data = staticmethod( from_data )
         
 
-    ##
-    # 22.02.2005
-    # 16.06.2005
-    # 26.09.2006
-    def __init__( self, name = 'mesh', **kwargs ):
-        Struct.__init__( self, **kwargs )
-        self.name = name
-        self.io = None
-        self.setup_done = 0
+    def __init__(self, name='mesh', filename=None,
+                 prefix_dir=None, **kwargs):
+        """Create a Mesh.
+
+        Parameters
+        ----------
+        filename : str
+            Loads a mesh from the specified file, if not None.
+        prefix_dir : str
+            If not None, the filename is relative to that directory.
+        """
+        Struct.__init__(self, name=name, **kwargs)
+
+        if filename is None:
+            self.io = None
+            self.setup_done = 0
+
+        else:
+            io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
+            output( 'reading mesh (%s)...' % (io.filename) )
+            tt = time.clock()
+            io.read(self)
+            output( '...done in %.2f s' % (time.clock() - tt) )
+            self._set_shape_info()
+            
+    def copy(self, name=None):
+        """Make a deep copy of self.
+
+        Parameters
+        ----------
+        name : str
+            Name of the copied mesh.
+        """
+        return Struct.copy(self, deep=True, name=name)
 
     ##
     # 04.08.2006, c
