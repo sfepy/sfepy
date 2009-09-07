@@ -196,6 +196,25 @@ class Struct( object ):
         """Behaves like dict.setdefault()."""
         return self.__dict__.setdefault( key, default )
 
+    def copy(self, deep=False, name=None):
+        """Make a (deep) copy of self.
+
+        Parameters
+        ----------
+        deep : bool
+            Make a deep copy.
+        name : str
+            Name of the copy, with default self.name + '_copy'.
+        """
+        if deep:
+            other = deepcopy(self)
+        else:
+            other = copy(self)
+
+        if hasattr(self, 'name'):
+            other.name = get_default(name, self.name + '_copy')
+
+        return other
 #
 # 12.07.2007, c
 class IndexedStruct( Struct ):
