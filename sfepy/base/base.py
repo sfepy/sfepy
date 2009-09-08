@@ -188,6 +188,10 @@ class Struct( object ):
     def to_dict( self ):
         return copy( self.__dict__ )
 
+    def get(self, key, default):
+        """A dict-like get for Struct attributes."""
+        return self.__dict__.get(key, default)
+
     def get_default_attr( self, key, default = None, msg_if_none = None ):
         """Behaves like dict.get() if msg_if_none is None."""
         return get_default_attr( self, key, default, msg_if_none )
@@ -490,7 +494,7 @@ def iter_dict_of_lists(dol, return_keys=False):
 # 26.05.2006
 # 17.10.2007
 def dict_to_struct( *args, **kwargs ):
-
+    """Convert a dict instance to a Struct instance."""
     try:
         level = kwargs['level']
     except:
@@ -499,8 +503,7 @@ def dict_to_struct( *args, **kwargs ):
     try:
         flag = kwargs['flag']
     except:
-        print 'mask undefined!'
-        raise
+        flag = (1,)
 
     # For level 0 only...
     try:
