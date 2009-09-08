@@ -128,16 +128,7 @@ class ProblemDefinition( Struct ):
     # c: 23.04.2007, r: 09.07.2008
     def set_fields( self, conf_fields = None ):
         conf_fields = get_default( conf_fields, self.conf.fields )
-        fields = Fields.from_conf( conf_fields )
-        fields.read_interpolants( self.eldesc_dir )
-        fields.setup_approximations( self.domain )
-##         print fields
-##         print fields[0].aps
-##         pause()
-        fields.setup_global_base()
-        fields.setup_coors()
-        self.fields = fields
-
+        self.fields = Fields.from_conf(conf_fields, self.domain.regions)
 ##         self.save_field_meshes( '.' )
 ##         pause()
 

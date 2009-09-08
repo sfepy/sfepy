@@ -131,7 +131,7 @@ class Test( TestCommon ):
             vecs = {}
             for var_name in d_vars:
                 var = pb.variables[var_name]
-                n_dof = var.field.n_nod * var.field.dim[0]
+                n_dof = var.field.n_nod * var.field.shape[0]
                 vecs[var_name] = nm.arange( n_dof, dtype = nm.float64 )
                 var.data_from_data( vecs[var_name] )
 

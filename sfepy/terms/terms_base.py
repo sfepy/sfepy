@@ -82,7 +82,7 @@ class VectorVector( InstantaneousBase ):
         else:
             self.data_shape = apr.get_v_data_shape( self.integral_name )
 
-        assert_( apr.dim == (self.data_shape[2], 1) )
+        assert_( apr.dim == (self.data_shape[2],) )
 
     def get_shape( self, diff_var, chunk_size ):
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -107,7 +107,7 @@ class ScalarScalar( InstantaneousBase ):
         else:
             self.data_shape = apr.get_v_data_shape( self.integral_name )
 
-        assert_( apr.dim == (1, 1) )
+        assert_( apr.dim == (1,) )
 
     def get_shape( self, diff_var, chunk_size ):
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -162,11 +162,11 @@ class CouplingVectorScalar( InstantaneousBase ):
             self.data_shape_c = apc.get_v_data_shape( self.integral_name )
 
         if self.mode == 'grad':
-            dim_c = (1, 1)
-            dim_r = (self.data_shape_r[2], 1)
+            dim_c = (1,)
+            dim_r = (self.data_shape_r[2],)
         else: # 'div', 'eval'
-            dim_c = (self.data_shape_r[2], 1)
-            dim_r = (1, 1)
+            dim_c = (self.data_shape_r[2],)
+            dim_r = (1,)
         assert_( apc.dim == dim_c )
         assert_( apr.dim == dim_r )
 

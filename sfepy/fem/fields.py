@@ -12,11 +12,11 @@ class Fields( Container ):
 
     ##
     # 14.07.2006, c
-    def from_conf( conf ):
+    def from_conf(conf, regions):
 
         objs = OneTypeList( Field )
         for key, val in conf.iteritems():
-            objs.append( Field.from_conf( val ) )
+            objs.append(Field.from_conf(val, regions))
 
         obj = Fields( objs )
 
@@ -75,40 +75,110 @@ class Fields( Container ):
 ##
 # 14.07.2006, c
 class Field( Struct ):
+    all_interps = {}
 
-    def from_conf( conf ):
-
-        obj = Field( name = conf.name,
-                     dim = conf.dim,
-                     flags = set( getattr( conf, 'flags', () ) ),
-                     dtype = getattr( conf, 'dtype', nm.float64 ),
-                     region_name = conf.domain,
-                     bases = conf.bases )
+    def from_conf(conf, regions):
+        """To refactor... very hackish now."""
+        approx_order = conf.bases.values()[0][5:]
+        obj = Field(name = conf.name,
+                    dtype = getattr( conf, 'dtype', nm.float64 ),
+                    shape = conf.dim[:1],
+                    region = regions[conf.domain],
+                    approx_order = approx_order,
+                    bases = conf.bases)
         return obj
     from_conf = staticmethod( from_conf )
 
+    def __init__(self, name, dtype, shape, region, approx_order,
+                 bases=None, component_dir=None):
+        """Create a Field.
+
+        Parameters
+        ----------
+        name : str
+            Object name.
+        dtype : numpy.dtype
+            Field data type: float64 or complex128.
+        shape : int/str
+            Field shape: (1,) or 'scalar', (dim,) or 'vector'. Stored
+            as a tuple.
+        region : Region
+            A region where the field is defined.
+        approx_order : int/str
+            FE approxiamtion order, e.g. 0, 1, 2, '1B' (1 with bubble).
+        bases : dict
+            To remove....
+        component_dir : str
+            A directory with element definitions, the default is 'sfepy/eldesc'.
+        """
+        if isinstance(shape, str):
+            try:
+                shape = {'scalar' : 1,
+                         'vector' : region.domain.shape.dim}[shape]
+            except KeyError:
+                raise ValueError('unsupported field shape! (%s)', shape)
+
+        Struct.__init__(self,
+                        name = name,
+                        dtype = dtype,
+                        shape = shape,
+                        region = region,
+                        approx_order = '%s' % approx_order)
+        self.domain = self.region.domain
+        if bases is None:
+            self.setup_bases()
+        else:
+            self.bases = bases
+        self.create_interpolants(component_dir)
+        self.setup_approximations()
+##         print self.aps
+##         pause()
+        self.setup_global_base()
+        self.setup_coors()
+
+    def setup_bases(self):
+        """Setup FE bases according to self.approx_order and region cell
+        types. Assumes one cell type for the whole region!"""
+        dim = self.domain.shape.dim
+        group = self.domain.groups[self.region.igs[0]]
+        n_ep = group.shape.n_ep
+
+        if n_ep == (dim + 1): # simplex
+            kind = 'P'
+        else: # tensor product
+            kind = 'Q'
+
+        self.bases = {self.region.name :
+                      '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)}
+
     ##
     # 18.07.2006, c
-    def create_interpolants( self, interps, read ):
-        """One interpolant for each base, shared if same."""
+    def create_interpolants(self, component_dir=None):
+        """One interpolant for each base, shared if same.
+
+        Parameters
+        ----------
+        component_dir : str
+            A directory with element definitions, the default is 'sfepy/eldesc'.
+        """
+        read = Reader(get_default(component_dir, 'sfepy/eldesc'))
+
         self.interps = {}
         for region_name, base_name in self.bases.iteritems():
 
-            if interps.has_key( base_name ):
-                interp = interps[base_name]
+            if self.all_interps.has_key( base_name ):
+                interp = self.all_interps[base_name]
             else:
                 interp = read( fea.Interpolant, base_name )
-                interps[base_name] = interp
+                self.all_interps[base_name] = interp
 
             self.interps[base_name] = interp
             
     ##
     # 18.07.2006, c
     # 05.09.2006
-    def setup_approximations( self, domain ):
-        self.aps = fea.Approximations( self.bases, self.interps, domain )
-        self.domain = domain
-        self.region = domain.regions[self.region_name]
+    def setup_approximations(self):
+        self.aps = fea.Approximations(self.bases, self.interps, self.domain)
 
     ##
     #

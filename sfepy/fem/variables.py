@@ -198,7 +198,7 @@ def create_lcbc_no_penetration( normals ):
 def compute_nodal_normals( nodes, region, field ):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
-    dim = field.dim[0]
+    dim = field.shape[0]
 
     fa = region.domain.get_neighbour_lists( True )[2]
     region.setup_face_indices( fa )
@@ -1358,7 +1358,7 @@ class Variable( Struct ):
         """Takes reference to a Field instance. Sets dtype according to
         field.dtype."""
         self.field = field
-        self.dpn = nm.product( field.dim )
+        self.dpn = nm.product( field.shape )
         self.n_nod = field.n_nod
 
         if self.dof_name is None:
@@ -1478,7 +1478,7 @@ class Variable( Struct ):
                 op_lc = op_lc[indx]
 
             elif kind == 'no_penetration':
-                dim = self.field.dim[0]
+                dim = self.field.shape[0]
                 assert_( len( dofs ) == dim )
 
                 normals = compute_nodal_normals( nmaster, region, self.field )
@@ -1808,7 +1808,7 @@ class Variable( Struct ):
             iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
                                               combine_groups=True)
         field = self.field
-        vdim = field.dim[0]
+        vdim = field.shape[0]
 
         vals = nm.empty((vdim, len(points)), dtype=self.dtype)
         coor = mesh.coors

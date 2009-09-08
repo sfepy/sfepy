@@ -16,7 +16,7 @@ class LinearVolumeForceTerm( Term ):
         mat, virtual = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
-        vdim = virtual.field.dim[0]
+        vdim = virtual.field.shape[0]
         
         if diff_var is None:
             shape = (chunk_size, 1, vdim * n_ep, 1)

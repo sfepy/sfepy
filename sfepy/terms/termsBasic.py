@@ -16,7 +16,7 @@ class IntegrateVolumeTerm( Term ):
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        field_dim = par.field.dim[0]
+        field_dim = par.field.shape[0]
         shape = (chunk_size, 1, field_dim, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
@@ -44,7 +44,7 @@ class IntegrateVolumeOperatorTerm( Term ):
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
-        field_dim = virtual.field.dim[0]
+        field_dim = virtual.field.shape[0]
         assert_( field_dim == 1 )
         
         if diff_var is None:

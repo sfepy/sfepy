@@ -304,7 +304,7 @@ class Domain( Struct ):
         component_dir : str
             A directory with element definitions, the default is 'sfepy/eldesc'.
         """
-        read = Reader(get_default(component_dir,'sfepy/eldesc'))
+        read = Reader(get_default(component_dir, 'sfepy/eldesc'))
 
         geom_els = OneTypeList( GeomElement )
         for desc in mesh.descs:

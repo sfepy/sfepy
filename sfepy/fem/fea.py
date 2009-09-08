@@ -971,7 +971,7 @@ class Approximations( Container ):
 
             # Store integral for possible future base function request.
             ap.integrals[integral.name] = integral
-            ap.dim = field.dim
+            ap.dim = field.shape
 
             ##
             # Prepare common bases.
