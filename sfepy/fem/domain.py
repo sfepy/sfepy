@@ -1,7 +1,9 @@
 from sfepy.base.base import *
 from sfepy.base.reader import Reader
 from geomElement import GeomElement
-from region import Region, get_dependency_graph, sort_by_dependency
+from region import Region, get_dependency_graph, sort_by_dependency, get_parents
+from sfepy.fem.parseReg \
+     import create_bnf, visit_stack, print_stack, ParseException
 import fea
 import extmods.meshutils as mu
 
@@ -146,6 +148,142 @@ def dm_mark_surface_faces( fa, nfa ):
             else:
                 flag[data[ptr]] = 2
     return flag
+
+##
+# 14.06.2006, c
+# 15.06.2006
+# 19.02.2007
+# 02.03.2007
+# 02.05.2007
+# 30.05.2007
+# 05.06.2007
+def region_leaf(domain, regions, rdef, functions):
+    """
+    Create/setup a region instance according to rdef.
+    """
+    def _region_leaf( level, op ):
+
+        token, details = op['token'], op['orig']
+
+        if token != 'KW_Region':
+            parse_def = token + '<' + ' '.join( details ) + '>'
+            region = Region('leaf', rdef, domain, parse_def=parse_def)
+
+        if token == 'KW_Region':
+            details = details[1][2:]
+            aux = regions.find( details )
+            if not aux:
+                raise ValueError, 'region %s does not exist' % details
+            else:
+                if rdef[:4] == 'copy':
+                    region = aux.copy()
+                else:
+                    region = aux
+
+        elif token == 'KW_All':
+            region.set_vertices( nm.arange( domain.mesh.n_nod,
+                                            dtype = nm.int32 ) )
+        elif token == 'E_NIR':
+            where = details[2]
+
+            if where[0] == '[':
+                out = nm.array( eval( where ), dtype = nm.int32 )
+                assert_( nm.amin( out ) >= 0 )
+                assert_( nm.amax( out ) < domain.mesh.n_nod )
+            else:
+                coors = domain.get_mesh_coors()
+                x = coors[:,0]
+                y = coors[:,1]
+                if domain.mesh.dim == 3:
+                    z = coors[:,2]
+                else:
+                    z = None
+                coor_dict = {'x' : x, 'y' : y, 'z': z}
+
+                out = nm.where( eval( where, {}, coor_dict ) )[0]
+            region.set_vertices( out )
+
+        elif token == 'E_NOS':
+
+            if domain.fa: # 3D.
+                fa, nfa = domain.fa, domain.nfa
+            else:
+                fa, nfa = domain.ed, domain.ned
+
+            flag = dm_mark_surface_faces( fa, nfa )
+            ii = nm.where( flag > 0 )[0]
+            aux = nm.unique1d( fa.data[ii,3:].ravel() )
+            if aux[0] == -1: # Triangular faces have -1 as 4. point.
+                aux = aux[1:]
+            region.can_cells = False
+            region.set_vertices( aux )
+
+        elif token == 'E_NBF':
+            where = details[2]
+
+            coors = domain.get_mesh_coors()
+
+            fun = functions[where]
+            out = fun(coors, domain=domain)
+
+            region.set_vertices( out )
+
+        elif token == 'E_EBF':
+            where = details[2]
+
+            coors = domain.get_mesh_coors()
+
+            fun = functions[where]
+            out = fun(coors, domain=domain)
+
+            region.set_cells( out )
+
+        elif token == 'E_EOG':
+
+            group = int( details[3] )
+
+            ig = domain.mat_ids_to_i_gs[group]
+            group = domain.groups[ig]
+            region.set_from_group( ig, group.vertices, group.shape.n_el )
+
+        elif token == 'E_NOG':
+
+            group = int( details[3] )
+
+            group_nodes = nm.where( domain.mesh.ngroups == group )[0]
+            region.set_vertices( group_nodes )
+
+        elif token == 'E_ONIR':
+            aux = regions[details[3][2:]]
+            region.set_vertices( aux.all_vertices[0:1] )
+
+        elif token == 'E_NI':
+            region.set_vertices( nm.array( [int( details[1] )],
+                                          dtype = nm.int32 ) )
+
+        else:
+            output( 'token "%s" unkown - check regions!' % token )
+            raise NotImplementedError
+        return region
+
+    return _region_leaf
+
+def region_op(level, op, item1, item2):
+    token = op['token']
+    if token == 'OA_SubN':
+        return item1.sub_n( item2 )
+    elif token == 'OA_SubE':
+        return item1.sub_e( item2 )
+    elif token == 'OA_AddN':
+        return item1.add_n( item2 )
+    elif token == 'OA_AddE':
+        return item1.add_e( item2 )
+    elif token == 'OA_IntersectN':
+        return item1.intersect_n( item2 )
+    elif token == 'OA_IntersectE':
+        return item1.intersect_e( item2 )
+    else:
+        raise NotImplementedError, token
 
 ##
 # 17.07.2006, c
@@ -413,164 +551,67 @@ class Domain( Struct ):
     def reset_regions(self):
         """Reset the list of regions associated with the domain."""
         self.regions = OneTypeList(Region)
+        self._region_stack = []
+        self._bnf = create_bnf(self._region_stack)
 
+    def create_region(self, name, select, flags=None, check_parents=True,
+                      functions=None):
+        """Region factory constructor. Append the new region to
+        self.regions list."""
+        if flags is None:
+            flags = {}
+
+        if check_parents:
+            parents = get_parents(select)
+            for p in parents:
+                if p not in self.regions:
+                    msg = 'parent region %s of %s not found!'
+                    raise ValueError(msg)
+
+        stack = self._region_stack
+        try:
+            out = self._bnf.parseString(select)
+        except ParseException:
+            print 'parsing failed:', select
+            raise
+
+        region = visit_stack(stack, region_op,
+                             region_leaf(self, self.regions, select,
+                                         functions))
+        region.name = name
+
+        forbid = flags.get('forbid', None)
+        if forbid:
+            fb = re.compile('^group +\d+(\s+\d+)*$').match(forbid)
+            if fb:
+                groups = forbid[5:].strip().split()
+                forbid = [int( ii ) for ii in groups]
+            else:
+                raise SyntaxError, 'bad forbid: %s' % rdef.forbid
+            forbidden_igs = [self.mat_ids_to_i_gs[mat_id] for mat_id in forbid]
+            region.delete_groups(forbidden_igs)
+
+        region.switch_cells(flags.get('can_cells', True))
+            
+        region.complete_description(self.ed, self.fa)
+
+        self.regions.append(region)
+
+        return region
+            
     def create_regions(self, region_defs, functions=None):
-        from sfepy.fem.parseReg import create_bnf, visit_stack, print_stack,\
-             ParseException
-
         output( 'creating regions...' )
         tt = time.clock()
-        regions = OneTypeList( Region )
 
-        ##
-        # 14.06.2006, c
-        # 15.06.2006
-        # 19.02.2007
-        # 02.03.2007
-        # 02.05.2007
-        # 30.05.2007
-        # 05.06.2007
-        def region_leaf(domain, rdef, functions):
-            def _region_leaf( level, op ):
-
-                token, details = op['token'], op['orig']
-                if token != 'KW_Region':
-                    parse_def = token + '<' + ' '.join( details ) + '>'
-##                     conns = [group.conn for group in domain.groups.itervalues()]
-##                     vertex_groups = [group.vertices
-##                                     for group in domain.groups.itervalues()]
-                    region = Region( 'leaf', rdef, domain, parse_def )
-
-                if token == 'KW_Region':
-                    details = details[1][2:]
-                    aux = regions.find( details )
-                    if not aux:
-                        raise ValueError, 'region %s does not exist' % details
-                    else:
-                        if rdef[:4] == 'copy':
-                            region = aux.copy()
-                        else:
-                            region = aux
-
-                elif token == 'KW_All':
-                    region.set_vertices( nm.arange( domain.mesh.n_nod,
-                                                    dtype = nm.int32 ) )
-                elif token == 'E_NIR':
-                    where = details[2]
-                    
-                    if where[0] == '[':
-                        out = nm.array( eval( where ), dtype = nm.int32 )
-                        assert_( nm.amin( out ) >= 0 )
-                        assert_( nm.amax( out ) < domain.mesh.n_nod )
-                    else:
-                        coors = domain.get_mesh_coors()
-                        x = coors[:,0]
-                        y = coors[:,1]
-                        if domain.mesh.dim == 3:
-                            z = coors[:,2]
-                        else:
-                            z = None
-                        coor_dict = {'x' : x, 'y' : y, 'z': z}
-                        
-                        out = nm.where( eval( where, {}, coor_dict ) )[0]
-                    region.set_vertices( out )
-                    
-                elif token == 'E_NOS':
-
-                    if domain.fa: # 3D.
-                        fa, nfa = domain.fa, domain.nfa
-                    else:
-                        fa, nfa = domain.ed, domain.ned
-                        
-                    flag = dm_mark_surface_faces( fa, nfa )
-                    ii = nm.where( flag > 0 )[0]
-                    aux = nm.unique1d( fa.data[ii,3:].ravel() )
-                    if aux[0] == -1: # Triangular faces have -1 as 4. point.
-                        aux = aux[1:]
-                    region.can_cells = False
-                    region.set_vertices( aux )
-
-                elif token == 'E_NBF':
-                    where = details[2]
-
-                    coors = domain.get_mesh_coors()
-                        
-                    fun = functions[where]
-                    out = fun(coors, domain=domain)
-
-                    region.set_vertices( out )
-
-                elif token == 'E_EBF':
-                    where = details[2]
-                    
-                    coors = domain.get_mesh_coors()
-
-                    fun = functions[where]
-                    out = fun(coors, domain=domain)
-
-                    region.set_cells( out )
-
-                elif token == 'E_EOG':
-
-                    group = int( details[3] )
-
-                    ig = domain.mat_ids_to_i_gs[group]
-                    group = domain.groups[ig]
-                    region.set_from_group( ig, group.vertices, group.shape.n_el )
-
-                elif token == 'E_NOG':
-
-                    group = int( details[3] )
-
-                    group_nodes = nm.where( domain.mesh.ngroups == group )[0]
-                    region.set_vertices( group_nodes )
-
-                elif token == 'E_ONIR':
-                    aux = regions[details[3][2:]]
-                    region.set_vertices( aux.all_vertices[0:1] )
-
-                elif token == 'E_NI':
-                    region.set_vertices( nm.array( [int( details[1] )],
-                                                  dtype = nm.int32 ) )
-
-                else:
-                    output( 'token "%s" unkown - check regions!' % token )
-                    raise NotImplementedError
-                return region
-            
-            return _region_leaf
-
-        ##
-        # 14.06.2006, c
-        # 15.06.2006
-        def region_op( domain, rdef, functions ):
-            def _region_op( level, op, item1, item2 ):
-
-                token = op['token']
-                if token == 'OA_SubN':
-                    return item1.sub_n( item2 )
-                elif token == 'OA_SubE':
-                    return item1.sub_e( item2 )
-                elif token == 'OA_AddN':
-                    return item1.add_n( item2 )
-                elif token == 'OA_AddE':
-                    return item1.add_e( item2 )
-                elif token == 'OA_IntersectN':
-                    return item1.intersect_n( item2 )
-                elif token == 'OA_IntersectE':
-                    return item1.intersect_e( item2 )
-                else:
-                    raise NotImplementedError, token
-            return _region_op
-
-        stack = []
-        bnf = create_bnf( stack )
+        self.reset_regions()
+        stack = self._region_stack
+        bnf = self._bnf
 
         ##
         # Sort region definitions by dependencies.
         graph, name_to_sort_name = get_dependency_graph(region_defs)
         sorted_regions = sort_by_dependency(graph)
-#        print sorted_regions
+##         print sorted_regions
         
         ##
         # Define regions.
@@ -578,48 +619,15 @@ class Domain( Struct ):
             sort_name = name_to_sort_name[name]
             rdef = region_defs[sort_name]
 
-            stack[:] = []
-            try:
-                out = bnf.parseString( rdef.select )
-            except ParseException:
-                print 'parsing failed:', rdef
-                raise
+            region = self.create_region(name, rdef.select,
+                                        flags=rdef,
+                                        check_parents=False,
+                                        functions=functions)
+            output(' ', region.name)
 
-#            print_stack( copy( stack ) )
-
-            region = visit_stack(stack,
-                                 region_op(self, rdef.select, functions),
-                                 region_leaf(self, rdef.select, functions))
-            if hasattr( rdef, 'forbid' ):
-                fb = re.compile( '^group +\d+(\s+\d+)*$' ).match( rdef.forbid )
-                if fb:
-                    groups = rdef.forbid[5:].strip().split()
-                    forbid = [int( ii ) for ii in groups]
-                else:
-                    raise SyntaxError, 'bad forbid: %s' % rdef.forbid
-                forbidden_igs = [self.mat_ids_to_i_gs[mat_id] for mat_id in forbid]
-##                 print forbidden_igs
-##                 pause()
-                region.delete_groups( forbidden_igs )
-            if hasattr( rdef, 'can_cells' ):
-                region.switch_cells( rdef.can_cells )
-            region.complete_description( self.ed, self.fa )
-
-            region.type_name = region.name
-            region.name = rdef.name
-            region.sort_name = sort_name
-            
-            output( ' ', region.type_name, region.name, region.sort_name )
-#            print region.definition
-#            print region.parse_def
-            regions.append( region )
-
-        # Sort by definition name.
-        regions.sort( cmp = lambda i1, i2: cmp( i1.sort_name, i2.sort_name ) )
-        self.regions = regions
         output( '...done in %.2f s' % (time.clock() - tt) )
 
-        return regions
+        return self.regions
 
     ##
     # 26.07.2007, c
