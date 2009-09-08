@@ -4,6 +4,7 @@ def configuration(parent_package='', top_path=None):
     import distutils.sysconfig as sysc
     from numpy.distutils.misc_util import Configuration
     import os.path as op
+    import glob
 
     import sys;
     if 'script' not in sys.path:
@@ -22,10 +23,13 @@ def configuration(parent_package='', top_path=None):
 
     fem_src = ['common_python.c', 'fmfield.c', 'geommech.c']
     fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
-    src = ['formSDCC.c', 'terms.c', 'termsBasic.c', 'termsElectric.c',
-           'termsMass.c', 'termsNavierStokes.c', 'termsBiot.c', 'termsLaplace.c',
-           'termsLinElasticity.c', 'termsHyperElasticity.c', 'termsPiezo.c',
-           'termsSurface.c', 'termsVolume.c', 'terms.i']
+
+    src = [op.split(ii)[1] for ii in glob.glob('sfepy/terms/extmods/*.c')]
+    src += ['terms.i']
+    try:
+        src.remove('terms_wrap.c')
+    except ValueError:
+        pass
 
     depends=['array.i', 'common.i', 'fmfield.i']
     depends = [op.join('../../fem/extmods', ii) for ii in depends]
