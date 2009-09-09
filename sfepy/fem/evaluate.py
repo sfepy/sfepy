@@ -246,7 +246,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
                caches = None, ret_caches = False,
                override = True, new_geometries = True,
                dw_mode = 'vector', tangent_matrix = None,
-               update_materials = False, **kwargs ):
+               update_materials = True, **kwargs ):
     """Evaluate a term. May not succeed!"""
     if term_prefixes is None:
         term_prefixes = {}
@@ -283,8 +283,9 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
     variables.set_data( state )
 
     if update_materials:
+        materials = materials.semideep_copy()
         materials.time_update(ts, domain,
-                              [equation], variables)
+                              [equation], variables, verbose=False)
 
     if itype == 'dw':
         if not variables.has_eq_map:

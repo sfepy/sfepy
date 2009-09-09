@@ -39,19 +39,30 @@ class Materials( Container ):
         return obj
     from_conf = staticmethod( from_conf )
 
+    def semideep_copy(self):
+        """Copy materials, while external data (e.g. region) remain shared."""
+        others = copy(self)
+        others.update(OneTypeList(Material))
+        for mat in self:
+            other = mat.copy(name=mat.name)
+            other._reset()
+            others.append(other)
+        return others
+
     ##
     # 22.08.2006, c
     def setup_regions( self, regions ):
         for mat in self:
             mat.setup_regions( regions )
 
-    def time_update(self, ts, domain, equations, variables):
-        output( 'updating materials...' )
+    def time_update(self, ts, domain, equations, variables, verbose=True):
+        """Update material parameters for given time, domain, and equations."""
+        if verbose: output('updating materials...')
         tt = time.clock()
         for mat in self:
-            output( ' ', mat.name )
+            if verbose: output(' ', mat.name)
             mat.time_update(ts, domain, equations, variables)
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
 # 21.07.2006, c
