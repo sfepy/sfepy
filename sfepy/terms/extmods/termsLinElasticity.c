@@ -329,7 +329,7 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( mtxD, iel );
+      FMF_SetCell( mtxD, ii );
       FMF_SetCell( vg->bfGM, iel );
       FMF_SetCell( vg->det, iel );
 

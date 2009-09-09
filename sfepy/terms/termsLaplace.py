@@ -102,7 +102,6 @@ class PermeabilityRTerm( Term ):
     name = 'dw_permeability_r'
     arg_types = ('material', 'virtual', 'index')
     geometry = [(Volume, 'virtual')]
-    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_permeability_r )
@@ -117,6 +116,7 @@ class PermeabilityRTerm( Term ):
         else:
             raise StopIteration
 
+        mat = nm.ascontiguousarray(mat[...,index:index+1])
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, mat, vg, ap.econn, chunk )
             yield out, chunk, status
@@ -129,7 +129,6 @@ class DiffusionVelocityTerm( Term ):
     name = 'de_diffusion_velocity'
     arg_types = ('material','parameter')
     geometry = [(Volume, 'parameter')]
-    use_caches = {'mat_in_qp' : [['material']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
