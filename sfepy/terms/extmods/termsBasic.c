@@ -155,7 +155,7 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
   - 04.08.2006, c
   - 01.12.2006
 */
-int32 dw_volume_wdot_scalar( FMField *out, FMField *coef, FMField *state_qp,
+int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,
 			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff )
@@ -178,23 +178,27 @@ int32 dw_volume_wdot_scalar( FMField *out, FMField *coef, FMField *state_qp,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( coef, ii );
+    FMF_SetCell( mtxD, ii );
     FMF_SetCell( vg->det, iel );
 
     if (isDiff) {
       fmf_mulATB_nn( ftd, bf, mtxD );
       fmf_mulAB_nn( ftdf, ftd, bf );
-      fmf_mul( ftdf, coef->val );
       fmf_sumLevelsMulF( out, ftdf, vg->det->val );
     } else {
       FMF_SetCell( state_qp, iel );
       fmf_mulAB_nn( dfp, mtxD, state_qp );
       fmf_mulATB_nn( ftdfp, bf, dfp );
-      fmf_mul( ftdfp, coef->val );
       fmf_sumLevelsMulF( out, ftdfp, vg->det->val );
     }
     ERR_CheckGo( ret );
   }
+
+  // E.g. 1/dt.
+  if (isDiff == 2) {
+    coef = -coef;
+  }
+  fmfc_mulC( out, coef );
 
  end_label:
   if (isDiff) {
