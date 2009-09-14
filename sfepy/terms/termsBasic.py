@@ -477,12 +477,13 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        n_qp = self.data_shape[1]
+        n_el, n_qp = self.data_shape[:2]
         bf = ap.get_base( 'v', 0, self.integral_name )
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat = mats[0]
+            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
             return (ts.dt, aux, bf, mat, vg), shape, mode
 
         else:
@@ -491,6 +492,7 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
                 for ii, mat in enumerate( mats ):
                     vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
+                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, vec_qp, bf, mat, vg)
             return iter_kernel, shape, mode
 

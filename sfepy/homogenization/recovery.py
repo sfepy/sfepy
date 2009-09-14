@@ -195,8 +195,6 @@ def recover_bones( problem, micro_problem, region, eps0,
 
     to_output = micro_problem.variables.state_to_output
 
-    micro_problem.update_materials()
-
     join = os.path.join
     aux = max(problem.domain.shape.n_gr, 2)
     format = get_print_info( aux, fill = '0' )[1] \

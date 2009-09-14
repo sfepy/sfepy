@@ -123,11 +123,12 @@ class BiotGradTH( CouplingVectorScalarTH ):
             raise StopIteration
 
         bf = apc.get_base( 'v', 0, self.integral_name )
-        n_qp = self.data_shape_r[1]
+        n_el, n_qp = self.data_shape_r[:2]
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat = mats[0]
+            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
             return (ts.dt, aux, bf, mat, vgr), shape, mode
 
         else:
@@ -136,6 +137,7 @@ class BiotGradTH( CouplingVectorScalarTH ):
                 for ii, mat in enumerate( mats ):
                     vec_qp = cache( 'state', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
+                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, vec_qp, bf, mat, vgr)
             return iter_kernel, shape, mode
 
@@ -155,11 +157,12 @@ class BiotDivTH( CouplingVectorScalarTH ):
             raise StopIteration
 
         bf = apr.get_base( 'v', 0, self.integral_name )
-        n_qp = self.data_shape_r[1]
+        n_el, n_qp = self.data_shape_r[:2]
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat = mats[0]
+            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
             return (ts.dt, aux, bf, mat, vgc), shape, mode
 
         else:
@@ -168,6 +171,7 @@ class BiotDivTH( CouplingVectorScalarTH ):
                 for ii, mat in enumerate( mats ):
                     strain = cache( 'strain', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
+                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, strain, bf, mat, vgc)
             return iter_kernel, shape, mode
 

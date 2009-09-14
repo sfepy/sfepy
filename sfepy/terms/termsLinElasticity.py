@@ -130,11 +130,12 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        n_qp = self.data_shape[1]
+        n_el, n_qp = self.data_shape[:2]
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
             mat = mats[0]
+            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
             return (ts.dt, aux, mat, vg), shape, mode
 
         else:
@@ -143,6 +144,7 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
                 for ii, mat in enumerate( mats ):
                     strain = cache( 'strain', self.get_current_group(), ii,
                                     state = state, get_vector = self.get_vector )
+                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, strain, mat, vg)
             return iter_kernel, shape, mode
 
