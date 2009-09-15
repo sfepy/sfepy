@@ -45,7 +45,7 @@ class Materials( Container ):
         others.update(OneTypeList(Material))
         for mat in self:
             other = mat.copy(name=mat.name)
-            other._reset()
+            other.reset()
             others.append(other)
         return others
 
@@ -54,6 +54,12 @@ class Materials( Container ):
     def setup_regions( self, regions ):
         for mat in self:
             mat.setup_regions( regions )
+
+    def reset(self):
+        """Clear material data so that next materials.time_update() is
+        performed even for stationary materials."""
+        for mat in self:
+            mat.reset()
 
     def time_update(self, ts, domain, equations, variables, verbose=True):
         """Update material parameters for given time, domain, and equations."""
@@ -89,7 +95,7 @@ class Material( Struct ):
                         function = function,
                         flags = flags,
                         region = None)
-        self._reset()
+        self.reset()
     ##
     # 22.08.2006, c
     def setup_regions( self, regions ):
@@ -163,9 +169,10 @@ class Material( Struct ):
 
     def set_function(self, function):
         self.function = function
-        self._reset()
+        self.reset()
 
-    def _reset(self):
+    def reset(self):
+        """Clear all data created by a call to time_update()."""
         self.datas = None
         self.special_names = set()
         self.constant_names = set()

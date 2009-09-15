@@ -18,6 +18,8 @@ class MiniAppBase( Struct ):
 
     def __init__( self, name, problem, kwargs ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
+
+        self.problem.reset_materials()
         self.set_default_attr( 'requires', [] )
         self.set_default_attr( 'is_linear', False )
 
@@ -544,7 +546,9 @@ class CoefSymSym( MiniAppBase ):
                     problem.variables[name].data_from_data( val )
 
                 val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval' )
+                                    problem, call_mode = 'd_eval',
+                                    copy_materials = False,
+                                    update_materials = ((ir * ic) == 0))
 
                 coef[ir,ic] = val
 
@@ -581,7 +585,10 @@ class CoefFMSymSym( MiniAppBase ):
                         problem.variables[name].data_from_data( val )
 
                     val = eval_term_op( None, self.expression,
-                                        problem, call_mode = 'd_eval' )
+                                        problem, call_mode = 'd_eval',
+                                        copy_materials = False,
+                                        update_materials = ((ir * step *
+                                                             ic) == 0) )
 
                     coef[step,ir,ic] = val
 
@@ -609,7 +616,9 @@ class CoefDimSym( MiniAppBase ):
                     problem.variables[name].data_from_data( val )
 
                 val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval' )
+                                    problem, call_mode = 'd_eval',
+                                    copy_materials = False,
+                                    update_materials = ((ir * ic) == 0) )
 
                 coef[ir,ic] = val
 
@@ -641,7 +650,9 @@ class CoefNN( MiniAppBase ):
                     problem.variables[name].data_from_data( val )
 
                 val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval' )
+                                    problem, call_mode = 'd_eval',
+                                    copy_materials = False,
+                                    update_materials = ((ir * ic) == 0) )
 
                 coef[ir,ic] = val
 
@@ -667,7 +678,9 @@ class CoefN( MiniAppBase ):
                 problem.variables[name].data_from_data( val )
 
             val = eval_term_op( None, self.expression,
-                                problem, call_mode = 'd_eval' )
+                                problem, call_mode = 'd_eval',
+                                copy_materials = False,
+                                update_materials = ((ir) == 0) )
             coef[ir] = val
 
         coef /= volume
@@ -704,7 +717,9 @@ class CoefSym( MiniAppBase ):
                 problem.variables[name].data_from_data( val )
 
             val = eval_term_op( None, expression,
-                                problem, call_mode = 'd_eval' )
+                                problem, call_mode = 'd_eval',
+                                copy_materials = False,
+                                update_materials = ((ii) == 0) )
             coef[ii] += val
 
         coef /= volume
@@ -735,7 +750,9 @@ class CoefFMSym( MiniAppBase ):
                     problem.variables[name].data_from_data( val )
 
                 val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval' )
+                                    problem, call_mode = 'd_eval',
+                                    copy_materials = False,
+                                    update_materials = ((ii * step) == 0) )
                 coef[step,ii] = val
 
         coef /= volume
@@ -787,7 +804,9 @@ class CoefFMOne( MiniAppBase ):
                 problem.variables[name].data_from_data( val )
 
             val = eval_term_op( None, self.expression,
-                                problem, call_mode = 'd_eval' )
+                                problem, call_mode = 'd_eval',
+                                copy_materials = False,
+                                update_materials = ((step) == 0) )
             coef[step] = val
 
         coef /= volume

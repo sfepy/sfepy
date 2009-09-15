@@ -272,6 +272,11 @@ class ProblemDefinition( Struct ):
         ts.set_step( step )
         return ts
 
+    def reset_materials(self):
+        """Clear material data so that next materials.time_update() is
+        performed even for stationary materials."""
+        self.materials.reset()
+
     def update_materials(self, ts=None):
         if ts is None:
             ts = self.get_default_ts(step=0)
