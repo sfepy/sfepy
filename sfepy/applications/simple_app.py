@@ -30,6 +30,8 @@ class SimpleApp( Application ):
         # Called after all time steps, or in the stationary case.
         post_process_hook_final = get( 'post_process_hook_final', None )
 
+        use_equations = get('use_equations', 'equations')
+
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
@@ -67,6 +69,10 @@ class SimpleApp( Application ):
         if hook is not None:
             hook = getattr( funmod, hook )
         self.post_process_hook_final = hook
+
+        # Override default equations, if use_equations is set.
+        if hasattr(self.conf, 'equations'):
+            self.conf.equations = getattr(funmod, self.app_options.use_equations)
 
     def setup_output_info( self, problem, options ):
         """Modifies both problem and options!"""
