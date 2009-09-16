@@ -5,7 +5,7 @@ import glob
 
 import sfepy
 from sfepy.base.base import pause, output
-from sfepy.postprocess import Viewer
+from sfepy.postprocess import Viewer, get_data_ranges
 from sfepy.solvers.ts import get_print_info
 
 usage = """%prog [options] filename
@@ -46,6 +46,8 @@ Examples
 """
 
 help = {
+    'list_ranges' :
+    'do not plot, only list names and ranges of all data',
     'no_show' :
     'do not call mlab.show()',
     'is_3d' :
@@ -67,6 +69,8 @@ help = {
     'glyph clamping mode',
     'ranges' :
     'force data ranges [default: automatic from data]',
+    'is_scalar_bar' :
+    'show scalar bar for each data',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'filename' :
@@ -82,8 +86,6 @@ help = {
     ' depends on layout: for rowcol it is 800x600]',
     'all' :
     'draw all data (normally, node_groups and mat_id are omitted)',
-    'list_names' :
-    'do not plot, only list all dataset names',
     'only_names' :
     'draw only named data',
     'anti_aliasing' :
@@ -113,9 +115,8 @@ def view_single_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, offscreen=not options.show)
 
-        if options.list_names:
-            for line in view.get_data_names():
-                print line
+        if options.list_ranges:
+            get_data_ranges(filename)
 
         else:
             if options.only_names is not None:
@@ -126,6 +127,7 @@ def view_single_file(filename, filter_names, options, view=None):
                  scalar_mode=options.scalar_mode,
                  rel_scaling=options.rel_scaling,
                  clamping=options.clamping, ranges=options.ranges,
+                 is_scalar_bar=options.is_scalar_bar,
                  rel_text_width=options.rel_text_width,
                  fig_filename=options.filename, resolution=options.resolution,
                  filter_names=filter_names, only_names=options.only_names,
@@ -139,6 +141,9 @@ def view_single_file(filename, filter_names, options, view=None):
                 
 def main():
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
+    parser.add_option("-l", "--list-ranges",
+                      action="store_true", dest="list_ranges",
+                      default=False, help=help['list_ranges'])
     parser.add_option("-n", "--no-show",
                       action="store_false", dest="show",
                       default=True, help=help['no_show'])
@@ -167,6 +172,9 @@ def main():
                       metavar='name1,min1,max1:name2,min2,max2:...',
                       action="callback", dest="ranges",
                       callback=parse_ranges, help=help['ranges'])
+    parser.add_option("-b", "--scalar-bar",
+                      action="store_true", dest="is_scalar_bar",
+                      default=False, help=help['is_scalar_bar'])
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
@@ -186,9 +194,6 @@ def main():
     parser.add_option("--all",
                       action="store_true", dest="all",
                       default=False, help=help['all'])
-    parser.add_option("--list-names",
-                      action="store_true", dest="list_names",
-                      default=False, help=help['list_names'])
     parser.add_option("--only-names", metavar='list of names',
                       action="store", dest="only_names",
                       default=None, help=help['only_names'])

@@ -101,7 +101,7 @@ class Viewer(Struct):
     def get_data_names(self, source=None, detailed=False):
         if source is None:
             mlab.options.offscreen = self.offscreen
-            scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(0, 0))
+            scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(1, 1))
             source = mlab.pipeline.open(self.filename)
         point_scalar_names = sorted( source._point_scalars_list[:-1] )
         point_vector_names = sorted( source._point_vectors_list[:-1] )
@@ -145,7 +145,7 @@ class Viewer(Struct):
     def call_mlab(self, scene=None, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
                   rel_scaling=None, clamping=False,
-                  ranges=None, rel_text_width=None,
+                  ranges=None, is_scalar_bar=False, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, anti_aliasing=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
@@ -175,6 +175,8 @@ class Viewer(Struct):
             Clamping for vector datasets.
         ranges : dict
             List of data ranges in the form {name : (min, max), ...}.
+        is_scalar_bar : bool
+            If True, show a scalar bar for each data.
         rel_text_width : float
             Relative text width.
         fig_filename : str
@@ -335,14 +337,24 @@ class Viewer(Struct):
 
             if (ranges is not None) and (name in ranges):
                 mm = active.children[0]
-
                 if (kind == 'scalars') or (kind == 'tensors'):
-                    mm.scalar_lut_manager.use_default_range = False
-                    mm.scalar_lut_manager.data_range = ranges[name]
+                    lm = mm.scalar_lut_manager
 
                 else: # kind == 'vectors': 
-                    mm.vector_lut_manager.use_default_range = False
-                    mm.vector_lut_manager.data_range = ranges[name]
+                    lm = mm.vector_lut_manager
+                    
+                lm.use_default_range = False
+                lm.data_range = ranges[name]
+
+            if is_scalar_bar:
+                mm = active.children[0]
+                if (kind == 'scalars') or (kind == 'tensors'):
+                    lm = mm.scalar_lut_manager
+
+                else: # kind == 'vectors': 
+                    lm = mm.vector_lut_manager
+
+                lm.show_scalar_bar = True
 
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
