@@ -1,14 +1,11 @@
 from sfepy.base.base import *
 from sfepy.base.la import cycle
-
-try:
-    from enthought.mayavi import mlab
-except ImportError:
-    mlab = None
+from sfepy.postprocess.utils import mlab
+from sfepy.postprocess.sources import create_file_source
 
 def get_glyphs_scale_factor(rng, rel_scaling, bbox):
     delta = rng[1] - rng[0]
-    dx = nm.max((bbox[1::2] - bbox[:-1:2]))
+    dx = nm.max((bbox[1,:] - bbox[0,:]))
     if rel_scaling is None:
         rel_scaling = 0.02 # -> delta fits 50x into dx.
     return rel_scaling * dx / delta
@@ -231,9 +228,11 @@ class Viewer(Struct):
 
         float_eps = nm.finfo(nm.float64).eps
 
-        self.source = source = mlab.pipeline.open(self.filename)
-        bbox = nm.array(source.reader.unstructured_grid_output.bounds)
-        dx = 1.1 * (bbox[1::2] - bbox[:-1:2])
+        self.file_source = create_file_source(self.filename)
+        self.source = source = self.file_source()
+
+        bbox = self.file_source.get_bounding_box()
+        dx = 1.1 * (bbox[1,:] - bbox[0,:])
         view3d = abs(dx[2]) > (10.0 * float_eps)
 
         p_names, c_names = self.get_data_names(source, detailed=True)
@@ -251,7 +250,7 @@ class Viewer(Struct):
         n_data = len(names)
         n_row, n_col = get_position_counts(n_data, layout)
 
-        max_label_width = nm.max([len(ii[2]) for ii in names]) + 2
+        max_label_width = nm.max([len(ii[2]) for ii in names] + [5]) + 2
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
@@ -269,7 +268,6 @@ class Viewer(Struct):
 
             is_magnitude = False
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
-            position[:2] -= bbox[:2]
             
             output(family, kind, name, position)
             if kind == 'scalars':
@@ -366,6 +364,14 @@ class Viewer(Struct):
 
             scene.scene.reset_zoom()
 
+        if not names:
+            # No data, so just show the mesh.
+            surf = add_surf(source, (0.0, 0.0, 0.0))
+            surf.actor.property.color = (0.8, 0.8, 0.8)
+
+            surf = add_surf(source, (0.0, 0.0, 0.0))
+            surf.actor.property.representation = 'wireframe'
+            
         scene.scene.reset_zoom()
         scene.scene.camera.zoom(1.0)
 

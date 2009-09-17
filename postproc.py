@@ -5,7 +5,7 @@ import glob
 
 import sfepy
 from sfepy.base.base import pause, output
-from sfepy.postprocess import Viewer, get_data_ranges
+from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
 from sfepy.solvers.ts import get_print_info
 
 usage = """%prog [options] filename
@@ -116,7 +116,9 @@ def view_single_file(filename, filter_names, options, view=None):
         view = Viewer(filename, offscreen=not options.show)
 
         if options.list_ranges:
-            get_data_ranges(filename)
+            file_source = create_file_source(filename)
+            file_source.set_step(100)
+            get_data_ranges(file_source())
 
         else:
             if options.only_names is not None:
