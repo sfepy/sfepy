@@ -260,6 +260,8 @@ class Viewer(Struct):
         else:
             iterator = enumerate(cycle((n_row, n_col)))
 
+        scalar_bars = []
+
         for ii, (ir, ic) in iterator:
             if layout[:3] == 'col':
                 ir, ic = ic, ir
@@ -352,8 +354,8 @@ class Viewer(Struct):
                 else: # kind == 'vectors': 
                     lm = mm.vector_lut_manager
 
-                lm.show_scalar_bar = True
-
+                scalar_bars.append((family, name, lm))
+                
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
                 if is_magnitude:
@@ -383,6 +385,19 @@ class Viewer(Struct):
         else:
             mlab.view(*view)
         mlab.roll(roll)
+
+        if is_scalar_bar:
+            for ii, (family, name, lm) in enumerate(scalar_bars):
+                x0, y0 = 0.03, 1.0 - 0.01 - float(ii) / 15.0 - 0.07
+                x1, y1 = 0.4, 0.07
+                lm.scalar_bar_representation.position = [x0, y0]
+                lm.scalar_bar_representation.position2 = [x1, y1]
+                lm.number_of_labels = 5
+                lm.scalar_bar.orientation = 'horizontal'
+                lm.data_name = '%s: %s' % (family, name)
+                lm.scalar_bar.title_text_property.font_size = 20
+                lm.scalar_bar.label_text_property.font_size = 16
+                lm.show_scalar_bar = True
 
         scene.scene.disable_render = False
         if anti_aliasing is not None:
