@@ -1,7 +1,12 @@
 from sfepy.base.base import *
 from sfepy.base.la import cycle
 from sfepy.postprocess.utils import mlab
-from sfepy.postprocess.sources import create_file_source
+from sfepy.postprocess.sources import create_file_source, FileSource
+
+from enthought.traits.api \
+     import HasTraits, Instance, Range
+from enthought.traits.ui.api \
+     import View, Item
 
 def get_glyphs_scale_factor(rng, rel_scaling, bbox):
     delta = rng[1] - rng[0]
@@ -65,7 +70,7 @@ def get_position_counts(n_data, layout):
     else: # layout == 'rowcol':
         pass
     return n_row, n_col
-    
+
 class Viewer(Struct):
     """Class to automate visualization of various data using Mayavi. It can be
     used via postproc.py or isfepy the most easily.
@@ -121,7 +126,7 @@ class Viewer(Struct):
 
     def set_source_filename(self, filename):
         self.filename = filename
-        self.source.base_file_name = filename
+        self.file_source.set_filename(filename, self.scene.children[0])
 #        self.mlab.pipeline.update()
 
     def save_image(self, filename):
@@ -405,6 +410,31 @@ class Viewer(Struct):
 
         if self.auto_screenshot:
             self.save_image(fig_filename)
+
+        if nm.diff(self.file_source.get_step_range()) > 0:
+            set_step = SetStep()
+            set_step._viewer = self
+            set_step._source = self.file_source
+            set_step.edit_traits()
             
         if show:
             mlab.show()
+
+class SetStep(HasTraits):
+
+    _viewer = Instance(Viewer)
+    _source = Instance(FileSource)
+    step = None
+
+    def __source_changed(self, old, new):
+        rng = self._source.get_step_range()
+        self.step = None
+        self.add_trait('step', Range(*rng))
+
+    def _step_changed(self, old, new):
+        self._source.set_step(self.step)
+        self._viewer.set_source_filename(self._source.filename)
+
+    view = View(
+        Item('step', enabled_when='step is not None')
+    )

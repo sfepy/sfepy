@@ -46,6 +46,9 @@ class FileSource(Struct):
         """Set step of a data sequence."""
         self.step = step
 
+    def get_step_range(self):
+        return (0, 0)
+
 class VTKFileSource(FileSource):
 
     def create_source(self):
@@ -56,9 +59,9 @@ class VTKFileSource(FileSource):
         bbox = nm.array(self.source.reader.unstructured_grid_output.bounds)
         return bbox.reshape((3,2)).T
 
-    def set_source_filename(self, filename):
+    def set_filename(self, filename, vis_source):
         self.filename = filename
-        self.source.base_file_name = filename
+        vis_source.base_file_name = filename
 
 class HDF5FileSource(FileSource):
 
@@ -66,6 +69,8 @@ class HDF5FileSource(FileSource):
         """Create a VTK source from data in a SfePy HDF5 file."""
         self.io = HDF5MeshIO(self.filename)
         self.ts = TimeStepper(*self.io.read_time_stepper())
+
+        self.step_range = (0, self.io.read_last_step())
 
         self.mesh = mesh = Mesh.from_file(self.filename)
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
@@ -152,7 +157,10 @@ class HDF5FileSource(FileSource):
         bbox = self.mesh.get_bounding_box()
         return bbox
 
-    def set_source_filename(self, filename):
+    def set_filename(self, filename, vis_source):
         self.filename = filename
         self.source = self.create_source()
+        vis_source.data = self.source.data
         
+    def get_step_range(self):
+        return self.step_range

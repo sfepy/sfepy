@@ -1124,6 +1124,13 @@ class HDF5MeshIO( MeshIO ):
                             'file closing time' )
             fd.close()
 
+    def read_last_step(self, filename=None):
+        filename = get_default( filename, self.filename )
+        fd = pt.openFile( filename, mode = "r" )
+        last_step = fd.root.last_step[0]
+        fd.close()
+        return last_step
+
     def read_time_stepper( self, filename = None ):
         filename = get_default( filename, self.filename )
         fd = pt.openFile( filename, mode = "r" )
