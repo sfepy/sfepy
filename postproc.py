@@ -4,7 +4,7 @@ import os
 import glob
 
 import sfepy
-from sfepy.base.base import pause, output
+from sfepy.base.base import pause, output, nm
 from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
 from sfepy.solvers.ts import get_print_info
 
@@ -115,25 +115,20 @@ def view_single_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, offscreen=not options.show)
 
-        if options.list_ranges:
-            file_source = create_file_source(filename)
-            file_source.set_step(100)
-            get_data_ranges(file_source())
+        if options.only_names is not None:
+            options.only_names = options.only_names.split(',')
 
-        else:
-            if options.only_names is not None:
-                options.only_names = options.only_names.split(',')
+        view(show=options.show, is_3d=options.is_3d, view=options.view,
+             roll=options.roll, layout=options.layout,
+             scalar_mode=options.scalar_mode,
+             rel_scaling=options.rel_scaling,
+             clamping=options.clamping, ranges=options.ranges,
+             is_scalar_bar=options.is_scalar_bar,
+             rel_text_width=options.rel_text_width,
+             fig_filename=options.filename, resolution=options.resolution,
+             filter_names=filter_names, only_names=options.only_names,
+             anti_aliasing=options.anti_aliasing)
 
-            view(show=options.show, is_3d=options.is_3d, view=options.view,
-                 roll=options.roll, layout=options.layout,
-                 scalar_mode=options.scalar_mode,
-                 rel_scaling=options.rel_scaling,
-                 clamping=options.clamping, ranges=options.ranges,
-                 is_scalar_bar=options.is_scalar_bar,
-                 rel_text_width=options.rel_text_width,
-                 fig_filename=options.filename, resolution=options.resolution,
-                 filter_names=filter_names, only_names=options.only_names,
-                 anti_aliasing=options.anti_aliasing)
     else:
         view.set_source_filename(filename)
         view.save_image(options.filename)
@@ -220,7 +215,14 @@ def main():
         filter_names = []
 
     if len(filenames) == 1:
-        view_single_file(filenames[0], filter_names, options)        
+        filename = filenames[0]
+
+        if options.list_ranges:
+            file_source = create_file_source(filename)
+            get_data_ranges(file_source())
+
+        else:
+            view_single_file(filename, filter_names, options)        
 
     else:
         if options.anim_file_type is not None:
@@ -233,10 +235,25 @@ def main():
         n_digit, fmt, suffix = get_print_info(len(filenames))
 
         view = None
+        all_ranges = {}
         for ii, filename in enumerate(filenames):
             output('%d: %s' % (ii, filename))
             options.filename = '.'.join((base, suffix % ii, ext[1:]))
-            view = view_single_file(filename, filter_names, options, view)
+
+            if options.list_ranges:
+                file_source = create_file_source(filename)
+                for key, val in get_data_ranges(file_source()).iteritems():
+                    all_ranges.setdefault(key, []).append(val[3:])
+
+            else:
+                view = view_single_file(filename, filter_names, options, view)
+
+        if options.list_ranges:
+            print 'summary of ranges:'
+            for key, ranges in all_ranges.iteritems():
+                aux = nm.array(ranges)
+                print '  "%s": min(min): %s max(max): %s' % \
+                      (key, aux[:,[0,2]].min(axis=0), aux[:,[1,3]].max(axis=0))
 
         if options.anim_file_type is not None:
             anim_name = '.'.join((base, options.anim_file_type))

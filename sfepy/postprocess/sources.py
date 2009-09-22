@@ -8,16 +8,16 @@ from dataset_manager import DatasetManager
 from enthought.tvtk.api import tvtk
 from enthought.mayavi.sources.vtk_data_source import VTKDataSource
 
-def create_file_source(filename):
+def create_file_source(filename, offscreen=True):
     """Factory function to create a file source corresponding to the
     given file format."""
     fmt = os.path.splitext(filename)[1]
 
     if fmt.lower() == '.vtk':
-        return VTKFileSource(filename)
+        return VTKFileSource(filename, offscreen=offscreen)
 
     elif fmt.lower() == '.h5':
-        return HDF5FileSource(filename)
+        return HDF5FileSource(filename, offscreen=offscreen)
 
     else:
         raise ValueError('unknown file format! (%s)' % fmt)
@@ -25,8 +25,9 @@ def create_file_source(filename):
 class FileSource(Struct):
     
     """General file source."""
-    def __init__(self, filename):
+    def __init__(self, filename, offscreen=True):
         """Create a file source using the given file name."""
+        mlab.options.offscreen = offscreen
         self.filename = filename
         self.reset()
 

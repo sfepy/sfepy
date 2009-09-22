@@ -233,7 +233,8 @@ class Viewer(Struct):
 
         float_eps = nm.finfo(nm.float64).eps
 
-        self.file_source = create_file_source(self.filename)
+        self.file_source = create_file_source(self.filename,
+                                              offscreen=self.offscreen)
         self.source = source = self.file_source()
 
         bbox = self.file_source.get_bounding_box()
