@@ -11,10 +11,19 @@ from enthought.mayavi.sources.vtk_data_source import VTKDataSource
 def create_file_source(filename, offscreen=True):
     """Factory function to create a file source corresponding to the
     given file format."""
-    fmt = os.path.splitext(filename)[1]
+    if isinstance(filename, str):
+        fmt = os.path.splitext(filename)[1]
+        is_sequence = False
+
+    else: # A sequence.
+        fmt = os.path.splitext(filename[0])[1]
+        is_sequence = True
 
     if fmt.lower() == '.vtk':
-        return VTKFileSource(filename, offscreen=offscreen)
+        if is_sequence:
+            return VTKSequenceFileSource(filename, offscreen=offscreen)
+        else:
+            return VTKFileSource(filename, offscreen=offscreen)
 
     elif fmt.lower() == '.h5':
         return HDF5FileSource(filename, offscreen=offscreen)
@@ -41,6 +50,7 @@ class FileSource(Struct):
     def reset(self):
         """Reset."""
         self.source = None
+        self.step_range = None
         self.set_step()
 
     def set_step(self, step=0):
@@ -48,7 +58,7 @@ class FileSource(Struct):
         self.step = step
 
     def get_step_range(self):
-        return (0, 0)
+        return self.step_range
 
 class VTKFileSource(FileSource):
 
@@ -64,16 +74,43 @@ class VTKFileSource(FileSource):
         self.filename = filename
         vis_source.base_file_name = filename
 
-class HDF5FileSource(FileSource):
+    def get_step_range(self):
+        return (0, 0)
+
+class VTKSequenceFileSource(VTKFileSource):
 
     def create_source(self):
-        """Create a VTK source from data in a SfePy HDF5 file."""
-        self.io = HDF5MeshIO(self.filename)
+        """Create a VTK file source """
+        return mlab.pipeline.open(self.filename[0])
+
+    def set_filename(self, filename, vis_source):
+        self.filename = filename
+        vis_source.base_file_name = filename[self.step]
+
+    def get_step_range(self):
+        return (0, len(self.filename) - 1)
+
+class HDF5FileSource(FileSource):
+
+    def __init__(self, *args, **kwargs):
+        FileSource.__init__(self, *args, **kwargs)
+
+        self.io = None
+
+    def read_common(self, filename):
+        self.io = HDF5MeshIO(filename)
         self.ts = TimeStepper(*self.io.read_time_stepper())
 
         self.step_range = (0, self.io.read_last_step())
 
         self.mesh = mesh = Mesh.from_file(self.filename)
+        
+    def create_source(self):
+        """Create a VTK source from data in a SfePy HDF5 file."""
+        if self.io is None:
+            self.read_common(self.filename)
+
+        mesh = self.mesh
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
 
         out = self.io.read_data(self.step)
@@ -164,4 +201,8 @@ class HDF5FileSource(FileSource):
         vis_source.data = self.source.data
         
     def get_step_range(self):
+        if self.step_range is None:
+            io = HDF5MeshIO(self.filename)
+            self.step_range = (0, io.read_last_step())
+
         return self.step_range

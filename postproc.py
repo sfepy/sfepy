@@ -225,28 +225,31 @@ def main():
             view_single_file(filename, filter_names, options)        
 
     else:
-        if options.anim_file_type is not None:
+        if (options.anim_file_type is not None) or options.list_ranges:
             # Force the offscreen rendering when saving an animation.
             options.show = False
 
-        fig_filename=options.filename
-        base, ext = os.path.splitext(fig_filename)
+            fig_filename=options.filename
+            base, ext = os.path.splitext(fig_filename)
 
-        n_digit, fmt, suffix = get_print_info(len(filenames))
+            n_digit, fmt, suffix = get_print_info(len(filenames))
 
-        view = None
-        all_ranges = {}
-        for ii, filename in enumerate(filenames):
-            output('%d: %s' % (ii, filename))
-            options.filename = '.'.join((base, suffix % ii, ext[1:]))
+            view = None
+            all_ranges = {}
+            for ii, filename in enumerate(filenames):
+                output('%d: %s' % (ii, filename))
+                options.filename = '.'.join((base, suffix % ii, ext[1:]))
 
-            if options.list_ranges:
-                file_source = create_file_source(filename)
-                for key, val in get_data_ranges(file_source()).iteritems():
-                    all_ranges.setdefault(key, []).append(val[3:])
+                if options.list_ranges:
+                    file_source = create_file_source(filename)
+                    for key, val in get_data_ranges(file_source()).iteritems():
+                        all_ranges.setdefault(key, []).append(val[3:])
 
-            else:
-                view = view_single_file(filename, filter_names, options, view)
+                else:
+                    view = view_single_file(filename, filter_names,
+                                            options, view)
+        else:
+            view_single_file(filenames, filter_names, options)        
 
         if options.list_ranges:
             print 'summary of ranges:'
