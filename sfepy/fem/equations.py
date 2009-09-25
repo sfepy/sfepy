@@ -277,6 +277,10 @@ class Equations( Container ):
         for cache in self.caches.itervalues():
             cache.advance( ts.step + 1 )
 
+        for eq in self:
+            for term in eq.terms:
+                term.advance(ts)
+
 ##
 # 21.07.2006, c
 class Equation( Struct ):

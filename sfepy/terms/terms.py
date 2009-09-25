@@ -469,6 +469,10 @@ class Term( Struct ):
         self.step = ts.step
         self.dt = ts.dt
 
+    def advance(self, ts):
+        """Advance to the next time step. Implemented in subclasses."""
+        pass
+
     def get_vector( self, variable ):
         """Get the vector stored in `variable` according to self.arg_steps
         and self.arg_derivatives. Supports only the backward difference w.r.t.
