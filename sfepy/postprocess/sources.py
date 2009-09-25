@@ -104,6 +104,7 @@ class HDF5FileSource(FileSource):
         self.step_range = (0, self.io.read_last_step())
 
         self.mesh = mesh = Mesh.from_file(self.filename)
+        self.n_nod, self.dim = self.mesh.coors.shape
         
     def create_source(self):
         """Create a VTK source from data in a SfePy HDF5 file."""
@@ -111,11 +112,19 @@ class HDF5FileSource(FileSource):
             self.read_common(self.filename)
 
         mesh = self.mesh
+        n_nod, dim = self.n_nod, self.dim
+        sym = (dim + 1) * dim / 2
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
 
         out = self.io.read_data(self.step)
 
-        data = tvtk.UnstructuredGrid(points=mesh.coors)
+        if dim == 2:
+            nod_zz = nm.zeros((n_nod, 1), dtype=mesh.coors.dtype)
+            points = nm.c_[mesh.coors, nod_zz]
+        else:
+            points = mesh.coors
+
+        data = tvtk.UnstructuredGrid(points=points)
         dm = DatasetManager(dataset=data)
 
         cell_types = []
@@ -146,20 +155,30 @@ class HDF5FileSource(FileSource):
                 if vd.shape[1] == 1:
                     aux = vd.reshape((vd.shape[0],))
 
+                elif vd.shape[1] == 2:
+                    aux = nm.c_[vd, nod_zz]
+
                 elif vd.shape[1] == 3:
                     aux = vd
 
-                dm.add_array(vd, key, 'point')
+                else:
+                    raise ValueError('unknown vertex data format! (%s)'\
+                                     % vd.shape)
+
+                dm.add_array(aux, key, 'point')
 
             elif val.mode == 'cell':
                 cdata = data.cell_data
-                dim, sym = 3, 6
                 ne, aux, nr, nc = val.data.shape
                 if (nr == 1) and (nc == 1):
                     aux = vd.reshape((ne,))
 
                 elif (nr == dim) and (nc == 1):
-                    aux = vd.reshape((ne, dim))
+                    if dim == 3:
+                        aux = vd.reshape((ne, dim))
+                    else:
+                        zz = nm.zeros( (vd.shape[0], 1), dtype = nm.float64 );
+                        aux = nm.c_[vd.squeeze(), zz]
 
                 elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
                          or ((nr == dim) and (nc == dim)):
@@ -193,6 +212,8 @@ class HDF5FileSource(FileSource):
 
     def get_bounding_box(self):
         bbox = self.mesh.get_bounding_box()
+        if self.dim == 2:
+            bbox = nm.c_[bbox, [0.0, 0.0]]
         return bbox
 
     def set_filename(self, filename, vis_source):
