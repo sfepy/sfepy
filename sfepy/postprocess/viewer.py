@@ -324,6 +324,11 @@ class Viewer(Struct):
             lm.scalar_bar.title_text_property.font_size = 20
             lm.scalar_bar.label_text_property.font_size = 16
             lm.show_scalar_bar = True
+
+    def reset_view(self):
+        mlab.view(*self.view)
+        mlab.roll(self.roll)
+        self.scene.scene.camera.zoom(1.0)
         
     def __call__(self, *args, **kwargs):
         """
@@ -464,9 +469,7 @@ class Viewer(Struct):
 ##             self.show_scalar_bars(self.scalar_bars)
 
         if gui is None:
-            mlab.view(*self.view)
-            mlab.roll(self.roll)
-            scene.scene.camera.zoom(1.0)
+            self.reset_view()
             if is_scalar_bar:
                 self.show_scalar_bars(self.scalar_bars)
             self.save_image(fig_filename)
@@ -523,11 +526,11 @@ class ViewerGUI(HasTraits):
     viewer = Instance(Viewer)
     set_step = Instance(SetStep)
 
-##     @on_trait_change('scene.interactor')
-##     def _post_init(self, name, old, new):
-##         print 111
-##         if self.scene.renderer:
-##             pass
+    @on_trait_change('scene.activated')
+    def _post_init(self, name, old, new):
+        viewer = self.viewer
+        viewer.reset_view()
+        viewer.show_scalar_bars(viewer.scalar_bars)
 
     def __init__(self, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0),
                  **traits):
@@ -536,8 +539,3 @@ class ViewerGUI(HasTraits):
 
         scene.foreground = fgcolor
         scene.background = bgcolor
-
-    def show(self):
-        """Show itself."""
-        
-        self.configure_traits()
