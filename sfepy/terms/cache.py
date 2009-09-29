@@ -156,28 +156,34 @@ class DataCache( Struct ):
         """History advancement."""
         # Should data be zeroed here?
         if step != self.step + 1:
-            print 'bad step %d == %d' % (step, self.step + 1)
-            raise RuntimeError
+            msg = 'bad step %d == %d' % (step, self.step + 1)
+            raise ValueError(msg)
 
         self.step = step
 
-        for key, data in self.data.iteritems():
-            mhs = self.mem_sizes[key]
-            if self.mem_growing[key]:
+        if hasattr(self, 'custom_advance'):
+            for key in self.data.iterkeys():
                 for ckey in self.valid[key].iterkeys():
-                    arr = nm.empty_like( self.data[key][ckey][0] )
-                    self.data[key][ckey].appendleft( arr )
-                    self.mem_sizes[key] += 1
-                    self.history_sizes[key] += 1
-            elif mhs == 1: continue
-            else:
-                for ckey in self.valid[key].iterkeys():
-                    # Rotate list.
-                    self.data[key][ckey].rotate()
+                    self.custom_advance(ckey, step)
 
-                    if mhs < self.history_sizes:
-                        # Data falling to disk. To finish...
-                        data = self.data[key][ckey][0]
+        else:
+            for key, data in self.data.iteritems():
+                mhs = self.mem_sizes[key]
+                if self.mem_growing[key]:
+                    for ckey in self.valid[key].iterkeys():
+                        arr = nm.empty_like( self.data[key][ckey][0] )
+                        self.data[key][ckey].appendleft( arr )
+                        self.mem_sizes[key] += 1
+                        self.history_sizes[key] += 1
+                elif mhs == 1: continue
+                else:
+                    for ckey in self.valid[key].iterkeys():
+                        # Rotate list.
+                        self.data[key][ckey].rotate()
+
+                        if mhs < self.history_sizes:
+                            # Data falling to disk. To finish...
+                            data = self.data[key][ckey][0]
 
     ##
     # c: 13.12.2007, r: 15.01.2008

@@ -109,8 +109,9 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
         return (vec, 0, lam, mu, vg, ap.econn), shape, mode
 
 class LinearElasticTHTerm( VectorVectorTH, Term ):
-    r""":definition: $\int_{\Omega} \left [\int_0^t
-    \Hcal_{ijkl}(t-\tau)\,\tdiff{e_{kl}(\ul{u}(\tau))}{\tau}
+    r""":description: Can use derivatives.
+    :definition: $\int_{\Omega} \left [\int_0^t
+    \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau))
     \difd{\tau} \right]\,e_{ij}(\ul{v})$"""
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
@@ -147,6 +148,58 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, strain, mat, vg)
             return iter_kernel, shape, mode
+
+class LinearElasticETHTerm(VectorVector, Term):
+    r""":description: This term has the same definition as
+    dw_lin_elastic_th, but assumes an exponential approximation of
+    the convolution kernel resulting in much higher efficiency. Can use
+    derivatives.
+    :definition: $\int_{\Omega} \left [\int_0^t
+    \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau))
+    \difd{\tau} \right]\,e_{ij}(\ul{v})$
+
+    :arguments:
+        material_0 : $\Hcal_{ijkl}(0)$,
+        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    """
+    name = 'dw_lin_elastic_eth'
+    arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    geometry = [(Volume, 'virtual')]
+    use_caches = {'cauchy_strain' : [['state']],
+                  'exp_history' : [['material_0', 'material_1', 'state',
+                                    {'history' : (2, 2)}]]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__(self, region, name, sign,  terms.dw_lin_elastic)
+
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        ts, mat0, mat1, virtual, state = self.get_args(**kwargs)
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
+        if diff_var is None:
+            cache = self.get_cache('cauchy_strain', 0)
+            strain = cache('strain', self.get_current_group(), 0,
+                           state=state, get_vector=self.get_vector)
+
+            cache = self.get_cache('exp_history', 0)
+            increment = cache('increment', self.get_current_group(), 0,
+                              decay=mat1, values=strain)
+            history = cache('history', self.get_current_group(), 1)
+
+            fargs = (ts.dt, history + increment, mat0, vg)
+            if ts.step == 0: # Just init the history in step 0.
+                raise StopIteration
+
+        else:
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            fargs = (ts.dt, aux, mat0, vg)
+
+##        self.check_mat_shape( mat )
+
+        return fargs, shape, mode
 
 class CauchyStrainTerm( Term ):
     r""":description: Cauchy strain tensor averaged in elements.
