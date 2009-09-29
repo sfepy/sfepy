@@ -77,7 +77,8 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
     given in vector form exploiting symmetry: in 3D it has the
     indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
     the indices ordered as $[11, 22, 12]$. Corresponds to weak
-    forms of Biot gradient and divergence terms. Can be evaluated.
+    forms of Biot gradient and divergence terms. Can be evaluated. Can
+    use derivatives.
     :definition: $\int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v})$, $\int_{\Omega}
     q\ \alpha_{ij} e_{ij}(\ul{u})$
     """
@@ -176,7 +177,7 @@ class BiotDivTH( CouplingVectorScalarTH ):
             return iter_kernel, shape, mode
 
 class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
-    r""":description: Can have time derivatives.
+    r""":description: Can use derivatives.
     
     :definition: $\int_{\Omega} \left [\int_0^t
     \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$,
@@ -205,3 +206,108 @@ class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
                                                    {'strain' : (-1,-1)}]]}
         else:
             raise NotImplementedError
+
+class BiotGradETH( CouplingVectorScalar ):
+
+    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
+        ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_grad( diff_var, chunk_size )
+
+        bf = apc.get_base( 'v', 0, self.integral_name )
+        if diff_var is None:
+            cache = self.get_cache( 'state_in_volume_qp', 0 )
+            vec_qp = cache( 'state', self.get_current_group(), 0,
+                            state = state, get_vector = self.get_vector )
+
+            cache = self.get_cache('exp_history', 0)
+            increment = cache('increment', self.get_current_group(), 0,
+                              decay=mat1, values=vec_qp)
+            history = cache('history', self.get_current_group(), 1)
+
+            fargs = (ts.dt, history + increment, bf, mat0, vgr)
+            if ts.step == 0: # Just init the history in step 0.
+                raise StopIteration
+
+        else:
+            aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
+            fargs = (ts.dt, aux, bf, mat0, vgr)
+
+        return fargs, shape, mode
+
+class BiotDivETH( CouplingVectorScalar ):
+
+    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
+        ts, mat0, mat1, state, virtual = self.get_args( **kwargs )
+        apr, vgr = virtual.get_approximation( self.get_current_group(),
+                                              'Volume' )
+        apc, vgc = state.get_approximation( self.get_current_group(),
+                                            'Volume' )
+
+        self.set_data_shape( apr, apc )
+        shape, mode = self.get_shape_div( diff_var, chunk_size )
+
+        bf = apr.get_base( 'v', 0, self.integral_name )
+        if diff_var is None:
+            cache = self.get_cache( 'cauchy_strain', 0 )
+            strain = cache( 'strain', self.get_current_group(), 0,
+                            state = state, get_vector = self.get_vector )
+
+            cache = self.get_cache('exp_history', 0)
+            increment = cache('increment', self.get_current_group(), 0,
+                              decay=mat1, values=strain)
+            history = cache('history', self.get_current_group(), 1)
+
+            fargs = (ts.dt, history + increment, bf, mat0, vgc)
+            if ts.step == 0: # Just init the history in step 0.
+                raise StopIteration
+
+        else:
+            aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
+            fargs = (ts.dt, aux, bf, mat0, vgc)
+
+        return fargs, shape, mode
+
+class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
+    r""":description: This term has the same definition as dw_biot_th, but
+    assumes an exponential approximation of the convolution kernel
+    resulting in much higher efficiency. Can use derivatives.
+    
+    :definition: $\int_{\Omega} \left [\int_0^t
+    \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$,
+    $\int_{\Omega} \left [\int_0^t
+    \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q$
+
+    :arguments:
+        material_0 : $\alpha_{ij}(0)$,
+        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    """
+    name = 'dw_biot_eth'
+    arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
+                 ('ts', 'material_0', 'material_1', 'state', 'virtual'))
+    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'virtual'), (Volume, 'state')])
+    modes = ('grad', 'div')
+    use_caches = {'exp_history' : [['material_0', 'material_1', 'state',
+                                    {'history' : (2, 2)}]]}
+
+    def set_arg_types( self ):
+        """Dynamically inherits from either BiotGradETH or
+        BiotDivETH."""
+        if self.mode == 'grad':
+            self.function = terms.dw_biot_grad
+            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
+            use_caches = {'state_in_volume_qp' : [['state']]}
+        elif self.mode == 'div':
+            self.function = terms.dw_biot_div
+            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
+            use_caches = {'cauchy_strain' : [['state']]}
+        else:
+            raise NotImplementedError
+
+        self.use_caches.update(use_caches)
