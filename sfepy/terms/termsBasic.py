@@ -1,5 +1,5 @@
 from sfepy.terms.terms import *
-from sfepy.terms.terms_base import VectorOrScalar, ScalarScalarTH
+from sfepy.terms.terms_base import VectorOrScalar, ScalarScalar, ScalarScalarTH
 
 class IntegrateVolumeTerm( Term ):
     r""":definition: $\int_\Omega y$,  $\int_\Omega \ul{y}$"""
@@ -495,6 +495,57 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, vec_qp, bf, mat, vg)
             return iter_kernel, shape, mode
+
+class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
+    r""":description: Fading memory volume $L^2(\Omega)$ weighted dot product
+    for scalar fields. This term has the same definition as
+    dw_volume_wdot_scalar_th, but assumes an exponential approximation
+    of the convolution kernel resulting in much higher efficiency. Can
+    use derivatives.
+    :definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
+    \difd{\tau} \right] q$
+
+    :arguments:
+        material_0 : $\Gcal(0)$,
+        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    """
+    name = 'dw_volume_wdot_scalar_eth'
+    arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    use_caches = {'state_in_volume_qp' : [['state']],
+                  'exp_history' : [['material_0', 'material_1', 'state',
+                                    {'history' : (2, 2)}]]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
+
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        if diff_var is None:
+            cache = self.get_cache( 'state_in_volume_qp', 0 )
+            vec_qp = cache( 'state', self.get_current_group(), 0,
+                            state = state, get_vector = self.get_vector )
+
+            cache = self.get_cache('exp_history', 0)
+            increment = cache('increment', self.get_current_group(), 0,
+                              decay=mat1, values=vec_qp)
+            history = cache('history', self.get_current_group(), 1)
+
+            fargs = (ts.dt, history + increment, bf, mat0, vg)
+            if ts.step == 0: # Just init the history in step 0.
+                raise StopIteration
+
+        else:
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            fargs = (ts.dt, aux, bf, mat0, vg)
+
+        return fargs, shape, mode
 
 class AverageVariableTerm( Term ):
     r""":description: Variable $y$ averaged in elements.
