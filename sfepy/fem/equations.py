@@ -341,7 +341,7 @@ class Equation( Struct ):
                 for args in arg_lists:
                     # Order should be handled in terms...
                     args = copy( args )
-                    if type( args[-1] ) == dict:
+                    if len(args) and (type( args[-1] ) == dict):
                         history_sizes = args.pop()
                     else:
                         history_sizes = None
