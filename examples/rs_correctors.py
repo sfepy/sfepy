@@ -260,6 +260,11 @@ Now the input will be used to create a ProblemDefinition instance.
     problem = ProblemDefinition.from_conf( conf,
                                           init_variables = False,
                                           init_equations = False )
+    # The homogenization mini-apps need the output_dir.
+    output_dir = os.path.join(os.path.split(__file__)[0], 'output')
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    problem.output_dir = output_dir
     print problem
     spause( r""">>>
 ...the ProblemDefinition instance.
@@ -286,17 +291,22 @@ computed now.
     req = conf.requirements['corrs_rs']
 
     save_name = req.get( 'save_name', '' )
-    cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
-    name = os.path.join( cwd, save_name )
+    name = os.path.join( output_dir, save_name )
 
     mini_app = ce.CorrectorsElasticRS( 'steady rs correctors', problem, req )
-    save_hook = mini_app.make_save_hook( name, problem.output_format )
-    corrs_rs = mini_app( data = {'pis': pis}, save_hook = save_hook )
+    mini_app.setup_output(save_format = 'vtk',
+                          file_per_var = False)
+    corrs_rs = mini_app( data = {'pis': pis} )
     print corrs_rs
     spause( r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
-The results are saved in: %s*.%s
-['q'/other key to quit/continue...]""" % (name, problem.output_format) )
+The results are saved in: %s_*.%s
+
+Try to display them with:
+
+   python postproc.py %s_*.%s
+
+['q'/other key to quit/continue...]""" % (2 * (name, problem.output_format)) )
 
     spause( r""">>>
 Then the volume of the domain is needed.
