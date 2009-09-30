@@ -160,9 +160,12 @@ class CorrNN( CorrMiniApp ):
         return self.save_name + '_%d%d'
         
     def save( self, state, problem, ir, ic ):
-        CorrMiniApp.save( self, state, problem,
-                          self.get_save_name() % (ir, ic),
-                          self.get_dump_name() % (ir, ic) )
+        dump_name = self.get_dump_name()
+        if dump_name is not None:
+            dump_name = dump_name % (ir, ic)
+        CorrMiniApp.save(self, state, problem,
+                         self.get_save_name() % (ir, ic),
+                         dump_name)
 
 class CorrN( CorrMiniApp ):
 
@@ -203,9 +206,12 @@ class CorrN( CorrMiniApp ):
         return self.save_name + '_%d'
         
     def save( self, state, problem, ir ):
-        CorrMiniApp.save( self, state, problem,
-                          self.get_save_name() % ir,
-                          self.get_dump_name() % ir )
+        dump_name = self.get_dump_name()
+        if dump_name is not None:
+            dump_name = dump_name % ir
+        CorrMiniApp.save(self, state, problem,
+                         self.get_save_name() % ir,
+                         dump_name)
 
 class CorrDimDim( CorrNN ):
     pass

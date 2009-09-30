@@ -104,7 +104,7 @@ class HomogenizationEngine( SimpleApp ):
         opts = self.app_options
         coef_info = getattr( self.conf, opts.coefs )
 
-        store_filenames = coef_info.pop('filenames', None) is not None
+        is_store_filenames = coef_info.pop('filenames', None) is not None
 
         dependencies = {}
         save_names = {}
@@ -128,7 +128,7 @@ class HomogenizationEngine( SimpleApp ):
             output( '...done' )
 
         # Store filenames of all requirements as a "coefficient".
-        if store_filenames:
+        if is_store_filenames:
             coefs.save_names = save_names
             coefs.dump_names = dump_names
             
