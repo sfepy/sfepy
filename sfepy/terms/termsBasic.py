@@ -513,8 +513,7 @@ class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state']],
-                  'exp_history' : [['material_0', 'material_1', 'state',
-                                    {'history' : (2, 2)}]]}
+                  'exp_history' : [['material_0', 'material_1', 'state']]}
 
     def __init__( self, region, name = name, sign = 1 ):
         Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
@@ -535,7 +534,7 @@ class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
             cache = self.get_cache('exp_history', 0)
             increment = cache('increment', self.get_current_group(), 0,
                               decay=mat1, values=vec_qp)
-            history = cache('history', self.get_current_group(), 1)
+            history = cache('history', self.get_current_group(), 0)
 
             fargs = (ts.dt, history + increment, bf, mat0, vg)
             if ts.step == 0: # Just init the history in step 0.

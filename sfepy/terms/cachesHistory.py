@@ -37,7 +37,7 @@ class ExpHistoryDataCache(DataCache):
         self.valid['decay'][ckey] = True
 
     def custom_advance(self, ckey, step):
-        history = self.data['history'][ckey][1]
+        history = self.data['history'][ckey][0]
         increment = self.data['increment'][ckey][0]
         decay = self.data['decay'][ckey][0]
 

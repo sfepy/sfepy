@@ -228,7 +228,7 @@ class BiotGradETH( CouplingVectorScalar ):
             cache = self.get_cache('exp_history', 0)
             increment = cache('increment', self.get_current_group(), 0,
                               decay=mat1, values=vec_qp)
-            history = cache('history', self.get_current_group(), 1)
+            history = cache('history', self.get_current_group(), 0)
 
             fargs = (ts.dt, history + increment, bf, mat0, vgr)
             if ts.step == 0: # Just init the history in step 0.
@@ -261,7 +261,7 @@ class BiotDivETH( CouplingVectorScalar ):
             cache = self.get_cache('exp_history', 0)
             increment = cache('increment', self.get_current_group(), 0,
                               decay=mat1, values=strain)
-            history = cache('history', self.get_current_group(), 1)
+            history = cache('history', self.get_current_group(), 0)
 
             fargs = (ts.dt, history + increment, bf, mat0, vgc)
             if ts.step == 0: # Just init the history in step 0.
@@ -293,8 +293,7 @@ class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
     geometry = ([(Volume, 'virtual'), (Volume, 'state')],
                 [(Volume, 'virtual'), (Volume, 'state')])
     modes = ('grad', 'div')
-    use_caches = {'exp_history' : [['material_0', 'material_1', 'state',
-                                    {'history' : (2, 2)}]]}
+    use_caches = {'exp_history' : [['material_0', 'material_1', 'state']]}
 
     def set_arg_types( self ):
         """Dynamically inherits from either BiotGradETH or
