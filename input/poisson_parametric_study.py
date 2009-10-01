@@ -42,7 +42,7 @@ regions = {
     'Omega' : ('all', {}),
     'Gamma_1' : ('nodes in (x < -0.999)', {}),
     'Gamma_2' : ('nodes in (x > 0.999)', {}),
-    'Omega_1' : ('nodes by select_circ( x, y, z, %f )' % default_diameter, {}),
+    'Omega_1' : ('nodes by select_circ', {}),
 }
 
 # FE field defines the FE approximation: 2_3_P1 = 2D, P1 on triangles.
@@ -68,15 +68,17 @@ ebcs = {
 # Material coefficient c and source term value f.
 material_1 = {
     'name' : 'coef',
-    'mode' : 'here',
     'region' : 'Omega',
-    'val' : 1.0,
+    'values' : {
+        'val' : 1.0,
+    }
 }
 material_2 = {
     'name' : 'source',
-    'mode' : 'here',
     'region' : 'Omega_1',
-    'val' : 10.0,
+    'values' : {
+        'val' : 10.0,
+    }
 }
 
 # Numerical quadrature and the equation.
@@ -123,14 +125,19 @@ fe = {
     'chunk_size' : 10000
 }
 
+functions = {
+    'select_circ': (lambda coors, domain=None: 
+                    select_circ(coors[:,0], coors[:,1], 0, default_diameter),),
+}
+
 # Functions.
 def select_circ( x, y, z, diameter ):
     """Select circular subdomain of a given diameter."""
     r = nm.sqrt( x**2 + y**2 )
 
-    out = nm.where( r < diameter, 1, 0 )
+    out = nm.where(r < diameter)[0]
 
-    n = nm.where( out == 1 )[0].shape[0]
+    n = out.shape[0]
     if n <= 3:
         raise ValueError( 'too few nodes selected! (%d)' % n )
 
@@ -159,19 +166,21 @@ def vary_omega1_size( problem ):
     join = os.path.join
 
     conf = problem.conf
-    cr = conf.get_raw( 'regions' )
+    cf = conf.get_raw( 'functions' )
     n_digit, aux, d_format = get_print_info( len( diameters ) + 1 )
     for ii, diameter in enumerate( diameters ):
         output( 'iteration %d: diameter %3.2f' % (ii, diameter) )
 
-        cr['Omega_1'] = ('nodes by select_circ( x, y, z, %.5f )' % diameter, {})
-        conf.edit( 'regions', cr )
+        cf['select_circ'] = (lambda coors, domain=None: 
+                             select_circ(coors[:,0], coors[:,1], 0, diameter),)
+        conf.edit('functions', cf)
         problem = ProblemDefinition.from_conf( conf )
 
         problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
 			      ['Omega_1'] )
         region = problem.domain.regions['Omega_1']
 	if not region.has_cells_if_can():
+            print region
 	    raise ValueError( 'region %s has no cells!' % region.name )
 
         problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
