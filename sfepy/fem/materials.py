@@ -128,9 +128,12 @@ class Material( Struct ):
                 qps = aps.get_physical_qps(term.region, term.integral)
                 for ig in self.igs:
                     if ig not in term.igs(): continue
-                    if (qps.n_qp[ig] == 0): continue
-                    
+
                     datas = self.datas.setdefault(key, {})
+                    if (qps.n_qp[ig] == 0):
+                        datas[ig] = None
+                        continue
+                    
                     data = self.function(ts, qps.values[ig], mode='qp',
                                          region=self.region, ig=ig,
                                          **self.extra_args)
@@ -216,7 +219,7 @@ class Material( Struct ):
 
             if isinstance( datas[ig], Struct ):
                 return getattr( datas[ig], name )
-            else:
+            elif datas[ig] is not None:
                 return datas[ig][name]
 
     def get_constant_data(self, name):
