@@ -740,13 +740,13 @@ class Variables( Container ):
         important here...
         """
         if not self.has_virtuals():
-            output( 'no matrix!' )
+            output( 'no matrix (no test variables)!' )
             return None
 
         shape = (self.avdi.ptr[-1], self.adi.ptr[-1])
         output( 'matrix shape:', shape )
         if nm.prod( shape ) == 0:
-            output( 'no matrix!' )
+            output( 'no matrix (zero size)!' )
             return None
 
         adcs = self.adof_conns
@@ -788,7 +788,7 @@ class Variables( Container ):
 
         if not shared:
             # No virtual, state variable -> no matrix.
-            output( 'no matrix!' )
+            output( 'no matrix (empty dof connectivities)!' )
             return None
         
         output( 'assembling matrix graph...' )
