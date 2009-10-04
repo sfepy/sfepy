@@ -730,13 +730,13 @@ class Mesh( Struct ):
         if (ed is not None) or (fa is not None):
             mesh.descs.append( {2 : '2_3', 3 : '3_4'}[mesh_in.dim] )
             mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
-            mesh.conns.append( make_point_cells( region.all_vertices, mesh_in.dim ) )
-
-        if localize:
-            mesh._set_shape_info()
-            mesh.localize( region.all_vertices )
+            mesh.conns.append(make_point_cells(region.all_vertices,
+                                               mesh_in.dim))
 
         mesh._set_shape_info()
+
+        if localize:
+            mesh.localize( region.all_vertices )
         
         return mesh
     from_region = staticmethod( from_region )
@@ -758,7 +758,7 @@ class Mesh( Struct ):
         mesh.conns.append( aux[2] )
 
         mesh.localize( nodes )
-        mesh._set_shape_info()
+
         return mesh
     from_region_and_field = staticmethod( from_region_and_field )
 
@@ -891,7 +891,7 @@ class Mesh( Struct ):
     # c: 02.01.2008, r: 02.01.2008
     def localize( self, inod ):
         """Strips nodes not in inod and remaps connectivities.
-        TODO: fix the case when remap[conn] contains -1..."""
+        Omits elements where remap[conn] contains -1..."""
         remap = nm.empty( (self.n_nod,), dtype = nm.int32 )
         remap.fill( -1 )
         remap[inod] = nm.arange( inod.shape[0], dtype = nm.int32 )
@@ -900,9 +900,13 @@ class Mesh( Struct ):
         self.ngroups = self.ngroups[inod]
         conns = []
         for conn in self.conns:
-            conns.append( remap[conn] )
+            aux = remap[conn]
+            ii = nm.unique1d(nm.where(aux == -1)[0])
+            ii = nm.setdiff1d(nm.arange(conn.shape[0], dtype=nm.int32), ii)
+            conns.append(aux[ii])
         self.conns = conns
 
+        self._set_shape_info()
 
     ##
     # c: 18.01.2008, r: 18.01.2008
