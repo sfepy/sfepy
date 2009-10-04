@@ -582,8 +582,16 @@ class ProblemDefinition( Struct ):
 
     def solve( self, state0 = None, nls_status = None,
                ls_conf = None, nls_conf = None, force_values = None,
+               var_data = None,
                **kwargs ):
-        """Solve self.equations in current time step."""
+        """Solve self.equations in current time step.
+
+        Parameters
+        ----------
+        var_data : dict
+            A dictionary of {variable_name : data vector} used to initialize
+            parameter variables.
+        """
         solvers = self.get_solvers()
         if solvers is None:
             self.init_solvers( nls_status, ls_conf, nls_conf, **kwargs )
@@ -597,6 +605,8 @@ class ProblemDefinition( Struct ):
             state = self.create_state_vector()
         else:
             state = state0.copy()
+
+        self.variables.set_data(var_data)
 
         self.apply_ebc( state, force_values = force_values )
 
