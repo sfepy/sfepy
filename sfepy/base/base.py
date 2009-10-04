@@ -36,16 +36,25 @@ if sys.version[:5] < '2.4.0':
 def debug():
     pdb.set_trace()
 
-##
-# c: 20.06.2008, r: 20.06.2008
 def import_file( filename ):
+    """Import a file as a module. The module is explicitly reloaded to
+    prevent undesirable interactions."""
     path = os.path.dirname( filename )
     if not path in sys.path:
         sys.path.append( path )
     name = os.path.splitext( os.path.basename( filename ) )[0]
-    mod = __import__( name )
-    return mod
 
+    if name in sys.modules:
+        force_reload = True
+    else:
+        force_reload = False
+
+    mod = __import__( name )
+
+    if force_reload:
+        reload(mod)
+
+    return mod
 
 def assert_( condition ):
     if not condition:
