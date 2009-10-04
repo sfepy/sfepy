@@ -162,7 +162,7 @@ def get_dir(default):
         out = op.normpath(op.join(sfepy.top_dir, share_path, default))
     return out
 
-usage = """%prog [options] [test_filename]"""
+usage = """%prog [options] [test_filename[ test_filename ...]]"""
 
 help = {
     'dir' : 'directory with tests [default: <top_dir>/tests]',
@@ -208,20 +208,17 @@ def main():
         print __doc__
         return
 
-    if len( args ) > 1:
-        parser.print_help(),
-        return
-    elif len( args ) == 1:
-        test_filename = args[0]
-
-        stats = run_test( test_filename, options )
-        print '1 test file executed in %.2f s, %d failure(s) of %d test(s)'\
-              % (stats[2], stats[0], stats[1])
-        return
-
-
+    run_tests = wrap_run_tests(options)
     stats = [0, 0, 0, 0.0]
-    op.walk( options.test_dir, wrap_run_tests( options ), stats )
+
+    if len(args) >= 1:
+        for test_filename in args:
+            dirname, filename = op.split(test_filename)
+            run_tests(stats, dirname, [filename])
+
+    else:
+        op.walk( options.test_dir, run_tests, stats )
+
     print '%d test file(s) executed in %.2f s, %d failure(s) of %d test(s)'\
           % (stats[0], stats[3], stats[1], stats[2])
 
