@@ -1,39 +1,6 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import ScalarScalar
 
-class LaplaceTerm( ScalarScalar, Term ):
-    r""":description: Laplace term with $c$ constant or constant per element.
-    :definition: $c \int_{\Omega}\nabla s \cdot \nabla r$
-    or $\sum_{K \in \Tcal_h}\int_{T_K} c_K\ \nabla s \cdot \nabla r$
-    """
-    name = 'dw_laplace'
-    arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
-    symbolic = {'expression': 'c * div( grad( u ) )',
-                'map' : {'u' : 'state', 'c' : 'material'}}
-
-    def __init__(self, region, name=name, sign=1):
-        Term.__init__(self, region, name, sign, terms.dw_laplace)
-
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        vec = self.get_vector( state )
-
-        if state.is_real():
-            fargs = vec, 0, mat, vg, ap.econn
-        else:
-            ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, mat, vg, ap.econn),
-                     (ac( vec.imag ), 0, mat, vg, ap.econn)]
-            mode += 1j
-            
-        return fargs, shape, mode
-
 class DiffusionTerm( ScalarScalar, Term ):
     r""":description: General diffusion term with permeability $K_{ij}$
     constant or  given in mesh vertices. Can be evaluated. Can use derivatives.
@@ -61,12 +28,12 @@ class DiffusionTerm( ScalarScalar, Term ):
 
         n_el, n_qp, dim, n_ep = self.data_shape
         if state.is_real():
-            return (1.0, vec, 0, mat, vg, ap.econn), shape, mode
+            return (vec, 0, mat, vg, ap.econn), shape, mode
         else:
             ac = nm.ascontiguousarray
             mode += 1j
-            return [(1.0, ac(vec.real), 0, mat, vg, ap.econn),
-                    (1.0, ac(vec.imag), 0, mat, vg, ap.econn)], shape, mode
+            return [(ac(vec.real), 0, mat, vg, ap.econn),
+                    (ac(vec.imag), 0, mat, vg, ap.econn)], shape, mode
     
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
@@ -82,7 +49,7 @@ class DiffusionTerm( ScalarScalar, Term ):
         gp2 = cache( 'grad', self.get_current_group(), 0,
                      state = par2, get_vector = self.get_vector )
 
-        return (1.0, gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
+        return (gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
 
     def set_arg_types( self ):
         if self.mode == 'weak':
@@ -91,6 +58,30 @@ class DiffusionTerm( ScalarScalar, Term ):
         else:
             self.function = terms.d_diffusion
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            self.use_caches = {'grad_scalar' : [['parameter_1'],
+                                                ['parameter_2']]}
+
+class LaplaceTerm(DiffusionTerm):
+    r""":description: Laplace term with $c$ constant or constant per element.
+    :definition: $c \int_{\Omega}\nabla s \cdot \nabla r$
+    or $\sum_{K \in \Tcal_h}\int_{T_K} c_K\ \nabla s \cdot \nabla r$
+    """
+    name = 'dw_laplace'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
+    modes = ('weak', 'eval')
+    symbolic = {'expression': 'c * div( grad( u ) )',
+                'map' : {'u' : 'state', 'c' : 'material'}}
+
+    def set_arg_types(self):
+        if self.mode == 'weak':
+            self.function = terms.dw_laplace
+            use_method_with_name(self, self.get_fargs_weak, 'get_fargs')
+        else:
+            self.function = terms.d_laplace
+            use_method_with_name(self, self.get_fargs_eval, 'get_fargs')
             self.use_caches = {'grad_scalar' : [['parameter_1'],
                                                 ['parameter_2']]}
 

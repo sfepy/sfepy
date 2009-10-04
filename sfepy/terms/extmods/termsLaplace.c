@@ -234,10 +234,9 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
   for (ii = 0; ii < elList_nRow; ii++) {
     iel = elList[ii];
 
-/*     output( "%d\n", iel ); */
-
+/*     output( "%d %d\n", ii, iel ); */
     FMF_SetCell( out, ii );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
@@ -284,12 +283,52 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
+#define __FUNC__ "d_laplace"
+int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
+		 FMField *coef, VolumeGeometry *vg,
+		 int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *dgp2 = 0, *gp1tdgp2 = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &dgp2, 1, nQP, dim, 1 );
+  fmf_createAlloc( &gp1tdgp2, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( gradP1, iel );
+    FMF_SetCell( gradP2, iel );
+    if (coef->nCell > 1) {
+      FMF_SetCell( coef, ii );
+    }
+
+    fmf_mulAF( dgp2, gradP2, coef->val );
+    fmf_mulATB_nn( gp1tdgp2, gradP1, dgp2 );
+    fmf_sumLevelsMulF( out, gp1tdgp2, vg->det->val );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &dgp2 );
+  fmf_freeDestroy( &gp1tdgp2 );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_diffusion"
 /*!
   @par Revision history:
   - c: 03.08.2006, r: 23.01.2008
 */
-int32 dw_diffusion( FMField *out, float64 coef, FMField *state, int32 offset,
+int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
 		    FMField *mtxD, VolumeGeometry *vg,
 		    int32 *conn, int32 nEl, int32 nEP,
 		    int32 *elList, int32 elList_nRow,
@@ -321,7 +360,7 @@ int32 dw_diffusion( FMField *out, float64 coef, FMField *state, int32 offset,
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
     if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, iel );
+      FMF_SetCell( mtxD, ii );
     }
 
     if (isDiff) {
@@ -337,9 +376,6 @@ int32 dw_diffusion( FMField *out, float64 coef, FMField *state, int32 offset,
     }
     ERR_CheckGo( ret );
   }
-
-  // E.g. 1/dt.
-  fmfc_mulC( out, coef );
 
  end_label:
   if (isDiff) {
@@ -361,7 +397,7 @@ int32 dw_diffusion( FMField *out, float64 coef, FMField *state, int32 offset,
   @par Revision history:
   - c: 12.03.2007, r: 23.01.2008
 */
-int32 d_diffusion( FMField *out, float64 coef, FMField *gradP1, FMField *gradP2,
+int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 		   FMField *mtxD, VolumeGeometry *vg,
 		   int32 *elList, int32 elList_nRow )
 {
@@ -382,7 +418,7 @@ int32 d_diffusion( FMField *out, float64 coef, FMField *gradP1, FMField *gradP2,
     FMF_SetCell( gradP1, iel );
     FMF_SetCell( gradP2, iel );
     if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, iel );
+      FMF_SetCell( mtxD, ii );
     }
 
     fmf_mulAB_nn( dgp2, mtxD, gradP2 );
@@ -391,9 +427,6 @@ int32 d_diffusion( FMField *out, float64 coef, FMField *gradP1, FMField *gradP2,
 
     ERR_CheckGo( ret );
   }
-
-  // E.g. 1/dt.
-  fmfc_mulC( out, coef );
 
  end_label:
   fmf_freeDestroy( &dgp2 );
