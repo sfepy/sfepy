@@ -22,7 +22,7 @@ class ExpHistoryDataCache(DataCache):
             'increment' : shape,
             'decay' : decay.shape,
         }
-        DataCache.init_datas(self, ckey, self.shapes)
+        DataCache.init_datas(self, ckey, self.shapes, zero=True)
 
     def update(self, key, group_indx, ih, **kwargs):
         decay, values = self.get_args(**kwargs)
@@ -36,9 +36,10 @@ class ExpHistoryDataCache(DataCache):
         self.valid['increment'][ckey] = True
         self.valid['decay'][ckey] = True
 
-    def custom_advance(self, ckey, step):
-        history = self.data['history'][ckey][0]
-        increment = self.data['increment'][ckey][0]
-        decay = self.data['decay'][ckey][0]
+    def custom_advance(self, key, ckey, step):
+        if key == 'history':
+            history = self.data['history'][ckey][0]
+            increment = self.data['increment'][ckey][0]
+            decay = self.data['decay'][ckey][0]
 
-        self.data['history'][ckey][0] = decay * (history + increment)
+            self.data['history'][ckey][0][:] = decay * (history + increment)

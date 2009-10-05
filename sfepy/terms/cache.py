@@ -130,23 +130,29 @@ class DataCache( Struct ):
 
     ##
     # c: 28.11.2006, r: 02.04.2008
-    def init_data( self, key, ckey, shape ):
+    def init_data(self, key, ckey, shape, zero=False):
+        if zero:
+            create_fun, like_fun = nm.zeros, nm.zeros_like
+        else:
+            create_fun, like_fun = nm.empty, nm.empty_like
 
         self.valid[key][ckey] = False
         data = self.data[key]
         
         # Current time data.
         data[ckey] = deque()
-        arr = nm.empty(shape, dtype=self.dtype)
-        data[ckey].append( arr )
+        arr = create_fun(shape, dtype=self.dtype)
+        data[ckey].append(arr)
             
         # History data.
-        for ih in xrange( self.mem_sizes[key] - 1 ):
-            data[ckey].append( nm.empty_like( arr ) )
+        for ih in xrange(self.mem_sizes[key] - 1):
+            data[ckey].append(like_fun(arr))
 
-    def init_datas( self, ckey, shapes ):
+    def init_datas(self, ckey, shapes, zero=False):
+        """Convenience function for multiple init_data() calls."""
         for key, shape in shapes.iteritems():
-            DataCache.init_data( self, key, ckey, shape )
+            DataCache.init_data(self, key, ckey, shape, zero=zero)
+
     ##
     # 30.11.2006, c
     # 08.06.2007
@@ -164,7 +170,7 @@ class DataCache( Struct ):
         if hasattr(self, 'custom_advance'):
             for key in self.data.iterkeys():
                 for ckey in self.valid[key].iterkeys():
-                    self.custom_advance(ckey, step)
+                    self.custom_advance(key, ckey, step)
 
         else:
             for key, data in self.data.iteritems():
