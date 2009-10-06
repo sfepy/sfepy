@@ -57,10 +57,7 @@ class ProcessPlotter( Struct ):
 
         elif command[0] == 'legends':
             for ig, ax in enumerate(self.ax):
-                try:
-                    ax.legend(self.data_names[ig])
-                except:
-                    pass
+                ax.legend(self.data_names[ig])
 
                 if self.xlabels[ig]:
                     ax.set_xlabel(self.xlabels[ig])
@@ -330,18 +327,25 @@ class Log( Struct ):
     def plot_data(self, igs):
         send = self.plot_pipe.send
 
-        for ig, ii, iseq, name in self.iter_names(igs):
-            key = name_to_key(name, ii)
-            try:
-                if len(self.x_values[ig]) > 0:
-                    send(['ig', ig])
-                    send(['clear'])
-                    send(['plot',
-                          nm.array(self.x_values[ig]),
-                          nm.array(self.data[key])])
-            except:
-                msg = "send failed! (%s, %s, %s)!" % (ii, name, self.data[key])
-                raise IOError(msg)
+        ii = 0
+        for ig, names in ordered_iteritems(self.data_names):
+            if ig in igs:
+                send(['ig', ig])
+                send(['clear'])
+                for name in names:
+                    key = name_to_key(name, ii)
+                    try:
+                        send(['plot',
+                              nm.array(self.x_values[ig]),
+                              nm.array(self.data[key])])
+                    except:
+                        msg = "send failed! (%s, %s, %s)!" \
+                              % (ii, name, self.data[key])
+                        raise IOError(msg)
+                    ii += 1
+
+            else:
+                ii += len(names)
 
         send(['legends'])
         send(['continue'])
