@@ -1,5 +1,6 @@
 from base import *
 from sfepy.base.tasks import Process, Pipe
+from sfepy.base.la import cycle
 
 try:
     import gobject
@@ -52,12 +53,15 @@ class ProcessPlotter( Struct ):
                 self.ax[ig].yaxis.set_minor_locator(yminor_locator)
 
         elif command[0] == 'clear':
-            for ax in self.ax:
-                ax.cla()
+            self.ax[self.ig].cla()
 
         elif command[0] == 'legends':
             for ig, ax in enumerate(self.ax):
-                ax.legend(self.data_names[ig])
+                try:
+                    ax.legend(self.data_names[ig])
+                except:
+                    pass
+
                 if self.xlabels[ig]:
                     ax.set_xlabel(self.xlabels[ig])
                 if self.ylabels[ig]:
@@ -118,9 +122,17 @@ class ProcessPlotter( Struct ):
     def make_axes(self):
         self.fig.clf()
         self.ax = []
-        for ig in range( self.n_gr ):
-            isub = 100 * self.n_gr + 11 + ig
-            self.ax.append( self.fig.add_subplot( isub ) )
+
+        n_col = min(5.0, nm.fix(nm.sqrt(self.n_gr)))
+        if int(n_col) == 0:
+            n_row = 0
+        else:
+            n_row = int(nm.ceil(self.n_gr / n_col))
+            n_col = int(n_col)
+
+        for ii, (ir, ic) in enumerate(cycle((n_col, n_row))):
+            if ii == self.n_gr: break
+            self.ax.append(self.fig.add_subplot(n_row, n_col, ii+1))
     
     def __call__(self, pipe, data_names, yscales, xlabels, ylabels):
         """Sets-up the plotting window, sets GTK event loop timer callback to
@@ -162,8 +174,8 @@ class Log( Struct ):
         return obj
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, data_names, is_plot=True, aggregate=200, yscales=None,
-                 xlabels=None, ylabels=None):
+    def __init__(self, data_names=None, yscales=None,
+                 xlabels=None, ylabels=None, is_plot=True, aggregate=200):
         """`data_names` ... tuple of names grouped by subplots:
                             ([name1, name2, ...], [name3, name4, ...], ...)
         where name<n> are strings to display in (sub)plot legends."""
@@ -173,7 +185,12 @@ class Log( Struct ):
                         yscales = {}, xlabels = {}, ylabels = {},
                         plot_pipe = None)
 
-        n_gr = len(data_names)
+        if data_names is not None:
+            n_gr = len(data_names)
+        else:
+            n_gr = 0
+            data_names = []
+
         yscales = get_default(yscales, ['linear'] * n_gr)
         xlabels = get_default(xlabels, ['iteration'] * n_gr)
         ylabels = get_default(ylabels, [''] * n_gr )
@@ -215,11 +232,16 @@ class Log( Struct ):
             send = self.plot_pipe.send
             send(['add_axis', ig, names, yscale, xlabel, ylabel])
 
-    def iter_names(self):
-        ii = 0
+    def iter_names(self, igs=None):
+        if igs is None:
+            igs = nm.arange(self.n_gr)
+
+        ii = iseq = 0
         for ig, names in ordered_iteritems(self.data_names):
             for name in names:
-                yield ig, ii, name
+                if ig in igs:
+                    yield ig, ii, iseq, name
+                    iseq += 1
                 ii += 1
 
     def __call__( self, *args, **kwargs ):
@@ -228,6 +250,8 @@ class Log( Struct ):
         finished = False
         save_figure = ''
         x_values = None
+        igs = nm.arange(self.n_gr)
+        full = True
         if kwargs:
             if 'finished' in kwargs:
                 finished = kwargs['finished']
@@ -236,6 +260,10 @@ class Log( Struct ):
             if 'x' in kwargs:
                 x_values = kwargs['x']
 
+            if 'igs' in kwargs:
+                igs = nm.array(kwargs['igs'])
+                full = False
+                
         if save_figure and (self.plot_pipe is not None):
             self.plot_pipe.send( ['save', save_figure] )
 
@@ -244,7 +272,7 @@ class Log( Struct ):
             return
 
         ls = len( args ), self.n_arg
-        if ls[0] != ls[1]:
+        if full and (ls[0] != ls[1]):
             if kwargs:
                 return
             else:
@@ -252,8 +280,8 @@ class Log( Struct ):
                       % ls
                 raise IndexError( msg )
 
-        for ig, ii, name in self.iter_names():
-            aux = args[ii]
+        for ig, ii, iseq, name in self.iter_names(igs):
+            aux = args[iseq]
             if isinstance( aux, nm.ndarray ):
                 aux = nm.array( aux, ndmin = 1 )
                 if len( aux ) == 1:
@@ -263,11 +291,15 @@ class Log( Struct ):
             key = name_to_key( name, ii )
             self.data[key].append( aux )
 
-        for ig in range( self.n_gr ):
-            if (x_values is not None) and x_values[ig]:
-                self.x_values[ig].append( x_values[ig] )
+        for ig in igs:
+            if (x_values is not None) and (x_values[ig] is not None):
+                self.x_values[ig].append(x_values[ig])
             else:
-                self.x_values[ig].append( self.n_calls )
+                if len(self.x_values[ig]):
+                    ii = self.x_values[ig][-1] + 1
+                else:
+                    ii = 0
+                self.x_values[ig].append(ii)
 
         if self.is_plot and self.can_plot:
             if self.n_calls == 0:
@@ -284,30 +316,32 @@ class Log( Struct ):
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
-            self.plot_data()
+            self.plot_data(igs)
             
         self.n_calls += 1
 
-    def terminate( self ):
+    def terminate(self):
         if self.is_plot and self.can_plot:
-            self.plot_pipe.send( None )
+            self.plot_pipe.send(None)
             self.plot_process.join()
             self.n_calls = 0
-            output( 'terminated' )
+            output('terminated')
 
-    def plot_data( self ):
+    def plot_data(self, igs):
         send = self.plot_pipe.send
 
-        send(['clear'])
-        for ig, ii, name in self.iter_names():
+        for ig, ii, iseq, name in self.iter_names(igs):
             key = name_to_key(name, ii)
             try:
-                send(['ig', ig])
-                send(['plot',
-                      nm.array(self.x_values[ig]),
-                      nm.array(self.data[key])])
+                if len(self.x_values[ig]) > 0:
+                    send(['ig', ig])
+                    send(['clear'])
+                    send(['plot',
+                          nm.array(self.x_values[ig]),
+                          nm.array(self.data[key])])
             except:
                 msg = "send failed! (%s, %s, %s)!" % (ii, name, self.data[key])
                 raise IOError(msg)
+
         send(['legends'])
         send(['continue'])
