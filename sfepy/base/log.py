@@ -33,44 +33,47 @@ class ProcessPlotter( Struct ):
     def process_command( self, command ):
         self.output( command[0] )
 
-        if command[0] == 'iseq':
-            self.iseq = command[1]
+        if command[0] == 'ig':
+            self.ig = command[1]
 
         elif command[0] == 'plot':
-            ii = self.iseq
-            name = self.seq_data_names[ii]
-            try:
-                ig = self.igs[ii]
-                ax = self.ax[ig]
-                ax.set_yscale( self.yscales[ig] )
-                ax.yaxis.grid( True )
-                ax.plot( command[1], command[2] )
+            ig = self.ig
+            ax = self.ax[ig]
+            ax.set_yscale(self.yscales[ig])
+            ax.yaxis.grid(True)
+            ax.plot(command[1], command[2])
 
-                if self.yscales[ig] == 'log':
-                    ymajor_formatter = ax.yaxis.get_major_formatter()
-                    ymajor_formatter.label_minor( True )
-                    yminor_locator = LogLocator()
-                else:
-                    yminor_locator = AutoLocator()
-                self.ax[ig].yaxis.set_minor_locator( yminor_locator )
-            except:
-                print ii, name
-                raise
+            if self.yscales[ig] == 'log':
+                ymajor_formatter = ax.yaxis.get_major_formatter()
+                ymajor_formatter.label_minor(True)
+                yminor_locator = LogLocator()
+            else:
+                yminor_locator = AutoLocator()
+                self.ax[ig].yaxis.set_minor_locator(yminor_locator)
 
         elif command[0] == 'clear':
-            for ig in range( self.n_gr ):
-                self.ax[ig].cla()
+            for ax in self.ax:
+                ax.cla()
 
         elif command[0] == 'legends':
-            for ig in range( self.n_gr ):
-                self.ax[ig].legend( self.data_names[ig] )
-                if self.xaxes[ig]:
-                    self.ax[ig].set_xlabel( self.xaxes[ig] )
-                if self.yaxes[ig]:
-                    self.ax[ig].set_ylabel( self.yaxes[ig] )
+            for ig, ax in enumerate(self.ax):
+                ax.legend(self.data_names[ig])
+                if self.xlabels[ig]:
+                    ax.set_xlabel(self.xlabels[ig])
+                if self.ylabels[ig]:
+                    ax.set_ylabel(self.ylabels[ig])
+
+        elif command[0] == 'add_axis':
+            ig, names, yscale, xlabel, ylabel = command[1:]
+            self.data_names[ig] = names
+            self.yscales[ig] = yscale
+            self.xlabels[ig] = xlabel
+            self.ylabels[ig] = ylabel
+            self.n_gr = len(self.data_names)
+            self.make_axes()
 
         elif command[0] == 'save':
-            self.fig.savefig( command[1] )
+            self.fig.savefig(command[1])
 
 
     def terminate( self ):
@@ -111,9 +114,15 @@ class ProcessPlotter( Struct ):
             return True
 
         return call_back
+
+    def make_axes(self):
+        self.fig.clf()
+        self.ax = []
+        for ig in range( self.n_gr ):
+            isub = 100 * self.n_gr + 11 + ig
+            self.ax.append( self.fig.add_subplot( isub ) )
     
-    def __call__( self, pipe, data_names, igs, seq_data_names, yscales,
-                  xaxes, yaxes ):
+    def __call__(self, pipe, data_names, yscales, xlabels, ylabels):
         """Sets-up the plotting window, sets GTK event loop timer callback to
         callback() returned by self.poll_draw(). The callback does the actual
         plotting, taking commands out of `pipe`, and is called every second."""
@@ -122,20 +131,13 @@ class ProcessPlotter( Struct ):
 
         self.pipe = pipe
         self.data_names = data_names
-        self.igs = igs
-        self.seq_data_names = seq_data_names
         self.yscales = yscales
-        self.xaxes = xaxes
-        self.yaxes = yaxes
-        self.n_gr = len( data_names )
+        self.xlabels = xlabels
+        self.ylabels = ylabels
+        self.n_gr = len(data_names)
 
         self.fig = plt.figure()
-
-        self.ax = []
-        for ig in range( self.n_gr ):
-            isub = 100 * self.n_gr + 11 + ig
-            self.ax.append( self.fig.add_subplot( isub ) )
-        
+        self.make_axes()
         self.gid = gobject.timeout_add( 1000, self.poll_draw() )
 
         self.output( '...done' )
@@ -161,31 +163,25 @@ class Log( Struct ):
     from_conf = staticmethod( from_conf )
 
     def __init__(self, data_names, is_plot=True, aggregate=200, yscales=None,
-                 xaxes=None, yaxes=None):
+                 xlabels=None, ylabels=None):
         """`data_names` ... tuple of names grouped by subplots:
                             ([name1, name2, ...], [name3, name4, ...], ...)
         where name<n> are strings to display in (sub)plot legends."""
-        Struct.__init__(self, data_names = data_names, seq_data_names = [],
-                        igs = [], data = {}, x_values = {}, n_calls = 0,
+        Struct.__init__(self, data_names = {},
+                        n_arg = 0, n_gr = 0,
+                        data = {}, x_values = {}, n_calls = 0,
+                        yscales = {}, xlabels = {}, ylabels = {},
                         plot_pipe = None)
 
-        ii = 0
-        for ig, names in enumerate( self.data_names ):
-            self.x_values[ig] = []
-            for name in names:
-                key = name_to_key( name, ii )
-                self.data[key] = []
-                self.igs.append( ig )
-                self.seq_data_names.append( name )
-                ii += 1
-        self.n_arg = len( self.igs )
-            
-        self.n_gr = len( self.data_names )
+        n_gr = len(data_names)
+        yscales = get_default(yscales, ['linear'] * n_gr)
+        xlabels = get_default(xlabels, ['iteration'] * n_gr)
+        ylabels = get_default(ylabels, [''] * n_gr )
+
+        for ig, names in enumerate(data_names):
+            self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig])
 
         self.is_plot = get_default( is_plot, True )
-        self.yscales = get_default( yscales, ['linear'] * self.n_arg )
-        self.xaxes = get_default( xaxes, ['iteration'] * self.n_arg )
-        self.yaxes = get_default( yaxes, [''] * self.n_arg )
         self.aggregate = get_default( aggregate, 100 )
 
         self.can_plot = (can_live_plot and (plt is not None)
@@ -194,7 +190,41 @@ class Log( Struct ):
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
     
+    def add_group(self, names, yscale=None, xlabel=None, ylabel=None):
+        """Add a new data group. Notify the plotting process if it is
+        already running."""
+        ig = self.n_gr
+        self.n_gr += 1
+
+        self.x_values[ig] = []
+
+        self.data_names[ig] = names
+        self.yscales[ig] = yscale
+        self.xlabels[ig] = xlabel
+        self.ylabels[ig] = ylabel
+        
+        ii = self.n_arg
+        for name in names:
+            key = name_to_key(name, ii)
+            self.data[key] = []
+            ii += 1
+
+        self.n_arg = ii
+
+        if self.plot_pipe is not None:
+            send = self.plot_pipe.send
+            send(['add_axis', ig, names, yscale, xlabel, ylabel])
+
+    def iter_names(self):
+        ii = 0
+        for ig, names in ordered_iteritems(self.data_names):
+            for name in names:
+                yield ig, ii, name
+                ii += 1
+
     def __call__( self, *args, **kwargs ):
+        """Log the data passed via *args, and send them to the plotting
+        process, if available."""
         finished = False
         save_figure = ''
         x_values = None
@@ -222,7 +252,7 @@ class Log( Struct ):
                       % ls
                 raise IndexError( msg )
 
-        for ii, name in enumerate( self.seq_data_names ):
+        for ig, ii, name in self.iter_names():
             aux = args[ii]
             if isinstance( aux, nm.ndarray ):
                 aux = nm.array( aux, ndmin = 1 )
@@ -248,10 +278,9 @@ class Log( Struct ):
                 self.plot_process = Process( target = self.plotter,
                                              args = (plotter_pipe,
                                                      self.data_names,
-                                                     self.igs,
-                                                     self.seq_data_names,
                                                      self.yscales,
-                                                     self.xaxes, self.yaxes) )
+                                                     self.xlabels,
+                                                     self.ylabels) )
                 self.plot_process.daemon = True
                 self.plot_process.start()
 
@@ -267,18 +296,18 @@ class Log( Struct ):
             output( 'terminated' )
 
     def plot_data( self ):
-        send =  self.plot_pipe.send
+        send = self.plot_pipe.send
 
-        send( ['clear'] )
-        for ii, name in enumerate( self.seq_data_names ):
-            key = name_to_key( name, ii )
+        send(['clear'])
+        for ig, ii, name in self.iter_names():
+            key = name_to_key(name, ii)
             try:
-                send( ['iseq', ii] )
-                send( ['plot',
-                      nm.array( self.x_values[self.igs[ii]] ),
-                      nm.array( self.data[key] )] )
+                send(['ig', ig])
+                send(['plot',
+                      nm.array(self.x_values[ig]),
+                      nm.array(self.data[key])])
             except:
-                print ii, name, self.data[key]
-                raise
-        send( ['legends'] )
-        send( ['continue'] )
+                msg = "send failed! (%s, %s, %s)!" % (ii, name, self.data[key])
+                raise IOError(msg)
+        send(['legends'])
+        send(['continue'])
