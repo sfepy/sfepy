@@ -7,10 +7,13 @@ from sfepy.solvers.ts import TimeStepper
 from dataset_manager import DatasetManager
 from enthought.tvtk.api import tvtk
 from enthought.mayavi.sources.vtk_data_source import VTKDataSource
+from enthought.pyface.timer.api import Timer
 
-def create_file_source(filename, offscreen=True):
+def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the
     given file format."""
+    kwargs = {'watch' : watch, 'offscreen' : offscreen}
+
     if isinstance(filename, str):
         fmt = os.path.splitext(filename)[1]
         is_sequence = False
@@ -21,12 +24,12 @@ def create_file_source(filename, offscreen=True):
 
     if fmt.lower() == '.vtk':
         if is_sequence:
-            return VTKSequenceFileSource(filename, offscreen=offscreen)
+            return VTKSequenceFileSource(filename, **kwargs)
         else:
-            return VTKFileSource(filename, offscreen=offscreen)
+            return VTKFileSource(filename, **kwargs)
 
     elif fmt.lower() == '.h5':
-        return HDF5FileSource(filename, offscreen=offscreen)
+        return HDF5FileSource(filename, **kwargs)
 
     else:
         raise ValueError('unknown file format! (%s)' % fmt)
@@ -34,9 +37,10 @@ def create_file_source(filename, offscreen=True):
 class FileSource(Struct):
     
     """General file source."""
-    def __init__(self, filename, offscreen=True):
+    def __init__(self, filename, watch=False, offscreen=True):
         """Create a file source using the given file name."""
         mlab.options.offscreen = offscreen
+        self.watch = watch
         self.filename = filename
         self.reset()
 
@@ -44,6 +48,8 @@ class FileSource(Struct):
         """Get the file source."""
         if self.source is None:
             self.source = self.create_source()
+            if self.watch:
+                self.timer = Timer(1000, self.poll_file)
 
         return self.source
 
@@ -51,6 +57,9 @@ class FileSource(Struct):
         """Reset."""
         self.source = None
         self.step_range = None
+        self.notify_obj = None
+        if self.watch:
+            self.last_stat = os.stat(self.filename)
         self.set_step()
 
     def set_step(self, step=0):
@@ -59,6 +68,30 @@ class FileSource(Struct):
 
     def get_step_range(self):
         return self.step_range
+
+    def file_changed(self):
+        pass
+
+    def setup_notification(self, obj, attr):
+        """The attribute 'attr' of the object 'obj' will be set to True
+        when the source file is watched and changes."""
+        self.notify_obj = obj
+        self.notify_attr = attr
+
+    def poll_file(self):
+        """Check the source file's time stamp and notify the
+        self.notify_obj in case it changed. Subclasses should implement
+        the file_changed() method."""
+        if not self.notify_obj:
+            return
+
+        s = os.stat(self.filename)
+        if s[-2] == self.last_stat[-2]:
+            setattr(self.notify_obj, self.notify_attr, False)
+        else:
+            self.file_changed()
+            setattr(self.notify_obj, self.notify_attr, True)
+            self.last_stat = s
 
 class VTKFileSource(FileSource):
 
@@ -227,3 +260,6 @@ class HDF5FileSource(FileSource):
             self.step_range = (0, io.read_last_step())
 
         return self.step_range
+
+    def file_changed(self):
+        self.step_range = (0, self.io.read_last_step())

@@ -73,6 +73,8 @@ help = {
     'show scalar bar for each data',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
+    'watch' :
+    'watch the results file for changes (single file mode only)',
     'filename' :
     'view image file name [default: %default]',
     'anim_file_type' :
@@ -113,7 +115,8 @@ def parse_ranges(option, opt, value, parser):
 
 def view_single_file(filename, filter_names, options, view=None):
     if view is None:
-        view = Viewer(filename, offscreen=not options.show)
+        view = Viewer(filename, watch=options.watch,
+                      offscreen=not options.show)
 
         if options.only_names is not None:
             options.only_names = options.only_names.split(',')
@@ -175,6 +178,9 @@ def main():
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
+    parser.add_option("-w", "--watch",
+                      action="store_true", dest="watch",
+                      default=False, help=help['watch'])
     parser.add_option("-o", "--output", metavar='filename',
                       action="store", dest="filename",
                       default='view.png', help=help['filename'])
@@ -229,7 +235,7 @@ def main():
             # Force the offscreen rendering when saving an animation.
             options.show = False
 
-            fig_filename=options.filename
+            fig_filename = options.filename
             base, ext = os.path.splitext(fig_filename)
 
             n_digit, fmt, suffix = get_print_info(len(filenames))

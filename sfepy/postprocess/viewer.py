@@ -4,7 +4,7 @@ from sfepy.postprocess.utils import mlab
 from sfepy.postprocess.sources import create_file_source, FileSource
 
 from enthought.traits.api \
-     import HasTraits, Instance, Range, on_trait_change
+     import HasTraits, Instance, Range, Int, Bool, on_trait_change
 from enthought.traits.ui.api \
      import View, Item, Group
 from  enthought.traits.ui.editors.range_editor import RangeEditor
@@ -83,16 +83,23 @@ class Viewer(Struct):
     After opening a data file, all data (point, cell, scalars, vectors,
     tensors) are plotted in a grid layout.
 
+    Parameters
+    ----------
+    watch : bool
+        If True, watch the file for changes and update the mayavi
+        pipeline automatically.
+
     Examples
     --------
     >>> view = Viewer('file.vtk')
     >>> view() # view with default parameters
     >>> view(layout='col') # use column layout
     """
-    def __init__(self, filename, output_dir='.', offscreen=False,
+    def __init__(self, filename, watch=False, output_dir='.', offscreen=False,
                  auto_screenshot=True):
         Struct.__init__(self,
                         filename = filename,
+                        watch = watch,
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
@@ -426,7 +433,7 @@ class Viewer(Struct):
 
         scene.scene.disable_render = True
 
-        self.file_source = create_file_source(self.filename,
+        self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
         if nm.diff(self.file_source.get_step_range()) > 0:
             set_step = SetStep()
@@ -434,6 +441,7 @@ class Viewer(Struct):
             set_step._source = self.file_source
             set_step.step = 0
             gui.set_step = set_step
+            self.file_source.setup_notification(set_step, 'file_changed')
 
         self.build_mlab_pipeline(is_3d=is_3d,
                                  layout=layout,
@@ -445,7 +453,7 @@ class Viewer(Struct):
                                  rel_text_width=rel_text_width,
                                  filter_names=filter_names,
                                  only_names=only_names)
-            
+        
         scene.scene.reset_zoom()
 
         if view is None:
@@ -499,8 +507,15 @@ class SetStep(HasTraits):
 
     _viewer = Instance(Viewer)
     _source = Instance(FileSource)
-    _step_editor = RangeEditor(low=0, high=0, auto_set=True, mode='slider')
+    _step_editor = RangeEditor(low_name='step_low',
+                               high_name='step_high',
+                               label_width=28,
+                               auto_set=True,
+                               mode='slider')
     step = None
+    step_low = Int
+    step_high = Int
+    file_changed = Bool(False)
 
     traits_view = View(
         Item('step', defined_when='step is not None',
@@ -509,15 +524,19 @@ class SetStep(HasTraits):
 
     def __source_changed(self, old, new):
         rng = self._source.get_step_range()
-        self.step = None
-        self.add_trait('step', Range(*rng))
-        if self._step_editor.high == 0:
-            self._step_editor.high = int(rng[1])
+        self.add_trait('step', Int(0))
+        self.step_low, self.step_high = [int(ii) for ii in rng]
 
     def _step_changed(self, old, new):
         self._source.set_step(self.step)
         self._viewer.set_source_filename(self._source.filename)
 
+    def _file_changed_changed(self, old, new):
+        if new == True:
+            rng = self._source.get_step_range()
+            self.step_low, self.step_high = [int(ii) for ii in rng]
+
+        self.file_changed = False
 
 class ViewerGUI(HasTraits):
 
