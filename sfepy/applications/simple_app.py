@@ -72,7 +72,8 @@ class SimpleApp( Application ):
 
         # Override default equations, if use_equations is set.
         if hasattr(self.conf, 'equations'):
-            self.conf.equations = getattr(funmod, self.app_options.use_equations)
+            self.conf.equations = getattr(self.conf,
+                                          self.app_options.use_equations)
 
     def setup_output_info( self, problem, options ):
         """Modifies both problem and options!"""
