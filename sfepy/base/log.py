@@ -57,7 +57,10 @@ class ProcessPlotter( Struct ):
 
         elif command[0] == 'legends':
             for ig, ax in enumerate(self.ax):
-                ax.legend(self.data_names[ig])
+                try:
+                    ax.legend(self.data_names[ig])
+                except:
+                    pass
 
                 if self.xlabels[ig]:
                     ax.set_xlabel(self.xlabels[ig])
