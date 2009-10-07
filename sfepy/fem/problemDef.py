@@ -73,6 +73,7 @@ class ProblemDefinition( Struct ):
                                  domain = domain,
                                  eldesc_dir = eldesc_dir )
 
+        obj.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
 	# Default output file trunk and format.
 	obj.ofn_trunk = io.get_trunk( conf.filename_mesh )
         obj.output_format = 'vtk'
@@ -660,9 +661,17 @@ class ProblemDefinition( Struct ):
         """Initialize variables with history."""
         self.variables.init_state( state )
 
-    def get_output_name( self, suffix = None ):
-        """Return default output file name."""
+    def get_output_name(self, suffix=None, mode=None):
+        """Return default output file name, based on the output format,
+        step suffix and mode."""
         if suffix is None:
             return '.'.join( (self.ofn_trunk, self.output_format) )
+
         else:
-            return '.'.join( (self.ofn_trunk, suffix, self.output_format) )
+            if mode is None:
+                mode = self.output_modes[self.output_format]
+
+            if mode == 'sequence':
+                return '.'.join((self.ofn_trunk, suffix, self.output_format))
+            else:
+                return '.'.join((self.ofn_trunk, self.output_format))

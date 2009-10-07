@@ -87,7 +87,8 @@ class SimpleApp( Application ):
         problem.ofn_trunk = ofn_trunk
         problem.output_dir = self.app_options.output_dir
 
-        if hasattr( options, 'output_format' ):
+        if hasattr(options, 'output_format') \
+               and (options.output_format is not None):
             problem.output_format = options.output_format
         else:
             problem.output_format = self.app_options.output_format

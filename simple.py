@@ -26,7 +26,7 @@ help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
-    'output file format, one of: {vtk, h5, mesh} [default: %default]',
+    'output file format, one of: {vtk, h5, mesh} [default: vtk]',
     'save_ebc' :
     "save problem state showing EBC (Dirichlet conditions)",
     'save_regions' :
@@ -48,7 +48,7 @@ def main():
                        default = None, help = help['filename'] )
     parser.add_option( "", "--format", metavar = 'format',
                        action = "store", dest = "output_format",
-                       default = "vtk", help = help['output_format'] )
+                       default = None, help = help['output_format'] )
     parser.add_option( "", "--save-ebc",
                        action = "store_true", dest = "save_ebc",
                        default = False, help = help['save_ebc'] )
