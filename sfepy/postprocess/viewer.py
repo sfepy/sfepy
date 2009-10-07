@@ -1,8 +1,3 @@
-from sfepy.base.base import *
-from sfepy.base.la import cycle
-from sfepy.postprocess.utils import mlab
-from sfepy.postprocess.sources import create_file_source, FileSource
-
 from enthought.traits.api \
      import HasTraits, Instance, Range, Int, Bool, on_trait_change
 from enthought.traits.ui.api \
@@ -11,6 +6,12 @@ from  enthought.traits.ui.editors.range_editor import RangeEditor
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
+
+from sfepy.base.base import *
+from sfepy.base.la import cycle
+from sfepy.solvers.ts import get_print_info
+from sfepy.postprocess.utils import mlab
+from sfepy.postprocess.sources import create_file_source, FileSource
 
 def get_glyphs_scale_factor(rng, rel_scaling, bbox):
     delta = rng[1] - rng[0]
@@ -89,17 +90,24 @@ class Viewer(Struct):
         If True, watch the file for changes and update the mayavi
         pipeline automatically.
 
+    animate : bool
+        If True, save a view snaphost for each time step and exit.
+
+    output_dir : str
+        The output directory, where view snapshots will be saved.
+
     Examples
     --------
     >>> view = Viewer('file.vtk')
     >>> view() # view with default parameters
     >>> view(layout='col') # use column layout
     """
-    def __init__(self, filename, watch=False, output_dir='.', offscreen=False,
-                 auto_screenshot=True):
+    def __init__(self, filename, watch=False, animate=False,
+                 output_dir='.', offscreen=False, auto_screenshot=True):
         Struct.__init__(self,
                         filename = filename,
                         watch = watch,
+                        animate = animate,
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
@@ -143,10 +151,40 @@ class Viewer(Struct):
             pass
 
     def save_image(self, filename):
+        """Save a snapshot of the current scene."""
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
         name = os.path.join(self.output_dir, filename)
         output('saving %s...' % name)
         self.scene.scene.save(name)
         output('...done')
+
+    def get_animation_info(self, filename, add_output_dir=True, rng=None):
+        if rng is None:
+            rng = self.file_source.get_step_range()
+
+        base, ext = os.path.splitext(filename)
+        if add_output_dir:
+            base = os.path.join(self.output_dir, base)
+
+        n_digit, fmt, suffix = get_print_info(rng[1] - rng[0] + 1)
+        return base, suffix, ext
+
+    def save_animation(self, filename):
+        """Animate the current scene view for all the time steps and save
+        a snapshot of each step view."""
+        rng = self.file_source.get_step_range()
+        base, suffix, ext = self.get_animation_info(filename,
+                                                    add_output_dir=False,
+                                                    rng=rng)
+
+        for step in xrange(*rng):
+            name = '.'.join((base, suffix % step, ext[1:]))
+            output('%d: %s' % (step, name))
+
+            self.set_step.step = step
+            self.save_image(name)
 
     def get_size_hint(self, layout, resolution=None):
         if resolution is not None:
@@ -435,13 +473,16 @@ class Viewer(Struct):
 
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
-        if nm.diff(self.file_source.get_step_range()) > 0:
-            set_step = SetStep()
+        has_several_steps = nm.diff(self.file_source.get_step_range()) > 0
+        if has_several_steps:
+            self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
             set_step.step = 0
-            gui.set_step = set_step
             self.file_source.setup_notification(set_step, 'file_changed')
+
+            if gui is not None:
+                gui.set_step = set_step
 
         self.build_mlab_pipeline(is_3d=is_3d,
                                  layout=layout,
@@ -469,18 +510,16 @@ class Viewer(Struct):
         if anti_aliasing is not None:
             scene.scene.anti_aliasing_frames = anti_aliasing
 
-## This works only after the scene is active!
-##         if self.auto_screenshot:
-##             self.save_image(fig_filename)
-
-##         if is_scalar_bar:
-##             self.show_scalar_bars(self.scalar_bars)
-
         if gui is None:
             self.reset_view()
             if is_scalar_bar:
                 self.show_scalar_bars(self.scalar_bars)
-            self.save_image(fig_filename)
+
+            if self.animate:
+                self.save_animation(fig_filename)
+
+            else:
+                self.save_image(fig_filename)
 
         else:
             traits_view = View(

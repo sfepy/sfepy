@@ -76,8 +76,12 @@ help = {
     'watch' :
     'watch the results file for changes (single file mode only)',
     'filename' :
-    'view image file name [default: %default]',
-    'anim_file_type' :
+    "view image file name [default: 'view.png']",
+    'output_dir' :
+    "output directory for saving view images; ignored when -o option is" \
+    " given, as the directory part of the filename is taken instead" \
+    " [default: '.']",
+    'anim_format' :
     'if set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is' \
     ' installed and results of multiple time steps are given, an animation is' \
     ' created in the same directory as the view images',
@@ -113,9 +117,11 @@ def parse_ranges(option, opt, value, parser):
             ranges[aux[0]] = (float(aux[1]), float(aux[2]))
         setattr(parser.values, option.dest, ranges)
 
-def view_single_file(filename, filter_names, options, view=None):
+def view_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, watch=options.watch,
+                      animate=options.anim_format is not None,
+                      output_dir=options.output_dir,
                       offscreen=not options.show)
 
         if options.only_names is not None:
@@ -183,10 +189,13 @@ def main():
                       default=False, help=help['watch'])
     parser.add_option("-o", "--output", metavar='filename',
                       action="store", dest="filename",
-                      default='view.png', help=help['filename'])
+                      default=None, help=help['filename'])
+    parser.add_option("--output-dir", metavar='directory',
+                      action="store", dest="output_dir",
+                      default=None, help=help['output_dir'])
     parser.add_option("-a", "--animation", metavar='<ffmpeg-supported format>',
-                      action="store", dest="anim_file_type",
-                      default=None, help=help['anim_file_type'])
+                      action="store", dest="anim_format",
+                      default=None, help=help['anim_format'])
     parser.add_option("", "--ffmpeg-options", metavar='"<ffmpeg options>"',
                       action="store", dest="ffmpeg_options",
                       default='-r 10 -sameq',
@@ -215,67 +224,62 @@ def main():
         parser.print_help(),
         return
 
+    # Output dir / file names.
+    if options.filename is None:
+        options.filename = 'view.png'
+        if options.output_dir is None:
+            options.output_dir = '.'
+
+    else:
+        options.output_dir, options.filename = op.split(options.filename)
+
+    # Data filtering,
     if not options.all:
         filter_names = ['node_groups', 'mat_id']
     else:
         filter_names = []
 
-    if len(filenames) == 1:
-        filename = filenames[0]
+    if options.anim_format is not None:
+        # Force the offscreen rendering when saving an animation.
+        options.show = False
 
-        if options.list_ranges:
+    if options.list_ranges:
+        # FIXME: For HDF5, shows the range of the first step only for the moment.
+        all_ranges = {}
+        for ii, filename in enumerate(filenames):
+            output('%d: %s' % (ii, filename))
+
             file_source = create_file_source(filename)
-            get_data_ranges(file_source())
-
-        else:
-            view_single_file(filename, filter_names, options)        
-
-    else:
-        if (options.anim_file_type is not None) or options.list_ranges:
-            # Force the offscreen rendering when saving an animation.
-            options.show = False
-
-            fig_filename = options.filename
-            base, ext = os.path.splitext(fig_filename)
-
-            n_digit, fmt, suffix = get_print_info(len(filenames))
-
-            view = None
-            all_ranges = {}
-            for ii, filename in enumerate(filenames):
-                output('%d: %s' % (ii, filename))
-                options.filename = '.'.join((base, suffix % ii, ext[1:]))
-
-                if options.list_ranges:
-                    file_source = create_file_source(filename)
-                    for key, val in get_data_ranges(file_source()).iteritems():
-                        all_ranges.setdefault(key, []).append(val[3:])
-
-                else:
-                    view = view_single_file(filename, filter_names,
-                                            options, view)
-        else:
-            view_single_file(filenames, filter_names, options)        
-
-        if options.list_ranges:
+            for key, val in get_data_ranges(file_source()).iteritems():
+                all_ranges.setdefault(key, []).append(val[3:])
+            
+        if len(filenames) > 1:
             print 'summary of ranges:'
             for key, ranges in all_ranges.iteritems():
                 aux = nm.array(ranges)
                 print '  "%s": min(min): %s max(max): %s' % \
                       (key, aux[:,[0,2]].min(axis=0), aux[:,[1,3]].max(axis=0))
 
-        if options.anim_file_type is not None:
-            anim_name = '.'.join((base, options.anim_file_type))
-            cmd = 'ffmpeg %s -i %s %s' % (options.ffmpeg_options,
-                                          '.'.join((base, suffix, ext[1:])),
-                                          anim_name)
-            output('creating animation "%s"...' % anim_name)
-            try:
-                os.system(cmd) 
-            except:
-                output('...warning: animation not created, is ffmpeg installed?')
-            else:
-                output('...done')
+    else:
+        if len(filenames) == 1:
+            filenames = filenames[0]
+
+        view = view_file(filenames, filter_names, options)        
+
+    if options.anim_format is not None:
+        base, suffix, ext = view.get_animation_info(options.filename)
+
+        anim_name = '.'.join((base, options.anim_format))
+        cmd = 'ffmpeg %s -i %s %s' % (options.ffmpeg_options,
+                                      '.'.join((base, suffix, ext[1:])),
+                                      anim_name)
+        output('creating animation "%s"...' % anim_name)
+        try:
+            os.system(cmd) 
+        except:
+            output('...warning: animation not created, is ffmpeg installed?')
+        else:
+            output('...done')
 
 if __name__ == '__main__':
     main()
