@@ -91,12 +91,13 @@ def interp_conv_mat( mat, ts, tdiff ):
 def integrate_in_time( coef, ts, scheme = 'forward' ):
     """Forward difference or trapezoidal rule. 'ts' can be anything with
     'times' attribute."""
+    dt = nm.diff(ts.times)
+    dt = dt.reshape((dt.shape[0],) + (1,) * (coef.ndim-1))
+    
     if scheme == 'trapezoid':
-        icoef = nm.sum( 0.5 * (coef[1:,...] + coef[:-1,...])
-                        * nm.diff( ts.times )[:,nm.newaxis], axis = 0 )
+        icoef = nm.sum(0.5 * (coef[1:,...] + coef[:-1,...]) * dt, axis=0)
     elif scheme == 'forward':
-        icoef = nm.sum( coef[:-1,...]
-                        * nm.diff( ts.times )[:,nm.newaxis], axis = 0 )
+        icoef = nm.sum(coef[:-1,...] * dt, axis=0)
     else:
         raise ValueError( 'unsupported scheme: %s' % scheme )
     
