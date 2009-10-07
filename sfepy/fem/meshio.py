@@ -339,7 +339,7 @@ class MeditMeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         fd = open( filename, 'w' )
 
         coors = mesh.coors
@@ -574,7 +574,7 @@ class VTKMeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
 
         fd = open( filename, 'w' )
         fd.write( vtk_header % op.basename( sys.argv[0] ) )
@@ -892,7 +892,7 @@ class TetgenMeshIO( MeshIO ):
 
     ##
     # c: 26.03.2008, r: 26.03.2008
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
 
     def read_dimension(self):
@@ -1003,7 +1003,7 @@ class ComsolMeshIO( MeshIO ):
 
     ##
     # c: 20.03.2008, r: 20.03.2008
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
 
 ##
@@ -1043,7 +1043,7 @@ class HDF5MeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, filename, mesh, out = None, ts = None ):
+    def write( self, filename, mesh, out = None, ts = None, **kwargs ):
         from time import asctime
 
         if pt is None:
@@ -1387,7 +1387,7 @@ class AVSUCDMeshIO( MeshIO ):
     def read_dimension(self):
         return 3
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
 
 class HypermeshAsciiMeshIO( MeshIO ):
@@ -1430,7 +1430,7 @@ class HypermeshAsciiMeshIO( MeshIO ):
     def read_dimension(self):
         return 3
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
 
 class AbaqusMeshIO( MeshIO ):
@@ -1527,7 +1527,7 @@ class AbaqusMeshIO( MeshIO ):
     def read_dimension(self):
         return 3
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
     
 class BDFMeshIO( MeshIO ):
@@ -1645,7 +1645,7 @@ class BDFMeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, filename, mesh, out = None ):
+    def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
 
 def guess_format( filename, ext, formats, io_table ):
