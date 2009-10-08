@@ -1100,19 +1100,18 @@ class HDF5MeshIO( MeshIO ):
             name_dict = {}
             for key, val in out.iteritems():
     #            print key
-                if val.dofs is None:
-                    dofs = (-1,)
-                else:
-                    dofs = val.dofs
+                dofs = get_default(val.dofs, (-1,))
+                var_name = val.get_default_attr('var_name', 'None')
 
                 group_name = '_' + key.translate( self._tr )
-                data_group = fd.createGroup( step_group, group_name, '%s data' % key )
+                data_group = fd.createGroup(step_group, group_name,
+                                            '%s data' % key)
                 fd.createArray( data_group, 'data', val.data, 'data' )
                 fd.createArray( data_group, 'mode', val.mode, 'mode' )
                 fd.createArray( data_group, 'dofs', dofs, 'dofs' )
                 fd.createArray( data_group, 'name', val.name, 'object name' )
                 fd.createArray( data_group, 'var_name',
-                                val.var_name, 'object parent name' )
+                                var_name, 'object parent name' )
                 fd.createArray( data_group, 'dname', key, 'data name' )
                 name_dict[key] = group_name
 
