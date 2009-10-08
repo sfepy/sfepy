@@ -645,6 +645,27 @@ def get_default_attr( obj, attr, default, msg_if_none = None ):
 
     return out
 
+def get_arguments(omit=None):
+    """Get a calling function's arguments.
+
+    Returns
+    -------
+    args : dict
+        The calling function's  arguments.
+    """
+    from inspect import getargvalues, stack
+    if omit is None:
+        omit = []
+
+    _args, _, _, _vars = getargvalues(stack()[1][0])
+
+    args = {}
+    for name in _args:
+        if name in omit: continue
+        args[name] = _vars[name]
+
+    return args
+
 ##
 # c: 27.02.2008, r: 27.02.2008
 def select_by_names( objs_all, names, replace = None, simple = True ):
