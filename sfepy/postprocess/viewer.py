@@ -1,13 +1,16 @@
+import shutil, tempfile
+
 from enthought.traits.api \
-     import HasTraits, Instance, Range, Int, Bool, on_trait_change
+     import HasTraits, Instance, Button, Int, Bool, on_trait_change
 from enthought.traits.ui.api \
-     import View, Item, Group
+     import View, Item, Group, HGroup, spring
 from  enthought.traits.ui.editors.range_editor import RangeEditor
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 
 from sfepy.base.base import *
+from sfepy.base.tasks import Process
 from sfepy.base.la import cycle
 from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.utils import mlab
@@ -89,10 +92,14 @@ class Viewer(Struct):
     watch : bool
         If True, watch the file for changes and update the mayavi
         pipeline automatically.
-
     animate : bool
         If True, save a view snaphost for each time step and exit.
-
+    anim_format : str
+        If set to a ffmpeg-supported format (e.g. mov, avi, mpg), ffmpeg is
+        installed and results of multiple time steps are given, an animation is
+        created in the same directory as the view images.
+    ffmpeg_options : str
+        The ffmpeg animation encoding options.
     output_dir : str
         The output directory, where view snapshots will be saved.
 
@@ -102,16 +109,20 @@ class Viewer(Struct):
     >>> view() # view with default parameters
     >>> view(layout='col') # use column layout
     """
-    def __init__(self, filename, watch=False, animate=False,
+    def __init__(self, filename, watch=False,
+                 animate=False, anim_format=None, ffmpeg_options=None,
                  output_dir='.', offscreen=False, auto_screenshot=True):
         Struct.__init__(self,
                         filename = filename,
                         watch = watch,
                         animate = animate,
+                        anim_format = anim_format,
+                        ffmpeg_options = ffmpeg_options,
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
                         mlab = mlab)
+        self.options = get_arguments(omit = ['self'])
 
         if mlab is None:
             output('mlab cannot be imported, check your installation!')
@@ -185,6 +196,22 @@ class Viewer(Struct):
 
             self.set_step.step = step
             self.save_image(name)
+
+    def encode_animation(self, filename, format, ffmpeg_options):
+        base, suffix, ext = self.get_animation_info(filename)
+        anim_name = '.'.join((base, format))
+        cmd = 'ffmpeg %s -i %s %s' % (ffmpeg_options,
+                                      '.'.join((base, suffix, ext[1:])),
+                                      anim_name)
+        output('creating animation "%s"...' % anim_name)
+        try:
+            os.system(cmd) 
+        except:
+            output('...warning: animation not created, is ffmpeg installed?')
+        else:
+            output('...done')
+
+        return anim_name
 
     def get_size_hint(self, layout, resolution=None):
         if resolution is not None:
@@ -374,7 +401,7 @@ class Viewer(Struct):
         mlab.view(*self.view)
         mlab.roll(self.roll)
         self.scene.scene.camera.zoom(1.0)
-        
+
     def __call__(self, *args, **kwargs):
         """
         This is either call_mlab() or call_empty().
@@ -442,13 +469,19 @@ class Viewer(Struct):
         if rel_text_width is None:
             rel_text_width = 0.02
 
-        if scalar_mode == 'both':
-            scalar_mode = ('cut_plane', 'iso_surface')
-        elif scalar_mode in ('cut_plane', 'iso_surface'):
-            scalar_mode = (scalar_mode,)
+        if isinstance(scalar_mode, str):
+            if scalar_mode == 'both':
+                scalar_mode = ('cut_plane', 'iso_surface')
+            elif scalar_mode in ('cut_plane', 'iso_surface'):
+                scalar_mode = (scalar_mode,)
+            else:
+                raise ValueError('bad value of scalar_mode parameter! (%s)'
+                                 % scalar_mode)
         else:
-            raise ValueError('bad value of scalar_mode parameter! (%s)'
-                             % scalar_mode)
+            for sm in scalar_mode:
+                if not sm in ('cut_plane', 'iso_surface'):
+                    raise ValueError('bad value of scalar_mode parameter! (%s)'
+                                     % sm)
 
         mlab.options.offscreen = self.offscreen
 
@@ -497,6 +530,8 @@ class Viewer(Struct):
         
         scene.scene.reset_zoom()
 
+        self.options.update(get_arguments(omit = ['self', 'file_source']))
+
         if view is None:
             if is_3d or self.is_3d_data:
                 self.view = (45, 45)
@@ -529,7 +564,12 @@ class Viewer(Struct):
                      style='custom',
                 ),
                 Group(Item('set_step', defined_when='set_step is not None',
-                           show_label=False, style='custom'),),
+                           show_label=False, style='custom'),
+                ),
+                HGroup(spring,
+                       Item('button_view', show_label=False),
+                       Item('button_make_animation', show_label=False),),
+                
                 resizable=True,
                 buttons=['OK'],
             )
@@ -577,12 +617,44 @@ class SetStep(HasTraits):
 
         self.file_changed = False
 
+def make_animation(filename, view, roll, anim_format, options):
+    output_dir = tempfile.mkdtemp()
+    
+    viewer = Viewer(filename, watch=options.watch,
+                    animate=True,
+                    output_dir=output_dir,
+                    offscreen=True)
+
+    viewer(show=False, is_3d=options.is_3d, view=view,
+           roll=roll, layout=options.layout,
+           scalar_mode=options.scalar_mode,
+           rel_scaling=options.rel_scaling,
+           clamping=options.clamping, ranges=options.ranges,
+           is_scalar_bar=options.is_scalar_bar,
+           rel_text_width=options.rel_text_width,
+           fig_filename=options.fig_filename, resolution=options.resolution,
+           filter_names=options.filter_names, only_names=options.only_names,
+           anti_aliasing=options.anti_aliasing)
+
+    anim_name = viewer.encode_animation(options.fig_filename, anim_format,
+                                        options.ffmpeg_options)
+
+    import os.path as op
+    os.rename(anim_name, op.join(options.output_dir, op.split(anim_name)[1]))
+    shutil.rmtree(output_dir)
+
+    mlab.close(viewer.scene)
+
 class ViewerGUI(HasTraits):
 
     scene = Instance(MlabSceneModel, ())
 
     viewer = Instance(Viewer)
     set_step = Instance(SetStep)
+    button_view = Button('print view')
+    button_make_animation = Button('make animation')
+
+##     anim_process = Instance(Process)
 
     @on_trait_change('scene.activated')
     def _post_init(self, name, old, new):
@@ -597,3 +669,33 @@ class ViewerGUI(HasTraits):
 
         scene.foreground = fgcolor
         scene.background = bgcolor
+
+    def _button_view_fired(self):
+        self.scene.camera.print_traits()
+        print 'view:', mlab.view()
+        print 'roll:', mlab.roll()
+
+    def _button_make_animation_fired(self):
+        view = mlab.view()
+        roll = mlab.roll()
+
+##         if self.anim_process and self.anim_process.is_alive():
+##             output('terminating previous animation process...')
+##             self.anim_process.terminate()
+##             output('...done')
+
+##         output('starting animation process...')
+##         self.anim_process = Process(target=make_animation,
+##                                     args=(self.viewer.filename,
+##                                           view[:2],
+##                                           roll,
+##                                           Struct(**self.viewer.options)))
+##         self.anim_process.daemon = True
+##         self.anim_process.start()
+##         output('...done')
+
+        make_animation(self.viewer.filename,
+                       view[:2],
+                       roll,
+                       'avi',
+                       Struct(**self.viewer.options))

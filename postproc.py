@@ -121,6 +121,8 @@ def view_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, watch=options.watch,
                       animate=options.anim_format is not None,
+                      anim_format=options.anim_format,
+                      ffmpeg_options=options.ffmpeg_options,
                       output_dir=options.output_dir,
                       offscreen=not options.show)
 
@@ -267,19 +269,8 @@ def main():
         view = view_file(filenames, filter_names, options)        
 
     if options.anim_format is not None:
-        base, suffix, ext = view.get_animation_info(options.filename)
-
-        anim_name = '.'.join((base, options.anim_format))
-        cmd = 'ffmpeg %s -i %s %s' % (options.ffmpeg_options,
-                                      '.'.join((base, suffix, ext[1:])),
-                                      anim_name)
-        output('creating animation "%s"...' % anim_name)
-        try:
-            os.system(cmd) 
-        except:
-            output('...warning: animation not created, is ffmpeg installed?')
-        else:
-            output('...done')
+        view.encode_animation(options.filename, options.anim_format,
+                              options.ffmpeg_options)
 
 if __name__ == '__main__':
     main()
