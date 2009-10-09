@@ -23,7 +23,7 @@ file with the data plotted are saved, see the options below.
 
 Generation options
 ------------------
--o, --auto-dir, --same-dir, -f, --only-names
+-o, --auto-dir, --same-dir, -f, --only-names, -s
 
 Postprocessing mode
 -------------------
@@ -49,6 +49,8 @@ help = {
     'store the probe figures/data in the directory of the results file',
     'only_names' :
     'probe only named data',
+    'step' :
+    'probe the given time step',
     'postprocess' :
     'postprocessing mode',
     'radial' :
@@ -68,7 +70,7 @@ def generate_probes(filename_input, filename_results, options):
     output('results in: %s' % filename_results)
 
     io = MeshIO.any_from_filename(filename_results)
-    all_data = io.read_data(0)
+    all_data = io.read_data(options.step)
     output('loaded:', all_data.keys())
 
     if options.only_names is None:
@@ -213,6 +215,9 @@ def main():
     parser.add_option("--only-names", metavar='list of names',
                       action="store", dest="only_names",
                       default=None, help=help['only_names'])
+    parser.add_option("-s", "--step", type='int', metavar='step',
+                      action="store", dest="step",
+                      default=0, help=help['step'])
     parser.add_option("-p", "--postprocess",
                       action="store_true", dest="postprocess",
                       default=False, help=help['postprocess'])
