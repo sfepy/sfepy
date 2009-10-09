@@ -4,6 +4,7 @@ except ImportError:
     KDTree = None
 
 from sfepy.base.base import *
+from sfepy.base.la import make_axis_rotation_matrix
 from sfepy.fem.mesh import make_inverse_connectivity, TreeItem
 
 class Probe(Struct):
@@ -74,13 +75,19 @@ class LineProbe(Probe):
         self.dirvec = dirvec / self.length
 
     def get_points(self):
-        pars = []
-        points = []
-        for ii, step in enumerate(nm.linspace(0, self.length, self.n_point)):
-            point = nm.array(self.p0 + self.dirvec * step, ndmin=2)
-            pars.append(step)
-            points.append(point)
-        return nm.array(pars), nm.array(points)
+        """
+        Get the probe points.
+
+        Returns
+        -------
+        pars : array_like
+           The independent coordinate of the probe.
+        points : array_like
+           The probe points, parametrized by pars.
+        """
+        pars = nm.linspace(0, self.length, self.n_point)
+        points = self.p0 + self.dirvec * pars[:,None]
+        return pars, points
 
 class RayProbe(Probe):
     """Probe variables along a ray. The points are parametrized by a function of
@@ -98,22 +105,97 @@ class RayProbe(Probe):
                        both_dirs=both_dirs)
 
     def gen_points(self, sign):
-        pars = []
-        points = []
-        for ii in xrange(self.n_point):
-            step = self.p_fun(ii)
-            point = nm.array(self.p0 + sign * self.dirvec * step, ndmin=2)
-            pars.append(step)
-            points.append( point )
-        return nm.array(pars), nm.array(points)
+        pars = self.p_fun(nm.arange(self.n_point, dtype=nm.float64))
+        points = self.p0 + sign * self.dirvec * pars[:,None]
+        return pars, points
 
     def get_points(self):
+        """
+        Get the probe points.
+
+        Returns
+        -------
+        pars : array_like
+           The independent coordinate of the probe.
+        points : array_like
+           The probe points, parametrized by pars.
+        """
         pars, points = self.gen_points(1.0)
         if self.both_dirs:
             pars0, points0 = self.gen_points(-1.0)
             pars = nm.concatenate((-pars0[::-1], pars))
             points = nm.concatenate((points0[::-1], points))
         return pars, points
+
+class CircleProbe(Probe):
+    """Probe variables along a circle."""
+
+    def __init__(self, centre, normal, radius, n_point,
+                 mesh, share_mesh=True, use_tree=0):
+        """
+        Parameters
+        ----------
+        centre : array_like
+            The coordinates of the circle centre.
+        normal : array_like
+            The normal vector perpendicular to the circle plane.
+        radius : float
+            The radius of the circle.
+        n_point : int
+            The number of the probe points.
+        """
+        centre = nm.array(centre, dtype=nm.float64)
+        normal = nm.array(normal, dtype=nm.float64)
+        normal /= nla.norm(normal)
+
+        name = '[%s, %s, %s] / %d' % (centre, normal, radius, n_point)
+
+        Probe.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
+                       centre=centre, normal=normal, radius=radius,
+                       n_point=n_point)
+
+    def get_points(self):
+        """
+        Get the probe points.
+
+        Returns
+        -------
+        pars : array_like
+           The independent coordinate of the probe.
+        points : array_like
+           The probe points, parametrized by pars.
+        """
+        # Vector of angles.
+        pars = nm.linspace(0.0, 2.0*nm.pi, self.n_point + 1)[:-1]
+
+        # Create the points in xy plane, centered at the origin.
+        x = self.radius * nm.cos(pars[:,None])
+        y = self.radius * nm.sin(pars[:,None])
+
+        if self.mesh.dim == 3:
+            z = nm.zeros((self.n_point, 1), dtype=nm.float64)
+            points = nm.c_[x, y, z]
+
+            # Rotate to satisfy the normal, shift to the centre.
+            n1 = nm.array([0.0, 0.0, 1.0], dtype=nm.float64)
+            axis = nm.cross(n1, self.normal)
+            angle = nm.arccos(nm.dot(n1, self.normal))
+
+            if nla.norm(axis) < 0.1:
+                # n1 == self.normal
+                rot_mtx = nm.eye(3, dtype=nm.float64)
+            else:
+                rot_mtx = make_axis_rotation_matrix(axis, angle)
+
+            points = nm.dot(points, rot_mtx)
+
+        else:
+            points = nm.c_[x, y]
+    
+        points += self.centre
+
+        return pars, points
+
 
 class IntegralProbe(Struct):
     """Evaluate integral expressions."""
