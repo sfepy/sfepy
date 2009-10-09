@@ -254,6 +254,32 @@ def rotation_matrix2d( angle ):
                      [nm.sin( angle ), nm.cos( angle )]], dtype = nm.float64 )
     return mtx
 
+def make_axis_rotation_matrix(direction, angle):
+    """
+    Create a rotation matrix corresponding to the rotation around a general
+    axis by a specified angle.
+    
+    R = dd^T + cos(a) (I - dd^T) + sin(a) skew(d)
+    
+    Parameters
+    ----------
+    direction : array
+        The rotation axis direction vector "d".
+    angle : float
+        The rotation angle "a".
+    """
+    d = nm.array(direction, dtype=nm.float64)
+    d /= nm.linalg.norm(d)
+    
+    eye = nm.eye(3, dtype=nm.float64)
+    ddt = nm.outer(d, d)
+    skew = nm.array([[    0,  d[2],  -d[1]],
+                     [-d[2],     0,  d[0]],
+                     [d[1], -d[0],    0]], dtype=nm.float64)
+
+    mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
+    return mtx
+
 ##
 # 30.08.2007, c
 class MatrixAction( Struct ):
