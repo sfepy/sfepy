@@ -62,6 +62,9 @@ help = {
     'scalar_mode' :
     'mode for plotting scalars with --3d, one of: cut_plane, iso_surface,'\
     ' both [default: %default]',
+    'vector_mode' :
+    'mode for plotting vectors, one of: arrows, norm, arrows_norm, warp_norm'\
+    ' [default: %default]',
     'rel_scaling' :
     'relative scaling of glyphs (vector field visualization)' \
     ' [default: %default]',
@@ -132,6 +135,7 @@ def view_file(filename, filter_names, options, view=None):
         view(show=options.show, is_3d=options.is_3d, view=options.view,
              roll=options.roll, layout=options.layout,
              scalar_mode=options.scalar_mode,
+             vector_mode=options.vector_mode,
              rel_scaling=options.rel_scaling,
              clamping=options.clamping, ranges=options.ranges,
              is_scalar_bar=options.is_scalar_bar,
@@ -170,6 +174,9 @@ def main():
     parser.add_option("--scalar-mode", metavar='mode',
                       action="store", dest="scalar_mode",
                       default='iso_surface', help=help['scalar_mode'])
+    parser.add_option("--vector-mode", metavar='mode',
+                      action="store", dest="vector_mode",
+                      default='arrows_norm', help=help['vector_mode'])
     parser.add_option("-s", "--scale-glyphs", type='float', metavar='scale',
                       action="store", dest="rel_scaling",
                       default=0.05, help=help['rel_scaling'])

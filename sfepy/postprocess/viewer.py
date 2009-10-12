@@ -228,6 +228,7 @@ class Viewer(Struct):
 
     def build_mlab_pipeline(self, file_source=None, is_3d=False, layout='rowcol',
                             scalar_mode='iso_surface',
+                            vector_mode='arrows_norm',
                             rel_scaling=None, clamping=False,
                             ranges=None, is_scalar_bar=False,
                             rel_text_width=None,
@@ -312,12 +313,32 @@ class Viewer(Struct):
                     active = mlab.pipeline.set_active_attribute(ctp)
                 active.point_vectors_name = name
 
-                glyphs = add_glyphs(active, position, bbox,
-                                    rel_scaling=rel_scaling, clamping=clamping)
-
                 if (ranges is not None) and (name in ranges):
-                    sf = get_glyphs_scale_factor(ranges[name], rel_scaling, bbox)
-                    glyphs.glyph.glyph.scale_factor = sf
+                    sf = get_glyphs_scale_factor(ranges[name],
+                                                 rel_scaling, bbox)
+                else:
+                    sf = None
+
+                if 'arrows' in vector_mode:
+                    glyphs = add_glyphs(active, position, bbox,
+                                        rel_scaling=rel_scaling,
+                                        clamping=clamping)
+                    if sf is not None:
+                        glyphs.glyph.glyph.scale_factor = sf
+
+                if 'warp' in vector_mode:
+                    active = mlab.pipeline.warp_vector(active)
+                    if sf is not None:
+                        active.filter.scale_factor = sf
+
+                if 'norm' in vector_mode:
+                    active = mlab.pipeline.extract_vector_norm(active)
+                    if 'arrows' in vector_mode:
+                        opacity = 0.3
+                    else:
+                        opacity = 1.0
+                    surf = add_surf(active, position, opacity=opacity)
+                    
 
             elif kind == 'tensors':
                 if family == 'point':
@@ -413,7 +434,7 @@ class Viewer(Struct):
     
     def call_mlab(self, scene=None, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
-                  rel_scaling=None, clamping=False,
+                  vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, anti_aliasing=None):
@@ -438,6 +459,9 @@ class Viewer(Struct):
         scalar_mode : str
              Mode for plotting scalars and tensor magnitudes, one of
              'cut_plane', 'iso_surface', 'both'. 
+        vector_mode : str
+             Mode for plotting vectors, one of 'arrows', 'norm', 'arrows_norm',
+             'warp_norm'.
         rel_scaling : float
             Relative scaling of glyphs for vector datasets.
         clamping : bool
@@ -483,6 +507,22 @@ class Viewer(Struct):
                     raise ValueError('bad value of scalar_mode parameter! (%s)'
                                      % sm)
 
+        if isinstance(vector_mode, str):
+            if vector_mode == 'arrows_norm':
+                vector_mode = ('arrows', 'norm')
+            elif vector_mode == 'warp_norm':
+                vector_mode = ('warp', 'norm')
+            elif vector_mode in ('arrows', 'norm'):
+                vector_mode = (vector_mode,)
+            else:
+                raise ValueError('bad value of vector_mode parameter! (%s)'
+                                 % vector_mode)
+        else:
+            for vm in vector_mode:
+                if not vm in ('arrows', 'norm', 'warp'):
+                    raise ValueError('bad value of vector_mode parameter! (%s)'
+                                     % sm)
+
         mlab.options.offscreen = self.offscreen
 
         self.size_hint = self.get_size_hint(layout, resolution=resolution)
@@ -520,6 +560,7 @@ class Viewer(Struct):
         self.build_mlab_pipeline(is_3d=is_3d,
                                  layout=layout,
                                  scalar_mode=scalar_mode,
+                                 vector_mode=vector_mode,
                                  rel_scaling=rel_scaling,
                                  clamping=clamping,
                                  ranges=ranges,
@@ -628,6 +669,7 @@ def make_animation(filename, view, roll, anim_format, options):
     viewer(show=False, is_3d=options.is_3d, view=view,
            roll=roll, layout=options.layout,
            scalar_mode=options.scalar_mode,
+           vector_mode=options.vector_mode,
            rel_scaling=options.rel_scaling,
            clamping=options.clamping, ranges=options.ranges,
            is_scalar_bar=options.is_scalar_bar,
