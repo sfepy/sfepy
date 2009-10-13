@@ -311,6 +311,9 @@ class Variables( Container ):
 
         obj.setup_dtype()
 
+        print obj
+        pause()
+
         return obj
     from_conf = staticmethod( from_conf )
 
@@ -1165,49 +1168,20 @@ class Variables( Container ):
 # 11.07.2006, c
 class Variable( Struct ):
 
-    def from_conf( key, conf, fields ):
-        flags = set()
+    def from_conf(key, conf, fields):
+        print conf
         kind, family = conf.kind.split()
 
         history = get_default_attr( conf, 'history', None )
         assert_( (history is None) or (history in ['previous', 'full']) )
 
-        obj = Variable( flags, name = conf.name, key = key,
-                        kind = kind, family = family, history = history )
+        order = int(conf.get_default_attr('order', -1))
 
-        if kind == 'unknown':
-            obj.flags.add( is_state )
-            if hasattr( conf, 'order' ):
-                obj._order = int( conf.order )
-            else:
-                msg = 'unnown variable %s: order missing' % conf.name
-                raise ValueError( msg )
-            obj.dof_name = obj.name
-        elif kind == 'test':
-            obj.flags.add( is_virtual )
-            if hasattr( conf, 'dual' ):
-                obj.primary_var_name = conf.dual
-            else:
-                msg = 'test variable %s: related unknown missing' % conf.name
-                raise ValueError( msg )
-            obj.dof_name = obj.primary_var_name
-        elif kind == 'parameter':
-            obj.flags.add( is_parameter )
-            if hasattr( conf, 'like' ):
-                obj.primary_var_name = conf.like
-            else:
-                msg = 'parameter variable %s: related unknown missing'\
-                        % conf.name
-                raise ValueError( msg )
-            obj.dof_name = obj.primary_var_name
+        primary_var_name = conf.get_default_attr('dual', None)
+        if primary_var_name is None:
+            primary_var_name = conf.get_default_attr('like', None)
 
-            if hasattr(conf, 'special'):
-                obj.special = conf.special
-
-        else:
-            obj.flags.add( is_other )
-            msg = 'unknown variable family: %s' % family
-            raise NotImplementedError( msg )
+        special = conf.get_default_attr('special', None)
 
         if family == 'field':
             try:
@@ -1215,30 +1189,75 @@ class Variable( Struct ):
             except:
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError( msg )
+            obj = FieldVariable(conf.name, kind, order, primary_var_name,
+                                fld, special=special,
+                                key=key, history=history)
 
-            obj.set_field( fld )
+        elif family == 'constant':
+            obj = ConstantVariable(conf.name, kind, order, primary_var_name,
+                                   conf.field, special=special,
+                                   key=key, history=history)
+
+        else:
+            raise ValueError('unknown variable family! (%s)' % family)
 
         return obj
     from_conf = staticmethod( from_conf )
 
-    def __init__( self, flags, data = None, indx = 0, **kwargs ):
-        Struct.__init__( self, **kwargs )
+    def __init__(self, name, kind, order=-1, primary_var_name=None,
+                 flags=None, **kwargs):
+        Struct.__init__(self, name=name, **kwargs)
 
         self.flags = set()
-        for flag in flags:
-            self.flags.add( flag )
+        if flags is not None:
+            for flag in flags:
+                self.flags.add(flag)
 
         self.data = deque()
-        self.data.append( data )
+        self.data.append(None)
         self.indx = None
         self.n_dof = None
-        self.current_ap = None
         self.step = 0
         self.dt = 1.0
         self.initial_condition = None
 
         if self.is_virtual():
             self.data = None
+
+        self._set_kind(kind, order, primary_var_name)
+
+    def _set_kind(self, kind, order, primary_var_name):
+        if kind == 'unknown':
+            self.flags.add(is_state)
+            if order >= 0:
+                self._order = order
+            else:
+                msg = 'unnown variable %s: order missing' % self.name
+                raise ValueError(msg)
+            self.dof_name = self.name
+
+        elif kind == 'test':
+            self.flags.add(is_virtual)
+            msg = 'test variable %s: related unknown missing' % self.name
+            self.primary_var_name = get_default(primary_var_name, None,
+                                                msg)
+            self.dof_name = self.primary_var_name
+
+        elif kind == 'parameter':
+            self.flags.add( is_parameter )
+            msg = 'parameter variable %s: related unknown missing' % self.name
+            self.primary_var_name = get_default(primary_var_name, None,
+                                                msg)
+            self.dof_name = self.primary_var_name
+
+            if hasattr(conf, 'special'):
+                self.special = conf.special
+        else:
+            obj.flags.add( is_other )
+            msg = 'unknown variable kind: %s' % kind
+            raise NotImplementedError( msg )
+            
+        self.kind = kind
 
     ##
     # 11.07.2006, c
@@ -1377,22 +1396,6 @@ class Variable( Struct ):
         self.indx = slice(0, len(data))
 
         self.data[step] = data
-
-    def set_field( self, field ):
-        """Takes reference to a Field instance. Sets dtype according to
-        field.dtype."""
-        self.field = field
-        self.dpn = nm.product( field.shape )
-        self.n_nod = field.n_nod
-
-        if self.dof_name is None:
-            dof_name = 'aux'
-        else:
-            dof_name = self.dof_name
-        self.dofs = [dof_name + ('.%d' % ii) for ii in range( self.dpn )]
-
-        self.flags.add( is_field )
-        self.dtype = field.dtype
 
     def setup_dof_conns(self, dof_conns, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""
@@ -2252,3 +2255,51 @@ class CloseNodesIterator(Struct):
         self.ii += 1
 
         return ii, val
+
+## ##
+## # 11.07.2006, c
+## class FEVariable( Variable ):
+##     """Finite element Variable
+## field .. field description of variable (borrowed)
+## """
+class FieldVariable(Variable):
+    """A finite element field variable.
+    
+    field .. field description of variable (borrowed)
+    """
+
+    def __init__(self, name, kind, order, primary_var_name,
+                 field, special=None, flags=None, **kwargs):
+        Variable.__init__(self, name, kind, order, primary_var_name,
+                          flags, **kwargs)
+
+        self.set_field(field)
+
+    def set_field( self, field ):
+        """Takes reference to a Field instance. Sets dtype according to
+        field.dtype."""
+        self.field = field
+        self.dpn = nm.product( field.shape )
+        self.n_nod = field.n_nod
+
+        if self.dof_name is None:
+            dof_name = 'aux'
+        else:
+            dof_name = self.dof_name
+        self.dofs = [dof_name + ('.%d' % ii) for ii in range( self.dpn )]
+
+        self.flags.add( is_field )
+        self.dtype = field.dtype
+
+        self.current_ap = None
+
+class ConstantVariable(Variable):
+    """A constant variable.
+    """
+    def __init__(self, name, kind, order, primary_var_name,
+                 dtype, special=None, flags=None, **kwargs):
+        Variable.__init__(self, name, kind, order, primary_var_name,
+                          flags, **kwargs)
+
+        dtypes = {'real' : nm.float64, 'complex' : nm.complex128}
+        self.dtype = dtypes[dtype]
