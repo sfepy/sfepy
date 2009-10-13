@@ -1,22 +1,6 @@
 from sfepy.terms.terms import *
 
 ##
-# c: 13.11.2007, r: 30.04.2008
-def fix_traction_shape( mat, n_nod ):
-    if nm.isscalar( mat ):
-        mat = nm.tile( mat, (n_nod, 1) )
-    else:
-        mat = nm.array( mat, ndmin = 1 )
-        if mat.ndim < 2:
-            mat = mat[:,nm.newaxis]
-        if mat.shape[0] != n_nod:
-            if mat.shape[0] == 1:
-                mat = nm.tile( mat, (n_nod, 1) )
-            else:
-                mat = nm.tile( mat[:,0], (n_nod, 1) )
-    return nm.ascontiguousarray( mat )
-
-##
 # 22.08.2006, c
 class LinearTractionTerm( Term ):
     r""":description: Linear traction forces (weak form), where,
@@ -37,7 +21,6 @@ class LinearTractionTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
         Should work in scalar, vector and tensor modes (tensor probably broken).
-        Tractions defined in vertices -> using 'vertex' subset of leconn
         """
         traction, virtual = self.get_args( **kwargs )
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
@@ -53,20 +36,18 @@ class LinearTractionTerm( Term ):
         gbf = ap.get_base( sd.face_type, 0, self.integral_name,
                            from_geometry = True )
 
-        traction = fix_traction_shape( traction, sd.nodes.shape[0] )
 ##        sg.str( sys.stdout, 0 )
 ##         print ap.bf[sd.face_type]
 ##         pause()
 
 ##         if ap.bf[sd.face_type].shape != gbf.shape:
 ##             raise NotImplementedError, 'tractions on P1 edges only!'
-        n_ep = gbf.shape[2]
-        leconn = sd.leconn[:,:n_ep].copy()
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
-#            print out.shape, lchunk.shape
+##             print out.shape, lchunk.shape
+##             print traction.shape
             status = self.function( out, bf, gbf,
-                                    traction, sg, leconn, lchunk )
+                                    traction, sg, lchunk )
 ##             print out
 ##             print nm.sum( out )
 ##             pause()

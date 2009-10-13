@@ -229,7 +229,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 
 int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
 		      FMField *traction, SurfaceGeometry *sg,
-		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow );
 
 int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,

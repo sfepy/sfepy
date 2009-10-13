@@ -11,73 +11,66 @@
 */
 int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
 		      FMField *traction, SurfaceGeometry *sg,
-		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow )
 {
   int32 ii, iel, dim, sym, nQP, nFP, ret = RET_OK;
-  FMField *trac = 0, *tracQP = 0, *outQP = 0, *pn = 0, *stn = 0;
+  FMField *outQP = 0, *pn = 0, *stn = 0;
 
   nFP = bf->nCol;
   nQP = sg->det->nLev;
   dim = sg->normal->nRow;
   sym = (dim + 1) * dim / 2;
 
-  FMF_SetFirst( traction );
 /*   fmf_print( traction, stdout, 0 ); */
 
-  fmf_createAlloc( &trac, 1, 1, traction->nCol, nEP );
-  fmf_createAlloc( &tracQP, 1, nQP, traction->nCol, 1 );
   fmf_createAlloc( &outQP, 1, nQP, dim * nFP, 1 );
 
-  if (traction->nCol == 1) { // Pressure.
+  if (traction->nRow == 1) { // Pressure.
     fmf_createAlloc( &pn, 1, nQP, dim, 1 );
-
+    
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, iel );
       FMF_SetCell( sg->det, iel );
 
-      ele_extractNodalValuesDBD( trac, traction, conn + nEP * iel );
-      bf_act( tracQP, gbf, trac );
-      fmf_mulAB_nn( pn, sg->normal, tracQP );
-      bf_actt_c1( outQP, bf, pn );
+      fmf_mulAB_nn( pn, sg->normal, traction );
+      bf_actt( outQP, bf, pn );
 
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );
     }
 
-  } else if (traction->nCol == dim) { // Traction vector.
+  } else if (traction->nRow == dim) { // Traction vector.
 
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, iel );
       FMF_SetCell( sg->det, iel );
 
-      ele_extractNodalValuesDBD( trac, traction, conn + nEP * iel );
-      bf_act( tracQP, gbf, trac );
-      bf_actt_c1( outQP, bf, tracQP );
+      bf_actt( outQP, bf, traction );
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );
     }
 
-  } else if (traction->nCol == sym) { // Traction tensor.
+  } else if (traction->nRow == sym) { // Traction tensor.
     fmf_createAlloc( &stn, 1, nQP, dim, 1 );
 
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
+      FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, iel );
       FMF_SetCell( sg->det, iel );
 
-      ele_extractNodalValuesDBD( trac, traction, conn + nEP * iel );
-      bf_act( tracQP, gbf, trac );
-      geme_mulAVSB3( stn, tracQP, sg->normal );
-      bf_actt_c1( outQP, bf, stn );
+      geme_mulAVSB3( stn, traction, sg->normal );
+      bf_actt( outQP, bf, stn );
 
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );
@@ -88,8 +81,6 @@ int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
   }
 
  end_label:
-  fmf_freeDestroy( &trac ); 
-  fmf_freeDestroy( &tracQP ); 
   fmf_freeDestroy( &outQP ); 
   if (traction->nCol == 1) {
     fmf_freeDestroy( &pn ); 
