@@ -311,9 +311,6 @@ class Variables( Container ):
 
         obj.setup_dtype()
 
-        print obj
-        pause()
-
         return obj
     from_conf = staticmethod( from_conf )
 
@@ -378,32 +375,30 @@ class Variables( Container ):
         """Sets also i_dof_max."""
         def _setup_dof_info( iterable ):
             ptr = [0]
-            n_nod = []
-            dpn = []
-            vnames = []
-            for ii in iterable:
+            names = []
+            indx = {}
+            n_dof = {}
+            details = {}
+            for iseq, ii in enumerate(iterable):
                 var = self[ii]
-                var.i_dof_max = var.field.n_nod * var.dpn
+                name = var.name
 
-                n_nod.append( var.field.n_nod )
-                dpn.append( var.dpn )
-                ptr.append( ptr[-1] + dpn[-1] * n_nod[-1] )
-                vnames.append( var.name )
+                n_dof[name], details[name] = var.get_dof_info()
+                ptr.append(ptr[-1] + n_dof[name])
+                indx[name] = slice(int(ptr[iseq] ), int(ptr[iseq+1]))
+                names.append(name)
 
-            di = DofInfo(
-                name = 'dof_info',
-                ptr = nm.array( ptr, dtype = nm.int32 ),
-                n_nod = nm.array( n_nod, dtype = nm.int32 ),
-                dpn = nm.array( dpn, dtype = nm.int32 ),
-                vnames = vnames, indx = {}, n_dofs = {}
+            di = DofInfo(name = 'dof_info',
+                         ptr = nm.array(ptr, dtype=nm.int32),
+                         n_dof = n_dof,
+                         details = details,
+                         indx = indx,
+                         names = names
             )
-
-            for ii, name in enumerate( di.vnames ):
-                di.indx[name] = slice( int( di.ptr[ii] ), int( di.ptr[ii+1] ) )
-                di.n_dofs[name] = di.ptr[ii+1] - di.ptr[ii]
             return di
 
         self.di = _setup_dof_info( self.ordered_state )
+        
         if make_virtual:
             self.vdi = _setup_dof_info( self.ordered_virtual )
         else:
@@ -1169,7 +1164,6 @@ class Variables( Container ):
 class Variable( Struct ):
 
     def from_conf(key, conf, fields):
-        print conf
         kind, family = conf.kind.split()
 
         history = get_default_attr( conf, 'history', None )
@@ -1186,9 +1180,10 @@ class Variable( Struct ):
         if family == 'field':
             try:
                 fld = fields[conf.field]
-            except:
+            except IndexError:
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError( msg )
+
             obj = FieldVariable(conf.name, kind, order, primary_var_name,
                                 fld, special=special,
                                 key=key, history=history)
@@ -2281,6 +2276,7 @@ class FieldVariable(Variable):
         self.field = field
         self.dpn = nm.product( field.shape )
         self.n_nod = field.n_nod
+        self.n_dof = self.n_nod * self.dpn
 
         if self.dof_name is None:
             dof_name = 'aux'
@@ -2293,6 +2289,12 @@ class FieldVariable(Variable):
 
         self.current_ap = None
 
+    def get_dof_info(self):
+        details = Struct(name = 'field_var_dof_details',
+                         n_nod = self.n_nod,
+                         dpn = self.dpn)
+        return self.n_dof, details
+
 class ConstantVariable(Variable):
     """A constant variable.
     """
@@ -2303,3 +2305,10 @@ class ConstantVariable(Variable):
 
         dtypes = {'real' : nm.float64, 'complex' : nm.complex128}
         self.dtype = dtypes[dtype]
+
+        self.n_dof = 1
+
+    def get_dof_info(self):
+        details = Struct(name = 'constant_var_dof_details')
+        return self.n_dof, details
+
