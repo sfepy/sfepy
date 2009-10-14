@@ -265,12 +265,16 @@ class Container( Struct ):
     ##
     # 14.11.2005, c
     def __getitem__( self, ii ):
-        if isinstance( ii, int ):
-            return self._objs[ii]
-        elif isinstance( ii, str ):
-            return self._objs[self.names.index( ii )]
-        else:
-            raise IndexError
+        try:
+            if isinstance( ii, int ):
+                return self._objs[ii]
+            elif isinstance( ii, str ):
+                return self._objs[self.names.index(ii)]
+            else:
+                raise ValueError('bad index type! (%s)' % type(ii))
+
+        except (IndexError, ValueError), msg:
+            raise IndexError(msg)
 
     def __iter__( self ):
         return self._objs.__iter__()
