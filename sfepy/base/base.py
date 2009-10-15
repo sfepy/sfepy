@@ -764,6 +764,16 @@ def get_arguments(omit=None):
 
     return args
 
+def check_names(names1, names2, msg):
+    """Check if all names in names1 are in names2, otherwise raise IndexError
+    with the provided message msg.
+    """
+    names = set(names1)
+    both = names.intersection(names2)
+    if both != names:
+        missing = ', '.join(ii for ii in names.difference(both))
+        raise IndexError(msg % missing)
+
 ##
 # c: 27.02.2008, r: 27.02.2008
 def select_by_names( objs_all, names, replace = None, simple = True ):
