@@ -4,16 +4,17 @@ from sfepy.base.la import cycle
 from sfepy.fem import Mesh
 
 def gen_block_mesh(dims, shape, centre, name='block'):
-    """Generate a block mesh.
+    """Generate a 2D or 3D block mesh. The dimension is determined by the
+    lenght of the shape argument. 
 
     Parameters
     ----------
 
-    dims : array of 3 floats
+    dims : array of 2 or 3 floats
         Dimensions of the block.
-    shape : array of 3 ints
+    shape : array of 2 or 3 ints
         Shape (counts of nodes in x, y, z) of the block mesh.
-    centre : array of 3 floats
+    centre : array of 2 or 3 floats
         Centre of the block.
 
     name : string
@@ -26,37 +27,53 @@ def gen_block_mesh(dims, shape, centre, name='block'):
     """
     dim = shape.shape[0]
 
+    centre = centre[:dim]
+    dims = dims[:dim]
+
     x0 = centre - 0.5 * dims
     dd = dims / (shape - 1)
 
     grid = nm.zeros( shape, dtype = nm.int32 )
     n_nod = nm.prod( shape )
     coors = nm.zeros( (n_nod, dim), dtype = nm.float64 )
-
-    # This is 3D only...
+    
     bar = MyBar( "       nodes:" )
     bar.init( n_nod )
     for ii, ic in enumerate( cycle( shape ) ):
-        ix, iy, iz = ic
-        grid[ix,iy,iz] = ii
+        grid[tuple(ic)] = ii
         coors[ii] = x0 + ic * dd
         if not (ii % 100):
             bar.update( ii )
-    print
+    bar.update(ii + 1)
+
     n_el = nm.prod( shape - 1 )
-    conn = nm.zeros( (n_el, 8), dtype = nm.int32 )
-    bar = MyBar( "       elements:" )
-    bar.init( n_el )
-    for ii, (ix, iy, iz) in enumerate( cycle( shape - 1 ) ):
-        conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
-                      grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
-                      grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
-                      grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
-        if not (ii % 100):
-            bar.update( ii )
-    print
     mat_id = nm.zeros( (n_el,), dtype = nm.int32 )
-    desc = '3_8'
+
+    if (dim == 2):
+        conn = nm.zeros( (n_el, 4), dtype = nm.int32 )
+        bar = MyBar( "       elements:" )
+        bar.init( n_el )
+        for ii, (ix, iy) in enumerate( cycle( shape - 1 ) ):
+            conn[ii,:] = [grid[ix  ,iy], grid[ix+1,iy  ],
+                          grid[ix+1,iy+1], grid[ix  ,iy+1]]
+            if not (ii % 100):
+                bar.update( ii )
+        bar.update(ii + 1)
+        desc = '2_4'
+
+    else:
+        conn = nm.zeros( (n_el, 8), dtype = nm.int32 )
+        bar = MyBar( "       elements:" )
+        bar.init( n_el )
+        for ii, (ix, iy, iz) in enumerate( cycle( shape - 1 ) ):
+            conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
+                          grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
+                          grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
+                          grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
+            if not (ii % 100):
+                bar.update( ii )
+        bar.update(ii + 1)
+        desc = '3_8'
 
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
     return mesh
