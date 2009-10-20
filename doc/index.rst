@@ -6,12 +6,19 @@
 Welcome to SfePy's documentation!
 =================================
 
+SfePy is a finite element analysis software written almost entirely in Python.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   module_sfepy_base_base
+   introduction
+   tutorial
+   users_guide
+   examples
+   developer_guide
+   documentation_guide
 
 Indices and tables
 ==================

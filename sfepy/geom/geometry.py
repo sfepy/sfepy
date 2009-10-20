@@ -11,7 +11,6 @@ class geometry(object):
     geometry element number  ->   instance of point,line,surface of volume
 
     Example:
-    ========
 
     To get all the points which define a surface 5, use:
 

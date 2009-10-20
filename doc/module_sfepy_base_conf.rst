@@ -1,6 +1,6 @@
-sfepy.base.base module
+sfepy.base.conf module
 ======================
 
-.. automodule:: sfepy.base.base
+.. automodule:: sfepy.base.conf
    :members:
    :undoc-members:

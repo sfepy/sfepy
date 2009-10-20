@@ -107,8 +107,8 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
     """Define sides and corner regions for a box aligned with coordinate
     axes.
 
-    Parameters
-    ----------
+    Parameters:
+
     dim : int
         Space dimension
     lbn : tuple
@@ -119,8 +119,8 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
     eps : float
         A parameter, that should be smaller than the smallest mesh node distance.
 
-    Returns
-    -------
+    Returns:
+
     regions : dict
         The box regions.
     """
@@ -188,8 +188,8 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
 def get_box_volume(dim, lbn, rtf=None):
     """Volume of a box aligned with coordinate axes.
 
-    Parameters
-    ----------
+    Parameters:
+
     dim : int
         Space dimension
     lbn : tuple
@@ -198,8 +198,8 @@ def get_box_volume(dim, lbn, rtf=None):
     rtf : tuple
         Right top far point coordinates.
 
-    Returns
-    -------
+    Returns:
+
     volume : float
         The box volume.
     """

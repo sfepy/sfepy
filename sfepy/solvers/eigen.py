@@ -214,6 +214,7 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
             'precond' : None,
             'verbosity' : 0,
         }
+
         """
         get = conf.get_default_attr
 

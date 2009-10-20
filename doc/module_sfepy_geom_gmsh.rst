@@ -1,6 +1,6 @@
-sfepy.base.base module
+sfepy.geom.gmsh module
 ======================
 
-.. automodule:: sfepy.base.base
+.. automodule:: sfepy.geom.gmsh
    :members:
    :undoc-members:

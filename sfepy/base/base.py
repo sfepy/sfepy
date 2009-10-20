@@ -212,8 +212,8 @@ class Struct( object ):
     def copy(self, deep=False, name=None):
         """Make a (deep) copy of self.
 
-        Parameters
-        ----------
+        Parameters:
+
         deep : bool
             Make a deep copy.
         name : str
@@ -648,8 +648,8 @@ def get_default_attr( obj, attr, default, msg_if_none = None ):
 def get_arguments(omit=None):
     """Get a calling function's arguments.
 
-    Returns
-    -------
+    Returns:
+
     args : dict
         The calling function's  arguments.
     """

@@ -261,8 +261,8 @@ def make_axis_rotation_matrix(direction, angle):
     
     R = dd^T + cos(a) (I - dd^T) + sin(a) skew(d)
     
-    Parameters
-    ----------
+    Parameters:
+
     direction : array
         The rotation axis direction vector "d".
     angle : float
