@@ -9,6 +9,18 @@ shared = Struct()
 # TODO : interpolate fvars to macro times. ?mid-points?
 #
 
+def get_output_suffix(ig, iel, ts, naming_scheme, format, output_format):
+    if output_format != 'h5':
+        if naming_scheme == 'step_iel':
+            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
+        else:
+            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
+
+    else:
+        suffix = format % (ig, iel)
+
+    return suffix
+
 def convolve_field_scalar( fvars, pvars, iel, ts ):
     """
     \int_0^t f(t-s) p(s) ds, t is given by step
@@ -267,14 +279,12 @@ def recover_bones( problem, micro_problem, region, eps0,
                                 mode = 'cell', data = aux,
                                 dofs = None)
 
-        if naming_scheme == 'step_iel':
-            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
-        else:
-            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
-        micro_name = micro_problem.get_output_name( suffix = suffix )
+        suffix = get_output_suffix(ig, iel, ts, naming_scheme, format,
+                                   micro_problem.output_format)
+        micro_name = micro_problem.get_output_name(extra=suffix)
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
-        micro_problem.save_state( filename, out = out )
+        micro_problem.save_state(filename, out=out, ts=ts)
 
 def recover_paraflow( problem, micro_problem, region,
                       ts, strain, dstrains, pressures1, pressures2,
@@ -343,11 +353,9 @@ def recover_paraflow( problem, micro_problem, region,
                           mode = 'vertex', data = p_mic,
                           var_name = vp, dofs = micro_p.dofs )
 
-        if naming_scheme == 'step_iel':
-            suffix = '.'.join( (ts.suffix % ts.step, format % (ig, iel)) )
-        else:
-            suffix = '.'.join( (format % (ig, iel), ts.suffix % ts.step) )
-        micro_name = micro_problem.get_output_name( suffix = suffix )
+        suffix = get_output_suffix(ig, iel, ts, naming_scheme, format,
+                                   micro_problem.output_format)
+        micro_name = micro_problem.get_output_name(extra=suffix)
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
-        micro_problem.save_state( filename, out = out )
+        micro_problem.save_state(filename, out=out, ts=ts)
