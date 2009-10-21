@@ -666,18 +666,17 @@ class ProblemDefinition( Struct ):
         step suffix and mode. If present, the extra string is put just before
         the output format suffix.
         """
-        if extra is None:
-            extra = ''
-
-        if suffix is None:
-            return '.'.join( (self.ofn_trunk, extra, self.output_format) )
-
-        else:
+        out = self.ofn_trunk
+        if suffix is not None:
             if mode is None:
                 mode = self.output_modes[self.output_format]
 
             if mode == 'sequence':
-                return '.'.join((self.ofn_trunk, suffix, extra,
-                                 self.output_format))
-            else:
-                return '.'.join((self.ofn_trunk, extra, self.output_format))
+                out = '.'.join((self.ofn_trunk, suffix))
+
+        if extra is not None:
+            out = '.'.join((out, extra, self.output_format))
+        else:
+            out = '.'.join((out, self.output_format))
+
+        return out
