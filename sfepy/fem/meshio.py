@@ -1173,7 +1173,7 @@ class HDF5MeshIO( MeshIO ):
         return out
 
     def read_data_header( self, dname, step = 0, filename = None ):
-        fd, step_group = _get_step_group( step, filename = filename )
+        fd, step_group = self._get_step_group( step, filename = filename )
         if fd is None: return None
 
         groups = step_group._v_groups
