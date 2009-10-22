@@ -437,7 +437,8 @@ class Viewer(Struct):
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
-                  filter_names=None, only_names=None, anti_aliasing=None):
+                  filter_names=None, only_names=None, step=0,
+                  anti_aliasing=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -484,6 +485,8 @@ class Viewer(Struct):
         only_names : list of strings
             Draw only the listed datasets. If None, it is initialized all names
             besides those in filter_names.
+        step : int
+            The time step to display.
         anti_aliasing : int
             Value of anti-aliasing.
         """
@@ -551,7 +554,7 @@ class Viewer(Struct):
             self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
-            set_step.step = 0
+            set_step.step = step
             self.file_source.setup_notification(set_step, 'file_changed')
 
             if gui is not None:
