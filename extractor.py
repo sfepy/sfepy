@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 # 26.09.2006, c 
+"""
+Examples
+--------
+
+$ ./extractor.py -e "p e 0 1999" bone.h5
+$ ./extractor.py -e "p e 0 1999" bone.h5 -a
+$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
+$ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
+"""
 import os.path as op
 from optparse import OptionParser
 
@@ -184,6 +193,9 @@ def main():
             ts = TimeStepper( *HDF5MeshIO( filename_in ).read_time_stepper() )
             ths.update( {'times' : ts.times, 'dt' : ts.dt} )
             write_dict_hdf5( options.output_filename_trunk + '.h5', ths )
+
+        else:
+            print dict_to_struct(ths, flag=(1, 1, 1)).str_all()
 
 if __name__ == '__main__':
     main()
