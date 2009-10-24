@@ -51,11 +51,11 @@ def dump_to_vtk( filename, options, steps = None ):
 
 ##
 # c: 26.09.2006, r: 23.06.2008
-def extract_time_history( filename, options ):
-    output( 'extracting selected data...' )
+def extract_time_history(filename, options, verbose=True):
+    output('extracting selected data...', verbose=verbose)
 
     el = options.extract_list
-    output( 'extraction list:', el )
+    output('extraction list:', el, verbose=verbose)
 
     ##
     # Parse extractions.
@@ -97,7 +97,8 @@ def extract_time_history( filename, options ):
     ths = {}
     for pe in pes:
         mode, nname = io.read_data_header( pe.var )
-        print mode, nname
+        output(mode, nname, verbose=verbose)
+
         if ((pe.mode == 'n' and mode == 'vertex') or
             (pe.mode == 'e' and mode == 'cell')):
             th = io.read_time_history( nname, pe.indx )
@@ -112,6 +113,9 @@ def extract_time_history( filename, options ):
             raise RuntimeError, 'cannot extract cell data %s in nodes' % pe.var
             
         ths[pe.var] = th
+
+    output('...done', verbose=verbose)
+
     return ths
 
 ##
