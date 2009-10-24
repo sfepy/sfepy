@@ -624,6 +624,9 @@ class Viewer(Struct):
             else:
                 gui.edit_traits(view=traits_view)
 
+                if self.auto_screenshot:
+                    self.save_image(fig_filename)
+
         return gui
 
 class SetStep(HasTraits):

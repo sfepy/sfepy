@@ -245,7 +245,7 @@ def main():
             options.output_dir = '.'
 
     else:
-        options.output_dir, options.filename = op.split(options.filename)
+        options.output_dir, options.filename = os.path.split(options.filename)
 
     # Data filtering,
     if not options.all:
@@ -258,7 +258,6 @@ def main():
         options.show = False
 
     if options.list_ranges:
-        # FIXME: For HDF5, shows the range of the first step only for the moment.
         all_ranges = {}
         for ii, filename in enumerate(filenames):
             output('%d: %s' % (ii, filename))
