@@ -409,7 +409,21 @@ class Output( Struct ):
         self.set_output(filename, combined)
         
     def __call__(self, *argc, **argv):
-        self.output_function(*argc, **argv)
+        """Call self.output_function.
+
+        Parameters
+        ----------
+        argc : positional arguments
+            The values to print.
+        argv : keyword arguments
+            The arguments to control the output behaviour. Supported keywords
+            are listed below.
+        verbose : bool (in **argv)
+            No output if False.
+        """
+        verbose = argv.get('verbose', True)
+        if verbose:
+            self.output_function(*argc, **argv)
 
     def set_output(self, filename=None, combined=False, append=False):
         """Set the output function - all SfePy printing is accomplished by
