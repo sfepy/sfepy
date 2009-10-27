@@ -1,7 +1,7 @@
 Developer Guide
 ===============
 
-This section purports to document the SfePy internals. It is mainly useful for those who which to develop SfePy and understand the inner workings of the code.
+This section purports to document the *SfePy* internals. It is mainly useful for those who wish to develop *SfePy* and understand the inner workings of the code.
 
 Module Index
 ------------

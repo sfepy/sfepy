@@ -198,9 +198,37 @@ latex_documents = [
 
 # Additional stuff for the LaTeX preamble.
 #latex_preamble = ''
+latex_preamble = r"""
+\usepackage{bm}
+\def\dt{{\Delta t}}
+\def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
+\def\difd#1{\ {\rm d}#1}
+\newcommand{\dvg}{\mathop{\rm div}}
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\uld}[1]{\dot{\underline{#1}}}
+\newcommand{\ull}[1]{\underline{\underline{#1}}}
+"""
+# LS: Are the following needed as well?
+#\def\Vcal{\mathcal{V}}
+#\def\Tcal{\mathcal{T}}
+#\def\figDir{../doc/tex/figures}
+#"""
 
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+# Preamble for pngmath images
+pngmath_latex_preamble = r"""
+\usepackage{bm}
+\def\dt{{\Delta t}}
+\def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
+\def\difd#1{\ {\rm d}#1}
+\newcommand{\dvg}{\mathop{\rm div}}
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\uld}[1]{\dot{\underline{#1}}}
+\newcommand{\ull}[1]{\underline{\underline{#1}}}
+"""
+
