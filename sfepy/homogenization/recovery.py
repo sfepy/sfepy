@@ -242,10 +242,10 @@ def recover_bones( problem, micro_problem, region, eps0,
         # \eta_k \partial_k^x p
         p1 = combine_scalar_grad(corrs_permeability, p_grad, vn, ii)
 
-        p_hat_e = micro_p.extend_data(p_hat[:,nm.newaxis], micro_n_nod, val=0.0)
-        p_mic = compute_p_from_macro(p_grad, micro_coor, ii) + p_hat_e / eps0
-        p_mic = p_hat_e / eps0
-        p_mic[nodes_yc] = p1[:,nm.newaxis]
+        p_hat_e = micro_p.extend_data(p_hat[:,None], micro_n_nod, val=0.0)
+        p_mic = compute_p_from_macro(p_grad, micro_coor, ii)[:,None] \
+                + p_hat_e / eps0
+        p_mic[nodes_yc] = p1[:,None]
         
 ##         print u_mic
 ##         print p_mic
