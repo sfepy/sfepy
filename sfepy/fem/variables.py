@@ -1955,6 +1955,276 @@ class Variable( Struct ):
         
         return vals
 
+    def set_from_mesh_vertices(self, data):
+        """Set the variable using values at the mesh vertices."""
+        ndata = self.field.interp_v_vals_to_n_vals(data)
+        self.data_from_any(ndata)
+
+##         print data.shape
+##         print ndata.shape
+
+    def set_from_other(self, other, strategy='kdtree', ordering_strategy='rcm'):
+        """
+        Set the variable using another variable.
+        
+        Notes
+        -----
+        
+        If the other variable uses the same mesh, only deformed slightly, it is
+        advisable to provide directly the node ids as a hint where to start
+        searching for a containing element; the order of nodes does not
+        matter then.
+
+        Otherwise (large deformation, unrelated meshes, ...) there are
+        basically two ways:
+        a) query each node (its coordinates) using a KDTree of the other nodes
+        - this completely disregards the connectivity information;
+        b) iterate the mesh nodes so that the subsequent ones are close to each
+        other - then also the elements of the other mesh should be close to each
+        other: the previous one can be used as a start for the directional
+        neighbour element crawling to the target point.
+
+        Not sure which way is faster, depends on implementation efficiency and
+        the particular meshes.
+        """
+        
+        # Assume different meshes -> general interpolation.
+        f1 = self.field
+        f2 = other.field
+
+        c1 = f1.get_coor()
+        c2 = f2.get_coor()
+
+        output('interpolating from %d nodes to %d nodes...' % (c2.shape[0],
+                                                               c1.shape[0]))
+
+        if strategy == 'kdtree':
+            from scipy.spatial import KDTree
+
+            tt = time.clock()
+            ctree = KDTree(c2)
+            output('ctree: %f s' % (time.clock()-tt))
+
+
+            tt = time.clock()
+            iter_nodes = CloseNodesIterator(f1, create_graph=False)
+            output('iterator: %f s' % (time.clock()-tt))
+
+            tt = time.clock()
+            for ii, point in iter_nodes():
+                ic = ctree.query(point)[1]
+#                print ii, point, ic
+            output('interpolator: %f s' % (time.clock()-tt))
+
+
+        elif strategy == 'crawl':
+            # Get map self.node -> other.element, including the barycentric coors
+            # w.r.t. the other element
+            mesh1 = f1.domain.mesh
+            mesh2 = f2.domain.mesh
+
+            iconn = make_inverse_connectivity(mesh2.conns, mesh2.n_nod,
+                                              combine_groups=True)
+
+
+            basis = Basis(iconn = iconn,
+                          aps = f2.aps,
+                          coors = c2,
+                          last_el = None)
+
+            tt = time.clock()
+            iter_nodes = CloseNodesIterator(f1, strategy='rcm')
+            output('iterator: %f s' % (time.clock()-tt))
+    #        iter_nodes.test_permutations()
+
+            for ii, point in iter_nodes(strategy=ordering_strategy):
+                bf = basis.find_local_basis(point)
+
+        else:
+            raise ValueError('unknown strategy! (%s)' % strategy)
+
+        output('...done')
+
+class CloseNodesIterator(Struct):
+
+    def __init__(self, field, create_graph=True, strategy=None):
+        self.field = field
+        self.coors = self.field.get_coor()
+
+        if create_graph:
+            self.mesh = self.field.create_mesh()
+
+            self.graph = self.mesh.create_conn_graph()
+##             self.graph.save('graph', format = '%d %d %d\n')
+            self.perm = self.get_permutation(strategy=strategy)
+            self.strategy = strategy
+
+        else:
+            self.graph = None
+            self.strategy = None
+
+    def __call__(self, strategy=None):
+        if strategy is None or (strategy != self.strategy):
+            self.perm = self.get_permutation(strategy=strategy)
+            self.strategy = strategy
+
+        self.ii = 0
+        return self
+
+    def get_permutation(self, strategy=None):
+        graph = self.graph
+
+        n_nod = self.coors.shape[0]
+        dtype = nm.int32
+
+        if strategy is None:
+            perm = nm.arange(n_nod, dtype=dtype)
+
+        elif strategy == 'rcm':
+            from sfepy.linalg import rcm
+            perm = rcm(graph)
+            
+        elif 'greedy' in strategy:
+            ipop, iin = {'00' : (0, 0),
+                         'e0' : (-1, 0),
+                         '0e' : (0, -1),
+                         'ee' : (-1, -1),
+                         '01' : (0, 1),
+                         }[strategy[-2:]]
+
+            perm_i = nm.empty((n_nod,), dtype=dtype)
+            perm_i.fill(-1)
+
+            n_nod = perm_i.shape[0]
+            num = graph.indptr[1:] - graph.indptr[:-1]
+
+            ir = nm.argmin(num)
+            perm_i[ir] = 0
+            active = [ir]
+            ii = 1
+            while ii < n_nod:
+                ir = active.pop(ipop)
+                row = graph.indices[graph.indptr[ir]:graph.indptr[ir+1]]
+##                 print ir, row
+                ips = []
+                for ip in row:
+                    if perm_i[ip] < 0:
+                        perm_i[ip] = ii
+                        ii += 1
+                        ips.append(ip)
+                if iin >= 0:
+                    active[iin:iin] = ips
+                else:
+                    active.extend(ips)
+
+            perm = nm.empty_like(perm_i)
+            perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
+             
+        return perm
+
+    def test_permutations(self, strategy='rcm'):
+        from sfepy.linalg import permute_in_place
+
+        graph = self.graph.copy()
+
+        perm = self.get_permutation('rcm')
+        g_perm = self.get_permutation('greedy_ee')
+
+        c1 = self.mesh.coors
+        d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
+        d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
+        d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
+        print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
+        print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
+        print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
+
+        permute_in_place(graph, perm)
+        graph.save('graph_rcm', format = '%d %d %d\n')
+
+        permute_in_place(graph, perm, inverse=True)
+        permute_in_place(graph, g_perm)
+        graph.save('graph_g', format = '%d %d %d\n')
+
+##         permute_in_place(graph, g_perm, inverse=True)
+##         permute_in_place(graph, g_perm, inverse=True)
+##         graph.save('graph_gi', format = '%d %d %d\n')
+
+
+        from matplotlib import pyplot as plt
+        n_bins = 30
+        plt.figure()
+        plt.subplot(311)
+        plt.hist(d1, n_bins, histtype='bar')
+        plt.subplot(312)
+        plt.hist(d2, n_bins, histtype='bar')
+        plt.subplot(313)
+        plt.hist(d3, n_bins, histtype='bar')
+
+        plt.figure()
+        plt.hist(nm.array([d1, d2, d3]).T, n_bins, histtype='bar')
+        plt.show()
+
+##         debug()
+        
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        try:
+            ii = self.perm[self.ii]
+            val = self.coors[ii]
+        except IndexError:
+            raise StopIteration
+
+        self.ii += 1
+
+        return ii, val
+
+class Basis(Struct):
+
+    def find_local_basis(self, point):
+        from sfepy.base.la import inverse_element_mapping
+
+        if self.last_el is not None:
+            pass
+        else:
+            i0 = find_nearest_nodes(self.coors, point)
+
+        bf = None
+        for ig, iel in els:
+            print ig, iel
+            ap = aps[ig]
+            nodes = ap.econn[iel]
+            el_coors = coors[nodes]
+            print el_coors
+
+            interp = aps[ig].interp
+            ref_coors = interp.nodes['v'].bar_coors
+            base_fun = interp.base_funs['v'].fun
+
+            debug()
+
+            n_v, dim = el_coors.shape
+            if n_v == (dim + 1):
+                bc = la.barycentric_coors(point, el_coors)
+                xi = nm.dot(bc.T, ref_coors)
+            else: # Tensor-product and other.
+                xi = inverse_element_mapping(point, el_coors, base_fun, ref_coors,
+                                             suppress_errors=True)
+
+                bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
+                                    suppress_errors=True)
+                print xi, bf
+
+                if bf is None:
+                    # Point outside the mesh.
+                    vals[:,ii] = nm.nan
+                else:
+                    # For scalar fields only!!!
+                    vals[:,ii] = nm.dot(bf,self()[nodes])
+
+
 ## ##
 ## # 11.07.2006, c
 ## class FEVariable( Variable ):
