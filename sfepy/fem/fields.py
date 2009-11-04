@@ -305,13 +305,16 @@ class Field( Struct ):
     def interp_v_vals_to_n_vals( self, vec ):
         dim = vec.shape[1]
         enod_vol_val = nm.zeros( (self.n_nod, dim), nm.float64 )
-        for ii, ap in enumerate( self.aps ):
-            sub = ap.sub
+        for region_name, ig, ap in self.aps.iter_aps():
+            group = self.domain.groups[ig]
+            offset = group.shape.n_ep
+            conn = ap.econn[:,:offset]
 
-            noff = ap.node_offsets
+            noff = ap.node_offsets.ravel()
             if noff[1] == noff[-1]:
                 # Vertex values only...
-                enod_vol_val[sub.conn] = vec[sub.conn]
+                ii = nm.unique1d(conn) # Probably wrong?!
+                enod_vol_val[ii] = vec[ii]
                 continue
 
             econn = ap.econn
@@ -320,10 +323,12 @@ class Field( Struct ):
             coors = ap.interp.nodes['v'].bar_coors
 
             qp = Struct( vals = coors )
-            bf, aux = fea.eval_bf( {'v': qp}, ginterp.base_funs, ginterp.nodes )
-            bf = bf['v'][:,0,:].copy()
+            bf = fea.eval_bf(qp, ginterp.base_funs['v'],
+                             ginterp.nodes['v'].vals, 0)
+            bf = bf[:,0,:].copy()
             
-            fea.mu.interp_vertex_data( enod_vol_val, econn, vec, sub.conn, bf, 0 )
+            fea.mu.interp_vertex_data(enod_vol_val, econn, vec, group.conn,
+                                      bf, 0)
 
         return enod_vol_val
 
