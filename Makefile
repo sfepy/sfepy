@@ -36,7 +36,7 @@ EXT_INCL     := $(PYTHON_INCL)
 ISRELEASE := 1
 ISOPT :=
 
-MODULES := examples input sfepy sfepy/applications sfepy/base sfepy/eldesc sfepy/fem sfepy/fem/extmods sfepy/geom sfepy/homogenization sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
+MODULES := examples input sfepy sfepy/applications sfepy/base sfepy/eldesc sfepy/fem sfepy/fem/extmods sfepy/geom sfepy/homogenization sfepy/linalg sfepy/linalg/extmods sfepy/mechanics sfepy/solvers sfepy/terms sfepy/terms/extmods sfepy/physics sfepy/physics/extmods tests
 ifdef ISOPT
   MODULES += sfepy/optimize
 endif
