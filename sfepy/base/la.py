@@ -182,7 +182,10 @@ def inverse_element_mapping( coors, e_coors, base_fun, ref_coors,
             xi : reference element coordinates
     """
     n_v, dim = e_coors.shape
-    n_c, dim2 = coors.shape
+    if coors.ndim == 2:
+        n_c, dim2 = coors.shape
+    else:
+        n_c, dim2 = 1, coors.shape[0]
 
     assert_( dim == dim2 )
 
