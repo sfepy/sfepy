@@ -15,6 +15,15 @@ def main():
     parser.add_option( "-e", "--epsilon", type = float,
                        dest = "eps", default = None,
                        help = "set drop-off tolerance [default: %default]" )
+    parser.add_option( "-o", metavar = 'figname',
+                       dest = "figname", default = None,
+                       help = "save the figure to figname" )
+    parser.add_option( "-t", "--transparent", action = "store_true",
+                       dest = "transparent", default = False,
+                       help = "save the figure as transparent" )
+    parser.add_option( "-n", "--no-show", action = "store_true",
+                       dest = "no_show", default = False,
+                       help = "do not show the figure" )
     (options, args) = parser.parse_args()
     if len( args ) < 1:
         print usage
@@ -50,7 +59,12 @@ def main():
     xlabel( '%d x %d: %d nnz, %.2f\%% fill'
             % (n_row, n_col, n_item, 100. * n_item / float( n_row * n_col )) )
     gca().set_ylim( gca().get_ylim()[::-1] )
-    show()
+
+    if options.figname is not None:
+        savefig(options.figname, transparent=options.transparent)
+
+    if not options.no_show:
+        show()
     
 if (__name__ == '__main__'):
     main()
