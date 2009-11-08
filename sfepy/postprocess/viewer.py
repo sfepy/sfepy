@@ -190,7 +190,7 @@ class Viewer(Struct):
                                                     add_output_dir=False,
                                                     rng=rng)
 
-        for step in xrange(*rng):
+        for step in xrange(rng[0], rng[1]+1):
             name = '.'.join((base, suffix % step, ext[1:]))
             output('%d: %s' % (step, name))
 
