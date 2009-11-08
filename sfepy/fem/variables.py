@@ -1856,6 +1856,24 @@ class Variable( Struct ):
 
         return diameters
 
+    def save_as_mesh(self, filename):
+        """
+        Save the field mesh and the variable values into a file for
+        visualization. Only the vertex values are stored.
+        """
+        mesh = self.field.create_mesh(extra_nodes=False)
+        vec = self()
+
+        n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.dpn
+        aux = nm.reshape(vec, (n_dof / dpn, dpn))
+        ext = self.extend_data(aux, n_nod, 0.0)
+
+        out = {}
+        out[self.name] = Struct(name = 'output_data',
+                                mode = 'vertex', data = ext,
+                                var_name = self.name, dofs = self.dofs )
+        mesh.write(filename, io='auto', out=out)
+        
     def interp_to_points(self, points, mesh, ctree=None, iconn=None,
                          cache=None):
         """
@@ -1963,9 +1981,18 @@ class Variable( Struct ):
 ##         print data.shape
 ##         print ndata.shape
 
-    def set_from_other(self, other, strategy='kdtree', ordering_strategy='rcm'):
+
+    def set_from_other(self, other, strategy='projection',
+                       search_strategy='kdtree', ordering_strategy='rcm'):
         """
-        Set the variable using another variable.
+        Set the variable using another variable. Undefined values (e.g. outside
+        the other mesh) are set to numpy.nan, or extrapolated.
+
+        Parameters
+        ----------
+        strategy : 'projection' or 'interpolation'
+            The strategy to set the values: the L^2 orthogonal projection, or
+            a direct interpolation to the nodes (nodal elements only!)
         
         Notes
         -----
@@ -1987,6 +2014,14 @@ class Variable( Struct ):
         Not sure which way is faster, depends on implementation efficiency and
         the particular meshes.
         """
+
+##         # TODO:
+##         coors = self.get_interp_coors()
+##         vals = other.evaluate_at(coors)
+##         if strategy == 'interpolation':
+##             self.data_from_any(vals)
+##         elif strategy == 'projection':
+##             self.data_from_projection(vals)
         
         # Assume different meshes -> general interpolation.
         f1 = self.field
@@ -1998,8 +2033,9 @@ class Variable( Struct ):
         output('interpolating from %d nodes to %d nodes...' % (c2.shape[0],
                                                                c1.shape[0]))
 
-        if strategy == 'kdtree':
-            from scipy.spatial import KDTree
+        if search_strategy == 'kdtree':
+            from scipy.spatial import cKDTree as KDTree
+#            from scipy.spatial import KDTree
 
             tt = time.clock()
             ctree = KDTree(c2)
@@ -2010,14 +2046,35 @@ class Variable( Struct ):
             iter_nodes = CloseNodesIterator(f1, create_graph=False)
             output('iterator: %f s' % (time.clock()-tt))
 
+            mesh = iter_nodes.mesh
+            iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                              combine_groups=True)
+
+            basis = Basis(ctree = ctree,
+                          iconn = iconn,
+                          aps = f2.aps,
+                          coors = c2,
+                          last_el = None)
+
             tt = time.clock()
+            # For scalar field only!!!
+            vals = nm.empty((c1.shape[0],), dtype=self.dtype)
+
+            other_vals = other()
             for ii, point in iter_nodes():
-                ic = ctree.query(point)[1]
-#                print ii, point, ic
+                bf, nodes, status = basis.find_local_basis(point)
+##                 print bf
+##                 print nodes
+##                 print status
+                if 1 or status <= 1:
+                    vals[ii] = nm.dot(bf,other_vals[nodes])
+                else:
+                    vals[ii] = 0.0
             output('interpolator: %f s' % (time.clock()-tt))
 
+            self.data_from_any(vals)
 
-        elif strategy == 'crawl':
+        elif search_strategy == 'crawl':
             # Get map self.node -> other.element, including the barycentric coors
             # w.r.t. the other element
             mesh1 = f1.domain.mesh
@@ -2035,27 +2092,28 @@ class Variable( Struct ):
             tt = time.clock()
             iter_nodes = CloseNodesIterator(f1, strategy='rcm')
             output('iterator: %f s' % (time.clock()-tt))
-    #        iter_nodes.test_permutations()
+            iter_nodes.test_permutations()
 
             for ii, point in iter_nodes(strategy=ordering_strategy):
                 bf = basis.find_local_basis(point)
 
         else:
-            raise ValueError('unknown strategy! (%s)' % strategy)
+            raise ValueError('unknown search strategy! (%s)' % search_strategy)
 
         output('...done')
 
 class CloseNodesIterator(Struct):
 
-    def __init__(self, field, create_graph=True, strategy=None):
+    def __init__(self, field, create_mesh=True, create_graph=True,
+                 strategy=None):
         self.field = field
         self.coors = self.field.get_coor()
 
-        if create_graph:
+        if create_mesh or create_graph:
             self.mesh = self.field.create_mesh()
 
+        if create_graph:
             self.graph = self.mesh.create_conn_graph()
-##             self.graph.save('graph', format = '%d %d %d\n')
             self.perm = self.get_permutation(strategy=strategy)
             self.strategy = strategy
 
@@ -2077,12 +2135,15 @@ class CloseNodesIterator(Struct):
         n_nod = self.coors.shape[0]
         dtype = nm.int32
 
+        tt = time.clock()
+
         if strategy is None:
             perm = nm.arange(n_nod, dtype=dtype)
 
         elif strategy == 'rcm':
             from sfepy.linalg import rcm
             perm = rcm(graph)
+            print 'rcm', time.clock() - tt
             
         elif 'greedy' in strategy:
             ipop, iin = {'00' : (0, 0),
@@ -2119,49 +2180,60 @@ class CloseNodesIterator(Struct):
 
             perm = nm.empty_like(perm_i)
             perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
+
+        print strategy, time.clock() - tt
              
         return perm
 
     def test_permutations(self, strategy='rcm'):
-        from sfepy.linalg import permute_in_place
+        from sfepy.linalg import permute_in_place, save_sparse_txt
 
+        save_sparse_txt('graph', self.graph, fmt='%d %d %d\n')
         graph = self.graph.copy()
 
         perm = self.get_permutation('rcm')
-        g_perm = self.get_permutation('greedy_ee')
+
+        g_types = ['00', 'e0', '0e', 'ee', '01']
+        g_names = ['greedy_%s' % ii for ii in g_types]
+        g_perms = [self.get_permutation('greedy_%s' % ii) for ii in g_types]
 
         c1 = self.mesh.coors
         d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
         d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
-        d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
         print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
         print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
-        print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
+        ds = []
+        for g_perm in g_perms:
+            d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
+            ds.append(d3)
+            print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
 
         permute_in_place(graph, perm)
-        graph.save('graph_rcm', format = '%d %d %d\n')
+        save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')
 
-        permute_in_place(graph, perm, inverse=True)
-        permute_in_place(graph, g_perm)
-        graph.save('graph_g', format = '%d %d %d\n')
-
-##         permute_in_place(graph, g_perm, inverse=True)
-##         permute_in_place(graph, g_perm, inverse=True)
-##         graph.save('graph_gi', format = '%d %d %d\n')
-
+        for ii, g_name in enumerate(g_names):
+            graph = self.graph.copy()
+            permute_in_place(graph, g_perms[ii])
+            save_sparse_txt('graph_%s' % g_name, graph, fmt='%d %d %d\n')
 
         from matplotlib import pyplot as plt
         n_bins = 30
         plt.figure()
         plt.subplot(311)
-        plt.hist(d1, n_bins, histtype='bar')
+        _, bins, ps = plt.hist(d1, n_bins, histtype='bar')
+        plt.legend(ps[0:1], ['default'])
         plt.subplot(312)
-        plt.hist(d2, n_bins, histtype='bar')
+        plt.hist(d2, bins, histtype='bar')
+        plt.legend(ps[0:1], ['RCM'])
         plt.subplot(313)
-        plt.hist(d3, n_bins, histtype='bar')
+        _, _, ps = plt.hist(nm.array(ds).T, bins, histtype='bar')
+        plt.legend([ii[0] for ii in ps], g_names)
+        plt.savefig('hist_distances_sub.pdf', transparent=True)
 
         plt.figure()
-        plt.hist(nm.array([d1, d2, d3]).T, n_bins, histtype='bar')
+        _, _, ps = plt.hist(nm.array([d1, d2] + ds).T, n_bins, histtype='bar')
+        plt.legend([ii[0] for ii in ps], ['default', 'RCM'] + g_names)
+        plt.savefig('hist_distances.pdf', transparent=True)
         plt.show()
 
 ##         debug()
@@ -2183,47 +2255,82 @@ class CloseNodesIterator(Struct):
 
 class Basis(Struct):
 
-    def find_local_basis(self, point):
+    def find_local_basis(self, point, close_limit=0.1,
+                         allow_extrapolation=True):
         from sfepy.base.la import inverse_element_mapping
 
-        if self.last_el is not None:
-            pass
-        else:
-            i0 = find_nearest_nodes(self.coors, point)
+        ic = self.ctree.query(point)[1]
+        els = self.iconn[ic]
 
+        aps = self.aps
+
+        xis = []
         bf = None
         for ig, iel in els:
-            print ig, iel
+ #           print ig, iel
             ap = aps[ig]
             nodes = ap.econn[iel]
-            el_coors = coors[nodes]
-            print el_coors
+            el_coors = self.coors[nodes]
+#            print el_coors
 
             interp = aps[ig].interp
             ref_coors = interp.nodes['v'].bar_coors
             base_fun = interp.base_funs['v'].fun
 
-            debug()
-
             n_v, dim = el_coors.shape
             if n_v == (dim + 1):
-                bc = la.barycentric_coors(point, el_coors)
+                bc = la.barycentric_coors(point[None,:], el_coors)
                 xi = nm.dot(bc.T, ref_coors)
             else: # Tensor-product and other.
-                xi = inverse_element_mapping(point, el_coors, base_fun, ref_coors,
+                xi = inverse_element_mapping(point, el_coors, base_fun,
+                                             ref_coors,
                                              suppress_errors=True)
+            xis.append(xi)
 
+            try:
+                # Verify that we are inside the element.
+                bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
+                                    suppress_errors=False)
+            except AssertionError:
+                continue
+            break
+
+        
+        if bf is None:
+            # Point outside the mesh.
+            if allow_extrapolation:
+                vd = ap.interp.gel.data['v'].coors
+                ii, dist = self.find_closest_refcoor(xis,
+                                                     vd.min(), vd.max())
+                xi = xis[ii]
                 bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
                                     suppress_errors=True)
-                print xi, bf
-
-                if bf is None:
-                    # Point outside the mesh.
-                    vals[:,ii] = nm.nan
+                ig, iel = els[ii]
+                nodes = aps[ig].econn[iel]
+#                print dist
+                if dist < close_limit:
+                    status = 1
                 else:
-                    # For scalar fields only!!!
-                    vals[:,ii] = nm.dot(bf,self()[nodes])
+                    status = 2
+            else:
+                status = 3
+        else:
+            status = 0
 
+        return bf, nodes, status
+
+    def find_closest_refcoor(self, xis, vmin, vmax):
+
+        ds = []
+        for xi in xis:
+            d1 = nm.sum(nm.clip(xi - vmax, 0, 100)**2.0)
+            d2 = nm.sum(nm.clip(vmin - xi, 0, 100)**2.0)
+            ds.append(d1 + d2) 
+
+##         print xis
+##         print ds
+        ii = nm.argmin(ds)
+        return ii, nm.sqrt(ds[ii])
 
 ## ##
 ## # 11.07.2006, c
