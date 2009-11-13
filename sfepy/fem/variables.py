@@ -1981,6 +1981,110 @@ class Variable( Struct ):
 ##         print data.shape
 ##         print ndata.shape
 
+    def has_same_mesh(self, other):
+        """
+        Returns
+        -------
+        flag : int
+            The flag can be either 'different' (different meshes), 'deformed'
+            (slightly deformed same mesh), or 'same' (same).
+        """
+        f1 = self.field
+        f2 = other.field
+
+        c1 = f1.get_coor()
+        c2 = f2.get_coor()
+
+        if c1.shape != c2.shape:
+            flag = 'different'
+
+        else:
+            eps = 10.0 * nm.finfo(nm.float64).eps
+
+            if nm.allclose(c1, c2, rtol=eps, atol=0.0):
+                flag = 'same'
+
+            elif nm.allclose(c1, c2, rtol=0.1, atol=0.0):
+                flag = 'deformed'
+
+            else:
+                flag = 'different'
+
+        return flag
+
+    def get_interp_coors(self, strategy='interpolation', interp_term=None):
+        """
+        Get the physical coordinates to interpolate into, based on the strategy
+        used.
+        """
+        if strategy == 'interpolation':
+            coors = self.field.get_coor()
+
+        elif strategy == 'projection':
+            region = self.field.region
+            integral = Integral(term=interp_term)
+            coors = self.field.aps.get_physical_qps(region, integral)
+
+        else:
+            raise ValueError('unknown interpolation strategy! (%s)' % strategy)
+
+        return coors
+
+    def evaluate_at(self, coors, strategy='kdtree', flag_same_mesh='different'):
+        """
+        Evaluate self in the given physical coordinates.
+        """
+        # Assume different meshes -> general interpolation.
+        mesh = self.field.create_mesh()
+        scoors = mesh.coors
+
+        output('interpolating from %d nodes to %d nodes...' % (scoors.shape[0],
+                                                               coors.shape[0]))
+
+
+        iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                          combine_groups=True)
+
+
+        if strategy == 'kdtree':
+            from scipy.spatial import cKDTree as KDTree
+#            from scipy.spatial import KDTree
+
+            tt = time.clock()
+            ctree = KDTree(scoors)
+            output('ctree: %f s' % (time.clock()-tt))
+
+            basis = Basis(ctree = ctree,
+                          iconn = iconn,
+                          aps = self.field.aps,
+                          coors = scoors,
+                          last_el = None)
+
+            tt = time.clock()
+            # For scalar field only!!!
+            vals = nm.empty((coors.shape[0],), dtype=self.dtype)
+
+            source_vals = self()
+            for ii, point in enumerate(coors):
+                bf, nodes, status = basis.find_local_basis(point)
+##                 print bf
+##                 print nodes
+##                 print status
+                if 0 or status <= 1:
+                    vals[ii] = nm.dot(bf, source_vals[nodes])
+                else:
+                    vals[ii] = 0.0
+            output('interpolator: %f s' % (time.clock()-tt))
+
+        elif strategy == 'crawl':
+            raise NotImplementedError
+
+        else:
+            raise ValueError('unknown search strategy! (%s)' % strategy)
+
+        output('...done')
+
+        return vals
 
     def set_from_other(self, other, strategy='projection',
                        search_strategy='kdtree', ordering_strategy='rcm'):
@@ -1996,10 +2100,12 @@ class Variable( Struct ):
         
         Notes
         -----
+        If the other variable uses the same field mesh, the coefficients are
+        set directly.
         
-        If the other variable uses the same mesh, only deformed slightly, it is
-        advisable to provide directly the node ids as a hint where to start
-        searching for a containing element; the order of nodes does not
+        If the other variable uses the same field mesh, only deformed slightly,
+        it is advisable to provide directly the node ids as a hint where to
+        start searching for a containing element; the order of nodes does not
         matter then.
 
         Otherwise (large deformation, unrelated meshes, ...) there are
@@ -2014,93 +2120,50 @@ class Variable( Struct ):
         Not sure which way is faster, depends on implementation efficiency and
         the particular meshes.
         """
+        flag_same_mesh = self.has_same_mesh(other)
 
-##         # TODO:
-##         coors = self.get_interp_coors()
-##         vals = other.evaluate_at(coors)
-##         if strategy == 'interpolation':
-##             self.data_from_any(vals)
-##         elif strategy == 'projection':
-##             self.data_from_projection(vals)
-        
-        # Assume different meshes -> general interpolation.
-        f1 = self.field
-        f2 = other.field
+        if flag_same_mesh == 'same':
+            self.data_from_any(other())
+            return
 
-        c1 = f1.get_coor()
-        c2 = f2.get_coor()
+        if strategy == 'interpolation':
+            coors = self.get_interp_coors(strategy)
 
-        output('interpolating from %d nodes to %d nodes...' % (c2.shape[0],
-                                                               c1.shape[0]))
+        elif strategy == 'projection':
+            interp_term = Term() # TODO
+            coors = self.get_interp_coors(strategy, interp_term)
+
+        else:
+            raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
         if search_strategy == 'kdtree':
-            from scipy.spatial import cKDTree as KDTree
-#            from scipy.spatial import KDTree
-
             tt = time.clock()
-            ctree = KDTree(c2)
-            output('ctree: %f s' % (time.clock()-tt))
-
-
-            tt = time.clock()
-            iter_nodes = CloseNodesIterator(f1, create_graph=False)
+            iter_nodes = CloseNodesIterator(self.field, create_graph=False)
             output('iterator: %f s' % (time.clock()-tt))
-
-            mesh = iter_nodes.mesh
-            iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                              combine_groups=True)
-
-            basis = Basis(ctree = ctree,
-                          iconn = iconn,
-                          aps = f2.aps,
-                          coors = c2,
-                          last_el = None)
-
-            tt = time.clock()
-            # For scalar field only!!!
-            vals = nm.empty((c1.shape[0],), dtype=self.dtype)
-
-            other_vals = other()
-            for ii, point in iter_nodes():
-                bf, nodes, status = basis.find_local_basis(point)
-##                 print bf
-##                 print nodes
-##                 print status
-                if 1 or status <= 1:
-                    vals[ii] = nm.dot(bf,other_vals[nodes])
-                else:
-                    vals[ii] = 0.0
-            output('interpolator: %f s' % (time.clock()-tt))
-
-            self.data_from_any(vals)
-
+            
         elif search_strategy == 'crawl':
-            # Get map self.node -> other.element, including the barycentric coors
-            # w.r.t. the other element
-            mesh1 = f1.domain.mesh
-            mesh2 = f2.domain.mesh
-
-            iconn = make_inverse_connectivity(mesh2.conns, mesh2.n_nod,
-                                              combine_groups=True)
-
-
-            basis = Basis(iconn = iconn,
-                          aps = f2.aps,
-                          coors = c2,
-                          last_el = None)
-
             tt = time.clock()
-            iter_nodes = CloseNodesIterator(f1, strategy='rcm')
+            iter_nodes = CloseNodesIterator(self.field, strategy='rcm')
             output('iterator: %f s' % (time.clock()-tt))
-            iter_nodes.test_permutations()
 
-            for ii, point in iter_nodes(strategy=ordering_strategy):
-                bf = basis.find_local_basis(point)
+            iter_nodes.test_permutations()
 
         else:
             raise ValueError('unknown search strategy! (%s)' % search_strategy)
 
-        output('...done')
+        perm = iter_nodes.get_permutation(iter_nodes.strategy)
+
+        vals = other.evaluate_at(coors[perm], strategy=search_strategy,
+                                 flag_same_mesh=flag_same_mesh)
+        
+        if strategy == 'interpolation':
+            self.data_from_any(vals)
+
+        elif strategy == 'projection':
+            self.data_from_projection(vals)
+
+        else:
+            raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
 class CloseNodesIterator(Struct):
 

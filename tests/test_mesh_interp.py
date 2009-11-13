@@ -71,7 +71,7 @@ class Test(TestCommon):
 
             # Performs interpolation, if other field differs from self.field
             # or, in particular, is defined on a different mesh.
-            u2.set_from_other(u1, strategy='kdtree')
+            u2.set_from_other(u1, strategy='interpolation')
 ##             u2.set_from_other(u1, strategy='crawl')
 
             fname = in_dir(self.options.out_dir)
