@@ -121,7 +121,8 @@ class Viewer(Struct):
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
-                        mlab = mlab)
+                        scene = None,
+                        gui = None)
         self.options = get_arguments(omit = ['self'])
 
         if mlab is None:
@@ -530,20 +531,40 @@ class Viewer(Struct):
 
         self.size_hint = self.get_size_hint(layout, resolution=resolution)
 
-        if scene is None:
-            if self.offscreen:
-                self.scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
-                                         size=self.size_hint)
-                scene = self.scene
-                gui = None
+        is_new_scene = False
 
-            else:
-                gui = ViewerGUI(viewer=self)
-                self.scene = scene = gui.scene.mlab.get_engine().current_scene
+        if scene is not None:
+            if scene is not self.scene:
+                is_new_scene = True
+                self.scene = scene
+            gui = None
 
         else:
-            gui = None
-            self.scene = scene
+            if (self.scene is not None) and (not self.scene.running):
+                self.scene = None
+
+            if self.scene is None:
+                if self.offscreen:
+                    gui = None
+                    scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
+                                        size=self.size_hint)
+
+                else:
+                    gui = ViewerGUI(viewer=self)
+                    scene = gui.scene.mayavi_scene
+
+                if scene is not self.scene:
+                    is_new_scene = True
+                    self.scene = scene
+
+            else:
+                gui = self.gui
+                scene = self.scene
+
+        self.engine = mlab.get_engine()
+        self.engine.current_scene = self.scene
+
+        self.gui = gui
 
         scene.scene.disable_render = True
 
@@ -618,14 +639,15 @@ class Viewer(Struct):
                 buttons=['OK'],
             )
 
-            if show:
-                gui.configure_traits(view=traits_view)
+            if is_new_scene:
+                if show:
+                    gui.configure_traits(view=traits_view)
 
-            else:
-                gui.edit_traits(view=traits_view)
+                else:
+                    gui.edit_traits(view=traits_view)
 
-                if self.auto_screenshot:
-                    self.save_image(fig_filename)
+                    if self.auto_screenshot:
+                        self.save_image(fig_filename)
 
         return gui
 
