@@ -34,12 +34,14 @@ sfepy/fem/extmods/meshutils.py
 sfepy/terms/extmods/terms.py
 sfepy/fem/extmods/version.h
 sfepy/physics/extmods/dft.py
+sfepy/linalg/extmods/rcm.py
 VERSION
 tmp/terms.*
 samples/*
 doc/tex/*.pdf
 doc/doxygenrc
 doc/html/
+doc/_build/
 tmp/*
 build/*
 sfepy/__config__.py
