@@ -66,7 +66,7 @@ def add_text(obj, position, text, width=None, color=(0, 0, 0)):
     return t
 
 def get_position_counts(n_data, layout):
-    n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
+    n_col = max(1.0, min(5.0, nm.fix(nm.sqrt(n_data))))
     n_row = int(nm.ceil(n_data / n_col))
     n_col = int(n_col)
     if layout == 'rowcol':
