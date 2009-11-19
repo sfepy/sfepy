@@ -25,12 +25,17 @@ def configuration(parent_package='', top_path=None):
                ('DEBUGFMF', None),
                ('SFEPY_PLATFORM', os_flag[system])]
 
-    src = ['rcm.c', 'rcm.i', 'common_python.c']
+    src = ['rcm.c', 'rcm.i']
+    fem_src = ['common_python.c']
+    fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
+
+    depends=['array.i', 'common.i']
+    depends = [op.join('../../fem/extmods', ii) for ii in depends]
     config.add_extension('_rcm',
-                         sources=src,
-                         depends=['array.i', 'common.i'],
+                         sources=src + fem_src,
+                         depends=depends,
                          extra_compile_args=['-O2'],
-                         include_dirs=[auto_dir],
+                         include_dirs=[auto_dir, '../../fem/extmods'],
                          define_macros=defines)
 
 ##     src = ['ct.pyx']
