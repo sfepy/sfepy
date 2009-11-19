@@ -1,5 +1,66 @@
 # created: 20.07.2007 (-1)
-# last revision: 20.07.2009 (+1)
+# last revision: 19.11.2009
+
+from 2009.3 to 2009.4
+=====================
+
+- major branches merged:
+  - 'ulf' branch: updated Lagrangian (UL) formulation
+  - 'functions' branch:
+    - unified passing extra arguments to boundary condition, material, and region
+      functions
+    - physical quadrature point generation
+    - unified/improved handling of material parameters in terms:
+      - all material parameters defined in physical quadrature points
+      - all terms updated, some terms were coalesced into one
+  - 'porous' branch: homogenized porous media
+- input file keywords:
+  - new 'functions' keyword
+- simplifications & unifications:
+  - results of all time steps of an evolutionary problem can be saved to a
+    single HDF5 file
+  - enable passing variables data to ProblemDefinition.solve()
+  - runTests.py: allow multiple test files as command line arguments
+  - Viewer.call_mlab() split and refactored
+  - short syntax for periodic boundary conditions
+  - simplified input file syntax of materials
+- postprocessing and visualization:
+  - using FileSource class abstracts the particular format for storing results:
+    - VTK, HDF5 supported now
+  - support for file sequences (evolutionary simulations)
+    - time step selection for HDF5 (single) and VTK (sequence) files
+  - animations (using ffmpeg)
+  - minimalistic ViewerGUI
+  - show scalar bars
+  - various vector plotting modes
+  - watch results file (HDF5) and add time steps as they are saved
+  - listing data ranges works offscreen, summary for file sequence
+  - sfepy_gui.py:  Mayavi2-based GUI to launch simulations
+- changes aimed at interactive work:
+  - Domain, Region, Field creation refactoring
+- data probing - postprocessing mode:
+  - read a previously probed data from the probe text file, re-plot them, and
+    integrate them along the probe
+- graphical logging:
+  - dynamic adding of data groups (new axes) to Log and ProcessPlotter  
+- many bug fixes, namely:
+  - fix import_file() for multiple imports
+  - fix saving results with piece-wise constant (Q0) approximation
+- miscellaneous updates:
+  - quasistatic time stepping
+  - new zero-order elements: 3_4_P0, 3_8_Q0
+  - more elastic tensor construction functions:
+    - elastic tensor from Young's modulus and Poisson's ratio
+    - elastic tensors for use in mixed formulation
+  - setting of parameter variables by a user-defined function
+  - gen_block_mesh() can generate also 2D meshes
+  - reversed Cuthill-McKee permutation algorithm, graph in-place permutation
+- new terms:
+  - dw_volume_wdot_scalar_eth (exponential decay dot product convolution term)
+  - dw_biot_eth (exponential decay Biot convolution term)
+  - dw_lin_elastic_eth (exponential decay elastic convolution term)
+  - updated Lagrangian (UL) formulation terms:
+    - dw_ul_bulk_penalty, dw_ul_he_neohook, dw_ul_he_mooney_rivlin
 
 from 2009.2 to 2009.3
 =====================

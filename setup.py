@@ -5,7 +5,6 @@ SfePy (simple finite elements in Python) is a software, distributed
 under the BSD license, for solving systems of coupled partial 
 differential equations by the finite element method. The code is based 
 on NumPy and SciPy packages.
-
 """
 
 DOCLINES = __doc__.split("\n")
@@ -13,7 +12,7 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 
-VERSION = '2009.3-release'
+VERSION = '2009.4'
 
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
