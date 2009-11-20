@@ -161,7 +161,14 @@ class Field( Struct ):
         component_dir : str
             A directory with element definitions, the default is 'sfepy/eldesc'.
         """
-        read = Reader(get_default(component_dir, 'sfepy/eldesc'))
+        if component_dir is None:
+            import sfepy
+            if sfepy.in_source_tree:
+                component_dir = 'sfepy/eldesc'
+            else:
+                component_dir = sfepy.top_dir + '/eldesc'
+
+        read = Reader(component_dir)
 
         self.interps = {}
         for region_name, base_name in self.bases.iteritems():
