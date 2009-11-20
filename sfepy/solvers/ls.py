@@ -188,12 +188,14 @@ class PyAMGSolver( LinearSolver ):
             'kind' : 'ls.pyamg',
 
             'method' : 'smoothed_aggregation_solver',
+            'accel' : 'cg'
             'eps_a'   : 1e-12,
         }
         """
         get = conf.get_default_attr
 
         method = get( 'method', 'smoothed_aggregation_solver' )
+        accel = get( 'accel', None )
         eps_a = get( 'eps_a', 1e-8 )
 
         common = LinearSolver.process_conf( conf )
@@ -234,7 +236,7 @@ class PyAMGSolver( LinearSolver ):
             self.mg = self.solver( mtx )
             self.mtx = mtx
 
-        sol = self.mg.solve( rhs, tol = conf.eps_a )
+        sol = self.mg.solve(rhs, accel=conf.accel, tol=conf.eps_a)
         
         return sol
 
