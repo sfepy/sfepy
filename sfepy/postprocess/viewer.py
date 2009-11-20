@@ -198,7 +198,10 @@ class Viewer(Struct):
             self.set_step.step = step
             self.save_image(name)
 
-    def encode_animation(self, filename, format, ffmpeg_options):
+    def encode_animation(self, filename, format, ffmpeg_options=None):
+        if ffmpeg_options is None:
+            ffmpeg_options = '-r 10 -sameq'
+
         base, suffix, ext = self.get_animation_info(filename)
         anim_name = '.'.join((base, format))
         cmd = 'ffmpeg %s -i %s %s' % (ffmpeg_options,
@@ -570,7 +573,11 @@ class Viewer(Struct):
 
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
-        has_several_steps = nm.diff(self.file_source.get_step_range()) > 0
+        has_several_steps = (nm.diff(self.file_source.get_step_range()) > 0)[0]
+
+        if gui is not None:
+            gui.has_several_steps = has_several_steps
+
         if has_several_steps:
             self.set_step = set_step = SetStep()
             set_step._viewer = self
@@ -633,7 +640,8 @@ class Viewer(Struct):
                 ),
                 HGroup(spring,
                        Item('button_view', show_label=False),
-                       Item('button_make_animation', show_label=False),),
+                       Item('button_make_animation', show_label=False,
+                            enabled_when='has_several_steps == True'),),
                 
                 resizable=True,
                 buttons=['OK'],
@@ -719,6 +727,7 @@ class ViewerGUI(HasTraits):
 
     scene = Instance(MlabSceneModel, ())
 
+    has_several_steps = Bool(False)
     viewer = Instance(Viewer)
     set_step = Instance(SetStep)
     button_view = Button('print view')
