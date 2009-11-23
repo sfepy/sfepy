@@ -1838,13 +1838,20 @@ class Variable( Struct ):
 
         return diameters
 
-    def interp_to_points( self, points, mesh, ctree = None, iconn=None ):
+    def interp_to_points(self, points, mesh, ctree=None, iconn=None,
+                         cache=None):
         """
         Interpolate self into given points. Works for scalar variables only!
         """
         if iconn is None:
             iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
                                               combine_groups=True)
+
+        if cache is None:
+            _cache = Struct(cells={}, bases={}, ordered_cells=[])
+        else:
+            _cache = cache
+
         field = self.field
         vdim = field.shape[0]
 
@@ -1852,55 +1859,71 @@ class Variable( Struct ):
         coor = mesh.coors
         conns = mesh.conns
 
+
         tts = [0.0, 0.0, 0.0, 0.0]
         tt0 = time.clock()
         for ii, point in enumerate(points):
 ##             print ii, point
-            if ctree is None:
-                tt = time.clock()
-                ic = find_nearest_nodes(coor, point)
-                tts[0] += time.clock() - tt
-            else:
-                tt = time.clock()
-                if isinstance(ctree, TreeItem):
-                    ic = ctree.find_nearest_node(coor, point)
-                else:
-                    ic = ctree.query(point)[1]
-                tts[0] += time.clock() - tt
+            tp = tuple(nm.around(point, 14))
 
-            els = iconn[ic]
-            bf = None
-            for ig, iel in els:
-##                 print ic, ig, iel
-                tt1 = time.clock()
+            if tp in _cache.bases:
+                ig, iel = _cache.cells[tp]
+                bf = _cache.bases[tp]
                 nodes = conns[ig][iel]
-                ecoor = coor[nodes]
-##                 print ecoor
+                
+            else:
+                if ctree is None:
+                    tt = time.clock()
+                    ic = find_nearest_nodes(coor, point)
+                    tts[0] += time.clock() - tt
+                else:
+                    tt = time.clock()
+                    if isinstance(ctree, TreeItem):
+                        ic = ctree.find_nearest_node(coor, point)
+                    else:
+                        ic = ctree.query(point)[1]
+                    tts[0] += time.clock() - tt
 
-                interp = field.aps[ig].interp
-                ref_coors = interp.nodes['v'].bar_coors
-                base_fun = interp.base_funs['v'].fun
-                tts[2] += time.clock() - tt1
+                els = iconn[ic]
+                bf = None
+                for ig, iel in els:
+    ##                 print ic, ig, iel
+                    tt1 = time.clock()
+                    nodes = conns[ig][iel]
+                    ecoor = coor[nodes]
+    ##                 print ecoor
 
-                tt = time.clock()
-                n_v, dim = ecoor.shape
-                if n_v == (dim + 1):
-                    bc = la.barycentric_coors(point, ecoor)
-                    xi = nm.dot(bc.T, ref_coors)
-                else: # Tensor-product and other.
-                    xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
-                    inverse_element_mapping(xi, point, ecoor, ref_coors,
-                                            100, 1e-8)
-                tts[1] += time.clock() - tt
+                    interp = field.aps[ig].interp
+                    ref_coors = interp.nodes['v'].bar_coors
+                    base_fun = interp.base_funs['v'].fun
+                    tts[2] += time.clock() - tt1
 
-                try:
-                    # Verify that we are inside the element.
-                    bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
-                                        suppress_errors=False)
-                except AssertionError:
-                    continue
-                break
-##             print xi, bf
+                    tt = time.clock()
+                    n_v, dim = ecoor.shape
+                    if n_v == (dim + 1):
+                        pp = nm.array(point)
+                        pp.shape = (1, pp.shape[0])
+                        bc = la.barycentric_coors(pp, ecoor)
+                        xi = nm.dot(bc.T, ref_coors)
+                    else: # Tensor-product and other.
+                        xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
+                        inverse_element_mapping(xi, point, ecoor, ref_coors,
+                                                100, 1e-8)
+                    tts[1] += time.clock() - tt
+
+                    try:
+                        # Verify that we are inside the element.
+                        bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
+                                            suppress_errors=False)
+                    except AssertionError:
+                        continue
+                    break
+    ##             print xi, bf
+
+                _cache.cells[tp] = (ig, iel)
+                _cache.bases[tp] = bf
+
+            _cache.ordered_cells.append((ig, iel))
 
             if bf is None:
                 # Point outside the mesh.
