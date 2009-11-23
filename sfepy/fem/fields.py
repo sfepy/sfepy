@@ -162,11 +162,9 @@ class Field( Struct ):
             A directory with element definitions, the default is 'sfepy/eldesc'.
         """
         if component_dir is None:
-            import sfepy
-            if sfepy.in_source_tree:
-                component_dir = 'sfepy/eldesc'
-            else:
-                component_dir = sfepy.top_dir + '/eldesc'
+            import os.path as op
+            component_dir = op.normpath(op.join(op.dirname(__file__),
+                                                '../eldesc'))
 
         read = Reader(component_dir)
 
