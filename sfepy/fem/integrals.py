@@ -50,12 +50,13 @@ class Integrals( Container ):
 class Integral( Struct ):
 
     def __init__(self, name, kind='v', quad_name='auto', mode='builtin',
-                 term=None):
+                 term=None, qcs=None):
         self.name = name
         self.kind = kind
         self.quad_name = quad_name
         self.mode = mode
         self.term = term
+        self.qcs = qcs
 
         if self.quad_name in ('auto', 'custom'):
             self.order = -1

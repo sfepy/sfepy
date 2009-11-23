@@ -491,14 +491,29 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    def describe_geometry( self, field, gtype, region, integral, coors ):
+    def describe_geometry(self, field, gtype, region, integral=None, coors=None):
         """Compute jacobians, element volumes and base function derivatives
         for Volume-type geometries, and jacobians, normals and base function
         derivatives for Surface-type geometries.
         """
+        if coors is None:
+            coors = field.aps.coors
+
 
         if gtype == 'Volume':
-            shape = self.get_v_data_shape( integral.name )
+            if integral is None:
+                from sfepy.fem import Integral
+                dim = field.domain.shape.dim
+                quad_name = 'gauss_o1_d%d' % dim
+                integral = Integral('i_tmp', 'v', quad_name,
+                                    qcs=collect_quadratures()[quad_name])
+                integral.setup()
+                integral.create_qp()
+
+                self.get_base('v', 1, integral=integral)
+
+            shape = self.get_v_data_shape(integral.name)
+                
             if shape[0] == 0:
                 return None
             
