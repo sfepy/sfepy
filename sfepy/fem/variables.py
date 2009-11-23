@@ -1817,6 +1817,27 @@ class Variable( Struct ):
         newdata = data[indx]
         return newdata
 
+    def get_element_diameters(self, cells, mode, square=False):
+        """Get diameters of selected elements."""
+        field = self.field
+        domain = field.domain
+
+        cells = nm.array(cells)
+
+        diameters = nm.empty((cells.shape[0],), dtype=nm.float64)
+
+        igs = nm.unique1d(cells[:,0])
+        for ig in igs:
+            ap = field.aps.aps_per_group[ig]
+            vg = ap.describe_geometry(field, 'Volume', field.region)
+
+            ii = nm.where(cells[:,0] == ig)[0]
+            aux = domain.get_element_diameters(ig, cells[ii,1].copy(), vg,
+                                               mode, square=square)
+            diameters[ii] = aux
+
+        return diameters
+
     def interp_to_points( self, points, mesh, ctree = None, iconn=None ):
         """
         Interpolate self into given points. Works for scalar variables only!
