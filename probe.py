@@ -57,10 +57,13 @@ help = {
     'assume radial integration',
 }
 
-def generate_probes(filename_input, filename_results, options):
+def generate_probes(filename_input, filename_results, options,
+                    conf=None, problem=None, probes=None, labels=None):
     """Generate probe figures and data files."""
-    required, other = get_standard_keywords()
-    conf = ProblemConf.from_file( filename_input, required, other )
+    if conf is None:
+        required, other = get_standard_keywords()
+        conf = ProblemConf.from_file( filename_input, required, other )
+
     opts = conf.options
 
     if options.auto_dir:
@@ -81,14 +84,16 @@ def generate_probes(filename_input, filename_results, options):
             if key in options.only_names:
                 data[key] = val
 
-    problem = ProblemDefinition.from_conf(conf, options,
-                                          init_equations=False,
-                                          init_solvers=False)
+    if problem is None:
+        problem = ProblemDefinition.from_conf(conf,
+                                              init_equations=False,
+                                              init_solvers=False)
 
-    gen_probes = getattr(conf.funmod, conf.options.gen_probes)
+    if probes is None:
+        gen_probes = getattr(conf.funmod, conf.options.gen_probes)
+        probes, labels = gen_probes(problem)
+
     probe_hook = getattr(conf.funmod, conf.options.probe_hook)
-    
-    probes, labels = gen_probes(problem)
 
     if options.output_filename_trunk is None:
 	    options.output_filename_trunk = problem.ofn_trunk
@@ -117,16 +122,18 @@ def generate_probes(filename_input, filename_results, options):
             output('figure ->', os.path.normpath(filename))
 
         if results is not None:
-            pname = edit_pname('_', probe.name)
-            filename = os.path.join(output_dir, 'probe_%s.txt' % pname)
+            aux = os.path.splitext(filename_template % ip)[0]
+            filename = aux + '.txt'
+
             fd = open(filename, 'w')
+            fd.write('\n'.join(probe.report()) + '\n')
             for key, res in results.iteritems():
                 pars, vals = res
                 fd.write('%s\n' % key)
-                fd.write('%d\n' % len(pars))
                 aux = nm.vstack((pars, vals)).T
                 nm.savetxt(fd, aux)
             fd.close()
+
             output('data ->', os.path.normpath(filename))
 
 def get_data_name(fd):
