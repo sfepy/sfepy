@@ -261,7 +261,8 @@ int32 vg_getElementDiameters( VolumeGeometry *obj, FMField *out,
 /* 	  sys_pause(); */
 	  vv += aux * aux;
 	}
-	val0 = Max( val0, aux );
+/* 	output("%f\n", sqrt(vv)); */
+	val0 = Max( val0, vv );
 	out->val[0] = val0;
       }
     }
