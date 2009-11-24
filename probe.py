@@ -140,8 +140,13 @@ def get_data_name(fd):
 
         if len(name) == 1:
             name = name[0]
+            try:
+                int(name)
+            except:
+                yield name
+
+        elif len(name) == 0:
             break
-    yield name
 
 def integrate_along_line(x, y, is_radial=False):
     """Integrate numerically (trapezoidal rule) a function $y=y(x)$.

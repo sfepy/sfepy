@@ -5,6 +5,7 @@ hyperelastic.py
 kostka.py
 le.py
 linear_elastic.py
+linear_elastic_dynamic.py
 navier_stokes.py
 octahedron.py
 pfdpm_permeability.py

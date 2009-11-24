@@ -49,10 +49,11 @@ Examples section in the INSTALL file.
 
 See also
 --------
- - 'http://sfepy.org' ... SfePy development (releases, mailing lists,
+ - http://sfepy.org ... SfePy development (releases, mailing lists,
                           issue tracking, mercurial repository, documentation,
                           examples
- - 'http://sfepy.kme.zcu.cz' ... projects solved within SfePy.
+ - http://sfepy.kme.zcu.cz ... projects solved within SfePy.
+ - http://docs.sfepy.org/doc ... new documentation site (work in progress)
 
 License: New BSD License, see the LICENSE file.
 

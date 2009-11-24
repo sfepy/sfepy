@@ -1,0 +1,13 @@
+# 14.12.2004, c
+# 18.08.2005
+
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := $(wildcard *.py *.c *.h *.i *.in) Makefile.dist Makefile.inc
+DISTFILES := $(filter-out $(wildcard *_wrap.c), $(DISTFILES))
+
+dist:
+#	echo $(DESTDIR)
+	mkdir $(DESTDIR)
+	cp -fpd $(DISTFILES) $(DESTDIR)

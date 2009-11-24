@@ -7,6 +7,7 @@ from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, inverse_element_mapping
 from extmods.geometry import SurfaceGeometry
+from sfepy.fem.utils import extend_cell_data
 
 is_state = 0
 is_virtual = 1
@@ -1048,9 +1049,11 @@ class Variables( Container ):
 
     def state_to_output( self, vec, fill_value = None, var_info = None,
                        extend = True ):
-        """Works for vertex data only."""
+        """Convert a state vector to a dictionary of output data usable by
+        Mesh.write()."""
 
-        n_nod, di = self.domain.shape.n_nod, self.di
+        n_nod = self.domain.shape.n_nod
+        di = self.di
 
         if var_info is None:
             var_info = {}
@@ -1059,6 +1062,8 @@ class Variables( Container ):
 
         out = {}
         for key, indx in di.indx.iteritems():
+            var = self[key]
+
             if key not in var_info.keys(): continue
             is_part, name = var_info[key]
             
@@ -1069,15 +1074,27 @@ class Variables( Container ):
             else:
                 aux = nm.reshape( vec[indx], (di.n_dofs[key] / dpn, dpn) )
 
-            if extend:
-                ext = self[key].extend_data( aux, n_nod, fill_value )
+            if var.field.approx_order != '0':
+                # Has vertex data.
+                if extend:
+                    ext = var.extend_data( aux, n_nod, fill_value )
+                else:
+                    ext = var.remove_extra_data( aux )
+
+                out[name] = Struct( name = 'output_data',
+                                    mode = 'vertex', data = ext,
+                                    var_name = key, dofs = var.dofs )
             else:
-                ext = self[key].remove_extra_data( aux )
-#            print ext.shape
-#            pause()
-            out[name] = Struct( name = 'output_data',
-                                mode = 'vertex', data = ext,
-                                var_name = key, dofs = self[key].dofs )
+                if extend:
+                    ext = extend_cell_data(aux, self.domain, var.field.region,
+                                           val=fill_value)
+                else:
+                    ext = aux
+
+                ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
+                out[name] = Struct( name = 'output_data',
+                                    mode = 'cell', data = ext,
+                                    var_name = key, dofs = var.dofs )
 
         out = self.convert_complex_output( out )
         

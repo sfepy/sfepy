@@ -214,6 +214,30 @@ class Field( Struct ):
         extra = make_point_cells( iextra, dim )
         return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
 
+    def create_mesh(self, extra_nodes=True):
+        """
+        Create a mesh from the field region, optionally including the field
+        extra nodes.
+        """
+        mesh = self.domain.mesh
+
+        conns, mat_ids, descs = [], [], []
+        for region_name, ig, ap in self.aps.iter_aps():
+            region = ap.region
+            group = region.domain.groups[ig]
+            if extra_nodes:
+                conn = ap.econn
+            else:
+                offset = group.shape.n_ep
+                conn = ap.econn[:,:offset]
+            conns.append(conn)
+            mat_ids.append(mesh.mat_ids[ig])
+            descs.append(mesh.descs[ig])
+
+        mesh = Mesh.from_data(self.name,
+                              self.aps.coors, None, conns, mat_ids, descs)
+        return mesh
+
     ##
     # c: 19.07.2006, r: 27.02.2008
     def write_mesh( self, name_template, field_name = None ):
@@ -221,26 +245,13 @@ class Field( Struct ):
         if field_name is None:
             field_name = self.name
 
-        mesh = self.domain.mesh
-        dim = mesh.dim
-
-        conns, mat_ids, descs = [], [], []
-        for region_name, ig, ap in self.aps.iter_aps():
-            region = ap.region
-            group = region.domain.groups[ig]
-            offset = group.shape.n_ep
-            conn = ap.econn[:,:offset]
-            conns.append( conn )
-            mat_ids.append( mesh.mat_ids[ig] )
-            descs.append( mesh.descs[ig] )
+        tmp = self.create_mesh(extra_nodes=False)
 
         aux = self.get_extra_nodes_as_simplices()
-        descs.append( aux[0] )
-        mat_ids.append( aux[1] )
-        conns.append( aux[2] )
+        tmp.descs.append( aux[0] )
+        tmp.mat_ids.append( aux[1] )
+        tmp.conns.append( aux[2] )
 
-        tmp = Mesh.from_data( name_template % field_name,
-                             self.aps.coors, conns, mat_ids, descs )
 ##         print tmp
 ##         pause()
         tmp.write( io = 'auto' )
@@ -305,13 +316,16 @@ class Field( Struct ):
     def interp_v_vals_to_n_vals( self, vec ):
         dim = vec.shape[1]
         enod_vol_val = nm.zeros( (self.n_nod, dim), nm.float64 )
-        for ii, ap in enumerate( self.aps ):
-            sub = ap.sub
+        for region_name, ig, ap in self.aps.iter_aps():
+            group = self.domain.groups[ig]
+            offset = group.shape.n_ep
+            conn = ap.econn[:,:offset]
 
-            noff = ap.node_offsets
+            noff = ap.node_offsets.ravel()
             if noff[1] == noff[-1]:
                 # Vertex values only...
-                enod_vol_val[sub.conn] = vec[sub.conn]
+                ii = nm.unique1d(conn) # Probably wrong?!
+                enod_vol_val[ii] = vec[ii]
                 continue
 
             econn = ap.econn
@@ -320,10 +334,12 @@ class Field( Struct ):
             coors = ap.interp.nodes['v'].bar_coors
 
             qp = Struct( vals = coors )
-            bf, aux = fea.eval_bf( {'v': qp}, ginterp.base_funs, ginterp.nodes )
-            bf = bf['v'][:,0,:].copy()
+            bf = fea.eval_bf(qp, ginterp.base_funs['v'],
+                             ginterp.nodes['v'].vals, 0)
+            bf = bf[:,0,:].copy()
             
-            fea.mu.interp_vertex_data( enod_vol_val, econn, vec, sub.conn, bf, 0 )
+            fea.mu.interp_vertex_data(enod_vol_val, econn, vec, group.conn,
+                                      bf, 0)
 
         return enod_vol_val
 

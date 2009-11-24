@@ -66,7 +66,7 @@ def add_text(obj, position, text, width=None, color=(0, 0, 0)):
     return t
 
 def get_position_counts(n_data, layout):
-    n_col = min(5.0, nm.fix(nm.sqrt(n_data)))
+    n_col = max(1.0, min(5.0, nm.fix(nm.sqrt(n_data))))
     n_row = int(nm.ceil(n_data / n_col))
     n_col = int(n_col)
     if layout == 'rowcol':
@@ -121,7 +121,8 @@ class Viewer(Struct):
                         output_dir = output_dir,
                         offscreen = offscreen,
                         auto_screenshot = auto_screenshot,
-                        mlab = mlab)
+                        scene = None,
+                        gui = None)
         self.options = get_arguments(omit = ['self'])
 
         if mlab is None:
@@ -190,7 +191,7 @@ class Viewer(Struct):
                                                     add_output_dir=False,
                                                     rng=rng)
 
-        for step in xrange(*rng):
+        for step in xrange(rng[0], rng[1]+1):
             name = '.'.join((base, suffix % step, ext[1:]))
             output('%d: %s' % (step, name))
 
@@ -437,7 +438,8 @@ class Viewer(Struct):
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
-                  filter_names=None, only_names=None, anti_aliasing=None):
+                  filter_names=None, only_names=None, step=0,
+                  anti_aliasing=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -484,6 +486,8 @@ class Viewer(Struct):
         only_names : list of strings
             Draw only the listed datasets. If None, it is initialized all names
             besides those in filter_names.
+        step : int
+            The time step to display.
         anti_aliasing : int
             Value of anti-aliasing.
         """
@@ -527,20 +531,40 @@ class Viewer(Struct):
 
         self.size_hint = self.get_size_hint(layout, resolution=resolution)
 
-        if scene is None:
-            if self.offscreen:
-                self.scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
-                                         size=self.size_hint)
-                scene = self.scene
-                gui = None
+        is_new_scene = False
 
-            else:
-                gui = ViewerGUI(viewer=self)
-                self.scene = scene = gui.scene.mlab.get_engine().current_scene
+        if scene is not None:
+            if scene is not self.scene:
+                is_new_scene = True
+                self.scene = scene
+            gui = None
 
         else:
-            gui = None
-            self.scene = scene
+            if (self.scene is not None) and (not self.scene.running):
+                self.scene = None
+
+            if self.scene is None:
+                if self.offscreen:
+                    gui = None
+                    scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
+                                        size=self.size_hint)
+
+                else:
+                    gui = ViewerGUI(viewer=self)
+                    scene = gui.scene.mayavi_scene
+
+                if scene is not self.scene:
+                    is_new_scene = True
+                    self.scene = scene
+
+            else:
+                gui = self.gui
+                scene = self.scene
+
+        self.engine = mlab.get_engine()
+        self.engine.current_scene = self.scene
+
+        self.gui = gui
 
         scene.scene.disable_render = True
 
@@ -551,7 +575,7 @@ class Viewer(Struct):
             self.set_step = set_step = SetStep()
             set_step._viewer = self
             set_step._source = self.file_source
-            set_step.step = 0
+            set_step.step = step
             self.file_source.setup_notification(set_step, 'file_changed')
 
             if gui is not None:
@@ -615,11 +639,15 @@ class Viewer(Struct):
                 buttons=['OK'],
             )
 
-            if show:
-                gui.configure_traits(view=traits_view)
+            if is_new_scene:
+                if show:
+                    gui.configure_traits(view=traits_view)
 
-            else:
-                gui.edit_traits(view=traits_view)
+                else:
+                    gui.edit_traits(view=traits_view)
+
+                    if self.auto_screenshot:
+                        self.save_image(fig_filename)
 
         return gui
 

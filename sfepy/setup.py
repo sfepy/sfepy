@@ -16,6 +16,7 @@ def configuration(parent_package='',top_path=None):
         'geom',
         'homogenization',
         'interactive',
+        'linalg',
         'mechanics',
         'physics',
         'postprocess',

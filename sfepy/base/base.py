@@ -265,12 +265,16 @@ class Container( Struct ):
     ##
     # 14.11.2005, c
     def __getitem__( self, ii ):
-        if isinstance( ii, int ):
-            return self._objs[ii]
-        elif isinstance( ii, str ):
-            return self._objs[self.names.index( ii )]
-        else:
-            raise IndexError
+        try:
+            if isinstance( ii, int ):
+                return self._objs[ii]
+            elif isinstance( ii, str ):
+                return self._objs[self.names.index(ii)]
+            else:
+                raise ValueError('bad index type! (%s)' % type(ii))
+
+        except (IndexError, ValueError), msg:
+            raise IndexError(msg)
 
     def __iter__( self ):
         return self._objs.__iter__()
@@ -405,7 +409,21 @@ class Output( Struct ):
         self.set_output(filename, combined)
         
     def __call__(self, *argc, **argv):
-        self.output_function(*argc, **argv)
+        """Call self.output_function.
+
+        Parameters
+        ----------
+        argc : positional arguments
+            The values to print.
+        argv : keyword arguments
+            The arguments to control the output behaviour. Supported keywords
+            are listed below.
+        verbose : bool (in **argv)
+            No output if False.
+        """
+        verbose = argv.get('verbose', True)
+        if verbose:
+            self.output_function(*argc, **argv)
 
     def set_output(self, filename=None, combined=False, append=False):
         """Set the output function - all SfePy printing is accomplished by

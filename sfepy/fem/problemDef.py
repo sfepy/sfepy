@@ -661,17 +661,22 @@ class ProblemDefinition( Struct ):
         """Initialize variables with history."""
         self.variables.init_state( state )
 
-    def get_output_name(self, suffix=None, mode=None):
+    def get_output_name(self, suffix=None, extra=None, mode=None):
         """Return default output file name, based on the output format,
-        step suffix and mode."""
-        if suffix is None:
-            return '.'.join( (self.ofn_trunk, self.output_format) )
-
-        else:
+        step suffix and mode. If present, the extra string is put just before
+        the output format suffix.
+        """
+        out = self.ofn_trunk
+        if suffix is not None:
             if mode is None:
                 mode = self.output_modes[self.output_format]
 
             if mode == 'sequence':
-                return '.'.join((self.ofn_trunk, suffix, self.output_format))
-            else:
-                return '.'.join((self.ofn_trunk, self.output_format))
+                out = '.'.join((self.ofn_trunk, suffix))
+
+        if extra is not None:
+            out = '.'.join((out, extra, self.output_format))
+        else:
+            out = '.'.join((out, self.output_format))
+
+        return out

@@ -48,6 +48,8 @@ Examples
 help = {
     'list_ranges' :
     'do not plot, only list names and ranges of all data',
+    'step' :
+    'set the time step [default: %default]',
     'no_show' :
     'do not call mlab.show()',
     'is_3d' :
@@ -142,7 +144,7 @@ def view_file(filename, filter_names, options, view=None):
              rel_text_width=options.rel_text_width,
              fig_filename=options.filename, resolution=options.resolution,
              filter_names=filter_names, only_names=options.only_names,
-             anti_aliasing=options.anti_aliasing)
+             step=options.step, anti_aliasing=options.anti_aliasing)
 
     else:
         view.set_source_filename(filename)
@@ -218,6 +220,9 @@ def main():
     parser.add_option("--only-names", metavar='list of names',
                       action="store", dest="only_names",
                       default=None, help=help['only_names'])
+    parser.add_option("--step", type='int', metavar='step',
+                      action="store", dest="step",
+                      default=0, help=help['step'])
     parser.add_option("--anti-aliasing", type='int', metavar='value',
                       action="store", dest="anti_aliasing",
                       default=None, help=help['anti_aliasing'])
@@ -240,7 +245,7 @@ def main():
             options.output_dir = '.'
 
     else:
-        options.output_dir, options.filename = op.split(options.filename)
+        options.output_dir, options.filename = os.path.split(options.filename)
 
     # Data filtering,
     if not options.all:
@@ -253,12 +258,12 @@ def main():
         options.show = False
 
     if options.list_ranges:
-        # FIXME: For HDF5, shows the range of the first step only for the moment.
         all_ranges = {}
         for ii, filename in enumerate(filenames):
             output('%d: %s' % (ii, filename))
 
             file_source = create_file_source(filename)
+            file_source.set_step(options.step)
             for key, val in get_data_ranges(file_source()).iteritems():
                 all_ranges.setdefault(key, []).append(val[3:])
             

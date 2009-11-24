@@ -23,10 +23,12 @@ class Integrals( Container ):
             if not name_map.has_key( name ): continue
 
             int_conf = name_map[name]
-            aux = Integral( name = int_conf.name,
-                            kind = int_conf.kind,
-                            quad_name = int_conf.quadrature,
-                            mode = 'builtin' )
+
+            aux = Integral(int_conf.name,
+                           kind = int_conf.kind,
+                           quad_name = int_conf.quadrature,
+                           mode = 'builtin')
+
             if hasattr( int_conf, 'vals' ):
                 aux.vals = nm.array( int_conf.vals, nm.float64 )
                 aux.weights = nm.array( int_conf.weights, nm.float64 )
@@ -47,10 +49,25 @@ class Integrals( Container ):
 # 16.11.2007, c
 class Integral( Struct ):
 
+    def __init__(self, name, kind='v', quad_name='auto', mode='builtin',
+                 term=None):
+        self.name = name
+        self.kind = kind
+        self.quad_name = quad_name
+        self.mode = mode
+        self.term = term
+
+        if self.quad_name in ('auto', 'custom'):
+            self.order = -1
+        else:
+            match = _match_order_dim(self.quad_name)
+            self.order, self.dim = [int( ii ) for ii in match.groups()]
+
+    def set_term(self, term):
+        self.term = term
+
     def setup( self ):
         if self.mode == 'builtin':
-            match = _match_order_dim( self.quad_name )
-            self.order, self.dim = [int( ii ) for ii in match.groups()]
             qcs = {}
             for key, quad_contructor in self.qcs.iteritems():
 #                print key
