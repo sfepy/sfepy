@@ -1,5 +1,6 @@
 from sfepy.base.base import *
-from sfepy.base.ioutils import skip_read_line, read_token, read_array, read_list, pt
+from sfepy.base.ioutils \
+     import skip_read_line, read_token, read_array, read_list, pt
 import sfepy.base.la as la
 from sfepy.base.progressbar import MyBar
 import os.path as op
@@ -143,7 +144,11 @@ class MeshIO( Struct ):
     Optionally, subclasses can implement read_data() to read also computation
     results. This concerns mainly the subclasses with implemented write()
     supporting the 'out' kwarg.
+
+    The default implementation od read_last_step() just returns 0. It should be
+    reimplemented in subclasses capable of storing several steps.
     """
+    
     format = None
     call_msg = 'called an abstract MeshIO instance!'
 
@@ -157,6 +162,10 @@ class MeshIO( Struct ):
     def read_bounding_box( self, ret_fd = False, ret_dim = False ):
         raise ValueError(MeshIO.call_msg)
 
+    def read_last_step(self):
+        """The default implementation: just return 0 as the last step."""
+        return 0
+    
     def read( self, mesh, *args, **kwargs ):
         raise ValueError(MeshIO.call_msg)
 
@@ -171,7 +180,7 @@ class MeshIO( Struct ):
 
     def get_vector_format( self, dim ):
         return ' '.join( [self.float_format] * dim )
-            
+
 ##
 # c: 05.02.2008
 class MeditMeshIO( MeshIO ):

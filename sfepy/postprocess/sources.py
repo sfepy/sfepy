@@ -1,7 +1,7 @@
 from sfepy.base.base import *
 from sfepy.postprocess.utils import mlab
 from sfepy.fem import Mesh
-from sfepy.fem.meshio import HDF5MeshIO, vtk_cell_types
+from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
 from sfepy.solvers.ts import TimeStepper
 
 from dataset_manager import DatasetManager
@@ -22,21 +22,30 @@ def create_file_source(filename, watch=False, offscreen=True):
         fmt = os.path.splitext(filename[0])[1]
         is_sequence = True
 
-    if fmt.lower() == '.vtk':
+    fmt = fmt.lower()
+
+    if fmt == '.vtk':
+        # VTK is supported directly by Mayavi, no need to use MeshIO.
         if is_sequence:
             return VTKSequenceFileSource(filename, **kwargs)
         else:
             return VTKFileSource(filename, **kwargs)
 
-    elif fmt.lower() == '.h5':
-        return HDF5FileSource(filename, **kwargs)
+    elif fmt in supported_formats.keys():
+        if is_sequence:
+            if fmt == '.h5':
+                raise ValueError('format .h5 does not support file sequences!')
+            else:
+                return GenericSequenceFileSource(filename, **kwargs)
+        else:
+            return GenericFileSource(filename, **kwargs)
 
     else:
         raise ValueError('unknown file format! (%s)' % fmt)
 
 class FileSource(Struct):
-    
     """General file source."""
+
     def __init__(self, filename, watch=False, offscreen=True):
         """Create a file source using the given file name."""
         mlab.options.offscreen = offscreen
@@ -94,6 +103,7 @@ class FileSource(Struct):
             self.last_stat = s
 
 class VTKFileSource(FileSource):
+    """A thin wrapper around mlab.pipeline.open()."""
 
     def create_source(self):
         """Create a VTK file source """
@@ -111,6 +121,7 @@ class VTKFileSource(FileSource):
         return (0, 0)
 
 class VTKSequenceFileSource(VTKFileSource):
+    """A thin wrapper around mlab.pipeline.open() for VTK file sequences."""
 
     def create_source(self):
         """Create a VTK file source """
@@ -123,7 +134,9 @@ class VTKSequenceFileSource(VTKFileSource):
     def get_step_range(self):
         return (0, len(self.filename) - 1)
 
-class HDF5FileSource(FileSource):
+
+class GenericFileSource(FileSource):
+    """File source usable with any format supported by MeshIO classes."""
 
     def __init__(self, *args, **kwargs):
         FileSource.__init__(self, *args, **kwargs)
@@ -131,25 +144,59 @@ class HDF5FileSource(FileSource):
         self.io = None
 
     def read_common(self, filename):
-        self.io = HDF5MeshIO(filename)
-        self.ts = TimeStepper(*self.io.read_time_stepper())
-
+        self.io = MeshIO.any_from_filename(filename)
         self.step_range = (0, self.io.read_last_step())
 
-        self.mesh = mesh = Mesh.from_file(self.filename)
+        self.mesh = mesh = Mesh.from_file(filename)
         self.n_nod, self.dim = self.mesh.coors.shape
-        
+
     def create_source(self):
-        """Create a VTK source from data in a SfePy HDF5 file."""
+        """Create a VTK source from data in a SfePy-supported file."""
         if self.io is None:
             self.read_common(self.filename)
 
+        dataset = self.create_dataset()
+
+        try:
+            out = self.io.read_data(self.step)
+        except ValueError:
+            out = None
+
+        if out is not None:
+            self.add_data_to_dataset(dataset, out)
+        
+        src = VTKDataSource(data=dataset)
+#        src.print_traits()
+#        debug()
+        return src
+
+    def get_bounding_box(self):
+        bbox = self.mesh.get_bounding_box()
+        if self.dim == 2:
+            bbox = nm.c_[bbox, [0.0, 0.0]]
+        return bbox
+
+    def set_filename(self, filename, vis_source):
+        self.filename = filename
+        self.source = self.create_source()
+        vis_source.data = self.source.data
+        
+    def get_step_range(self):
+        if self.step_range is None:
+            io = MeshIO.any_from_filename(self.filename)
+            self.step_range = (0, io.read_last_step())
+
+        return self.step_range
+
+    def file_changed(self):
+        self.step_range = (0, self.io.read_last_step())
+
+    def create_dataset(self):
+        """Create a tvtk.UnstructuredGrid dataset from the Mesh instance of the
+        file source."""
         mesh = self.mesh
         n_nod, dim = self.n_nod, self.dim
-        sym = (dim + 1) * dim / 2
         n_el, n_els, n_e_ps = mesh.n_el, mesh.n_els, mesh.n_e_ps
-
-        out = self.io.read_data(self.step)
 
         if dim == 2:
             nod_zz = nm.zeros((n_nod, 1), dtype=mesh.coors.dtype)
@@ -157,8 +204,7 @@ class HDF5FileSource(FileSource):
         else:
             points = mesh.coors
 
-        data = tvtk.UnstructuredGrid(points=points)
-        dm = DatasetManager(dataset=data)
+        dataset = tvtk.UnstructuredGrid(points=points)
 
         cell_types = []
         cells = []
@@ -179,9 +225,17 @@ class HDF5FileSource(FileSource):
         cell_array = tvtk.CellArray()
         cell_array.set_cells(n_el, cells)
 
-        data.set_cells(cell_types, offset, cell_array)
+        dataset.set_cells(cell_types, offset, cell_array)
 
-        for key, val in out.iteritems():
+        return dataset
+
+    def add_data_to_dataset(self, dataset, data):
+        """Add point and cell data to the dataset."""
+        dim = self.dim
+        sym = (dim + 1) * dim / 2
+
+        dm = DatasetManager(dataset=dataset)
+        for key, val in data.iteritems():
             vd = val.data
 ##             print vd.shape
             if val.mode == 'vertex':
@@ -237,29 +291,26 @@ class HDF5FileSource(FileSource):
                                         zz, zz, zz, zz]
 
                 dm.add_array(aux, key, 'cell')
-        
-        src = VTKDataSource(data=data)
-#        src.print_traits()
-#        debug()
-        return src
 
-    def get_bounding_box(self):
-        bbox = self.mesh.get_bounding_box()
-        if self.dim == 2:
-            bbox = nm.c_[bbox, [0.0, 0.0]]
-        return bbox
+class GenericSequenceFileSource(GenericFileSource):
+    """File source usable with any format supported by MeshIO classes, with
+    exception of HDF5 (.h5), for file sequences."""
+
+    def create_source(self):
+        """Create a VTK source from data in a SfePy-supported file."""
+        if self.io is None:
+            self.read_common(self.filename[self.step])
+
+        dataset = self.create_dataset()
+
+        src = VTKDataSource(data=dataset)
+        return src
 
     def set_filename(self, filename, vis_source):
         self.filename = filename
+        self.io = None
         self.source = self.create_source()
         vis_source.data = self.source.data
         
     def get_step_range(self):
-        if self.step_range is None:
-            io = HDF5MeshIO(self.filename)
-            self.step_range = (0, io.read_last_step())
-
-        return self.step_range
-
-    def file_changed(self):
-        self.step_range = (0, self.io.read_last_step())
+        return (0, len(self.filename) - 1)
