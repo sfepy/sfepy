@@ -485,7 +485,7 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
 /*     output( "%d\n", iel ); */
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( viscosity, iel );
+    FMF_SetCell( viscosity, ii );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
 
@@ -910,7 +910,7 @@ int32 dw_st_pspg_c( FMField *out,
     FMF_SetCell( vg_u->bfGM, iel );
     FMF_SetCell( vg_p->bfGM, iel );
     FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stb, stateB, conn + nEP * iel );
     bf_act( fb, bf_u, stb );
@@ -996,7 +996,7 @@ int32 dw_st_supg_p( FMField *out,
     FMF_SetCell( vg_u->bfGM, iel );
     FMF_SetCell( vg_p->bfGM, iel );
     FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stb, stateB, conn_u + nEP_u * iel );
     bf_act( fb, bf_u, stb );
@@ -1079,7 +1079,7 @@ int32 dw_st_supg_c( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stb, stateB, conn + nEP * iel );
     bf_act( fb, bf, stb );
@@ -1154,7 +1154,7 @@ int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
     FMF_SetCell( gcl, iel );
     FMF_SetCell( vg->det, iel );
       
