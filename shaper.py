@@ -4,7 +4,7 @@
 import os.path as op
 from optparse import OptionParser
 
-import init_sfepy
+import sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf
 from sfepy.fem.evaluate import BasicEvaluator
@@ -417,13 +417,9 @@ def solve_optimize( conf, options ):
     anls_conf = apb.get_solver_conf( opts.nls_adjoint )
     opt_conf = apb.get_solver_conf( opts.optimizer )
 
-    ls = Solver.any_from_conf( ls_conf )
+    dpb.init_solvers(ls_conf=ls_conf, nls_conf=dnls_conf)
 
-    ev = BasicEvaluator( dpb, data = data )
-    dnls = Solver.any_from_conf( dnls_conf, evaluator = ev, lin_solver = ls )
-
-    ev = BasicEvaluator( apb, data = data )
-    anls = Solver.any_from_conf( anls_conf, evaluator = ev, lin_solver = ls )
+    apb.init_solvers(ls_conf=ls_conf, nls_conf=anls_conf)
 
     shape_opt = so.ShapeOptimFlowCase.from_conf( conf, apb.domain )
     design0 = shape_opt.dsg_vars.val
@@ -436,13 +432,11 @@ def solve_optimize( conf, options ):
                                     obj_fun = so.obj_fun,
                                     obj_fun_grad = so.obj_fun_grad,
                                     status = opt_status,
-                                    obj_args = (shape_opt, dpb, apb,
-                                               dnls, anls, opts) )
-
+                                    obj_args = (shape_opt, dpb, apb, opts) )
 
     ##
     # State problem solution for the initial design.
-    vec_dp0 = so.solve_problem_for_design( design0, shape_opt, dnls, opts )
+    vec_dp0 = so.solve_problem_for_design(dpb, design0, shape_opt, opts)
 
     dpb.save_state( trunk + '_direct_initial.vtk', vec_dp0 )
 
@@ -482,10 +476,7 @@ help = {
 # created:       13.06.2005
 # last revision: 15.04.2008
 def main():
-    version = open( op.join( init_sfepy.install_dir,
-                             'VERSION' ) ).readlines()[0][:-1]
-
-    parser = OptionParser( usage = usage, version = "%prog " + version )
+    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
     parser.add_option( "-s", "--server",
                        action = "store_true", dest = "server_mode",
                        default = False, help = help['server_mode'] )

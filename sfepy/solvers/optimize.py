@@ -181,7 +181,8 @@ class FMinSteepestDescent( OptimizationSolver ):
 
         if conf.log:
             from sfepy.base.log import Log
-            log = Log.from_conf( conf, ([r'of'], [r'$||$ofg$||$'], [r'alpha']) )
+            log = Log(([r'of'], [r'$||$ofg$||$'], [r'alpha']),
+                      yscales=conf.yscales)
         else:
             log = None
 

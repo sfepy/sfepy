@@ -41,13 +41,10 @@ def update_mesh( shape_opt, pb, design ):
 
 ##
 # c: 19.04.2006, r: 15.04.2008
-def solve_problem_for_design( design, shape_opt, nls, opts,
-                           use_cache = True, is_mesh_update = True ):
+def solve_problem_for_design(problem, design, shape_opt, opts,
+                             use_cache=True, is_mesh_update=True):
     """use_cache == True means direct problem..."""
-
-    pb = nls.evaluator.problem
-    
-    is_pressure = 'r' in pb.variables.names
+    pb = problem
     
     if use_cache and nm.allclose( design, shape_opt.cache.design,
                                  rtol = opts.eps_r, atol = opts.eps_a ):
@@ -59,9 +56,7 @@ def solve_problem_for_design( design, shape_opt, nls, opts,
             if not ok: return None
             
         # Solve direct/adjoint problem.
-        vec = pb.create_state_vector()
-        pb.apply_ebc( vec )
-        vec = nls( vec )
+        vec = problem.solve()
 
         if use_cache:
             shape_opt.cache.vec = vec.copy()
@@ -75,7 +70,7 @@ def solve_problem_for_design( design, shape_opt, nls, opts,
                 aux = shape_opt.sp_boxes.create_mesh_from_control_points()
                 aux.write( op.join( shape_opt.save_dir, 'cp.%03d.vtk' )\
                            % (shape_opt.cache.i_mesh - 1), io = 'auto' )
-                
+
             if shape_opt.save_dsg_vars:
                 filename = op.join( shape_opt.save_dir, 'dsg.%03d.txt' )\
                            % (shape_opt.cache.i_mesh - 1)
@@ -87,11 +82,11 @@ def solve_problem_for_design( design, shape_opt, nls, opts,
 ##
 # created:       19.04.2006
 # last revision: 21.12.2007
-def obj_fun( design, shape_opt, dpb, apb, dnls, anls, opts ):
+def obj_fun( design, shape_opt, dpb, apb, opts ):
 
 #    print 'OF'
     data = {}
-    vec_dp = solve_problem_for_design( design, shape_opt, dnls, opts )
+    vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
     if vec_dp is None:
         return None
         
@@ -103,14 +98,14 @@ def obj_fun( design, shape_opt, dpb, apb, dnls, anls, opts ):
 ##
 # created:       19.04.2006
 # last revision: 21.12.2007
-def obj_fun_grad( design, shape_opt, dpb, apb, dnls, anls, opts ):
+def obj_fun_grad( design, shape_opt, dpb, apb, opts ):
 
 #    print 'OFG'
     data = {}
-    vec_dp = solve_problem_for_design( design, shape_opt, dnls, opts )
+    vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
     set_state_to_vars( apb.variables, shape_opt.var_map, vec_dp )
-    vec_ap = solve_problem_for_design( design, shape_opt, anls, opts,
-                                   use_cache = False, is_mesh_update = False )
+    vec_ap = solve_problem_for_design(apb, design, shape_opt, opts,
+                                      use_cache=False, is_mesh_update=False)
 ##     print apb.materials['stabil']
 ##     pause()
     vec_sa = shape_opt.sensitivity( vec_dp, vec_ap, apb.conf, apb.domain,
