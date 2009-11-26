@@ -1,10 +1,9 @@
 from sfepy.terms.terms import *
 from sfepy.terms.termsNavierStokes import DivGradTerm
-from sfepy.terms.utils import fix_scalar_in_el
 
-class AdjDivGrad1Term( DivGradTerm ):
+class AdjDivGradTerm( DivGradTerm ):
     """Uses material.viscosity as viscosity."""
-    name = 'dw_adj_div_grad1'
+    name = 'dw_adj_div_grad'
     arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
     geometry = [(Volume, 'virtual')]
 
@@ -21,31 +20,7 @@ class AdjDivGrad1Term( DivGradTerm ):
 
         vec = parameter()
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0,
-                                    weight * viscosity,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
-
-class AdjDivGrad2Term( DivGradTerm ):
-    """Uses 1.0 as viscosity."""
-    name = 'dw_adj_div_grad2'
-    arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual')]
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        weight, material, virtual, parameter = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
-
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        else:
-            raise StopIteration
-
-        vec = parameter()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, weight,
+            status = self.function( out, vec, 0, weight * viscosity,
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
@@ -109,14 +84,12 @@ class AdjSUPGCtabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
-
         vec_w = state()
         vec_u = par()
         bf = ap.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_w, 0,
-                                    coef_in_el, bf, vg, ap.econn,
+                                    coef, bf, vg, ap.econn,
                                     chunk, mode )
             yield out, chunk, status
 
@@ -144,14 +117,12 @@ class SUPGPAdj1StabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
-            
         vec_w = state()
         vec_p = par()
         bf = apr.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_p, 0, vec_w, 0,
-                                    coef_in_el, bf, vgr, vgp,
+                                    coef, bf, vgr, vgp,
                                     apr.econn, app.econn, chunk, mode )
             yield out, chunk, status
 
@@ -180,14 +151,12 @@ class SUPGPAdj2StabilizationTerm( Term ):
         else:
             raise StopIteration
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
-            
         vec_u = par()
         vec_r = state()
         bf = apr.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_r, 0,
-                                    coef_in_el, bf, vgr, vgc,
+                                    coef, bf, vgr, vgc,
                                     apr.econn, apc.econn, chunk, mode )
             yield out, chunk, status
 
@@ -287,7 +256,7 @@ class SDDivGradTerm( Term ):
         vec_u = par_u()
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_w, 0, vec_mv, 0,
-                                    weight * viscosity, vg_u, vg_mv,
+                                    weight * viscosity[0,0,0,0], vg_u, vg_mv,
                                     ap_u.econn, ap_mv.econn, chunk, mode )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
@@ -501,12 +470,11 @@ class SDSUPGCStabilizationTerm( Term ):
         vec_b = par_b()
         vec_u = par_u()
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
         bf = ap_u.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_b, 0,
                                     vec_w, 0, vec_mv, 0,
-                                    bf, coef_in_el, vg_u, vg_mv,
+                                    bf, coef, vg_u, vg_mv,
                                     ap_u.econn, ap_mv.econn, chunk, mode )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
@@ -539,12 +507,11 @@ class SDPSPGCStabilizationTerm( Term ):
         vec_b = par_b()
         vec_u = par_u()
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
         bf = ap_u.get_base( 'v', 0, self.integral_name )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_b, 0,
                                     vec_r, 0, vec_mv, 0,
-                                    bf, coef_in_el, vg_u, vg_r, vg_mv,
+                                    bf, coef, vg_u, vg_r, vg_mv,
                                     ap_u.econn, ap_r.econn, ap_mv.econn,
                                     chunk, mode )
             out1 = nm.sum( nm.squeeze( out ) )
@@ -574,10 +541,9 @@ class SDPSPGPStabilizationTerm( Term ):
         vec_r = par_r()
         vec_p = par_p()
 
-        coef_in_el = fix_scalar_in_el( coef, n_el, nm.float64 )
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_p, 0, vec_r, 0,
-                                    vec_mv, 0, coef_in_el, vg_p, vg_mv,
+                                    vec_mv, 0, coef, vg_p, vg_mv,
                                     ap_p.econn, ap_mv.econn, chunk, mode )
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
