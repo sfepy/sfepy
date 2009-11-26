@@ -189,16 +189,15 @@ class SplineBoxes( Struct ):
     # 27.03.2007, c
     def create_mesh_from_control_points( self ):
         offset = 0
-        coors = nm.empty( (0,4), dtype = nm.float64 )
+        dim = self.spbs[0].cxyz.shape[1]
+        coors = nm.empty((0, dim), dtype=nm.float64)
         conns = []
         mat_ids = []
         descs = []
         for ib, spb in enumerate( self.spbs ):
             n_nod = spb.cxyz.shape[0]
-            aux = nm.c_[spb.cxyz, nm.zeros( (n_nod, 1), dtype = nm.float64 )]
-            coors = nm.concatenate( (coors, aux), 0 )
+            coors = nm.concatenate( (coors, spb.cxyz), 0 )
             descs.append( '3_2' )
-            mat_ids.append( ib )
 
             conn = []
             for ij in xrange( spb.cpi.shape[1] ):
@@ -217,10 +216,15 @@ class SplineBoxes( Struct ):
                     row = [[p1, p2] for p1, p2 in zip( inx[:-1], inx[1:] )]
                     conn.extend( row )
 
+            aux = nm.empty(len(conn), dtype=nm.int32)
+            aux.fill(ib)
+            mat_ids.append(aux)
+
             conns.append( offset + nm.array( conn, dtype = nm.int32 ) )
             offset += n_nod
 
-        mesh = Mesh.from_data( 'control_points', coors, conns, mat_ids, descs )
+        mesh = Mesh.from_data('control_points', coors, None, conns,
+                              mat_ids, descs)
         return mesh
 
 if __name__ == '__main__':
