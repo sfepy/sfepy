@@ -718,7 +718,7 @@ def make_animation(filename, view, roll, anim_format, options):
                                         options.ffmpeg_options)
 
     import os.path as op
-    os.rename(anim_name, op.join(options.output_dir, op.split(anim_name)[1]))
+    shutil.move(anim_name, op.join(options.output_dir, op.split(anim_name)[1]))
     shutil.rmtree(output_dir)
 
     mlab.close(viewer.scene)
