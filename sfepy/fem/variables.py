@@ -468,10 +468,11 @@ class Variables( Container ):
         output( 'dofs: total %d, free %d, constrained %d, new %d'\
                 % (n_dof, n_dof_free, n_constrained, n_dof_new) )
         output( ' -> reduced %d' % (n_dof_reduced) )
-        mtx_lc = sp.lil_matrix( (n_dof, n_dof_reduced), dtype = nm.float64 )
+
         ir = nm.where( eq_lcbc == 0 )[0]
-        ic = nm.arange( n_dof_reduced, dtype = nm.int32 )
-        mtx_lc[ir,ic] = 1.0
+        ic = nm.arange( n_dof_free, dtype = nm.int32 )
+        mtx_lc = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
+                               shape=(n_dof, n_dof_reduced), dtype=nm.float64)
 
         rows = []
         cols = []
