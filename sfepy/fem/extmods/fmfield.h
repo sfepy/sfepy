@@ -99,6 +99,7 @@ int32 fmf_mulAF( FMField *objR, FMField *objA, float64 *val );
 int32 fmf_mulATF( FMField *objR, FMField *objA, float64 *val );
 int32 fmf_mulAB_nn( FMField *objR, FMField *objA, FMField *objB );
 int32 fmf_mulAB_n1( FMField *objR, FMField *objA, FMField *objB );
+int32 fmf_mulAB_1n( FMField *objR, FMField *objA, FMField *objB );
 int32 fmf_mulATB_nn( FMField *objR, FMField *objA, FMField *objB );
 int32 fmf_mulATB_1n( FMField *objR, FMField *objA, FMField *objB );
 int32 fmf_mulABT_nn( FMField *objR, FMField *objA, FMField *objB );
