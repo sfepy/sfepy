@@ -735,8 +735,8 @@ def detect_band_gaps( pb, evp_kind, eigs, eig_vectors, opts, funmod,
     else:
         mat_name = opts.region_to_material[opts.liquid_region]
         mat = pb.materials[mat_name]
-        gamma = mat.get_data(opts.liquid_region, mat.igs[0], 'gamma')
-        eta = mat.get_data(opts.liquid_region, mat.igs[0], 'eta')
+        gamma = mat.get_constant_data('gamma')
+        eta = mat.get_constant_data('eta')
 
         mass = AcousticMassLiquidTensor(valid_eigenmomenta, valid_eigs,
                                         dv_info, gamma, eta)
