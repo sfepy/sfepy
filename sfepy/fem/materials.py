@@ -228,7 +228,7 @@ class Material( Struct ):
             # no key, ig.
             return self.datas['special_constant'][name]
         else:
-            raise ValueError('material %s has now constant %s!'
+            raise ValueError('material %s has no constant %s!'
                              % (self.name, name))
 
     ##

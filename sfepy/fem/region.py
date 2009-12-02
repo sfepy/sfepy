@@ -17,7 +17,8 @@ def get_dependency_graph(region_defs):
         name, sel = rdef.name, rdef.select
 ##         print sort_name, name, sel
         if name_to_sort_name.has_key( name ):
-            raise 'region %s/%s already defined!' % (sort_name, name)
+            msg = 'region %s/%s already defined!' % (sort_name, name)
+            raise ValueError(msg)
         name_to_sort_name[name] = sort_name
 
         if not graph.has_key( name ):
