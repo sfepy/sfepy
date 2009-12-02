@@ -1619,7 +1619,15 @@ class Variable( Struct ):
 ##                 print slave_nod_list
 
                 nmaster = nm.unique1d( nm.hstack( master_nod_list ) )
+                # Treat fields not covering the whole domain.
+                if nmaster[0] == -1:
+                    nmaster = nmaster[1:]
+                    
                 nslave = nm.unique1d( nm.hstack( slave_nod_list ) )
+                # Treat fields not covering the whole domain.
+                if nslave[0] == -1:
+                    nslave = nslave[1:]
+
 ##                 print nmaster + 1
 ##                 print nslave + 1
                 if nmaster.shape != nslave.shape:
@@ -1627,8 +1635,12 @@ class Variable( Struct ):
                           (nmaster, nslave)
                     raise ValueError( msg )
 
+                if (nmaster.shape[0] == 0) and (nslave.shape[0] == 0):
+                    continue
+
                 mcoor = field.get_coor( nmaster )
                 scoor = field.get_coor( nslave )
+
                 fun = functions[bc.match]
                 i1, i2 = fun(mcoor, scoor)
 ##                print nm.c_[mcoor[i1], scoor[i2]]
