@@ -31,6 +31,9 @@ help = {
     "save problem state showing EBC (Dirichlet conditions)",
     'save_regions' :
     "save problem regions as meshes",
+    'save_regions_as_groups' :
+    "save problem regions in a single mesh but mark them by using different"
+    " element/node group numbers",
     'save_field_meshes' :
     "save meshes of problem fields (with extra DOF nodes)",
     'save_region_field_meshes' :
@@ -55,6 +58,9 @@ def main():
     parser.add_option( "", "--save-regions",
                        action = "store_true", dest = "save_regions",
                        default = False, help = help['save_regions'] )
+    parser.add_option( "", "--save-regions-as-groups",
+                       action = "store_true", dest = "save_regions_as_groups",
+                       default = False, help = help['save_regions_as_groups'] )
     parser.add_option( "", "--save-field-meshes",
                        action = "store_true", dest = "save_field_meshes",
                        default = False, help = help['save_field_meshes'] )

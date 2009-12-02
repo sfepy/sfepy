@@ -480,6 +480,60 @@ class ProblemDefinition( Struct ):
                        io = 'auto' )
         output( '...done' )
 
+    def save_regions_as_groups(self, filename_trunk):
+	"""Save regions in a single mesh but mark them by using different
+        element/node group numbers.
+
+        If regions overlap, the result is undetermined, with exception of the
+        whole domain region, which is marked by group id 0.
+
+        Region masks are also saved as scalar point data for output formats
+        that support this.
+        """
+
+        output( 'saving regions as groups...' )
+        aux = self.domain.mesh.copy()
+        n_ig = c_ig = 0
+
+        n_nod = self.domain.shape.n_nod
+
+        # The whole domain region should go first.
+        names = self.domain.regions.get_names()
+        for region in self.domain.regions:
+            if region.all_vertices.shape[0] == n_nod:
+                names.remove(region.name)
+                names = [region.name] + names
+                break
+
+        out = {}
+        for name in names:
+            region = self.domain.regions[name]
+            output(region.name)
+
+            aux.ngroups[region.all_vertices] = n_ig
+            n_ig += 1
+
+            mask = nm.zeros((n_nod, 1), dtype=nm.float64)
+            mask[region.all_vertices] = 1.0
+            out[name] = Struct(name = 'region',
+                               mode = 'vertex', data = mask,
+                               var_name = name, dofs = None)
+
+            if region.has_cells():
+                for ig in region.igs:
+                    ii = region.get_cells(ig)
+                    aux.mat_ids[ig][ii] = c_ig
+                    c_ig += 1
+
+        try:
+            aux.write( '%s.%s' % (filename_trunk, self.output_format), io='auto',
+                       out=out)
+        except NotImplementedError:
+            # Not all formats support output.
+            pass
+
+        output( '...done' )
+
     ##
     # created:       02.01.2008
     # last revision: 27.02.2008

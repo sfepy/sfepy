@@ -15,6 +15,9 @@ def save_only( conf, save_names, problem = None ):
     if save_names.regions is not None:
         problem.save_regions( save_names.regions )
 
+    if save_names.regions_as_groups is not None:
+        problem.save_regions_as_groups( save_names.regions_as_groups )
+
     if save_names.field_meshes is not None:
         problem.save_field_meshes( save_names.field_meshes )
 
@@ -196,12 +199,15 @@ def solve_direct( conf, options, problem = None, step_hook = None,
 	    problem.output_format = options.output_format
     ofn_trunk = problem.ofn_trunk
     
-    save_names = Struct( ebc = None, regions = None, field_meshes = None,
+    save_names = Struct( ebc = None, regions = None,
+                         save_regions_as_groups = None, field_meshes = None,
                          region_field_meshes = None )
     if options.save_ebc:
         save_names.ebc = ofn_trunk + '_ebc.vtk'
     if options.save_regions:
         save_names.regions = ofn_trunk + '_region'
+    if options.save_regions_as_groups:
+        save_names.regions_as_groups = ofn_trunk + '_regions'
     if options.save_field_meshes:
         save_names.field_meshes = ofn_trunk + '_field'
     if options.save_region_field_meshes:
