@@ -192,18 +192,33 @@ class Struct( object ):
         
     # 08.03.2005
     def __str__( self ):
-        """Print instance class, name and items in alphabetical order."""
+        """Print instance class, name and items in alphabetical order.
+
+        If the class instance has '_str_attrs' attribute, only the attributes
+        listed there are printed. For attributes that are Struct instances, if
+        the listed attribute name ends with '.', the attribute is printed fully
+        by calling str(). Otherwise only its class name/name are printed.
+        """
         ss = "%s" % self.__class__.__name__
         if hasattr( self, 'name' ):
             ss += ":%s" % self.name
         ss += '\n'
 
-        keys, vals = self.__dict__.keys(), self.__dict__.values()
-        order = nm.argsort(keys)
-        for ii in order:
-            key, val = keys[ii], vals[ii]
+        str_attrs = sorted(self.get_default_attr('_str_attrs',
+                                                 self.__dict__.keys()))
+        for key in str_attrs:
+            if key[-1] == '.':
+                key = key[:-1]
+                full_print = True
+            else:
+                full_print = False
 
-            if issubclass( val.__class__, Struct ):
+            try:
+                val = self.__dict__[key]
+            except KeyError:
+                continue
+
+            if (not full_print) and issubclass( val.__class__, Struct ):
                 ss += "  %s:\n    %s" % (key, val.__class__.__name__)
                 if hasattr( val, 'name' ):
                     ss += ":%s" % val.name
