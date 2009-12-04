@@ -1051,11 +1051,10 @@ Converts "filename" DocBook to other formats.
         if mod_name.endswith(".py"):
             mod_name = mod_name[:-3]
 
-        if sys.version < '2.5':
-            # This is needed for python2.4 on Gentoo. It works on python2.4 on
-            # Debian. Weird.
-            mod_path, mod_name = os.path.split( mod_name )
-            sys.path.append( mod_path )
+        path = os.path.dirname(mod_name)
+        if not path in sys.path:
+            sys.path.append(path)
+        mod_name = os.path.splitext(os.path.basename(mod_name))[0]
         mod = __import__(mod_name)
         mod_class = getattr(mod, mod_class_name)
         converter = mod_class
