@@ -175,3 +175,22 @@ class VolumeDataCache( DataCache ):
         ckey = self.g_to_c( group_indx )
         self.data[key][ckey][ih] = region.get_volume( field, ckey,
                                                       update = True )
+
+class SurfaceDataCache( DataCache ):
+    name = 'surface'
+    arg_types = ('region','field')
+
+    def __init__( self, name, arg_names, history_sizes = None ):
+        DataCache.__init__( self, name, arg_names, ['surface'], history_sizes )
+         
+    def init_data( self, key, ckey, **kwargs ):
+        shape = (1, 1, 1, 1)
+
+        DataCache.init_data( self, key, ckey, shape )
+
+    def update( self, key, group_indx, ih, **kwargs ):
+        region, field = self.get_args( **kwargs )
+        ckey = self.g_to_c( group_indx )
+        self.data[key][ckey][ih] = region.get_volume( field, ckey,
+                                                      update = True,
+                                                      mode = 'Surface' )

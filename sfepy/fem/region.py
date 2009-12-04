@@ -505,7 +505,7 @@ class Region( Struct ):
         else:
             return True
 
-    def update_geometry_info( self, field, key ):
+    def update_geometry_info( self, field, key, mode = 'Volume' ):
         """
         key: iname, aregion_name, ig
         TODO: surfaces, lengths
@@ -520,23 +520,25 @@ class Region( Struct ):
         aps = field.aps
         geometries = aps.geometries
         ap = aps.aps_per_group[ig]
-        g_key = (iname, 'Volume', self.name, ap.name)
+        g_key = (iname, mode, self.name, ap.name)
 
         vg = geometries[g_key]
 
         volume = vg.variable( 2 )
         volume.shape = (nm.prod( volume.shape ),)
-
-        val[key] = nm.sum( volume[self.cells[ig]] )
+        if mode == 'Volume':
+            val[key] = nm.sum( volume[self.cells[ig]] )
+        else:
+            val[key] = nm.sum( volume[:] )
         self.volume[field.name] = val
 
     ##
     # created:       16.07.2007
     # last revision: 13.12.2007
     def get_volume( self, field, key = None,
-                   update = False ):
+                   update = False, mode = 'Volume' ):
         if update:
-            self.update_geometry_info( field, key )
+            self.update_geometry_info( field, key, mode )
 
         if key is None:
             return self.volume[field.name]

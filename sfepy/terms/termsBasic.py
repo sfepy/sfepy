@@ -283,6 +283,28 @@ class VolumeTerm( Term ):
                         region = self.char_fun.region, field = par.field )
         yield volume, 0, 0
 
+class SurfaceTerm( Term ):
+    r""":description: Surface of a domain. Uses approximation of the parameter
+    variable.
+    :definition: $\int_\Gamma 1$"""
+    name = 'd_surface'
+    arg_types = ('parameter',)
+    geometry = [(Surface, 'parameter')]
+    use_caches = {'surface' : [['parameter']]}
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign )
+        self.dof_conn_type = 'surface'
+        
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        par, = self.get_args( **kwargs )
+        shape = (1, 1, 1, 1)
+
+        cache = self.get_cache( 'surface', 0 )
+        surface = cache( 'surface', self.get_current_group(), 0,
+                         region = self.char_fun.region, field = par.field )
+        yield surface, 0, 0
+
 class VolumeSurfaceTerm( Term ):
     r""":description: Volume of a domain - using surface integral.
     Uses approximation of the parameter.
