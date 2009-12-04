@@ -67,6 +67,7 @@ class TestInputEvolutionary( TestInput ):
         options = Struct( output_filename_trunk = name,
                           output_format ='vtk',
                           save_ebc = False, save_regions = False,
+                          save_regions_as_groups = False,
                           save_field_meshes = False,
                           save_region_field_meshes = False,
                           solve_not = False )
