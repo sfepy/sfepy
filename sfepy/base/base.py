@@ -191,11 +191,14 @@ class Struct( object ):
             self.__dict__.update( kwargs )
         
     # 08.03.2005
-    def __str__( self ):
+    def __str__(self):
         """Print instance class, name and items in alphabetical order.
 
         If the class instance has '_str_attrs' attribute, only the attributes
-        listed there are printed. For attributes that are Struct instances, if
+        listed there are taken into account. Other attributes are provided only
+        as a list of attribute names (no values).
+
+        For attributes that are Struct instances, if
         the listed attribute name ends with '.', the attribute is printed fully
         by calling str(). Otherwise only its class name/name are printed.
         """
@@ -204,14 +207,18 @@ class Struct( object ):
             ss += ":%s" % self.name
         ss += '\n'
 
+        keys = self.__dict__.keys()
         str_attrs = sorted(self.get_default_attr('_str_attrs',
-                                                 self.__dict__.keys()))
+                                                 keys))
+        printed_keys = []
         for key in str_attrs:
             if key[-1] == '.':
                 key = key[:-1]
                 full_print = True
             else:
                 full_print = False
+
+            printed_keys.append(key)
 
             try:
                 val = self.__dict__[key]
@@ -227,6 +234,12 @@ class Struct( object ):
                 aux = "\n" + str( val )
                 aux = aux.replace( "\n", "\n    " );
                 ss += "  %s:\n%s\n" % (key, aux[1:])
+
+        other_keys = sorted(set(keys).difference(set(printed_keys)))
+        if len(other_keys):
+            ss += "  other attributes:\n    %s\n" \
+                  % '\n    '.join(key for key in other_keys)
+
         return( ss.rstrip() )
 
     def __repr__( self ):
