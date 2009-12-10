@@ -49,7 +49,6 @@ class IntegrateVolumeOperatorTerm( Term ):
         
         if diff_var is None:
             shape = (chunk_size, 1, field_dim * n_ep, 1 )
-            mode = 0
         else:
             raise StopIteration
 
@@ -59,6 +58,37 @@ class IntegrateVolumeOperatorTerm( Term ):
                             (chunk.shape[0], 1, 1, 1) )
             status = vg.integrate_chunk( out, bf_t, chunk )
 
+            yield out, chunk, 0
+
+class IntegrateVolumeVariableOperatorTerm( Term ):
+    r""":definition: $\int_\Omega c q$"""
+
+    name = 'dw_volume_integrate_variable'
+    arg_types = ('material', 'virtual',)
+    geometry = [(Volume, 'virtual')]
+
+    def __init__( self, region, name = name, sign = 1 ):
+        Term.__init__( self, region, name, sign )
+        
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        field_dim = virtual.field.shape[0]
+        assert_( field_dim == 1 )
+        
+        if diff_var is None:
+            shape = (chunk_size, 1, field_dim * n_ep, 1 )
+        else:
+            raise StopIteration
+        
+        bf = ap.get_base( 'v', 0, self.integral_name )
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
+                            (chunk.shape[0], 1, 1, 1) )
+            val = mat[chunk] * bf_t
+            status = vg.integrate_chunk( out, val, chunk )
+            
             yield out, chunk, 0
 
 ## 24.04.2007, c
