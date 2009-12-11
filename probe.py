@@ -136,6 +136,26 @@ def generate_probes(filename_input, filename_results, options,
 
             output('data ->', os.path.normpath(filename))
 
+def read_header(fd):
+    """Read the probe data header from file descriptor fd."""
+    header = Struct(name='probe_data_header')
+    header.probe_class = fd.readline().strip()
+
+    aux = fd.readline().strip().split(':')[1]
+    header.n_point = int(aux.strip().split()[0])
+
+    details = []
+    while 1:
+        line = fd.readline().strip()
+
+        if line == '-----':
+            break
+        else:
+            details.append(line)
+    header.details = '\n'.join(details)
+
+    return header
+
 def get_data_name(fd):
     """Try to read next data name in file fd."""
     name = None
@@ -180,12 +200,14 @@ def postprocess(filename_input, filename_results, options):
     
     fd = open(filename_input, 'r')
 
+    header = read_header(fd)
+    output(header)
+
     fig = plt.figure()
     for name in get_data_name(fd):
         if (only_names is not None) and (name not in only_names): continue
 
-        n_data = int(fd.readline())
-        data = read_array(fd, n_data, 2, nm.float64)
+        data = read_array(fd, header.n_point, 2, nm.float64)
         pars, vals = data[:,0], data[:,1]
 
         ii = nm.where(nm.isfinite(vals))[0]

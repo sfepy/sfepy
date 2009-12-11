@@ -190,6 +190,7 @@ class LineProbe(Probe):
         out = Probe.report(self)
         out.append('point 0: %s' % self.p0)
         out.append('point 1: %s' % self.p1)
+        out.append('-----')
         return out
 
     def get_points(self, refine_flag=None):
@@ -231,16 +232,25 @@ class RayProbe(Probe):
         dirvec /= nla.norm(dirvec)
         name = 'ray %s [%s, %s]' % (p_fun.__name__, p0, dirvec)
 
+        if both_dirs:
+            n_point_true  = 2 * n_point
+        else:
+            n_point_true = n_point
+
         Probe.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
-                       p0=p0, dirvec=dirvec, p_fun=p_fun, n_point=n_point,
+                       p0=p0, dirvec=dirvec, p_fun=p_fun, n_point=n_point_true,
                        both_dirs=both_dirs)
+
+        self.n_point_single = n_point
 
     def report(self):
         """Report the probe parameters."""
         out = Probe.report(self)
         out.append('point 0: %s' % self.p0)
         out.append('direction vector: %s' % self.dirvec)
+        out.append('both directions: %s' % self.both_dirs)
         out.append('distribution function: %s' % self.p_fun.__name__)
+        out.append('-----')
         return out
 
     def refine_points(self, variable, points, cache):
@@ -249,7 +259,7 @@ class RayProbe(Probe):
         return refine_flag
     
     def gen_points(self, sign):
-        pars = self.p_fun(nm.arange(self.n_point, dtype=nm.float64))
+        pars = self.p_fun(nm.arange(self.n_point_single, dtype=nm.float64))
         points = self.p0 + sign * self.dirvec * pars[:,None]
         return pars, points
 
@@ -311,6 +321,7 @@ class CircleProbe(Probe):
         out.append('centre: %s' % self.centre)
         out.append('normal: %s' % self.normal)
         out.append('radius: %s' % self.radius)
+        out.append('-----')
         return out
 
     def get_points(self, refine_flag=None):
