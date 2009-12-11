@@ -306,7 +306,7 @@ class SchroedingerApp( SimpleApp ):
         for ii, val in enumerate( vec_n ):
 ##             print ii, val
 ##             assert nm.isfinite(val)
-            vec_vxc[ii] = dft.getvxc(val/(4*pi), 0)
+            vec_vxc[ii] = dft.getvxc(val, 0)
 ##             print vec_vxc[ii] 
 ##             assert nm.isfinite(vec_vxc[ii])
 
