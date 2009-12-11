@@ -164,7 +164,7 @@ class Viewer(Struct):
 
     def save_image(self, filename):
         """Save a snapshot of the current scene."""
-        if not os.path.exists(self.output_dir):
+        if self.output_dir and not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         name = os.path.join(self.output_dir, filename)
