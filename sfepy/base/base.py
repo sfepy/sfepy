@@ -601,6 +601,30 @@ def use_method_with_name( instance, method, new_name ):
 def insert_as_static_method( cls, name, function ):
     setattr( cls, name, staticmethod( function ) )
 
+def find_subclasses(context, classes):
+    """Find subclasses of the given classes in the given context.
+
+    Examples
+    --------
+
+    >>> solver_table = find_subclasses(vars().items(),
+                                       [LinearSolver, NonlinearSolver,
+                                        TimeSteppingSolver, EigenvalueSolver,
+                                        OptimizationSolver])
+    """
+    var_dict = context.items()
+    table = {}
+
+    for key, var in var_dict:
+        try:
+            for cls in classes:
+                if is_derived_class(var, cls):
+                    table[var.name] = var
+                    break
+        except TypeError:
+            pass
+    return table
+
 ##
 # 09.08.2006, c
 def invert_dict( d, is_val_tuple = False ):
