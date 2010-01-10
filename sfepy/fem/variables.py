@@ -1194,6 +1194,9 @@ class Variables( Container ):
 ##
 # 11.07.2006, c
 class Variable( Struct ):
+    _count = 0
+    _orders = []
+    _all_vars = {}
 
     def from_conf(key, conf, fields):
         aux = conf.kind.split()
@@ -1209,7 +1212,9 @@ class Variable( Struct ):
         history = get_default_attr( conf, 'history', None )
         assert_( (history is None) or (history in ['previous', 'full']) )
 
-        order = int(conf.get_default_attr('order', -1))
+        order = conf.get_default_attr('order', None)
+        if order is not None:
+            order = int(order)
 
         primary_var_name = conf.get_default_attr('dual', None)
         if primary_var_name is None:
@@ -1243,7 +1248,7 @@ class Variable( Struct ):
         return obj
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, name, kind, order=-1, primary_var_name=None,
+    def __init__(self, name, kind, order=None, primary_var_name=None,
                  flags=None, special=None, **kwargs):
         Struct.__init__(self, name=name, **kwargs)
 
@@ -1264,15 +1269,22 @@ class Variable( Struct ):
             self.data = None
 
         self._set_kind(kind, order, primary_var_name, special=special)
+        self._all_vars[name] = self
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
             self.flags.add(is_state)
-            if order >= 0:
-                self._order = order
+            if order is not None:
+                if order in self._orders:
+                    raise ValueError('order %d already used!' % order)
+                else:
+                    self._order = order
+
             else:
-                msg = 'unnown variable %s: order missing' % self.name
-                raise ValueError(msg)
+                self._order = self._count
+                self._orders.append(self._order)
+            self._count += 1
+
             self.dof_name = self.name
 
         elif kind == 'test':
