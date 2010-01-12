@@ -56,8 +56,8 @@ class IntegrateVolumeOperatorTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
+            bf_t = nm.ascontiguousarray(bf_t)
             status = vg.integrate_chunk( out, bf_t, chunk )
-
             yield out, chunk, 0
 
 class IntegrateVolumeVariableOperatorTerm( Term ):
@@ -86,6 +86,7 @@ class IntegrateVolumeVariableOperatorTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
+            bf_t = nm.ascontiguousarray(bf_t)
             val = mat[chunk] * bf_t
             status = vg.integrate_chunk( out, val, chunk )
             
@@ -240,6 +241,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
+            bf_t = nm.ascontiguousarray(bf_t)
             status = sg.integrate_chunk( out, bf_t, lchunk, 1 )
 
             yield out, lchunk, 0
@@ -274,6 +276,7 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             bf_t = nm.tile(bf.transpose((0, 2, 1) ), (chunk.shape[0], 1, 1, 1))
+            bf_t = nm.ascontiguousarray(bf_t)
             val =  mat[lchunk] * bf_t
             if virtual.is_real:
                 status = sg.integrate_chunk(out, val, lchunk, 1)
