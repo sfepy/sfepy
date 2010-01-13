@@ -255,8 +255,7 @@ class GenericFileSource(FileSource):
                 dm.add_array(aux, key, 'point')
 
             elif val.mode == 'cell':
-                cdata = data.cell_data
-                ne, aux, nr, nc = val.data.shape
+                ne, aux, nr, nc = vd.shape
                 if (nr == 1) and (nc == 1):
                     aux = vd.reshape((ne,))
 
