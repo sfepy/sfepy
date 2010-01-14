@@ -1,5 +1,5 @@
 from sfepy.terms.terms import *
-from sfepy.terms.termsHyperElasticity import HyperElasticTLBase
+from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.homogenization.utils import iter_sym
 
 class FibresActiveTLTerm(HyperElasticTLBase):
