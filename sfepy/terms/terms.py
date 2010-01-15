@@ -361,7 +361,11 @@ class Term( Struct ):
     ##
     # 24.07.2006, c
     def get_arg_name( self, arg_type, full = False ):
-        ii = self.ats.index( arg_type )
+        try:
+            ii = self.ats.index( arg_type )
+        except ValueError:
+            return None
+
         name = self.arg_names[ii]
         if full:
             # Include derivatives.
