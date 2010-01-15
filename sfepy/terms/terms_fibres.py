@@ -1,8 +1,9 @@
 from sfepy.terms.terms import *
+from sfepy.terms.terms_base import VectorVector
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.homogenization.utils import iter_sym
 
-class FibresActiveTLTerm(HyperElasticTLBase):
+class FibresActiveTLTerm(VectorVector, HyperElasticTLBase):
     r""":description: Hyperelastic active fibres term. Effective stress $S_{ij} =
     A f_{\rm max} \exp{-(\frac{\epsilon - \varepsilon_{\rm opt}}{s})^2}$, where
     $\epsilon = E_{ij} d_i d_j$ is the Green strain $\ull{E}$ projected to the
@@ -15,7 +16,7 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     geometry = [(Volume, 'virtual')]
     family_data_names = ['E']
     
-    def compute_crt_data( self, family_data, ap, vg, mode, **kwargs ):
+    def compute_crt_data( self, family_data, mode, **kwargs ):
         pars = self.get_args(['material_1', 'material_2', 'material_3',
                               'material_4', 'material_5'], **kwargs)
         fmax, eps_opt, s, fdir, act = pars
