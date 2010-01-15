@@ -3,6 +3,14 @@ import numpy as nm
 
 filename_mesh = '../database/simple.vtk'
 
+# Time-stepping parameters.
+t0 = 0.0
+t1 = 1.0
+n_step = 21
+
+from sfepy.solvers.ts import TimeStepper
+ts = TimeStepper(t0, t1, None, n_step)
+
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
@@ -21,7 +29,8 @@ materials = {
     # Perfused solid.
     'ps' : ('Omega', {
         'mu' : 20e0, # shear modulus of neoHookean term
-        'k'  : nm.eye(3, dtype=nm.float64) # reference permeability
+        'k'  : ts.dt * nm.eye(3, dtype=nm.float64), # reference permeability
+        'N_f' : 1.0, # reference porosity
     }),
     # Surface pressure traction.
     'traction' : ('Right', None, 'get_traction'),
@@ -30,7 +39,7 @@ materials = {
 variables = {
     'u' : ('unknown field', 'displacement', 0, 'previous'),
     'v' : ('test field', 'displacement', 'u'),
-    'p' : ('unknown field', 'pressure', 0),
+    'p' : ('unknown field', 'pressure', 1),
     'q' : ('test field', 'pressure', 'p'),
 }
 
@@ -55,24 +64,24 @@ integrals = {
 equations = {
     'force_balance'
         : """dw_tl_he_neohook.i1.Omega( ps.mu, v, u )
-           + dw_tl_bulk_pressure.i1.Omega( v, u, p )
-           = dw_tl_surface_pressure.i2.Right( traction.pressure, v, u )""",
+           + dw_tl_bulk_pressure.i1.Omega( v, u, p )""",
     'mass_balance'
         : """dw_tl_volume.i1.Omega( q, u )
-           + dw_tl_diffusion.i1.Omega( ps.k, q, p, u[-1])
+           + dw_tl_diffusion.i1.Omega( ps.k, ps.N_f, q, p, u[-1])
            = dw_tl_volume.i1.Omega( q, u[-1] )"""
 }
+#           = dw_tl_surface_pressure.i2.Right( traction.pressure, v, u ),
 
 def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct, debug
 
-    val = problem.evaluate('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
                            state, call_mode='de_strain')
     out['green_strain'] = Struct(name = 'output_data',
                                  mode = 'cell', data = val,
                                  dof_types = None)
 
-    val = problem.evaluate('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
+    val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
                            state, call_mode='de_stress')
     out['neohook_stress'] = Struct(name = 'output_data',
                                    mode = 'cell', data = val,
@@ -84,7 +93,7 @@ def post_process(out, problem, state, extend=False):
                                   mode = 'cell', data = val,
                                   dof_types = None)
 
-    val = problem.evaluate('dw_tl_diffusion_velocity.i1.Omega( solid.k, v, u )',
+    val = problem.evaluate('dw_tl_diffusion_velocity.i1.Omega( ps.k, q, p, u[-1] )',
                            state, call_mode='de_diffusion_velocity')
     out['diffusion_velocity'] = Struct(name = 'output_data',
                                        mode = 'cell', data = val,
@@ -122,10 +131,10 @@ solver_2 = {
     'name' : 'ts',
     'kind' : 'ts.simple',
 
-    't0'    : 0,
-    't1'    : 1,
+    't0'    : t0,
+    't1'    : t1,
     'dt'    : None,
-    'n_step' : 21, # has precedence over dt!
+    'n_step' : n_step, # has precedence over dt!
 }
 
 ##
@@ -167,9 +176,9 @@ def get_pressure(ts, coor, bc):
     """Internal pressure Dirichlet boundary condition."""
     tt = ts.nt * 2.0 * nm.pi
 
-    val = nm.zeros((coor.shape[0],), dtype=nnm.float64)
+    val = nm.zeros((coor.shape[0],), dtype=nm.float64)
 
-    val[:] = nm.sin(tt)
+    val[:] = 1e-2 * nm.sin(tt)
 
     return val
 
