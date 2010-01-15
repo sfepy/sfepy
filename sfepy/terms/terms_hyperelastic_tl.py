@@ -1,6 +1,7 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_hyperelastic_base \
-     import VectorVector, CouplingVectorScalarTL, HyperElasticBase
+     import CouplingVectorScalarTL, HyperElasticBase
+from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
             
 class HyperElasticTLBase( HyperElasticBase ):
     """Base class for all hyperelastic terms in TL formulation. This is not a
@@ -122,36 +123,62 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     use_caches = {'finite_strain_tl' : [['state']],
                   'state_in_volume_qp' : [['state_p']]}
 
-    family_data_names = ['detF', 'invC']
-    ## term_function = {'stress' : terms.dq_tl_stress_pressure,
-    ##                  'tangent_modulus' : terms.dq_tl_tan_mod_pressure }
+    term_function = {'stress' : terms.dq_tl_stress_bulk_pressure,
+                     'tangent_modulus_u' : terms.dq_tl_tan_mod_bulk_pressure_u}
 
     def __init__(self, region, name=None, sign=1):
-        Term.__init__(self, region, name, sign, function=None)
+        Term.__init__(self, region, name, sign)
+
+        self.function = {
+            'element_contribution' : terms.dw_he_rtm,
+            'element_contribution_dp' : terms.dw_tl_volume,
+        }
+        self.crt_data = Struct(stress = None,
+                               tan_mod = nm.array([0], ndmin=4))
+
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         call_mode, = self.get_kwargs(['call_mode'], **kwargs)
-        virtual, state_u, state_p = self.get_args(**kwargs)
+        virtual, state, state_p = self.get_args(**kwargs)
         apv, vgv = virtual.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = state_p.get_approximation(self.get_current_group(), 'Volume')
 
         self.set_data_shape(apv, aps)
-        shape, mode = self.get_shape(diff_var, chunk_size)
+        shape, mode = self.get_shape_grad(diff_var, chunk_size)
 
         cache = self.get_cache('finite_strain_tl', 0)
-        family_data = cache(self.family_data_names,
-                            self.get_current_group(), 0, state=state_u)
+        family_data = cache(['detF', 'invC'],
+                            self.get_current_group(), 0, state=state)
 
         if call_mode is None:
 
-            crt_data = self.compute_crt_data(family_data, mode, **kwargs)
-            fun = self.function['element_contribution']
+            if mode < 2:
+                crt_data = self.compute_crt_data(family_data, mode, **kwargs)
+                if mode == 0:
+                    self.crt_data.stress = crt_data
+                else:
+                    self.crt_data.tan_mod = crt_data
 
-            invC, detF = cache(['invC', 'detF'],
-                               self.get_current_group(), 0, state=state_u)
-            for out, chunk in self.char_fun(chunk_size, shape):
-                status = fun(out, crt_data, invC, detF, vgv, chunk, mode)
-                yield out, chunk, status
+                fun = self.function['element_contribution']
+
+                mtxF, detF = cache(['F', 'detF'],
+                                   self.get_current_group(), 0, state=state)
+                for out, chunk in self.char_fun(chunk_size, shape):
+                    status = fun(out, self.crt_data.stress,
+                                 self.crt_data.tan_mod, mtxF, detF,
+                                 vgv, chunk, mode, 0)
+                    yield out, chunk, status
+            else:
+                fun = self.function['element_contribution_dp']
+                
+                mtxF, invC, detF = cache(['F', 'invC', 'detF'],
+                                         self.get_current_group(), 0,
+                                         state=state)
+                bf = aps.get_base('v', 0, self.integral_name)
+                for out, chunk in self.char_fun(chunk_size, shape):
+                    status = fun(out, bf, mtxF, invC, detF, vgv, 1, chunk, 1)
+                    yield -out, chunk, status
+
 
         elif call_mode == 'd_eval':
             raise NotImplementedError
@@ -159,7 +186,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         elif call_mode in ['de_strain', 'de_stress']:
 
             if call_mode == 'de_strain':
-                out_qp = cache('E', self.get_current_group(), 0, state=state_u)
+                out_qp = cache('E', self.get_current_group(), 0, state=state)
             elif call_mode == 'de_stress':
                 out_qp = self.compute_crt_data(family_data, 0, **kwargs)
                 
@@ -173,7 +200,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     def compute_crt_data(self, family_data, mode, **kwargs):
         detF, invC = family_data
 
-        p, = self.get_kwargs(['state_p'], **kwargs)
+        p, = self.get_args(['state_p'], **kwargs)
 
         cache = self.get_cache('state_in_volume_qp', 0)
         p_qp = cache('state', self.get_current_group(), 0,
@@ -188,8 +215,89 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
             out = nm.empty(shape, dtype=nm.float64)
             fun = self.term_function['tangent_modulus_u']
         else:
-            fun = self.term_function['tangent_modulus_p']
+            raise ValueError('bad mode! (%d)' % mode)
 
         fun(out, p_qp, detF, invC)
 
         return out
+
+class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
+    r""":description: Volume term in the total Lagrangian formulation.
+    :definition:
+    $\int_{\Omega} q J(\ul{u})$
+    """
+    name = 'dw_tl_volume'
+    arg_types = ('virtual', 'state')
+    geometry = [(Volume, 'virtual'), (Volume, 'state')]
+    use_caches = {'finite_strain_tl' : [['state',
+                                         {'F' : (2, 2),
+                                          'invC' : (2, 2),
+                                          'detF' : (2, 2)}]]}
+
+    def __init__(self, region, name=None, sign=1):
+        Term.__init__(self, region, name, sign,
+                      function=terms.dw_tl_volume)
+
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        virtual, state = self.get_args( **kwargs )
+        apv, vgv = state.get_approximation(self.get_current_group(), 'Volume')
+        aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
+
+        self.set_data_shape(apv, aps)
+        shape, mode = self.get_shape_div(diff_var, chunk_size)
+
+        cache = self.get_cache('finite_strain_tl', 0)
+        ih = self.arg_steps[state.name] # issue 104!
+        mtxF, invC, detF = cache(['F', 'invC', 'detF'],
+                                 self.get_current_group(), ih,
+                                 state=state)
+        bf = aps.get_base('v', 0, self.integral_name)
+        if self.step == 0: # Just init the history in step 0.
+            raise StopIteration
+
+        return (bf, mtxF, invC, detF, vgv, 0), shape, mode
+
+class DiffusionTLTerm(ScalarScalar, Term):
+    r""":description: Diffusion term in the total Lagrangian formulation with
+    linearized deformation-dependent permeability $\ull{K}(\ul{u}) = J
+    \ull{F}^{-1} \ull{k} \left(\frac{(1 - J)^2}{N_f} - 1\right) \ull{F}^{-T}$,
+    where $\ul{u}$ relates to the previous time step $(n-1)$.
+    :definition:
+    $\int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}$
+    """
+    name = 'dw_tl_diffusion'
+    arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
+    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
+    use_caches = {'grad_scalar' : [['state']],
+                  'finite_strain_tl' : [['parameter',
+                                         {'F' : (2, 2),
+                                          'invC' : (2, 2),
+                                          'detF' : (2, 2)}]]}
+
+    def __init__(self, region, name=None, sign=1):
+        Term.__init__(self, region, name, sign, function=terms.dw_tl_diffusion)
+
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
+        apv, vgv = par.get_approximation(self.get_current_group(), 'Volume')
+        aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
+
+        self.set_data_shape(aps)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        cache = self.get_cache('finite_strain_tl', 0)
+        # issue 104!
+        if self.step == 0:
+            ih = 0
+        else:
+            ih = 1
+        mtxF, detF = cache(['F', 'detF'],
+                           self.get_current_group(), ih, state=par)
+        if self.step == 0: # Just init the history in step 0.
+            raise StopIteration
+        
+        cache = self.get_cache('grad_scalar', 0)
+        gp = cache('grad', self.get_current_group(), 0,
+                   state=state, get_vector=self.get_vector)
+        
+        return (gp, perm, ref_porosity, mtxF, detF, vgv), shape, mode

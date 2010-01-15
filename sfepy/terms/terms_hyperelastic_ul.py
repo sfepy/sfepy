@@ -1,6 +1,6 @@
 from sfepy.terms.terms import *
-from sfepy.terms.terms_hyperelastic_base \
-     import VectorVector, HyperElasticBase
+from sfepy.terms.terms_base import VectorVector
+from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
 
 class HyperElasticULBase( HyperElasticBase ):
     """Base class for all hyperelastic terms in UL formulation. This is not a

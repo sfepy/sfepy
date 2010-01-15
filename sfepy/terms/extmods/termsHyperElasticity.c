@@ -1145,3 +1145,250 @@ int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "dq_tl_stress_bulk_pressure"
+int32 dq_tl_stress_bulk_pressure( FMField *out, FMField *pressure_qp,
+				  FMField *detF, FMField *vecInvCS )
+{
+  int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
+  float64 aux;
+  float64 *pp = 0, *pstress = 0, *pCI = 0, *pdetF = 0;
+
+  nQP = detF->nLev;
+  sym = out->nRow;
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    pstress = FMF_PtrCell( out, ii );
+    pp = FMF_PtrCell( pressure_qp, ii );
+    pCI = FMF_PtrCell( vecInvCS, ii );
+    pdetF = FMF_PtrCell( detF, ii );
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      aux = - pp[iqp] * pdetF[iqp];
+      for (ir = 0; ir < sym; ir++) {
+	pstress[ir] = aux * pCI[ir];
+      }
+      pstress += sym;
+      pCI += sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  return( ret );
+}
+
+
+#undef __FUNC__
+#define __FUNC__ "dq_tl_tan_mod_bulk_pressure_u"
+int32 dq_tl_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
+				     FMField *detF, FMField *vecInvCS )
+{
+  int32 ii, nQP, ir, ic, iqp, sym, ret = RET_OK;
+  float64 cc;
+  float64 *pd, *ppress;
+  float64 *pinvC, *pdetF, *pinvC2_ikjl, *pinvC2_iljk;
+  FMField *invC2_ikjl = 0, *invC2_iljk = 0;
+
+  sym = out->nRow;
+  nQP = out->nLev;
+
+  fmf_createAlloc( &invC2_ikjl, 1, nQP, sym, sym );
+  fmf_createAlloc( &invC2_iljk, 1, nQP, sym, sym );
+
+  pinvC2_ikjl = FMF_PtrCurrent( invC2_ikjl );
+  pinvC2_iljk = FMF_PtrCurrent( invC2_iljk );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( vecInvCS, ii );
+    pdetF = FMF_PtrCell( detF, ii );
+    pinvC = FMF_PtrCell( vecInvCS, ii );
+    pd = FMF_PtrCell( out, ii );
+    ppress = FMF_PtrCell( pressure_qp, ii );
+
+    geme_mulT2ST2S_T4S_ikjl( invC2_ikjl, vecInvCS, vecInvCS );
+    geme_mulT2ST2S_T4S_iljk( invC2_iljk, vecInvCS, vecInvCS );
+
+    for (iqp = 0; iqp < nQP; iqp++) {
+      cc = pdetF[iqp] * ppress[iqp];
+      for (ir = 0; ir < sym; ir++) {
+	for (ic = 0; ic < sym; ic++) {
+	  pd[sym*ir+ic] =
+	    - cc * pinvC[sym*iqp+ir] * pinvC[sym*iqp+ic]
+	    + cc * (pinvC2_ikjl[sym*(sym*iqp+ir)+ic]
+		  + pinvC2_iljk[sym*(sym*iqp+ir)+ic]);
+	}
+      }
+      pd += sym * sym;
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &invC2_ikjl );
+  fmf_freeDestroy( &invC2_iljk );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_tl_volume"
+int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
+		    FMField *vecInvCS, FMField *detF,
+		    VolumeGeometry *vg, int32 transpose,
+		    int32 *elList, int32 elList_nRow,
+		    int32 mode )
+{
+  int32 ii, iel, nQP, nEP, nRow, sym, ret = RET_OK;
+  FMField *aux = 0, *jcitb = 0, *fjcitb = 0;
+
+  if (mode == 0) {
+    fmf_createAllocCopy( &aux, bf );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( vg->det, iel );
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( detF, ii );
+
+      fmf_copy( aux, bf );
+      fmf_mul( aux, detF->val );
+
+      fmf_sumLevelsTMulF( out, aux, vg->det->val );
+      ERR_CheckGo( ret );
+    }
+
+  } else {
+    nQP = vg->bfGM->nLev;
+    sym = vecInvCS->nRow;
+    nEP = bf->nCol;
+    nRow = vg->bfGM->nRow * vg->bfGM->nCol; /* dim * nEP */
+
+    fmf_createAlloc( &aux, 1, nQP, sym, nRow );
+    fmf_createAlloc( &jcitb, 1, nQP, 1, nRow );
+    fmf_createAlloc( &fjcitb, 1, nQP, nEP, nRow );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( mtxF, ii );
+      FMF_SetCell( detF, ii );
+      FMF_SetCell( vecInvCS, ii );
+
+      form_tlcc_buildOpB_VS3( aux, mtxF, vg->bfGM );
+      fmf_mulATB_nn( jcitb, vecInvCS, aux );
+      fmf_mul( jcitb, detF->val );
+      fmf_mulATB_nn( fjcitb, bf, jcitb );
+
+      if (transpose) {
+	fmf_sumLevelsTMulF( out, fjcitb, vg->det->val );
+      } else {
+	fmf_sumLevelsMulF( out, fjcitb, vg->det->val );
+      }
+      ERR_CheckGo( ret );
+    }
+  }
+
+ end_label:
+  fmf_freeDestroy( &aux );
+  fmf_freeDestroy( &jcitb );
+  fmf_freeDestroy( &fjcitb );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_tl_diffusion"
+int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
+		       FMField *mtxD, FMField *ref_porosity,
+		       FMField *mtxF, FMField *detF,
+		       VolumeGeometry *vg,
+		       int32 *elList, int32 elList_nRow,
+		       int32 mode )
+{
+  int32 ii, iel, iqp, dim, nEP, nQP, ret = RET_OK;
+  float64 val;
+  FMField *gtd = 0, *gtdg = 0, *dgp = 0, *gtdgp = 0;
+  FMField *coef = 0, *perm = 0, *mtxFI = 0, *aux = 0, *mtxK = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+  nEP = vg->bfGM->nCol;
+
+  fmf_createAlloc( &coef, 1, nQP, 1, 1 );
+  fmf_createAlloc( &perm, 1, nQP, dim, dim );
+  fmf_createAlloc( &mtxFI, 1, nQP, dim, dim );
+  fmf_createAlloc( &aux, 1, nQP, dim, dim );
+  fmf_createAlloc( &mtxK, 1, nQP, dim, dim );
+
+  if (mode == 1) {
+    fmf_createAlloc( &gtd, 1, nQP, nEP, dim );
+    fmf_createAlloc( &gtdg, 1, nQP, nEP, nEP );
+  } else {
+    fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
+    fmf_createAlloc( &gtdgp, 1, nQP, nEP, 1 );
+  }
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( mtxF, ii );
+    FMF_SetCell( detF, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( ref_porosity, ii );
+
+    // (1 - (1 - J) / N_f)^2
+    for (iqp = 0; iqp < nQP; iqp++) {
+      val = (1.0 - (1.0 - detF->val[iqp]) / ref_porosity->val[iqp]);
+      coef->val[iqp] = val * val;
+    }
+    // Actual permeability.
+    fmf_mulAF( perm, mtxD, coef->val );
+
+    // Transformed permeability.
+    geme_invert3x3( mtxFI, mtxF );
+    
+    fmf_mulAB_nn( aux, mtxFI, perm );
+    fmf_mulABT_nn( mtxK, aux, mtxFI );
+    fmf_mul( mtxK, detF->val );
+    
+    if (mode == 1) {
+      fmf_mulATB_nn( gtd, vg->bfGM, mtxK );
+      fmf_mulAB_nn( gtdg, gtd, vg->bfGM );
+      fmf_sumLevelsMulF( out, gtdg, vg->det->val );
+    } else {
+      FMF_SetCell( pressure_grad, ii );
+      fmf_mulAB_nn( dgp, mtxK, pressure_grad );
+      fmf_mulATB_nn( gtdgp, vg->bfGM, dgp );
+      fmf_sumLevelsMulF( out, gtdgp, vg->det->val );
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &coef ); 
+  fmf_freeDestroy( &perm ); 
+  fmf_freeDestroy( &mtxFI ); 
+  fmf_freeDestroy( &aux ); 
+  fmf_freeDestroy( &mtxK ); 
+
+  if (mode == 1) {
+    fmf_freeDestroy( &gtd ); 
+    fmf_freeDestroy( &gtdg ); 
+  } else {
+    fmf_freeDestroy( &dgp ); 
+    fmf_freeDestroy( &gtdgp ); 
+  }
+
+  return( ret );
+}

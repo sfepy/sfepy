@@ -47,6 +47,7 @@
     (FMField *state2),
     (FMField *vecMV),
     (FMField *mtxD),
+    (FMField *ref_porosity),
     (FMField *mtxG),
     (FMField *traction),
     (FMField *forceQP),
@@ -57,6 +58,7 @@
     (FMField *gradP1),
     (FMField *gradP2),
     (FMField *pressure),
+    (FMField *pressure_grad),
     (FMField *charge_grad),
     (FMField *pressure_qp),
     (FMField *state_qp),
@@ -173,6 +175,24 @@ int32 dw_he_rtm( FMField *out,
 		 FMField *mtxF, FMField *detF,
 		 VolumeGeometry *vg,
 		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul );
+
+int32 dq_tl_stress_bulk_pressure( FMField *out, FMField *pressure_qp,
+				  FMField *detF, FMField *vecInvCS );
+int32 dq_tl_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
+				     FMField *detF, FMField *vecInvCS );
+
+int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
+		    FMField *vecInvCS, FMField *detF,
+		    VolumeGeometry *vg, int32 transpose,
+		    int32 *elList, int32 elList_nRow,
+		    int32 mode );
+
+int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
+		       FMField *mtxD, FMField *ref_porosity,
+		       FMField *mtxF, FMField *detF,
+		       VolumeGeometry *vg,
+		       int32 *elList, int32 elList_nRow,
+		       int32 mode );
 
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,

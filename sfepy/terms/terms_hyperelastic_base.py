@@ -1,5 +1,4 @@
 from sfepy.terms.terms import *
-from sfepy.terms.terms_base import VectorVector
 
 class CouplingVectorScalarTL(Struct):
     
@@ -15,7 +14,7 @@ class CouplingVectorScalarTL(Struct):
             self.data_shape_s = aps.get_v_data_shape(self.integral_name)
 
         assert_(aps.dim == (1,))
-        assert_(apv.dim == self.data_shape_v[2])
+        assert_(apv.dim == (self.data_shape_v[2],))
 
     def get_shape_div(self, diff_var, chunk_size):
         n_el, n_qp, dim, n_eps = self.data_shape_s
@@ -23,10 +22,10 @@ class CouplingVectorScalarTL(Struct):
         if diff_var is None:
             return (chunk_size, 1, n_eps, 1), 0
         elif diff_var == self.get_arg_name( 'state_p' ):
-            return (chunk_size, 1, n_eps, n_eps), 1
+            return (chunk_size, 1, n_eps, n_eps), 2
         elif diff_var == self.get_arg_name( 'state' ):
             n_epv = self.data_shape_v[3]
-            return (chunk_size, 1, n_eps, dim * n_epv), 2
+            return (chunk_size, 1, n_eps, dim * n_epv), 1
         else:
             raise StopIteration
 
