@@ -279,11 +279,12 @@ class DiffusionTLTerm(ScalarScalar, Term):
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
+        call_mode = kwargs.get('call_mode')
+
         apv, vgv = par.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
 
         self.set_data_shape(aps)
-        shape, mode = self.get_shape(diff_var, chunk_size)
 
         cache = self.get_cache('finite_strain_tl', 0)
         # issue 104!
@@ -293,8 +294,15 @@ class DiffusionTLTerm(ScalarScalar, Term):
             ih = 1
         mtxF, detF = cache(['F', 'detF'],
                            self.get_current_group(), ih, state=par)
-        if self.step == 0: # Just init the history in step 0.
-            raise StopIteration
+
+        if call_mode == 'de_diffusion_velocity':
+            n_el, n_qp, dim, n_ep = self.data_shape
+            shape, mode = (n_el, 1, dim, 1), 2
+
+        else:
+            shape, mode = self.get_shape(diff_var, chunk_size)
+            if self.step == 0: # Just init the history in step 0.
+                raise StopIteration
         
         cache = self.get_cache('grad_scalar', 0)
         gp = cache('grad', self.get_current_group(), 0,

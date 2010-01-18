@@ -1370,7 +1370,7 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
   int32 ii, iel, iqp, dim, nEP, nQP, ret = RET_OK;
   float64 val;
   FMField *gtd = 0, *gtdg = 0, *dgp = 0, *gtdgp = 0;
-  FMField *coef = 0, *perm = 0, *mtxFI = 0, *aux = 0, *mtxK = 0;
+  FMField *coef = 0, *perm = 0, *mtxFI = 0, *aux = 0, *mtxK = 0, *w_qp = 0;
 
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
@@ -1380,14 +1380,19 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
   fmf_createAlloc( &perm, 1, nQP, dim, dim );
   fmf_createAlloc( &mtxFI, 1, nQP, dim, dim );
   fmf_createAlloc( &aux, 1, nQP, dim, dim );
-  fmf_createAlloc( &mtxK, 1, nQP, dim, dim );
 
-  if (mode == 1) {
-    fmf_createAlloc( &gtd, 1, nQP, nEP, dim );
-    fmf_createAlloc( &gtdg, 1, nQP, nEP, nEP );
+  if (mode < 2) {
+    fmf_createAlloc( &mtxK, 1, nQP, dim, dim );
+
+    if (mode == 1) {
+      fmf_createAlloc( &gtd, 1, nQP, nEP, dim );
+      fmf_createAlloc( &gtdg, 1, nQP, nEP, nEP );
+    } else {
+      fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
+      fmf_createAlloc( &gtdgp, 1, nQP, nEP, 1 );
+    }
   } else {
-    fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
-    fmf_createAlloc( &gtdgp, 1, nQP, nEP, 1 );
+    fmf_createAlloc( &w_qp, 1, nQP, dim, 1 );
   }
 
   for (ii = 0; ii < elList_nRow; ii++) {
@@ -1409,22 +1414,34 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
     // Actual permeability.
     fmf_mulAF( perm, mtxD, coef->val );
 
-    // Transformed permeability.
     geme_invert3x3( mtxFI, mtxF );
+
+    if (mode < 2) {
+      // Regular assembling.
+
+      // Transformed permeability.
+      fmf_mulAB_nn( aux, mtxFI, perm );
+      fmf_mulABT_nn( mtxK, aux, mtxFI );
+      fmf_mul( mtxK, detF->val );
     
-    fmf_mulAB_nn( aux, mtxFI, perm );
-    fmf_mulABT_nn( mtxK, aux, mtxFI );
-    fmf_mul( mtxK, detF->val );
-    
-    if (mode == 1) {
-      fmf_mulATB_nn( gtd, vg->bfGM, mtxK );
-      fmf_mulAB_nn( gtdg, gtd, vg->bfGM );
-      fmf_sumLevelsMulF( out, gtdg, vg->det->val );
+      if (mode == 1) {
+	fmf_mulATB_nn( gtd, vg->bfGM, mtxK );
+	fmf_mulAB_nn( gtdg, gtd, vg->bfGM );
+	fmf_sumLevelsMulF( out, gtdg, vg->det->val );
+      } else {
+	FMF_SetCell( pressure_grad, ii );
+	fmf_mulAB_nn( dgp, mtxK, pressure_grad );
+	fmf_mulATB_nn( gtdgp, vg->bfGM, dgp );
+	fmf_sumLevelsMulF( out, gtdgp, vg->det->val );
+      }
     } else {
-      FMF_SetCell( pressure_grad, ii );
-      fmf_mulAB_nn( dgp, mtxK, pressure_grad );
-      fmf_mulATB_nn( gtdgp, vg->bfGM, dgp );
-      fmf_sumLevelsMulF( out, gtdgp, vg->det->val );
+      // Diffusion velocity averaged in elements.
+      FMF_SetCell( vg->volume, iel );
+
+      fmf_mulABT_nn( aux, perm, mtxFI );
+      fmf_mulAB_nn( w_qp, aux, pressure_grad );
+      fmf_sumLevelsMulF( out, w_qp, vg->det->val );
+      fmf_mulC( out, -1.0 / vg->volume->val[0] );
     }
     ERR_CheckGo( ret );
   }
@@ -1433,15 +1450,20 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
   fmf_freeDestroy( &coef ); 
   fmf_freeDestroy( &perm ); 
   fmf_freeDestroy( &mtxFI ); 
-  fmf_freeDestroy( &aux ); 
-  fmf_freeDestroy( &mtxK ); 
+  fmf_freeDestroy( &aux );
 
-  if (mode == 1) {
-    fmf_freeDestroy( &gtd ); 
-    fmf_freeDestroy( &gtdg ); 
+  if (mode < 2) {
+    fmf_freeDestroy( &mtxK ); 
+
+    if (mode == 1) {
+      fmf_freeDestroy( &gtd ); 
+      fmf_freeDestroy( &gtdg ); 
+    } else {
+      fmf_freeDestroy( &dgp ); 
+      fmf_freeDestroy( &gtdgp ); 
+    }
   } else {
-    fmf_freeDestroy( &dgp ); 
-    fmf_freeDestroy( &gtdgp ); 
+      fmf_freeDestroy( &w_qp ); 
   }
 
   return( ret );

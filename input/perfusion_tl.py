@@ -95,7 +95,7 @@ def post_process(out, problem, state, extend=False):
                                   mode = 'cell', data = val,
                                   dof_types = None)
 
-    val = problem.evaluate('dw_tl_diffusion_velocity.i1.Omega( ps.k, q, p, u[-1] )',
+    val = problem.evaluate('dw_tl_diffusion.i1.Omega( ps.k, ps.N_f, q, p, u[-1] )',
                            state, call_mode='de_diffusion_velocity')
     out['diffusion_velocity'] = Struct(name = 'output_data',
                                        mode = 'cell', data = val,
