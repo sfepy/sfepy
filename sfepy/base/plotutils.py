@@ -27,7 +27,7 @@ def spy( mtx, eps = None, color = 'b', **kwargs ):
 
     print n_item
     if n_item:
-        args = {'marker' : '.', 'markersize' : 0.5, 'markeredgewidth' : 0.1}
+        args = {'marker' : '.', 'markersize' : 0.5, 'markeredgewidth' : 0.5}
         args.update( kwargs )
         plt.plot( ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle = 'None',
                     **args )
