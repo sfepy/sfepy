@@ -19,6 +19,12 @@ int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 			   int32 offset, VolumeGeometry *vg,
 			   int32 *conn, int32 nEl, int32 nEP );
 
+int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
+				   FMField *state, int32 offset,
+				   SurfaceGeometry *sg,
+				   int32 *fis, int32 nFa, int32 nFP,
+				   int32 *conn, int32 nEl, int32 nEP);
+
 int32 dq_tl_he_stress_bulk( FMField *out,FMField *mat,
 			    FMField *detF, FMField *vecInvCS );
 
@@ -83,6 +89,13 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       VolumeGeometry *vg,
 		       int32 *elList, int32 elList_nRow,
 		       int32 mode );
+
+int32 dw_tl_surface_traction( FMField *out, FMField *traction,
+			      FMField *detF, FMField *mtxFI,
+			      FMField *bf, SurfaceGeometry *sg,
+			      int32 *fis, int32 nFa, int32 nFP,
+			      int32 *elList, int32 elList_nRow,
+			      int32 mode );
 
 END_C_DECLS
 

@@ -301,3 +301,48 @@ class DiffusionTLTerm(ScalarScalar, Term):
                    state=state, get_vector=self.get_vector)
         
         return (gp, perm, ref_porosity, mtxF, detF, vgv), shape, mode
+
+class SurfaceTractionTLTerm(VectorVector, Term):
+    r""":description: Surface traction term in the total Lagrangian
+    formulation, expressed using $\ul{\nu}$, the outward unit normal vector
+    w.r.t. the undeformed surface, $\ull{F}(\ul{u})$, the
+    deformation gradient, $J = \det(\ull{F})$, and $\ull{\sigma}$ a given
+    traction, often equal to a given pressure, i.e. $\ull{\sigma} = \pi
+    \ull{I}$.
+    :definition:
+    $\int_{\Gamma} \ul{\nu} \cdot \ull{F}^{-1} \cdot \ull{\sigma} \cdot \ul{v} J$
+    """
+    name = 'dw_tl_surface_traction'
+    arg_types = ('material', 'virtual', 'state')
+    geometry = [(SurfaceExtra, 'virtual')]
+    use_caches = {'finite_strain_surface_tl' : [['state']]}
+
+    def __init__(self, region, name=None, sign=1):
+        Term.__init__(self, region, name, sign,
+                      function=terms.dw_tl_surface_traction)
+
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        trac_qp, virtual, state = self.get_args(**kwargs)
+        ap, sg = virtual.get_approximation(self.get_current_group(),
+                                            'SurfaceExtra')
+        sd = ap.surface_data[self.region.name]
+
+        n_fa, n_qp = ap.get_s_data_shape(self.integral_name,
+                                         self.region.name)[:2]
+        n_el, dim, n_ep = ap.get_v_data_shape()
+        self.data_shape = (n_fa, n_qp, dim, n_ep)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        cache = self.get_cache('finite_strain_surface_tl', 0)
+        detF, invF = cache(['detF', 'invF'],
+                           self.get_current_group(), 0,
+                           state=state, data_shape=self.data_shape)
+
+        bf = ap.get_base(sd.bkey, 0, self.integral_name)
+
+        assert_(trac_qp.shape[2] == trac_qp.shape[3] == dim)
+
+        return (trac_qp, detF, invF, bf, sg, sd.fis), shape, mode
+
+    def needs_local_chunk(self):
+        return True, False

@@ -324,9 +324,9 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     geme_invar1( trC->val, mtx1 );
     // I_2 of C.
     geme_invar2( in2C->val, mtx1 );
-    // C^{-1} as a vector, symmetric storage.
-    geme_invert3x3( mtx2, mtx1 );
     if ( vecInvCS > 0 ) {
+      // C^{-1} as a vector, symmetric storage.
+      geme_invert3x3( mtx2, mtx1 );
       geme_tensor2vectorS3( vecInvCS, mtx2 );
     }
     form_tlcc_strainGreen_VS( vecES, mtxF );
@@ -334,6 +334,7 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
     ERR_CheckGo( ret );
   }
  end_label:
+  fmf_freeDestroy( &st ); 
   fmf_freeDestroy( &mtx1 ); 
   fmf_freeDestroy( &mtx2 ); 
 
@@ -373,6 +374,59 @@ int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 
   fmf_freeDestroy( &du );
  
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dq_tl_finite_strain_surface"
+int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
+				   FMField *state, int32 offset,
+				   SurfaceGeometry *sg,
+				   int32 *fis, int32 nFa, int32 nFP,
+				   int32 *conn, int32 nEl, int32 nEP)
+{
+  int32 ii, iel, id, iqp, nQP, dim, ret = RET_OK;
+  FMField *st = 0;
+
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  nQP = sg->bfBGM->nLev;
+  dim = sg->bfBGM->nRow;
+
+  fmf_createAlloc( &st, 1, 1, nEP, dim );
+
+  for (ii = 0; ii < nFa; ii++) {
+    iel = fis[ii*nFP+0];
+    
+    FMF_SetCell( sg->bfBGM, ii );
+    FMF_SetCell( mtxF, ii );
+    FMF_SetCell( mtxFI, ii );
+    FMF_SetCell( detF, ii );
+
+    // Deformation gradient.
+    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    fmf_mulATBT_1n( mtxF, st, sg->bfBGM );
+    for (iqp = 0; iqp < nQP; iqp++) {
+      for (id = 0; id < dim; id++) {
+	mtxF->val[dim*(dim*iqp+id)+id] += 1.0;
+      }
+    }
+
+    // Determinant of deformation gradient.
+    geme_det3x3( detF->val, mtxF );
+    for (iqp = 0; iqp < nQP; iqp++) {
+      if (detF->val[iqp] <= MachEps) {
+	errput( "warp violation %e at (iel: %d, iqp: %d)!\n",
+		detF->val[iqp], iel, iqp );
+      }
+    }
+    geme_invert3x3( mtxFI, mtxF );
+
+    ERR_CheckGo( ret );
+  }
+ end_label:
+  fmf_freeDestroy( &st ); 
+
   return( ret );
 }
 
@@ -1391,4 +1445,96 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
   }
 
   return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_tl_surface_traction"
+int32 dw_tl_surface_traction( FMField *out, FMField *traction,
+			      FMField *detF, FMField *mtxFI,
+			      FMField *bf, SurfaceGeometry *sg,
+			      int32 *fis, int32 nFa, int32 nFP,
+			      int32 *elList, int32 elList_nRow,
+			      int32 mode )
+{
+  int32 ii, iel, iqp, idr, idc, iep, ifa, nEP, nQP, dim;
+  float64 *pn2, *pbfBGS, *paux;
+  FMField *n2 = 0, *stn2 = 0, *trq = 0;
+  FMField *trdq = 0, *aux = 0, *staux = 0, *bfBGS = 0;
+
+  dim = mtxFI->nRow;
+  nQP = mtxFI->nLev;
+  nEP = sg->bfBGM->nCol;
+
+/*    output( "%d %d %d\n", dim, nQP, nEP ); */
+
+  fmf_createAlloc( &n2, 1, nQP, dim, 1 );
+  if (mode == 0) {
+    fmf_createAlloc( &stn2, 1, nQP, dim, 1 );
+    fmf_createAlloc( &trq, 1, nQP, dim * nEP, 1 );
+  } else {
+    fmf_createAlloc( &bfBGS, 1, nQP, dim, nEP );
+    fmf_createAlloc( &aux, 1, nQP, dim, dim * nEP );
+    fmf_createAlloc( &staux, 1, nQP, dim, dim * nEP );
+    fmf_createAlloc( &trdq, 1, nQP, dim * nEP, dim * nEP );
+  }
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii]; // Local number w.r.t. the surface.
+    ifa = fis[ii*nFP+1];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( traction, ii );
+    FMF_SetCell( detF, ii );
+    FMF_SetCell( mtxFI, ii );
+    FMF_SetCell( sg->normal, iel );
+    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( bf, ifa );
+
+    fmf_mulATB_nn( n2, mtxFI, sg->normal );
+
+    if (mode == 0) {
+      fmf_mulATB_nn( stn2, traction, n2 );
+      fmf_mul( stn2, detF->val );
+      bf_actt( trq, bf, stn2 );
+      fmf_sumLevelsMulF( out, trq, sg->det->val );
+
+    } else {
+      FMF_SetCell( sg->bfBGM, iel );
+
+      fmf_mulATB_nn( bfBGS, mtxFI, sg->bfBGM );
+
+      for (iqp = 0; iqp < nQP; iqp++) {
+	pn2 = FMF_PtrLevel( n2, iqp );
+	pbfBGS = FMF_PtrLevel( bfBGS, iqp );
+
+	for (idr = 0; idr < dim; idr++) {
+	  paux = FMF_PtrRowOfLevel( aux, iqp, idr );
+
+	  for (idc = 0; idc < dim; idc++) {
+	    for (iep = 0; iep < nEP; iep++) {
+	      paux[nEP*idc+iep]
+		= (pn2[idr] * pbfBGS[nEP*idc+iep]
+		   - pn2[idc] * pbfBGS[nEP*idr+iep]) * detF->val[iqp];
+	    }
+	  }
+	}
+      }
+      fmf_mulATB_nn( staux, traction, aux );
+      bf_actt( trdq, bf, staux );
+      fmf_sumLevelsMulF( out, trdq, sg->det->val );
+    }
+  }  
+
+  fmf_freeDestroy( &n2 );
+  if (mode == 0) {
+    fmf_freeDestroy( &stn2 );
+    fmf_freeDestroy( &trq );
+  } else {
+    fmf_freeDestroy( &bfBGS );
+    fmf_freeDestroy( &aux );
+    fmf_freeDestroy( &staux );
+    fmf_freeDestroy( &trdq );
+  }
+
+  return( RET_OK );
 }

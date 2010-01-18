@@ -74,6 +74,59 @@ class FiniteStrainTLDataCache( DataCache ):
         self.valid['invC'][ckey] = True
         self.valid['E'][ckey] = True
 
+class FiniteStrainSurfaceTLDataCache(DataCache):
+    """
+    Stores shared deformation-related data useful for the total Lagrangian
+    formulation of finite strain elasticity for surface integrals.
+
+    arguments:
+      - state : displacements
+
+    supported:
+      - deformation gradient F
+      - inverse deformation gradient F^{-1}
+      - jacobian  J = det( F )
+
+    All data are computed together, no matter which one is requested!
+    """
+    name = 'finite_strain_surface_tl'
+    arg_types = ('state', 'data_shape')
+
+    def __init__( self, name, arg_names, history_sizes = None ):
+
+        keys = ['F', 'detF', 'invF']
+        DataCache.__init__( self, name, arg_names, keys, history_sizes,
+                            terms.dq_tl_finite_strain_surface )
+
+    def init_data( self, key, ckey, **kwargs ):
+        state, data_shape = self.get_args( **kwargs )
+
+        n_fa, n_qp, dim, n_ep = data_shape
+
+        self.shapes = {
+            'F' : (n_fa, n_qp, dim, dim),
+            'invF' : (n_fa, n_qp, dim, dim),
+            'detF' : (n_fa, n_qp, 1, 1),
+        }
+
+        DataCache.init_datas( self, ckey, self.shapes )
+
+    def update( self, key, group_indx, ih, **kwargs ):
+##         print 'update!', key, group_indx, ih
+        state = self.get_args(**kwargs)[0]
+        ap, sg = state.get_approximation(group_indx, 'SurfaceExtra')
+        sd = ap.surface_data[group_indx[1]]
+
+        ckey = self.g_to_c(group_indx)
+
+        self.function( self.data['F'][ckey][ih],
+                       self.data['detF'][ckey][ih],
+                       self.data['invF'][ckey][ih],
+                       state(), 0, sg, sd.fis, ap.econn )
+        
+        self.valid['F'][ckey] = True
+        self.valid['detF'][ckey] = True
+        self.valid['invF'][ckey] = True
 
 class FiniteStrainULDataCache( DataCache ):
     """

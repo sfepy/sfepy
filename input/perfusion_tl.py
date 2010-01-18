@@ -59,18 +59,20 @@ ebcs = {
 # Balance of forces.
 integrals = {
     'i1' : ('v', 'gauss_o1_d3'),
-    'i2' : ('s3', 'gauss_o1_d3'),
+    'i2' : ('s3', 'gauss_o2_d2'),
 }
+
 equations = {
     'force_balance'
         : """dw_tl_he_neohook.i1.Omega( ps.mu, v, u )
-           + dw_tl_bulk_pressure.i1.Omega( v, u, p )""",
+           + dw_tl_bulk_pressure.i1.Omega( v, u, p )
+           + dw_tl_surface_traction.i2.Right( traction.pressure, v, u )
+           = 0""",
     'mass_balance'
         : """dw_tl_volume.i1.Omega( q, u )
            + dw_tl_diffusion.i1.Omega( ps.k, ps.N_f, q, p, u[-1])
            = dw_tl_volume.i1.Omega( q, u[-1] )"""
 }
-#           = dw_tl_surface_pressure.i2.Right( traction.pressure, v, u ),
 
 def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct, debug
@@ -163,7 +165,8 @@ def get_traction(ts, coors, mode=None):
 
     tt = ts.nt * 2.0 * nm.pi
 
-    val = nm.sin(tt)
+    dim = coors.shape[1]
+    val = 1e-1 * nm.sin(tt) * nm.eye(dim, dtype=nm.float64)
 
     shape = (coors.shape[0], 1, 1)
     out = {
