@@ -3,13 +3,14 @@ from sfepy.terms.terms import *
 class InstantaneousBase( Struct ):
     
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
-        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
+        call_mode = kwargs.get('call_mode', '')
+        itype = call_mode.split('_')[0]
 
         # Imaginary mode marks problem in complex numbers.
         fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
         flocal, alocal = self.needs_local_chunk()
 
-        if call_mode is None:
+        if (call_mode == '') or (itype in ['dw', 'dq', 'de']):
             if nm.isreal( mode ):
                 for out, asm_chunk in self.char_fun(chunk_size, shape,
                                                     ret_local_chunk=alocal):
@@ -57,7 +58,7 @@ class InstantaneousBase( Struct ):
                 raise NotImplementedError
 
         else:
-            msg = 'unknown call_mode for %s' % self.name
+            msg = 'unknown call_mode %s for %s' % (call_mode, self.name)
             raise ValueError( msg )
 
 class TimeHistoryBase( Struct ):
