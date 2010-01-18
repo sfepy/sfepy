@@ -587,7 +587,7 @@ class Domain( Struct ):
                 groups = forbid[5:].strip().split()
                 forbid = [int( ii ) for ii in groups]
             else:
-                raise SyntaxError, 'bad forbid: %s' % rdef.forbid
+                raise ValueError('bad forbid! (%s)' % forbid)
             forbidden_igs = [self.mat_ids_to_i_gs[mat_id] for mat_id in forbid]
             region.delete_groups(forbidden_igs)
 
