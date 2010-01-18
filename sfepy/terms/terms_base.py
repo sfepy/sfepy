@@ -7,31 +7,45 @@ class InstantaneousBase( Struct ):
 
         # Imaginary mode marks problem in complex numbers.
         fargs, shape, mode = self.get_fargs( diff_var, chunk_size, **kwargs )
+        flocal, alocal = self.needs_local_chunk()
 
         if call_mode is None:
             if nm.isreal( mode ):
-                for out, chunk in self.char_fun( chunk_size, shape ):
-                    if self.dof_conn_type == 'surface':
+                for out, asm_chunk in self.char_fun(chunk_size, shape,
+                                                    ret_local_chunk=alocal):
+                    if flocal:
                         chunk = self.char_fun.get_local_chunk()
+                    else:
+                        chunk = asm_chunk
+
                     status = self.function( out, *fargs + (chunk, mode) )
-                    yield out, chunk, status
+
+                    yield out, asm_chunk, status
+
             else:
                 # Assuming linear forms. Then for mode == 1, the matrix is the
                 # same both for real and imaginary part.
                 rmode = int( mode.real )
-                for out_real, chunk in self.char_fun( chunk_size, shape ):
-                    if self.dof_conn_type == 'surface':
+                for out_real, asm_chunk in self.char_fun(chunk_size, shape,
+                                                         ret_local_chunk=alocal):
+                    if flocal:
                         chunk = self.char_fun.get_local_chunk()
+                    else:
+                        chunk = asm_chunk
+
                     status1 = self.function( out_real,
                                              *fargs[0] + (chunk, rmode ) )
+
                     if rmode == 0:
                         out_imag = nm.zeros_like( out_real )
                         status2 = self.function( out_imag,
                                                  *fargs[1] + (chunk, rmode) )
-                        yield out_real + 1j * out_imag, chunk, status1 or status2
+
+                        yield out_real + 1j * out_imag, asm_chunk, \
+                              status1 or status2
 
                     else:
-                        yield out_real, chunk, status1
+                        yield out_real, asm_chunk, status1
 
         elif call_mode == 'd_eval':
             if nm.isreal( mode ):

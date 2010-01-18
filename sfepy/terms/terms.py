@@ -46,15 +46,19 @@ class CharacteristicFunction( Struct ):
         self.local_chunk = None
         self.ig = None
 
-    def __call__( self, chunk_size, shape_in, zero = False, set_shape = True,
-                  dtype = nm.float64 ):
+    def __call__(self, chunk_size, shape_in, zero=False, set_shape=True,
+                  ret_local_chunk=False, dtype=nm.float64):
         els = self.region.cells[self.ig]
         for out, chunk in vector_chunk_generator( els.shape[0], chunk_size,
                                                   shape_in, zero, set_shape,
                                                   dtype ):
             self.local_chunk = chunk
-            yield out, els[chunk]
 
+            if ret_local_chunk:
+                yield out, chunk
+            else:
+                yield out, els[chunk]
+                
         self.local_chunk = None
 
     ##
@@ -456,6 +460,16 @@ class Term( Struct ):
     # 02.03.2007, c
     def igs( self ):
         return self.char_fun.igs
+
+    def needs_local_chunk(self):
+        """Returns a tuple of booleans telling whether the term requires local
+        element numbers in an assembling chunk to pass to an element
+        contribution function, and to an assembling function."""
+        ret = [False, False]
+        if self.dof_conn_type == 'surface':
+            ret[1] = True
+            
+        return tuple(ret)
 
     ##
     # c: 05.12.2007, r: 15.01.2008
