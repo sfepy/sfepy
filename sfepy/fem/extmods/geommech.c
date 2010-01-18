@@ -589,34 +589,6 @@ int32 geme_projectToDir( float64 *pdef, float64 *pomega,
   return( RET_OK );
 }
 
-/*!
-  @par Revision history:
-  - 07.08.2003, c
-*/
-int32 geme_bfMtx( FMField *out, FMField *bf, FMField *in )
-{
-  int32 iqp, id, iep, ic, nEP, nQP, dim, nc;
-
-  nQP = bf->nLev;
-  nEP = bf->nCol;
-  dim = in->nRow;
-  nc = out->nCol;
-/*    fmf_fillC( out, 0.0 ); */
-/*    output( "%d %d %d %d\n", nQP, dim, nEP, nc ); */
-  for (iqp = 0; iqp < nQP; iqp++) {
-    for (ic = 0; ic < nc; ic++) {
-      for (id = 0; id < dim; id++) {
-	for (iep = 0; iep < nEP; iep++) {
-	  out->val[nc*(nEP*(dim*iqp+id)+iep)+ic]
-	    = bf->val[nEP*iqp+iep] * in->val[nc*(dim*iqp+id)+ic];
-	}
-      }
-    }
-  }
-
-  return( RET_OK );
-}
-
 #undef __FUNC__
 #define __FUNC__ "bf_act"
 /*!

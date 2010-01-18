@@ -37,7 +37,6 @@ int32 geme_buildOpOmega_VS3( float64 *pomega, float64 *pdir,
                              int32 nItem, int32 dim, int32 sym );
 int32 geme_projectToDir( float64 *pdef, float64 *pomega,
                          float64 *pstrain, int32 nItem, int32 size );
-int32 geme_bfMtx( FMField *out, FMField *bf, FMField *in );
 
 int32 bf_act( FMField *out, FMField *bf, FMField *in );
 int32 bf_ract( FMField *out, FMField *bf, FMField *in );
