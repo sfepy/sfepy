@@ -192,8 +192,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
                 
             shape = (chunk_size, 1) + out_qp.shape[2:]
             for out, chunk in self.char_fun(chunk_size, shape):
-                status = vg.integrate_chunk(out, out_qp[chunk], chunk)
-                out1 = out / vg.variable(2)[chunk]
+                status = vgv.integrate_chunk(out, out_qp[chunk], chunk)
+                out1 = out / vgv.variable(2)[chunk]
 
             yield out1, chunk, status
 
