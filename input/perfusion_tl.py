@@ -166,7 +166,8 @@ def get_traction(ts, coors, mode=None):
     tt = ts.nt * 2.0 * nm.pi
 
     dim = coors.shape[1]
-    val = 1e-1 * nm.sin(tt) * nm.eye(dim, dtype=nm.float64)
+    val = 0.05 * nm.sin(tt) * nm.eye(dim, dtype=nm.float64)
+    val[1,0] = val[0,1] = 0.5 * val[0,0]
 
     shape = (coors.shape[0], 1, 1)
     out = {

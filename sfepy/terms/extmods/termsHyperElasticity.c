@@ -1437,6 +1437,7 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
     } else {
       // Diffusion velocity averaged in elements.
       FMF_SetCell( vg->volume, iel );
+      FMF_SetCell( pressure_grad, ii );
 
       fmf_mulABT_nn( aux, perm, mtxFI );
       fmf_mulAB_nn( w_qp, aux, pressure_grad );
