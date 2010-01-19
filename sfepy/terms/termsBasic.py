@@ -374,10 +374,10 @@ class AverageVolumeMatTerm( Term ):
     :definition: $\forall K \in \Tcal_h: \int_{T_K} m / \int_{T_K} 1$
     :arguments: material : $m$ (can have up to two dimensions),
     parameter : $y$, shape : shape of material parameter
-    parameter, mode : 'const' or 'vertex' or 'element_avg'
+    parameter
     """
     name = 'de_volume_average_mat'
-    arg_types = ('material', 'parameter', 'shape', 'mode')
+    arg_types = ('material', 'parameter', 'shape')
     geometry = [(Volume, 'parameter')]
 
     def __init__( self, region, name = name, sign = 1 ):
@@ -386,7 +386,7 @@ class AverageVolumeMatTerm( Term ):
     ##
     # c: 06.05.2008, r: 06.05.2008
     def prepare_data( self, chunk_size = None, **kwargs ):
-        mat, par, mat_shape, mode = self.get_args( **kwargs )
+        mat, par, mat_shape = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
@@ -412,7 +412,7 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     :definition: $\int_\Omega m$
     :arguments: material : $m$ (can have up to two dimensions),
     parameter : $y$, shape : shape of material parameter
-    parameter, mode : 'const' or 'vertex' or 'element_avg'
+    parameter
     """
     name = 'di_volume_integrate_mat'
 
