@@ -54,7 +54,7 @@ def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0):
 
     if which == 0: # system 1
         fdir = nm.array([1.0, 0.0, 0.0], dtype=nm.float64)
-        act = 0.0 * (1.0 + nm.sin(tt - (0.5 * nm.pi)))
+        act = 0.5 * (1.0 + nm.sin(tt - (0.5 * nm.pi)))
 
     elif which == 1: # system 2
         fdir = nm.array([0.0, 1.0, 0.0], dtype=nm.float64)
