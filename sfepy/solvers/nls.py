@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.base.log import Log
 from sfepy.solvers.solvers import NonlinearSolver
 
 def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
@@ -99,6 +100,7 @@ class Newton( NonlinearSolver ):
             'check'     : 0,
             'delta'     : 1e-6,
             'is_plot'    : False,
+            'log'        : None,
             'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
         }
         """
@@ -118,14 +120,29 @@ class Newton( NonlinearSolver ):
         is_plot = get( 'is_plot', False )
         problem = get( 'problem', 'nonlinear' )
 
+        log = get( 'log', {'text' : None, 'plot' : None} )
+        log = Struct(name='log_conf', **log)
+        is_any_log = (log.text is not None) or (log.plot is not None)
+
         common = NonlinearSolver.process_conf( conf )
         return Struct( **locals() ) + common
     process_conf = staticmethod( process_conf )
 
-    ##
-    # 10.10.2007, c
-    def __init__( self, conf, **kwargs ):
+    def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__( self, conf, **kwargs )
+
+        conf = self.conf
+        if conf.is_any_log:
+            self.log = Log([['||r||'], ['iteration']],
+                           xlabels=['all iterations', 'all iterations'],
+                           ylabels=['||r||', 'iteration'],
+                           yscales=['log', 'linear'],
+                           is_plot=conf.log.plot is not None,
+                           log_filename=conf.log.text,
+                           formats=[['%.8e'], ['%d']])
+
+        else:
+            self.log = None
 
     ##
     # c: 02.12.2005, r: 04.04.2008
@@ -147,6 +164,9 @@ class Newton( NonlinearSolver ):
         vec_x = vec_x0.copy()
         vec_x_last = vec_x0.copy()
         vec_dx = None
+
+        if self.log is not None:
+            self.log.plot_vlines(color='r', linewidth=1.0)
 
         err0 = -1.0
         err_last = -1.0
@@ -172,6 +192,10 @@ class Newton( NonlinearSolver ):
                         output( 'infs or nans in the residual:', vec_r )
                         output( nm.isfinite( vec_r ).all() )
                         debug()
+
+                    if self.log is not None:
+                        self.log(err, it)
+
                     if it == 0:
                         err0 = err;
                         break
@@ -197,6 +221,9 @@ class Newton( NonlinearSolver ):
                 vec_dx = ls * vec_dx0;
                 vec_x = vec_x_last.copy() - vec_dx
             # End residual loop.
+
+            if self.log is not None:
+                self.log.plot_vlines([1], color='g', linewidth=0.5)
 
             err_last = err;
             vec_x_last = vec_x.copy()
@@ -265,6 +292,10 @@ class Newton( NonlinearSolver ):
             status['err0'] = err0
             status['err'] = err
             status['condition'] = condition
+
+        if conf.log.plot is not None:
+            if self.log is not None:
+                self.log(save_figure=conf.log.plot)
 
         return vec_x
 
