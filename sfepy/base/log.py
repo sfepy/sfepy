@@ -38,11 +38,13 @@ class ProcessPlotter( Struct ):
             self.ig = command[1]
 
         elif command[0] == 'plot':
+            xdata, ydata = command[1:]
+
             ig = self.ig
             ax = self.ax[ig]
             ax.set_yscale(self.yscales[ig])
             ax.yaxis.grid(True)
-            ax.plot(command[1], command[2])
+            ax.plot(xdata, ydata)
 
             if self.yscales[ig] == 'log':
                 ymajor_formatter = ax.yaxis.get_major_formatter()
@@ -51,6 +53,11 @@ class ProcessPlotter( Struct ):
             else:
                 yminor_locator = AutoLocator()
                 self.ax[ig].yaxis.set_minor_locator(yminor_locator)
+
+        elif command[0] == 'vline':
+            x, kwargs = command[1:]
+
+            self.vlines[self.ig].append((x, kwargs))
 
         elif command[0] == 'clear':
             self.ax[self.ig].cla()
@@ -66,6 +73,9 @@ class ProcessPlotter( Struct ):
                     ax.set_xlabel(self.xlabels[ig])
                 if self.ylabels[ig]:
                     ax.set_ylabel(self.ylabels[ig])
+
+                for x, kwargs in self.vlines[ig]:
+                    ax.axvline(x, **kwargs)
 
         elif command[0] == 'add_axis':
             ig, names, yscale, xlabel, ylabel = command[1:]
@@ -133,6 +143,7 @@ class ProcessPlotter( Struct ):
         for ii, (ir, ic) in enumerate(cycle((n_col, n_row))):
             if ii == self.n_gr: break
             self.ax.append(self.fig.add_subplot(n_row, n_col, ii+1))
+            self.vlines.setdefault(ii, [])
     
     def __call__(self, pipe, data_names, yscales, xlabels, ylabels):
         """Sets-up the plotting window, sets GTK event loop timer callback to
@@ -147,6 +158,7 @@ class ProcessPlotter( Struct ):
         self.xlabels = xlabels
         self.ylabels = ylabels
         self.n_gr = len(data_names)
+        self.vlines = {}
 
         self.fig = plt.figure()
         self.make_axes()
@@ -175,7 +187,8 @@ class Log( Struct ):
     from_conf = staticmethod( from_conf )
 
     def __init__(self, data_names=None, yscales=None,
-                 xlabels=None, ylabels=None, is_plot=True, aggregate=200):
+                 xlabels=None, ylabels=None, is_plot=True, aggregate=200,
+                 formats=None, log_filename=None):
         """`data_names` ... tuple of names grouped by subplots:
                             ([name1, name2, ...], [name3, name4, ...], ...)
         where name<n> are strings to display in (sub)plot legends."""
@@ -183,7 +196,7 @@ class Log( Struct ):
                         n_arg = 0, n_gr = 0,
                         data = {}, x_values = {}, n_calls = 0,
                         yscales = {}, xlabels = {}, ylabels = {},
-                        plot_pipe = None)
+                        plot_pipe = None, formats = {}, output = None)
 
         if data_names is not None:
             n_gr = len(data_names)
@@ -195,8 +208,12 @@ class Log( Struct ):
         xlabels = get_default(xlabels, ['iteration'] * n_gr)
         ylabels = get_default(ylabels, [''] * n_gr )
 
+        if formats is None:
+            formats = [None] * n_gr
+
         for ig, names in enumerate(data_names):
-            self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig])
+            self.add_group(names, yscales[ig], xlabels[ig], ylabels[ig],
+                           formats[ig])
 
         self.is_plot = get_default( is_plot, True )
         self.aggregate = get_default( aggregate, 100 )
@@ -204,10 +221,15 @@ class Log( Struct ):
         self.can_plot = (can_live_plot and (plt is not None)
                          and (Process is not None))
 
+        if log_filename is not None:
+            self.output = Output('', filename=log_filename)
+            self.output('# started: %s' % time.asctime())
+
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
     
-    def add_group(self, names, yscale=None, xlabel=None, ylabel=None):
+    def add_group(self, names, yscale=None, xlabel=None, ylabel=None,
+                  formats=None):
         """Add a new data group. Notify the plotting process if it is
         already running."""
         ig = self.n_gr
@@ -221,10 +243,15 @@ class Log( Struct ):
         self.ylabels[ig] = ylabel
         
         ii = self.n_arg
-        for name in names:
+        for iseq, name in enumerate(names):
             key = name_to_key(name, ii)
             self.data[key] = []
             ii += 1
+
+            if formats is not None:
+                self.formats[key] = formats[iseq]
+            else:
+                self.formats[key] = '%.3e'
 
         self.n_arg = ii
 
@@ -280,6 +307,16 @@ class Log( Struct ):
                       % ls
                 raise IndexError( msg )
 
+        for ig in igs:
+            if (x_values is not None) and (x_values[ig] is not None):
+                self.x_values[ig].append(x_values[ig])
+            else:
+                if len(self.x_values[ig]):
+                    ii = self.x_values[ig][-1] + 1
+                else:
+                    ii = 0
+                self.x_values[ig].append(ii)
+
         for ig, ii, iseq, name in self.iter_names(igs):
             aux = args[iseq]
             if isinstance( aux, nm.ndarray ):
@@ -291,15 +328,9 @@ class Log( Struct ):
             key = name_to_key( name, ii )
             self.data[key].append( aux )
 
-        for ig in igs:
-            if (x_values is not None) and (x_values[ig] is not None):
-                self.x_values[ig].append(x_values[ig])
-            else:
-                if len(self.x_values[ig]):
-                    ii = self.x_values[ig][-1] + 1
-                else:
-                    ii = 0
-                self.x_values[ig].append(ii)
+            if self.output:
+                self.output(('%%s: %%s: %s' % self.formats[key])
+                            % (name, self.x_values[ig][-1], aux))
 
         if self.is_plot and self.can_plot:
             if self.n_calls == 0:
@@ -321,6 +352,10 @@ class Log( Struct ):
         self.n_calls += 1
 
     def terminate(self):
+        if self.output is not None:
+            self.output('# ended: %s' % time.asctime())
+            self.output = None
+
         if self.is_plot and self.can_plot:
             self.plot_pipe.send(None)
             self.plot_process.join()
@@ -352,3 +387,20 @@ class Log( Struct ):
 
         send(['legends'])
         send(['continue'])
+
+    def plot_vlines(self, igs=None, **kwargs):
+        """Plot vertical lines in axes given by igs at current x locations
+        to mark some events."""
+        if self.plot_pipe is not None:
+            send = self.plot_pipe.send
+
+            if igs is None:
+                igs = range(self.n_gr)
+
+            for ig in igs:
+                x = self.x_values[ig]
+                if len(x):
+                    send(['ig', ig])
+                    send(['vline', x[-1], kwargs])
+
+            send(['continue'])
