@@ -9,10 +9,9 @@ except ImportError:
 
 try:
     import matplotlib as mpl
-    import matplotlib.pyplot as plt
     from matplotlib.ticker import LogLocator, AutoLocator
 except:
-    plt = None
+    mpl = None
 
 if (mpl is not None) and mpl.rcParams['backend'] == 'GTKAgg':
     can_live_plot = True
@@ -24,8 +23,7 @@ _msg_no_live = """warning: log plot is disabled, install matplotlib
 
     
 class ProcessPlotter( Struct ):
-    output = Output('plotter:',
-                    filename=os.path.join(sfepy_config_dir,'plotter.log'))
+    output = Output('plotter:')
     output = staticmethod( output )
 
     def __init__( self, aggregate = 100 ):
@@ -94,7 +92,7 @@ class ProcessPlotter( Struct ):
         if self.ii:
             self.output( 'processed %d commands' % self.ii )
         self.output( 'ended.' )
-        plt.close( 'all' )
+        self.plt.close( 'all' )
 
     def poll_draw( self ):
 
@@ -145,12 +143,20 @@ class ProcessPlotter( Struct ):
             self.ax.append(self.fig.add_subplot(n_row, n_col, ii+1))
             self.vlines.setdefault(ii, [])
     
-    def __call__(self, pipe, data_names, yscales, xlabels, ylabels):
+    def __call__(self, pipe, log_file, data_names, yscales, xlabels, ylabels):
         """Sets-up the plotting window, sets GTK event loop timer callback to
         callback() returned by self.poll_draw(). The callback does the actual
-        plotting, taking commands out of `pipe`, and is called every second."""
+        plotting, taking commands out of `pipe`, and is called every second.
+
+        Note that pyplot _must_ be imported here and not in this module so that
+        the import occurs _after_ the plotting process is started in that
+        process.
+        """
+        import matplotlib.pyplot as plt
+        self.plt = plt
+
+        self.output.set_output(filename=log_file)
         self.output( 'starting plotter...' )
-#        atexit.register( self.terminate )
 
         self.pipe = pipe
         self.data_names = data_names
@@ -160,12 +166,12 @@ class ProcessPlotter( Struct ):
         self.n_gr = len(data_names)
         self.vlines = {}
 
-        self.fig = plt.figure()
+        self.fig = self.plt.figure()
         self.make_axes()
         self.gid = gobject.timeout_add( 1000, self.poll_draw() )
 
         self.output( '...done' )
-        plt.show()
+        self.plt.show()
 
 def name_to_key( name, ii ):
     return name + (':%d' % ii)
@@ -173,6 +179,7 @@ def name_to_key( name, ii ):
 class Log( Struct ):
     """Log data and (optionally) plot them in the second process via
     ProcessPlotter."""
+    count = -1
 
     def from_conf( conf, data_names ):
         """`data_names` ... tuple of names grouped by subplots:
@@ -218,7 +225,7 @@ class Log( Struct ):
         self.is_plot = get_default( is_plot, True )
         self.aggregate = get_default( aggregate, 100 )
 
-        self.can_plot = (can_live_plot and (plt is not None)
+        self.can_plot = (can_live_plot and (mpl is not None)
                          and (Process is not None))
 
         if log_filename is not None:
@@ -227,7 +234,7 @@ class Log( Struct ):
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
-    
+
     def add_group(self, names, yscale=None, xlabel=None, ylabel=None,
                   formats=None):
         """Add a new data group. Notify the plotting process if it is
@@ -270,6 +277,11 @@ class Log( Struct ):
                     yield ig, ii, iseq, name
                     iseq += 1
                 ii += 1
+
+    def get_log_name(self):
+        return os.path.join(sfepy_config_dir,
+                            'plotter_%03d.log' % self.__class__.count)       
+
 
     def __call__( self, *args, **kwargs ):
         """Log the data passed via *args, and send them to the plotting
@@ -336,10 +348,13 @@ class Log( Struct ):
             if self.n_calls == 0:
                 atexit.register( self.terminate )
 
+                self.__class__.count += 1
+
                 self.plot_pipe, plotter_pipe = Pipe()
                 self.plotter = ProcessPlotter( self.aggregate )
                 self.plot_process = Process( target = self.plotter,
                                              args = (plotter_pipe,
+                                                     self.get_log_name(),
                                                      self.data_names,
                                                      self.yscales,
                                                      self.xlabels,
