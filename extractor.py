@@ -9,136 +9,18 @@ $ ./extractor.py -e "p e 0 1999" bone.h5 -a
 $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5
 $ ./extractor.py -e "p e 0 1999" bone.h5 -o extracted.h5 -a
 """
-import os.path as op
 from optparse import OptionParser
 
 import sfepy
-from sfepy.base.base import *
-from sfepy.fem.mesh import Mesh
-from sfepy.fem.meshio import HDF5MeshIO
-from sfepy.solvers.ts import TimeStepper
-from sfepy.base.ioutils import get_trunk, write_dict_hdf5
+from sfepy.base.base import dict_to_struct
+from sfepy.postprocess.time_history \
+     import dump_to_vtk, extract_time_history, average_vertex_var_in_cells, \
+            save_time_history
 
-##
-# c: 26.09.2006, r: 09.07.2008
-def dump_to_vtk( filename, options, steps = None ):
-    output( 'dumping to VTK...' )
-    
-    mesh = Mesh.from_file( filename )
+usage = """%prog [options] filename_in
 
-    io = HDF5MeshIO( filename )
-    ts = TimeStepper( *io.read_time_stepper() )
-
-    if options.output_filename_trunk:
-        ofn_trunk = options.output_filename_trunk
-    else:
-        ofn_trunk = get_trunk( filename )
-
-    if steps is None:
-        iterator = ts.iter_from( options.step0 )
-    else:
-        iterator = [(step, ts.times[step]) for step in steps]
-
-    for step, time in iterator:
-        output( ts.format % (step, ts.n_step - 1) )
-        out = io.read_data( step )
-        if out is None: break
-        mesh.write( ofn_trunk + ts.suffix % step + '.vtk',
-                    io = 'auto', out = out )
-
-    output( '...done' )
-    return ts.suffix
-
-##
-# c: 26.09.2006, r: 23.06.2008
-def extract_time_history(filename, options, verbose=True):
-    output('extracting selected data...', verbose=verbose)
-
-    el = options.extract_list
-    output('extraction list:', el, verbose=verbose)
-
-    ##
-    # Parse extractions.
-    pes = OneTypeList( Struct )
-    for chunk in el.split( ',' ):
-        aux =  chunk.strip().split()
-        pes.append( Struct( var = aux[0],
-                            mode = aux[1],
-                            indx = map( int, aux[2:] ),
-                            igs = None ) )
-
-    ##
-    # Verify array limits, set igs for element data, shift indx.
-    mesh = Mesh.from_file( filename )
-    n_el, n_els, offs = mesh.n_el, mesh.n_els, mesh.el_offsets
-    for pe in pes:
-        if pe.mode == 'n':
-            for ii in pe.indx:
-                if (ii < 0) or (ii >= mesh.n_nod):
-                    raise IndexError, 'node index 0 <= %d < %d'\
-                          % (ii, mesh.n_nod)
-
-        if pe.mode == 'e':
-            pe.igs = []
-            for ii, ie in enumerate( pe.indx[:] ):
-                if (ie < 0) or (ie >= n_el):
-                    raise IndexError, 'element index 0 <= %d < %d'\
-                          % (ie, n_el)
-                ig = (ie < n_els).argmax()
-                pe.igs.append( ig )
-                pe.indx[ii] = ie - offs[ig]
-
-##     print pes
-
-    ##
-    # Extract data.
-    # Assumes only one element group (ignores igs)!
-    io = HDF5MeshIO( filename )
-    ths = {}
-    for pe in pes:
-        mode, nname = io.read_data_header( pe.var )
-        output(mode, nname, verbose=verbose)
-
-        if ((pe.mode == 'n' and mode == 'vertex') or
-            (pe.mode == 'e' and mode == 'cell')):
-            th = io.read_time_history( nname, pe.indx )
-
-        elif pe.mode == 'e' and mode == 'vertex':
-            conn = mesh.conns[0]
-            th = {}
-            for iel in pe.indx:
-                ips = conn[iel]
-                th[iel] = io.read_time_history( nname, ips )
-        else:
-            raise RuntimeError, 'cannot extract cell data %s in nodes' % pe.var
-            
-        ths[pe.var] = th
-
-    output('...done', verbose=verbose)
-
-    return ths
-
-##
-# 27.09.2006, c
-def average_vertex_var_in_cells( ths_in ):
-    ths = dict.fromkeys( ths_in.keys() )
-    for var, th in ths_in.iteritems():
-        aux = dict.fromkeys( th.keys() )
-        for ir, data in th.iteritems():
-            if isinstance( data, dict ):
-                for ic, ndata in data.iteritems():
-                    if aux[ir] is None:
-                        aux[ir] = ndata
-                    else:
-                        aux[ir] += ndata
-                aux[ir] /= float( len( data ) )
-            else:
-                aux[ir] = data
-        ths[var] = aux
-
-    return ths
-
-usage = """%prog [options] filename_in"""
+Extract information from a SfePy multi-time-step results file (HDF5 format).
+"""
 
 help = {
     'filename' :
@@ -167,15 +49,14 @@ def main():
                        action = "store", dest = "step0",
                        default = 0, help = help['from'] )
     parser.add_option( "-e", "--extract", metavar = 'list',
-                       action = "store", dest = "extract_list",
+                       action = "store", dest = "extract",
                        default = None, help = help['extract'] )
     parser.add_option( "-a", "--average",
                        action = "store_true", dest = "average",
                        default = False, help = help['average'] )
 
     (options, args) = parser.parse_args()
-    print options
-    print args
+
     if (len( args ) == 1):
         filename_in = args[0];
     else:
@@ -183,10 +64,11 @@ def main():
         return
 
     if options.dump:
-        dump_to_vtk( filename_in, options )
+        dump_to_vtk(filename_in, ofn_trunk=options.output_filename_trunk,
+                    step0=options.step0)
 
-    if options.extract_list:
-        ths = extract_time_history( filename_in, options )
+    if options.extract:
+        ths, ts = extract_time_history(filename_in, options.extract)
 ##         print ths
 
         if options.average:
@@ -194,9 +76,7 @@ def main():
 ##             print ths
 
         if options.output_filename_trunk:
-            ts = TimeStepper( *HDF5MeshIO( filename_in ).read_time_stepper() )
-            ths.update( {'times' : ts.times, 'dt' : ts.dt} )
-            write_dict_hdf5( options.output_filename_trunk + '.h5', ths )
+            save_time_history(ths, ts, options.output_filename_trunk + '.h5')
 
         else:
             print dict_to_struct(ths, flag=(1, 1, 1)).str_all()
