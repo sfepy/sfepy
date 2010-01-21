@@ -5,21 +5,25 @@ from sfepy.base.base import *
 from sfepy.base.log import Log
 
 def main():
-    log = Log((['sin( x )', 'cos( x )'], ['exp( x )']),
+    log = Log((['sin(x)', 'cos(x)'], ['exp(x)']),
               yscales=['linear', 'log'],
               xlabels=['angle', None], ylabels=[None, 'a function'],
               log_filename='examples/live_plot.log')
+    log2 = Log([['x^3']],
+               yscales=['linear'],
+               xlabels=['x'], ylabels=['a cubic function'],
+               log_filename='examples/live_plot2.log')
 
     added = 0
-    for x in nm.linspace( 0, 4.0 * nm.pi, 200 ):
-        output( 'x: ', x )
+    for x in nm.linspace(0, 4.0 * nm.pi, 200):
+        output('x: ', x)
 
         if x < (2.0 * nm.pi):
-            log( nm.sin( x ), nm.cos( x ), nm.exp( x ), x = [x, None] )
+            log(nm.sin(x), nm.cos(x), nm.exp(x), x = [x, None])
 
         else:
             if added:
-                log(nm.sin( x ), nm.cos( x ), nm.exp( x ), x**2,
+                log(nm.sin(x), nm.cos(x), nm.exp(x), x**2,
                     x=[x, None, x])
             else:
                 log.plot_vlines(color='r', linewidth=2)
@@ -30,10 +34,14 @@ def main():
         if (added == 20) or (added == 50):
             log.plot_vlines([2], color='g', linewidth=2)
 
+        log2(x*x*x, x=[x])
+            
     print log
+    print log2
     pause()
 
-    log( finished = True )
+    log(finished=True)
+    log2(finished=True)
 
 if __name__ == '__main__':
     main()
