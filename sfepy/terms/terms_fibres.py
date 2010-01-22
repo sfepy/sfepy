@@ -5,7 +5,8 @@ from sfepy.homogenization.utils import iter_sym
 
 class FibresActiveTLTerm(VectorVector, HyperElasticTLBase):
     r""":description: Hyperelastic active fibres term. Effective stress $S_{ij} =
-    A f_{\rm max} \exp{-(\frac{\epsilon - \varepsilon_{\rm opt}}{s})^2}$, where
+    A f_{\rm max} \exp{\left\{-(\frac{\epsilon - \varepsilon_{\rm
+    opt}}{s})^2\right\}} d_i d_j$, where
     $\epsilon = E_{ij} d_i d_j$ is the Green strain $\ull{E}$ projected to the
     fibre direction $\ul{d}$.
     :definition:
