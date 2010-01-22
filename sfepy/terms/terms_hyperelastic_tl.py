@@ -260,8 +260,10 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 class DiffusionTLTerm(ScalarScalar, Term):
     r""":description: Diffusion term in the total Lagrangian formulation with
     linearized deformation-dependent permeability $\ull{K}(\ul{u}) = J
-    \ull{F}^{-1} \ull{k} \left(\frac{(1 - J)^2}{N_f} - 1\right) \ull{F}^{-T}$,
-    where $\ul{u}$ relates to the previous time step $(n-1)$.
+    \ull{F}^{-1} \ull{k} f(J) \ull{F}^{-T}$,
+    where $\ul{u}$ relates to the previous time step $(n-1)$ and $f(J) =
+    \max\left(0, \left(1 + \frac{(J - 1)}{N_f}\right)\right)^2$ expresses the
+    dependence on volume compression/expansion.
     :definition:
     $\int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}$
     """

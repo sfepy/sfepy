@@ -1406,9 +1406,10 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
     FMF_SetCell( mtxD, ii );
     FMF_SetCell( ref_porosity, ii );
 
-    // (1 - (1 - J) / N_f)^2
+    // max(0, (1 + (J - 1) / N_f))^2
     for (iqp = 0; iqp < nQP; iqp++) {
-      val = (1.0 - (1.0 - detF->val[iqp]) / ref_porosity->val[iqp]);
+      val = 1.0 + ((detF->val[iqp] - 1.0) / ref_porosity->val[iqp]);
+      if (val <= 0.0) val = 0.0;
       coef->val[iqp] = val * val;
     }
     // Actual permeability.
