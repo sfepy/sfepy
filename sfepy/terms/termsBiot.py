@@ -73,14 +73,19 @@ class BiotEval( CouplingVectorScalar ):
         return status
 
 class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
-    r""":description: Biot coupling term with $\alpha_{ij}$
+    r"""
+    :Description:
+    Biot coupling term with :math:`\alpha_{ij}`
     given in vector form exploiting symmetry: in 3D it has the
-    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it has
-    the indices ordered as $[11, 22, 12]$. Corresponds to weak
+    indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
+    the indices ordered as :math:`[11, 22, 12]`. Corresponds to weak
     forms of Biot gradient and divergence terms. Can be evaluated. Can
     use derivatives.
-    :definition: $\int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v})$, $\int_{\Omega}
-    q\ \alpha_{ij} e_{ij}(\ul{u})$
+    
+    :Definition:
+    .. math::
+        \int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega}
+        q\ \alpha_{ij} e_{ij}(\ul{u})
     """
     name = 'dw_biot'
     arg_types = (('material', 'virtual', 'state'),
@@ -177,12 +182,15 @@ class BiotDivTH( CouplingVectorScalarTH ):
             return iter_kernel, shape, mode
 
 class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
-    r""":description: Can use derivatives.
-    
-    :definition: $\int_{\Omega} \left [\int_0^t
-    \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$,
-    $\int_{\Omega} \left [\int_0^t
-    \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q$
+    r"""
+    :Description:
+    Fading memory Biot term. Can use derivatives.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
+        \right]\,e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega} \left [\int_0^t
+        \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
     """
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
@@ -274,18 +282,21 @@ class BiotDivETH( CouplingVectorScalar ):
         return fargs, shape, mode
 
 class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
-    r""":description: This term has the same definition as dw_biot_th, but
-    assumes an exponential approximation of the convolution kernel
-    resulting in much higher efficiency. Can use derivatives.
-    
-    :definition: $\int_{\Omega} \left [\int_0^t
-    \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau} \right]\,e_{ij}(\ul{v})$,
-    $\int_{\Omega} \left [\int_0^t
-    \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q$
+    r"""
+    :Description:
+    This term has the same definition as dw_biot_th, but assumes an
+    exponential approximation of the convolution kernel resulting in much
+    higher efficiency. Can use derivatives.
 
-    :arguments:
-        material_0 : $\alpha_{ij}(0)$,
-        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    :Definition:
+    .. math::
+        \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
+        \right]\,e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega} \left [\int_0^t
+        \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
+    
+    :Arguments:
+    material_0 : :math:`\alpha_{ij}(0)`,
+    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
     """
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
