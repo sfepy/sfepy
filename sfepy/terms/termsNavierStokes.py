@@ -2,8 +2,13 @@ from sfepy.terms.terms import *
 from sfepy.terms.terms_base import CouplingVectorScalar
 
 class DivGradTerm( Term ):
-    r""":description: Diffusion term.
-    :definition: $\int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}$
+    r"""
+    :Description:
+    Diffusion term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
     """
     name = 'dw_div_grad'
     arg_types = ('material', 'virtual', 'state')
@@ -33,8 +38,13 @@ class DivGradTerm( Term ):
             yield out, chunk, status
 
 class ConvectTerm( Term ):
-    r""":description: Nonlinear convective term.
-    :definition: $\int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}$
+    r"""
+    :Description:
+    Nonlinear convective term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
     """
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
@@ -65,8 +75,13 @@ class ConvectTerm( Term ):
             yield out, chunk, status
 
 class LinearConvectTerm( Term ):
-    r""":description: Linearized convective term.
-    :definition: $\int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}$
+    r"""
+    :Description:
+    Linearized convective term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
     """
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
@@ -98,8 +113,13 @@ class LinearConvectTerm( Term ):
             yield out, chunk, status
 
 class LinearConvectQTerm( Term ):
-    r""":description: Linearized convective term evaluated in quadrature points.
-    :definition: $((\ul{b} \cdot \nabla) \ul{u})|_{qp}$
+    r"""
+    :Description:
+    Linearized convective term evaluated in quadrature points.
+
+    :Definition:
+    .. math::
+        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
     """
     name = 'dq_lin_convect'
     arg_types = ('parameter', 'state')
@@ -184,10 +204,15 @@ class StokesEval( CouplingVectorScalar ):
         return status
 
 class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
-    r""":description: Stokes problem coupling term. Corresponds to weak
-    forms of gradient and divergence terms. Can be evaluated.
-    :definition: $\int_{\Omega}  p\ \nabla \cdot \ul{v}$, $\int_{\Omega} q\
-    \nabla \cdot \ul{u}$
+    r"""
+    :Description:
+    Stokes problem coupling term. Corresponds to weak forms of gradient and
+    divergence terms. Can be evaluated.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , } \int_{\Omega} q\ \nabla
+        \cdot \ul{u}
     """
     name = 'dw_stokes'
     arg_types = (('virtual', 'state'),
@@ -214,8 +239,13 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
                                'div_vector' : [['parameter_v']]}
 
 class GradQTerm( Term ):
-    r""":description: Gradient term (weak form) in quadrature points.
-    :definition: $(\nabla p)|_{qp}$
+    r"""
+    :Description:
+    Gradient term (weak form) in quadrature points.
+
+    :Definition:
+    .. math::
+        (\nabla p)|_{qp}
     """
     name = 'dq_grad'
     arg_types = ('state',)
@@ -243,10 +273,15 @@ class GradQTerm( Term ):
             yield out, chunk, status
 
 class GradETerm( Term ):
-    r""":description: Gradient term (weak form) in averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \nabla p /
-    \int_{T_K} 1$ or $\int_{T_K} \nabla \ul{w} /
-    \int_{T_K} 1$
+    r"""
+    :Description:
+    Gradient term (weak form) in averaged in elements.
+    
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} \nabla p /
+        \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{w} /
+        \int_{T_K} 1
     """
     name = 'de_grad'
     arg_types = ('state',)
@@ -290,10 +325,14 @@ class GradETerm( Term ):
 ##
 # 26.07.2007, c
 class GradDivStabilizationTerm( Term ):
-    r""":description: Grad-div stabilization term ($\gamma$ is a global
-    stabilization parameter).
-    :definition: $\gamma \int_{\Omega} (\nabla\cdot\ul{u}) \cdot
-    (\nabla\cdot\ul{v})$
+    r"""
+    :Description:
+    Grad-div stabilization term ( :math:`\gamma` is a global stabilization
+    parameter).
+
+    :Definition:
+    .. math::
+        \gamma \int_{\Omega} (\nabla\cdot\ul{u}) \cdot (\nabla\cdot\ul{v})
     """
     name = 'dw_st_grad_div'
     arg_types = ('material', 'virtual', 'state')
@@ -328,19 +367,29 @@ class GradDivStabilizationTerm( Term ):
 # 31.07.2007, c
 from sfepy.terms.termsLaplace import LaplaceTerm
 class PSPGPStabilizationTerm( LaplaceTerm ):
-    r""":description: PSPG stabilization term, pressure part ($\tau$ is a local
+    r"""
+    :Description:
+    PSPG stabilization term, pressure part ( :math:`\tau` is a local
     stabilization parameter), alias to Laplace term dw_laplace.
-    :definition: $\sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q$
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q
     """
     name = 'dw_st_pspg_p'
 
 ##
 # 31.07.2007, c
 class PSPGCStabilizationTerm( Term ):
-    r""":description: PSPG stabilization term, convective part ($\tau$ is a local
+    r"""
+    :Description:
+    PSPG stabilization term, convective part ( :math:`\tau` is a local
     stabilization parameter).
-    :definition: $\sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ ((\ul{b}
-    \cdot \nabla) \ul{u}) \cdot \nabla q $
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ ((\ul{b} \cdot \nabla) \ul{u})
+        \cdot \nabla q
     """
     name = 'dw_st_pspg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -379,10 +428,15 @@ class PSPGCStabilizationTerm( Term ):
 ##
 # 31.07.2007, c
 class SUPGPStabilizationTerm( Term ):
-    r""":description: SUPG stabilization term, pressure part ($\delta$ is a local
+    r"""
+    :Description:
+    SUPG stabilization term, pressure part ( :math:`\delta` is a local
     stabilization parameter).
-    :definition: $\sum_{K \in \Tcal_h}\int_{T_K} \delta_K\  \nabla p\cdot
-    ((\ul{b} \cdot \nabla) \ul{v})$
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Tcal_h}\int_{T_K} \delta_K\ \nabla p\cdot ((\ul{b} \cdot
+        \nabla) \ul{v})
     """
     name = 'dw_st_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -421,10 +475,15 @@ class SUPGPStabilizationTerm( Term ):
 ##
 # 31.07.2007, c
 class SUPGCStabilizationTerm( Term ):
-    r""":description: SUPG stabilization term, convective part ($\delta$ is a
-    local stabilization parameter).
-    :definition: $\sum_{K \in \Tcal_h}\int_{T_K} \delta_K\ ((\ul{b}
-    \cdot \nabla) \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})$
+    r"""
+    :Description:
+    SUPG stabilization term, convective part ( :math:`\delta` is a local
+    stabilization parameter).
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Tcal_h}\int_{T_K} \delta_K\ ((\ul{b} \cdot \nabla)
+        \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})
     """
     name = 'dw_st_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
