@@ -16,12 +16,17 @@ from sfepy.terms.terms_base import VectorVector, VectorVectorTH
 ## """
 
 class LinearElasticTerm( VectorVector, Term ):
-    r""":description: General linear elasticity term, with $D_{ijkl}$ given in
-    the usual matrix form exploiting symmetry: in 3D it is $6\times6$ with the
-    indices ordered as $[11, 22, 33, 12, 13, 23]$, in 2D it is $3\times3$ with
-    the indices ordered as $[11, 22, 12]$. Can be evaluated. Can use derivatives.
+    r"""
+    :Description:
+    General linear elasticity term, with :math:`D_{ijkl}` given in
+    the usual matrix form exploiting symmetry: in 3D it is :math:`6\times6`
+    with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
+    :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`. Can be
+    evaluated. Can use derivatives.
 
-    :definition: $\int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})$
+    :definition:
+    .. math::
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
     """
     name = 'dw_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -85,10 +90,15 @@ class LinearElasticTerm( VectorVector, Term ):
                                                   ['parameter_2']]}
 
 class LinearElasticIsotropicTerm( VectorVector, Term ):
-    r""":description: Isotropic linear elasticity term.
-    :definition: $\int_{\Omega}  D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})$
-    with $D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
-    \lambda \ \delta_{ij} \delta_{kl}$ 
+    r"""
+    :Description:
+    Isotropic linear elasticity term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
+        D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+        \lambda \ \delta_{ij} \delta_{kl}
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
@@ -109,10 +119,16 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
         return (vec, 0, lam, mu, vg, ap.econn), shape, mode
 
 class LinearElasticTHTerm( VectorVectorTH, Term ):
-    r""":description: Can use derivatives.
-    :definition: $\int_{\Omega} \left [\int_0^t
-    \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau))
-    \difd{\tau} \right]\,e_{ij}(\ul{v})$"""
+    r"""
+    :Description:
+    Fading memory linear elastic (viscous) term. Can use derivatives.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \left [\int_0^t
+        \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau)) \difd{\tau}
+        \right]\,e_{ij}(\ul{v})
+    """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
@@ -150,17 +166,21 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
             return iter_kernel, shape, mode
 
 class LinearElasticETHTerm(VectorVector, Term):
-    r""":description: This term has the same definition as
-    dw_lin_elastic_th, but assumes an exponential approximation of
-    the convolution kernel resulting in much higher efficiency. Can use
-    derivatives.
-    :definition: $\int_{\Omega} \left [\int_0^t
-    \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau))
-    \difd{\tau} \right]\,e_{ij}(\ul{v})$
+    r"""
+    :Description:
+    This term has the same definition as dw_lin_elastic_th, but assumes an
+    exponential approximation of the convolution kernel resulting in much
+    higher efficiency. Can use derivatives.
 
-    :arguments:
-        material_0 : $\Hcal_{ijkl}(0)$,
-        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    :Definition:
+    .. math::
+        \int_{\Omega} \left [\int_0^t
+        \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau)) \difd{\tau}
+        \right]\,e_{ij}(\ul{v})
+
+    :Arguments:
+    material_0 : :math:`\Hcal_{ijkl}(0)`,
+    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -201,9 +221,14 @@ class LinearElasticETHTerm(VectorVector, Term):
         return fargs, shape, mode
 
 class CauchyStrainTerm( Term ):
-    r""":description: Cauchy strain tensor averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w}) /
-    \int_{T_K} 1$
+    r"""
+    :Description:
+    Cauchy strain tensor averaged in elements.
+    
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w}) /
+        \int_{T_K} 1
     """
     name = 'de_cauchy_strain'
     arg_types = ('parameter',)
@@ -238,9 +263,14 @@ class CauchyStrainTerm( Term ):
             yield out1, chunk, status
 
 class CauchyStressTerm( CauchyStrainTerm ):
-    r""":description: Cauchy stress tensor averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h:
-    \int_{T_K} D_{ijkl} e_kl(\ul{w}) / \int_{T_K} 1$
+    r"""
+    :Description:
+    Cauchy stress tensor averaged in elements.
+
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h:
+        \int_{T_K} D_{ijkl} e_{kl}(\ul{w}) / \int_{T_K} 1
     """
     name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
