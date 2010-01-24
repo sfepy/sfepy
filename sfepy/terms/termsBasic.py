@@ -2,7 +2,15 @@ from sfepy.terms.terms import *
 from sfepy.terms.terms_base import VectorOrScalar, ScalarScalar, ScalarScalarTH
 
 class IntegrateVolumeTerm( Term ):
-    r""":definition: $\int_\Omega y$,  $\int_\Omega \ul{y}$"""
+    r"""
+    :Description:
+    Integrate a variable over a volume.
+    
+
+    :Definition:
+    .. math::
+        \int_\Omega y \mbox{ , } \int_\Omega \ul{y}
+    """
     name = 'di_volume_integrate'
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
@@ -30,7 +38,14 @@ class IntegrateVolumeTerm( Term ):
             yield out1, chunk, status
 
 class IntegrateVolumeOperatorTerm( Term ):
-    r""":definition: $\int_\Omega q$"""
+    r"""
+    :Description:
+    Volume integral of a test function.
+
+    :Definition:
+    .. math::
+        \int_\Omega q
+    """
 
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
@@ -61,8 +76,15 @@ class IntegrateVolumeOperatorTerm( Term ):
             yield out, chunk, 0
 
 class IntegrateVolumeVariableOperatorTerm( Term ):
-    r""":definition: $\int_\Omega c q$"""
+    r"""
+    :Description:
+    Volume integral of a test function with variable coefficient.
 
+
+    :Definition:
+    .. math::
+        \int_\Omega c q
+    """
     name = 'dw_volume_integrate_variable'
     arg_types = ('material', 'virtual',)
     geometry = [(Volume, 'virtual')]
@@ -94,7 +116,15 @@ class IntegrateVolumeVariableOperatorTerm( Term ):
 
 ## 24.04.2007, c
 class IntegrateSurfaceTerm( Term ):
-    r""":definition: $\int_\Gamma y$, for vectors: $\int_\Gamma \ul{y} \cdot \ul{n}$"""
+    r"""
+    :Description:
+    Integrate a variable over a surface.
+    
+    :Definition:
+    .. math::
+        \int_\Gamma y \mbox{ , for vectors: } \int_\Gamma \ul{y} \cdot
+        \ul{n}
+    """
     name = 'd_surface_integrate'
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
@@ -129,9 +159,15 @@ class IntegrateSurfaceTerm( Term ):
 ##
 # 26.09.2007, c
 class DotProductVolumeTerm( Term ):
-    r""":description: Volume $L^2(\Omega)$ dot product for both scalar and
-    vector fields.
-    :definition: $\int_\Omega p r$, $\int_\Omega \ul{u} \cdot \ul{w}$"""
+    r"""
+    :Description:
+    Volume :math:`L^2(\Omega)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
+    """
     name = 'd_volume_dot'
     arg_types = ('parameter_1', 'parameter_2')
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
@@ -169,9 +205,15 @@ class DotProductVolumeTerm( Term ):
 ##
 # 09.10.2007, c
 class DotProductSurfaceTerm( Term ):
-    r""":description: Surface $L^2(\Gamma)$ dot product for both scalar and
-    vector fields.
-    :definition: $\int_\Gamma p r$, $\int_\Gamma \ul{u} \cdot \ul{w}$"""
+    r"""
+    :Description:
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+    """
     name = 'd_surface_dot'
     arg_types = ('parameter_1', 'parameter_2')
     geometry = [(Surface, 'parameter_1'), (Surface, 'parameter_2')]
@@ -210,7 +252,14 @@ class DotProductSurfaceTerm( Term ):
 ##
 # 30.06.2008, c
 class IntegrateSurfaceOperatorTerm( Term ):
-    r""":definition: $\int_{\Gamma} q$"""
+    r"""
+    :Description:
+    Surface integral of a test function.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} q
+    """
 
     name = 'dw_surface_integrate'
     arg_types = ('virtual',)
@@ -247,9 +296,14 @@ class IntegrateSurfaceOperatorTerm( Term ):
             yield out, lchunk, 0
 
 class IntegrateSurfaceVariableOperatorTerm(Term):
-    r""":description: Surface integral of a test function with variable
-    coefficient.
-    :definition: $\int_\Gamma c q$"""
+    r"""
+    :Description:
+    Surface integral of a test function with variable coefficient.
+
+    :Definition:
+    .. math::
+        \int_\Gamma c q
+    """
     name = 'dw_surface_integrate_variable'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
@@ -293,9 +347,14 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
 ##
 # 16.07.2007, c
 class VolumeTerm( Term ):
-    r""":description: Volume of a domain. Uses approximation of the parameter
-    variable.
-    :definition: $\int_\Omega 1$"""
+    r"""
+    :Description:
+    Volume of a domain. Uses approximation of the parameter variable.
+
+    :Definition:
+    .. math::
+        \int_\Omega 1
+    """
     name = 'd_volume'
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
@@ -317,9 +376,14 @@ class VolumeTerm( Term ):
         yield volume, 0, 0
 
 class SurfaceTerm( Term ):
-    r""":description: Surface of a domain. Uses approximation of the parameter
-    variable.
-    :definition: $\int_\Gamma 1$"""
+    r"""
+    :Description:
+    Surface of a domain. Uses approximation of the parameter variable.
+
+    :Definition:
+    .. math::
+        \int_\Gamma 1
+    """
     name = 'd_surface'
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
@@ -339,9 +403,15 @@ class SurfaceTerm( Term ):
         yield surface, 0, 0
 
 class VolumeSurfaceTerm( Term ):
-    r""":description: Volume of a domain - using surface integral.
-    Uses approximation of the parameter.
-    :definition: $\int_\Gamma \ul{x} \cdot \ul{n}$"""
+    r"""
+    :Description:
+    Volume of a domain, using a surface integral. Uses approximation of the
+    parameter variable.
+
+    :Definition:
+    .. math::
+        \int_\Gamma \ul{x} \cdot \ul{n}
+    """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
@@ -369,12 +439,19 @@ class VolumeSurfaceTerm( Term ):
 ##
 # c: 06.05.2008
 class AverageVolumeMatTerm( Term ):
-    r""":description: Material parameter $m$ averaged in elements. Uses
-    approximation of $y$ variable.
-    :definition: $\forall K \in \Tcal_h: \int_{T_K} m / \int_{T_K} 1$
-    :arguments: material : $m$ (can have up to two dimensions),
-    parameter : $y$, shape : shape of material parameter
-    parameter
+    r"""
+    :Description:
+    Material parameter :math:`m` averaged in elements. Uses
+    approximation of :math:`y` variable.
+
+    :Definition:
+    .. math::
+        \forall K \in \Tcal_h: \int_{T_K} m / \int_{T_K} 1
+
+    :Arguments:
+    material : :math:`m` (can have up to two dimensions),
+    parameter : :math:`y`,
+    shape : shape of material parameter
     """
     name = 'de_volume_average_mat'
     arg_types = ('material', 'parameter', 'shape')
@@ -407,12 +484,18 @@ class AverageVolumeMatTerm( Term ):
 ##
 # c: 05.03.2008
 class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
-    r""":description: Integrate material parameter $m$ over a domain. Uses
-    approximation of $y$ variable.
-    :definition: $\int_\Omega m$
-    :arguments: material : $m$ (can have up to two dimensions),
-    parameter : $y$, shape : shape of material parameter
-    parameter
+    r"""
+    :Description:
+    Integrate material parameter :math:`m` over a domain. Uses
+    approximation of :math:`y` variable.
+
+    :Definition:
+    .. math::
+        \int_\Omega m
+
+    :Arguments:
+    material : :math:`m` (can have up to two dimensions),
+    parameter : :math:`y`, shape : shape of material parameter
     """
     name = 'di_volume_integrate_mat'
 
@@ -431,12 +514,19 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
 ##
 # c: 05.03.2008
 class WDotProductVolumeTerm( VectorOrScalar, Term ):
-    r""":description: Volume $L^2(\Omega)$ weighted dot product for both scalar
+    r"""
+    :Description:
+    Volume :math:`L^2(\Omega)` weighted dot product for both scalar
     and vector (not implemented in weak form!) fields. Can be evaluated. Can
     use derivatives.
-    :definition: $\int_\Omega y q p$, $\int_\Omega y \ul{v} \cdot \ul{u}$,
-    $\int_\Omega y p r$, $\int_\Omega y \ul{u} \cdot \ul{w}$
-    :arguments: material : weight function $y$"""
+    
+    :Definition:
+    .. math::
+        \int_\Omega y q p \mbox{ , } \int_\Omega y \ul{v} \cdot \ul{u} \mbox{ , }
+        \int_\Omega y p r \mbox{ , } \int_\Omega y \ul{u} \cdot \ul{w}
+
+    :Arguments:
+    material : weight function :math:`y`"""
     name = 'dw_volume_wdot'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
@@ -510,10 +600,15 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
 ##
 # c: 03.04.2008
 class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
-    r""":description: Fading memory volume $L^2(\Omega)$ weighted dot product
-    for scalar fields. Can use derivatives.
-    :definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
-    \difd{\tau} \right] q$"""
+    r"""
+    :Description:
+    Fading memory volume :math:`L^2(\Omega)` weighted dot product for
+    scalar fields. Can use derivatives.
+
+    :Definition:
+    .. math::
+        \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
+    """
     name = 'dw_volume_wdot_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
@@ -552,17 +647,21 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
             return iter_kernel, shape, mode
 
 class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
-    r""":description: Fading memory volume $L^2(\Omega)$ weighted dot product
-    for scalar fields. This term has the same definition as
-    dw_volume_wdot_scalar_th, but assumes an exponential approximation
-    of the convolution kernel resulting in much higher efficiency. Can
-    use derivatives.
-    :definition: $\int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau)
-    \difd{\tau} \right] q$
+    r"""
+    :Description:
+    Fading memory volume :math:`L^2(\Omega)` weighted dot product for
+    scalar fields. This term has the same definition as
+    dw_volume_wdot_scalar_th, but assumes an exponential approximation of
+    the convolution kernel resulting in much higher efficiency. Can use
+    derivatives.
 
-    :arguments:
-        material_0 : $\Gcal(0)$,
-        material_1 : $\exp(-\lambda \Delta t)$ (decay at $t_1$)
+    :Definition:
+    .. math::
+        \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
+
+    :Arguments:
+    material_0 : :math:`\Gcal(0)`,
+    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
     """
     name = 'dw_volume_wdot_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -602,9 +701,15 @@ class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
         return fargs, shape, mode
 
 class AverageVariableTerm( Term ):
-    r""":description: Variable $y$ averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} y /
-    \int_{T_K} 1$"""
+    r"""
+    :Description:
+    Variable :math:`y` averaged in elements.
+
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} y /
+        \int_{T_K} 1
+    """
     name = 'de_average_variable'
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
@@ -629,8 +734,13 @@ class AverageVariableTerm( Term ):
             yield out1, chunk, status
 
 class StateVQTerm(Term):
-    r""":description: State interpolated into volume quadrature points.
-    :definition: $\ul{u}|_{qp}, p|_{qp}$
+    r"""
+    :Description:
+    State interpolated into volume quadrature points.
+
+    :Definition:
+    .. math::
+        \ul{u}|_{qp} \mbox{ , } p|_{qp}
     """
     name = 'dq_state_in_volume_qp'
     arg_types = ('state',)
@@ -659,8 +769,13 @@ class StateVQTerm(Term):
         yield out, nm.arange(n_el, dtype=nm.int32), 0
 
 class StateSQTerm(Term):
-    r""":description: State interpolated into surface quadrature points.
-    :definition: $\ul{u}|_{qp}, p|_{qp}$
+    r"""
+    :Description:
+    State interpolated into surface quadrature points.
+
+    :Definition:
+    .. math::
+        \ul{u}|_{qp} \mbox{ , } p|_{qp}
     """
     name = 'dq_state_in_surface_qp'
     arg_types = ('state',)
