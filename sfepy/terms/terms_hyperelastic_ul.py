@@ -12,11 +12,14 @@ class HyperElasticULBase( HyperElasticBase ):
         HyperElasticBase.__init__( self, region, name, sign, mode_ul = 1 )
 
 class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
-    r""":description: Hyperelastic neo-Hookean term. Effective stress
-    $\tau_{ij} =
-    \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})$.
-    :definition:
-    $\int_{\Omega} \cal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J$
+    r"""
+    :Description:
+    Hyperelastic neo-Hookean term. Effective stress
+    :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
     """
     name = 'dw_ul_he_neohook'
     arg_types = ('material', 'virtual', 'state')
@@ -45,8 +48,14 @@ class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
         return out
 
 class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
-    r""":description: Hyperelastic bulk penalty term. Stress $\tau_{ij}
-    = K(J-1)\; J \delta_{ij}$.
+    r"""
+    :Description:
+    Hyperelastic bulk penalty term. Stress
+    :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
     """
     name = 'dw_ul_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')
@@ -75,9 +84,13 @@ class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
         return out
 
 class MooneyRivlinULTerm( VectorVector, HyperElasticULBase ):
-    r""":description: Hyperelastic Mooney-Rivlin term.
-    :definition:
-    $\int_{\Omega} \cal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J$
+    r"""
+    :Description:
+    Hyperelastic Mooney-Rivlin term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
     """
     name = 'dw_ul_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
