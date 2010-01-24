@@ -3,10 +3,15 @@ from sfepy.terms.terms import *
 ##
 # 10.07.2007, c
 class LinearPointSpringTerm( Term ):
-    r""":description: Linear springs constraining movement of FE nodes in a
-    reagion; use as a relaxed Dirichlet boundary conditions.
-    :definition: $\ul{f}^i = -k \ul{u}^i \quad \forall \mbox{ FE node } i
-    \mbox{ in region }$
+    r"""
+    :Description:
+    Linear springs constraining movement of FE nodes in a region; to use as a
+    relaxed Dirichlet boundary conditions.
+
+    :Definition:
+    .. math::
+        \ul{f}^i = -k \ul{u}^i \quad \forall \mbox{ FE node } i \mbox{ in
+        a region }
     """
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
