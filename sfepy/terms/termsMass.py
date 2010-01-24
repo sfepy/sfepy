@@ -2,10 +2,18 @@ from sfepy.terms.terms import *
 from sfepy.terms.terms_base import VectorVector, ScalarScalar
 
 class MassTerm( VectorVector, Term ):
-    r""":description: Inertial forces term.
-    :definition: $\int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} -
-    \ul{u}_0}{\dt}$
-    :arguments: material : $\rho$, ts.dt : $\dt$, parameter : $\ul{u}_0$"""
+    r"""
+    :Description:
+    Inertial forces term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}
+
+    :Arguments:
+    material : :math:`\rho`,
+    ts.dt : :math:`\dt`,
+    parameter : :math:`\ul{u}_0`"""
     name = 'dw_mass'
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
@@ -28,8 +36,13 @@ class MassTerm( VectorVector, Term ):
         return fargs, shape, mode
 
 class MassVectorTerm( MassTerm ):
-    r""":description: Vector field mass matrix/rezidual.
-    :definition: $\int_{\Omega} \rho\ \ul{v} \cdot \ul{u}$
+    r"""
+    :Description:
+    Vector field mass matrix/rezidual.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \rho\ \ul{v} \cdot \ul{u}
     """
     name = 'dw_mass_vector'
     arg_types = ('material', 'virtual', 'state')
@@ -48,8 +61,13 @@ class MassVectorTerm( MassTerm ):
         return fargs, shape, mode
 
 class MassScalarTerm( ScalarScalar, Term ):
-    r""":description: Scalar field mass matrix/rezidual.
-    :definition: $\int_{\Omega} q p$
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} q p
     """
     name = 'dw_mass_scalar'
     arg_types = (('virtual', 'state'),
@@ -100,8 +118,13 @@ class MassScalarTerm( ScalarScalar, Term ):
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
 
 class MassScalarSurfaceTerm( ScalarScalar, Term ):
-    r""":description: Scalar field mass matrix/rezidual.
-    :definition: $\int_{\Gamma} q p$
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual on a surface.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} q p
     """
     name = 'dw_surface_mass_scalar'
     arg_types = ('virtual', 'state')
@@ -134,10 +157,19 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
     
 class BCNewtonTerm(MassScalarSurfaceTerm):
-    r""":description: Newton boundary condition term.
-    :definition: $\int_{\Gamma} \alpha q (p - p_{\rm outer})$
-    :arguments: material_1 : $\alpha$, material_2 : $p_{\rm outer}$,
-    virtual : $q$, state : $p$
+    r"""
+    :Description:
+    Newton boundary condition term.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \alpha q (p - p_{\rm outer})
+
+    :Arguments:
+    material_1 : :math:`\alpha`,
+    material_2 : :math:`p_{\rm outer}`,
+    virtual : :math:`q`,
+    state : :math:`p`
     """
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
@@ -164,9 +196,13 @@ class BCNewtonTerm(MassScalarSurfaceTerm):
             yield out, chunk, status
     
 class MassScalarVariableTerm( MassScalarTerm ):
-    r""":description: Scalar field mass matrix/rezidual with coefficient $c$
-    defined in nodes.
-    :definition: $\int_{\Omega} c q p$
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual with coefficient :math:`c`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} c q p
     """
     name = 'dw_mass_scalar_variable'
     arg_types = ('material', 'virtual', 'state')
@@ -196,10 +232,15 @@ class MassScalarVariableTerm( MassScalarTerm ):
         pass
 
 class MassScalarFineCoarseTerm( Term ):
-    r""":description: Scalar field mass matrix/rezidual for coarse to fine grid
-    interpolation. Field $p_H$ belong to the coarse grid, test field $q_h$ to
-    the fine grid.
-    :definition: $\int_{\Omega} q_h p_H$
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual for coarse to fine grid
+    interpolation. Field :math:`p_H` belong to the coarse grid, test field
+    :math:`q_h` to the fine grid.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} q_h p_H
     """
     name = 'dw_mass_scalar_fine_coarse'
     arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
