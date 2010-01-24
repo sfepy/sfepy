@@ -69,9 +69,14 @@ class  PiezoCouplingEval( CouplingVectorScalar ):
 
 class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad,
                          PiezoCouplingEval, Term ):
-    r""":description: Piezoelectric coupling term.
-    :definition: $\int_{\Omega} g_{kij}\ e_{ij}(\ul{u}) \nabla_k q$,
-    $\int_{\Omega} g_{kij}\ e_{ij}(\ul{v}) \nabla_k p$
+    r"""
+    :Description:
+    Piezoelectric coupling term. Can be evaluated.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} g_{kij}\ e_{ij}(\ul{u}) \nabla_k q \mbox{ , }
+        \int_{\Omega} g_{kij}\ e_{ij}(\ul{v}) \nabla_k p
     """
     name = 'dw_piezo_coupling'
     arg_types = (('material', 'virtual', 'state'),
