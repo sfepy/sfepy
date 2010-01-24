@@ -13,10 +13,14 @@ class HyperElasticTLBase( HyperElasticBase ):
         HyperElasticBase.__init__( self, region, name, sign, mode_ul = 0 )
 
 class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
-    r""":description: Hyperelastic neo-Hookean term. Effective stress $S_{ij} =
-    \mu J^{-\frac{2}{3}}(\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})$.
-    :definition:
-    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
+    r"""
+    :Description:
+    Hyperelastic neo-Hookean term. Effective stress
+    :math:`S_{ij} = \mu J^{-\frac{2}{3}}(\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
     """
     name = 'dw_tl_he_neohook'
     arg_types = ('material', 'virtual', 'state')
@@ -45,11 +49,14 @@ class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
         return out
 
 class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
-    r""":description: Hyperelastic Mooney-Rivlin term. Effective stress $S_{ij}
-    = \kappa J^{-\frac{4}{3}} (C_{kk} \delta_{ij} - C_{ij} - \frac{2}{3
-    } I_2 C_{ij}^{-1})$.
-    :definition:
-    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
+    r"""
+    :Description:
+    Hyperelastic Mooney-Rivlin term. Effective stress
+    :math:`S_{ij} = \kappa J^{-\frac{4}{3}} (C_{kk} \delta_{ij} - C_{ij} - \frac{2}{3 } I_2 C_{ij}^{-1})`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
     """
     name = 'dw_tl_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
@@ -78,10 +85,14 @@ class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
         return out
 
 class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
-    r""":description: Hyperelastic bulk penalty term. Stress $S_{ij}
-    = K(J-1)\; J C_{ij}^{-1}$.
-    :definition:
-    $\int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})$
+    r"""
+    :Description:
+    Hyperelastic bulk penalty term. Stress
+    :math:`S_{ij} = K(J-1)\; J C_{ij}^{-1}`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
     """
 
     name = 'dw_tl_bulk_penalty'
@@ -111,10 +122,14 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
         return out
 
 class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
-    r""":description: Hyperelastic bulk pressure term. Stress $S_{ij}
-    = -p J C_{ij}^{-1}$.
-    :definition:
-    $\int_{\Omega} S_{ij}(p) \delta E_{ij}(\ul{u};\ul{v})$
+    r"""
+    :Description:
+    Hyperelastic bulk pressure term. Stress
+    :math:`S_{ij} = -p J C_{ij}^{-1}`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} S_{ij}(p) \delta E_{ij}(\ul{u};\ul{v})
     """
 
     name = 'dw_tl_bulk_pressure'
@@ -222,9 +237,13 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         return out
 
 class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
-    r""":description: Volume term in the total Lagrangian formulation.
-    :definition:
-    $\int_{\Omega} q J(\ul{u})$
+    r"""
+    :Description:
+    Volume term (weak form) in the total Lagrangian formulation.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} q J(\ul{u})
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
@@ -258,14 +277,19 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
         return (bf, mtxF, invC, detF, vgv, 0), shape, mode
 
 class DiffusionTLTerm(ScalarScalar, Term):
-    r""":description: Diffusion term in the total Lagrangian formulation with
-    linearized deformation-dependent permeability $\ull{K}(\ul{u}) = J
-    \ull{F}^{-1} \ull{k} f(J) \ull{F}^{-T}$,
-    where $\ul{u}$ relates to the previous time step $(n-1)$ and $f(J) =
-    \max\left(0, \left(1 + \frac{(J - 1)}{N_f}\right)\right)^2$ expresses the
-    dependence on volume compression/expansion.
-    :definition:
-    $\int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}$
+    r"""
+    :Description:
+    Diffusion term in the total Lagrangian formulation with
+    linearized deformation-dependent permeability
+    :math:`\ull{K}(\ul{u}) = J \ull{F}^{-1} \ull{k} f(J) \ull{F}^{-T}`,
+    where :math:`\ul{u}` relates to the previous time step :math:`(n-1)`
+    and
+    :math:`f(J) = \max\left(0, \left(1 + \frac{(J - 1)}{N_f}\right)\right)^2`
+    expresses the dependence on volume compression/expansion.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}
     """
     name = 'dw_tl_diffusion'
     arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
@@ -313,14 +337,19 @@ class DiffusionTLTerm(ScalarScalar, Term):
         return (gp, perm, ref_porosity, mtxF, detF, vgv), shape, mode
 
 class SurfaceTractionTLTerm(VectorVector, Term):
-    r""":description: Surface traction term in the total Lagrangian
-    formulation, expressed using $\ul{\nu}$, the outward unit normal vector
-    w.r.t. the undeformed surface, $\ull{F}(\ul{u})$, the
-    deformation gradient, $J = \det(\ull{F})$, and $\ull{\sigma}$ a given
-    traction, often equal to a given pressure, i.e. $\ull{\sigma} = \pi
-    \ull{I}$.
-    :definition:
-    $\int_{\Gamma} \ul{\nu} \cdot \ull{F}^{-1} \cdot \ull{\sigma} \cdot \ul{v} J$
+    r"""
+    :Description:
+    Surface traction term in the total Lagrangian formulation, expressed
+    using :math:`\ul{\nu}`, the outward unit normal vector w.r.t. the
+    undeformed surface, :math:`\ull{F}(\ul{u})`, the deformation gradient,
+    :math:`J = \det(\ull{F})`, and :math:`\ull{\sigma}` a given traction,
+    often equal to a given pressure, i.e.
+    :math:`\ull{\sigma} = \pi \ull{I}`.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{\nu} \cdot \ull{F}^{-1} \cdot \ull{\sigma} \cdot
+        \ul{v} J
     """
     name = 'dw_tl_surface_traction'
     arg_types = ('material', 'virtual', 'state')
