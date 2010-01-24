@@ -122,3 +122,23 @@ sfepy.terms package
 
 The terms documentation is incomplete here as yet. Please refer to the terms
 documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/terms/module_sfepy_terms_termsAdjointNavierStokes
+   src/sfepy/terms/module_sfepy_terms_termsBasic
+   src/sfepy/terms/module_sfepy_terms_termsBiot
+   src/sfepy/terms/module_sfepy_terms_termsElectric
+   src/sfepy/terms/module_sfepy_terms_termsLaplace
+   src/sfepy/terms/module_sfepy_terms_termsLinElasticity
+   src/sfepy/terms/module_sfepy_terms_termsMass
+   src/sfepy/terms/module_sfepy_terms_termsNavierStokes
+   src/sfepy/terms/module_sfepy_terms_termsPiezo
+   src/sfepy/terms/module_sfepy_terms_termsPoint
+   src/sfepy/terms/module_sfepy_terms_termsSurface
+   src/sfepy/terms/module_sfepy_terms_termsVolume
+   src/sfepy/terms/module_sfepy_terms_terms_fibres
+   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_base
+   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_tl
+   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_ul
