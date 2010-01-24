@@ -97,6 +97,7 @@ sfepy.postprocess package
 
    src/sfepy/postprocess/module_sfepy_postprocess_dataset_manager
    src/sfepy/postprocess/module_sfepy_postprocess_sources
+   src/sfepy/postprocess/module_sfepy_postprocess_time_history
    src/sfepy/postprocess/module_sfepy_postprocess_utils
    src/sfepy/postprocess/module_sfepy_postprocess_viewer
 
@@ -119,5 +120,5 @@ sfepy.solvers package
 sfepy.terms package
 ^^^^^^^^^^^^^^^^^^^
 
-The terms documentation is incomplete here as yet. Please refer to the terms documentation until it is merged with Sphinx documentation.
-
+The terms documentation is incomplete here as yet. Please refer to the terms
+documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
