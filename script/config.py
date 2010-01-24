@@ -42,6 +42,9 @@ import shutil
 msg_unknown_os = """could not determine operating system!
 try setting it in site_cfg.py manually, see site_cfg_template.py"""
 
+msg_numpydoc = """could not find numpydoc!
+If it is installed in a non-standard location, try setting it in
+site_cfg.py manually."""
 
 try:
     import site_cfg
@@ -124,6 +127,17 @@ class Config( object ):
             return site_cfg.debug_flags
         else:
             return ''
+
+    def numpydoc_path(self):
+        if (has_attr(site_cfg, 'numpydoc_path') and
+            (site_cfg.numpydoc_path is not None)):
+            return site_cfg.numpydoc_path
+
+        else:
+            try:
+                import numpydoc
+            except ImportError:
+                raise ValueError(msg_numpydoc)
 
 usage = """Usage: %s option"""
 

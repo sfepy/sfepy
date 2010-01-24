@@ -33,3 +33,7 @@ link_flags = '-shared -fPIC -DPIC'
 
 # Can be a combination of '-DDEBUG_FMF' '-DDEBUG_MESH'.
 debug_flags = ''
+
+# Sphinx documentation uses numpydoc extension. Set the path here in case it is
+# not installed in a standard location.
+numpydoc_path = None
