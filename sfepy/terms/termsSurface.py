@@ -3,11 +3,16 @@ from sfepy.terms.terms import *
 ##
 # 22.08.2006, c
 class LinearTractionTerm( Term ):
-    r""":description: Linear traction forces (weak form), where,
-    depending on dimension of 'material' argument, $\ull{\sigma} \cdot
-    \ul{n}$ is $\bar{p} \ull{I} \cdot \ul{n}$ for a given scalar pressure,
-    $\ul{f}$ for a traction vector, and itself for a stress tensor.
-    :definition: $\int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}$
+    r"""
+    :Description:
+    Linear traction forces (weak form), where, depending on dimension of
+    'material' argument, :math:`\ull{\sigma} \cdot \ul{n}` is
+    :math:`\bar{p} \ull{I} \cdot \ul{n}` for a given scalar pressure,
+    :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
@@ -54,6 +59,14 @@ class LinearTractionTerm( Term ):
             yield out, lchunk, status
 
 class SurfaceJumpTerm(Term):
+    r"""
+    :Description:
+    Interface jump condition.
+    
+    :Definition:
+    .. math::
+        \int_{\Gamma} q (p_1 - p_2 - c)
+    """
     name = 'dw_jump'
     arg_types = ('material', 'virtual', 'state_1', 'state_2')
     geometry = [(Surface, 'virtual'), (Surface, 'state_1'), (Surface, 'state_2')]
