@@ -2,11 +2,15 @@ from sfepy.terms.terms import *
 from sfepy.terms.terms_base import ScalarScalar
 
 class DiffusionTerm( ScalarScalar, Term ):
-    r""":description: General diffusion term with permeability $K_{ij}$
-    constant or  given in mesh vertices. Can be evaluated. Can use derivatives.
-
-    :definition: $\int_{\Omega} K_{ij} \nabla_i q \nabla_j p$, $\int_{\Omega}
-    K_{ij} \nabla_i \bar{p} \nabla_j r$
+    r"""
+    :Description:
+    General diffusion term with permeability :math:`K_{ij}`. Can be
+    evaluated. Can use derivatives.
+    
+    :Definition:
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_i q \nabla_j p \mbox{ , } \int_{\Omega}
+        K_{ij} \nabla_i \bar{p} \nabla_j r
     """
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
@@ -62,9 +66,14 @@ class DiffusionTerm( ScalarScalar, Term ):
                                                 ['parameter_2']]}
 
 class LaplaceTerm(DiffusionTerm):
-    r""":description: Laplace term with $c$ constant or constant per element.
-    :definition: $c \int_{\Omega}\nabla s \cdot \nabla r$
-    or $\sum_{K \in \Tcal_h}\int_{T_K} c_K\ \nabla s \cdot \nabla r$
+    r"""
+    :Description:
+    Laplace term with :math:`c` coefficient. Can be
+    evaluated. Can use derivatives.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} c \nabla s \cdot \nabla r
     """
     name = 'dw_laplace'
     arg_types = (('material', 'virtual', 'state'),
@@ -86,9 +95,14 @@ class LaplaceTerm(DiffusionTerm):
                                                 ['parameter_2']]}
 
 class PermeabilityRTerm( Term ):
-    r""":description: Special-purpose diffusion-like term with permeability
-    $K_{ij}$ constant or given in mesh vertices (to use on a right-hand side).
-    :definition: $\int_{\Omega} K_{ij} \nabla_j q$
+    r"""
+    :Description:
+    Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
+    use on the right-hand side).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_j q
     """
     name = 'dw_permeability_r'
     arg_types = ('material', 'virtual', 'index')
@@ -113,9 +127,14 @@ class PermeabilityRTerm( Term ):
             yield out, chunk, status
 
 class DiffusionVelocityTerm( Term ):
-    r""":description: Diffusion velocity averaged in elements.
-    :definition: vector of $\forall K \in \Tcal_h: \int_{T_K} -K_{ij} \nabla_j r
-    / \int_{T_K} 1$
+    r"""
+    :Description:
+    Diffusion velocity averaged in elements.
+
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} -K_{ij} \nabla_j r
+        / \int_{T_K} 1
     """
     name = 'de_diffusion_velocity'
     arg_types = ('material','parameter')
