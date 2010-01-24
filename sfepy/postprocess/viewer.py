@@ -87,8 +87,8 @@ class Viewer(Struct):
     After opening a data file, all data (point, cell, scalars, vectors,
     tensors) are plotted in a grid layout.
 
-    Parameters
-    ----------
+    Parameters:
+
     watch : bool
         If True, watch the file for changes and update the mayavi
         pipeline automatically.
@@ -103,8 +103,8 @@ class Viewer(Struct):
     output_dir : str
         The output directory, where view snapshots will be saved.
 
-    Examples
-    --------
+    Examples:
+
     >>> view = Viewer('file.vtk')
     >>> view() # view with default parameters
     >>> view(layout='col') # use column layout
@@ -447,8 +447,8 @@ class Viewer(Struct):
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
 
-        Parameters
-        ----------
+        Parameters:
+
         show : bool
             Call mlab.show().
         is_3d : bool
