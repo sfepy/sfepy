@@ -1315,7 +1315,7 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
       ERR_CheckGo( ret );
     }
 
-  } else {
+  } else if (mode == 1) {
     nQP = vg->bfGM->nLev;
     sym = vecInvCS->nRow;
     nEP = bf->nCol;
@@ -1346,6 +1346,35 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
       } else {
 	fmf_sumLevelsMulF( out, fjcitb, vg->det->val );
       }
+      ERR_CheckGo( ret );
+    }
+  } else if (mode == 2){ // de_volume
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( vg->det, iel );
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( detF, ii );
+
+      fmf_sumLevelsMulF( out, detF, vg->det->val );
+      ERR_CheckGo( ret );
+    }
+  } else { // mode == 3, de_rel_volume
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( vg->volume, iel );
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( detF, ii );
+
+      fmf_sumLevelsMulF( out, detF, vg->det->val );
+      fmf_mulC( out, 1.0 / vg->volume->val[0] );
+
       ERR_CheckGo( ret );
     }
   }

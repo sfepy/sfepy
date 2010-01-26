@@ -243,7 +243,13 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
     :Definition:
     .. math::
-        \int_{\Omega} q J(\ul{u})
+        \begin{split}
+           & \int_{\Omega} q J(\ul{u}) \\
+           & \mbox{de\_volume mode: vector of } \forall K \in \Tcal_h: \int_{T_K}
+           J(\ul{u}) \\
+           & \mbox{de\_rel\_volume mode: vector of } \forall K \in \Tcal_h:
+           \int_{T_K} J(\ul{u}) / \int_{T_K} 1
+        \end{split}
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
@@ -259,20 +265,33 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         virtual, state = self.get_args( **kwargs )
+        call_mode = kwargs.get('call_mode')
+
         apv, vgv = state.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
 
         self.set_data_shape(apv, aps)
-        shape, mode = self.get_shape_div(diff_var, chunk_size)
 
         cache = self.get_cache('finite_strain_tl', 0)
         ih = self.arg_steps[state.name] # issue 104!
         mtxF, invC, detF = cache(['F', 'invC', 'detF'],
                                  self.get_current_group(), ih,
                                  state=state)
+
+        if call_mode == 'de_volume':
+            n_el, _, _, _ = self.data_shape_s
+            shape, mode = (n_el, 1, 1, 1), 2
+
+        elif call_mode == 'de_rel_volume':
+            n_el, _, _, _ = self.data_shape_s
+            shape, mode = (n_el, 1, 1, 1), 3
+
+        else:
+            shape, mode = self.get_shape_div(diff_var, chunk_size)
+            if self.step == 0: # Just init the history in step 0.
+                raise StopIteration
+
         bf = aps.get_base('v', 0, self.integral_name)
-        if self.step == 0: # Just init the history in step 0.
-            raise StopIteration
 
         return (bf, mtxF, invC, detF, vgv, 0), shape, mode
 
