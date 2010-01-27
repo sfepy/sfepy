@@ -1,3 +1,4 @@
+import os
 import sys
 sys.path.append( '.' )
 
@@ -5,14 +6,16 @@ from sfepy.base.base import *
 from sfepy.base.log import Log
 
 def main():
+    cwd = os.path.split(os.path.join(os.getcwd(), __file__))[0]
+    
     log = Log((['sin(x)', 'cos(x)'], ['exp(x)']),
               yscales=['linear', 'log'],
               xlabels=['angle', None], ylabels=[None, 'a function'],
-              log_filename='examples/live_plot.log')
+              log_filename=os.path.join(cwd, 'live_plot.log'))
     log2 = Log([['x^3']],
                yscales=['linear'],
                xlabels=['x'], ylabels=['a cubic function'],
-               log_filename='examples/live_plot2.log')
+               log_filename=os.path.join(cwd, 'live_plot2.log'))
 
     added = 0
     for x in nm.linspace(0, 4.0 * nm.pi, 200):

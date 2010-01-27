@@ -1,17 +1,14 @@
-# c: 05.05.2008, r: 05.05.2008
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc MANIFEST
-DISTDIRS :=
-
-RELDISTFILES := $(DISTFILES) $(shell cat MANIFEST)
-RELDISTDIRS := $(DISTDIRS)
+DISTFILES := $(wildcard *.py) Makefile.dist
+DISTDIRS := $(shell find * -type d)
 
 dist:
-	mkdir $(DESTDIR)
-	cp -fpd $(DISTFILES) $(DESTDIR)
+	mkdir -p $(DESTDIR)
+	cp -fa $(DISTFILES) $(DESTDIR)
+	-@for i in $(DISTDIRS); do \
+		$(MAKE) -C $$i -f Makefile.dist $@ DISTDIR=${DESTDIR}/$$i; \
+	done
 
-reldist:
-	mkdir $(DESTDIR)
-	cp -fpd $(RELDISTFILES) $(DESTDIR)
+reldist: dist
