@@ -1,0 +1,7 @@
+DISTFILES := Makefile.dist $(wildcard *.py)
+
+dist:
+	mkdir -p $(DISTDIR)
+	cp -fa $(DISTFILES) $(DISTDIR)
+
+reldist: dist
