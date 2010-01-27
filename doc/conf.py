@@ -238,3 +238,5 @@ latex_preamble = r"""
 # Preamble for pngmath images
 pngmath_latex_preamble = latex_preamble
 
+# Turn off numpydoc autosummary tables
+numpydoc_show_class_members = False
