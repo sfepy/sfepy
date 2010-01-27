@@ -290,8 +290,10 @@ class Viewer(Struct):
             
             output(family, kind, name, position)
             if kind == 'scalars':
-                active = mlab.pipeline.set_active_attribute(source)
-#                active.point_scalars_name = name
+                if family == 'point':
+                    active = mlab.pipeline.set_active_attribute(source)
+                else:
+                    active = mlab.pipeline.set_active_attribute(ctp)
                 setattr(active, '%s_%s_name' % (family, kind), name)
 
                 if is_3d:
