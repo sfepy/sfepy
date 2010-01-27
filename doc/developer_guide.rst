@@ -11,9 +11,9 @@ sfepy.applications package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/applications/module_sfepy_applications_application
-   src/sfepy/applications/module_sfepy_applications_simple_app
-   src/sfepy/applications/module_sfepy_applications_top_level
+   src/sfepy/applications/application
+   src/sfepy/applications/app
+   src/sfepy/applications/level
 
 sfepy.base package
 ^^^^^^^^^^^^^^^^^^
@@ -21,18 +21,18 @@ sfepy.base package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/base/module_sfepy_base_base
-   src/sfepy/base/module_sfepy_base_conf
-   src/sfepy/base/module_sfepy_base_getch
-   src/sfepy/base/module_sfepy_base_ioutils
-   src/sfepy/base/module_sfepy_base_la
-   src/sfepy/base/module_sfepy_base_log
-   src/sfepy/base/module_sfepy_base_plotutils
-   src/sfepy/base/module_sfepy_base_progressbar
-   src/sfepy/base/module_sfepy_base_reader
-   src/sfepy/base/module_sfepy_base_setup
-   src/sfepy/base/module_sfepy_base_tasks
-   src/sfepy/base/module_sfepy_base_testing
+   src/sfepy/base/base
+   src/sfepy/base/conf
+   src/sfepy/base/getch
+   src/sfepy/base/ioutils
+   src/sfepy/base/la
+   src/sfepy/base/log
+   src/sfepy/base/plotutils
+   src/sfepy/base/progressbar
+   src/sfepy/base/reader
+   src/sfepy/base/setup
+   src/sfepy/base/tasks
+   src/sfepy/base/testing
 
 sfepy.eldesc package
 ^^^^^^^^^^^^^^^^^^^^
@@ -50,11 +50,11 @@ sfepy.geom package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/geom/module_sfepy_geom_femlab
-   src/sfepy/geom/module_sfepy_geom_geometry
-   src/sfepy/geom/module_sfepy_geom_gmsh
-   src/sfepy/geom/module_sfepy_geom_meshutils
-   src/sfepy/geom/module_sfepy_geom_tetgen
+   src/sfepy/geom/femlab
+   src/sfepy/geom/geometry
+   src/sfepy/geom/gmsh
+   src/sfepy/geom/meshutils
+   src/sfepy/geom/tetgen
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -62,16 +62,16 @@ sfepy.homogenization package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/homogenization/module_sfepy_homogenization_coefficients
-   src/sfepy/homogenization/module_sfepy_homogenization_coefs_base
-   src/sfepy/homogenization/module_sfepy_homogenization_coefs_elastic
-   src/sfepy/homogenization/module_sfepy_homogenization_coefs_piezo
-   src/sfepy/homogenization/module_sfepy_homogenization_engine
-   src/sfepy/homogenization/module_sfepy_homogenization_pfdpm
-   src/sfepy/homogenization/module_sfepy_homogenization_phono
-   src/sfepy/homogenization/module_sfepy_homogenization_prolong
-   src/sfepy/homogenization/module_sfepy_homogenization_recovery
-   src/sfepy/homogenization/module_sfepy_homogenization_utils
+   src/sfepy/homogenization/coefficients
+   src/sfepy/homogenization/base
+   src/sfepy/homogenization/elastic
+   src/sfepy/homogenization/piezo
+   src/sfepy/homogenization/engine
+   src/sfepy/homogenization/pfdpm
+   src/sfepy/homogenization/phono
+   src/sfepy/homogenization/prolong
+   src/sfepy/homogenization/recovery
+   src/sfepy/homogenization/utils
 
 sfepy.mechanics package
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -79,7 +79,7 @@ sfepy.mechanics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/mechanics/module_sfepy_mechanics_matcoefs
+   src/sfepy/mechanics/matcoefs
 
 sfepy.physics package
 ^^^^^^^^^^^^^^^^^^^^^
@@ -87,7 +87,7 @@ sfepy.physics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/physics/module_sfepy_physics_extmods_dft
+   src/sfepy/physics/dft
 
 sfepy.postprocess package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -95,11 +95,11 @@ sfepy.postprocess package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/postprocess/module_sfepy_postprocess_dataset_manager
-   src/sfepy/postprocess/module_sfepy_postprocess_sources
-   src/sfepy/postprocess/module_sfepy_postprocess_time_history
-   src/sfepy/postprocess/module_sfepy_postprocess_utils
-   src/sfepy/postprocess/module_sfepy_postprocess_viewer
+   src/sfepy/postprocess/manager
+   src/sfepy/postprocess/sources
+   src/sfepy/postprocess/history
+   src/sfepy/postprocess/utils
+   src/sfepy/postprocess/viewer
 
 sfepy.solvers package
 ^^^^^^^^^^^^^^^^^^^^^
@@ -107,15 +107,15 @@ sfepy.solvers package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/solvers/module_sfepy_solvers_eigen
-   src/sfepy/solvers/module_sfepy_solvers_generic
-   src/sfepy/solvers/module_sfepy_solvers_ls
-   src/sfepy/solvers/module_sfepy_solvers_nls
-   src/sfepy/solvers/module_sfepy_solvers_optimize
-   src/sfepy/solvers/module_sfepy_solvers_oseen
-   src/sfepy/solvers/module_sfepy_solvers_setup
-   src/sfepy/solvers/module_sfepy_solvers_solvers
-   src/sfepy/solvers/module_sfepy_solvers_ts
+   src/sfepy/solvers/eigen
+   src/sfepy/solvers/generic
+   src/sfepy/solvers/ls
+   src/sfepy/solvers/nls
+   src/sfepy/solvers/optimize
+   src/sfepy/solvers/oseen
+   src/sfepy/solvers/setup
+   src/sfepy/solvers/solvers
+   src/sfepy/solvers/ts
 
 sfepy.terms package
 ^^^^^^^^^^^^^^^^^^^
@@ -126,19 +126,19 @@ documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/terms/module_sfepy_terms_termsAdjointNavierStokes
-   src/sfepy/terms/module_sfepy_terms_termsBasic
-   src/sfepy/terms/module_sfepy_terms_termsBiot
-   src/sfepy/terms/module_sfepy_terms_termsElectric
-   src/sfepy/terms/module_sfepy_terms_termsLaplace
-   src/sfepy/terms/module_sfepy_terms_termsLinElasticity
-   src/sfepy/terms/module_sfepy_terms_termsMass
-   src/sfepy/terms/module_sfepy_terms_termsNavierStokes
-   src/sfepy/terms/module_sfepy_terms_termsPiezo
-   src/sfepy/terms/module_sfepy_terms_termsPoint
-   src/sfepy/terms/module_sfepy_terms_termsSurface
-   src/sfepy/terms/module_sfepy_terms_termsVolume
-   src/sfepy/terms/module_sfepy_terms_terms_fibres
-   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_base
-   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_tl
-   src/sfepy/terms/module_sfepy_terms_terms_hyperelastic_ul
+   src/sfepy/terms/termsAdjointNavierStokes
+   src/sfepy/terms/termsBasic
+   src/sfepy/terms/termsBiot
+   src/sfepy/terms/termsElectric
+   src/sfepy/terms/termsLaplace
+   src/sfepy/terms/termsLinElasticity
+   src/sfepy/terms/termsMass
+   src/sfepy/terms/termsNavierStokes
+   src/sfepy/terms/termsPiezo
+   src/sfepy/terms/termsPoint
+   src/sfepy/terms/termsSurface
+   src/sfepy/terms/termsVolume
+   src/sfepy/terms/fibres
+   src/sfepy/terms/base
+   src/sfepy/terms/tl
+   src/sfepy/terms/ul
