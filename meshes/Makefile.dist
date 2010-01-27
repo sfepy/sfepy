@@ -1,0 +1,12 @@
+CDIR = $(notdir $(CURDIR))
+DESTDIR = $(DISTDIR)/$(CDIR)
+
+DISTFILES := Makefile.dist
+
+RELDISTFILES := $(DISTFILES) $(wildcard */)
+
+dist:
+	mkdir $(DESTDIR)
+	cp -a --parents $(DISTFILES) $(DESTDIR)
+
+reldist: dist
