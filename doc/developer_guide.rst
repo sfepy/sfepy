@@ -142,3 +142,17 @@ documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
    src/sfepy/terms/base
    src/sfepy/terms/tl
    src/sfepy/terms/ul
+
+sfepy.terms package - full inheritance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The terms documentation is incomplete here as yet. Please refer to the terms
+documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
+
+This section is the same as the previous, but shows the full inheritance for the
+terms classes.
+
+.. toctree::
+   :maxdepth: 2
+   
+   src/sfepy/terms/termsLinElasticity_full
