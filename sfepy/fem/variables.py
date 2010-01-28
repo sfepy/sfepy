@@ -1517,6 +1517,7 @@ class Variable( Struct ):
 
             # Treat dofs with periodic BC.
             umeq, indx = nm.unique1d(meq, return_index=True)
+            indx.sort()
             op_lc = op_lc[indx]
 
             n_transformed_dof.append( n_dof )
