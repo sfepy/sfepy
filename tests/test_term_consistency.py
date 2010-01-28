@@ -1,5 +1,7 @@
 # c: 19.05.2008, r: 19.05.2008
-filename_mesh = '../database/phono/mesh_circ21.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 is3d = False
 

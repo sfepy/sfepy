@@ -1,7 +1,8 @@
 # 30.05.2007, c
 # last revision: 25.02.2008
+from sfepy import top_dir
 
-filename_mesh = '../database/tests/plane.mesh'
+filename_mesh = top_dir + '/meshes/2d/square_unit_tri.mesh'
 
 material_1 = {
     'name' : 'coef',

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import numpy as nm
 
-filename_mesh = '../database/simple.vtk'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 
 options = {
     'nls' : 'newton',

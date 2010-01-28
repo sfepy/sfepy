@@ -1,4 +1,6 @@
-filename_mesh = '../database/acoustics.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/2d/special/two_rectangles.mesh'
 
 v_n = 1.0 # m/s
 w = 1000.0

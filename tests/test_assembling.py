@@ -1,7 +1,8 @@
 # c: 14.04.2008, r: 14.04.2008
+from sfepy import top_dir
 from sfepy.fem.periodic import *
 
-filename_mesh = '../database/tests/plane.mesh'
+filename_mesh = top_dir + '/meshes/2d/square_unit_tri.mesh'
 
 material_2 = {
     'name' : 'm',

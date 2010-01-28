@@ -1,5 +1,7 @@
 # c: 20.03.2008, r: 20.03.2008
-filename_mesh = '../database/maillage.txt'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/various_formats/comsol_tri.txt'
 
 material_1 = {
     'name' : 'm',

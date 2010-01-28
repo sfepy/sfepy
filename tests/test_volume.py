@@ -1,6 +1,7 @@
 # 28.05.2009, c
+from sfepy import top_dir
 
-filename_mesh = '../database/pul_klikatak.mesh'
+filename_mesh = top_dir + '/meshes/3d/elbow.mesh'
 
 fields = {
     'scalar' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),

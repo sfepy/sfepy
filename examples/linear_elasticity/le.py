@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # last revision: 25.02.2008
-filename_mesh = '../database/simple.vtk'
+from sfepy import top_dir
 
+filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 ###############################
 #
 # This file models a cylinder that is fixed at both ends. The input to the
@@ -121,11 +122,13 @@ fe = {
 
 ##
 # Functions.
-from valec import *
-
-##
-# Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( filename_mesh ) )[0]
-cinc = eval( 'cinc_' + trunk )
-del op, trunk
+import utils
+
+cinc_name = 'cinc_' + op.splitext(op.basename(filename_mesh))[0]
+cinc = getattr(utils, cinc_name)
+
+functions = {
+    'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
+    'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
+}

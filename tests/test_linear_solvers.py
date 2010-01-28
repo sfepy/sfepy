@@ -1,4 +1,6 @@
-filename_mesh = '../database/phono/cube_cylinder.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/special/cube_cylinder.mesh'
 
 material_2 = {
     'name' : 'coef',

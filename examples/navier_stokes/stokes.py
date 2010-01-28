@@ -1,10 +1,9 @@
 # 24.05.2007, c
 # last revision: 25.02.2008
+from sfepy import top_dir
 from sfepy.fem.periodic import *
 
-#fileName_mesh = '../database/micro/perf_symm638t.mesh'
-filename_mesh = '../database/micro/perf_symm944t.mesh'
-#fileName_mesh = '../database/micro/perf_symm748t.mesh'
+filename_mesh = top_dir + '/meshes/2d/special/channels_symm944t.mesh'
 
 if filename_mesh.find( 'symm' ):
     region_1 = {

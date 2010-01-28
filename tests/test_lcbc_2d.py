@@ -1,5 +1,7 @@
 # 03.10.2007, c
-filename_mesh = '../database/phono/mesh_circ21.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

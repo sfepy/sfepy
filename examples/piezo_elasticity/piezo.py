@@ -1,13 +1,14 @@
 # c: 21.09.2008
 import os
 import numpy as nm
+
+from sfepy import top_dir
 from sfepy.fem import MeshIO
 
-#filename_mesh = '../database/phono/cube_sphere.mesh'
-#filename_mesh = '../database/phono/cube_cylinder.mesh'
-filename_mesh = '../database/phono/mesh_circ21.mesh'
-#filename_mesh = '../database/phono/mesh_circ21_small.mesh'
-
+filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
+## filename_mesh = top_dir + '/meshes/2d/special/circle_in_square_small.mesh'
+## filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
+## filename_mesh = top_dir + '/meshes/2d/special/cube_cylinder.mesh'
 
 omega = 1
 omega_squared = omega**2

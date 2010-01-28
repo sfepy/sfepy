@@ -1,6 +1,9 @@
 # c: 14.04.2008, r: 14.04.2008
 import numpy as nm
-filename_mesh = '../database/tests/plane.mesh'
+
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/2d/square_unit_tri.mesh'
 
 def get_pars(ts, coors, mode=None, region=None, ig=None, extra_arg=None):
     if mode == 'special':

@@ -1,6 +1,8 @@
 ##
 # c: 05.02.2008
-filename_mesh = '../database/simple.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 
 t0 = 0.0
 t1 = 0.1

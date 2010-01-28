@@ -1,5 +1,7 @@
-#filename_mesh = '../database/kostka_big.mesh'
-filename_mesh = '../database/kostka_medium.mesh'
+from sfepy import top_dir
+
+#filename_mesh = top_dir + '/meshes/3d/cube_big_tetra.mesh'
+filename_mesh = top_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 ############# Laplace.
 
@@ -9,7 +11,7 @@ material_1 = {
     'values' : {'val' : 1.0},
 }
 
-if filename_mesh == '../database/kostka_medium.mesh':
+if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 0',
@@ -31,7 +33,7 @@ if filename_mesh == '../database/kostka_medium.mesh':
         'kind' : 'ls.scipy_direct',
     }
 
-elif filename_mesh == '../database/kostka_big.mesh':
+elif filename_mesh.find('cube_big_tetra.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 6',

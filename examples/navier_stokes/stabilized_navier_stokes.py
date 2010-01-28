@@ -6,7 +6,9 @@ discretisations of the generalised Oseen problem. Number 2007-02 in Preprint
 Series of Institut fuer Numerische und Angewandte Mathematik,
 Georg-August-Universitaet Goettingen, 2007.
 """
-filename_mesh = '../database/pul_klikatak2.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/elbow2.mesh'
 
 options = {
     'solution' : 'steady',
@@ -116,17 +118,13 @@ solver_2 = {
 
 ##
 # Functions.
-from valec import *
-
-##
-# Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( filename_mesh ) )[0]
-cinc = eval( 'cinc_' + trunk )
-del op, trunk
+import utils
+
+cinc_name = 'cinc_' + op.splitext(op.basename(filename_mesh))[0]
+cinc = getattr(utils, cinc_name)
 
 functions = {
     'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
     'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
 }
-

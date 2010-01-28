@@ -1,4 +1,4 @@
-input_name = '../input/biot.py'
+input_name = '../examples/biot/biot.py'
 output_name = 'test_biot.vtk'
 
 from testsBasic import TestInput

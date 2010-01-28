@@ -1,13 +1,19 @@
-filename_meshes = ['../database/simple.mesh',
-                   '../database/simple.vtk',
-                   '../database/t.1.node',
-                   '../database/maillage.txt',
-                   '../database/tests/abaqus_hex.inp',
-                   '../database/tests/abaqus_tet.inp',
-                   '../database/tests/hex4.mesh3d',
-                   '../database/tests/tetra8.mesh3d',
-		   '../database/tests/cube.bdf']
-same = [(0, 1)]
+from sfepy import top_dir
+
+filename_meshes = ['/meshes/3d/cylinder.mesh',
+                   '/meshes/3d/cylinder.vtk',
+                   '/meshes/various_formats/small2d.mesh',
+                   '/meshes/various_formats/small2d.vtk',
+                   '/meshes/various_formats/octahedron.node',
+                   '/meshes/various_formats/comsol_tri.txt',
+                   '/meshes/various_formats/abaqus_hex.inp',
+                   '/meshes/various_formats/abaqus_tet.inp',
+                   '/meshes/various_formats/hex4.mesh3d',
+                   '/meshes/various_formats/tetra8.mesh3d',
+		   '/meshes/various_formats/cube.bdf']
+filename_meshes = [top_dir + name for name in filename_meshes]
+
+same = [(0, 1), (2, 3)]
 
 import os.path as op
 from sfepy.base.testing import TestCommon, assert_
@@ -119,11 +125,10 @@ class Test( TestCommon ):
     # c: 03.07.2008, r: 03.07.2008
     def test_read_dimension( self ):
         from sfepy.fem import MeshIO
-        meshes = {'../database/tests/small2d.mesh' : 2,
-                  '../database/tests/small2d.vtk' : 2,
-                  '../database/tests/small3d.mesh' : 3,
-                  '../database/simple.mesh' : 3,
-                  '../database/simple.vtk' : 3}
+
+        meshes = {top_dir + '/meshes/various_formats/small2d.mesh' : 2,
+                  top_dir + '/meshes/various_formats/small2d.vtk' : 2,
+                  top_dir + '/meshes/various_formats/small3d.mesh' : 3}
 
         ok = True
         conf_dir = op.dirname(__file__)

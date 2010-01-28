@@ -1,4 +1,4 @@
-input_name = '../input/active_fibres.py'
+input_name = '../examples/large_deformation/active_fibres.py'
 output_name_trunk = 'test_active_fibres'
 
 from testsBasic import TestInputEvolutionary

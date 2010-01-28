@@ -3,7 +3,9 @@
 \Delta p_2 = g_2 in Omega_2
 p_1 = p_2 + c on \Gamma_{12}
 """
-filename_mesh = '../database/acoustics.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/2d/special/two_rectangles.mesh'
 
 options = {
     'nls' : 'newton',

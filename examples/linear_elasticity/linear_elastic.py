@@ -15,7 +15,9 @@
 
 #! Mesh
 #! ----
-filename_mesh = '../database/simple.vtk'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 #! Regions
 #! -------
 #! Whole domain 'Omega', left and right ends.

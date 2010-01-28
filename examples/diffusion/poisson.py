@@ -7,7 +7,9 @@
 
 #! Mesh
 #! ----
-filename_mesh = '../database/simple.mesh'
+from sfepy import top_dir
+
+filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 
 #! Materials
 #! ---------

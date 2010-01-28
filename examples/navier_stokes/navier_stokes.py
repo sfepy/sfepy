@@ -1,7 +1,8 @@
 # 26.02.2007, c
 # last revision: 25.02.2008
+from sfepy import top_dir
 
-filename_mesh = '../database/pul_klikatak2.mesh'
+filename_mesh = top_dir + '/meshes/3d/elbow2.mesh'
 
 options = {
     'nls' : 'newton',
@@ -181,16 +182,11 @@ def verify_incompressibility( out, problem, state, extend = False ):
 
 ##
 # Functions.
-from valec import *
-
-##
-# Make 'cinc' refer to a cinc_* function according to the mesh file name.
 import os.path as op
-trunk = op.splitext( op.basename( filename_mesh ) )[0]
-print trunk
-cinc = eval( 'cinc_' + trunk )
-print cinc
-del op, trunk
+import utils
+
+cinc_name = 'cinc_' + op.splitext(op.basename(filename_mesh))[0]
+cinc = getattr(utils, cinc_name)
 
 functions = {
     'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),

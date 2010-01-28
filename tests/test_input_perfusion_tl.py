@@ -1,4 +1,4 @@
-input_name = '../input/perfusion_tl.py'
+input_name = '../examples/large_deformation/perfusion_tl.py'
 output_name_trunk = 'test_perfusion_tl'
 
 from testsBasic import TestInputEvolutionary
