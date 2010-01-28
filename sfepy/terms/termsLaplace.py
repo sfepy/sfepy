@@ -126,6 +126,34 @@ class PermeabilityRTerm( Term ):
             status = self.function( out, mat, vg, ap.econn, chunk )
             yield out, chunk, status
 
+class DiffusionRTerm( PermeabilityRTerm ):
+    r"""
+    :Description:
+    Diffusion-like term with material parameter :math:`K_{j}` (to
+    use on the right-hand side).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} K_{j} \nabla_j q
+    """
+    name = 'dw_diffusion_r'
+    arg_types = ('material', 'virtual')
+    geometry = [(Volume, 'virtual')]
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual = self.get_args( **kwargs )
+        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+
+        if diff_var is None:
+            shape = (chunk_size, 1, n_ep, 1)
+        else:
+            raise StopIteration
+
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, mat, vg, ap.econn, chunk )
+            yield out, chunk, status
+
 class DiffusionVelocityTerm( Term ):
     r"""
     :Description:
