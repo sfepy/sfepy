@@ -15,9 +15,11 @@ eq_rs = {
             + dw_lin_elastic.i2.%s( matrix.D, v1, Pi ) = 0""",
 }
 
-def define_input( filename, region, dim, geom ):
+def define_input( filename, region, bbox, geom ):
     """Uses materials, fe of master file, merges regions."""
     filename_mesh = filename
+
+    dim = bbox.shape[1]
     
     options = {
         'coefs' : 'coefs',
@@ -80,12 +82,7 @@ def define_input( filename, region, dim, geom ):
         'Pi2' : ('parameter field', 'displacement_matrix', 'u1'),
     }
 
-    if filename.find( 'mesh_circ21' ) >= 0:
-        sizes = (0.499, 0.499)
-    elif filename.find( 'cube_cylinder_centered' ) >= 0:
-        sizes = (0.499, 0.499, 0.499)
-
-    regions = define_box_regions( dim, sizes )
+    regions = define_box_regions(dim, bbox[0], bbox[1])
 
     ebcs = {
         'fixed_u' : ('Corners', {'u1.all' : 0.0}),

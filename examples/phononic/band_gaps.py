@@ -1,14 +1,16 @@
 # c: 25.09.2007, r: 16.12.2008
 import os
 import numpy as nm
+
+from sfepy import top_dir
 from sfepy.fem import MeshIO
 import coef_conf_elastic as cconf
 from parametric import vary_incident_wave_dir
 
-#filename_mesh = '../../database/phono/cube_sphere.mesh'
-#filename_mesh = '../../database/phono/cube_cylinder.mesh'
-filename_mesh = '../../database/phono/mesh_circ21.mesh'
-#filename_mesh = '../../database/phono/mesh_circ21_small.mesh'
+filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
+## filename_mesh = top_dir + '/meshes/2d/special/circle_in_square_small.mesh'
+## filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
+## filename_mesh = top_dir + '/meshes/3d/special/cube_cylinder.mesh'
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 
@@ -16,8 +18,9 @@ homogeneous = False
 fig_suffix = '.pdf'
 
 conf_dir = os.path.dirname(__file__)
-dim = MeshIO.any_from_filename(filename_mesh,
-                               prefix_dir=conf_dir).read_dimension()
+io = MeshIO.any_from_filename(filename_mesh,
+                              prefix_dir=conf_dir)
+bbox, dim = io.read_bounding_box(ret_dim = True)
 geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 if homogeneous:
@@ -61,9 +64,9 @@ options = {
     'dispersion' : 'simple',
     'incident_wave_dir' : [1.0, 1.0],
     'dispersion_conf' : {
-         'input' : cconf.define_input( filename_mesh,
-                                       matrix_region, dim, geom ),
-         'module' : cconf,
+        'input' : cconf.define_input(filename_mesh,
+                                     matrix_region, bbox, geom),
+        'module' : cconf,
     },
 
     'homogeneous' : homogeneous,

@@ -1,6 +1,8 @@
 # c: 14.12.2007, r: 03.11.2008
 import os
 import numpy as nm
+
+from sfepy import top_dir
 from sfepy.base.base import output, pause, debug, Struct
 from sfepy.fem import MeshIO
 from gen_mesh import gen_concentric
@@ -10,8 +12,8 @@ generate_2D = False
 fig_suffix = '.pdf'
 
 if is_3D:
-    filename_mesh = '../../database/phono/cube_sphere.mesh'
-##     filename_mesh = '../../database/phono/cube_cylinder.mesh'
+    filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
+
     out_groups = [1]
     in_groups = [2]
     diameters_g = None
@@ -19,9 +21,8 @@ if is_3D:
     default_y3_diameter = 0.1
     diameters_g = nm.linspace( 0.075, 0.26, 11 )
 else:
-    #filename_mesh = '../../database/phono/mesh_circ21.mesh'
-    #filename_mesh = '../../database/phono/mesh_circ21_small.mesh'
-    filename_mesh = '../../database/phono/mesh_circ.vtk'
+    # This mesh is generated, see below.
+    filename_mesh = top_dir + '/meshes/2d/special//circle_in_square.vtk'
 
     out_groups = [1]
     if generate_2D:
@@ -29,13 +30,13 @@ else:
                                                  1., 0.2, 0.08, 0.1, 0.6, 7 )
         diameters_g = nm.array( diameters_g[:-2] ) + 0.001
     else:
-        os.system("cp database/phono/mesh_circ.geo tmp/mesh.geo")
+        os.system("cp %s tmp/mesh.geo" % filename_mesh.replace('.vtk', '.geo'))
         in_groups = [2]
         diameters_g = None
     tepss_g = nm.logspace( -3, -1, 11 )
     default_y3_diameter = 0.25
     os.system("gmsh -2 tmp/mesh.geo -format mesh")
-    os.system("script/mesh_to_vtk.py tmp/mesh.mesh database/phono/mesh_circ.vtk")
+    os.system("script/mesh_to_vtk.py tmp/mesh.mesh %s" % filename_mesh)
     #pause()
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
@@ -77,7 +78,7 @@ options = {
     'volume' : 'd_volume.i1.%s( uy )',
     'eig_problem' : 'simple',
 
-    'fig_name' : 'band_gaps_sym_025' + fig_suffix,
+    'fig_name' : os.path.join(cwd, 'output', 'band_gaps_sym_025' + fig_suffix),
     'plot_options' : {
         'show' : True, # Show figure.
         'legend' : False, # Show legend.
