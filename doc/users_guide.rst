@@ -348,16 +348,21 @@ conditions, the domains of terms and materials etc.
     * Node-wise: ``+n``, ``-n``, ``*n`` (union, set difference, intersection)
     * Element-wise: ``+e``, ``-e``, ``*e`` (union, set difference, intersection)
 
+  * Additional specification:
+
+    * 'forbid' : 'group <integer>' - forbid elements of listed groups
+    * 'canCells' : <boolean> - determines whether a region can have cells (volume in 3D) 
+
 * Region definition syntax
 
   * Long syntax: a region is defined by the following Python dictionary
     (denote optional keys)::
 
         region_<number> = {
-            'name' : <string>,
-            'select' : <selection string>,
-            ['forbid'] : group <integer>[, <integer>]* # forbid elements of listed groups
-            ['can_cells'] : <boolean> # determines whether a region can have cells (volume in 3D)
+            'name' : <name>,
+            'select' : <selection>,
+            ['forbid'] : group <integer>[, <integer>],
+            ['can_cells'] : <boolean>,
         }
 
     * Example definitions::
@@ -381,7 +386,13 @@ conditions, the domains of terms and materials etc.
                 'forbid' : 'group 1 2'
             }
 
-  * Example definitions, short syntax::
+  * Short syntax::
+
+    	  regions = {
+	      <name> : ( <selection>, {[<additional spec.>]} )
+	  }
+
+    * Example definitions::
 
         regions = {
             'Left' : ('nodes in (x < -0.499)', {}),
@@ -394,11 +405,27 @@ conditions, the domains of terms and materials etc.
                          {'forbid' : 'group 1 2'}),
         }
 
-Fields, Variables and Integrals
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fields
+^^^^^^
 
-* Fields correspond to FE spaces
+Fields correspond to FE spaces
 
+* Long syntax::
+    
+	field_<number> = {
+       	    'name' : <name>,
+            'dim' : (<dofs>,1),
+            'domain' : <region_name>,
+            'bases' : {<subregion_name> : <bases>}
+	    ['dtype' : <dtype>]
+    	}
+
+
+  where
+    * <dofs> - number of DOFs per node
+    * <dtype> - 'real' or 'complex' values
+    * <bases> - approximation on subdomains, e.g.  {'Omega_1' : 3_4_P1, 'Omega_2' : '3_8_Q1'} 
+	
   * Example: P1 elements in 2D on a whole domain Omega::
 
         field_1 = {
@@ -407,9 +434,39 @@ Fields, Variables and Integrals
             'domain' : 'Omega',
             'bases' : {'Omega' : '2_3_P1'}
         }
+	
+* Short syntax::
 
-* Variables use the FE approximation given by the specified field:
-          
+     	  fields = {
+	      <name> : ((<dofs>,1), <dtype>, <region_name>, {<subregion_name> : <bases>})
+	  }
+
+* The following elements/approximations can be used::
+
+  * 2D: 2_3_P1, 2_3_P2, 2_4_Q0, 2_4_Q1
+  * 3D: 3_4_P0, 3_4_P1, 3_4_P2, 3_8_Q0, 3_8_Q1, 3_8_Q2 
+
+P0, P1, Q0, ... indicate approximation order. For actual available elements look at 'sfepy/eldesc' directory. 
+
+Variables
+^^^^^^^^^
+
+Variables use the FE approximation given by the specified field:
+
+* Long syntax::
+
+     	variables_<number> = {
+            'name' : <name>,
+	    'kind' : <kind>,
+	    'field' : <field_name>,
+	    ['order' : <order>,]
+	    ['dual' : <variable_name>,]
+    	}
+
+  where
+    * <kind> - 'unknown field', 'test field' or 'parameter field'
+    * <order> -  primary variable - order in the global vector of unknowns
+
   * Example, long syntax::
 
         variable_1 = {
@@ -426,6 +483,17 @@ Fields, Variables and Integrals
             'dual' : 't',
         }
 
+* Short syntax::
+
+    	variables = {
+            <name> : (<kind>, <field_name>, <spec.>)
+        }
+
+  where
+
+  * <spec> - in case of: primary variable - order in the global vector of unknowns, dual variable - name of primary variable
+
+
   * Example, short syntax::
 
         variables = {
@@ -433,28 +501,54 @@ Fields, Variables and Integrals
             's' : ('test field', 'temperature', 't'),
         }
 
-* Integrals (quadrature rules)::
+Integrals
+^^^^^^^^^
 
-    integral_1 = {
-        'name' : 'i1',
-        'kind' : 'v',
-        'quadrature' : 'gauss_o2_d2', # <quadrature name>
-    }
+Define the integral type and quadrature rule. 
 
-    import numpy as nm
-    N = 2
-    integral_2 = {
-        'name' : 'i2',
-        'kind' : 'v',
-        'quadrature' : 'custom', # <quadrature name>
-        'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
-                        nm.linspace( 1e-10, 0.5, N )),
-        'weights' : [1./N] * N,
-    }
+* Long syntax::
+    
+        integral_<number> = {
+            'name' : <name>,
+	    'kind' : <kind>,
+            'quadrature' : <rule>
+    	}
 
-  * Available quadratures are in sfe/fem/quadratures.py - it is still
-    preliminary and incomplete
-  * Naming convention: ``<family>_o<order>_d<dimension>``
+  where
+
+    * <kind> - volume 'v' or surface 's' integral
+    * <rule> - <family>_o<order>_d<dimension>, available quadratures are in sfe/fem/quadratures.py - it is still preliminary and incomplete
+
+  * Example, long syntax::
+
+    	integral_1 = {
+            'name' : 'i1',
+            'kind' : 'v',
+            'quadrature' : 'gauss_o2_d2', # <quadrature name>
+    	}
+
+    	import numpy as nm
+    	N = 2
+    	integral_2 = {
+            'name' : 'i2',
+       	    'kind' : 'v',
+       	    'quadrature' : 'custom', # <quadrature name>
+       	    'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
+            	            nm.linspace( 1e-10, 0.5, N )),
+  	    'weights' : [1./N] * N,
+    	}
+
+* Short syntax::
+  
+        integrals = {
+            <name> : (<kind>, <rule>)
+        }
+
+  * Example, short syntax::
+   
+        integrals = {
+            'i1' : ('v', 'gauss_o2_d3'),
+    	}
 
 Boundary conditions
 ^^^^^^^^^^^^^^^^^^^
@@ -462,7 +556,7 @@ Boundary conditions
 * Dirichlet (essential) boundary conditions, long syntax::
 
     ebc_<number> = {
-        'name' : <string>,
+        'name' : <name>,
         'region' : <region_name>,
         'dofs' : {<dof_specification> : <value>[,
                   <dof_specification> : <value>, ...]}
@@ -479,7 +573,7 @@ Boundary conditions
 * Dirichlet (essential) boundary conditions, short syntax::
 
     ebcs = {
-        'name' : (<region_name>, {<dof_specification> : <value>[,
+        <name> : (<region_name>, {<dof_specification> : <value>[,
                                   <dof_specification> : <value>, ...]},...)
     }
 
@@ -500,7 +594,7 @@ care must be used for the boundary dofs.
 * Long syntax::
 
     ic_<number> = {
-        'name' : <string>,
+        'name' : <name>,
         'region' : <region_name>,
         'dofs' : {<dof_specification> : <value>[,
                   <dof_specification> : <value>, ...]}
@@ -517,7 +611,7 @@ care must be used for the boundary dofs.
 * Short syntax::
 
     ics = {
-        'name' : (<region_name>, {<dof_specification> : <value>[,
+        <name> : (<region_name>, {<dof_specification> : <value>[,
                                   <dof_specification> : <value>, ...]},...)
     }
 
@@ -536,7 +630,7 @@ traction or volume forces). Depending on a particular term, the parameters can
 be constants, functions defined over FE mesh nodes, functions defined in the
 elements, etc.
 
-* Example::
+* Example, long syntax::
 
     material_10 = {
         'name' : 'm',
@@ -561,6 +655,13 @@ elements, etc.
             out['val'] = <array of shape (coor.shape[0], n_row, n_col)>
         else: # special mode
             out['val0'] = True
+
+* Example, short syntax::
+
+    material = {
+        'm' : ('SomeRegion', {'val' : [0.0, -1.0, 0.0]}),
+    }
+
 
 Equations and Terms
 ^^^^^^^^^^^^^^^^^^^
@@ -594,14 +695,14 @@ In SfePy, a non-linear solver has to be specified even when solving a linear
 problem. The linear problem is/should be then solved in one iteration of the
 nonlinear solver.
 
-* Linear solver::
+* Linear solver, long syntax::
 
     solver_0 = {
         'name' : 'ls',
         'kind' : 'ls.umfpack',
     }
 
-* Nonlinear solver::
+* Nonlinear solver, long syntax::
 
     solver_1 = {
         'name' : 'newton',
@@ -620,6 +721,16 @@ nonlinear solver.
         'delta'     : 1e-6,
         'is_plot'    : False,
         'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
+    }
+
+
+* Solvers, short syntax::
+
+    solvers = {
+        'ls' : ('ls.scipy_direct', {}),
+    	'newton' : ('nls.newton',
+                    {'i_max'   : 1,
+                     'problem' : 'nonlinear')
     }
 
 * Solver selection::
