@@ -1,7 +1,7 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc MANIFEST
+DISTFILES := $(wildcard *.py) Makefile.dist
 
 RELDISTFILES := $(DISTFILES)
 

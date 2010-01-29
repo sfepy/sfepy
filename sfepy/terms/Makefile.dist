@@ -4,10 +4,10 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES := $(wildcard *.py) Makefile.dist Makefile.inc
+DISTFILES := $(wildcard *.py) Makefile.dist
 DISTDIRS := extmods
 
-RELDISTFILES := $(filter-out termsAdjointNavierStokes.py, $(DISTFILES))
+RELDISTFILES := $(DISTFILES)
 
 dist:
 #	echo $(DESTDIR)

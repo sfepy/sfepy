@@ -4,7 +4,7 @@
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES = *.tex *.fig *.latex Makefile.dist Makefile.inc
+DISTFILES = *.tex *.fig *.latex Makefile.dist
 RELDISTFILES = $(DISTFILES)
 DISTDIRS := figures
 
