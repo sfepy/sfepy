@@ -9,14 +9,14 @@ options = {
 }
 
 variables = {
-    'u' : ('unknown field', '3_displacement', 0, 'previous'),
-    'v' : ('test field', '3_displacement', 'u'),
+    'u' : ('unknown field', 'displacement', 0, 'previous'),
+    'v' : ('test field', 'displacement', 'u'),
 }
 
 # Put density to 'solid'.
 materials['solid'][1].update({'rho' : 1000.0})
 
-# Moving right face.
+# Moving the PerturbedSurface region.
 ebcs['PerturbedSurface'][1].update({'u.0' : 'ebc_sin'})
 
 def ebc_sin(ts, coors, bc=None):

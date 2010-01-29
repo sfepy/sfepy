@@ -5,8 +5,13 @@
 #$ \centerline{Example input file, \today}
 
 #! This file models a cylinder that is fixed at one end while the
-#! second end has a specified displacement of 0.02 in the x direction
-#! (this boundary condition is named PerturbedSurface).
+#! second end has a specified displacement of 0.01 in the x direction
+#! (this boundary condition is named Displaced). There is also a specified
+#! displacement of 0.005 in the z direction for points in
+#! the region labeled SomewhereTop. This boundary condition is named
+#! PerturbedSurface.  The region SomewhereTop is specified as those nodes for
+#! which
+#!              (z > 0.017) & (x > 0.03) & (x <  0.07).
 #! The output is the displacement for each node, saved by default to
 #! simple_out.vtk. The material is linear elastic and its properties are
 #! specified as Lame parameters (see
@@ -25,6 +30,7 @@ regions = {
     'Omega' : ('all', {}),
     'Left' : ('nodes in (x < 0.001)', {}),
     'Right' : ('nodes in (x > 0.099)', {}),
+    'SomewhereTop' : ('nodes in (z > 0.017) & (x > 0.03) & (x < 0.07)', {}),
 }
 #! Materials
 #! ---------
@@ -39,7 +45,7 @@ materials = {
 #! A displacement field (three DOFs/node) will be computed on a region
 #! called 'Omega' using P1 (four-node tetrahedral) finite elements.
 fields = {
-    '3_displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
 }
 #! Integrals
 #! ---------
@@ -54,8 +60,8 @@ integrals = {
 #! of freedom) and the seccond field for the corresponding test variable of
 #! the weak formulation.
 variables = {
-    'u' : ('unknown field', '3_displacement', 0),
-    'v' : ('test field', '3_displacement', 'u'),
+    'u' : ('unknown field', 'displacement', 0),
+    'v' : ('test field', 'displacement', 'u'),
 }
 #! Boundary Conditions
 #! -------------------
@@ -63,7 +69,8 @@ variables = {
 #! the 'right' end has non-zero displacements only in the x direction.
 ebcs = {
     'Fixed' : ('Left', {'u.all' : 0.0}),
-    'PerturbedSurface' : ('Right', {'u.0' : 0.02, 'u.1' : 0.0, 'u.2' : 0.0}),
+    'Displaced' : ('Right', {'u.0' : 0.01, 'u.[1,2]' : 0.0}),
+    'PerturbedSurface' : ('SomewhereTop', {'u.2' : 0.005}),
 }
 #! Equations
 #! ---------
