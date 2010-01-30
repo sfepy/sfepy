@@ -86,7 +86,7 @@ class ProcessPlotter( Struct ):
 
         elif command[0] == 'save':
             self.fig.savefig(command[1])
-
+            self.pipe.send(True) # Acknowledge save.
 
     def terminate( self ):
         if self.ii:
@@ -305,6 +305,7 @@ class Log( Struct ):
                 
         if save_figure and (self.plot_pipe is not None):
             self.plot_pipe.send( ['save', save_figure] )
+            ok = self.plot_pipe.recv()
 
         if finished:
             self.terminate()
