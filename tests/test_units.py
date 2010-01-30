@@ -88,3 +88,34 @@ class Test(TestCommon):
 
         return True
 
+    def test_consistent_sets(self):
+        from sfepy.mechanics.units import get_consistent_unit_set
+
+        u_sets = {
+            ('m', 's', 'kg', 'C') : {'force' : '1.0 Newton',
+                                     'stress' : '1.0 Pa',
+                                     'energy' : '1.0 J',
+                                     'thermal_expandability' : '1.0 Pa / C'},
+            ('mm', 's', 'kg', 'C') : {'force' : '1.0 mNewton',
+                                      'stress' : '1.0 kPa',
+                                      'energy' : '1.0 muJ',
+                                     'thermal_expandability' : '1.0 kPa / C'},
+            ('mm', 's', 'g', 'C') : {'force' : '1.0 muNewton',
+                                     'stress' : '1.0 Pa',
+                                     'energy' : '1.0 nJ',
+                                     'thermal_expandability' : '1.0 Pa / C'},
+        }
+
+        ok = True
+        for unit_set, true_derived_units in u_sets.iteritems():
+            self.report('units:', unit_set)
+            derived_units = get_consistent_unit_set(*unit_set)
+
+            for key, true_val in true_derived_units.iteritems():
+                val = derived_units[key]
+                _ok = true_val == val
+                self.report('%s: %s == %s -> %s' % (key, true_val, val, _ok))
+
+                ok = ok and _ok
+
+        return ok

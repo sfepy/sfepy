@@ -213,22 +213,22 @@ class Quantity(Struct):
             
         return '%s %s%s' % (mul, prefix, self.unit_name)
 
-
-def get_consistent_unit_set(quantity_name,
-                            length=None, time=None,
-                            mass=None, temperature=None):
-
+def get_consistent_unit_set(length=None, time=None, mass=None, temperature=None):
+    """Given a set of basic units, return a consistent set of derived units for
+    quantities listed in the units_of_quantities dictionary."""
     defaults = default_units_of_basic_quantities
     length = get_default(length, defaults['length'])
     time = get_default(time, defaults['time'])
     mass = get_default(mass, defaults['mass'])
     temperature = get_default(temperature, defaults['temperature'])
 
-    print length, time, mass, temperature
+    unit_set = [Unit(length), Unit(time), Unit(mass), Unit(temperature)]
 
-    print BasicUnit(length)
-    print BasicUnit(time)
-    print BasicUnit(mass)
-    print BasicUnit(temperature)
+    derived_units = {}
 
-    print Quantity('(kg * cm) / s**2')
+    for quantity_name in units_of_quantities.keys():
+        quantity = Quantity(quantity_name, unit_set)
+
+        derived_units[quantity_name] = quantity()
+
+    return derived_units
