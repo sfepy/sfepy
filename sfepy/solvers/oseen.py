@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.fem.functions import Function
+from sfepy.base.log import Log
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test
 
@@ -146,6 +147,8 @@ class Oseen( NonlinearSolver ):
             'macheps'   : 1e-16,
             'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
             'is_plot'    : False,
+            'log'        : {'text' : 'oseen_log.txt',
+                            'plot' : 'oseen_log.png'},
         }
         """
         get = conf.get_default_attr
@@ -176,14 +179,31 @@ class Oseen( NonlinearSolver ):
         lin_red = get( 'lin_red', 1.0 )
         is_plot = get( 'is_plot', False )
 
+        log = get( 'log', {'text' : None, 'plot' : None} )
+        log = Struct(name='log_conf', **log)
+        is_any_log = (log.text is not None) or (log.plot is not None)
+
         common = NonlinearSolver.process_conf( conf )
         return Struct( **locals() ) + common
     process_conf = staticmethod( process_conf )
 
-    ##
-    # 10.10.2007, c
     def __init__( self, conf, **kwargs ):
         NonlinearSolver.__init__( self, conf, **kwargs )
+
+        conf = self.conf
+        if conf.is_any_log:
+            self.log = Log([[r'$||r||$'], ['iteration'],
+                            [r'$\gamma$', r'$\max(\delta)$', r'$\max(\tau)$']],
+                           xlabels=['', '', 'all iterations'],
+                           ylabels=[r'$||r||$', 'iteration', 'stabilization'],
+                           yscales=['log', 'linear', 'log'],
+                           is_plot=conf.log.plot is not None,
+                           log_filename=conf.log.text,
+                           formats=[['%.8e'], ['%d'],
+                                    ['%.8e', '%.8e', '%.8e']])
+
+        else:
+            self.log = None
 
     def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
                   lin_solver = None, status = None, problem = None ):
@@ -223,6 +243,9 @@ class Oseen( NonlinearSolver ):
         vec_x = vec_x0.copy()
         vec_x_prev = vec_x0.copy()
         vec_dx = None
+
+        if self.log is not None:
+            self.log.plot_vlines(color='r', linewidth=1.0)
 
         err0 = -1.0
         it = 0
@@ -275,6 +298,10 @@ class Oseen( NonlinearSolver ):
             else: # Failure.
                 output( 'rezidual computation failed for iter %d!' % it )
                 raise RuntimeError( 'giving up...' )
+
+            if self.log is not None:
+                self.log(err, it,
+                         max_pars['gamma'], max_pars['delta'], max_pars['tau'])
 
             condition = conv_test( conf, it, err, err0 )
             if condition >= 0:
@@ -398,4 +425,8 @@ class Oseen( NonlinearSolver ):
             status['err_ns'] = err_ns
             status['condition'] = condition
 
+        if conf.log.plot is not None:
+            if self.log is not None:
+                self.log(save_figure=conf.log.plot)
+                
         return vec_x
