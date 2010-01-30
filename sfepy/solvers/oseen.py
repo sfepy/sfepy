@@ -1,5 +1,4 @@
 from sfepy.base.base import *
-from sfepy.fem.functions import Function
 from sfepy.base.log import Log
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test
@@ -17,107 +16,6 @@ def scale_matrix( mtx, indx, factor ):
     ptr1 = mtx.indptr[indx.stop]
     mtx.data[ptr0:ptr1] *= factor
 
-_dimater_modes = {'edge' : 0, 'volume' : 1, 'max' : 2}
-
-##
-# c: 01.08.2007, r: 15.01.2008
-def create_stabil_data( problem, fluid_name, stabil_name, eq_name1, eq_name2 ):
-
-    ns = {}
-    term = problem.equations[eq_name1].terms['dw_lin_convect']
-
-    ns['fluid'] = 'fluid'
-    ns['v'] = term.get_virtual_name()
-    ns['b'] = term.get_parameter_names()[0]
-    ns['u'] = term.get_state_names()[0]
-    ns['omega'] = term.region.name
-    ns['i2'] = term.integral_name
-    
-    term = problem.equations[eq_name1].terms['dw_stokes']
-    ns['p'] = term.get_state_names()[0]
-    ns['i1'] = term.integral_name
-
-    term = problem.equations[eq_name2].terms['dw_stokes']
-    ns['q'] = term.get_virtual_name()
-
-    ii = {}
-    ii['u'] = problem.variables.get_indx( ns['u'] )
-    ii['us'] = problem.variables.get_indx( ns['u'], stripped = True )
-    ii['ps'] = problem.variables.get_indx( ns['p'], stripped = True )
-
-    stabil_mat = problem.materials[stabil_name]
-    stabil = dict_to_struct(stabil_mat.datas['special'], flag=(1,))
-
-    mat = problem.materials[ns['fluid']]
-    viscosity = mat.function()['viscosity']
-
-    c_friedrichs = problem.domain.get_diameter()
-    sigma = 1e-12 # 1 / dt.
-
-#    print c_friedrichs
-
-    def mat_fun( ts, coor, mode=None, region=None, ig=None,
-                 b_norm = 1.0, fixed_data = None ):
-        if mode == 'special': return
-
-        if fixed_data is not None:
-            out = {}
-            for key, val in fixed_data[ig].iteritems():
-                out[key] = nm.tile(val, (coor.shape[0], 1, 1))
-            return out
-
-        print '|b|_max (mat_fun):', b_norm
-        gamma = viscosity + b_norm * c_friedrichs
-
-        data = {}
-        if stabil.gamma is None:
-            data['gamma'] = stabil.gamma_mul * gamma
-        else:
-            data['gamma'] = nm.asarray( stabil.gamma_mul * stabil.gamma,
-                                        dtype = nm.float64 )
-        data['gamma'] = nm.tile(data['gamma'], (coor.shape[0], 1, 1))
-
-        if stabil.delta is None:
-            term = problem.equations[eq_name1].terms['dw_lin_convect']
-            for ig in term.iter_groups():
-                # This sets term.ig - for 1 group only!!!
-                break
-            var = problem.variables[ns['u']]
-            ap, vg = var.get_approximation( term.get_current_group(), 'Volume' )
-            delta = 1.0
-            mode = _dimater_modes[stabil.diameter_mode]
-            cells = region.get_cells( ig )
-            diameters2 = problem.domain.get_element_diameters( ig, cells, vg,
-                                                             mode )
-            val1 = min( 1.0, 1.0 / sigma )
-            val2 = sigma * c_friedrichs**2
-            val3 = (b_norm**2) * min( (c_friedrichs**2) / viscosity, 1.0 / sigma )
-#            print val1, gamma, val2, val3
-            delta = stabil.delta_mul * val1 * diameters2 / (gamma + val2 + val3)
-
-            n_qp = coor.shape[0] / diameters2.shape[0]
-            data['diameters2'] = nm.repeat(diameters2, n_qp)
-            data['diameters2'].shape = data['diameters2'].shape + (1, 1)
-
-            data['delta'] = nm.repeat(delta, n_qp)
-            data['delta'].shape = data['delta'].shape + (1, 1)
-        else:
-            val = stabil.delta_mul * stabil.delta
-            data['delta'] = nm.tile(data['delta'], (coor.shape[0], 1, 1))
-        
-        if stabil.tau is None:
-            data['tau'] = stabil.tau_red * data['delta']
-        else:
-            data['tau'] = nm.asarray( stabil.tau_mul * stabil.tau,
-                                      dtype = nm.float64 )
-            data['tau'] = nm.tile(data['tau'], (coor.shape[0], 1, 1))
-
-        return data
-
-    stabil_mat.set_function(Function('stabil', mat_fun))
-
-    return stabil_mat, ns, ii
-
 ##
 # 11.10.2007, c
 class Oseen( NonlinearSolver ):
@@ -133,18 +31,16 @@ class Oseen( NonlinearSolver ):
             'name' : 'oseen',
             'kind' : 'nls.oseen',
 
+            'needs_problem_instance' : True,
+            'stabilization_hook' : 'create_stabil_mat',
+
             'adimensionalize' : False,
             'check_navier_stokes_rezidual' : False,
-
-            'fluid_mat_name' : 'fluid',
-            'stabil_mat_name' : 'stabil',
-            'lin_convect_eq_name' : 'balance',
-            'div_eq_name' : 'incompressibility',
 
             'i_max'      : 10,
             'eps_a'      : 1e-8,
             'eps_r'      : 1.0,
-            'macheps'   : 1e-16,
+            'macheps'    : 1e-16,
             'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
             'is_plot'    : False,
             'log'        : {'text' : 'oseen_log.txt',
@@ -159,14 +55,8 @@ class Oseen( NonlinearSolver ):
             msg = 'set solver option "needs_problem_instance" to True!'
             raise ValueError(msg)
         
-        fluid_mat_name = get( 'fluid_mat_name', None,
-                              'missing "fluid_mat_name" in options!' )
-        stabil_mat_name = get( 'stabil_mat_name', None,
-                               'missing "stabil_mat_name" in options!' )
-        lin_convect_eq_name = get( 'lin_convect_eq_name', None,
-                                   'missing "lin_convect_eq_name" in options!' )
-        div_eq_name = get( 'div_eq_name', None,
-                           'missing "div_eq_name" in options!' )
+        stabilization_hook = get('stabilization_hook', None,
+                                 'missing "stabilization_hook" in options!')
 
         # With defaults.
         adimensionalize = get( 'adimensionalize', False )
@@ -222,17 +112,11 @@ class Oseen( NonlinearSolver ):
             msg = 'set solver option "needs_problem_instance" to True!'
             raise ValueError(msg)
 
-        if hasattr( conf, 'fixed_data' ):
-            fixed_data = conf.fixed_data
-        else:
-            fixed_data = None
-
         time_stats = {}
 
-        stabil, ns, ii = create_stabil_data( problem, conf.fluid_mat_name,
-                                           conf.stabil_mat_name,
-                                           conf.lin_convect_eq_name,
-                                           conf.div_eq_name )
+        hook = problem.functions[conf.stabilization_hook]
+        stabil, ns, ii = hook(problem)
+
         update_var = problem.variables.non_state_data_from_state
         make_full_vec = problem.variables.make_full_vec
 
@@ -262,8 +146,7 @@ class Oseen( NonlinearSolver ):
             u_norm = nla.norm( vec_u, nm.inf )
             print '|u|_max: %.2e' % u_norm
 
-            stabil.function.set_extra_args(b_norm = b_norm,
-                                           fixed_data = fixed_data)
+            stabil.function.set_extra_args(b_norm = b_norm)
             stabil.time_update(None, problem.domain, problem.equations,
                                problem.variables)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
@@ -367,12 +250,6 @@ class Oseen( NonlinearSolver ):
             it += 1
 
         if conf.check_navier_stokes_rezidual:
-    ##         update_var( b_name, vec_x_prev, u_name )
-    ## #        update_var( b_name, vec_x, u_name )
-    ##         vec_rns1, ret = residual( vec_x, context )
-    ##         err_ns = nla.norm( vec_rns1 )
-    ##         print '"Oseen" rezidual: %.8e' % err_ns
-
 
             t1 = '+ dw_div_grad.%s.%s( %s.viscosity, %s, %s )' \
                  % (ns['i2'], ns['omega'], ns['fluid'], ns['v'], ns['u'])

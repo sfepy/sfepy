@@ -94,19 +94,15 @@ solver_1 = {
     'kind' : 'nls.oseen',
 
     'needs_problem_instance' : True,
+    'stabilization_hook' : 'create_stabil_mat',
 
     'adimensionalize' : False,
     'check_navier_stokes_rezidual' : False,
 
-    'fluid_mat_name' : 'fluid',
-    'stabil_mat_name' : 'stabil',
-    'lin_convect_eq_name' : 'balance',
-    'div_eq_name' : 'incompressibility',
-
     'i_max'      : 10,
     'eps_a'      : 1e-8,
     'eps_r'      : 1.0,
-    'macheps'   : 1e-16,
+    'macheps'    : 1e-16,
     'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
     'is_plot'    : False,
 
@@ -123,12 +119,101 @@ solver_2 = {
 ##
 # Functions.
 import os.path as op
+import numpy as nm
+
 import utils
 
 cinc_name = 'cinc_' + op.splitext(op.basename(filename_mesh))[0]
 cinc = getattr(utils, cinc_name)
 
+def create_stabil_mat(problem):
+    """Using the stabilization material stub make it the true material."""
+    from sfepy.base.base import dict_to_struct, debug
+    from sfepy.fem.functions import Function
+
+    # Identity map...
+    ns = {'p' : 'p', 'q' : 'q',
+          'u' : 'u', 'b' : 'b', 'v' : 'v',
+          'fluid' : 'fluid', 'omega' : 'omega', 'i1' : 'i1', 'i2' : 'i2'}
+
+    # Indices to the state vector.
+    ii = {}
+    ii['u'] = problem.variables.get_indx(ns['u'])
+    ii['us'] = problem.variables.get_indx(ns['u'], stripped=True)
+    ii['ps'] = problem.variables.get_indx(ns['p'], stripped=True)
+
+    stabil_mat = problem.materials['stabil']
+    stabil = dict_to_struct(stabil_mat.datas['special'], flag=(1,))
+
+    # The viscosity.
+    fluid_mat = problem.materials[ns['fluid']]
+    viscosity = fluid_mat.function()['viscosity']
+
+    # The Friedrich's constant.
+    c_friedrichs = problem.domain.get_diameter()
+    sigma = 1e-12 # 1 / dt.
+
+    # Element diameter modes.
+    diameter_modes = {'edge' : 0, 'volume' : 1, 'max' : 2}
+
+    def mat_fun(ts, coor, mode=None, region=None, ig=None,
+                b_norm=1.0):
+        if mode != 'qp': return
+
+        print '|b|_max (mat_fun):', b_norm
+        gamma = viscosity + b_norm * c_friedrichs
+
+        data = {}
+        if stabil.gamma is None:
+            data['gamma'] = stabil.gamma_mul * gamma
+        else:
+            data['gamma'] = nm.asarray( stabil.gamma_mul * stabil.gamma,
+                                        dtype = nm.float64 )
+        data['gamma'] = nm.tile(data['gamma'], (coor.shape[0], 1, 1))
+
+        if stabil.delta is None:
+            term = problem.equations['balance'].terms['dw_lin_convect']
+            for ig in term.iter_groups():
+                # This sets term.ig - for 1 group only!!!
+                break
+            var = problem.variables[ns['u']]
+            ap, vg = var.get_approximation( term.get_current_group(), 'Volume' )
+            delta = 1.0
+            mode = diameter_modes[stabil.diameter_mode]
+            cells = region.get_cells( ig )
+            diameters2 = problem.domain.get_element_diameters( ig, cells, vg,
+                                                             mode )
+            val1 = min( 1.0, 1.0 / sigma )
+            val2 = sigma * c_friedrichs**2
+            val3 = (b_norm**2) * min( (c_friedrichs**2) / viscosity, 1.0 / sigma )
+#            print val1, gamma, val2, val3
+            delta = stabil.delta_mul * val1 * diameters2 / (gamma + val2 + val3)
+
+            n_qp = coor.shape[0] / diameters2.shape[0]
+            data['diameters2'] = nm.repeat(diameters2, n_qp)
+            data['diameters2'].shape = data['diameters2'].shape + (1, 1)
+
+            data['delta'] = nm.repeat(delta, n_qp)
+            data['delta'].shape = data['delta'].shape + (1, 1)
+        else:
+            val = stabil.delta_mul * stabil.delta
+            data['delta'] = nm.tile(data['delta'], (coor.shape[0], 1, 1))
+        
+        if stabil.tau is None:
+            data['tau'] = stabil.tau_red * data['delta']
+        else:
+            data['tau'] = nm.asarray( stabil.tau_mul * stabil.tau,
+                                      dtype = nm.float64 )
+            data['tau'] = nm.tile(data['tau'], (coor.shape[0], 1, 1))
+
+        return data
+
+    stabil_mat.set_function(Function('stabil', mat_fun))
+
+    return stabil_mat, ns, ii
+
 functions = {
     'cinc0' : (lambda coors, domain=None: cinc(coors, 0),),
     'cinc1' : (lambda coors, domain=None: cinc(coors, 1),),
+    'create_stabil_mat' : (create_stabil_mat,),
 }
