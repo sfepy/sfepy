@@ -133,9 +133,9 @@ class Newton( NonlinearSolver ):
 
         conf = self.conf
         if conf.is_any_log:
-            self.log = Log([['||r||'], ['iteration']],
-                           xlabels=['all iterations', 'all iterations'],
-                           ylabels=['||r||', 'iteration'],
+            self.log = Log([[r'$||r||$'], ['iteration']],
+                           xlabels=['', 'all iterations'],
+                           ylabels=[r'$||r||$', 'iteration'],
                            yscales=['log', 'linear'],
                            is_plot=conf.log.plot is not None,
                            log_filename=conf.log.text,
