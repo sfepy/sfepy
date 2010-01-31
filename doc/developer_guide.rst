@@ -63,9 +63,9 @@ sfepy.homogenization package
    :maxdepth: 2
 
    src/sfepy/homogenization/coefficients
-   src/sfepy/homogenization/base
-   src/sfepy/homogenization/elastic
-   src/sfepy/homogenization/piezo
+   src/sfepy/homogenization/coefs_base
+   src/sfepy/homogenization/coefs_elastic
+   src/sfepy/homogenization/coefs_piezo
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/pfdpm
    src/sfepy/homogenization/phono
@@ -95,9 +95,9 @@ sfepy.postprocess package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/postprocess/manager
+   src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/sources
-   src/sfepy/postprocess/history
+   src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
    src/sfepy/postprocess/viewer
 
@@ -138,10 +138,10 @@ documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
    src/sfepy/terms/termsPoint
    src/sfepy/terms/termsSurface
    src/sfepy/terms/termsVolume
-   src/sfepy/terms/fibres
-   src/sfepy/terms/base
-   src/sfepy/terms/tl
-   src/sfepy/terms/ul
+   src/sfepy/terms/terms_fibres
+   src/sfepy/terms/terms_hyperelastic_base
+   src/sfepy/terms/terms_hyperelastic_tl
+   src/sfepy/terms/terms_hyperelastic_ul
 
 sfepy.terms package - full inheritance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
