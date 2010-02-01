@@ -36,6 +36,32 @@ if sys.version[:5] < '2.4.0':
 def debug():
     pdb.set_trace()
 
+def mark_time(times, msg=None):
+    """
+    Time measurement utility.
+
+    Measures times of execution between subsequent calls using
+    time.clock(). The time is printed if the msg argument is not None.
+
+    Examples
+    --------
+
+    >>> times = []
+    >>> mark_time(times)
+    ... do something
+    >>> mark_time(times, 'elapsed')
+    elapsed 0.1
+    ... do something else
+    >>> mark_time(times, 'elapsed again')
+    elapsed again 0.05
+    >>> times
+    [0.10000000000000001, 0.050000000000000003]
+    """
+    tt = time.clock()
+    times.append(tt)
+    if (msg is not None) and (len(times) > 1):
+        print msg, times[-1] - times[-2]
+
 def import_file( filename ):
     """Import a file as a module. The module is explicitly reloaded to
     prevent undesirable interactions."""
