@@ -12,8 +12,8 @@ sfepy.applications package
    :maxdepth: 2
 
    src/sfepy/applications/application
-   src/sfepy/applications/app
-   src/sfepy/applications/level
+   src/sfepy/applications/simple_app
+   src/sfepy/applications/top_level
 
 sfepy.base package
 ^^^^^^^^^^^^^^^^^^
@@ -30,7 +30,6 @@ sfepy.base package
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
    src/sfepy/base/reader
-   src/sfepy/base/setup
    src/sfepy/base/tasks
    src/sfepy/base/testing
 
@@ -66,12 +65,21 @@ sfepy.homogenization package
    src/sfepy/homogenization/coefs_base
    src/sfepy/homogenization/coefs_elastic
    src/sfepy/homogenization/coefs_piezo
+   src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/pfdpm
    src/sfepy/homogenization/phono
    src/sfepy/homogenization/prolong
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
+
+sfepy.interactive package
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/interactive
 
 sfepy.mechanics package
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -80,6 +88,7 @@ sfepy.mechanics package
    :maxdepth: 2
 
    src/sfepy/mechanics/matcoefs
+   src/sfepy/mechanics/units
 
 sfepy.physics package
 ^^^^^^^^^^^^^^^^^^^^^
@@ -113,7 +122,6 @@ sfepy.solvers package
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
-   src/sfepy/solvers/setup
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
 
