@@ -7,7 +7,11 @@ class Test(TestCommon):
         return Test(conf=conf, options=options)
 
     def test_units(self):
-        from sfepy.mechanics.units import Unit, Quantity
+        from sfepy.mechanics.units import Unit, Quantity, sm
+
+        if sm is None:
+            self.report('cannot import sympy, skipping')
+            return True
 
         units = ['m', 's', 'kg', 'C']
         self.report('units:', units)
@@ -89,7 +93,11 @@ class Test(TestCommon):
         return True
 
     def test_consistent_sets(self):
-        from sfepy.mechanics.units import get_consistent_unit_set
+        from sfepy.mechanics.units import get_consistent_unit_set, sm
+
+        if sm is None:
+            self.report('cannot import sympy, skipping')
+            return True
 
         u_sets = {
             ('m', 's', 'kg', 'C') : {'force' : '1.0 Newton',

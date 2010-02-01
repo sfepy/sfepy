@@ -1,7 +1,10 @@
 """
 Some utilities for work with units of physical quantities.
 """
-import sympy as sm
+try:
+    import sympy as sm
+except ImportError:
+    sm = None
 
 from sfepy.base.base import *
 
