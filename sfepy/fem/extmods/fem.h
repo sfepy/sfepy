@@ -43,6 +43,12 @@ int32 raw_graph( int32 *p_nRow, int32 **p_prow,
 		int32 *nElR, int32 *nEPR, int32 **connR,
 		int32 *nElC, int32 *nEPC, int32 **connC );
 
+int32 eval_lagrange_simplex( FMField *out, FMField *coors,
+			     int32 *nodes, int32 nNod, int32 nCol,
+			     int32 order, int32 diff,
+			     FMField *mtx_i, FMField *bc,
+			     int32 suppress_errors, float64 eps );
+
 int32 inverse_element_mapping( FMField *out,
 			       FMField *coors, FMField *e_coors,
 			       FMField *ref_coors, int32 i_max, float64 eps );

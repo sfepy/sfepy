@@ -609,6 +609,120 @@ float64 baseTriLz( float64 x, float64 y, float64 z, int32 which )
   return( lagrange1( x, i ) * lagrange1( y, j ) * lag1x[k] );
 }
 
+int32 eval_lagrange_simplex( FMField *out, FMField *coors,
+			     int32 *nodes, int32 nNod, int32 nCol,
+			     int32 order, int32 diff,
+			     FMField *mtx_i, FMField *bc,
+			     int32 suppress_errors, float64 eps )
+{
+  int32 ii, ir, ic, i1, i2, in, error, n_i1, n_ii;
+  int32 n_coor, n_v, dim, ret = RET_OK;
+  float64 val, dval, dd, vv;
+  float64 *pout;
+
+  n_coor = coors->nRow;
+  n_v = bc->nRow;
+  dim = n_v - 1;
+
+  // Barycentric coordinates.
+  for (ic = 0; ic < n_coor; ic++) {
+    for (ir = 0; ir < n_v; ir++) {
+      val = 0.0;
+      for (ii = 0; ii < dim; ii++) {
+	val += mtx_i->val[n_v*ir+ii] * coors->val[dim*ic+ii];
+      }
+      val += mtx_i->val[n_v*ir+dim];
+
+      error = 0;
+      if (val < 0.0) {
+	if (val > (-eps)) {
+	  val = 0.0;
+	} else {
+	  error = 1;
+	}
+      }
+      if (val > 1.0) {
+	if (val < (1.0 + eps)) {
+	  val = 1.0;
+	} else {
+	  error = 1;
+	}
+      }
+
+      if ((error) && (!(suppress_errors))) {
+	errput("quadrature point outside of element!\n");
+      }
+
+      bc->val[n_coor*ir+ic] = val;
+
+      ERR_CheckGo( ret );
+    }
+  } 
+
+  if (!diff) {
+    fmf_fillC(out, 1.0);
+    
+    for (ic = 0; ic < n_coor; ic++) {
+      pout = FMF_PtrLevel(out, ic);
+
+      for (in = 0; in < nNod; in++) {
+
+	for (i1 = 0; i1 < n_v; i1++) {
+	  n_i1 = nodes[nCol*in+i1];
+
+	  for (i2 = 0; i2 < n_i1; i2++) {
+	    pout[in] *= (order * bc->val[n_coor*i1+ic] - i2) / (i2 + 1.0);
+	  }
+	}
+      }
+    }
+  } else {
+    fmf_fillC(out, 0.0);
+
+    for (ic = 0; ic < n_coor; ic++) {
+      pout = FMF_PtrLevel(out, ic);
+
+      for (in = 0; in < nNod; in++) {
+
+	for (ii = 0; ii < n_v; ii++) {
+	  vv = 1.0;
+	  
+	  for (i1 = 0; i1 < n_v; i1++) {
+	    if (i1 == ii) continue;
+	    n_i1 = nodes[nCol*in+i1];
+	    
+	    for (i2 = 0; i2 < n_i1; i2++) {
+	      vv *= (order * bc->val[n_coor*i1+ic] - i2) / (i2 + 1.0);
+	    }
+
+	  }
+
+	  dval = 0.0;
+	  n_ii = nodes[nCol*in+ii];
+	  for (i1 = 0; i1 < n_ii; i1++) {
+	    dd = 1.0;
+
+	    for (i2 = 0; i2 < n_ii; i2++) {
+	      if (i1 == i2) continue;
+
+	      dd *= (order * bc->val[n_coor*ii+ic] - i2) / (i2 + 1.0);
+	    }
+	    dval += dd * order / (i1 + 1.0);
+	  }
+
+	  for (ir = 0; ir < dim; ir++) {
+	    pout[nNod*ir+in] += vv * dval * mtx_i->val[n_v*ii+ir];
+	  }
+	}
+      }
+    }
+  }
+
+ end_label:
+ 
+  return( ret );
+}
+
 void rezidual( FMField *res, FMField *xi, FMField *coors, FMField *e_coors,
 	       FMField *bf, FMField *xint )
 {

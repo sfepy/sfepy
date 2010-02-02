@@ -27,6 +27,8 @@
   (FMField *mtx_i),
   (FMField *mtxInEls_i),
   (FMField *out),
+  (FMField *mtx_i),
+  (FMField *bc),
   (FMField *coors),
   (FMField *e_coors),
   (FMField *ref_coors)
@@ -34,7 +36,8 @@
 %apply (int32 *array, int32 n_row, int32 n_col) {
   (int32 *conn, int32 nEl, int32 nEP),
   (int32 *connR, int32 nElR, int32 nEPR),
-  (int32 *connC, int32 nElC, int32 nEPC)
+  (int32 *connC, int32 nElC, int32 nEPC),
+  (int32 *nodes, int32 nNod, int32 nCol)
 };
 %apply (int32 *array, int32 len) {
   (int32 *iels, int32 iels_len),
@@ -125,6 +128,12 @@ int32 raw_graph( int32 *p_nRow, int32 **p_prow,
 		 int32 nRow, int32 nCol, int32 nGr,
 		 int32 *nElR, int32 *nEPR, int32 **connR,
 		 int32 *nElC, int32 *nEPC, int32 **connC );
+
+int32 eval_lagrange_simplex( FMField *out, FMField *coors,
+			     int32 *nodes, int32 nNod, int32 nCol,
+			     int32 order, int32 diff,
+			     FMField *mtx_i, FMField *bc,
+			     int32 suppress_errors, float64 eps );
 
 int32 inverse_element_mapping( FMField *out,
 			       FMField *coors, FMField *e_coors,
