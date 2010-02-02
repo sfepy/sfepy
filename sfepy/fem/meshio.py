@@ -1571,6 +1571,13 @@ class BDFMeshIO( MeshIO ):
             return dim
 
     def read( self, mesh, **kwargs ):
+        def mfloat( s ):
+            if len( s ) > 3:
+                if s[-3] == '-':
+                    return float( s[:-3]+'e'+s[-3:] )
+        
+            return float( s )
+            
         import string
         fd = open( self.filename, 'r' )
 
@@ -1591,12 +1598,15 @@ class BDFMeshIO( MeshIO ):
                 raise
 
             if (len( line ) == 0): break
-            if len( line ) == 1: continue
+            if len( line ) < 4: continue
             if line[0] == '$': continue
 
             row = line.strip().split()
-
-            if row[0] == 'GRID*':
+            if row[0] == 'GRID':
+                cs = line.strip()[-24:]
+                aux = [ cs[0:8], cs[8:16], cs[16:24] ]
+                nod.append( [mfloat(ii) for ii in aux] );
+            elif row[0] == 'GRID*':
                 aux = row[1:4];
                 cmd = 'GRIDX';
             elif row[0] == 'CHEXA':
