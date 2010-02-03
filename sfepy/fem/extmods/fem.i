@@ -29,6 +29,7 @@
   (FMField *out),
   (FMField *mtx_i),
   (FMField *bc),
+  (FMField *base1d),
   (FMField *coors),
   (FMField *e_coors),
   (FMField *ref_coors)
@@ -134,6 +135,12 @@ int32 eval_lagrange_simplex( FMField *out, FMField *coors,
 			     int32 order, int32 diff,
 			     FMField *mtx_i, FMField *bc,
 			     int32 suppress_errors, float64 eps );
+
+int32 eval_lagrange_tensor_product( FMField *out, FMField *coors,
+				    int32 *nodes, int32 nNod, int32 nCol,
+				    int32 order, int32 diff,
+				    FMField *mtx_i, FMField *bc, FMField *base1d,
+				    int32 suppress_errors, float64 eps );
 
 int32 inverse_element_mapping( FMField *out,
 			       FMField *coors, FMField *e_coors,

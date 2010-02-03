@@ -616,20 +616,21 @@ int32 eval_lagrange_simplex( FMField *out, FMField *coors,
 			     int32 suppress_errors, float64 eps )
 {
   int32 ii, ir, ic, i1, i2, in, error, n_i1, n_ii;
-  int32 n_coor, n_v, dim, ret = RET_OK;
+  int32 n_coor, n_v, dim, cdim, ret = RET_OK;
   float64 val, dval, dd, vv;
   float64 *pout;
 
   n_coor = coors->nRow;
   n_v = bc->nRow;
   dim = n_v - 1;
+  cdim = coors->nCol;
 
   // Barycentric coordinates.
   for (ic = 0; ic < n_coor; ic++) {
     for (ir = 0; ir < n_v; ir++) {
       val = 0.0;
       for (ii = 0; ii < dim; ii++) {
-	val += mtx_i->val[n_v*ir+ii] * coors->val[dim*ic+ii];
+	val += mtx_i->val[n_v*ir+ii] * coors->val[cdim*ic+ii];
       }
       val += mtx_i->val[n_v*ir+dim];
 
@@ -669,7 +670,7 @@ int32 eval_lagrange_simplex( FMField *out, FMField *coors,
 
 	for (i1 = 0; i1 < n_v; i1++) {
 	  n_i1 = nodes[nCol*in+i1];
-
+	  /* printf("%d %d \n", in, n_i1); */
 	  for (i2 = 0; i2 < n_i1; i2++) {
 	    pout[in] *= (order * bc->val[n_coor*i1+ic] - i2) / (i2 + 1.0);
 	  }
@@ -722,6 +723,76 @@ int32 eval_lagrange_simplex( FMField *out, FMField *coors,
  
   return( ret );
 }
+
+int32 eval_lagrange_tensor_product( FMField *out, FMField *coors,
+				    int32 *nodes, int32 nNod, int32 nCol,
+				    int32 order, int32 diff,
+				    FMField *mtx_i, FMField *bc, FMField *base1d,
+				    int32 suppress_errors, float64 eps )
+{
+  int32 ii, id, im, ic, nr, nc, dim, ret = RET_OK;
+  int32 *pnodes = 0;
+  FMField c1[1];
+    
+  c1->nAlloc = -1;
+  dim = coors->nCol;
+
+  fmf_fillC( out, 1.0 );
+
+  if (!diff) {
+    for (ii = 0; ii < dim; ii++) {
+      // slice [:,2*ii:2*ii+2]
+      pnodes = nodes + 2 * ii;
+      // slice [:,ii:ii+1]
+      fmf_pretend( c1, 1, 1, coors->nRow, coors->nCol, coors->val + ii );
+
+      eval_lagrange_simplex( base1d, c1, pnodes, nNod, nCol, order, diff,
+			     mtx_i, bc, suppress_errors, eps );
+
+      for (im = 0; im < out->cellSize; im++) {
+	out->val[im] *= base1d->val[im];
+      }
+
+      ERR_CheckGo( ret );
+    }
+
+  } else {
+
+    nr = out->nRow;
+    nc = out->nCol;
+
+    for (ii = 0; ii < dim; ii++) {
+      // slice [:,2*ii:2*ii+2]
+      pnodes = nodes + 2 * ii;
+      // slice [:,ii:ii+1]
+      fmf_pretend( c1, 1, 1, coors->nRow, coors->nCol, coors->val + ii );
+
+      for (id = 0; id < dim; id++) {
+	if (ii == id) {
+	  eval_lagrange_simplex( base1d, c1, pnodes, nNod, nCol, order, diff,
+				 mtx_i, bc, suppress_errors, eps );
+	} else {
+	  eval_lagrange_simplex( base1d, c1, pnodes, nNod, nCol, order, 0,
+				 mtx_i, bc, suppress_errors, eps );
+	}
+
+	// slice [:,id:id+1,:]
+	for (im = 0; im < out->nLev; im++) {
+	  for (ic = 0; ic < nc; ic++) {
+	    out->val[nr*nc*im + nc*id + ic] *= base1d->val[nc*im + ic];
+	  }
+	}
+      }
+
+      ERR_CheckGo( ret );
+    }
+  }
+ 
+ end_label:
+
+  return( ret );
+}
+
 
 void rezidual( FMField *res, FMField *xi, FMField *coors, FMField *e_coors,
 	       FMField *bf, FMField *xint )

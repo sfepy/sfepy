@@ -398,3 +398,66 @@ class LagrangeTensorProductPolySpace(PolySpace):
                           + nodes[:,cr[1::2]] * c_max) / order
 
         return nodes, nts, node_coors
+
+    def _eval_base_debug(self, coors, diff=False,
+                         suppress_errors=False, eps=1e-15):
+        """Python version of eval_base()."""
+        dim = self.geometry.dim
+
+        ev = self.ps1d.eval_base
+        
+        if diff:
+            base = nm.ones((coors.shape[0], dim, self.n_nod), dtype=nm.float64)
+
+            for ii in xrange(dim):
+                self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
+                self.ps1d.n_nod = self.n_nod
+
+                for iv in xrange(dim):
+                    if ii == iv:
+                        base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
+                                                diff=True,
+                                                suppress_errors=suppress_errors,
+                                                eps=eps)
+                
+                    else:
+                        base[:,iv:iv+1,:] *= ev(coors[:,ii:ii+1].copy(),
+                                                diff=False,
+                                                suppress_errors=suppress_errors,
+                                                eps=eps)
+
+        else:
+            base = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
+
+            for ii in xrange(dim):
+                self.ps1d.nodes = self.nodes[:,2*ii:2*ii+2].copy()
+                self.ps1d.n_nod = self.n_nod
+                
+                base *= ev(coors[:,ii:ii+1].copy(),
+                           diff=diff,
+                           suppress_errors=suppress_errors,
+                           eps=eps)
+
+        return base
+
+    def eval_base(self, coors, diff=False,
+                  suppress_errors=False, eps=1e-15):
+        from extmods.fem import eval_lagrange_tensor_product as ev
+        ps1d = self.ps1d
+
+        dim = self.geometry.dim
+        if diff:
+            bdim = dim
+        else:
+            bdim = 1
+
+        base = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
+
+        # Work arrays.
+        bc = nm.zeros((ps1d.geometry.n_vertex, coors.shape[0]), nm.float64)
+        base1d = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
+
+        ev(base, coors, self.nodes, self.order, diff, ps1d.mtx_i, bc, base1d,
+           suppress_errors, eps)
+                
+        return base
