@@ -538,7 +538,7 @@ class VTKMeshIO( MeshIO ):
                         assert_( int( line[1] ) == n_el )
                         mode_status = 1
                 elif mode_status == 1:
-                    if line.strip() == 'SCALARS mat_id float 1':
+                    if line.strip() == 'SCALARS mat_id int 1':
                         mode_status = 2
                 elif mode_status == 2:
                     if line.strip() == 'LOOKUP_TABLE default':
