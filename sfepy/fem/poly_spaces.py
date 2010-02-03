@@ -2,6 +2,7 @@ from sfepy.base.base import *
 from sfepy.base.la import cycle
 
 class LagrangeNodes(Struct):
+    """Helper class for defining nodes of Lagrange elements."""
 
     @staticmethod
     def append_edges(nodes, nts, iseq, nt, edges, order):
@@ -130,6 +131,7 @@ class LagrangeNodes(Struct):
 
                     
 class PolySpace(Struct):
+    """Abstract polynomial space class."""
     _all = None
 
     keys = {
@@ -143,6 +145,11 @@ class PolySpace(Struct):
     @staticmethod
     def any_from_args(name, geometry, order, base='lagrange',
                       force_bubble=False):
+        """
+        Construct a particular polynomial space classes according to the
+        arguments passed in.
+        """
+
         if PolySpace._all is None:
             PolySpace._all = find_subclasses(globals(),
                                                  [PolySpace])
@@ -162,11 +169,32 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(coors, diff=None,
+    def eval_base(coors, diff=False,
                   suppress_errors=False, eps=1e-15):
-        """Implemented in subclasses."""
+        """
+        Evaluate the basis in points given by coordinates. Implemented
+        in subclasses.
+
+        Parameters
+        ----------
+        coors : array_like
+            The coordinates of points where the basis is evaluated.
+        diff : bool
+            If True, return the first derivative.
+        suppress_errors : bool
+            If True, do not report points outside the reference domain.
+        eps : float
+            Accuracy for comparing coordinates.
+
+        Returns
+        -------
+        base : array
+            The basis (shape (n_coor, 1, n_base)) or its derivative (shape
+            (n_coor, dim, n_base)) evaluated in the given points.
+        """
 
 class LagrangeSimplexPolySpace(PolySpace):
+    """Lagrange polynomial space on a simplex domain."""
     name = 'lagrange_simplex'
 
     def __init__(self, name, geometry, order):
@@ -248,6 +276,7 @@ class LagrangeSimplexPolySpace(PolySpace):
 
     def eval_base(self, coors, diff=False,
                   suppress_errors=False, eps=1e-15):
+        """See PolySpace.eval_base()."""
         from extmods.fem import eval_lagrange_simplex
 
         if diff:
@@ -266,6 +295,8 @@ class LagrangeSimplexPolySpace(PolySpace):
         return base
 
 class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
+    """Lagrange polynomial space with forced bubble function on a simplex
+    domain."""
     name = 'lagrange_simplex_bubble'
 
     def __init__(self, name, geometry, order):
@@ -279,8 +310,8 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         shape = [nodes.shape[0] + 1, nodes.shape[1]]
         nodes = nm.resize(nodes, shape)
-        nodes[-1,0] = -1
-        nodes[-1,1:] = 0
+        # Make a 'hypercubic' (cubic in 2D) node.
+        nodes[-1,:] = 1
 
         n_v = self.geometry.n_vertex
         tmp = nm.ones((n_v,), nm.int32)
@@ -289,9 +320,41 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
                                 nm.dot(tmp, self.geometry.coors) / n_v))
 
         self.nodes, self.nts, self.node_coors = nodes, nts, node_coors
+        self.bnode = nodes[-1:,:]
+
         self.n_nod = self.nodes.shape[0]
 
+    def eval_base(self, coors, diff=False,
+                  suppress_errors=False, eps=1e-15):
+        """See PolySpace.eval_base()."""
+        from extmods.fem import eval_lagrange_simplex
+
+        if diff:
+            bdim = self.geometry.dim
+        else:
+            bdim = 1
+        
+        base = nm.empty((coors.shape[0], bdim, self.n_nod - 1), dtype=nm.float64)
+
+        # Work array.
+        bc = nm.zeros((self.geometry.n_vertex, coors.shape[0]), nm.float64)
+
+        eval_lagrange_simplex(base, coors, self.nodes[:-1],
+                              self.order, diff,
+                              self.mtx_i, bc, suppress_errors, eps)
+
+        bubble = nm.empty((coors.shape[0], bdim, 1), dtype=nm.float64)
+        eval_lagrange_simplex(bubble, coors, self.bnode,
+                              int(self.bnode.sum()), diff,
+                              self.mtx_i, bc, suppress_errors, eps)
+
+        base -= bubble / (self.n_nod - 1)
+        base = nm.dstack((base, bubble))
+
+        return base
+
 class LagrangeTensorProductPolySpace(PolySpace):
+    """Lagrange polynomial space on a tensor product domain."""
     name = 'lagrange_tensor_product'
 
     def __init__(self, name, geometry, order):
@@ -442,6 +505,7 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
     def eval_base(self, coors, diff=False,
                   suppress_errors=False, eps=1e-15):
+        """See PolySpace.eval_base()."""
         from extmods.fem import eval_lagrange_tensor_product as ev
         ps1d = self.ps1d
 
