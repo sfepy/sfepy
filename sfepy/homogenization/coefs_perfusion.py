@@ -1,0 +1,77 @@
+from sfepy.base.base import *
+from sfepy.homogenization.coefs_base import VolumeFractions, \
+     CorrMiniApp, CoefN
+
+class CorrRegion( CorrMiniApp ):
+
+    def __init__( self, name, problem, kwargs ):
+        CorrMiniApp.__init__( self, name, problem, kwargs )
+        self.set_default_attr( 'Nreg', len(self.regions.values()[0]) )
+        self.set_default_attr( 'ebcs_list', False )
+
+    def get_variables( self, ir, data ):
+        return iter([])
+        
+    def __call__( self, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+
+        states = nm.zeros( (self.Nreg,), dtype = nm.object )
+
+        for ir in range( self.Nreg ):
+
+            problem.select_variables( self.variables )
+            
+            for name, val in self.get_variables( ir, data ):
+                problem.variables[name].data_from_data( val )
+
+            equations = {}
+        
+            for keye, vale in self.equations.iteritems():
+                for keyr, valr in self.regions.iteritems():
+                    vale = vale.replace( keyr, valr[ir] )
+            
+                equations[keye] = vale    
+
+            problem.set_equations( equations )
+
+            if ( self.ebcs_list ):
+                problem.select_bcs( ebc_names = self.ebcs[ir], epbc_names = self.epbcs )
+            else:
+                problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+            self.init_solvers(problem)
+        
+            state = problem.create_state_vector()
+            problem.apply_ebc( state )
+            state = problem.solve()
+            assert_( problem.variables.has_ebc( state ) )
+            states[ir] = state
+        
+            self.save( state, problem, ir )
+
+        return Struct( name = self.name,
+                       states = states,
+                       di = problem.variables.di )
+
+    def get_save_name_base( self ):
+        return self.save_name + '_%d'
+
+    def save( self, state, problem, ir ):
+        dump_name = self.get_dump_name()
+        if dump_name is not None:
+            dump_name = dump_name % ir
+        CorrMiniApp.save( self, state, problem,
+                          self.get_save_name() % ir,
+                          dump_name )
+
+class CoefRegion( CoefN ):
+
+    def __init__( self, name, problem, kwargs ):
+        CoefN.__init__( self, name, problem, kwargs )
+        self.corr_dim = len(kwargs['regions'].values()[0])
+        
+    def get_variables( self, problem, ir, data ):
+
+        corr = data[self.requires[-1]]
+        yield (self.variables[0], corr.states[ir])
+
