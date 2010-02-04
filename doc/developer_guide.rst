@@ -43,6 +43,11 @@ sfepy.fem package
 
 WARNING: The code in the fem package is undergoing rapid change. It is best to refer directly to the code base until the code stabilizes.
 
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/fem/poly_spaces
+
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
 
