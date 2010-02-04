@@ -169,16 +169,16 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(coors, diff=False,
+    def eval_base(self, coors, diff=False,
                   suppress_errors=False, eps=1e-15):
         """
-        Evaluate the basis in points given by coordinates. Implemented
-        in subclasses.
+        Evaluate the basis in points given by coordinates. The real work is
+        done in _eval_base() implemented in subclasses.
 
         Parameters
         ----------
         coors : array_like
-            The coordinates of points where the basis is evaluated.
+            The coordinates of points where the basis is evaluated. See Notes.
         diff : bool
             If True, return the first derivative.
         suppress_errors : bool
@@ -191,7 +191,35 @@ class PolySpace(Struct):
         base : array
             The basis (shape (n_coor, 1, n_base)) or its derivative (shape
             (n_coor, dim, n_base)) evaluated in the given points.
+
+        Notes
+        -----
+        If coors.ndim == 3, several point sets are assumed, with equal number
+        of points in each of them. This is the case, for example, of the
+        values of the volume base functions on the element facets. The indexing
+        (of bf_b(g)) is then (ifa,iqp,:,n_ep), so that the facet can be set in
+        C using FMF_SetCell.
         """
+        if (coors.ndim == 2):
+            base = self._eval_base(coors, diff=diff,
+                                   suppress_errors=suppress_errors,
+                                   eps=eps)
+
+        else: # Several point sets.
+            if diff:
+                bdim = self.geometry.dim
+            else:
+                bdim = 1
+
+            base = nm.empty((coors.shape[0], coors.shape[1],
+                             bdim, self.n_nod), dtype=nm.float64)
+
+            for ii, _coors in enumerate(coors):
+                base[ii] = self._eval_base(_coors, diff=diff,
+                                           suppress_errors=suppress_errors,
+                                           eps=eps)
+
+        return base
 
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""
@@ -274,8 +302,8 @@ class LagrangeSimplexPolySpace(PolySpace):
 
         return nodes, nts, node_coors
 
-    def eval_base(self, coors, diff=False,
-                  suppress_errors=False, eps=1e-15):
+    def _eval_base(self, coors, diff=False,
+                   suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.fem import eval_lagrange_simplex
 
@@ -324,8 +352,8 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         self.n_nod = self.nodes.shape[0]
 
-    def eval_base(self, coors, diff=False,
-                  suppress_errors=False, eps=1e-15):
+    def _eval_base(self, coors, diff=False,
+                   suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.fem import eval_lagrange_simplex
 
@@ -349,7 +377,7 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
                               self.mtx_i, bc, suppress_errors, eps)
 
         base -= bubble / (self.n_nod - 1)
-        base = nm.dstack((base, bubble))
+        base = nm.ascontiguousarray(nm.dstack((base, bubble)))
 
         return base
 
@@ -503,8 +531,8 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
         return base
 
-    def eval_base(self, coors, diff=False,
-                  suppress_errors=False, eps=1e-15):
+    def _eval_base(self, coors, diff=False,
+                   suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.fem import eval_lagrange_tensor_product as ev
         ps1d = self.ps1d
