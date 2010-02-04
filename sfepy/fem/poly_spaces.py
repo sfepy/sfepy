@@ -15,7 +15,7 @@ class LagrangeNodes(Struct):
                 c2 = ie + 1
                 c1 = order - c2
                 nts[iseq] = [nt, ii]
-                aux = [int(tmp) for tmp in delta * (c1 * n1 + c2 * n2)]
+                aux = [int(round(tmp)) for tmp in delta * (c1 * n1 + c2 * n2)]
                 nodes[iseq,:] = aux
                 iseq += 1
         return iseq
@@ -34,7 +34,7 @@ class LagrangeNodes(Struct):
                     c2 = i2 + 1
                     c1 = order - c3 - c2
                     nts[iseq] = [nt, ii]
-                    aux = [int(tmp) for tmp
+                    aux = [int(round(tmp)) for tmp
                            in delta * (c1 * n1 + c2 * n2 + c3 * n3)]
                     nodes[iseq,:] = aux
                     iseq += 1
@@ -56,7 +56,7 @@ class LagrangeNodes(Struct):
                     c2 = i3 + 1
                     c1 = order - c4 - c3 - c2
                     nts[iseq] = [nt, 0]
-                    aux = [int(tmp) for tmp
+                    aux = [int(round(tmp)) for tmp
                            in delta * (c1 * n1 + c2 * n2 + c3 * n3 + c4 * n4)]
                     nodes[iseq,:] = aux
                     iseq += 1
@@ -72,7 +72,7 @@ class LagrangeNodes(Struct):
                 c2 = ie + 1
                 c1 = ao - c2
                 nts[iseq] = [nt, ii]
-                aux = [int(tmp) for tmp in delta * (c1 * n1 + c2 * n2)]
+                aux = [int(round(tmp)) for tmp in delta * (c1 * n1 + c2 * n2)]
                 nodes[iseq,:] = aux
                 iseq += 1
         return iseq
@@ -92,7 +92,7 @@ class LagrangeNodes(Struct):
                     c2 = ao - c4
                     c1 = ao - c3
                     nts[iseq] = [2, ii]
-                    aux = [int(tmp) for tmp
+                    aux = [int(round(tmp)) for tmp
                            in delta * (c1 * c2 * n1 + c2 * c3 * n2
                                        + c3 * c4 * n3 + c4 * c1 * n4)]
                     nodes[iseq,:] = aux
@@ -120,7 +120,7 @@ class LagrangeNodes(Struct):
                     c2 = ao - c5
                     c1 = ao - c4
                     nts[iseq] = [nt, 0]
-                    aux = [int(tmp) for tmp
+                    aux = [int(round(tmp)) for tmp
                            in delta * (c1 * c2 * c3 * n1 + c4 * c2 * c3 * n2
                                        + c5 * c4 * c3 * n3 + c1 * c3 * c5 * n4
                                        + c1 * c2 * c6 * n5 + c4 * c2 * c6 * n6
@@ -136,7 +136,7 @@ class PolySpace(Struct):
 
     keys = {
         (1, 2) : 'simplex',
-        (3, 4) : 'simplex',
+        (2, 3) : 'simplex',
         (3, 4) : 'simplex',
         (2, 4) : 'tensor_product',
         (3, 8) : 'tensor_product',
