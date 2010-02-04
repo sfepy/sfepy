@@ -227,7 +227,7 @@ def compute_nodal_normals( nodes, region, field ):
         integral = Integral( name = 'i', kind = 's',
                              quad_name = 'custom',
                              mode = 'custom' )
-        integral.vals = ap.interp.nodes[face_type].bar_coors
+        integral.vals = ap.interp.poly_spaces[face_type].node_coors
         # Unit normals -> weights = ones.
         integral.weights = nm.ones( (n_fp,), dtype = nm.float64 )
         integral.setup()
@@ -1911,9 +1911,9 @@ class Variable( Struct ):
                     ecoor = coor[nodes]
     ##                 print ecoor
 
-                    interp = field.aps[ig].interp
-                    ref_coors = interp.nodes['v'].bar_coors
-                    base_fun = interp.base_funs['v'].fun
+                    ps = field.aps[ig].interp.poly_spaces['v']
+                    ref_coors, eval_base = ps.node_coors, ps.eval_base
+
                     tts[2] += time.clock() - tt1
 
                     tt = time.clock()
@@ -1931,8 +1931,7 @@ class Variable( Struct ):
 
                     try:
                         # Verify that we are inside the element.
-                        bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
-                                            suppress_errors=False)
+                        bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
                     except AssertionError:
                         continue
                     break

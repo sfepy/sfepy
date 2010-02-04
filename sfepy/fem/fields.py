@@ -336,11 +336,9 @@ class Field( Struct ):
             econn = ap.econn
 
             ginterp = ap.interp.gel.interp
-            coors = ap.interp.nodes['v'].bar_coors
+            coors = ap.interp.poly_spaces['v'].node_coors
 
-            qp = Struct( vals = coors )
-            bf = fea.eval_bf(qp, ginterp.base_funs['v'],
-                             ginterp.nodes['v'].vals, 0)
+            bf = ginterp.poly_spaces['v'].eval_base(coors)
             bf = bf[:,0,:].copy()
             
             fea.mu.interp_vertex_data(enod_vol_val, econn, vec, group.conn,

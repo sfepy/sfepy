@@ -1,6 +1,5 @@
 from sfepy.base.base import *
-from feGenerators import ap_node_generators, ap_bf_generators
-from baseFunction import BaseFunction
+from poly_spaces import PolySpace
 from quadratures import collect_quadratures
 import extmods.meshutils as mu
 import extmods.geometry as gm
@@ -37,45 +36,6 @@ def _get_i_name( iname, integral, key ):
     return iname
 
 ##
-# 02.08.2005, c
-# 30.09.2005
-# 03.10.2005
-# 07.10.2005
-# 19.12.2005
-# 02.08.2006
-# 11.04.2007
-# 03.05.2007
-# 04.05.2007
-# 24.05.2007
-def eval_bf( qp, base_fun, nodes, derivative ):
-    """bf_b(g) indexing is (ifa,iqp,:,n_ep) -> can use FMF_SetCell"""
-    fun, var_set = base_fun.fun, base_fun.var_set
-    if (qp.vals.ndim == 2):
-        if derivative == 0:
-            val = fun.value( qp.vals, nodes )
-        else:
-            val = fun.value( qp.vals, nodes, var_set )
-
-    else: # Boundary QP.
-        sh = qp.vals.shape[0:2]
-        if derivative == 0:
-            val = nm.zeros( sh + (1, len( nodes )), nm.float64 )
-            for ifa, bqp in enumerate( qp.vals ):
-                val[ifa,:,:,:] = fun.value( bqp, nodes )
-        else:
-            val = nm.zeros( sh + (len( var_set ), len( nodes )), nm.float64 )
-            for ifa, bqp in enumerate( qp.vals ):
-                val[ifa,:,:,:] = fun.value( bqp, nodes, var_set )
-
-
-    if derivative == 0:
-        aux = nm.sum( val, -1 ).ravel()
-        if not nm.alltrue( nm.absolute( aux - 1.0 ) < 1e-14 ):
-            raise ValueError( '%s' % aux )
-
-    return val
-
-##
 # Field approximation.
 # 29.11.2004, c
 # 30.11.2004
@@ -89,16 +49,6 @@ class Interpolant( Struct ):
     def __init__( self ):
         self.setup_done = 0
 
-    ##
-    # 09.03.2005, c
-    # 31.03.2005
-    # 22.06.2005
-    # 19.07.2005
-    # 20.07.2005
-    # 02.08.2005
-    # 18.07.2006
-    # 23.08.2006
-    # 11.04.2007
     def setup( self, gel = None ):
         if (self.setup_done): return
 
@@ -111,61 +61,23 @@ class Interpolant( Struct ):
                 nod['share'] = 1
 
         self.desc = dict_to_struct( self.desc, flag = (1,) )
-        self.nodes, self.base_funs\
-                    = dict_to_struct( self.nodes, self.base_funs,
-                                    flag = (0, 1) )
-        name = self.desc.family
+
+        is_bubble = self.desc.family[-1] == 'B'
         self.i_key_map = i_key_map = invert_dict( self.key_map )
-        # Nodes.
-        for key, nod in self.nodes.iteritems():
-            if nod.mode == 'generate':
-                try:
-                    gen = ap_node_generators[name]
-                except:
-                    print self.desc.family
-                    raise NotImplementedError, name
-                if not key == 'v':
-                    gen = gen[1]
-                else:
-                    gen = gen[0]
-                aux = gen( self.desc.approx_order, i_key_map[key],
-                           nod, self.gel, want_bar_coors = 1 )
-                # ntx := node types, a row = (type, entity (vefb)) index
-                nod.nts, nod.vals, nod.bar_coors = aux
-            else:
-                print 'unknown mode', nod.mode
-                raise NotImplementedError
 
-        # Base functions.
-        for key, bf in self.base_funs.items():
+        poly_spaces = {}
+        for key in self.base_funs.iterkeys():
             gd = self.gel.data[i_key_map[key]]
-            bf.var_set = range( gd.dim )
-            
-            if bf.mode == 'generate':
-                try:
-                    gen = ap_bf_generators[name]
-                except:
-                    print self.desc.family
-                    raise NotImplementedError, name
-                if not key == 'v':
-                    gen = gen[1]
-                else:
-                    gen = gen[0]
-                bfgen = gen( gd.coors, bf, self.nodes[key].vals, bf.var_set )
-                bf.fun = BaseFunction( bfgen, self.nodes[key].vals, bf.var_set )
+            force_bubble = is_bubble and (key == 'v')
 
-            else:
-                print 'unknown mode', bf.mode
-                raise NotImplementedError
+            ps = PolySpace.any_from_args(self.name, gd, self.desc.approx_order,
+                                         base='lagrange',
+                                         force_bubble=force_bubble)
+            poly_spaces[key] = ps
 
+        self.poly_spaces = poly_spaces
 
-##         for key, nod in self.nodes.iteritems():
-##             print key, nod
-##         pause()
-            
         self.setup_done = 1
-
-
 
     ##
     # 02.08.2005, c
@@ -175,33 +87,33 @@ class Interpolant( Struct ):
     # 03.10.2005
     def list_extra_node_types( self, et, ft ):
         gd = self.gel.data['v']
-        nodes = self.nodes['v']
-        max_ao = nm.amax( nm.sum( nodes.vals, 1 ) )
+        ps = self.poly_spaces['v']
+        max_ao = nm.amax( nm.sum( ps.nodes, 1 ) )
 
 ##         print nodes
 ##         print 'sdsd', max_ao
 ##         pause()
 
-        for ii, nt in enumerate( nodes.nts ):
+        for ii, nt in enumerate( ps.nts ):
             if (nt[0] == 1): # Edge node.
                 edge = gd.edges[nt[1]]
-                tpar = float( nodes.vals[ii,edge[1]] )
+                tpar = float( ps.nodes[ii,edge[1]] )
                 key = int( round( tpar / max_ao, 5 ) * 1e5 )
                 if not et.has_key( key ): et[key] = len( et )
 ##                 print ii, nt
 ##                 print tpar
-##                 print nodes.vals[ii], edge
+##                 print ps.nodes[ii], edge
 
             elif (nt[0] == 2): # Face node.
                 face = gd.faces[nt[1]]
-                upar = float( nodes.vals[ii,face[1]] )
-                vpar = float( nodes.vals[ii,face[-1]] )
+                upar = float( ps.nodes[ii,face[1]] )
+                vpar = float( ps.nodes[ii,face[-1]] )
                 key = [int( round( ii / max_ao, 5 ) * 1e5 )
                        for ii in [upar, vpar]]
                 key = tuple( key )
                 if not ft.has_key( key ): ft[key] = len( ft )
 ##                 print upar, vpar
-##                 print nodes.vals[ii], face
+##                 print ps.nodes[ii], face
 
         return (et, ft)
 
@@ -228,7 +140,7 @@ class Interpolant( Struct ):
 
             return objs
 
-        nts = self.nodes['v'].nts
+        nts = self.poly_spaces['v'].nts
 
         node_desc = Struct()
 
@@ -255,8 +167,8 @@ class Interpolant( Struct ):
     # 16.11.2007, c
     def get_n_nodes( self ):
         nn = {}
-        for key, nodes in self.nodes.iteritems():
-            nn[key] = nodes.vals.shape[0]
+        for key, ps in self.poly_spaces.iteritems():
+            nn[key] = ps.nodes.shape[0]
         return nn
 
 ##
@@ -319,13 +231,12 @@ class Approximation( Struct ):
         ##
         # Evaluate geometry interpolation base functions in extra nodes.
         ginterp = self.interp.gel.interp
-        nodes = self.interp.nodes['v']
+        ps = self.interp.poly_spaces['v']
 
-        iex = (nodes.nts[:,0] > 0).nonzero()[0]
-        qp_coors = nodes.bar_coors[iex,:]
+        iex = (ps.nts[:,0] > 0).nonzero()[0]
+        qp_coors = ps.node_coors[iex,:]
 
-        qp = Struct( vals = qp_coors )
-        bf = eval_bf( qp, ginterp.base_funs['v'], ginterp.nodes['v'].vals, 0 )
+        bf = ginterp.poly_spaces['v'].eval_base(qp_coors)
         bf = bf[:,0,:].copy()
 
         ##
@@ -334,7 +245,7 @@ class Approximation( Struct ):
 
         econn = nm.zeros_like( self.econn[:,iex] ).copy()
         for ii in range( 1, 4 ):
-            ix = nm.where( nodes.nts[:,0] == ii )[0]
+            ix = nm.where( ps.nts[:,0] == ii )[0]
             if not len( ix ): continue
             
 ##             print ii, ix, iex[0], ix-iex[0]
@@ -475,16 +386,14 @@ class Approximation( Struct ):
 
         if from_geometry:
             gkey = self.interp.i_key_map[key]
-            base_fun = self.interp.gel.interp.base_funs[gkey]
-            nodes = self.interp.gel.interp.nodes[gkey].vals
+            ps = self.interp.gel.interp.poly_spaces[gkey]
             bf_key = (iname, 'g' + key, derivative)
         else:
-            base_fun = self.interp.base_funs[key]
-            nodes = self.interp.nodes[key].vals
+            ps = self.interp.poly_spaces[key]
             bf_key = (iname, key, derivative)
 
         if not self.bf.has_key( bf_key ):
-            self.bf[bf_key] = eval_bf( qp, base_fun, nodes, derivative )            
+            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative)
 
         if base_only:
             return self.bf[bf_key]
@@ -590,8 +499,7 @@ class Approximation( Struct ):
         self.qp_coors[bqpkey] = Struct( name = 'BQP_%s' % bkey,
                                      vals = vals, weights = weights )
 ##         print self.qp_coors[bqpkey]
-        interp.nodes[bkey] = interp.nodes['v']
-        interp.base_funs[bkey] = interp.base_funs['v']
+        interp.poly_spaces[bkey] = interp.poly_spaces['v']
         return bkey
 
     def create_bqp(self, region_name, integral ):
@@ -919,15 +827,6 @@ class Approximations( Container ):
 #                print efs
                 ap.efaces = nm.hstack( (ap.efaces, efs ) )
                 
-##             print ap.efaces
-##             print ap.interp.base_funs['v'].fun
-##             try:
-##                 print ap.interp.base_funs['s2'].fun
-##                 print ap.interp.base_funs['s3'].fun
-##             except:
-##                 pass
-##             pause()
-
         return iseq, remap, cnt_vn, cnt_en
 
     ##
