@@ -13,6 +13,8 @@
 #include "termsSurface.h"
 #include "termsMass.h"
 #include "termsVolume.h"
+#include "termsAcoustic.h"
+
 #ifdef ISOPT
   #include "termsAdjointNavierStokes.h"
 #endif
@@ -37,6 +39,7 @@
     (FMField *meshVelocity),
     (FMField *diameter2),
     (FMField *stateU),
+    (FMField *stateV),
     (FMField *stateB),
     (FMField *stateW),
     (FMField *stateP),
@@ -52,6 +55,7 @@
     (FMField *traction),
     (FMField *forceQP),
     (FMField *coef),
+    (FMField *coef2),
     (FMField *strain),
     (FMField *strainV),
     (FMField *strainU),
@@ -409,6 +413,46 @@ int32 dw_electric_source( FMField *out,
 			  int32 *elList, int32 elList_nRow,
 			  int32 mode );
 
+int32 d_sa_acoustic_alpha( FMField *out,
+ 			   FMField *stateU, FMField *stateV, FMField *stateW,
+ 			   VolumeGeometry *vg,
+ 			   int32 *conn, int32 nEl, int32 nEP,
+ 			   int32 mode,
+ 			   int32 *elList, int32 elList_nRow );
+
+int32 d_sa_acoustic_z( FMField *out,
+		       FMField *stateU, FMField *stateV, FMField *stateW,
+		       VolumeGeometry *vg,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 mode,
+		       int32 *elList, int32 elList_nRow );
+
+int32 dw_acoustic( FMField *out, FMField *state,
+		   FMField *coef, FMField *coef2, VolumeGeometry *vg,
+		   int32 *conn, int32 nEl, int32 nEP,
+		   int32 *elList, int32 elList_nRow,
+		   int32 isDiff );
+
+int32 d_acoustic( FMField *out, FMField *stateU, FMField *stateV,
+		  FMField *coef, FMField *coef2, VolumeGeometry *vg,
+		  int32 *conn, int32 nEl, int32 nEP,
+		  int32 *elList, int32 elList_nRow );
+
+int32 d_acoustic_surface( FMField *out, FMField *in,
+			  FMField *coef, FMField *coef2, SurfaceGeometry *sg,
+			  int32 *conn, int32 nEl, int32 nEP,
+			  int32 *elList, int32 elList_nRow );
+
+int32 dw_acoustic_integrate( FMField *out, FMField *coef, VolumeGeometry *vg,
+			     int32 *conn, int32 nEl, int32 nEP,
+			     int32 *elList, int32 elList_nRow,
+			     int32 isDiff );
+
+int32 d_acoustic_alpha( FMField *out, FMField *in,
+			VolumeGeometry *vg,
+			int32 *conn, int32 nEl, int32 nEP,
+			int32 *elList, int32 elList_nRow );
+
 #ifdef ISOPT
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
@@ -566,6 +610,7 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
+
 #endif // ISOPT
 
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
