@@ -139,6 +139,7 @@ documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/terms/termsAcoustic
    src/sfepy/terms/termsAdjointNavierStokes
    src/sfepy/terms/termsBasic
    src/sfepy/terms/termsBiot

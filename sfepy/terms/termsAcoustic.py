@@ -34,7 +34,7 @@ class AcousticAlphaSA2Term( ScalarScalar, Term ):
 
     :Definition:
     .. math::
-        \int_{\Omega} \div w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v},
+        \int_{\Omega} \dvg w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v},
         \alpha = 1,\dots,N-1
     """
     name = 'd_sa_acoustic_alpha2'
@@ -87,7 +87,7 @@ class AcousticZSA2Term( ScalarScalar, Term ):
 
     :Definition:
     .. math::
-        \int_{\Omega} \div w \partial_z \ul{v}\,\partial_z \ul{u}
+        \int_{\Omega} \dvg w \partial_z \ul{v}\,\partial_z \ul{u}
     """
     name = 'd_sa_acoustic_z2'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
