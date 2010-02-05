@@ -2,9 +2,14 @@ from sfepy.terms.terms import *
 from sfepy.terms.terms_base import ScalarScalar
 
 class AcousticAlphaSA1Term( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha \ul{v}$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Sensitivity analysis acoustic term (in-plane directions).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha \ul{v},
+        \alpha = 1,\dots,N-1
     """
     name = 'd_sa_acoustic_alpha'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -23,9 +28,14 @@ class AcousticAlphaSA1Term( ScalarScalar, Term ):
         return fargs, (chunk_size, 1, 1, 1), 0
     
 class AcousticAlphaSA2Term( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} \div w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v}$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Sensitivity analysis acoustic term (in-plane directions).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \div w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v},
+        \alpha = 1,\dots,N-1
     """
     name = 'd_sa_acoustic_alpha2'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -45,8 +55,13 @@ class AcousticAlphaSA2Term( ScalarScalar, Term ):
         return fargs, (chunk_size, 1, 1, 1), 0
 
 class AcousticZSATerm( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} \partial_z w_k\, \partial_k \ul{v}\,\partial_z \ul{u}$
+    r"""
+    :Description:
+    Sensitivity analysis acoustic term (transversal direction).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \partial_z w_k\, \partial_k \ul{v}\,\partial_z \ul{u}
     """
     name = 'd_sa_acoustic_z'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -66,8 +81,13 @@ class AcousticZSATerm( ScalarScalar, Term ):
         return fargs, (chunk_size, 1, 1, 1), 0
 
 class AcousticZSA2Term( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} \div w \partial_z \ul{v}\,\partial_z \ul{u}$
+    r"""
+    :Description:
+    Sensitivity analysis acoustic term (transversal direction).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \div w \partial_z \ul{v}\,\partial_z \ul{u}
     """
     name = 'd_sa_acoustic_z2'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -87,9 +107,14 @@ class AcousticZSA2Term( ScalarScalar, Term ):
         return fargs, (chunk_size, 1, 1, 1), 0
 
 class AcousticTerm( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2 \partial_z \ul{v}\,\partial_z \ul{u} )$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Acoustic term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2 \partial_z \ul{v}\,\partial_z \ul{u} ),
+        \alpha = 1,\dots,N-1
     """
     name = 'dw_acoustic'
     arg_types = (('material', 'material', 'virtual', 'state'),
@@ -124,9 +149,14 @@ class AcousticTerm( ScalarScalar, Term ):
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
 
 class AcousticSurfaceTerm( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y}$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Acoustic surface term (in-plane directions).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y},
+        \alpha = 1,\dots,N-1
     """
     name = 'd_acoustic_surface'
     arg_types = ('material', 'material', 'parameter')
@@ -147,9 +177,14 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
         return fargs, (chunk_size, 1, 1, 1), 0
 
 class AcousticIntegrateTerm( ScalarScalar, Term ):
-    r""":description: acoustic term 
-    :definition: $\int_{\Omega} m  \partial_\alpha \ul{u}$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Integration of acoustic term (in-plane directions).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} m  \partial_\alpha \ul{u},
+        \alpha = 1,\dots,N-1
     """
     name = 'dw_acoustic_integrate'
     arg_types = ('material', 'virtual')
@@ -167,9 +202,14 @@ class AcousticIntegrateTerm( ScalarScalar, Term ):
         return (mat, vg, ap.econn), shape, mode
 
 class AcousticEvalAlphaTerm( Term ):
-    r""":description: acoustic evaluation term 
-    :definition: $\int_{\Omega} \partial_{\alpha} \ul{y}$,
-    $\alpha = 1,\dots,N-1$
+    r"""
+    :Description:
+    Evaluation of acoustic term (in-plane directions).
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \partial_{\alpha} \ul{y},
+        \alpha = 1,\dots,N-1
     """
     name = 'd_acoustic_alpha'
     arg_types = ('parameter',)
