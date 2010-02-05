@@ -651,7 +651,7 @@ int32 eval_lagrange_simplex( FMField *out, FMField *coors,
       }
 
       if ((error) && (!(suppress_errors))) {
-	errput("quadrature point outside of element!\n");
+	errset("quadrature point outside of element!");
       }
 
       bc->val[n_coor*ir+ic] = val;
