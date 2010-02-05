@@ -109,7 +109,7 @@ def wrap_function( function, args ):
         tt = time.time()
 
         results[:] = function( x, *args )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot = results
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion = results
 
         tt2 = time.time()
         if tt2 < tt:
@@ -227,9 +227,9 @@ class SchroedingerApp( SimpleApp ):
         pb.update_materials()
 
         # Interpolate core potential from QP to nodes.
-        pot_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'pot')
-        pb.variables['V'].data_from_qp(pot_qp, 'i1')
-        vec_pot = pb.variables['V']()
+        v_ion_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'V_ion')
+        pb.variables['V'].data_from_qp(v_ion_qp, 'i1')
+        vec_ion = pb.variables['V']()
 
         dummy = pb.create_state_vector()
 
@@ -337,7 +337,7 @@ class SchroedingerApp( SimpleApp ):
         file_output("charge_n:  ", charge_n)
         file_output("----------------------------------------")
         file_output("|N|:       ", nla.norm(vec_n))
-        file_output("|Pot|:     ", nla.norm(vec_pot))
+        file_output("|V_ion|:   ", nla.norm(vec_ion))
         file_output("|V_H|:     ", nla.norm(vec_vh))
         file_output("|V_XC|:    ", nla.norm(vec_vxc))
         file_output("|V_HXC|:   ", nla.norm(vec_vh + vec_vxc))
@@ -346,12 +346,12 @@ class SchroedingerApp( SimpleApp ):
 	if self.iter_hook is not None: # User postprocessing.
             data = Struct( eigs = eigs, mtx_s_phi = mtx_s_phi,
                            vec_n = vec_n, vec_vh = vec_vh,
-                           vec_vxc = vec_vxc, vec_pot = vec_pot )
+                           vec_vxc = vec_vxc, vec_ion = vec_ion )
 	    self.iter_hook( self.problem, data = data )
 
         self.norm_vhxc0 = norm
         
-        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot
+        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion
 
     def solve_eigen_problem_n( self ):
         opts = self.app_options
@@ -407,7 +407,7 @@ class SchroedingerApp( SimpleApp ):
         dft_solver = Solver.any_from_conf( dft_conf, fun = nonlin_v,
                                            status = dft_status )
         vec_vhxc = dft_solver( vec_vhxc )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_pot = results
+        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion = results
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
         
         if self.options.plot:
@@ -424,10 +424,10 @@ class SchroedingerApp( SimpleApp ):
         out = {}
         update_state_to_output( out, pb, vec_n, 'n' )
         update_state_to_output( out, pb, vec_nr2, 'nr2' )
-        update_state_to_output( out, pb, vec_vh, 'vh' )
-        update_state_to_output( out, pb, vec_vxc, 'vxc' )
-        update_state_to_output( out, pb, vec_pot, 'pot' )
-        update_state_to_output( out, pb, vec_pot + vec_vh + vec_vxc, 'v' )
+        update_state_to_output( out, pb, vec_vh, 'V_h' )
+        update_state_to_output( out, pb, vec_vxc, 'V_xc' )
+        update_state_to_output( out, pb, vec_ion, 'V_ion' )
+        update_state_to_output( out, pb, vec_ion + vec_vh + vec_vxc, 'V_sum' )
         self.save_results( eigs, mtx_phi, out = out )
 
         return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi,
