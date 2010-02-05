@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.base.la import cycle
+import extmods.fem as _fem
 
 class LagrangeNodes(Struct):
     """Helper class for defining nodes of Lagrange elements."""
@@ -220,6 +221,9 @@ class PolySpace(Struct):
                                            eps=eps)
 
         return base
+
+    def clear_c_errors(self):
+        _fem.errclear()
 
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""

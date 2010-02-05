@@ -1932,10 +1932,11 @@ class Variable( Struct ):
                     try:
                         # Verify that we are inside the element.
                         bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
-                    except AssertionError:
+                    except RuntimeError:
+                        ps.clear_c_errors()
                         continue
                     break
-    ##             print xi, bf
+                ## print xi, bf
 
                 _cache.cells[tp] = (ig, iel)
                 _cache.bases[tp] = bf
