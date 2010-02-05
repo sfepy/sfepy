@@ -30,6 +30,7 @@ typedef enum ReturnStatus {
 
 void output( const char *what, ... );
 void errput( const char *what, ... );
+void errset( const char *msg );
 void errclear( void );
 
 #define AL_CookieValue   0xf0e0d0c9

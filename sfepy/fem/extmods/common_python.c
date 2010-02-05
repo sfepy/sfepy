@@ -42,6 +42,12 @@ void errput( const char *what, ... )
   g_error++;
 }
 
+void errset( const char *msg )
+{
+  PyErr_SetString( PyExc_RuntimeError, msg );
+  g_error++;
+}
+
 #undef __FUNC__
 #define __FUNC__ "errclear"
 /*!
