@@ -129,7 +129,7 @@ def generate_probes(filename_input, filename_results, options,
             fd.write('\n'.join(probe.report()) + '\n')
             for key, res in results.iteritems():
                 pars, vals = res
-                fd.write('%s\n' % key)
+                fd.write('\n# %s\n' % key)
                 aux = nm.vstack((pars, vals)).T
                 nm.savetxt(fd, aux)
             fd.close()
@@ -161,19 +161,16 @@ def get_data_name(fd):
     name = None
     while 1:
         try:
-            name = fd.readline().strip().split()
+            line = fd.readline()
+            if (len(line) == 0): break
+            if len(line) == 1: continue
         except:
             raise StopIteration
 
-        if len(name) == 1:
-            name = name[0]
-            try:
-                int(name)
-            except:
-                yield name
-
-        elif len(name) == 0:
-            break
+        name = line.strip().split()
+        if (len(name) == 2) and (name[0] == '#'):
+            name = name[1]
+            yield name
 
 def integrate_along_line(x, y, is_radial=False):
     """Integrate numerically (trapezoidal rule) a function $y=y(x)$.
