@@ -173,7 +173,7 @@ def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
         ii += 1
     return x
 
-def inverse_element_mapping( coors, e_coors, base_fun, ref_coors,
+def inverse_element_mapping( coors, e_coors, eval_base, ref_coors,
                              suppress_errors = False ):
     """
     Given spatial element coordinates, find the inverse mapping for
@@ -195,15 +195,14 @@ def inverse_element_mapping( coors, e_coors, base_fun, ref_coors,
         
     else: # Tensor-product and other.
         def residual( xi ):
-            bf = base_fun.value( xi[nm.newaxis,:], base_fun.nodes,
-                                 suppress_errors = suppress_errors ).squeeze()
+            bf = eval_base(xi[nm.newaxis,:],
+                           suppress_errors=suppress_errors).squeeze()
             res = coors - nm.dot( bf, e_coors )
             return res.squeeze()
         
         def matrix( xi ):
-            bfg = base_fun.value( xi[nm.newaxis,:], base_fun.nodes,
-                                  base_fun.var_set,
-                                  suppress_errors = suppress_errors ).squeeze()
+            bfg = eval_base(xi[nm.newaxis,:], diff=True,
+                            suppress_errors=suppress_errors).squeeze()
             mtx = - nm.dot( bfg, e_coors )
             return mtx
 
