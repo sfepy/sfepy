@@ -2336,25 +2336,24 @@ class Basis(Struct):
             el_coors = self.coors[nodes]
 #            print el_coors
 
-            interp = aps[ig].interp
-            ref_coors = interp.nodes['v'].bar_coors
-            base_fun = interp.base_funs['v'].fun
+            ps = aps[ig].interp.poly_spaces['v']
+            ref_coors, eval_base = ps.node_coors, ps.eval_base
 
             n_v, dim = el_coors.shape
             if n_v == (dim + 1):
                 bc = la.barycentric_coors(point[None,:], el_coors)
                 xi = nm.dot(bc.T, ref_coors)
             else: # Tensor-product and other.
-                xi = inverse_element_mapping(point, el_coors, base_fun,
+                xi = inverse_element_mapping(point, el_coors, eval_base,
                                              ref_coors,
                                              suppress_errors=True)
             xis.append(xi)
 
             try:
                 # Verify that we are inside the element.
-                bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
-                                    suppress_errors=False)
-            except AssertionError:
+                bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
+            except RuntimeError:
+                ps.clear_c_errors()
                 continue
             break
 
@@ -2366,8 +2365,7 @@ class Basis(Struct):
                 ii, dist = self.find_closest_refcoor(xis,
                                                      vd.min(), vd.max())
                 xi = xis[ii]
-                bf = base_fun.value(nm.atleast_2d(xi), base_fun.nodes,
-                                    suppress_errors=True)
+                bf = eval_base(nm.atleast_2d(xi), suppress_errors=True)
                 ig, iel = els[ii]
                 nodes = aps[ig].econn[iel]
 #                print dist
