@@ -9,14 +9,7 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-
-void debug_printConn( int32 *conn, int32 nEP );
-
-int32 ele_extractNodalValuesNBN( FMField *out, FMField *in,
-				 int32 *conn );
-
-int32 ele_extractNodalValuesDBD( FMField *out, FMField *in,
-				 int32 *conn );
+#include "geommech.h"
 
 END_C_DECLS
 

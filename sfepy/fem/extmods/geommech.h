@@ -47,6 +47,14 @@ int32 bf_buildFTF( FMField *ftf, FMField *ftf1 );
 int32 geme_invar1( float64 *invar, FMField *mtx );
 int32 geme_invar2( float64 *invar, FMField *mtx );
 
+void debug_printConn( int32 *conn, int32 nEP );
+
+int32 ele_extractNodalValuesNBN( FMField *out, FMField *in,
+				 int32 *conn );
+
+int32 ele_extractNodalValuesDBD( FMField *out, FMField *in,
+				 int32 *conn );
+
 END_C_DECLS
 
 #endif /* Header */
