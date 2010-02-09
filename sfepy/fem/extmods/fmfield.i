@@ -79,10 +79,10 @@ int32 helper_pretend_FMField( FMField *out, PyObject *input )
   }
 };
 
-%typemap( in ) (int32 num, FMField **in) {
+%typemap( in ) (int32 num, FMField *in) {
   PyObject *aux;
   int32 ig, nn;
-  FMField **out;
+  FMField *out;
 
   if (!PyList_Check( $input )) {
     PyErr_SetString( PyExc_TypeError, "not a list" );
@@ -90,16 +90,16 @@ int32 helper_pretend_FMField( FMField *out, PyObject *input )
   }
 
   nn= PyList_Size( $input );
-  out = alloc_mem( FMField *, nn );
+  out = alloc_mem( FMField, nn );
   for (ig = 0; ig < nn; ig++) {
     aux = PyList_GetItem( $input, ig );
-    if (!helper_pretend_FMField( out[ig], aux )) return NULL;
+    if (!helper_pretend_FMField( out + ig, aux )) return NULL;
   }
 
   $1 = nn;
   $2 = out;
 };
-%typemap( freearg ) (int32 num, FMField **in) {
+%typemap( freearg ) (int32 num, FMField *in) {
   free_mem( $2 );
 }
 

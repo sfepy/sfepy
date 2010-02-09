@@ -1323,6 +1323,8 @@ class Variable( Struct ):
         self.data_from_any(data, indx, step)
 
     def data_from_any( self, data = None, indx = None, step = 0 ):
+        data = data.ravel()
+
         self.data[step] = data
         if indx is None:
             self.indx = slice( 0, len( data ) )
@@ -2043,11 +2045,11 @@ class Variable( Struct ):
 
 
         n_els, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod)
-        offsets = nm.cumsum(nm.r_[0, n_els])
+        offsets = nm.cumsum(nm.r_[0, n_els], dtype=nm.int32)
 
         if strategy == 'kdtree':
             from scipy.spatial import cKDTree as KDTree
-#            from scipy.spatial import KDTree
+            ## from scipy.spatial import KDTree
 
             tt = time.clock()
             ctree = KDTree(scoors)
@@ -2060,6 +2062,8 @@ class Variable( Struct ):
             source_vals = self()
 
             ics = ctree.query(coors)[1]
+            ics = nm.asarray(ics, dtype=nm.int32)
+
             node_coorss, nodess, orders, mtx_is, conns = [], [], [], [], []
             for ap in self.field.aps:
                 ps = ap.interp.poly_spaces['v']
@@ -2068,11 +2072,11 @@ class Variable( Struct ):
                 orders.append(ps.order)
                 mtx_is.append(ps.get_mtx_i())
                 conns.append(ap.econn)
-            
-            debug()
+            orders = nm.array(orders, dtype=nm.int32)
+
             evaluate_at(vals, status, coors, source_vals,
                         ics, offsets, iconn,
-                        scoors, len(conns), conns,
+                        scoors, conns,
                         node_coorss, nodess, orders, mtx_is,
                         1, 0.1, 1e-15, 100, 1e-8)
 

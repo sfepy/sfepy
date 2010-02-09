@@ -32,7 +32,14 @@
   (FMField *base1d),
   (FMField *coors),
   (FMField *e_coors),
+  (FMField *dest_coors),
+  (FMField *mesh_coors),
+  (FMField *source_vals),
   (FMField *ref_coors)
+};
+%apply (int32 num, FMField *in) {
+  (int32 n_ref_coorss, FMField *ref_coorss),
+  (int32 n_mtx_is, FMField *mtx_is)
 };
 %apply (int32 *array, int32 n_row, int32 n_col) {
   (int32 *conn, int32 nEl, int32 nEP),
@@ -44,7 +51,12 @@
   (int32 *iels, int32 iels_len),
   (int32 *eq, int32 nEq),
   (int32 *prows, int32 prows_len),
-  (int32 *cols, int32 cols_len)
+  (int32 *cols, int32 cols_len),
+  (int32 *status, int32 n_status),
+  (int32 *ics, int32 n_ics),
+  (int32 *offsets, int32 n_offsets),
+  (int32 *iconn0, int32 n_iconn0),
+  (int32 *orders, int32 n_orders)
 };
 
 int32 assemble_vector( FMField *vec, FMField *vecInEls,
@@ -116,7 +128,9 @@ int32 assemble_matrix_complex( FMField *mtx_r, FMField *mtx_i,
 
 %apply (int32 *nEl, int32 *nEP, int32 **conn) {
   (int32 *nElR, int32 *nEPR, int32 **connR),
-  (int32 *nElC, int32 *nEPC, int32 **connC)
+  (int32 *nElC, int32 *nEPC, int32 **connC),
+  (int32 *nEls, int32 *nEPs, int32 **conns),
+  (int32 *nNod, int32 *nCol, int32 **nodess)
 };
 
 %apply (int32 *p_len, int32 **p_array) {
@@ -145,5 +159,21 @@ int32 eval_lagrange_tensor_product( FMField *out, FMField *coors,
 int32 inverse_element_mapping( FMField *out,
 			       FMField *coors, FMField *e_coors,
 			       FMField *ref_coors, int32 i_max, float64 eps );
+
+int32 evaluate_at( FMField *out,
+		   int32 *status, int32 n_status,
+		   FMField *dest_coors, FMField *source_vals,
+		   int32 *ics, int32 n_ics,
+		   int32 *offsets, int32 n_offsets,
+		   int32 *iconn0, int32 n_iconn0,
+		   FMField *mesh_coors,
+		   int32 *nEls, int32 *nEPs, int32 **conns,
+		   int32 n_ref_coorss, FMField *ref_coorss,
+		   int32 *nNod, int32 *nCol, int32 **nodess,
+		   int32 *orders, int32 n_orders,
+		   int32 n_mtx_is, FMField *mtx_is,
+		   int32 allow_extrapolation,
+		   float64 close_limit, float64 qp_eps,
+		   int32 i_max, float64 newton_eps );
 
 #endif
