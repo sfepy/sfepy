@@ -216,12 +216,12 @@ class SchroedingerApp( SimpleApp ):
         vec_vhxc = nm.array(vec_vhxc, dtype=nm.float64)
 
         # Interpolate V_hxc into QP and pass it to mat_v material.
-##         print vec_vhxc.min(), vec_vhxc.max()
+        ## print vec_vhxc.min(), vec_vhxc.max()
         vhxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
                               Psi=vec_vhxc)
         sh = vhxc_qp.shape
         vhxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
-##         print vhxc_qp.min(), vhxc_qp.max()
+        ## print vhxc_qp.min(), vhxc_qp.max()
         pb.materials['mat_v'].set_extra_args(vhxc=vhxc_qp)
         pb.set_equations(pb.conf.equations)
         pb.update_materials()
@@ -236,7 +236,8 @@ class SchroedingerApp( SimpleApp ):
         output( 'assembling lhs...' )
         tt = time.clock()
         mtx_a = eval_term_op( dummy, pb.conf.equations['lhs'], pb,
-                              dw_mode = 'matrix', tangent_matrix = pb.mtx_a )
+                              dw_mode = 'matrix', tangent_matrix = pb.mtx_a,
+                              update_materials = False )
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         assert_( nm.alltrue( nm.isfinite( mtx_a.data ) ) )
@@ -257,9 +258,7 @@ class SchroedingerApp( SimpleApp ):
         output( '...done' )
         
         if (weights[-1] > 1e-12):
-            print n_eigs_ok
-            print eigs
-            raise Exception("not enough eigenvalues have converged - exiting.")
+            output("last smearing weight is nonzero (%s eigs ok)!" % n_eigs_ok)
 
         output( "saving solutions, iter=%d..." % self.itercount )
         out = {}
