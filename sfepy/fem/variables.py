@@ -5,7 +5,7 @@ import sfepy.base.la as la
 from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
      TreeItem
 from sfepy.fem.integrals import Integral
-from extmods.fem import raw_graph, inverse_element_mapping
+from extmods.fem import raw_graph, evaluate_at
 from extmods.geometry import SurfaceGeometry
 from sfepy.fem.utils import extend_cell_data
 
@@ -2042,9 +2042,8 @@ class Variable( Struct ):
                                                                coors.shape[0]))
 
 
-        iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                          combine_groups=True)
-
+        n_els, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod)
+        offsets = nm.cumsum(nm.r_[0, n_els])
 
         if strategy == 'kdtree':
             from scipy.spatial import cKDTree as KDTree
@@ -2054,26 +2053,29 @@ class Variable( Struct ):
             ctree = KDTree(scoors)
             output('ctree: %f s' % (time.clock()-tt))
 
-            basis = Basis(ctree = ctree,
-                          iconn = iconn,
-                          aps = self.field.aps,
-                          coors = scoors,
-                          last_el = None)
-
             tt = time.clock()
-            # For scalar field only!!!
-            vals = nm.empty((coors.shape[0],), dtype=self.dtype)
 
+            vals = nm.empty((coors.shape[0], self.dpn), dtype=self.dtype)
+            status = nm.empty((coors.shape[0],), dtype=nm.int32)
             source_vals = self()
-            for ii, point in enumerate(coors):
-                bf, nodes, status = basis.find_local_basis(point)
-##                 print bf
-##                 print nodes
-##                 print status
-                if 0 or status <= 1:
-                    vals[ii] = nm.dot(bf, source_vals[nodes])
-                else:
-                    vals[ii] = 0.0
+
+            ics = ctree.query(coors)[1]
+            node_coorss, nodess, orders, mtx_is, conns = [], [], [], [], []
+            for ap in self.field.aps:
+                ps = ap.interp.poly_spaces['v']
+                node_coorss.append(ps.node_coors)
+                nodess.append(ps.nodes)
+                orders.append(ps.order)
+                mtx_is.append(ps.get_mtx_i())
+                conns.append(ap.econn)
+            
+            debug()
+            evaluate_at(vals, status, coors, source_vals,
+                        ics, offsets, iconn,
+                        scoors, len(conns), conns,
+                        node_coorss, nodess, orders, mtx_is,
+                        1, 0.1, 1e-15, 100, 1e-8)
+
             output('interpolator: %f s' % (time.clock()-tt))
 
         elif strategy == 'crawl':
@@ -2316,82 +2318,82 @@ class CloseNodesIterator(Struct):
 
         return ii, val
 
-class Basis(Struct):
+## class Basis(Struct):
 
-    def find_local_basis(self, point, close_limit=0.1,
-                         allow_extrapolation=True):
-        from sfepy.base.la import inverse_element_mapping
+##     def find_local_basis(self, point, close_limit=0.1,
+##                          allow_extrapolation=True):
+##         from sfepy.base.la import inverse_element_mapping
 
-        ic = self.ctree.query(point)[1]
-        els = self.iconn[ic]
+##         ic = self.ctree.query(point)[1]
+##         els = self.iconn[ic]
 
-        aps = self.aps
+##         aps = self.aps
 
-        xis = []
-        bf = None
-        for ig, iel in els:
- #           print ig, iel
-            ap = aps[ig]
-            nodes = ap.econn[iel]
-            el_coors = self.coors[nodes]
-#            print el_coors
+##         xis = []
+##         bf = None
+##         for ig, iel in els:
+##  #           print ig, iel
+##             ap = aps[ig]
+##             nodes = ap.econn[iel]
+##             el_coors = self.coors[nodes]
+## #            print el_coors
 
-            ps = aps[ig].interp.poly_spaces['v']
-            ref_coors, eval_base = ps.node_coors, ps.eval_base
+##             ps = aps[ig].interp.poly_spaces['v']
+##             ref_coors, eval_base = ps.node_coors, ps.eval_base
 
-            n_v, dim = el_coors.shape
-            if n_v == (dim + 1):
-                bc = la.barycentric_coors(point[None,:], el_coors)
-                xi = nm.dot(bc.T, ref_coors)
-            else: # Tensor-product and other.
-                xi = inverse_element_mapping(point, el_coors, eval_base,
-                                             ref_coors,
-                                             suppress_errors=True)
-            xis.append(xi)
+##             n_v, dim = el_coors.shape
+##             if n_v == (dim + 1):
+##                 bc = la.barycentric_coors(point[None,:], el_coors)
+##                 xi = nm.dot(bc.T, ref_coors)
+##             else: # Tensor-product and other.
+##                 xi = inverse_element_mapping(point, el_coors, eval_base,
+##                                              ref_coors,
+##                                              suppress_errors=True)
+##             xis.append(xi)
 
-            try:
-                # Verify that we are inside the element.
-                bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
-            except RuntimeError:
-                ps.clear_c_errors()
-                continue
-            break
+##             try:
+##                 # Verify that we are inside the element.
+##                 bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
+##             except RuntimeError:
+##                 ps.clear_c_errors()
+##                 continue
+##             break
 
         
-        if bf is None:
-            # Point outside the mesh.
-            if allow_extrapolation:
-                vd = ap.interp.gel.data['v'].coors
-                ii, dist = self.find_closest_refcoor(xis,
-                                                     vd.min(), vd.max())
-                xi = xis[ii]
-                bf = eval_base(nm.atleast_2d(xi), suppress_errors=True)
-                ig, iel = els[ii]
-                nodes = aps[ig].econn[iel]
-#                print dist
-                if dist < close_limit:
-                    status = 1
-                else:
-                    status = 2
-            else:
-                status = 3
-        else:
-            status = 0
+##         if bf is None:
+##             # Point outside the mesh.
+##             if allow_extrapolation:
+##                 vd = ap.interp.gel.data['v'].coors
+##                 ii, dist = self.find_closest_refcoor(xis,
+##                                                      vd.min(), vd.max())
+##                 xi = xis[ii]
+##                 bf = eval_base(nm.atleast_2d(xi), suppress_errors=True)
+##                 ig, iel = els[ii]
+##                 nodes = aps[ig].econn[iel]
+## #                print dist
+##                 if dist < close_limit:
+##                     status = 1
+##                 else:
+##                     status = 2
+##             else:
+##                 status = 3
+##         else:
+##             status = 0
 
-        return bf, nodes, status
+##         return bf, nodes, status
 
-    def find_closest_refcoor(self, xis, vmin, vmax):
+##     def find_closest_refcoor(self, xis, vmin, vmax):
 
-        ds = []
-        for xi in xis:
-            d1 = nm.sum(nm.clip(xi - vmax, 0, 100)**2.0)
-            d2 = nm.sum(nm.clip(vmin - xi, 0, 100)**2.0)
-            ds.append(d1 + d2) 
+##         ds = []
+##         for xi in xis:
+##             d1 = nm.sum(nm.clip(xi - vmax, 0, 100)**2.0)
+##             d2 = nm.sum(nm.clip(vmin - xi, 0, 100)**2.0)
+##             ds.append(d1 + d2) 
 
-##         print xis
-##         print ds
-        ii = nm.argmin(ds)
-        return ii, nm.sqrt(ds[ii])
+## ##         print xis
+## ##         print ds
+##         ii = nm.argmin(ds)
+##         return ii, nm.sqrt(ds[ii])
 
 ## ##
 ## # 11.07.2006, c

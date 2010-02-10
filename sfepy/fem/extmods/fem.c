@@ -1,6 +1,7 @@
 #include "fem.h"
 #include "geommech.h"
 #include "sort.h"
+#include "terms.h"
 
 #undef __FUNC__
 #define __FUNC__ "assemble_vector"
@@ -881,6 +882,208 @@ int32 inverse_element_mapping( FMField *out,
  end_label:
   fmf_freeDestroy( &bf );
   fmf_freeDestroy( &bfg );
+  fmf_freeDestroy( &res );
+  fmf_freeDestroy( &mtx );
+  fmf_freeDestroy( &imtx );
+  fmf_freeDestroy( &xint );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "evaluate_at"
+int32 evaluate_at( FMField *out, FMField *status,
+		   FMField *dest_coors, FMField *source_vals,
+		   int32 *ics, int32 *offsets,
+		   int32 *iconn0, FMField *mesh_coors,
+		   int32 nGr,
+		   int32 **conns, int32 *nEls, int32 *nEPs,
+		   FMField **ref_coorss,
+		   int32 **nodess, int32 *nNod, int32 *nCol,
+		   int32 *orders, int32 nOrders,
+		   FMField **mtx_is,
+		   int32 allow_extrapolation,
+		   float64 close_limit, float64 qp_eps,
+		   int32 i_max, float64 newton_eps )
+{
+  int32 ii, ie, ie_min, ig, iel, ip, ic, id, ik, dim, n_v, nEP, dpn;
+  int32 order = 0, ok, ret = RET_OK;
+  int32 *conn, *iconn, *nodes = 0;
+  float64 aux, err, dist, d_min, vmin, vmax;
+  FMField *ref_coors = 0, *mtx_i = 0;
+  FMField *bc = 0, *base1d = 0, *e_coors = 0, *src = 0;
+  FMField *bf = 0, *bfg = 0, *res = 0, *mtx = 0, *imtx = 0, *xi = 0, *xint = 0;
+  FMField **bfs, **bfgs;
+
+  dim = mesh_coors->nCol;
+  dpn = out->nCol;
+
+  bfs = alloc_mem( FMField *, nGr );
+  bfgs = alloc_mem( FMField *, nGr );
+  for (ig = 0; ig < nGr; ig++) {
+    fmf_createAlloc( bfs + ig, 1, 1, 1, nEPs[ig] );
+    fmf_createAlloc( bfgs + ig, 1, 1, dim, nEPs[ig] );
+  }
+
+  fmf_createAlloc( &res, 1, 1, 1, dim );
+  fmf_createAlloc( &mtx, 1, 1, dim, dim );
+  fmf_createAlloc( &imtx, 1, 1, dim, dim );
+  fmf_createAlloc( &xint, 1, 1, 1, dim );
+
+  fmf_fillC( out, 0.0 );
+  
+  for (ip = 0; ip < dest_coors->nRow; ip++) {
+    ic = ics[ip];
+
+    ok = 0;
+    d_min = 100.0 * 100.0;
+    ie_min = -1;
+    iconn = iconn0 + offsets[ic];
+    for (ie = 0; ie < offsets[ic+1]; ie++) {
+      ig  = iconn[0];
+      iel = iconn[1];
+      iconn += 2;
+
+      FMF_SetCell( xi, ie );
+      
+      bf = bfs[ig];
+      bfg = bfgs[ig];
+
+      ref_coors = ref_coorss[ig];
+      nodes = nodess[ig];
+      order = orders[ig];
+      mtx_i = mtx_is[ig];
+      conn = conns[ig];
+
+      n_v = ref_coors->nRow;
+
+      vmin = ref_coors->val[0];
+      vmax = ref_coors->val[dim];
+
+      ele_extractNodalValuesDBD( e_coors, mesh_coors,
+				 conn + nEPs[ig] * iel );
+
+      if (n_v == (dim + 1)) {
+	errput("not implemented!");
+
+      } else {
+
+	fmf_fillC( xi, 0.0 );
+
+	// Newton method
+	ii = 0;
+	while (ii < i_max) {
+	  // Base(xi).
+	  eval_lagrange_tensor_product(bf, xi,
+				       nodes, nNod[ig], nCol[ig],
+				       order, 0,
+				       mtx_i, bc, base1d,
+				       1, qp_eps );
+	  // X(xi).
+	  fmf_mulAB_n1( xint, bf, e_coors );
+	  // Rezidual.
+	  fmf_subAB_nn( res, dest_coors, xint );
+
+	  err = 0.0;
+	  for (id = 0; id < dim; id++) {
+	    err += res->val[id] * res->val[id];
+	  }
+	  err = sqrt( err );
+	  if (err < newton_eps) break;
+
+	  // grad Base(xi).
+	  eval_lagrange_tensor_product(bfg, xi,
+				       nodes, nNod[ig], nCol[ig],
+				       order, 1,
+				       mtx_i, bc, base1d,
+				       1, qp_eps );
+	  // - Matrix.
+	  fmf_mulAB_n1( mtx, bfg, e_coors );
+
+	  geme_invert3x3( imtx, mtx );
+	  ERR_CheckGo( ret );
+	  
+	  fmf_mulAB_nn( xint, res, imtx );
+	  fmf_addAB_nn( xi, xi, xint );
+	  ii += 1;
+	}
+      }
+
+      // dist == 0 for vmin <= xi <= vmax.
+      dist = 0.0;
+      for (id = 0; id < dim; id++) {
+	aux = Min( Max( xi->val[id] - vmax, 0.0 ), 100.0 );
+	dist += aux * aux;
+	aux = Min( Max( vmin - xi->val[id], 0.0 ), 100.0 );
+	dist += aux * aux;
+      }
+
+      if (dist < qp_eps) {
+	ok = 1;
+	ie_min = ie;
+	break;
+      } else {
+	if (dist < d_min) {
+	  d_min = dist;
+	  ie_min = ie;
+	}
+      }
+    }
+    
+    // Restore ig, iel.
+    iconn = iconn0 + offsets[ic];
+    ig  = iconn[2*ie_min+0];
+    iel = iconn[2*ie_min+1];
+
+    bf = bfs[ie_min];
+
+    conn = conns[ig];
+
+    if (!ok) {
+      if (allow_extrapolation) {
+	// Try using minimum distance xi.
+	if (sqrt(d_min) < close_limit) {
+	  status->val[ip] = 1;
+	} else {
+	  status->val[ip] = 2;
+	}
+	eval_lagrange_tensor_product(bf, xi,
+				     nodes, nNod[ig], nCol[ig],
+				     order, 0,
+				     mtx_i, bc, base1d,
+				     1, qp_eps );
+      } else {
+	status->val[ip] = 3;
+      }
+    } else {
+      status->val[ip] = 0;
+    }
+
+    if (status->val[ip] <= 1) {
+      // Interpolate source_vals using bf.
+      nEP = bf->nCol;
+      ele_extractNodalValuesDBD( src, source_vals,
+				 conn + nEP * iel );
+
+      for (ic = 0; ic < dpn; ic++) {
+	aux = 0.0;
+	for (ik = 0; ik < nEP; ik++) {
+	  aux += bf->val[ik] * src->val[nEP*ic+ik];
+	}
+	out->val[dpn*ip+ic] = aux;
+      }
+    }
+  }
+
+ end_label:
+
+  for (ig = 0; ig < nGr; ig++) {
+    fmf_freeDestroy( bfs + ig );
+    fmf_freeDestroy( bfgs + ig );
+  }
+  free_mem( &bfs );
+  free_mem( &bfgs );
+
   fmf_freeDestroy( &res );
   fmf_freeDestroy( &mtx );
   fmf_freeDestroy( &imtx );

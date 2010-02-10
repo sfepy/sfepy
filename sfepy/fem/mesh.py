@@ -102,29 +102,26 @@ def make_mesh( coor, ngroups, conns, mesh_in ):
                                mat_ids, mesh_in.descs )
     return mesh_out
 
-def make_inverse_connectivity( conns, n_nod, combine_groups = False ):
+def make_inverse_connectivity(conns, n_nod):
     """
     For each mesh node referenced in the connectivity conns, make a list of
-    elements it belongs to. If combine_groups is True, elements are referenced
-    by (ig, iel), otherwise by iel only.
+    elements it belongs to.
     """
-    if combine_groups:
-        iconn = [[] for ii in xrange( n_nod )]
-        for ig, conn in enumerate( conns ):
-            for iel, row in enumerate( conn ):
-                for node in row:
-                    iconn[node].append( (ig, iel) )
-        return iconn
+    from itertools import chain
 
-    else:
-        iconns = []
-        for ig, conn in enumerate( conns ):
-            iconn = [[] for ii in xrange( n_nod )]
-            for iel, row in enumerate( conn ):
-                for node in row:
-                    iconn[node].append( iel )
-            iconns.append( iconn )
-        return iconns
+    iconn = [[] for ii in xrange( n_nod )]
+    n_els = [0] * n_nod
+    for ig, conn in enumerate( conns ):
+        for iel, row in enumerate( conn ):
+            for node in row:
+                iconn[node].extend([ig, iel])
+                n_els[node] += 1
+
+    n_els = nm.array(n_els, dtype=nm.int32)
+    iconn = nm.fromiter(chain(*iconn), nm.int32)
+
+    return n_els, iconn
+
 
 class TreeItem(Struct):
     """Spatial tree class for searching a nearest node."""
