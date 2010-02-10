@@ -907,11 +907,13 @@ int32 evaluate_at( FMField *out,
 		   float64 close_limit, float64 qp_eps,
 		   int32 i_max, float64 newton_eps )
 {
-  int32 ii, ie, ie_min, ig, iel, ip, ic, id, ik, dim, n_v, nEl, nEP, nGr, dpn;
+  int32 ii, ie, ie_min, ig, iel, ip, ic, id, ik, dim, nEl, nEP, nGr, dpn;
   int32 nEP_max, n_v_max, n_max;
-  int32 order = 0, ok, ret = RET_OK;
+  int32 order = 0, n_v = 0, ok, ret = RET_OK;
   int32 *conn, *iconn, *nodes = 0;
   float64 aux, err, dist, d_min, vmin, vmax;
+  float64 buf16[16], buf4[4];
+  FMField bc_mtx[1], bc_rhs[1];
   FMField e_coors[1], base1d[1], bc[1], dest_point[1], src[1];
   FMField *ref_coors = 0, *mtx_i = 0;
   FMField *bc_max = 0, *b1d_max = 0, *ec_max = 0, *src_max = 0;
@@ -928,6 +930,8 @@ int32 evaluate_at( FMField *out,
   base1d->nAlloc = -1;
   dest_point->nAlloc = -1;
   src->nAlloc = -1;
+  bc_mtx->nAlloc = -1;
+  bc_rhs->nAlloc = -1;
 
   n_max = 0;
   for (ii = 0; ii < (n_offsets - 1); ii++) {
@@ -1022,8 +1026,31 @@ int32 evaluate_at( FMField *out,
       /* fmf_print( e_coors, stdout, 0 ); */
 
       if (n_v == (dim + 1)) {
-	errput("not implemented!");
+	// Barycentric coordinates.
+	fmf_pretend( bc_mtx, 1, 1, n_v, n_v, buf16 );
+	fmf_pretend( bc_rhs, 1, 1, n_v, 1, buf4 );
+	for (id = 0; id < dim; id++) {
+	  for (ii = 0; ii < n_v; ii++) {
+	    bc_mtx->val[n_v*id+ii] = e_coors->val[dim*ii+id];
+	  }
+	  bc_rhs->val[id] = dest_point->val[id];
+	}
+	for (ii = 0; ii < n_v; ii++) {
+	  bc_mtx->val[n_v*dim+ii] = 1.0;
+	}
+	bc_rhs->val[dim] = 1.0;
 
+	if (dim == 3) {
+	  geme_invert4x4( bc_mtx, bc_mtx );
+	} else {
+	  geme_invert3x3( bc_mtx, bc_mtx );
+	}
+
+	fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
+	fmf_mulAB_nn( bc, bc_mtx, bc_rhs );
+
+	fmf_mulATB_nn( xi, bc, ref_coors );
+	
       } else {
 	
 	fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
@@ -1035,11 +1062,11 @@ int32 evaluate_at( FMField *out,
 	ii = 0;
 	while (ii < i_max) {
 	  // Base(xi).
-	  eval_lagrange_tensor_product(bf, xi,
-				       nodes, nNod[ig], nCol[ig],
-				       order, 0,
-				       mtx_i, bc, base1d,
-				       1, qp_eps );
+	  eval_lagrange_tensor_product( bf, xi,
+					nodes, nNod[ig], nCol[ig],
+					order, 0,
+					mtx_i, bc, base1d,
+					1, qp_eps );
 	  /* fmf_print( xi, stdout, 0 ); */
 	  /* fmf_print( bf, stdout, 0 ); */
 	  // X(xi).
@@ -1060,11 +1087,11 @@ int32 evaluate_at( FMField *out,
 	  if (err < newton_eps) break;
 
 	  // grad Base(xi).
-	  eval_lagrange_tensor_product(bfg, xi,
-				       nodes, nNod[ig], nCol[ig],
-				       order, 1,
-				       mtx_i, bc, base1d,
-				       1, qp_eps );
+	  eval_lagrange_tensor_product( bfg, xi,
+					nodes, nNod[ig], nCol[ig],
+					order, 1,
+					mtx_i, bc, base1d,
+					1, qp_eps );
 	  // - Matrix.
 	  fmf_mulAB_n1( mtx, bfg, e_coors );
 
@@ -1108,8 +1135,6 @@ int32 evaluate_at( FMField *out,
     ig  = iconn[2*ie_min+0];
     iel = iconn[2*ie_min+1];
 
-    bf = bfs + ie_min;
-
     /* output("DDD %d: %d, %f, %d %d\n", ok, ie_min, d_min, ig, iel ); */
 
     conn = conns[ig];
@@ -1128,26 +1153,44 @@ int32 evaluate_at( FMField *out,
 	order = orders[ig];
 	mtx_i = mtx_is + ig;
 
-	fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
-	fmf_pretend( base1d, 1, 1, 1, nEPs[ig], b1d_max->val );
+	if (n_v == (dim + 1)) {
+	  fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
+	  eval_lagrange_simplex( bf, xi,
+				 nodes, nNod[ig], nCol[ig],
+				 order, 0,
+				 mtx_i, bc,
+				 1, qp_eps );
+	} else {
+	  fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
+	  fmf_pretend( base1d, 1, 1, 1, nEPs[ig], b1d_max->val );
 
-	eval_lagrange_tensor_product(bf, xi,
-				     nodes, nNod[ig], nCol[ig],
-				     order, 0,
-				     mtx_i, bc, base1d,
-				     1, qp_eps );
+	  eval_lagrange_tensor_product( bf, xi,
+					nodes, nNod[ig], nCol[ig],
+					order, 0,
+					mtx_i, bc, base1d,
+					1, qp_eps );
+	}
+
       } else {
 	status[ip] = 3;
       }
     } else {
       status[ip] = 0;
-    }
 
+      if (n_v == (dim + 1)) {
+	fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
+	eval_lagrange_simplex( bf, xi,
+			       nodes, nNod[ig], nCol[ig],
+			       order, 0,
+			       mtx_i, bc,
+			       1, qp_eps );
+      }
+    }
     /* output("EEE %d\n", status[ip] ); */
 
     if (status[ip] <= 1) {
       // Interpolate source_vals using bf.
-      nEP = bf->nCol;
+      nEP = nEPs[ig];
       fmf_pretend( src, 1, 1, dpn, nEP, src_max->val );
       ele_extractNodalValuesDBD( src, source_vals,
 				 conn + nEP * iel );

@@ -2032,7 +2032,8 @@ class Variable( Struct ):
 
         return coors
 
-    def evaluate_at(self, coors, strategy='kdtree', flag_same_mesh='different'):
+    def evaluate_at(self, coors, strategy='kdtree', flag_same_mesh='different',
+                    close_limit=0.1):
         """
         Evaluate self in the given physical coordinates.
         """
@@ -2064,10 +2065,10 @@ class Variable( Struct ):
             ics = ctree.query(coors)[1]
             ics = nm.asarray(ics, dtype=nm.int32)
 
-            node_coorss, nodess, orders, mtx_is, conns = [], [], [], [], []
+            vertex_coorss, nodess, orders, mtx_is, conns = [], [], [], [], []
             for ap in self.field.aps:
                 ps = ap.interp.poly_spaces['v']
-                node_coorss.append(ps.node_coors)
+                vertex_coorss.append(ps.geometry.coors)
                 nodess.append(ps.nodes)
                 orders.append(ps.order)
                 mtx_is.append(ps.get_mtx_i())
@@ -2077,8 +2078,8 @@ class Variable( Struct ):
             evaluate_at(vals, status, coors, source_vals,
                         ics, offsets, iconn,
                         scoors, conns,
-                        node_coorss, nodess, orders, mtx_is,
-                        1, 0.1, 1e-15, 100, 1e-8)
+                        vertex_coorss, nodess, orders, mtx_is,
+                        1, close_limit, 1e-15, 100, 1e-8)
 
             output('interpolator: %f s' % (time.clock()-tt))
 
@@ -2093,7 +2094,8 @@ class Variable( Struct ):
         return vals
 
     def set_from_other(self, other, strategy='projection',
-                       search_strategy='kdtree', ordering_strategy='rcm'):
+                       search_strategy='kdtree', ordering_strategy='rcm',
+                       close_limit=0.1):
         """
         Set the variable using another variable. Undefined values (e.g. outside
         the other mesh) are set to numpy.nan, or extrapolated.
@@ -2160,7 +2162,8 @@ class Variable( Struct ):
         perm = iter_nodes.get_permutation(iter_nodes.strategy)
 
         vals = other.evaluate_at(coors[perm], strategy=search_strategy,
-                                 flag_same_mesh=flag_same_mesh)
+                                 flag_same_mesh=flag_same_mesh,
+                                 close_limit=close_limit)
         
         if strategy == 'interpolation':
             self.data_from_any(vals)
@@ -2204,7 +2207,7 @@ class CloseNodesIterator(Struct):
         n_nod = self.coors.shape[0]
         dtype = nm.int32
 
-        tt = time.clock()
+        ## tt = time.clock()
 
         if strategy is None:
             perm = nm.arange(n_nod, dtype=dtype)
@@ -2250,7 +2253,7 @@ class CloseNodesIterator(Struct):
             perm = nm.empty_like(perm_i)
             perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
 
-        print strategy, time.clock() - tt
+        ## print time.clock() - tt
              
         return perm
 
