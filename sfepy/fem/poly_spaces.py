@@ -225,6 +225,9 @@ class PolySpace(Struct):
     def clear_c_errors(self):
         _fem.errclear()
 
+    def get_mtx_i(self):
+        return self.mtx_i
+
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""
     name = 'lagrange_simplex'
@@ -557,3 +560,6 @@ class LagrangeTensorProductPolySpace(PolySpace):
            suppress_errors, eps)
                 
         return base
+
+    def get_mtx_i(self):
+        return self.ps1d.mtx_i
