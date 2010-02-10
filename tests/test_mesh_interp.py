@@ -107,3 +107,63 @@ class Test(TestCommon):
                                       % (field_name, ia)))
        
         return True
+
+    def test_interpolation_two_meshes(self):
+        from sfepy.fem import Mesh, Domain, Fields, Variables
+
+        m1 = Mesh('source mesh', 'meshes/3d/block.mesh')
+
+        m2 = Mesh('target mesh', 'meshes/3d/cube_medium_tetra.mesh')
+        m2.coors *= 2.0
+
+        bbox = m1.get_bounding_box()
+        dd = bbox[1,:] - bbox[0,:]
+        data = nm.sin(4.0 * nm.pi * m1.coors[:,0:1] / dd[0]) \
+               * nm.cos(4.0 * nm.pi * m1.coors[:,1:2] / dd[1])
+
+        fields1 = {
+            'scalar_tp' : ((1,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
+        }
+
+        fields2 = {
+            'scalar_si' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P0'}),
+        }
+
+        variables1 = {
+            'u'       : ('unknown field', 'scalar_tp', 0),
+            'v'       : ('test field',    'scalar_tp', 'u'),
+        }
+
+        variables2 = {
+            'u'       : ('unknown field', 'scalar_si', 0),
+            'v'       : ('test field',    'scalar_si', 'u'),
+        }
+
+        d1 = Domain('d1', m1)
+        omega1 = d1.create_region('Omega', 'all')
+        ff1 = Fields.from_conf(transform_fields(fields1), d1.regions)
+        field1 = ff1[0]
+        
+        d2 = Domain('d2', m2)
+        omega2 = d2.create_region('Omega', 'all')
+        ff2 = Fields.from_conf(transform_fields(fields2), d2.regions)
+        field2 = ff2[0]
+        
+        vv1 = Variables.from_conf(transform_variables(variables1), ff1)
+        vv1.setup_dof_info()
+        u1 = vv1['u']
+        u1.set_from_mesh_vertices(data)
+
+        vv2 = Variables.from_conf(transform_variables(variables2), ff2)
+        vv2.setup_dof_info()
+        u2 = vv2['u']
+
+        # Performs interpolation, if other field differs from self.field
+        # or, in particular, is defined on a different mesh.
+        u2.set_from_other(u1, strategy='interpolation', close_limit=0.1)
+
+        fname = in_dir(self.options.out_dir)
+        u1.save_as_mesh(fname('test_mesh_interp_block_scalar.vtk'))
+        u2.save_as_mesh(fname('test_mesh_interp_cube_scalar.vtk'))
+
+        return True
