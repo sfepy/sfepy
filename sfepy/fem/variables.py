@@ -2319,9 +2319,6 @@ class CloseNodesIterator(Struct):
         plt.savefig('hist_distances.pdf', transparent=True)
         plt.show()
 
-##         debug()
-        
-
     def __iter__(self):
         return self
 
@@ -2335,87 +2332,3 @@ class CloseNodesIterator(Struct):
         self.ii += 1
 
         return ii, val
-
-## class Basis(Struct):
-
-##     def find_local_basis(self, point, close_limit=0.1,
-##                          allow_extrapolation=True):
-##         from sfepy.base.la import inverse_element_mapping
-
-##         ic = self.ctree.query(point)[1]
-##         els = self.iconn[ic]
-
-##         aps = self.aps
-
-##         xis = []
-##         bf = None
-##         for ig, iel in els:
-##  #           print ig, iel
-##             ap = aps[ig]
-##             nodes = ap.econn[iel]
-##             el_coors = self.coors[nodes]
-## #            print el_coors
-
-##             ps = aps[ig].interp.poly_spaces['v']
-##             ref_coors, eval_base = ps.node_coors, ps.eval_base
-
-##             n_v, dim = el_coors.shape
-##             if n_v == (dim + 1):
-##                 bc = la.barycentric_coors(point[None,:], el_coors)
-##                 xi = nm.dot(bc.T, ref_coors)
-##             else: # Tensor-product and other.
-##                 xi = inverse_element_mapping(point, el_coors, eval_base,
-##                                              ref_coors,
-##                                              suppress_errors=True)
-##             xis.append(xi)
-
-##             try:
-##                 # Verify that we are inside the element.
-##                 bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
-##             except RuntimeError:
-##                 ps.clear_c_errors()
-##                 continue
-##             break
-
-        
-##         if bf is None:
-##             # Point outside the mesh.
-##             if allow_extrapolation:
-##                 vd = ap.interp.gel.data['v'].coors
-##                 ii, dist = self.find_closest_refcoor(xis,
-##                                                      vd.min(), vd.max())
-##                 xi = xis[ii]
-##                 bf = eval_base(nm.atleast_2d(xi), suppress_errors=True)
-##                 ig, iel = els[ii]
-##                 nodes = aps[ig].econn[iel]
-## #                print dist
-##                 if dist < close_limit:
-##                     status = 1
-##                 else:
-##                     status = 2
-##             else:
-##                 status = 3
-##         else:
-##             status = 0
-
-##         return bf, nodes, status
-
-##     def find_closest_refcoor(self, xis, vmin, vmax):
-
-##         ds = []
-##         for xi in xis:
-##             d1 = nm.sum(nm.clip(xi - vmax, 0, 100)**2.0)
-##             d2 = nm.sum(nm.clip(vmin - xi, 0, 100)**2.0)
-##             ds.append(d1 + d2) 
-
-## ##         print xis
-## ##         print ds
-##         ii = nm.argmin(ds)
-##         return ii, nm.sqrt(ds[ii])
-
-## ##
-## # 11.07.2006, c
-## class FEVariable( Variable ):
-##     """Finite element Variable
-## field .. field description of variable (borrowed)
-## """
