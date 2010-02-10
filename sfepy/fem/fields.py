@@ -226,21 +226,24 @@ class Field( Struct ):
         """
         mesh = self.domain.mesh
 
-        conns, mat_ids, descs = [], [], []
-        for region_name, ig, ap in self.aps.iter_aps():
-            region = ap.region
-            group = region.domain.groups[ig]
-            if extra_nodes:
-                conn = ap.econn
-            else:
-                offset = group.shape.n_ep
-                conn = ap.econn[:,:offset]
-            conns.append(conn)
-            mat_ids.append(mesh.mat_ids[ig])
-            descs.append(mesh.descs[ig])
+        if self.approx_order != '0':
+            conns, mat_ids, descs = [], [], []
+            for region_name, ig, ap in self.aps.iter_aps():
+                region = ap.region
+                group = region.domain.groups[ig]
+                if extra_nodes:
+                    conn = ap.econn
+                else:
+                    offset = group.shape.n_ep
+                    conn = ap.econn[:,:offset]
+                conns.append(conn)
+                mat_ids.append(mesh.mat_ids[ig])
+                descs.append(mesh.descs[ig])
 
-        mesh = Mesh.from_data(self.name,
-                              self.aps.coors, None, conns, mat_ids, descs)
+            mesh = Mesh.from_data(self.name,
+                                  self.aps.coors, None, conns,
+                                  mat_ids, descs)
+
         return mesh
 
     ##

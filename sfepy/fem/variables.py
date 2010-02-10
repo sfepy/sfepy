@@ -1868,12 +1868,23 @@ class Variable( Struct ):
 
         n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.dpn
         aux = nm.reshape(vec, (n_dof / dpn, dpn))
-        ext = self.extend_data(aux, n_nod, 0.0)
 
         out = {}
-        out[self.name] = Struct(name = 'output_data',
-                                mode = 'vertex', data = ext,
-                                var_name = self.name, dofs = self.dofs )
+        if self.field.approx_order != '0':
+            ext = self.extend_data(aux, n_nod, 0.0)
+
+            out[self.name] = Struct(name = 'output_data',
+                                    mode = 'vertex', data = ext,
+                                    var_name = self.name, dofs = self.dofs)
+        else:
+            ext = extend_cell_data(aux, self.field.domain, self.field.region,
+                                   val=0.0)
+
+            ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
+            out[self.name] = Struct(name = 'output_data',
+                                    mode = 'cell', data = ext,
+                                    var_name = self.name, dofs = self.dofs)
+
         mesh.write(filename, io='auto', out=out)
         
     def interp_to_points(self, points, mesh, ctree=None, iconn=None,
