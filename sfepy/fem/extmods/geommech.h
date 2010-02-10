@@ -20,6 +20,7 @@ extern int32 t2j3D[];
 extern int32 t4s3D[];
 
 int32 geme_invert3x3( FMField *mtxI, FMField *mtx );
+int32 geme_invert4x4( FMField *mtxI, FMField *mtx );
 int32 geme_tensor2vectorS3( FMField *vec, FMField *mtx );
 int32 geme_det3x3( float64 *det, FMField *mtx );
 int32 geme_trace3x3( float64 *tr, FMField *mtx );

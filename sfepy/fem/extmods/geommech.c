@@ -61,6 +61,65 @@ int32 geme_invert3x3( FMField *mtxI, FMField *mtx )
 }
 
 #undef __FUNC__
+#define __FUNC__ "geme_invert4x4"
+int32 geme_invert4x4( FMField *mtxI, FMField *mtx )
+{
+  int32 ii, il;
+  float64 det, buf[16];
+  float64 *pm, *pi;
+
+  for (il = 0; il < mtx->nLev; il++) {
+    pm = FMF_PtrLevel( mtx, il );
+    pi = FMF_PtrLevel( mtxI, il );
+
+    buf[0] = pm[5]*pm[10]*pm[15] - pm[5]*pm[11]*pm[14] - pm[9]*pm[6]*pm[15]
+      + pm[9]*pm[7]*pm[14] + pm[13]*pm[6]*pm[11] - pm[13]*pm[7]*pm[10];
+    buf[4] = -pm[4]*pm[10]*pm[15] + pm[4]*pm[11]*pm[14] + pm[8]*pm[6]*pm[15]
+      - pm[8]*pm[7]*pm[14] - pm[12]*pm[6]*pm[11] + pm[12]*pm[7]*pm[10];
+    buf[8] = pm[4]*pm[9]*pm[15] - pm[4]*pm[11]*pm[13] - pm[8]*pm[5]*pm[15]
+      + pm[8]*pm[7]*pm[13] + pm[12]*pm[5]*pm[11] - pm[12]*pm[7]*pm[9];
+    buf[12] = -pm[4]*pm[9]*pm[14] + pm[4]*pm[10]*pm[13] + pm[8]*pm[5]*pm[14]
+      - pm[8]*pm[6]*pm[13] - pm[12]*pm[5]*pm[10] + pm[12]*pm[6]*pm[9];
+    buf[1] = -pm[1]*pm[10]*pm[15] + pm[1]*pm[11]*pm[14] + pm[9]*pm[2]*pm[15]
+      - pm[9]*pm[3]*pm[14] - pm[13]*pm[2]*pm[11] + pm[13]*pm[3]*pm[10];
+    buf[5] = pm[0]*pm[10]*pm[15] - pm[0]*pm[11]*pm[14] - pm[8]*pm[2]*pm[15]
+      + pm[8]*pm[3]*pm[14] + pm[12]*pm[2]*pm[11] - pm[12]*pm[3]*pm[10];
+    buf[9] = -pm[0]*pm[9]*pm[15] + pm[0]*pm[11]*pm[13] + pm[8]*pm[1]*pm[15]
+      - pm[8]*pm[3]*pm[13] - pm[12]*pm[1]*pm[11] + pm[12]*pm[3]*pm[9];
+    buf[13] = pm[0]*pm[9]*pm[14] - pm[0]*pm[10]*pm[13] - pm[8]*pm[1]*pm[14]
+      + pm[8]*pm[2]*pm[13] + pm[12]*pm[1]*pm[10] - pm[12]*pm[2]*pm[9];
+    buf[2] = pm[1]*pm[6]*pm[15] - pm[1]*pm[7]*pm[14] - pm[5]*pm[2]*pm[15]
+      + pm[5]*pm[3]*pm[14] + pm[13]*pm[2]*pm[7] - pm[13]*pm[3]*pm[6];
+    buf[6] = -pm[0]*pm[6]*pm[15] + pm[0]*pm[7]*pm[14] + pm[4]*pm[2]*pm[15]
+      - pm[4]*pm[3]*pm[14] - pm[12]*pm[2]*pm[7] + pm[12]*pm[3]*pm[6];
+    buf[10] = pm[0]*pm[5]*pm[15] - pm[0]*pm[7]*pm[13] - pm[4]*pm[1]*pm[15]
+      + pm[4]*pm[3]*pm[13] + pm[12]*pm[1]*pm[7] - pm[12]*pm[3]*pm[5];
+    buf[14] = -pm[0]*pm[5]*pm[14] + pm[0]*pm[6]*pm[13] + pm[4]*pm[1]*pm[14]
+      - pm[4]*pm[2]*pm[13] - pm[12]*pm[1]*pm[6] + pm[12]*pm[2]*pm[5];
+    buf[3] = -pm[1]*pm[6]*pm[11] + pm[1]*pm[7]*pm[10] + pm[5]*pm[2]*pm[11]
+      - pm[5]*pm[3]*pm[10] - pm[9]*pm[2]*pm[7] + pm[9]*pm[3]*pm[6];
+    buf[7] = pm[0]*pm[6]*pm[11] - pm[0]*pm[7]*pm[10] - pm[4]*pm[2]*pm[11]
+      + pm[4]*pm[3]*pm[10] + pm[8]*pm[2]*pm[7] - pm[8]*pm[3]*pm[6];
+    buf[11] = -pm[0]*pm[5]*pm[11] + pm[0]*pm[7]*pm[9] + pm[4]*pm[1]*pm[11]
+      - pm[4]*pm[3]*pm[9] - pm[8]*pm[1]*pm[7] + pm[8]*pm[3]*pm[5];
+    buf[15] = pm[0]*pm[5]*pm[10] - pm[0]*pm[6]*pm[9] - pm[4]*pm[1]*pm[10]
+      + pm[4]*pm[2]*pm[9] + pm[8]*pm[1]*pm[6] - pm[8]*pm[2]*pm[5];
+
+    det = pm[0]*buf[0] + pm[1]*buf[4] + pm[2]*buf[8] + pm[3]*buf[12];
+    if (fabs(det) == 1e-16) {
+      errput("singular matrix!\n");
+    }
+    det = 1.0 / det;
+
+    for (ii = 0; ii < 16; ii++) {
+      pi[ii] = buf[ii] * det;
+    }
+  }
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
 #define __FUNC__ "geme_tensor2vectorS3"
 /*!
   @par Revision history:
