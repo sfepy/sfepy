@@ -5,8 +5,8 @@ from sfepy.base.conf import transform_variables, transform_fields
 from sfepy.base.testing import TestCommon
 
 fields = {
-    'scalar_si' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
-    'vector_si' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'scalar_si' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P2'}),
+    'vector_si' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P2'}),
     'scalar_tp' : ((1,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
     'vector_tp' : ((3,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
 }
@@ -47,7 +47,7 @@ def do_interpolation(m2, m1, data, field_name):
 
     # Performs interpolation, if other field differs from self.field
     # or, in particular, is defined on a different mesh.
-    u2.set_from_other(u1, strategy='interpolation')
+    u2.set_from_other(u1, strategy='interpolation', close_limit=0.5)
 
     return u1, u2
  
@@ -64,21 +64,30 @@ class Test(TestCommon):
 
         fname = in_dir(self.options.out_dir)
 
-        m1 = Mesh('original mesh', 'meshes/3d/block.mesh')
+        meshes = {
+            'tp' : Mesh('original mesh', 'meshes/3d/block.mesh'),
+            'si' : Mesh('original mesh', 'meshes/3d/cylinder.mesh'),
+        }
 
         datas = {}
 
-        bbox = m1.get_bounding_box()
-        nx = bbox[1,0] - bbox[0,0]
-        data = nm.sin(4.0 * nm.pi * m1.coors[:,0:1] / nx)
-        datas['scalar'] = data
+        for key, mesh in meshes.iteritems():
+            bbox = mesh.get_bounding_box()
+            nx = bbox[1,0] - bbox[0,0]
+            centre = 0.5 * bbox.sum(axis=0)
+            mesh.coors -= centre
+            
+            data = nm.sin(4.0 * nm.pi * mesh.coors[:,0:1] / nx)
+            datas['scalar_' + key] = data
 
-        data = nm.zeros_like(m1.coors)
-        data[:,0] = 0.2 * nm.sin(4.0 * nm.pi * m1.coors[:,0] / nx)
-        data[:,2] = 0.2 * nm.cos(4.0 * nm.pi * m1.coors[:,0] / nx)
-        datas['vector'] = data
+            data = nm.zeros_like(mesh.coors)
+            data[:,0] = 0.05 * nx * nm.sin(4.0 * nm.pi * mesh.coors[:,0] / nx)
+            data[:,2] = 0.05 * nx * nm.cos(4.0 * nm.pi * mesh.coors[:,0] / nx)
+            datas['vector_' + key] = data
 
-        for field_name in ['scalar_tp', 'vector_tp']:
+        for field_name in ['scalar_si', 'vector_si', 'scalar_tp', 'vector_tp']:
+            m1 = meshes[field_name[-2:]]
+
             for ia, angle in enumerate(nm.linspace(0.0, nm.pi, 11)):
                 self.report('%s: %d. angle: %f' % (field_name, ia, angle))
                 shift = [0.0, 0.0, 0.0]
@@ -87,7 +96,7 @@ class Test(TestCommon):
                 m2 = m1.copy('rotated mesh')
                 m2.transform_coors(mtx)
 
-                data = datas[field_name[:6]]
+                data = datas[field_name]
                 u1, u2 = do_interpolation(m2, m1, data, field_name)
 
                 if ia == 0:
