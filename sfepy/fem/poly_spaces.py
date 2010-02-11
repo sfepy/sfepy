@@ -239,7 +239,7 @@ class LagrangeSimplexPolySpace(PolySpace):
 
         mtx = nm.ones((n_v, n_v), nm.float64)
         mtx[0:n_v-1,:] = nm.transpose(geometry.coors)
-        self.mtx_i = nla.inv(mtx)
+        self.mtx_i = nm.ascontiguousarray(nla.inv(mtx))
         self.rhs = nm.ones((n_v,), nm.float64)
 
         self.nodes, self.nts, self.node_coors = self._define_nodes()
