@@ -60,6 +60,7 @@ int32 inverse_element_mapping( FMField *out,
 			       FMField *ref_coors, int32 i_max, float64 eps );
 
 int32 evaluate_at( FMField *out,
+		   int32 *cells, int32 n_cells, int32 n_cells_col,
 		   int32 *status, int32 n_status,
 		   FMField *dest_coors, FMField *source_vals,
 		   int32 *ics, int32 n_ics,

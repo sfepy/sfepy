@@ -45,7 +45,8 @@
   (int32 *conn, int32 nEl, int32 nEP),
   (int32 *connR, int32 nElR, int32 nEPR),
   (int32 *connC, int32 nElC, int32 nEPC),
-  (int32 *nodes, int32 nNod, int32 nCol)
+  (int32 *nodes, int32 nNod, int32 nCol),
+  (int32 *cells, int32 n_cells, int32 n_cells_col)
 };
 %apply (int32 *array, int32 len) {
   (int32 *iels, int32 iels_len),
@@ -161,6 +162,7 @@ int32 inverse_element_mapping( FMField *out,
 			       FMField *ref_coors, int32 i_max, float64 eps );
 
 int32 evaluate_at( FMField *out,
+		   int32 *cells, int32 n_cells, int32 n_cells_col,
 		   int32 *status, int32 n_status,
 		   FMField *dest_coors, FMField *source_vals,
 		   int32 *ics, int32 n_ics,

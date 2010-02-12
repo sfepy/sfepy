@@ -1886,105 +1886,6 @@ class Variable( Struct ):
                                     var_name = self.name, dofs = self.dofs)
 
         mesh.write(filename, io='auto', out=out)
-        
-    def interp_to_points(self, points, mesh, ctree=None, iconn=None,
-                         cache=None):
-        """
-        Interpolate self into given points. Works for scalar variables only!
-        """
-        if iconn is None:
-            iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                              combine_groups=True)
-
-        if cache is None:
-            _cache = Struct(cells={}, bases={}, ordered_cells=[])
-        else:
-            _cache = cache
-
-        field = self.field
-        vdim = field.shape[0]
-
-        vals = nm.empty((vdim, len(points)), dtype=self.dtype)
-        coor = mesh.coors
-        conns = mesh.conns
-
-
-        tts = [0.0, 0.0, 0.0, 0.0]
-        tt0 = time.clock()
-        for ii, point in enumerate(points):
-##             print ii, point
-            tp = tuple(nm.around(point, 14))
-
-            if tp in _cache.bases:
-                ig, iel = _cache.cells[tp]
-                bf = _cache.bases[tp]
-                nodes = conns[ig][iel]
-                
-            else:
-                if ctree is None:
-                    tt = time.clock()
-                    ic = find_nearest_nodes(coor, point)
-                    tts[0] += time.clock() - tt
-                else:
-                    tt = time.clock()
-                    if isinstance(ctree, TreeItem):
-                        ic = ctree.find_nearest_node(coor, point)
-                    else:
-                        ic = ctree.query(point)[1]
-                    tts[0] += time.clock() - tt
-
-                els = iconn[ic]
-                bf = None
-                for ig, iel in els:
-    ##                 print ic, ig, iel
-                    tt1 = time.clock()
-                    nodes = conns[ig][iel]
-                    ecoor = coor[nodes]
-    ##                 print ecoor
-
-                    ps = field.aps[ig].interp.poly_spaces['v']
-                    ref_coors, eval_base = ps.node_coors, ps.eval_base
-
-                    tts[2] += time.clock() - tt1
-
-                    tt = time.clock()
-                    n_v, dim = ecoor.shape
-                    if n_v == (dim + 1):
-                        pp = nm.array(point)
-                        pp.shape = (1, pp.shape[0])
-                        bc = la.barycentric_coors(pp, ecoor)
-                        xi = nm.dot(bc.T, ref_coors)
-                    else: # Tensor-product and other.
-                        xi = nm.empty((ecoor.shape[1],), dtype=nm.float64)
-                        inverse_element_mapping(xi, point, ecoor, ref_coors,
-                                                100, 1e-8)
-                    tts[1] += time.clock() - tt
-
-                    try:
-                        # Verify that we are inside the element.
-                        bf = eval_base(nm.atleast_2d(xi), suppress_errors=False)
-                    except RuntimeError:
-                        ps.clear_c_errors()
-                        continue
-                    break
-                ## print xi, bf
-
-                _cache.cells[tp] = (ig, iel)
-                _cache.bases[tp] = bf
-
-            _cache.ordered_cells.append((ig, iel))
-
-            if bf is None:
-                # Point outside the mesh.
-                vals[:,ii] = nm.nan
-            else:
-                # For scalar fields only!!!
-                vals[:,ii] = nm.dot(bf,self()[nodes])
-        tts[-1] = time.clock() - tt0
-        print tts
-#        print tts[0], tts[3]
-        
-        return vals
 
     def set_from_mesh_vertices(self, data):
         """Set the variable using values at the mesh vertices."""
@@ -2044,7 +1945,8 @@ class Variable( Struct ):
         return coors
 
     def evaluate_at(self, coors, strategy='kdtree', flag_same_mesh='different',
-                    close_limit=0.1):
+                    close_limit=0.1, cache=None, ret_cells=False,
+                    ret_status=False):
         """
         Evaluate self in the given physical coordinates.
         """
@@ -2055,21 +1957,28 @@ class Variable( Struct ):
         output('interpolating from %d nodes to %d nodes...' % (scoors.shape[0],
                                                                coors.shape[0]))
 
-
-        n_els, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod)
-        offsets = nm.cumsum(nm.r_[0, n_els], dtype=nm.int32)
+        if cache is None:
+            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                                       ret_offsets=True)
+        else:
+            offsets, iconn = cache.offsets, cache.iconn
 
         if strategy == 'kdtree':
-            from scipy.spatial import cKDTree as KDTree
-            ## from scipy.spatial import KDTree
+            if cache is None:
+                from scipy.spatial import cKDTree as KDTree
+                ## from scipy.spatial import KDTree
 
-            tt = time.clock()
-            ctree = KDTree(scoors)
-            output('ctree: %f s' % (time.clock()-tt))
+                tt = time.clock()
+                ctree = KDTree(scoors)
+                output('ctree: %f s' % (time.clock()-tt))
+
+            else:
+                ctree = cache.ctree
 
             tt = time.clock()
 
             vals = nm.empty((coors.shape[0], self.dpn), dtype=self.dtype)
+            cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
             status = nm.empty((coors.shape[0],), dtype=nm.int32)
             source_vals = self()
 
@@ -2086,7 +1995,7 @@ class Variable( Struct ):
                 conns.append(ap.econn)
             orders = nm.array(orders, dtype=nm.int32)
 
-            evaluate_at(vals, status, coors, source_vals,
+            evaluate_at(vals, cells, status, coors, source_vals,
                         ics, offsets, iconn,
                         scoors, conns,
                         vertex_coorss, nodess, orders, mtx_is,
@@ -2102,7 +2011,14 @@ class Variable( Struct ):
 
         output('...done')
 
-        return vals
+        if ret_status:
+            return vals, cells, status
+
+        elif ret_cells:
+            return vals, cells
+
+        else:
+            return vals
 
     def set_from_other(self, other, strategy='projection',
                        search_strategy='kdtree', ordering_strategy='rcm',

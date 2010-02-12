@@ -892,6 +892,7 @@ int32 inverse_element_mapping( FMField *out,
 #undef __FUNC__
 #define __FUNC__ "evaluate_at"
 int32 evaluate_at( FMField *out,
+		   int32 *cells, int32 n_cells, int32 n_cells_col,
 		   int32 *status, int32 n_status,
 		   FMField *dest_coors, FMField *source_vals,
 		   int32 *ics, int32 n_ics,
@@ -1134,6 +1135,9 @@ int32 evaluate_at( FMField *out,
     iconn = iconn0 + 2 * offsets[ic];
     ig  = iconn[2*ie_min+0];
     iel = iconn[2*ie_min+1];
+
+    cells[2*ip+0] = ig;
+    cells[2*ip+1] = iel;
 
     /* output("DDD %d: %d, %f, %d %d\n", ok, ie_min, d_min, ig, iel ); */
 
