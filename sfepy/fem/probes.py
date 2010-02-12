@@ -14,15 +14,14 @@ class Probe(Struct):
     """
     Base class for all point probes. Enforces two points minimum.
     """
-    iconn = None
-    ctree = None
-    cttype = None
+    cache = Struct(name = 'probe_shared_cache',
+                   offsets = None,
+                   iconn = None,
+                   ctree = None)
     is_cyclic = False 
 
-    def __init__(self, name, mesh, share_mesh=True, use_tree=0, n_point=None,
-                 **kwargs):
-        Struct.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
-                        n_point=n_point, **kwargs)
+    def __init__(self, name, mesh, share_mesh=True, n_point=None, **kwargs):
+        Struct.__init__(self, name=name, mesh=mesh, n_point=n_point, **kwargs)
 
         if self.n_point is None:
             self.n_point = -10
@@ -36,39 +35,36 @@ class Probe(Struct):
             self.n_point_required = self.n_point
 
         self.is_refined = False
-        self.cache = self._create_cache()
 
         tt = time.clock()
-        if share_mesh and Probe.iconn:
-            iconn = Probe.iconn
+        if share_mesh:
+            if Probe.cache.iconn is None:
+                offsets, iconn = make_inverse_connectivity(mesh.conns,
+                                                           mesh.n_nod,
+                                                           ret_offsets=True)
+                Probe.cache.iconn = iconn
+                Probe.cache.offsets = offsets
+            self.cache = Probe.cache
+
         else:
-            iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                              combine_groups=True)
-            Probe.iconn = iconn
-        self.iconn = iconn
+            offsets, iconn = make_inverse_connectivity(mesh.conns,
+                                                       mesh.n_nod,
+                                                       ret_offsets=True)
+            self.cache = Struct(name = 'probe_cache',
+                                offsets = offsets,
+                                iconn = iconn,
+                                ctree = None)
         output('iconn: %f s' % (time.clock()-tt))
 
-        if use_tree:
-            
-            tt = time.clock()
-            if share_mesh and Probe.ctree:
-                self.ctree = Probe.ctree
-                self.cttype = Probe.cttype
-            else:
-                if (use_tree == 1) and (KDTree is not None):
-                    tt = time.clock()                    
-                    ctree = KDTree(mesh.coors)
-                    cttype = 'scipy.kdtree'
-                else:
-                    tt = time.clock()                    
-                    ctree = TreeItem.build_tree(mesh.coors, use_tree, 2)
-                    cttype = 'builtin (slow)'
-                Probe.ctree = self.ctree = ctree
-                Probe.cttype = self.cttype = cttype
-            output('ctree (%s): %f s' % (self.cttype, time.clock()-tt))
-                
+        tt = time.clock()
+        if share_mesh:
+            if Probe.cache.ctree is None:
+                self.cache.ctree = KDTree(mesh.coors)
+
         else:
-            self.ctree = None
+            self.cache.ctree = KDTree(mesh.coors)
+
+        output('ctree: %f s' % (time.clock()-tt))
 
     def report(self):
         """Report the probe parameters."""
@@ -82,43 +78,34 @@ class Probe(Struct):
 
         return out
 
-    def _create_cache(self):
-        return Struct(cells={}, bases={})
-        
     def __call__(self, variable):
         return self.probe(variable)
 
     def probe(self, variable):
         """Probe the given varable."""
-        tt = time.clock()
-
-        cache = self.cache = get_default(self.cache, self._create_cache())
-
         refine_flag = None
         while True:
             pars, points = self.get_points(refine_flag)
 
-            cache.ordered_cells = []
-            vals = variable.interp_to_points(points, self.mesh,
-                                             ctree=self.ctree,
-                                             iconn=self.iconn,
-                                             cache=cache)
+            vals, cells, status = variable.evaluate_at(points, strategy='kdtree',
+                                                       cache=self.cache,
+                                                       ret_status=True)
+            ii = nm.where(status > 0)[0]
+            vals[ii] = nm.nan
+
             if self.is_refined:
                 break
 
             else:
-                refine_flag = self.refine_points(variable, points,
-                                                 cache.ordered_cells)
+                refine_flag = self.refine_points(variable, points, cells)
                 if (refine_flag == False).all():
                     break
-
-        print time.clock() - tt
 
         self.is_refined = True
 
         return pars, vals
 
-    def refine_points(self, variable, points, ordered_cells):
+    def refine_points(self, variable, points, cells):
         """Mark intervals between points for a refinement, based on element
         sizes at those points. Assumes the points to be ordered.
 
@@ -132,8 +119,6 @@ class Probe(Struct):
             refine_flag = nm.array([False])
 
         else:
-            cells = nm.array(ordered_cells, dtype=nm.int32)
-
             ed = variable.get_element_diameters(cells, 0)
             pd = 0.5 * (ed[1:] + ed[:-1])
 
