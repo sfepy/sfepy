@@ -102,7 +102,7 @@ def make_mesh( coor, ngroups, conns, mesh_in ):
                                mat_ids, mesh_in.descs )
     return mesh_out
 
-def make_inverse_connectivity(conns, n_nod):
+def make_inverse_connectivity(conns, n_nod, ret_offsets=True):
     """
     For each mesh node referenced in the connectivity conns, make a list of
     elements it belongs to.
@@ -120,7 +120,12 @@ def make_inverse_connectivity(conns, n_nod):
     n_els = nm.array(n_els, dtype=nm.int32)
     iconn = nm.fromiter(chain(*iconn), nm.int32)
 
-    return n_els, iconn
+    if ret_offsets:
+        offsets = nm.cumsum(nm.r_[0, n_els], dtype=nm.int32)
+        return offsets, iconn
+
+    else:
+        return n_els, iconn
 
 
 class TreeItem(Struct):
