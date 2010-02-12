@@ -47,6 +47,7 @@ WARNING: The code in the fem package is undergoing rapid change. It is best to r
    :maxdepth: 2
 
    src/sfepy/fem/poly_spaces
+   src/sfepy/fem/probes
 
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
