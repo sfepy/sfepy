@@ -1,14 +1,12 @@
+"""Classes for probing values of Variables, for example, along a line."""
 try:
     from scipy.spatial import cKDTree as KDTree
 except ImportError:
-    try:
-        from scipy.spatial import KDTree
-    except ImportError:
-        KDTree = None
+    from scipy.spatial import KDTree
 
 from sfepy.base.base import *
 from sfepy.base.la import make_axis_rotation_matrix, norm_l2_along_axis
-from sfepy.fem.mesh import make_inverse_connectivity, TreeItem
+from sfepy.fem.mesh import make_inverse_connectivity
 
 class Probe(Struct):
     """
@@ -21,6 +19,26 @@ class Probe(Struct):
     is_cyclic = False 
 
     def __init__(self, name, mesh, share_mesh=True, n_point=None, **kwargs):
+        """
+        Parameters
+        ----------
+        name : str
+            The probe name, set automatically by the subclasses.
+        mesh : Mesh instance
+            The FE mesh where the variables to be probed are defined.
+        share_mesh : bool
+            Set to True to indicate that all the probes will work on the same
+            mesh. Certain data are then computed only for the first probe and
+            cached.
+        n_point : int
+           The (fixed) number of probe points, when positive. When non-positive,
+           the number of points is adaptively increased starting from -n_point,
+           until the neighboring point distance is less than the diameter of the
+           elements enclosing the points. When None, it is set to -10.
+
+        For additional parameters see the __init__() docstrings of the
+        subclasses.
+        """
         Struct.__init__(self, name=name, mesh=mesh, n_point=n_point, **kwargs)
 
         if self.n_point is None:
@@ -79,10 +97,26 @@ class Probe(Struct):
         return out
 
     def __call__(self, variable):
+        """
+        Probe the given variable. The actual implementation is in self.probe(),
+        so that it can be overridden in subclasses.
+
+        Parameters
+        ----------
+        variable : Variable instance
+            The variable to be sampled along the probe.
+        """
         return self.probe(variable)
 
     def probe(self, variable):
-        """Probe the given varable."""
+        """
+        Probe the given variable.
+
+        Parameters
+        ----------
+        variable : Variable instance
+            The variable to be sampled along the probe.
+        """
         refine_flag = None
         while True:
             pars, points = self.get_points(refine_flag)
@@ -106,7 +140,8 @@ class Probe(Struct):
         return pars, vals
 
     def refine_points(self, variable, points, cells):
-        """Mark intervals between points for a refinement, based on element
+        """
+        Mark intervals between points for a refinement, based on element
         sizes at those points. Assumes the points to be ordered.
 
         Returns
@@ -135,6 +170,9 @@ class Probe(Struct):
 
     @staticmethod
     def refine_pars(pars, refine_flag, cyclic_val=None):
+        """
+        Refine the probe parametrization based on the refine_flag.
+        """
         ii = nm.where(refine_flag)[0]
         ip = ii + 1
 
@@ -150,7 +188,8 @@ class Probe(Struct):
         return pars
 
 class LineProbe(Probe):
-    """Probe variables along a line.
+    """
+    Probe variables along a line.
 
     If n_point is positive, that number of evenly spaced points is used. If
     n_point is None or non-positive, an adaptive refinement based on element
@@ -158,13 +197,20 @@ class LineProbe(Probe):
     automatically. If it is negative, -n_point is used as an initial guess.
     """
 
-    def __init__(self, p0, p1, n_point, mesh, share_mesh=True, use_tree=0):
+    def __init__(self, p0, p1, n_point, mesh, share_mesh=True):
+        """
+        Parameters
+        ----------
+        p0 : array_like
+            The coordinates of the start point.
+        p1 : array_like
+            The coordinates of the end point.
+        """
         p0 = nm.array(p0, dtype=nm.float64)
         p1 = nm.array(p1, dtype=nm.float64)
         name = 'line [%s, %s]' % (p0, p1)
 
-        Probe.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
-                       p0=p0, p1=p1, n_point=n_point)
+        Probe.__init__(self, name=name, mesh=mesh, p0=p0, p1=p1, n_point=n_point)
             
         dirvec = self.p1 - self.p0
         self.length = nm.linalg.norm(dirvec)
@@ -207,11 +253,27 @@ class LineProbe(Probe):
         return pars, self.points
 
 class RayProbe(Probe):
-    """Probe variables along a ray. The points are parametrized by a function of
-    radial coordinates from a given point in a given direction."""
+    """
+    Probe variables along a ray. The points are parametrized by a function of
+    radial coordinates from a given point in a given direction.
+    """
     
     def __init__(self, p0, dirvec, p_fun, n_point, both_dirs, mesh,
-                 share_mesh=True, use_tree=0):
+                 share_mesh=True):
+        """
+        Parameters
+        ----------
+        p0 : array_like
+            The coordinates of the start point.
+        dirvec : array_like
+            The probe direction vector.
+        p_fun : function
+            The function returning the probe parametrization along the dirvec
+            direction.
+        both_dirs : bool
+            If True, the probe works, starting at p0, symmetrically in both
+            dirvec and -dirvec directions.
+        """
         p0 = nm.array(p0, dtype=nm.float64)
         dirvec = nm.array(dirvec, dtype=nm.float64)
         dirvec /= nla.norm(dirvec)
@@ -222,7 +284,7 @@ class RayProbe(Probe):
         else:
             n_point_true = n_point
 
-        Probe.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
+        Probe.__init__(self, name=name, mesh=mesh,
                        p0=p0, dirvec=dirvec, p_fun=p_fun, n_point=n_point_true,
                        both_dirs=both_dirs)
 
@@ -244,6 +306,7 @@ class RayProbe(Probe):
         return refine_flag
     
     def gen_points(self, sign):
+        """Generate the probe points and their parametrization."""
         pars = self.p_fun(nm.arange(self.n_point_single, dtype=nm.float64))
         points = self.p0 + sign * self.dirvec * pars[:,None]
         return pars, points
@@ -267,7 +330,8 @@ class RayProbe(Probe):
         return pars, points
 
 class CircleProbe(Probe):
-    """Probe variables along a circle.
+    """
+    Probe variables along a circle.
 
     If n_point is positive, that number of evenly spaced points is used. If
     n_point is None or non-positive, an adaptive refinement based on element
@@ -277,7 +341,7 @@ class CircleProbe(Probe):
     is_cyclic = True
 
     def __init__(self, centre, normal, radius, n_point,
-                 mesh, share_mesh=True, use_tree=0):
+                 mesh, share_mesh=True):
         """
         Parameters
         ----------
@@ -287,8 +351,6 @@ class CircleProbe(Probe):
             The normal vector perpendicular to the circle plane.
         radius : float
             The radius of the circle.
-        n_point : int
-            The number of the probe points.
         """
         centre = nm.array(centre, dtype=nm.float64)
         normal = nm.array(normal, dtype=nm.float64)
@@ -296,7 +358,7 @@ class CircleProbe(Probe):
 
         name = 'circle [%s, %s, %s]' % (centre, normal, radius)
 
-        Probe.__init__(self, name=name, mesh=mesh, use_tree=use_tree,
+        Probe.__init__(self, name=name, mesh=mesh,
                        centre=centre, normal=normal, radius=radius,
                        n_point=n_point)
 
