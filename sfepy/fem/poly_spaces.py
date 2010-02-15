@@ -150,6 +150,8 @@ class PolySpace(Struct):
         Construct a particular polynomial space classes according to the
         arguments passed in.
         """
+        if name is None:
+            name = PolySpace.suggest_name(geometry, order, base, force_bubble)
 
         if PolySpace._all is None:
             PolySpace._all = find_subclasses(globals(),
@@ -157,11 +159,23 @@ class PolySpace(Struct):
         table = PolySpace._all
 
         key = '%s_%s' % (base, PolySpace.keys[(geometry.dim,
-                                            geometry.n_vertex)])
+                                               geometry.n_vertex)])
         if force_bubble:
             key += '_bubble'
 
         return table[key](name, geometry, order)
+
+    @staticmethod
+    def suggest_name(geometry, order, base='lagrange',
+                     force_bubble=False):
+        """
+        Suggest the polynomial space name given its constructor parameters.
+        """
+        aux = geometry.get_interpolation_name()[:-1]
+        if force_bubble:
+            return aux + ('%dB' % order)
+        else:
+            return aux + ('%d' % order)
 
     def __init__(self, name, geometry, order):
         self.name = name
