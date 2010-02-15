@@ -65,13 +65,11 @@ class ProblemDefinition( Struct ):
             
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
-        eldesc_dir = op.join( sfepy.base_dir, 'eldesc' )
-        domain = Domain(mesh.name, mesh, eldesc_dir)
+        domain = Domain(mesh.name, mesh)
 
-        obj = ProblemDefinition( conf = conf,
-                                 functions = functions,
-                                 domain = domain,
-                                 eldesc_dir = eldesc_dir )
+        obj = ProblemDefinition(conf = conf,
+                                functions = functions,
+                                domain = domain)
 
         obj.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
 	# Default output file trunk and format.

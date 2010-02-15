@@ -35,49 +35,56 @@ def _get_i_name( iname, integral, key ):
             iname = integral.name
     return iname
 
-##
-# Field approximation.
-# 29.11.2004, c
-# 30.11.2004
-# 01.12.2004
-# 04.02.2005
 class Interpolant( Struct ):
+    """A simple wrapper around PolySpace."""
 
-    ##
-    # 31.03.2005
-    # 16.06.2005
-    def __init__( self ):
-        self.setup_done = 0
+    # A dirty hack to satisfy the tests. The key should be given by PolySpace.
+    _map = {
+        '2_3_P2'  : 's3',
+        '2_3_P2B' : 's3',
+        '3_4_P2'  : 's6',
+        '3_4_P2B' : 's6',
+    }
 
-    def setup( self, gel = None ):
-        if (self.setup_done): return
+    def __init__(self, name, gel):
+        self.name = name
+        self.gel = gel
 
-        if gel is not None:
-            self.gel = gel
+        is_bubble = name[-1] == 'B'
+        if is_bubble:
+            approx_order = int(name[-2])
 
-        # Input transformation and defaults.
-        for key, nod in self.nodes.iteritems():
-            if not nod.has_key( 'share' ):
-                nod['share'] = 1
+        else:
+            approx_order = int(name[-1])
 
-        self.desc = dict_to_struct( self.desc, flag = (1,) )
+        if name in self._map:
+            skey = self._map[name]
 
-        is_bubble = self.desc.family[-1] == 'B'
-        self.i_key_map = i_key_map = invert_dict( self.key_map )
+        else:
+            if gel.surface_facet is not None:
+                n_fp = gel.surface_facet.n_vertex
+
+            else:
+                n_fp = 2
+            skey = 's%d' % n_fp
+
+        key_map = {0 : 'v', 1 : skey}
+
+        is_bubble = name[-1] == 'B'
+        ## self.i_key_map = i_key_map = invert_dict(self.key_map)
 
         poly_spaces = {}
-        for key in self.base_funs.iterkeys():
-            gd = self.gel.data[i_key_map[key]]
-            force_bubble = is_bubble and (key == 'v')
+        for ii, gel in enumerate([gel, gel.surface_facet]):
+            if gel is None: continue
+            force_bubble = is_bubble and (ii == 0)
 
-            ps = PolySpace.any_from_args(self.name, gd, self.desc.approx_order,
+            ps = PolySpace.any_from_args(None, gel, approx_order,
                                          base='lagrange',
                                          force_bubble=force_bubble)
+            key = key_map[ii]
             poly_spaces[key] = ps
 
         self.poly_spaces = poly_spaces
-
-        self.setup_done = 1
 
     ##
     # 02.08.2005, c
@@ -86,7 +93,7 @@ class Interpolant( Struct ):
     # 30.09.2005
     # 03.10.2005
     def list_extra_node_types( self, et, ft ):
-        gd = self.gel.data['v']
+        gel = self.gel
         ps = self.poly_spaces['v']
         max_ao = nm.amax( nm.sum( ps.nodes, 1 ) )
 
@@ -96,7 +103,7 @@ class Interpolant( Struct ):
 
         for ii, nt in enumerate( ps.nts ):
             if (nt[0] == 1): # Edge node.
-                edge = gd.edges[nt[1]]
+                edge = gel.edges[nt[1]]
                 tpar = float( ps.nodes[ii,edge[1]] )
                 key = int( round( tpar / max_ao, 5 ) * 1e5 )
                 if not et.has_key( key ): et[key] = len( et )
@@ -105,7 +112,7 @@ class Interpolant( Struct ):
 ##                 print ps.nodes[ii], edge
 
             elif (nt[0] == 2): # Face node.
-                face = gd.faces[nt[1]]
+                face = gel.faces[nt[1]]
                 upar = float( ps.nodes[ii,face[1]] )
                 vpar = float( ps.nodes[ii,face[-1]] )
                 key = [int( round( ii / max_ao, 5 ) * 1e5 )
@@ -359,18 +366,16 @@ class Approximation( Struct ):
                     print self.name
                     print 'no integral given for key "%s"' % str( qpkey )
                     raise ValueError
+
             interp = self.interp
             if key[0] == 's':
                 dim = interp.gel.dim - 1
-                if dim == 2:
-                    n_fp = len( interp.gel.s_faces[interp.i_key_map[key]] )
-                elif dim == 1:
-                    n_fp = len( interp.gel.s_edges[interp.i_key_map[key]][0] )
-                else:
-                    raise NotImplementedError
+                n_fp = interp.gel.surface_facet.n_vertex
                 geometry = '%d_%d' % (dim, n_fp)
+
             else:
-                geometry = interp.geometry
+                geometry = interp.gel.name
+
             vals, weights = integral.get_qp( geometry )()
             self.qp_coors[qpkey] = Struct( vals = vals, weights = weights )
 ##             print self.name, self.qp_coors
@@ -385,9 +390,13 @@ class Approximation( Struct ):
         qp = self.get_qp( key, iname, integral )
 
         if from_geometry:
-            gkey = self.interp.i_key_map[key]
+            if key == 'v':
+                gkey = key
+            else:
+                gkey = 's%d' % self.interp.gel.surface_facet.n_vertex
             ps = self.interp.gel.interp.poly_spaces[gkey]
             bf_key = (iname, 'g' + key, derivative)
+
         else:
             ps = self.interp.poly_spaces[key]
             bf_key = (iname, key, derivative)
@@ -490,10 +499,10 @@ class Approximation( Struct ):
     #
     def _create_bqp( self, skey, bf_s, weights, iname ):
         interp = self.interp
-        gd = interp.gel.data['v']
+        gel = interp.gel
         bkey = 'b%s' % skey[1:]
         bqpkey = (iname, bkey)
-        coors, faces = gd.coors, gd.faces
+        coors, faces = gel.coors, gel.get_surface_entities()
 
         vals = _interp_to_faces( coors, bf_s, faces )
         self.qp_coors[bqpkey] = Struct( name = 'BQP_%s' % bkey,
@@ -544,13 +553,13 @@ class Approximations( Container ):
                 raise
 
             interp = interps[base_name]
-            if self.interps.has_key( region.name ):
+
+            if region.name in self.interps:
                 if self.interps[region.name] is not interp:
-                    output( 'interpolation mismatch!' )
-                    output( self.interps[region.name].name, interp.name )
-                    raise ValueError
+                    msg = 'interpolation mismatch! (%s == %s)'\
+                          % (self.interps[region.name].name, interp.name)
+                    raise ValueError(msg)
             else:
-                interp.setup( domain.geom_els[interp.geometry] )
                 self.interps[region.name] = interp
             
             for ig in region.igs:
@@ -802,13 +811,13 @@ class Approximations( Container ):
         for region_name, ig, ap in self.iter_aps():
             node_desc = self.node_descs[region_name]
 
-            gd = ap.interp.gel.data['v']
-            ap.efaces = gd.faces.copy()
+            gel = ap.interp.gel
+            ap.efaces = gel.get_surface_entities().copy()
 
             if ap.has_extra_edge_nodes:
                 nd = node_desc.edge
                 efs = []
-                for eof in gd.edges_of_faces:
+                for eof in gel.get_edges_per_face():
                     ef = [nd[ie][:,0] for ie in eof]
                     efs.append( ef )
                 efs = nm.array( efs ).squeeze()

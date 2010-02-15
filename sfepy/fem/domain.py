@@ -1,6 +1,5 @@
 from sfepy.base.base import *
-from sfepy.base.reader import Reader
-from geomElement import GeomElement
+from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parseReg \
      import create_bnf, visit_stack, print_stack, ParseException
@@ -29,11 +28,10 @@ def dm_create_list( groups, sentinel, mode, is_sort ):
     ii = 0
     for ig, group in groups.iteritems():
         conn, gel = group.conn, group.gel
-        gd = gel.data['v']
         if (mode == 0):
-            n_item, items = gd.n_edge, gd.edges
+            n_item, items = gel.n_edge, gel.edges
         else:
-            n_item, items = gd.n_face, gd.faces
+            n_item, items = gel.n_face, gel.faces
 
 #        print '::', ii
         ii = mu.create_list( ii, objs, ig, conn, items, is_sort )[1]
@@ -74,11 +72,11 @@ def dm_neighbour_list( obj_in, groups, ic, perm, mode ):
 
     pel = nm.zeros( (sum( n_el ) + 1,), nm.int32 )
     for ig in range( n_gr ):
-        gd = groups[ig].gel.data['v']
+        gel = groups[ig].gel
         if (mode == 0):
-            n_item = gd.n_edge
+            n_item = gel.n_edge
         else:
-            n_item = gd.n_face
+            n_item = gel.n_face
         for ie in range( n_el[ig] ):
             pel[pg[ig]+ie+1] = n_item
     pel = nm.cumsum( pel, dtype = nm.int32 )
@@ -292,7 +290,7 @@ class Domain( Struct ):
     Domain is divided into groups, whose purpose is to have homogeneous
     data shapes."""
 
-    def __init__(self, name, mesh, component_dir=None):
+    def __init__(self, name, mesh):
         """Create a Domain.
 
         Parameters
@@ -301,27 +299,26 @@ class Domain( Struct ):
             Object name.
         mesh : Mesh
             A mesh defining the domain.
-        component_dir : str
-            A directory with element definitions, the default is 'sfepy/eldesc'.
         """
-        read = Reader(get_default(component_dir, 'sfepy/eldesc'))
+        geom_els = {}
+        for ig, desc in enumerate(mesh.descs):
+            gel = GeometryElement(desc)
+            # Create geometry elements of dimension - 1.
+            gel.create_surface_facet()
 
-        geom_els = OneTypeList( GeomElement )
-        for desc in mesh.descs:
-#            print desc
-            
-            if not geom_els.find( desc ):
-                geom_els.append( read( GeomElement, desc ) )
+            geom_els[desc] = gel
 
         interps = {}
-        for gel in geom_els:
-            key = gel.interpolation
+        for gel in geom_els.itervalues():
+            key = gel.get_interpolation_name()
 
-            if interps.has_key( key ):
-                gel.interp = interps[key]
-            else:
-                gel.interp = read( fea.Interpolant, key )
-                interps[key] = gel.interp
+            gel.interp = interps.setdefault(key,
+                                            fea.Interpolant(key, gel))
+            gel = gel.surface_facet
+            if gel is not None:
+                key = gel.get_interpolation_name()
+                gel.interp = interps.setdefault(key,
+                                                fea.Interpolant(key, gel))
 
         Struct.__init__(self,
                         name = name,
@@ -339,14 +336,6 @@ class Domain( Struct ):
 
     def setup_groups( self ):
 
-        for gel in self.geom_els:
-            gel.setup()
-        
-        # Call after gel.setup()
-        for ginterp in self.geom_interps.itervalues():
-            gel = self.geom_els[ginterp.geometry]
-            ginterp.setup( gel )
-
         n_gr = len( self.mesh.conns )
         n_nod, dim = self.mesh.coors.shape
         self.shape = Struct( n_gr = len( self.mesh.conns ), n_el = 0,
@@ -359,11 +348,11 @@ class Domain( Struct ):
 
             n_vertex = vertices.shape[0]
             n_el, n_ep = conn.shape
-            n_edge = gel.data['v'].n_edge           
+            n_edge = gel.n_edge           
             n_edge_total = n_edge * n_el
 
             if gel.dim == 3:
-                n_face = gel.data['v'].n_face
+                n_face = gel.n_face
                 n_face_total = n_face * n_el
             else:
                 n_face = n_face_total = 0
@@ -427,7 +416,7 @@ class Domain( Struct ):
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
                 mu.orient_elements( flag, conn, coors,
-                                    ori.v_roots, ori.v_vecs,
+                                    ori.roots, ori.vecs,
                                     ori.swap_from, ori.swap_to )
     #            print flag
                 if nm.alltrue( flag == 0 ):
@@ -448,11 +437,10 @@ class Domain( Struct ):
     # 19.07.2006, c
     def get_orientation( self, ii, mode = 'edges' ):
         group = self.groups[ii]
-        gd = group.gel.data['v']
 
         if mode == 'edges':
-            ori = nm.zeros( (group.shape.n_el, gd.n_edge), nm.int32 )
-            mu.orient_edges( ori, group.conn, gd.edges );
+            ori = nm.zeros( (group.shape.n_el, group.gel.n_edge), nm.int32 )
+            mu.orient_edges( ori, group.conn, group.gel.edges );
         elif mode == 'faces':
             output( 'orient faces' )
             raise NotImplementedError
@@ -643,7 +631,7 @@ class Domain( Struct ):
         if vg is None:
             diameters.fill( 1.0 )
         else:
-            vg.get_element_diameters( diameters, group.gel.data['v'].edges,
+            vg.get_element_diameters( diameters, group.gel.edges,
                                     self.get_mesh_coors().copy(), group.conn,
                                     cells, mode )
         if square:

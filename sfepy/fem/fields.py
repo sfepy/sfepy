@@ -1,5 +1,4 @@
 from sfepy.base.base import *
-from sfepy.base.reader import Reader
 import sfepy.base.la as la
 import fea
 from mesh import Mesh, make_point_cells
@@ -37,20 +36,6 @@ class Fields( Container ):
         return obj
     from_field_list = staticmethod( from_field_list )
     
-    ##
-    # 14.07.2006, c
-    # 18.07.2006
-    def read_interpolants( self, component_dir ):
-
-        read = Reader( component_dir )
-
-        interps = {}
-
-        for field in self:
-            field.create_interpolants( interps, read )
-
-        self.interps = interps
-
     ##
     # 18.07.2006, c
     # 19.02.2007
@@ -90,7 +75,7 @@ class Field( Struct ):
     from_conf = staticmethod( from_conf )
 
     def __init__(self, name, dtype, shape, region, approx_order,
-                 bases=None, component_dir=None):
+                 bases=None):
         """Create a Field.
 
         Parameters
@@ -108,8 +93,6 @@ class Field( Struct ):
             FE approxiamtion order, e.g. 0, 1, 2, '1B' (1 with bubble).
         bases : dict
             To remove....
-        component_dir : str
-            A directory with element definitions, the default is 'sfepy/eldesc'.
         """
         if isinstance(shape, str):
             try:
@@ -129,7 +112,7 @@ class Field( Struct ):
             self.setup_bases()
         else:
             self.bases = bases
-        self.create_interpolants(component_dir)
+        self.create_interpolants()
         self.setup_approximations()
 ##         print self.aps
 ##         pause()
@@ -151,30 +134,19 @@ class Field( Struct ):
         self.bases = {self.region.name :
                       '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)}
 
-    ##
-    # 18.07.2006, c
-    def create_interpolants(self, component_dir=None):
-        """One interpolant for each base, shared if same.
-
-        Parameters
-        ----------
-        component_dir : str
-            A directory with element definitions, the default is 'sfepy/eldesc'.
+    def create_interpolants(self):
         """
-        if component_dir is None:
-            import os.path as op
-            component_dir = op.normpath(op.join(op.dirname(__file__),
-                                                '../eldesc'))
-
-        read = Reader(component_dir)
-
+        One interpolant for each base, shared if same.
+        """
         self.interps = {}
         for region_name, base_name in self.bases.iteritems():
 
-            if self.all_interps.has_key( base_name ):
+            if base_name in self.all_interps:
                 interp = self.all_interps[base_name]
+
             else:
-                interp = read( fea.Interpolant, base_name )
+                gel = self.domain.geom_els[base_name[:3]]
+                interp = fea.Interpolant(base_name, gel)
                 self.all_interps[base_name] = interp
 
             self.interps[base_name] = interp
