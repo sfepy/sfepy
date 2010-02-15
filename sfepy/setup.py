@@ -11,7 +11,6 @@ def configuration(parent_package='',top_path=None):
     subdirs = [
         'applications',
         'base',
-        'eldesc',
         'fem',
         'geom',
         'homogenization',
