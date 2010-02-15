@@ -109,13 +109,14 @@ def wrap_function( function, args ):
         tt = time.time()
 
         results[:] = function( x, *args )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion = results
+        eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp = results
 
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
         times.append( tt2 - tt )
-        return vec_vh + vec_vxc - x
+
+        return v_hxc_qp.ravel() - x
     return ncalls, times, function_wrapper, results
 
 class SchroedingerApp( SimpleApp ):
@@ -200,7 +201,13 @@ class SchroedingerApp( SimpleApp ):
 
         return evp
 
-    def iterate( self, vec_vhxc, eig_solver, mtx_b, log, file_output,
+    def _interp_to_nodes(self, v_qp):
+        self.problem.variables['scalar'].data_from_qp(v_qp, 'i1')
+
+        return self.problem.variables['scalar']()
+        
+
+    def iterate( self, v_hxc_qp, eig_solver, mtx_b, log, file_output,
                  n_electron = None ):
         from sfepy.physics import dft
 
@@ -213,24 +220,18 @@ class SchroedingerApp( SimpleApp ):
         
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
 
-        vec_vhxc = nm.array(vec_vhxc, dtype=nm.float64)
+        sh = self.qp_shape
 
-        # Interpolate V_hxc into QP and pass it to mat_v material.
-        ## print vec_vhxc.min(), vec_vhxc.max()
-        vhxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
-                              Psi=vec_vhxc)
-        sh = vhxc_qp.shape
-        vhxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
-        ## print vhxc_qp.min(), vhxc_qp.max()
-        pb.materials['mat_v'].set_extra_args(vhxc=vhxc_qp)
+        v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
+        v_hxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
+        pb.materials['mat_v'].set_extra_args(vhxc=v_hxc_qp)
         pb.set_equations(pb.conf.equations)
         pb.update_materials()
 
-        # Interpolate core potential from QP to nodes.
-        v_ion_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'V_ion')
-        pb.variables['V'].data_from_qp(v_ion_qp, 'i1')
-        vec_ion = pb.variables['V']()
+        v_hxc_qp.shape = sh
 
+        v_ion_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'V_ion')
+        
         dummy = pb.create_state_vector()
 
         output( 'assembling lhs...' )
@@ -270,57 +271,54 @@ class SchroedingerApp( SimpleApp ):
         pb.save_state('.'.join((name, opts.output_format)), out=out)
         output( "...solutions saved" )
 
-##        vec_n = nm.zeros_like( vec_vhxc )
-        # Just to get the shape. Assumes one element group only!!!
-        n_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
-                           Psi=vec_phi)
-        n_qp.fill(0.0)
+        n_qp = nm.zeros_like(v_hxc_qp)
         for ii in xrange( n_eigs_ok ):
             vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
             phi_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
                                  Psi=vec_phi)
             n_qp += weights[ii] * (phi_qp ** 2)
-##            vec_n += weights[ii] * vec_phi ** 2
 
-##        charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
-##        print charge
+       ## charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
+       ## print charge
 
         var = pb.variables['Psi']
         ap, vg = var.get_approximation(('i1', 'Omega', 0), 'Volume')
 
         det = vg.variable(1)
         charge = (det * n_qp).sum()
-##         Same as above.
-##         out = nm.zeros((n_qp.shape[0], 1, 1, 1), dtype=nm.float64)
-##         vg.integrate(out, n_qp)
-##         charge = out.sum()
+        ## Same as above.
+        ## out = nm.zeros((n_qp.shape[0], 1, 1, 1), dtype=nm.float64)
+        ## vg.integrate(out, n_qp)
+        ## charge = out.sum()
 
-##         pb.variables['n'].data_from_data( vec_n )
-        pb.variables['n'].data_from_qp(n_qp, 'i1')
-        vec_n = pb.variables['n']()
-
+        vec_n = self._interp_to_nodes(n_qp)
         charge_n = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
 
-        vec_vxc = nm.zeros_like( vec_vhxc )
-        for ii, val in enumerate( vec_n ):
-##             print ii, val
-##             assert nm.isfinite(val)
-            vec_vxc[ii] = dft.getvxc(val, 0)
-##             print vec_vxc[ii] 
-##             assert nm.isfinite(vec_vxc[ii])
+        ##
+        # V_xc in quadrature points.
+        v_xc_qp = nm.zeros((nm.prod(self.qp_shape),), dtype=nm.float64)
+        for ii, val in enumerate(n_qp.flat):
+            ## print ii, val
+            v_xc_qp[ii] = dft.getvxc(val, 0)
+        assert_(nm.isfinite(v_xc_qp).all())
+        v_xc_qp.shape = self.qp_shape
 
-
-        assert_(nm.isfinite(vec_vxc).all())
-
+        mat_key = pb.materials['mat_v'].datas.keys()[0]
         pb.set_equations( pb.conf.equations_vh )
         pb.select_bcs( ebc_names = ['VHSurface'] )
 
         output( "solving Ax=b Poisson equation" )
-        vec_vh = pb.solve()
+        pb.materials['mat_n'].reset()
+        pb.materials['mat_n'].set_data({mat_key : {0: {'N' : n_qp}}})
+        vec_v_h = pb.solve()
 
-        norm = nla.norm( vec_vh + vec_vxc )
-        dnorm = abs(norm - self.norm_vhxc0)
-        log( norm, max(dnorm,1e-20) ) # logplot of pure 0 fails.
+        v_h_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
+                             Psi=vec_v_h)
+
+        v_hxc_qp = v_h_qp + v_xc_qp
+        norm = nla.norm(v_hxc_qp.ravel())
+        dnorm = abs(norm - self.norm_v_hxc0)
+        log(norm, max(dnorm,1e-20)) # logplot of pure 0 fails.
         file_output( '%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
                      % (self.itercount, norm, dnorm) )
 
@@ -335,22 +333,22 @@ class SchroedingerApp( SimpleApp ):
         file_output("charge_qp: ", charge)
         file_output("charge_n:  ", charge_n)
         file_output("----------------------------------------")
-        file_output("|N|:       ", nla.norm(vec_n))
-        file_output("|V_ion|:   ", nla.norm(vec_ion))
-        file_output("|V_H|:     ", nla.norm(vec_vh))
-        file_output("|V_XC|:    ", nla.norm(vec_vxc))
-        file_output("|V_HXC|:   ", nla.norm(vec_vh + vec_vxc))
+        file_output("|N|:       ", nla.norm(n_qp.ravel()))
+        file_output("|V_H|:     ", nla.norm(v_h_qp.ravel()))
+        file_output("|V_XC|:    ", nla.norm(v_xc_qp.ravel()))
+        file_output("|V_HXC|:   ", norm)
         file_output("-"*70)
 
 	if self.iter_hook is not None: # User postprocessing.
-            data = Struct( eigs = eigs, mtx_s_phi = mtx_s_phi,
-                           vec_n = vec_n, vec_vh = vec_vh,
-                           vec_vxc = vec_vxc, vec_ion = vec_ion )
-	    self.iter_hook( self.problem, data = data )
+            data = Struct(eigs = eigs, mtx_s_phi = mtx_s_phi,
+                          vec_n = vec_n, vec_v_h = vec_v_h,
+                          n_qp = n_qp, v_ion_qp = v_ion_qp, v_h_qp = v_h_qp,
+                          v_xc_qp = v_xc_qp)
+	    self.iter_hook(self.problem, data = data)
 
-        self.norm_vhxc0 = norm
+        self.norm_v_hxc0 = norm
         
-        return eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion
+        return eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp
 
     def solve_eigen_problem_n( self ):
         opts = self.app_options
@@ -392,28 +390,41 @@ class SchroedingerApp( SimpleApp ):
         eig_conf = pb.get_solver_conf( opts.eigen_solver )
         eig_solver = Solver.any_from_conf( eig_conf )
 
-        vec_vhxc = nm.zeros( (pb.variables.di.ptr[-1],), dtype = nm.float64 )
+        # Just to get the shape. Assumes one element group only!!!
+        aux = nm.zeros((pb.variables.di.ptr[-1],), dtype=nm.float64)
+        v_hxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
+                               Psi=aux)
+        v_hxc_qp.fill(0.0)
+        self.qp_shape = v_hxc_qp.shape
+        vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
 
-        self.norm_vhxc0 = nla.norm( vec_vhxc )
+        self.norm_v_hxc0 = nla.norm(vec_v_hxc)
         self.itercount = 0
-        aux = wrap_function( self.iterate,
-                             (eig_solver, mtx_b, log, file_output) )
+        aux = wrap_function(self.iterate,
+                            (eig_solver, mtx_b, log, file_output))
         ncalls, times, nonlin_v, results = aux
 
         # Create and call the DFT solver.
-        dft_conf = pb.get_solver_conf( opts.dft_solver )
+        dft_conf = pb.get_solver_conf(opts.dft_solver)
         dft_status = {}
-        dft_solver = Solver.any_from_conf( dft_conf, fun = nonlin_v,
-                                           status = dft_status )
-        vec_vhxc = dft_solver( vec_vhxc )
-        eigs, mtx_s_phi, vec_n, vec_vh, vec_vxc, vec_ion = results
-        output( 'DFT iteration time [s]:', dft_status['time_stats'] )
-        
-        if self.options.plot:
-            log( save_figure = opts.iter_fig_name )
-            pause()
-            log(finished=True)
+        dft_solver = Solver.any_from_conf(dft_conf,
+                                          fun = nonlin_v,
+                                          status = dft_status)
+        v_hxc_qp = dft_solver(v_hxc_qp.ravel())
 
+        v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
+        v_hxc_qp.shape = self.qp_shape
+        eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp = results
+        output( 'DFT iteration time [s]:', dft_status['time_stats'] )
+
+        fun = pb.materials['mat_v'].function
+        vec_v_ion = fun(None, pb.variables['scalar'].field.get_coor(),
+                        mode='qp')['V_ion'].squeeze()
+
+        vec_v_xc = self._interp_to_nodes(v_xc_qp)
+        vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
+        vec_v_sum = self._interp_to_nodes(v_hxc_qp + v_ion_qp)
+        
         coor = pb.domain.get_mesh_coors()
         r2 = norm_l2_along_axis(coor, squared=True)
         vec_nr2 = vec_n * r2
@@ -421,17 +432,23 @@ class SchroedingerApp( SimpleApp ):
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
         mtx_phi = self.make_full( mtx_s_phi )
         out = {}
-        update_state_to_output( out, pb, vec_n, 'n' )
-        update_state_to_output( out, pb, vec_nr2, 'nr2' )
-        update_state_to_output( out, pb, vec_vh, 'V_h' )
-        update_state_to_output( out, pb, vec_vxc, 'V_xc' )
-        update_state_to_output( out, pb, vec_ion, 'V_ion' )
-        update_state_to_output( out, pb, vec_ion + vec_vh + vec_vxc, 'V_sum' )
-        self.save_results( eigs, mtx_phi, out = out )
+        update_state_to_output(out, pb, vec_n, 'n')
+        update_state_to_output(out, pb, vec_nr2, 'nr2')
+        update_state_to_output(out, pb, vec_v_h, 'V_h')
+        update_state_to_output(out, pb, vec_v_xc, 'V_xc')
+        update_state_to_output(out, pb, vec_v_ion, 'V_ion')
+        update_state_to_output(out, pb, vec_v_hxc, 'V_hxc')
+        update_state_to_output(out, pb, vec_v_sum, 'V_sum')
+        self.save_results(eigs, mtx_phi, out=out)
+
+        if self.options.plot:
+            log( save_figure = opts.iter_fig_name )
+            pause()
+            log(finished=True)
 
         return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi,
                        vec_n = vec_n, vec_nr2 = vec_nr2,
-                       vec_vh = vec_vh, vec_vxc = vec_vxc )
+                       vec_v_h = vec_v_h, vec_v_xc = vec_v_xc )
 
     def solve_eigen_problem_1( self ):
         from sfepy.fem import Mesh
