@@ -3,7 +3,7 @@ from sfepy.base.base import *
 This is a test file only! Orders of quadrature may be wrong!!!
 
 Simplex quadratures for <0, 1> x dim
-Tensor product quadratures for <-1, 1> x dim
+Tensor product quadratures for <0, 1> x dim
 ... due to base functions used.
 """
 
@@ -62,8 +62,8 @@ class GaussSimplexO2G12( Quadrature ):
         GAUSS3W1 = 0.5555555555555555555555556
         GAUSS3W2 = 0.8888888888888888888888889
 
-        self.vals = (nm.array( [[-GAUSS3], [0.0], [GAUSS3]],
-                               dtype = nm.float64 ) + 1.0) / 2.0
+        self.vals = nm.array([[-GAUSS3], [0.0], [GAUSS3]], dtype=nm.float64)
+        self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [GAUSS3W1, GAUSS3W2, GAUSS3W1],
                                  dtype = nm.float64 ) / 2.0
 ##
@@ -76,6 +76,7 @@ class GaussTensorProductO2G12( Quadrature ):
     def __init__( self ):
         a = nm.sqrt( 3.0 ) / 3.0
         self.vals = nm.array( [[-a], [a]], dtype = nm.float64 )
+        self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [1.0, 1.0], dtype = nm.float64 )
 
 ##
@@ -123,6 +124,7 @@ class GaussO2G24( Quadrature ):
 
         self.vals = nm.array( [[-a, -a], [a, -a], [a, a], [-a, a]],
                               dtype = nm.float64 )
+        self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [1.0] * 4, dtype = nm.float64 )
 
 ##
@@ -143,6 +145,7 @@ class GaussO1G38( Quadrature ):
                                [ a,  a,  a],
                                [-a,  a,  a]],
                               dtype = nm.float64 )
+        self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [1.0] * 8, dtype = nm.float64 )
 
 ##
@@ -163,6 +166,7 @@ class GaussO2G38( Quadrature ):
                                [ a,  a,  a],
                                [-a,  a,  a]],
                               dtype = nm.float64 )
+        self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [1.0] * 8, dtype = nm.float64 )
 
 ##
