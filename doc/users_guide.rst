@@ -443,10 +443,12 @@ Fields correspond to FE spaces
 
 * The following elements/approximations can be used::
 
-  * 2D: 2_3_P1, 2_3_P2, 2_4_Q0, 2_4_Q1
-  * 3D: 3_4_P0, 3_4_P1, 3_4_P2, 3_8_Q0, 3_8_Q1, 3_8_Q2 
+  * 2D: 2_3_P1, 2_3_P1B, 2_3_P2, 2_3_P2B, 2_4_Q0, 2_4_Q1
+  * 3D: 3_4_P0, 3_4_P1, 3_4_P1B, 3_4_P2, 3_4_P2B, 3_8_Q0, 3_8_Q1
 
-P0, P1, Q0, ... indicate approximation order. For actual available elements look at 'sfepy/eldesc' directory. 
+The letter 'P' indicates a polynomial space on the simplex geometry, while 'Q'
+on the tensor product geometry. The numbers behind the letters indicate
+approximation order. Optional bubble function enrichment is marked by 'B'.
 
 Variables
 ^^^^^^^^^

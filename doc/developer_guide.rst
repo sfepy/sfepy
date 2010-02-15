@@ -33,11 +33,6 @@ sfepy.base package
    src/sfepy/base/tasks
    src/sfepy/base/testing
 
-sfepy.eldesc package
-^^^^^^^^^^^^^^^^^^^^
-
-This package contains the element description files.
-
 sfepy.fem package
 ^^^^^^^^^^^^^^^^^
 
@@ -46,6 +41,7 @@ WARNING: The code in the fem package is undergoing rapid change. It is best to r
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/fem/geometry_element
    src/sfepy/fem/poly_spaces
    src/sfepy/fem/probes
 
