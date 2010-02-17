@@ -131,12 +131,10 @@ sfepy.solvers package
 sfepy.terms package
 ^^^^^^^^^^^^^^^^^^^
 
-The terms documentation is incomplete here as yet. Please refer to the terms
-documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
-
 .. toctree::
    :maxdepth: 2
 
+   term_table
    src/sfepy/terms/termsAcoustic
    src/sfepy/terms/termsAdjointNavierStokes
    src/sfepy/terms/termsBasic
