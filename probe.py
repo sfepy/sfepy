@@ -58,7 +58,8 @@ help = {
 }
 
 def generate_probes(filename_input, filename_results, options,
-                    conf=None, problem=None, probes=None, labels=None):
+                    conf=None, problem=None, probes=None, labels=None,
+                    probe_hooks=None):
     """Generate probe figures and data files."""
     if conf is None:
         required, other = get_standard_keywords()
@@ -93,7 +94,8 @@ def generate_probes(filename_input, filename_results, options,
         gen_probes = getattr(conf.funmod, conf.options.gen_probes)
         probes, labels = gen_probes(problem)
 
-    probe_hook = getattr(conf.funmod, conf.options.probe_hook)
+    if probe_hooks is None:
+        probe_hooks = {None : getattr(conf.funmod, conf.options.probe_hook)}
 
     if options.output_filename_trunk is None:
 	    options.output_filename_trunk = problem.ofn_trunk
@@ -110,31 +112,44 @@ def generate_probes(filename_input, filename_results, options,
     for ip, probe in enumerate(probes):
         output(ip, probe.name)
 
-        out = probe_hook(data, probe, labels[ip], problem)
-        if isinstance(out, tuple):
-            fig, results = out
-        else:
-            fig = out
+        for key, probe_hook in probe_hooks.iteritems():
 
-        if fig is not None:
-            filename = filename_template % ip
-            fig.savefig(filename)
-            output('figure ->', os.path.normpath(filename))
+            out = probe_hook(data, probe, labels[ip], problem)
+            if isinstance(out, tuple):
+                fig, results = out
+            else:
+                fig = out
 
-        if results is not None:
-            aux = os.path.splitext(filename_template % ip)[0]
-            filename = aux + '.txt'
+            if key is not None:
+                filename = filename_template % (key, ip)
 
-            fd = open(filename, 'w')
-            fd.write('\n'.join(probe.report()) + '\n')
-            for key, res in results.iteritems():
-                pars, vals = res
-                fd.write('\n# %s\n' % key)
-                aux = nm.vstack((pars, vals)).T
-                nm.savetxt(fd, aux)
-            fd.close()
+            else:
+                filename = filename_template % ip
 
-            output('data ->', os.path.normpath(filename))
+            if fig is not None:
+                fig.savefig(filename)
+                output('figure ->', os.path.normpath(filename))
+
+            if results is not None:
+                aux = os.path.splitext(filename)[0]
+                txt_filename = aux + '.txt'
+
+                fd = open(txt_filename, 'w')
+                fd.write('\n'.join(probe.report()) + '\n')
+                for key, res in results.iteritems():
+                    pars, vals = res
+                    fd.write('\n# %s\n' % key)
+
+                    if vals.ndim == 1:
+                        aux = nm.hstack((pars[:,None], vals[:,None]))
+
+                    else:
+                        aux = nm.hstack((pars[:,None], vals))
+
+                    nm.savetxt(fd, aux)
+                fd.close()
+
+                output('data ->', os.path.normpath(txt_filename))
 
 def read_header(fd):
     """Read the probe data header from file descriptor fd."""
