@@ -45,3 +45,7 @@ doc/_build/
 tmp/*
 build/*
 sfepy/__config__.py
+doc/term_table.rst
+.buildinfo
+PKG-INFO
+spkg-install
