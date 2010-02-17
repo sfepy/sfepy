@@ -90,6 +90,7 @@ sfepy.mechanics package
    :maxdepth: 2
 
    src/sfepy/mechanics/matcoefs
+   src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
 
 sfepy.physics package
