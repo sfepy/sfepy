@@ -6,6 +6,7 @@ from oseen import *
 from ts import *
 from eigen import *
 from optimize import *
+from semismooth_newton import *
 
 solver_table = find_subclasses(vars(),
                                [LinearSolver, NonlinearSolver,
