@@ -451,10 +451,9 @@ class AverageVolumeMatTerm( Term ):
     :Arguments:
     material : :math:`m` (can have up to two dimensions),
     parameter : :math:`y`,
-    shape : shape of material parameter
     """
     name = 'de_volume_average_mat'
-    arg_types = ('material', 'parameter', 'shape')
+    arg_types = ('material', 'parameter')
     geometry = [(Volume, 'parameter')]
 
     def __init__( self, region, name = name, sign = 1 ):
@@ -463,7 +462,7 @@ class AverageVolumeMatTerm( Term ):
     ##
     # c: 06.05.2008, r: 06.05.2008
     def prepare_data( self, chunk_size = None, **kwargs ):
-        mat, par, mat_shape = self.get_args( **kwargs )
+        mat, par = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
@@ -498,6 +497,17 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     parameter : :math:`y`, shape : shape of material parameter
     """
     name = 'di_volume_integrate_mat'
+    arg_types = ('material', 'parameter', 'shape')
+    geometry = [(Volume, 'parameter')]
+
+    def prepare_data( self, chunk_size = None, **kwargs ):
+        mat, par, mat_shape = self.get_args( **kwargs )
+        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+
+        shape = (chunk_size, 1) + mat.shape[2:]
+
+        return vg, mat, shape
 
     ##
     # c: 05.03.2008, r: 06.05.2008
