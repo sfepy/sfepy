@@ -77,7 +77,7 @@ class GaussTensorProductO2G12( Quadrature ):
         a = nm.sqrt( 3.0 ) / 3.0
         self.vals = nm.array( [[-a], [a]], dtype = nm.float64 )
         self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [1.0, 1.0], dtype = nm.float64 )
+        self.weights = nm.array( [0.5, 0.5], dtype = nm.float64 )
 
 ##
 # 13.11.2007, c
@@ -125,7 +125,7 @@ class GaussO2G24( Quadrature ):
         self.vals = nm.array( [[-a, -a], [a, -a], [a, a], [-a, a]],
                               dtype = nm.float64 )
         self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [1.0] * 4, dtype = nm.float64 )
+        self.weights = nm.array( [0.25] * 4, dtype = nm.float64 )
 
 ##
 # created: 03.12.2007
@@ -146,7 +146,7 @@ class GaussO1G38( Quadrature ):
                                [-a,  a,  a]],
                               dtype = nm.float64 )
         self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [1.0] * 8, dtype = nm.float64 )
+        self.weights = nm.array( [0.125] * 8, dtype = nm.float64 )
 
 ##
 # created: 06.12.2007
@@ -167,7 +167,7 @@ class GaussO2G38( Quadrature ):
                                [-a,  a,  a]],
                               dtype = nm.float64 )
         self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [1.0] * 8, dtype = nm.float64 )
+        self.weights = nm.array( [0.125] * 8, dtype = nm.float64 )
 
 ##
 # created: 03.12.2007
