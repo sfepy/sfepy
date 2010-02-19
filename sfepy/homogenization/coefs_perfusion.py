@@ -16,7 +16,7 @@ class CorrRegion( CorrMiniApp ):
         problem = get_default( problem, self.problem )
 
         states = nm.zeros( (self.Nreg,), dtype = nm.object )
-
+        clist = []
         for ir in range( self.Nreg ):
 
             problem.select_variables( self.variables )
@@ -46,23 +46,13 @@ class CorrRegion( CorrMiniApp ):
             state = problem.solve()
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
-        
-            self.save( state, problem, ir )
+            clist.append( (ir,) )
+
+        self.save( states, problem, clist )
 
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
-
-    def get_save_name_base( self ):
-        return self.save_name + '_%d'
-
-    def save( self, state, problem, ir ):
-        dump_name = self.get_dump_name()
-        if dump_name is not None:
-            dump_name = dump_name % ir
-        CorrMiniApp.save( self, state, problem,
-                          self.get_save_name() % ir,
-                          dump_name )
 
 class CoefRegion( CoefN ):
 

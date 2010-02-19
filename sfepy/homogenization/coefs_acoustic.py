@@ -50,8 +50,7 @@ class CorrScalar( CorrMiniApp ):
         state = problem.solve()
         assert_( problem.variables.has_ebc( state ) )
 
-        self.save( state, problem,
-                   self.get_save_name(), self.get_dump_name() )
+        self.save( state, problem )
 
         return Struct( name = self.name,
                        states = state,

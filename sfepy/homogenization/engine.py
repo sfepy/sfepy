@@ -110,8 +110,10 @@ class HomogenizationEngine( SimpleApp ):
         save_names = {}
         dump_names = {}
         def store_filenames( app ):
-            save_names[app.name] = app.get_save_name_base()
-            dump_names[app.name] = app.get_dump_name_base()
+            if not '(not_set)' in app.get_save_name_base():
+                save_names[app.name] = app.get_save_name_base()
+            if not '(not_set)' in app.get_dump_name_base():
+                dump_names[app.name] = app.get_dump_name_base()
 
         coefs = Struct()
         for coef_name, cargs in coef_info.iteritems():
@@ -122,7 +124,7 @@ class HomogenizationEngine( SimpleApp ):
 #            debug()
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
             val = mini_app( self.volume, data = dependencies )
-            print val
+#            print val
             setattr( coefs, coef_name, val )
 #            pause()
             output( '...done' )

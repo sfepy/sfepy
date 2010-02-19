@@ -79,23 +79,32 @@ class CorrMiniApp( MiniAppBase ):
         else:
             return None
 
-    def get_dump( self, state ):
-        get_state = self.problem.variables.get_state_part_view
+    def get_dump( self, state, comps = None ):
+        #get_state = self.problem.variables.get_state_part_view
+        to_output = self.problem.variables.state_to_output
         out = {}
         for dvar in self.dump_variables:
-            out[dvar] = Struct( name = 'dump', mode = 'nodes',
-                                data = get_state( state, dvar ),
-                                dofs = None, var_name = dvar )
+            if comps:
+                for ii in range( len( comps ) ):
+                    aux = to_output( state[comps[ii]], extend = False )
+                    for key in aux.keys():
+                        new_key = key + '_' + '%d'*len( comps[ii] ) % comps[ii]
+                        out[new_key] = aux[key]
+            else:
+                out.update(  to_output( state, extend = False ) )
+
         return out
 
-    def save( self, state, problem, save_name, dump_name = None ):
-        problem.save_state( save_name,
-                            state,
+    def save( self, out, problem, comps = None ):
+        vout = self.get_dump( out, comps )
+        problem.save_state( self.get_save_name(),
+                            out = vout,
                             post_process_hook = self.post_process_hook,
                             file_per_var = self.file_per_var )
+        dump_name = self.get_dump_name()
         if dump_name is not None:
             problem.save_state( dump_name,
-                                out = self.get_dump( state ),
+                                out = vout,
                                 file_per_var = False )
 
 class ShapeDimDim( CorrMiniApp ):
@@ -141,6 +150,7 @@ class CorrNN( CorrMiniApp ):
         self.init_solvers(problem)
 
         states = nm.zeros( (self.corr_dim, self.corr_dim), dtype = nm.object )
+        clist = []
         for ir in range( self.corr_dim ):
             for ic in range( self.corr_dim ):
                 for name, val in self.get_variables( ir, ic, data ):
@@ -150,22 +160,13 @@ class CorrNN( CorrMiniApp ):
                 assert_( problem.variables.has_ebc( state ) )
                 states[ir,ic] = state
 
-                self.save( state, problem, ir, ic )
+                clist.append( (ir, ic) )
+
+        self.save( states, problem, comps = clist )
 
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
-
-    def get_save_name_base( self ):
-        return self.save_name + '_%d%d'
-        
-    def save( self, state, problem, ir, ic ):
-        dump_name = self.get_dump_name()
-        if dump_name is not None:
-            dump_name = dump_name % (ir, ic)
-        CorrMiniApp.save(self, state, problem,
-                         self.get_save_name() % (ir, ic),
-                         dump_name)
 
 class CorrN( CorrMiniApp ):
 
@@ -188,6 +189,7 @@ class CorrN( CorrMiniApp ):
         self.init_solvers(problem)
 
         states = nm.zeros( (self.corr_dim,), dtype = nm.object )
+        clist = []
         for ir in range( self.corr_dim ):
             for name, val in self.get_variables( ir, data ):
                 problem.variables[name].data_from_data( val )
@@ -196,22 +198,13 @@ class CorrN( CorrMiniApp ):
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
 
-            self.save( state, problem, ir )
+            clist.append( (ir,) )
+
+        self.save( states, problem, comps = clist )
             
         return Struct( name = self.name,
                        states = states,
                        di = problem.variables.di )
-
-    def get_save_name_base( self ):
-        return self.save_name + '_%d'
-        
-    def save( self, state, problem, ir ):
-        dump_name = self.get_dump_name()
-        if dump_name is not None:
-            dump_name = dump_name % ir
-        CorrMiniApp.save(self, state, problem,
-                         self.get_save_name() % ir,
-                         dump_name)
 
 class CorrDimDim( CorrNN ):
     pass
@@ -243,11 +236,6 @@ class CorrOne( CorrMiniApp ):
         return Struct( name = self.name,
                        state = state,
                        di = problem.variables.di )
-
-    def save( self, state, problem ):
-        CorrMiniApp.save( self, state, problem,
-                          self.get_save_name(),
-                          self.get_dump_name() )
 
 class PressureEigenvalueProblem( CorrMiniApp ):
     """Pressure eigenvalue problem solver for time-dependent correctors."""

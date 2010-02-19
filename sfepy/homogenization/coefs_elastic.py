@@ -45,12 +45,14 @@ class CorrectorsPermeability( CorrDim ):
 
         dim = problem.get_dim()
         states = nm.zeros( (dim,), dtype = nm.object )
+        clist = []
         for ir in range( dim ):
             state = problem.solve( ir = ir )
             assert_( problem.variables.has_ebc( state ) )
             states[ir] = state
-
-            self.save( state, problem, ir )
+            clist.append( (ir,) )
+            
+        self.save( states, problem, clist )
 
         return Struct( name = self.name,
                        states = states,
