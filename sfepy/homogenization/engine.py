@@ -115,10 +115,20 @@ class HomogenizationEngine( SimpleApp ):
             if not '(not_set)' in app.get_dump_name_base():
                 dump_names[app.name] = app.get_dump_name_base()
 
-        coefs = Struct()
+        req_corr = []
+        req_coef = []
         for coef_name, cargs in coef_info.iteritems():
+            if type( cargs.get( 'class', [] ) ) == str:
+                req_coef.append( coef_name )
+            else:
+                req_corr.append( coef_name )
+
+        coefs = Struct()
+        for coef_name in req_corr:
+            cargs = coef_info[coef_name]
             output( 'computing %s...' % coef_name )
             requires = cargs.get( 'requires', [] )
+
             self.compute_requirements( requires, dependencies, store_filenames )
 
 #            debug()
@@ -127,6 +137,19 @@ class HomogenizationEngine( SimpleApp ):
 #            print val
             setattr( coefs, coef_name, val )
 #            pause()
+            output( '...done' )
+
+        for coef_name in req_coef:
+            cargs = coef_info[coef_name]
+            output( 'computing %s...' % coef_name )
+            requires = cargs.get( 'requires', [] )
+            mclass = cargs.get( 'class', [] )
+            if mclass == 'sum':
+                val = nm.zeros_like( getattr( coefs, requires[0] ) )
+                for req in requires[:]:
+                    val += getattr( coefs, req )
+
+            setattr( coefs, coef_name, val )
             output( '...done' )
 
         # Store filenames of all requirements as a "coefficient".
