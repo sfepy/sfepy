@@ -34,7 +34,7 @@ class HomogenizationApp( HomogenizationEngine ):
         print_digits = get( 'print_digits', 3 )
 
         float_format = get( 'float_format', '%8.3e' )
-        coef_save_name = get( 'coef_save_name', 'coefs.txt' )
+        coef_save_name = get( 'coef_save_name', 'coefs' )
         tex_names = get( 'tex_names', None )
         
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
