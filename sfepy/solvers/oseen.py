@@ -69,7 +69,9 @@ class Oseen( NonlinearSolver ):
         lin_red = get( 'lin_red', 1.0 )
         is_plot = get( 'is_plot', False )
 
-        log = get( 'log', {'text' : None, 'plot' : None} )
+        log = get('log', None)
+        log = get_default(log, {'text' : None, 'plot' : None})
+
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
