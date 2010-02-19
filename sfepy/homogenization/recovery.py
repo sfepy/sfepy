@@ -2,11 +2,18 @@ from sfepy.base.base import *
 from sfepy.base.ioutils import get_print_info
 from sfepy.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
+from sfepy.base.conf import get_standard_keywords, ProblemConf
+from sfepy.fem import ProblemDefinition
+from sfepy.homogenization.coefficients import Coefficients
+from sfepy.homogenization.micmac import get_correctors_from_file
+import os.path as op
 
 shared = Struct()
 
 #
 # TODO : interpolate fvars to macro times. ?mid-points?
+#
+# TODO : clean-up!
 #
 
 def get_output_suffix(ig, iel, ts, naming_scheme, format, output_format):
@@ -22,15 +29,15 @@ def get_output_suffix(ig, iel, ts, naming_scheme, format, output_format):
     return suffix
 
 def convolve_field_scalar( fvars, pvars, iel, ts ):
-    """
-    \int_0^t f(t-s) p(s) ds, t is given by step
+    r"""
+    .. math::
+      \int_0^t f(t-s) p(s) ds
 
-    f: fvars ... scalar field variables, defined in a micro domain
-    p: pvars ... scalar point variables, a scalar in a point of macro-domain,
-    FMField style
-
-    pvars have shape [step][fmf dims]
-    fvars have shape [n_step][var dims]
+    - t is given by step
+    - f: fvars
+      scalar field variables, defined in a micro domain, have shape [step][fmf dims]
+    - p: pvars
+      scalar point variables, a scalar in a point of macro-domain, FMField style have shape [n_step][var dims]
     """
 
     step0 = max( 0, ts.step - fvars.steps[-1] )
@@ -46,19 +53,19 @@ def convolve_field_scalar( fvars, pvars, iel, ts ):
     return val
 
 def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
-    """
-    \int_0^t f^{ij}(t-s) p_{ij}(s) ds, t is given by step
+    r"""
+    .. math::
+      \int_0^t f^{ij}(t-s) p_{ij}(s) ds
 
-    f: fvars ... field variables, defined in a micro domain
-    p: pvars ... sym. tensor point variables, a scalar in a point of
-    macro-domain, FMField style
-
-    pvars have shape [step][fmf dims]
-    fvars have shape [dim, dim][var_name][n_step][var dims]
+    - t is given by step
+    - f: fvars
+      field variables, defined in a micro domain, have shape [step][fmf dims]
+    - p: pvars
+      sym. tensor point variables, a scalar in a point of
+      macro-domain, FMField style, have shape [dim, dim][var_name][n_step][var dims]
     """
 
     step0 = max( 0, ts.step - fvars[0,0][var_name].steps[-1] )
-##     print step0, ts.step
 
     val = nm.zeros_like( fvars[0,0][var_name][0] )
     for ik in xrange( step0, ts.step + 1 ):
@@ -82,10 +89,14 @@ def add_strain_rs( corrs_rs, strain, vu, dim, iel, out = None ):
     return out
 
 def combine_scalar_grad(corrs, grad, vn, ii, shift_coors=None):
-    """
-    $\eta_k \partial_k^x p$
+    r"""
+    .. math::
+      \eta_k \partial_k^x p
+
     or
-    $(y_k + \eta_k) \partial_k^x p$
+
+    .. math::
+      (y_k + \eta_k) \partial_k^x p
     """
     dim = grad.shape[2]
     
@@ -102,24 +113,21 @@ def combine_scalar_grad(corrs, grad, vn, ii, shift_coors=None):
     return out
 
 
-def compute_u_corr_steady( corrs_rs, strain, corrs_pressure, pressure,
-                           vu, dim, iel ):
-    """
-    $\sum_{ij}\left [ \bar\omegabf^{ij}e_{ij}(\ub(t)) \right ]
-    + \omegabf^{*,P} p(t)$
+def compute_u_corr_steady( corrs_rs, strain, vu, dim, iel ):
+    r"""
+    .. math::
+      \sum_{ij} \bm{\omega}^{ij}\, e_{ij}(\bm{u})
 
-    iel = element number
+    - iel = element number
     """
-    u_corr = corrs_pressure[vu].data * pressure[iel,0,0,0]
-    add_strain_rs( corrs_rs, strain, vu, dim, iel, out = u_corr )
+    u_corr = add_strain_rs( corrs_rs, strain, vu, dim, iel )
     return u_corr
 
 def compute_u_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
                          vu, dim, iel, ts ):
-    """
-    $\sum_{ij}\left [ \int_0^t \tilde\omegabf^{ij}(t-s)
-    \dt{}{s}e_{ij}(\ub(s))\,ds\right ]
-    + \int_0^t \tilde\omegabf^P(t-s)\,p(s)\,ds\right ]$
+    r"""
+    .. math::
+      \sum_{ij} \left[ \int_0^t \bm{\omega}^{ij}(t-s) {\mathrm{d} \over \mathrm{d} s} e_{ij}(\bm{u}(s))\,ds\right] + \int_0^t \widetilde{\bm{\omega}}^P(t-s)\,p(s)\,ds
     """
     u_corr = convolve_field_scalar( corrs_pressure[vu], pressures,
                                     iel, ts )
@@ -128,17 +136,19 @@ def compute_u_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
     return u_corr
 
 def compute_p_corr_steady( corrs_pressure, pressure, vp, iel ):
-    """
-    $\tilde\pi^P(0)p(t)$
+    r"""
+    .. math::
+      \widetilde\pi^P\,p
     """
     p_corr = corrs_pressure[vp].data * pressure[iel,0,0,0]
     return p_corr
 
 def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
                          vdp, dim, iel, ts ):
-    """
-    $\sum_{ij} \int_0^t \dt{}{t}\tilde\pi^{ij}(t-s) \dt{}{s}e_{ij}(\ub(s))\,ds
-    + \int_0^t \dt{}{t}\tilde\pi^P(t-s)\,p(s)\,ds$
+    r"""
+    .. math::
+      \sum_{ij} \int_0^t {\mathrm{d} \over \mathrm{d} t} \widetilde\pi^{ij}(t-s)\, {\mathrm{d} \over \mathrm{d} s} e_{ij}(\bm{u}(s))\,ds
+      + \int_0^t {\mathrm{d} \over \mathrm{d} t}\widetilde\pi^P(t-s)\,p(s)\,ds
     """
     p_corr = convolve_field_scalar( corrs_pressure[vdp], pressures,
                                     iel, ts )
@@ -147,10 +157,11 @@ def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
     return p_corr
 
 def compute_u_from_macro(strain, coor, iel, centre=None):
-    """
+    r"""
     Macro-induced displacements.
     
-    e_{ij}^x(\ub(t))\,(y_j - y_j^c)
+    .. math::
+      e_{ij}^x(\bm{u})\,(y_j - y_j^c)
     """
     n_nod, dim = coor.shape
 
@@ -165,11 +176,14 @@ def compute_u_from_macro(strain, coor, iel, centre=None):
             um[ir::dim] += strain[iel,0,ii,0] * (coor[:,ic] - centre[ic])
     return um
 
+
+
 def compute_p_from_macro(p_grad, coor, iel, centre=None):
-    """
+    r"""
     Macro-induced pressure.
     
-    \partial_j^x p(t)\,(y_j - y_j^c)
+    .. math::
+      \partial_j^x p\,(y_j - y_j^c)
     """
     n_nod, dim = coor.shape
 
@@ -182,14 +196,57 @@ def compute_p_from_macro(p_grad, coor, iel, centre=None):
         pm += p_grad[iel,0,ic,0] * (coor[:,ic] - centre[ic])
     return pm
 
+###
+def compute_micro_u( corrs, strain, vu, dim, out = None ):
+    r"""
+    Micro displacements.
+    
+    .. math::
+      \bm{u}^1 = \bm{\chi}^{ij}\, e_{ij}^x(\bm{u}^0)
+    """
+
+    if out is None:
+        out = nm.zeros_like( corrs[vu+'_00'] )
+
+    for ir in range( dim ):
+        for ic in range( dim ):
+            ii = coor_to_sym( ir, ic, dim )
+            out += corrs[vu+'_%d%d' % (ir, ic)] * strain[ii]
+    return out
+
+def compute_stress_strain_u( pb, integral, region, material, vu, data ):
+
+    pb.select_variables( [vu] )
+    stress = pb.evaluate( 'de_cauchy_stress.%s.%s( %s, %s )' % (integral, region, material, vu),
+                          **{vu : data } )
+    strain = pb.evaluate( 'de_cauchy_strain.%s.%s( %s )' % (integral, region, vu),
+                          **{vu : data } )
+
+    return extend_cell_data( stress, pb.domain, region ), extend_cell_data( strain, pb.domain, region )
+
+def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
+
+    pb.select_variables( [vu] )
+    avgmat = pb.evaluate( 'de_volume_average_mat.%s.%s( %s, %s )' \
+                              % (integral, region, material, vu) )
+    
+    return extend_cell_data( nm.dot( avgmat, mac_strain ), pb.domain, region )
+
+
+###
+
 def recover_bones( problem, micro_problem, region, eps0,
                    ts, strain, dstrains, p_grad, pressures,
                    corrs_permeability, corrs_rs, corrs_time_rs,
                    corrs_pressure, corrs_time_pressure,
                    var_names, naming_scheme = 'step_iel' ):
-    """
-    note that \tilde{\pi}^P(0) is in corrs_pressure
-    -> from time correctors only 'u', 'dp' are needed.
+    r"""
+    - note that
+
+      .. math::
+        \widetilde{\pi}^P
+
+      is in corrs_pressure -> from time correctors only 'u', 'dp' are needed.
     """
 
     dim = problem.domain.mesh.dim
@@ -359,3 +416,67 @@ def recover_paraflow( problem, micro_problem, region,
         filename = join( problem.output_dir, 'recovered_' + micro_name )
 
         micro_problem.save_state(filename, out=out, ts=ts)
+
+def save_recovery_region( mac_pb, rname, filename = 'recovery_region.vtk' ):
+
+    region = mac_pb.domain.regions[rname]
+
+    # Save recovery region characteristic function.
+    out = {}
+    mask = region.get_charfun( by_cell = False, val_by_id = False )
+    out['vmask'] = Struct( name = 'output_data',
+                           mode = 'vertex', data = mask[:,nm.newaxis],
+                           dof_types = None )
+    mask = region.get_charfun( by_cell = True, val_by_id = False )
+    out['cmask'] = Struct( name = 'output_data',
+                           mode = 'cell',
+                           data = mask[:,nm.newaxis,nm.newaxis,nm.newaxis],
+                           dof_types = None )
+
+    mac_pb.save_state( os.path.join( mac_pb.output_dir, filename ),
+                       out = out )
+
+
+def recover_micro_hook( micro_filename, region, macro, naming_scheme = 'step_iel' ):
+
+    # Create a micro-problem instance.
+    required, other = get_standard_keywords()
+    required.remove( 'equations' )
+    pb = ProblemDefinition.from_conf_file( micro_filename,
+                                           required = required,
+                                           other = other,
+                                           init_variables = False,
+                                           init_solvers = False )
+
+    coefs_filename = pb.conf.options.get_default_attr('coefs_filename', 'coefs.h5')
+    output_dir = pb.conf.options.get_default_attr('output_dir', '.')
+
+    # Coefficients and correctors
+    coefs = Coefficients.from_file_hdf5( coefs_filename )
+    corrs = get_correctors_from_file( dump_names = coefs.dump_names ) 
+
+    recovery_hook = get_default_attr( pb.conf.options,
+                                      'recovery_hook', None )
+
+    if recovery_hook is not None:
+        recovery_hook = getattr( pb.conf.funmod, recovery_hook )
+
+        aux = max(pb.domain.shape.n_gr, 2)
+        format = get_print_info( aux, fill = '0' )[1] \
+            + '_' + get_print_info( pb.domain.mesh.n_el, fill = '0' )[1]
+
+        for ig, ii, iel in region.iter_cells():
+            print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
+        
+            local_macro = {}
+            for k, v in macro.iteritems():
+                local_macro[k] = v[ii,0]
+
+            out = recovery_hook( pb, corrs, local_macro )
+
+            # save data
+            suffix = format % (ig, iel)
+            micro_name = pb.get_output_name( extra = suffix )
+            filename = op.join( output_dir, 'recovered_' + micro_name )
+            pb.save_state( filename, out = out )
+
