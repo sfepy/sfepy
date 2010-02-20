@@ -1112,7 +1112,7 @@ class HDF5MeshIO( MeshIO ):
                 dofs = get_default(val.dofs, (-1,))
                 var_name = val.get_default_attr('var_name', 'None')
 
-                group_name = '_' + key.translate( self._tr )
+                group_name = '__' + key.translate( self._tr )
                 data_group = fd.createGroup(step_group, group_name,
                                             '%s data' % key)
                 fd.createArray( data_group, 'data', val.data, 'data' )
