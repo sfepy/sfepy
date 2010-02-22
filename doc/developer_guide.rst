@@ -134,7 +134,7 @@ sfepy.terms package
 .. toctree::
    :maxdepth: 2
 
-   term_table
+   terms_overview
    src/sfepy/terms/termsAcoustic
    src/sfepy/terms/termsAdjointNavierStokes
    src/sfepy/terms/termsBasic

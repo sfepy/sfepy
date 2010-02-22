@@ -42,22 +42,19 @@ def create_parser(slist, current_section):
     return doc
 
 header = """
-Overview
-========
-
 .. list-table:: Table of all terms.
-   :widths: 20 20 30 30
+   :widths: 30 30 40
    :header-rows: 1
 
-   * - link
-     - name
-     - syntax
+   * - name/class/link
+     - arguments
      - definition
 """
 
 table_row = """   * - %s
-     - :class:`%s`
-       :mod:`%s`
+
+         :class:`%s`
+         :mod:`%s`
      - %s
      -
 %s
@@ -102,17 +99,16 @@ def typeset_to_indent(txt, indent0, indent, width):
     return text
 
 def typeset_term_syntax(term_class):
-    if len(term_class.arg_types) > 1:
+    if ((len(term_class.arg_types) > 1) and not
+        isinstance(term_class.arg_types[0], str)):
         arg_types = [','.join(['<%s>' % arg for arg in arg_type])
                      for arg_type in term_class.arg_types]
-        arg_types = ['           ``%s``\n' % arg_type 
-                     for arg_type in arg_types]
-        text = ['``%s.<i>.<r>( <arguments> )`` ' % (term_class.name) \
-               + 'where ``<arguments>`` is one of:\n'] 
-        text = ''.join(text + arg_types)
+        arg_types = [' ``%s``' % arg_type for arg_type in arg_types]
+        text = '\n\n       '.join(arg_types)
+
     else:
-        args = ','.join(['<%s>' % arg for arg in term_class.arg_types])
-        text = '``%s.<i>.<r>( %s )``' % (term_class.name, args)
+        text = ','.join(['<%s>' % arg for arg in term_class.arg_types])
+        text = '``%s``' % text
     return text
 
 def typeset_term_table(fd, table):
