@@ -1,57 +1,47 @@
 import os
 from sfepy import top_dir
+from sfepy.base.base import debug, nm
+from sfepy.homogenization.micmac import get_homog_coefs_linear
+from sfepy.homogenization.recovery import save_recovery_region, recover_micro_hook
 
-# Homogenization - get material properties
-def get_homog( ts, coor, mode, region, ig,
-               filename = None, coefs_filename=None,
-               regenerate = False ):
-     
-     import tables as pt
-     import numpy as nm
-     
-     if not regenerate:
-         if os.path.exists( coefs_filename ):
-             if not pt.isHDF5File( coefs_filename ):
-                 regenerate = True
-         else:
-             regenerate = True
-   
-     if regenerate:
-         from sfepy.base.base import Struct, output
-         from sfepy.base.conf import ProblemConf, get_standard_keywords
-         from homogen import HomogenizationApp
-         
-         output.prefix = 'micro:'
+def post_process( out, pb, state, extend = False ):
+    from sfepy.base.base import Struct
+    from sfepy.fem.evaluate import eval_term_op
 
-         required, other = get_standard_keywords()
-         required.remove( 'equations' )
-         
-         conf = ProblemConf.from_file( filename, required, other )
-         options = Struct( output_filename_trunk = None )
-   
-         app = HomogenizationApp( conf, options, 'micro:' )
-         coefs = app()
-         
-         coefs.to_file_hdf5( coefs_filename )
-         
-         output.prefix = 'macro:'
-     else:
-         from sfepy.homogenization.coefficients import Coefficients
-         coefs = Coefficients.from_file_hdf5( coefs_filename )
+    if isinstance( state, dict ):
+        pass
+    else:
+        stress = eval_term_op( state, 'de_cauchy_stress.i1.Omega( solid.D, u )', pb )
+        strain = eval_term_op( state, 'de_cauchy_strain.i1.Omega( u )', pb )
+        out['cauchy_strain'] = Struct( name = 'output_data',
+                                       mode = 'cell', data = strain,
+                                       dofs = None )
+        out['cauchy_stress'] = Struct( name = 'output_data',
+                                       mode = 'cell', data = stress,
+                                       dofs = None )
 
-     out = {}
-     if mode == 'qp':
-         out['D'] = nm.tile( coefs.D, (coor.shape[0], 1, 1) )
-         
-     return  out
+        if pb.conf.options.get_default_attr('recover_micro', False):
 
+            rname = pb.conf.options.recovery_region
+            region = pb.domain.regions[rname]
+
+            save_recovery_region( pb, rname );
+
+            rstrain = eval_term_op( state, 'de_cauchy_strain.i1.%s( u )' % rname, pb )
+
+            recover_micro_hook( pb.conf.options.micro_filename,
+                                region, {'strain' : rstrain} )
+
+    return out
+
+def get_elements(coors, domain=None):
+    return {0 : nm.arange(50, domain.shape.n_el, 100)}
 
 functions = {
+    'get_elements' : (get_elements,),
     'get_homog' : (lambda ts, coors, mode = None, region = None, ig = None:
-                   get_homog( ts, coors, mode, region, ig,
-                              filename = 'examples/homogenization/linear_homogenization.py',
-                              coefs_filename = './output/coefs_le.h5',
-                              regenerate = False ),),
+                   get_homog_coefs_linear( ts, coors, mode, region, ig,
+                                           micro_filename = options['micro_filename'] ), )
 }
 
 filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
@@ -60,6 +50,7 @@ regions = {
     'Omega' : ('all', {}),
     'Left' : ('nodes in (x < 0.001)', {}),
     'Right' : ('nodes in (x > 0.099)', {}),
+    'Recovery' : ('elements by get_elements', {}),
 }
 
 materials = {
@@ -105,4 +96,9 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'output_dir' : 'output',
+    'post_process_hook' : 'post_process',
+    'output_prefix' : 'macro:',
+    'recover_micro': True,
+    'recovery_region' : 'Recovery',
+    'micro_filename' : 'examples/homogenization/linear_homogenization_up.py',
 }

@@ -13,6 +13,42 @@ from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson, stiffness_te
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_elastic as ce
 from sfepy import top_dir
+from sfepy.base.base import Struct
+from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
+
+def recovery_le( pb, corrs, macro ):
+    
+    out = {}
+    dim = corrs['corrs_le']['u_00'].shape[1]
+    mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
+    mic_p = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'p', dim )
+    
+    out['u_mic'] = Struct( name = 'output_data',
+                           mode = 'vertex', data = mic_u,
+                           var_name = 'u', dofs = None )
+    out['p_mic'] = Struct( name = 'output_data',
+                           mode = 'cell', data = mic_p,
+                           var_name = 'p', dofs = None )
+
+    mic_p = mic_p[:,0,:0]
+    stress_Ym, strain_Ym = compute_stress_strain_u( pb, 'i1', 'Ym', 'matrix.D', 'u', mic_u )
+    stress_Ym += compute_mac_stress_part( pb, 'i1', 'Ym', 'matrix.D', 'u', macro['strain'] )
+    add_stress_p( stress_Ym, pb, 'i1', 'Ym', 'p', mic_p )    
+    stress_Yc, strain_Yc = compute_stress_strain_u( pb, 'i1', 'Yc', 'reinf.D', 'u', mic_u )
+    stress_Yc += compute_mac_stress_part( pb, 'i1', 'Yc', 'reinf.D', 'u', macro['strain'] )
+    add_stress_p( stress_Yc, pb, 'i1', 'Yc', 'p', mic_p )
+
+    strain = macro['strain'] + strain_Ym + strain_Yc
+    stress = stress_Ym + stress_Yc
+
+    out['cauchy_strain'] = Struct( name = 'output_data',
+                                   mode = 'cell', data = strain,
+                                   dofs = None )
+    out['cauchy_stress'] = Struct( name = 'output_data',
+                                   mode = 'cell', data = stress,
+                                   dofs = None )
+    return out
+
 #! Mesh
 #! ----
 dim = 3
@@ -31,8 +67,10 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials
 #! ---------
 materials = {
-    'matrix' : ('Ym', {'D' : stiffness_tensor_youngpoisson_mixed( dim, 0.7e9, 0.4 ) }),
-    'reinf' : ('Yc', {'D' : stiffness_tensor_youngpoisson_mixed( dim, 70.0e9, 0.2 ) }),
+    'matrix' : ('Ym', {'D' : stiffness_tensor_youngpoisson_mixed( dim, 0.7e9, 0.4 ),
+                       'gamma' : bulk_modulus_youngpoisson( 0.7e9, 0.4 )}),
+    'reinf' : ('Yc', {'D' : stiffness_tensor_youngpoisson_mixed( dim, 70.0e9, 0.2 ),
+                      'gamma' : bulk_modulus_youngpoisson( 70.0e9, 0.2 )}),
 }
 gamma_m = bulk_modulus_youngpoisson( 0.7e9, 0.4 )
 gamma_c = bulk_modulus_youngpoisson( 70.0e9, 0.2 )
@@ -94,7 +132,6 @@ integrals = {
 #! -------
 #! Various problem-specific options.
 options = {
-    'coef_info' : 'coefs', # homogenized coefficients to compute
     'coefs' : 'coefs',
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
@@ -102,10 +139,10 @@ options = {
                  #'expression' : 'd_volume.i1.Y( u )',
                  'value' : get_box_volume( dim, region_lbn, region_rtf ),
                  },    
-    'output_dir' : './output',
+    'output_dir' : 'output',
+    'coefs_filename' : 'output/coefs_le_up.h5',
+    'recovery_hook' : 'recovery_le',
 }
-
-
 #! Equations
 #! ---------
 #! Equations for corrector functions.
@@ -145,7 +182,11 @@ coefs = {
                    'variables' : ['Pi1p', 'Pi2p'],
                    'expression' : expr_coefs['Q2'],
                    'class' : ce.ElasticPCoef,
-                   },   
+                   },
+    'D' : {'requires' : ['elastic_u', 'elastic_p'],
+           'class' : 'sum',
+           },
+    'filenames' : {},
 }
 # requirements for elastic homog. coefficients
 requirements = {
@@ -158,7 +199,7 @@ requirements = {
                    'epbcs' : all_periodic,
                    'equations' : equation_corrs,
                    'class' : ce.CorrectorsElasticRS,
-                   'save_name' : 'corrs_rs',
+                   'save_name' : 'corrs_le',
                    'dump_variables' : ['u', 'p'],
                    },
 }

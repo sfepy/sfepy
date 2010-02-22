@@ -11,6 +11,35 @@ from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
 from sfepy.homogenization.utils import define_box_regions
 import sfepy.homogenization.coefs_elastic as ce
 from sfepy import top_dir
+from sfepy.base.base import Struct
+from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part
+
+def recovery_le( pb, corrs, macro ):
+    
+    out = {}
+
+    dim = corrs['corrs_le']['u_00'].shape[1]
+    mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
+
+    out['u_mic'] = Struct( name = 'output_data',
+                           mode = 'vertex', data = mic_u,
+                           var_name = 'u', dofs = None )
+
+    stress_Ym, strain_Ym = compute_stress_strain_u( pb, 'i1', 'Ym', 'matrix.D', 'u', mic_u )
+    stress_Ym += compute_mac_stress_part( pb, 'i1', 'Ym', 'matrix.D', 'u', macro['strain'] )
+    stress_Yc, strain_Yc = compute_stress_strain_u( pb, 'i1', 'Yc', 'reinf.D', 'u', mic_u )
+    stress_Yc += compute_mac_stress_part( pb, 'i1', 'Yc', 'reinf.D', 'u', macro['strain'] )
+
+    strain = macro['strain'] + strain_Ym + strain_Yc
+
+    out['cauchy_strain'] = Struct( name = 'output_data',
+                                   mode = 'cell', data = strain,
+                                   dofs = None )
+    out['cauchy_stress'] = Struct( name = 'output_data',
+                                   mode = 'cell', data = stress_Ym + stress_Yc,
+                                   dofs = None )
+    return out
+    
 #! Mesh
 #! ----
 filename_mesh = top_dir + '/meshes/3d/matrix_fiber.mesh'
@@ -85,13 +114,14 @@ integrals = {
 #! -------
 #! Various problem-specific options.
 options = {
-    'coef_info' : 'coefs', # homogenized coefficients to compute
     'coefs' : 'coefs',
     'requirements' : 'requirements',
     'ls' : 'ls', # linear solver to use
     'volume' : { 'variables' : ['u'],
                  'expression' : 'd_volume.i1.Y( u )' },
-    'output_dir' : './output',
+    'output_dir' : 'output',
+    'coefs_filename' : 'output/coefs_le.h5',
+    'recovery_hook' : 'recovery_le',
 }
 #! Equations
 #! ---------
@@ -113,7 +143,8 @@ coefs = {
     'D' : {'requires' : ['pis', 'corrs_rs'],
            'variables' : ['Pi1', 'Pi2'],
            'expression' : expr_coefs,
-           'class' : ce.ElasticCoef,}
+           'class' : ce.ElasticCoef,},
+    'filenames' : {},
 }
 # requirements for elastic homog. coefficients
 requirements = {
