@@ -240,6 +240,20 @@ def compute_stress_strain_u( pb, integral, region, material, vu, data ):
     return extend_cell_data( stress, pb.domain, region ), \
            extend_cell_data( strain, pb.domain, region )
 
+def add_stress_p( out, pb, integral, region, vp, data ):
+
+    pb.select_variables( [vp] )
+
+    press0 = pb.evaluate( 'de_average_variable.%s.%s( %s )' \
+                             % (integral, region, vp), **{vp : data } )
+    press = extend_cell_data( press0, pb.domain, region )
+    
+    dim = pb.domain.mesh.dim
+    nn = out.shape[0]
+    for ii in range( nn ):
+        for j in range( dim ):
+            out[ii,0,j,0] += press[ii,0,0,0]
+
 def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
 
     pb.select_variables( [vu] )
