@@ -8,19 +8,19 @@ conf = {
     'name' : 'semismooth_newton',
     'kind' : 'nls.semismooth_newton',
 
+    'semismooth' : False,
+
     'i_max'      : 10,
     'eps_a'      : 1e-8,
     'eps_r'      : 1e-2,
     'macheps'   : 1e-16,
     'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.01,
+    'ls_red_reg' : 0.1,
+    'ls_red_alt' : 0.01,
     'ls_red_warp' : 0.001,
     'ls_on'      : 0.9,
     'ls_min'     : 1e-10,
-    'check'     : 0,
-    'delta'     : 1e-6,
-    'is_plot'    : False,
-    ## 'log'        : {'plot' : 'aux.png', 'text' : None},
+    ## 'log'        : {'plot' : 'aux.png'},
 }
 
 ls_conf = {

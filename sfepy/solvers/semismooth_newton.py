@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from sfepy.base.log import Log
+from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from sfepy.solvers.nls import Newton, conv_test
 
@@ -30,8 +30,53 @@ class SemismoothNewton(Newton):
 
     _colors = {'regular' : 'g', 'steepest_descent' : 'k'}
 
-    def _get_error(self, vec):
-        return err
+    def process_conf(conf):
+        """
+        Missing items are set to default values.
+        
+        Example configuration, all items:
+        
+        solver_1 = {
+            'name' : 'semismooth_newton',
+            'kind' : 'nls.semismooth_newton',
+
+            'semismooth' : True,
+
+            'i_max'      : 10,
+            'eps_a'      : 1e-8,
+            'eps_r'      : 1e-2,
+            'macheps'   : 1e-16,
+            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+            'ls_red_reg' : 0.1,
+            'ls_red_alt' : 0.01,
+            'ls_red_warp' : 0.001,
+            'ls_on'      : 0.9,
+            'ls_min'     : 1e-10,
+            'log'        : {'plot' : 'convergence.png'},
+        }
+        """
+        get = conf.get_default_attr
+
+        semismooth = get('semismooth', True)
+
+        i_max = get('i_max', 1)
+        eps_a = get('eps_a', 1e-10)
+        eps_r = get('eps_r', 1.0)
+        macheps = get('macheps', nm.finfo(nm.float64).eps)
+        lin_red = get('lin_red', 1.0)
+        ls_red = {'regular' : get('ls_red_reg', 0.1),
+                  'steepest_descent' : get('ls_red_alt', 0.01)}
+        ls_red_warp = get('ls_red_warp', 0.001)
+        ls_on = get('ls_on', 0.99999)
+        ls_min = get('ls_min', 1e-5)
+
+        log = get_logging_conf(conf)
+        log = Struct(name='log_conf', **log)
+        is_any_log = (log.text is not None) or (log.plot is not None)
+
+        common = NonlinearSolver.process_conf(conf)
+        return Struct(**locals()) + common
+    process_conf = staticmethod(process_conf)
 
     def __call__(self, vec_x0, conf=None, fun_smooth=None, fun_smooth_grad=None,
                  fun_a=None, fun_a_grad=None, fun_b=None, fun_b_grad=None,
@@ -46,8 +91,8 @@ class SemismoothNewton(Newton):
         fun_b = get_default(fun_b, self.fun_b)
         fun_b_grad = get_default(fun_b_grad, self.fun_b_grad)
 
-        lin_solver = get_default( lin_solver, self.lin_solver )
-        status = get_default( status, self.status )
+        lin_solver = get_default(lin_solver, self.lin_solver)
+        status = get_default(status, self.status)
 
         time_stats = {}
 
@@ -82,10 +127,18 @@ class SemismoothNewton(Newton):
                     ok = False
 
                 else:
-                    # Semi-smooth equation.
-                    vec_semismooth_r = nm.sqrt(vec_a_r**2.0 + vec_b_r**2.0) \
-                                       - (vec_a_r + vec_b_r)
+                    if conf.semismooth:
+                        # Semi-smooth equation.
+                        vec_semismooth_r = nm.sqrt(vec_a_r**2.0 + vec_b_r**2.0) \
+                                           - (vec_a_r + vec_b_r)
+
+                    else:
+                        # Non-smooth equation (brute force).
+                        vec_semismooth_r = nm.where(vec_a_r > vec_b_r,
+                                                    vec_a_r, vec_b_r)
+
                     r_last = (vec_smooth_r, vec_a_r, vec_b_r, vec_semismooth_r)
+
                     ok = True
 
                 time_stats['rezidual'] = time.clock() - tt
@@ -114,7 +167,7 @@ class SemismoothNewton(Newton):
                     else:
                         output('%s step line search' % step_mode)
 
-                        red = conf.ls_red;
+                        red = conf.ls_red[step_mode];
                         output('iter %d, (%.5e < %.5e) (new ls: %e)'\
                                % (it, err, err_last * conf.ls_on, red * ls))
 
@@ -205,7 +258,7 @@ class SemismoothNewton(Newton):
             time_stats['solve'] = time.clock() - tt
 
             for kv in time_stats.iteritems():
-                output( '%10s: %7.2f [s]' % kv )
+                output('%10s: %7.2f [s]' % kv)
 
             vec_x -= vec_dx
             it += 1
@@ -240,43 +293,52 @@ class SemismoothNewton(Newton):
             n_s = vec_smooth_r.shape[0]
             n_ns = vec_a_r.shape[0]
 
-            aa = nm.abs(vec_a_r)
-            ab = nm.abs(vec_b_r)
-            iz = nm.where((aa < (conf.macheps * max(aa.max(), 1.0)))
-                          & (ab < (conf.macheps * max(ab.max(), 1.0))))[0]
-            inz = nm.setdiff1d(nm.arange(n_ns), iz)
+            if conf.semismooth:
+                aa = nm.abs(vec_a_r)
+                ab = nm.abs(vec_b_r)
+                iz = nm.where((aa < (conf.macheps * max(aa.max(), 1.0)))
+                              & (ab < (conf.macheps * max(ab.max(), 1.0))))[0]
+                inz = nm.setdiff1d(nm.arange(n_ns), iz)
 
-            output('non_active/active: %d/%d' % (len(inz), len(iz)))
+                output('non_active/active: %d/%d' % (len(inz), len(iz)))
 
-            mul_a = nm.empty_like(vec_a_r)
-            mul_b = nm.empty_like(mul_a)
+                mul_a = nm.empty_like(vec_a_r)
+                mul_b = nm.empty_like(mul_a)
 
-            # Non-active part of the jacobian.
-            if len(inz) > 0:
-                a_r_nz = vec_a_r[inz]
-                b_r_nz = vec_b_r[inz]
+                # Non-active part of the jacobian.
+                if len(inz) > 0:
+                    a_r_nz = vec_a_r[inz]
+                    b_r_nz = vec_b_r[inz]
 
-                sqrt_ab = nm.sqrt(a_r_nz**2.0 + b_r_nz**2.0)
-                mul_a[inz] = (a_r_nz / sqrt_ab) - 1.0
-                mul_b[inz] = (b_r_nz / sqrt_ab) - 1.0
+                    sqrt_ab = nm.sqrt(a_r_nz**2.0 + b_r_nz**2.0)
+                    mul_a[inz] = (a_r_nz / sqrt_ab) - 1.0
+                    mul_b[inz] = (b_r_nz / sqrt_ab) - 1.0
 
-            # Active part of the jacobian.
-            if len(iz) > 0:
-                vec_z = nm.zeros_like(vec_x)
-                vec_z[n_s+iz] = 1.0
+                # Active part of the jacobian.
+                if len(iz) > 0:
+                    vec_z = nm.zeros_like(vec_x)
+                    vec_z[n_s+iz] = 1.0
 
-                mtx_a_z = mtx_a[iz]
-                mtx_b_z = mtx_b[iz]
+                    mtx_a_z = mtx_a[iz]
+                    mtx_b_z = mtx_b[iz]
 
-                sqrt_ab = nm.empty_like(vec_a_r)
-                for ir in range(len(iz)):
-                    row_a_z = mtx_a_z[ir]
-                    row_b_z = mtx_b_z[ir]
-                    sqrt_ab[ir] = nm.sqrt((row_a_z * row_a_z.T).todense()
-                                          + (row_b_z * row_b_z.T).todense())
-                mul_a[iz] = ((mtx_a_z * vec_z) / sqrt_ab) - 1.0
-                mul_b[iz] = ((mtx_b_z * vec_z) / sqrt_ab) - 1.0
- 
+                    sqrt_ab = nm.empty_like(vec_a_r)
+                    for ir in range(len(iz)):
+                        row_a_z = mtx_a_z[ir]
+                        row_b_z = mtx_b_z[ir]
+                        sqrt_ab[ir] = nm.sqrt((row_a_z * row_a_z.T).todense()
+                                              + (row_b_z * row_b_z.T).todense())
+                    mul_a[iz] = ((mtx_a_z * vec_z) / sqrt_ab) - 1.0
+                    mul_b[iz] = ((mtx_b_z * vec_z) / sqrt_ab) - 1.0
+
+            else:
+                iz = nm.where(vec_a_r > vec_b_r)[0]
+                mul_a = nm.zeros_like(vec_a_r)
+                mul_b = nm.ones_like(mul_a)
+
+                mul_a[iz] = 1.0
+                mul_b[iz] = 0.0
+
             # Assume the same sparsity structure!
             for ir in range(n_ns):
                 ij0 = mtx_jac.indptr[n_s+ir]
