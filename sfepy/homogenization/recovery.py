@@ -33,11 +33,15 @@ def convolve_field_scalar( fvars, pvars, iel, ts ):
     .. math::
       \int_0^t f(t-s) p(s) ds
 
+    Notes
+    -----
     - t is given by step
     - f: fvars
-      scalar field variables, defined in a micro domain, have shape [step][fmf dims]
+      scalar field variables, defined in a micro domain, have shape [step][fmf
+      dims]
     - p: pvars
-      scalar point variables, a scalar in a point of macro-domain, FMField style have shape [n_step][var dims]
+      scalar point variables, a scalar in a point of macro-domain, FMField
+      style have shape [n_step][var dims]
     """
 
     step0 = max( 0, ts.step - fvars.steps[-1] )
@@ -57,12 +61,15 @@ def convolve_field_sym_tensor( fvars, pvars, var_name, dim, iel, ts ):
     .. math::
       \int_0^t f^{ij}(t-s) p_{ij}(s) ds
 
+    Notes
+    -----
     - t is given by step
     - f: fvars
       field variables, defined in a micro domain, have shape [step][fmf dims]
     - p: pvars
       sym. tensor point variables, a scalar in a point of
-      macro-domain, FMField style, have shape [dim, dim][var_name][n_step][var dims]
+      macro-domain, FMField style, have shape [dim, dim][var_name][n_step][var
+      dims]
     """
 
     step0 = max( 0, ts.step - fvars[0,0][var_name].steps[-1] )
@@ -118,6 +125,8 @@ def compute_u_corr_steady( corrs_rs, strain, vu, dim, iel ):
     .. math::
       \sum_{ij} \bm{\omega}^{ij}\, e_{ij}(\bm{u})
 
+    Notes
+    -----
     - iel = element number
     """
     u_corr = add_strain_rs( corrs_rs, strain, vu, dim, iel )
@@ -127,7 +136,9 @@ def compute_u_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
                          vu, dim, iel, ts ):
     r"""
     .. math::
-      \sum_{ij} \left[ \int_0^t \bm{\omega}^{ij}(t-s) {\mathrm{d} \over \mathrm{d} s} e_{ij}(\bm{u}(s))\,ds\right] + \int_0^t \widetilde{\bm{\omega}}^P(t-s)\,p(s)\,ds
+      \sum_{ij} \left[ \int_0^t \bm{\omega}^{ij}(t-s) {\mathrm{d} \over
+      \mathrm{d} s} e_{ij}(\bm{u}(s))\,ds\right] + \int_0^t
+      \widetilde{\bm{\omega}}^P(t-s)\,p(s)\,ds
     """
     u_corr = convolve_field_scalar( corrs_pressure[vu], pressures,
                                     iel, ts )
@@ -147,7 +158,9 @@ def compute_p_corr_time( corrs_rs, dstrains, corrs_pressure, pressures,
                          vdp, dim, iel, ts ):
     r"""
     .. math::
-      \sum_{ij} \int_0^t {\mathrm{d} \over \mathrm{d} t} \widetilde\pi^{ij}(t-s)\, {\mathrm{d} \over \mathrm{d} s} e_{ij}(\bm{u}(s))\,ds
+      \sum_{ij} \int_0^t {\mathrm{d} \over \mathrm{d} t}
+      \widetilde\pi^{ij}(t-s)\, {\mathrm{d} \over \mathrm{d} s}
+      e_{ij}(\bm{u}(s))\,ds
       + \int_0^t {\mathrm{d} \over \mathrm{d} t}\widetilde\pi^P(t-s)\,p(s)\,ds
     """
     p_corr = convolve_field_scalar( corrs_pressure[vdp], pressures,
@@ -217,12 +230,15 @@ def compute_micro_u( corrs, strain, vu, dim, out = None ):
 def compute_stress_strain_u( pb, integral, region, material, vu, data ):
 
     pb.select_variables( [vu] )
-    stress = pb.evaluate( 'de_cauchy_stress.%s.%s( %s, %s )' % (integral, region, material, vu),
+    stress = pb.evaluate( 'de_cauchy_stress.%s.%s( %s, %s )'
+                          % (integral, region, material, vu),
                           **{vu : data } )
-    strain = pb.evaluate( 'de_cauchy_strain.%s.%s( %s )' % (integral, region, vu),
+    strain = pb.evaluate( 'de_cauchy_strain.%s.%s( %s )'
+                          % (integral, region, vu),
                           **{vu : data } )
 
-    return extend_cell_data( stress, pb.domain, region ), extend_cell_data( strain, pb.domain, region )
+    return extend_cell_data( stress, pb.domain, region ), \
+           extend_cell_data( strain, pb.domain, region )
 
 def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
 
@@ -241,6 +257,8 @@ def recover_bones( problem, micro_problem, region, eps0,
                    corrs_pressure, corrs_time_pressure,
                    var_names, naming_scheme = 'step_iel' ):
     r"""
+    Notes
+    -----
     - note that
 
       .. math::
@@ -437,7 +455,8 @@ def save_recovery_region( mac_pb, rname, filename = 'recovery_region.vtk' ):
                        out = out )
 
 
-def recover_micro_hook( micro_filename, region, macro, naming_scheme = 'step_iel' ):
+def recover_micro_hook( micro_filename, region, macro,
+                        naming_scheme = 'step_iel' ):
 
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
@@ -448,7 +467,8 @@ def recover_micro_hook( micro_filename, region, macro, naming_scheme = 'step_iel
                                            init_variables = False,
                                            init_solvers = False )
 
-    coefs_filename = pb.conf.options.get_default_attr('coefs_filename', 'coefs.h5')
+    coefs_filename = pb.conf.options.get_default_attr('coefs_filename',
+                                                      'coefs.h5')
     output_dir = pb.conf.options.get_default_attr('output_dir', '.')
 
     # Coefficients and correctors
