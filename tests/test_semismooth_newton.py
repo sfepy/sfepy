@@ -86,10 +86,9 @@ def define_matrices():
     psi = (k.T * e.applyfunc(lambda x: x**2))[0]
     work = sm.sympify('u1 * g1 + u2 * g2')
 
-    w_names = ['u1', 'u2', 'u3', 'u4', 'v3', 'v4']
-    w = sm.Matrix(w_names)
+    w = ['u1', 'u2', 'u3', 'u4', 'v3', 'v4']
     wbar = w[:2]
-    g = sm.Matrix(['g1', 'g2'])
+    g = ['g1', 'g2']
 
     mtx_a = sm.zeros((6, 6))
     for ir in range(mtx_a.shape[0]):
@@ -108,8 +107,8 @@ def define_matrices():
 
     mtx_c = sm.eye(2)
 
-    sn1 = sm.abs(sm.diff(psi, 'u1n')).subs('u1n', 0)
-    sn2 = sm.abs(sm.diff(psi, 'u2n')).subs('u2n', 0)
+    sn1 = sm.diff(psi, 'u1n').subs('u1n', 0)
+    sn2 = sm.diff(psi, 'u2n').subs('u2n', 0)
     sn = sm.Matrix([sn1, sn2])
 
     mtx_d = sm.zeros((2, 6))
@@ -134,7 +133,7 @@ def define_matrices():
     m['D'] = mtx_d.subs(subsd)
     m['fs'] = fs
 
-    return m, ms, w_names
+    return m, ms, w
 
 class Test(TestCommon):
 
@@ -205,7 +204,7 @@ class Test(TestCommon):
 
             sn = eval_matrix(self.m['sn'], **subsd).squeeze()
 
-            ra = nm.abs(xg) - fc * sn
+            ra = nm.abs(xg) - fc * nm.abs(sn)
 
             return ra
 
@@ -219,9 +218,10 @@ class Test(TestCommon):
                 subsd[key] = xw[ii]
 
             md = eval_matrix(self.m['D'], **subsd)
+            sn = eval_matrix(self.m['sn'], **subsd).squeeze()
 
             ma = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
-            ma[:,iw] = - fc * md
+            ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
             ma[:,ig] = nm.sign(xg)[:,None] * self.m['C']
 
             return preserve_nnz(ma)
@@ -239,8 +239,6 @@ class Test(TestCommon):
 
             return preserve_nnz(mb)
 
-        ok = True
-
         vec_x0 = nm.zeros((nx,), dtype=nm.float64)
 
         lin_solver = Solver.any_from_conf(dict_to_struct(ls_conf))
@@ -257,6 +255,22 @@ class Test(TestCommon):
 
         vec_x = solver(vec_x0)
 
-        print vec_x
+        xw = vec_x[iw]
+        xg = vec_x[ig]
+        xl = vec_x[il]
+
+        self.report('x:', xw)
+        self.report('g:', xg)
+        self.report('l:', xl)
+
+
+        subsd = {}
+        for ii, key in enumerate(self.w_names):
+            subsd[key] = xw[ii]
+
+        sn = eval_matrix(self.m['sn'], **subsd).squeeze()
+        self.report('sn:', sn)
+
+        ok = status['condition'] == 0
 
         return ok
