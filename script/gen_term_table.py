@@ -46,17 +46,19 @@ Overview
 ========
 
 .. list-table:: Table of all terms.
-   :widths: 20 20 60
+   :widths: 20 20 30 30
    :header-rows: 1
 
    * - link
      - name
+     - syntax
      - definition
 """
 
 table_row = """   * - %s
      - :class:`%s`
        :mod:`%s`
+     - %s
      -
 %s
 """
@@ -99,6 +101,20 @@ def typeset_to_indent(txt, indent0, indent, width):
 
     return text
 
+def typeset_term_syntax(term_class):
+    if len(term_class.arg_types) > 1:
+        arg_types = [','.join(['<%s>' % arg for arg in arg_type])
+                     for arg_type in term_class.arg_types]
+        arg_types = ['           ``%s``\n' % arg_type 
+                     for arg_type in arg_types]
+        text = ['``%s.<i>.<r>( <arguments> )`` ' % (term_class.name) \
+               + 'where ``<arguments>`` is one of:\n'] 
+        text = ''.join(text + arg_types)
+    else:
+        args = ','.join(['<%s>' % arg for arg in term_class.arg_types])
+        text = '``%s.<i>.<r>( %s )``' % (term_class.name, args)
+    return text
+
 def typeset_term_table(fd, table):
     """Terms are sorted by name without the d*_ prefix."""
     sec_list = []
@@ -129,6 +145,7 @@ def typeset_term_table(fd, table):
             fd.write(table_row % (item_class.name,
                                   item_class.__name__,
                                   item_class.__module__,
+                                  typeset_term_syntax(item_class),
                                   typeset_to_indent(dd, 7, 11, 65)))
 
     fd.write('\n')
