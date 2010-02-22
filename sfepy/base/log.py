@@ -21,6 +21,32 @@ else:
 _msg_no_live = """warning: log plot is disabled, install matplotlib
          (use GTKAgg backend) and multiprocessing"""
 
+
+def get_logging_conf(conf):
+    """
+    Check for a logging configuration ('log' attribute) in conf. Supply default
+    values if necessary.
+    
+    Returns
+    -------
+    log : dict
+        The dictionary {'plot' : <figure_file>, 'text' : <text_log_file>}. One
+        or both values can be None.
+    """
+    get = conf.get_default_attr
+
+    log = get('log', None)
+
+    default_log = {'text' : None, 'plot' : None}
+
+    if log is None:
+        log = default_log
+
+    else:
+        set_defaults(log, default_log)
+
+    return log
+    
     
 class ProcessPlotter( Struct ):
     output = Output('plotter:')
