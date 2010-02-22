@@ -196,7 +196,7 @@ htmlhelp_basename = 'SfePydoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'SfePy.tex', u'SfePy Documentation',
-   u'Robert Cimrman', 'manual'),
+   u'Robert Cimrman and Contributors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
