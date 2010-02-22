@@ -1,3 +1,0 @@
-script/genDocsXML.py -o tmp/terms.xml
-script/convert_doc.py tmp/terms.xml tmp/t.xml
-script/convert_doc.py tmp/t.xml tmp/t.html
