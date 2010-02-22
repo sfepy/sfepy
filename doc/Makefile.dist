@@ -1,14 +1,11 @@
-# 02.02.2004, c
-# last revision: 01.07.2007
-
 CDIR = $(notdir $(CURDIR))
 DESTDIR = $(DISTDIR)/$(CDIR)
 
-DISTFILES = doxygen.config Makefile.dist
+DISTFILES = doxygen.config Makefile.dist $(wildcard *.py) Makefile
 DISTDIRS := logo tex txt pages
 
-RELDISTFILES := sfepy_manual.pdf $(DISTFILES)
-RELDISTDIRS := logo tex pages
+RELDISTFILES := sfepy_manual.pdf $(DISTFILES) $(shell find . -name "*.rst") $(shell find . -path "./images/*")
+RELDISTDIRS := logo
 
 dist:
 #	echo $(DESTDIR)
@@ -20,7 +17,7 @@ dist:
 
 reldist:
 	mkdir $(DESTDIR)
-	-cp -fpd $(RELDISTFILES) $(DESTDIR)
+	cp -a --parents $(RELDISTFILES) $(DESTDIR)
 	@for i in $(RELDISTDIRS); do \
 	  $(MAKE) -C $$i -f Makefile.dist reldist DISTDIR=${DESTDIR}; \
 	done

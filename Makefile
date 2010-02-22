@@ -42,8 +42,8 @@ ALLTARGETS := version modules
 
 CUR_DIR := $(shell $(PWDCOMMAND))
 
-DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py isfepy shaper.py test.mesh gen genhtml genDocs.py genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py sfepy_gui.py eigen.py site_cfg_template.py setup.py TODO INSTALL README LICENSE
-RELDISTFILES_TOP := btrace_python Makefile VERSION isfepy extractor.py findSurf.py gen genhtml genDocs.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py sfepy_gui.py eigen.py site_cfg_template.py setup.py INSTALL LICENSE README RELEASE_NOTES.txt PKG-INFO
+DISTFILES_TOP := btrace_python Makefile DIARY VERSION findSurf.py isfepy shaper.py test.mesh genPerMesh.py homogen.py extractor.py plotPerfusionCoefs.py postproc.py probe.py runTests.py simple.py schroedinger.py sfepy_gui.py eigen.py site_cfg_template.py setup.py TODO INSTALL README LICENSE
+RELDISTFILES_TOP := btrace_python Makefile VERSION isfepy extractor.py findSurf.py genPerMesh.py postproc.py probe.py runTests.py simple.py schroedinger.py sfepy_gui.py eigen.py site_cfg_template.py setup.py INSTALL LICENSE README RELEASE_NOTES.txt PKG-INFO
 SUBDIRS = database doc examples input script sfepy tests
 RELSUBDIRS = meshes doc examples input script sfepy tests
 DATADIRS := database
@@ -97,7 +97,7 @@ endif
 
 ####### Build rules
 
-.PHONY : tags version dist reldist htmldocs save backup clean
+.PHONY : tags version dist reldist htmldocs pdfdocs save backup clean
 
 modules: sfepy/fem/extmods/version.h $(SRC_LIBSWIG)
 	@echo Python modules done.
@@ -150,8 +150,7 @@ dist: version
 	mv $(DISTDIR).tar.gz $(DISTDIR).tgz
 	rm -rf $(DISTDIR)
 
-reldist: version
-	-./gen
+reldist: version pdfdocs
 	-mkdir $(RELDISTDIR)
 	rm -rf $(RELDISTDIR)/*
 	for i in $(RELDISTFILES_TOP); do cp -fpd $$i $(RELDISTDIR)/$$i; done
@@ -193,3 +192,7 @@ htmldocs:
 	sed "s|^\(PROJECT_NUMBER[ ]*= \)X.Y|\1$(VERSION)|;" doc/doxygen.config > doc/doxygenrc
 	doxygen doc/doxygenrc
 	-rm -rf doc/aux
+
+pdfdocs:
+	-cd doc; make latex; cd _build/latex; make all-pdf
+	-cp -a doc/_build/latex/SfePy.pdf doc/sfepy_manual.pdf
