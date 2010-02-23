@@ -243,13 +243,13 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
     :Definition:
     .. math::
-        \begin{split}
-           & \int_{\Omega} q J(\ul{u}) \\
-           & \mbox{de\_volume mode: vector of } \forall K \in \Tcal_h: \int_{T_K}
-           J(\ul{u}) \\
-           & \mbox{de\_rel\_volume mode: vector of } \forall K \in \Tcal_h:
-           \int_{T_K} J(\ul{u}) / \int_{T_K} 1
-        \end{split}
+         \begin{array}{l}
+         \int_{\Omega} q J(\ul{u}) \\
+         \mbox{de\_volume mode: vector of } \forall K \in \Tcal_h: \int_{T_K}
+         J(\ul{u}) \\
+         \mbox{de\_rel\_volume mode: vector of } \forall K \in \Tcal_h:
+         \int_{T_K} J(\ul{u}) / \int_{T_K} 1
+         \end{array}
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')

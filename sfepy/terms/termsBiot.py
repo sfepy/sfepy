@@ -188,9 +188,12 @@ class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
 
     :Definition:
     .. math::
+        \begin{array}{l}
         \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
-        \right]\,e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega} \left [\int_0^t
+        \right]\,e_{ij}(\ul{v}) \mbox{ ,} \\
+        \int_{\Omega} \left [\int_0^t
         \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
+        \end{array}
     """
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
@@ -290,9 +293,12 @@ class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
 
     :Definition:
     .. math::
+        \begin{array}{l}
         \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
-        \right]\,e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega} \left [\int_0^t
+        \right]\,e_{ij}(\ul{v}) \mbox{ ,} \\
+        \int_{\Omega} \left [\int_0^t
         \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
+        \end{array}
     
     :Arguments:
     material_0 : :math:`\alpha_{ij}(0)`,

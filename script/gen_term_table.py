@@ -42,6 +42,7 @@ def create_parser(slist, current_section):
     return doc
 
 header = """
+.. tabularcolumns:: |p{0.3\linewidth}|p{0.2\linewidth}|p{0.5\linewidth}|
 .. list-table:: Table of all terms.
    :widths: 30 30 40
    :header-rows: 1
@@ -54,7 +55,7 @@ header = """
 table_row = """   * - %s
 
          :class:`%s`
-         :mod:`%s`
+         :mod:`%s <%s>`
      - %s
      -
 %s
@@ -101,13 +102,13 @@ def typeset_to_indent(txt, indent0, indent, width):
 def typeset_term_syntax(term_class):
     if ((len(term_class.arg_types) > 1) and not
         isinstance(term_class.arg_types[0], str)):
-        arg_types = [','.join(['<%s>' % arg for arg in arg_type])
+        arg_types = [', '.join(['<%s>' % arg for arg in arg_type])
                      for arg_type in term_class.arg_types]
         arg_types = [' ``%s``' % arg_type for arg_type in arg_types]
         text = '\n\n       '.join(arg_types)
 
     else:
-        text = ','.join(['<%s>' % arg for arg in term_class.arg_types])
+        text = ', '.join(['<%s>' % arg for arg in term_class.arg_types])
         text = '``%s``' % text
     return text
 
@@ -140,6 +141,7 @@ def typeset_term_table(fd, table):
 
             fd.write(table_row % (item_class.name,
                                   item_class.__name__,
+                                  item_class.__module__.split('.')[-1],
                                   item_class.__module__,
                                   typeset_term_syntax(item_class),
                                   typeset_to_indent(dd, 7, 11, 65)))
