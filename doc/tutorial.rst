@@ -34,12 +34,13 @@ This section introduces the basics of running *SfePy* on the command line.
 * The script ``simple.py`` is the most basic starting point in *SfePy*. It is
   invoked as follows::
 
-    $ ./simple.py input/poisson.py
+    $ ./simple.py examples/diffusion/poisson.py
 
-  * ``input/poisson.py`` is the *SfePy* *problem description* file, which
-    defines the problem to be solved in terms *SfePy* can understand
+  * ``examples/diffusion/poisson.py`` is the *SfePy* *problem description*
+    file, which defines the problem to be solved in terms *SfePy* can
+    understand
 
-  * Running the above command creates the output file ``simple.vtk`` in the
+  * Running the above command creates the output file ``cylinder.vtk`` in the
     *SfePy* top-level directory
 
 * The ``postproc.py`` script can be used for quick postprocessing and
@@ -48,7 +49,7 @@ This section introduces the basics of running *SfePy* on the command line.
 
   * As a simple example, try::
 
-    $ ./postproc.py simple.vtk
+    $ ./postproc.py cylinder.vtk
 
   * The following interactive 3D window should display:
 
@@ -64,12 +65,12 @@ This section introduces the basics of running *SfePy* on the command line.
 Example problem description file
 --------------------------------
 
-Here we discuss the contents of the ``input/poisson.py`` problem description
-file. For additional examples, see the problem description files in the
-``input/`` directory of SfePy.
+Here we discuss the contents of the ``examples/diffusion/poisson.py`` problem
+description file. For additional examples, see the problem description files in
+the ``examples/`` directory of SfePy.
 
-Open the ``input/poisson.py`` file in your favorite text editor. Note that the
-file is a regular python source code.
+Open the ``examples/diffusion/poisson.py`` file in your favorite text
+editor. Note that the file is a regular python source code.
 
 :: 
 
@@ -82,7 +83,9 @@ file is a regular python source code.
 
     #! Mesh
     #! ----
-    filename_mesh = '../database/simple.mesh'
+    from sfepy import top_dir
+
+    filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
 
 The ``filename_mesh`` variable points to the file containing the mesh for the
 particular problem. *SfePy* supports a variety of mesh formats.

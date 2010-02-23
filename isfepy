@@ -60,7 +60,7 @@ These commands were executed:
 >>> from sfepy.postprocess import Viewer
 
 Try:
->>> pb, vec, data = pde_solve('input/poisson.py')
+>>> pb, vec, data = pde_solve('examples/diffusion/poisson.py')
 >>> view = Viewer(pb.get_output_name())
 >>> view()
 

@@ -8,7 +8,7 @@ results/*
 work/*
 auto/*
 dist/
-database/
+meshes/
 patches/
 issues/
 .spkg

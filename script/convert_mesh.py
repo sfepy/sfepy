@@ -12,9 +12,9 @@ Convert a mesh file from one SfePy-supported format to another.
 
 Examples:
 
-$script/convert_mesh.py database/simple.mesh new.vtk
-$script/convert_mesh.py database/simple.mesh new.vtk -s2.5
-$script/convert_mesh.py database/simple.mesh new.vtk -s0.5,2,1
+$ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk
+$ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s2.5
+$ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
 """
 
 help = {

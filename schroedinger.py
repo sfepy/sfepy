@@ -652,28 +652,28 @@ def main():
 
         if options.oscillator:
             if dim == 2:
-                filename_in = fix_path("input/quantum/oscillator2d.py")
+                filename_in = fix_path("examples/quantum/oscillator2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = fix_path("input/quantum/oscillator3d.py")
+                filename_in = fix_path("examples/quantum/oscillator3d.py")
         elif options.well:
             if dim == 2:
-                filename_in = fix_path("input/quantum/well2d.py")
+                filename_in = fix_path("examples/quantum/well2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = fix_path("input/quantum/well3d.py")
+                filename_in = fix_path("examples/quantum/well3d.py")
         elif options.hydrogen:
             if dim == 2:
-                filename_in = fix_path("input/quantum/hydrogen2d.py")
+                filename_in = fix_path("examples/quantum/hydrogen2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = fix_path("input/quantum/hydrogen3d.py")
+                filename_in = fix_path("examples/quantum/hydrogen3d.py")
         elif options.boron:
             if dim == 2:
-                filename_in = fix_path("input/quantum/boron2d.py")
+                filename_in = fix_path("examples/quantum/boron2d.py")
             else:
                 assert_( dim == 3 )
-                filename_in = fix_path("input/quantum/boron3d.py")
+                filename_in = fix_path("examples/quantum/boron3d.py")
         elif options.mesh:
             try:
                 os.makedirs("tmp")
@@ -682,7 +682,7 @@ def main():
                     raise
             if options.dim2:
                 print "Dimension: 2"
-                gp = fix_path('database/quantum/square.geo')
+                gp = fix_path('meshes/quantum/square.geo')
                 os.system("cp %s tmp/mesh.geo" % gp)
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
                 mtv = fix_path('script/mesh_to_vtk.py')
@@ -695,7 +695,7 @@ def main():
                     from site_cfg import tetgen_path
                 except ImportError:
                     tetgen_path = '/usr/bin/tetgen'
-                gp = fix_path('database/box.geo')
+                gp = fix_path('meshes/quantum/box.geo')
                 os.system("gmsh -0 %s -o tmp/x.geo" % gp)
                 g = geom.read_gmsh("tmp/x.geo")
                 g.printinfo()
@@ -708,10 +708,10 @@ def main():
             return
         elif options.dft:
             if dim == 2:
-                filename_in = "input/quantum/dft2d.py"
+                filename_in = "examples/quantum/dft2d.py"
             else:
                 assert_( dim == 3 )
-                filename_in = "input/quantum/dft3d.py"
+                filename_in = "examples/quantum/dft3d.py"
         else:
             parser.print_help()
             return

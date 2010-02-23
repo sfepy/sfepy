@@ -44,7 +44,7 @@ Installation prerequisites:
 Dependencies:
 
 * matplotlib, pyparsing, umfpack, pytables
-* schroedinger.py requires pysparse, gmsh (2D) , tetgen (3D)
+* schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
 * log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
 * isfepy requires ipython, matplotlib with WXAgg
 * postproc.py requires mayavi2 

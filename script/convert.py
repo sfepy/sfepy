@@ -12,12 +12,9 @@ def mesh():
     if len( sys.argv ) == 3:
         geom_filename = sys.argv[1]
         vtk_filename = sys.argv[2]
-    if len( sys.argv ) == 2:
-        geom_filename = sys.argv[1]
-        vtk_filename = "tmp/t.1.vtk"
     else:
-        geom_filename = "database/box.geo"
-        vtk_filename = "tmp/t.1.vtk"
+        print 'Usage: %s <gmsh_filename> <mesh_filename>' % sys.argv[0]
+        return
 
     os.system( "gmsh -0 %s -o tmp/x.geo" % geom_filename )
     g=geom.read_gmsh("tmp/x.geo")

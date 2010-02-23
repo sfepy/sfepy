@@ -509,8 +509,8 @@ class Mesh( Struct ):
     Example of creating and working with a mesh:
 
     In [1]: from sfepy.fem import Mesh
-    In [2]: m = Mesh.from_file("database/simple.vtk")
-    sfepy: reading mesh (database/simple.vtk)...
+    In [2]: m = Mesh.from_file("meshes/3d/cylinder.vtk")
+    sfepy: reading mesh (meshes/3d/cylinder.vtk)...
     sfepy: ...done in 0.04 s
 
     In [3]: m.coors
@@ -543,50 +543,50 @@ class Mesh( Struct ):
     Out[7]: ['3_4']
 
     In [8]: m
-    Out[8]: Mesh:database/simple
+    Out[8]: Mesh:meshes/3d/cylinder
 
     In [9]: print m
-    Mesh:database/simple
-      setup_done:
-        0
+    Mesh:meshes/3d/cylinder
+      conns:               
+        [array([[ 28,  60,  45,  29],
+               [ 28,  60,  57,  45], 
+               [ 28,  57,  27,  45], 
+               ...,                  
+               [353, 343, 260, 296], 
+               [353, 139, 181, 140], 
+               [353, 295, 139, 140]])]
+      coors:                          
+        [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18]
+         [  1.00000000e-01   1.80193774e-02   8.67767478e-03]
+         [  1.00000000e-01   1.24697960e-02   1.56366296e-02]
+         ...,                                                
+         [  8.00298527e-02   5.21598617e-03  -9.77772215e-05]
+         [  7.02544004e-02   3.61610291e-04  -1.16903153e-04]
+         [  3.19633596e-02  -1.00335972e-02   9.60460305e-03]]
+      descs:                                                  
+        ['3_4']
       dim:
         3
-      name:
-        database/simple
-      n_el:
-        1348
-      descs:
-        ['3_4']
-      ngroups:
-        [0 0 0 ..., 0 0 0]
       el_offsets:
         [   0 1348]
+      io:
+        None
+      mat_ids:
+        [array([6, 6, 6, ..., 6, 6, 6])]
+      n_e_ps:
+        [4]
+      n_el:
+        1348
       n_els:
         [1348]
       n_nod:
         354
-      io:
-        None
-      conns:
-        [array([[ 28,  60,  45,  29],
-               [ 28,  60,  57,  45],
-               [ 28,  57,  27,  45],
-               ...,
-               [353, 343, 260, 296],
-               [353, 139, 181, 140],
-               [353, 295, 139, 140]])]
-      coors:
-        [[  1.00000000e-01   2.00000000e-02  -1.22460635e-18]
-         [  1.00000000e-01   1.80193774e-02   8.67767478e-03]
-         [  1.00000000e-01   1.24697960e-02   1.56366296e-02]
-         ...,
-         [  8.00298527e-02   5.21598617e-03  -9.77772215e-05]
-         [  7.02544004e-02   3.61610291e-04  -1.16903153e-04]
-         [  3.19633596e-02  -1.00335972e-02   9.60460305e-03]]
-      n_e_ps:
-        [4]
-      mat_ids:
-        [array([6, 6, 6, ..., 6, 6, 6])]
+      name:
+        meshes/3d/cylinder
+      ngroups:
+        [0 0 0 ..., 0 0 0]
+      setup_done:
+        0
 
     The Mesh().coors is an array of node coordinates and Mesh().conns is the
     list of elements of each type (see Mesh().desc), so for example if you want

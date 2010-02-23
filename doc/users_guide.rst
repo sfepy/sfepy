@@ -16,15 +16,15 @@ Basic usage
 
 * ::
 
-    $ ./simple.py input/poisson.py
+    $ ./simple.py examples/diffusion/poisson.py
 
-  * Creates ``simple.vtk``
+  * Creates ``cylinder.vtk``
 
 * ::
 
-    $ ./simple.py input/pfdpm_permeability.py
+    $ ./simple.py examples/navier_stokes/stokes.py
 
-  * Creates ``perf_symm944t.vtk``
+  * Creates ``channels_symm944t.vtk``
 
 * ::
 
@@ -43,9 +43,9 @@ Surface extraction
 
 * ::
 
-    $ ./findSurf.py database/t.1.node
+    $ ./findSurf.py meshes/quantum/cube.node -
 
-  * Creates ``surf_t.1.mesh``
+  * Creates ``surf_cube.mesh``
 
 Applications
 ^^^^^^^^^^^^
@@ -54,9 +54,9 @@ Applications
 
   * ::
   
-      $ ./eigen.py -p input/phono/band_gaps.py
+      $ ./eigen.py -p examples/phononic/band_gaps.py
       
-    * see ``input/phono/output/``
+    * see ``examples/phononic/output/``
 
 * ``schroedinger.py`` 
 
@@ -134,7 +134,7 @@ Common tasks
 Computations and examples
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The example problems in the ``input`` directory can be computed by the script
+The example problems in the ``examples`` directory can be computed by the script
 ``simple.py`` which is in the top-level directory of the *SfePy* distribution.
 If it is run without arguments, a help message is printed::
 
@@ -163,15 +163,15 @@ Additional (stand-alone) examples are in the examples/ directory, e.g.::
 
 Parametric study example::
 
-    $ ./simple.py input/poisson_parametric_study.py
+    $ ./simple.py examples/diffusion/poisson_parametric_study.py
 
 Common tasks
 """"""""""""
 
 * Run a simulation::
 
-    ./simple.py input/poisson.py
-    ./simple.py input/poisson.py -o some_results # -> produces some_results.vtk
+    ./simple.py examples/diffusion/poisson.py
+    ./simple.py examples/diffusion/poisson.py -o some_results # -> produces some_results.vtk
 
 * Print available terms::
 
@@ -179,7 +179,7 @@ Common tasks
 
 * Run a simulation and also save Dirichlet boundary conditions::
 
-    ./simple.py --save-ebc input/poisson.py # -> produces an additional .vtk file with BC visualization
+    ./simple.py --save-ebc examples/diffusion/poisson.py # -> produces an additional .vtk file with BC visualization
 
 Visualization of results
 ------------------------
@@ -277,8 +277,8 @@ system. Running ``postproc.py`` without arguments produces::
 
 As a simple example, try::
 
-    $ ./simple.py input/poisson.py
-    $ ./postproc.py simple.vtk
+    $ ./simple.py examples/diffusion/poisson.py
+    $ ./postproc.py cylinder.vtk
 
 The following window should display:
 
@@ -286,8 +286,8 @@ The following window should display:
 
 The ``-l`` switch lists information contained in a results file, e.g.::
 
-    $ ./postproc.py -l simple.vtk
-    sfepy: 0: simple.vtk
+    $ ./postproc.py -l cylinder.vtk
+    sfepy: 0: cylinder.vtk
     point scalars
       "node_groups" (354,) range: 0 0 l2_norm_range: 0.0 0.0
         "t" (354,) range: -2.0 2.0 l2_norm_range: 0.0106091 2.0
@@ -299,7 +299,7 @@ Problem description file
 
 Here we discuss the basic items that users have to specify in their input
 files. For complete examples, see the problem description files in the
-``input/`` directory of SfePy.
+``examples/`` directory of SfePy.
 
 
 FE mesh
@@ -315,7 +315,7 @@ A FE mesh defining a domain geometry can be stored in several formats:
 
 Example::
 
-    filename_mesh = 'database/a_mesh.vtk'
+    filename_mesh = 'meshes/3d/cylinder.vtk'
 
 Regions
 ^^^^^^^
@@ -804,7 +804,7 @@ Miscellaneous
 
   * ``parametric_hook`` makes it possible to run parametric studies by
     modifying the problem description programmatically. See
-    ``input/poisson_parametric_study.py`` for an example.
+    ``examples/diffusion/poisson_parametric_study.py`` for an example.
   * ``output_dir`` redirects output files to specified directory
 
 Building Equations in SfePy
