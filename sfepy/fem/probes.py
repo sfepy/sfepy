@@ -187,6 +187,56 @@ class Probe(Struct):
 
         return pars
 
+class PointsProbe(Probe):
+    """
+    Probe variables in given points.
+    """
+    
+    def __init__(self, points, mesh, share_mesh=True):
+        """
+        Parameters
+        ----------
+        points : array_like
+            The coordinates of the points.
+        """
+        points = nm.array(points, dtype=nm.float64)
+        if points.ndim == 1:
+            points.shape = points.shape + (1,)
+        n_point = points.shape[0]
+        name = 'points %d' % n_point
+
+        Probe.__init__(self, name=name, mesh=mesh,
+                       points=points, n_point=n_point)
+
+        self.n_point_single = n_point
+
+    def report(self):
+        """Report the probe parameters."""
+        out = Probe.report(self)
+        for ii, point in enumerate(self.points):
+            out.append('point %d: %s' % (ii, point))
+        out.append('-----')
+        return out
+
+    def refine_points(self, variable, points, cache):
+        """No refinement for this probe."""
+        refine_flag = nm.array([False])
+        return refine_flag
+    
+    def get_points(self, refine_flag=None):
+        """
+        Get the probe points.
+
+        Returns
+        -------
+        pars : array_like
+           The independent coordinate of the probe.
+        points : array_like
+           The probe points, parametrized by pars.
+        """
+        pars = nm.arange(self.n_point, dtype=nm.float64)
+        return pars, self.points
+
 class LineProbe(Probe):
     """
     Probe variables along a line.
