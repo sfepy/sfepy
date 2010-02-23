@@ -156,11 +156,8 @@ sfepy.terms package
 sfepy.terms package - full inheritance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The terms documentation is incomplete here as yet. Please refer to the terms
-documentation in sfepy_manual.pdf until it is merged with Sphinx documentation.
-
-This section is the same as the previous, but shows the full inheritance for the
-terms classes.
+This section is the same as the previous, but shows the full inheritance for
+some of the terms classes.
 
 .. toctree::
    :maxdepth: 2

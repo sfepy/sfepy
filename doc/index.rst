@@ -20,6 +20,8 @@ Contents:
    developer_guide
    documentation_guide
 
+PDF version of the documentation: :download:`sfepy_manual.pdf`
+
 Indices and tables
 ==================
 

@@ -668,7 +668,7 @@ elements, etc.
 Equations and Terms
 ^^^^^^^^^^^^^^^^^^^
 
-Equations can be built by combining terms listed in ``sfepy_manual.pdf``.
+Equations can be built by combining terms listed in :ref:`term_table`.
 
 Examples
 """"""""

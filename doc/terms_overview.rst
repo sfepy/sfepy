@@ -101,6 +101,8 @@ Term names are (usually) prefixed according to the following conventions:
      - terms having all arguments known, the result is a vector of
        integral averages over elements (element average of 'dq')
 
+.. _term_table:
+
 Term Table
 ----------
 
