@@ -2,20 +2,50 @@ from sfepy.base.base import *
 
 ##
 # c: 22.07.2008
-def youngpoisson_to_lame( young, poisson, plane = 'stress' ):
+def youngpoisson_to_lame( young, poisson, plane = 'strain' ):
+    r"""
+    The relationship between Lame parameters and Young's modulus, Poisson's
+    ratio (see [1],[2]):
+
+    .. math::
+        \lambda = {\nu E \over (1+\nu)(1-2\nu)},\qquad \mu = {E \over 2(1+\nu)}
+
+    The plain stress hypothesis:
+
+    .. math::
+       \bar\lambda = {2\lambda\mu \over \lambda + 2\mu}
+
+
+    [1] I.S. Sokolnikoff: Mathematical Theory of Elasticity. New York, 1956.
+
+    [2] T.J.R. Hughes: The Finite Element Method, Linear Static and Dynamic
+    Finite Element Analysis. New Jersey, 1987.
+    """
+
+    mu = young/(2.0*(1.0 + poisson))
+    lam = young*poisson/((1.0 + poisson)*(1.0 - 2.0*poisson))
 
     if plane == 'stress':
-        lam = young*poisson/(1.0 - poisson*poisson)
-        mu = young/(2.0*(1.0 + poisson))
-    elif plane == 'strain':
-        lam = young*poisson/((1.0 + poisson)*(1.0 - 2.0*poisson))
-        mu = young/(2.0*(1.0 + poisson))
+        lam = 2*lam*mu/(lam + 2*mu)
 
     return lam, mu
 
 ##
 # c: 22.07.2008
 def stiffness_tensor_lame( dim, lam, mu ):
+    r"""
+    Stiffness tensor - using Lame coefficients
+
+    .. math::
+        {\bm D}_{(2D)} = \begin{bmatrix} \lambda + 2\mu & \lambda & 0\\
+        \lambda & \lambda + 2\mu & 0\\ 0 & 0 & \mu \end{bmatrix}
+
+    .. math::
+        {\bm D}_{(3D)} = \begin{bmatrix} \lambda + 2\mu & \lambda &
+        \lambda & 0 & 0 & 0\\ \lambda & \lambda + 2\mu & \lambda & 0 & 0 & 0 \\
+        \lambda & \lambda & \lambda + 2\mu & 0 & 0 & 0 \\ 0 & 0 & 0 & \mu & 0 &
+        0 \\ 0 & 0 & 0 & 0 & \mu & 0 \\ 0 & 0 & 0 & 0 & 0 & \mu\\ \end{bmatrix}
+    """
 
     sym = (dim + 1) * dim / 2
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
@@ -25,7 +55,7 @@ def stiffness_tensor_lame( dim, lam, mu ):
     
 ##
 # c: 22.07.2008
-def stiffness_tensor_youngpoisson( dim, young, poisson, plane = 'stress' ):
+def stiffness_tensor_youngpoisson( dim, young, poisson, plane = 'strain' ):
 
     lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
@@ -34,6 +64,27 @@ def stiffness_tensor_youngpoisson( dim, young, poisson, plane = 'stress' ):
 ##
 # c: 10.08.2009
 def stiffness_tensor_lame_mixed( dim, lam, mu ):
+    r"""
+    Stiffness tensor - using Lame coefficients
+
+    .. math::
+        {\bm D}_{(2D)} = \begin{bmatrix} \widetilde\lambda + 2\mu &
+        \widetilde\lambda & 0\\ \widetilde\lambda & \widetilde\lambda + 2\mu &
+        0\\ 0 & 0 & \mu \end{bmatrix}
+
+    .. math::
+        {\bm D}_{(3D)} = \begin{bmatrix} \widetilde\lambda + 2\mu &
+        \widetilde\lambda & \widetilde\lambda & 0 & 0 & 0\\ \widetilde\lambda &
+        \widetilde\lambda + 2\mu & \widetilde\lambda & 0 & 0 & 0 \\
+        \widetilde\lambda & \widetilde\lambda & \widetilde\lambda + 2\mu & 0 &
+        0 & 0 \\ 0 & 0 & 0 & \mu & 0 & 0 \\ 0 & 0 & 0 & 0 & \mu & 0 \\ 0 & 0 &
+        0 & 0 & 0 & \mu\\ \end{bmatrix}
+
+    where
+
+    .. math::
+       \widetilde\lambda = {2\over 3} (\lambda - \mu)
+    """
 
     sym = (dim + 1) * dim / 2
     o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
@@ -43,7 +94,7 @@ def stiffness_tensor_lame_mixed( dim, lam, mu ):
 
 ##
 # c: 10.08.2009
-def stiffness_tensor_youngpoisson_mixed( dim, young, poisson, plane = 'stress' ):
+def stiffness_tensor_youngpoisson_mixed( dim, young, poisson, plane = 'strain' ):
 
     lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
@@ -52,12 +103,18 @@ def stiffness_tensor_youngpoisson_mixed( dim, young, poisson, plane = 'stress' )
 ##
 # c: 10.08.2009
 def bulk_modulus_lame( lam, mu ):
+    r"""
+    Bulk modulus - using Lame coefficients
+
+    .. math::
+        \gamma = {1\over 3}(\lambda + 2\mu)
+    """
 
     return 1.0/3.0 * (2*mu + lam)
 
 ##
 # c: 10.08.2009
-def bulk_modulus_youngpoisson( young, poisson, plane = 'stress' ):
+def bulk_modulus_youngpoisson( young, poisson, plane = 'strain' ):
 
     lam, mu = youngpoisson_to_lame( young, poisson, plane )
 
