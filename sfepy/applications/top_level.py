@@ -18,6 +18,7 @@ def pde_solve(conf_filename, options=None, **app_options):
                          save_regions = False,
                          save_field_meshes = False,
                          save_region_field_meshes = False,
+                         save_regions_as_groups = False,
                          solve_not = False)
         
     app = SimpleApp(conf, options, output_prefix)
