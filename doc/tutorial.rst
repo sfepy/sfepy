@@ -6,14 +6,14 @@ Tutorial
   #. a Python package to build custom applications involving solving PDEs by the
      finite element (FE) method.
 
-This tutorial focuses on the first way, and introduces the basic concepts and
+This tutorial focuses on the first way and introduces the basic concepts and
 nomenclature used in the following parts of the documentation.
 
 Notes on solving PDEs by the Finite Element Method
 --------------------------------------------------
 
-Topics which should be here
-  * A description of the weak form
+Topics which should eventually be discussed here
+  * A description of the PDE weak form
   * Discussion of discretization and meshing
 
 It is planned to have an example based on the Poisson's equation here. For now,
@@ -26,10 +26,37 @@ Running a simulation
 
 The following commands should be run in the top-level directory of the *SfePy*
 source tree after compiling the C extension files. See
-:ref:`introduction_installation` for full installation instructions info. The
-``$`` indicates the command prompt of your terminal.
+:ref:`introduction_installation` for full installation instructions. 
 
-This section introduces the basics of running *SfePy* on the command line.
+Running *SfePy* through the GUI
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The easisest way to run *SfePy* is through the GUI utility. 
+
+* Locate the ``sfepy_gui.py`` script in the top-level directory
+
+* Most environments allow you to double-click on this file to execute the
+  python script. Consult your platform documentation to find out how to
+  associate python scripts with the python interpreter.
+
+* After executing the ``sfepy_gui.py`` script, you should see the following
+  window:
+
+.. image:: images/sfepy_gui.png
+
+* Click the *Browse* button to the right of the *input file name* box and
+  browse for ``examples/diffusion/poisson.py`` as indicated in the figure
+
+* The solution will start automatically and an output box will pop up when the
+  simulation completes
+
+* Viewing the output is described in the :ref:`postprocessing` section below
+
+Invoking *SfePy* from the command line
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section introduces the basics of running *SfePy* on the command line. The
+``$`` indicates the command prompt of your terminal.
 
 * The script ``simple.py`` is the most basic starting point in *SfePy*. It is
   invoked as follows::
@@ -43,6 +70,18 @@ This section introduces the basics of running *SfePy* on the command line.
   * Running the above command creates the output file ``cylinder.vtk`` in the
     *SfePy* top-level directory
 
+* *SfePy* can also be invoked interactively with the ``isfepy`` script::
+
+    $ ./isfepy
+
+  * Follow the help information printed on startup to solve the
+    Poisson's equation example above
+
+.. _postprocessing:
+
+Postprocessing the results
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 * The ``postproc.py`` script can be used for quick postprocessing and
   visualization of the *SfePy* output files. It requires mayavi2 installed on
   your system.
@@ -55,12 +94,14 @@ This section introduces the basics of running *SfePy* on the command line.
 
 .. image:: images/postproc_simple.png
 
-* *SfePy* can also be invoked interactively with the ``isfepy`` script::
+* The left mouse button by itself orbits the 3D view
 
-    $ ./isfepy
+* Holding shift and the left mouse button pans the view
 
-  * Follow the help information printed on startup to solve the
-    Poisson's equation example above and view the output
+* Holding control and the left mouse button rotates about the screen normal axis
+
+* The right mouse button controls the zoom
+
 
 Example problem description file
 --------------------------------

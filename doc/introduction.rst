@@ -71,7 +71,7 @@ top-level directory of the distribution (TOPDIR), or can be installed locally or
 system-wide.
 
 *SfePy* should work both with bleeding edge (SVN) and last released versions of
-its dependencies, see INSTALL file in the tarball. Submit an `issue
+its dependencies; see INSTALL file in the tarball. Submit an `issue
 <http://code.google.com/p/sfepy/issues/entry>`_ in
 case this does not hold.
 
@@ -79,7 +79,11 @@ Generic Installation Instructions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Download the latest source release or the development version from our git
-repository http://git.sympy.org/?p=sfepy.git, see the Downloads tab.
+repository http://git.sympy.org/?p=sfepy.git::
+
+    git clone git://git.sympy.org/sfepy.git
+
+See the *Downloads* tab at http://sfepy.org for additional download options.
 
 In-place compilation of C extension modules
 """""""""""""""""""""""""""""""""""""""""""
@@ -104,7 +108,7 @@ There are two methods of compiling the C extension modules.
 Installation
 """"""""""""
 
-(As mentioned above, this step is not required to use *Sfepy*.)
+(As mentioned above, this step is not required to use *SfePy*.)
 
 * System-Wide (may require root privileges)::
 
