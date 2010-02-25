@@ -331,11 +331,10 @@ class Viewer(Struct):
                                         clamping=clamping)
                     if sf is not None:
                         glyphs.glyph.glyph.scale_factor = sf
-
+                        
                 if 'warp' in vector_mode:
                     active = mlab.pipeline.warp_vector(active)
-                    if sf is not None:
-                        active.filter.scale_factor = sf
+                    active.filter.scale_factor = rel_scaling
 
                 if 'norm' in vector_mode:
                     active = mlab.pipeline.extract_vector_norm(active)
