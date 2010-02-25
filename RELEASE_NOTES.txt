@@ -1,5 +1,75 @@
 # created: 20.07.2007 (-1)
-# last revision: 19.11.2009
+# last revision: 25.01.2010
+
+from 2009.4 to 2010.1
+=====================
+
+- new sphinx-based documentation
+- major branches merged:
+  - 'interp' branch: interpolation between different meshes
+  - 'shape' branch: shape optimization in optimal flow problems
+- fast evaluation (in C) of Lagrange base functions:
+  - new sfepy/fem/poly_spaces.py, tests/test_fem.py
+- new GeometryElement class:
+  - tensor product geometry now in [0, 1] instead of [-1, 1]
+  - remove sfepy/eldesc/*
+- clean-up of examples and meshes
+- examples:
+  - perfusion in the total Lagrangian (TL) formulation
+  - active fibres in the TL formulation
+- homogenization:
+  - new examples:
+    - linear elasticity, micro-macro coupling + test, micro-recovery
+  - updated homogenization engine:
+    - support for coefficients summing
+    - improved saving of correctors
+  - new acoustic and perfusion homogenized coefficients
+- data probing:
+  - automatic refinement of probe points
+  - speed-up:
+    - point caching, use cKDTree for speed
+    - generate_probes() can reuse problem, probes, etc.
+  - new PointsProbe data probe
+  - update generate_probes() for multiple probe hooks
+- postprocessing and visualization:
+  - VTK source construction for any format supported by MeshIO classes
+  - HDF5FileSource -> GenericFileSource
+  - new GenericSequenceFileSource
+- graphical logging:
+  - support logging to a text file, vertical line plot (see live_plot.py)
+  - update Log and ProcessPlotter for several Log instances
+  - Log class: wait until figure save is acknowledged
+  - convergence log support in Newton and Oseen solvers
+- schroedinger: components of V evaluated point-wise in QPs
+- miscellaneous updates:
+  - new --save-regions-as-groups option in simple.py
+  - move and update functions from extractor.py into time_history.py
+  - Oseen solver: leave setup of stabilization parameters to user
+  - allow also 'dq', 'de' call modes in InstantaneousBase._call()
+  - split termsHyperElasticity.py to base, TL and UL parts
+  - utilities for work with units of physical quantities:
+    - new sfepy/mechanics/units.py
+  - functions to compute tensor-related quantities usual in continuum mechanics:
+    - new sfepy/mechanics/tensors.py
+  - many bug fixes
+- new terms:
+  - d_surface (surface of a subdomain)
+  - dw_volume_integrate_variable (volume integration a variable coefficient)
+  - dw_diffusion_r (diffusion-like term)
+  - TL formulation terms:
+    - dw_tl_fib_a (hyperelastic active fibres)
+    - dw_tl_bulk_pressure (hyperelastic bulk pressure)
+    - dw_tl_volume (volume)
+    - dw_tl_diffusion (diffusion with deformation-dependent permeability)
+    - dw_tl_surface_traction (surface traction)
+  - acoustic terms:
+    - dw_acoustic (acoustic term)
+    - d_acoustic_surface (acoustic surface term (in-plane directions))
+    - d_acoustic_alpha (evaluation of acoustic term (in-plane directions))
+    - dw_acoustic_integrate (integration of acoustic term (in-plane directions))
+    - terms for sensitivity analysis:
+      - d_sa_acoustic_alpha, d_sa_acoustic_alpha2, d_sa_acoustic_z,
+        d_sa_acoustic_z2
 
 from 2009.3 to 2009.4
 =====================
