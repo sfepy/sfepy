@@ -84,7 +84,7 @@ solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton',
                 { 'i_max'      : 1,
-                  'eps_a'      : 1e-8,
+                  'eps_a'      : 1e-6,
                   'problem'   : 'nonlinear'}),
 }
 
