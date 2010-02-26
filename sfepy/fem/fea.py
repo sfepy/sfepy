@@ -1,6 +1,7 @@
 from sfepy.base.base import *
 from poly_spaces import PolySpace
 from quadratures import collect_quadratures
+from fe_surface import FESurface
 import extmods.meshutils as mu
 import extmods.geometry as gm
 
@@ -301,42 +302,8 @@ class Approximation( Struct ):
     def setup_surface_data( self, region ):
         """nodes[leconn] == econn"""
         """nodes are sorted by node number -> same order as region.vertices"""
-        face_indices = region.fis[self.ig]
-        
-        faces = self.efaces[face_indices[:,1]]
-        if faces.size == 0:
-            raise RuntimeError, 'region with group with no faces! (%s)'\
-                  % region.name
-#        print self.efaces
-        try:
-            ee = self.econn[face_indices[:,0]]
-        except:
-            pdb.set_trace()
-
-        econn = nm.empty( faces.shape, dtype = nm.int32 )
-        for ir, face in enumerate( faces ):
-#            print ir, face, ee[ir,face]
-            econn[ir] = ee[ir,face]
-
-        ef = econn.flat
-        nodes = nm.unique1d( ef )
-
-        aux = -nm.ones( (nm.max( ef ) + 1,), dtype = nm.int32 )
-        aux[nodes] = nm.arange( len( nodes ), dtype = nm.int32 )
-        leconn = aux[econn].copy()
-        assert_( nm.alltrue( nodes[leconn] == econn ) )
-        
-        n_fa, n_fp = face_indices.shape[0], faces.shape[1]
-        face_type = 's%d' % n_fp
-
-        # Store bkey in SurfaceData, so that base function can be
-        # queried later.
-        bkey = 'b%s' % face_type[1:]
-
-        sd = Struct( name = 'surface_data_%s' % region.name,
-                     econn = econn, fis = face_indices, n_fa = n_fa, n_fp = n_fp,
-                     nodes = nodes, leconn = leconn, face_type = face_type,
-                     bkey = bkey )
+        sd = FESurface('surface_data_%s' % region.name, region,
+                       self.efaces, self.econn, self.ig)
         self.surface_data[region.name] = sd
         return sd
 
