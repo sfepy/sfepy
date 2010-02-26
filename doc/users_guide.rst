@@ -450,6 +450,8 @@ The letter 'P' indicates a polynomial space on the simplex geometry, while 'Q'
 on the tensor product geometry. The numbers behind the letters indicate
 approximation order. Optional bubble function enrichment is marked by 'B'.
 
+.. image:: images/elements.png
+
 Variables
 ^^^^^^^^^
 
