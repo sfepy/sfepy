@@ -10,6 +10,10 @@ python_version
 
     The default Python version that is installed on the system.
 
+system
+
+    The operating system (posix or windows).
+
 archlib
 
     'lib' or 'lib64' depending on your architecture (32bit or 64bit)
@@ -21,6 +25,26 @@ tetgen_path
 numpy_include
 
     Full path to the numpy headers.  This path should end in numpy/core/include.
+
+opt_flags
+
+    Compiler optimization flags.
+
+link_flags
+
+    Linker flags.
+
+debug_flags
+
+    Debugging flags.
+
+numpydoc_path
+
+    The path to numpydoc (required for the sphinx documentation).
+
+is_release
+
+    If set, the version is a release.
 
 New options should be added both to site_cfg_template.py and Config class below.
 
@@ -138,6 +162,12 @@ class Config( object ):
                 import numpydoc
             except ImportError:
                 raise ValueError(msg_numpydoc)
+
+    def is_release(self):
+        if has_attr(site_cfg, 'is_release'):
+            return site_cfg.is_release
+        else:
+            return ''
 
 usage = """Usage: %s option"""
 

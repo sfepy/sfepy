@@ -33,7 +33,7 @@ EXT_INCL     := $(PYTHON_INCL)
 
 ###############
 
-ISRELEASE := 1
+ISRELEASE := $(shell $(RUNCONFIG) is_release)
 ISOPT := 1
 
 MODULES := sfepy/fem/extmods sfepy/linalg/extmods sfepy/terms/extmods sfepy/physics/extmods

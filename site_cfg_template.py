@@ -37,3 +37,6 @@ debug_flags = ''
 # Sphinx documentation uses numpydoc extension. Set the path here in case it is
 # not installed in a standard location.
 numpydoc_path = None
+
+# '1' for a release, '' otherwise.
+is_release = '1'
