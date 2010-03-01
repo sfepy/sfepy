@@ -79,32 +79,50 @@ class CorrMiniApp( MiniAppBase ):
         else:
             return None
 
-    def get_dump( self, state, comps = None ):
-        #get_state = self.problem.variables.get_state_part_view
+    def get_output(self, state, comps=None, is_dump=False):
         to_output = self.problem.variables.state_to_output
+        get_state = self.problem.variables.get_state_part_view
+
         out = {}
         for dvar in self.dump_variables:
             if comps:
-                for ii in range( len( comps ) ):
-                    aux = to_output( state[comps[ii]], extend = False )
-                    for key in aux.keys():
-                        new_key = key + '_' + '%d'*len( comps[ii] ) % comps[ii]
-                        out[new_key] = aux[key]
+                for ii, comp in enumerate(comps):
+                    if is_dump:
+                        aux = {dvar : state[comp]}
+                    else:
+                        aux = to_output(state[comp], extend=False)
+
+                    for key, val in aux.iteritems():
+                        new_key = key + '_' + '%d'*len( comp ) % comp
+
+                        if is_dump:
+                            out[new_key] = Struct(name = 'dump', mode = 'nodes',
+                                                  data = get_state(val, dvar),
+                                                  dofs = None, var_name = dvar)
+
+                        else:
+                            out[new_key] = val
             else:
-                out.update(  to_output( state, extend = False ) )
+                if is_dump:
+                    out[dvar] = Struct(name = 'dump', mode = 'nodes',
+                                       data = get_state(state, dvar),
+                                       dofs = None, var_name = dvar)
+                else:
+                    out.update(to_output(state, extend=False))
 
         return out
-
-    def save( self, out, problem, comps = None ):
-        vout = self.get_dump( out, comps )
+        
+    def save( self, state, problem, comps = None ):
         problem.save_state( self.get_save_name(),
-                            out = vout,
+                            out = self.get_output(state, comps),
                             post_process_hook = self.post_process_hook,
                             file_per_var = self.file_per_var )
+
         dump_name = self.get_dump_name()
         if dump_name is not None:
             problem.save_state( dump_name,
-                                out = vout,
+                                out = self.get_output(state, comps,
+                                                      is_dump=True),
                                 file_per_var = False )
 
 class ShapeDimDim( CorrMiniApp ):
