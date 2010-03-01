@@ -186,6 +186,7 @@ requirements = {
     'corrs_rs' : {
          'requires' : ['pis'],
          'variables' : ['uc', 'vc', 'Pi'],
+         'save_variables' : ['uc'],
          'ebcs' : ['fixed_u'],
          'epbcs' : all_periodic,
          'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
@@ -293,18 +294,18 @@ computed now.
     save_name = req.get( 'save_name', '' )
     name = os.path.join( output_dir, save_name )
 
-    mini_app = ce.CorrectorsElasticRS( 'steady rs correctors', problem, req )
-    mini_app.setup_output(save_format = 'vtk',
-                          file_per_var = False)
+    mini_app = ce.CorrectorsElasticRS('steady rs correctors', problem, req)
+    mini_app.setup_output(save_format='vtk',
+                          file_per_var=False)
     corrs_rs = mini_app( data = {'pis': pis} )
     print corrs_rs
     spause( r""">>>
 ...the $\bar{\omega}^{rs}$ correctors.
-The results are saved in: %s_*.%s
+The results are saved in: %s.%s
 
 Try to display them with:
 
-   python postproc.py %s_*.%s
+   python postproc.py %s.%s
 
 ['q'/other key to quit/continue...]""" % (2 * (name, problem.output_format)) )
 
