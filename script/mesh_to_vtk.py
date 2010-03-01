@@ -99,7 +99,7 @@ file_out.write( 'CELL_TYPES %d\n' % n_el )
 file_out.write( ''.join( ['%d\n' % ii for ii in ct] ) )
 
 file_out.write( 'CELL_DATA %d\n' % n_el )
-file_out.write( '\nSCALARS mat_id float 1\n' )
+file_out.write( '\nSCALARS mat_id int 1\n' )
 file_out.write( 'LOOKUP_TABLE default\n' )
 for row in mat_ids:
     file_out.write( '%s\n' % row )
