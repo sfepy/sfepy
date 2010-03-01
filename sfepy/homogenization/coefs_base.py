@@ -51,6 +51,7 @@ class CorrMiniApp( MiniAppBase ):
         self.set_default_attr( 'save_name', '(not_set)' )
         self.set_default_attr( 'dump_name', self.save_name )
         self.set_default_attr( 'dump_variables', [] )
+        self.set_default_attr( 'save_variables', self.dump_variables )
 
         self.save_name = os.path.normpath( os.path.join( self.output_dir,
                                                          self.save_name ) )
@@ -83,8 +84,14 @@ class CorrMiniApp( MiniAppBase ):
         to_output = self.problem.variables.state_to_output
         get_state = self.problem.variables.get_state_part_view
 
+        if is_dump:
+            var_names = self.dump_variables
+
+        else:
+            var_names = self.save_variables
+
         out = {}
-        for dvar in self.dump_variables:
+        for dvar in var_names:
             if comps:
                 for ii, comp in enumerate(comps):
                     if is_dump:
@@ -113,6 +120,7 @@ class CorrMiniApp( MiniAppBase ):
         return out
         
     def save( self, state, problem, comps = None ):
+
         problem.save_state( self.get_save_name(),
                             out = self.get_output(state, comps),
                             post_process_hook = self.post_process_hook,
