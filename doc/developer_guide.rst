@@ -69,9 +69,7 @@ sfepy.homogenization package
    src/sfepy/homogenization/coefs_piezo
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
-   src/sfepy/homogenization/pfdpm
    src/sfepy/homogenization/phono
-   src/sfepy/homogenization/prolong
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 

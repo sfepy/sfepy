@@ -3,14 +3,8 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 
 DISTFILES := $(wildcard *.py) Makefile.dist
 
-RELDISTFILES := __init__.py coefs_base.py coefs_elastic.py engine.py phono.py utils.py Makefile.dist
-
-
 dist:
-#	echo $(DESTDIR)
 	mkdir $(DESTDIR)
-	cp -fpd $(DISTFILES) $(DESTDIR)
+	cp -fa $(DISTFILES) $(DESTDIR)
 
-reldist:
-	mkdir $(DESTDIR)
-	cp -fpd $(RELDISTFILES) $(DESTDIR)
+reldist: dist

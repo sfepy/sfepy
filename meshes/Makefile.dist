@@ -9,4 +9,6 @@ dist:
 	mkdir $(DESTDIR)
 	cp -a --parents $(DISTFILES) $(DESTDIR)
 
-reldist: dist
+reldist:
+	mkdir $(DESTDIR)
+	cp -a --parents $(RELDISTFILES) $(DESTDIR)
