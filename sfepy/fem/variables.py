@@ -196,7 +196,7 @@ def create_lcbc_no_penetration( normals ):
 
     return n_np_dof, op
 
-def compute_nodal_normals( nodes, region, field ):
+def compute_nodal_normals(nodes, region, field, return_imap=False):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
     dim = field.shape[0]
@@ -253,7 +253,11 @@ def compute_nodal_normals( nodes, region, field ):
 
     normals /= la.norm_l2_along_axis( normals )[:,nm.newaxis]
 
-    return normals
+    if return_imap:
+        return normals, imap
+
+    else:
+        return normals
 
 ##
 # 19.07.2006
