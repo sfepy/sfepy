@@ -282,6 +282,44 @@ def make_axis_rotation_matrix(direction, angle):
     mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
     return mtx
 
+def dot_sequences(mtx, vec):
+    """
+    Computes dot product for each pair of items in the two sequences.
+
+    Equivalent to
+ 
+    out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]), dtype=vec.dtype)
+    for ir in range(mtx.shape[0]):
+        out[ir] = nm.dot(mtx[ir], vec[ir])
+
+    Parameters
+    ----------
+    mtx : array
+        The array of matrices with shape (n_item, m, n).
+    vec : array
+        The array of vectors with shape (n_item, n) or matrices with shape
+        (n_item, n, k).
+
+    Returns
+    -------
+    out : array
+       The resulting array of shape (n_item, m) or (n_item, m, k).
+    """
+    if vec.ndim == 2:
+        out = nm.sum(mtx * vec[:,None,:], axis=2)
+
+    elif vec.ndim == 3:
+        out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
+                       dtype=vec.dtype)
+
+        for ic in range(vec.shape[2]):
+            out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
+
+    else:
+        raise ValueError('unsupported operand shape')
+
+    return out
+
 ##
 # 30.08.2007, c
 class MatrixAction( Struct ):
