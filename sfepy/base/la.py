@@ -59,19 +59,6 @@ def unique( array_in, mode = 'flat' ):
     return( array_out )
 
 ##
-# 14.01.2005, c
-def as_unique_set( obj ):
-    obj_s = nm.zeros( (0,), nm.int32 )
-    for ii in obj:
-        obj_s = nm.concatenate( (obj_s, ii.flat) )
-    obj_s = nm.sort( obj_s )
-#    obj_s = nm.where( obj_s == -1, , obj_s )
-    flag = nm.zeros( obj_s.shape, nm.int32 )
-    flag[obj_s] = 1;
-    set = flag.nonzero()[0]
-    return( set )
-
-##
 # 01.04.2005, c
 # 04.09.2006
 def rect( array, ir, ic ):

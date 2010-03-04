@@ -620,7 +620,9 @@ class Mesh( Struct ):
         """
         Create a mesh given a set of surface faces and the original mesh.
         """
-        inod = la.as_unique_set( surf_faces )
+        aux = nm.concatenate([faces.ravel() for faces in surf_faces])
+        inod = nm.unique1d(aux)
+
         n_nod = len( inod )
         n_nod_m, dim = mesh_in.coors.shape
 
@@ -889,24 +891,27 @@ class Mesh( Struct ):
     def get_bounding_box( self ):
         return nm.vstack( (nm.amin( self.coors, 0 ), nm.amax( self.coors, 0 )) )
 
-    ##
-    # c: 02.01.2008, r: 02.01.2008
-    def localize( self, inod ):
-        """Strips nodes not in inod and remaps connectivities.
-        Omits elements where remap[conn] contains -1..."""
-        remap = nm.empty( (self.n_nod,), dtype = nm.int32 )
-        remap.fill( -1 )
-        remap[inod] = nm.arange( inod.shape[0], dtype = nm.int32 )
+    def localize(self, inod):
+        """
+        Strips nodes not in inod and remaps connectivities.
+        Omits elements where remap[conn] contains -1...
+        """
+        remap = nm.empty((self.n_nod,), dtype=nm.int32)
+        remap.fill(-1)
+        remap[inod] = nm.arange(inod.shape[0], dtype=nm.int32)
 
         self.coors = self.coors[inod]
         self.ngroups = self.ngroups[inod]
         conns = []
-        for conn in self.conns:
+        mat_ids = []
+        for ig, conn in enumerate(self.conns):
             aux = remap[conn]
             ii = nm.unique1d(nm.where(aux == -1)[0])
             ii = nm.setdiff1d(nm.arange(conn.shape[0], dtype=nm.int32), ii)
             conns.append(aux[ii])
+            mat_ids.append(self.mat_ids[ig][ii])
         self.conns = conns
+        self.mat_ids = mat_ids
 
         self._set_shape_info()
 
