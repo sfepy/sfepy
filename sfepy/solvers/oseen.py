@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from sfepy.base.log import Log
+from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test
 
@@ -69,9 +69,7 @@ class Oseen( NonlinearSolver ):
         lin_red = get( 'lin_red', 1.0 )
         is_plot = get( 'is_plot', False )
 
-        log = get('log', None)
-        log = get_default(log, {'text' : None, 'plot' : None})
-
+        log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 

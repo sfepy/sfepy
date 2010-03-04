@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from sfepy.base.log import Log
+from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 
 def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
@@ -120,9 +120,7 @@ class Newton( NonlinearSolver ):
         is_plot = get( 'is_plot', False )
         problem = get( 'problem', 'nonlinear' )
 
-        log = get('log', None)
-        log = get_default(log, {'text' : None, 'plot' : None})
-
+        log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
