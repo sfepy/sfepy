@@ -16,9 +16,9 @@ class SemismoothNewton(Newton):
 
     The function :math:`F(y)` represents the smooth part of the problem.
 
-    Regular step: :math:`y \leftarrow y - J(y)^{-1} Phi(y)`
+    Regular step: :math:`y \leftarrow y - J(y)^{-1} \Phi(y)`
 
-    Steepest descent step: :math:`y \leftarrow y - \beta J(y) Phi(y)`
+    Steepest descent step: :math:`y \leftarrow y - \beta J(y) \Phi(y)`
 
     Notes
     -----
@@ -34,26 +34,26 @@ class SemismoothNewton(Newton):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
-        
-        solver_1 = {
-            'name' : 'semismooth_newton',
-            'kind' : 'nls.semismooth_newton',
+        Example configuration, all items::
 
-            'semismooth' : True,
+            solver_1 = {
+                'name' : 'semismooth_newton',
+                'kind' : 'nls.semismooth_newton',
 
-            'i_max'      : 10,
-            'eps_a'      : 1e-8,
-            'eps_r'      : 1e-2,
-            'macheps'   : 1e-16,
-            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-            'ls_red_reg' : 0.1,
-            'ls_red_alt' : 0.01,
-            'ls_red_warp' : 0.001,
-            'ls_on'      : 0.9,
-            'ls_min'     : 1e-10,
-            'log'        : {'plot' : 'convergence.png'},
-        }
+                'semismooth' : True,
+
+                'i_max'      : 10,
+                'eps_a'      : 1e-8,
+                'eps_r'      : 1e-2,
+                'macheps'   : 1e-16,
+                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+                'ls_red_reg' : 0.1,
+                'ls_red_alt' : 0.01,
+                'ls_red_warp' : 0.001,
+                'ls_on'      : 0.9,
+                'ls_min'     : 1e-10,
+                'log'        : {'plot' : 'convergence.png'},
+            }
         """
         get = conf.get_default_attr
 

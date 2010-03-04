@@ -82,27 +82,28 @@ class Newton( NonlinearSolver ):
         """
         Missing items are set to default values for a linear problem.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_1 = {
-            'name' : 'newton',
-            'kind' : 'nls.newton',
+            solver_1 = {
+                'name' : 'newton',
+                'kind' : 'nls.newton',
 
-            'i_max'      : 2,
-            'eps_a'      : 1e-8,
-            'eps_r'      : 1e-2,
-            'macheps'   : 1e-16,
-            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-            'ls_red'     : 0.1,
-            'ls_red_warp' : 0.001,
-            'ls_on'      : 0.99999,
-            'ls_min'     : 1e-5,
-            'check'     : 0,
-            'delta'     : 1e-6,
-            'is_plot'    : False,
-            'log'        : None,
-            'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-        }
+                'i_max'      : 2,
+                'eps_a'      : 1e-8,
+                'eps_r'      : 1e-2,
+                'macheps'   : 1e-16,
+                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+                'ls_red'     : 0.1,
+                'ls_red_warp' : 0.001,
+                'ls_on'      : 0.99999,
+                'ls_min'     : 1e-5,
+                'check'     : 0,
+                'delta'     : 1e-6,
+                'is_plot'    : False,
+                'log'        : None,
+                 # 'nonlinear' or 'linear' (ignore i_max)
+                'problem'   : 'nonlinear',
+            }
         """
         get = conf.get_default_attr
 
@@ -308,19 +309,19 @@ class ScipyBroyden( NonlinearSolver ):
         """
         Missing items are left to scipy defaults. Unused options are ignored.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_1 = {
-            'name' : 'broyden',
-            'kind' : 'nls.scipy_broyden_like',
+            solver_1 = {
+                'name' : 'broyden',
+                'kind' : 'nls.scipy_broyden_like',
 
-            'method'  : 'broyden3',
-            'i_max'   : 10,
-            'alpha'   : 0.9,
-            'M'       : 5,
-            'w0'      : 0.1,
-            'verbose' : True,
-        }
+                'method'  : 'broyden3',
+                'i_max'   : 10,
+                'alpha'   : 0.9,
+                'M'       : 5,
+                'w0'      : 0.1,
+                'verbose' : True,
+            }
         """
         get = conf.get_default_attr
 

@@ -124,14 +124,14 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-       solver_20 = {
-            'name' : 'eigen2',
-            'kind' : 'eig.sgscipy',
+            solver_20 = {
+                'name' : 'eigen2',
+                'kind' : 'eig.sgscipy',
 
-            'force_n_eigs' : True,
-        }
+                'force_n_eigs' : True,
+            }
         """
         get = conf.get_default_attr
 
@@ -201,20 +201,19 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_2 = {
-            'name' : 'lobpcg',
-            'kind' : 'eig.scipy_lobpcg',
+            solver_2 = {
+                'name' : 'lobpcg',
+                'kind' : 'eig.scipy_lobpcg',
 
-            'i_max' : 20,
-            'n_eigs' : 5,
-            'eps_a' : None,
-            'largest' : True,
-            'precond' : None,
-            'verbosity' : 0,
-        }
-
+                'i_max' : 20,
+                'n_eigs' : 5,
+                'eps_a' : None,
+                'largest' : True,
+                'precond' : None,
+                'verbosity' : 0,
+            }
         """
         get = conf.get_default_attr
 
@@ -276,19 +275,19 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_2 = {
-            'name' : 'eigen1',
-            'kind' : 'eig.pysparse',
+            solver_2 = {
+                'name' : 'eigen1',
+                'kind' : 'eig.pysparse',
 
-            'i_max' : 150,
-            'eps_a' : 1e-5,
-            'tau' : -10.0,
-            'method' : 'qmrs',
-            'verbosity' : 0,
-            'strategy' : 1,
-        }
+                'i_max' : 150,
+                'eps_a' : 1e-5,
+                'tau' : -10.0,
+                'method' : 'qmrs',
+                'verbosity' : 0,
+                'strategy' : 1,
+            }
         """
         get = conf.get_default_attr
 

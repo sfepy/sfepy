@@ -22,16 +22,16 @@ class ScipyDirect(LinearSolver):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_1100 = {
-            'name' : 'dls1100',
-            'kind' : 'ls.scipy_direct',
+            solver_1100 = {
+                'name' : 'dls1100',
+                'kind' : 'ls.scipy_direct',
 
-            'method' : 'superlu',
-            'presolve' : False,
-            'warn' : True,
-        }
+                'method' : 'superlu',
+                'presolve' : False,
+                'warn' : True,
+            }
         """
         get = conf.get_default_attr
 
@@ -118,16 +118,16 @@ class ScipyIterative( LinearSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_110 = {
-            'name' : 'ls110',
-            'kind' : 'ls.scipy_iterative',
+            solver_110 = {
+                'name' : 'ls110',
+                'kind' : 'ls.scipy_iterative',
 
-            'method' : 'cg',
-            'i_max'   : 1000,
-            'eps_a'   : 1e-12,
-        }
+                'method' : 'cg',
+                'i_max'   : 1000,
+                'eps_a'   : 1e-12,
+            }
         """
         get = conf.get_default_attr
 
@@ -181,16 +181,16 @@ class PyAMGSolver( LinearSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_102 = {
-            'name' : 'ls102',
-            'kind' : 'ls.pyamg',
+            solver_102 = {
+                'name' : 'ls102',
+                'kind' : 'ls.pyamg',
 
-            'method' : 'smoothed_aggregation_solver',
-            'accel' : 'cg'
-            'eps_a'   : 1e-12,
-        }
+                'method' : 'smoothed_aggregation_solver',
+                'accel' : 'cg'
+                'eps_a'   : 1e-12,
+            }
         """
         get = conf.get_default_attr
 
@@ -256,18 +256,18 @@ class PETScKrylovSolver( LinearSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_120 = {
-            'name' : 'ls120',
-            'kind' : 'ls.petsc',
+            solver_120 = {
+                'name' : 'ls120',
+                'kind' : 'ls.petsc',
 
-            'method' : 'cg', # ksp_type
-            'precond' : 'icc', # pc_type
-            'eps_a' : 1e-12, # abstol
-            'eps_r' : 1e-12, # rtol
-            'i_max' : 1000, # maxits
-        }
+                'method' : 'cg', # ksp_type
+                'precond' : 'icc', # pc_type
+                'eps_a' : 1e-12, # abstol
+                'eps_r' : 1e-12, # rtol
+                'i_max' : 1000, # maxits
+            }
         """
         get = conf.get_default_attr
 

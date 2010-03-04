@@ -25,27 +25,27 @@ class Oseen( NonlinearSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_1 = {
-            'name' : 'oseen',
-            'kind' : 'nls.oseen',
+            solver_1 = {
+                'name' : 'oseen',
+                'kind' : 'nls.oseen',
 
-            'needs_problem_instance' : True,
-            'stabilization_hook' : 'create_stabil_mat',
+                'needs_problem_instance' : True,
+                'stabilization_hook' : 'create_stabil_mat',
 
-            'adimensionalize' : False,
-            'check_navier_stokes_rezidual' : False,
+                'adimensionalize' : False,
+                'check_navier_stokes_rezidual' : False,
 
-            'i_max'      : 10,
-            'eps_a'      : 1e-8,
-            'eps_r'      : 1.0,
-            'macheps'    : 1e-16,
-            'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-            'is_plot'    : False,
-            'log'        : {'text' : 'oseen_log.txt',
-                            'plot' : 'oseen_log.png'},
-        }
+                'i_max'      : 10,
+                'eps_a'      : 1e-8,
+                'eps_r'      : 1.0,
+                'macheps'    : 1e-16,
+                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
+                'is_plot'    : False,
+                'log'        : {'text' : 'oseen_log.txt',
+                                'plot' : 'oseen_log.png'},
+            }
         """
         get = conf.get_default_attr
 

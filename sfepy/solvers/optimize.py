@@ -10,11 +10,14 @@ import scipy.optimize.linesearch as linesearch
 # 28.04.2006
 def conv_test( conf, it, of, of0, ofg_norm = None ):
     """
-    -1 ... continue
-     0 ... small OF -> stop
-     1 ... i_max reached -> stop
-     2 ... small OFG -> stop
-     3 ... small relative decrase of OF
+    Returns
+    -------
+    flag : int
+        * -1 ... continue
+        *  0 ... small OF -> stop
+        *  1 ... i_max reached -> stop
+        *  2 ... small OFG -> stop
+        *  3 ... small relative decrase of OF
      """
 
     status = -1
@@ -95,30 +98,30 @@ class FMinSteepestDescent( OptimizationSolver ):
         """
         Missing items are set to default values.
         
-        Example configuration, all items:
+        Example configuration, all items::
         
-        solver_0 = {
-            'name'      : 'fmin_sd',
-            'kind'      : 'opt.fmin_sd',
+            solver_0 = {
+                'name'      : 'fmin_sd',
+                'kind'      : 'opt.fmin_sd',
 
-            'i_max'      : 10,
-            'eps_rd'     : 1e-5, # Relative delta of objective function
-            'eps_of'     : 1e-4,
-            'eps_ofg'    : 1e-8,
-            'norm'      : nm.Inf,
-            'ls'        : True, # Linesearch.
-            'ls_method'  : 'backtracking', # 'backtracking' or 'full'
-            'ls0'       : 0.25,
-            'ls_red'     : 0.5,
-            'ls_red_warp' : 0.1,
-            'ls_on'      : 0.99999,
-            'ls_min'     : 1e-5,
-            'check'     : 0,
-            'delta'     : 1e-6,
-            'output'    : None, # 'itc'
-            'log'       : True,
-            'yscales'   : ['linear', 'log', 'log'],
-        }
+                'i_max'      : 10,
+                'eps_rd'     : 1e-5, # Relative delta of objective function
+                'eps_of'     : 1e-4,
+                'eps_ofg'    : 1e-8,
+                'norm'      : nm.Inf,
+                'ls'        : True, # Linesearch.
+                'ls_method'  : 'backtracking', # 'backtracking' or 'full'
+                'ls0'       : 0.25,
+                'ls_red'     : 0.5,
+                'ls_red_warp' : 0.1,
+                'ls_on'      : 0.99999,
+                'ls_min'     : 1e-5,
+                'check'     : 0,
+                'delta'     : 1e-6,
+                'output'    : None, # 'itc'
+                'log'       : True,
+                'yscales'   : ['linear', 'log', 'log'],
+            }
         """
         get = conf.get_default_attr
 
