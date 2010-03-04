@@ -309,6 +309,8 @@ class MeditMeshIO( MeshIO ):
             ic = descs.index( '3_8' )
 
             conn_in = conns_in.pop( ic )
+            mat_id_in = mat_ids.pop(ic)
+            
             flag = nm.zeros( (conn_in.shape[0],), nm.int32 )
             for ii, el in enumerate( conn_in ):
                 if (el[4] == el[5]):
@@ -319,27 +321,32 @@ class MeditMeshIO( MeshIO ):
 
             conn = []
             desc = []
-
+            mat_id = []
+  
             ib = nm.where( flag == 0 )[0]
             if (len( ib ) > 0):
                 conn.append( conn_in[ib] )
+                mat_id.append(mat_id_in[ib])
                 desc.append( '3_8' )
 
             iw = nm.where( flag == 1 )[0]
             if (len( iw ) > 0):
-                ar = nm.array( [0,1,2,3,4,6,8], nm.int32 )
+                ar = nm.array( [0,1,2,3,4,6], nm.int32 )
                 conn.append( la.rect( conn_in, iw, ar ) )
+                mat_id.append(mat_id_in[iw])
                 desc.append( '3_6' )
 
             ip = nm.where( flag == 2 )[0]
             if (len( ip ) > 0):
-                ar = nm.array( [0,1,2,3,4,8], nm.int32 )
+                ar = nm.array( [0,1,2,3,4], nm.int32 )
                 conn.append( la.rect( conn_in, ip, ar ) )
+                mat_id.append(mat_id_in[ip])
                 desc.append( '3_5' )
 
 ##             print "brick split:", ic, ":", ib, iw, ip, desc
 
             conns_in[ic:ic] = conn
+            mat_ids[ic:ic] = mat_id
             del( descs[ic] )
             descs[ic:ic] = desc
 
