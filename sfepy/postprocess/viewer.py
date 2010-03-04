@@ -234,9 +234,10 @@ class Viewer(Struct):
                             scalar_mode='iso_surface',
                             vector_mode='arrows_norm',
                             rel_scaling=None, clamping=False,
-                            ranges=None, is_scalar_bar=False,
+                            ranges=None, is_scalar_bar=False, is_wireframe=False,
                             rel_text_width=None,
-                            filter_names=None, only_names=None):
+                            filter_names=None, group_names=None,
+                            only_names=None):
         """Sets self.source, self.is_3d_data """
         file_source = get_default(file_source, self.file_source,
                                   'file_source not set!')
@@ -264,22 +265,54 @@ class Viewer(Struct):
                 raise ValueError('no names were found! (%s not in %s)'
                                  % (only_names, [name[2] for name in names]))
             names = _names
-        n_data = len(names)
-        n_row, n_col = get_position_counts(n_data, layout)
+
+        if group_names is not None:
+            ndict = {}
+            for name in names:
+                ndict[name[2]] = name
+
+            repeat = []
+            _names = []
+            aux = set(name[2] for name in names)
+            for group in group_names:
+                aux.difference_update(group)
+                repeat.append(len(group))
+                for name in group:
+                    _names.append(ndict[name])
+
+            repeat.extend([1] * len(aux))
+            n_pos = len(repeat)
+
+            names = _names
+            n_data = len(names)
+
+        else:
+            n_pos = n_data = len(names)
+            repeat = [1] * n_data
+
+        def _make_iterator(repeat, n_row, n_col):
+            ii = 0
+            for ij, iric in enumerate(cycle((n_row, n_col))):
+                ir, ic = iric
+                for ik in xrange(repeat[ij]):
+                    yield ii, ir, ic
+                    ii += 1
+
+        n_row, n_col = get_position_counts(n_pos, layout)
+        if layout[:3] == 'col':
+            iterator = _make_iterator(repeat, n_col, n_row)
+        else:
+            iterator = _make_iterator(repeat, n_row, n_col)
 
         max_label_width = nm.max([len(ii[2]) for ii in names] + [5]) + 2
 
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
 
-        if layout[:3] == 'col':
-            iterator = enumerate(cycle((n_col, n_row)))
-        else:
-            iterator = enumerate(cycle((n_row, n_col)))
 
         self.scalar_bars = []
 
-        for ii, (ir, ic) in iterator:
+        for ii, ir, ic in iterator:
             if layout[:3] == 'col':
                 ir, ic = ic, ir
             if ii == n_data: break
@@ -384,6 +417,10 @@ class Viewer(Struct):
                 lm.use_default_range = False
                 lm.data_range = ranges[name]
 
+            if is_wireframe:
+                surf = add_surf(source, position)
+                surf.actor.property.representation = 'wireframe'
+
             if is_scalar_bar:
                 mm = active.children[0]
                 if (kind == 'scalars') or (kind == 'tensors'):
@@ -440,9 +477,10 @@ class Viewer(Struct):
     def call_mlab(self, scene=None, show=True, is_3d=False, view=None, roll=None,
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
-                  ranges=None, is_scalar_bar=False, rel_text_width=None,
+                  ranges=None, is_scalar_bar=False, is_wireframe=False,
+                  rel_text_width=None,
                   fig_filename='view.png', resolution = None,
-                  filter_names=None, only_names=None, step=0,
+                  filter_names=None, only_names=None, group_names=None, step=0,
                   anti_aliasing=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
@@ -476,6 +514,8 @@ class Viewer(Struct):
             List of data ranges in the form {name : (min, max), ...}.
         is_scalar_bar : bool
             If True, show a scalar bar for each data.
+        is_wireframe : bool
+            If True, show a wireframe of mesh surface bar for each data.
         rel_text_width : float
             Relative text width.
         fig_filename : str
@@ -490,6 +530,10 @@ class Viewer(Struct):
         only_names : list of strings
             Draw only the listed datasets. If None, it is initialized all names
             besides those in filter_names.
+        group_names : list of tuples
+            List of data names in the form [(name1, ..., nameN), (...)]. Plots
+            of data named in each group are superimposed. Repetitions of names
+            are possible.
         step : int
             The time step to display.
         anti_aliasing : int
@@ -597,8 +641,10 @@ class Viewer(Struct):
                                  clamping=clamping,
                                  ranges=ranges,
                                  is_scalar_bar=is_scalar_bar,
+                                 is_wireframe=is_wireframe,
                                  rel_text_width=rel_text_width,
                                  filter_names=filter_names,
+                                 group_names=group_names,
                                  only_names=only_names)
         
         scene.scene.reset_zoom()
@@ -710,9 +756,11 @@ def make_animation(filename, view, roll, anim_format, options):
            rel_scaling=options.rel_scaling,
            clamping=options.clamping, ranges=options.ranges,
            is_scalar_bar=options.is_scalar_bar,
+           is_wireframe=options.is_wireframe,
            rel_text_width=options.rel_text_width,
            fig_filename=options.fig_filename, resolution=options.resolution,
            filter_names=options.filter_names, only_names=options.only_names,
+           group_names=options.group_names,
            anti_aliasing=options.anti_aliasing)
 
     anim_name = viewer.encode_animation(options.fig_filename, anim_format,

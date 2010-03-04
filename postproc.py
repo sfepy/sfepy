@@ -76,6 +76,8 @@ help = {
     'force data ranges [default: automatic from data]',
     'is_scalar_bar' :
     'show scalar bar for each data',
+    'is_wireframe' :
+    'show wireframe of mesh surface for each data',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'watch' :
@@ -99,6 +101,8 @@ help = {
     'draw all data (normally, node_groups and mat_id are omitted)',
     'only_names' :
     'draw only named data',
+    'group_names' :
+    'superimpose plots of data in each group',
     'anti_aliasing' :
     'value of anti-aliasing [default: mayavi2 default]',
 }
@@ -122,6 +126,12 @@ def parse_ranges(option, opt, value, parser):
             ranges[aux[0]] = (float(aux[1]), float(aux[2]))
         setattr(parser.values, option.dest, ranges)
 
+def parse_group_names(option, opt, value, parser):
+    if value is not None:
+        print value
+        group_names = [tuple(group.split(',')) for group in value.split(':')]
+        setattr(parser.values, option.dest, group_names)
+
 def view_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, watch=options.watch,
@@ -141,9 +151,11 @@ def view_file(filename, filter_names, options, view=None):
              rel_scaling=options.rel_scaling,
              clamping=options.clamping, ranges=options.ranges,
              is_scalar_bar=options.is_scalar_bar,
+             is_wireframe=options.is_wireframe,
              rel_text_width=options.rel_text_width,
              fig_filename=options.filename, resolution=options.resolution,
              filter_names=filter_names, only_names=options.only_names,
+             group_names=options.group_names,
              step=options.step, anti_aliasing=options.anti_aliasing)
 
     else:
@@ -192,6 +204,9 @@ def main():
     parser.add_option("-b", "--scalar-bar",
                       action="store_true", dest="is_scalar_bar",
                       default=False, help=help['is_scalar_bar'])
+    parser.add_option("", "--wireframe",
+                      action="store_true", dest="is_wireframe",
+                      default=False, help=help['is_wireframe'])
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
@@ -220,6 +235,9 @@ def main():
     parser.add_option("--only-names", metavar='list of names',
                       action="store", dest="only_names",
                       default=None, help=help['only_names'])
+    parser.add_option("--group-names", type='str', metavar='name1,...,nameN:...',
+                      action="callback", dest="group_names",
+                      callback=parse_group_names, help=help['group_names'])
     parser.add_option("--step", type='int', metavar='step',
                       action="store", dest="step",
                       default=0, help=help['step'])
