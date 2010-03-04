@@ -42,6 +42,13 @@ from sfepy.fem import Mesh, Domain, Field, Fields, Variables
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.variables import compute_nodal_normals
 
+def edge_data_to_output(coors, conn, e_sort, data):
+    out = nm.zeros_like(coors)
+    out[conn[e_sort,0]] = data
+    return Struct(name='output_data',
+                  mode='vertex', data=out,
+                  dofs=None)
+
 def define_dual_mesh(region, region_omega):
     """
     Assume a single GeometryElement type in all groups, linear
@@ -163,9 +170,14 @@ def define_dual_mesh(region, region_omega):
         dm_conn[:,1:] += centre_coors.shape[0]
         mat_id = nm.zeros((dm_conn.shape[0],), dtype=nm.int32)
 
+        out = {}
+        out['en'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_normals)
+        out['ed'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_dirs)
+        out['eo'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_ortho)
+
         dual_mesh = Mesh.from_data('dual_vis', dm_coors, None, [dm_conn],
                                    [mat_id], ['2_4'])
-        dual_mesh.write('aux4.mesh', io='auto')
+        dual_mesh.write('aux4.vtk', io='auto', out=out)
 
         aux = Mesh.from_surface([surface.econn], domain.mesh)
         aux.write('surface.mesh', io='auto')
