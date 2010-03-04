@@ -288,9 +288,10 @@ def dot_sequences(mtx, vec):
 
     Equivalent to
  
-    out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]), dtype=vec.dtype)
-    for ir in range(mtx.shape[0]):
-        out[ir] = nm.dot(mtx[ir], vec[ir])
+    >>> out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
+    >>>                dtype=vec.dtype)
+    >>> for ir in range(mtx.shape[0]):
+    >>>     out[ir] = nm.dot(mtx[ir], vec[ir])
 
     Parameters
     ----------
