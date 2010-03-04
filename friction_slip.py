@@ -90,6 +90,8 @@ def define_dual_mesh(region, region_omega):
 
         print surface
 
+        n_fa, n_edge = surface.n_fa, sgel.n_edge
+
         surfaces[ig] = surface
 
         # Face centres.
@@ -107,17 +109,38 @@ def define_dual_mesh(region, region_omega):
                                                     field, return_imap=True)
         normals[ig] = nodal_normals
 
-        edges_per_face = surface.leconn[:,sgel.edges].copy()
+        ee = surface.leconn[:,sgel.edges].copy()
+        edges_per_face = ee.copy()
         sh = edges_per_face.shape
-        edges_per_face.shape = (sh[0] * sh[1], sh[2])
+        ee.shape = edges_per_face.shape = (sh[0] * sh[1], sh[2])
         edges_per_face.sort(axis=1)
 
-        edge_normals = 0.5 * nodal_normals[edges_per_face].sum(axis=1)
+        eo = nm.empty((sh[0] * sh[1],), dtype=nm.object)
+        eo[:] = [tuple(ii) for ii in edges_per_face]
+
+        ueo, e_sort, e_id = nm.unique1d(eo, return_index=True,
+                                        return_inverse=True)
+        ueo = edges_per_face[e_sort]
+
+        # edge centre, edge point 1, face centre, edge point 2.
+        conn = nm.empty((n_edge * n_fa, n_edge), dtype=nm.int32)
+        conn[:,0] = e_id
+        conn[:,1] = ee[:,0]
+        conn[:,2] = nm.repeat(nm.arange(n_fa, dtype=nm.int32), n_edge) \
+                    + coor_offsets[ig]
+        conn[:,3] = ee[:,1]
+
+        nn = surface.nodes[ueo]
+        edge_coors = mesh_coors[nn]
+
+        centre_coors = 0.5 * edge_coors.sum(axis=1)
+
+        edge_normals = 0.5 * nodal_normals[ueo].sum(axis=1)
 
         edge_normals /= la.norm_l2_along_axis(edge_normals)[:,None]
 
-        nn = surface.nodes[edges_per_face]
-        edge_dirs = mesh_coors[nn[:,1]] = mesh_coors[nn[:,0]]
+        nn = surface.nodes[ueo]
+        edge_dirs = edge_coors[:,1] - edge_coors[:,0]
         edge_dirs /= la.norm_l2_along_axis(edge_dirs)[:,None]
 
         edge_ortho = nm.cross(edge_normals, edge_dirs)
@@ -126,6 +149,34 @@ def define_dual_mesh(region, region_omega):
         print edge_dirs
         print edge_ortho
 
+        print centre_coors
+
+        dm_coors = dual_coors[ig]
+        dm_conn = conn[:,1:].copy()
+        mat_id = nm.zeros((dm_conn.shape[0],), dtype=nm.int32)
+        dual_mesh = Mesh.from_data('dual_vis', dm_coors, None, [dm_conn],
+                                   [mat_id], ['2_3'])
+        dual_mesh.write('aux3.mesh', io='auto')
+
+        dm_coors = nm.r_[centre_coors, dual_coors[ig]]
+        dm_conn = conn.copy()
+        dm_conn[:,1:] += centre_coors.shape[0]
+        mat_id = nm.zeros((dm_conn.shape[0],), dtype=nm.int32)
+
+        dual_mesh = Mesh.from_data('dual_vis', dm_coors, None, [dm_conn],
+                                   [mat_id], ['2_4'])
+        dual_mesh.write('aux4.mesh', io='auto')
+
+        aux = Mesh.from_surface([surface.econn], domain.mesh)
+        aux.write('surface.mesh', io='auto')
+
+        debug()
+
+        ## cc = centre_coors[0]
+        ## nn = edge_normals[0]
+        ## dd = edge_dirs[0]
+        ## oo = edge_ortho[0]
+        
     print centre_coors
     print dual_coors
     print coor_offsets
@@ -142,9 +193,8 @@ def main():
     print domain
 
     reg_omega = domain.create_region('Omega', 'all')
-    reg = domain.create_region('Screw',
-                               ' +n '.join(['nodes of group %d'
-                                            % ii for ii in [1,2,3,4]]),
+    reg = domain.create_region('Surface',
+                               'nodes of surface',
                                {'can_cells' : True})
 
     dual_mesh = define_dual_mesh(reg, reg_omega)
