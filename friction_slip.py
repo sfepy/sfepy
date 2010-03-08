@@ -79,7 +79,7 @@ def define_dual_mesh(region, region_omega):
 
     # Coordinate interpolation to face centres.
     ps = gel.interp.poly_spaces[face_key]
-    centre = 0.5 * ps.bbox.sum(axis=0)
+    centre = ps.node_coors.sum(axis=0) / ps.n_nod
     bf = ps.eval_base(centre[None,:])
 
     dual_coors = {}
@@ -130,7 +130,7 @@ def define_dual_mesh(region, region_omega):
         ueo = edges_per_face[e_sort]
 
         # edge centre, edge point 1, face centre, edge point 2.
-        conn = nm.empty((n_edge * n_fa, n_edge), dtype=nm.int32)
+        conn = nm.empty((n_edge * n_fa, 4), dtype=nm.int32)
         conn[:,0] = e_id
         conn[:,1] = ee[:,0]
         conn[:,2] = nm.repeat(nm.arange(n_fa, dtype=nm.int32), n_edge) \
