@@ -1,14 +1,25 @@
 #!/usr/bin/env python
-import sys
 import os.path as op
+from optparse import OptionParser
 
 from sfepy.base.base import *
 from sfepy.fem import Mesh, Domain
 from sfepy.mechanics.friction import define_dual_mesh
 
-def main():
+usage = """%prog [options] mesh_filename"""
 
-    mesh = Mesh('mesh', 'meshes/3d/block.mesh')
+def main():
+    parser = OptionParser(usage=usage, version="%prog")
+
+    options, args = parser.parse_args()
+
+    if (len(args) == 1):
+        mesh_filename = args[0];
+    else:
+        parser.print_help(),
+        return
+
+    mesh = Mesh('mesh', mesh_filename)
     print mesh
 
     domain = Domain('domain', mesh)
