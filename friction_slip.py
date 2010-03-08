@@ -151,6 +151,7 @@ def define_dual_mesh(region, region_omega):
         edge_dirs /= la.norm_l2_along_axis(edge_dirs)[:,None]
 
         edge_ortho = nm.cross(edge_normals, edge_dirs)
+        edge_ortho /= la.norm_l2_along_axis(edge_ortho)[:,None]
 
         print edge_normals
         print edge_dirs
