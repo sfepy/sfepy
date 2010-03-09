@@ -45,74 +45,70 @@ def edge_data_to_output(coors, conn, e_sort, data):
                   mode='vertex', data=out,
                   dofs=None)
 
-def define_dual_mesh(region, region_omega):
-    """
-    Assume a single GeometryElement type in all groups, linear
-    approximation.
-    """
-    domain = region.domain
+class DualMesh(Struct):
+    """Dual mesh corresponding to a (surface) region."""
 
-    ed = domain.ed
-    ## edge_map = {}
-    ## for ig, edges in region.edges.iteritems():
+    def __init__(self, region):
+        """
+        Assume a single GeometryElement type in all groups, linear
+        approximation.
+
+        Works for one group only for the moment.
+        """
+        domain = region.domain
+
+        self.region = copy(region)
+        self.region.setup_face_indices(domain.fa)
+
+        self.mesh_coors = domain.mesh.coors
+
+        # add_to_regions=True due to Field implementation shortcomings.
+        omega = domain.create_region('Omega', 'all', add_to_regions=True)
+        self.field = Field('displacements', nm.float64, (3,), omega, 1)
+
+        self.gel = domain.geom_els.values()[0]
+        self.sgel = self.gel.surface_facet
+
+        face_key = 's%d' % self.sgel.n_vertex
+
+        # Coordinate interpolation to face centres.
+        self.ps = self.gel.interp.poly_spaces[face_key]
+        centre = self.ps.node_coors.sum(axis=0) / self.ps.n_nod
+        self.bf = self.ps.eval_base(centre[None,:])
+
+        self.surfaces = surfaces = {}
+        self.dual_surfaces = dual_surfaces = {}
         
+        el_map = {}
 
-    ##     data = ed.data[edges]
-    ##     for row in data:
-    ##         key = tuple(row[3:])
-    ##         els = edge_map.setdefault(key, [])
-    ##         els.append(row[:3])
+        for ig, conn in enumerate(domain.mesh.conns):
+            surface = FESurface(None, self.region, self.gel.faces, conn, ig)
+            surfaces[ig] = surface
 
-    ##     print edge_map
-    ##     pause()
+            dual_surface = self.describe_dual_surface(surface)
+            dual_surfaces[ig] = dual_surface
 
-    field = Field('displacements', nm.float64, (3,), region_omega, 1)
+            print dual_surface
 
-    gel = domain.geom_els.values()[0]
-    sgel = gel.surface_facet
-    
-    face_key = 's%d' % sgel.n_vertex
+    def describe_dual_surface(self, surface):
+        n_fa, n_edge = surface.n_fa, self.sgel.n_edge
 
-    # Coordinate interpolation to face centres.
-    ps = gel.interp.poly_spaces[face_key]
-    centre = ps.node_coors.sum(axis=0) / ps.n_nod
-    bf = ps.eval_base(centre[None,:])
-
-    dual_coors = {}
-    dual_conns = {}
-    surfaces = {}
-    centre_coors = {}
-    coor_offsets = {}
-    normals = {}
-    el_map = {}
-
-    region.setup_face_indices(domain.fa)
-    mesh_coors = domain.mesh.coors
-    for ig, conn in enumerate(domain.mesh.conns):
-        surface = FESurface(None, region, gel.faces, conn, ig)
-
-        print surface
-
-        n_fa, n_edge = surface.n_fa, sgel.n_edge
-
-        surfaces[ig] = surface
+        mesh_coors = self.mesh_coors
 
         # Face centres.
         fcoors = mesh_coors[surface.econn]
-        vals = nm.dot(bf.squeeze(), fcoors)
-        centre_coors[ig] = vals
+        centre_coors = nm.dot(self.bf.squeeze(), fcoors)
 
         surface_coors = mesh_coors[surface.nodes]
 
-        dual_coors[ig] = nm.r_[surface_coors, vals]
-        coor_offsets[ig] = surface.nodes.shape[0]
+        dual_coors = nm.r_[surface_coors, centre_coors]
+        coor_offset = surface.nodes.shape[0]
 
         # Normals in primary mesh nodes.
-        nodal_normals, imap = compute_nodal_normals(surface.nodes, region,
-                                                    field, return_imap=True)
-        normals[ig] = nodal_normals
+        nodal_normals = compute_nodal_normals(surface.nodes, self.region,
+                                              self.field)
 
-        ee = surface.leconn[:,sgel.edges].copy()
+        ee = surface.leconn[:,self.sgel.edges].copy()
         edges_per_face = ee.copy()
         sh = edges_per_face.shape
         ee.shape = edges_per_face.shape = (sh[0] * sh[1], sh[2])
@@ -130,13 +126,13 @@ def define_dual_mesh(region, region_omega):
         conn[:,0] = e_id
         conn[:,1] = ee[:,0]
         conn[:,2] = nm.repeat(nm.arange(n_fa, dtype=nm.int32), n_edge) \
-                    + coor_offsets[ig]
+                    + coor_offset
         conn[:,3] = ee[:,1]
 
         nn = surface.nodes[ueo]
         edge_coors = mesh_coors[nn]
 
-        centre_coors = 0.5 * edge_coors.sum(axis=1)
+        edge_centre_coors = 0.5 * edge_coors.sum(axis=1)
 
         edge_normals = 0.5 * nodal_normals[ueo].sum(axis=1)
 
@@ -149,45 +145,77 @@ def define_dual_mesh(region, region_omega):
         edge_ortho = nm.cross(edge_normals, edge_dirs)
         edge_ortho /= la.norm_l2_along_axis(edge_ortho)[:,None]
 
-        print edge_normals
-        print edge_dirs
-        print edge_ortho
+        dual_surface = Struct(name = 'dual_surface_description',
+                              dual_coors = dual_coors,
+                              coor_offset = coor_offset,
+                              e_sort = e_sort,
+                              conn = conn,
+                              nodal_normals = nodal_normals,
+                              edge_centre_coors = edge_centre_coors,
+                              edge_normals = edge_normals,
+                              edge_dirs = edge_dirs,
+                              edge_ortho = edge_ortho)
 
-        print centre_coors
+        return dual_surface
 
-        dm_coors = dual_coors[ig]
-        dm_conn = conn[:,1:].copy()
-        mat_id = nm.zeros((dm_conn.shape[0],), dtype=nm.int32)
-        dual_mesh = Mesh.from_data('dual_vis', dm_coors, None, [dm_conn],
-                                   [mat_id], ['2_3'])
-        dual_mesh.write('aux3.mesh', io='auto')
+    def save(self, filename):
+        coors = []
+        conns = []
+        mat_ids = []
+        offset = 0
+        for ig, dual_surface in self.dual_surfaces.iteritems():
+            cc = dual_surface.dual_coors
+            coors.append(cc)
 
-        dm_coors = nm.r_[centre_coors, dual_coors[ig]]
-        dm_conn = conn.copy()
-        dm_conn[:,1:] += centre_coors.shape[0]
-        mat_id = nm.zeros((dm_conn.shape[0],), dtype=nm.int32)
+            conn = dual_surface.conn[:,1:].copy() + offset
+            conns.append(conn)
+            
+            mat_id = nm.empty((conn.shape[0],), dtype=nm.int32)
+            mat_id[:] = ig
+            mat_ids.append(mat_id)
+
+            offset += cc.shape[0]
+
+        coors = nm.concatenate(coors, axis=0)
+
+        dual_mesh = Mesh.from_data('dual_mesh', coors, None, conns,
+                                   mat_ids, ['2_3'] * len(conns))
+        dual_mesh.write(filename, io='auto')
+
+    def save_axes(self, filename):
+        coors = []
+        conns = []
+        mat_ids = []
+        offset = 0
+        for ig, dual_surface in self.dual_surfaces.iteritems():
+            cc = nm.r_[dual_surface.edge_centre_coors,
+                       dual_surface.dual_coors]
+            coors.append(cc)
+
+            conn = dual_surface.conn.copy() + offset
+            conn[:,1:] += dual_surface.edge_centre_coors.shape[0]
+            conns.append(conn)
+            
+            mat_id = nm.empty((conn.shape[0],), dtype=nm.int32)
+            mat_id[:] = ig
+            mat_ids.append(mat_id)
+
+            offset += cc.shape[0]
+
+        coors = nm.concatenate(coors, axis=0)
 
         out = {}
-        out['en'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_normals)
-        out['ed'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_dirs)
-        out['eo'] = edge_data_to_output(dm_coors, dm_conn, e_sort, edge_ortho)
+        for ig, dual_surface in self.dual_surfaces.iteritems():
+            eto = edge_data_to_output
+            out['en_%d' % ig] = eto(coors, conns[ig], dual_surface.e_sort,
+                                    dual_surface.edge_normals)
+            out['ed_%d' % ig] = eto(coors, conns[ig], dual_surface.e_sort,
+                                    dual_surface.edge_dirs)
+            out['eo_%d' % ig] = eto(coors, conns[ig], dual_surface.e_sort,
+                                    dual_surface.edge_ortho)
 
-        dual_mesh = Mesh.from_data('dual_vis', dm_coors, None, [dm_conn],
-                                   [mat_id], ['2_4'])
-        dual_mesh.write('aux4.vtk', io='auto', out=out)
+        dual_mesh = Mesh.from_data('dual_mesh_vectors', coors, None, conns,
+                                   mat_ids, ['2_4'] * len(conns))
+        dual_mesh.write(filename, io='auto', out=out)
 
-        aux = Mesh.from_surface([surface.econn], domain.mesh)
-        aux.write('surface.mesh', io='auto')
 
-        debug()
-
-        ## cc = centre_coors[0]
-        ## nn = edge_normals[0]
-        ## dd = edge_dirs[0]
-        ## oo = edge_ortho[0]
-        
-    print centre_coors
-    print dual_coors
-    print coor_offsets
-    print normals
-    debug()

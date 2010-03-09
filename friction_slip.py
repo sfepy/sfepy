@@ -4,7 +4,7 @@ from optparse import OptionParser
 
 from sfepy.base.base import *
 from sfepy.fem import Mesh, Domain
-from sfepy.mechanics.friction import define_dual_mesh
+from sfepy.mechanics.friction import DualMesh
 
 usage = """%prog [options] mesh_filename"""
 
@@ -25,12 +25,15 @@ def main():
     domain = Domain('domain', mesh)
     print domain
 
-    reg_omega = domain.create_region('Omega', 'all')
     reg = domain.create_region('Surface',
                                'nodes of surface',
                                {'can_cells' : True})
 
-    dual_mesh = define_dual_mesh(reg, reg_omega)
+    dual_mesh = DualMesh(reg)
+    dual_mesh.save('dual_mesh.mesh',)
+    dual_mesh.save_axes('axes.vtk',)
+
+    print dual_mesh
 
 if __name__ == '__main__':
     main()
