@@ -543,7 +543,7 @@ class Domain( Struct ):
         self._bnf = create_bnf(self._region_stack)
 
     def create_region(self, name, select, flags=None, check_parents=True,
-                      functions=None):
+                      functions=None, add_to_regions=True):
         """Region factory constructor. Append the new region to
         self.regions list."""
         if flags is None:
@@ -583,7 +583,8 @@ class Domain( Struct ):
             
         region.complete_description(self.ed, self.fa)
 
-        self.regions.append(region)
+        if add_to_regions:
+            self.regions.append(region)
 
         return region
             
