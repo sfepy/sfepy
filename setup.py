@@ -47,17 +47,16 @@ def configuration(parent_package='',top_path=None):
         'blockgen.py',
         'config.py',
         'convert.py',
-        'convert_doc.py',
         'convert_mesh.py',
+        'cylindergen.py',
         'edit_identifiers.py',
         'edit_neu.py',
         'evalForms.py',
         'eval_tl_forms.py',
-        'genDocsXML.py',
+        'gen_term_table.py',
         'hfm3_mesh.py',
         'mesh_to_vtk.py',
         'neu_mesh.py',
-        'sfepyconverter.py',
         'spymatrix.py',
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
@@ -72,7 +71,8 @@ def configuration(parent_package='',top_path=None):
     config.add_data_dir(('../../../share/sfepy/tests', 'tests'))
 
     config.get_version('sfepy/version.py') # sets config.version
-    print config
+    ## print config
+
     return config
 
 def setup_package():
@@ -109,16 +109,15 @@ def setup_package():
         'eigen.py',
         'extractor.py',
         'findSurf.py',
-        'gen',
-        'genDocs.py',
         'genPerMesh.py',
-        'isfepy',
+        'homogen.py',
         'postproc.py',
         'probe.py',
         'runTests.py',
         'schroedinger.py',
         'sfepy_gui.py',
-        'simple.py'
+        'simple.py',
+        'site_cfg_template.py',
     ]
 
     try:
