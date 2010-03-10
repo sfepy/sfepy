@@ -38,16 +38,18 @@ class HomogenizationApp( HomogenizationEngine ):
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
-    def __init__( self, conf, options, output_prefix, **kwargs ):
-        SimpleApp.__init__( self, conf, options, output_prefix,
-                            init_equations = False )
+    def __init__(self, conf, options, output_prefix, **kwargs):
+        SimpleApp.__init__(self, conf, options, output_prefix,
+                           init_equations=False)
 
         self.setup_options()
         self.cached_coefs = None
 
         output_dir = self.problem.output_dir
-        shutil.copyfile( conf._filename,
-                         op.join( output_dir, op.basename( conf._filename ) ) )
+
+        if conf._filename is not None:
+            shutil.copyfile(conf._filename,
+                            op.join(output_dir, op.basename(conf._filename)))
 
     def setup_options( self ):
         SimpleApp.setup_options( self )
