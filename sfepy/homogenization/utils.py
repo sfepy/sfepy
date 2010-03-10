@@ -214,3 +214,34 @@ def get_box_volume(dim, lbn, rtf=None):
         lbnx, lbny, = lbn
         rtfx, rtfy, = rtf
         return abs(rtfx-lbnx)*abs(rtfy-lbny)
+
+def get_lattice_volume(axes):
+    r"""
+    Volume of a periodic cell in a rectangular 3D (or 2D) lattice.
+
+    Parameters
+    ----------
+    axes : array
+        The array with the periodic cell axes :math:`a_1, \dots, a_3` as rows.
+
+    Returns
+    -------
+    volume : float
+        The periodic cell volume :math:`V = (a_1 \times a_2) \cdot a_3`. In 2D
+        :math:`V = |(a_1 \times a_2)|` with zeros as the third components of
+        vectors :math:`a_1`, :math:`a_2`.
+    """
+    axes = nm.asarray(axes)
+
+    dim = axes.shape[0]
+
+    if dim == 2:
+        volume = nm.abs(nm.cross(axes[0], axes[1]))
+
+    elif dim == 3:
+        volume = nm.dot(nm.cross(axes[0], axes[1]), axes[2])
+
+    else:
+        raise ValueError('wrong axes shape! (%s)' % axes.shape)
+
+    return volume
