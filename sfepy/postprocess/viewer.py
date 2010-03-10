@@ -294,9 +294,10 @@ class Viewer(Struct):
             ii = 0
             for ij, iric in enumerate(cycle((n_row, n_col))):
                 ir, ic = iric
-                for ik in xrange(repeat[ij]):
-                    yield ii, ir, ic
-                    ii += 1
+                if ij < len(repeat):
+                    for ik in xrange(repeat[ij]):
+                        yield ii, ir, ic
+                        ii += 1
 
         n_row, n_col = get_position_counts(n_pos, layout)
         if layout[:3] == 'col':
