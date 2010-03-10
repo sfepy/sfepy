@@ -80,58 +80,69 @@ class CorrMiniApp( MiniAppBase ):
         else:
             return None
 
-    def get_output(self, state, comps=None, is_dump=False):
+    def get_output(self, state, comps=None, is_dump=False, extend=True):
         to_output = self.problem.variables.state_to_output
         get_state = self.problem.variables.get_state_part_view
 
         if is_dump:
             var_names = self.dump_variables
+            extend = False
 
         else:
             var_names = self.save_variables
 
         out = {}
-        for dvar in var_names:
-            if comps:
-                for ii, comp in enumerate(comps):
-                    if is_dump:
-                        aux = {dvar : state[comp]}
-                    else:
-                        aux = to_output(state[comp], extend=False)
+        if comps:
+            for ii, comp in enumerate(comps):
+                if is_dump:
+                    for dvar in var_names:
+                        new_key = dvar + '_' + '%d'*len(comp) % comp
+                        data = get_state(state[comp], dvar)
+                        out[new_key] = Struct(name = 'dump', mode = 'nodes',
+                                              data = data,
+                                              dofs = None, var_name = dvar)
+
+                else:
+                    aux = to_output(state[comp], extend=extend)
+                    if self.post_process_hook is not None:
+                        aux = self.post_process_hook(aux, self.problem,
+                                                     state[comp],
+                                                     extend=extend)
 
                     for key, val in aux.iteritems():
                         new_key = key + '_' + '%d'*len( comp ) % comp
+                        out[new_key] = val
 
-                        if is_dump:
-                            out[new_key] = Struct(name = 'dump', mode = 'nodes',
-                                                  data = get_state(val, dvar),
-                                                  dofs = None, var_name = dvar)
-
-                        else:
-                            out[new_key] = val
-            else:
-                if is_dump:
+        else:
+            if is_dump:
+                for dvar in var_names:
                     out[dvar] = Struct(name = 'dump', mode = 'nodes',
                                        data = get_state(state, dvar),
                                        dofs = None, var_name = dvar)
-                else:
-                    out.update(to_output(state, extend=False))
-
+            else:
+                out.update(to_output(state, extend=extend))
+                if self.post_process_hook is not None:
+                    out = self.post_process_hook(out, self.problem,
+                                                 state,
+                                                 extend=extend)
         return out
         
-    def save( self, state, problem, comps = None ):
+    def save(self, state, problem, comps=None):
 
-        problem.save_state( self.get_save_name(),
-                            out = self.get_output(state, comps),
-                            post_process_hook = self.post_process_hook,
-                            file_per_var = self.file_per_var )
+        save_name = self.get_save_name()
+        if save_name is not None:
+            extend = not self.file_per_var
+            out = self.get_output(state, comps, extend=extend)
+
+            problem.save_state(save_name, out=out,
+                               file_per_var=self.file_per_var)
 
         dump_name = self.get_dump_name()
         if dump_name is not None:
-            problem.save_state( dump_name,
-                                out = self.get_output(state, comps,
-                                                      is_dump=True),
-                                file_per_var = False )
+            problem.save_state(dump_name,
+                               out=self.get_output(state, comps,
+                                                   is_dump=True),
+                               file_per_var=False)
 
 class ShapeDimDim( CorrMiniApp ):
     
