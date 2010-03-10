@@ -1,12 +1,29 @@
 import numpy as nm
 from numpy import array
-import re, sys
+import re, sys, os
 import os.path as op
 from base import output, Struct, pause, dict_from_keys_init
 try:
     import tables as pt
 except:
     pt = None
+
+class InDir(Struct):
+    """
+    Store the directory name a file is in, and prepend this name to other
+    files.
+    
+    Examples
+    --------
+
+    >>> indir = InDir('output/file1')
+    >>> print indir('file2')
+    """
+    def __init__(self, filename):
+        self.dir = op.split(op.join(os.getcwd(), filename))[0]
+
+    def __call__(self, filename):
+         return op.join(self.dir, filename)
 
 ##
 # 27.04.2006, c
