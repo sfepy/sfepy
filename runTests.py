@@ -136,7 +136,7 @@ def run_test( conf_name, options ):
 # 19.07.2007
 def wrap_run_tests( options ):
     def run_tests( stats, dir_name, filenames ):
-        filenames = [filename for filename in filenames
+        filenames = [filename for filename in sorted(filenames)
                      if (len( filename ) > 8) and
                      filename[:5] == 'test_' and filename[-3:] == '.py']
 
@@ -158,14 +158,13 @@ def get_dir(default):
     if sfepy.in_source_tree:
         out = default
     else:
-        share_path = '../../../../share/sfepy'
-        out = op.normpath(op.join(sfepy.top_dir, share_path, default))
+        out = op.normpath(op.join(sfepy.data_dir, default))
     return out
 
 usage = """%prog [options] [test_filename[ test_filename ...]]"""
 
 help = {
-    'dir' : 'directory with tests [default: <top_dir>/tests]',
+    'dir' : 'directory with tests [default: %default]',
     'out_dir' : 'directory for storing test results and temporary files'
     ' [default: %default]',
     'debug' : 'raise silenced exceptions to see what was wrong',
