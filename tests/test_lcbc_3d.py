@@ -1,8 +1,8 @@
 # 05.10.2007, c
 # last revision: 25.02.2008
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
+filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

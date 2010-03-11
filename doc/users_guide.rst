@@ -103,7 +103,7 @@ The tests are run by the ``runTests.py`` script::
       --print-doc           print the docstring of this file (howto write new
                             tests)
       -d directory, --dir=directory
-                            directory with tests [default: <top_dir>/tests]
+                            directory with tests [default: tests]
       -o directory, --output=directory
                             directory for storing test results and temporary files
                             [default: output-tests]

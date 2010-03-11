@@ -2,15 +2,15 @@
 import os
 import numpy as nm
 
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.fem import MeshIO
 import coef_conf_elastic as cconf
 from parametric import vary_incident_wave_dir
 
-filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
-## filename_mesh = top_dir + '/meshes/2d/special/circle_in_square_small.mesh'
-## filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
-## filename_mesh = top_dir + '/meshes/3d/special/cube_cylinder.mesh'
+filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
+## filename_mesh = data_dir + '/meshes/2d/special/circle_in_square_small.mesh'
+## filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
+## filename_mesh = data_dir + '/meshes/3d/special/cube_cylinder.mesh'
 
 cwd = os.path.split( os.path.join( os.getcwd(), __file__ ) )[0]
 

@@ -1,11 +1,11 @@
 # 10.07.2007, c
 # last revision: 25.03.2008
-from sfepy import top_dir
+from sfepy import data_dir
 
 filename_meshes = ['/meshes/3d/cube_medium_tetra.mesh',
                    '/meshes/3d/cube_medium_tetra.mesh',
                    '/meshes/3d/cube_medium_hexa.mesh']
-filename_meshes = [top_dir + name for name in filename_meshes]
+filename_meshes = [data_dir + name for name in filename_meshes]
 
 all_your_bases = [{'Omega' : '3_4_P1'},
                 {'Omega' : '3_4_P2'},

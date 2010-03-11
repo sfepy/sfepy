@@ -1,7 +1,7 @@
 # c: 20.03.2008, r: 20.03.2008
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/various_formats/comsol_tri.txt'
+filename_mesh = data_dir + '/meshes/various_formats/comsol_tri.txt'
 
 material_1 = {
     'name' : 'm',

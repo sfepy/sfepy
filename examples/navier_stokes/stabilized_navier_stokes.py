@@ -6,9 +6,9 @@ discretisations of the generalised Oseen problem. Number 2007-02 in Preprint
 Series of Institut fuer Numerische und Angewandte Mathematik,
 Georg-August-Universitaet Goettingen, 2007.
 """
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/3d/elbow2.mesh'
+filename_mesh = data_dir + '/meshes/3d/elbow2.mesh'
 
 options = {
     'solution' : 'steady',

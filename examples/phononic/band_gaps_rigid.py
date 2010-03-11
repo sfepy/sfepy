@@ -2,7 +2,7 @@
 import os
 import numpy as nm
 
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.base.base import output, pause, debug, Struct
 from sfepy.fem import MeshIO
 from gen_mesh import gen_concentric
@@ -12,7 +12,7 @@ generate_2D = False
 fig_suffix = '.pdf'
 
 if is_3D:
-    filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
+    filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
 
     out_groups = [1]
     in_groups = [2]
@@ -22,7 +22,7 @@ if is_3D:
     diameters_g = nm.linspace( 0.075, 0.26, 11 )
 else:
     # This mesh is generated, see below.
-    filename_mesh = top_dir + '/meshes/2d/special//circle_in_square.vtk'
+    filename_mesh = data_dir + '/meshes/2d/special//circle_in_square.vtk'
 
     out_groups = [1]
     if generate_2D:

@@ -1,7 +1,7 @@
 # 03.10.2007, c
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
+filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 # Whole domain $Y$.
 region_1000 = {

@@ -59,14 +59,15 @@ class Test(TestCommon):
         return test
 
     def test_interpolation(self):
+        from sfepy import data_dir
         from sfepy.fem import Mesh
         from sfepy.base.la import make_axis_rotation_matrix
 
         fname = in_dir(self.options.out_dir)
 
         meshes = {
-            'tp' : Mesh('original mesh', 'meshes/3d/block.mesh'),
-            'si' : Mesh('original mesh', 'meshes/3d/cylinder.mesh'),
+            'tp' : Mesh('original mesh', data_dir + '/meshes/3d/block.mesh'),
+            'si' : Mesh('original mesh', data_dir + '/meshes/3d/cylinder.mesh'),
         }
 
         datas = {}
@@ -109,11 +110,12 @@ class Test(TestCommon):
         return True
 
     def test_interpolation_two_meshes(self):
+        from sfepy import data_dir
         from sfepy.fem import Mesh, Domain, Fields, Variables
 
-        m1 = Mesh('source mesh', 'meshes/3d/block.mesh')
+        m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
-        m2 = Mesh('target mesh', 'meshes/3d/cube_medium_tetra.mesh')
+        m2 = Mesh('target mesh', data_dir + '/meshes/3d/cube_medium_tetra.mesh')
         m2.coors *= 2.0
 
         bbox = m1.get_bounding_box()

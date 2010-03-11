@@ -124,9 +124,9 @@ editor. Note that the file is a regular python source code.
 
     #! Mesh
     #! ----
-    from sfepy import top_dir
+    from sfepy import data_dir
 
-    filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
+    filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
 The ``filename_mesh`` variable points to the file containing the mesh for the
 particular problem. *SfePy* supports a variety of mesh formats.

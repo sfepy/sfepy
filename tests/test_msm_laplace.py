@@ -1,7 +1,7 @@
 # c: 07.05.2007, r: 25.06.2008
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
+filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 dim = 2
 

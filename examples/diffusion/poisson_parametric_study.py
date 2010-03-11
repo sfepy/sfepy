@@ -22,11 +22,11 @@ problem. However, the approach below is much more general.
 import os
 import numpy as nm
 
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.base.base import output, pause, debug
 
 # Mesh.
-filename_mesh = top_dir + '/meshes/2d/special/circles_in_square.vtk'
+filename_mesh = data_dir + '/meshes/2d/special/circles_in_square.vtk'
 
 # Options. The value of 'parametric_hook' is the function that does the
 # parametric study.

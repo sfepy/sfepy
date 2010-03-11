@@ -2,13 +2,13 @@
 import os
 import numpy as nm
 
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.fem import MeshIO
 
-filename_mesh = top_dir + '/meshes/2d/special/circle_in_square.mesh'
-## filename_mesh = top_dir + '/meshes/2d/special/circle_in_square_small.mesh'
-## filename_mesh = top_dir + '/meshes/3d/special/cube_sphere.mesh'
-## filename_mesh = top_dir + '/meshes/2d/special/cube_cylinder.mesh'
+filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
+## filename_mesh = data_dir + '/meshes/2d/special/circle_in_square_small.mesh'
+## filename_mesh = data_dir + '/meshes/3d/special/cube_sphere.mesh'
+## filename_mesh = data_dir + '/meshes/2d/special/cube_cylinder.mesh'
 
 omega = 1
 omega_squared = omega**2

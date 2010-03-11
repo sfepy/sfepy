@@ -5,9 +5,9 @@ import numpy as nm
 from sfepy.mechanics.matcoefs import stiffness_tensor_lame
 
 def define():
-    from sfepy import top_dir
+    from sfepy import data_dir
 
-    filename = top_dir + '/meshes/3d/cylinder.mesh'
+    filename = data_dir + '/meshes/3d/cylinder.mesh'
     output_dir = 'output'
     return define_input(filename, output_dir)
 

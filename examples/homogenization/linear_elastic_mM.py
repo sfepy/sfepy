@@ -1,5 +1,5 @@
 import os
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.base.base import debug, nm
 from sfepy.homogenization.micmac import get_homog_coefs_linear
 from sfepy.homogenization.recovery import save_recovery_region, recover_micro_hook
@@ -44,7 +44,7 @@ functions = {
                                            micro_filename = options['micro_filename'] ), )
 }
 
-filename_mesh = top_dir + '/meshes/3d/cylinder.mesh'
+filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
 regions = {
     'Omega' : ('all', {}),
@@ -92,6 +92,8 @@ fe = {
     'chunk_size' : 10000
 }
 
+micro_filename = data_dir \
+                 + '/examples/homogenization/linear_homogenization_up.py'
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
@@ -100,5 +102,5 @@ options = {
     'output_prefix' : 'macro:',
     'recover_micro': True,
     'recovery_region' : 'Recovery',
-    'micro_filename' : 'examples/homogenization/linear_homogenization_up.py',
+    'micro_filename' : micro_filename,
 }

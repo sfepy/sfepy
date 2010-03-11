@@ -1,8 +1,8 @@
 # 04.06.2007, c
 # last revision: 25.02.2008
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/various_formats/small3d.mesh'
+filename_mesh = data_dir + '/meshes/various_formats/small3d.mesh'
 
 material_1 = {
     'name' : 'coef',

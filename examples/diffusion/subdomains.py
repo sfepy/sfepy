@@ -3,9 +3,9 @@
 \Delta p_2 = g_2 in Omega_2
 p_1 = p_2 + c on \Gamma_{12}
 """
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/2d/special/two_rectangles.mesh'
+filename_mesh = data_dir + '/meshes/2d/special/two_rectangles.mesh'
 
 options = {
     'nls' : 'newton',

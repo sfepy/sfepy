@@ -12,7 +12,7 @@ from sfepy.fem.periodic import *
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson, stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_elastic as ce
-from sfepy import top_dir
+from sfepy import data_dir
 from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
@@ -52,7 +52,7 @@ def recovery_le( pb, corrs, macro ):
 #! Mesh
 #! ----
 dim = 3
-filename_mesh = top_dir + '/meshes/3d/matrix_fiber.mesh'
+filename_mesh = data_dir + '/meshes/3d/matrix_fiber.mesh'
 region_lbn = (0, 0, 0)
 region_rtf = (1, 1, 1)
 #! Regions

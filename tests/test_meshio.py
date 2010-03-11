@@ -1,4 +1,4 @@
-from sfepy import top_dir
+from sfepy import data_dir
 
 filename_meshes = ['/meshes/3d/cylinder.mesh',
                    '/meshes/3d/cylinder.vtk',
@@ -11,7 +11,7 @@ filename_meshes = ['/meshes/3d/cylinder.mesh',
                    '/meshes/various_formats/hex4.mesh3d',
                    '/meshes/various_formats/tetra8.mesh3d',
 		   '/meshes/various_formats/cube.bdf']
-filename_meshes = [top_dir + name for name in filename_meshes]
+filename_meshes = [data_dir + name for name in filename_meshes]
 
 same = [(0, 1), (2, 3)]
 
@@ -126,9 +126,9 @@ class Test( TestCommon ):
     def test_read_dimension( self ):
         from sfepy.fem import MeshIO
 
-        meshes = {top_dir + '/meshes/various_formats/small2d.mesh' : 2,
-                  top_dir + '/meshes/various_formats/small2d.vtk' : 2,
-                  top_dir + '/meshes/various_formats/small3d.mesh' : 3}
+        meshes = {data_dir + '/meshes/various_formats/small2d.mesh' : 2,
+                  data_dir + '/meshes/various_formats/small2d.vtk' : 2,
+                  data_dir + '/meshes/various_formats/small3d.mesh' : 3}
 
         ok = True
         conf_dir = op.dirname(__file__)

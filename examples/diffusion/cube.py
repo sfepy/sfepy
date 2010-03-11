@@ -1,7 +1,7 @@
-from sfepy import top_dir
+from sfepy import data_dir
 
-#filename_mesh = top_dir + '/meshes/3d/cube_big_tetra.mesh'
-filename_mesh = top_dir + '/meshes/3d/cube_medium_hexa.mesh'
+#filename_mesh = data_dir + '/meshes/3d/cube_big_tetra.mesh'
+filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 ############# Laplace.
 

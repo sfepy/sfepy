@@ -8,11 +8,11 @@ class Test(TestCommon):
         return Test(conf = conf, options = options)
 
     def test_rcm(self):
-        from sfepy import top_dir
+        from sfepy import data_dir
         from sfepy.linalg import rcm, permute_in_place, save_sparse_txt
         from sfepy.fem import Mesh
 
-        filename = top_dir + '/meshes/2d/special/square_triquad.mesh'
+        filename = data_dir + '/meshes/2d/special/square_triquad.mesh'
 
         self.report('testing reversed Cuthill-McKee permutation')
 

@@ -1,9 +1,9 @@
 # c: 10.10.2008
 import numpy as nm
 
-from sfepy import top_dir
+from sfepy import data_dir
 
-filename_mesh = top_dir + '/meshes/3d/cube_medium_hexa.mesh'
+filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 regions = {
     'Omega' : ('all', {}),
