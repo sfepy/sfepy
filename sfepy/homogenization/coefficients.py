@@ -71,7 +71,7 @@ class Coefficients( Struct ):
     ##
     # c: 07.03.2008, r: 09.04.2008
     def _save_dict( self, adict, fd, names, format ):
-        for key, val in adict.iteritems():
+        for key, val in ordered_iteritems(adict):
             try:
                 lname = names[key]
             except:
