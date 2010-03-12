@@ -62,23 +62,34 @@ def mark_time(times, msg=None):
     if (msg is not None) and (len(times) > 1):
         print msg, times[-1] - times[-2]
 
-def import_file( filename ):
-    """Import a file as a module. The module is explicitly reloaded to
-    prevent undesirable interactions."""
-    path = os.path.dirname( filename )
+def import_file(filename):
+    """
+    Import a file as a module. The module is explicitly reloaded to
+    prevent undesirable interactions.
+    """
+    path = os.path.dirname(filename)
+
     if not path in sys.path:
         sys.path.append( path )
-    name = os.path.splitext( os.path.basename( filename ) )[0]
+        remove_path = True
+
+    else:
+        remove_path = False
+
+    name = os.path.splitext(os.path.basename(filename))[0]
 
     if name in sys.modules:
         force_reload = True
     else:
         force_reload = False
 
-    mod = __import__( name )
+    mod = __import__(name)
 
     if force_reload:
         reload(mod)
+
+    if remove_path:
+        sys.path.pop(-1)
 
     return mod
 
@@ -627,7 +638,7 @@ def use_method_with_name( instance, method, new_name ):
 def insert_as_static_method( cls, name, function ):
     setattr( cls, name, staticmethod( function ) )
 
-def find_subclasses(context, classes):
+def find_subclasses(context, classes, omit_unnamed=False):
     """Find subclasses of the given classes in the given context.
 
     Examples
@@ -645,8 +656,16 @@ def find_subclasses(context, classes):
         try:
             for cls in classes:
                 if is_derived_class(var, cls):
-                    table[var.name] = var
+                    if hasattr(var, 'name'):
+                        key = var.name
+                        if omit_unnamed and not key:
+                            continue
+                    else:
+                        key = var.__class__.__name__
+
+                    table[key] = var
                     break
+
         except TypeError:
             pass
     return table
