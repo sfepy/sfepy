@@ -670,6 +670,17 @@ def find_subclasses(context, classes, omit_unnamed=False):
             pass
     return table
 
+def load_classes(filenames, classes):
+    """
+    For each filename in filenames, load all subclasses of classes listed.
+    """
+    table = {}
+    for filename in filenames:
+        mod = import_file(filename)
+        table.update(find_subclasses(vars(mod), classes, omit_unnamed=True))
+
+    return table
+
 ##
 # 09.08.2006, c
 def invert_dict( d, is_val_tuple = False ):
