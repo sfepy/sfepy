@@ -1,6 +1,7 @@
 from sfepy.base.base import *
 from sfepy.applications import SimpleApp, Application
 from sfepy.fem import eval_term_op
+from sfepy.fem.region import sort_by_dependency
 from coefs_base import MiniAppBase
 
 def insert_sub_reqs( reqs, levels, req_info ):
@@ -123,20 +124,48 @@ class HomogenizationEngine( SimpleApp ):
             else:
                 req_corr.append( coef_name )
 
+        def _get_parents(req_list):
+            out = []
+            for req_name in req_list:
+                aux = req_name.split('.')
+                if len(aux) == 2:
+                    out.append(aux[1])
+            return out
+
+        # Some coefficients can require other coefficients - resolve theirorder
+        # here.
+        graph = {}
+        for name in req_corr:
+            cargs = coef_info[name]
+            if not name in graph:
+                graph[name] = [0]
+
+            requires = cargs.get('requires', [])
+            for parent in _get_parents(requires):
+                graph[name].append(parent)
+                requires.remove('c.' + parent)
+            
+        sorted_coef_names = sort_by_dependency(deepcopy(graph))
+        ## print graph
+        ## print sorted_coef_names
+
         coefs = Struct()
-        for coef_name in req_corr:
+        for coef_name in sorted_coef_names:
             cargs = coef_info[coef_name]
             output( 'computing %s...' % coef_name )
             requires = cargs.get( 'requires', [] )
 
             self.compute_requirements( requires, dependencies, store_filenames )
 
-#            debug()
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
+            if len(graph[coef_name]) > 1:
+                for name in graph[coef_name][1:]:
+                    key = 'c.' + name
+                    requires.append(key)
+                    dependencies[key] = getattr(coefs, name)
+
             val = mini_app( self.volume, data = dependencies )
-#            print val
             setattr( coefs, coef_name, val )
-#            pause()
             output( '...done' )
 
         for coef_name in req_coef:
