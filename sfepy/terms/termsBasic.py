@@ -436,6 +436,43 @@ class VolumeSurfaceTerm( Term ):
             out1 = nm.sum( out )
             yield out1, chunk, status
 
+class SurfaceMomentTerm(Term):
+    r"""
+    :Description:
+    Surface integral of the outer product of the unit outward normal
+    :math:`\ul{n}` and the coordinate :math:`\ul{x}` shifted by :math:`\ul{x}_0`
+    
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{n} (\ul{x} - \ul{x}_0)
+    """
+    name = 'di_surface_moment'
+    arg_types = ('parameter', 'shift')
+    geometry = [(Surface, 'parameter')]
+
+    def __init__(self, region, name=name, sign=1):
+        Term.__init__(self, region, name, sign, terms.di_surface_moment)
+        self.dof_conn_type = 'surface'
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        par, shift = self.get_args(**kwargs)
+        ap, sg = par.get_approximation(self.get_current_group(), 'Surface')
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+                                                    self.region.name)
+        shape = (chunk_size, 1, dim, dim)
+
+        sd = ap.surface_data[self.region.name]
+        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+        coor = par.field.get_coor() \
+               - nm.asarray(shift, dtype=nm.float64)[None,:]
+        for out, chunk in self.char_fun(chunk_size, shape):
+            lchunk = self.char_fun.get_local_chunk()
+            status = self.function(out, coor, bf,
+                                   sg, sd.econn.copy(), lchunk)
+
+            out1 = nm.sum(out, axis=0)
+            yield out1, chunk, status
+
 ##
 # c: 06.05.2008
 class AverageVolumeMatTerm( Term ):
