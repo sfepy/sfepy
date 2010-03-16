@@ -470,7 +470,7 @@ class SurfaceMomentTerm(Term):
             status = self.function(out, coor, bf,
                                    sg, sd.econn.copy(), lchunk)
 
-            out1 = nm.sum(out, axis=0)
+            out1 = nm.sum(out, axis=0).squeeze()
             yield out1, chunk, status
 
 ##
