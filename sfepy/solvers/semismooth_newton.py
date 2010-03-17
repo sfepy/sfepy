@@ -134,7 +134,7 @@ class SemismoothNewton(Newton):
 
                     else:
                         # Non-smooth equation (brute force).
-                        vec_semismooth_r = nm.where(vec_a_r > vec_b_r,
+                        vec_semismooth_r = nm.where(vec_a_r < vec_b_r,
                                                     vec_a_r, vec_b_r)
 
                     r_last = (vec_smooth_r, vec_a_r, vec_b_r, vec_semismooth_r)
