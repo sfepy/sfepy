@@ -8,7 +8,7 @@ conf = {
     'name' : 'semismooth_newton',
     'kind' : 'nls.semismooth_newton',
 
-    'semismooth' : False,
+    'semismooth' : True,
 
     'i_max'      : 10,
     'eps_a'      : 1e-8,
@@ -18,7 +18,7 @@ conf = {
     'ls_red_reg' : 0.1,
     'ls_red_alt' : 0.01,
     'ls_red_warp' : 0.001,
-    'ls_on'      : 0.9,
+    'ls_on'      : 2.0,
     'ls_min'     : 1e-10,
     ## 'log'        : {'plot' : 'aux.png'},
 }
@@ -206,7 +206,7 @@ class Test(TestCommon):
 
             ra = nm.abs(xg) - fc * nm.abs(sn)
 
-            return ra
+            return -ra
 
         def fun_a_grad(vec_x):
             xw = vec_x[iw]
@@ -224,22 +224,23 @@ class Test(TestCommon):
             ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
             ma[:,ig] = nm.sign(xg)[:,None] * self.m['C']
 
-            return preserve_nnz(ma)
+            return -preserve_nnz(ma)
 
         def fun_b(vec_x):
             xl = vec_x[il]
 
-            return -xl
+            return xl
 
         def fun_b_grad(vec_x):
             xl = vec_x[il]
 
             mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
-            mb[:,il] = -self.m['C']
+            mb[:,il] = self.m['C']
 
             return preserve_nnz(mb)
 
         vec_x0 = nm.zeros((nx,), dtype=nm.float64)
+        vec_x0[il] = 1.0
 
         lin_solver = Solver.any_from_conf(dict_to_struct(ls_conf))
         status = {}
