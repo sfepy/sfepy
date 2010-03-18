@@ -134,7 +134,8 @@ class Term( Struct ):
             region = regions[desc.region]
         except IndexError:
             raise KeyError('region "%s" does not exist!' % desc.region)
-        obj = constructor(desc.name, desc.sign, region, desc.integral)
+        obj = constructor(desc.name, desc.sign,
+                          region=region, integral_name=desc.integral)
 
         arg_names = []
         arg_steps = {}
@@ -168,17 +169,21 @@ class Term( Struct ):
         return obj
 
     def __init__(self, name, sign, region=None, integral_name=None,
-                 function=None):
+                 dof_conn_type='volume', function=None):
         self.name = name
         self.sign = sign
         self.ats = list(self.arg_types)
 
         self.char_fun = CharacteristicFunction(region)
         self.region = region
-        self.dof_conn_type = 'volume'
+        self.integral_name = integral_name
+        self.dof_conn_type = dof_conn_type
         self.function = function
         self.step = 0
         self.dt = 1.0
+        self.has_integral = True
+        self.has_region = True
+        self.has_geometry = True
         
         self.itype = itype = None
         aux = re.compile('([a-z]+)_.*').match(name)
@@ -411,6 +416,13 @@ class Term( Struct ):
     def get_parameter_names( self ):
         return copy( self.names.parameter )
 
+    def get_conn_key(self):
+        """The key to be used in DOF connectivity information."""
+        key = (self.name,) + tuple(self.arg_names)
+        key += (self.integral_name, self.region.name)
+
+        return key
+
     def get_args( self, arg_types = None, **kwargs ):
         """Extract arguments from **kwargs by type as specified in arg_types
         (or self.ats)."""
@@ -462,21 +474,24 @@ class Term( Struct ):
     # c: 29.11.2007, r: 10.04.2008
     def describe_geometry( self, geometries, variables, integrals ):
         """Takes reference to the used integral."""
-        
+        if not self.has_geometry: return
+
         try:
             integral = integrals[self.integral_name]
-        except ValueError:
+        except IndexError:
             msg = 'integral %s is not defined!' % self.integral_name
-            raise ValueError( msg )
+            raise ValueError(msg)
             
         integral.create_qp()
         self.integral = integral
         
         tgs = self.get_geometry()
         for var_name in self.get_variable_names():
-##             print '>>>>>', self.name, var_name
+            print '>>>>>', self.name, var_name
 
             variable = variables[var_name]
+            if not variable.has_field: continue
+
             field = variable.field
 
             is_trace = self.arg_traces[variable.name]
@@ -501,24 +516,25 @@ class Term( Struct ):
                                             tgs[var_name], region, self.region,
                                             integral, ig_map=ig_map)
 
+    def get_region(self):
+        return self.region
+
     def get_geometry( self ):
         geom = self.geometry
+        out = {}
         if geom:
-            out = {}
             for (gtype, arg_type) in geom:
                 arg_name = self.get_arg_name( arg_type )
                 out[arg_name] = gtype
-            return out
-        else:
-            return None
+        return out
 
     def get_current_group(self):
         return (self.integral_name, self.region.name, self.char_fun.ig)
 
-    ##
-    # 11.10.2006, c
-    def get_dof_conn_type( self ):
-        return self.dof_conn_type, self.region.name
+
+    def get_dof_conn_type(self):
+        return Struct(name='dof_conn_info', type=self.dof_conn_type,
+                      region_name=self.region.name)
 
     ##
     # c: 16.02.2007, r: 15.01.2008

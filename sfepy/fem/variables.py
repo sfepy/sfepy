@@ -259,6 +259,11 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     else:
         return normals
 
+def _fix_scalar_dc(dc1, dc2):
+    aux = nm.empty((dc2.shape[0], 1), dtype=nm.int32)
+    aux.fill(dc1)
+    return aux
+
 ##
 # 19.07.2006
 class DofInfo( Struct ):
@@ -408,7 +413,7 @@ class Variables( Container ):
     # c: 16.10.2006, r: 15.04.2008
     def _list_bc_of_vars( self, bc_defs, is_ebc = True ):
 
-        bc_of_vars = dict_from_keys_init( (key for key in self.di.vnames), list )
+        bc_of_vars = dict_from_keys_init( (key for key in self.di.names), list )
         if bc_defs is None: return bc_of_vars
 
         for key, bc in bc_defs.iteritems():
@@ -548,17 +553,22 @@ class Variables( Container ):
         ##
         # Adjust by offsets - create active dof info.
         def _create_a_dof_info( di ):
-            adi = DofInfo(
-                name = 'active_dof_info',
-                ptr = nm.array( di.ptr, dtype = nm.int32 ),
-                n_nod = nm.array( di.n_nod, dtype = nm.int32 ),
-                dpn = nm.array( di.dpn, dtype = nm.int32 ),
-                vnames = di.vnames, indx = {}, n_dofs = {}
+            ptr = [0]
+            indx = {}
+            n_dof = {}
+            for iseq, name in enumerate(di.names):
+                var = self[name]
+
+                n_dof[name] = var.n_adof
+                ptr.append(ptr[-1] + n_dof[name])
+                indx[name] = slice(int(ptr[iseq] ), int(ptr[iseq+1]))
+
+            adi = DofInfo(name = 'active_dof_info',
+                          ptr = nm.array(ptr, dtype=nm.int32),
+                          n_dof = n_dof,
+                          indx = indx,
+                          names = di.names,
             )
-            for ii, key in enumerate( adi.vnames ):
-                adi.n_dofs[key] = self[key].eq_map.n_eq
-                adi.ptr[ii+1] = adi.ptr[ii] + adi.n_dofs[key]
-                adi.indx[key] = slice( int( adi.ptr[ii] ), int( adi.ptr[ii+1] ) )
             return adi
 
         self.adi = _create_a_dof_info( self.di )
@@ -620,7 +630,7 @@ class Variables( Container ):
                 return out[0]
 
     def _setup_extra_data(self, var, geometry, info, is_trace, shared):
-        dct = info.dc_type[0]
+        dct = info.dc_type.type
         
         if geometry != None:
             geometry_flag = geometry.find('Surface') >= 0
@@ -644,7 +654,7 @@ class Variables( Container ):
         elif dct == 'point':
             var.field.aps.setup_point_data(var.field, info.region)
 
-        elif dct != 'volume':
+        elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
     def setup_extra_data(self):
@@ -690,7 +700,7 @@ class Variables( Container ):
 
 ##         print dof_conns
 ##         pause()
-        
+
         self.dof_conns = dof_conns
         output( '...done in %.2f s' % (time.clock() - tt) )
 
@@ -700,7 +710,7 @@ class Variables( Container ):
         adof_conns = {}
         for key, dc in self.dof_conns.iteritems():
             for var in self.iter_state():
-                if var.field.name == key[0]:
+                if var.has_dof_conn_key(key):
                     indx = self.adi.indx[var.name]
                     eq = var.eq_map.eq
                     akey = (var.name,) + key[1:]
@@ -718,14 +728,26 @@ class Variables( Container ):
         if is_dual and not self.has_virtual_dcs:
             var_name = self.dual_map[var_name]
 
-        if not is_trace:
-            key = (var_name, dc_type[1], dc_type[0], ig)
+        if self[var_name].has_field:
+            if not is_trace:
+                region_name = dc_type.region_name
+                aig = ig
 
-        else:
-            region, ig_map = self.get_mirror_region(dc_type[1],
-                                                    return_ig_map_i=True)
-            key = (var_name, region.name, dc_type[0], ig_map[ig])
+            else:
+                region, ig_map = self.get_mirror_region(dc_type.region_name,
+                                                        return_ig_map_i=True)
+                region_name = region.name
+                aig = ig_map[ig]
 
+        else: # scalar variable, assume no traces.
+            if dc_type.type == 'scalar':
+                region_name = aig = None
+
+            else:
+                region_name = dc_type.region_name
+                aig = None
+
+        key = (var_name, region_name, dc_type.type, aig)
         dc = self.adof_conns[key]
         return dc
         
@@ -762,20 +784,20 @@ class Variables( Container ):
         cdcs = []
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
-            dct = info.dc_type[0]
-            if not (dct == 'volume' or info.is_trace):
+            dct = info.dc_type.type
+            if not (dct in ('volume', 'scalar') or info.is_trace):
                 continue
 
             rn, cn = info.virtual, info.state
             if (rn is None) or (cn is None):
                 continue
             
-            rreg = info.get_region(can_trace=False)
-            creg = info.get_region()
+            rreg_name = info.get_region_name(can_trace=False)
+            creg_name = info.get_region_name()
 
             for rig, cig in info.iter_igs():
-                rkey = (self.dual_map[rn], rreg.name, dct, rig)
-                ckey = (cn, creg.name, dct, cig)
+                rkey = (self.dual_map[rn], rreg_name, dct, rig)
+                ckey = (cn, creg_name, dct, cig)
                 
                 dc_key = (rkey, ckey)
 ##                 print dc_key
@@ -786,9 +808,21 @@ class Variables( Container ):
                     except:
                         debug()
                     shared.add(dc_key)
-##         print rdcs
-##         print cdcs
+
 ##         print shared
+        for ii in range(len(rdcs)):
+            if (rdcs[ii].ndim == 1) and (cdcs[ii].ndim == 2):
+                rdcs[ii] = _fix_scalar_dc(rdcs[ii], cdcs[ii])
+
+            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 2):
+                cdcs[ii] = _fix_scalar_dc(cdcs[ii], rdcs[ii])
+
+            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 1):
+                rdcs[ii] = nm.array(rdcs[ii], ndmin=2)
+                cdcs[ii] = nm.array(cdcs[ii], ndmin=2)
+
+##             print rdcs[ii], cdcs[ii]
+##         pause()
 
         if not shared:
             # No virtual, state variable -> no matrix.
@@ -937,7 +971,7 @@ class Variables( Container ):
                 _make_full_vec( vec[self.di.indx[var_name]],
                                 svec[self.adi.indx[var_name]], eq_map )
         else:
-            vec = nm.empty( (self.di.n_dofs[var_name],), dtype = self.dtype )
+            vec = nm.empty( (self.di.n_dof[var_name],), dtype = self.dtype )
             eq_map = self[var_name].eq_map
             _make_full_vec( vec, svec, eq_map )
 
@@ -1060,7 +1094,7 @@ class Variables( Container ):
 
         if var_info is None:
             var_info = {}
-            for name in di.vnames:
+            for name in di.names:
                 var_info[name] = (False, name)
 
         out = {}
@@ -1069,13 +1103,14 @@ class Variables( Container ):
 
             if key not in var_info.keys(): continue
             is_part, name = var_info[key]
-            
-            dpn = di.dpn[di.vnames.index( key )]
+
+            details = di.details[key]
+            dpn = details.dpn
 
             if is_part:
-                aux = nm.reshape( vec, (di.n_dofs[key] / dpn, dpn) )
+                aux = nm.reshape( vec, (di.n_dof[key] / dpn, dpn) )
             else:
-                aux = nm.reshape( vec[indx], (di.n_dofs[key] / dpn, dpn) )
+                aux = nm.reshape( vec[indx], (di.n_dof[key] / dpn, dpn) )
 
             if var.field.approx_order != '0':
                 # Has vertex data.
@@ -1164,7 +1199,15 @@ class Variables( Container ):
 class Variable( Struct ):
 
     def from_conf(key, conf, fields):
-        kind, family = conf.kind.split()
+        aux = conf.kind.split()
+        if len(aux) == 2:
+            kind, family = aux
+
+        elif len(aux) == 3:
+            kind, family = aux[0], '_'.join(aux[1:])
+
+        else:
+            raise ValueError('variable kind is 2 or 3 words! (%s)' % conf.kind)
 
         history = get_default_attr( conf, 'history', None )
         assert_( (history is None) or (history in ['previous', 'full']) )
@@ -1200,7 +1243,7 @@ class Variable( Struct ):
     from_conf = staticmethod( from_conf )
 
     def __init__(self, name, kind, order=-1, primary_var_name=None,
-                 flags=None, **kwargs):
+                 flags=None, special=None, **kwargs):
         Struct.__init__(self, name=name, **kwargs)
 
         self.flags = set()
@@ -1219,9 +1262,9 @@ class Variable( Struct ):
         if self.is_virtual():
             self.data = None
 
-        self._set_kind(kind, order, primary_var_name)
+        self._set_kind(kind, order, primary_var_name, special=None)
 
-    def _set_kind(self, kind, order, primary_var_name):
+    def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
             self.flags.add(is_state)
             if order >= 0:
@@ -1241,12 +1284,12 @@ class Variable( Struct ):
         elif kind == 'parameter':
             self.flags.add( is_parameter )
             msg = 'parameter variable %s: related unknown missing' % self.name
-            self.primary_var_name = get_default(primary_var_name, None,
-                                                msg)
+            self.primary_var_name = get_default(primary_var_name, None, msg)
             self.dof_name = self.primary_var_name
 
-            if hasattr(conf, 'special'):
-                self.special = conf.special
+            if special is not None:
+                self.special = special
+
         else:
             obj.flags.add( is_other )
             msg = 'unknown variable kind: %s' % kind
@@ -1395,44 +1438,6 @@ class Variable( Struct ):
 
         self.data[step] = data
 
-    def setup_dof_conns(self, dof_conns, dc_type, region):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        dpn = self.dpn
-        field = self.field
-        dct = dc_type[0]
-
-        ##
-        # Expand nodes into dofs.
-        can_point = True
-        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
-            region_name = region.name # True region name.
-            key = (field.name, region_name, dct, ig)
-            if key in dof_conns: continue
-
-            if dct == 'volume':
-                dc = create_dof_conn(ap.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'surface':
-                sd = ap.surface_data[region_name]
-                dc = create_dof_conn(sd.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'edge':
-                raise NotImplementedError('dof connectivity type %s' % dct)
-                
-            elif dct == 'point':
-                if can_point:
-                    # Point data only in the first group to avoid multiple
-                    # assembling of nodes on group boundaries.
-                    conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, dpn)
-                    dof_conns[key] = dc
-                    can_point = False
-
-            else:
-                raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
     ##
     # c: 25.02.2008, r: 25.02.2008
     def _canonize( self, dofs ):
@@ -1552,7 +1557,7 @@ class Variable( Struct ):
 
     def equation_mapping(self, bcs, regions, di, ts, functions, warn = False):
         """EPBC: master and slave dofs must belong to the same field (variables
-        can differ, though)."""
+        can differ, though). Set n_adof."""
         # Sort by ebc definition name.
         bcs.sort( cmp = lambda i1, i2: cmp( i1[0], i2[0] ) )
 ##         print bcs
@@ -1560,24 +1565,26 @@ class Variable( Struct ):
         
         self.eq_map = eq_map = Struct()
 
-        eq_map.eq = nm.arange( di.n_dofs[self.name], dtype = nm.int32 )
+        eq_map.eq = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
         eq_map.val_ebc = nm.empty( (0,), dtype = self.dtype )
         if len( bcs ) == 0:
             ##
             # No ebc for this field.
-            eq_map.eqi = nm.arange( di.n_dofs[self.name], dtype = nm.int32 )
+            eq_map.eqi = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
             eq_map.eq_ebc = nm.empty( (0,), dtype = nm.int32 )
             eq_map.n_eq = eq_map.eqi.shape[0]
             eq_map.n_ebc = eq_map.eq_ebc.shape[0]
             eq_map.master = nm.empty( (0,), dtype = nm.int32 )
             eq_map.slave = nm.empty( (0,), dtype = nm.int32 )
+
+            self.n_adof = self.n_dof
             return
 
         field = self.field
 
-        eq_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
-        val_ebc = nm.zeros( (di.n_dofs[self.name],), dtype = self.dtype )
-        master_slave = nm.zeros( (di.n_dofs[self.name],), dtype = nm.int32 )
+        eq_ebc = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
+        val_ebc = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
+        master_slave = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
         chains = []
         for key, bc in bcs:
             if key[:3] == 'ebc':
@@ -1720,6 +1727,8 @@ class Variable( Struct ):
         eq_map.n_eq = eq_map.eqi.shape[0]
         eq_map.n_ebc = eq_map.eq_ebc.shape[0]
         eq_map.n_epbc = eq_map.master.shape[0]
+        
+        self.n_adof = eq_map.n_eq
 ##         print eq_map
 ##         pause()
 
@@ -1751,7 +1760,7 @@ class Variable( Struct ):
 
             eq = self.expand_nodes_to_equations( nods, dofs )
 
-            ic_vec = nm.zeros( (di.n_dofs[self.name],), dtype = self.dtype )
+            ic_vec = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
             ic_vec[eq] = vv
             
             self.initial_condition = ic_vec
@@ -2269,9 +2278,12 @@ class FieldVariable(Variable):
     def __init__(self, name, kind, order, primary_var_name,
                  field, special=None, flags=None, **kwargs):
         Variable.__init__(self, name, kind, order, primary_var_name,
-                          flags, **kwargs)
+                          flags, special=special, **kwargs)
 
         self.set_field(field)
+
+        self.has_field = True
+        self.has_bc = True
 
     def set_field( self, field ):
         """Takes reference to a Field instance. Sets dtype according to
@@ -2301,6 +2313,47 @@ class FieldVariable(Variable):
                          dpn = self.dpn)
         return self.n_dof, details
 
+    def setup_dof_conns(self, dof_conns, dc_type, region):
+        """Setup dof connectivities of various kinds as needed by terms."""
+        dpn = self.dpn
+        field = self.field
+        dct = dc_type.type
+
+        ##
+        # Expand nodes into dofs.
+        can_point = True
+        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
+            region_name = region.name # True region name.
+            key = (field.name, region_name, dct, ig)
+            if key in dof_conns: continue
+
+            if dct == 'volume':
+                dc = create_dof_conn(ap.econn, dpn)
+                dof_conns[key] = dc
+
+            elif dct == 'surface':
+                sd = ap.surface_data[region_name]
+                dc = create_dof_conn(sd.econn, dpn)
+                dof_conns[key] = dc
+
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
+                
+            elif dct == 'point':
+                if can_point:
+                    # Point data only in the first group to avoid multiple
+                    # assembling of nodes on group boundaries.
+                    conn = ap.point_data[region_name]
+                    dc = create_dof_conn(conn, dpn)
+                    dof_conns[key] = dc
+                    can_point = False
+
+            else:
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def has_dof_conn_key(self, key):
+        return self.field.name == key[0]
+
 class ConstantVariable(Variable):
     """A constant variable.
     """
@@ -2314,7 +2367,22 @@ class ConstantVariable(Variable):
 
         self.n_dof = 1
 
+        self.has_field = False
+        self.has_bc = False
+
     def get_dof_info(self):
         details = Struct(name = 'constant_var_dof_details')
         return self.n_dof, details
 
+    def setup_dof_conns(self, dof_conns, dc_type, region):
+        dct = dc_type.type
+        if region is not None:
+            region_name = region.name
+        else:
+            region_name = None
+
+        key = (self.name, region_name, dct, None)
+        dof_conns[key] = nm.zeros((1,), dtype=nm.int32)
+
+    def has_dof_conn_key(self, key):
+        return self.name == key[0]

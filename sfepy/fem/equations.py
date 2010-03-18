@@ -59,14 +59,41 @@ class ConnInfo(Struct):
         else:
             return self.region
 
+    def get_region_name(self, can_trace=True):
+        if self.is_trace and can_trace:
+            reg = self.mirror_region
+        else:
+            reg = self.region
+
+        if reg is not None:            
+            return reg.name
+        else:
+            return None
+
     def iter_igs(self):
-        for ig in self.region.igs:
-            ir = self.virtual_igs.index(ig)
-            if not self.is_trace:
-                ic = self.state_igs.index(ig)
-            else:
-                ic = self.state_igs.index(self.ig_map_i[ig])
-            yield self.virtual_igs[ir], self.state_igs[ic]
+        if self.region is not None:
+            for ig in self.region.igs:
+                if self.virtual_igs is not None:
+                    ir = self.virtual_igs.index(ig)
+                    rig = self.virtual_igs[ir]
+                else:
+                    rig = None
+
+                if not self.is_trace:
+                    ii = ig
+                else:
+                    ii = self.ig_map_i[ig]
+
+                if self.state_igs is not None:
+                    ic = self.state_igs.index(ii)
+                    cig = self.state_igs[ic]
+                else:
+                    cig = None
+                    
+                yield rig, cig
+
+        else:
+            yield None, None
 
 ##
 # 21.07.2006, c
@@ -286,8 +313,7 @@ class Equation( Struct ):
     def collect_conn_info(self, conn_info, variables):
 
         for term in self.terms:
-            key = (self.name, term.name, term.integral_name, term.region.name)
-            key += tuple(term.arg_names)
+            key = (self.name,) + term.get_conn_key()
 
             vn = term.get_virtual_name()
             sns = term.get_state_names()
@@ -302,41 +328,43 @@ class Equation( Struct ):
                 
             dc_type = term.get_dof_conn_type()
             tgs = term.get_geometry()
-            
+
+            v_igs = v_tg = None
             if vn is not None:
-                v_igs = variables[vn].field.igs()
-                v_tg = tgs[vn]
-            else:
-                v_igs = v_tg = None
+                field = variables[vn].get_field()
+                if field is not None:
+                    v_igs = field.igs()
+                    v_tg = tgs[vn]
 
-            region = term.region
-
-            is_any_trace = reduce(lambda x, y: x or y, term.arg_traces.values())
-            if is_any_trace:
-                for reg in region.domain.regions:
-                    if (reg is not region) and \
-                           (len(reg.igs) == len(region.igs)) and \
-                           nm.all(region.all_vertices == reg.all_vertices):
-                        mirror_region = reg
-                        break
-                else:
-                    raise ValueError('trace: cannot find mirror region! (%s)' \
-                                     % region)
-
-                ig_map = {}
-                ig_map_i = {}
-                for igr in region.igs:
-                    for igc in mirror_region.igs:
-                        if nm.all(region.vertices[igr] ==
-                                  mirror_region.vertices[igc]):
-                            ig_map[igc] = igr
-                            ig_map_i[igr] = igc
+            region = term.get_region()
+            if region is not None:
+                is_any_trace = reduce(lambda x, y: x or y,
+                                      term.arg_traces.values())
+                if is_any_trace:
+                    for reg in region.domain.regions:
+                        if (reg is not region) and \
+                               (len(reg.igs) == len(region.igs)) and \
+                               nm.all(region.all_vertices == reg.all_vertices):
+                            mirror_region = reg
                             break
                     else:
-                        raise ValueError('trace: cannot find group! (%s)' \
-                                         % geom_request)
-            else:
-                mirror_region = ig_map = ig_map_i = None
+                        raise ValueError('trace: cannot find mirror region! (%s)' \
+                                         % region)
+
+                    ig_map = {}
+                    ig_map_i = {}
+                    for igr in region.igs:
+                        for igc in mirror_region.igs:
+                            if nm.all(region.vertices[igr] ==
+                                      mirror_region.vertices[igc]):
+                                ig_map[igc] = igr
+                                ig_map_i[igr] = igc
+                                break
+                        else:
+                            raise ValueError('trace: cannot find group! (%s)' \
+                                             % geom_request)
+                else:
+                    mirror_region = ig_map = ig_map_i = None
                 
             vals = []
             aux_pns = []
@@ -346,7 +374,12 @@ class Equation( Struct ):
                     aux_pns.append(sn)
                     continue
                 
-                s_igs = variables[sn].field.igs()
+                
+                field = variables[sn].get_field()
+                if field is not None:
+                    s_igs = field.igs()
+                else:
+                    s_igs = None
                 is_trace = term.arg_traces[sn]
 
                 if sn in tgs:
@@ -367,13 +400,18 @@ class Equation( Struct ):
                                mirror_region = mirror_region,
                                all_vars = term_var_names,
                                ig_map = ig_map, ig_map_i = ig_map_i)
-                ConnInfo.mirror_map[region.name] = (mirror_region,
-                                                    ig_map, ig_map_i)
+                if region is not None:
+                    ConnInfo.mirror_map[region.name] = (mirror_region,
+                                                        ig_map, ig_map_i)
                 vals.append(val)
 
             pns += aux_pns
             for pn in pns:
-                p_igs = variables[pn].field.igs()
+                field = variables[pn].get_field()
+                if field is not None:
+                    p_igs = field.igs()
+                else:
+                    p_igs = None
                 is_trace = term.arg_traces[pn]
 
                 if pn in tgs:
@@ -394,8 +432,9 @@ class Equation( Struct ):
                                mirror_region = mirror_region,
                                all_vars = term_var_names,
                                ig_map = ig_map, ig_map_i = ig_map_i)
-                ConnInfo.mirror_map[region.name] = (mirror_region,
-                                                    ig_map, ig_map_i)
+                if region is not None:
+                    ConnInfo.mirror_map[region.name] = (mirror_region,
+                                                        ig_map, ig_map_i)
                 vals.append(val)
 
             if vn and (len(vals) == 0):
@@ -436,5 +475,6 @@ class Equation( Struct ):
     def get_term_integral_names( self ):
         i_names = set()
         for term in self.terms:
-            i_names.add( term.integral_name )
+            if term.has_integral:
+                i_names.add(term.integral_name)
         return i_names
