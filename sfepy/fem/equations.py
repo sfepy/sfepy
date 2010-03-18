@@ -20,53 +20,23 @@ def parse_terms( regions, desc, itps ):
     try:
         bnf.parseString( desc )
     except:
-        print 'cannot parse:\n', desc
-        raise
+        raise ValueError('cannot parse term: %s' % desc)
     
     # Construct terms.
     terms = OneTypeList( Term )
     for td in term_descs:
-##         print td
-##         pause()
         try:
             constructor = term_table[td.name]
         except:
             msg = "term '%s' is not in %s" % (td.name,
-                                              sorted( term_table.keys() ))
-            raise ValueError( msg )
-        region = regions[td.region]
-        arg_names = []
-        arg_steps = {}
-        arg_derivatives = {}
-        arg_traces = {}
-        for arg in td.args:
-            trace = False
-            derivative = None
-
-            if isinstance(arg[1], int):
-                name, step = arg
-
-            else:
-                kind = arg[0]
-                name, step = arg[1]
-                if kind == 'd':
-                    derivative = arg[2]
-                elif kind == 'tr':
-                    trace = True
-
-            arg_names.append( name )
-            arg_steps[name] = step
-            arg_derivatives[name] = derivative
-            arg_traces[name] = trace
-
-        term = constructor( region, td.name, td.sign )
-        term.arg_names = arg_names
-        term.arg_steps = arg_steps
-        term.arg_derivatives = arg_derivatives
-        term.arg_traces = arg_traces
-        term.integral_name = td.integral
-
+                                              sorted(term_table.keys()))
+            raise ValueError(msg)
+        
+        print td
+        term = Term.from_desc(constructor, td, regions)
         terms.append( term )
+
+    print terms
 
     return terms
 

@@ -128,30 +128,64 @@ class Term( Struct ):
     arg_types = ()
     geometry = []
 
-    ##
-    # 24.07.2006, c
-    # 25.07.2006
-    # 11.08.2006
-    # 24.08.2006
-    # 11.10.2006
-    # 29.11.2006
-    def __init__( self, region, name, sign, function = None ):
-        self.char_fun  = CharacteristicFunction( region )
-        self.region = region
+    @staticmethod
+    def from_desc(constructor, desc, regions):
+        try:
+            region = regions[desc.region]
+        except IndexError:
+            raise KeyError('region "%s" does not exist!' % desc.region)
+        obj = constructor(desc.name, desc.sign, region, desc.integral)
+
+        arg_names = []
+        arg_steps = {}
+        arg_derivatives = {}
+        arg_traces = {}
+        for arg in desc.args:
+            trace = False
+            derivative = None
+
+            if isinstance(arg[1], int):
+                name, step = arg
+
+            else:
+                kind = arg[0]
+                name, step = arg[1]
+                if kind == 'd':
+                    derivative = arg[2]
+                elif kind == 'tr':
+                    trace = True
+
+            arg_names.append( name )
+            arg_steps[name] = step
+            arg_derivatives[name] = derivative
+            arg_traces[name] = trace
+
+        obj.arg_names = arg_names
+        obj.arg_steps = arg_steps
+        obj.arg_derivatives = arg_derivatives
+        obj.arg_traces = arg_traces
+
+        return obj
+
+    def __init__(self, name, sign, region=None, integral_name=None,
+                 function=None):
         self.name = name
         self.sign = sign
+        self.ats = list(self.arg_types)
+
+        self.char_fun = CharacteristicFunction(region)
+        self.region = region
         self.dof_conn_type = 'volume'
         self.function = function
         self.step = 0
         self.dt = 1.0
         
         self.itype = itype = None
-        aux = re.compile( '([a-z]+)_.*' ).match( name )
+        aux = re.compile('([a-z]+)_.*').match(name)
         if aux:
-            itype = aux.group( 1 )
+            itype = aux.group(1)
         self.raw_itype = itype
-        self.ats = list( self.arg_types )
-
+    
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """Subclasses either implement __call__ or plug in a proper _call()."""
         return self._call( diff_var, chunk_size, **kwargs )
@@ -179,7 +213,7 @@ class Term( Struct ):
 
     ##
     # 24.07.2006, c
-    def classify_args( self, variables ):
+    def classify_args(self, variables):
         """state variable can be in place of parameter variable and vice
         versa."""
         self.names = Struct( name = 'arg_names',
