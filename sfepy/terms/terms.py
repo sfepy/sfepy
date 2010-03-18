@@ -315,7 +315,53 @@ class Term( Struct ):
 
     def set_arg_types( self ):
         pass
-        
+
+    def check_args(self, variables, materials, user=None):
+        """Common checking to all terms."""
+        check_names(self.get_variable_names(), variables.names,
+                    'variable(s) "%s" not found!')
+        check_names(self.get_material_names(), materials.names,
+                    'material(s) "%s" not found!')
+
+        if isinstance(user, dict):
+            check_names(self.get_user_names(), user.keys(),
+                        'user data "%s" not found!')
+
+        elif user is not None:
+            raise ValueError('user data must be a dict or None!')
+
+        igs = self.char_fun.igs
+        vns = self.get_variable_names()
+        for name in vns:
+            field = variables[name].get_field()
+            if field is None:
+                continue
+
+            if self.arg_traces[name]:
+                if not nm.all(nm.setmember1d(self.region.all_vertices,
+                                             field.region.all_vertices)):
+                    msg = ('%s: incompatible regions: (self, trace of field %s)'
+                           + '(%s in %s)') %\
+                           (self.name, field.name,
+                            self.region.all_vertices, field.region.all_vertices)
+                    raise ValueError(msg)
+            else:
+                if not set( igs ).issubset( set( field.aps.igs ) ):
+                    msg = ('%s: incompatible regions: (self, field)'
+                           + ' (%s(%s) in %s(%s)') %\
+                             (self.name, igs, name, field.igs(), field.name)
+                    raise ValueError(msg)
+
+        mns = self.get_material_names()
+        for name in mns:
+            mat = materials[name]
+
+            if not set( igs ).issubset( set( mat.igs ) ):
+                msg= ('%s: incompatible regions: (self, material)'
+                      + ' (%s(%s) in %s(%s)') %\
+                      (self.name, igs, name, mat.igs, mat.name)
+                raise ValueError(msg)
+
     ##
     # 24.07.2006, c
     def get_variable_names( self ):

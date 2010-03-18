@@ -36,64 +36,7 @@ def parse_terms( regions, desc, itps ):
         term = Term.from_desc(constructor, td, regions)
         terms.append( term )
 
-    print terms
-
     return terms
-
-def setup_term_args( terms, variables, materials, user = None ):
-    """terms ... can be both Terms or Term class
-       - checks term argument existence in variables, materials, user
-       - checks equality of field and term subdomain lists (igs)"""
-    terms.classify_args( variables )
-    for term in terms:
-        igs = term.char_fun.igs
-        vns = term.get_variable_names()
-        for name in vns:
-            if name not in variables.names:
-                msg = 'variable "%s" not found' % name
-                raise IndexError(msg)
-
-            field = variables[name].field
-
-            if term.arg_traces[name]:
-                if not nm.all(nm.setmember1d(term.region.all_vertices,
-                                             field.region.all_vertices)):
-                    msg = ('%s: incompatible regions: (term, trace of field %s)'
-                           + '(%s in %s)') %\
-                           (term.name, field.name,
-                            term.region.all_vertices, field.region.all_vertices)
-                    raise ValueError(msg)
-            else:
-                if not set( igs ).issubset( set( field.aps.igs ) ):
-                    msg = ('%s: incompatible regions: (term, field)'
-                           + ' (%s(%s) in %s(%s)') %\
-                             (term.name, igs, name, field.igs(), field.name)
-                    raise ValueError(msg)
-
-        mns = term.get_material_names()
-        for name in mns:
-            if name not in materials.names:
-                msg = 'material "%s" not found' % name
-                raise IndexError(msg)
-
-            mat = materials[name]
-
-            if not set( igs ).issubset( set( mat.igs ) ):
-                msg= ('%s: incompatible regions: (term, material)'
-                      + ' (%s(%s) in %s(%s)') %\
-                      (term.name, igs, name, mat.igs, mat.name)
-                raise ValueError(msg)
-
-    if user is None:
-        return
-
-    uns = terms.get_user_names()
-    uks = user.keys()
-    for name in uns:
-        if name not in uks:
-            output( 'user data "%s" not found' % name )
-            raise IndexError
-#        print '********* ok'
 
 ##
 # 24.07.2006, c
@@ -169,7 +112,7 @@ class Equations( Container ):
         conn_info = {}
 
         for eq in self:
-            eq.setup_terms( regions, variables, materials, self.caches, user )
+            eq.setup_terms(regions, variables, materials, self.caches, user)
             eq.collect_conn_info(conn_info, variables)
 
 ##         print_structs(conn_info)
@@ -279,17 +222,15 @@ class Equation( Struct ):
         self.terms = Terms( terms )
 
 
-    ##
-    # 21.07.2006, c
-    # 24.07.2006
-    # 22.08.2006
-    # 25.08.2006
-    # 27.11.2006
-    # 20.02.2007
-    def setup_term_args( self, variables, materials, user = None ):
-        """- checks term argument existence in variables, materials, user
-           - checks compatability of field and term subdomain lists (igs)"""
-        setup_term_args( self.terms, variables, materials, user )
+    def check_term_args(self, variables, materials, user=None):
+        """
+        Classify term arguments and also set the dynamic term types. Then
+        check term argument existence in variables, materials, user data. Also
+        check compatability of field and term subdomain lists (igs).
+        """
+        for term in self.terms:
+            term.classify_args(variables)
+            term.check_args(variables, materials, user)
 
     ##
     # 29.11.2006, c
@@ -339,7 +280,7 @@ class Equation( Struct ):
                      user = None ):
         """Parse equation and create term instances."""
         self.parse_terms( regions )
-        self.setup_term_args( variables, materials, user )
+        self.check_term_args( variables, materials, user )
         self.assign_term_caches( caches )
 
     def collect_conn_info(self, conn_info, variables):

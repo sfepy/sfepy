@@ -1254,6 +1254,9 @@ class Variable( Struct ):
             
         self.kind = kind
 
+    def get_field(self):
+        pass
+
     ##
     # 11.07.2006, c
     def is_state( self ):
@@ -2288,6 +2291,9 @@ class FieldVariable(Variable):
         self.dtype = field.dtype
 
         self.current_ap = None
+
+    def get_field(self):
+        return self.field
 
     def get_dof_info(self):
         details = Struct(name = 'field_var_dof_details',
