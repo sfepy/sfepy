@@ -32,7 +32,7 @@ def parse_terms( regions, desc, itps ):
                                               sorted(term_table.keys()))
             raise ValueError(msg)
         
-        print td
+        ## print td
         term = Term.from_desc(constructor, td, regions)
         terms.append( term )
 

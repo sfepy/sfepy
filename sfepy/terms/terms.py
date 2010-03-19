@@ -488,7 +488,7 @@ class Term( Struct ):
         
         tgs = self.get_geometry()
         for var_name in self.get_variable_names():
-            print '>>>>>', self.name, var_name
+            ## print '>>>>>', self.name, var_name
 
             variable = variables[var_name]
             if not variable.has_field: continue
