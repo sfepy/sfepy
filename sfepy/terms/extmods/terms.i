@@ -2,6 +2,7 @@
 %module terms
 
 %{
+#include "termsAdjointNavierStokes.h"
 #include "termsBasic.h"
 #include "termsLaplace.h"
 #include "termsLinElasticity.h"
@@ -14,10 +15,6 @@
 #include "termsMass.h"
 #include "termsVolume.h"
 #include "termsAcoustic.h"
-
-#ifdef ISOPT
-  #include "termsAdjointNavierStokes.h"
-#endif
 %}
 
 %include "types.h"
@@ -458,8 +455,6 @@ int32 d_acoustic_alpha( FMField *out, FMField *in,
 			int32 *conn, int32 nEl, int32 nEP,
 			int32 *elList, int32 elList_nRow );
 
-#ifdef ISOPT
-
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
 		       FMField *velocity, int32 voffset, FMField *bf,
 		       VolumeGeometry *vg,
@@ -615,8 +610,6 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
-
-#endif // ISOPT
 
 int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
 		       FMField *mtxD, SurfaceGeometry *sg,

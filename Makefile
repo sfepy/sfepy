@@ -34,7 +34,6 @@ EXT_INCL     := $(PYTHON_INCL)
 ###############
 
 ISRELEASE := $(shell $(RUNCONFIG) is_release)
-ISOPT := 1
 
 MODULES := sfepy/fem/extmods sfepy/linalg/extmods sfepy/terms/extmods sfepy/physics/extmods
 VERSIONH := sfepy/fem/extmods/version.h
@@ -77,10 +76,6 @@ SWIGFLAGS :=
 ifdef ISRELEASE
   CFLAGS += -DISRELEASE
   SWIGFLAGS += -DISRELEASE
-endif
-ifdef ISOPT
-  CFLAGS += -DISOPT
-  SWIGFLAGS += -DISOPT
 endif
 
 ####### Implicit rules
