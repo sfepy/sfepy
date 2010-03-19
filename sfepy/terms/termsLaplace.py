@@ -108,8 +108,7 @@ class PermeabilityRTerm( Term ):
     arg_types = ('material', 'virtual', 'index')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_permeability_r )
+    function = staticmethod(terms.dw_permeability_r)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, index = self.get_args( **kwargs )
@@ -168,8 +167,7 @@ class DiffusionVelocityTerm( Term ):
     arg_types = ('material','parameter')
     geometry = [(Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.de_diffusion_velocity )
+    function = staticmethod(terms.de_diffusion_velocity)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, parameter = self.get_args( **kwargs )

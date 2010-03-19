@@ -53,10 +53,10 @@ class HyperElasticBase( Term ):
     material), in self.compute_crt_data().
     Mode: 0 - total formulation, 1 - updated formulation
     """
-    def __init__( self, region, name = None, sign = 1, mode_ul = 0 ):
-        Term.__init__( self, region, name, sign )
+    def __init__(self, name, sign, mode='tl', **kwargs):
+        Term.__init__(self, name, sign, **kwargs)
 
-        self.mode_ul = mode_ul
+        self.mode_ul = {'tl' : 0, 'ul' : 1}[mode]
         self.function = {
             'finite_strain' : { 0: 'finite_strain_tl',
                                 1: 'finite_strain_ul'},

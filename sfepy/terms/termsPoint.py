@@ -17,10 +17,9 @@ class LinearPointSpringTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Point, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        self.dof_conn_type = 'point'
-        
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='point', **kwargs)
+
     ##
     # 10.07.2007, c
     # 18.07.2007

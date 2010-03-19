@@ -18,8 +18,7 @@ class ElectricSourceTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_electric_source )
+    function = staticmethod(terms.dw_electric_source)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, parameter = self.get_args( **kwargs )

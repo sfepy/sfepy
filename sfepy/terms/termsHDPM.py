@@ -1,12 +1,11 @@
 from sfepy.terms.terms import *
 
-class HDPMDiffusionVelocitySIntegratedTerm( Term ):
+class HDPMDiffusionVelocitySIntegratedTerm(Term):
     name = 'd_hdpm_surfdvel'
     arg_types = ('material', 'parameter')
     geometry = [(SurfaceExtra, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_hdpm_surfdvel )
+    function = staticmethod(terms.d_hdpm_surfdvel)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """? move surface pressure grad part into a cache ?"""

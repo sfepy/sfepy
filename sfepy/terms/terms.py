@@ -178,7 +178,8 @@ class Term( Struct ):
         self.region = region
         self.integral_name = integral_name
         self.dof_conn_type = dof_conn_type
-        self.function = function
+        self.function = get_default(function,
+                                    self.get_default_attr('function'), None)
         self.step = 0
         self.dt = 1.0
         self.has_integral = True

@@ -24,13 +24,12 @@ class AdjDivGradTerm( DivGradTerm ):
                                     vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-class AdjConvect1Term( Term ):
+class AdjConvect1Term(Term):
     name = 'dw_adj_convect1'
     arg_types = ('virtual', 'state', 'parameter' )
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_adj_convect1 )
+    function = staticmethod(terms.dw_adj_convect1)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state, parameter = self.get_args( **kwargs )
@@ -59,16 +58,14 @@ class AdjConvect2Term( AdjConvect1Term ):
     arg_types = ('virtual', 'state', 'parameter' )
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_adj_convect2 )
+    function = staticmethod(terms.dw_adj_convect2)
 
-class AdjSUPGCtabilizationTerm( Term ):
+class AdjSUPGCtabilizationTerm(Term):
     name = 'dw_st_adj_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_adj_supg_c )
+    function = staticmethod(terms.dw_st_adj_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, par, state = self.get_args( **kwargs )
@@ -93,13 +90,12 @@ class AdjSUPGCtabilizationTerm( Term ):
                                     chunk, mode )
             yield out, chunk, status
 
-class SUPGPAdj1StabilizationTerm( Term ):
+class SUPGPAdj1StabilizationTerm(Term):
     name = 'dw_st_adj1_supg_p'
     arg_types = ('material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_adj1_supg_p )
+    function = staticmethod(terms.dw_st_adj1_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, state, par = self.get_args( **kwargs )
@@ -126,13 +122,12 @@ class SUPGPAdj1StabilizationTerm( Term ):
                                     apr.econn, app.econn, chunk, mode )
             yield out, chunk, status
 
-class SUPGPAdj2StabilizationTerm( Term ):
+class SUPGPAdj2StabilizationTerm(Term):
     name = 'dw_st_adj2_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_adj2_supg_p )
+    function = staticmethod(terms.dw_st_adj2_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, par, state = self.get_args( **kwargs )
@@ -160,14 +155,13 @@ class SUPGPAdj2StabilizationTerm( Term ):
                                     apr.econn, apc.econn, chunk, mode )
             yield out, chunk, status
 
-class TestPQTerm( Term ):
+class TestPQTerm(Term):
     name = 'd_sd_test_pq'
     arg_types = ('parameter_p', 'parameter_q', 'parameter_mesh_velocity',
                 'mode')
     geometry = [(Volume, 'parameter_p')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_test_pq )
+    function = staticmethod(terms.d_sd_testPQ)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_p, par_q, par_mv, mode = self.get_args( **kwargs )
@@ -190,15 +184,14 @@ class TestPQTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDDivTerm( Term ):
+class SDDivTerm(Term):
     name = 'd_sd_div'
     arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity',
                 'mode')
     geometry = [(Volume, 'parameter_u'), (Volume, 'parameter_p'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_div )
+    function = staticmethod(terms.d_sd_div)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_u, par_p, par_mv, mode = self.get_args( **kwargs )
@@ -225,15 +218,14 @@ class SDDivTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDDivGradTerm( Term ):
+class SDDivGradTerm(Term):
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
     geometry = [(Volume, 'parameter_u'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_div_grad )
+    function = staticmethod(terms.d_sd_div_grad)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -261,15 +253,14 @@ class SDDivGradTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDConvectTerm( Term ):
+class SDConvectTerm(Term):
     name = 'd_sd_convect'
     arg_types = ('parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
     geometry = [(Volume, 'parameter_u'), (Volume, 'parameter_w'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_convect )
+    function = staticmethod(terms.d_sd_convect)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_u, par_w, par_mv, mode = self.get_args( **kwargs )
@@ -297,13 +288,12 @@ class SDConvectTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class NSOFMinGrad1Term( Term ):
+class NSOFMinGrad1Term(Term):
     name = 'd_of_ns_min_grad1'
     arg_types = ('material_1', 'material_2', 'parameter')
     geometry = [(Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_of_nsMinGrad )
+    function = staticmethod(terms.d_of_nsMinGrad)
     
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -340,15 +330,14 @@ class NSOFMinGrad2Term( NSOFMinGrad1Term ):
             status = self.function( out, vec, 0, weight, vg, ap.econn, chunk )
             yield out, chunk, status
 
-class NSOFSurfMinDPressTerm( Term ):
+class NSOFSurfMinDPressTerm(Term):
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
     geometry = [(Surface, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign,
-                       terms.d_of_nsSurfMinDPress )
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface',
+                      function=terms.d_of_nsSurfMinDPress, **kwargs)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -407,15 +396,14 @@ class NSOFSurfMinDPressDiffTerm( NSOFSurfMinDPressTerm ):
                                     bf, sg, sd.econn, lchunk, 1 )
             yield out, lchunk, status
 
-class SDGradDivStabilizationTerm( Term ):
+class SDGradDivStabilizationTerm(Term):
     name = 'd_sd_st_grad_div'
     arg_types = ('material', 'parameter_w', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
     geometry = [(Volume, 'parameter_u'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_st_grad_div )
+    function = staticmethod(terms.d_sd_st_grad_div)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_w, par_u, par_mv, mode = self.get_args( **kwargs )
@@ -444,15 +432,14 @@ class SDGradDivStabilizationTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDSUPGCStabilizationTerm( Term ):
+class SDSUPGCStabilizationTerm(Term):
     name = 'd_sd_st_supg_c'
     arg_types = ('material', 'parameter_w', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
     geometry = [(Volume, 'parameter_u'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_st_supg_c )
+    function = staticmethod(terms.d_sd_st_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_w, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
@@ -479,7 +466,7 @@ class SDSUPGCStabilizationTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDPSPGCStabilizationTerm( Term ):
+class SDPSPGCStabilizationTerm(Term):
     name = 'd_sd_st_pspg_c'
     arg_types = ('material', 'parameter_r', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
@@ -487,8 +474,7 @@ class SDPSPGCStabilizationTerm( Term ):
                 (Volume, 'parameter_u'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_st_pspg_c)
+    function = staticmethod(terms.d_sd_st_pspg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_r, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
@@ -517,15 +503,14 @@ class SDPSPGCStabilizationTerm( Term ):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class SDPSPGPStabilizationTerm( Term ):
+class SDPSPGPStabilizationTerm(Term):
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
                 'parameter_mesh_velocity', 'mode')
     geometry = [(Volume, 'parameter_p'),
                 (Volume, 'parameter_mesh_velocity')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sd_st_pspg_p)
+    function = staticmethod(terms.d_sd_st_pspg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_r, par_p, par_mv, mode = self.get_args( **kwargs )

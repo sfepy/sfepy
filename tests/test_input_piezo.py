@@ -21,8 +21,8 @@ class Test( TestInput ):
         set = vvs.set_state_part
         make_full = vvs.make_full_vec
 
-        svec_u = nm.ones( (vvs.adi.n_dofs['u'],), dtype = nm.float64 )
-        svec_phi = nm.empty( (vvs.adi.n_dofs['phi'],), dtype = nm.float64 )
+        svec_u = nm.ones( (vvs.adi.n_dof['u'],), dtype = nm.float64 )
+        svec_phi = nm.empty( (vvs.adi.n_dof['phi'],), dtype = nm.float64 )
         svec_phi.fill( 2.0 )
 
         svec = vvs.create_stripped_state_vector()

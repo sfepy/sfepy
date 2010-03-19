@@ -16,9 +16,6 @@ class IntegrateVolumeTerm( Term ):
     geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
@@ -46,14 +43,10 @@ class IntegrateVolumeOperatorTerm( Term ):
     .. math::
         \int_\Omega q
     """
-
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -89,9 +82,6 @@ class IntegrateVolumeVariableOperatorTerm( Term ):
     arg_types = ('material', 'virtual',)
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, = self.get_args( **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -130,11 +120,8 @@ class IntegrateSurfaceTerm( Term ):
     geometry = [(Surface, 'parameter')]
     use_caches = {'state_in_surface_qp' : [['parameter']]}
 
-    ##
-    # 24.04.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
 
     ##
     # c: 24.04.2007, r: 15.01.2008
@@ -173,11 +160,6 @@ class DotProductVolumeTerm( Term ):
     geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
     use_caches = {'state_in_volume_qp' : [['parameter_1'], ['parameter_2']]}
 
-    ##
-    # 26.09.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     ##
     # created:       26.09.2007
     # last revision: 13.12.2007
@@ -220,11 +202,6 @@ class DotProductSurfaceTerm( Term ):
     use_caches = {'state_in_surface_qp' : [['parameter_1'], ['parameter_2']]}
 
     ##
-    # 09.10.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
-    ##
     # c: 09.10.2007, r: 15.01.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2 = self.get_args( **kwargs )
@@ -260,17 +237,12 @@ class IntegrateSurfaceOperatorTerm( Term ):
     .. math::
         \int_{\Gamma} q
     """
-
     name = 'dw_surface_integrate'
     arg_types = ('virtual',)
     geometry = [(Surface, 'virtual')]
 
-    ##
-    # 30.06.2008, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
 
     ##
     # 30.06.2008, c
@@ -308,9 +280,8 @@ class IntegrateSurfaceVariableOperatorTerm(Term):
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
 
-    def __init__(self, region, name=name, sign=1):
-        Term.__init__(self, region, name, sign)
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
         
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         mat, virtual = self.get_args(**kwargs)
@@ -360,9 +331,6 @@ class VolumeTerm( Term ):
     geometry = [(Volume, 'parameter')]
     use_caches = {'volume' : [['parameter']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     ##
     # created:       16.07.2007
     # last revision: 13.12.2007
@@ -389,9 +357,8 @@ class SurfaceTerm( Term ):
     geometry = [(Surface, 'parameter')]
     use_caches = {'surface' : [['parameter']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
@@ -416,9 +383,9 @@ class VolumeSurfaceTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_volume_surface )
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface',
+                      function=terms.d_volume_surface, **kwargs)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
@@ -450,9 +417,9 @@ class SurfaceMomentTerm(Term):
     arg_types = ('parameter', 'shift')
     geometry = [(Surface, 'parameter')]
 
-    def __init__(self, region, name=name, sign=1):
-        Term.__init__(self, region, name, sign, terms.di_surface_moment)
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface',
+                      function=terms.di_surface_moment, **kwargs)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         par, shift = self.get_args(**kwargs)
@@ -493,9 +460,6 @@ class AverageVolumeMatTerm( Term ):
     arg_types = ('material', 'parameter')
     geometry = [(Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     ##
     # c: 06.05.2008, r: 06.05.2008
     def prepare_data( self, chunk_size = None, **kwargs ):
@@ -573,7 +537,8 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
         \int_\Omega y p r \mbox{ , } \int_\Omega y \ul{u} \cdot \ul{w}
 
     :Arguments:
-    material : weight function :math:`y`"""
+    material : weight function :math:`y`
+    """
     name = 'dw_volume_wdot'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
@@ -661,8 +626,7 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
+    function = staticmethod(terms.dw_volume_wdot_scalar)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
@@ -716,8 +680,7 @@ class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
     use_caches = {'state_in_volume_qp' : [['state']],
                   'exp_history' : [['material_0', 'material_1', 'state']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_volume_wdot_scalar )
+    function = staticmethod(terms.dw_volume_wdot_scalar)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
@@ -762,9 +725,6 @@ class AverageVariableTerm( Term ):
     geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign )
-        
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
@@ -793,8 +753,7 @@ class StateVQTerm(Term):
     arg_types = ('state',)
     geometry = [(Volume, 'state')]
 
-    def __init__(self, region, name=name, sign=1):
-        Term.__init__(self, region, name, sign, terms.dq_state_in_qp)
+    function = staticmethod(terms.dq_state_in_qp)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """Ignores chunk_size."""
@@ -828,8 +787,7 @@ class StateSQTerm(Term):
     arg_types = ('state',)
     geometry = [(Surface, 'state')]
 
-    def __init__(self, region, name=name, sign=1):
-        Term.__init__(self, region, name, sign, terms.dq_state_in_qp)
+    function = staticmethod(terms.dq_state_in_qp)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """Ignores chunk_size."""

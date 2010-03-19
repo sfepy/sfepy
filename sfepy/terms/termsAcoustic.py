@@ -8,18 +8,18 @@ class AcousticAlphaSA1Term( ScalarScalar, Term ):
 
     :Definition:
     .. math::
-        \int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha \ul{v},
-        \alpha = 1,\dots,N-1
+        \int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha
+        \ul{v}, \alpha = 1,\dots,N-1
     """
     name = 'd_sa_acoustic_alpha'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
     geometry = [(Volume, 'parameter_1')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sa_acoustic_alpha )
+    function = staticmethod(terms.d_sa_acoustic_alpha)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2', 'parameter_3'], **kwargs )
+        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
+                                           'parameter_3'], **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
@@ -41,11 +41,11 @@ class AcousticAlphaSA2Term( ScalarScalar, Term ):
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
     geometry = [(Volume, 'parameter_1')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sa_acoustic_alpha )
+    function = staticmethod(terms.d_sa_acoustic_alpha)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2', 'parameter_3'], **kwargs )
+        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
+                                           'parameter_3'], **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
@@ -67,11 +67,11 @@ class AcousticZSATerm( ScalarScalar, Term ):
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
     geometry = [(Volume, 'parameter_1')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sa_acoustic_z )
+    function = staticmethod(terms.d_sa_acoustic_z)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2', 'parameter_3'], **kwargs )
+        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
+                                           'parameter_3'], **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
@@ -93,11 +93,11 @@ class AcousticZSA2Term( ScalarScalar, Term ):
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
     geometry = [(Volume, 'parameter_1')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_sa_acoustic_z )
+    function = staticmethod(terms.d_sa_acoustic_z)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2', 'parameter_3'], **kwargs )
+        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
+                                           'parameter_3'], **kwargs )
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
 
         self.set_data_shape( ap )
@@ -113,8 +113,8 @@ class AcousticTerm( ScalarScalar, Term ):
 
     :Definition:
     .. math::
-        \int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2 \partial_z \ul{v}\,\partial_z \ul{u} ),
-        \alpha = 1,\dots,N-1
+        \int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2
+        \partial_z \ul{v}\,\partial_z \ul{u} ), \alpha = 1,\dots,N-1
     """
     name = 'dw_acoustic'
     arg_types = (('material', 'material', 'virtual', 'state'),
@@ -138,7 +138,8 @@ class AcousticTerm( ScalarScalar, Term ):
         ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
         self.set_data_shape( ap )
 
-        return (par1(), par2(), mat1, mat2, vg, ap.econn), (chunk_size, 1, 1, 1), 0
+        return ((par1(), par2(), mat1, mat2, vg, ap.econn),
+                (chunk_size, 1, 1, 1), 0)
 
     def set_arg_types( self ):
         if self.mode == 'weak':
@@ -162,9 +163,9 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
     arg_types = ('material', 'material', 'parameter')
     geometry = [(SurfaceExtra, 'parameter')]
         
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_acoustic_surface )
-        self.dof_conn_type = 'surface'
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, dof_conn_type='surface',
+                      function=terms.d_acoustic_surface, **kwargs)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, par = self.get_args( **kwargs )
@@ -190,8 +191,7 @@ class AcousticIntegrateTerm( ScalarScalar, Term ):
     arg_types = ('material', 'virtual')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_acoustic_integrate )
+    function = staticmethod(terms.dw_acoustic_integrate)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
@@ -215,8 +215,7 @@ class AcousticEvalAlphaTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
     
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.d_acoustic_alpha )
+    function = staticmethod(terms.d_acoustic_alpha)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )

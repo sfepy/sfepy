@@ -104,8 +104,7 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_lin_elastic_iso )
+    function = staticmethod(terms.dw_lin_elastic_iso)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         lam, mu, virtual, state = self.get_args( **kwargs )
@@ -134,8 +133,7 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
     geometry = [(Volume, 'virtual')]
     use_caches = {'cauchy_strain' : [['state', {'strain' : (-1,-1)}]]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_lin_elastic )
+    function = staticmethod(terms.dw_lin_elastic)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
@@ -188,8 +186,7 @@ class LinearElasticETHTerm(VectorVector, Term):
     use_caches = {'cauchy_strain' : [['state']],
                   'exp_history' : [['material_0', 'material_1', 'state']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__(self, region, name, sign,  terms.dw_lin_elastic)
+    function = staticmethod(terms.dw_lin_elastic)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, virtual, state = self.get_args(**kwargs)
@@ -234,8 +231,7 @@ class CauchyStrainTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.de_cauchy_strain )
+    function = staticmethod(terms.de_cauchy_strain)
 
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
         self.data_shape = apr.get_v_data_shape( self.integral_name )
@@ -277,8 +273,7 @@ class CauchyStressTerm( CauchyStrainTerm ):
     geometry = [(Volume, 'parameter')]
     use_caches = {'cauchy_strain' : [['parameter']]}
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.de_cauchy_stress )
+    function = staticmethod(terms.de_cauchy_stress)
 
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         mat, = self.get_args( ['material'], **kwargs )

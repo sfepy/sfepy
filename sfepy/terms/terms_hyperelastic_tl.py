@@ -9,8 +9,8 @@ class HyperElasticTLBase( HyperElasticBase ):
     """
     use_caches = {'finite_strain_tl' : [['state']]}
 
-    def __init__( self, region, name = None, sign = 1 ):
-        HyperElasticBase.__init__( self, region, name, sign, mode_ul = 0 )
+    def __init__(self, name, sign, **kwargs):
+        HyperElasticBase.__init__(self, name, sign, mode='tl', **kwargs)
 
 class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
     r"""
@@ -141,8 +141,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     term_function = {'stress' : terms.dq_tl_stress_bulk_pressure,
                      'tangent_modulus_u' : terms.dq_tl_tan_mod_bulk_pressure_u}
 
-    def __init__(self, region, name=None, sign=1):
-        Term.__init__(self, region, name, sign)
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, **kwargs)
 
         self.function = {
             'element_contribution' : terms.dw_he_rtm,
@@ -259,9 +259,7 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
                                           'invC' : (2, 2),
                                           'detF' : (2, 2)}]]}
 
-    def __init__(self, region, name=None, sign=1):
-        Term.__init__(self, region, name, sign,
-                      function=terms.dw_tl_volume)
+    function = staticmethod(terms.dw_tl_volume)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         virtual, state = self.get_args( **kwargs )
@@ -319,8 +317,7 @@ class DiffusionTLTerm(ScalarScalar, Term):
                                           'invC' : (2, 2),
                                           'detF' : (2, 2)}]]}
 
-    def __init__(self, region, name=None, sign=1):
-        Term.__init__(self, region, name, sign, function=terms.dw_tl_diffusion)
+    function = staticmethod(terms.dw_tl_diffusion)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
@@ -375,9 +372,7 @@ class SurfaceTractionTLTerm(VectorVector, Term):
     geometry = [(SurfaceExtra, 'virtual')]
     use_caches = {'finite_strain_surface_tl' : [['state']]}
 
-    def __init__(self, region, name=None, sign=1):
-        Term.__init__(self, region, name, sign,
-                      function=terms.dw_tl_surface_traction)
+    function = staticmethod(terms.dw_tl_surface_traction)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         trac_qp, virtual, state = self.get_args(**kwargs)

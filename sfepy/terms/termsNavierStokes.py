@@ -14,8 +14,7 @@ class DivGradTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asm_div_grad )
+    function = staticmethod(terms.term_ns_asm_div_grad)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
@@ -50,8 +49,9 @@ class ConvectTerm( Term ):
     arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.term_ns_asm_convect )
+    def __init__(self, name, sign, **kwargs):
+        Term.__init__(self, name, sign, function=terms.term_ns_asm_convect,
+                      **kwargs)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( **kwargs )
@@ -87,8 +87,7 @@ class LinearConvectTerm( Term ):
     arg_types = ('virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_lin_convect )
+    function = staticmethod(terms.dw_lin_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, par, state = self.get_args( **kwargs )
@@ -125,8 +124,7 @@ class LinearConvectQTerm( Term ):
     arg_types = ('parameter', 'state')
     geometry = [(Volume, 'state')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_lin_convect )
+    function = staticmethod(terms.dw_lin_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, state = self.get_args( **kwargs )
@@ -251,10 +249,7 @@ class GradQTerm( Term ):
     arg_types = ('state',)
     geometry = [(Volume, 'state')]
 
-    ##
-    # 30.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dq_grad )
+    function = staticmethod(terms.dq_grad)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
@@ -287,8 +282,7 @@ class GradETerm( Term ):
     arg_types = ('state',)
     geometry = [(Volume, 'state')]
 
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.de_grad )
+    function = staticmethod(terms.de_grad)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
@@ -338,10 +332,7 @@ class GradDivStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 26.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_grad_div )
+    function = staticmethod(terms.dw_st_grad_div)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         gamma, virtual, state = self.get_args( **kwargs )
@@ -395,10 +386,7 @@ class PSPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    ##
-    # 31.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_pspg_c )
+    function = staticmethod(terms.dw_st_pspg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         tau, virtual, par, state = self.get_args( **kwargs )
@@ -442,10 +430,7 @@ class SUPGPStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
-    ##
-    # 31.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_supg_p )
+    function = staticmethod(terms.dw_st_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
@@ -489,10 +474,7 @@ class SUPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
 
-    ##
-    # 31.07.2007, c
-    def __init__( self, region, name = name, sign = 1 ):
-        Term.__init__( self, region, name, sign, terms.dw_st_supg_c )
+    function = staticmethod(terms.dw_st_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
