@@ -1216,7 +1216,11 @@ class Variable( Struct ):
 
         primary_var_name = conf.get_default_attr('dual', None)
         if primary_var_name is None:
-            primary_var_name = conf.get_default_attr('like', None)
+            if hasattr(conf, 'like'):
+                primary_var_name = get_default(conf.like, '(set-to-None)')
+
+            else:
+                primary_var_name = None
 
         special = conf.get_default_attr('special', None)
 
@@ -1277,14 +1281,15 @@ class Variable( Struct ):
         elif kind == 'test':
             self.flags.add(is_virtual)
             msg = 'test variable %s: related unknown missing' % self.name
-            self.primary_var_name = get_default(primary_var_name, None,
-                                                msg)
+            self.primary_var_name = get_default(primary_var_name, None, msg)
             self.dof_name = self.primary_var_name
 
         elif kind == 'parameter':
             self.flags.add( is_parameter )
             msg = 'parameter variable %s: related unknown missing' % self.name
             self.primary_var_name = get_default(primary_var_name, None, msg)
+            if self.primary_var_name == '(set-to-None)':
+                self.primary_var_name = None
             self.dof_name = self.primary_var_name
 
             if special is not None:
