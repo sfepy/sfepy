@@ -1266,7 +1266,7 @@ class Variable( Struct ):
         if self.is_virtual():
             self.data = None
 
-        self._set_kind(kind, order, primary_var_name, special=None)
+        self._set_kind(kind, order, primary_var_name, special=special)
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
