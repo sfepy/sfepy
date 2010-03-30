@@ -732,7 +732,7 @@ class AverageVariableTerm( Term ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0,
                      state = par, get_vector = self.get_vector )
-        vdim = vec.shape[-1]
+        vdim = vec.shape[2]
         shape = (chunk_size, 1, vdim, 1)
 
         for out, chunk in self.char_fun( chunk_size, shape ):
