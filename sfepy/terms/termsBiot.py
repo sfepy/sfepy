@@ -1,5 +1,6 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import CouplingVectorScalar, CouplingVectorScalarTH
+from sfepy.terms.termsLinElasticity import CauchyStrainTerm
 
 class BiotGrad( CouplingVectorScalar ):
 
@@ -111,6 +112,32 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
                                'cauchy_strain' : [['parameter_v']]}
+
+
+class BiotStressTerm(CauchyStrainTerm):
+    r"""
+    :Description:
+    Biot stress tensor averaged in elements.
+    
+    :Definition:
+    .. math::
+        \mbox{vector of } \forall K \in \Tcal_h:
+        \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
+    """
+    name = 'de_biot_stress'
+    arg_types = ('material', 'parameter')
+    geometry = [(Volume, 'parameter')]
+    use_caches = {'state_in_volume_qp' : [['parameter']]}
+
+    function = staticmethod(terms.de_cauchy_stress)
+
+    def build_c_fun_args(self, state, ap, vg, **kwargs):
+        mat, = self.get_args(['material'], **kwargs)
+        cache = self.get_cache('state_in_volume_qp', 0)
+        state_qp = cache('state', self.get_current_group(), 0,
+                         state=state, get_vector=self.get_vector)
+
+        return state_qp, mat, vg
 
 
 class BiotGradTH( CouplingVectorScalarTH ):
