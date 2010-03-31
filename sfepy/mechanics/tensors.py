@@ -165,6 +165,12 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         else:
             raise ValueError('transformation mode %s is not supported!' % mode)
 
+    shape = data.shape
+
+    data = nm.squeeze(data)
+    if data.ndim == 1:
+        data.shape = (1, data.shape[0])
+
     if data.shape[1] == 3: # Vectors.
         new_data = dot_sequences(mtx, data)
 
@@ -178,5 +184,11 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         aux3 = aux2.reshape((aux2.shape[0], 9))
 
         new_data = aux3[:, [0, 4, 8, 1, 2, 5]]
+
+    else:
+        raise ValueError('unsupported data shape! (%s)' % str(data.shape))
+
+    # Restore the correct shape.
+    new_data.shape = shape
 
     return new_data
