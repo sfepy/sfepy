@@ -62,7 +62,7 @@ def mark_time(times, msg=None):
     if (msg is not None) and (len(times) > 1):
         print msg, times[-1] - times[-2]
 
-def import_file(filename):
+def import_file(filename, package_name=None):
     """
     Import a file as a module. The module is explicitly reloaded to
     prevent undesirable interactions.
@@ -83,7 +83,12 @@ def import_file(filename):
     else:
         force_reload = False
 
-    mod = __import__(name)
+
+    if package_name is not None:
+        mod = __import__('.'.join((package_name, name)), fromlist=[name])
+
+    else:
+        mod = __import__(name)
 
     if force_reload:
         reload(mod)
@@ -670,13 +675,13 @@ def find_subclasses(context, classes, omit_unnamed=False):
             pass
     return table
 
-def load_classes(filenames, classes):
+def load_classes(filenames, classes, package_name=None):
     """
     For each filename in filenames, load all subclasses of classes listed.
     """
     table = {}
     for filename in filenames:
-        mod = import_file(filename)
+        mod = import_file(filename, package_name=package_name)
         table.update(find_subclasses(vars(mod), classes, omit_unnamed=True))
 
     return table
