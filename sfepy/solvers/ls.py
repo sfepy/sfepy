@@ -83,7 +83,7 @@ class ScipyDirect(LinearSolver):
             if self.mtx is not None:
                 self.solve = self.sls.factorized(self.mtx)
 
-    def __call__(self, rhs, conf=None, mtx=None, status=None):
+    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
@@ -160,15 +160,13 @@ class ScipyIterative( LinearSolver ):
             solver = la.cg
         self.solver = solver
         
-    ##
-    # c: 22.02.2008, r: 22.02.2008
-    def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = get_default( conf, self.conf )
-        mtx = get_default( mtx, self.mtx )
-        status = get_default( status, self.status )
+    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
 
-        sol, info = self.solver( mtx, rhs, tol = conf.eps_a,
-                                 maxiter = conf.i_max )
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=conf.eps_a,
+                                maxiter=conf.i_max)
         
         return sol
 
@@ -225,18 +223,16 @@ class PyAMGSolver( LinearSolver ):
             if self.mtx is not None:
                 self.mg = self.solver( self.mtx )
         
-    ##
-    # c: 02.05.2008, r: 02.05.2008
-    def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = get_default( conf, self.conf )
-        mtx = get_default( mtx, self.mtx )
-        status = get_default( status, self.status )
+    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
 
         if (self.mg is None) or (mtx is not self.mtx):
-            self.mg = self.solver( mtx )
+            self.mg = self.solver(mtx)
             self.mtx = mtx
 
-        sol = self.mg.solve(rhs, accel=conf.accel, tol=conf.eps_a)
+        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=conf.eps_a)
         
         return sol
 
@@ -314,24 +310,25 @@ class PETScKrylovSolver( LinearSolver ):
         sol, rhs = pmtx.getVecs()
         return pmtx, sol, rhs
                 
-    def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        conf = get_default( conf, self.conf )
-        mtx = get_default( mtx, self.mtx )
-        status = get_default( status, self.status )
+    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
 
         ksp = self.ksp
         if (self.pmtx is None) or (mtx is not self.mtx):
-            self.pmtx, self.sol, self.rhs = self.set_matrix( mtx )
-            self.ksp.setOperators( self.pmtx )
+            self.pmtx, self.sol, self.rhs = self.set_matrix(mtx)
+            self.ksp.setOperators(self.pmtx)
             self.ksp.setFromOptions() # PETSc.Options() not used yet...
             self.mtx = mtx
 
-        ksp.setTolerances( atol = conf.eps_a, rtol = conf.eps_r,
-                           max_it = conf.i_max )
+        ksp.setTolerances(atol=conf.eps_a, rtol=conf.eps_r, max_it=conf.i_max)
 
         # Set PETSc rhs, solve, get solution from PETSc solution.
+        if x0 is not None:
+            self.sol[...] = x0
         self.rhs[...] = rhs
-        ksp.solve( self.rhs, self.sol )
+        ksp.solve(self.rhs, self.sol)
         sol = self.sol[...].copy()
         output('KSP convergence: %s' % ksp.reason)
         

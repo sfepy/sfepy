@@ -26,20 +26,16 @@ class Solver( Struct ):
         print 'called an abstract Solver instance!'
         raise ValueError
 
-##
-# 10.10.2007, c
-class LinearSolver( Solver ):
-    ##
-    # 10.10.2007, c
-    def __init__( self, conf, mtx = None, status = None, **kwargs ):
-        Solver.__init__( self, conf = conf, mtx = mtx, status = status,
-                         **kwargs )
+class LinearSolver(Solver):
+    """
+    Abstract linear solver class.
+    """
+
+    def __init__(self, conf, mtx=None, status=None, **kwargs):
+        Solver.__init__(self, conf=conf, mtx=mtx, status=status, **kwargs)
     
-    ##
-    # 10.10.2007, c
-    def __call__( self, rhs, conf = None, mtx = None, status = None ):
-        print 'called an abstract LinearSolver instance!'
-        raise ValueError
+    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+        raise ValueError('called an abstract LinearSolver instance!')
 
 ##
 # 10.10.2007, c
