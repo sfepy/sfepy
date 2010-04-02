@@ -12,6 +12,12 @@ solver_table = load_classes(solver_files,
                              TimeSteppingSolver, EigenvalueSolver,
                              OptimizationSolver], package_name='sfepy.solvers')
 
+def register_solver(cls):
+    """
+    Register a custom solver.
+    """
+    solver_table[cls.name] = cls
+
 def any_from_conf(conf, **kwargs):
     """Create an instance of a solver class according to the configuration."""
     return solver_table[conf.kind](conf, **kwargs)
