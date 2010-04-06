@@ -11,25 +11,39 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
     io = MeshIO.any_from_filename(filename)
     mesh = Mesh.from_file(filename, io=io)
 
-    ts = TimeStepper(*io.read_time_stepper())
-
     if output_filename_trunk is None:
         output_filename_trunk = get_trunk(filename)
 
-    if steps is None:
-        iterator = ts.iter_from(step0)
-    else:
-        iterator = [(step, ts.times[step]) for step in steps]
+    try:
+        ts = TimeStepper(*io.read_time_stepper())
 
-    for step, time in iterator:
-        output(ts.format % (step, ts.n_step - 1))
-        out = io.read_data(step)
-        if out is None: break
-        mesh.write(output_filename_trunk + ts.suffix % step + '.vtk',
-                   io='auto', out=out)
+    except:
+        output('no time stepping info found, assuming single step')
+
+        out = io.read_data(0)
+        if out is not None:
+            mesh.write(output_filename_trunk + '.vtk', io='auto', out=out)
+
+        ret = None
+
+    else:
+        if steps is None:
+            iterator = ts.iter_from(step0)
+
+        else:
+            iterator = [(step, ts.times[step]) for step in steps]
+
+        for step, time in iterator:
+            output(ts.format % (step, ts.n_step - 1))
+            out = io.read_data(step)
+            if out is None: break
+            mesh.write(output_filename_trunk + ts.suffix % step + '.vtk',
+                       io='auto', out=out)
+
+        ret = ts.suffix
 
     output('...done')
-    return ts.suffix
+    return ret
 
 def extract_time_history(filename, extract, verbose=True):
     """Extract time history of a variable from a multi-time-step results file.
