@@ -10,7 +10,7 @@ from pyparsing import Literal, CaselessLiteral, Word, delimitedList,\
 op_codes = ['OA_SubN', 'OA_SubE', 'OA_AddN', 'OA_AddE',
            'OA_IntersectN', 'OA_IntersectE']
 eval_codes = ['E_NIR', 'E_NOS', 'E_NBF', 'E_EBF', 'E_EOG', 'E_NOG',
-              'E_ONIR', 'E_NI']
+              'E_ONIR', 'E_NI', 'E_EI1', 'E_EI2']
 kw_codes = ['KW_All', 'KW_Region']
 
 ##
@@ -101,6 +101,7 @@ def print_stack( stack ):
 # c: 13.06.2006, r: 14.07.2008
 def create_bnf( stack ):
     point = Literal( "." )
+    comma = Literal( "," )
     e = CaselessLiteral( "E" )
     inumber = Word( nums )
     fnumber = Combine( Word( "+-"+nums, nums ) + 
@@ -125,6 +126,7 @@ def create_bnf( stack ):
     _all = Literal( 'all' ).setParseAction( replace( 'KW_All' ) )
     node = Literal( 'node' )
     nodes = Literal( 'nodes' )
+    element = Literal( 'element' )
     elements = Literal( 'elements' )
     group = Literal( 'group' )
     surface = Literal( 'surface' )
@@ -162,12 +164,19 @@ def create_bnf( stack ):
         replace( 'E_NOG', keep = True ) )
     onir = Group( node + _in + region ).setParseAction( \
         replace_with_region( 'E_ONIR', 2 ) )
-    ni = Group( node + inumber ).setParseAction( \
+    ni = Group( node + delimitedList( inumber ) ).setParseAction( \
         replace( 'E_NI', keep = True ) )
+    ei1 = Group( element + delimitedList( inumber ) ).setParseAction( \
+        replace( 'E_EI1', keep = True ) )
+    etuple = lpar.suppress() + inumber + comma.suppress() \
+             + inumber + rpar.suppress()
+    ei2 = Group( element + delimitedList( etuple ) ).setParseAction( \
+        replace( 'E_EI2', keep = True ) )
 
     region_expression = Forward()
 
-    atom1 = (_all | region | ni | onir | nos | nir | nbf | ebf | eog | nog)
+    atom1 = (_all | region | ni | onir | nos | nir | nbf
+             | ei1 | ei2 | ebf | eog | nog)
     atom1.setParseAction( to_stack( stack ) )
     atom2 = (lpar + region_expression.suppress() + rpar)
     atom = (atom1 | atom2)

@@ -74,6 +74,13 @@ class Test( TestCommon ):
                      'nodes by afun',
                      'node in r.Gamma_3',
                      'node 10',
+                     'node 10, 20, 30',
+                     'element 10',
+                     'element 10, 20, 30',
+                     'element (0, 10), (1, 20), (0, 30)',
+                     'node 10, 20 +n element 30, 40',
+                     '(node 10, 20) +n (element 30, 40)',
+                     'element (0, 10), (1, 20), (0, 30) +n node 10',
                      'elements by afun']
 
         stack = []

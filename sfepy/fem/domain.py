@@ -256,8 +256,22 @@ def region_leaf(domain, regions, rdef, functions):
             region.set_vertices( aux.all_vertices[0:1] )
 
         elif token == 'E_NI':
-            region.set_vertices( nm.array( [int( details[1] )],
-                                          dtype = nm.int32 ) )
+            region.set_vertices(nm.array([int(ii) for ii in details[1:]],
+                                         dtype=nm.int32))
+
+        elif token == 'E_EI1':
+            region.set_cells({0 : nm.array([int(ii) for ii in details[1:]],
+                                           dtype=nm.int32)})
+
+        elif token == 'E_EI2':
+            num = len(details[1:]) / 2
+
+            cells = {}
+            for ii in range(num):
+                ig, iel = int(details[1+2*ii]), int(details[2+2*ii])
+                cells.setdefault(ig, []).append(iel)
+
+            region.set_cells(cells)
 
         else:
             output( 'token "%s" unkown - check regions!' % token )
