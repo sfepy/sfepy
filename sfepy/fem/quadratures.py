@@ -79,6 +79,17 @@ class GaussTensorProductO2G12( Quadrature ):
         self.vals = 0.5 * (self.vals + 1.0)
         self.weights = nm.array( [0.5, 0.5], dtype = nm.float64 )
 
+class GaussO1G23( Quadrature ):
+    family = 'gauss_o1_d2'
+    name = 'gauss_s_o1_g2_3'
+
+    def __init__( self ):
+        c = 1.0 / 3.0
+        w = 0.5
+
+        self.vals = nm.array( [[c, c]], dtype = nm.float64 )
+        self.weights = nm.array( [w], dtype = nm.float64 )
+
 ##
 # 13.11.2007, c
 class GaussO2G23( Quadrature ):
