@@ -332,9 +332,11 @@ conditions, the domains of terms and materials etc.
     * ``nodes of surface``
     * ``nodes in <expr>``
     * ``nodes by <function>``
-    * ``node <id>``
+    * ``node <id>[, <id>, ...]``
     * ``elements of group <integer>``
     * ``elements by <efunction>``
+    * ``element <id>[, <id>, ...]`` assumes group 0 (ig = 0)
+    * ``element (<ig>, <id>)[, (<ig>, <id>), ...]``
     * ``r.<name of another region>``
 
   * Notation
