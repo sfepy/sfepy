@@ -156,6 +156,14 @@ class MeshIO( Struct ):
         Struct.__init__( self, filename = filename, **kwargs )
         self.set_float_format()
 
+    def get_filename_trunk(self):
+        if isinstance(self.filename, file):
+            trunk = 'from_descriptor'
+        else:
+            trunk = op.splitext(self.filename)[0]
+
+        return trunk
+
     def read_dimension( self, ret_fd = False ):
         raise ValueError(MeshIO.call_msg)
 
@@ -180,6 +188,30 @@ class MeshIO( Struct ):
 
     def get_vector_format( self, dim ):
         return ' '.join( [self.float_format] * dim )
+            
+class UserMeshIO(MeshIO):
+    """
+    Special MeshIO subclass that enables reading and writing a mesh using a
+    user-supplied function.
+    """
+    format = 'function'
+
+    def __init__(self, filename, **kwargs):
+        assert_(hasattr(filename, '__call__'))
+        self.function = filename
+
+        MeshIO.__init__(self, filename='function:%s' % self.function.__name__,
+                        **kwargs )
+        
+    def get_filename_trunk(self):
+        return self.filename
+
+    def read(self, mesh, *args, **kwargs):
+        self.function(mesh, mode='read')
+        return mesh
+    
+    def write(self, filename, mesh, *args, **kwargs):
+        self.function(mesh, mode='write')
 
 ##
 # c: 05.02.2008
@@ -1705,6 +1737,30 @@ for key, var in var_dict:
 del var_dict
 
 def any_from_filename(filename, prefix_dir=None):
+    """
+    Create a MeshIO instance according to the kind of `filename`.
+
+    Parameters
+    ----------
+    filename : str, function or MeshIO subclass instance
+        The name of the mesh file. It can be also a user-supplied function
+        accepting two arguments: mesh, mode, where mesh is a Mesh instance and
+        mode is one of 'read','write', or a MeshIO subclass instance.
+    prefix_dir : str
+        The directory name to prepend to `filename`.
+
+    Returns
+    -------
+    io : MeshIO subclass instance
+        The MeshIO subclass instance corresponding to the kind of `filename`.
+    """
+    if not isinstance(filename, str):
+        if isinstance(filename, MeshIO):
+            return filename
+
+        else:
+            return UserMeshIO(filename)
+
     if prefix_dir is not None:
         filename = op.normpath(op.join(prefix_dir, filename))
 

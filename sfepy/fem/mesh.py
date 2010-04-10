@@ -655,7 +655,8 @@ class Mesh( Struct ):
         return mesh
     from_surface = staticmethod( from_surface )
 
-    def from_file(filename = None, io = 'auto', prefix_dir=None):
+    @staticmethod
+    def from_file(filename=None, io='auto', prefix_dir=None):
         """
         Read a mesh from a file.
 
@@ -676,21 +677,19 @@ class Mesh( Struct ):
                 raise ValueError
             else:
                 io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
-                if isinstance( filename, file ):
-                    trunk = 'from_descriptor'
-                else:
-                    trunk = op.splitext( filename )[0]
-        else:
-            trunk = io.filename
 
-        output( 'reading mesh (%s)...' % (io.filename) )
+        output('reading mesh (%s)...' % (io.filename))
         tt = time.clock()
-        mesh = Mesh( trunk )
-        mesh = io.read( mesh )
-        output( '...done in %.2f s' % (time.clock() - tt) )
+
+        trunk = io.get_filename_trunk()
+        mesh = Mesh(trunk)
+        mesh = io.read(mesh)
+
+        output('...done in %.2f s' % (time.clock() - tt))
+
         mesh._set_shape_info()
+
         return mesh
-    from_file = staticmethod( from_file )
 
     ##
     # c: 17.02.2006, r: 28.04.2008
@@ -830,7 +829,7 @@ class Mesh( Struct ):
         self.el_offsets = nm.cumsum( nm.r_[0, self.n_els] )
         self.n_el = nm.sum( self.n_els )
 
-    def _set_data( self, coors, ngroups, conns, mat_ids, descs ):
+    def _set_data(self, coors, ngroups, conns, mat_ids, descs):
         """
         Set mesh data.
         
@@ -848,12 +847,15 @@ class Mesh( Struct ):
             The element type for each element group.
         """
         self.coors = nm.ascontiguousarray(coors)
+
         if ngroups is None:
-            self.ngroups = nm.zeros( (self.coors.shape[0],), dtype = nm.int32 )
+            self.ngroups = nm.zeros((self.coors.shape[0],), dtype=nm.int32)
+
         else:
             self.ngroups = nm.ascontiguousarray(ngroups)
-        self.conns = conns
-        self.mat_ids = mat_ids
+
+        self.conns = [nm.asarray(conn, dtype=nm.int32) for conn in conns]
+        self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
         self.descs = descs
         
     ##

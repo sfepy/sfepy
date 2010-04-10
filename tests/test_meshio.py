@@ -13,6 +13,28 @@ filename_meshes = ['/meshes/3d/cylinder.mesh',
 		   '/meshes/various_formats/cube.bdf']
 filename_meshes = [data_dir + name for name in filename_meshes]
 
+def mesh_hook(mesh, mode):
+    """
+    Define a mesh programmatically.
+    """
+    if mode == 'read':
+        nodes = [[0, 0], [1, 0], [1, 1], [0, 1]]
+        nod_ids = [0, 0, 1, 1]
+        conns = [[[0, 1, 2], [0, 2, 3]]]
+        mat_ids = [[0, 1]]
+        descs = ['2_3']
+
+        mesh._set_data(nodes, nod_ids, conns, mat_ids, descs)
+
+        ## mesh.write('aux.vtk', io='auto')
+
+    elif mode == 'write':
+        pass
+
+from sfepy.fem.meshio import UserMeshIO
+
+filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
+
 same = [(0, 1), (2, 3)]
 
 import os.path as op
