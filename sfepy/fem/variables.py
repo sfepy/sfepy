@@ -1391,15 +1391,25 @@ class Variable( Struct ):
 
         self.data_from_any(data, indx, step)
 
-    def data_from_any( self, data = None, indx = None, step = 0 ):
+    def data_from_any(self, data=None, indx=None, step=0):
         data = data.ravel()
 
-        self.data[step] = data
         if indx is None:
-            self.indx = slice( 0, len( data ) )
+            indx = slice(0, len(data))
         else:
-            self.indx = slice( int( indx.start ), int( indx.stop ) )
-        self.n_dof = self.indx.stop - self.indx.start
+            indx = slice(int(indx.start), int(indx.stop))
+        n_data_dof = indx.stop - indx.start
+
+        n_dof = self.n_nod * self.dpn
+        if n_dof != n_data_dof:
+            msg = 'incompatible data shape! (%d (variable) == %d (data))' \
+                  % (n_dof, n_data_dof)
+            raise ValueError(msg)
+
+        else:
+            self.data[step] = data
+            self.indx = indx
+            self.n_dof = n_dof
 
     def data_from_qp(self, data_qp, integral_name, step=0):
         """u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
