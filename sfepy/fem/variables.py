@@ -2014,19 +2014,37 @@ class Variable( Struct ):
             ics = ctree.query(coors)[1]
             ics = nm.asarray(ics, dtype=nm.int32)
 
-            vertex_coorss, nodess, orders, mtx_is, conns = [], [], [], [], []
+            vertex_coorss, nodess, orders, mtx_is = [], [], [], []
+            conns, conns0 = [], []
             for ap in self.field.aps:
                 ps = ap.interp.poly_spaces['v']
+                if ps.order == 0:
+                    # Use geometry element space and connectivity to locate an
+                    # element a point is in.
+                    ps = ap.interp.gel.interp.poly_spaces['v']
+                    assert_(ps.order == 1)
+
+                    orders.append(0) # Important!
+                    iels = ap.region.cells[ap.ig]
+                    conn = ap.region.domain.groups[ap.ig].conn
+                    conns.append(conn)
+
+                else:
+                    orders.append(ps.order)
+                    conns.append(ap.econn)
+
                 vertex_coorss.append(ps.geometry.coors)
                 nodess.append(ps.nodes)
-                orders.append(ps.order)
                 mtx_is.append(ps.get_mtx_i())
-                conns.append(ap.econn)
+
+                # Always the true connectivity for extracting source values.
+                conns0.append(ap.econn)
+
             orders = nm.array(orders, dtype=nm.int32)
 
             evaluate_at(vals, cells, status, coors, source_vals,
                         ics, offsets, iconn,
-                        scoors, conns,
+                        scoors, conns0, conns,
                         vertex_coorss, nodess, orders, mtx_is,
                         1, close_limit, 1e-15, 100, 1e-8)
 

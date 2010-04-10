@@ -130,6 +130,7 @@ int32 assemble_matrix_complex( FMField *mtx_r, FMField *mtx_i,
 %apply (int32 *nEl, int32 *nEP, int32 **conn) {
   (int32 *nElR, int32 *nEPR, int32 **connR),
   (int32 *nElC, int32 *nEPC, int32 **connC),
+  (int32 *nEls0, int32 *nEPs0, int32 **conns0),
   (int32 *nEls, int32 *nEPs, int32 **conns),
   (int32 *nNod, int32 *nCol, int32 **nodess)
 };
@@ -169,6 +170,7 @@ int32 evaluate_at( FMField *out,
 		   int32 *offsets, int32 n_offsets,
 		   int32 *iconn0, int32 n_iconn0,
 		   FMField *mesh_coors,
+		   int32 *nEls0, int32 *nEPs0, int32 **conns0,
 		   int32 *nEls, int32 *nEPs, int32 **conns,
 		   int32 n_ref_coorss, FMField *ref_coorss,
 		   int32 *nNod, int32 *nCol, int32 **nodess,

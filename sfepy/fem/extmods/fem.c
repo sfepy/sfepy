@@ -899,6 +899,7 @@ int32 evaluate_at( FMField *out,
 		   int32 *offsets, int32 n_offsets,
 		   int32 *iconn0, int32 n_iconn0,
 		   FMField *mesh_coors,
+		   int32 *nEls0, int32 *nEPs0, int32 **conns0,
 		   int32 *nEls, int32 *nEPs, int32 **conns,
 		   int32 n_ref_coorss, FMField *ref_coorss,
 		   int32 *nNod, int32 *nCol, int32 **nodess,
@@ -1065,7 +1066,7 @@ int32 evaluate_at( FMField *out,
 	  // Base(xi).
 	  eval_lagrange_tensor_product( bf, xi,
 					nodes, nNod[ig], nCol[ig],
-					order, 0,
+					Max( order, 1 ), 0,
 					mtx_i, bc, base1d,
 					1, qp_eps );
 	  /* fmf_print( xi, stdout, 0 ); */
@@ -1090,7 +1091,7 @@ int32 evaluate_at( FMField *out,
 	  // grad Base(xi).
 	  eval_lagrange_tensor_product( bfg, xi,
 					nodes, nNod[ig], nCol[ig],
-					order, 1,
+					Max( order, 1 ), 1,
 					mtx_i, bc, base1d,
 					1, qp_eps );
 	  // - Matrix.
@@ -1141,8 +1142,6 @@ int32 evaluate_at( FMField *out,
 
     /* output("DDD %d: %d, %f, %d %d\n", ok, ie_min, d_min, ig, iel ); */
 
-    conn = conns[ig];
-
     if (!ok) {
       if (allow_extrapolation) {
 	// Try using minimum distance xi.
@@ -1155,33 +1154,35 @@ int32 evaluate_at( FMField *out,
 
 	nodes = nodess[ig];
 	order = orders[ig];
-	mtx_i = mtx_is + ig;
 
-	if (n_v == (dim + 1)) {
-	  fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
-	  eval_lagrange_simplex( bf, xi,
-				 nodes, nNod[ig], nCol[ig],
-				 order, 0,
-				 mtx_i, bc,
-				 1, qp_eps );
-	} else {
-	  fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
-	  fmf_pretend( base1d, 1, 1, 1, nEPs[ig], b1d_max->val );
+	if (order > 0) {
+	  mtx_i = mtx_is + ig;
 
-	  eval_lagrange_tensor_product( bf, xi,
-					nodes, nNod[ig], nCol[ig],
-					order, 0,
-					mtx_i, bc, base1d,
-					1, qp_eps );
+	  if (n_v == (dim + 1)) {
+	    fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
+	    eval_lagrange_simplex( bf, xi,
+				   nodes, nNod[ig], nCol[ig],
+				   order, 0,
+				   mtx_i, bc,
+				   1, qp_eps );
+	  } else {
+	    fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
+	    fmf_pretend( base1d, 1, 1, 1, nEPs[ig], b1d_max->val );
+
+	    eval_lagrange_tensor_product( bf, xi,
+					  nodes, nNod[ig], nCol[ig],
+					  order, 0,
+					  mtx_i, bc, base1d,
+					  1, qp_eps );
+	  }
 	}
-
       } else {
 	status[ip] = 3;
       }
     } else {
       status[ip] = 0;
 
-      if (n_v == (dim + 1)) {
+      if ((n_v == (dim + 1)) && (order > 0)) {
 	fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
 	eval_lagrange_simplex( bf, xi,
 			       nodes, nNod[ig], nCol[ig],
@@ -1193,8 +1194,18 @@ int32 evaluate_at( FMField *out,
     /* output("EEE %d\n", status[ip] ); */
 
     if (status[ip] <= 1) {
+      if (order > 0) {
+	conn = conns[ig];
+	nEP = nEPs[ig];
+      } else {
+	conn = conns0[ig];
+	nEP = 1;
+
+	fmf_pretend( bf, 1, 1, 1, 1, bfs_max[ie].val );
+	fmf_fillC( bf, 1.0 );
+      }
+
       // Interpolate source_vals using bf.
-      nEP = nEPs[ig];
       fmf_pretend( src, 1, 1, dpn, nEP, src_max->val );
       ele_extractNodalValuesDBD( src, source_vals,
 				 conn + nEP * iel );
