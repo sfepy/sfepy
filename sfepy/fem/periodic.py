@@ -9,6 +9,9 @@ def set_accuracy( eps ):
 ##
 # c: 18.10.2006, r: 05.05.2008
 def match_grid_line( coor1, coor2, which ):
+    """
+    Match coordinates `coor1` with `coor2` along the axis `which`.
+    """
     if coor1.shape != coor2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
               % ( coor1.shape, coor2.shape)
@@ -40,6 +43,10 @@ def match_z_line( coor1, coor2 ):
 # 01.06.2007, c
 # last revision: 01.06.2007
 def match_grid_plane( coor1, coor2, which ):
+    """
+    Match coordinates `coor1` with `coor2` along the plane with normal axis
+    `which`.
+    """
     from sfepy.fem.mesh import find_map
     
     if coor1.shape != coor2.shape:

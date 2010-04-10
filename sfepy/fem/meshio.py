@@ -119,17 +119,17 @@ class MeshIO( Struct ):
     The abstract class for importing and exporting meshes.
 
     Read the docstring of the Mesh() class. Basically all you need to do is to
-    implement the read() method:
+    implement the read() method::
 
-    def read(self, mesh, **kwargs):
-        nodes = ...
-        conns = ...
-        mat_ids = ...
-        descs = ...
-        mesh._set_data(nodes, conns, mat_ids, descs)
-        return mesh
+        def read(self, mesh, **kwargs):
+            nodes = ...
+            conns = ...
+            mat_ids = ...
+            descs = ...
+            mesh._set_data(nodes, conns, mat_ids, descs)
+            return mesh
 
-    See the Mesh() class' docstring how the nodes, conns, mat_ids and descs
+    See the Mesh class' docstring how the nodes, conns, mat_ids and descs
     should look like. You just need to read them from your specific format from
     disk.
 
@@ -1744,8 +1744,9 @@ def any_from_filename(filename, prefix_dir=None):
     ----------
     filename : str, function or MeshIO subclass instance
         The name of the mesh file. It can be also a user-supplied function
-        accepting two arguments: mesh, mode, where mesh is a Mesh instance and
-        mode is one of 'read','write', or a MeshIO subclass instance.
+        accepting two arguments: `mesh`, `mode`, where `mesh` is a Mesh
+        instance and `mode` is one of 'read','write', or a MeshIO subclass
+        instance.
     prefix_dir : str
         The directory name to prepend to `filename`.
 
