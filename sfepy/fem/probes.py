@@ -38,6 +38,12 @@ class Probe(Struct):
 
         For additional parameters see the __init__() docstrings of the
         subclasses.
+
+        Notes
+        -----
+        If the mesh contains vertices that are not contained in any element, we
+        shift coordinates of such vertices so that they never match in the
+        nearest node search.
         """
         Struct.__init__(self, name=name, mesh=mesh, n_point=n_point, **kwargs)
 
@@ -73,6 +79,11 @@ class Probe(Struct):
                                 iconn = iconn,
                                 ctree = None)
         output('iconn: %f s' % (time.clock()-tt))
+
+        i_bad = nm.where(nm.diff(self.cache.offsets) == 0)[0]
+        if len(i_bad):
+            bbox = mesh.get_bounding_box()
+            mesh.coors[i_bad] = bbox[1] + bbox[1] - bbox[0]
 
         tt = time.clock()
         if share_mesh:
