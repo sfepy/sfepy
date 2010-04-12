@@ -243,7 +243,8 @@ class GenericFileSource(FileSource):
                     aux = vd.reshape((vd.shape[0],))
 
                 elif vd.shape[1] == 2:
-                    aux = nm.c_[vd, nod_zz]
+                    zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype)
+                    aux = nm.c_[vd, zz]
 
                 elif vd.shape[1] == 3:
                     aux = vd
@@ -263,7 +264,7 @@ class GenericFileSource(FileSource):
                     if dim == 3:
                         aux = vd.reshape((ne, dim))
                     else:
-                        zz = nm.zeros( (vd.shape[0], 1), dtype = nm.float64 );
+                        zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype);
                         aux = nm.c_[vd.squeeze(), zz]
 
                 elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
@@ -278,7 +279,7 @@ class GenericFileSource(FileSource):
                         else:
                             aux = vd.reshape((vd.shape[0], dim*dim))
                     else:
-                        zz = nm.zeros( (vd.shape[0], 1), dtype = nm.float64 );
+                        zz = nm.zeros((vd.shape[0], 1), dtype=vd.dtype);
                         if nr == sym:
                             aux = nm.c_[vd[:,[0,2]], zz, vd[:,[2,1]],
                                         zz, zz, zz, zz]
