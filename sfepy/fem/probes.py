@@ -84,6 +84,8 @@ class Probe(Struct):
         if len(i_bad):
             bbox = mesh.get_bounding_box()
             mesh.coors[i_bad] = bbox[1] + bbox[1] - bbox[0]
+            output('warning: some vertices are not in any element!')
+            output('warning: vertex-based results will be wrong!')
 
         tt = time.clock()
         if share_mesh:
