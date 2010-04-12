@@ -914,8 +914,8 @@ int32 evaluate_at( FMField *out,
   int32 order = 0, n_v = 0, ok, ret = RET_OK;
   int32 *conn, *iconn, *nodes = 0;
   float64 aux, err, dist, d_min, vmin, vmax;
-  float64 buf16[16], buf4[4];
-  FMField bc_mtx[1], bc_rhs[1];
+  float64 buf16[16], buf16_2[9], buf4[4];
+  FMField bc_mtx[1], bc_mtx_i[1], bc_rhs[1];
   FMField e_coors[1], base1d[1], bc[1], dest_point[1], src[1];
   FMField *ref_coors = 0, *mtx_i = 0;
   FMField *bc_max = 0, *b1d_max = 0, *ec_max = 0, *src_max = 0;
@@ -933,6 +933,7 @@ int32 evaluate_at( FMField *out,
   dest_point->nAlloc = -1;
   src->nAlloc = -1;
   bc_mtx->nAlloc = -1;
+  bc_mtx_i->nAlloc = -1;
   bc_rhs->nAlloc = -1;
 
   n_max = 0;
@@ -985,6 +986,10 @@ int32 evaluate_at( FMField *out,
 
     nEl = offsets[ic+1] - offsets[ic];
     /* output("AA %d %d nEl: %d\n", ip, ic, nEl); */
+    if (nEl == 0) {
+      status[ip] = 3;
+      continue;
+    }
     
     for (ie = 0; ie < nEl; ie++) {
       ig  = iconn[0];
@@ -1026,10 +1031,12 @@ int32 evaluate_at( FMField *out,
 				 conn + nEPs[ig] * iel );
 
       /* fmf_print( e_coors, stdout, 0 ); */
+      /* fmf_print( dest_point, stdout, 0 ); */
 
       if (n_v == (dim + 1)) {
 	// Barycentric coordinates.
 	fmf_pretend( bc_mtx, 1, 1, n_v, n_v, buf16 );
+	fmf_pretend( bc_mtx_i, 1, 1, n_v, n_v, buf16_2 );
 	fmf_pretend( bc_rhs, 1, 1, n_v, 1, buf4 );
 	for (id = 0; id < dim; id++) {
 	  for (ii = 0; ii < n_v; ii++) {
@@ -1043,13 +1050,14 @@ int32 evaluate_at( FMField *out,
 	bc_rhs->val[dim] = 1.0;
 
 	if (dim == 3) {
-	  geme_invert4x4( bc_mtx, bc_mtx );
+	  geme_invert4x4( bc_mtx_i, bc_mtx );
 	} else {
-	  geme_invert3x3( bc_mtx, bc_mtx );
+	  geme_invert3x3( bc_mtx_i, bc_mtx );
 	}
 
 	fmf_pretend( bc, 1, 1, n_v, 1, bc_max->val );
-	fmf_mulAB_nn( bc, bc_mtx, bc_rhs );
+	fmf_mulAB_nn( bc, bc_mtx_i, bc_rhs );
+	/* fmf_print( bc, stdout, 0 ); */
 
 	fmf_mulATB_nn( xi, bc, ref_coors );
 	
@@ -1109,15 +1117,26 @@ int32 evaluate_at( FMField *out,
       /* fmf_print( bf, stdout, 0 ); */
       
 
-      // dist == 0 for vmin <= xi <= vmax.
-      dist = 0.0;
-      for (id = 0; id < dim; id++) {
-	aux = Min( Max( xi->val[id] - vmax, 0.0 ), 100.0 );
-	dist += aux * aux;
-	aux = Min( Max( vmin - xi->val[id], 0.0 ), 100.0 );
-	dist += aux * aux;
-      }
+      if (n_v == (dim + 1)) {
+	// dist == 0 for 0 <= bc <= 1.
+	dist = 0.0;
+	for (ii = 0; ii < n_v; ii++) {
+	  aux = Min( Max( bc->val[ii] - 1.0, 0.0 ), 100.0 );
+	  dist += aux * aux;
+	  aux = Min( Max( 0.0 - bc->val[ii], 0.0 ), 100.0 );
+	  dist += aux * aux;
+	}
 
+      } else {
+	// dist == 0 for vmin <= xi <= vmax.
+	dist = 0.0;
+	for (id = 0; id < dim; id++) {
+	  aux = Min( Max( xi->val[id] - vmax, 0.0 ), 100.0 );
+	  dist += aux * aux;
+	  aux = Min( Max( vmin - xi->val[id], 0.0 ), 100.0 );
+	  dist += aux * aux;
+	}
+      }
       /* output("CCC %d, %d, %f\n", ie, ii, dist ); */
 
       if (dist < qp_eps) {
