@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sfepy.base.base import *
 
 ##
@@ -120,6 +121,131 @@ def bulk_modulus_youngpoisson( young, poisson, plane = 'strain' ):
 
     return bulk_modulus_lame( lam, mu )
 
+class ElasticConstants(Struct):
+    r"""
+    Conversion formulas for various groups of elastic constants. The elastic
+    constants supported are:
+
+      - :math:`E` : Young's modulus
+      - :math:`\nu` : Poisson's ratio
+      - :math:`K` : bulk modulus
+      - :math:`\lambda` : Lamé's first parameter
+      - :math:`\mu, G` : shear modulus, Lamé's second parameter
+      - :math:`M` : P-wave modulus, longitudinal wave modulus
+
+    The elastic constants are referred to by the following keyword arguments:
+    young, poisson, bulk, lam, mu, p_wave.
+
+    Exactly two of them must be provided to the __init__() method.
+    """
+    def __init__(self, young=None, poisson=None, bulk=None, lam=None,
+                 mu=None, p_wave=None):
+        """
+        Set exactly two of the elastic constants, and compute the remaining.
+        """
+        self.relations = self._construct_relations()
+
+        ## print sorted(self.relations.keys())
+        ## print len(self.relations)
+
+        self.init(young=young, poisson=poisson, bulk=bulk, lam=lam,
+                  mu=mu, p_wave=p_wave)
+
+    def _construct_relations(self):
+        import sympy as sm
+
+        relations = {}
+
+        def _expand_keys(sols):
+            for key, val in sols.iteritems():
+                val = val[-1]
+                skey = tuple(sorted([ii.name for ii in val.atoms()
+                                     if ii.is_Symbol])) + (key.name,)
+                if skey in relations:
+                    print '!', skey
+                relations[skey] = val
+
+        self.names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
+        bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names, real=True)
+
+        _expand_keys(sm.solve(bulk - (lam + 2 * mu / 3)))
+        _expand_keys(sm.solve(young - (mu * (3 * lam + 2 * mu) / (lam + mu))))
+        _expand_keys(sm.solve(poisson - (lam / (2 * (lam + mu)))))
+        _expand_keys(sm.solve(p_wave - (lam + 2 * mu)))
+
+        _expand_keys(sm.solve(bulk - (young / (3 * (1 - 2 * poisson)))))
+        _expand_keys(sm.solve(p_wave - ((young * (1 - poisson))
+                                        / ((1 + poisson) * (1 - 2 * poisson)))))
+        _expand_keys(sm.solve(lam - (young * poisson
+                                     / ((1 + poisson) * (1 - 2 * poisson)))))
+        ## _expand_keys(sm.solve(poisson - (2 * lam /
+        ##                                  (young +
+        ##                                   lam + (young**2 + 9 *
+        ##                                          lam**2
+        ##                                          + 2 * young * lam)**(1/2)))))
+        _expand_keys(sm.solve(mu - (young / (2 * (1 + poisson)))))
+
+        _expand_keys(sm.solve(bulk - (young * mu / (3 * (3 * mu - young)))))
+        _expand_keys(sm.solve(p_wave - (mu * (4 * mu - young)
+                                        / (3 * mu - young))))
+
+        _expand_keys(sm.solve(young - (9 * bulk * (bulk - lam)
+                                       / (3 * bulk - lam))))
+        _expand_keys(sm.solve(poisson - (lam / (3 * bulk - lam))))
+        _expand_keys(sm.solve(p_wave - (3 * bulk - 2 * lam)))
+
+        _expand_keys(sm.solve(poisson - ((3 * bulk - 2 * mu)
+                                         / (2 * (3 * bulk + mu)))))
+        _expand_keys(sm.solve(p_wave - (bulk + 4 * mu / 3)))
+
+        _expand_keys(sm.solve(p_wave - (lam * (1 - poisson) / poisson)))
+
+        _expand_keys(sm.solve(p_wave - (2 * mu * (1 - poisson)
+                                        / (1 - 2 * poisson))))
+
+        _expand_keys(sm.solve(p_wave - (3 * bulk * (1 - poisson)
+                                        / (1 + poisson))))
+
+        _expand_keys(sm.solve(p_wave - (3 * bulk * (3 * bulk + young)
+                                        / (9 * bulk - young))))
+
+        _expand_keys(sm.solve(young - ((lam*p_wave + p_wave**2 - 2*lam**2)
+                                       / (lam + p_wave))))
+
+        return relations
+
+    def init(self, young=None, poisson=None, bulk=None, lam=None,
+             mu=None, p_wave=None):
+        """
+        Set exactly two of the elastic constants, and compute the
+        remaining. (Re)-initializes the existing instance of ElasticConstants.
+        """
+        Struct.__init__(self, young=young, poisson=poisson, bulk=bulk, lam=lam,
+                        mu=mu, p_wave=p_wave)
+
+        values = {}
+        for key, val in self.__dict__.iteritems():
+            if (key in self.names) and (val is not None):
+                values[key] = val
+
+        known = values.keys()
+        if len(known) != 2:
+            raise ValueError('exactly two elastic constants must be provided!')
+
+        unknown = set(self.names).difference(known)
+
+        for name in unknown:
+            key = tuple(sorted(known)) + (name,)
+            val = float(self.relations[key].n(subs=values))
+            setattr(self, name, val)
+
+    def get(self, names):
+        """
+        Get the named elastic constants.
+        """
+        out = [getattr(self, name) for name in names]
+        return out
+    
 class TransformToPlane( Struct ):
     """Transformmations of constitutive law coefficients of 3D problems to 2D."""
 
