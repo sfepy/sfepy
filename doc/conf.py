@@ -217,9 +217,11 @@ latex_preamble = r"""
 \def\tdiff#1#2{\frac{{\rm d} {#1}}{{\rm d} {#2}}}
 \def\difd#1{\ {\rm d}#1}
 \newcommand{\dvg}{\mathop{\rm div}}
+\newcommand{\tr}{\mathop{\rm tr}}
 \newcommand{\ul}[1]{\underline{#1}}
 \newcommand{\uld}[1]{\dot{\underline{#1}}}
 \newcommand{\ull}[1]{\underline{\underline{#1}}}
+\newcommand{\dev}{\mathop{\rm dev}}
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
 \def\Hcal{\mathcal{H}}

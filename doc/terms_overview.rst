@@ -24,6 +24,8 @@ The following notation is used:
      - volume (sub)domain
    * - :math:`\Gamma`
      - surface (sub)domain
+   * - :math:`d`
+     - dimension of space
    * - :math:`t`
      - time
    * - :math:`y`
@@ -69,6 +71,11 @@ The following notation is used:
      - any constant
    * - :math:`\delta_{ij}, \ull{I}`
      - Kronecker delta, identity matrix
+   * - :math:`\tr{\ull{\bullet}}`
+     - trace of a second order tensor (:math:`\sum_{i=1}^d \bullet_{ii}`)
+   * - :math:`\dev{\ull{\bullet}}`
+     - deviator of a second order tensor
+       (:math:`\ull{\bullet} - \frac{1}{d}\tr{\ull{\bullet}}`)
 
 The suffix ":math:`_0`" denotes a quantity related to a previous time step.
 
