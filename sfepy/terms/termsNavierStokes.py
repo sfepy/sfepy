@@ -159,7 +159,14 @@ class StokesGrad( CouplingVectorScalar ):
 
         vec = self.get_vector( state )
         bf = apc.get_base( 'v', 0, self.integral_name )
-        return (1.0, vec, 0, bf, vgr, apc.econn), shape, mode
+
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+
+        else:
+            coef = nm.ones((1, self.data_shape_r[1], 1, 1), dtype=nm.float64)
+
+        return (coef, vec, 0, bf, vgr, apc.econn), shape, mode
 
 class StokesDiv( CouplingVectorScalar ):
 
@@ -175,7 +182,14 @@ class StokesDiv( CouplingVectorScalar ):
 
         vec = self.get_vector( state )
         bf = apr.get_base( 'v', 0, self.integral_name )
-        return (vec, 0, bf, vgc, apc.econn), shape, mode
+
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+
+        else:
+            coef = nm.ones((1, self.data_shape_r[1], 1, 1), dtype=nm.float64)
+
+        return (coef, vec, 0, bf, vgc, apc.econn), shape, mode
 
 class StokesEval( CouplingVectorScalar ):
 
@@ -196,6 +210,10 @@ class StokesEval( CouplingVectorScalar ):
         div = cache( 'div', self.get_current_group(), 0, state = par_v )
 
         out_qp = vec[chunk] * div[chunk]
+
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+            out_qp *= coef[chunk]
 
         status = vgv.integrate_chunk( out, out_qp, chunk )
         
@@ -235,6 +253,26 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
                                'div_vector' : [['parameter_v']]}
+
+class WeightedStokesTerm(StokesTerm):
+    r"""
+    :Description:
+    Stokes problem coupling term weighted by a scalar function. Corresponds to
+    weighted weak forms of gradient and divergence terms. Can be evaluated.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
+    """
+    name = 'dw_stokes_w'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_v', 'parameter_s'))
+    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'virtual'), (Volume, 'state')],
+                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
+    modes = ('grad', 'div', 'eval')
 
 class GradQTerm( Term ):
     r"""
