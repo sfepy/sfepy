@@ -158,7 +158,10 @@ class ElasticConstants(Struct):
 
         def _expand_keys(sols):
             for key, val in sols.iteritems():
-                val = val[-1]
+                if len(val) == 2 and (key.name == 'poisson'):
+                    val = val[0]
+                else:
+                    val = val[-1]
                 skey = tuple(sorted([ii.name for ii in val.atoms()
                                      if ii.is_Symbol])) + (key.name,)
                 if skey in relations:
@@ -176,13 +179,16 @@ class ElasticConstants(Struct):
         _expand_keys(sm.solve(bulk - (young / (3 * (1 - 2 * poisson)))))
         _expand_keys(sm.solve(p_wave - ((young * (1 - poisson))
                                         / ((1 + poisson) * (1 - 2 * poisson)))))
+        # Choose the correct root manually.
+        ## relations[('p_wave', 'young', 'poisson')] \
+        ##                 = (young - p_wave + (-10*p_wave*young + young**2 +
+        ##                                      9*p_wave**2)**(0.5))/(4*p_wave)
         _expand_keys(sm.solve(lam - (young * poisson
                                      / ((1 + poisson) * (1 - 2 * poisson)))))
-        ## _expand_keys(sm.solve(poisson - (2 * lam /
-        ##                                  (young +
-        ##                                   lam + (young**2 + 9 *
-        ##                                          lam**2
-        ##                                          + 2 * young * lam)**(1/2)))))
+        # Choose the correct root.
+        ## relations[('lam', 'young', 'poisson')] \
+        ##                   = (lam + young - (2*lam*young + young**2 +
+        ##                                     9*(lam**2))**(0.5))/(-4*lam)
         _expand_keys(sm.solve(mu - (young / (2 * (1 + poisson)))))
 
         _expand_keys(sm.solve(bulk - (young * mu / (3 * (3 * mu - young)))))
