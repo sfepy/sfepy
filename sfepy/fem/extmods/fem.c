@@ -914,7 +914,7 @@ int32 evaluate_at( FMField *out,
   int32 order = 0, n_v = 0, ok, ret = RET_OK;
   int32 *conn, *iconn, *nodes = 0;
   float64 aux, err, dist, d_min, vmin, vmax;
-  float64 buf16[16], buf16_2[9], buf4[4];
+  float64 buf16[16], buf16_2[16], buf4[4];
   FMField bc_mtx[1], bc_mtx_i[1], bc_rhs[1];
   FMField e_coors[1], base1d[1], bc[1], dest_point[1], src[1];
   FMField *ref_coors = 0, *mtx_i = 0;
