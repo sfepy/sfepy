@@ -14,8 +14,10 @@ class Test(TestCommon):
 
         names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
 
-        ec = ElasticConstants(lam=1.0, mu=3.0)
+        ec = ElasticConstants(lam=1.0, mu=1.5)
         vals = ec.get(names)
+
+        self.report('using values:', vals)
 
         for i1 in range(len(names)):
             for i2 in range(i1+1, len(names)):
@@ -35,8 +37,8 @@ class Test(TestCommon):
 
                 self.report(names[i1], names[i2], '->', _ok)
                 if not _ok:
-                    self.report(vals)
-                    self.report(ec_vals)
+                    self.report('correct:', vals)
+                    self.report('    got:', ec_vals)
 
                 ok = ok and _ok
 
