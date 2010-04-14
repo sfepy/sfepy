@@ -211,7 +211,8 @@ int32 d_mass_scalar( FMField *out, FMField *stateP, FMField *stateQ,
   @par Revision history:
   - 09.03.2009, c
 */
-int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
+int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
+			   FMField *state, int32 offset,
 			   FMField *bf, SurfaceGeometry *sg,
 			   int32 *conn, int32 nEl, int32 nEP,
 			   int32 *elList, int32 elList_nRow,
@@ -222,7 +223,7 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
 
   nFP = bf->nCol;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+  /* output( "%d %d %d %d %d\n", offset, nEl, nEP, bf->nLev, elList_nRow ); */
 
   if (isDiff) {
     fmf_createAlloc( &ftf, 1, sg->nQP, nFP, nFP );
@@ -234,7 +235,11 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
       
       FMF_SetCell( out, ii );
       FMF_SetCell( sg->det, iel );
+      if (coef->nCell > 1) {
+	FMF_SetCell( coef, ii );
+      }
 
+      fmf_mulAF( ftf, ftf, coef->val );
       fmf_sumLevelsMulF( out, ftf, sg->det->val );
 
       ERR_CheckGo( ret );
@@ -251,10 +256,14 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *state, int32 offset,
 
       FMF_SetCell( out, ii );
       FMF_SetCell( sg->det, iel );
+      if (coef->nCell > 1) {
+	FMF_SetCell( coef, ii );
+      }
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
       bf_act( fp, bf, st );
       bf_actt( ftfp, bf, fp );
+      fmf_mulAF( ftfp, ftfp, coef->val );
       fmf_sumLevelsMulF( out, ftfp, sg->det->val );
 
       ERR_CheckGo( ret );

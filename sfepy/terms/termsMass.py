@@ -142,15 +142,35 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base( sd.face_type, 0, self.integral_name )
 
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+
+        else:
+            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+
         if state.is_real():
-            fargs = vec, 0, bf, sg, sd.econn
+            fargs = coef, vec, 0, bf, sg, sd.econn
+
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, bf, sg, sd.econn),
-                     (ac( vec.imag ), 0, bf, sg, sd.econn)]
+            fargs = [(coef, ac(vec.real), 0, bf, sg, sd.econn),
+                     (coef, ac(vec.imag), 0, bf, sg, sd.econn)]
             mode += 1j
 
         return fargs, shape, mode
+
+class WeightedMassScalarSurfaceTerm(MassScalarSurfaceTerm):
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual on a surface weighted by a scalar function.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} c q p
+    """
+    name = 'dw_surface_mass_scalar_w'
+    arg_types = ('material', 'virtual', 'state')
+    geometry = [(Surface, 'virtual')]
 
 class BCNewtonTerm(MassScalarSurfaceTerm):
     r"""
