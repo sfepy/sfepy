@@ -137,6 +137,30 @@ class ElasticConstants(Struct):
     young, poisson, bulk, lam, mu, p_wave.
 
     Exactly two of them must be provided to the __init__() method.
+
+    Examples
+    --------
+
+     - basic usage::
+
+        >>> from sfepy.mechanics.matcoefs import ElasticConstants             
+        >>> ec = ElasticConstants(lam=1.0, mu=1.5)
+        >>> ec.young
+        3.6000000000000001
+        >>> ec.poisson
+        0.20000000000000001
+        >>> ec.bulk
+        2.0
+        >>> ec.p_wave
+        4.0
+        >>> ec.get(['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave'])
+        [2.0, 1.0, 1.5, 3.6000000000000001, 0.20000000000000001, 4.0]
+
+     - reinitialize existing instance::
+
+        >>> ec.init(p_wave=4.0, bulk=2.0)
+        >>> ec.get(['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave'])
+        [2.0, 1.0, 1.5, 3.6000000000000001, 0.20000000000000001, 4.0]
     """
     def __init__(self, young=None, poisson=None, bulk=None, lam=None,
                  mu=None, p_wave=None):
