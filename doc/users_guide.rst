@@ -687,11 +687,11 @@ Examples
 
     equations = {
         'balance' :
-        """+ dw_div_grad.i2.Omega( fluid.viscosity, v, w )
-           + dw_convect.i2.Omega( v, w )
-           - dw_grad.i1.Omega( v, r ) = 0""",
+        """+ dw_div_grad.i2.Omega( fluid.viscosity, v, u )
+           + dw_convect.i2.Omega( v, u )
+           - dw_stokes.i1.Omega( v, p ) = 0""",
         'incompressibility' :
-        """dw_div.i1.Omega( q, w ) = 0""",
+        """dw_stokes.i1.Omega( u, q ) = 0""",
     }
 
 Configuring Solvers
