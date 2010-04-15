@@ -217,6 +217,76 @@ class LinearElasticETHTerm(VectorVector, Term):
 
         return fargs, shape, mode
 
+class LinearPrestressTerm(VectorVector, Term):
+    r"""
+    :Description:
+    Linear prestress term, with the prestress :math:`\sigma_{ij}` given in
+    the usual vector form exploiting symmetry: in 3D it has 6 components
+    with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
+    3 components with the indices ordered as :math:`[11, 22, 12]`. Can be
+    evaluated.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \sigma_{ij} e_{ij}(\ul{v})
+    """
+    name = 'dw_lin_prestress'
+    arg_types = (('material', 'virtual'),
+                 ('material', 'parameter'))
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter')])
+    modes = ('weak', 'eval')
+
+    def check_mat_shape(self, mat):
+        dim = self.data_shape[2]
+        sym = (dim + 1) * dim / 2
+        assert_(mat.shape == (self.data_shape[0], self.data_shape[1], sym, 1))
+
+    def get_fargs_weak(self, diff_var=None, chunk_size=None, **kwargs):
+        mat, virtual = self.get_args(**kwargs)
+        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
+
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        if diff_var is not None:
+            raise StopIteration
+
+        self.check_mat_shape(mat)
+
+        return (mat, vg), shape, mode
+
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par = self.get_args(**kwargs)
+        ap, vg = par.get_approximation(self.get_current_group(), 'Volume')
+
+        self.set_data_shape(ap)
+
+        self.check_mat_shape(mat)
+
+        cache = self.get_cache('cauchy_strain', 0)
+        strain = cache('strain', self.get_current_group(), 0,
+                       state=par, get_vector=self.get_vector)
+
+        return (strain, mat, vg), (chunk_size, 1, 1, 1), 0
+
+    def d_lin_prestress(self, out, strain, mat, vg, chunk):
+        aux = (mat[chunk] * strain[chunk]).sum(axis=2)
+        aux.shape = aux.shape + (1,)
+
+        status = vg.integrate_chunk(out, aux, chunk)
+        return status
+
+    def set_arg_types(self):
+        if self.mode == 'weak':
+            self.function = terms.dw_lin_prestress
+            use_method_with_name(self, self.get_fargs_weak, 'get_fargs')
+
+        else:
+            self.function = self.d_lin_prestress
+            use_method_with_name(self, self.get_fargs_eval, 'get_fargs')
+            self.use_caches = {'cauchy_strain' : [['parameter']]}
+
 class CauchyStrainTerm( Term ):
     r"""
     :Description:

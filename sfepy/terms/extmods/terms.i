@@ -256,6 +256,9 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg,
 		     int32 *elList, int32 elList_nRow );
 
+int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
+			int32 *elList, int32 elList_nRow, int32 isDiff );
+
 int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			VolumeGeometry *vg,
 			int32 *conn, int32 nEl, int32 nEP,

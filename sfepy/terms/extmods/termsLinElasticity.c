@@ -421,6 +421,39 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dw_lin_prestress"
+int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
+			int32 *elList, int32 elList_nRow, int32 isDiff )
+{
+  int32 ii, iel, dim, nQP, nEP, ret = RET_OK;
+  FMField *res = 0;
+
+  nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
+
+    for (ii = 0; ii < elList_nRow; ii++) {
+      iel = elList[ii];
+
+      FMF_SetCell( out, ii );
+      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( stress, iel );
+
+      form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
+      fmf_sumLevelsMulF( out, res, vg->det->val );
+      ERR_CheckGo( ret );
+    }
+
+ end_label:
+    fmf_freeDestroy( &res ); 
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "de_cauchy_strain"
 /*!
   @par Revision history:
