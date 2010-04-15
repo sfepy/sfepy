@@ -1509,7 +1509,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      int32 *elList, int32 elList_nRow,
 			      int32 mode )
 {
-  int32 ii, iel, iqp, idr, idc, iep, ifa, nEP, nQP, dim;
+  int32 ii, iel, iqp, idr, idc, iep, ifa, nEP, nQP, dim, ret = RET_OK;
   float64 *pn2, *pbfBGS, *paux;
   FMField *n2 = 0, *stn2 = 0, *trq = 0;
   FMField *trdq = 0, *aux = 0, *staux = 0, *bfBGS = 0;
@@ -1576,8 +1576,11 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
       bf_actt( trdq, bf, staux );
       fmf_sumLevelsMulF( out, trdq, sg->det->val );
     }
+
+    ERR_CheckGo( ret );
   }  
 
+ end_label:
   fmf_freeDestroy( &n2 );
   if (mode == 0) {
     fmf_freeDestroy( &stn2 );
