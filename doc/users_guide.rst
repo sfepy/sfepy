@@ -754,15 +754,30 @@ define material properties, boundary conditions, parametric sweeps, and other
 items in an arbitrary manner. Functions are normal Python functions declared in
 the Problem Definition file, so they can invoke the full power of Python. In
 order for *SfePy* to make use of the functions, they must be declared using the
-function keyword. See below for examples::
+function keyword. See the examples below.
 
-    def get_pars(ts, coors, mode=None, region=None, ig=None, extra_arg=None):
-        if mode == 'special':
-            if extra_arg == 'hello!':
-                ic = 0
-            else:
-                ic = 1
-            return {('x_%s' % ic) : coors[:,ic]}
+Defining material parameters
+""""""""""""""""""""""""""""
+
+The functions for defining material parameters can work in two modes,
+distinguished by the `mode` argument. The two modes are 'qp' and 'special'. The
+first mode is used for usual functions that define parameters in quadrature
+points (hence 'qp'), while the second one can be used for special values like
+various flags.
+
+The shape and type of data returned in the 'special' mode can be arbitrary
+(depending on the term used). On the other hand, in the 'qp' mode all the data
+have to be numpy float64 arrays with shape `(n_coor, n_row, n_col)`, where
+`n_coor` is the number of quadrature points given by the `coors` argument,
+`n_coor = coors.shape[0]`, and `(n_row, n_col)` is the shape of a material
+parameter in each quadrature point. For example, for scalar parameters, the
+shape is `(n_coor, 1, 1)`.
+
+Examples
+""""""""
+
+ - functions for defining boundary conditions (`get_p_edge()`) and regions
+   (`get_circle()`)::
 
     def get_p_edge(ts, coors, bc=None):
         if bc.name == 'p_left':
@@ -775,18 +790,69 @@ function keyword. See below for examples::
         return nm.where(r < 0.2)[0]
 
     functions = {
-        'get_pars1' : (lambda ts, coors, mode=None, region=None, ig=None:
-                       get_pars(ts, coors, mode, region, ig, extra_arg='hello!'),),
         'get_p_edge' : (get_p_edge,),
         'get_circle' : (get_circle,),
+    }
+
+ - function for defining usual material parameters::
+
+    def get_pars(ts, coors, mode=None, region=None, ig=None):
+        if mode == 'qp':
+            val = coor[:,0]
+	    val.shape = (coor.shape[0], 1, 1)
+
+	    return {'x_coor' : val}
+
+    functions = {
+        'get_pars' : (get_pars,),
+    }
+
+ - function for defining special material parameters, with an extra argument::
+
+    def get_pars_special(ts, coors, mode=None, region=None, ig=None,
+                         extra_arg=None):
+        if mode == 'special':
+            if extra_arg == 'hello!':
+                ic = 0
+            else:
+                ic = 1
+            return {('x_%s' % ic) : coors[:,ic]}
+
+    functions = {
+        'get_pars1' : (lambda ts, coors, mode=None, region=None, ig=None:
+                       get_pars_special(ts, coors, mode, region, ig,
+                                        extra_arg='hello!'),),
     }
 
     # Just another way of adding a function, besides 'functions' keyword.
     function_1 = {
         'name' : 'get_pars2',
         'function' : lambda ts, coors,mode=None,  region=None, ig=None:
-            get_pars(ts, coors, mode, region, ig, extra_arg='hi!'),
+            get_pars_special(ts, coors, mode, region, ig, extra_arg='hi!'),
     }
+
+ - function combining both kinds of material parameters::
+
+    def get_pars_both(ts, coors, mode=None, region=None, ig=None):
+        out = {}
+
+        if mode == 'special':
+
+	    out['flag'] = coors.max() > 1.0
+
+        elif mode == 'qp':
+	    
+            val = coor[:,1]
+	    val.shape = (coor.shape[0], 1, 1)
+
+	    out['y_coor'] = val
+
+	return out
+
+    functions = {
+        'get_pars_both' : (get_pars_both,),
+    }
+
 
 Miscellaneous
 ^^^^^^^^^^^^^
