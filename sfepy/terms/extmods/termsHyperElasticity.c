@@ -1594,3 +1594,56 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 
   return( RET_OK );
 }
+
+#undef __FUNC__
+#define __FUNC__ "dq_def_grad"
+int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
+		   int32 *conn, int32 nEl, int32 nEP,
+		   int32 *elList, int32 elList_nRow, int32 mode )
+{
+  int32 ii, iel, id, iqp, nQP, dim, ret = RET_OK;
+  FMField *st = 0, *mtxF = 0;
+
+  state->val = FMF_PtrFirst( state );
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &st, 1, 1, nEP, dim );
+  if (mode == 1) {
+    fmf_createAlloc( &mtxF, 1, nQP, dim, dim );
+  }
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+
+    // Deformation gradient.
+    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+    if (mode == 1) {
+      fmf_mulATBT_1n( mtxF, st, vg->bfGM );
+     
+      for (iqp = 0; iqp < nQP; iqp++) {
+	for (id = 0; id < dim; id++) {
+	  mtxF->val[dim*(dim*iqp+id)+id] += 1.0;
+	}
+      }
+
+      // Determinant of deformation gradient.
+      geme_det3x3( out->val, mtxF );
+
+    } else {
+      fmf_mulATBT_1n( out, st, vg->bfGM );
+    }
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st ); 
+  fmf_freeDestroy( &mtxF ); 
+
+  return( ret );
+}

@@ -112,3 +112,46 @@ class HyperElasticBase( Term ):
                 out1 = out / vg.variable( 2 )[chunk]
 
             yield out1, chunk, status
+
+class DeformationGradientTerm(Term):
+    r"""
+    :Description:
+    Deformation gradient :math:`F` in quadrature points for
+    `call_mode='dq_def_grad'` (default) or the jacobian :math:`J` if
+    `call_mode='dq_jacobian'`.
+
+    :Definition:
+    .. math::
+        \ull{F} = \pdiff{\ul{x}}{\ul{X}}|_{qp}
+        = \ull{I} + \pdiff{\ul{u}}{\ul{X}}|_{qp} \;, \\
+        \ul{x} = \ul{X} + \ul{u} \;, J = \det{(\ull{F})}
+    """
+    name = 'dq_def_grad'
+    arg_types = ('state',)
+    geometry = [(Volume, 'state')]
+
+    function = staticmethod(terms.dq_def_grad)
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        state, = self.get_args(**kwargs)
+        call_mode = kwargs.get('call_mode', 'dq_def_grad')
+
+        ap, vg = state.get_approximation(self.get_current_group(), 'Volume')
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+
+        if diff_var is None:
+            if call_mode == 'dq_def_grad':
+                shape = (chunk_size, n_qp, dim, dim)
+                mode = 0
+
+            elif call_mode == 'dq_jacobian':
+                shape = (chunk_size, n_qp, 1, 1)
+                mode = 1
+
+        else:
+            raise StopIteration
+
+        vec = state()
+        for out, chunk in self.char_fun(chunk_size, shape):
+            status = self.function(out, vec, vg, ap.econn, chunk, mode)
+            yield out, chunk, status
