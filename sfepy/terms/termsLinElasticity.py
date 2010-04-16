@@ -352,3 +352,75 @@ class CauchyStressTerm( CauchyStrainTerm ):
                         state = state, get_vector = self.get_vector )
         return strain, mat, vg
 
+class CauchyStrainQTerm(Term):
+    r"""
+    :Description:
+    Cauchy strain tensor in quadrature points, given in the usual vector form
+    exploiting symmetry: in 3D it has 6 components with the indices ordered as
+    :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
+    indices ordered as :math:`[11, 22, 12]`. The last three (non-diagonal)
+    components are doubled so that it is energetically conjugate to the Cauchy
+    stress tensor with the same storage.
+    
+    :Definition:
+    .. math::
+        \ull{e}(\ul{w})|_{qp}
+    """
+    name = 'dq_cauchy_strain'
+    arg_types = ('parameter',)
+    geometry = [(Volume, 'parameter')]
+    use_caches = {'cauchy_strain' : [['parameter']]}
+
+    def get_strain(self, diff_var=None, chunk_size=None, **kwargs):
+        if diff_var is not None:
+            raise StopIteration
+
+        par, = self.get_args(['parameter'], **kwargs)
+
+        cache = self.get_cache('cauchy_strain', 0)
+        strain = cache('strain', self.get_current_group(), 0,
+                       state=par, get_vector=self.get_vector)
+
+        shape = (chunk_size,) + strain.shape[1:]
+
+        return strain, shape
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        strain, shape = self.get_strain(diff_var, chunk_size, **kwargs)
+        
+        for out, chunk in self.char_fun(chunk_size, shape):
+            yield strain[chunk], chunk, 0
+
+class CauchyStressQTerm(CauchyStrainQTerm):
+    r"""
+    :Description:
+    Cauchy stress tensor in quadrature points, given in the usual vector form
+    exploiting symmetry: in 3D it has 6 components with the indices ordered as
+    :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
+    indices ordered as :math:`[11, 22, 12]`.
+    
+    :Definition:
+    .. math::
+        D_{ijkl} e_{kl}(\ul{w})|_{qp}
+    """
+    name = 'dq_cauchy_stress'
+    arg_types = ('material', 'parameter')
+    geometry = [(Volume, 'parameter')]
+    use_caches = {'cauchy_strain' : [['parameter']]}
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        strain, shape = self.get_strain(diff_var, chunk_size, **kwargs)
+
+        mat, = self.get_args(['material'], **kwargs)
+
+        for out, chunk in self.char_fun(chunk_size, shape):
+            mc = mat[chunk]
+            sc = strain[chunk]
+
+            mc.shape = (mc.shape[0] * mc.shape[1],) + mc.shape[2:]
+            sc.shape = (sc.shape[0] * sc.shape[1],) + sc.shape[2:]
+
+            stress = nm.sum(mc * sc, axis=1)
+            stress.shape = strain[chunk].shape
+
+            yield stress, chunk, 0
