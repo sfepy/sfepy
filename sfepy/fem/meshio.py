@@ -15,7 +15,8 @@ supported_formats = {
     '.inp'  : ('abaqus', 'avs_ucd'),
     '.hmascii'  : 'hmascii',
     '.mesh3d'   : 'mesh3d',
-    '.bdf'  : 'nastran'
+    '.bdf'  : 'nastran',
+    '.neu'  : 'gambit',
 }
 
 ##
@@ -1694,6 +1695,138 @@ class BDFMeshIO( MeshIO ):
         nod = nm.array( nod, nm.float64 )
         if dim == 2:
             nod = nod[:,:2].copy()
+        conns_in = nm.array( conns_in, nm.int32 )
+        
+        conns_in, mat_ids = sort_by_mat_id( conns_in )
+        conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
+        mesh._set_data( nod, None, conns, mat_ids, descs )
+
+        return mesh
+
+    def write( self, filename, mesh, out = None, **kwargs ):
+        raise NotImplementedError
+
+
+class NEUMeshIO( MeshIO ):
+    format = 'gambit'
+
+    def read_dimension( self, ret_fd = False ):
+
+        fd = open( self.filename, 'r' )
+
+        row = fd.readline().split()
+        while 1:
+            if not row: break
+            if len( row ) == 0: continue
+
+            if (row[0] == 'NUMNP'):
+                row = fd.readline().split()
+                n_nod, n_el, dim = row[0], row[1], int( row[4] )
+                break;
+                
+        if ret_fd:
+            return dim, fd
+        else:
+            fd.close()
+            return dim
+
+    def read( self, mesh, **kwargs ):
+
+        el = {'3_8' : [], '3_4' : [], '2_4' : [], '2_3' : []}
+        nod = []
+
+        conns_in = []
+        descs = []
+
+        group_ids = []
+        group_n_els = []
+        groups = []
+
+        fd = open( self.filename, 'r' )
+
+        row = fd.readline().split()
+        while 1:
+            if not row: break
+            if len( row ) == 0: continue
+
+            if (row[0] == 'NUMNP'):
+                row = fd.readline().split()
+                n_nod, n_el, dim = row[0], row[1], int( row[4] )
+
+            elif (row[0] == 'NODAL'):
+                row = fd.readline().split()
+                while not( row[0] == 'ENDOFSECTION' ):
+                    nod.append( row[1:] )
+                    row = fd.readline().split()
+
+            elif (row[0] == 'ELEMENTS/CELLS'):
+                if dim == 3:
+                    row = fd.readline().split()
+                    while not( row[0] == 'ENDOFSECTION' ):
+                        elid = [row[0]]
+                        if (int( row[2] ) == 4):
+                            el['3_4'].append( row[3:]+elid )
+#                        if (int( row[2] ) == 5):
+#                            el['pyram5'].append( row )
+#                        if (int( row[2] ) == 6):
+#                            el['wedge6'].append( row )
+                        elif (int( row[2] ) == 8):
+                            rr = row[3:]
+                            if (len( rr ) < 8):
+                                rr.extend( fd.readline().split() )
+                            el['3_8'].append( rr+elid )
+                        row = fd.readline().split()
+                else:
+                    row = fd.readline().split()
+                    while not( row[0] == 'ENDOFSECTION' ):
+                        elid = [row[0]]
+                        if (int( row[2] ) == 3):
+                            el['2_3'].append( row[3:]+elid )
+                        if (int( row[2] ) == 4):
+                            el['2_4'].append( row[3:]+elid )
+                        row = fd.readline().split()
+
+            elif (row[0] == 'GROUP:'):
+                group_ids.append( row[1] )
+                g_n_el = int( row[3] )
+                group_n_els.append( g_n_el )
+                name = fd.readline().strip()
+        
+                els = []
+                row = fd.readline().split()
+                row = fd.readline().split()
+                while not( row[0] == 'ENDOFSECTION' ):
+                    els.extend( row )
+                    row = fd.readline().split()
+                if g_n_el != len( els ):
+                    print 'wrong number of group elements! (%d == %d)'\
+                        % (n_el, len( els ))
+                    raise ValueError
+                groups.append( els )
+            else:
+                row = fd.readline().split()                
+        
+        fd.close()
+        
+        if int( n_el ) != sum( group_n_els ):
+            print 'wrong total number of group elements! (%d == %d)'\
+                % (int( n_el ), len( group_n_els ))
+
+        mat_ids = [None] * int( n_el )
+        for ii, els in enumerate( groups ):
+            for iel in els:
+                mat_ids[int( iel ) - 1] = group_ids[ii]
+
+        for elem in el.keys():
+            if len(el[elem]) > 0:
+                for iel in el[elem]:
+                    for ii in range( len( iel ) ):
+                        iel[ii] = int( iel[ii] ) - 1
+                    iel[-1] = mat_ids[iel[-1]]
+                conns_in.append( el[elem] )
+                descs.append( elem )
+
+        nod = nm.array( nod, nm.float64 )
         conns_in = nm.array( conns_in, nm.int32 )
         
         conns_in, mat_ids = sort_by_mat_id( conns_in )
