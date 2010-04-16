@@ -294,6 +294,8 @@ The ``-l`` switch lists information contained in a results file, e.g.::
         cell scalars
           "mat_id" (1348,) range: 6 6 l2_norm_range: 6.0 6.0
 
+.. _sec-problem-description-file:
+
 Problem description file
 ------------------------
 
@@ -798,8 +800,8 @@ Examples
 
     def get_pars(ts, coors, mode=None, region=None, ig=None):
         if mode == 'qp':
-            val = coor[:,0]
-	    val.shape = (coor.shape[0], 1, 1)
+            val = coors[:,0]
+	    val.shape = (coors.shape[0], 1, 1)
 
 	    return {'x_coor' : val}
 
@@ -842,8 +844,8 @@ Examples
 
         elif mode == 'qp':
 	    
-            val = coor[:,1]
-	    val.shape = (coor.shape[0], 1, 1)
+            val = coors[:,1]
+	    val.shape = (coors.shape[0], 1, 1)
 
 	    out['y_coor'] = val
 
