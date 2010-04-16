@@ -139,6 +139,42 @@ class BiotStressTerm(CauchyStrainTerm):
 
         return state_qp, mat, vg
 
+class BiotStressQTerm(Term):
+    r"""
+    :Description:
+    Biot stress tensor in quadrature points, given in the usual vector form
+    exploiting symmetry: in 3D it has 6 components with the indices ordered as
+    :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
+    indices ordered as :math:`[11, 22, 12]`.
+    
+    :Definition:
+    .. math::
+        \alpha_{ij} \bar{p}|_{qp}
+    """
+    name = 'dq_biot_stress'
+    arg_types = ('material', 'parameter')
+    geometry = [(Volume, 'parameter')]
+    use_caches = {'state_in_volume_qp' : [['parameter']]}
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        if diff_var is not None:
+            raise StopIteration
+
+        mat, par = self.get_args(**kwargs)
+        ap, vg = par.get_approximation(self.get_current_group(), 'Volume')
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+
+        shape = (chunk_size, n_qp, dim * (dim + 1) / 2, 1)
+
+        cache = self.get_cache('state_in_volume_qp', 0)
+        state_qp = cache('state', self.get_current_group(), 0,
+                         state=par, get_vector=self.get_vector)
+
+        for out, chunk in self.char_fun(chunk_size, shape):
+            stress = mat[chunk] * state_qp[chunk]
+
+            yield stress, chunk, 0
+
 
 class BiotGradTH( CouplingVectorScalarTH ):
 
