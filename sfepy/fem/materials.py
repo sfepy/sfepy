@@ -103,12 +103,12 @@ class Material( Struct ):
         self.igs = region.igs
         self.region = region 
 
-    def time_update(self, ts, domain, equations, variables):
-        """All material parameters are evaluated in all physical QPs."""
-        self.data = None
-        if self.datas and (self.kind == 'stationary'): return
 
-        self.datas = {}
+    def iter_qps(self, equations, variables, only_new=True):
+        """
+        Iterate groups of quadrature points, where the material data should be
+        evaluated.
+        """
         # Quadrature point function values.
         for equation in equations:
             for term in equation.terms:
@@ -116,7 +116,7 @@ class Material( Struct ):
                 if self.name not in names: continue
 
                 key = (term.region.name, term.integral.name)
-                if key in self.datas: continue
+                if only_new and (key in self.datas): continue
 
                 # Any term has at least one variable, all variables used
                 # in a term share the same integral.
@@ -126,29 +126,61 @@ class Material( Struct ):
                 aps = var.field.aps
 
                 qps = aps.get_physical_qps(term.region, term.integral)
-                for ig in self.igs:
-                    if ig not in term.igs(): continue
 
-                    datas = self.datas.setdefault(key, {})
-                    if (qps.n_qp[ig] == 0):
-                        datas[ig] = None
-                        continue
-                    
-                    data = self.function(ts, qps.values[ig], mode='qp',
-                                         region=self.region, ig=ig,
-                                         **self.extra_args)
-                    # Restore shape to (n_el, n_qp, ...) until the C
-                    # core is rewritten to work with a bunch of physical
-                    # point values only.
-                    if qps.is_uniform:
-                        if data is not None:
-                            n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
-                            for val in data.itervalues():
-                                val.shape = (val.shape[0] / n_qp, n_qp,
-                                             val.shape[1], val.shape[2])
-                    else:
-                        raise NotImplementedError
-                    datas[ig] = data
+                yield key, term.igs(), qps
+
+    def set_data(self, key, ig, qps, data):
+        """
+        Set the material data in quadrature points.
+
+        Parameters
+        ----------
+        key : tuple
+            The (region_name, integral_name) data key.
+        ig : int
+            The element group id.
+        qps : Struct
+            Information about the quadrature points.
+        data : dict.
+            The material data. Changes the shape of data!
+        """
+        datas = self.datas[key]
+
+        # Restore shape to (n_el, n_qp, ...) until the C
+        # core is rewritten to work with a bunch of physical
+        # point values only.
+        if qps.is_uniform:
+            if data is not None:
+                n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
+                for val in data.itervalues():
+                    val.shape = (val.shape[0] / n_qp, n_qp,
+                                 val.shape[1], val.shape[2])
+        else:
+            raise NotImplementedError
+
+        datas[ig] = data
+
+    def time_update(self, ts, domain, equations, variables):
+        """All material parameters are evaluated in all physical QPs."""
+        self.data = None
+        if self.datas and (self.kind == 'stationary'): return
+
+        self.datas = {}
+        # Quadrature point function values.
+        for key, igs, qps in self.iter_qps(equations, variables):
+            for ig in self.igs:
+                if ig not in igs: continue
+
+                self.datas.setdefault(key, {})
+                if (qps.n_qp[ig] == 0):
+                    self.set_data(key, ig, qps, None)
+                    continue
+
+                data = self.function(ts, qps.values[ig], mode='qp',
+                                     region=self.region, ig=ig,
+                                     **self.extra_args)
+
+                self.set_data(key, ig, qps, data)
 
         # Special function values (e.g. flags).
         datas = self.function(ts, domain.get_mesh_coors(), mode='special',
@@ -163,9 +195,7 @@ class Material( Struct ):
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
-    ##
-    # 31.07.2007, c
-    def set_data( self, datas ):
+    def set_all_data( self, datas ):
         self.mode = 'user'
         self.datas = datas
         self.data = None

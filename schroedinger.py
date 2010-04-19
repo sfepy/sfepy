@@ -309,7 +309,7 @@ class SchroedingerApp( SimpleApp ):
 
         output( "solving Ax=b Poisson equation" )
         pb.materials['mat_n'].reset()
-        pb.materials['mat_n'].set_data({mat_key : {0: {'N' : n_qp}}})
+        pb.materials['mat_n'].set_all_data({mat_key : {0: {'N' : n_qp}}})
         vec_v_h = pb.solve()
 
         v_h_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
