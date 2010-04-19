@@ -2,7 +2,8 @@
 Functions to compute some tensor-related quantities usual in continuum mechanics.
 """
 from sfepy.base.base import *
-from sfepy.base.la import dot_sequences, make_axis_rotation_matrix
+from sfepy.base.la \
+     import apply_to_sequence, dot_sequences, make_axis_rotation_matrix
 
 def dim2sym(dim):
     """
@@ -15,6 +16,33 @@ def sym2dim(sym):
     Given the symmetric storage size, return the space dimension.
     """
     return int((sym / 3) + 1)
+
+def get_full_indices(dim):
+    """
+    The indices for converting the symmetric storage to the full storage.
+    """
+    return {
+        2 : [[0, 2], [2, 1]],
+        3 : [[0, 3, 4], [3, 1, 5], [4, 5, 2]],
+    }[dim]
+
+def get_sym_indices(dim):
+    """
+    The indices for converting the full storage to the symmetric storage.
+    """
+    return {
+        2 : [0, 3, 1],
+        3 : [0, 4, 8, 1, 2, 5],
+    }[dim]
+
+def get_non_diagonal_indices(dim):
+    """
+    The non_diagonal indices for the full vector storage.
+    """
+    return {
+        2 : ([1], [2]),
+        3 : ([1, 2, 5], [3, 6, 7]),
+    }[dim]
 
 def get_trace(tensor, sym_storage=True):
     """
@@ -175,7 +203,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         new_data = dot_sequences(mtx, data)
 
     elif data.shape[1] == 6: # Symmetric tensors.
-        ii = [[0, 3, 4], [3, 1, 5], [4, 5, 2]]
+        ii = get_full_indices(3)
 
         aux = data[:,ii]
         aux2 = dot_sequences(dot_sequences(mtx, aux), mtx.transpose((0, 2, 1)))
@@ -183,7 +211,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
 
         aux3 = aux2.reshape((aux2.shape[0], 9))
 
-        new_data = aux3[:, [0, 4, 8, 1, 2, 5]]
+        new_data = aux3[:, get_sym_indices(3)]
 
     else:
         raise ValueError('unsupported data shape! (%s)' % str(data.shape))
@@ -192,3 +220,58 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
     new_data.shape = shape
 
     return new_data
+
+class StressTransform(Struct):
+    """
+    Encapsulates functions to convert various stress tensors in the symmetric
+    storage given the deformation state.
+    """
+
+    def __init__(self, def_grad, jacobian=None):
+        """
+        Set :math:`\ull{F} = \pdiff{\ul{x}}{\ul{X}}` and optionally also
+        :math:`J = \det(\ull{F})`.
+        """
+        self.def_grad = def_grad
+        self.n_el, self.n_qp, self.dim = self.def_grad.shape[:3]
+
+        self.s2f = get_full_indices(self.dim)
+        self.f2s = get_sym_indices(self.dim)
+
+        if jacobian is None:
+            self.jacobian = apply_to_sequence(self.def_grad, nla.det,
+                                              2, (1, 1))
+
+        else:
+            self.jacobian = jacobian
+
+    def _assert_symmetry(self, stress):
+        i1, i2 = get_non_diagonal_indices(self.dim)
+        assert_(nm.allclose(stress[:,:,i1], stress[:,:,i2]))
+
+    def get_cauchy_from_2pk(self, stress_in):
+        """
+        Get the Cauchy stress given the second Piola-Kirchhoff stress.
+        
+        .. math::
+
+            \sigma_{ij} = J^{-1} F_{ik} S_{kl} F_{jl}
+        """
+
+        stress_in_full = stress_in[:,:,self.s2f,0]
+
+        val_il = dot_sequences(self.def_grad, stress_in_full)
+        val_ij = dot_sequences(val_il, self.def_grad, use_rows=True)
+
+        stress_out_full = val_ij / self.jacobian
+
+        ii = get_sym_indices(self.dim)
+        sh = stress_out_full.shape
+        stress_out_full.shape = (sh[0], sh[1], sh[2] * sh[3])
+
+        self._assert_symmetry(stress_out_full)
+
+        stress_out = nm.empty_like(stress_in)
+        stress_out[...,0] = stress_out_full[:,:,self.f2s]
+        return stress_out
+        
