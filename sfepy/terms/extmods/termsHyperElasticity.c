@@ -1636,6 +1636,13 @@ int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
 
     } else {
       fmf_mulATBT_1n( out, st, vg->bfGM );
+
+      for (iqp = 0; iqp < nQP; iqp++) {
+	for (id = 0; id < dim; id++) {
+	  out->val[dim*(dim*iqp+id)+id] += 1.0;
+	}
+      }
+
     }
 
     ERR_CheckGo( ret );
