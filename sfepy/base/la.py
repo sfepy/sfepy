@@ -269,7 +269,7 @@ def make_axis_rotation_matrix(direction, angle):
     mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
     return mtx
 
-def dot_sequences(mtx, vec):
+def dot_sequences(mtx, vec, use_rows=False):
     """
     Computes dot product for each pair of items in the two sequences.
 
@@ -283,28 +283,86 @@ def dot_sequences(mtx, vec):
     Parameters
     ----------
     mtx : array
-        The array of matrices with shape (n_item, m, n).
+        The array of matrices with shape `(n_item, m, n)`.
     vec : array
-        The array of vectors with shape (n_item, n) or matrices with shape
-        (n_item, n, k).
+        The array of vectors with shape `(n_item, n)` or matrices with shape
+        `(n_item, n, k)`.
+    use_rows : bool
+        If `vec` is an array of matrices with `(n_item, k, n)` shape, 
 
     Returns
     -------
     out : array
-       The resulting array of shape (n_item, m) or (n_item, m, k).
+       The resulting array of shape `(n_item, m)` or `(n_item, m, k)`.
+
+    Notes
+    -----
+    For r-D arrays `(n_1, ..., n_r, ?, ?)` the arrays are first reshaped to
+    `(n_1 * ... * n_r, ?, ?)`, then the dot is performed, and finally the shape
+    is restored to `(n_1, ..., n_r, ?, ?)`.
     """
-    if vec.ndim == 2:
+    if (vec.ndim == 2) and (mtx.ndim == 3):
         out = nm.sum(mtx * vec[:,None,:], axis=2)
 
-    elif vec.ndim == 3:
+    elif (vec.ndim == 3) and (mtx.ndim == 3):
         out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
                        dtype=vec.dtype)
 
-        for ic in range(vec.shape[2]):
-            out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
+        if use_rows:
+            for ic in range(vec.shape[2]):
+                out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
+
+        else:
+            for ic in range(vec.shape[2]):
+                out[:,:,ic] = dot_sequences(mtx, vec[:,ic,:])
+
+    elif (vec.ndim >= 4) and (mtx.ndim >= 4) and (vec.ndim == mtx.ndim):
+        mtx_seq = nm.reshape(mtx,
+                             (nm.prod(mtx.shape[0:-2], dtype=int),)
+                             + mtx.shape[-2:])
+
+        vec_seq = nm.reshape(vec,
+                             (nm.prod(vec.shape[0:-2], dtype=int),)
+                             + vec.shape[-2:])
+
+        out_seq = dot_sequences(mtx_seq, vec_seq)
+        out = nm.reshape(out_seq, mtx.shape[0:-2] + out_seq.shape[-2:])
 
     else:
         raise ValueError('unsupported operand shape')
+
+    return out
+
+def apply_to_sequence(seq, fun, ndim, out_item_shape):
+    """
+    Applies function `fun()` to each item of the sequence `seq`. An item
+    corresponds to the last `ndim` dimensions of `seq`.
+
+    Parameters
+    ----------
+    seq : array
+        The sequence array with shape `(n_1, ..., n_r, m_1, ..., m_{ndim})`.
+    fun : function
+        The function taking an array argument of shape of length `ndim`.
+    ndim : int
+        The number of dimensions of an item in `seq`.
+    out_item_shape : tuple
+        The shape an output item.
+
+    Returns
+    -------
+    out : array
+       The resulting array of shape `(n_1, ..., n_r) + out_item_shape`. The
+       `out_item_shape` must be compatible with the `fun`.
+    """
+    n_seq = nm.prod(seq.shape[0:-ndim], dtype=int)
+    aux = nm.reshape(seq, (n_seq,) + seq.shape[-ndim:])
+
+    out = nm.empty((n_seq,) + out_item_shape, dtype=seq.dtype)
+    for ii, item in enumerate(aux):
+        out[ii,:] = fun(item)
+
+    out = nm.reshape(out, seq.shape[0:-ndim] + out_item_shape)
 
     return out
 
