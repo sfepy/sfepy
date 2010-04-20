@@ -554,8 +554,13 @@ Define the integral type and quadrature rule.
 
   * Example, short syntax::
    
+    	import numpy as nm
+    	N = 2
         integrals = {
             'i1' : ('v', 'gauss_o2_d3'),
+            'i2' : ('v', 'custom', zip(nm.linspace( 1e-10, 0.5, N ),
+            	                       nm.linspace( 1e-10, 0.5, N )),
+                    [1./N] * N),
     	}
 
 Boundary conditions
