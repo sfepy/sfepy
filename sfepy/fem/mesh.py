@@ -858,24 +858,39 @@ class Mesh( Struct ):
         self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
         self.descs = descs
         
-    ##
-    # c: 23.01.2006, r: 23.06.2008
-    def write( self, filename = None, io = None,
-               coors = None, igs = None, out = None, float_format = None,
-               **kwargs ):
-        """Write mesh + optional results in 'out'.
+    def write(self, filename=None, io=None,
+              coors=None, igs=None, out=None, float_format=None, **kwargs):
+        """
+        Write mesh + optional results in `out` to a file.
 
-        'io' == 'auto' respects the extension of 'filename'
-        'coors' can be used instead of mesh coordinates,
-        providing 'igs' filters some groups only"""
+        Parameters
+        ----------
+        filename : str, optional
+            The file name. If None, the mesh name is used instead.
+        io : MeshIO instance or 'auto', optional
+            Passing 'auto' respects the extension of `filename`.
+        coors : array, optional
+            The coordinates that can be used instead of the mesh coordinates.
+        igs : array_like, optional
+            Passing a list of group ids selects only those groups for writing.
+        out : dict, optional
+            The output data attached to the mesh vertices and/or cells.
+        float_format : str, optional
+            The format string used to print floats in case of a text file
+            format.
+        **kwargs : dict, optional
+            Additional arguments that can be passed to the `MeshIO` instance.
+        """
         if filename is None:
             filename = self.name + '.mesh'
 
         if io is None:
             io = self.io
-        else:
-            if io == 'auto':
-                io = MeshIO.any_from_filename( filename )
+            if io is None:
+                io = 'auto'
+
+        if io == 'auto':
+            io = MeshIO.any_from_filename( filename )
 
         if coors is None:
             coors = self.coors
