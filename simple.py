@@ -27,6 +27,10 @@ help = {
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
     'output file format, one of: {vtk, h5, mesh} [default: vtk]',
+    'log' :
+    "log all messages to specified file (existing file will be overwritten!)",
+    'quiet' :
+    "do not print any messages to screen",
     'save_ebc' :
     "save problem state showing EBC (Dirichlet conditions)",
     'save_regions' :
@@ -52,6 +56,12 @@ def main():
     parser.add_option( "", "--format", metavar = 'format',
                        action = "store", dest = "output_format",
                        default = None, help = help['output_format'] )
+    parser.add_option( "", "--log", metavar = 'file',
+                       action = "store", dest = "log",
+                       default = None, help = help['log'] )
+    parser.add_option( "-q", "--quiet",
+                       action = "store_true", dest = "quiet",
+                       default = False, help = help['quiet'] )
     parser.add_option( "", "--save-ebc",
                        action = "store_true", dest = "save_ebc",
                        default = False, help = help['save_ebc'] )
@@ -86,6 +96,10 @@ def main():
             parser.print_help(),
         return
     
+    output.set_output(filename=options.log,
+                      quiet=options.quiet,
+                      combined=options.log is not None)
+
     required, other = get_standard_keywords()
     if options.solve_not:
         required.remove( 'equations' )
