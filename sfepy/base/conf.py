@@ -107,6 +107,9 @@ def transform_integrals( adict ):
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf( key, conf, ['kind', 'quadrature'] )
+            if (c2.quadrature == 'custom') and (len(conf) == 4):
+                c2.vals = conf[2]
+                c2.weights = conf[3]
             d2['integral_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
