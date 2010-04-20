@@ -15,6 +15,7 @@ geometry_data = {
                             [1.0]],
                    faces = None,
                    edges = None,
+                   volume = 1.0,
                    orientation = None,
                    surface_facet_name = None),
 
@@ -25,6 +26,7 @@ geometry_data = {
                    edges = [[0, 1],
                             [1, 2],
                             [2, 0]],
+                   volume = 0.5,
                    orientation = (0, (1, 2), 1, 2),
                    surface_facet_name = '1_2'),
 
@@ -37,6 +39,7 @@ geometry_data = {
                             [1, 2],
                             [2, 3],
                             [3, 0]],
+                   volume = 1.0,
                    # Not finished...
                    orientation = (0, (1, 3), (0, 1), (3, 2)),
                    surface_facet_name = '1_2'),
@@ -55,6 +58,7 @@ geometry_data = {
                             [0, 3],
                             [1, 3],
                             [2, 3]],
+                   volume = 1.0 / 6.0,
                    orientation = (0, (1, 2, 3), 0, 3),
                    surface_facet_name = '2_3'),
 
@@ -84,6 +88,7 @@ geometry_data = {
                             [1, 5],
                             [2, 6],
                             [3, 7]],
+                   volume = 1.0,
                    # Not finished...
                    orientation = (0, (1, 3, 4), (0, 1, 2, 3), (4, 5, 6, 7) ),
                    surface_facet_name = '2_4'),
