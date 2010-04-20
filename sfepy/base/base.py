@@ -432,15 +432,20 @@ class OneTypeList( list ):
     def get_names( self ):
         return [ii.name for ii in self]
 
-class Output( Struct ):
-    """Factory class providing output (print) functions.
+class Output(Struct):
+    """
+    Factory class providing output (print) functions. All SfePy
+    printing should be accomplished by this class.
 
-    Example:
-
-    >>> output = Output( 'sfepy:' )
-    >>> output( 1, 2, 3, 'hello' )
+    Examples
+    --------
+    >>> from sfepy.base.base import Output
+    >>> output = Output('sfepy:')
+    >>> output(1, 2, 3, 'hello')
+    sfepy: 1 2 3 hello
     >>> output.prefix = 'my_cool_app:'
-    >>> output( 1, 2, 3, 'hello' )
+    >>> output(1, 2, 3, 'hello')
+    my_cool_app: 1 2 3 hello
     """
 
     def __init__(self, prefix, filename=None, combined=False, **kwargs):
@@ -467,75 +472,125 @@ class Output( Struct ):
         if verbose:
             self.output_function(*argc, **argv)
 
-    def set_output(self, filename=None, combined=False, append=False):
-        """Set the output function - all SfePy printing is accomplished by
-        it. If filename is None, output is to screen only, otherwise it is to
-        the specified file, moreover, if combined is True, both the ways are
-        used.
+    def set_output(self, filename=None, quiet=False, combined=False,
+                   append=False):
+        """
+        Set the output mode.
 
-        Arguments:
-                filename - print into this file
-                combined - print both on screen and into a file
-                append - append to an existing file instead of overwriting it
+        If `quiet` is `True`, no messages are printed to screen. If
+        simultaneously `filename` is not `None`, the messages are logged
+        into the specified file.
+
+        If `quiet` is `False`, more combinations are possible. If
+        `filename` is `None`, output is to screen only, otherwise it is
+        to the specified file. Moreover, if `combined` is `True`, both
+        the ways are used.
+
+        Parameters
+        ----------
+        filename : str
+            Print messages into the specified file.
+        quiet : bool
+            Do not print anything to screen.
+        combined : bool
+            Print both on screen and into the specified file.
+        append : bool
+            Append to an existing file instead of overwriting it. Use with
+            `filename`.
         """
         self.level = 0
-        def output_screen( *argc, **argv ):
-            format = '%s' + ' %s' * (len( argc ) - 1)
+        def output_none(*argc, **argv):
+            pass
+
+        def output_screen(*argc, **argv):
+            format = '%s' + ' %s' * (len(argc) - 1)
             msg =  format % argc
 
-            if msg.startswith( '...' ):
+            if msg.startswith('...'):
                 self.level -= 1
 
             print self._prefix + ('  ' * self.level) + msg
 
-            if msg.endswith( '...' ):
+            if msg.endswith('...'):
                 self.level += 1
 
-        def output_file( *argc, **argv ):
-            format = '%s' + ' %s' * (len( argc ) - 1)
+        def output_file(*argc, **argv):
+            format = '%s' + ' %s' * (len(argc) - 1)
             msg =  format % argc
 
-            if msg.startswith( '...' ):
+            if msg.startswith('...'):
                 self.level -= 1
 
-            fd = open( filename, 'a' )
+            fd = open(filename, 'a')
             print >>fd, self._prefix + ('  ' * self.level) + msg
             fd.close()
 
-            if msg.endswith( '...' ):
+            if msg.endswith('...'):
                 self.level += 1
 
-        def output_combined( *argc, **argv ):
-            output_screen( *argc, **argv )
-            output_file( *argc, **argv )
-    
-        if filename is None:
-            self.output_function = output_screen
+        def output_combined(*argc, **argv):
+            format = '%s' + ' %s' * (len(argc) - 1)
+            msg =  format % argc
+
+            if msg.startswith('...'):
+                self.level -= 1
+
+            print self._prefix + ('  ' * self.level) + msg
+
+            fd = open(filename, 'a')
+            print >>fd, self._prefix + ('  ' * self.level) + msg
+            fd.close()
+
+            if msg.endswith('...'):
+                self.level += 1
+
+        def reset_file(filename):
+            output_dir = os.path.dirname(filename)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            fd = open( filename, 'w' )
+            fd.close()
+
+        if quiet is True:
+            if filename is not None:
+                if not append:
+                    reset_file(filename)
+
+                self.output_function = output_file
+
+            else:
+                self.output_function = output_none
+
 
         else:
-            if not append:
-                fd = open( filename, 'w' )
-                fd.close()
+            if filename is None:
+                self.output_function = output_screen
 
-            if combined:
-                self.output_function = output_combined
             else:
-                self.output_function = output_file
+                if not append:
+                    reset_file(filename)
+
+                if combined:
+                    self.output_function = output_combined
+
+                else:
+                    self.output_function = output_file
 
     def get_output_function(self):
         return self.output_function
 
-    def set_output_prefix( self, prefix ):
-        assert_( isinstance( prefix, str ) )
-        if len( prefix ) > 0:
+    def set_output_prefix(self, prefix):
+        assert_(isinstance(prefix, str))
+        if len(prefix) > 0:
             prefix += ' '
         self._prefix = prefix
         
-    def get_output_prefix( self ):
+    def get_output_prefix(self):
         return self._prefix[:-1]
-    prefix = property( get_output_prefix, set_output_prefix )
+    prefix = property(get_output_prefix, set_output_prefix)
     
-output = Output( 'sfepy:' )
+output = Output('sfepy:')
 
 def print_structs(objs):
     """Print Struct instances in a container, works recursively. Debugging
