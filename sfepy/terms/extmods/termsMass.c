@@ -312,7 +312,7 @@ int32 dw_mass_scalar_variable( FMField *out, FMField *coef,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( coef, iel );
+      FMF_SetCell( coef, ii );
       FMF_SetCell( vg->det, iel );
 
       fmf_mulAF( cftf, ftf, coef->val );
@@ -331,7 +331,7 @@ int32 dw_mass_scalar_variable( FMField *out, FMField *coef,
       iel = elList[ii];
 
       FMF_SetCell( out, ii );
-      FMF_SetCell( coef, iel );
+      FMF_SetCell( coef, ii );
       FMF_SetCell( vg->det, iel );
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
