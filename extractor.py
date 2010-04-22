@@ -13,7 +13,8 @@ import os
 from optparse import OptionParser
 
 import sfepy
-from sfepy.base.base import nm, dict_to_struct
+from sfepy.base.base import nm, dict_to_struct, get_default
+from sfepy.base.ioutils import get_trunk
 from sfepy.postprocess.time_history \
      import dump_to_vtk, extract_time_history, average_vertex_var_in_cells, \
             save_time_history
@@ -80,7 +81,8 @@ def main():
         return
 
     if options.dump:
-        trunk = options.output_filename_trunk
+        trunk = get_default(options.output_filename_trunk,
+                            get_trunk(filename_in))
         if options.same_dir:
             trunk = os.path.join(os.path.dirname(filename_in),
                                  os.path.basename(trunk))
