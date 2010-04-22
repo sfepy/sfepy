@@ -148,7 +148,7 @@ class LinearConvectQTerm( Term ):
 class StokesGrad( CouplingVectorScalar ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( **kwargs )
+        virtual, state = self.get_args(['virtual', 'state'], **kwargs)
         apr, vgr = virtual.get_approximation( self.get_current_group(),
                                               'Volume' )
         apc, vgc = state.get_approximation( self.get_current_group(),
@@ -171,7 +171,7 @@ class StokesGrad( CouplingVectorScalar ):
 class StokesDiv( CouplingVectorScalar ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, virtual = self.get_args( **kwargs )
+        state, virtual = self.get_args(['state', 'virtual'], **kwargs)
         apr, vgr = virtual.get_approximation( self.get_current_group(),
                                               'Volume' )
         apc, vgc = state.get_approximation( self.get_current_group(),
@@ -194,7 +194,7 @@ class StokesDiv( CouplingVectorScalar ):
 class StokesEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_v, par_s = self.get_args( **kwargs )
+        par_v, par_s = self.get_args(['parameter_v', 'parameter_s'], **kwargs)
         aps, vgs = par_s.get_approximation( self.get_current_group(),
                                             'Volume' )
         apv, vgv = par_v.get_approximation( self.get_current_group(),
