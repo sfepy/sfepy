@@ -783,8 +783,11 @@ shape is `(n_coor, 1, 1)`.
 Examples
 """"""""
 
- - functions for defining boundary conditions (`get_p_edge()`) and regions
-   (`get_circle()`)::
+See ``examples/diffusion/poisson_functions.py`` for a complete problem
+description file demonstrating how to use different kinds of functions.
+
+- functions for defining boundary conditions (`get_p_edge()`) and regions
+  (`get_circle()`)::
 
     def get_p_edge(ts, coors, bc=None):
         if bc.name == 'p_left':
@@ -801,7 +804,7 @@ Examples
         'get_circle' : (get_circle,),
     }
 
- - function for defining usual material parameters::
+- function for defining usual material parameters::
 
     def get_pars(ts, coors, mode=None, region=None, ig=None):
         if mode == 'qp':
@@ -814,7 +817,7 @@ Examples
         'get_pars' : (get_pars,),
     }
 
- - function for defining special material parameters, with an extra argument::
+- function for defining special material parameters, with an extra argument::
 
     def get_pars_special(ts, coors, mode=None, region=None, ig=None,
                          extra_arg=None):
@@ -837,8 +840,8 @@ Examples
         'function' : lambda ts, coors,mode=None,  region=None, ig=None:
             get_pars_special(ts, coors, mode, region, ig, extra_arg='hi!'),
     }
-
- - function combining both kinds of material parameters::
+    
+- function combining both kinds of material parameters::
 
     def get_pars_both(ts, coors, mode=None, region=None, ig=None):
         out = {}
@@ -860,6 +863,24 @@ Examples
         'get_pars_both' : (get_pars_both,),
     }
 
+- function for setting values of a parameter variable::
+
+    variable_1 = {
+        'name' : 'p',
+        'kind' : 'parameter field',
+        'field' : 'temperature',
+        'like' : None,
+        'special' : {'setter' : 'get_load_variable'},
+    }
+
+    def get_load_variable(ts, coors, region=None):
+        y = coors[:,1]
+        val = 5e5 * y
+        return val
+
+    functions = {
+        'get_load_variable' : (get_load_variable,)
+    }
 
 Miscellaneous
 ^^^^^^^^^^^^^
