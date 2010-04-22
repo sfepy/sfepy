@@ -115,9 +115,6 @@ editor. Note that the file is a regular python source code.
 
 :: 
 
-    # 14.02.2007
-    # last revision: 20.03.2008
-    #!
     #! Poisson Equation
     #! ================
     #$ \centerline{Example input file, \today}
@@ -135,8 +132,8 @@ particular problem. *SfePy* supports a variety of mesh formats.
 
     #! Materials
     #! ---------
-    #$ Here we define just a constant coefficient $c$ of the Poisson equation.
-    #$ The 'here' mode says that. Other possible mode is 'function', for
+    #$ Here we define just a constant coefficient $c$ of the Poisson equation,
+    #$ using the 'values' attribute. Other possible attribute is 'function', for
     #$ material coefficients computed/obtained at runtime.
 
     material_2 = {
@@ -163,7 +160,6 @@ material parameters with the corresponding region of the mesh.
     field_1 = {
         'name' : 'temperature',
         'dim' : (1,1),
-        'flags' : (),
         'domain' : 'Omega',
         'bases' : {'Omega' : '3_4_P1'}
     }
@@ -176,7 +172,7 @@ material parameters with the corresponding region of the mesh.
     #! ---------
     #! One field can be used to generate discrete degrees of freedom (DOFs) of
     #! several variables. Here the unknown variable (the temperature) is called
-    #! 't', it's asssociated DOF name is 't.0' --- this will be referred to
+    #! 't', it's associated DOF name is 't.0' --- this will be referred to
     #! in the Dirichlet boundary section (ebc). The corresponding test variable of
     #! the weak formulation is called 's'. Notice that the 'dual' item of a test
     #! variable must specify the unknown it corresponds to.

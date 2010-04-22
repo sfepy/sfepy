@@ -9,6 +9,7 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
         'n_eigs' : 10,
         'n_electron' : n_electron,
         'eigen_solver' : 'eigen1',
+        'dft_solver' : 'broyden',
         'output_dir' : os.path.join( cwd, 'output/' ),
         'log_filename' : 'log.txt',
         'iter_fig_name' : 'iterations.pdf',
@@ -32,11 +33,12 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
 
     material_1 = {
         'name' : 'm',
-        'mode' : 'here',
         'region' : 'Omega',
 
-        'val' : 0.5,
-        'one' : 1.0,
+        'values' : {
+            'val' : 0.5,
+            'one' : 1.0,
+        }
     }
 
     material_2 = {
