@@ -99,6 +99,12 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
         D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
         \lambda \ \delta_{ij} \delta_{kl}
+
+    :Arguments:
+        material_1 : :math:`\lambda`,
+        material_2 : :math:`\mu`,
+        virtual :    :math:`\ul{v}`,
+        state :      :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
