@@ -445,7 +445,7 @@ Fields correspond to FE spaces
 	      <name> : ((<dofs>,1), <dtype>, <region_name>, {<subregion_name> : <bases>})
 	  }
 
-* The following elements/approximations can be used::
+* The following elements/approximations can be used:
 
   * 2D: 2_3_P1, 2_3_P1B, 2_3_P2, 2_3_P2B, 2_4_Q0, 2_4_Q1
   * 3D: 3_4_P0, 3_4_P1, 3_4_P1B, 3_4_P2, 3_4_P2B, 3_8_Q0, 3_8_Q1
@@ -665,7 +665,8 @@ elements, etc.
     def some_function(ts, coor, region, ig, mode=None):
         out = {}
         if mode == 'qp':
-            out['val'] = <array of shape (coor.shape[0], n_row, n_col)>
+            # <array of shape (coor.shape[0], n_row, n_col)>
+            out['val'] = nm.ones((coor.shape[0], 1, 1), dtype=nm.float64)
         else: # special mode
             out['val0'] = True
 
@@ -743,7 +744,7 @@ nonlinear solver.
         'ls' : ('ls.scipy_direct', {}),
     	'newton' : ('nls.newton',
                     {'i_max'   : 1,
-                     'problem' : 'nonlinear')
+                     'problem' : 'nonlinear'}),
     }
 
 * Solver selection::
