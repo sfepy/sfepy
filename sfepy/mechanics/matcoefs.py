@@ -121,6 +121,9 @@ def bulk_modulus_youngpoisson( young, poisson, plane = 'strain' ):
 
     return bulk_modulus_lame( lam, mu )
 
+elastic_constants_relations = {
+}
+
 class ElasticConstants(Struct):
     r"""
     Conversion formulas for various groups of elastic constants. The elastic
@@ -163,11 +166,18 @@ class ElasticConstants(Struct):
         [2.0, 1.0, 1.5, 3.6000000000000001, 0.20000000000000001, 4.0]
     """
     def __init__(self, young=None, poisson=None, bulk=None, lam=None,
-                 mu=None, p_wave=None):
+                 mu=None, p_wave=None, _regenerate_relations=False):
         """
         Set exactly two of the elastic constants, and compute the remaining.
         """
-        self.relations = self._construct_relations()
+        self.names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
+
+        if _regenerate_relations:
+            self.relations = self._construct_relations()
+
+        else:
+            from elastic_constants import relations
+            self.relations = relations
 
         ## print sorted(self.relations.keys())
         ## print len(self.relations)
@@ -176,6 +186,11 @@ class ElasticConstants(Struct):
                   mu=mu, p_wave=p_wave)
 
     def _construct_relations(self):
+        """
+        Construct the dictionary of all relations among the six elastic
+        constants and save it as `elastic_constants.py` module, that can be
+        imported for reuse. Users should not call this!
+        """
         import sympy as sm
 
         relations = {}
@@ -192,7 +207,6 @@ class ElasticConstants(Struct):
                     print '!', skey
                 relations[skey] = val
 
-        self.names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
         bulk, lam, mu, young, poisson, p_wave = sm.symbols(self.names, real=True)
 
         _expand_keys(sm.solve(bulk - (lam + 2 * mu / 3)))
@@ -241,6 +255,23 @@ class ElasticConstants(Struct):
 
         _expand_keys(sm.solve(young - ((lam*p_wave + p_wave**2 - 2*lam**2)
                                        / (lam + p_wave))))
+
+        fd = open(os.path.join(os.path.dirname(__file__),
+                               'elastic_constants.py'), 'w')
+        fd.write("""
+from __future__ import division
+
+import sympy as sm
+
+names = ['bulk', 'lam', 'mu', 'young', 'poisson', 'p_wave']
+bulk, lam, mu, young, poisson, p_wave = sm.symbols(names, real=True)
+
+relations = {
+%s
+}
+        """ % ',\n'.join(['    %s : %s' % (key, val)
+                         for key, val in relations.iteritems()]))
+        fd.close()
 
         return relations
 
