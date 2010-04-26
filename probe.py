@@ -115,6 +115,7 @@ def generate_probes(filename_input, filename_results, options,
         for key, probe_hook in probe_hooks.iteritems():
 
             out = probe_hook(data, probe, labels[ip], problem)
+            if out is None: continue
             if isinstance(out, tuple):
                 fig, results = out
             else:
