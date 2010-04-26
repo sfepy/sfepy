@@ -6,6 +6,161 @@ Developer Guide
 
 This section purports to document the *SfePy* internals. It is mainly useful for those who wish to develop *SfePy* and understand the inner workings of the code.
 
+How to Contribute
+-----------------
+
+Read this section, if you wish to contribute some work to the *SfePy* project.
+
+Below we describe
+
+#. where to report or find current problems and issues, plus suggestions of
+   some particular topics
+#. what to do to apply changes/fixes
+#. what to do after you made your changes/fixes
+
+Reporting problems
+^^^^^^^^^^^^^^^^^^
+
+*Reporting a bug is the first way how to contribute to an open source project*
+
+We use the site http://sfepy.org to provide a hub for the developers to post
+problems, ask questions, create wiki pages etc. The address is currently just
+an alias to the Google code site http://code.google.com/p/sfepy.
+
+When you encounter a problem, try searching that site first - an answer may
+already be posted in the `sfepy-devel
+<http://groups.google.com/group/sfepy-devel>`_ mailing list (where we suggest
+you to subscribe...), or the problem might have been added to the `Issues
+<http://code.google.com/p/sfepy/issues/list>`_ web page. In case the problem is
+not there, create a new issue with proper labels for the issue type and
+priority, and/or ask us using the mailing list.
+
+**Note** A google account (e.g. gmail account) is needed to join the mailing
+list and post comments to issues. It is, however, not needed to create a new
+issue.
+
+**Note** When reporting a problem, try to provide as much information as
+possible concerning the version of *SfePy*, the OS / Linux distribution, the
+versions of *Python*, *NumPy* and *SciPy* and other prerequisites.
+
+Our persisting all star issues include:
+
+* missing docstrings in many functions/classes/modules
+* incomplete documentation
+* lowering the barrier for new users
+
+So if you are a new user, let us know, please, what difficulties you have with
+this documentation.
+
+Making changes
+^^^^^^^^^^^^^^
+
+This step is simple, just keep in mind to use the latest development version of
+the code from the `downloads tab
+<http://code.google.com/p/sfepy/wiki/Downloads?tm=2>`_ at the developers'
+site - the git repository (*not* the latest released sources).
+
+We use `git <http://git-scm.com/>`_ to track source code, documentation,
+examples and other files related to the project.
+
+It is not necessary to learn git in order to contribute to *SfePy* but we
+strongly suggest you do so as soon as possible - it is an extremely useful tool
+not just for writing code, but also for tracking revisions of articles,
+Ph.D. theses, books, ... It will also look well in your CV :-) It is also much
+easier for us to integrate changes that are in form of a nice git patch than in
+another form.
+
+Having said that, to download the latest snapshot, do either (with git):
+
+- git clone git://git.sympy.org/sfepy.git
+
+or (without git):
+
+- click this link: http://git.sympy.org/?p=sfepy.git;a=snapshot;h=HEAD;sf=tgz
+
+Then make the changes as you wish, following our `style guide
+<http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
+
+Contributing changes
+^^^^^^^^^^^^^^^^^^^^
+
+Even if you do not use git, try to follow the spirit of :ref:`notes_patches`
+
+Without git
+"""""""""""
+
+Without using git, send the modified files to the `sfepy-devel
+<http://groups.google.com/group/sfepy-devel>`_ mailing list or attach them to
+the corresponding issue at the `Issues
+<http://code.google.com/p/sfepy/issues/list>`_ web page. Do not forget to
+describe the changes properly.
+
+With git
+""""""""
+
+With git there are some additional options. Before listing them, let us
+describe a typical development session and the related git commands:
+
+#. Either clone a fresh copy by::
+
+     git clone git://git.sympy.org/sfepy.git
+
+   or update your local repository::
+
+     # look for changes at origin
+     git fetch origin
+
+     # difference between local and origin master branch
+     git diff master origin/master
+
+     # apply the changes to local master branch
+     git pull origin master
+
+#. Change some file(s), and review the changes::
+
+     # text diff
+     git diff
+
+     # use GUI to visualize of project history (all branches)
+     gitk --all
+
+#. Create one or more commits::
+
+    # schedule some of the changed files for the next commit
+    git add file1 file2 ...
+    # an editor will pop up where you should describe the commit
+    git commit
+
+#. All done, so create one or more patches::
+
+    # create patches for the last two commits
+    git format-patch HEAD~2
+
+#. Send the patches like described in the previous Section.
+
+There is another option, however, useful when you wish to get feedback on a
+larger set of changes. This option is to publish your repository at some free
+git hosting web site like `Github <http://github.com/>`_ and let the other
+developers know about it. For example, Robert usually publishes fixes to issues
+at http://github.com/rc/sfepy for review, before pushing them to the main
+repository.
+
+.. _notes_patches:
+
+Notes on commits and patches
+""""""""""""""""""""""""""""
+- Follow our `style guide <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
+- There should be one patch for one topic - do not mix unrelated things in one
+  patch. For example, when you add a new function, then notice a typo in
+  docstring in a nearby function and correct it, create two patches: one fixing
+  the docstring, the other adding the new function.
+- The commit message and description should clearly state what the patch
+  does. Try to follow the style of other commit messages. Some interesting
+  notes can be found `here
+  <http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>`_,
+  namely that the commit message is better to be written in the present tense:
+  "fix bug" and not "fixed bug".
+
 How to Implement a New Term
 ---------------------------
 *tentative documentation*
