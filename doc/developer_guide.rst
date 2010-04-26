@@ -161,6 +161,39 @@ Notes on commits and patches
   namely that the commit message is better to be written in the present tense:
   "fix bug" and not "fixed bug".
 
+How to Regenerate Documentation
+-------------------------------
+
+The following steps summarize how to regenerate this documentation.
+
+#. Install `sphinx <http://sphinx.pocoo.org>`_ and `numpydoc
+   <http://pypi.python.org/pypi/numpydoc/0.3.1>`_. Do not forget to set the path
+   to numpydoc in site_cfg.py if it is not installed in a standard location for
+   Python packages on your platform.
+
+#. Edit the rst files in `doc/` directory using your favorite text editor - the
+   ReST format is really simple, so nothing fancy is needed. Follow the
+   existing files in `doc/`, for reference check also [1]_, [2]_ and [3]_.
+
+   - When adding a new Python module, add a corresponding documentation file
+     into `doc/src/sfepy/<path>`, where `<path>` should reflect the location of
+     the module in `sfepy/`.
+
+   - Figures belong to `doc/images`, subdirectories can be used.
+
+#. (Re)generate the documentation (assuming GNU make is installed)::
+
+    cd doc
+    make html
+
+#. View it (substitute your favorite browser)::
+
+    firefox _build/html/index.html
+
+.. [1] http://sphinx.pocoo.org/rest.html
+.. [2] http://sphinx.pocoo.org/markup/index.html
+.. [3] http://docutils.sourceforge.net/rst.html
+
 How to Implement a New Term
 ---------------------------
 *tentative documentation*
