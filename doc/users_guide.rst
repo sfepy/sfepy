@@ -310,14 +310,23 @@ FE mesh
 A FE mesh defining a domain geometry can be stored in several formats:
 
 * legacy VTK (``.vtk``)
+* custom HDF5 file (``.h5``)
 * medit mesh file (``.mesh``)
 * tetgen mesh files (``.node``, ``.ele``)
 * comsol text mesh file (``.txt``)
-* custom HDF5 file (``.h5``)
+* abaqus text mesh file (``.inp``)
+* avs-ucd text mesh file (``.inp``)
+* hypermesh text mesh file (``.hmascii``)
+* hermes3d mesh file (``.mesh3d``)
+* nastran text mesh file (``.bdf``)
+* gambit neutral text mesh file (``.neu``)
 
 Example::
 
     filename_mesh = 'meshes/3d/cylinder.vtk'
+
+The VTK and HDF5 formats can be used for storing the results. The format
+can be selected in options, see :ref:`miscellaneous_options`.
 
 Regions
 ^^^^^^^
@@ -332,6 +341,7 @@ conditions, the domains of terms and materials etc.
 
     * ``all``
     * ``nodes of surface``
+    * ``nodes of group <integer>``
     * ``nodes in <expr>``
     * ``nodes by <function>``
     * ``node <id>[, <id>, ...]``
@@ -883,8 +893,63 @@ description file demonstrating how to use different kinds of functions.
         'get_load_variable' : (get_load_variable,)
     }
 
+.. _miscellaneous_options:
+
 Miscellaneous
 ^^^^^^^^^^^^^
+The options can be used to select solvers, output file format, output
+directory, to register functions to be called at various phases of the
+solution (the `hooks`), and for other settings.
+
+* Additional options (including solver selection)::
+
+    options = {
+        # string, output directory
+        'output_dir'        : 'output/<output_dir>',
+
+        # 'vtk' or 'h5', output file (results) format
+        'output_format'     : 'h5',
+
+	# string, nonlinear solver name
+        'nls' : 'newton',
+
+	# string, linear solver name
+        'ls' : 'ls',
+
+	# string, time stepping solver name
+        'ts' : 'ts',
+
+	# int, number of time steps when results should be saved (spaced
+        # regularly from 0 to n_step), or -1 for all time steps
+        'save_steps' : -1,
+
+	# string, a function to be called after each time step
+        'step_hook'  : '<step_hook_function>',
+
+	# string, a function to be called after each time step, used to
+        # update the results to be saved
+        'post_process_hook' : '<post_process_hook_function>',
+
+	# string, as above, at the end of simulation
+        'post_process_hook_final' : '<post_process_hook_final_function>',
+
+	# string, a function to generate probe instances
+        'gen_probes'        : '<gen_probes_function>',
+
+	# string, a function to probe data
+        'probe_hook'        : '<probe_hook_function>',
+
+	# string, a function to modify problem definition parameters
+	'parametric_hook' : '<parametric_hook_function>',
+    }
+
+  * ``post_process_hook`` enables computing derived quantities, like
+    stress or strain, from the primary unknown variables. See the
+    examples in ``examples/large_deformation/`` directory.
+  * ``parametric_hook`` makes it possible to run parametric studies by
+    modifying the problem description programmatically. See
+    ``examples/diffusion/poisson_parametric_study.py`` for an example.
+  * ``output_dir`` redirects output files to specified directory
 
 * Number of elements assembled in one term function call::
 
@@ -892,19 +957,9 @@ Miscellaneous
         'chunk_size' : 1000
     }
 
-* Additional options (including solver selection)::
-
-    options = {
-        'parametric_hook' : '<a_function>',
-        'output_dir' : 'output/<output_dir>',
-        'nls' : 'newton',
-        'ls' : 'ls',
-    }
-
-  * ``parametric_hook`` makes it possible to run parametric studies by
-    modifying the problem description programmatically. See
-    ``examples/diffusion/poisson_parametric_study.py`` for an example.
-  * ``output_dir`` redirects output files to specified directory
+  * **Warninng** Due to a known "feature", make sure this is actually
+    higher than the total number of elements. This option is likely to
+    be removed.
 
 Building Equations in SfePy
 ---------------------------
