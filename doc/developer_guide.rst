@@ -161,15 +161,20 @@ Notes on commits and patches
   namely that the commit message is better to be written in the present tense:
   "fix bug" and not "fixed bug".
 
+.. _how_to_regenerate_documentation:
+
 How to Regenerate Documentation
 -------------------------------
 
 The following steps summarize how to regenerate this documentation.
 
 #. Install `sphinx <http://sphinx.pocoo.org>`_ and `numpydoc
-   <http://pypi.python.org/pypi/numpydoc/0.3.1>`_. Do not forget to set the path
-   to numpydoc in site_cfg.py if it is not installed in a standard location for
-   Python packages on your platform.
+   <http://pypi.python.org/pypi/numpydoc/0.3.1>`_. Do not forget to set the
+   path to numpydoc in site_cfg.py if it is not installed in a standard
+   location for Python packages on your platform. A recent
+   :math:`\mbox{\LaTeX}` distribution is required, too, for example `TeX Live
+   <http://www.tug.org/texlive/>`_. Depending on your OS/platform, it can be in
+   form of one or several packages.
 
 #. Edit the rst files in `doc/` directory using your favorite text editor - the
    ReST format is really simple, so nothing fancy is needed. Follow the

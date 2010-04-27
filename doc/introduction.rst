@@ -48,6 +48,8 @@ Dependencies:
 * log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
 * isfepy requires ipython, matplotlib with WXAgg
 * postproc.py requires mayavi2 
+* to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX, see
+  :ref:`how_to_regenerate_documentation`
 
 *SfePy* is known to work on various flavours of Linux, on Intel Macs and Windows.
 
