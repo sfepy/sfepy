@@ -81,6 +81,11 @@ or (without git):
 Then make the changes as you wish, following our `style guide
 <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
 
+**Note** Do not fear to experiment - git works with your *local* copy of
+the repository, so it is not possible to damage the master
+repository. And it is always possible to re-clone a fresh copy, in case
+you do something that is really bad.
+
 Contributing changes
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -131,12 +136,26 @@ describe a typical development session and the related git commands:
     # an editor will pop up where you should describe the commit
     git commit
 
-#. All done, so create one or more patches::
+#. The commits now reflect changes, but only in your *local* git
+   repository. Then you must somehow allow others to see them. This can
+   be done, for example, by sending a patch (another option below). So
+   create the patches::
 
     # create patches for the last two commits
     git format-patch HEAD~2
 
-#. Send the patches like described in the previous Section.
+#. Send the patches to the `sfepy-devel
+   <http://groups.google.com/group/sfepy-devel>`_ mailing list or attach them
+   to the corresponding issue at the `Issues
+   <http://code.google.com/p/sfepy/issues/list>`_ web page.
+
+#. If the patches are fine, they will appear in the master
+   repository. Then synchronize your repository with the master:
+
+   - either clone a fresh copy
+   - or use the fetch, pull, merge or rebase commands. This may require
+     a deeper git-fu in case of conflicts. For beginners, it is
+     advisable to clone always a fresh copy if they see a conflict.
 
 There is another option, however, useful when you wish to get feedback on a
 larger set of changes. This option is to publish your repository at some free
