@@ -21,10 +21,13 @@ Naming conventions in problem description files::
 
     `<family>_<order>_<dimension>`
 
+Integral 'family' is just an arbitrary name given by user.
+
 Examples
 --------
-gauss_o2_d2 # second order, 2D
-gauss_o1_d3 # first order, 3D
+* gauss_o2_d2 # second order, 2D
+* gauss_o1_d3 # first order, 3D
+* my_int_o1_d3 # same as above
 """
 from sfepy.base.base import *
 
