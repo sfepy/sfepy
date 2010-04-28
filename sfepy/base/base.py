@@ -4,7 +4,6 @@ import numpy as nm
 import scipy as sc
 import scipy.linalg as nla
 import scipy.sparse as sp
-import pdb
 
 import glob, re, time, sys, os
 from copy import copy, deepcopy
@@ -31,10 +30,55 @@ if sys.version[:5] < '2.4.0':
         tmp.sort()
         return tmp
 
-##
-# 26.05.2006, c
-def debug():
-    pdb.set_trace()
+def get_debug():
+    """
+    Utility function providing ``debug()`` function.
+    """
+    old_excepthook = sys.excepthook
+
+    try:
+        import ipdb
+    except ImportError:
+        debug = None
+    else:
+        debug = ipdb.set_trace
+
+    if debug is None:
+        try:
+            from IPython.Debugger import Pdb
+            from IPython.Shell import IPShell
+            from IPython import ipapi
+        except ImportError:
+            pass
+        else:
+            shell = IPShell(argv=[''])
+            def debug():
+                ip = ipapi.get()
+                def_colors = ip.options.colors
+                Pdb(def_colors).set_trace(sys._getframe().f_back)
+
+    if debug is None:
+        import pdb
+        debug = pdb.set_trace
+
+    sys.excepthook = old_excepthook
+
+    debug.__doc__ = """
+    Start debugger on line where it is called, roughly equivalent to::
+
+        import pdb; pdb.set_trace()
+
+    First, this function tries to use `ipdb` (`IPython`-enabled `pdb`).
+
+    If it is not installed, the function resorts to trying to start the
+    debugger directly using the `IPython` API.
+
+    When this fails too, the plain old `pdb` is used instead.
+    """
+
+    return debug
+
+debug = get_debug()
 
 def mark_time(times, msg=None):
     """
