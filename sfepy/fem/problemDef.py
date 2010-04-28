@@ -173,7 +173,6 @@ class ProblemDefinition( Struct ):
 
         i_names = equations.get_term_integral_names()
         self.integrals = Integrals.from_conf( self.conf.integrals, i_names )
-        self.integrals.set_quadratures( fea.collect_quadratures() )
 
         self.geometries = {}
         equations.describe_geometry( self.geometries, self.variables,

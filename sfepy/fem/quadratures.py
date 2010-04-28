@@ -1,256 +1,150 @@
+"""
+**Warning**: Orders of quadrature may be wrong!!! Needs review.
+
+`quadrature_tables` are organized as follows::
+
+    quadrature_tables = {
+        '<geometry1>' : {
+            order1 : QuadraturePoints(args1),
+            order2 : QuadraturePoints(args2),
+            ...
+        },
+        '<geometry2>' : {
+            order1 : QuadraturePoints(args1),
+            order2 : QuadraturePoints(args2),
+            ...
+        },
+        ...
+    }
+
+Naming conventions in problem description files::
+
+    `<family>_<order>_<dimension>`
+
+Examples
+--------
+gauss_o2_d2 # second order, 2D
+gauss_o1_d3 # first order, 3D
+"""
 from sfepy.base.base import *
-"""
-This is a test file only! Orders of quadrature may be wrong!!!
 
-Simplex quadratures for <0, 1> x dim
-Tensor product quadratures for <0, 1> x dim
-... due to base functions used.
-"""
-
-
-##
-# 13.11.2007, c
-class Quadrature( Struct ):
-    """Naming conventions:
-abstract description: <family>_<max. order>_<dimension>
-geometry description: <family>_<max. order>_<geometry>
-
-
+class QuadraturePoints(Struct):
     """
-    def __call__( self ):
-        return self.vals, self.weights
+    Representation of a set of quadrature points.
 
-##
-# 16.11.2007, c
-class CustomQuadrature( Quadrature ):
-    family = 'custom'
-    name = 'custom'
+    Parameters
+    ----------
+    data : array_like
+        The array of shape `(n_point, dim + 1)` of quadrature point
+        coordinates (first `dim` columns) and weights (the last column). 
+    coors : array_like, optional
+        Optionally, instead of using `data`, the coordinates and weights can
+        be provided separately - `data` are then ignored.
+    weights : array_like, optional
+        Optionally, instead of using `data`, the coordinates and weights can
+        be provided separately - `data` are then ignored.
+    bounds : (float, float), optional
+        The coordinates and weights should correspond to a reference
+        element in `[0, 1]` x `dim`. Provide the correct bounds if this is
+        not the case.
+    tp_fix : float, optional
+        The value that is used to multiply the tensor product element
+        volume (= 1.0) to get the correct volume.
+    """
 
-    def from_conf( conf ):
-        if conf.mode == 'custom':
-            obj = CustomQuadrature( vals = nm.asarray( conf.vals, nm.float64 ),
-                                    weights = nm.asarray( conf.weights,
-                                                          nm.float64 ) )
+    def __init__(self, data, coors=None, weights=None, bounds=None, tp_fix=1.0):
+        if coors is None:
+            data = nm.array(data, dtype=nm.float64, ndmin=2)
+            self.coors = data[:,:-1].copy()
+            self.weights = data[:,-1].copy()
+
+        elif weights is not None:
+            self.coors = nm.array(coors, dtype=nm.float64, ndmin=2)
+            self.weights = nm.array(weights, dtype=nm.float64)
+
         else:
-            print 'unknown custom quadrature mode:', conf.mode
-            raise ValueError
+            raise ValueError('both "coors" and "weights" have to be provided!')
 
-        return obj
-    from_conf = staticmethod( from_conf )
+        self.n_point, self.dim = self.coors.shape
 
+        self.bounds = (0, 1)
+        bbox = nm.array([self.bounds] * self.dim, dtype=nm.float64)
+        self.volume = nm.prod(bbox.sum(axis=1)) * tp_fix
 
-##
-# created:       03.12.2007
-# last revision: 11.12.2007
-class GaussSimplexO1G12( Quadrature ):
-    family = 'gauss_o1_d1'
-    name = 'gauss_s_o1_g1_2'
+        if bounds is not None:
+            # Transform from given bounds to self.bounds.
+            bbox = nm.array([bounds] * self.dim, dtype=nm.float64)
+            volume = nm.prod(nm.diff(bbox, axis=1)) * tp_fix
 
-    def __init__( self ):
-        self.vals = nm.array( [[0.5]], dtype = nm.float64 )
-        self.weights = nm.array( [1.0], dtype = nm.float64 )
-    
-##
-# created:       11.12.2007
-# last revision: 11.12.2007
-class GaussSimplexO2G12( Quadrature ):
-    family = 'gauss_o2_d1'
-    name = 'gauss_s_o2_g1_2'
+            a, b = bounds
+            c, d = self.bounds
 
-    def __init__( self ):
-        GAUSS3 = 0.7745966692414833770358531
-        GAUSS3W1 = 0.5555555555555555555555556
-        GAUSS3W2 = 0.8888888888888888888888889
+            c1 = (d - c) / (b - a)
+            c2 = ((b * c) - (a * d)) / (b - a)
 
-        self.vals = nm.array([[-GAUSS3], [0.0], [GAUSS3]], dtype=nm.float64)
-        self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [GAUSS3W1, GAUSS3W2, GAUSS3W1],
-                                 dtype = nm.float64 ) / 2.0
-##
-# created:       11.12.2007
-# last revision: 11.12.2007
-class GaussTensorProductO2G12( Quadrature ):
-    family = 'gauss_o2_d1'
-    name = 'gauss_tp_o2_g1_2'
+            self.coors = c1 * self.coors + c2
+            self.weights *= self.volume / volume
 
-    def __init__( self ):
-        a = nm.sqrt( 3.0 ) / 3.0
-        self.vals = nm.array( [[-a], [a]], dtype = nm.float64 )
-        self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [0.5, 0.5], dtype = nm.float64 )
-
-class GaussO1G23( Quadrature ):
-    family = 'gauss_o1_d2'
-    name = 'gauss_s_o1_g2_3'
-
-    def __init__( self ):
-        c = 1.0 / 3.0
-        w = 0.5
-
-        self.vals = nm.array( [[c, c]], dtype = nm.float64 )
-        self.weights = nm.array( [w], dtype = nm.float64 )
-
-##
-# 13.11.2007, c
-class GaussO2G23( Quadrature ):
-    family = 'gauss_o2_d2'
-    name = 'gauss_s_o2_g2_3'
-
-    def __init__( self ):
-        c = 1.0 / 6.0
-        d = 2.0 / 3.0
-
-        self.vals = nm.array( [[c, c], [d, c], [c, d]], dtype = nm.float64 )
-        self.weights = nm.array( [c] * 3, dtype = nm.float64 )
-
-##
-# created:       11.12.2007
-# last revision: 11.12.2007
-class GaussO3G23( Quadrature ):
-    family = 'gauss_o3_d2'
-    name = 'gauss_s_o3_g2_3'
-
-    def __init__( self ):
-        d = 1.0 / 3.0
-        e = 1.0 / 5.0
-        f = 3.0 / 5.0
-        w3 = -27.0 / 96.0
-        w4 = 25.0 / 96.0
-
-        self.vals = nm.array(  [[d, d],
-                                [e, e],
-                                [f, e],
-                                [e, f]], dtype = nm.float64 )
-        self.weights = nm.array( [w3, w4, w4, w4], dtype = nm.float64 )
-
-##
-# created:       13.11.2007
-# last revision: 11.12.2007
-class GaussO2G24( Quadrature ):
-    family = 'gauss_o2_d2'
-    name = 'gauss_tp_o2_g2_4'
-
-    def __init__( self ):
-        a = nm.sqrt( 3.0 ) / 3.0
-
-        self.vals = nm.array( [[-a, -a], [a, -a], [a, a], [-a, a]],
-                              dtype = nm.float64 )
-        self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [0.25] * 4, dtype = nm.float64 )
-
-##
-# created: 03.12.2007
-class GaussO1G38( Quadrature ):
-    family = 'gauss_o1_d3'
-    name = 'gauss_tp_o1_g3_8'
-
-    def __init__( self ):
-        a = nm.sqrt( 3.0 ) / 3.0
-
-        self.vals = nm.array( [[-a, -a, -a],
-                               [ a, -a, -a],
-                               [ a,  a, -a],
-                               [-a,  a, -a],
-                               [-a, -a,  a],
-                               [ a, -a,  a],
-                               [ a,  a,  a],
-                               [-a,  a,  a]],
-                              dtype = nm.float64 )
-        self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [0.125] * 8, dtype = nm.float64 )
-
-##
-# created: 06.12.2007
-class GaussO2G38( Quadrature ):
-    family = 'gauss_o2_d3'
-    name = 'gauss_tp_o2_g3_8'
-
-    def __init__( self ):
-        a = nm.sqrt( 3.0 ) / 3.0
-
-        self.vals = nm.array( [[-a, -a, -a],
-                               [ a, -a, -a],
-                               [ a,  a, -a],
-                               [-a,  a, -a],
-                               [-a, -a,  a],
-                               [ a, -a,  a],
-                               [ a,  a,  a],
-                               [-a,  a,  a]],
-                              dtype = nm.float64 )
-        self.vals = 0.5 * (self.vals + 1.0)
-        self.weights = nm.array( [0.125] * 8, dtype = nm.float64 )
-
-##
-# created: 03.12.2007
-class GaussO1G34( Quadrature ):
-    family = 'gauss_o1_d3'
-    name = 'gauss_s_o1_g3_4'
-
-    def __init__( self ):
-        self.vals = nm.array( [[0.25, 0.25, 0.25]], dtype = nm.float64 )
-        self.weights = nm.array( [1.0/6.0], dtype = nm.float64 )
-
-##
-# created: 06.12.2007
-class GaussO2G34( Quadrature ):
-    family = 'gauss_o2_d3'
-    name = 'gauss_s_o2_g3_4'
-
-    def __init__( self ):
-        a = (5.0 - pow( 5.0, 0.5 )) / 20.0
-        b = (5.0 + 3.0 * pow( 5.0, 0.5 )) / 20.0
-        w = 1.0 / 24.0
-
-        self.vals = nm.array( [[a, a, a],
-                               [a, b, a],
-                               [a, a, b],
-                               [b, a, a]], dtype = nm.float64 )
-        self.weights = nm.array( [w] * 4, dtype = nm.float64 )
-
-##
-# created: 06.12.2007
-class GaussO3G34( Quadrature ):
-    family = 'gauss_o3_d3'
-    name = 'gauss_s_o3_g3_4'
-
-    def __init__( self ):
-        # 3D 5 point, order 3
-        a = 0.25
-        b = 0.5
-        c = 1.0 / 6.0
-        w1 = -2.0 / 15.0
-        w2 = 3.0 / 40.0
-
-        self.vals = nm.array( [[a, a, a],
-                               [c, c, c],
-                               [c, b, c],
-                               [c, c, b],
-                               [b, c, c]], dtype = nm.float64 )
-        self.weights = nm.array( [w1, w2, w2, w2, w2], dtype = nm.float64 )
-
-##
-# 13.11.2007, c
-def collect_quadratures():
-    var_dict = globals().items()
-
-    quad_table = {}
-    for key, var in var_dict:
-        try:
-            if is_derived_class( var, Quadrature ):
-                quad_table[var.name] = var
-        except TypeError:
-            pass
-#    print quad_table
-
-    family_table = {}
-    for name, cls in quad_table.iteritems():
-        family_table.setdefault( cls.family, {}  )[name] = cls
-
-#    print family_table
-
-    return family_table
-
-quadratures = collect_quadratures()
-
-if __name__ == "__main__":
-    print collect_quadratures()
+_QP = QuadraturePoints
+quadrature_tables = {
+    '1_2' : {
+        1 : _QP([0.5, 1.0]),
+        3 : _QP([[-0.57735026918962584, 1.0],
+                 [0.57735026918962584, 1.0]], bounds=(-1.0, 1.0)),
+        5 : _QP([[-0.7745966692414834, 5.0/9.0],
+                 [0.0, 8.0/9.0],
+                 [0.7745966692414834, 5.0/9.0]], bounds=(-1.0, 1.0)),
+    },
+    '2_3' : {
+        1 : _QP([[1.0/3.0, 1.0/3.0, 0.5]], tp_fix=0.5),
+        2 : _QP([[1.0/6.0, 1.0/6.0, 1.0/6.0],
+                 [2.0/3.0, 1.0/6.0, 1.0/6.0],
+                 [1.0/6.0, 2.0/3.0, 1.0/6.0]], tp_fix=0.5),
+        3 : _QP([[1.0/3.0, 1.0/3.0, -27.0/96.0],
+                 [1.0/5.0, 1.0/5.0, 25.0/96.0],
+                 [3.0/5.0, 1.0/5.0, 25.0/96.0],
+                 [1.0/5.0, 3.0/5.0, 25.0/96.0]], tp_fix=0.5),
+    },
+    '2_4' : {
+        2 : _QP([[-0.57735026918962584, -0.57735026918962584, 1.0],
+                 [0.57735026918962584, -0.57735026918962584, 1.0],
+                 [0.57735026918962584, 0.57735026918962584, 1.0],
+                 [-0.57735026918962584, 0.57735026918962584, 1.0]],
+                bounds=(-1.0, 1.0)),
+    },
+    '3_4' : {
+        1 : _QP([[0.25, 0.25, 0.25, 1.0/6.0]], tp_fix=1.0/6.0),
+        2 : _QP([[0.1381966011250105, 0.1381966011250105,
+                  0.1381966011250105, 1.0/24.0],
+                 [0.58541019662496852, 0.1381966011250105,
+                  0.1381966011250105, 1.0/24.0],
+                 [0.1381966011250105, 0.58541019662496852,
+                  0.1381966011250105, 1.0/24.0],
+                 [0.1381966011250105, 0.1381966011250105,
+                  0.58541019662496852, 1.0/24.0]], tp_fix=1.0/6.0),
+        3 : _QP([[0.25, 0.25, 0.25, -2.0/15.0],
+                 [1.0/6.0, 1.0/6.0, 1.0/6.0, 3.0/40.0],
+                 [0.5, 1.0/6.0, 1.0/6.0, 3.0/40.0],
+                 [1.0/6.0, 0.5, 1.0/6.0, 3.0/40.0],
+                 [1.0/6.0, 1.0/6.0, 0.5, 3.0/40.0]], tp_fix=1.0/6.0),
+    },
+    '3_8' : {
+        1 : _QP([[-0.57735026918962584, -0.57735026918962584,
+                  -0.57735026918962584, 1.0],
+                 [0.57735026918962584, -0.57735026918962584,
+                  -0.57735026918962584, 1.0],
+                 [0.57735026918962584, 0.57735026918962584,
+                  -0.57735026918962584, 1.0],
+                 [-0.57735026918962584, 0.57735026918962584,
+                  -0.57735026918962584, 1.0],
+                 [-0.57735026918962584, -0.57735026918962584,
+                  0.57735026918962584, 1.0],
+                 [0.57735026918962584, -0.57735026918962584,
+                  0.57735026918962584, 1.0],
+                 [0.57735026918962584, 0.57735026918962584,
+                  0.57735026918962584, 1.0],
+                 [-0.57735026918962584, 0.57735026918962584,
+                  0.57735026918962584, 1.0]], bounds=(-1.0, 1.0)),
+    },
+}
+del _QP

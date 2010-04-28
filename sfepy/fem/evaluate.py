@@ -3,7 +3,7 @@ import extmods.fem as fem
 from sfepy.terms import Term, DataCaches
 from region import Region
 from equations import Equation, Equations, build_args
-from integrals import Integrals, quadratures
+from integrals import Integrals
 
 ##
 # 02.10.2007, c
@@ -275,7 +275,6 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         i_names = equation.get_term_integral_names()
         integrals = Integrals.from_conf( conf.integrals, i_names )
-        integrals.set_quadratures( quadratures )
         
         geometries = {}
         equation.describe_geometry( geometries, variables, integrals )

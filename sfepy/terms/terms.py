@@ -483,7 +483,6 @@ class Term( Struct ):
             msg = 'integral %s is not defined!' % self.integral_name
             raise ValueError(msg)
             
-        integral.create_qp()
         self.integral = integral
         
         tgs = self.get_geometry()

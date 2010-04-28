@@ -224,14 +224,11 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         for ir, face in enumerate( faces ):
             econn[ir] = ee[ir,face]
         mask[econn] += 1
-        integral = Integral( name = 'i', kind = 's',
-                             quad_name = 'custom',
-                             mode = 'custom' )
-        integral.vals = ap.interp.poly_spaces[face_type].node_coors
         # Unit normals -> weights = ones.
-        integral.weights = nm.ones( (n_fp,), dtype = nm.float64 )
-        integral.setup()
-        integral.create_qp()
+        integral = Integral(name='i', kind='s',
+                            quad_name='custom',
+                            coors=ap.interp.poly_spaces[face_type].node_coors,
+                            weights=nm.ones((n_fp,), dtype=nm.float64))
 
         bf_sg, weights = ap.get_base( face_type, 1,
                                       integral = integral,

@@ -1,65 +1,71 @@
 from sfepy.base.base import *
-from quadratures import CustomQuadrature, quadratures
+from quadratures import QuadraturePoints, quadrature_tables
 
 import re
 
 _match_order_dim = re.compile( '.*_o([0-9]+)_d([0-9]+)$' ).match
-_match_order_geom = re.compile( '.*_o([0-9]+)_g([0-9]+_[0-9]+)$' ).match
 
-##
-# 16.11.2007, c
-class Integrals( Container ):
-
-    ##
-    # 16.11.2007, c
-    def from_conf( conf, names ):
-        objs = OneTypeList( Integral )
+class Integrals(Container):
+    """
+    Container for instances of :class:`Integral`.
+    """
+    
+    @staticmethod
+    def from_conf(conf, names):
+        objs = OneTypeList(Integral)
 
         name_map = {}
         for desc in conf.itervalues():
             name_map[desc.name] = desc
 
         for name in names:
-            if not name_map.has_key( name ): continue
+            if not name_map.has_key(name): continue
 
             int_conf = name_map[name]
 
-            aux = Integral(int_conf.name,
-                           kind = int_conf.kind,
-                           quad_name = int_conf.quadrature,
-                           mode = 'builtin')
+            if hasattr(int_conf, 'vals'):
+                aux = Integral(int_conf.name,
+                               kind=int_conf.kind,
+                               quad_name=int_conf.quadrature,
+                               coors=int_conf.vals,
+                               weights=int_conf.weights)
 
-            if hasattr( int_conf, 'vals' ):
-                aux.vals = nm.array( int_conf.vals, nm.float64 )
-                aux.weights = nm.array( int_conf.weights, nm.float64 )
-                aux.mode = 'custom'
+            else:
+                aux = Integral(int_conf.name,
+                               kind=int_conf.kind,
+                               quad_name=int_conf.quadrature)
                 
-            objs.append( aux )
+            objs.append(aux)
 
-        obj = Integrals( objs )
+        obj = Integrals(objs)
         return obj
-    from_conf = staticmethod( from_conf )
 
-    def set_quadratures( self, quadratures ):
-        for intl in self:
-            intl.qcs = quadratures[intl.quad_name]
-            intl.setup()
-
-##
-# 16.11.2007, c
-class Integral( Struct ):
-
-    def __init__(self, name, kind='v', quad_name='auto', mode='builtin',
-                 term=None, qcs=None):
+class Integral(Struct):
+    """
+    Wrapper class around quadratures.
+    """
+    _msg1 = 'WARNING: quadrature order %d is not available for geometry %s!'
+    _msg2 = 'WARNING: using %d instead!'
+    
+    def __init__(self, name, kind='v', quad_name='auto',
+                 coors=None, weights=None, term=None):
         self.name = name
         self.kind = kind
         self.quad_name = quad_name
-        self.mode = mode
         self.term = term
-        self.qcs = qcs
+        self.qps = {}
+
+        if coors is None:
+            self.mode = 'builtin'
+
+        else:
+            self.mode = 'custom'
+            self.coors = coors
+            self.weights = weights
 
         if self.quad_name in ('auto', 'custom'):
             self.order = -1
+
         else:
             match = _match_order_dim(self.quad_name)
             self.order, self.dim = [int( ii ) for ii in match.groups()]
@@ -67,31 +73,34 @@ class Integral( Struct ):
     def set_term(self, term):
         self.term = term
 
-    def setup( self ):
-        if self.mode == 'builtin':
-            qcs = {}
-            for key, quad_contructor in self.qcs.iteritems():
-#                print key
-                match = _match_order_geom( key )
-                order = int( match.group( 1 ) )
-                geom = match.group( 2 )
-                qcs[geom] = quad_contructor
-                assert_( order == self.order )
-            self.qcs = qcs
-        else:
-            self.order = None
-            self.dim = self.vals.shape[1]
+    def get_qp(self, geometry):
 
-    def create_qp( self ):
-        self.qp = {}
-        if self.mode == 'builtin':
-            for geom, quad_contructor in self.qcs.iteritems():
-                self.qp[geom] = quad_contructor()
-        else:
-            self.qp['custom'] = CustomQuadrature.from_conf( self )
+        if geometry in self.qps:
+            qp = self.qps[geometry]
 
-    def get_qp( self, geometry ):
-        if self.mode == 'builtin':
-            return self.qp[geometry]
         else:
-            return self.qp['custom']
+            if self.mode == 'builtin':
+                table = quadrature_tables[geometry]
+                if self.order in table:
+                    qp = table[self.order]
+
+                else:
+                    orders = table.keys()
+                    ii = nm.searchsorted(orders, self.order)
+                    if ii >= len(orders):
+                        order = max(orders)
+                        output(self._msg1 % (self.order, geometry))
+                        output(self._msg2 % order)
+
+                    else:
+                        order = orders[ii]
+
+                    qp = table[order]
+
+            else:
+                qp = QuadraturePoints(None,
+                                      coors=self.coors, weights=self.weights)
+
+            self.qps[geometry] = qp
+
+        return qp.coors, qp.weights

@@ -1,6 +1,5 @@
 from sfepy.base.base import *
 from poly_spaces import PolySpace
-from quadratures import collect_quadratures
 from fe_surface import FESurface
 import extmods.meshutils as mu
 import extmods.geometry as gm
@@ -343,7 +342,7 @@ class Approximation( Struct ):
             else:
                 geometry = interp.gel.name
 
-            vals, weights = integral.get_qp( geometry )()
+            vals, weights = integral.get_qp( geometry )
             self.qp_coors[qpkey] = Struct( vals = vals, weights = weights )
 ##             print self.name, self.qp_coors
 ##             pause()
@@ -390,10 +389,7 @@ class Approximation( Struct ):
                 from sfepy.fem import Integral
                 dim = field.domain.shape.dim
                 quad_name = 'gauss_o1_d%d' % dim
-                integral = Integral('i_tmp', 'v', quad_name,
-                                    qcs=collect_quadratures()[quad_name])
-                integral.setup()
-                integral.create_qp()
+                integral = Integral('i_tmp', 'v', quad_name)
 
                 self.get_base('v', 1, integral=integral)
 
