@@ -429,12 +429,14 @@ below are already more or less updated.
 
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
+   src/sfepy/fem/integrals
    src/sfepy/fem/mesh
    src/sfepy/fem/mesh_generators
    src/sfepy/fem/meshio
    src/sfepy/fem/periodic
    src/sfepy/fem/poly_spaces
    src/sfepy/fem/probes
+   src/sfepy/fem/quadratures
 
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
