@@ -15,7 +15,7 @@ to use) and ``<r>`` marks a region (domain of the integral).
 The following notation is used:
 
 .. list-table:: Notation.
-   :widths: 40 60
+   :widths: 20 80
    :header-rows: 1
 
    * - symbol
@@ -76,6 +76,12 @@ The following notation is used:
    * - :math:`\dev{\ull{\bullet}}`
      - deviator of a second order tensor
        (:math:`\ull{\bullet} - \frac{1}{d}\tr{\ull{\bullet}}`)
+   * - :math:`T_K \in \Tcal_h`
+     - :math:`K`-th element of triangulation (= mesh) :math:`\Tcal_h` of
+       domain :math:`\Omega`
+   * - :math:`K \from \Ical_h`
+     - :math:`K` is assigned values from :math:`\{0, 1, \dots, N_h-1\}
+       \equiv \Ical_h` in ascending order
 
 The suffix ":math:`_0`" denotes a quantity related to a previous time step.
 

@@ -222,8 +222,10 @@ latex_preamble = r"""
 \newcommand{\uld}[1]{\dot{\underline{#1}}}
 \newcommand{\ull}[1]{\underline{\underline{#1}}}
 \newcommand{\dev}{\mathop{\rm dev}}
+\def\from{\leftarrow}
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}
+\def\Ical{\mathcal{I}}
 \def\Hcal{\mathcal{H}}
 \def\Fcal{\mathcal{F}}
 \def\Gcal{\mathcal{G}}
