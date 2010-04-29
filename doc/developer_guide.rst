@@ -121,6 +121,24 @@ describe a typical development session and the related git commands:
      # apply the changes to local master branch
      git pull origin master
 
+#. Introduce yourself to git and make (optionally) some handy aliases
+   either in ``.gitconfig`` in your home directory (global setting for
+   all your git projects), or directly in ``.git/config`` in the repository::
+
+     [user]
+         email = mail@mail.org
+         name = Name Surname
+
+     [color]
+         ui = auto
+         interactive = true
+
+     [alias]
+         ci = commit
+         di = diff --color-words
+         st = status
+         co = checkout
+
 #. Change some file(s), and review the changes::
 
      # text diff
@@ -169,6 +187,9 @@ repository.
 Notes on commits and patches
 """"""""""""""""""""""""""""
 - Follow our `style guide <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
+- Do not use lines longer than 79 characters (exception: tables of
+  values, e.g. quadratures).
+- Write descriptive docstrings in correct style, see :ref:`docstrings`.
 - There should be one patch for one topic - do not mix unrelated things in one
   patch. For example, when you add a new function, then notice a typo in
   docstring in a nearby function and correct it, create two patches: one fixing
@@ -179,6 +200,77 @@ Notes on commits and patches
   <http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>`_,
   namely that the commit message is better to be written in the present tense:
   "fix bug" and not "fixed bug".
+
+.. _docstrings:
+
+Docstring standard
+""""""""""""""""""
+
+We use `sphinx <http://sphinx.pocoo.org>`_ with `numpydoc
+<http://pypi.python.org/pypi/numpydoc/0.3.1>`_ extension to generate
+this documentation. Refer to the sphinx site for possible markup
+constructs.
+
+Basically (with a little tweak), we try to follow the NumPy/SciPy
+docstring standard as described in this `guide
+<http://projects.scipy.org/numpy/wiki/CodingStyleGuidelines>`_. See also
+the complete `example.py
+<http://svn.scipy.org/svn/numpy/trunk/doc/example.py>`_. It is exaggerated
+a bit to show all the possibilities. Use your common sense here - the
+docstring should be sufficient for a new user to use the documented
+object. A good way for reminding the format
+is to type::
+
+    In [1]: import numpy as nm
+    In [2]: nm.sin?
+
+in `ipython`. The little tweak mentioned above is the starting newline::
+
+    def function(arg1, arg2):
+        """
+	This is a function.
+
+        Parameters
+        ----------
+        arg1 : array
+            The coordinates of ...
+        arg2 : int
+            The dimension ...
+
+        Returns
+        -------
+        out : array
+           The resulting array of shape ....
+        """
+
+It seems visually better than::
+
+    def function(arg1, arg2):
+        """This is a function.
+
+        Parameters
+        ----------
+        arg1 : array
+            The coordinates of ...
+        arg2 : int
+            The dimension ...
+
+        Returns
+        -------
+        out : array
+           The resulting array of shape ....
+        """
+
+When using :math:`\mbox{\LaTeX}` in a docstring, use a raw string::
+
+    def function():
+        r"""
+	This is a function with :math:`\mbox{\LaTeX}` math:
+        :math:`\frac{1}{\pi}`.
+	"""
+
+to prevent Python to interpret and consume the backslashes in common
+escape sequences like '\\n', '\\f' etc.
 
 .. _how_to_regenerate_documentation:
 
