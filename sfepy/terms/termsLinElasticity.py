@@ -300,7 +300,7 @@ class CauchyStrainTerm( Term ):
     
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} \ull{e}(\ul{w}) /
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
         \int_{T_K} 1
     """
     name = 'de_cauchy_strain'
@@ -341,7 +341,7 @@ class CauchyStressTerm( CauchyStrainTerm ):
 
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h:
+        \mbox{vector for } K \from \Ical_h:
         \int_{T_K} D_{ijkl} e_{kl}(\ul{w}) / \int_{T_K} 1
     """
     name = 'de_cauchy_stress'

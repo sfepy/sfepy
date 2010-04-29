@@ -450,7 +450,7 @@ class AverageVolumeMatTerm( Term ):
 
     :Definition:
     .. math::
-        \forall K \in \Tcal_h: \int_{T_K} m / \int_{T_K} 1
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
 
     :Arguments:
     material : :math:`m` (can have up to two dimensions),
@@ -717,7 +717,7 @@ class AverageVariableTerm( Term ):
 
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} y /
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} y /
         \int_{T_K} 1
     """
     name = 'de_average_variable'

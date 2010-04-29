@@ -160,7 +160,7 @@ class DiffusionVelocityTerm( Term ):
 
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} -K_{ij} \nabla_j r
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} -K_{ij} \nabla_j r
         / \int_{T_K} 1
     """
     name = 'de_diffusion_velocity'

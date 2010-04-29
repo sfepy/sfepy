@@ -121,7 +121,7 @@ class BiotStressTerm(CauchyStrainTerm):
     
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h:
+        \mbox{vector for } K \from \Ical_h:
         \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
     """
     name = 'de_biot_stress'

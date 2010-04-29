@@ -312,7 +312,7 @@ class GradETerm( Term ):
     
     :Definition:
     .. math::
-        \mbox{vector of } \forall K \in \Tcal_h: \int_{T_K} \nabla p /
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
         \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{w} /
         \int_{T_K} 1
     """
@@ -403,7 +403,7 @@ class PSPGPStabilizationTerm( LaplaceTerm ):
 
     :Definition:
     .. math::
-        \sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q
+        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q
     """
     name = 'dw_st_pspg_p'
 
@@ -417,7 +417,7 @@ class PSPGCStabilizationTerm( Term ):
 
     :Definition:
     .. math::
-        \sum_{K \in \Tcal_h}\int_{T_K} \tau_K\ ((\ul{b} \cdot \nabla) \ul{u})
+        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ ((\ul{b} \cdot \nabla) \ul{u})
         \cdot \nabla q
     """
     name = 'dw_st_pspg_c'
@@ -461,7 +461,7 @@ class SUPGPStabilizationTerm( Term ):
 
     :Definition:
     .. math::
-        \sum_{K \in \Tcal_h}\int_{T_K} \delta_K\ \nabla p\cdot ((\ul{b} \cdot
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ \nabla p\cdot ((\ul{b} \cdot
         \nabla) \ul{v})
     """
     name = 'dw_st_supg_p'
@@ -505,7 +505,7 @@ class SUPGCStabilizationTerm( Term ):
 
     :Definition:
     .. math::
-        \sum_{K \in \Tcal_h}\int_{T_K} \delta_K\ ((\ul{b} \cdot \nabla)
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ ((\ul{b} \cdot \nabla)
         \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})
     """
     name = 'dw_st_supg_c'

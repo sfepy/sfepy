@@ -245,9 +245,9 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
     .. math::
          \begin{array}{l}
          \int_{\Omega} q J(\ul{u}) \\
-         \mbox{de\_volume mode: vector of } \forall K \in \Tcal_h: \int_{T_K}
+         \mbox{de\_volume mode: vector for } K \from \Ical_h: \int_{T_K}
          J(\ul{u}) \\
-         \mbox{de\_rel\_volume mode: vector of } \forall K \in \Tcal_h:
+         \mbox{de\_rel\_volume mode: vector for } K \from \Ical_h:
          \int_{T_K} J(\ul{u}) / \int_{T_K} 1
          \end{array}
     """
