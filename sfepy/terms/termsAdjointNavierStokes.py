@@ -1,8 +1,15 @@
 from sfepy.terms.terms import *
 from sfepy.terms.termsNavierStokes import DivGradTerm
 
-class AdjDivGradTerm( DivGradTerm ):
-    """Uses material.viscosity as viscosity."""
+class AdjDivGradTerm(DivGradTerm):
+    r"""
+    :Description:
+    Gateaux differential of psi(u) w.r.t. u in the direction v.
+
+    :Definition:
+    .. math::
+        \delta_{u} \Psi(\ul{u}) \circ \ul{v}
+    """
     name = 'dw_adj_div_grad'
     arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
     geometry = [(Volume, 'virtual')]
@@ -25,6 +32,14 @@ class AdjDivGradTerm( DivGradTerm ):
             yield out, chunk, status
 
 class AdjConvect1Term(Term):
+    r"""
+    :Description:
+    Adjoint state of nonlinear convective term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} ((\ul{v} \cdot \nabla) \ul(u)) \ul(w)
+    """
     name = 'dw_adj_convect1'
     arg_types = ('virtual', 'state', 'parameter' )
     geometry = [(Volume, 'virtual')]
@@ -53,7 +68,15 @@ class AdjConvect1Term(Term):
                                     bf, vg, ap.econn, chunk, mode )
             yield out, chunk, status
 
-class AdjConvect2Term( AdjConvect1Term ):
+class AdjConvect2Term(AdjConvect1Term):
+    r"""
+    :Description:
+    Adjoint state of nonlinear convective term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} ((\ul{u} \cdot \nabla) \ul(v)) \ul(w)
+    """
     name = 'dw_adj_convect2'
     arg_types = ('virtual', 'state', 'parameter' )
     geometry = [(Volume, 'virtual')]
@@ -61,6 +84,16 @@ class AdjConvect2Term( AdjConvect1Term ):
     function = staticmethod(terms.dw_adj_convect2)
 
 class AdjSUPGCtabilizationTerm(Term):
+    r"""
+    :Description:
+    Adjoint state of term from SUPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ ((\ul{v} \cdot \nabla)
+        \ul{u}) ((\ul{u} \cdot \nabla) \ul{w}) + ((\ul{u} \cdot \nabla)
+        \ul{u}) ((\ul{v} \cdot \nabla) \ul{w}) ]
+    """
     name = 'dw_st_adj_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual')]
@@ -91,6 +124,15 @@ class AdjSUPGCtabilizationTerm(Term):
             yield out, chunk, status
 
 class SUPGPAdj1StabilizationTerm(Term):
+    r"""
+    :Description:
+    Adjoint state of term from SUPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ \nabla p (\ul{v} \cdot
+        \nabla \ul{w})
+    """
     name = 'dw_st_adj1_supg_p'
     arg_types = ('material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
@@ -123,6 +165,15 @@ class SUPGPAdj1StabilizationTerm(Term):
             yield out, chunk, status
 
 class SUPGPAdj2StabilizationTerm(Term):
+    r"""
+    :Description:
+    Adjoint state of term from SUPG and PSPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ \nabla r (\ul{v} \cdot \nabla
+        \ul{u})
+    """
     name = 'dw_st_adj2_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
@@ -185,6 +236,15 @@ class TestPQTerm(Term):
             yield out1, chunk, status
 
 class SDDivTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of Stokes term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega_D} p [ (\nabla \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
+        - \pdiff{\Vcal_k}{x_i} \pdiff{w_i}{x_k} ]
+    """
     name = 'd_sd_div'
     arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity',
                 'mode')
@@ -219,6 +279,17 @@ class SDDivTerm(Term):
             yield out1, chunk, status
 
 class SDDivGradTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of diffusion term.
+
+    :Definition:
+    .. math::
+        \nu \int_{\Omega_D} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
+        (\nabla \cdot \ul{\Vcal})
+        - \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} \pdiff{w_i}{x_k}
+        - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
+    """
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
@@ -254,6 +325,15 @@ class SDDivGradTerm(Term):
             yield out1, chunk, status
 
 class SDConvectTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of convective term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega_D} [ u_k \pdiff{u_i}{x_k} w_i (\nabla \cdot \Vcal)
+        - u_k \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} w_i ]
+    """
     name = 'd_sd_convect'
     arg_types = ('parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
@@ -310,7 +390,7 @@ class NSOFMinGrad1Term(Term):
                                     vg, ap.econn, chunk )
             yield out, chunk, status
 
-class NSOFMinGrad2Term( NSOFMinGrad1Term ):
+class NSOFMinGrad2Term(NSOFMinGrad1Term):
     name = 'd_of_ns_min_grad2'
     arg_types = ('material_1', 'material_2', 'parameter')
     geometry = [(Volume, 'parameter')]
@@ -331,6 +411,15 @@ class NSOFMinGrad2Term( NSOFMinGrad1Term ):
             yield out, chunk, status
 
 class NSOFSurfMinDPressTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of :math:`Psi(p)`.
+
+    :Definition:
+    .. math::
+        \delta \Psi(p) = \delta \left( \int_{\Gamma_{in}}p -
+        \int_{\Gamma_{out}}bpress \right)
+    """
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
     geometry = [(Surface, 'parameter')]
@@ -365,7 +454,16 @@ class NSOFSurfMinDPressTerm(Term):
                                     bf, sg, sd.econn, lchunk, 0 )
             yield out, lchunk, status
 
-class NSOFSurfMinDPressDiffTerm( NSOFSurfMinDPressTerm ):
+class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
+    r"""
+    :Description:
+    Gateaux differential of :math:`psi(u)` w.r.t. :math:`p` in the
+    direction :math:`q`.
+
+    :Definition:
+    .. math::
+        \delta_{p} \Psi(p) \circ q
+    """
     name = 'dw_of_ns_surf_min_d_press_diff'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
@@ -397,6 +495,17 @@ class NSOFSurfMinDPressDiffTerm( NSOFSurfMinDPressTerm ):
             yield out, lchunk, status
 
 class SDGradDivStabilizationTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of term from grad-div stabilization.
+
+    :Definition:
+    .. math::
+        \gamma \int_{\Omega_D} [ (\nabla \cdot \ul{u}) (\nabla \cdot \ul{w})
+        (\nabla \cdot \ul{\Vcal})
+        - \pdiff{u_i}{x_k} \pdiff{\Vcal_k}{x_i} (\nabla \cdot \ul(w))
+        - (\nabla \cdot \ul(u)) \pdiff{w_i}{x_k} \pdiff{\Vcal_k}{x_i} ]
+    """
     name = 'd_sd_st_grad_div'
     arg_types = ('material', 'parameter_w', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
@@ -433,6 +542,18 @@ class SDGradDivStabilizationTerm(Term):
             yield out1, chunk, status
 
 class SDSUPGCStabilizationTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of term from SUPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ (\ul{u} \cdot \nabla)u_k
+        (\ul{u} \cdot \nabla)w_k (\nabla \cdot \Vcal) -
+        (\ul{u} \cdot \nabla)\Vcal_i \pdiff{u_k}{x_i}
+        (\ul{u} \cdot \nabla)w_k - (\ul{u} \cdot \nabla)u_k
+        (\ul{u} \cdot \nabla)\Vcal_i \pdiff{w_k}{x_i} ]
+    """
     name = 'd_sd_st_supg_c'
     arg_types = ('material', 'parameter_w', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
@@ -467,6 +588,17 @@ class SDSUPGCStabilizationTerm(Term):
             yield out1, chunk, status
 
 class SDPSPGCStabilizationTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of term from PSPG or SUPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\
+        [ \pdiff{p}{x_i} (\ul{u} \cdot \nabla)w_i (\nabla \cdot \Vcal) -
+        \pdiff{p}{x_k} \pdiff{\Vcal_k}{x_i} (\ul{u} \cdot \nabla)w_i
+        - \pdiff{p}{x_k} (\ul{u} \cdot \nabla)\Vcal_k  \pdiff{w_i}{x_k} ]
+    """
     name = 'd_sd_st_pspg_c'
     arg_types = ('material', 'parameter_r', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
@@ -504,6 +636,17 @@ class SDPSPGCStabilizationTerm(Term):
             yield out1, chunk, status
 
 class SDPSPGPStabilizationTerm(Term):
+    r"""
+    :Description:
+    Sensitivity of term from PSPG stabilization.
+
+    :Definition:
+    .. math::
+        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ [ (\nabla p \cdot \nabla q)
+        (\nabla \cdot \Vcal)
+        - \pdiff{p}{x_k} (\nabla \Vcal_k \cdot \nabla q)
+        - (\nabla p \cdot \nabla \Vcal_k) \pdiff{q}{x_k} ]
+    """
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
                 'parameter_mesh_velocity', 'mode')
