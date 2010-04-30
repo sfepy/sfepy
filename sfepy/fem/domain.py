@@ -438,7 +438,7 @@ class Domain( Struct ):
                     itry = -1
                     break
 
-                output( 'warning: bad element orienation, trying to correct...' )
+                output('warning: bad element orientation, trying to correct...')
                 itry += 1
 
             if itry == 2 and flag[0] != -1:
