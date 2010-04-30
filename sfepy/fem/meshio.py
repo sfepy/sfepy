@@ -17,6 +17,7 @@ supported_formats = {
     '.mesh3d'   : 'mesh3d',
     '.bdf'  : 'nastran',
     '.neu'  : 'gambit',
+    '.med'  : 'med',
 }
 
 ##
@@ -1280,6 +1281,76 @@ class HDF5MeshIO( MeshIO ):
         fd.close()
 
         return ths
+
+class MEDMeshIO( MeshIO ):
+    format = "med"
+
+    def read( self, mesh, **kwargs ):
+        fd = pt.openFile( self.filename, mode = "r" )
+
+        mesh_root = fd.root.ENS_MAA
+
+        #TODO: Loop through multiple meshes? 
+        mesh_group = mesh_root._f_getChild(mesh_root._v_groups.keys()[0])
+
+        mesh.name = mesh_group._v_name
+
+        coors = mesh_group.NOE.COO.read()
+        n_nodes = mesh_group.NOE.COO.getAttr('NBR')
+
+        # Unflatten the node coordinate array
+        coors = coors.reshape(coors.shape[0]/n_nodes,n_nodes).transpose()
+
+        ngroups = mesh_group.NOE.FAM.read()
+
+        # Dict to map MED element names to SfePy descs
+        #NOTE: The commented lines are elements which 
+        #      produce KeyError in SfePy
+        med_descs = { 
+                      'TE4' : '3_4',
+                      #'T10' : '3_10',
+                      #'PY5' : '3_5',
+                      #'P13' : '3_13',
+                      'HE8' : '3_8',
+                      #'H20' : '3_20',
+                      #'PE6' : '3_6',
+                      #'P15' : '3_15',
+                      #TODO: Polyhedrons (POE) - need special handling
+                      'TR3' : '2_3',
+                      #'TR6' : '2_6',
+                      'QU4' : '2_4',
+                      #'QU8' : '2_8',
+                      #TODO: Polygons (POG) - need special handling
+                      #'SE2' : '1_2',
+                      #'SE3' : '1_3',
+                    }
+
+        conns = []
+        descs = []
+        mat_ids = []
+        for md in med_descs.iterkeys():
+            try:
+                group = mesh_group.MAI._f_getChild(md)
+
+                conn = group.NOD.read()
+                n_conns = group.NOD.getAttr('NBR')
+
+                # (0 based indexing in numpy vs. 1 based in MED)
+                conn = conn.reshape(conn.shape[0]/n_conns,n_conns).transpose()-1
+
+                conns.append( conn )
+                mat_id = group.FAM.read()
+
+                mat_ids.append( mat_id )
+                descs.append( med_descs[md] )
+            
+            except pt.exceptions.NoSuchNodeError:
+                pass
+
+        fd.close()
+        mesh._set_data( coors, ngroups, conns, mat_ids, descs )
+
+        return mesh
 
 class Mesh3DMeshIO( MeshIO ):
     format = "mesh3d"
