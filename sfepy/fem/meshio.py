@@ -1300,6 +1300,7 @@ class MEDMeshIO( MeshIO ):
 
         # Unflatten the node coordinate array
         coors = coors.reshape(coors.shape[0]/n_nodes,n_nodes).transpose()
+        dim = coors.shape[1]
 
         ngroups = mesh_group.NOE.FAM.read()
 
@@ -1328,7 +1329,10 @@ class MEDMeshIO( MeshIO ):
         conns = []
         descs = []
         mat_ids = []
-        for md in med_descs.iterkeys():
+
+        for md, desc in med_descs.iteritems():
+            if int(desc[0]) != dim: continue
+
             try:
                 group = mesh_group.MAI._f_getChild(md)
 
@@ -1349,6 +1353,8 @@ class MEDMeshIO( MeshIO ):
 
         fd.close()
         mesh._set_data( coors, ngroups, conns, mat_ids, descs )
+
+        print mesh
 
         return mesh
 
