@@ -200,7 +200,7 @@ def solve_direct( conf, options, problem = None, step_hook = None,
     ofn_trunk = problem.ofn_trunk
     
     save_names = Struct( ebc = None, regions = None,
-                         save_regions_as_groups = None, field_meshes = None,
+                         regions_as_groups = None, field_meshes = None,
                          region_field_meshes = None )
     if options.save_ebc:
         save_names.ebc = ofn_trunk + '_ebc.vtk'
