@@ -37,25 +37,19 @@ def get_debug():
     old_excepthook = sys.excepthook
 
     try:
-        import ipdb
+        from IPython.Debugger import Pdb
+        from IPython.Shell import IPShell
+        from IPython import ipapi
+
     except ImportError:
         debug = None
-    else:
-        debug = ipdb.set_trace
 
-    if debug is None:
-        try:
-            from IPython.Debugger import Pdb
-            from IPython.Shell import IPShell
-            from IPython import ipapi
-        except ImportError:
-            pass
-        else:
+    else:
+        def debug():
             shell = IPShell(argv=[''])
-            def debug():
-                ip = ipapi.get()
-                def_colors = ip.options.colors
-                Pdb(def_colors).set_trace(sys._getframe().f_back)
+            ip = ipapi.get()
+            def_colors = ip.options.colors
+            Pdb(def_colors).set_trace(sys._getframe().f_back)
 
     if debug is None:
         import pdb
@@ -68,12 +62,10 @@ def get_debug():
 
         import pdb; pdb.set_trace()
 
-    First, this function tries to use `ipdb` (`IPython`-enabled `pdb`).
+    First, this function tries to start an `IPython`-enabled
+    debugger using the `IPython` API.
 
-    If it is not installed, the function resorts to trying to start the
-    debugger directly using the `IPython` API.
-
-    When this fails too, the plain old `pdb` is used instead.
+    When this fails, the plain old `pdb` is used instead.
     """
 
     return debug
