@@ -88,20 +88,21 @@ int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
   return( ret );
 }
 
+
 #undef __FUNC__
 #define __FUNC__ "dw_mass_scalar"
 /*!
   @par Revision history:
-  - 04.09.2007, c
+  - 01.02.2008, c
 */
-int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
-		      FMField *bf, VolumeGeometry *vg,
+int32 dw_mass_scalar( FMField *out, FMField *coef,
+		      FMField *state, FMField *bf, VolumeGeometry *vg,
 		      int32 *conn, int32 nEl, int32 nEP,
 		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff )
 {
   int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0;
+  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0, *cftf = 0;
 
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
@@ -109,6 +110,7 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
 /*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
   if (isDiff) {
     fmf_createAlloc( &ftf, 1, nQP, nEP, nEP );
+    fmf_createAlloc( &cftf, 1, nQP, nEP, nEP );
 
     fmf_mulATB_nn( ftf, bf, bf );
 
@@ -117,14 +119,16 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
 
       FMF_SetCell( out, ii );
       FMF_SetCell( vg->det, iel );
+      if (coef->nCell > 1) {
+	FMF_SetCell( coef, ii );
+      }
 
-      fmf_sumLevelsMulF( out, ftf, vg->det->val );
+      fmf_mulAF( cftf, ftf, coef->val );
+      fmf_sumLevelsMulF( out, cftf, vg->det->val );
 
       ERR_CheckGo( ret );
     }
   } else {
-    state->val = FMF_PtrFirst( state ) + offset;
-
     fmf_createAlloc( &st, 1, 1, 1, nEP );
     fmf_createAlloc( &fp, 1, nQP, 1, 1 );
     fmf_createAlloc( &ftfp, 1, nQP, nEP, 1 );
@@ -134,11 +138,15 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
 
       FMF_SetCell( out, ii );
       FMF_SetCell( vg->det, iel );
+      if (coef->nCell > 1) {
+	FMF_SetCell( coef, ii );
+      }
 
       ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
 
       bf_act( fp, bf, st );
       bf_actt( ftfp, bf, fp );
+      fmf_mul( ftfp, coef->val );
       fmf_sumLevelsMulF( out, ftfp, vg->det->val );
 
       ERR_CheckGo( ret );
@@ -148,6 +156,7 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
  end_label:
   if (isDiff) {
     fmf_freeDestroy( &ftf );
+    fmf_freeDestroy( &cftf );
   } else {
     fmf_freeDestroy( &st ); 
     fmf_freeDestroy( &fp ); 
@@ -163,7 +172,8 @@ int32 dw_mass_scalar( FMField *out, FMField *state, int32 offset,
   @par Revision history:
   - 04.09.2007, c
 */
-int32 d_mass_scalar( FMField *out, FMField *stateP, FMField *stateQ,
+int32 d_mass_scalar( FMField *out, FMField *coef,
+		     FMField *stateP, FMField *stateQ,
 		     FMField *bf, VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP,
 		     int32 *elList, int32 elList_nRow )
@@ -183,6 +193,9 @@ int32 d_mass_scalar( FMField *out, FMField *stateP, FMField *stateQ,
     
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->det, iel );
+    if (coef->nCell > 1) {
+      FMF_SetCell( coef, ii );
+    }
     
     ele_extractNodalValuesDBD( st, stateP, conn + nEP * iel );
     
@@ -191,6 +204,7 @@ int32 d_mass_scalar( FMField *out, FMField *stateP, FMField *stateQ,
 
     ele_extractNodalValuesDBD( st, stateQ, conn + nEP * iel );
     fmf_mulATB_1n( fp, st, ftfp );
+    fmf_mul( fp, coef->val );
 
     fmf_sumLevelsMulF( out, fp, vg->det->val );
     
@@ -277,82 +291,6 @@ end_label:
     fmf_freeDestroy( &st );
     fmf_freeDestroy( &fp );
     fmf_freeDestroy( &ftfp );
-  }
-
-  return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "dw_mass_scalar_variable"
-/*!
-  @par Revision history:
-  - 01.02.2008, c
-*/
-int32 dw_mass_scalar_variable( FMField *out, FMField *coef,
-			       FMField *state, int32 offset,
-			       FMField *bf, VolumeGeometry *vg,
-			       int32 *conn, int32 nEl, int32 nEP,
-			       int32 *elList, int32 elList_nRow,
-			       int32 isDiff )
-{
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0, *cftf = 0;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-  if (isDiff) {
-    fmf_createAlloc( &ftf, 1, nQP, nEP, nEP );
-    fmf_createAlloc( &cftf, 1, nQP, nEP, nEP );
-
-    fmf_mulATB_nn( ftf, bf, bf );
-
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( out, ii );
-      FMF_SetCell( coef, ii );
-      FMF_SetCell( vg->det, iel );
-
-      fmf_mulAF( cftf, ftf, coef->val );
-      fmf_sumLevelsMulF( out, cftf, vg->det->val );
-
-      ERR_CheckGo( ret );
-    }
-  } else {
-    state->val = FMF_PtrFirst( state ) + offset;
-
-    fmf_createAlloc( &st, 1, 1, 1, nEP );
-    fmf_createAlloc( &fp, 1, nQP, 1, 1 );
-    fmf_createAlloc( &ftfp, 1, nQP, nEP, 1 );
-
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( out, ii );
-      FMF_SetCell( coef, ii );
-      FMF_SetCell( vg->det, iel );
-
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-
-      bf_act( fp, bf, st );
-      bf_actt( ftfp, bf, fp );
-      fmf_mul( ftfp, coef->val );
-      fmf_sumLevelsMulF( out, ftfp, vg->det->val );
-
-      ERR_CheckGo( ret );
-    }
-  }
-
- end_label:
-  if (isDiff) {
-    fmf_freeDestroy( &ftf );
-    fmf_freeDestroy( &cftf );
-  } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &fp ); 
-    fmf_freeDestroy( &ftfp ); 
   }
 
   return( ret );

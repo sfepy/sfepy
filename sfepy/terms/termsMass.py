@@ -60,7 +60,7 @@ class MassVectorTerm( MassTerm ):
         fargs = (mat, vec, 0, bf, vg, ap.econn)
         return fargs, shape, mode
 
-class MassScalarTerm( ScalarScalar, Term ):
+class MassScalarTerm(ScalarScalar, Term):
     r"""
     :Description:
     Scalar field mass matrix/rezidual.
@@ -73,7 +73,7 @@ class MassScalarTerm( ScalarScalar, Term ):
     arg_types = (('virtual', 'state'),
                  ('parameter_1', 'parameter_2')) 
     geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
+                [(Volume, 'parameter_1')])
     modes = ('weak', 'eval')
     functions = {'weak': terms.dw_mass_scalar,
                  'eval': terms.d_mass_scalar}
@@ -88,12 +88,18 @@ class MassScalarTerm( ScalarScalar, Term ):
         vec = self.get_vector( state )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+
+        else:
+            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+
         if state.is_real():
-            fargs = vec, 0, bf, vg, ap.econn
+            fargs = coef, vec, bf, vg, ap.econn
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac( vec.real ), 0, bf, vg, ap.econn),
-                     (ac( vec.imag ), 0, bf, vg, ap.econn)]
+            fargs = [(coef, ac( vec.real ), bf, vg, ap.econn),
+                     (coef, ac( vec.imag ), bf, vg, ap.econn)]
             mode += 1j
             
         return fargs, shape, mode
@@ -104,7 +110,13 @@ class MassScalarTerm( ScalarScalar, Term ):
         self.set_data_shape( ap )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
-        return (par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
+        if 'material' in self.arg_types:
+            coef, = self.get_args(['material'], **kwargs)
+
+        else:
+            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+
+        return (coef, par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
 
     def set_arg_types( self ):
         if self.mode == 'weak':
@@ -113,6 +125,21 @@ class MassScalarTerm( ScalarScalar, Term ):
         else:
             self.function = self.functions['eval']
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+
+class MassScalarWTerm(MassScalarTerm):
+    r"""
+    :Description:
+    Scalar field mass matrix/rezidual weighted by a scalar function :math:`c`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} c q p
+    """
+    name = 'dw_mass_scalar_w'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2')) 
+    geometry = ([(Volume, 'virtual')],
+                [(Volume, 'parameter_1')])
 
 class MassScalarSurfaceTerm( ScalarScalar, Term ):
     r"""
@@ -210,43 +237,6 @@ class BCNewtonTerm(MassScalarSurfaceTerm):
         for out, chunk, status in call(self, diff_var, chunk_size, **kwargs):
             out = coef * out
             yield out, chunk, status
-    
-class MassScalarVariableTerm( MassScalarTerm ):
-    r"""
-    :Description:
-    Scalar field mass matrix/rezidual with coefficient :math:`c`.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} c q p
-    """
-    name = 'dw_mass_scalar_variable'
-    arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign,
-                      function=terms.dw_mass_scalar_variable, **kwargs)
-        
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        fargs, shape, mode = MassScalarTerm.get_fargs_weak(self, diff_var,
-                                                           chunk_size, **kwargs)
-        n_el, n_qp, dim, n_ep = self.data_shape
-        
-        mat, virtual = self.get_args( ['material', 'virtual'], **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
-
-        if virtual.is_real():
-            fargs = (mat,) + fargs
-
-        else:
-            fargs[0] = (mat,) + fargs[0]
-            fargs[1] = (mat,) + fargs[1]
-            
-        return fargs, shape, mode
-
-    def set_arg_types(self):
-        pass
 
 class MassScalarFineCoarseTerm( Term ):
     r"""
