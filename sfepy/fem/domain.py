@@ -566,8 +566,8 @@ class Domain( Struct ):
         if check_parents:
             parents = get_parents(select)
             for p in parents:
-                if p not in self.regions:
-                    msg = 'parent region %s of %s not found!'
+                if p not in [region.name for region in self.regions]:
+                    msg = 'parent region %s of %s not found!' % (p, name)
                     raise ValueError(msg)
 
         stack = self._region_stack
