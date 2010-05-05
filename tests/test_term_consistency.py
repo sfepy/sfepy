@@ -91,7 +91,7 @@ test_terms = [
      ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us'), 'biot')),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
-    ('%s_volume_wdot.i1.Omega( m.val, %s, %s )',
+    ('%s_volume_dot_w.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m')),
 ]
 

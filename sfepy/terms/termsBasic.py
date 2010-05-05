@@ -526,7 +526,7 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
 
 ##
 # c: 05.03.2008
-class WDotProductVolumeTerm( VectorOrScalar, Term ):
+class DotProductVolumeWTerm( VectorOrScalar, Term ):
     r"""
     :Description:
     Volume :math:`L^2(\Omega)` weighted dot product for both scalar
@@ -541,7 +541,7 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
     :Arguments:
     material : weight function :math:`y`
     """
-    name = 'dw_volume_wdot'
+    name = 'dw_volume_dot_w'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
     geometry = ([(Volume, 'virtual')],
@@ -563,7 +563,7 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
 
         return (vec_qp, bf, mat, vg), shape, mode
 
-    def dw_volume_wdot( self, out, vec_qp, bf, mat, vg, chunk, mode ):
+    def dw_volume_dot_w( self, out, vec_qp, bf, mat, vg, chunk, mode ):
         if self.vdim > 1:
             raise NotImplementedError
 
@@ -590,7 +590,7 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
 
         return (vec1_qp, vec2_qp, mat, vg), (chunk_size, 1, 1, 1), 0
 
-    def d_volume_wdot( self, out, vec1_qp, vec2_qp, mat, vg, chunk ):
+    def d_volume_dot_w( self, out, vec1_qp, vec2_qp, mat, vg, chunk ):
 
         if self.vdim > 1:
             vec = mat[chunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
@@ -602,18 +602,18 @@ class WDotProductVolumeTerm( VectorOrScalar, Term ):
 
     def set_arg_types( self ):
         if self.mode == 'weak':
-            self.function = self.dw_volume_wdot
+            self.function = self.dw_volume_dot_w
             use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['state']]}
         else:
-            self.function = self.d_volume_wdot
+            self.function = self.d_volume_dot_w
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
             self.use_caches = {'state_in_volume_qp' : [['parameter_1'],
                                                        ['parameter_2']]}
 
 ##
 # c: 03.04.2008
-class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
+class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
     r"""
     :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
@@ -623,7 +623,7 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
     .. math::
         \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
     """
-    name = 'dw_volume_wdot_scalar_th'
+    name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
@@ -659,12 +659,12 @@ class WDotSProductVolumeOperatorTHTerm( ScalarScalarTH, Term ):
                     yield ii, (ts.dt, vec_qp, bf, mat, vg)
             return iter_kernel, shape, mode
 
-class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
+class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
     r"""
     :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
     scalar fields. This term has the same definition as
-    dw_volume_wdot_scalar_th, but assumes an exponential approximation of
+    dw_volume_dot_w_scalar_th, but assumes an exponential approximation of
     the convolution kernel resulting in much higher efficiency. Can use
     derivatives.
 
@@ -676,7 +676,7 @@ class WDotSProductVolumeOperatorETHTerm( ScalarScalar, Term ):
     material_0 : :math:`\Gcal(0)`,
     material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
     """
-    name = 'dw_volume_wdot_scalar_eth'
+    name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
     geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state']],
