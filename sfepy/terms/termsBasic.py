@@ -268,16 +268,17 @@ class IntegrateSurfaceOperatorTerm( Term ):
 
             yield out, lchunk, 0
 
-class IntegrateSurfaceVariableOperatorTerm(Term):
+class IntegrateSurfaceOperatorWTerm(Term):
     r"""
     :Description:
-    Surface integral of a test function with variable coefficient.
+    Surface integral of a test function weighted by a scalar function
+    :math:`c`.
 
     :Definition:
     .. math::
         \int_\Gamma c q
     """
-    name = 'dw_surface_integrate_variable'
+    name = 'dw_surface_integrate_w'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
 
