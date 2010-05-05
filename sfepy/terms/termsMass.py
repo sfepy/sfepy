@@ -186,7 +186,7 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
         return fargs, shape, mode
 
-class WeightedMassScalarSurfaceTerm(MassScalarSurfaceTerm):
+class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     r"""
     :Description:
     Scalar field mass matrix/rezidual on a surface weighted by a scalar function.

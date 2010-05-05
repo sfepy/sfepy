@@ -254,7 +254,7 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
             self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
                                'div_vector' : [['parameter_v']]}
 
-class WeightedStokesTerm(StokesTerm):
+class StokesWTerm(StokesTerm):
     r"""
     :Description:
     Stokes problem coupling term weighted by a scalar function. Corresponds to
