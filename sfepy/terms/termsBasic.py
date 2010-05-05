@@ -68,17 +68,18 @@ class IntegrateVolumeOperatorTerm( Term ):
             status = vg.integrate_chunk( out, bf_t, chunk )
             yield out, chunk, 0
 
-class IntegrateVolumeVariableOperatorTerm( Term ):
+class IntegrateVolumeOperatorWTerm(Term):
     r"""
     :Description:
-    Volume integral of a test function with variable coefficient.
+    Volume integral of a test function weighted by a scalar function
+    :math:`c`.
 
 
     :Definition:
     .. math::
         \int_\Omega c q
     """
-    name = 'dw_volume_integrate_variable'
+    name = 'dw_volume_integrate_w'
     arg_types = ('material', 'virtual',)
     geometry = [(Volume, 'virtual')]
 
