@@ -60,10 +60,10 @@ on windows use 'python <script>' in place of './<script>'.
 
 Basic usage:
 './simple.py examples/diffusion/poisson.py' ... creates cylinder.vtk
-'./postproc.py cylinder.vtk' ... visualize the results
+'./postproc.py -b cylinder.vtk' ... visualize the results
 
 './simple.py examples/navier_stokes/stokes.py' ... creates channels_symm944t.vtk
-'./postproc.py channels_symm944t.vtk' ... visualize the results
+'./postproc.py -b channels_symm944t.vtk' ... visualize the results
 
 './runTests.py' ... see Testing below
 './isfepy' ... follow the help printed on its startup
