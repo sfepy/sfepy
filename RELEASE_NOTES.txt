@@ -1,5 +1,69 @@
 # created: 20.07.2007 (-1)
-# last revision: 01.03.2010
+# last revision: 06.05.2010
+
+from 2010.1 to 2010.2
+=====================
+
+- new mesh readers:
+  - MED (Salome, PythonOCC) format
+  - Gambit NEU mesh format
+  - UserMeshIO class:
+    - creating, writing meshes by user-supplied functions
+- mechanics:
+  - ElasticConstants class - conversion formulas for elastic constants
+  - StressTransform class to convert various stress tensors
+  - basic tensor transformations
+- updated documentation:
+  - new sections in developer guide
+  - updated tutorial
+  - many new docstrings
+- solvers:
+  - semi-smooth Newton method
+  - allow registering custom solvers
+- examples:
+  - usage of functions to define various parameter
+  - usage of probes
+- scripts:
+  - simple.py: new --log, --quiet options
+  - postproc.py: new --wireframe, --group-names options
+  - extractor.py: new --same-dir, --to, --step options
+  - split homogen.py:
+    - HomogenizationApp moved to sfepy/homogenization/homogen_app.py
+- new tests:
+  - test region construction
+  - test quadratures using symbolic integration
+  - test semi-smooth Newton solver
+- miscellaneous updates:
+  - automatic order of variables
+  - refactor integrals and quadratures
+  - improve printing of Struct instances
+  - IPython-enabled debug()
+  - fixed probes in 2D
+  - split Material.time_update() to allow easier setting of data
+  - region selection of several nodes or elements by their ids
+  - update dump_to_vtk() for stationary results (no time stepper)
+  - update import_file(), load_classes() for package namespaces
+  - update all terms for the new Term constructor
+  - refactor dof connectivity setup, info, active dof info
+  - refactor term argument checking
+  - update equations and terms construction
+  - update HomogenizationEngine to allow inter-coefficient dependencies
+  - update term and cache table generation
+  - run tests in alphabetical order
+  - fix paths to meshes and other data in system-wide installation
+  - new get_lattice_volume()
+  - many small bug fixes
+- new terms:
+  - dw_stokes_w (Stokes term weighted by scalar function)
+  - dq_biot_stress (Biot stress term in QP)
+  - dq_cauchy_strain (Cauchy strain term in QP)
+  - dq_cauchy_stress (Cauchy stress term in QP)
+  - dq_def_grad (deformation gradient term)
+  - dw_lin_prestress (linear prestress term)
+  - dw_surface_mass_scalar_w (weighted surface scalar mass term)
+  - de_biot_stress (averaged Biot stress term)
+  - di_surface_moment (surface moment term)
+
 
 from 2009.4 to 2010.1
 =====================
