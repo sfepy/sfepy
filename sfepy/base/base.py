@@ -47,6 +47,7 @@ def get_debug():
     else:
         def debug():
             shell = IPShell(argv=[''])
+            sys.excepthook = old_excepthook
             ip = ipapi.get()
             def_colors = ip.options.colors
             Pdb(def_colors).set_trace(sys._getframe().f_back)
@@ -54,8 +55,6 @@ def get_debug():
     if debug is None:
         import pdb
         debug = pdb.set_trace
-
-    sys.excepthook = old_excepthook
 
     debug.__doc__ = """
     Start debugger on line where it is called, roughly equivalent to::
