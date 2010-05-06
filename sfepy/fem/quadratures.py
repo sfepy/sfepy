@@ -15,6 +15,11 @@
         ...
     }
 
+**Note** The order for quadratures on tensor product domains (`'2_4'`,
+`'3_8'` geometries) in case of composite Gauss quadratures (products of
+1D quadratures) holds for each component separately, so the actual
+polynomial order may be much higher (up to `order**dimension`).
+
 Naming conventions in problem description files::
 
     `<family>_<order>_<dimension>`
