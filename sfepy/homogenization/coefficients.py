@@ -24,12 +24,25 @@ class Coefficients( Struct ):
     def to_file_hdf5( self, filename ):
         write_dict_hdf5( filename, self.__dict__ )
 
-    ##
-    # c: 07.03.2008, r: 07.03.2008
-    def _write2d( self, val ):
+    def _escape_latex(self, txt):
+        return txt.replace('_', '\_').replace('%', '\%')
+
+    def _write1d(self, fd, val):
         fd.write( r'  \begin{equation}' )
         fd.write( '\n' )
-        fd.write( r'    \left[\begin{array}{%s}' % (('c',) * val.shape[0]) )
+        fd.write( r'    \left[' )
+        fd.write( '\n' )
+        fd.write( ', '.join([self.format % vv for vv in val]) )
+        fd.write( '\n' )
+        fd.write( r'    \right]' )
+        fd.write( '\n' )
+        fd.write( r'  \end{equation}' )
+        fd.write( '\n' )
+
+    def _write2d(self, fd, val):
+        fd.write( r'  \begin{equation}' )
+        fd.write( '\n' )
+        fd.write( r'    \left[\begin{array}{%s}' % ('c' * val.shape[0]) )
         fd.write( '\n' )
         for ir in xrange( val.shape[1] ):
             for ic in xrange( val.shape[0] ):
@@ -45,27 +58,45 @@ class Coefficients( Struct ):
         fd.write( r'  \end{equation}' )
         fd.write( '\n' )
         
-    ##
-    # c: 07.03.2008, r: 07.03.2008
-    def to_file_latex( self, filename, names, print_digits ):
-
-        self.format = '%% %d.%df' % (print_digits + 3, print_digits)
-        print self.format
-        fd = open( filename, 'w' )
+    def _save_dict_latex(self, adict, fd, names):
         fd.write( r'\begin{itemize}' )
         fd.write( '\n' )
-        for key, val in self.__dict__.iteritems():
+        for key, val in ordered_iteritems(adict):
+            print key
             try:
                 lname = names[key]
             except:
-                lname = key
+                lname = self._escape_latex(key)
             fd.write( '\item %s:' % lname )
             fd.write( '\n' )
 
-            if val.ndim == 2:
-                self._write2d( val )
+            if isinstance(val, dict):
+                self._save_dict_latex(val, fd, names)
+
+            elif isinstance(val, str):
+                fd.write(self._escape_latex(val) + '\n')
+
+            elif val.ndim == 0:
+                fd.write((self.format % val) + '\n')
+
+            elif val.ndim == 1:
+                self._write1d(fd, val)
+
+            elif val.ndim == 2:
+                self._write2d(fd, val)
+
         fd.write( r'\end{itemize}' )
         fd.write( '\n\n' )
+        
+        
+    def to_file_latex(self, filename, names, print_digits):
+        """
+        Save the coefficients to a file in LaTeX format.
+        """
+        self.format = '%% %d.%df' % (print_digits + 3, print_digits)
+        print self.format
+        fd = open(filename, 'w')
+        self._save_dict_latex(self.__dict__, fd, names)
         fd.close()
 
     ##
