@@ -111,6 +111,7 @@ def setup_package():
         'findSurf.py',
         'genPerMesh.py',
         'homogen.py',
+        'isfepy',
         'postproc.py',
         'probe.py',
         'runTests.py',
