@@ -320,6 +320,7 @@ A FE mesh defining a domain geometry can be stored in several formats:
 * hermes3d mesh file (``.mesh3d``)
 * nastran text mesh file (``.bdf``)
 * gambit neutral text mesh file (``.neu``)
+* salome/pythonocc med binary mesh file (``.med``)
 
 Example::
 
