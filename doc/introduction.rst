@@ -326,15 +326,15 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
     * For this task, we will use the svn support built in to git
     * In the msys window, type the following commands::
 
-        git svn clone http://svn.scipy.org/svn/scikits/trunk/umfpack
-        umfpack-scikit
+        git svn clone http://svn.scipy.org/svn/scikits/trunk/umfpack umfpack-scikit
 
 #. Create the source directory inside ``umfpack-scikit`` to store the source code
    for UMFPACK and AMD
 
     * In msys, type:: 
     
-        mkdir umfpack-scikit/src; cd umfpack-scikit/src
+        mkdir umfpack-scikit/src
+        cd umfpack-scikit/src
 
 #. Download UMFPACK, AMD, and UFconfig source code
 
