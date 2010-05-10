@@ -65,8 +65,9 @@ in Debian::
 On Windows, all the required packages are part of the `Enthought Python
 Distribution (EPD) <http://www.enthought.com/products/epd.php>`_, which is free
 for academic purposes. A completely free `Python(x,y)
-<http://www.pythonxy.com/foreword.php>`_ can be used too, but pyparsing has to
-be installed manually.
+<http://www.pythonxy.com>`_ can be used too, but pyparsing has to
+be installed manually. Instructions for installing Python(x,y) can be found in
+`Running on Windows using Python(x,y) (tested on Windows XP Pro 32-bit)`_.
 
 *SfePy* can be used without any installation by running the scripts from the
 top-level directory of the distribution (TOPDIR), or can be installed locally or
@@ -217,4 +218,222 @@ Finally you can test *SfePy* with::
 
 If some test fails see `Checking the SfePy installation`_ section for further
 details.
+
+
+Running on Windows using Python(x,y) (tested on Windows XP Pro 32-bit)
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Here we provide instructions for using *SfePy* on Windows through
+`Python(x,y)`_. We will also use
+`msysgit <http://code.google.com/p/msysgit>`_ to install the umfpack scikit to
+speed performance. 
+
+You will probably need a few gigabytes of free disk space due to the installed
+size of Python(x,y) and msysgit. 
+
+This procedure was tested on a Windows XP 32-bit machine. It should work in
+theory for any Windows machine supported by Python(x,y) and msysgit, but your
+milage may vary.
+
+There are many steps, but hopefully it is straightforward to follow this
+procedure. If you have any questions or difficulties please feel free to ask on
+the sfepy-devel mailing list (see http://sfepy.org). Also, if you have any
+suggestions for improving or streamlining this process, it would be very
+beneficial as well!
+
+Steps to get a working *SfePy* on Windows using Python(x,y)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+#. Download and install current release of Python(x,y) from the *Downloads* tab
+   at http://www.pythonxy.com/
+
+    * Version at time of writing is 2.6.5.1
+    * Detailed Python(x,y) installation notes
+
+        #. Double click on the Python(x,y) installation file
+        #. Click *Okay* at warning if not installing with an administrator
+           account
+        #. Click *I Agree* at license notification window
+        #. In the *Python* subtree of the *Choose components* window,
+           additionally select the following packages:
+
+            #. ETS
+            #. SymPy
+
+        #. You can optionally select the following packages:
+
+            #. Sphinx - needed to rebuild the documentation
+            #. winpdb - a graphical python debugger - useful for solving
+               problems with *SfePy* runs
+
+        #. You can optionally choose whether or not to install Eclipse - it is
+           not needed by *SfePy*
+        #. In the *Other* subtree of the *Choose components* window,
+           additionally select SWIG
+        #. Choose an installation directory
+
+            * Probably ``C:\pythonxy`` is good unless you have a reason to change it
+
+        #. It will take a few minutes to install Python(x,y)
+
+#. Download and install msysgit from *Downloads* tab at
+   http://code.google.com/p/msysgit/
+
+    * Version at time of writing is 1.7.0.2
+    * Make sure to get the file that begins with ``msysGit-fullinstall``
+    * Detailed msysgit installation notes
+
+    #. Double click on the file beginning with ``msysGit-fullinstall`` to start
+       the installation process
+    #. Choose an installation directory
+
+        * Probably the default, ``C:\msysgit``, is best unless you have a reason
+          to change it
+
+    #. After clicking ok, the msysgit files will be extracted and then a
+       terminal window will open showing git being compiled
+     
+#. Open an msys terminal (or use the one that opens after installing msysgit)
+
+    * The msys terminal is opened with ``C:\msysgit\msys.bat``
+
+#. Install pyparsing using easy_install
+
+    * In the msys terminal, type the following command::
+
+          easy_install http://pypi.python.org/packages/source/p/pyparsing/pyparsing-1.5.2.tar.gz
+
+        * Note: ``easy_install pyparsing`` should also work, but appears to have
+          a problem so it may be better to enter the full URL as above
+
+#. Decide where to put *SfePy* and UMFPACK scikit sources
+
+    * Probably ``C:\src`` is good
+    * In msys, this path would be ``/c/src``
+
+#. Create the source directory and change to it
+
+    * In the msys window, type the following commands::
+
+        mkdir /c/src
+        cd /c/src
+
+#. Download the UMFPACK scikit source code
+
+    * For this task, we will use the svn support built in to git
+    * In the msys window, type the following commands::
+
+        git svn clone http://svn.scipy.org/svn/scikits/trunk/umfpack
+        umfpack-scikit
+
+#. Create the source directory inside ``umfpack-scikit`` to store the source code
+   for UMFPACK and AMD
+
+    * In msys, type:: 
+    
+        mkdir umfpack-scikit/src; cd umfpack-scikit/src
+
+#. Download UMFPACK, AMD, and UFconfig source code
+
+    * In msys, type the following commands::
+
+        curl -O http://www.cise.ufl.edu/research/sparse/umfpack/current/UMFPACK.tar.gz
+        curl -O http://www.cise.ufl.edu/research/sparse/amd/current/AMD.tar.gz
+        curl -O http://www.cise.ufl.edu/research/sparse/UFconfig/current/UFconfig.tar.gz
+
+#. Extract the UMFPACK, AMD, and UFconfig sources
+
+    * In msys, type the following::
+
+        tar zxf UMFPACK.tar.gz
+        tar zxf AMD.tar.gz
+        tar zxf UFconfig.tar.gz
+
+#. Edit ``UFconfig.mk``
+
+    * We need to set some configuration options in ``UFconfig/UFconfig.mk``
+    * Use your favorite text editor to edit this file
+    * Find the line that reads ``UMFPACK_CONFIG =``
+    * Modify this line to the following:
+
+        * ``UMFPACK_CONFIG = -DNCHOLMOD -DNBLAS``
+        * Note: we are disabling BLAS and CHOLMOD to make it easier to compile
+          UMFPACK. This may have some performance penalty associated with it. If
+          you have experience compiling BLAS/LAPACK/ATLAS on Windows, please
+          send us a message on the sfepy-devel mailing list!
+
+#. Now change to the UMFPACK directory and make the library:
+
+    * In msys, type::
+
+        cd UMFPACK
+        make library
+
+#. Copy ``UFconfig.h`` to ``UMFPACK/Include``
+
+    * In msys, type:: 
+    
+        cp ../UFconfig/UFconfig.h Include/
+
+#. Now we need to make a ``site.cfg`` in the umfpack-scikit directory
+   corresponding to our current setup
+
+    * In msys, type::
+
+        cd /c/src/umfpack-scikit
+        cp site.cfg.example site.cfg
+
+   * Using your favorite text editor, change the all the paths to point to the
+     UMFPACK and AMD directories (non-msys paths)
+
+     * E.g., ``include_dirs = /Users/stefan/src/UMFPACK/Include`` ->
+       ``include_dirs = c:/src/umfpack-scikit/src/UMFPACK/Include``
+
+#. Now it's time to install the UMFPACK scikit!
+
+    * In msys, type::
+
+        python setup.py install
+
+    * Congratulations, you should now have a working UMFPACK scikit on Windows!
+
+#. Decide which version of *SfePy* to use
+
+    * If you want to use the stable released version, grab the tarball from the
+      *Downloads* tab at and extract it in ``C:/src``
+
+        * In msys, type:: 
+
+            cd /c/src
+            curl -O http://sfepy.googlecode.com/files/sfepy-release-2010.2.tgz
+            tar zxf sfepy-release-2010.2.tgz
+
+    * If you want to use the latest features and contribute to the development
+      of *SfePy*, clone the git development repository
+
+        * In msys, type::
+
+            cd /c/src
+            git clone git://git.sympy.org/sfepy.git
+
+#. Compile *SfePy* C extensions
+
+   * In msys, change to the *SfePy* directory you downloaded in the preceding
+     step with the ``cd`` command
+   * Type:: 
+
+       python build_ext --inplace --compiler=mingw32
+
+ #. Run *SfePy* tests
+
+    * Congratulations! You should (hopefully) now have a working copy of *SfePy*
+      on Windows 
+    * Please help aid *SfePy* development by running the builtin tests
+
+        * In msys, in the *SfePy* source directory, type::
+
+            ./runTests.py --filter-less
+
+        * Report any failures to the sfepy-devel mailing list
+        * See `Checking the SfePy installation`_ for further details
 
