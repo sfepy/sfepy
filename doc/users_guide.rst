@@ -148,8 +148,14 @@ If it is run without arguments, a help message is printed::
                             input file>]
       --format=format       output file format, one of: {vtk, h5, mesh} [default:
                             vtk]
+      --log=file            log all messages to specified file (existing file will
+                            be overwritten!)
+      -q, --quiet           do not print any messages to screen
       --save-ebc            save problem state showing EBC (Dirichlet conditions)
       --save-regions        save problem regions as meshes
+      --save-regions-as-groups
+                            save problem regions in a single mesh but mark them by
+                            using different element/node group numbers
       --save-field-meshes   save meshes of problem fields (with extra DOF nodes)
       --save-region-field-meshes
                             save meshes of regions of problem fields (with extra
@@ -206,7 +212,7 @@ system. Running ``postproc.py`` without arguments produces::
 
       - create animation (forces offscreen rendering) from
         output-tests/test_time_poisson.*.vtk              
-                                                          
+
         $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
 
       - create animation (forces offscreen rendering) from
@@ -246,12 +252,13 @@ system. Running ``postproc.py`` without arguments produces::
       --ranges=name1,min1,max1:name2,min2,max2:...                                
                             force data ranges [default: automatic from data]      
       -b, --scalar-bar      show scalar bar for each data                         
+      --wireframe           show wireframe of mesh surface for each data          
       --rel-text-width=width                                                      
                             relative text annotation width [default: 0.02]        
       -w, --watch           watch the results file for changes (single file mode  
-                            only)
-      -o filename, --output=filename
-                            view image file name [default: 'view.png']
+                            only)                                                 
+      -o filename, --output=filename                                              
+                            view image file name [default: 'view.png']            
       --output-dir=directory
                             output directory for saving view images; ignored when
                             -o option is given, as the directory part of the
@@ -271,6 +278,8 @@ system. Running ``postproc.py`` without arguments produces::
                             omitted)
       --only-names=list of names
                             draw only named data
+      --group-names=name1,...,nameN:...
+                            superimpose plots of data in each group
       --step=step           set the time step [default: 0]
       --anti-aliasing=value
                             value of anti-aliasing [default: mayavi2 default]
