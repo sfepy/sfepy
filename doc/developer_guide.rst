@@ -9,48 +9,55 @@ This section purports to document the *SfePy* internals. It is mainly useful for
 How to Contribute
 -----------------
 
-Read this section, if you wish to contribute some work to the *SfePy* project.
+Read this section if you wish to contribute some work to the *SfePy* project.
 
 Below we describe
 
-#. where to report or find current problems and issues, plus suggestions of
-   some particular topics
+#. where to report or find current problems, issues, and suggestions of
+   particular topics for additional development
 #. what to do to apply changes/fixes
 #. what to do after you made your changes/fixes
 
 Reporting problems
 ^^^^^^^^^^^^^^^^^^
 
-*Reporting a bug is the first way how to contribute to an open source project*
+*Reporting a bug is the first way in which to contribute to an open source project*
 
 We use the site http://sfepy.org to provide a hub for the developers to post
-problems, ask questions, create wiki pages etc. The address is currently just
+problems, ask questions, create wiki pages, etc. The address is currently just
 an alias to the Google code site http://code.google.com/p/sfepy.
 
 When you encounter a problem, try searching that site first - an answer may
 already be posted in the `sfepy-devel
-<http://groups.google.com/group/sfepy-devel>`_ mailing list (where we suggest
-you to subscribe...), or the problem might have been added to the `Issues
-<http://code.google.com/p/sfepy/issues/list>`_ web page. In case the problem is
-not there, create a new issue with proper labels for the issue type and
-priority, and/or ask us using the mailing list.
+<http://groups.google.com/group/sfepy-devel>`_ mailing list (to which we
+suggest you subscribe...), or the problem might have been added to the `Issues
+<http://code.google.com/p/sfepy/issues/list>`_ web page. As is true in any open
+source project, doing your homework by searching for existing known problems
+greatly reduces the burden on the developers by eliminating duplicate issues.
+If you find your problem already exists in the issue tracker, feel free to
+gather more information and append it to the issue. In case the problem is not
+there, create a new issue with proper labels for the issue type and priority,
+and/or ask us using the mailing list.
 
-**Note** A google account (e.g. gmail account) is needed to join the mailing
+**Note** A google account (e.g., gmail account) is needed to join the mailing
 list and post comments to issues. It is, however, not needed to create a new
 issue.
 
 **Note** When reporting a problem, try to provide as much information as
-possible concerning the version of *SfePy*, the OS / Linux distribution, the
-versions of *Python*, *NumPy* and *SciPy* and other prerequisites.
+possible concerning the version of *SfePy*, the OS / Linux distribution, and
+the versions of *Python*, *NumPy* and *SciPy*, and other prerequisites.
 
-Our persisting all star issues include:
+Our persisting all star top priority issues include:
 
 * missing docstrings in many functions/classes/modules
 * incomplete documentation
 * lowering the barrier for new users
 
+  * e.g., through generation of additional tutorial material
+
 So if you are a new user, let us know, please, what difficulties you have with
-this documentation.
+this documentation. We greatly welcome a variety of contributions not limited
+to code only.
 
 Making changes
 ^^^^^^^^^^^^^^
@@ -61,12 +68,12 @@ the code from the `downloads tab
 site - the git repository (*not* the latest released sources).
 
 We use `git <http://git-scm.com/>`_ to track source code, documentation,
-examples and other files related to the project.
+examples, and other files related to the project.
 
 It is not necessary to learn git in order to contribute to *SfePy* but we
 strongly suggest you do so as soon as possible - it is an extremely useful tool
 not just for writing code, but also for tracking revisions of articles,
-Ph.D. theses, books, ... It will also look well in your CV :-) It is also much
+Ph.D. theses, books, ... it will also look well in your CV :-) It is also much
 easier for us to integrate changes that are in form of a nice git patch than in
 another form.
 
@@ -81,10 +88,10 @@ or (without git):
 Then make the changes as you wish, following our `style guide
 <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
 
-**Note** Do not fear to experiment - git works with your *local* copy of
-the repository, so it is not possible to damage the master
-repository. And it is always possible to re-clone a fresh copy, in case
-you do something that is really bad.
+**Note** Do not be afraid to experiment - git works with your *local* copy of
+the repository, so it is not possible to damage the master repository. It is
+always possible to re-clone a fresh copy, in case you do something that is
+really bad.
 
 Contributing changes
 ^^^^^^^^^^^^^^^^^^^^
@@ -154,15 +161,15 @@ describe a typical development session and the related git commands:
     # an editor will pop up where you should describe the commit
     git commit
 
-#. The commits now reflect changes, but only in your *local* git
-   repository. Then you must somehow allow others to see them. This can
-   be done, for example, by sending a patch (another option below). So
-   create the patches::
+#. The commit(s) now reflect changes, but only in your *local* git
+   repository. Then you must somehow allow others to see them. This can be done,
+   for example, by sending a patch (or through the other option below). So
+   create the patch(es)::
 
-    # create patches for the last two commits
+    # create patches for, e.g., the last two commits
     git format-patch HEAD~2
 
-#. Send the patches to the `sfepy-devel
+#. Send the patch(es) to the `sfepy-devel
    <http://groups.google.com/group/sfepy-devel>`_ mailing list or attach them
    to the corresponding issue at the `Issues
    <http://code.google.com/p/sfepy/issues/list>`_ web page.
@@ -175,12 +182,12 @@ describe a typical development session and the related git commands:
      a deeper git-fu in case of conflicts. For beginners, it is
      advisable to clone always a fresh copy if they see a conflict.
 
-There is another option, however, useful when you wish to get feedback on a
-larger set of changes. This option is to publish your repository at some free
-git hosting web site like `Github <http://github.com/>`_ and let the other
-developers know about it. For example, Robert usually publishes fixes to issues
-at http://github.com/rc/sfepy for review, before pushing them to the main
-repository.
+There is another option than submitting patches, however, useful when you wish
+to get feedback on a larger set of changes. This option is to publish your
+repository at a free git hosting web site like `Github <http://github.com/>`_
+and let the other developers know about it. For example, Robert usually
+publishes fixes to issues at http://github.com/rc/sfepy for review, before
+pushing them to the main repository.
 
 .. _notes_patches:
 
@@ -188,7 +195,7 @@ Notes on commits and patches
 """"""""""""""""""""""""""""
 - Follow our `style guide <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
 - Do not use lines longer than 79 characters (exception: tables of
-  values, e.g. quadratures).
+  values, e.g., quadratures).
 - Write descriptive docstrings in correct style, see :ref:`docstrings`.
 - There should be one patch for one topic - do not mix unrelated things in one
   patch. For example, when you add a new function, then notice a typo in
@@ -206,9 +213,9 @@ Notes on commits and patches
 Docstring standard
 """"""""""""""""""
 
-We use `sphinx <http://sphinx.pocoo.org>`_ with `numpydoc
+We use `sphinx <http://sphinx.pocoo.org>`_ with the `numpydoc
 <http://pypi.python.org/pypi/numpydoc/0.3.1>`_ extension to generate
-this documentation. Refer to the sphinx site for possible markup
+this documentation. Refer to the sphinx site for the possible markup
 constructs.
 
 Basically (with a little tweak), we try to follow the NumPy/SciPy
@@ -218,7 +225,7 @@ the complete `example.py
 <http://svn.scipy.org/svn/numpy/trunk/doc/example.py>`_. It is exaggerated
 a bit to show all the possibilities. Use your common sense here - the
 docstring should be sufficient for a new user to use the documented
-object. A good way for reminding the format
+object. A good way to remember the format
 is to type::
 
     In [1]: import numpy as nm
@@ -269,7 +276,7 @@ When using :math:`\mbox{\LaTeX}` in a docstring, use a raw string::
         :math:`\frac{1}{\pi}`.
 	"""
 
-to prevent Python to interpret and consume the backslashes in common
+to prevent Python from interpreting and consuming the backslashes in common
 escape sequences like '\\n', '\\f' etc.
 
 .. _how_to_regenerate_documentation:
@@ -285,17 +292,17 @@ The following steps summarize how to regenerate this documentation.
    location for Python packages on your platform. A recent
    :math:`\mbox{\LaTeX}` distribution is required, too, for example `TeX Live
    <http://www.tug.org/texlive/>`_. Depending on your OS/platform, it can be in
-   form of one or several packages.
+   the form of one or several packages.
 
 #. Edit the rst files in `doc/` directory using your favorite text editor - the
    ReST format is really simple, so nothing fancy is needed. Follow the
-   existing files in `doc/`, for reference check also [1]_, [2]_ and [3]_.
+   existing files in `doc/`; for reference also check [1]_, [2]_ and [3]_.
 
    - When adding a new Python module, add a corresponding documentation file
      into `doc/src/sfepy/<path>`, where `<path>` should reflect the location of
      the module in `sfepy/`.
 
-   - Figures belong to `doc/images`, subdirectories can be used.
+   - Figures belong to `doc/images`; subdirectories can be used.
 
 #. (Re)generate the documentation (assuming GNU make is installed)::
 
@@ -345,7 +352,7 @@ supported. There are three types of arguments a term can have:
 **The purpose of a term class** is:
 
   #. to extract the real data from its arguments
-  #. to pass those data to a element matrix/rezidual evaluation function
+  #. to pass those data to a element matrix/residual evaluation function
      (usually in C)
 
 So a term class basically transforms the arguments to a form suitable for the
@@ -364,14 +371,14 @@ following attributes and methods:
 - `name` attribute - the name to be used in `equations`
 - `arg_types` attribute - the types of arguments the term accepts
 - `geometry` attribute - the kind of geometrical data the term needs (usually
-  `Volume` of `Surface`)
+  `Volume` or `Surface`)
 - `__call__()` method - subclasses of `Term` either implement `__call__()` or
   plug in a proper `_call()` method that is called by the default
   implementation. It takes the following arguments::
 
       __call__(self, diff_var=None, chunk_size=None, **kwargs)
 
- - `diff_var` is either None (rezidual mode), or the name of the
+ - `diff_var` is either None (residual mode), or the name of the
    variable to differentiate with respect to (matrix mode)
  - `chunk_size` is the number of elements that should be processed in one
    call - `__call__()` is a generator that is called in the assembling loop
@@ -429,14 +436,14 @@ Discussion:
   - `dim`  .. space dimension
   - `n_ep` .. number of element points (=nodes) of each element
 
-- lines 19-26: determine data shape of the chunk, depending whether in rezidual
+- lines 19-26: determine data shape of the chunk, depending whether in residual
   or matrix mode.
 - line 28: get volume base function corresponding to the integral used
 - lines 29-32: evaluate for each chunk and yield the results
 
 In practice, such a term would inherit also from
 :class:`sfepy.terms.terms_base.VectorVector` - then it could look, for example,
-like the :class:`sfepy.terms.termsMass.MassTerm`, i.e. take care just about
+like the :class:`sfepy.terms.termsMass.MassTerm`, i.e., just take care of
 providing the correct arguments to the evaluation function (`self.function`
 attribute)::
 
