@@ -4,7 +4,8 @@ SfePy (Simple finite elements in Python)
 
 A finite element analysis software based primarily on NumPy and SciPy.
 
-See the INSTALL file for installation instructions.
+See the INSTALL file for installation instructions or refer to SfePy
+documentation site [1].
 
 How to start
 ------------
@@ -41,7 +42,7 @@ Once an input file and a corresponding mesh file are prepared, the
 solution of the problem can be attempted by the 'simple.py' script, see
 Examples section in the INSTALL file.
 
-[1] http://code.google.com/p/sfepy/wiki/ProblemDescription
+[1] http://docs.sfepy.org/
 [2] http://en.wikipedia.org/wiki/Weak_formulation
 [3] http://www.vtk.org/pdf/file-formats.pdf
 [4] http://paraview.org/
