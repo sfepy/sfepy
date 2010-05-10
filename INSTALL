@@ -6,12 +6,15 @@ Installation prerequisites:
 
 Dependencies:
 -------------
-    matplotlib, pyparsing, umfpack, pytables
-    schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
-    log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-    isfepy requires ipython, mayavi2, matplotlib with WXAgg
-    postproc.py, sfepy_gui.py require mayavi2
-    to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
+  - mandatory: matplotlib, pyparsing, pytables
+  - optional:
+    - umfpack + umfpack scikit (optional, but strongly recommended)
+    - some tests and functions use sympy
+    - schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
+    - log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
+    - isfepy requires ipython, mayavi2, matplotlib with WXAgg
+    - postproc.py, sfepy_gui.py require mayavi2
+    - to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
 
 SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
 
