@@ -14,7 +14,10 @@ def get_poly(order, dim, is_simplex=False):
     and integrate it symbolically over a rectangular or simplex domain
     for coordinates in [0, 1].
     """
-    xs = sm.symarray(dim, 'x')
+    try:
+        xs = sm.symarray('x', dim)
+    except:
+        xs = sm.symarray(dim, 'x')
 
     opd = max(1, int((order + 1) / dim))
 
