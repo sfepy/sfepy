@@ -142,10 +142,9 @@ and report the output to the sfepy-devel mailing list.
 Platform-specific notes
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Using umfpack on fedora 8
-"""""""""""""""""""""""""
-
-(contributed by David Huard)
+Fedora 8
+""""""""
+Notes on using umfpack (contributed by David Huard).
 
 entry in numpy site.cfg::
 
@@ -170,8 +169,10 @@ site_cfg.py::
 
 (revision http://hg.sympy.org/sfepy/rev/609196c918be is needed) 
 
-Installation on Ubuntu (tested on Jaunty Jackalope 9.04)
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Installation on Ubuntu
+""""""""""""""""""""""
+
+(tested on Jaunty Jackalope 9.04 and Lucid Lynx 10.04)
 
 Prerequisites
 +++++++++++++
@@ -220,8 +221,10 @@ If some test fails see `Checking the SfePy installation`_ section for further
 details.
 
 
-Running on Windows using Python(x,y) (tested on Windows XP Pro 32-bit)
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Running on Windows using Python(x,y)
+""""""""""""""""""""""""""""""""""""
+
+(tested on Windows XP Pro 32-bit)
 
 Here we provide instructions for using *SfePy* on Windows through
 `Python(x,y)`_. We will also use
@@ -283,12 +286,12 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
     * Make sure to get the file that begins with ``msysGit-fullinstall``
     * Detailed msysgit installation notes
 
-    #. Double click on the file beginning with ``msysGit-fullinstall`` to start
-       the installation process
-    #. Choose an installation directory
+        #. Double click on the file beginning with
+           ``msysGit-fullinstall`` to start the installation process
+    	#. Choose an installation directory
 
-        * Probably the default, ``C:\msysgit``, is best unless you have a reason
-          to change it
+            * Probably the default, ``C:\msysgit``, is best unless you
+              have a reason to change it
 
     #. After clicking ok, the msysgit files will be extracted and then a
        terminal window will open showing git being compiled
