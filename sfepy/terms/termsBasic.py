@@ -10,6 +10,9 @@ class IntegrateVolumeTerm( Term ):
     :Definition:
     .. math::
         \int_\Omega y \mbox{ , } \int_\Omega \ul{y}
+
+    :Arguments:
+        parameter : :math:`y` or :math:`\ul{y}`
     """
     name = 'di_volume_integrate'
     arg_types = ('parameter',)
@@ -42,6 +45,9 @@ class IntegrateVolumeOperatorTerm( Term ):
     :Definition:
     .. math::
         \int_\Omega q
+
+    :Arguments:
+        virtual : :math:`q`
     """
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
@@ -78,6 +84,10 @@ class IntegrateVolumeOperatorWTerm(Term):
     :Definition:
     .. math::
         \int_\Omega c q
+
+    :Arguments:
+        material : :math:`c`,
+        virtual  : :math:`q`
     """
     name = 'dw_volume_integrate_w'
     arg_types = ('material', 'virtual',)
@@ -115,6 +125,9 @@ class IntegrateSurfaceTerm( Term ):
     .. math::
         \int_\Gamma y \mbox{ , for vectors: } \int_\Gamma \ul{y} \cdot
         \ul{n}
+
+    :Arguments:
+        parameter : :math:`y` or :math:`\ul{y}`,
     """
     name = 'd_surface_integrate'
     arg_types = ('parameter',)
@@ -155,6 +168,10 @@ class DotProductVolumeTerm( Term ):
     :Definition:
     .. math::
         \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'd_volume_dot'
     arg_types = ('parameter_1', 'parameter_2')
@@ -196,6 +213,10 @@ class DotProductSurfaceTerm( Term ):
     :Definition:
     .. math::
         \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'd_surface_dot'
     arg_types = ('parameter_1', 'parameter_2')
@@ -237,6 +258,9 @@ class IntegrateSurfaceOperatorTerm( Term ):
     :Definition:
     .. math::
         \int_{\Gamma} q
+
+    :Arguments:
+        virtual : :math:`q`
     """
     name = 'dw_surface_integrate'
     arg_types = ('virtual',)
@@ -277,6 +301,10 @@ class IntegrateSurfaceOperatorWTerm(Term):
     :Definition:
     .. math::
         \int_\Gamma c q
+
+    :Arguments:
+        material : :math:`c`,
+        virtual  : :math:`q`
     """
     name = 'dw_surface_integrate_w'
     arg_types = ('material', 'virtual')
@@ -327,6 +355,9 @@ class VolumeTerm( Term ):
     :Definition:
     .. math::
         \int_\Omega 1
+
+    :Arguments:
+        parameter : any variable
     """
     name = 'd_volume'
     arg_types = ('parameter',)
@@ -353,6 +384,9 @@ class SurfaceTerm( Term ):
     :Definition:
     .. math::
         \int_\Gamma 1
+
+    :Arguments:
+        parameter : any variable
     """
     name = 'd_surface'
     arg_types = ('parameter',)
@@ -380,6 +414,9 @@ class VolumeSurfaceTerm( Term ):
     :Definition:
     .. math::
         \int_\Gamma \ul{x} \cdot \ul{n}
+
+    :Arguments:
+        parameter : any variable
     """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
@@ -414,6 +451,10 @@ class SurfaceMomentTerm(Term):
     :Definition:
     .. math::
         \int_{\Gamma} \ul{n} (\ul{x} - \ul{x}_0)
+
+    :Arguments:
+        parameter : any variable,
+        shift     : :math:`\ul{x}_0`
     """
     name = 'di_surface_moment'
     arg_types = ('parameter', 'shift')
@@ -455,8 +496,8 @@ class AverageVolumeMatTerm( Term ):
         \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
 
     :Arguments:
-    material : :math:`m` (can have up to two dimensions),
-    parameter : :math:`y`,
+        material  : :math:`m` (can have up to two dimensions),
+        parameter : :math:`y`
     """
     name = 'de_volume_average_mat'
     arg_types = ('material', 'parameter')
@@ -496,8 +537,9 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
         \int_\Omega m
 
     :Arguments:
-    material : :math:`m` (can have up to two dimensions),
-    parameter : :math:`y`, shape : shape of material parameter
+        material  : :math:`m` (can have up to two dimensions),
+        parameter : :math:`y`, shape : shape of material parameter,
+        shape     : shape of :math:`m`
     """
     name = 'di_volume_integrate_mat'
     arg_types = ('material', 'parameter', 'shape')
@@ -538,8 +580,15 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
         \int_\Omega y q p \mbox{ , } \int_\Omega y \ul{v} \cdot \ul{u} \mbox{ , }
         \int_\Omega y p r \mbox{ , } \int_\Omega y \ul{u} \cdot \ul{w}
 
-    :Arguments:
-    material : weight function :math:`y`
+    :Arguments 1:
+        material : weight function :math:`y`,
+        virtual  : :math:`q` or :math:`\ul{v}`,
+        state    : :math:`p` or :math:`\ul{u}`
+
+    :Arguments 2:
+        material    : weight function :math:`y`,
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'dw_volume_dot_w'
     arg_types = (('material', 'virtual', 'state'),
@@ -622,6 +671,12 @@ class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
     :Definition:
     .. math::
         \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
+
+    :Arguments:
+        ts       : :class:`TimeStepper` instance,
+        material : :math:`\Gcal(\tau)`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
     """
     name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
@@ -673,8 +728,11 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
         \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
 
     :Arguments:
-    material_0 : :math:`\Gcal(0)`,
-    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        ts         : :class:`TimeStepper` instance,
+        material_0 : :math:`\Gcal(0)`,
+        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
+        virtual    : :math:`q`,
+        state      : :math:`p`
     """
     name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -721,6 +779,9 @@ class AverageVariableTerm( Term ):
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} y /
         \int_{T_K} 1
+
+    :Arguments:
+        parameter : :math:`y`
     """
     name = 'de_average_variable'
     arg_types = ('parameter',)
@@ -750,6 +811,9 @@ class StateVQTerm(Term):
     :Definition:
     .. math::
         \ul{u}|_{qp} \mbox{ , } p|_{qp}
+
+    :Arguments:
+        state : :math:`\ul{u}` or :math:`p`
     """
     name = 'dq_state_in_volume_qp'
     arg_types = ('state',)
@@ -784,6 +848,9 @@ class StateSQTerm(Term):
     :Definition:
     .. math::
         \ul{u}|_{qp} \mbox{ , } p|_{qp}
+
+    :Arguments:
+        state : :math:`\ul{u}` or :math:`p`
     """
     name = 'dq_state_in_surface_qp'
     arg_types = ('state',)
