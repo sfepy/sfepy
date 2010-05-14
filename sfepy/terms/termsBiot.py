@@ -87,6 +87,21 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
     .. math::
         \int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega}
         q\ \alpha_{ij} e_{ij}(\ul{u})
+
+    :Arguments 1:
+        material : :math:`\alpha_{ij}`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material : :math:`\alpha_{ij}`,
+        state    : :math:`\ul{u}`,
+        virtual  : :math:`q`
+
+    :Arguments 3:
+        material    : :math:`\alpha_{ij}`,
+        parameter_v : :math:`\ul{u}`,
+        parameter_s : :math:`p`
     """
     name = 'dw_biot'
     arg_types = (('material', 'virtual', 'state'),
@@ -123,6 +138,10 @@ class BiotStressTerm(CauchyStrainTerm):
     .. math::
         \mbox{vector for } K \from \Ical_h:
         \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
+
+    :Arguments:
+        material  : :math:`\alpha_{ij}`,
+        parameter : :math:`\bar{p}`
     """
     name = 'de_biot_stress'
     arg_types = ('material', 'parameter')
@@ -150,6 +169,10 @@ class BiotStressQTerm(Term):
     :Definition:
     .. math::
         \alpha_{ij} \bar{p}|_{qp}
+
+    :Arguments:
+        material  : :math:`\alpha_{ij}`,
+        parameter : :math:`\bar{p}`
     """
     name = 'dq_biot_stress'
     arg_types = ('material', 'parameter')
@@ -257,6 +280,18 @@ class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
         \int_{\Omega} \left [\int_0^t
         \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
         \end{array}
+
+    :Arguments 1:
+        ts       : :class:`TimeStepper` instance,
+        material : :math:`\alpha_{ij}(\tau)`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        ts       : :class:`TimeStepper` instance,
+        material : :math:`\alpha_{ij}(\tau)`,
+        state    : :math:`\ul{u}`,
+        virtual  : :math:`q`
     """
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
@@ -363,9 +398,19 @@ class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
         \alpha_{ij}(t-\tau) e_{kl}(\ul{u}(\tau)) \difd{\tau} \right] q
         \end{array}
     
-    :Arguments:
-    material_0 : :math:`\alpha_{ij}(0)`,
-    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+    :Arguments 1:
+        ts         : :class:`TimeStepper` instance,
+        material_0 : :math:`\alpha_{ij}(0)`,
+        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
+        virtual    : :math:`\ul{v}`,
+        state      : :math:`p`
+
+    :Arguments 2:
+        ts         : :class:`TimeStepper` instance,
+        material_0 : :math:`\alpha_{ij}(0)`,
+        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
+        state      : :math:`\ul{u}`,
+        virtual    : :math:`q`
     """
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
