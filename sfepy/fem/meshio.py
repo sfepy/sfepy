@@ -1151,6 +1151,7 @@ class HDF5MeshIO( MeshIO ):
             for key, val in out.iteritems():
     #            print key
                 dofs = get_default(val.dofs, (-1,))
+                shape = val.get_default_attr('shape', val.data.shape)
                 var_name = val.get_default_attr('var_name', 'None')
 
                 group_name = '__' + key.translate( self._tr )
@@ -1159,6 +1160,7 @@ class HDF5MeshIO( MeshIO ):
                 fd.createArray( data_group, 'data', val.data, 'data' )
                 fd.createArray( data_group, 'mode', val.mode, 'mode' )
                 fd.createArray( data_group, 'dofs', dofs, 'dofs' )
+                fd.createArray( data_group, 'shape', shape, 'shape' )
                 fd.createArray( data_group, 'name', val.name, 'object name' )
                 fd.createArray( data_group, 'var_name',
                                 var_name, 'object parent name' )
@@ -1214,7 +1216,8 @@ class HDF5MeshIO( MeshIO ):
             out[key] = Struct( name = data_group.name.read(),
                                mode = data_group.mode.read(),
                                data = data_group.data.read(),
-                               dofs = tuple( data_group.dofs.read() ) )
+                               dofs = tuple( data_group.dofs.read() ),
+                               shape = tuple( data_group.shape.read() ) )
             if out[key].dofs == (-1,):
                 out[key].dofs = None
 

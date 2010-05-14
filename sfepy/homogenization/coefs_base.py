@@ -98,9 +98,13 @@ class CorrMiniApp( MiniAppBase ):
                     for dvar in var_names:
                         new_key = dvar + '_' + '%d'*len(comp) % comp
                         data = get_state(state[comp], dvar)
+                        var_di = self.problem.variables[dvar] 
+                        shape = (var_di.n_dof / var_di.dpn, var_di.dpn)
                         out[new_key] = Struct(name = 'dump', mode = 'nodes',
                                               data = data,
-                                              dofs = None, var_name = dvar)
+                                              dofs = var_di.dofs,
+                                              shape = shape,
+                                              var_name = dvar)
 
                 else:
                     aux = to_output(state[comp], extend=extend)
@@ -116,9 +120,13 @@ class CorrMiniApp( MiniAppBase ):
         else:
             if is_dump:
                 for dvar in var_names:
+                    var_di = self.problem.variables[dvar]
+                    shape = (var_di.n_dof / var_di.dpn, var_di.dpn)
                     out[dvar] = Struct(name = 'dump', mode = 'nodes',
                                        data = get_state(state, dvar),
-                                       dofs = None, var_name = dvar)
+                                       dofs = var_di.dofs,
+                                       shape = shape,
+                                       var_name = dvar)
             else:
                 out.update(to_output(state, extend=extend))
                 if self.post_process_hook is not None:
@@ -128,7 +136,6 @@ class CorrMiniApp( MiniAppBase ):
         return out
         
     def save(self, state, problem, comps=None):
-
         save_name = self.get_save_name()
         if save_name is not None:
             extend = not self.file_per_var

@@ -71,7 +71,7 @@ def get_correctors_from_file( coefs_filename = 'coefs.h5',
         dkeys = data.keys()
         corr = {}
         for dk in dkeys:
-            corr[dk] = data[dk].data
+            corr[dk] = data[dk].data.reshape(data[dk].shape)
 
         out[corr_name] = corr
 
