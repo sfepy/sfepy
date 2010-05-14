@@ -11,9 +11,12 @@ class MassTerm( VectorVector, Term ):
         \int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}
 
     :Arguments:
-    material : :math:`\rho`,
-    ts.dt : :math:`\dt`,
-    parameter : :math:`\ul{u}_0`"""
+        ts        : :class:`TimeStepper` instance,
+        material  : :math:`\rho`,
+        virtual   : :math:`\ul{v}`,
+        state     : :math:`\ul{u}`,
+        parameter : :math:`\ul{u}_0`
+    """
     name = 'dw_mass'
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
@@ -43,6 +46,11 @@ class MassVectorTerm( MassTerm ):
     :Definition:
     .. math::
         \int_{\Omega} \rho\ \ul{v} \cdot \ul{u}
+
+    :Arguments:
+        material : :math:`\rho`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_mass_vector'
     arg_types = ('material', 'virtual', 'state')
@@ -68,6 +76,14 @@ class MassScalarTerm(ScalarScalar, Term):
     :Definition:
     .. math::
         \int_{\Omega} q p
+
+    :Arguments 1:
+        virtual : :math:`q`,
+        state   : :math:`p`
+
+    :Arguments 2:
+        parameter_1 : :math:`r`,
+        parameter_2 : :math:`p`
     """
     name = 'dw_mass_scalar'
     arg_types = (('virtual', 'state'),
@@ -134,6 +150,16 @@ class MassScalarWTerm(MassScalarTerm):
     :Definition:
     .. math::
         \int_{\Omega} c q p
+
+    :Arguments 1:
+        material : :math:`c`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material    : :math:`c`,
+        parameter_1 : :math:`r`,
+        parameter_2 : :math:`p`
     """
     name = 'dw_mass_scalar_w'
     arg_types = (('material', 'virtual', 'state'),
@@ -149,6 +175,10 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
     :Definition:
     .. math::
         \int_{\Gamma} q p
+
+    :Arguments:
+        virtual : :math:`q`,
+        state   : :math:`p`
     """
     name = 'dw_surface_mass_scalar'
     arg_types = ('virtual', 'state')
@@ -194,6 +224,11 @@ class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     :Definition:
     .. math::
         \int_{\Gamma} c q p
+
+    :Arguments:
+        material : :math:`c`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
     """
     name = 'dw_surface_mass_scalar_w'
     arg_types = ('material', 'virtual', 'state')
@@ -209,10 +244,10 @@ class BCNewtonTerm(MassScalarSurfaceTerm):
         \int_{\Gamma} \alpha q (p - p_{\rm outer})
 
     :Arguments:
-    material_1 : :math:`\alpha`,
-    material_2 : :math:`p_{\rm outer}`,
-    virtual : :math:`q`,
-    state : :math:`p`
+        material_1 : :math:`\alpha`,
+        material_2 : :math:`p_{\rm outer}`,
+        virtual    : :math:`q`,
+        state      : :math:`p`
     """
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
@@ -248,6 +283,12 @@ class MassScalarFineCoarseTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} q_h p_H
+
+    :Arguments:
+        virtual : :math:`q_h`,
+        state   : :math:`p_H`,
+        iemaps  : coarse-fine element maps,
+        pbase   : coarse base functions
     """
     name = 'dw_mass_scalar_fine_coarse'
     arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
