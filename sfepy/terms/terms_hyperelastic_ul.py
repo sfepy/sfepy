@@ -20,6 +20,11 @@ class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
     :Definition:
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+    :Arguments:
+        material : :math:`\mu`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_ul_he_neohook'
     arg_types = ('material', 'virtual', 'state')
@@ -56,6 +61,11 @@ class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
     :Definition:
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+    :Arguments:
+        material : :math:`K`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_ul_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')
@@ -91,6 +101,11 @@ class MooneyRivlinULTerm( VectorVector, HyperElasticULBase ):
     :Definition:
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+    :Arguments:
+        material : :math:`\kappa`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_ul_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
