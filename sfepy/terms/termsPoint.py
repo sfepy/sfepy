@@ -12,6 +12,11 @@ class LinearPointSpringTerm( Term ):
     .. math::
         \ul{f}^i = -k \ul{u}^i \quad \forall \mbox{ FE node } i \mbox{ in
         a region }
+
+    :Arguments:
+        material : :math:`k`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
