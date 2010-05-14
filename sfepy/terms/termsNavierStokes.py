@@ -9,6 +9,11 @@ class DivGradTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
+
+    :Arguments:
+        material : :math:`\nu` (viscosity),
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_div_grad'
     arg_types = ('material', 'virtual', 'state')
@@ -44,6 +49,10 @@ class ConvectTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    :Arguments:
+        virtual : :math:`\ul{v}`,
+        state   : :math:`\ul{u}`
     """
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
@@ -82,6 +91,11 @@ class LinearConvectTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    :Arguments:
+        virtual   : :math:`\ul{v}`,
+        parameter : :math:`\ul{b}`,
+        state     : :math:`\ul{u}`
     """
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
@@ -119,6 +133,10 @@ class LinearConvectQTerm( Term ):
     :Definition:
     .. math::
         ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
+
+    :Arguments:
+        parameter : :math:`\ul{b}`,
+        state     : :math:`\ul{u}`
     """
     name = 'dq_lin_convect'
     arg_types = ('parameter', 'state')
@@ -229,6 +247,18 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     .. math::
         \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , } \int_{\Omega} q\ \nabla
         \cdot \ul{u}
+
+    :Arguments 1:
+        virtual : :math:`\ul{v}`,
+        state   : :math:`\ul{p}`
+
+    :Arguments 2:
+        state   : :math:`\ul{u}`,
+        virtual : :math:`\ul{q}`
+
+    :Arguments 3:
+        parameter_v : :math:`\ul{u}`,
+        parameter_s : :math:`p`
     """
     name = 'dw_stokes'
     arg_types = (('virtual', 'state'),
@@ -264,6 +294,21 @@ class StokesWTerm(StokesTerm):
     .. math::
         \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
         \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
+
+    :Arguments 1:
+        material : :math:`c`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material : :math:`c`,
+        state    : :math:`\ul{u}`,
+        virtual  : :math:`q`
+
+    :Arguments 3:
+        material    : :math:`c`,
+        parameter_v : :math:`\ul{u}`,
+        parameter_s : :math:`p`
     """
     name = 'dw_stokes_w'
     arg_types = (('material', 'virtual', 'state'),
@@ -282,6 +327,9 @@ class GradQTerm( Term ):
     :Definition:
     .. math::
         (\nabla p)|_{qp}
+
+    :Arguments:
+        state : :math:`p`
     """
     name = 'dq_grad'
     arg_types = ('state',)
@@ -315,6 +363,9 @@ class GradETerm( Term ):
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
         \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{w} /
         \int_{T_K} 1
+
+    :Arguments:
+        state : :math:`p` or :math:`\ul{w}`
     """
     name = 'de_grad'
     arg_types = ('state',)
@@ -365,6 +416,11 @@ class GradDivStabilizationTerm( Term ):
     :Definition:
     .. math::
         \gamma \int_{\Omega} (\nabla\cdot\ul{u}) \cdot (\nabla\cdot\ul{v})
+
+    :Arguments:
+        material : :math:`\gamma`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_st_grad_div'
     arg_types = ('material', 'virtual', 'state')
@@ -404,6 +460,11 @@ class PSPGPStabilizationTerm( LaplaceTerm ):
     :Definition:
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q
+
+    :Arguments:
+        material : :math:`\tau_K`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
     """
     name = 'dw_st_pspg_p'
 
@@ -419,6 +480,12 @@ class PSPGCStabilizationTerm( Term ):
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ ((\ul{b} \cdot \nabla) \ul{u})
         \cdot \nabla q
+
+    :Arguments:
+        material  : :math:`\tau_K`,
+        virtual   : :math:`q`,
+        parameter : :math:`\ul{b}`,
+        state     : :math:`\ul{u}`
     """
     name = 'dw_st_pspg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -463,6 +530,12 @@ class SUPGPStabilizationTerm( Term ):
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ \nabla p\cdot ((\ul{b} \cdot
         \nabla) \ul{v})
+
+    :Arguments:
+        material  : :math:`\delta_K`,
+        virtual   : :math:`\ul{v}`,
+        parameter : :math:`\ul{b}`,
+        state     : :math:`p`
     """
     name = 'dw_st_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -507,6 +580,12 @@ class SUPGCStabilizationTerm( Term ):
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ ((\ul{b} \cdot \nabla)
         \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})
+
+    :Arguments:
+        material  : :math:`\delta_K`,
+        virtual   : :math:`\ul{v}`,
+        parameter : :math:`\ul{b}`,
+        state     : :math:`\ul{u}`
     """
     name = 'dw_st_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
