@@ -11,6 +11,16 @@ class DiffusionTerm( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} K_{ij} \nabla_i q \nabla_j p \mbox{ , } \int_{\Omega}
         K_{ij} \nabla_i \bar{p} \nabla_j r
+
+    :Arguments 1:
+        material : :math:`K_{ij}`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material    : :math:`K_{ij}`,
+        parameter_1 : :math:`\bar{p}`,
+        parameter_2 : :math:`r`
     """
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
@@ -73,7 +83,18 @@ class LaplaceTerm(DiffusionTerm):
 
     :Definition:
     .. math::
-        \int_{\Omega} c \nabla s \cdot \nabla r
+        \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
+        c \nabla \bar{p} \cdot \nabla r
+
+    :Arguments 1:
+        material : :math:`c`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material    : :math:`c`,
+        parameter_1 : :math:`\bar{p}`,
+        parameter_2 : :math:`r`
     """
     name = 'dw_laplace'
     arg_types = (('material', 'virtual', 'state'),
@@ -103,6 +124,11 @@ class PermeabilityRTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} K_{ij} \nabla_j q
+
+    :Arguments:
+        material : :math:`K_{ij}`,
+        virtual  : :math:`q`,
+        index    : :math:`j`
     """
     name = 'dw_permeability_r'
     arg_types = ('material', 'virtual', 'index')
@@ -134,6 +160,11 @@ class DiffusionRTerm( PermeabilityRTerm ):
     :Definition:
     .. math::
         \int_{\Omega} K_{j} \nabla_j q
+
+    :Arguments:
+        material : :math:`K_j`,
+        virtual  : :math:`q`,
+        index    : :math:`j`
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
@@ -162,6 +193,10 @@ class DiffusionVelocityTerm( Term ):
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} -K_{ij} \nabla_j r
         / \int_{T_K} 1
+
+    :Arguments:
+        material  : :math:`K_{ij}`,
+        parameter : :math:`r`
     """
     name = 'de_diffusion_velocity'
     arg_types = ('material','parameter')
