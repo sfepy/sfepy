@@ -13,6 +13,10 @@ class LinearTractionTerm( Term ):
     :Definition:
     .. math::
         \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}
+
+    :Arguments:
+        material : :math:`\ull{\sigma}`,
+        virtual  : :math:`\ul{v}`
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
@@ -65,6 +69,12 @@ class SurfaceJumpTerm(Term):
     :Definition:
     .. math::
         \int_{\Gamma} q (p_1 - p_2 - c)
+
+    :Arguments:
+        material : :math:`c`,
+        virtual  : :math:`q`,
+        state_1  : :math:`p_1`,
+        state_2  : :math:`p_2`
     """
     name = 'dw_jump'
     arg_types = ('material', 'virtual', 'state_1', 'state_2')
