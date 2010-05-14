@@ -10,6 +10,11 @@ class AcousticAlphaSA1Term( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha
         \ul{v}, \alpha = 1,\dots,N-1
+
+    :Arguments:
+        parametr_1: :math:`\ul{u}`,
+        parametr_2: :math:`\ul{v}`,
+        parametr_3: :math:`w`
     """
     name = 'd_sa_acoustic_alpha'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -36,6 +41,11 @@ class AcousticAlphaSA2Term( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} \dvg w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v},
         \alpha = 1,\dots,N-1
+
+    :Arguments:
+        parametr_1: :math:`\ul{u}`,
+        parametr_2: :math:`\ul{v}`,
+        parametr_3: :math:`w`
     """
     name = 'd_sa_acoustic_alpha2'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -62,6 +72,11 @@ class AcousticZSATerm( ScalarScalar, Term ):
     :Definition:
     .. math::
         \int_{\Omega} \partial_z w_k\, \partial_k \ul{v}\,\partial_z \ul{u}
+
+    :Arguments:
+        parametr_1: :math:`\ul{u}`,
+        parametr_2: :math:`\ul{v}`,
+        parametr_3: :math:`w`
     """
     name = 'd_sa_acoustic_z'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -88,6 +103,11 @@ class AcousticZSA2Term( ScalarScalar, Term ):
     :Definition:
     .. math::
         \int_{\Omega} \dvg w \partial_z \ul{v}\,\partial_z \ul{u}
+
+    :Arguments:
+        parametr_1: :math:`\ul{u}`,
+        parametr_2: :math:`\ul{v}`,
+        parametr_3: :math:`w`
     """
     name = 'd_sa_acoustic_z2'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
@@ -115,6 +135,12 @@ class AcousticTerm( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2
         \partial_z \ul{v}\,\partial_z \ul{u} ), \alpha = 1,\dots,N-1
+
+    :Arguments:
+        material_1: :math:`p_1`,
+        material_2: :math:`p_2`,
+        virtual:    :math:`\ul{v}`,
+        state:      :math:`\ul{u}`
     """
     name = 'dw_acoustic'
     arg_types = (('material', 'material', 'virtual', 'state'),
@@ -158,6 +184,11 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y},
         \alpha = 1,\dots,N-1
+
+    :Arguments:
+        material_1: :math:`p_1`,
+        material_2: :math:`p_2`,
+        parameter:  :math:`z`
     """
     name = 'd_acoustic_surface'
     arg_types = ('material', 'material', 'parameter')
@@ -186,6 +217,10 @@ class AcousticIntegrateTerm( ScalarScalar, Term ):
     .. math::
         \int_{\Omega} m  \partial_\alpha \ul{u},
         \alpha = 1,\dots,N-1
+
+    :Arguments:
+        material: :math:`m`,
+        virtual:  :math:`\ul{v}`
     """
     name = 'dw_acoustic_integrate'
     arg_types = ('material', 'virtual')
@@ -210,6 +245,9 @@ class AcousticEvalAlphaTerm( Term ):
     .. math::
         \int_{\Omega} \partial_{\alpha} \ul{y},
         \alpha = 1,\dots,N-1
+
+    :Arguments:
+        parameter: :math:`y`
     """
     name = 'd_acoustic_alpha'
     arg_types = ('parameter',)
