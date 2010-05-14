@@ -43,10 +43,11 @@ class CouplingVectorScalarTL(Struct):
             raise StopIteration
 
 class HyperElasticBase( Term ):
-    """Base class for all hyperelastic terms in TL/UL formulation. This is not a
-    proper Term!
+    """Base class for all hyperelastic terms in TL/UL formulation.
 
-    HyperElasticBase.__call__() computes element contributions given either
+    **Note** This is not a proper Term!
+
+    `HyperElasticBase.__call__()` computes element contributions given either
     stress (-> rezidual) or tangent modulus (-> tangent sitffnes matrix),
     i.e. constitutive relation type (CRT) related data. The CRT data are
     computed in subclasses implementing particular CRT (e.g. neo-Hookean
@@ -125,6 +126,9 @@ class DeformationGradientTerm(Term):
         \ull{F} = \pdiff{\ul{x}}{\ul{X}}|_{qp}
         = \ull{I} + \pdiff{\ul{u}}{\ul{X}}|_{qp} \;, \\
         \ul{x} = \ul{X} + \ul{u} \;, J = \det{(\ull{F})}
+
+    :Arguments:
+        state : :math:`\ul{u}`
     """
     name = 'dq_def_grad'
     arg_types = ('state',)
