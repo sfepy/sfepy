@@ -16,11 +16,17 @@ class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
     r"""
     :Description:
     Hyperelastic neo-Hookean term. Effective stress
-    :math:`S_{ij} = \mu J^{-\frac{2}{3}}(\delta_{ij} - \frac{1}{3}C_{kk}C_{ij}^{-1})`.
+    :math:`S_{ij} = \mu J^{-\frac{2}{3}}(\delta_{ij} -
+    \frac{1}{3}C_{kk}C_{ij}^{-1})`.
 
     :Definition:
     .. math::
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        material : :math:`\mu`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_tl_he_neohook'
     arg_types = ('material', 'virtual', 'state')
@@ -52,11 +58,17 @@ class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
     r"""
     :Description:
     Hyperelastic Mooney-Rivlin term. Effective stress
-    :math:`S_{ij} = \kappa J^{-\frac{4}{3}} (C_{kk} \delta_{ij} - C_{ij} - \frac{2}{3 } I_2 C_{ij}^{-1})`.
+    :math:`S_{ij} = \kappa J^{-\frac{4}{3}} (C_{kk} \delta_{ij} - C_{ij}
+    - \frac{2}{3 } I_2 C_{ij}^{-1})`.
 
     :Definition:
     .. math::
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        material : :math:`\kappa`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_tl_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
@@ -93,6 +105,11 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
     :Definition:
     .. math::
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        material : :math:`K`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
 
     name = 'dw_tl_bulk_penalty'
@@ -130,6 +147,11 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     :Definition:
     .. math::
         \int_{\Omega} S_{ij}(p) \delta E_{ij}(\ul{u};\ul{v})
+
+    :Arguments:
+        virtual : :math:`\ul{v}`,
+        state   : :math:`\ul{u}`,
+        state_p : :math:`p`
     """
 
     name = 'dw_tl_bulk_pressure'
@@ -250,6 +272,10 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
          \mbox{de\_rel\_volume mode: vector for } K \from \Ical_h:
          \int_{T_K} J(\ul{u}) / \int_{T_K} 1
          \end{array}
+
+    :Arguments:
+        virtual : :math:`q`,
+        state   : :math:`\ul{u}`
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
@@ -307,6 +333,13 @@ class DiffusionTLTerm(ScalarScalar, Term):
     :Definition:
     .. math::
         \int_{\Omega} \ull{K}(\ul{u}^{(n-1)}) : \pdiff{q}{X} \pdiff{p}{X}
+
+    :Arguments:
+        material_1 : :math:`\ull{k}`,
+        material_2 : :math:`N_f`,
+        virtual    : :math:`q`,
+        state      : :math:`p`,
+        parameter  : :math:`\ul{u}^{(n-1)}`
     """
     name = 'dw_tl_diffusion'
     arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
@@ -366,6 +399,11 @@ class SurfaceTractionTLTerm(VectorVector, Term):
     .. math::
         \int_{\Gamma} \ul{\nu} \cdot \ull{F}^{-1} \cdot \ull{\sigma} \cdot
         \ul{v} J
+
+    :Arguments:
+        material : :math:`\ull{\sigma}`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_tl_surface_traction'
     arg_types = ('material', 'virtual', 'state')
