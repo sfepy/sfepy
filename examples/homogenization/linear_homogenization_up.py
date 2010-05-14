@@ -13,7 +13,7 @@ from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson, stiffness_te
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_elastic as ce
 from sfepy import data_dir
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, debug
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
 def recovery_le( pb, corrs, macro ):
@@ -27,10 +27,10 @@ def recovery_le( pb, corrs, macro ):
                            mode = 'vertex', data = mic_u,
                            var_name = 'u', dofs = None )
     out['p_mic'] = Struct( name = 'output_data',
-                           mode = 'cell', data = mic_p,
+                           mode = 'cell', data = mic_p[:,nm.newaxis,
+                                                       :,nm.newaxis],
                            var_name = 'p', dofs = None )
 
-    mic_p = mic_p[:,0,:0]
     stress_Ym, strain_Ym = compute_stress_strain_u( pb, 'i1', 'Ym', 'matrix.D', 'u', mic_u )
     stress_Ym += compute_mac_stress_part( pb, 'i1', 'Ym', 'matrix.D', 'u', macro['strain'] )
     add_stress_p( stress_Ym, pb, 'i1', 'Ym', 'p', mic_p )    
