@@ -27,6 +27,16 @@ class LinearElasticTerm( VectorVector, Term ):
     :definition:
     .. math::
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+
+    :Arguments 1:
+        material : :math:`D_{ijkl}`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        material    : :math:`D_{ijkl}`,
+        parameter_1 : :math:`\ul{w}`,
+        parameter_2 : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -103,8 +113,8 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
     :Arguments:
         material_1 : :math:`\lambda`,
         material_2 : :math:`\mu`,
-        virtual :    :math:`\ul{v}`,
-        state :      :math:`\ul{u}`
+        virtual    : :math:`\ul{v}`,
+        state      : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
@@ -133,6 +143,12 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
         \int_{\Omega} \left [\int_0^t
         \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau)) \difd{\tau}
         \right]\,e_{ij}(\ul{v})
+
+    :Arguments:
+        ts       : :class:`TimeStepper` instance,
+        material : :math:`\Hcal_{ijkl}(\tau)`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
@@ -183,8 +199,11 @@ class LinearElasticETHTerm(VectorVector, Term):
         \right]\,e_{ij}(\ul{v})
 
     :Arguments:
-    material_0 : :math:`\Hcal_{ijkl}(0)`,
-    material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        ts         : :class:`TimeStepper` instance,
+        material_0 : :math:`\Hcal_{ijkl}(0)`,
+        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
+        virtual    : :math:`\ul{v}`,
+        state      : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -235,6 +254,14 @@ class LinearPrestressTerm(VectorVector, Term):
     :Definition:
     .. math::
         \int_{\Omega} \sigma_{ij} e_{ij}(\ul{v})
+
+    :Arguments 1:
+        material : :math:`\sigma_{ij}`,
+        virtual  : :math:`\ul{v}`
+
+    :Arguments 2:
+        material : :math:`\sigma_{ij}`,
+        parameter : :math:`\ul{u}`
     """
     name = 'dw_lin_prestress'
     arg_types = (('material', 'virtual'),
@@ -302,6 +329,9 @@ class CauchyStrainTerm( Term ):
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
         \int_{T_K} 1
+
+    :Arguments:
+        parameter : :math:`\ul{w}`
     """
     name = 'de_cauchy_strain'
     arg_types = ('parameter',)
@@ -343,6 +373,10 @@ class CauchyStressTerm( CauchyStrainTerm ):
     .. math::
         \mbox{vector for } K \from \Ical_h:
         \int_{T_K} D_{ijkl} e_{kl}(\ul{w}) / \int_{T_K} 1
+
+    :Arguments:
+        material  : :math:`D_{ijkl}`,
+        parameter : :math:`\ul{w}`
     """
     name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
@@ -370,8 +404,11 @@ class CauchyStrainQTerm(Term):
     
     :Definition:
     .. math::
-        \ull{e}(\ul{w})|_{qp}
-    """
+        \ull{e}(\ul{w})|_{qp} 
+
+    :Arguments:
+        parameter : :math:`\ul{w}`
+   """
     name = 'dq_cauchy_strain'
     arg_types = ('parameter',)
     geometry = [(Volume, 'parameter')]
@@ -408,6 +445,10 @@ class CauchyStressQTerm(CauchyStrainQTerm):
     :Definition:
     .. math::
         D_{ijkl} e_{kl}(\ul{w})|_{qp}
+
+    :Arguments:
+        material  : :math:`D_{ijkl}`,
+        parameter : :math:`\ul{w}`
     """
     name = 'dq_cauchy_stress'
     arg_types = ('material', 'parameter')
