@@ -75,8 +75,23 @@ class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad,
 
     :Definition:
     .. math::
-        \int_{\Omega} g_{kij}\ e_{ij}(\ul{u}) \nabla_k q \mbox{ , }
-        \int_{\Omega} g_{kij}\ e_{ij}(\ul{v}) \nabla_k p
+        \int_{\Omega} g_{kij}\ e_{ij}(\ul{v}) \nabla_k p \mbox{ , }
+        \int_{\Omega} g_{kij}\ e_{ij}(\ul{u}) \nabla_k q
+
+    :Arguments 1:
+        material : :math:`g_{kij}`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`p`
+
+    :Arguments 2:
+        material : :math:`g_{kij}`,
+        state    : :math:`\ul{u}`,
+        virtual  : :math:`q`
+
+    :Arguments 3:
+        material    : :math:`g_{kij}`,
+        parameter_v : :math:`\ul{u}`,
+        parameter_s : :math:`p`
     """
     name = 'dw_piezo_coupling'
     arg_types = (('material', 'virtual', 'state'),
