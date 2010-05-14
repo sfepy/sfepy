@@ -128,7 +128,7 @@ class PermeabilityRTerm( Term ):
     :Arguments:
         material : :math:`K_{ij}`,
         virtual  : :math:`q`,
-        index    : :math:`j`
+        index    : :math:`i`
     """
     name = 'dw_permeability_r'
     arg_types = ('material', 'virtual', 'index')
@@ -163,8 +163,7 @@ class DiffusionRTerm( PermeabilityRTerm ):
 
     :Arguments:
         material : :math:`K_j`,
-        virtual  : :math:`q`,
-        index    : :math:`j`
+        virtual  : :math:`q`
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
