@@ -116,14 +116,6 @@ class HomogenizationEngine( SimpleApp ):
             if not '(not_set)' in app.get_dump_name_base():
                 dump_names[app.name] = app.get_dump_name_base()
 
-        req_corr = []
-        req_coef = []
-        for coef_name, cargs in coef_info.iteritems():
-            if type( cargs.get( 'class', [] ) ) == str:
-                req_coef.append( coef_name )
-            else:
-                req_corr.append( coef_name )
-
         def _get_parents(req_list):
             out = []
             for req_name in req_list:
@@ -135,20 +127,19 @@ class HomogenizationEngine( SimpleApp ):
         # Some coefficients can require other coefficients - resolve theirorder
         # here.
         graph = {}
-        for name in req_corr:
-            cargs = coef_info[name]
-            if not name in graph:
-                graph[name] = [0]
+        for coef_name, cargs in coef_info.iteritems():
+            if not coef_name in graph:
+                graph[coef_name] = [0]
 
             requires = cargs.get('requires', [])
             for parent in _get_parents(requires):
-                graph[name].append(parent)
+                graph[coef_name].append(parent)
                 requires.remove('c.' + parent)
             
         sorted_coef_names = sort_by_dependency(deepcopy(graph))
         ## print graph
         ## print sorted_coef_names
-
+        
         coefs = Struct()
         for coef_name in sorted_coef_names:
             cargs = coef_info[coef_name]
@@ -165,19 +156,6 @@ class HomogenizationEngine( SimpleApp ):
                     dependencies[key] = getattr(coefs, name)
 
             val = mini_app( self.volume, data = dependencies )
-            setattr( coefs, coef_name, val )
-            output( '...done' )
-
-        for coef_name in req_coef:
-            cargs = coef_info[coef_name]
-            output( 'computing %s...' % coef_name )
-            requires = cargs.get( 'requires', [] )
-            mclass = cargs.get( 'class', [] )
-            if mclass == 'sum':
-                val = nm.zeros_like( getattr( coefs, requires[0] ) )
-                for req in requires[:]:
-                    val += getattr( coefs, req )
-
             setattr( coefs, coef_name, val )
             output( '...done' )
 

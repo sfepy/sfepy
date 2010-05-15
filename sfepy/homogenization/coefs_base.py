@@ -281,6 +281,16 @@ class CorrOne( CorrMiniApp ):
                        state = state,
                        di = problem.variables.di )
 
+class CorrSum( CorrMiniApp ):
+    
+    def __call__( self, problem = None, data = None ):
+
+        corr = data[self.requires[0]].copy( deep = True )
+        for req in self.requires[1:]:
+            corr.states += data[req].states
+
+        return corr
+
 class PressureEigenvalueProblem( CorrMiniApp ):
     """Pressure eigenvalue problem solver for time-dependent correctors."""
 
@@ -848,5 +858,15 @@ class CoefFMOne( MiniAppBase ):
             coef[step] = val
 
         coef /= volume
+
+        return coef
+
+class CoefSum( MiniAppBase ):
+    
+    def __call__( self, volume, problem = None, data = None ):
+
+        coef = nm.zeros_like( data[self.requires[0]] )
+        for i in range( len(self.requires[:]) ):
+            coef += data[self.requires[i]]
 
         return coef
