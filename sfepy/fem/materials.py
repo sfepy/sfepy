@@ -34,12 +34,6 @@ class Materials( Container ):
             others.append(other)
         return others
 
-    ##
-    # 22.08.2006, c
-    def setup_regions( self, regions ):
-        for mat in self:
-            mat.setup_regions( regions )
-
     def reset(self):
         """Clear material data so that next materials.time_update() is
         performed even for stationary materials."""
@@ -71,52 +65,68 @@ class Material( Struct ):
 
     Material parameters are passed to terms using the dot notation,
     i.e. 'm.E' in our example case.
-    
     """
     @staticmethod
     def from_conf(conf, functions):
         """
         Construct Material instance from configuration.
         """
-        fun = get_default_attr(conf, 'function', None)
-        vals = get_default_attr(conf, 'values', None)
-
-        if (fun is not None) and (vals is not None):
-            msg = 'material can have function or values but not both! (%s)' \
-                  % conf
-            raise ValueError(msg)
-
-        elif vals is not None: # => fun is None
-            fun = ConstantFunction(vals, functions = functions)
-
-        else: # => vals is None
-            fun = functions[fun]
-
-        if (fun is None):
-            msg = 'material has no values! (%s)' % conf
-            raise ValueError(msg)
-
         kind = get_default_attr(conf, 'kind', 'time-dependent')
         flags = get_default_attr(conf, 'flags', {})
-        obj =  Material(conf.name, conf.region, kind, fun, flags)
+
+        function = get_default_attr(conf, 'function', None)
+        values = get_default_attr(conf, 'values', None)
+
+        if isinstance(function, str):
+            function = functions[function]
+
+        obj =  Material(conf.name, kind, function, values, flags)
 
         return obj
     
-    def __init__(self, name, region_name, kind, function, flags):
-        Struct.__init__(self, name = name,
-                        region_name = region_name,
-                        kind = kind,
-                        function = function,
-                        flags = flags,
-                        region = None)
-        self.reset()
-    ##
-    # 22.08.2006, c
-    def setup_regions( self, regions ):
-        region = regions[self.region_name]
-        self.igs = region.igs
-        self.region = region 
+    def __init__(self, name, kind='time-dependent',
+                 function=None, values=None, flags=None, **kwargs):
+        """
+        Parameters
+        ----------
+        name : str
+            The name of the material.
+        kind : 'time-dependent' or 'stationary'
+            The kind of the material.
+        function : function
+            The function for setting up the material values.
+        values : dict
+            Constant material values.
+        flags : dict, optional
+            Special flags.
+        **kwargs : keyword arguments, optional
+            Constant material values passed by their names.
+        """
+        Struct.__init__(self, name=name, kind=kind)
 
+        if (function is not None) and ((values is not None) or len(kwargs)):
+            msg = 'material can have function or values but not both! (%s)' \
+                  % self.name
+            raise ValueError(msg)
+
+        self.flags = get_default(flags, {})
+
+        if hasattr(function, '__call__'): 
+            self.function = function
+
+        elif (values is not None) or len(kwargs): # => function is None
+                all_values = {}
+                all_values.update(values)
+                all_values.update(kwargs)
+
+                self.function = ConstantFunction(all_values)
+
+        else: # => both values and function are None
+            msg = 'material %s: neither function nor values given! (%s)' \
+                  % self.name
+            raise ValueError(msg)
+
+        self.reset()
 
     def iter_qps(self, equations, variables, only_new=True):
         """
@@ -141,7 +151,7 @@ class Material( Struct ):
 
                 qps = aps.get_physical_qps(term.region, term.integral)
 
-                yield key, term.igs(), qps
+                yield key, term.igs(), term.region, qps
 
     def set_data(self, key, ig, qps, data):
         """
@@ -181,24 +191,21 @@ class Material( Struct ):
 
         self.datas = {}
         # Quadrature point function values.
-        for key, igs, qps in self.iter_qps(equations, variables):
-            for ig in self.igs:
-                if ig not in igs: continue
-
+        for key, igs, region, qps in self.iter_qps(equations, variables):
+            for ig in igs:
                 self.datas.setdefault(key, {})
                 if (qps.n_qp[ig] == 0):
                     self.set_data(key, ig, qps, None)
                     continue
 
                 data = self.function(ts, qps.values[ig], mode='qp',
-                                     region=self.region, ig=ig,
+                                     region=region, ig=ig,
                                      **self.extra_args)
 
                 self.set_data(key, ig, qps, data)
 
         # Special function values (e.g. flags).
-        datas = self.function(ts, domain.get_mesh_coors(), mode='special',
-                              region=self.region)
+        datas = self.function(ts, domain.get_mesh_coors(), mode='special')
         if datas is not None:
             self.datas['special'] = datas
             self.special_names.update(datas.keys())
@@ -248,7 +255,7 @@ class Material( Struct ):
     def _get_data( self, key, ig, name ):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
-                  '(material: %s, region: %s)' % (self.name, region_name)
+                  '(material: %s, key: %s)' % (self.name, key)
             raise ValueError( msg )
 
         if self.datas is None:

@@ -120,7 +120,6 @@ class ProblemDefinition( Struct ):
         self.domain.create_regions(conf_regions, functions)
 
         materials = Materials.from_conf(conf_materials, functions)
-        materials.setup_regions(self.domain.regions)
         self.materials = materials
 
     ##

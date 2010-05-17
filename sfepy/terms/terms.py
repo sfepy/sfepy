@@ -358,16 +358,6 @@ class Term( Struct ):
                              (self.name, igs, name, field.igs(), field.name)
                     raise ValueError(msg)
 
-        mns = self.get_material_names()
-        for name in mns:
-            mat = materials[name]
-
-            if not set( igs ).issubset( set( mat.igs ) ):
-                msg= ('%s: incompatible regions: (self, material)'
-                      + ' (%s(%s) in %s(%s)') %\
-                      (self.name, igs, name, mat.igs, mat.name)
-                raise ValueError(msg)
-
     ##
     # 24.07.2006, c
     def get_variable_names( self ):
