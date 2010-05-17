@@ -6,8 +6,11 @@ from functions import ConstantFunction
 # 21.07.2006, c
 class Materials( Container ):
 
+    @staticmethod
     def from_conf(conf, functions, wanted=None):
-        """Construct Materials instance from configuration."""
+        """
+        Construct Materials instance from configuration.
+        """
         if wanted is None:
             wanted = conf.keys()
 
@@ -15,29 +18,11 @@ class Materials( Container ):
         for key, mc in conf.iteritems():
             if key not in wanted: continue
 
-            fun = get_default_attr(mc, 'function', None)
-            vals = get_default_attr(mc, 'values', None)
-            if (fun is not None) and (vals is not None):
-                msg = 'material can have function or values but not both! (%s)' \
-                      % mc
-                raise ValueError(msg)
-            elif vals is not None: # => fun is None
-                fun = ConstantFunction(vals, functions = functions)
-            else: # => vals is None
-                fun = functions[fun]
-
-            if (fun is None):
-                msg = 'material has no values! (%s)' % mc
-                raise ValueError(msg)
-
-            kind = get_default_attr(mc, 'kind', 'time-dependent')
-            flags = get_default_attr(mc, 'flags', {})
-            mat =  Material(mc.name, mc.region, kind, fun, flags)
+            mat = Material.from_conf(mc, functions)
             objs.append(mat)
 
         obj = Materials( objs )
         return obj
-    from_conf = staticmethod( from_conf )
 
     def semideep_copy(self):
         """Copy materials, while external data (e.g. region) remain shared."""
@@ -88,6 +73,35 @@ class Material( Struct ):
     i.e. 'm.E' in our example case.
     
     """
+    @staticmethod
+    def from_conf(conf, functions):
+        """
+        Construct Material instance from configuration.
+        """
+        fun = get_default_attr(conf, 'function', None)
+        vals = get_default_attr(conf, 'values', None)
+
+        if (fun is not None) and (vals is not None):
+            msg = 'material can have function or values but not both! (%s)' \
+                  % conf
+            raise ValueError(msg)
+
+        elif vals is not None: # => fun is None
+            fun = ConstantFunction(vals, functions = functions)
+
+        else: # => vals is None
+            fun = functions[fun]
+
+        if (fun is None):
+            msg = 'material has no values! (%s)' % conf
+            raise ValueError(msg)
+
+        kind = get_default_attr(conf, 'kind', 'time-dependent')
+        flags = get_default_attr(conf, 'flags', {})
+        obj =  Material(conf.name, conf.region, kind, fun, flags)
+
+        return obj
+    
     def __init__(self, name, region_name, kind, function, flags):
         Struct.__init__(self, name = name,
                         region_name = region_name,
