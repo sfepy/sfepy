@@ -248,3 +248,39 @@ pngmath_latex_preamble = latex_preamble
 
 # Turn off numpydoc autosummary tables
 numpydoc_show_class_members = False
+
+def process_terms(app, what_, name, obj, options, lines):
+    """
+    Prepend term call signature(s) into term docstrings.
+    """
+    from types import TypeType
+    from sfepy.terms import Term
+
+    if isinstance(obj, TypeType):
+        if issubclass(obj, Term) and len(obj.name):
+            arg_types = obj.arg_types
+            if ((len(arg_types) > 1) and not isinstance(arg_types[0], str)):
+                arg_types = [', '.join(['%s' % arg for arg in arg_type])
+                             for arg_type in arg_types]
+                at_lines = [' ``(%s)``' % arg_type for arg_type in arg_types]
+
+            else:
+                arg_types = ', '.join(['%s' % arg for arg in arg_types])
+                at_lines = [' ``(%s)``' % arg_types]
+            
+
+            len0 = len(obj.name) + 4
+            lines.insert(0, ':Call signature:')
+            lines.insert(1, ('=' * len0) + ' ===')
+            lines.insert(2, '**%s** %s' % (obj.name, at_lines[0]))
+            for ii, line in enumerate(at_lines[1:]):
+                lines.insert(3+ii, '..' + (' ' * (len0 - 2)) + line)
+            lines.insert(3+len(at_lines), ('=' * len0) + ' ===')
+
+    # make sure there is a blank line at the end
+    if lines and lines[-1]:
+        lines.append('')
+
+
+def setup(app):
+    app.connect('autodoc-process-docstring', process_terms)
