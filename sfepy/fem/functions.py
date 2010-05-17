@@ -41,7 +41,7 @@ class Function(Struct):
 class ConstantFunction(Function):
     """Function with constant values."""
 
-    def __init__(self, values, functions=None):
+    def __init__(self, values):
         """Make a function out of a dictionary of constant values. When
         called with coors argument, the values are repeated for each
         coordinate."""
@@ -71,6 +71,3 @@ class ConstantFunction(Function):
         
         Function.__init__(self, name = name, function = get_constants,
                           is_constant = True)
-
-        if functions is not None:
-            functions.append(self)
