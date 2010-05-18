@@ -367,16 +367,27 @@ class Container( Struct ):
 
         self.names = [obj.name for obj in self._objs]
 
-    ##
-    # 14.11.2005, c
-    def __getitem__( self, ii ):
+    def __setitem__(self, ii, obj):
         try:
-            if isinstance( ii, int ):
-                return self._objs[ii]
-            elif isinstance( ii, str ):
-                return self._objs[self.names.index(ii)]
-            else:
+            if isinstance(ii, str):
+                ii = self.names.index(ii)
+            elif not isinstance(ii, int):
                 raise ValueError('bad index type! (%s)' % type(ii))
+
+            self._objs[ii] = obj
+            self.names[ii] = obj.name
+
+        except (IndexError, ValueError), msg:
+            raise IndexError(msg)
+
+    def __getitem__(self, ii):
+        try:
+            if isinstance(ii, str):
+                ii = self.names.index(ii)
+            elif not isinstance( ii, int ):
+                raise ValueError('bad index type! (%s)' % type(ii))
+
+            return  self._objs[ii]
 
         except (IndexError, ValueError), msg:
             raise IndexError(msg)
