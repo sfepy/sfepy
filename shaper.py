@@ -19,47 +19,34 @@ from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.solvers import Solver
 from sfepy.fem.variables import zero_conf_ebc
 
-##
-# 11.10.2007, c
-# 17.10.2007
-def solve_stokes( dpb, equations_stokes, nls_conf ):
-    dpb.set_equations( equations_stokes )
-    dpb.time_update( None )
-    output( 'Stokes...' )
-    return dpb.solve( nls_conf = nls_conf )
+def solve_stokes(dpb, equations_stokes, nls_conf):
+    dpb.set_equations(equations_stokes)
+    dpb.time_update(None)
 
-##
-# 22.11.2006, c
-# 23.11.2006
-# 20.03.2007
-# 26.07.2007
-# 11.10.2007
-# 17.10.2007
-def solve_navier_stokes( conf, options ):
+    output('solving Stokes problem...')
+    vec = dpb.solve(nls_conf=nls_conf)
+    output('...done')
+
+    return vec
+
+def solve_navier_stokes(conf, options):
     opts = conf.options
 
-    dpb = ProblemDefinition.from_conf( conf, init_equations = False )
-    equations = getattr( conf, '_'.join( ('equations_direct', opts.problem) ) )
-
-    dpb.set_equations( equations )
+    dpb = ProblemDefinition.from_conf(conf, init_equations=False)
+    equations = getattr(conf, '_'.join(('equations_direct', opts.problem)))
+    dpb.set_equations(equations)
 
     ls_conf = dpb.get_solver_conf( opts.ls )
-    nls_conf = dpb.get_solver_conf( opts.nls_direct )
-
-    ls = Solver.any_from_conf( ls_conf )
+    nls_conf = dpb.get_solver_conf(opts.nls_direct)
 
     method = opts.direct_method
     if method == 'stationary':
         data = {}
-        dpb.time_update( None )
-        ev = BasicEvaluator( dpb, data = data )
-
-        vec_dp0 = dpb.create_state_vector()
-        dpb.apply_ebc( vec_dp0 )
-        nls = Solver.any_from_conf( nls_conf, evaluator = ev, lin_solver = ls )
-        vec_dp = nls( vec_dp0 )
+        dpb.time_update(None)
+        vec_dp = dpb.solve(nls_conf=nls_conf)
 
     elif method == 'transient':
+        ls = Solver.any_from_conf( ls_conf )
         ts_conf = dpb.get_solver_conf( opts.ts_direct )
 
         data = {'ts' : Struct( dt = ts_conf.dt )}
@@ -121,39 +108,26 @@ def solve_navier_stokes( conf, options ):
     
     return dpb, vec_dp, data
 
-##
-# 01.11.2007, c
-def solve_generic_direct( conf, options ):
+def solve_generic_direct(conf, options):
     opts = conf.options
 
-    dpb = ProblemDefinition.from_conf( conf, init_equations = False )
-    equations = getattr( conf,
-                         '_'.join( ('equations_direct', opts.problem) ) )
-    dpb.set_equations( equations )
+    dpb = ProblemDefinition.from_conf(conf, init_equations=False)
+    equations = getattr(conf, '_'.join(('equations_direct', opts.problem)))
+    dpb.set_equations(equations)
 
-    ls_conf = dpb.get_solver_conf( opts.ls )
-    nls_conf = dpb.get_solver_conf( opts.nls_direct )
+    dpb.time_update(None)
 
-    ls = Solver.any_from_conf( ls_conf )
+    nls_conf = dpb.get_solver_conf(opts.nls_direct)
+    vec_dp = dpb.solve(nls_conf=nls_conf)
 
-    data = {}
-    dpb.time_update( None )
-    ev = BasicEvaluator( dpb, data = data )
-
-    vec_dp0 = dpb.create_state_vector()
-    dpb.apply_ebc( vec_dp0 )
-
-    nls = Solver.any_from_conf( nls_conf, evaluator = ev, lin_solver = ls )
-    vec_dp = nls( vec_dp0 )
-##     pause()
-##     vec_dp[dpb.variables.get_indx( 'r' )] += 100.0
-##     vec_dp = nls( vec_dp )
-##     pause()
     return dpb, vec_dp, data
 
 ##
 # c: 22.11.2006, r: 15.04.2008
 def solve_direct( conf, options ):
+    """
+    Solve the direct (nonlinear) problem.
+    """
     opts = conf.options
     if hasattr( opts, 'problem' ):
         if opts.problem == 'navier_stokes':
@@ -193,68 +167,57 @@ def solve_direct( conf, options ):
 
     return dpb, vec_dp, data
 
-##
-# c: 01.11.2007, r: 15.04.2008
-def solve_generic_adjoint( conf, options, dpb, vec_dp, data ):
+def solve_adjoint(conf, options, dpb, vec_dp, data):
+    """
+    Solve the adjoint (linear) problem.
+    """
     opts = conf.options
 
     if dpb:
-        apb = dpb.copy( share = ['domain', 'conf', 'fields',
-                                 'materials', 'mtx_a', 'solvers'] )
-        ebc = zero_conf_ebc( conf.ebcs )
-        apb.set_variables( conf.variables ) 
+        apb = dpb.copy(share=['domain', 'conf', 'fields',
+                              'materials', 'mtx_a', 'solvers'])
+        ebc = zero_conf_ebc(conf.ebcs)
+        apb.set_variables(conf.variables) 
+
     else:
-        ebc = conf.ebcs = zero_conf_ebc( conf.ebcs )
-        apb = ProblemDefinition.from_conf( conf )
+        ebc = conf.ebcs = zero_conf_ebc(conf.ebcs)
+        apb = ProblemDefinition.from_conf(conf)
 
-    equations = getattr( conf, '_'.join( ('equations_adjoint',
-                                          opts.problem,
-                                          opts.objective_function) ) )
-    apb.set_equations( equations )
-    apb.time_update( None, conf_ebc = ebc )
-
-    vec_ap = apb.create_state_vector()
-    apb.apply_ebc( vec_ap )
+    equations = getattr(conf, '_'.join(('equations_adjoint',
+                                        opts.problem,
+                                        opts.objective_function)))
+    apb.set_equations(equations)
+    apb.time_update(None, conf_ebc=ebc)
 
     so.set_state_to_vars( apb.variables, opts.var_map, vec_dp )
 
-    ls_conf = apb.get_solver_conf( opts.ls )
-    nls_conf = apb.get_solver_conf( opts.nls_adjoint )
+    nls_conf = apb.get_solver_conf(opts.nls_adjoint)
+    vec_ap = apb.solve(nls_conf=nls_conf)
 
-    ls = Solver.any_from_conf( ls_conf )
+    trunk = io.get_trunk(conf.filename_mesh)
+    apb.save_state(trunk + '_adjoint.vtk', vec_ap)
 
-    ev = BasicEvaluator( apb, data = data )
-    nls = Solver.any_from_conf( nls_conf, evaluator = ev, lin_solver = ls )
-
-    vec_ap = nls( vec_ap )
-
-    trunk = io.get_trunk( conf.filename_mesh )
-    apb.save_state( trunk + '_adjoint.vtk', vec_ap )
-
-    shape_opt = so.ShapeOptimFlowCase.from_conf( conf, apb.domain )
-##     print shape_opt
-##     pause()
+    shape_opt = so.ShapeOptimFlowCase.from_conf(conf, apb.domain)
+    ## print shape_opt
+    ## pause()
 
     if options.test is not None:
         ##
         # Test shape sensitivity.
         if shape_opt.test_terms_if_test:
-            so.test_terms( [options.test], opts.term_delta, shape_opt,
-                           vec_dp, vec_ap, apb )
+            so.test_terms([options.test], opts.term_delta, shape_opt,
+                          vec_dp, vec_ap, apb)
 
-        dev = BasicEvaluator( dpb, data = data )
-        dnls_conf = apb.get_solver_conf( opts.nls_direct )
-        dnls = Solver.any_from_conf( dnls_conf, evaluator = dev, lin_solver = ls )
-        shape_opt.check_sensitivity( [options.test], opts.delta, vec_dp, vec_ap,
-                                   dnls, apb.conf,
-                                   apb.domain, apb.variables,
-                                   apb.materials, data )
+        shape_opt.check_sensitivity([options.test], opts.delta, vec_dp, vec_ap,
+                                    dpb, apb.conf,
+                                    apb.domain, apb.variables,
+                                    apb.materials, data)
     ##
     # Compute objective function.
-    val = shape_opt.obj_fun( vec_dp, apb.conf, apb.domain,
-                           apb.variables, apb.materials, data = data )
+    val = shape_opt.obj_fun(vec_dp, apb.conf, apb.domain,
+                            apb.variables, apb.materials, data=data)
     print 'actual obj_fun:', val
-##         pause()
+    ## pause()
 
     ##
     # Compute shape sensitivity.
@@ -263,126 +226,8 @@ def solve_generic_adjoint( conf, options, dpb, vec_dp, data ):
                                   data = data )
     print 'actual sensitivity:', vec_sa
 
-##
-# c: 22.11.2006, r: 15.04.2008
-def solve_navier_stokes_adjoint( conf, options, dpb, vec_dp, data ):
-    opts = conf.options
-
-    if dpb:
-        apb = dpb.copy( share = ['domain', 'conf', 'fields',
-                                 'materials', 'mtx_a', 'solvers'] )
-        ebc = zero_conf_ebc( conf.ebcs )
-        apb.set_variables( conf.variables ) 
-    else:
-        ebc = conf.ebcs = zero_conf_ebc( conf.ebcs )
-        apb = ProblemDefinition.from_conf( conf )
-
-    equations = getattr( conf, '_'.join( ('equations_adjoint',
-                                          opts.problem,
-                                          opts.objective_function) ) )
-
-    apb.set_equations( equations )
-
-    extra_mat_args = {}
-    fixed_data = None
-    aux_conf = apb.get_solver_conf( opts.nls_direct )
-    if hasattr( aux_conf, 'stabil_mat_name' ):
-        st_name = aux_conf.stabil_mat_name
-        if apb.materials.has_key( st_name ):
-            mat = apb.materials[st_name]
-            fixed_data = copy( mat.datas )
-            vec_b = vec_dp[dpb.variables.get_indx( 'w' )]
-            b_norm = nla.norm( vec_b, nm.inf )
-            extra_mat_args = {st_name : {'b_norm' : b_norm, 'fixed_data' : fixed_data}}
-            
-    apb.time_update( None, conf_ebc = ebc, extra_mat_args = extra_mat_args )
-
-    indx = dpb.variables.get_indx( 'r' )
-    vec_dp[indx,nm.newaxis].tofile( 'p_p.txt', ' ' )
-
-    is_pressure = 'r' in apb.variables.names
-    if not options.direct:
-        vec_u, vec_p = fluu.read_state( conf, apb.fields, 1 )
-
-        # For objective funstion...
-        vec_dp = apb.create_state_vector()
-        apb.variables.set_state_part( vec_dp, vec_u.ravel(), 'w' )
-        if is_pressure:
-            apb.variables.set_state_part( vec_dp, vec_p, 'r' )
-
-    vec_ap = apb.create_state_vector()
-    apb.apply_ebc( vec_ap )
-
-    so.set_state_to_vars( apb.variables, opts.var_map, vec_dp )
-
-    ls_conf = apb.get_solver_conf( opts.ls )
-    nls_conf = apb.get_solver_conf( opts.nls_adjoint )
-
-    ls = Solver.any_from_conf( ls_conf )
-
-    ev = BasicEvaluator( apb, data = data )
-    if nls_conf.kind == 'nls.oseen':
-        nls_conf.fixed_data = fixed_data
-    nls = Solver.any_from_conf( nls_conf, evaluator = ev, lin_solver = ls )
-
-    vec_ap = nls( vec_ap )
-
-    indx = apb.variables.get_indx( 'r' )
-    vec_ap[indx,nm.newaxis].tofile( 'p_r.txt', ' ' )
-
-    trunk = io.get_trunk( conf.filename_mesh )
-    apb.save_state( trunk + '_adjoint.vtk', vec_ap )
-
-    shape_opt = so.ShapeOptimFlowCase.from_conf( conf, apb.domain )
-##     print shape_opt
-##     pause()
-
-    if options.test is not None:
-        ##
-        # Test shape sensitivity.
-        if shape_opt.test_terms_if_test:
-            so.test_terms( [options.test], opts.term_delta, shape_opt,
-                           vec_dp, vec_ap, apb )
-
-        dev = BasicEvaluator( dpb, data = data )
-        dnls_conf = apb.get_solver_conf( opts.nls_direct )
-        if dnls_conf.kind == 'nls.oseen':
-            dnls_conf.fixed_data = fixed_data
-        dnls = Solver.any_from_conf( dnls_conf, evaluator = dev, lin_solver = ls )
-        shape_opt.check_sensitivity( [options.test], opts.delta, vec_dp, vec_ap,
-                                   dnls, apb.conf,
-                                   apb.domain, apb.variables,
-                                   apb.materials, data )
-    ##
-    # Compute objective function.
-    val = shape_opt.obj_fun( vec_dp, apb.conf, apb.domain,
-                           apb.variables, apb.materials, data = data )
-    print 'actual obj_fun:', val
-##         pause()
-
-    ##
-    # Compute shape sensitivity.
-    vec_sa = shape_opt.sensitivity( vec_dp, vec_ap, apb.conf, apb.domain,
-                                  apb.variables, apb.materials,
-                                  data = data )
-    print 'actual sensitivity:', vec_sa
-
-##         pylab.plot( vec_sa )
-##         pylab.show()
-
-##
-# 01.11.2007, c
-def solve_adjoint( conf, options, dpb, vec_dp, data ):
-    opts = conf.options
-    if hasattr( opts, 'problem' ):
-        if opts.problem == 'navier_stokes':
-            solve_navier_stokes_adjoint( conf, options, dpb, vec_dp, data )
-        else:
-            output( 'unknown problem type (%s), using generic solver.'\
-                    % opts.problem )
-            solve_generic_adjoint( conf, options, dpb, vec_dp, data )
-    else: # Generic direct problem.
-        solve_generic_adjoint( conf, options, dpb, vec_dp, data )
+    ## pylab.plot(vec_sa)
+    ## pylab.show()
 
 ##
 # c: 22.11.2006, r: 15.04.2008
