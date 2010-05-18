@@ -543,8 +543,9 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
         """
         weight, virtual = self.get_args( **kwargs )
         ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
-
-        shape = (chunk_size, 1, sg.n_fp, 1 )
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+                                                     self.region.name )
+        shape = (chunk_size, 1, n_fp, 1 )
 
         sd = ap.surface_data[self.region.name]
 
