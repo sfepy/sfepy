@@ -276,7 +276,7 @@ int32 dw_st_adj_supg_c( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg->bfGM, iel );
     FMF_SetCell( vg->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stU, stateU, conn + nEP * iel );
     // u.
@@ -392,7 +392,7 @@ int32 dw_st_adj1_supg_p( FMField *out,
     FMF_SetCell( vg_w->bfGM, iel );
     FMF_SetCell( vg_p->bfGM, iel );
     FMF_SetCell( vg_w->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stP, stateP, conn_p + nEP_p * iel );
     // grad p.
@@ -483,7 +483,7 @@ int32 dw_st_adj2_supg_p( FMField *out,
     FMF_SetCell( vg_u->bfGM, iel );
     FMF_SetCell( vg_r->bfGM, iel );
     FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     ele_extractNodalValuesDBD( stU, stateU, conn_u + nEP_u * iel );
     // grad u.
@@ -1372,7 +1372,7 @@ int32 d_sd_st_supg_c( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg_u->bfGM, iel );
     FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     // u.
     ele_extractNodalValuesDBD( stU, stateU, conn_u + nEP_u * iel );
@@ -1552,7 +1552,7 @@ int32 d_sd_st_pspg_c( FMField *out,
     FMF_SetCell( vg_u->bfGM, iel );
     FMF_SetCell( vg_r->bfGM, iel );
     FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     // u.
     ele_extractNodalValuesDBD( stU, stateU, conn_u + nEP_u * iel );
@@ -1711,7 +1711,7 @@ int32 d_sd_st_pspg_p( FMField *out,
     FMF_SetCell( out, ii );
     FMF_SetCell( vg_p->bfGM, iel );
     FMF_SetCell( vg_p->det, iel );
-    FMF_SetCell( coef, iel );
+    FMF_SetCell( coef, ii );
 
     // p.
     ele_extractNodalValuesDBD( stP, stateP, conn_p + nEP_p * iel );
