@@ -126,14 +126,14 @@ def test_terms( idsgs, delta, shape_opt, vec_dp, vec_ap, pb ):
     dd = {}
     ccs = shape_opt.check_custom_sensitivity
 
-##     ccs( 'd_sd_st_grad_div.Omega_D( stabil.gamma, w, u, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_st_supg_c.Omega_D( stabil.delta, w, w, u, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_st_pspg_c.Omega_D( stabil.tau, r, w, u, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
 ##     pb.variables.non_state_data_from_state( 'p', vec_dp, 'r' )
 
@@ -173,20 +173,20 @@ def test_terms( idsgs, delta, shape_opt, vec_dp, vec_ap, pb ):
     ccs( 'd_sd_st_pspg_p.i1.Omega( stabil.tau, p, p, Nu, mode )',
          idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_test_pq.Omega_D( p, r, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_test_pq.i1.Omega_D( p, r, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_div.Omega_D( u, r, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_div.i1.Omega_D( u, r, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_div.Omega_D( w, p, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_div.i1.Omega_D( w, p, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_div_grad.Omega_D( one, fluid, u, w, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
-##     ccs( 'd_sd_convect.Omega_D( u, w, Nu, mode )',
-##          idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs( 'd_sd_convect.i2.Omega_D( u, w, Nu, mode )',
+         idsgs, delta, vec_dp, vec_ap, pb, dd )
 
 ##
 # 25.01.2006, c
@@ -323,11 +323,8 @@ class ShapeOptimFlowCase( Struct ):
         vec_sa = nm.array( sa, nm.float64 )
         return vec_sa
 
-    ##
-    # created:       27.02.2006
-    # last revision: 02.01.2008
-    def check_custom_sensitivity( self, term_desc, idsg, delta, vec_dp, vec_ap,
-                                pb, data = None ):
+    def check_custom_sensitivity(self, term_desc, idsg, delta, vec_dp, vec_ap,
+                                 pb, data=None):
 
         variables = pb.variables
         domain = pb.domain
@@ -348,7 +345,7 @@ class ShapeOptimFlowCase( Struct ):
         a_grad = []
         d_grad = []
 
-        coors0 = domain.mesh.nod0[:,:-1].copy() 
+        coors0 = domain.mesh.coors
 
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), [idsg] ):
             vec_nu = nu.ravel()
@@ -381,18 +378,12 @@ class ShapeOptimFlowCase( Struct ):
         output( '-> ratio:', a_grad / d_grad )
         pause()
 
-    ##
-    # created:       25.01.2006
-    # last revision: 02.01.2008
-    def check_sensitivity( self, idsgs, delta, vec_dp, vec_ap, nls,
-                          conf, domain, variables, materials, data = None ):
-#        print data; pause()
+    def check_sensitivity(self, idsgs, delta, vec_dp, vec_ap, dpb,
+                          conf, domain, variables, materials, data=None):
         if data is None:
             data = {}
         else:
             data = copy( data )
-        
-        dpb = nls.evaluator.problem
         
         a_grad = self.sensitivity( vec_dp, vec_ap, conf, dpb.domain,
                                   dpb.variables, dpb.materials,
@@ -410,37 +401,21 @@ class ShapeOptimFlowCase( Struct ):
             coorsp = coors0 + delta * nu
             dpb.set_mesh_coors( coorsp, update_state = True )
 
-            vec_dp = dpb.create_state_vector()
-            dpb.apply_ebc( vec_dp )
-            vec_dp = nls( vec_dp )
+            vec_dp = dpb.solve()
 
             valp = self.obj_fun( vec_dp, conf, domain, variables, materials,
                                 data )
             output( 'obj_fun+:', valp )
 
-##             out = dm_state_to_output( vec_dp, variables, maps.di, domain )
-##             fd = open( trunk + '_sol.vtk', 'w' )
-## #            write_vtk( fd, self.char_mesh, out )
-##             write_vtk( fd, domain.mesh, out )
-##             fd.close()
-
             coorsm = coors0 - delta * nu
             dpb.set_mesh_coors( coorsm, update_state = True )
 
-            vec_dp = dpb.create_state_vector()
-            dpb.apply_ebc( vec_dp )
-            vec_dp = nls( vec_dp )
+            vec_dp = dpb.solve()
 
             valm = self.obj_fun( vec_dp, conf, domain, variables, materials,
                                 data )
             output( 'obj_fun-:', valm )
             
-##             out = dm_state_to_output( vec_dp, variables, maps.di, domain )
-##             fd = open( trunk + '_sol.vtk', 'w' )
-##             write_vtk( fd, domain.mesh, out )
-##             fd.close()
-## #            pause()
-
             d_grad.append( 0.5 * (valp - valm) / delta )
             
         ##
