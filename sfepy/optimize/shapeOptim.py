@@ -1,6 +1,7 @@
 import os.path as op
 
 from sfepy.base.base import *
+from sfepy.base.progressbar import MyBar
 import sfepy.fem.evaluate as eva
 import freeFormDef as ffd
 from sfepy.terms import CharacteristicFunction
@@ -276,11 +277,8 @@ class ShapeOptimFlowCase( Struct ):
                              variables, materials, None, **data )
         return nm.squeeze( val )
         
-    ##
-    # created: 25.01.2006
-    # last revision: 21.12.2007
-    def sensitivity( self, vec_dp, vec_ap, conf, domain, variables, materials,
-                     data = None, select = None ):
+    def sensitivity(self, vec_dp, vec_ap, conf, domain, variables, materials,
+                    data=None, select=None):
         """can use both apb, dpb variables"""
         set_state_to_vars( variables, self.var_map, vec_dp, vec_ap )
 
@@ -294,26 +292,33 @@ class ShapeOptimFlowCase( Struct ):
 
         sa = []
 
-        ii = 0
-        for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), idsgs ):
+        pbar = MyBar('sensitivity:')
+        pbar.init(len(idsgs))
+
+        materials = materials.semideep_copy()
+        shape = (n_mesh_nod, dim)
+        for ii, nu in enumerate(self.generate_mesh_velocity(shape, idsgs)):
+            pbar.update(ii)
             vec_nu = nu.ravel()
-            variables['Nu'].data_from_data( vec_nu, slice( 0, len( vec_nu ) ) )
-            data.update( {'mode' : 1} )
+            variables['Nu'].data_from_data(vec_nu)
+            data.update({'mode' : 1})
 
-##             from sfepy.base.ioutils import write_vtk
-##             cc = nla.norm( vec_nu )
-##             nun = nu / cc
-##             out = {'v' : Struct( mode = 'vertex', data = nun,
-##                                  ap_name = 'nic', dof_types = (0,1,2) )}
-##             fd = open( 'anim/pert_%03d.pvtk' % (ii+1), 'w' )
-##             write_vtk( fd, domain.mesh, out )
-##             fd.close()
-##             print ii
+            ## from sfepy.base.ioutils import write_vtk
+            ## cc = nla.norm( vec_nu )
+            ## nun = nu / cc
+            ## out = {'v' : Struct( mode = 'vertex', data = nun,
+            ##                      ap_name = 'nic', dof_types = (0,1,2) )}
+            ## fd = open( 'anim/pert_%03d.pvtk' % (ii+1), 'w' )
+            ## write_vtk( fd, domain.mesh, out )
+            ## fd.close()
+            ## print ii
+            
+            val = eva.eval_term(None, self.sens_terms, conf, domain,
+                                variables, materials, None,
+                                copy_materials=False,
+                                update_materials=ii==0, **data)
 
-            val = eva.eval_term( None, self.sens_terms, conf, domain,
-                                 variables, materials, None, **data )
             sa.append( val )
-            ii += 1
 
         vec_sa = nm.array( sa, nm.float64 )
         return vec_sa
