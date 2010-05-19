@@ -185,9 +185,15 @@ class Material( Struct ):
         datas[ig] = data
 
     def time_update(self, ts, domain, equations, variables):
-        """All material parameters are evaluated in all physical QPs."""
+        """
+        Evaluate material parameters in physical quadrature points.
+
+        Do nothing, if ``self.mode == 'user'`` or ``self.kind ==
+        'stationary'`` and the parameters are already set.
+        """
         self.data = None
-        if self.datas and (self.kind == 'stationary'): return
+        if ((self.mode == 'user')
+            or self.datas and (self.kind == 'stationary')): return
 
         self.datas = {}
         # Quadrature point function values.
@@ -217,6 +223,9 @@ class Material( Struct ):
             self.constant_names.update(datas.keys())
 
     def set_all_data( self, datas ):
+        """
+        Use the provided data, set mode to 'user'.
+        """
         self.mode = 'user'
         self.datas = datas
         self.data = None
@@ -226,7 +235,11 @@ class Material( Struct ):
         self.reset()
 
     def reset(self):
-        """Clear all data created by a call to time_update()."""
+        """
+        Clear all data created by a call to ``time_update()``, set ``self.mode``
+        to ``None``.
+        """
+        self.mode = None
         self.datas = None
         self.special_names = set()
         self.constant_names = set()
