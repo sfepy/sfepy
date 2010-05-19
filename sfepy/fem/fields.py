@@ -23,35 +23,6 @@ class Fields( Container ):
     from_conf = staticmethod( from_conf )
 
     ##
-    # 05.09.2007, c
-    def from_field_list( flist, qp_coors, names = None ):
-        objs = OneTypeList( Field )
-        objs.extend( flist )
-        obj = Fields( objs )
-        if names is not None:
-            obj.names = names
-
-        obj.qp_coors = qp_coors
-        
-        return obj
-    from_field_list = staticmethod( from_field_list )
-    
-    ##
-    # 18.07.2006, c
-    # 19.02.2007
-    def setup_approximations( self, domain ):
-
-        for field in self:
-            field.setup_approximations( domain )
-
-    ##
-    # 19.07.2006, c
-    def setup_global_base( self ):
-        gb = []
-        for field in self:
-            gb.append( field.setup_global_base() )
-
-    ##
     # 19.07.2006, c
     def setup_coors( self ):
         for field in self:
