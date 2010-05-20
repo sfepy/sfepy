@@ -53,18 +53,6 @@ def zero_conf_ebc( conf ):
     return new
 
 ##
-# 27.11.2006, c
-def invert_data_shapes( var_shapes ):
-    shapes = {}
-    for name, groups in var_shapes.iteritems():
-        for ig, shape in groups.iteritems():
-            shapes.setdefault( ig, {} )[name] = shape
-##                 if not shapes.has_key( ig ):
-##                     shapes[ig] = {}
-##                 shapes[ig][name] = shape
-    return shapes
-
-##
 # 15.03.2007, c
 # 04.06.2007
 def resolve_chains( master_slave, chains ):
@@ -748,15 +736,6 @@ class Variables( Container ):
         dc = self.adof_conns[key]
         return dc
         
-    ##
-    # 05.09.2007, c
-    def fix_coarse_grid_a_dof_conns( self, iemaps, var_name ):
-        """Volume only!"""
-        dcs = self.adof_conns[var_name].volume_d_cs
-        for ig, dc in dcs.iteritems():
-            iemap = iemaps[ig]
-            dcs[ig] = dc[iemap]
-
     def create_matrix_graph( self, var_names = None, vvar_names = None ):
         """
         Create tangent matrix graph. Order of dof connectivities is not
@@ -1152,17 +1131,6 @@ class Variables( Container ):
                 out[key] = val
 
         return out
-
-    ##
-    # 24.08.2006, c
-    # 20.09.2006
-    def get_fields_of_vars( self, var_names ):
-        field_names = {}
-        for var_name in var_names:
-            if not self.has_key( var_name ):
-                raise RuntimeError( 'undefined variable %s' % var_name )
-            field_names[var_name] = self[var_name].field.name
-        return field_names
 
     ##
     # c: 27.11.2006, r: 22.05.2008
