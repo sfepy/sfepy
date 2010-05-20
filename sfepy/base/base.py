@@ -370,12 +370,20 @@ class Container( Struct ):
     def __setitem__(self, ii, obj):
         try:
             if isinstance(ii, str):
-                ii = self.names.index(ii)
-            elif not isinstance(ii, int):
-                raise ValueError('bad index type! (%s)' % type(ii))
+                if ii in self.names:
+                    ii = self.names.index(ii)
+                else:
+                    ii = len(self.names)
 
-            self._objs[ii] = obj
-            self.names[ii] = obj.name
+            elif not isinstance(ii, int):
+                    raise ValueError('bad index type! (%s)' % type(ii))
+
+            if ii >= len(self.names):
+                self.append(obj)
+
+            else:
+                self._objs[ii] = obj
+                self.names[ii] = obj.name
 
         except (IndexError, ValueError), msg:
             raise IndexError(msg)
@@ -394,10 +402,15 @@ class Container( Struct ):
 
     def __iter__( self ):
         return self._objs.__iter__()
+
     ##
     # 18.07.2006, c
     def __len__( self ):
         return len( self._objs )
+
+    def insert(self, ii, obj):
+        self._objs.insert(ii, obj)
+        self.names.insert(ii, obj.name)
 
     def append( self, obj ):
         self._objs.append( obj )
@@ -445,7 +458,6 @@ class Container( Struct ):
     def get_names( self ):
         return [obj.name for obj in self._objs]
 
-        
 ##
 # 30.11.2004, c
 # 01.12.2004
