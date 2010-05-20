@@ -202,6 +202,7 @@ class Variables( Container ):
     def from_conf( conf, fields ):
         objs = OneTypeList( Variable )
         state, virtual, parameter, other = [], [], [], []
+        Variable.reset()
         for ii, (key, val) in enumerate( conf.iteritems() ):
             var = Variable.from_conf( key, val, fields )
             if var.is_state():
@@ -1105,6 +1106,12 @@ class Variable( Struct ):
     _orders = []
     _all_vars = {}
 
+    @staticmethod
+    def reset():
+        Variable._count = 0
+        Variable._orders = []
+        Variable._all_vars = {}
+
     def from_conf(key, conf, fields):
         aux = conf.kind.split()
         if len(aux) == 2:
@@ -1186,6 +1193,7 @@ class Variable( Struct ):
                     raise ValueError('order %d already used!' % order)
                 else:
                     self._order = order
+                    self._orders.append(order)
 
             else:
                 self._order = self._count
