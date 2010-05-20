@@ -11,7 +11,6 @@ from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
 is_state = 0
 is_virtual = 1
 is_parameter = 2
-is_other = 3
 is_field = 10
 
 def create_dof_conn(conn, dpn):
@@ -196,73 +195,57 @@ class DofInfo( Struct ):
 ##
 # 14.07.2006, c
 class Variables( Container ):
+    """
+    Container holding instances of Variable.
+    """
 
-    ##
-    # c: 14.07.2006, r: 22.05.2008
-    def from_conf( conf, fields ):
-        objs = OneTypeList( Variable )
-        state, virtual, parameter, other = [], [], [], []
+    @staticmethod
+    def from_conf(conf, fields):
         Variable.reset()
-        for ii, (key, val) in enumerate( conf.iteritems() ):
-            var = Variable.from_conf( key, val, fields )
-            if var.is_state():
-                state.append( ii )
-            elif var.is_virtual():
-                virtual.append( ii )
-            elif var.is_parameter():
-                parameter.append( ii )
-            elif var.is_other():
-                other.append( ii )
-            objs.append( var )
 
-        obj = Variables( objs,
-                         state = state,
-                         virtual = virtual,
-                         parameter = parameter,
-                         other = other,
-                         domain = fields[0].domain,
-                         fields = fields,
-                         has_virtual_dcs = False,
-                         has_lcbc = False,
-                         has_eq_map = False )
+        obj = Variables()
+        for key, val in conf.iteritems():
+            var = Variable.from_conf(key, val, fields)
 
-        indx = nm.array( [var._order
-                          for var in obj.iter_state( ordered = False )] )
-        obj.ordered_state = [obj.state[ii] for ii in indx.argsort()]
+            obj[var.name] = var
 
-        obj.link_duals()
-
-        obj.ordered_virtual = []
-        for var in obj.iter_state( ordered = True ):
-            for ii in obj.virtual:
-                if obj[ii].primary_var_name == var.name:
-                    obj.ordered_virtual.append( ii )
-                    break
-
+        # Move into equations.
         obj.setup_dtype()
+        obj.setup_ordering()
+        # Remove.
+        obj.domain = fields[0].domain
 
         return obj
-    from_conf = staticmethod( from_conf )
 
-    ##
-    # c: 05.09.2007, r: 10.04.2008
-    def link_duals( self ):
-        self.dual_map = {}
-        for ii in self.virtual:
-            vvar = self[ii]
-            try:
-                self[vvar.primary_var_name].dual_var_name = vvar.name
-            except ValueError:
-                msg = 'variable %s is not active!' % vvar.primary_var_name
-                raise ValueError( msg )
+    def __init__(self):
+        Container.__init__(self, OneTypeList(Variable),
+                           state = set(),
+                           virtual = set(),
+                           parameter = set(),
+                           has_virtual_dcs = False,
+                           has_lcbc = False,
+                           has_eq_map = False,
+                           dual_map = None,
+                           ordered_state = None,
+                           ordered_virtual = None)
 
-            self.dual_map[vvar.name] = vvar.primary_var_name
+    def __setitem__(self, ii, var):
+        Container.__setitem__(self, ii, var)
+
+        if var.is_state():
+            self.state.add(var.name)
+
+        elif var.is_virtual():
+            self.virtual.add(var.name)
+
+        elif var.is_parameter():
+            self.parameter.add(var.name)
 
     def setup_dtype( self ):
         """Setup data types of state variables - all have to be of the same
         data type, one of nm.float64 or nm.complex128."""
         dtypes = {nm.complex128 : 0, nm.float64 : 0}
-        for var in self.iter_state():
+        for var in self.iter_state(ordered=False):
             dtypes[var.dtype] += 1
 
         if dtypes[nm.float64] and dtypes[nm.complex128]:
@@ -274,6 +257,42 @@ class Variables( Container ):
         else:
             self.dtype = nm.complex128
 
+    def link_duals(self):
+        """
+        Link state variables with corresponding virtual variables.
+        """
+        
+        self.dual_map = {}
+        for ii in self.virtual:
+            vvar = self[ii]
+            try:
+                self[vvar.primary_var_name].dual_var_name = vvar.name
+            except IndexError:
+                msg = 'variable %s is not active!' % vvar.primary_var_name
+                raise ValueError(msg)
+
+            self.dual_map[vvar.name] = vvar.primary_var_name
+
+        if not (len(self.virtual) == len(self.state)
+                == len(self.dual_map) == len(set(self.dual_map.values()))):
+                msg = 'state and virtual variables do not match!'
+                raise ValueError(msg)
+
+    def setup_ordering(self):
+        """
+        Setup ordering of variables.
+        """
+        self.ordered_state = [0] * len(self.state)
+        for var in self.iter_state(ordered=False):
+            self.ordered_state[var._order] = var.name
+
+        if self.dual_map is None:
+            self.link_duals()
+
+        self.ordered_virtual = [0] * len(self.virtual)
+        for var in self.iter_state(ordered=False):
+            self.ordered_virtual[var._order] = var.dual_var_name
+            
     ##
     # 26.07.2007, c
     def get_names( self, kind = None ):
