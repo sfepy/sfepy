@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import OptimizationSolver
 
 import scipy.optimize as sopt
@@ -119,8 +120,9 @@ class FMinSteepestDescent( OptimizationSolver ):
                 'check'     : 0,
                 'delta'     : 1e-6,
                 'output'    : None, # 'itc'
-                'log'       : True,
-                'yscales'   : ['linear', 'log', 'log'],
+                'log'       : {'text' : 'output/log.txt',
+                               'plot' : 'output/log.png'},
+                'yscales'   : ['linear', 'log', 'log', 'linear'],
             }
         """
         get = conf.get_default_attr
@@ -140,8 +142,11 @@ class FMinSteepestDescent( OptimizationSolver ):
         check = get( 'check', 0 )
         delta = get( 'delta', 1e-6)
         output = get( 'output', None )
-        log = get( 'log', True )
-        yscales = get( 'yscales', ['linear', 'log', 'log'] )
+        yscales = get( 'yscales', ['linear', 'log', 'log', 'linear'] )
+
+        log = get_logging_conf(conf)
+        log = Struct(name='log_conf', **log)
+        is_any_log = (log.text is not None) or (log.plot is not None)
 
         common = OptimizationSolver.process_conf( conf )
         return Struct( **locals() ) + common
@@ -151,6 +156,18 @@ class FMinSteepestDescent( OptimizationSolver ):
     # 17.10.2007, c
     def __init__( self, conf, **kwargs ):
         OptimizationSolver.__init__( self, conf, **kwargs )
+
+        conf = self.conf
+        if conf.is_any_log:
+            self.log = Log([[r'$||\Psi||$'], [r'$||\nabla \Psi||$'],
+                            [r'$\alpha$'], ['iteration']],
+                           xlabels=['', '', 'all iterations', 'all iterations'],
+                           yscales=conf.yscales,
+                           is_plot=conf.log.plot is not None,
+                           log_filename=conf.log.text,
+                           formats=[['%.8e'], ['%.3e'], ['%.3e'], ['%d']])
+        else:
+            self.log = None
 
     ##
     # 19.04.2006, c
@@ -182,13 +199,6 @@ class FMinSteepestDescent( OptimizationSolver ):
 
         time_stats = {'of' : tt_of, 'ofg': tt_ofg, 'check' : []}
 
-        if conf.log:
-            from sfepy.base.log import Log
-            log = Log(([r'of'], [r'$||$ofg$||$'], [r'alpha']),
-                      yscales=conf.yscales)
-        else:
-            log = None
-
         ofg = None
 
         it = 0
@@ -202,7 +212,6 @@ class FMinSteepestDescent( OptimizationSolver ):
                 of_prev_prev = of + 5000.0
 
             if ofg is None:
-    #            ofg = 1
                 ofg = fn_ofg( xit )
 
             if conf.check:
@@ -224,6 +233,10 @@ class FMinSteepestDescent( OptimizationSolver ):
             while 1:
                 xit2 = xit - alpha * ofg
                 aux = fn_of( xit2 )
+
+                if self.log is not None:
+                    self.log(of, ofg_norm, alpha, it)
+
                 if aux is None:
                     alpha *= conf.ls_red_warp
                     can_ls = False
@@ -269,8 +282,8 @@ class FMinSteepestDescent( OptimizationSolver ):
                                                                  can_ls) )
                 ofg1 = None
 
-            if conf.log:
-                log( of, ofg_norm, alpha )
+            if self.log is not None:
+                self.log.plot_vlines(color='g', linewidth=0.5)
 
             xit = xit - alpha * ofg
             if ofg1 is None:
@@ -293,11 +306,17 @@ class FMinSteepestDescent( OptimizationSolver ):
         output( 'gradient evaluations: %d in %.2f [s]' \
               % (nc_ofg[0], nm.sum( time_stats['ofg'] ) ) )
 
-        if conf.log:
-            log( of, ofg_norm, alpha, finished = True )
+        if self.log is not None:
+            self.log(of, ofg_norm, alpha, it)
 
+            if conf.log.plot is not None:
+                self.log(save_figure=conf.log.plot,
+                         finished=True)
+            else:
+                self.log(finished=True)
+                
         if status is not None:
-            status['log'] = log
+            status['log'] = self.log
             status['status'] = status
             status['of0'] = of0
             status['of'] = of
