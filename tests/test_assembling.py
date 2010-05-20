@@ -142,8 +142,6 @@ class Test( TestCommon ):
         from sfepy.fem import eval_term_op
         problem  = self.problem
 
-        problem.conf.edit('variables', self.conf.get_raw('variables'))
-        problem.set_variables()
         problem.set_equations()
         problem.time_update()
 
@@ -172,11 +170,6 @@ class Test( TestCommon ):
     def test_surface_evaluate(self):
         problem = self.problem
         
-        problem.conf.edit('variables', {'p' : ('unknown field', 'pressure', 0)})
-        problem.set_variables()
-##         print self.conf.variables
-##         print problem.variables.names
-        
         p = problem.create_state_vector()
         p.fill(1.0)
 
@@ -188,9 +181,6 @@ class Test( TestCommon ):
 
         problem.conf.edit('variables',
                           {'r' : ('parameter field', 'pressure', 'p')})
-        problem.set_variables()
-##         print self.conf.variables
-##         print problem.variables.names
 
         expr = 'd_surface_integrate.isurf.Left( r )'
         val = problem.evaluate(expr, r=p)
@@ -203,13 +193,9 @@ class Test( TestCommon ):
     def test_dq_de(self):
         problem = self.problem
 
-        problem.conf.edit('variables', self.conf.get_raw('variables'))
-        problem.set_variables()
-
         p = problem.create_state_vector()
         p[:] = nm.arange(p.shape[0], dtype=p.dtype)
 
-        
         val1 = problem.evaluate('de_grad.i1.Omega( p )', p)
         self.report('de_grad: min, max:', val1.min(), val1.max())
 

@@ -86,7 +86,7 @@ field_2 = {
 variables = {
     'u' : ('unknown field', 'displacement', 0),
     'v' : ('test field', 'displacement', 'u'),
-    'phi' : ('unknown field', 'potential', 0),
+    'phi' : ('unknown field', 'potential', 1),
     'psi' : ('test field', 'potential', 'phi'),
 }
 

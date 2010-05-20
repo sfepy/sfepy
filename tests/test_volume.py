@@ -9,8 +9,8 @@ fields = {
 }
 
 variables = {
-    'p' : ('unknown field', 'scalar', 0),
-    'u' : ('unknown field', 'vector', 0),
+    'p' : ('parameter field', 'scalar', None),
+    'u' : ('parameter field', 'vector', None),
 }
 
 integrals = {

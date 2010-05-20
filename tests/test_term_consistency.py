@@ -29,7 +29,7 @@ variables = {
     'ts'  : ('test field',      'scalar_field', 'us'),
     'ps1' : ('parameter field', 'scalar_field', 'us'),
     'ps2' : ('parameter field', 'scalar_field', 'us'),
-    'uv'  : ('unknown field',   'vector_field', 0),
+    'uv'  : ('unknown field',   'vector_field', 1),
     'tv'  : ('test field',      'vector_field', 'uv'),
     'pv1' : ('parameter field', 'vector_field', 'uv'),
     'pv2' : ('parameter field', 'vector_field', 'uv'),
@@ -82,13 +82,13 @@ functions = {
 
 
 # (eval term prefix, parameter corresponding to test variable, 'd' variables,
-# 'dw' variables (test must be paired with unknown, which should be last!), mat
-# mode)
+# 'dw' variables (test must be paired with unknown, which should be at
+# index 2!), mat mode)
 test_terms = [
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv'), 'biot')),
+     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv', 'tv'), 'biot')),
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us'), 'biot')),
+     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'), 'biot')),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
     ('%s_volume_dot_w.i1.Omega( m.val, %s, %s )',
