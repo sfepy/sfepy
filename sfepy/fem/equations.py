@@ -1,5 +1,4 @@
 from sfepy.base.base import *
-from parseEq import create_bnf
 from materials import Materials
 from sfepy.terms import Terms, Term, term_table, DataCaches, cache_table
 
@@ -9,34 +8,6 @@ Note:
   ... no - user should be able to create objects even if they are not
   used in equations
 """
-
-def parse_terms( regions, desc, itps ):
-    """
-    Parse equation given by 'desc' into terms. Assign each term its region.
-    """
-    # Parse.
-    term_descs = []
-    bnf = create_bnf( term_descs, itps )
-    try:
-        bnf.parseString( desc )
-    except:
-        raise ValueError('cannot parse term: %s' % desc)
-    
-    # Construct terms.
-    terms = OneTypeList( Term )
-    for td in term_descs:
-        try:
-            constructor = term_table[td.name]
-        except:
-            msg = "term '%s' is not in %s" % (td.name,
-                                              sorted(term_table.keys()))
-            raise ValueError(msg)
-        
-        ## print td
-        term = Term.from_desc(constructor, td, regions)
-        terms.append( term )
-
-    return terms
 
 ##
 # 24.07.2006, c
@@ -122,6 +93,9 @@ class Equations( Container ):
         
         return obj
     from_conf = staticmethod( from_conf )
+
+    def __init__(self, equations, itps=None):
+        Container.__init__(self, equations, itps=itps)
 
     def setup_terms( self, regions, variables, materials, caches = None,
                      user = None ):
@@ -225,29 +199,53 @@ class Equations( Container ):
 # 21.07.2006, c
 class Equation( Struct ):
 
-    ##
-    # 25.07.2006, c
-    # 28.08.2006
-    # 12.02.2007
-    def from_desc( name, desc, term_prefixes = None ):
+    @staticmethod
+    def from_desc(name, desc, term_prefixes=None):
         if term_prefixes is None: term_prefixes = {}
 
-        obj = Equation( name = name, desc = desc,
-                        itps = invert_dict( term_prefixes, True ) )
+        obj = Equation(name, desc, itps = invert_dict(term_prefixes, True))
         return obj
-    from_desc = staticmethod( from_desc )
 
-    ##
-    # 21.07.2006, c
-    # 25.07.2006
-    # 01.08.2006
-    # 11.08.2006
-    # 12.02.2007
-    # 27.02.2007
-    def parse_terms( self, regions ):
-        terms = parse_terms( regions, self.desc, self.itps )
-        self.terms = Terms( terms )
+    def __init__(self, name, desc, itps=None):
+        obj = Struct.__init__(self, name = name,
+                              desc = desc,
+                              itps = itps)
 
+        self.parse_definition()
+
+    def parse_definition(self):
+        """
+        Parse equation definition string to create term description list.
+        """
+        from parseEq import create_bnf
+
+        term_descs = []
+        bnf = create_bnf(term_descs, self.itps)
+        try:
+            bnf.parseString(self.desc)
+        except:
+            raise ValueError('cannot parse equation! (%s)' % self.desc)
+
+        self.term_descs = term_descs
+
+    def create_terms(self, regions):
+        """
+        Create terms, assign each term its region.
+        """
+        terms = OneTypeList(Term)
+        for td in self.term_descs:
+            try:
+                constructor = term_table[td.name]
+            except:
+                msg = "term '%s' is not in %s" % (td.name,
+                                                  sorted(term_table.keys()))
+                raise ValueError(msg)
+
+            ## print td
+            term = Term.from_desc(constructor, td, regions)
+            terms.append(term)
+
+        return terms
 
     def check_term_args(self, variables, materials, user=None):
         """
@@ -303,12 +301,15 @@ class Equation( Struct ):
                 caches.insert_term( cname, term.name, ans )
             term.caches = caches
 
-    def setup_terms( self, regions, variables, materials, caches,
-                     user = None ):
-        """Parse equation and create term instances."""
-        self.parse_terms( regions )
-        self.check_term_args( variables, materials, user )
-        self.assign_term_caches( caches )
+    def setup_terms(self, regions, variables, materials, caches,
+                    user=None):
+        """
+        Create term instances, check their arguments and assign term
+        caches.
+        """
+        self.terms = self.create_terms(regions)
+        self.check_term_args(variables, materials, user)
+        self.assign_term_caches(caches)
 
     def collect_conn_info(self, conn_info, variables):
 
