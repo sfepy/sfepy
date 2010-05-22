@@ -1012,6 +1012,26 @@ class ComsolMeshIO( MeshIO ):
                             conns.append( aux )
                             descs.append( '2_3' )
                             is_conn = True
+                        elif t_name == 'quad':
+                            # Rearrange elelment node order to match SfePy
+                            aux = aux[:,(0,1,3,2)]
+                            conns.append( aux )
+                            descs.append( '2_4' )
+                            is_conn = True
+                        else:
+                            is_conn = False
+                    elif dim == 3:
+                        aux = read_array( fd, n_el, n_ep, nm.int32 )
+                        if t_name == 'hex':
+                            # Rearrange elelment node order to match SfePy
+                            aux = aux[:,(0,1,3,2,4,5,7,6)]
+                            conns.append( aux )
+                            descs.append( '3_8' )
+                            is_conn = True
+                        elif t_name == 'tet':
+                            conns.append( aux )
+                            descs.append( '3_4' )
+                            is_conn = True
                         else:
                             is_conn = False
                     else:
@@ -1051,10 +1071,100 @@ class ComsolMeshIO( MeshIO ):
         
         return mesh
 
-    ##
-    # c: 20.03.2008, r: 20.03.2008
+
     def write( self, filename, mesh, out = None, **kwargs ):
-        raise NotImplementedError
+
+        def write_elements( fd, ig, conn, mat_ids, type_name, 
+                            npe, format, norder, nm_params ):
+            fd.write( "# Type #%d\n\n" % ig )
+            fd.write( "%s # type name\n\n\n" % type_name )
+            fd.write( "%d # number of nodes per element\n" % npe)
+            fd.write( "%d # number of elements\n" % conn.shape[0] )
+            fd.write( "# Elements\n" )
+            for ii in range( conn.shape[0] ):
+                nn = conn[ii] # Zero based
+                fd.write( format % tuple( nn[norder] ) )
+            fd.write( "\n%d # number of parameter values per element\n" 
+                      % nm_params)
+            # Top level always 0?
+            fd.write( "0 # number of parameters\n" )
+            fd.write( "# Parameters\n\n" )
+            fd.write( "%d # number of domains\n" 
+                       % sum([mi.shape[0] for mi in mat_ids]) )
+            fd.write( "# Domains\n" )
+            for mi in mat_ids:
+                for dom in mi:
+                    fd.write( "%d\n" % dom )
+            fd.write( "\n0 # number of up/down pairs\n" )
+            fd.write( "# Up/down\n" )
+
+
+        fd = open( filename, 'w' )
+
+        coors = mesh.coors
+        conns, desc, mat_ids  = join_conn_groups( mesh.conns, mesh.descs,
+                                                  mesh.mat_ids )
+
+        n_nod, dim = coors.shape
+
+        # Header
+        fd.write( "# Created by SfePy\n\n\n" )
+        fd.write( "# Major & minor version\n" )
+        fd.write( "0 1\n" )
+        fd.write( "1 # number of tags\n" )
+        fd.write( "# Tags\n" )
+        fd.write( "2 m1\n" )
+        fd.write( "1 # number of types\n" )
+        fd.write( "# Types\n" )
+        fd.write( "3 obj\n\n" )
+
+        # Record
+        fd.write( "# --------- Object 0 ----------\n\n" )
+        fd.write( "0 0 1\n" ) # version unused serializable
+        fd.write( "4 Mesh # class\n" )
+        fd.write( "1 # version\n" )
+        fd.write( "%d # sdim\n" % dim )
+        fd.write( "%d # number of mesh points\n" % n_nod )
+        fd.write( "0 # lowest mesh point index\n\n" ) # Always zero in SfePy
+
+        fd.write( "# Mesh point coordinates\n" )
+
+        format = self.get_vector_format( dim ) + '\n'
+        for ii in range( n_nod ):
+            nn = tuple( coors[ii] )
+            fd.write( format % tuple( nn ) )
+
+        fd.write( "\n%d # number of element types\n\n\n" % len(conns) )
+
+        for ig, conn in enumerate( conns ):
+            if (desc[ig] == "2_4"):
+                write_elements( fd, ig, conn, mat_ids, 
+                                "4 quad", 4, "%d %d %d %d\n", [0, 1, 3, 2], 8 )
+
+            elif (desc[ig] == "2_3"):
+                # TODO: Verify number of parameters for tri element
+                write_elements( fd, ig, conn, mat_ids, 
+                                "3 tri", 3, "%d %d %d\n", [0, 1, 2], 4 )
+
+            elif (desc[ig] == "3_4"):
+                # TODO: Verify number of parameters for tet element
+                write_elements( fd, ig, conn, mat_ids, 
+                                "3 tet", 4, "%d %d %d %d\n", [0, 1, 2, 3], 16 )
+
+            elif (desc[ig] == "3_8"):
+                write_elements( fd, ig, conn, mat_ids, 
+                                "3 hex", 8, "%d %d %d %d %d %d %d %d\n", 
+                                [0, 1, 3, 2, 4, 5, 7, 6], 24 )
+
+            else:
+                print 'unknown element type!', desc[ig]
+                raise ValueError
+
+        fd.close()
+
+        if out is not None:
+            for key, val in out.iteritems():
+                raise NotImplementedError
 
 ##
 # c: 23.06.2008
