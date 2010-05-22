@@ -1094,7 +1094,8 @@ class ComsolMeshIO( MeshIO ):
             fd.write( "# Domains\n" )
             for mi in mat_ids:
                 for dom in mi:
-                    fd.write( "%d\n" % dom )
+                    # Domains in comsol have to be >0
+                    fd.write( "%d\n" % ( dom + 1 ) )
             fd.write( "\n0 # number of up/down pairs\n" )
             fd.write( "# Up/down\n" )
 
