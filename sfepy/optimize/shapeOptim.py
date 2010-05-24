@@ -188,6 +188,9 @@ def test_terms( idsgs, delta, shape_opt, vec_dp, vec_ap, pb ):
     ccs( 'd_sd_convect.i2.Omega_D( u, w, Nu, mode )',
          idsgs, delta, vec_dp, vec_ap, pb, dd )
 
+    # Restore materials.
+    pb.time_update()
+
 ##
 # 25.01.2006, c
 class ShapeOptimFlowCase( Struct ):
@@ -353,18 +356,24 @@ class ShapeOptimFlowCase( Struct ):
 
             data['mode'] = 1
 
-            aux = eva.eval_term_op( None, term_desc, pb, **data )
+            aux = eva.eval_term_op(None, term_desc, pb,
+                                   copy_materials=False,
+                                   update_materials=True, **data)
             a_grad.append( aux )
 
             data['mode'] = 0
 
             coorsp = coors0 + delta * nu
             pb.set_mesh_coors( coorsp, update_state = True )
-            valp = eva.eval_term_op( None, term_desc, pb, **data )
+            valp = eva.eval_term_op(None, term_desc, pb,
+                                    copy_materials=False,
+                                    update_materials=False, **data)
 
             coorsm = coors0 - delta * nu
             pb.set_mesh_coors( coorsm, update_state = True )
-            valm = eva.eval_term_op( None, term_desc, pb, **data )
+            valm = eva.eval_term_op(None, term_desc, pb,
+                                    copy_materials=False,
+                                    update_materials=False, **data)
             d_grad.append( 0.5 * (valp - valm) / delta )
             
         pb.set_mesh_coors( coors0, update_state = True )
