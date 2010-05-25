@@ -131,18 +131,24 @@ def transform_fields( adict ):
             d2['field_'+c2.name] = c2
     return d2
 
-def transform_materials( adict ):
+def transform_materials(adict):
     d2 = {}
-    for ii, (key, conf) in enumerate( adict.iteritems() ):
-        if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf,
-                                ['region', 'values', 'function', 'kind'] )
-            if len(conf) == 5:
-                c2.flags = conf[4]
+    for ii, (key, conf) in enumerate(adict.iteritems()):
+        if isinstance(conf, str):
+            c2 = Struct(name = key, function = conf)
             d2['material_%s__%d' % (c2.name, ii)] = c2
+
+        elif isinstance(conf, tuple):
+            c2 = tuple_to_conf(key, conf,
+                               ['values', 'function', 'kind'])
+            if len(conf) == 4:
+                c2.flags = conf[3]
+            d2['material_%s__%d' % (c2.name, ii)] = c2
+
         else:
             c2 = transform_to_struct_1(conf)
             d2['material_'+conf['name']] = c2
+
     return d2
 
 def transform_solvers( adict ):
