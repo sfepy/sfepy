@@ -40,13 +40,12 @@ class Field( Struct ):
                     dtype = getattr( conf, 'dtype', nm.float64 ),
                     shape = conf.dim[:1],
                     region = regions[conf.domain],
-                    approx_order = approx_order,
-                    bases = conf.bases)
+                    approx_order = approx_order)
         return obj
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, name, dtype, shape, region, approx_order,
-                 bases=None):
+    def __init__(self, name, dtype, shape, region,
+                 space='H1', poly_space_base='lagrange', approx_order=1):
         """Create a Field.
 
         Parameters
@@ -56,14 +55,17 @@ class Field( Struct ):
         dtype : numpy.dtype
             Field data type: float64 or complex128.
         shape : int/str
-            Field shape: (1,) or 'scalar', (dim,) or 'vector'. Stored
-            as a tuple.
+            Field shape: 1 or 'scalar', space dimension (2 or 3) or 'vector'.
+            The field shape determines the shape of the FE base functions and
+            can be different from a FieldVariable instance shape. 
         region : Region
-            A region where the field is defined.
+            The region where the field is defined.
+        space : str
+            The function space name.
+        poly_space_base : str
+            The name of polynomial space base.
         approx_order : int/str
             FE approxiamtion order, e.g. 0, 1, 2, '1B' (1 with bubble).
-        bases : dict
-            To remove....
         """
         if isinstance(shape, str):
             try:
@@ -77,18 +79,42 @@ class Field( Struct ):
                         dtype = dtype,
                         shape = shape,
                         region = region,
-                        approx_order = '%s' % approx_order)
+                        space = space,
+                        poly_space_base = poly_space_base)
         self.domain = self.region.domain
-        if bases is None:
-            self.setup_bases()
-        else:
-            self.bases = bases
+
+        self.set_approx_order(approx_order)
+
+        # To refactor below...
+        self.setup_bases()
         self.create_interpolants()
         self.setup_approximations()
 ##         print self.aps
 ##         pause()
         self.setup_global_base()
         self.setup_coors()
+
+    def set_approx_order(self, approx_order):
+        """Set a uniform approximation order."""
+        
+        ao_msg = 'unsupported approximation order! (%s)'
+        force_bubble = False
+
+        try:
+            ao = int(approx_order)
+        except ValueError:
+            if approx_order[-1] == 'B':
+                ao = int(approx_order[:-1])
+                force_bubble = True
+            else:
+                raise ValueError(ao_msg % approx_order)
+
+        if ao < 0:
+            raise ValueError(ao_msg % approx_order)
+
+        self.approx_order = '%s' % approx_order
+        self._ao = ao
+        self.force_bubble = force_bubble
 
     def setup_bases(self):
         """Setup FE bases according to self.approx_order and region cell
