@@ -402,16 +402,40 @@ class Domain( Struct ):
             off += group.shape.n_el
         return offs
 
-    ##
-    # 22.08.2006, c
-    def get_mesh_coors( self ):
+    def get_mesh_coors(self):
+        """
+        Return the coordinates of the underlying mesh vertices.
+        """
         return self.mesh.coors
 
-    ##
-    # 30.08.2007, c
-    def get_conns( self ):
-        return self.mesh.conns
+    def get_mesh_bounding_box(self):
+        """
+        Return the bounding box of the underlying mesh. 
 
+        Returns
+        -------
+        bbox : ndarray (2, dim)
+            The bounding box with min. values in the first row and max. values
+            in the second row.
+        """
+        return self.mesh.get_bounding_box()
+
+    def get_diameter(self):
+        """
+        Return the diameter of the domain.
+
+        Notes
+        -----
+        The diameter corresponds to the Friedrichs constant.
+        """
+        bbox = self.get_mesh_bounding_box()
+        return (bbox[1,:] - bbox[0,:]).max()
+
+    def get_conns(self):
+        """
+        Return the element connectivity groups of the underlying mesh.
+        """
+        return self.mesh.conns
     
     ##
     # 08.06.2006, c
@@ -631,12 +655,6 @@ class Domain( Struct ):
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         return self.regions
-
-    ##
-    # 26.07.2007, c
-    def get_diameter( self ):
-        bbox = self.mesh.get_bounding_box()
-        return (bbox[1,:] - bbox[0,:]).max()
 
     ##
     # 31.07.2007, c
