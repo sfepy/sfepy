@@ -260,6 +260,13 @@ class Variables( Container ):
     def link_duals(self):
         """
         Link state variables with corresponding virtual variables.
+
+        Usually, when solving a PDE in the weak form, each state
+        variable has to have a corresponding virtual variable.
+
+        As it is possible to use state variables in place of parameter
+        variables in term evaluation, the above requirement is relaxed -
+        it is possible to define more state variables than virtual ones.
         """
         
         self.dual_map = {}
@@ -273,13 +280,13 @@ class Variables( Container ):
 
             self.dual_map[vvar.name] = vvar.primary_var_name
 
-        if not (len(self.virtual) == len(self.state)
-                == len(self.dual_map) == len(set(self.dual_map.values()))):
+	if ((len(self.dual_map) != len(set(self.dual_map.values())))
+	    or (len(self.virtual) > len(self.state))):
                 msg = 'state and virtual variables do not match!'
                 raise ValueError(msg)
 
     def setup_ordering(self):
-        """
+	"""
         Setup ordering of variables.
         """
         self.ordered_state = [0] * len(self.state)
@@ -289,10 +296,13 @@ class Variables( Container ):
         if self.dual_map is None:
             self.link_duals()
 
-        self.ordered_virtual = [0] * len(self.virtual)
+	self.ordered_virtual = [0] * len(self.virtual)
+	ii = 0
         for var in self.iter_state(ordered=False):
-            self.ordered_virtual[var._order] = var.dual_var_name
-            
+            if var.dual_var_name is not None:
+                self.ordered_virtual[ii] = var.dual_var_name
+                ii += 1
+
     ##
     # 26.07.2007, c
     def get_names( self, kind = None ):
@@ -1197,6 +1207,7 @@ class Variable( Struct ):
         self.step = 0
         self.dt = 1.0
         self.initial_condition = None
+        self.dual_var_name = None
 
         if self.is_virtual():
             self.data = None
