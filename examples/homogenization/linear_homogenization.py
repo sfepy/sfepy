@@ -58,8 +58,8 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials
 #! ---------
 materials = {
-    'matrix' : ('Ym', {'D' : stiffness_tensor_youngpoisson( dim, 0.7e9, 0.4 ) }),
-    'reinf' : ('Yc', {'D' : stiffness_tensor_youngpoisson( dim, 70.0e9, 0.2 ) }),
+    'matrix' : ({'D' : stiffness_tensor_youngpoisson( dim, 0.7e9, 0.4 ) },),
+    'reinf' : ({'D' : stiffness_tensor_youngpoisson( dim, 70.0e9, 0.2 ) },),
 }
 #! Fields
 #! ------
