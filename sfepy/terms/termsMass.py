@@ -104,7 +104,7 @@ class MassScalarTerm(ScalarScalar, Term):
         vec = self.get_vector( state )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
-        if 'material' in self.arg_types:
+        if 'material' in [at[0] for at in self.arg_types]:
             coef, = self.get_args(['material'], **kwargs)
 
         else:
@@ -126,7 +126,7 @@ class MassScalarTerm(ScalarScalar, Term):
         self.set_data_shape( ap )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
-        if 'material' in self.arg_types:
+        if 'material' in [at[0] for at in self.arg_types]:
             coef, = self.get_args(['material'], **kwargs)
 
         else:
