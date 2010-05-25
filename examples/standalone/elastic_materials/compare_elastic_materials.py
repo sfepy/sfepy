@@ -37,7 +37,6 @@ def define():
     # Young modulus = 10 kPa, Poisson's ratio = 0.3
     material_1 = {
         'name' : 'solid',
-        'region' : 'Omega',
 
         'values' : {
             'K'  : 8.333, # bulk modulus
@@ -51,7 +50,6 @@ def define():
 
     material_2 = {
         'name' : 'load',
-        'region' : 'Top',
         'function' : 'empty'
     }
 

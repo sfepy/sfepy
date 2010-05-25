@@ -37,8 +37,8 @@ integral_1 = {
 
 coef = 2.0
 materials = {
-    'coef' : ('Omega', {'val' : coef}),
-    'rhs' : ('Omega', None, 'rhs'),
+    'coef' : ({'val' : coef},),
+    'rhs' : 'rhs',
 }
 
 equations = {

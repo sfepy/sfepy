@@ -16,7 +16,6 @@ filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 
 material_2 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {'val' : 1.0},
 }
 

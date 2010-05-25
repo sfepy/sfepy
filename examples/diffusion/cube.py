@@ -7,7 +7,6 @@ filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {'val' : 1.0},
 }
 

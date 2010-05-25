@@ -23,7 +23,6 @@ field_1 = {
 
 material_1 = {
     'name' : 'solid',
-    'region' : 'Omega',
     'values' : {
         'K'  : 1e3, # bulk modulus
         'mu' : 20e0, # shear modulus of neoHookean term

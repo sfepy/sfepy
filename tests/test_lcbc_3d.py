@@ -34,7 +34,6 @@ region_11 = {
 
 material_1 = {
     'name' : 'solid',
-    'region' : 'Y',
     
     'values' : {
         'lam' : 1e1,

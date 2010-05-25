@@ -59,7 +59,6 @@ class Material( Struct ):
 
     material_2 = {
        'name' : 'm',
-       'region' : 'Omega',
        'values' : {'E' : 1.0},
     }
 

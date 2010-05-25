@@ -23,12 +23,12 @@ fields = {
 }
 
 materials = {
-    'solid' : ('Omega', {
+    'solid' : ({
         'K'  : vf_matrix * 1e3, # bulk modulus
         'mu' : vf_matrix * 20e0, # shear modulus of neoHookean term
-    }),
-    'f1' : ('Omega', None, 'get_pars_fibres1'),
-    'f2' : ('Omega', None, 'get_pars_fibres2'),
+    },),
+    'f1' : 'get_pars_fibres1',
+    'f2' : 'get_pars_fibres2',
 }
 
 def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0):

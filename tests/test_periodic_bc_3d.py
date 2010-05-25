@@ -6,7 +6,6 @@ filename_mesh = data_dir + '/meshes/various_formats/small3d.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {'coef' : 1.0},
 }
 

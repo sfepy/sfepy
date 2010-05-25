@@ -29,13 +29,13 @@ fields = {
 
 materials = {
     # Perfused solid.
-    'ps' : ('Omega', {
+    'ps' : ({
         'mu' : 20e0, # shear modulus of neoHookean term
         'k'  : ts.dt * nm.eye(3, dtype=nm.float64), # reference permeability
         'N_f' : 1.0, # reference porosity
-    }),
+    },),
     # Surface pressure traction.
-    'traction' : ('Right', None, 'get_traction'),
+    'traction' : 'get_traction',
 }
 
 variables = {

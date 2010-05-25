@@ -59,7 +59,6 @@ ebc_2 = {
 
 material_1 = {
     'name' : 'fluid',
-    'region' : 'Omega',
     'values' : {
         'viscosity' : 1.25e-3,
         'density' : 1e0,

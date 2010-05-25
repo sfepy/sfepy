@@ -114,7 +114,6 @@ def get_pars( lam, mu, dim, full = False ):
 
 material_1 = {
     'name' : 'matrix',
-    'region' : 'Y1',
 
     # aluminium, in 1e+10 Pa
     'values' : {
@@ -128,7 +127,6 @@ material_1 = {
 
 material_2 = {
     'name' : 'inclusion',
-    'region' : 'Y2',
 
     # epoxy, in 1e+10 Pa
     'values' : {
@@ -141,7 +139,6 @@ material_2 = {
 }
 
 if homogeneous:
-    material_2['region'] = material_1['region'] = matrix_region
     material_2['values'] = material_1['values']
 
 field_0 = {

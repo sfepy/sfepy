@@ -32,7 +32,6 @@ regions = {
 
 material_2 = {
     'name' : 'inclusion',
-    'region' : 'Y',
 
     # epoxy
     'function' : 'get_inclusion_pars',

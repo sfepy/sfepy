@@ -6,14 +6,12 @@ filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 
 material_1 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {
         'val' : 1.0,
     },
 }
 material_2 = {
     'name' : 'm',
-    'region' : 'Omega',
     'values' : {
         'K' : [[1.0, 0.0], [0.0, 1.0]],
     },

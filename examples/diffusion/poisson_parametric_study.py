@@ -70,14 +70,12 @@ ebcs = {
 # Material coefficient c and source term value f.
 material_1 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {
         'val' : 1.0,
     }
 }
 material_2 = {
     'name' : 'source',
-    'region' : 'Omega_1',
     'values' : {
         'val' : 10.0,
     }

@@ -13,8 +13,8 @@ options = {
 }
 
 materials = {
-    'm' : ('Omega', {'c' : 1.0}),
-    'load' : ('Omega', None, 'get_pars'),
+    'm' : ({'c' : 1.0},),
+    'load' : 'get_pars',
 }
 
 regions = {

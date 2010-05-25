@@ -123,7 +123,6 @@ regions = {
 
 material_1 = {
     'name' : 'matrix',
-    'region' : 'Y1',
 
     # aluminium
     'values' : {
@@ -136,7 +135,6 @@ material_1 = {
 
 material_2 = {
     'name' : 'inclusion',
-    'region' : 'Y2',
 
     # epoxy, in 1e+10 Pa
     'values' : {
@@ -149,7 +147,6 @@ material_2 = {
 
 material_3 = {
     'name' : 'rigid',
-    'region' : 'Y3',
 
     # lead, in 1e+10 Pa, does not matter
     'values' : {

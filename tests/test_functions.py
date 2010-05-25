@@ -38,10 +38,10 @@ function_1 = {
 }
 
 materials = {
-    'mf1' : ('Omega', None, 'get_pars1'),
-    'mf2' : ('Omega', None, 'get_pars2'),
+    'mf1' : (None, 'get_pars1'),
+    'mf2' : 'get_pars2',
     # Dot denotes a special value, that is not propagated to all QP.
-    'mf3' : ('Omega', {'a' : 10.0, 'b' : 2.0, '.c' : 'ahoj'}),
+    'mf3' : ({'a' : 10.0, 'b' : 2.0, '.c' : 'ahoj'},),
 }
 
 fields = {

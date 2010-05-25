@@ -138,7 +138,6 @@ particular problem. *SfePy* supports a variety of mesh formats.
 
     material_2 = {
         'name' : 'coef',
-        'region' : 'Omega',
         'values' : {'val' : 1.0},
     }
 

@@ -10,7 +10,6 @@ n_step = 11
 
 material_2 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {'val' : 0.01},
     'kind' : 'stationary', # 'stationary' or 'time-dependent'
 }

@@ -34,7 +34,6 @@ def get_pars( dim, full = False ):
 
 material_1 = {
     'name' : 'solid',
-    'region' : 'Omega',
     'values' : {
         'lam' : get_pars( 3 )[0],
         'mu' : get_pars( 3 )[1],
@@ -44,7 +43,6 @@ material_1 = {
 
 material_2 = {
     'name' : 'spring',
-    'region' : 'Omega',
     'values' : {
         '.pars' : {'stiffness' : 1e0, 'projection' : None},
     }

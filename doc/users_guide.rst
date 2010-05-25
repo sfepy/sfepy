@@ -667,7 +667,6 @@ elements, etc.
 
     material_10 = {
         'name' : 'm',
-        'region' : 'SomeRegion',
         'values' : {
             # This gets tiled to all physical QPs (constant function)
             'val' : [0.0, -1.0, 0.0],
@@ -677,8 +676,7 @@ elements, etc.
     }
 
     material_3 = {
-      'name' : 'm',
-      'region' : 'SomeRegion',
+      'name' : 'm2',
       'function' : 'some_function',
     }
 
@@ -693,7 +691,9 @@ elements, etc.
 * Example, short syntax::
 
     material = {
-        'm' : ('SomeRegion', {'val' : [0.0, -1.0, 0.0]}),
+        'm' : ({'val' : [0.0, -1.0, 0.0]},),
+        'm2' : 'some_function',
+        'm3' : (None, 'some_function'), # Same as the above line.
     }
 
 

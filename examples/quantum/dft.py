@@ -33,7 +33,6 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
 
     material_1 = {
         'name' : 'm',
-        'region' : 'Omega',
 
         'values' : {
             'val' : 0.5,
@@ -43,8 +42,6 @@ def common(mesh='../../tmp/mesh.vtk', dim=3, n_eigs=5, n_electron=5, tau=-1.0):
 
     material_2 = {
         'name' : 'mat_v',
-        'mode' : 'function',
-        'region' : 'Omega',
 
         'function' : 'fun_v',
         'extra_args' : {'mode' : 'r^2'},

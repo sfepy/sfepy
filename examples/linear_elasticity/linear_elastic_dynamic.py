@@ -14,7 +14,7 @@ variables = {
 }
 
 # Put density to 'solid'.
-materials['solid'][1].update({'rho' : 1000.0})
+materials['solid'][0].update({'rho' : 1000.0})
 
 # Moving the PerturbedSurface region.
 ebcs['PerturbedSurface'][1].update({'u.0' : 'ebc_sin'})

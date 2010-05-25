@@ -47,8 +47,6 @@ integral_1 = {
 
 material_1 = {
     'name' : 'm',
-    'mode' : 'function',
-    'region' : 'Omega',
     'function' : 'get_pars',
 }   
 

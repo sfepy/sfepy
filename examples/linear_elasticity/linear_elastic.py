@@ -37,7 +37,7 @@ regions = {
 #! The linear elastic material model is used. Properties are
 #! specified as Lame parameters.
 materials = {
-    'solid' : ('Omega', {'lam' : 1e1, 'mu' : 1e0}),
+    'solid' : ({'lam' : 1e1, 'mu' : 1e0},),
 }
 #! Fields
 #! ------

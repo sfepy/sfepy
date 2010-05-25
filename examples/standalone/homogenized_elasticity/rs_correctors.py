@@ -154,7 +154,6 @@ ebcs = {
 # Material defining constitutive parameters of the microproblem.
 material_1 = {
     'name' : 'm',
-    'region' : 'Y',
     'function' : 'get_pars',
 }
 

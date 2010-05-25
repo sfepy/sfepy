@@ -41,7 +41,6 @@ ebcs = {
 
 material_1 = {
     'name' : 'm',
-    'region' : 'Omega',
     'values' : {
         'lam' : 1.7,
         'mu' : 0.3,

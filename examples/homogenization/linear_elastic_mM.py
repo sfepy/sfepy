@@ -54,7 +54,7 @@ regions = {
 }
 
 materials = {
-    'solid' : ('Omega', None, 'get_homog'),
+    'solid' : 'get_homog',
 }
 
 fields = {

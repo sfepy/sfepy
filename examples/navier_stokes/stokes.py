@@ -125,7 +125,6 @@ equations = {
 
 material_1 = {
     'name' : 'fluid',
-    'region' : 'Y1Y2',
     'values' : {
         'viscosity' : 1.0,
         'density' : 1e0,

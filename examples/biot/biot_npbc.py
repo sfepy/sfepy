@@ -158,7 +158,6 @@ def define_input(filename, output_dir):
 
     material_1 = {
         'name' : 'm',
-        'region' : 'Omega',
         'function' : 'get_pars',
     }
 

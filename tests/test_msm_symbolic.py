@@ -37,7 +37,6 @@ integral_1 = {
 
 material_1 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {
         'val' : 12.0,
         'K' : [[1.0, 0.3], [0.3, 2.0]],
@@ -46,7 +45,6 @@ material_1 = {
 
 material_2 = {
     'name' : 'rhs',
-    'region' : 'Omega',
     'function' : 'rhs',
 }
 

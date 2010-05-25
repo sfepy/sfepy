@@ -5,7 +5,6 @@ filename_mesh = data_dir + '/meshes/various_formats/octahedron.node'
 
 material_2 = {
     'name' : 'coef',
-    'region' : 'Omega',
     'values' : {'K' : [[1.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 1.0]],
                 'val' : 1.0},
 }

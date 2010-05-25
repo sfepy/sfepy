@@ -5,7 +5,6 @@ filename_mesh = data_dir + '/meshes/various_formats/comsol_tri.txt'
 
 material_1 = {
     'name' : 'm',
-    'region' : 'Omega',
     'values' : {'val' : 1.0},
 }
 
