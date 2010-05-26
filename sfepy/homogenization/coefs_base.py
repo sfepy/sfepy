@@ -99,7 +99,8 @@ class CorrMiniApp( MiniAppBase ):
                         new_key = dvar + '_' + '%d'*len(comp) % comp
                         data = get_state(state[comp], dvar)
                         var_di = self.problem.variables[dvar] 
-                        shape = (var_di.n_dof / var_di.dpn, var_di.dpn)
+                        shape = (var_di.n_dof / var_di.n_components,
+                                 var_di.n_components)
                         out[new_key] = Struct(name = 'dump', mode = 'nodes',
                                               data = data,
                                               dofs = var_di.dofs,
@@ -121,7 +122,8 @@ class CorrMiniApp( MiniAppBase ):
             if is_dump:
                 for dvar in var_names:
                     var_di = self.problem.variables[dvar]
-                    shape = (var_di.n_dof / var_di.dpn, var_di.dpn)
+                    shape = (var_di.n_dof / var_di.n_components,
+                             var_di.n_components)
                     out[dvar] = Struct(name = 'dump', mode = 'nodes',
                                        data = get_state(state, dvar),
                                        dofs = var_di.dofs,

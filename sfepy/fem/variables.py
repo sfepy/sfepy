@@ -554,7 +554,7 @@ class Variables( Container ):
             indx = di.indx[var.name]
             igdof = igdofs[(igdofs >= indx.start) & (igdofs < indx.stop)]
             ivdof = igdof - indx.start
-            inod = ivdof / var.dpn
+            inod = ivdof / var.n_components
             nods = nm.concatenate( (nods, inod) )
 ##             print var.name, indx
 ##             print igdof
@@ -1155,6 +1155,8 @@ class Variable( Struct ):
         history = get_default_attr( conf, 'history', None )
         assert_( (history is None) or (history in ['previous', 'full']) )
 
+        n_components = conf.get_default_attr('n_components', None)
+
         order = conf.get_default_attr('order', None)
         if order is not None:
             order = int(order)
@@ -1176,9 +1178,13 @@ class Variable( Struct ):
                 msg = 'field "%s" does not exist!' % conf.field
                 raise KeyError( msg )
 
-            obj = FieldVariable(conf.name, kind, order, primary_var_name,
-                                fld, special=special,
-                                key=key, history=history)
+            if n_components is None:
+                # Workaround until new syntax for Variable is introduced.
+                n_components = fld.shape[0]
+                
+            obj = FieldVariable(conf.name, kind, fld, n_components,
+                                order, primary_var_name,
+                                special=special, key=key, history=history)
 
         elif family == 'constant':
             obj = ConstantVariable(conf.name, kind, order, primary_var_name,
@@ -1191,9 +1197,10 @@ class Variable( Struct ):
         return obj
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, name, kind, order=None, primary_var_name=None,
-                 flags=None, special=None, **kwargs):
-        Struct.__init__(self, name=name, **kwargs)
+    def __init__(self, name, kind, n_components, order=None,
+                 primary_var_name=None, special=None, flags=None, **kwargs):
+        Struct.__init__(self, name=name, n_components=n_components,
+                        **kwargs)
 
         self.flags = set()
         if flags is not None:
@@ -1256,9 +1263,6 @@ class Variable( Struct ):
             
         self.kind = kind
 
-    def get_field(self):
-        pass
-
     ##
     # 11.07.2006, c
     def is_state( self ):
@@ -1307,23 +1311,8 @@ class Variable( Struct ):
         self.data_from_state( state, indx, step = 0 )
 
     def time_update(self, ts, functions):
-        """Store time step, set variable data for variables with the
-        setter function."""
-        self.dt = ts.dt
-
-        if hasattr(self, 'special') and ('setter' in self.special):
-            setter_name = self.special['setter']
-            setter = functions[setter_name]
-
-            region = self.field.region
-            fn = region.get_field_nodes(self.field)
-            nod_list = self.clean_node_list(fn, 'field', region.name,
-                                            warn=False)
-            nods = nm.unique1d(nm.hstack(nod_list))
-
-            coor = self.field.get_coor(nods)
-            self.data_from_any(setter(ts, coor, region=region))
-            output('data of %s set by %s()' % (self.name, setter_name))
+        """Implemented in subclasses."""
+        pass
 
     def advance( self, ts ):
         if self.history is None: return
@@ -1354,16 +1343,334 @@ class Variable( Struct ):
             indx = slice(int(indx.start), int(indx.stop))
         n_data_dof = indx.stop - indx.start
 
-        n_dof = self.n_nod * self.dpn
-        if n_dof != n_data_dof:
+        if self.n_dof != n_data_dof:
             msg = 'incompatible data shape! (%d (variable) == %d (data))' \
-                  % (n_dof, n_data_dof)
+                  % (self.n_dof, n_data_dof)
             raise ValueError(msg)
 
         else:
             self.data[step] = data
             self.indx = indx
-            self.n_dof = n_dof
+
+    ##
+    # c: 25.02.2008, r: 25.02.2008
+    def _canonize( self, dofs ):
+        vname, dd = dofs.split( '.' )
+        if dd == 'all':
+            cdofs = self.dofs
+        elif dd[0] == '[':
+            cdofs = [vname + '.' + ii.strip()
+                     for ii in dd[1:-1].split( ',' )]
+        else:
+            cdofs = [dofs]
+        return cdofs
+
+    ##
+    # c: 18.10.2006, r: 15.04.2008
+    def expand_nodes_to_equations( self, nods, dofs=None ):
+        """dofs must be already canonized - it is done in
+        Variables._list_bc_of_vars()"""
+        if dofs is None:
+            dofs = self.dofs
+            
+        eq = nm.array( [], dtype = nm.int32 )
+        for dof in dofs:
+            idof = self.dofs.index( dof )
+            eq = nm.concatenate( (eq, self.n_components * nods + idof) )
+        return eq
+
+    def __call__( self, step = 0, derivative = None, dt = None ):
+        """Returns:
+             if `derivative` is None: a view of the data vector,
+             otherwise: required derivative of the data vector
+             at time step given by `step`.
+
+           Supports only the backward difference w.r.t. time."""
+        if derivative is None:
+            return self.data[step][self.indx]
+        else:
+            if self.history is None:
+                msg = 'set history type of variable %s to use derivatives!'\
+                      % self.name
+                raise ValueError( msg )
+            dt = get_default( dt, self.dt )
+##            print self.name, step, dt
+            return (self( step = step ) - self( step = step-1 )) / dt
+            
+    def get_initial_condition( self ):
+        if self.initial_condition is None:
+            return 0.0
+        else:
+            return self.initial_condition
+
+    def get_full_state( self, step = 0 ):
+        return self.data[step]
+
+    def get_indx( self ):
+        return self.indx
+
+class CloseNodesIterator(Struct):
+
+    def __init__(self, field, create_mesh=True, create_graph=True,
+                 strategy=None):
+        self.field = field
+        self.coors = self.field.get_coor()
+
+        if create_mesh or create_graph:
+            self.mesh = self.field.create_mesh()
+
+        if create_graph:
+            self.graph = self.mesh.create_conn_graph()
+            self.perm = self.get_permutation(strategy=strategy)
+            self.strategy = strategy
+
+        else:
+            self.graph = None
+            self.strategy = None
+
+    def __call__(self, strategy=None):
+        if strategy is None or (strategy != self.strategy):
+            self.perm = self.get_permutation(strategy=strategy)
+            self.strategy = strategy
+
+        self.ii = 0
+        return self
+
+    def get_permutation(self, strategy=None):
+        graph = self.graph
+
+        n_nod = self.coors.shape[0]
+        dtype = nm.int32
+
+        ## tt = time.clock()
+
+        if strategy is None:
+            perm = nm.arange(n_nod, dtype=dtype)
+
+        elif strategy == 'rcm':
+            from sfepy.linalg import rcm
+            perm = rcm(graph)
+            print 'rcm', time.clock() - tt
+            
+        elif 'greedy' in strategy:
+            ipop, iin = {'00' : (0, 0),
+                         'e0' : (-1, 0),
+                         '0e' : (0, -1),
+                         'ee' : (-1, -1),
+                         '01' : (0, 1),
+                         }[strategy[-2:]]
+
+            perm_i = nm.empty((n_nod,), dtype=dtype)
+            perm_i.fill(-1)
+
+            n_nod = perm_i.shape[0]
+            num = graph.indptr[1:] - graph.indptr[:-1]
+
+            ir = nm.argmin(num)
+            perm_i[ir] = 0
+            active = [ir]
+            ii = 1
+            while ii < n_nod:
+                ir = active.pop(ipop)
+                row = graph.indices[graph.indptr[ir]:graph.indptr[ir+1]]
+##                 print ir, row
+                ips = []
+                for ip in row:
+                    if perm_i[ip] < 0:
+                        perm_i[ip] = ii
+                        ii += 1
+                        ips.append(ip)
+                if iin >= 0:
+                    active[iin:iin] = ips
+                else:
+                    active.extend(ips)
+
+            perm = nm.empty_like(perm_i)
+            perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
+
+        ## print time.clock() - tt
+             
+        return perm
+
+    def test_permutations(self, strategy='rcm'):
+        from sfepy.linalg import permute_in_place, save_sparse_txt
+
+        save_sparse_txt('graph', self.graph, fmt='%d %d %d\n')
+        graph = self.graph.copy()
+
+        perm = self.get_permutation('rcm')
+
+        g_types = ['00', 'e0', '0e', 'ee', '01']
+        g_names = ['greedy_%s' % ii for ii in g_types]
+        g_perms = [self.get_permutation('greedy_%s' % ii) for ii in g_types]
+
+        c1 = self.mesh.coors
+        d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
+        d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
+        print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
+        print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
+        ds = []
+        for g_perm in g_perms:
+            d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
+            ds.append(d3)
+            print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
+
+        permute_in_place(graph, perm)
+        save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')
+
+        for ii, g_name in enumerate(g_names):
+            graph = self.graph.copy()
+            permute_in_place(graph, g_perms[ii])
+            save_sparse_txt('graph_%s' % g_name, graph, fmt='%d %d %d\n')
+
+        from matplotlib import pyplot as plt
+        n_bins = 30
+        plt.figure()
+        plt.subplot(311)
+        _, bins, ps = plt.hist(d1, n_bins, histtype='bar')
+        plt.legend(ps[0:1], ['default'])
+        plt.subplot(312)
+        plt.hist(d2, bins, histtype='bar')
+        plt.legend(ps[0:1], ['RCM'])
+        plt.subplot(313)
+        _, _, ps = plt.hist(nm.array(ds).T, bins, histtype='bar')
+        plt.legend([ii[0] for ii in ps], g_names)
+        plt.savefig('hist_distances_sub.pdf', transparent=True)
+
+        plt.figure()
+        _, _, ps = plt.hist(nm.array([d1, d2] + ds).T, n_bins, histtype='bar')
+        plt.legend([ii[0] for ii in ps], ['default', 'RCM'] + g_names)
+        plt.savefig('hist_distances.pdf', transparent=True)
+        plt.show()
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        try:
+            ii = self.perm[self.ii]
+            val = self.coors[ii]
+        except IndexError:
+            raise StopIteration
+
+        self.ii += 1
+
+        return ii, val
+
+## ##
+## # 11.07.2006, c
+## class FEVariable( Variable ):
+##     """Finite element Variable
+## field .. field description of variable (borrowed)
+## """
+class FieldVariable(Variable):
+    """A finite element field variable.
+    
+    field .. field description of variable (borrowed)
+    """
+
+    def __init__(self, name, kind, field, n_components, order=None,
+                 primary_var_name=None, special=None, flags=None, **kwargs):
+        Variable.__init__(self, name, kind, n_components, order,
+                          primary_var_name, special, flags, **kwargs)
+
+        self.set_field(field)
+
+        self.has_field = True
+        self.has_bc = True
+
+    def set_field(self, field):
+        """
+        Set field of the variable.
+
+        Takes reference to a Field instance. Sets dtype according to
+        field.dtype.
+        """
+        self.field = field
+        self.n_nod = field.n_nod
+        self.n_dof = self.n_nod * self.n_components
+
+        if self.dof_name is None:
+            dof_name = 'aux'
+        else:
+            dof_name = self.dof_name
+        self.dofs = [dof_name + ('.%d' % ii) for ii in range(self.n_components)]
+
+        self.flags.add(is_field)
+        self.dtype = field.dtype
+
+        self.current_ap = None
+
+    def get_field(self):
+        return self.field
+
+    def get_dof_info(self):
+        details = Struct(name = 'field_var_dof_details',
+                         n_nod = self.n_nod,
+                         dpn = self.n_components)
+        return self.n_dof, details
+
+    def setup_dof_conns(self, dof_conns, dc_type, region):
+        """Setup dof connectivities of various kinds as needed by terms."""
+        dpn = self.n_components
+        field = self.field
+        dct = dc_type.type
+
+        ##
+        # Expand nodes into dofs.
+        can_point = True
+        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
+            region_name = region.name # True region name.
+            key = (field.name, region_name, dct, ig)
+            if key in dof_conns: continue
+
+            if dct == 'volume':
+                dc = create_dof_conn(ap.econn, dpn)
+                dof_conns[key] = dc
+
+            elif dct == 'surface':
+                sd = ap.surface_data[region_name]
+                dc = create_dof_conn(sd.econn, dpn)
+                dof_conns[key] = dc
+
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
+                
+            elif dct == 'point':
+                if can_point:
+                    # Point data only in the first group to avoid multiple
+                    # assembling of nodes on group boundaries.
+                    conn = ap.point_data[region_name]
+                    dc = create_dof_conn(conn, dpn)
+                    dof_conns[key] = dc
+                    can_point = False
+
+            else:
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def has_dof_conn_key(self, key):
+        return self.field.name == key[0]
+
+    def time_update(self, ts, functions):
+        """
+        Store time step, set variable data for variables with the setter
+        function.
+        """
+        self.dt = ts.dt
+
+        if hasattr(self, 'special') and ('setter' in self.special):
+            setter_name = self.special['setter']
+            setter = functions[setter_name]
+
+            region = self.field.region
+            fn = region.get_field_nodes(self.field)
+            nod_list = self.clean_node_list(fn, 'field', region.name,
+                                            warn=False)
+            nods = nm.unique1d(nm.hstack(nod_list))
+
+            coor = self.field.get_coor(nods)
+            self.data_from_any(setter(ts, coor, region=region))
+            output('data of %s set by %s()' % (self.name, setter_name))
 
     def data_from_qp(self, data_qp, integral_name, step=0):
         """u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
@@ -1406,33 +1713,6 @@ class Variable( Struct ):
         self.indx = slice(0, len(data))
 
         self.data[step] = data
-
-    ##
-    # c: 25.02.2008, r: 25.02.2008
-    def _canonize( self, dofs ):
-        vname, dd = dofs.split( '.' )
-        if dd == 'all':
-            cdofs = self.dofs
-        elif dd[0] == '[':
-            cdofs = [vname + '.' + ii.strip()
-                     for ii in dd[1:-1].split( ',' )]
-        else:
-            cdofs = [dofs]
-        return cdofs
-
-    ##
-    # c: 18.10.2006, r: 15.04.2008
-    def expand_nodes_to_equations( self, nods, dofs=None ):
-        """dofs must be already canonized - it is done in
-        Variables._list_bc_of_vars()"""
-        if dofs is None:
-            dofs = self.dofs
-            
-        eq = nm.array( [], dtype = nm.int32 )
-        for dof in dofs:
-            idof = self.dofs.index( dof )
-            eq = nm.concatenate( (eq, self.dpn * nods + idof) )
-        return eq
 
     ##
     # c: 03.10.2007, r: 25.02.2008
@@ -1750,48 +2030,19 @@ class Variable( Struct ):
 
         return shape
 
-    def __call__( self, step = 0, derivative = None, dt = None ):
-        """Returns:
-             if `derivative` is None: a view of the data vector,
-             otherwise: required derivative of the data vector
-             at time step given by `step`.
-
-           Supports only the backward difference w.r.t. time."""
-        if derivative is None:
-            return self.data[step][self.indx]
-        else:
-            if self.history is None:
-                msg = 'set history type of variable %s to use derivatives!'\
-                      % self.name
-                raise ValueError( msg )
-            dt = get_default( dt, self.dt )
-##            print self.name, step, dt
-            return (self( step = step ) - self( step = step-1 )) / dt
-            
-    def get_initial_condition( self ):
-        if self.initial_condition is None:
-            return 0.0
-        else:
-            return self.initial_condition
-
-    def get_full_state( self, step = 0 ):
-        return self.data[step]
-
-    def get_indx( self ):
-        return self.indx
-
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
         nods = region.get_field_nodes( self.field, merge = True, igs = igs )
 ##         print nods, len( nods )
 ##         pause()
-        eq = nm.empty( (len( nods ) * self.dpn,), dtype = nm.int32 )
-        for idof in range( self.dpn ):
-            eq[idof::self.dpn] = self.dpn * nods + idof + self.indx.start
+        eq = nm.empty( (len( nods ) * self.n_components,), dtype = nm.int32 )
+        for idof in range( self.n_components ):
+            eq[idof::self.n_components] = self.n_components * nods \
+                                          + idof + self.indx.start
 
         out = self.data[step][eq]
         if reshape:
-            out.shape = (len( nods ), self.dpn)
+            out.shape = (len( nods ), self.n_components)
 
         return out
 
@@ -1811,6 +2062,7 @@ class Variable( Struct ):
         extdata[indx] = data[:indx.size]
 
         return extdata
+
     ##
     # c: 12.05.2008, r: 12.05.2008
     def remove_extra_data( self, data ):
@@ -1849,7 +2101,7 @@ class Variable( Struct ):
         mesh = self.field.create_mesh(extra_nodes=False)
         vec = self()
 
-        n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.dpn
+        n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof / dpn, dpn))
 
         out = {}
@@ -1960,7 +2212,8 @@ class Variable( Struct ):
 
             tt = time.clock()
 
-            vals = nm.empty((coors.shape[0], self.dpn), dtype=self.dtype)
+            vals = nm.empty((coors.shape[0], self.n_components),
+                            dtype=self.dtype)
             cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
             status = nm.empty((coors.shape[0],), dtype=nm.int32)
             source_vals = self()
@@ -2101,245 +2354,6 @@ class Variable( Struct ):
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
-
-class CloseNodesIterator(Struct):
-
-    def __init__(self, field, create_mesh=True, create_graph=True,
-                 strategy=None):
-        self.field = field
-        self.coors = self.field.get_coor()
-
-        if create_mesh or create_graph:
-            self.mesh = self.field.create_mesh()
-
-        if create_graph:
-            self.graph = self.mesh.create_conn_graph()
-            self.perm = self.get_permutation(strategy=strategy)
-            self.strategy = strategy
-
-        else:
-            self.graph = None
-            self.strategy = None
-
-    def __call__(self, strategy=None):
-        if strategy is None or (strategy != self.strategy):
-            self.perm = self.get_permutation(strategy=strategy)
-            self.strategy = strategy
-
-        self.ii = 0
-        return self
-
-    def get_permutation(self, strategy=None):
-        graph = self.graph
-
-        n_nod = self.coors.shape[0]
-        dtype = nm.int32
-
-        ## tt = time.clock()
-
-        if strategy is None:
-            perm = nm.arange(n_nod, dtype=dtype)
-
-        elif strategy == 'rcm':
-            from sfepy.linalg import rcm
-            perm = rcm(graph)
-            print 'rcm', time.clock() - tt
-            
-        elif 'greedy' in strategy:
-            ipop, iin = {'00' : (0, 0),
-                         'e0' : (-1, 0),
-                         '0e' : (0, -1),
-                         'ee' : (-1, -1),
-                         '01' : (0, 1),
-                         }[strategy[-2:]]
-
-            perm_i = nm.empty((n_nod,), dtype=dtype)
-            perm_i.fill(-1)
-
-            n_nod = perm_i.shape[0]
-            num = graph.indptr[1:] - graph.indptr[:-1]
-
-            ir = nm.argmin(num)
-            perm_i[ir] = 0
-            active = [ir]
-            ii = 1
-            while ii < n_nod:
-                ir = active.pop(ipop)
-                row = graph.indices[graph.indptr[ir]:graph.indptr[ir+1]]
-##                 print ir, row
-                ips = []
-                for ip in row:
-                    if perm_i[ip] < 0:
-                        perm_i[ip] = ii
-                        ii += 1
-                        ips.append(ip)
-                if iin >= 0:
-                    active[iin:iin] = ips
-                else:
-                    active.extend(ips)
-
-            perm = nm.empty_like(perm_i)
-            perm[perm_i] = nm.arange(perm_i.shape[0], dtype=perm.dtype)
-
-        ## print time.clock() - tt
-             
-        return perm
-
-    def test_permutations(self, strategy='rcm'):
-        from sfepy.linalg import permute_in_place, save_sparse_txt
-
-        save_sparse_txt('graph', self.graph, fmt='%d %d %d\n')
-        graph = self.graph.copy()
-
-        perm = self.get_permutation('rcm')
-
-        g_types = ['00', 'e0', '0e', 'ee', '01']
-        g_names = ['greedy_%s' % ii for ii in g_types]
-        g_perms = [self.get_permutation('greedy_%s' % ii) for ii in g_types]
-
-        c1 = self.mesh.coors
-        d1 = la.norm_l2_along_axis(c1[1:] - c1[:-1])
-        d2 = la.norm_l2_along_axis(c1[perm][1:] - c1[perm][:-1])
-        print d1.min(), d1.mean(), d1.max(), d1.std(), d1.var()
-        print d2.min(), d2.mean(), d2.max(), d2.std(), d2.var()
-        ds = []
-        for g_perm in g_perms:
-            d3 = la.norm_l2_along_axis(c1[g_perm][1:] - c1[g_perm][:-1])
-            ds.append(d3)
-            print d3.min(), d3.mean(), d3.max(), d3.std(), d3.var()
-
-        permute_in_place(graph, perm)
-        save_sparse_txt('graph_rcm', graph, fmt='%d %d %d\n')
-
-        for ii, g_name in enumerate(g_names):
-            graph = self.graph.copy()
-            permute_in_place(graph, g_perms[ii])
-            save_sparse_txt('graph_%s' % g_name, graph, fmt='%d %d %d\n')
-
-        from matplotlib import pyplot as plt
-        n_bins = 30
-        plt.figure()
-        plt.subplot(311)
-        _, bins, ps = plt.hist(d1, n_bins, histtype='bar')
-        plt.legend(ps[0:1], ['default'])
-        plt.subplot(312)
-        plt.hist(d2, bins, histtype='bar')
-        plt.legend(ps[0:1], ['RCM'])
-        plt.subplot(313)
-        _, _, ps = plt.hist(nm.array(ds).T, bins, histtype='bar')
-        plt.legend([ii[0] for ii in ps], g_names)
-        plt.savefig('hist_distances_sub.pdf', transparent=True)
-
-        plt.figure()
-        _, _, ps = plt.hist(nm.array([d1, d2] + ds).T, n_bins, histtype='bar')
-        plt.legend([ii[0] for ii in ps], ['default', 'RCM'] + g_names)
-        plt.savefig('hist_distances.pdf', transparent=True)
-        plt.show()
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        try:
-            ii = self.perm[self.ii]
-            val = self.coors[ii]
-        except IndexError:
-            raise StopIteration
-
-        self.ii += 1
-
-        return ii, val
-
-## ##
-## # 11.07.2006, c
-## class FEVariable( Variable ):
-##     """Finite element Variable
-## field .. field description of variable (borrowed)
-## """
-class FieldVariable(Variable):
-    """A finite element field variable.
-    
-    field .. field description of variable (borrowed)
-    """
-
-    def __init__(self, name, kind, order, primary_var_name,
-                 field, special=None, flags=None, **kwargs):
-        Variable.__init__(self, name, kind, order, primary_var_name,
-                          flags, special=special, **kwargs)
-
-        self.set_field(field)
-
-        self.has_field = True
-        self.has_bc = True
-
-    def set_field( self, field ):
-        """Takes reference to a Field instance. Sets dtype according to
-        field.dtype."""
-        self.field = field
-        self.dpn = nm.product( field.shape )
-        self.n_nod = field.n_nod
-        self.n_dof = self.n_nod * self.dpn
-
-        if self.dof_name is None:
-            dof_name = 'aux'
-        else:
-            dof_name = self.dof_name
-        self.dofs = [dof_name + ('.%d' % ii) for ii in range( self.dpn )]
-
-        self.flags.add( is_field )
-        self.dtype = field.dtype
-
-        self.current_ap = None
-
-    def get_field(self):
-        return self.field
-
-    def get_dof_info(self):
-        details = Struct(name = 'field_var_dof_details',
-                         n_nod = self.n_nod,
-                         dpn = self.dpn)
-        return self.n_dof, details
-
-    def setup_dof_conns(self, dof_conns, dc_type, region):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        dpn = self.dpn
-        field = self.field
-        dct = dc_type.type
-
-        ##
-        # Expand nodes into dofs.
-        can_point = True
-        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
-            region_name = region.name # True region name.
-            key = (field.name, region_name, dct, ig)
-            if key in dof_conns: continue
-
-            if dct == 'volume':
-                dc = create_dof_conn(ap.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'surface':
-                sd = ap.surface_data[region_name]
-                dc = create_dof_conn(sd.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'edge':
-                raise NotImplementedError('dof connectivity type %s' % dct)
-                
-            elif dct == 'point':
-                if can_point:
-                    # Point data only in the first group to avoid multiple
-                    # assembling of nodes on group boundaries.
-                    conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, dpn)
-                    dof_conns[key] = dc
-                    can_point = False
-
-            else:
-                raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-    def has_dof_conn_key(self, key):
-        return self.field.name == key[0]
 
 class ConstantVariable(Variable):
     """A constant variable.

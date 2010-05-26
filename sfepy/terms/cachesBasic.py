@@ -15,7 +15,7 @@ class StateInVolumeQPDataCache( DataCache ):
         state, aux = self.get_args( **kwargs )
 
         n_el, n_qp = state.get_data_shapes( ckey )[:2]
-        shape = (n_el, n_qp, state.dpn, 1)
+        shape = (n_el, n_qp, state.n_components, 1)
 
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
@@ -46,7 +46,7 @@ class StateInSurfaceQPDataCache( DataCache ):
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
         n_fa, n_qp = state.get_data_shapes( ckey, kind = 'Surface' )[:2]
-        shape = (n_fa, n_qp, state.dpn, 1)
+        shape = (n_fa, n_qp, state.n_components, 1)
 
         DataCache.init_data( self, key, ckey, shape )
 

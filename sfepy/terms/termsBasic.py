@@ -828,7 +828,7 @@ class StateVQTerm(Term):
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
 
         if diff_var is None:
-            shape = (n_el, n_qp, state.dpn, 1)
+            shape = (n_el, n_qp, state.n_components, 1)
         else:
             raise StopIteration
 
@@ -866,7 +866,7 @@ class StateSQTerm(Term):
                                                     self.region.name)
 
         if diff_var is None:
-            shape = (chunk_size, n_qp, state.dpn, 1)
+            shape = (chunk_size, n_qp, state.n_components, 1)
         else:
             raise StopIteration
 
