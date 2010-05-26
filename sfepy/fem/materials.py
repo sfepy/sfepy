@@ -115,7 +115,8 @@ class Material( Struct ):
 
         elif (values is not None) or len(kwargs): # => function is None
                 all_values = {}
-                all_values.update(values)
+                if values is not None:
+                    all_values.update(values)
                 all_values.update(kwargs)
 
                 self.function = ConstantFunction(all_values)
