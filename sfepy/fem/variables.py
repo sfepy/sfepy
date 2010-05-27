@@ -7,7 +7,7 @@ from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, evaluate_at
 from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
-from sfepy.fem.boundary_conditions import Conditions
+from sfepy.fem.conditions import Conditions
 
 is_state = 0
 is_virtual = 1
