@@ -450,8 +450,8 @@ class ProblemDefinition( Struct ):
         state = self.create_state_vector()
         state.fill( default )
         if force:
-            vals = dict_from_keys_init( [self.variables.names[ii]
-                                      for ii in self.variables.state] )
+            vals = dict_from_keys_init([self.variables[ii]
+                                        for ii in self.variables.state])
             for ii, key in enumerate( vals.iterkeys() ):
                 vals[key] = ii + 1
             self.apply_ebc( state, force_values = vals )

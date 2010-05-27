@@ -7,6 +7,7 @@ from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, evaluate_at
 from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
+from sfepy.fem.boundary_conditions import Conditions
 
 is_state = 0
 is_virtual = 1
@@ -364,37 +365,14 @@ class Variables( Container ):
             self.vdi = self.di
 
     ##
-    # c: 16.10.2006, r: 15.04.2008
-    def _list_bc_of_vars( self, bc_defs, is_ebc = True ):
-
-        bc_of_vars = dict_from_keys_init( (key for key in self.di.names), list )
-        if bc_defs is None: return bc_of_vars
-
-        for key, bc in bc_defs.iteritems():
-##             print key
-##             print bc
-            for dofs, val in bc.dofs.iteritems():
-                vname = dofs.split( '.' )[0]
-                if bc_of_vars.has_key( vname ):
-                    var = self[vname]
-                    vbc = copy( bc )
-                    if is_ebc:
-                        vbc.dofs = (var._canonize( dofs ), val)
-                    else:
-                        vbc.dofs = (var._canonize( dofs ), var._canonize( val ))
-                    bc_of_vars[vname].append( (key, vbc) )
-                else:
-                    output( 'BC: ignoring nonexistent dof(s) %s' % dofs )
-        return bc_of_vars
-
-    ##
     # c: 03.10.2007, r: 18.02.2008
     def setup_lcbc_operators( self, lcbc, regions ):
         if lcbc is None: return
 
         self.has_lcbc =True
 
-        lcbc_of_vars = self._list_bc_of_vars( lcbc )
+        self.lcbcs = Conditions.from_conf(lcbc)
+        lcbc_of_vars = self.lcbcs.group_by_variables()
 
         # Assume disjoint regions.
         lcbc_ops = {}
@@ -486,16 +464,20 @@ class Variables( Container ):
         if vregions is None:
             vregions = regions
 
+        self.ebcs = Conditions.from_conf(ebc)
+        self.epbcs = Conditions.from_conf(epbc)
+
         ##
         # Assing EBC, PBC to variables and regions.
-        self.bc_of_vars = self._list_bc_of_vars( ebc )
-        dict_extend( self.bc_of_vars,
-                     self._list_bc_of_vars( epbc, is_ebc = False ) )
+        self.bc_of_vars = self.ebcs.group_by_variables()
+        self.bc_of_vars = self.epbcs.group_by_variables(self.bc_of_vars)
 
         ##
         # List EBC nodes/dofs for each variable.
-        for var_name, bcs in self.bc_of_vars.iteritems():
+        for var_name in self.di.names:
             var = self[var_name]
+            bcs = self.bc_of_vars.get(var.name, None)
+
             var.equation_mapping(bcs, regions, self.di, ts, functions)
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
@@ -534,12 +516,15 @@ class Variables( Container ):
         self.has_eq_map = True
 
     def setup_initial_conditions(self, conf_ics, regions, functions):
-        self.ic_of_vars = self._list_bc_of_vars( conf_ics )
+        self.ics = Conditions.from_conf(conf_ics)
+        self.ic_of_vars = self.ics.group_by_variables()
 
-        for var_name, ics in self.ic_of_vars.iteritems():
-            if len( ics ) == 0:
-                continue
+        for var_name in self.di.names:
             var = self[var_name]
+
+            ics = self.ic_of_vars.get(var.name, None)
+            if ics is None: continue
+
             var.setup_initial_conditions(ics, regions, self.di, functions)
 
     ##
@@ -843,7 +828,7 @@ class Variables( Container ):
     # 25.07.2006
     # 18.10.2006
     def update_vec( self, vec, delta ):
-        for var_name in self.bc_of_vars.iterkeys():
+        for var_name in self.di.names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eqi
@@ -859,7 +844,7 @@ class Variables( Container ):
         corresponding slave dofs, just like when assembling.
         """
         svec = nm.empty( (self.adi.ptr[-1],), dtype = self.dtype )
-        for var_name in self.bc_of_vars.iterkeys():
+        for var_name in self.di.names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eqi
@@ -911,7 +896,7 @@ class Variables( Container ):
         if var_name is None:
             vec = self.create_state_vector()
 
-            for var_name in self.bc_of_vars.iterkeys():
+            for var_name in self.di.names:
                 eq_map = self[var_name].eq_map
                 _make_full_vec( vec[self.di.indx[var_name]],
                                 svec[self.adi.indx[var_name]], eq_map )
@@ -1353,23 +1338,9 @@ class Variable( Struct ):
             self.indx = indx
 
     ##
-    # c: 25.02.2008, r: 25.02.2008
-    def _canonize( self, dofs ):
-        vname, dd = dofs.split( '.' )
-        if dd == 'all':
-            cdofs = self.dofs
-        elif dd[0] == '[':
-            cdofs = [vname + '.' + ii.strip()
-                     for ii in dd[1:-1].split( ',' )]
-        else:
-            cdofs = [dofs]
-        return cdofs
-
-    ##
     # c: 18.10.2006, r: 15.04.2008
     def expand_nodes_to_equations( self, nods, dofs=None ):
-        """dofs must be already canonized - it is done in
-        Variables._list_bc_of_vars()"""
+        """dofs must be already canonized"""
         if dofs is None:
             dofs = self.dofs
             
@@ -1719,6 +1690,9 @@ class FieldVariable(Variable):
     def create_lcbc_operators( self, bcs, regions, offset ):
         if len( bcs ) == 0: return None
 
+        bcs.canonize_dof_names(self.dofs)
+        bcs.sort()
+
         eq = self.eq_map.eq
         n_dof = self.eq_map.n_eq
         
@@ -1727,7 +1701,7 @@ class FieldVariable(Variable):
         ops_lc = []
         n_transformed_dof = []
         markers = []
-        for ii, (key, bc) in enumerate( bcs ):
+        for ii, bc in enumerate(bcs):
             print self.name, bc.name
             region = regions[bc.region]
             print region.name
@@ -1807,8 +1781,6 @@ class FieldVariable(Variable):
     def equation_mapping(self, bcs, regions, di, ts, functions, warn = False):
         """EPBC: master and slave dofs must belong to the same field (variables
         can differ, though). Set n_adof."""
-        # Sort by ebc definition name.
-        bcs.sort( cmp = lambda i1, i2: cmp( i1[0], i2[0] ) )
 ##         print bcs
 ##         pause()
         
@@ -1816,7 +1788,7 @@ class FieldVariable(Variable):
 
         eq_map.eq = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
         eq_map.val_ebc = nm.empty( (0,), dtype = self.dtype )
-        if len( bcs ) == 0:
+        if bcs is None:
             ##
             # No ebc for this field.
             eq_map.eqi = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
@@ -1829,19 +1801,23 @@ class FieldVariable(Variable):
             self.n_adof = self.n_dof
             return
 
+        bcs.canonize_dof_names(self.dofs)
+        bcs.sort()
+
         field = self.field
 
         eq_ebc = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
         val_ebc = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
         master_slave = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
         chains = []
-        for key, bc in bcs:
-            if key[:3] == 'ebc':
+
+        for bc in bcs:
+            if 'ebc' in bc.key:
                 ntype = 'EBC'
                 rname = bc.region
             else:
                 ntype = 'EPBC'
-                rname = bc.region[0]
+                rname = bc.regions[0]
 
             try:
                 region = regions[rname]
@@ -1879,7 +1855,7 @@ class FieldVariable(Variable):
                 if vv is not None: val_ebc[eq] = vv
 
             else: # EPBC.
-                region = regions[bc.region[1]]
+                region = regions[bc.regions[1]]
                 fn = region.get_field_nodes( field )
                 slave_nod_list = self.clean_node_list( fn, ntype, region.name,
                                                        warn = warn )
@@ -1976,14 +1952,18 @@ class FieldVariable(Variable):
         eq_map.n_eq = eq_map.eqi.shape[0]
         eq_map.n_ebc = eq_map.eq_ebc.shape[0]
         eq_map.n_epbc = eq_map.master.shape[0]
-        
+
         self.n_adof = eq_map.n_eq
+
 ##         print eq_map
 ##         pause()
 
     def setup_initial_conditions(self, ics, regions, di, functions, warn=False):
         """Setup of initial conditions."""
-        for key, ic in ics:
+        ics.canonize_dof_names(self.dofs)
+        ics.sort()
+
+        for ic in ics:
             dofs, val = ic.dofs
 
             try:
