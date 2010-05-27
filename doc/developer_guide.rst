@@ -526,6 +526,7 @@ below are already more or less updated.
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/fem/conditions
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
    src/sfepy/fem/integrals
