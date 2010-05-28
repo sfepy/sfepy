@@ -8,6 +8,7 @@ from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, evaluate_at
 from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
 from sfepy.fem.conditions import Conditions
+from sfepy.fem.dof_info import DofInfo
 
 is_state = 0
 is_virtual = 1
@@ -189,11 +190,6 @@ def _fix_scalar_dc(dc1, dc2):
     return aux
 
 ##
-# 19.07.2006
-class DofInfo( Struct ):
-    pass
-
-##
 # 14.07.2006, c
 class Variables( Container ):
     """
@@ -329,38 +325,19 @@ class Variables( Container ):
     def has_virtuals(self):
         return len(self.virtual) > 0
 
-    ##
-    # c: 07.10.2005, r: 22.05.2008
-    def setup_dof_info( self, make_virtual = False ):
-        """Sets also i_dof_max."""
-        def _setup_dof_info( iterable ):
-            ptr = [0]
-            names = []
-            indx = {}
-            n_dof = {}
-            details = {}
-            for iseq, ii in enumerate(iterable):
-                var = self[ii]
-                name = var.name
-
-                n_dof[name], details[name] = var.get_dof_info()
-                ptr.append(ptr[-1] + n_dof[name])
-                indx[name] = slice(int(ptr[iseq] ), int(ptr[iseq+1]))
-                names.append(name)
-
-            di = DofInfo(name = 'dof_info',
-                         ptr = nm.array(ptr, dtype=nm.int32),
-                         n_dof = n_dof,
-                         details = details,
-                         indx = indx,
-                         names = names
-            )
-            return di
-
-        self.di = _setup_dof_info( self.ordered_state )
+    def setup_dof_info(self, make_virtual=False):
+        """
+        Setup global DOF information.
+        """
+        self.di = DofInfo('state_dof_info')
+        for var_name in self.ordered_state:
+            self.di.append_variable(self[var_name])
         
         if make_virtual:
-            self.vdi = _setup_dof_info( self.ordered_virtual )
+            self.vdi = DofInfo('virtual_dof_info')
+            for var_name in self.ordered_virtual:
+                self.vdi.append_variable(self[var_name])
+
         else:
             self.vdi = self.di
 
@@ -474,7 +451,7 @@ class Variables( Container ):
 
         ##
         # List EBC nodes/dofs for each variable.
-        for var_name in self.di.names:
+        for var_name in self.di.var_names:
             var = self[var_name]
             bcs = self.bc_of_vars.get(var.name, None)
 
@@ -486,30 +463,15 @@ class Variables( Container ):
 ##             print var.eq_map
 ##             pause()
 
-        ##
-        # Adjust by offsets - create active dof info.
-        def _create_a_dof_info( di ):
-            ptr = [0]
-            indx = {}
-            n_dof = {}
-            for iseq, name in enumerate(di.names):
-                var = self[name]
+        self.adi = DofInfo('active_state_dof_info')
+        for var_name in self.ordered_state:
+            self.adi.append_variable(self[var_name], active=True)
 
-                n_dof[name] = var.n_adof
-                ptr.append(ptr[-1] + n_dof[name])
-                indx[name] = slice(int(ptr[iseq] ), int(ptr[iseq+1]))
-
-            adi = DofInfo(name = 'active_dof_info',
-                          ptr = nm.array(ptr, dtype=nm.int32),
-                          n_dof = n_dof,
-                          indx = indx,
-                          names = di.names,
-            )
-            return adi
-
-        self.adi = _create_a_dof_info( self.di )
         if self.has_virtual_dcs:
-            self.avdi = _create_a_dof_info( self.vdi )
+            self.avdi = DofInfo('active_virtual_dof_info')
+            for var_name in self.ordered_virtual:
+                self.avdi.append_variable(self[var_name], active=True)
+
         else:
             self.avdi = self.adi
 
@@ -519,7 +481,7 @@ class Variables( Container ):
         self.ics = Conditions.from_conf(conf_ics)
         self.ic_of_vars = self.ics.group_by_variables()
 
-        for var_name in self.di.names:
+        for var_name in self.di.var_names:
             var = self[var_name]
 
             ics = self.ic_of_vars.get(var.name, None)
@@ -828,7 +790,7 @@ class Variables( Container ):
     # 25.07.2006
     # 18.10.2006
     def update_vec( self, vec, delta ):
-        for var_name in self.di.names:
+        for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eqi
@@ -844,7 +806,7 @@ class Variables( Container ):
         corresponding slave dofs, just like when assembling.
         """
         svec = nm.empty( (self.adi.ptr[-1],), dtype = self.dtype )
-        for var_name in self.di.names:
+        for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eqi
@@ -896,7 +858,7 @@ class Variables( Container ):
         if var_name is None:
             vec = self.create_state_vector()
 
-            for var_name in self.di.names:
+            for var_name in self.di.var_names:
                 eq_map = self[var_name].eq_map
                 _make_full_vec( vec[self.di.indx[var_name]],
                                 svec[self.adi.indx[var_name]], eq_map )
@@ -1024,7 +986,7 @@ class Variables( Container ):
 
         if var_info is None:
             var_info = {}
-            for name in di.names:
+            for name in di.var_names:
                 var_info[name] = (False, name)
 
         out = {}
@@ -1575,11 +1537,17 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
-    def get_dof_info(self):
+    def get_dof_info(self, active=False):
         details = Struct(name = 'field_var_dof_details',
                          n_nod = self.n_nod,
                          dpn = self.n_components)
-        return self.n_dof, details
+        if active:
+            n_dof = self.n_adof
+
+        else:
+            n_dof = self.n_dof
+            
+        return n_dof, details
 
     def setup_dof_conns(self, dof_conns, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""
