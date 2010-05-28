@@ -406,16 +406,15 @@ class Region( Struct ):
         tmp.update_vertices()
         return tmp
 
-    ##
-    # 16.10.2006, c
-    # 20.02.2007
-    # 28.02.2007
-    # 31.05.2007
-    # 10.07.2007
-    # 16.07.2007
-    # 17.07.2007
-    def get_field_nodes( self, field, merge = False, igs = None ):
-        """For one edge node type only! (should index row of cnt_en...)"""
+    def get_field_nodes(self, field, merge=False, clean=False,
+                        warn=False, igs=None):
+        """
+        Get nodes of the field contained in the region.
+
+        Notes
+        -----
+        For one edge node type only! (should index row of cnt_en...)
+        """
         if igs is None:
             igs = self.igs
         cnt_en = field.cnt_en
@@ -453,6 +452,13 @@ class Region( Struct ):
         if merge:
             nods = [nn for nn in nods if nn is not None]
             nods = nm.unique1d( nm.hstack( nods ) )
+
+        elif clean:
+            for nn in nods[:]:
+                if nn is None:
+                    nods.remove(nn)
+                    if warn is not None:
+                        output(warn + ('%s' % region.name))
             
         return nods
 

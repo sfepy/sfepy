@@ -8,7 +8,7 @@ from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, evaluate_at
 from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
 from sfepy.fem.conditions import Conditions
-from sfepy.fem.dof_info import DofInfo
+from sfepy.fem.dof_info import DofInfo, EquationMap, expand_nodes_to_equations
 
 is_state = 0
 is_virtual = 1
@@ -51,55 +51,6 @@ def zero_conf_ebc( conf ):
             newbc.dofs[dd] = 0.0
         new[key] = newbc
     return new
-
-##
-# 15.03.2007, c
-# 04.06.2007
-def resolve_chains( master_slave, chains ):
-    """Resolve EPBC chains - e.g. in corner nodes."""
-
-    for chain in chains:
-        slave = chain[-1]
-        master_slave[chain[:-1]] = slave + 1
-        master_slave[slave] = - chain[0] - 1 # Any of masters...
-
-##
-# 04.06.2007, c
-def group_chains( chain_list ):
-
-    chains = []
-    while len( chain_list ):
-        chain = set( chain_list.pop( 0 ) )
-##         print ':', chain
-        ii = 0
-        while ii < len( chain_list ):
-            c1 = sorted( chain_list[ii] )
-#            print '--', ii, c1, chain
-            is0 = c1[0] in chain
-            is1 = c1[1] in chain
-
-            if is0 and is1:
-                chain_list.pop( ii )
-            elif is0 or is1:
-                chain.update( c1 )
-                chain_list.pop( ii )
-                ii = 0
-            else:
-                ii += 1
-#            print ii, chain, chain_list
-##         print '->', chain
-##         print chain_list
-##         pause()
-
-        chains.append( list( chain ) )
-
-#    print 'EPBC chain groups:', chains
-    aux = {}
-    for chain in chains:
-        aux.setdefault( len( chain ), [0] )[0] += 1
-#    print 'EPBC chain counts:', aux
-
-    return chains
 
 def create_lcbc_rigid( coors ):
     """Create transformation matrix for rigid LCBCs."""
@@ -455,13 +406,16 @@ class Variables( Container ):
             var = self[var_name]
             bcs = self.bc_of_vars.get(var.name, None)
 
-            var.equation_mapping(bcs, regions, self.di, ts, functions)
+            var_di = self.di.get_info(var_name)
+            var.equation_mapping(bcs, regions, var_di, ts, functions)
+
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
-                vvar.equation_mapping(bcs, vregions, self.vdi, ts, functions)
+                vvar_di = self.vdi.get_info(var_name)
+                vvar.equation_mapping(bcs, vregions, vvar_di, ts, functions)
 
-##             print var.eq_map
-##             pause()
+            ## print var.eq_map
+            ## pause()
 
         self.adi = DofInfo('active_state_dof_info')
         for var_name in self.ordered_state:
@@ -1299,19 +1253,6 @@ class Variable( Struct ):
             self.data[step] = data
             self.indx = indx
 
-    ##
-    # c: 18.10.2006, r: 15.04.2008
-    def expand_nodes_to_equations( self, nods, dofs=None ):
-        """dofs must be already canonized"""
-        if dofs is None:
-            dofs = self.dofs
-            
-        eq = nm.array( [], dtype = nm.int32 )
-        for dof in dofs:
-            idof = self.dofs.index( dof )
-            eq = nm.concatenate( (eq, self.n_components * nods + idof) )
-        return eq
-
     def __call__( self, step = 0, derivative = None, dt = None ):
         """Returns:
              if `derivative` is None: a view of the data vector,
@@ -1602,9 +1543,7 @@ class FieldVariable(Variable):
             setter = functions[setter_name]
 
             region = self.field.region
-            fn = region.get_field_nodes(self.field)
-            nod_list = self.clean_node_list(fn, 'field', region.name,
-                                            warn=False)
+            nod_list = region.get_field_nodes(self.field, clean=True)
             nods = nm.unique1d(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
@@ -1678,7 +1617,7 @@ class FieldVariable(Variable):
             print nmaster.shape
 
             dofs, kind = bc.dofs
-            meq = eq[self.expand_nodes_to_equations( nmaster, dofs )]
+            meq = eq[expand_nodes_to_equations(nmaster, dofs, self.dofs)]
             assert_( nm.all( meq >= 0 ) )
 
             markers.append( offset + ii + 1 )
@@ -1736,195 +1675,17 @@ class FieldVariable(Variable):
                        markers = markers,
                        n_transformed_dof = n_transformed_dof )
 
-    def clean_node_list( self, nod_list, ntype, region_name, warn = False ):
-        for nods in nod_list[:]:
-            if nods is None:
-                nod_list.remove( nods )
-                if warn:
-                    output( 'warning: ignoring nonexistent %s'\
-                            + ' node (%s) in %s'\
-                            % (ntype, self.name, region.name) )
-        return nod_list
-
-    def equation_mapping(self, bcs, regions, di, ts, functions, warn = False):
-        """EPBC: master and slave dofs must belong to the same field (variables
-        can differ, though). Set n_adof."""
-##         print bcs
-##         pause()
+    def equation_mapping(self, bcs, regions, var_di, ts, functions, warn=False):
+        """Set n_adof."""
         
-        self.eq_map = eq_map = Struct()
+        self.eq_map = EquationMap('eq_map', self.dofs, var_di)
+        if bcs is not None:
+            bcs.canonize_dof_names(self.dofs)
+            bcs.sort()
 
-        eq_map.eq = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
-        eq_map.val_ebc = nm.empty( (0,), dtype = self.dtype )
-        if bcs is None:
-            ##
-            # No ebc for this field.
-            eq_map.eqi = nm.arange( di.n_dof[self.name], dtype = nm.int32 )
-            eq_map.eq_ebc = nm.empty( (0,), dtype = nm.int32 )
-            eq_map.n_eq = eq_map.eqi.shape[0]
-            eq_map.n_ebc = eq_map.eq_ebc.shape[0]
-            eq_map.master = nm.empty( (0,), dtype = nm.int32 )
-            eq_map.slave = nm.empty( (0,), dtype = nm.int32 )
-
-            self.n_adof = self.n_dof
-            return
-
-        bcs.canonize_dof_names(self.dofs)
-        bcs.sort()
-
-        field = self.field
-
-        eq_ebc = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
-        val_ebc = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
-        master_slave = nm.zeros( (di.n_dof[self.name],), dtype = nm.int32 )
-        chains = []
-
-        for bc in bcs:
-            if 'ebc' in bc.key:
-                ntype = 'EBC'
-                rname = bc.region
-            else:
-                ntype = 'EPBC'
-                rname = bc.regions[0]
-
-            try:
-                region = regions[rname]
-            except IndexError:
-                msg = "no region '%s' used in BC %s!" % (rname, bc)
-                raise IndexError( msg )
-
-##             print ir, key, bc
-##             debug()
-            # Get master region nodes.
-
-            fn = region.get_field_nodes( field )
-            master_nod_list = self.clean_node_list( fn, ntype, region.name,
-                                                    warn = warn )
-            if len( master_nod_list ) == 0:
-                continue
-
-            if ntype == 'EBC': # EBC.
-                dofs, val = bc.dofs
-                ##
-                # Evaluate EBC values.
-                vv = nm.empty( (0,), dtype = self.dtype )
-                nods = nm.unique1d( nm.hstack( master_nod_list ) )
-                coor = field.get_coor( nods )
-                if type( val ) == str:
-                    fun = functions[val]
-                    vv = fun(ts, coor, bc = bc)
-                else:
-                    vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
-##                 print nods
-##                 print vv
-                eq = self.expand_nodes_to_equations( nods, dofs )
-                # Duplicates removed here...
-                eq_ebc[eq] = 1
-                if vv is not None: val_ebc[eq] = vv
-
-            else: # EPBC.
-                region = regions[bc.regions[1]]
-                fn = region.get_field_nodes( field )
-                slave_nod_list = self.clean_node_list( fn, ntype, region.name,
-                                                       warn = warn )
-##                 print master_nod_list
-##                 print slave_nod_list
-
-                nmaster = nm.unique1d( nm.hstack( master_nod_list ) )
-                # Treat fields not covering the whole domain.
-                if nmaster[0] == -1:
-                    nmaster = nmaster[1:]
-                    
-                nslave = nm.unique1d( nm.hstack( slave_nod_list ) )
-                # Treat fields not covering the whole domain.
-                if nslave[0] == -1:
-                    nslave = nslave[1:]
-
-##                 print nmaster + 1
-##                 print nslave + 1
-                if nmaster.shape != nslave.shape:
-                    msg = 'EPBC list lengths do not match!\n(%s,\n %s)' %\
-                          (nmaster, nslave)
-                    raise ValueError( msg )
-
-                if (nmaster.shape[0] == 0) and (nslave.shape[0] == 0):
-                    continue
-
-                mcoor = field.get_coor( nmaster )
-                scoor = field.get_coor( nslave )
-
-                fun = functions[bc.match]
-                i1, i2 = fun(mcoor, scoor)
-##                print nm.c_[mcoor[i1], scoor[i2]]
-##                print nm.c_[nmaster[i1], nslave[i2]] + 1
-
-                meq = self.expand_nodes_to_equations( nmaster[i1], bc.dofs[0] )
-                seq = self.expand_nodes_to_equations( nslave[i2], bc.dofs[1] )
-
-                m_assigned = nm.where( master_slave[meq] != 0 )[0]
-                s_assigned = nm.where( master_slave[seq] != 0 )[0]
-                if m_assigned.size or s_assigned.size: # Chain EPBC.
-##                     print m_assigned, meq[m_assigned]
-##                     print s_assigned, seq[s_assigned]
-
-                    aux = master_slave[meq[m_assigned]]
-                    sgn = nm.sign( aux )
-                    om_chain = zip( meq[m_assigned], (aux - sgn) * sgn )
-##                     print om_chain
-                    chains.extend( om_chain )
-
-                    aux = master_slave[seq[s_assigned]]
-                    sgn = nm.sign( aux )
-                    os_chain = zip( seq[s_assigned], (aux - sgn) * sgn )
-##                     print os_chain
-                    chains.extend( os_chain )
-
-                    m_chain = zip( meq[m_assigned], seq[m_assigned] )
-##                     print m_chain
-                    chains.extend( m_chain )
-
-                    msd = nm.setdiff1d( s_assigned, m_assigned )
-                    s_chain = zip( meq[msd], seq[msd] )
-##                     print s_chain
-                    chains.extend( s_chain )
-
-                    msa = nm.union1d( m_assigned, s_assigned )
-                    ii = nm.setdiff1d( nm.arange( meq.size ), msa )
-                    master_slave[meq[ii]] = seq[ii] + 1
-                    master_slave[seq[ii]] = - meq[ii] - 1
-                else:
-                    master_slave[meq] = seq + 1
-                    master_slave[seq] = - meq - 1
-##                 print 'ms', master_slave
-##                 print chains
-
-##         print master_slave
-        chains = group_chains( chains )
-        resolve_chains( master_slave, chains )
-
-        ii = nm.argwhere( eq_ebc == 1 )
-        eq_map.eq_ebc = nm.atleast_1d( ii.squeeze() )
-        eq_map.val_ebc = nm.atleast_1d( val_ebc[ii].squeeze() )
-        eq_map.master = nm.argwhere( master_slave > 0 ).squeeze()
-        eq_map.slave = master_slave[eq_map.master] - 1
-
-        assert_( (eq_map.eq_ebc.shape == eq_map.val_ebc.shape) )
-##         print eq_map.eq_ebc.shape
-##         pause()
-        eq_map.eq[eq_map.eq_ebc] = -2
-        eq_map.eq[eq_map.master] = -1
-        eq_map.eqi = nm.compress( eq_map.eq >= 0, eq_map.eq )
-        eq_map.eq[eq_map.eqi] = nm.arange( eq_map.eqi.shape[0],
-                                           dtype = nm.int32 )
-        eq_map.eq[eq_map.master] = eq_map.eq[eq_map.slave]
-        eq_map.n_eq = eq_map.eqi.shape[0]
-        eq_map.n_ebc = eq_map.eq_ebc.shape[0]
-        eq_map.n_epbc = eq_map.master.shape[0]
-
-        self.n_adof = eq_map.n_eq
-
-##         print eq_map
-##         pause()
+        self.eq_map.map_equations(bcs, self.field, regions, ts,
+                                  functions, warn=warn)
+        self.n_adof = self.eq_map.n_eq
 
     def setup_initial_conditions(self, ics, regions, di, functions, warn=False):
         """Setup of initial conditions."""
@@ -1940,9 +1701,14 @@ class FieldVariable(Variable):
                 msg = "no region '%s' used in IC %s!" % (ic.region, ic)
                 raise IndexError( msg )
 
-            fn = region.get_field_nodes( self.field )
-            nod_list = self.clean_node_list( fn, 'IC', region.name,
-                                             warn = warn )
+            if warn:
+                clean_msg = ('warning: ignoring nonexistent' \
+                             ' IC node (%s) in ' % self.name)
+            else:
+                clean_msg = None
+
+            nod_list = region.get_field_nodes(self.field, clean=True,
+                                              warn=clean_msg)
             if len( nod_list ) == 0:
                 continue
 
@@ -1955,7 +1721,7 @@ class FieldVariable(Variable):
             else:
                 vv = nm.repeat( [val], nods.shape[0] * len( dofs ) )
 
-            eq = self.expand_nodes_to_equations( nods, dofs )
+            eq = expand_nodes_to_equations(nods, dofs, self.dofs)
 
             ic_vec = nm.zeros( (di.n_dof[self.name],), dtype = self.dtype )
             ic_vec[eq] = vv
