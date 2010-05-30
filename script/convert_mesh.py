@@ -21,7 +21,14 @@ $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
 help = {
     'scale' : 'scale factor [default: %default]',
     'format' : 'output mesh format (overrides filename_out extension)',
+    'list' : 'list supported writable output mesh formats',
 }
+
+def output_writable_meshes():
+    output('Supported writable mesh formats are:')
+    for key, val in supported_capabilities.iteritems():
+        if 'w' in val:
+            output(key)
 
 def main():
     parser = OptionParser(usage=usage)
@@ -31,12 +38,18 @@ def main():
     parser.add_option("-f", "--format", metavar='format',
                       action="store", type='string', dest="format",
                       default=None, help=help['format'])
+    parser.add_option("-l", "--list", action="store_true", 
+                      dest="list", help=help['list'])
     (options, args) = parser.parse_args()
+
+    if options.list:
+        output_writable_meshes()
+        sys.exit(0)
 
     if len(args) != 2:
         parser.print_help()
         sys.exit(1)
-
+    
     scale = options.scale
     if scale is not None:
         try:
@@ -65,12 +78,6 @@ def main():
 
     io = 'auto'
     if options.format:
-        def output_writable_meshes():
-            output('writable formats are:')
-            for key, val in supported_capabilities.iteritems():
-                if 'w' in val:
-                    output(key)
-
         try:
             io = io_table[options.format](filename_out)
         except KeyError:
