@@ -20,6 +20,22 @@ supported_formats = {
     '.med'  : 'med',
 }
 
+# Map mesh formats to read and write capabilities
+supported_capabilities = {
+    'medit' : 'rw',
+    'vtk' : 'rw',
+    'tetgen' : 'r',
+    'comsol' : 'rw',
+    'hdf5' : 'rw',
+    'abaqus' : 'r', 
+    'avs_ucd' : 'r',
+    'hmascii' : 'r',
+    'mesh3d' : 'r',
+    'nastran' : 'r',
+    'gambit' : 'r',
+    'med' : 'r',
+}
+
 ##
 # c: 15.02.2008, r: 15.02.2008
 def sort_by_mat_id( conns_in ):

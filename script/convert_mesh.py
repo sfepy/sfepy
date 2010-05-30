@@ -5,6 +5,7 @@ sys.path.append('.')
 from optparse import OptionParser
 from sfepy.base.base import nm, output
 from sfepy.fem import Mesh
+from sfepy.fem.meshio import io_table, supported_capabilities
 
 usage = """%prog [options] filename_in filename_out
 
@@ -19,6 +20,7 @@ $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
 
 help = {
     'scale' : 'scale factor [default: %default]',
+    'format' : 'output mesh format (overrides filename_out extension)',
 }
 
 def main():
@@ -26,6 +28,9 @@ def main():
     parser.add_option("-s", "--scale", metavar='scale',
                       action="store", dest="scale",
                       default=None, help=help['scale'])
+    parser.add_option("-f", "--format", metavar='format',
+                      action="store", type='string', dest="format",
+                      default=None, help=help['format'])
     (options, args) = parser.parse_args()
 
     if len(args) != 2:
@@ -58,8 +63,29 @@ def main():
             raise ValueError('bad scale! (%s)' % scale)
         mesh.transform_coors(tr)
 
+    io = 'auto'
+    if options.format:
+        def output_writable_meshes():
+            output('writable formats are:')
+            for key, val in supported_capabilities.iteritems():
+                if 'w' in val:
+                    output(key)
+
+        try:
+            io = io_table[options.format](filename_out)
+        except KeyError:
+            output('unknown output mesh format! (%s)' % options.format)
+            output_writable_meshes()
+            sys.exit(1)
+            
+        if 'w' not in supported_capabilities[options.format]:
+            output('write support not implemented for output mesh format! (%s)'
+                    % options.format)
+            output_writable_meshes()
+            sys.exit(1)
+
     output('writing %s...' % filename_out)
-    mesh.write(filename_out, io='auto')
+    mesh.write(filename_out, io=io)
     output('...done')
 
 if __name__ == '__main__':
