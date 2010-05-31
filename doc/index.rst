@@ -19,6 +19,7 @@ Contents:
    examples
    developer_guide
    documentation_guide
+   notes
 
 PDF version of the documentation: :download:`sfepy_manual.pdf`
 
