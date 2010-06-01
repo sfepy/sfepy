@@ -2,81 +2,92 @@
 This module is not a test file. It contains classes grouping some common
 functionality, that is used in several test files.
 """
-
+from sfepy.base.base import IndexedStruct
 from sfepy.base.testing import TestCommon
 import os.path as op
 
-##
-# 05.06.2007, c
-class TestInput( TestCommon ):
+class NLSStatus(IndexedStruct):
+    """
+    Custom nonlinear solver status storing stopping condition of all
+    time steps.
+    """
+    def __setitem__(self, key, val):
+        IndexedStruct.__setitem__(self, key, val)
+        if key == 'condition':
+            self.conditions.append(val)
+
+class TestInput(TestCommon):
     """Test that an input file works. See test_input_*.py files."""
 
-    ##
-    # c: 05.06.2007, r: 19.02.2008
-    def from_conf( conf, options, cls = None ):
+    @staticmethod
+    def from_conf(conf, options, cls=None):
+        from sfepy.base.base import Struct
         from sfepy.base.conf import ProblemConf, get_standard_keywords
+        from sfepy.applications.simple_app import assign_standard_hooks
 
         required, other = get_standard_keywords()
         input_name = op.join(op.dirname(__file__), conf.input_name)
-        test_conf = ProblemConf.from_file( input_name, required, other )
+        test_conf = ProblemConf.from_file(input_name, required, other)
 
         if cls is None:
             cls = TestInput
-        test = cls( test_conf = test_conf, conf = conf, options = options )
+        test = cls(test_conf=test_conf, conf=conf, options=options)
+
+        assign_standard_hooks(test, test_conf.options.get_default_attr,
+                              test_conf.funmod)
+
+        name = op.join(test.options.out_dir, test.get_output_name_trunk())
+        test.solver_options = Struct(output_filename_trunk = name,
+                                     output_format ='vtk',
+                                     save_ebc = False, save_regions = False,
+                                     save_regions_as_groups = False,
+                                     save_field_meshes = False,
+                                     save_region_field_meshes = False,
+                                     solve_not = False)
 
         return test
-    from_conf = staticmethod( from_conf )
 
-    ##
-    # c: 05.06.2007, r: 08.02.2008
-    def test_input( self ):
-        from sfepy.solvers.generic import solve_stationary
-        from sfepy.base.base import IndexedStruct
+    def get_output_name_trunk(self):
+        return op.splitext(op.split(self.conf.output_name)[1])[0]
 
-        self.report( 'solving %s...' % self.conf.input_name )
-        status = IndexedStruct()
-        dpb, vec_dp, data = solve_stationary( self.test_conf, nls_status = status )
-        ok = status.condition == 0
-        out = dpb.state_to_output( vec_dp )
+    def check_conditions(self, conditions):
+        ok = (conditions == 0).all()
+        if not ok:
+            self.report('nls stopping conditions:')
+            self.report(conditions)
+        return ok
 
-        name = op.join( self.options.out_dir,
-                        op.split( self.conf.output_name )[1] )
-        dpb.save_state( name, vec_dp )
-        self.report( '%s solved' % self.conf.input_name )
+    def test_input(self):
+        import numpy as nm
+        from sfepy.solvers.generic import solve_direct
+
+        self.report('solving %s...' % self.conf.input_name)
+
+        status = NLSStatus(conditions=[])
+
+        out = solve_direct(self.test_conf,
+                           self.solver_options,
+                           step_hook=self.step_hook,
+                           post_process_hook=self.post_process_hook,
+                           post_process_hook_final=self.post_process_hook_final,
+                           nls_status=status)
+        self.report('%s solved' % self.conf.input_name)
+
+        ok = self.check_conditions(nm.array(status.conditions))
 
         return ok
 
-class TestInputEvolutionary( TestInput ):
+class TestInputEvolutionary(TestInput):
 
-    ##
-    # c: 06.02.2008, r: 06.02.2008
-    def from_conf( conf, options ):
-        return TestInput.from_conf( conf, options, cls = TestInputEvolutionary )
-    from_conf = staticmethod( from_conf )
+    @staticmethod
+    def from_conf(conf, options, cls=None):
+        if cls is None:
+            cls = TestInputEvolutionary
 
-    ##
-    # c: 06.02.2008, r: 06.02.2008
-    def test_input( self ):
-        """Does not verify anything!!!"""
-        import os.path as op
-        from sfepy.solvers.generic import solve_direct
-        from sfepy.base.base import Struct
+        return TestInput.from_conf(conf, options, cls=cls)
 
-        self.report( 'solving %s...' % self.conf.input_name )
-        name = op.join( self.options.out_dir, self.conf.output_name_trunk )
-        options = Struct( output_filename_trunk = name,
-                          output_format ='vtk',
-                          save_ebc = False, save_regions = False,
-                          save_regions_as_groups = False,
-                          save_field_meshes = False,
-                          save_region_field_meshes = False,
-                          solve_not = False )
-        dpb, vec_dp, data = solve_direct( self.test_conf, options )
-
-        self.report( '%s solved' % self.conf.input_name )
-
-        return True
-    
+    def get_output_name_trunk(self):
+        return self.conf.output_name_trunk
 
 ##
 # 03.10.2007, c
