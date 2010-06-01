@@ -80,7 +80,7 @@ def prepare_save_data( ts, conf ):
 
     return ts.suffix, is_save
 
-def time_step_function( ts, state0, problem, data ):
+def time_step_function(ts, state0, problem, data, nls_status=None):
     problem.time_update( ts )
 
     if ts.step == 0:
@@ -119,29 +119,31 @@ def time_step_function( ts, state0, problem, data ):
             mtx_a = None
 
         # Initialize solvers (and possibly presolve the matrix).
-        problem.init_solvers( ts = ts, mtx = mtx_a, **data )
+        problem.init_solvers(nls_status=nls_status, ts=ts, mtx=mtx_a, **data)
 
         if ts.is_quasistatic:
             # Ordinary solve.
-            state = problem.solve(state0=state0, ts=ts, **data)
+            state = problem.solve(state0=state0, ts=ts)
 
         else:
             # Initialize variables with history.
             problem.init_variables( state0 )
 
     else:
-        state = problem.solve( state0 = state0, ts = ts, **data )
+        state = problem.solve(state0=state0, ts=ts)
 
     return state
 
-def solve_evolutionary_op( problem,
-                           save_results = True, return_history = False,
-                           post_process_hook = None, step_hook = None ):
+def solve_evolutionary_op(problem,
+                          save_results=True, return_history=False,
+                          step_hook=None, post_process_hook=None,
+                          nls_status=None):
     """TODO  return_history"""
     
     data = {}
-    time_solver = problem.get_time_solver( step_fun = time_step_function,
-                                           step_args = (problem, data) )
+    step_args = problem, data, nls_status
+    time_solver = problem.get_time_solver(step_fun=time_step_function,
+                                          step_args=step_args)
 
     suffix, is_save = prepare_save_data( time_solver.ts,
 					 problem.conf )
@@ -166,8 +168,9 @@ def solve_evolutionary_op( problem,
         problem.advance( ts )
     return state, data
 
-def solve_stationary_op( problem, save_results = True, ts = None,
-                         post_process_hook = None ):
+def solve_stationary_op(problem, save_results=True, ts=None,
+                        post_process_hook=None,
+                        nls_status=None):
     data = {}
 
     if ts is None:
@@ -177,7 +180,7 @@ def solve_stationary_op( problem, save_results = True, ts = None,
             pass
 
     problem.time_update( ts )
-    state = problem.solve(ts=ts)
+    state = problem.solve(ts=ts, nls_status=nls_status)
 
     if save_results:
         problem.save_state( problem.get_output_name(), state,
@@ -185,8 +188,8 @@ def solve_stationary_op( problem, save_results = True, ts = None,
 
     return state, data
     
-def solve_direct( conf, options, problem = None, step_hook = None,
-                  post_process_hook = None ):
+def solve_direct(conf, options, problem=None, step_hook=None,
+                 post_process_hook=None, nls_status=None):
     """Generic (simple) problem solver."""
     if problem is None:
         is_vars = not options.solve_not
@@ -227,14 +230,16 @@ def solve_direct( conf, options, problem = None, step_hook = None,
     if hasattr( conf.options, 'ts' ):
         ##
         # Time-dependent problem.
-        out = solve_evolutionary_op( problem, options,
-				     post_process_hook = post_process_hook,
-                                     step_hook = step_hook )
+        out = solve_evolutionary_op(problem, options,
+                                    step_hook=step_hook,
+                                    post_process_hook=post_process_hook,
+                                    nls_status=nls_status)
     else:
         ##
         # Stationary problem.
-        out = solve_stationary_op( problem, options,
-				   post_process_hook = post_process_hook )
+        out = solve_stationary_op(problem, options,
+                                  post_process_hook=post_process_hook,
+                                  nls_status=nls_status)
 
     state, data = out
     return problem, state, data
