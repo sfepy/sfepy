@@ -189,7 +189,8 @@ def solve_stationary_op(problem, save_results=True, ts=None,
     return state, data
     
 def solve_direct(conf, options, problem=None, step_hook=None,
-                 post_process_hook=None, nls_status=None):
+                 post_process_hook=None, post_process_hook_final=None,
+                 nls_status=None):
     """Generic (simple) problem solver."""
     if problem is None:
         is_vars = not options.solve_not
@@ -242,4 +243,9 @@ def solve_direct(conf, options, problem=None, step_hook=None,
                                   nls_status=nls_status)
 
     state, data = out
+
+
+    if post_process_hook_final is not None: # User postprocessing.
+       post_process_hook_final(problem, state, data)
+
     return problem, state, data
