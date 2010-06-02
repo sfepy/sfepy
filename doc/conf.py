@@ -230,6 +230,10 @@ latex_preamble = r"""
 \def\Fcal{\mathcal{F}}
 \def\Gcal{\mathcal{G}}
 \def\pd{\partial}
+\def\ub{\bm{u}}
+\def\vb{\bm{v}}
+\def\Mb{\bm{M}}
+\def\vphib{\bm{\varphi}}
 """
 # LS: Are the following needed as well?
 #\def\Vcal{\mathcal{V}}
