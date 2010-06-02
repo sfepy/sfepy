@@ -6,9 +6,11 @@ from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
      TreeItem
 from sfepy.fem.integrals import Integral
 from extmods.fem import raw_graph, evaluate_at
-from sfepy.fem.utils import compute_nodal_normals, extend_cell_data
+from sfepy.fem.utils import extend_cell_data
 from sfepy.fem.conditions import Conditions
-from sfepy.fem.dof_info import DofInfo, EquationMap, expand_nodes_to_equations
+from sfepy.fem.dof_info \
+     import DofInfo, EquationMap, LCBCOperators, \
+            expand_nodes_to_equations, make_global_lcbc_operator
 
 is_state = 0
 is_virtual = 1
@@ -51,89 +53,6 @@ def zero_conf_ebc( conf ):
             newbc.dofs[dd] = 0.0
         new[key] = newbc
     return new
-
-def create_lcbc_rigid( coors ):
-    """Create transformation matrix for rigid LCBCs."""
-    n_nod, dim = coors.shape
-
-    mtx_e = nm.tile( nm.eye( dim, dtype = nm.float64 ), (n_nod, 1) )
-
-    if dim == 2:
-        mtx_r = nm.empty( (dim * n_nod, 1), dtype = nm.float64 )
-        mtx_r[0::dim,0] = -coors[:,1]
-        mtx_r[1::dim,0] = coors[:,0]
-        n_rigid_dof = 3
-
-    elif dim == 3:
-        mtx_r = nm.zeros( (dim * n_nod, dim), dtype = nm.float64 )
-        mtx_r[0::dim,1] = coors[:,2]
-        mtx_r[0::dim,2] = -coors[:,1]
-        mtx_r[1::dim,0] = -coors[:,2]
-        mtx_r[1::dim,2] = coors[:,0]
-        mtx_r[2::dim,0] = coors[:,1]
-        mtx_r[2::dim,1] = -coors[:,0]
-        n_rigid_dof = 6
-
-    else:
-        msg = 'dimension in [2,3]: %d' % dim
-        raise ValueError( msg )
-
-    return n_rigid_dof, nm.hstack( (mtx_r, mtx_e) )
-
-def create_lcbc_no_penetration( normals ):
-##     print normals
-    ii = nm.abs( normals ).argmax( 1 )
-##     print ii
-    n_nod, dim = normals.shape
-
-    irs = set( range( dim ) )
-
-    data = []
-    rows = []
-    cols = []
-    for idim in xrange( dim ):
-        ic = nm.where( ii == idim )[0]
-        if len( ic ) == 0: continue
-##         print ic
-##         print idim
-
-        ir = list( irs.difference( [idim] ) )
-        nn = nm.empty( (len( ic ), dim - 1), dtype = nm.float64 )
-        for ik, il in enumerate( ir ):
-            nn[:,ik] = - normals[ic,il] / normals[ic,idim]
-        
-        irn = dim * ic + idim
-        ics = [(dim - 1) * ic + ik for ik in xrange( dim - 1 )]
-        for ik in xrange( dim - 1 ):
-            rows.append( irn )
-            cols.append( ics[ik] )
-            data.append( nn[:,ik] )
-
-        ones = nm.ones( (nn.shape[0],), dtype = nm.float64 )
-        for ik, il in enumerate( ir ):
-            rows.append( dim * ic + il )
-            cols.append( ics[ik] )
-            data.append( ones )
-            
-##     print rows
-##     print cols
-##     print data
-        
-    rows = nm.concatenate( rows )
-    cols = nm.concatenate( cols )
-    data = nm.concatenate( data )
-
-    n_np_dof = n_nod * (dim - 1)
-    op = sp.coo_matrix( (data, (rows, cols)), shape = (n_nod * dim, n_np_dof) )
-    op = op.tocsr()
-
-##     import pylab
-##     from sfepy.base.plotutils import spy
-##     spy( op )
-##     print op
-##     pylab.show()
-
-    return n_np_dof, op
 
 def _fix_scalar_dc(dc1, dc2):
     aux = nm.empty((dc2.shape[0], 1), dtype=nm.int32)
@@ -292,12 +211,11 @@ class Variables( Container ):
         else:
             self.vdi = self.di
 
-    ##
-    # c: 03.10.2007, r: 18.02.2008
-    def setup_lcbc_operators( self, lcbc, regions ):
+    def setup_lcbc_operators(self, lcbc, regions):
+        """
+        Prepare linear combination BC operator matrix.
+        """
         if lcbc is None: return
-
-        self.has_lcbc =True
 
         self.lcbcs = Conditions.from_conf(lcbc)
         lcbc_of_vars = self.lcbcs.group_by_variables()
@@ -307,76 +225,15 @@ class Variables( Container ):
         offset = 0
         for var_name, bcs in lcbc_of_vars.iteritems():
             var = self[var_name]
+
             lcbc_op = var.create_lcbc_operators( bcs, regions, offset )
             lcbc_ops[var_name] = lcbc_op
+
             if lcbc_op is not None:
                 offset += lcbc_op.n_op
 
-        n_dof = self.adi.ptr[-1]
-        eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
-        n_dof_new = 0
-        for var_name, lcbc_op in lcbc_ops.iteritems():
-#            print var_name, lcbc_op
-            if lcbc_op is None: continue
-
-            indx = self.adi.indx[var_name]
-            eq_lcbc[indx] = lcbc_op.eq_lcbc
-
-            n_dof_new += nm.sum( lcbc_op.n_transformed_dof )
-
-        if n_dof_new == 0:
-            self.has_lcbc = False
-            return
-            
-        ii = nm.nonzero( eq_lcbc )[0]
-        n_constrained = ii.shape[0]
-        n_dof_free = n_dof - n_constrained
-        n_dof_reduced = n_dof_free + n_dof_new
-        output( 'dofs: total %d, free %d, constrained %d, new %d'\
-                % (n_dof, n_dof_free, n_constrained, n_dof_new) )
-        output( ' -> reduced %d' % (n_dof_reduced) )
-
-        ir = nm.where( eq_lcbc == 0 )[0]
-        ic = nm.arange( n_dof_free, dtype = nm.int32 )
-        mtx_lc = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
-                               shape=(n_dof, n_dof_reduced), dtype=nm.float64)
-
-        rows = []
-        cols = []
-        data = []
-        for var_name, lcbc_op in lcbc_ops.iteritems():
-            if lcbc_op is None: continue
-            for ii, op_lc in enumerate( lcbc_op.ops_lc ):
-                indx = nm.where( eq_lcbc == lcbc_op.markers[ii] )[0]
-                icols = nm.arange(n_dof_free + lcbc_op.ics[ii],
-                                  n_dof_free + lcbc_op.ics[ii+1])
-
-                if isinstance(op_lc, sp.spmatrix):
-                    lr, lc, lv = sp.find(op_lc)
-                    rows.append(indx[lr])
-                    cols.append(icols[lc])
-                    data.append(lv)
-
-                else:
-                    irs, ics = nm.meshgrid(indx, icols)
-                    rows.append(irs.ravel())
-                    cols.append(ics.ravel())
-                    data.append(op_lc.T.ravel())
-
-        rows = nm.concatenate(rows)
-        cols = nm.concatenate(cols)
-        data = nm.concatenate(data)
-
-        mtx_lc2 = sp.coo_matrix((data, (rows, cols)), shape=mtx_lc.shape)
-        mtx_lc = (mtx_lc + mtx_lc2).tocsr()
-
-##         import pylab
-##         from sfepy.base.plotutils import spy
-##         spy( mtx_lc )
-##         print mtx_lc
-##         pylab.show()
-
-        self.op_lcbc = mtx_lc
+        self.op_lcbc = make_global_lcbc_operator(lcbc_ops, self.adi)
+        self.has_lcbc = self.op_lcbc is not None
 
     ##
     # 04.10.2007, c
@@ -1592,88 +1449,21 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
-    ##
-    # c: 03.10.2007, r: 25.02.2008
-    def create_lcbc_operators( self, bcs, regions, offset ):
-        if len( bcs ) == 0: return None
+    def create_lcbc_operators(self, bcs, regions, offset):
+        if len(bcs) == 0: return None
 
         bcs.canonize_dof_names(self.dofs)
         bcs.sort()
 
-        eq = self.eq_map.eq
-        n_dof = self.eq_map.n_eq
+        ops = LCBCOperators('lcbc:%s' % self.name, self.eq_map, offset)
+        for bc in bcs:
+            output('lcbc:', self.name, bc.name)
+
+            ops.add_from_bc(bc, self.field, regions)
+
+        ops.finalize()
         
-        eq_lcbc = nm.zeros( (n_dof,), dtype = nm.int32 )
-        
-        ops_lc = []
-        n_transformed_dof = []
-        markers = []
-        for ii, bc in enumerate(bcs):
-            print self.name, bc.name
-            region = regions[bc.region]
-            print region.name
-
-            nmaster = region.get_field_nodes( self.field, merge = True )
-            print nmaster.shape
-
-            dofs, kind = bc.dofs
-            meq = eq[expand_nodes_to_equations(nmaster, dofs, self.dofs)]
-            assert_( nm.all( meq >= 0 ) )
-
-            markers.append( offset + ii + 1 )
-            eq_lcbc[meq] = markers[-1]
-##             print meq, meq.shape
-##             print nm.where( eq_lcbc )[0]
-            
-            if kind == 'rigid':
-                mcoor = self.field.get_coor( nmaster )
-                n_dof, op_lc = create_lcbc_rigid( mcoor )
-
-                # Strip unconstrained dofs.
-                n_nod, dim = mcoor.shape
-                aux = dim * nm.arange(n_nod)
-                indx = [aux + self.dofs.index(dof) for dof in dofs]
-                indx = nm.array(indx).T.ravel()
-
-                op_lc = op_lc[indx]
-
-            elif kind == 'no_penetration':
-                dim = self.field.shape[0]
-                assert_( len( dofs ) == dim )
-
-                normals = compute_nodal_normals( nmaster, region, self.field )
-
-                if hasattr( bc, 'filename' ):
-                    mesh = self.field.domain.mesh
-                    nn = nm.zeros_like( mesh.coors )
-                    nmax = region.all_vertices.shape[0]
-                    nn[region.all_vertices] = normals[:nmax]
-                    out = {'normals' : Struct( name = 'output_data',
-                                               mode = 'vertex', data = nn )}
-                    mesh.write( bc.filename, out = out, io = 'auto' )
-
-                n_dof, op_lc = create_lcbc_no_penetration( normals )
-
-            else:
-                raise ValueError( 'unknown LCBC kind! (%s)' % kind )
-
-            # Treat dofs with periodic BC.
-            umeq, indx = nm.unique1d(meq, return_index=True)
-            indx.sort()
-            op_lc = op_lc[indx]
-
-            n_transformed_dof.append( n_dof )
-            ops_lc.append( op_lc )
-
-        ics = nm.cumsum( nm.r_[0, n_transformed_dof]  )
-        n_op = len( ops_lc )
-        
-        return Struct( eq_lcbc = eq_lcbc,
-                       ops_lc = ops_lc,
-                       n_op = n_op,
-                       ics = ics,
-                       markers = markers,
-                       n_transformed_dof = n_transformed_dof )
+        return ops
 
     def equation_mapping(self, bcs, regions, var_di, ts, functions, warn=False):
         """Set n_adof."""
