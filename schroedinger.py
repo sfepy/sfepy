@@ -496,30 +496,30 @@ class SchroedingerApp( SimpleApp ):
                 Z = 1
             elif options.boron:
                 Z = 5
-            if options.dim == 2:
+            if dim == 2:
                 E_exact = [-float(Z)**2/2/(n-0.5)**2/4
                            for n in [1]+[2]*3+[3]*5 + [4]*8 + [5]*15]
-            elif options.dim == 3:
+            elif dim == 3:
                 E_exact = [-float(Z)**2/2/n**2 for n in [1]+[2]*2**2+[3]*3**2 ]
         if options.well:
-            if options.dim == 2:
+            if dim == 2:
                 E_exact = [pi**2/(2*a**2)*x
                            for x in [2, 5, 5, 8, 10, 10, 13, 13,
                                      17, 17, 18, 20, 20 ] ]
-            elif options.dim == 3:
+            elif dim == 3:
                 E_exact = [pi**2/(2*a**2)*x
                            for x in [3, 6, 6, 6, 9, 9, 9, 11, 11,
                                      11, 12, 14, 14, 14, 14, 14,
                                      14, 17, 17, 17] ]
         if options.oscillator:
-            if options.dim == 2:
+            if dim == 2:
                 E_exact = [1] + [2]*2 + [3]*3 + [4]*4 + [5]*5 + [6]*6
-            elif options.dim == 3:
+            elif dim == 3:
                 E_exact = [float(1)/2+x for x in [1]+[2]*3+[3]*6+[4]*10 ]
         if E_exact is not None:
-            print "a=%f" % a
-            print "Energies:"
-            print     "n      exact         FEM      error"
+            output("a=%f" % a)
+            output("Energies:")
+            output("n      exact         FEM      error")
 
             for i, e in enumerate(eigs):
                 from numpy import NaN
@@ -529,9 +529,9 @@ class SchroedingerApp( SimpleApp ):
                 else:
                     exact = NaN
                     err = NaN
-                print "%d:  %.8f   %.8f  %5.2f%%" % (i, exact, e, err)
+                output("%d:  %.8f   %.8f  %5.2f%%" % (i, exact, e, err))
         else:
-            print eigs
+            output(eigs)
 ##         import sfepy.base.plotutils as plu
 ##         plu.spy( mtx_b, eps = 1e-12 )
 ##         plu.plt.show()
@@ -574,7 +574,7 @@ class SchroedingerApp( SimpleApp ):
 def fix_path(filename):
     return op.join(sfepy.data_dir, filename)
 
-usage = """%prog [options] filename_in
+usage = """%prog [options] [filename_in]
 
 Solver for electronic structure problems. 
 
@@ -587,12 +587,24 @@ determined by the mesh that you created above):
 
     $ ./schroedinger.py --hydrogen
     $ ./schroedinger.py --well
-    $ ./schroedinger.py --dft
+    $ ./schroedinger.py --boron
+    $ ./schroedinger.py --oscillator
 
 and visualize the result:
 
-    $ paraview --data=mesh.vtk
+- using Mayavi
 
+  - 2D:
+
+    $ ./postproc.py mesh.vtk
+
+  - 3D:
+
+    $ ./postproc.py mesh.vtk --3d
+
+- using ParaView
+
+    $ paraview --data=mesh.vtk
 """
 
 help = {
@@ -603,7 +615,7 @@ help = {
     'boron' : "solve the boron atom with 1 electron",
     "mesh": "creates a mesh",
     "dim": "Create a 2D mesh, instead of the default 3D",
-    "dft": "Do a DFT calculation",
+    "dft": "Do a DFT calculation (input file required)",
     "plot": "plot convergence of DFT iterations (with --dft)",
 }
 
@@ -645,50 +657,35 @@ def main():
         
     elif len( args ) == 0:
         auto_mesh_name = True
-        if not options.mesh:
-            io = MeshIO.any_from_filename("tmp/mesh.vtk")
-            options.dim = dim = io.read_dimension()
-            print "Dimension:", dim
 
         if options.oscillator:
-            if dim == 2:
-                filename_in = fix_path("examples/quantum/oscillator2d.py")
-            else:
-                assert_( dim == 3 )
-                filename_in = fix_path("examples/quantum/oscillator3d.py")
+            filename_in = fix_path("examples/quantum/oscillator.py")
+
         elif options.well:
-            if dim == 2:
-                filename_in = fix_path("examples/quantum/well2d.py")
-            else:
-                assert_( dim == 3 )
-                filename_in = fix_path("examples/quantum/well3d.py")
+            filename_in = fix_path("examples/quantum/well.py")
+
         elif options.hydrogen:
-            if dim == 2:
-                filename_in = fix_path("examples/quantum/hydrogen2d.py")
-            else:
-                assert_( dim == 3 )
-                filename_in = fix_path("examples/quantum/hydrogen3d.py")
+            filename_in = fix_path("examples/quantum/hydrogen.py")
+
         elif options.boron:
-            if dim == 2:
-                filename_in = fix_path("examples/quantum/boron2d.py")
-            else:
-                assert_( dim == 3 )
-                filename_in = fix_path("examples/quantum/boron3d.py")
+            filename_in = fix_path("examples/quantum/boron.py")
+
         elif options.mesh:
+            output('generating mesh...')
             try:
                 os.makedirs("tmp")
             except OSError, e:
                 if e.errno != 17: # [Errno 17] File exists
                     raise
             if options.dim2:
-                print "Dimension: 2"
+                output("dimension: 2")
                 gp = fix_path('meshes/quantum/square.geo')
                 os.system("cp %s tmp/mesh.geo" % gp)
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
                 mtv = fix_path('script/mesh_to_vtk.py')
                 os.system("%s tmp/mesh.mesh tmp/mesh.vtk" % mtv)
             else:
-                print "Dimension: 3"
+                output("dimension: 3")
                 import sfepy.geom as geom
                 from sfepy.fem.mesh import Mesh
                 try:
@@ -704,16 +701,11 @@ def main():
                                quadratic=False, tetgenpath=tetgen_path)
                 m = Mesh.from_file("tmp/t.1.node")
                 m.write("tmp/mesh.vtk", io="auto")
-            print "Mesh written to tmp/mesh.vtk"
+            output("...mesh written to tmp/mesh.vtk")
             return
-        elif options.dft:
-            if dim == 2:
-                filename_in = "examples/quantum/dft2d.py"
-            else:
-                assert_( dim == 3 )
-                filename_in = "examples/quantum/dft3d.py"
+
         else:
-            parser.print_help()
+            output('the --dft option requires input file') 
             return
     else:
         parser.print_help()
