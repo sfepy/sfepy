@@ -527,6 +527,7 @@ below are already more or less updated.
    :maxdepth: 2
 
    src/sfepy/fem/conditions
+   src/sfepy/fem/dof_info
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
    src/sfepy/fem/integrals
