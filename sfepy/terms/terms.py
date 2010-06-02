@@ -475,7 +475,7 @@ class Term( Struct ):
             
         self.integral = integral
         
-        tgs = self.get_geometry()
+        tgs = self.get_geometry_types()
         for var_name in self.get_variable_names():
             ## print '>>>>>', self.name, var_name
 
@@ -509,7 +509,13 @@ class Term( Struct ):
     def get_region(self):
         return self.region
 
-    def get_geometry( self ):
+    def get_geometry_types(self):
+        """
+        Returns
+        -------
+        out : dict
+            The required geometry types for each variable argument.
+        """
         geom = self.geometry
         out = {}
         if geom:

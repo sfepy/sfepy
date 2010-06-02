@@ -319,7 +319,7 @@ class Equation( Struct ):
 ##             pause()
                 
             dc_type = term.get_dof_conn_type()
-            tgs = term.get_geometry()
+            tgs = term.get_geometry_types()
 
             v_igs = v_tg = None
             if vn is not None:
