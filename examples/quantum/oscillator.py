@@ -3,20 +3,16 @@ from sfepy.base.la import norm_l2_along_axis
 from common import common
 
 def fun_v(ts, coor, mode=None, region=None, ig=None):
-    from numpy import sqrt
-
     if not mode == 'qp': return
 
     out = {}
     C = 0.5
-    r = norm_l2_along_axis(coor, axis=1)
+    val = C * norm_l2_along_axis(coor, axis=1, squared=True)
 
-    V = - C * 1.0 / r
-
-    V.shape = (V.shape[0], 1, 1)
-    out['V'] = V
+    val.shape = (val.shape[0], 1, 1)
+    out['V'] = val
     return out
 
 def define():
-    l = common(fun_v, n_eigs=5, tau=-1.0)
+    l = common(fun_v, n_eigs=20, tau=0.0)
     return l
