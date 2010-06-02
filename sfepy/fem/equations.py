@@ -132,15 +132,6 @@ class Equations( Container ):
         
 
     ##
-    # 24.08.2006, c
-    # 24.04.2007
-    def get_term_geometries( self ):
-        tgs = set()
-        for eq in self:
-            tgs.update( eq.get_term_geometries() )
-        return tgs
-
-    ##
     # 16.11.2007, c
     def get_term_integral_names( self ):
         i_names = set()
@@ -461,15 +452,6 @@ class Equation( Struct ):
     def describe_geometry( self, geometries, variables, integrals ):
         for term in self.terms:
             term.describe_geometry( geometries, variables, integrals )
-
-    ##
-    # 24.04.2007, c
-    def get_term_geometries( self ):
-        tgs = set()
-        for term in self.terms:
-            for tg in term.get_geometry():
-                tgs.add( tg )
-        return tgs
 
     ##
     # 16.11.2007, c
