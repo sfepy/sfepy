@@ -156,14 +156,14 @@ class Variables( Container ):
 	"""
         Setup ordering of variables.
         """
-        self.ordered_state = [0] * len(self.state)
+        self.ordered_state = [None] * len(self.state)
         for var in self.iter_state(ordered=False):
             self.ordered_state[var._order] = var.name
 
         if self.dual_map is None:
             self.link_duals()
 
-	self.ordered_virtual = [0] * len(self.virtual)
+	self.ordered_virtual = [None] * len(self.virtual)
 	ii = 0
         for var in self.iter_state(ordered=False):
             if var.dual_var_name is not None:
@@ -978,22 +978,22 @@ class Variable( Struct ):
             self.data = None
 
         self._set_kind(kind, order, primary_var_name, special=special)
-        self._all_vars[name] = self
+        Variable._all_vars[name] = self
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
             self.flags.add(is_state)
             if order is not None:
-                if order in self._orders:
+                if order in Variable._orders:
                     raise ValueError('order %d already used!' % order)
                 else:
                     self._order = order
-                    self._orders.append(order)
+                    Variable._orders.append(order)
 
             else:
-                self._order = self._count
-                self._orders.append(self._order)
-            self._count += 1
+                self._order = Variable._count
+                Variable._orders.append(self._order)
+            Variable._count += 1
 
             self.dof_name = self.name
 
