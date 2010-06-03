@@ -12,6 +12,8 @@ from sfepy.fem.periodic import *
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson, stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_elastic as ce
+import sfepy.homogenization.coefs_base as cb
+
 from sfepy import data_dir
 from sfepy.base.base import Struct, debug
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
@@ -68,12 +70,10 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! ---------
 materials = {
     'matrix' : ({'D' : stiffness_tensor_youngpoisson_mixed( dim, 0.7e9, 0.4 ),
-                 'gamma' : bulk_modulus_youngpoisson( 0.7e9, 0.4 )},),
+                 'gamma' : 1.0/bulk_modulus_youngpoisson( 0.7e9, 0.4 )},),
     'reinf' : ({'D' : stiffness_tensor_youngpoisson_mixed( dim, 70.0e9, 0.2 ),
-                'gamma' : bulk_modulus_youngpoisson( 70.0e9, 0.2 )},),
+                'gamma' : 1.0/bulk_modulus_youngpoisson( 70.0e9, 0.2 )},),
 }
-gamma_m = bulk_modulus_youngpoisson( 0.7e9, 0.4 )
-gamma_c = bulk_modulus_youngpoisson( 70.0e9, 0.2 )
 #! Fields
 #! ------
 #! Scalar field for corrector basis functions.
@@ -87,9 +87,9 @@ fields = {
 #! Unknown and corresponding test variables. Parameter fields
 #! used for evaluation of homogenized coefficients.
 variables = {
-    'u'     : ('unknown field', 'corrector_u', 0),
+    'u'     : ('unknown field', 'corrector_u'),
     'v'     : ('test field', 'corrector_u', 'u'),
-    'p'     : ('unknown field', 'corrector_p', 1),
+    'p'     : ('unknown field', 'corrector_p'),
     'q'     : ('test field', 'corrector_p', 'p'),
     'Pi'    : ('parameter field', 'corrector_u', 'u'),
     'Pi1u' : ('parameter field', 'corrector_u', 'u'),
@@ -157,17 +157,17 @@ equation_corrs = {
     'pressure constraint' :
     """- dw_stokes.i1.Ym( u, q )
        - dw_stokes.i1.Yc( u, q )
-       - %e * dw_mass_scalar.i1.Ym( q, p )
-       - %e * dw_mass_scalar.i1.Yc( q, p ) = 
+       - dw_mass_scalar_w.i1.Ym( matrix.gamma, q, p )
+       - dw_mass_scalar_w.i1.Yc( reinf.gamma, q, p ) = 
          dw_stokes.i1.Ym( Pi, q )
-       + dw_stokes.i1.Yc( Pi, q )""" % (1.0/gamma_m, 1.0/gamma_c),
+       + dw_stokes.i1.Yc( Pi, q )""",
 }
 #! Expressions for homogenized linear elastic coefficients.
 expr_coefs = {
-    'Q1' : 'dw_lin_elastic.i1.Ym( matrix.D, Pi1u, Pi2u ) +\
-      dw_lin_elastic.i1.Yc( reinf.D, Pi1u, Pi2u )',
-    'Q2' : '%e * dw_mass_scalar.i1.Ym( Pi1p, Pi2p ) +\
-      %e * dw_mass_scalar.i1.Yc( Pi1p, Pi2p )' % (1.0/gamma_m, 1.0/gamma_c),
+    'Q1' : """  dw_lin_elastic.i1.Ym( matrix.D, Pi1u, Pi2u )
+              + dw_lin_elastic.i1.Yc( reinf.D, Pi1u, Pi2u )""",
+    'Q2' : """  dw_mass_scalar_w.i1.Ym( matrix.gamma, Pi1p, Pi2p )
+              + dw_mass_scalar_w.i1.Yc( reinf.gamma, Pi1p, Pi2p )""",
 }
 #! Coefficients
 #! ------------
@@ -183,8 +183,8 @@ coefs = {
                    'expression' : expr_coefs['Q2'],
                    'class' : ce.ElasticPCoef,
                    },
-    'D' : {'requires' : ['elastic_u', 'elastic_p'],
-           'class' : 'sum',
+    'D' : {'requires' : ['c.elastic_u', 'c.elastic_p'],
+           'class' : cb.CoefSum,
            },
     'filenames' : {},
 }
