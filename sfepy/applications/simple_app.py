@@ -82,23 +82,27 @@ class SimpleApp( Application ):
             self.conf.equations = getattr(self.conf,
                                           self.app_options.use_equations)
 
-    def setup_output_info( self, problem, options ):
+    def setup_output_info(self, problem, options):
         """Modifies both problem and options!"""
         if options.output_filename_trunk is None:
-            ofn_trunk = op.join( self.app_options.output_dir,
-                                 io.get_trunk( self.conf.filename_mesh ) )
+            ofn_trunk = op.join(self.app_options.output_dir,
+                                 io.get_trunk(self.conf.filename_mesh))
 	    options.output_filename_trunk = ofn_trunk
+
 	else:
             ofn_trunk = options.output_filename_trunk
 
-        problem.ofn_trunk = ofn_trunk
-        problem.output_dir = self.app_options.output_dir
-
         if hasattr(options, 'output_format') \
                and (options.output_format is not None):
-            problem.output_format = options.output_format
+            output_format = options.output_format
+
         else:
-            problem.output_format = self.app_options.output_format
+            output_format = self.app_options.output_format
+
+        problem.setup_output(output_filename_trunk=ofn_trunk,
+                             output_dir=self.app_options.output_dir,
+                             output_format=output_format)
+
 
     def call( self ):
 	out = solve_direct( self.conf, self.options,

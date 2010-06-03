@@ -71,10 +71,7 @@ class ProblemDefinition( Struct ):
                                 functions = functions,
                                 domain = domain)
 
-        obj.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
-	# Default output file trunk and format.
-	obj.ofn_trunk = io.get_trunk( conf.filename_mesh )
-        obj.output_format = 'vtk'
+        obj.setup_output()
 
         obj.set_regions(conf.regions, conf.materials, obj.functions)
 
@@ -110,6 +107,24 @@ class ProblemDefinition( Struct ):
             else:
                 obj.__dict__[key] = copy( val )
         return obj
+
+    def setup_output(self, output_filename_trunk=None, output_dir=None,
+                     output_format=None):
+        """
+        Sets output options to given values, or uses the defaults for
+        each argument that is None.
+        """
+        self.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
+
+	self.ofn_trunk = get_default(output_filename_trunk,
+                                     io.get_trunk(self.conf.filename_mesh))
+
+        self.output_dir = get_default(output_dir, '.')
+
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+
+        self.output_format = get_default(output_format, 'vtk')
 
     def set_regions( self, conf_regions=None,
                      conf_materials=None, functions=None):
