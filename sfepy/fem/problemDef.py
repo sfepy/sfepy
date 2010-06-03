@@ -4,7 +4,7 @@ import sfepy
 from sfepy.base.base import *
 
 import sfepy.base.ioutils as io
-from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.base.conf import ProblemConf, get_standard_keywords, transform_variables
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
@@ -143,9 +143,11 @@ class ProblemDefinition( Struct ):
 ##         print variables.di
 ##         pause()
         
-
     def select_variables( self, variable_names ):
-        conf_variables = select_by_names( self.conf.variables, variable_names )
+        if type(variable_names) == dict:
+            conf_variables = transform_variables(variable_names)
+        else:
+            conf_variables = select_by_names( self.conf.variables, variable_names )
         self.set_variables( conf_variables )
 
     def clear_equations( self ):
