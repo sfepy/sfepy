@@ -881,3 +881,32 @@ class CoefSum( MiniAppBase ):
 
         return coef
 
+class CorrSlice( CorrMiniApp ):
+    
+    def __call__( self, problem = None, data = None ):
+
+        states = nm.zeros( (self.dim,), dtype = nm.object )
+        corr = data[self.requires[0]].states
+        nnod = corr.shape[0] / self.dim
+        corr = corr.reshape((nnod, self.dim))
+        for i in range(self.dim):
+            states[i] = corr[:,i]
+
+        return Struct( name = self.name,
+                       states = states )
+
+class CoefEval( MiniAppBase ):
+    """
+    Evaluate expression.
+    """
+    
+    def __call__( self, volume, problem = None, data = None ):
+
+        expr = self.expression
+        for i in range( len(self.requires) ):
+            expr = expr.replace(self.requires[i],
+                                "data['%s']" % self.requires[i])
+
+        coef = eval(expr)
+
+        return coef
