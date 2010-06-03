@@ -158,14 +158,20 @@ class ShapeDimDim( CorrMiniApp ):
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        return create_pis( problem, self.variables[0] )
+        pis = create_pis( problem, self.variables[0] )
+
+        return Struct( name = self.name,
+                       states = pis )
 
 class ShapeDim( CorrMiniApp ):
     
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        return create_scalar_pis( problem, self.variables[0] )
+        pis = create_scalar_pis( problem, self.variables[0] )
+
+        return Struct( name = self.name,
+                       states = pis )
 
 class CorrNN( CorrMiniApp ):
     """ __init__() kwargs:
@@ -287,9 +293,10 @@ class CorrSum( CorrMiniApp ):
     
     def __call__( self, problem = None, data = None ):
 
-        corr = data[self.requires[0]].copy( deep = True )
+        corr = data[self.requires[0]].copy(deep=True)
         for req in self.requires[1:]:
-            corr.states += data[req].states
+            for i in range(len(corr.states)):
+                corr.states[i] += data[req].states[i]
 
         return corr
 
@@ -867,8 +874,10 @@ class CoefSum( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
 
-        coef = nm.zeros_like( data[self.requires[0]] )
-        for i in range( len(self.requires[:]) ):
+        
+        coef = nm.zeros_like(data[self.requires[0]])
+        for i in range(len(self.requires)):
             coef += data[self.requires[i]]
 
         return coef
+

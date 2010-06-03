@@ -19,7 +19,7 @@ class CorrectorsElasticRS( CorrDimDim ):
     def get_variables( self, ir, ic, data ):
         """data: pis"""
         pis = data[self.requires[0]]
-        yield (self.variables[-1], pis[ir,ic])
+        yield (self.variables[-1], pis.states[ir,ic])
 
 class CorrectorsPressure( CorrOne ):
 
@@ -171,7 +171,7 @@ class ElasticCoef( CoefSymSym ):
 
         indx = corrs.di.indx[c_name]
         omega = corrs.states[ir,ic][indx]
-        pi = pis[ir,ic] + omega
+        pi = pis.states[ir,ic] + omega
         yield (var_name, pi)
 
 class ElasticPCoef( CoefSymSym ):
@@ -232,7 +232,7 @@ class PBiotCoef( CoefSym ):
 
         else:
             var_name = self.variables[1]
-            yield var_name, pis[ir,ic]
+            yield var_name, pis.states[ir,ic]
 
             var_name = self.variables[2]
             c_name = problem.variables[var_name].primary_var_name
@@ -268,7 +268,7 @@ class RBiotCoef( CoefFMSym ):
             yield var_name, step_data[c_name].data
 
             var_name = self.variables[1]
-            yield var_name, pis[self.ir,self.ic]
+            yield var_name, pis.states[self.ir,self.ic]
 
             var_name = self.variables[2]
             c_name = problem.variables[var_name].primary_var_name

@@ -7,14 +7,14 @@ class CorrectorsPiezoRS( CorrDimDim ):
     def get_variables( self, ir, ic, data ):
         """data: pis"""
         pis = data[self.requires[0]]
-        yield (self.variables[-1], pis[ir,ic])
+        yield (self.variables[-1], pis.states[ir,ic])
 
 class CorrectorsPiezoK( CorrDim ):
 
     def get_variables( self, ir, data ):
         """data: pis_scalar"""
         pis_scalar = data[self.requires[0]]
-        yield (self.variables[-1], pis_scalar[ir])
+        yield (self.variables[-1], pis_scalar.states[ir])
 
 class ElasticPiezoCoef( CoefSymSym ):
     """Homogenized elastic tensor $E_{ijkl}$ for piezo-materials."""
@@ -30,7 +30,7 @@ class ElasticPiezoCoef( CoefSymSym ):
 
         indx = corrs.di.indx[c_name]
         omega = corrs.states[ir,ic][indx]
-        pi = pis[ir,ic] + omega
+        pi = pis.states[ir,ic] + omega
         yield (var_name, pi)
 
         var_name = self.variables[self.mode2var[mode] + 2]
@@ -65,7 +65,7 @@ class DielectricCoef( CoefDimDim ):
 
         indx = corrs.di.indx[c_name]
         omega = corrs.states[ii][indx]
-        pi = pis[ii] + omega
+        pi = pis.states[ii] + omega
         yield (var_name, pi)
 
 class PiezoCouplingCoef( CoefDimSym ):
@@ -84,7 +84,7 @@ class PiezoCouplingCoef( CoefDimSym ):
 
             indx = corrs.di.indx[c_name]
             omega = corrs.states[ir,ic][indx]
-            pi = pis[ir,ic] + omega
+            pi = pis.states[ir,ic] + omega
             yield (var_name, pi)
 
             var_name = self.variables[1]

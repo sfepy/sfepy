@@ -11,7 +11,8 @@ class ShapeDimM1( CorrMiniApp ):
 
         pis = create_scalar_pis( problem, self.variables[0] )
 
-        return pis[0:-1].copy()
+        return Struct( name = self.name,
+                       states = pis[0:-1].copy() )
 
 class CorrDimM1( CorrN ):
 
@@ -23,7 +24,7 @@ class CorrDimM1( CorrN ):
         """data: pis"""
         pis = data[self.requires[0]]
 
-        yield (self.variables[0], pis[ir])
+        yield (self.variables[0], pis.states[ir])
 
 class CorrScalar( CorrMiniApp ):
 
@@ -39,7 +40,6 @@ class CorrScalar( CorrMiniApp ):
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
         self.init_solvers(problem)
-        states = nm.zeros( (1,), dtype = nm.object )
 
         for ival in range( len( self.requires ) ):
             for name, val in self.get_variables( problem, ival, data ):
@@ -55,6 +55,46 @@ class CorrScalar( CorrMiniApp ):
         return Struct( name = self.name,
                        states = state,
                        di = problem.variables.di )
+
+class CorrVector( CorrScalar ):
+
+    def get_variables( self, problem, i, data ):
+        yield ( self.variables[i], data[self.requires[i]].states )
+
+    def __call__( self, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+
+        problem.select_variables( self.variables )
+        problem.set_equations( self.equations )
+
+        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+
+        self.init_solvers(problem)
+
+        for ival in range( len( self.requires ) ):
+            for name, val in self.get_variables( problem, ival, data ):
+                problem.variables[name].data_from_data( val )
+            
+        state = problem.create_state_vector()
+        problem.apply_ebc( state )
+        state = problem.solve()
+        assert_( problem.variables.has_ebc( state ) )
+
+        self.save( state, problem )
+
+        ostate = problem.state_to_output(state)
+        ostate = ostate[ostate.keys()[0]].data
+        ndim = ostate.shape[1]
+
+        states = nm.zeros( (ndim,), dtype = nm.object )
+
+        clist = []
+        for ir in range( ndim ):
+            states[ir] = ostate[:,ir]
+            clist.append( (ir,) )
+
+        return Struct( name = self.name,
+                       states = states )
 
 class CoefDimM1PDimM1P( CoefNN ):
 
@@ -76,7 +116,7 @@ class CoefDimM1PDimM1P( CoefNN ):
         if mode =='col':
             ir = ic
 
-        ret = pis[ir] + corr.states[ir][indx]
+        ret = pis.states[ir] + corr.states[ir][indx]
 
         yield (var_name, ret)
 
@@ -90,16 +130,21 @@ class CoefDimM1DimM1( CoefNN ):
         
     def get_variables( self, problem, ir, ic, data, mode ):
 
-        corr = data[self.requires[-1]]
+        nreq = len(self.requires)
+        for i in range(nreq-1):
+            if i == (nreq-2):
+                idx = nreq - 2 + self.mode2var[mode]
+                corr = data[self.requires[idx]]
+                var_name = self.variables[idx]
+                if mode =='col':
+                    ir = ic
 
-        var_name = self.variables[self.mode2var[mode]]
-        c_name = problem.variables[var_name].primary_var_name
-        indx = corr.di.indx[c_name]
+                out = corr.states[ir].copy()
+            else:
+                var_name = self.variables[i]
+                out = data[self.requires[i]].states.copy()
 
-        if mode =='col':
-            ir = ic
-
-        yield (var_name, corr.states[ir].copy())
+            yield (var_name, out)
 
 class CoefDimM1( CoefN ):
 
@@ -109,13 +154,20 @@ class CoefDimM1( CoefN ):
         
     def get_variables( self, problem, ir, data ):
 
-        corr = data[self.requires[-1]]
-        yield (self.variables[0], corr.states[ir])
+        nreq = len(self.requires) 
+        for i in range(nreq):
+            if i == (nreq-1):
+                out = data[self.requires[i]].states[ir].copy()
+            else:
+                out = data[self.requires[i]].states.copy()
+
+            yield (self.variables[i], out)
 
 class CoefScalar( MiniAppBase ):
 
     def get_variables( self, problem, data ):
-        yield ( self.variables[0], data[self.requires[0]].states )
+        for i in range(len(self.requires)):
+            yield ( self.variables[i], data[self.requires[i]].states )
         
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
