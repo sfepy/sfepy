@@ -249,25 +249,25 @@ class Region( Struct ):
             
         self.is_complete = True
 
-    ##
-    # 24.08.2006, c
-    # 16.02.2007
-    # 21.02.2007
-    # 23.02.2007
-    def setup_face_indices( self, fa ):
-        """(iel, ifa) for each face."""
-        if self.faces:
-            faces = self.faces
-        else:
-            faces = self.edges
+    def setup_face_indices(self, reset=True):
+        """
+        Initialize an array (per group) of (iel, ifa) for each face.
+        """
+        if reset or not self.fis:
+            fa = self.domain.get_neighbour_lists(force_faces=True)[2]
 
-        self.fis = {}
-        for ig in self.igs:
-            rfaces = faces[ig]
-            aux = fa.data[rfaces]
-            assert_( nm.all( aux[:,0] == ig ) )
-            fi = aux[:,1:3].copy()
-            self.fis[ig] = fi
+            if self.faces:
+                faces = self.faces
+            else:
+                faces = self.edges
+
+            self.fis = {}
+            for ig in self.igs:
+                rfaces = faces[ig]
+                aux = fa.data[rfaces]
+                assert_( nm.all( aux[:,0] == ig ) )
+                fi = aux[:,1:3].copy()
+                self.fis[ig] = fi
 
     ##
     # 05.09.2006, c
@@ -292,14 +292,14 @@ class Region( Struct ):
 #            print rcells.shape
             self.cells[ig] = rcells
 
-    ##
-    # 22.02.2007, c
-    # 17.07.2007
-    def select_cells_of_surface( self ):
-        """Select cells corresponding to faces (or edges in 2D)."""
+    def select_cells_of_surface(self, reset=True):
+        """
+        Select cells corresponding to faces (or edges in 2D).
+        """
         if not self.can_cells:
-            print 'region %s cannot have cells!' % self.name
-            raise ValueError
+            raise ValueError('region %s cannot have cells!' % self.name)
+
+        self.setup_face_indices(reset=reset)
 
         if self.faces:
             faces = self.faces

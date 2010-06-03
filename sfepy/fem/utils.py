@@ -8,8 +8,6 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     elements every node is contained in. """
     dim = field.shape[0]
 
-    fa = region.domain.get_neighbour_lists( True )[2]
-    region.setup_face_indices( fa )
     region.select_cells_of_surface()
 
     normals = nm.zeros( (nodes.shape[0], dim),

@@ -341,44 +341,14 @@ class Variables( Container ):
             else:
                 return out[0]
 
-    def _setup_extra_data(self, var, geometry, info, is_trace, shared):
-        dct = info.dc_type.type
-        
-        if geometry != None:
-            geometry_flag = geometry.find('Surface') >= 0
-        else:
-            geometry_flag = False     
-            
-        if (dct == 'surface') or (geometry_flag):
-            reg = info.get_region()
-            if reg.name not in shared:
-                shared.add(reg.name)
-
-                fa = self.domain.get_neighbour_lists(force_faces=True)[2]
-                reg.setup_face_indices(fa)
-                reg.select_cells_of_surface()
-
-            var.field.aps.setup_surface_data(reg)
-
-        elif dct == 'edge':
-            raise NotImplementedError('dof connectivity type %s' % dct)
-
-        elif dct == 'point':
-            var.field.aps.setup_point_data(var.field, info.region)
-
-        elif dct not in ('volume', 'scalar'):
-            raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
     def setup_extra_data(self):
         """Dof connectivity key = (field.name, region.name, type, ig)"""
-        surface_regions = set()
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
 ##             print key, ii
 ##             print info
             for var_name in info.all_vars:
-                self._setup_extra_data(self[var_name], info.ps_tg,
-                                       info, info.is_trace, surface_regions)
+                self[var_name].setup_extra_data(info.ps_tg, info, info.is_trace)
             
     def setup_dof_conns(self, make_virtual=False, single_term=False):
         """Dof connectivity key = (field.name, region.name, type, ig)"""
@@ -388,25 +358,22 @@ class Variables( Container ):
         self.has_virtual_dcs = make_virtual == True
 
         dof_conns = {}
-        surface_regions = set()
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
 ##             print key, ii
 ##             print info
 
             if info.primary is not None:
-                self._setup_extra_data(self[info.primary], info.ps_tg,
-                                       info, info.is_trace, surface_regions)
                 var = self[info.primary]
+                var.setup_extra_data(info.ps_tg, info, info.is_trace)
                 var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
 
             if info.has_virtual and (ii == 0):
                 # This is needed regardless make_virtual.
-                self._setup_extra_data(self[info.virtual], info.v_tg, info,
-                                       False, surface_regions)
+                var = self[info.virtual]
+                var.setup_extra_data(info.v_tg, info, False)
 
                 if make_virtual or single_term or (info.primary is None):
-                    var = self[info.virtual]
                     var.setup_dof_conns(dof_conns, info.dc_type,
                                         info.get_region(can_trace=False))
 
@@ -1347,6 +1314,29 @@ class FieldVariable(Variable):
             
         return n_dof, details
 
+    def setup_extra_data(self, geometry, info, is_trace):
+        dct = info.dc_type.type
+        
+        if geometry != None:
+            geometry_flag = geometry.find('Surface') >= 0
+        else:
+            geometry_flag = False     
+            
+        if (dct == 'surface') or (geometry_flag):
+            reg = info.get_region()
+            reg.select_cells_of_surface(reset=False)
+
+            self.field.aps.setup_surface_data(reg)
+
+        elif dct == 'edge':
+            raise NotImplementedError('dof connectivity type %s' % dct)
+
+        elif dct == 'point':
+            self.field.aps.setup_point_data(self.field, info.region)
+
+        elif dct not in ('volume', 'scalar'):
+            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
     def setup_dof_conns(self, dof_conns, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""
         dpn = self.n_components
@@ -1878,6 +1868,9 @@ class ConstantVariable(Variable):
     def get_dof_info(self):
         details = Struct(name = 'constant_var_dof_details')
         return self.n_dof, details
+
+    def setup_extra_data(self, geometry, info, is_trace):
+        pass
 
     def setup_dof_conns(self, dof_conns, dc_type, region):
         dct = dc_type.type
