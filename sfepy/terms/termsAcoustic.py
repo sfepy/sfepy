@@ -1,10 +1,10 @@
 from sfepy.terms.terms import *
 from sfepy.terms.terms_base import ScalarScalar
 
-class AcousticAlphaSA1Term( ScalarScalar, Term ):
+class LaplaceLayerPSA1Term(ScalarScalar, Term):
     r"""
     :Description:
-    Sensitivity analysis acoustic term (in-plane directions).
+    Sensitivity analysis term -- in-plane directions.
 
     :Definition:
     .. math::
@@ -16,11 +16,13 @@ class AcousticAlphaSA1Term( ScalarScalar, Term ):
         parametr_2: :math:`\ul{v}`,
         parametr_3: :math:`w`
     """
-    name = 'd_sa_acoustic_alpha'
+    name = 'd_llaplace_p_sa1'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
     geometry = [(Volume, 'parameter_1')]
 
-    function = staticmethod(terms.d_sa_acoustic_alpha)
+    function = staticmethod(terms.d_llaplace_p_sa)
+
+    sa_mode = 0
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
@@ -29,13 +31,13 @@ class AcousticAlphaSA1Term( ScalarScalar, Term ):
 
         self.set_data_shape( ap )
 
-        fargs = ( par1(), par2(), par3(), vg, ap.econn, 0 )
+        fargs = ( par1(), par2(), par3(), vg, ap.econn, self.sa_mode )
         return fargs, (chunk_size, 1, 1, 1), 0
     
-class AcousticAlphaSA2Term( ScalarScalar, Term ):
+class LaplaceLayerPSA2Term(LaplaceLayerPSA1Term):
     r"""
     :Description:
-    Sensitivity analysis acoustic term (in-plane directions).
+    Sensitivity analysis term -- in-plane directions.
 
     :Definition:
     .. math::
@@ -47,109 +49,75 @@ class AcousticAlphaSA2Term( ScalarScalar, Term ):
         parametr_2: :math:`\ul{v}`,
         parametr_3: :math:`w`
     """
-    name = 'd_sa_acoustic_alpha2'
-    arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
-    geometry = [(Volume, 'parameter_1')]
 
-    function = staticmethod(terms.d_sa_acoustic_alpha)
+    name = 'd_llaplace_p_sa2'
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
-                                           'parameter_3'], **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+    sa_mode = 1
 
-        self.set_data_shape( ap )
-
-        fargs = ( par1(), par2(), par3(), vg, ap.econn, 1 )
-
-        return fargs, (chunk_size, 1, 1, 1), 0
-
-class AcousticZSATerm( ScalarScalar, Term ):
+class LaplaceLayerTSA1Term(LaplaceLayerPSA1Term):
     r"""
     :Description:
-    Sensitivity analysis acoustic term (transversal direction).
+    Sensitivity analysis term -- transversal direction.
 
     :Definition:
     .. math::
-        \int_{\Omega} \partial_z w_k\, \partial_k \ul{v}\,\partial_z \ul{u}
+        \int_{\Omega} \partial_N w_k\, \partial_k \ul{v}\,\partial_N \ul{u}
 
     :Arguments:
         parametr_1: :math:`\ul{u}`,
         parametr_2: :math:`\ul{v}`,
         parametr_3: :math:`w`
     """
-    name = 'd_sa_acoustic_z'
-    arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
-    geometry = [(Volume, 'parameter_1')]
 
-    function = staticmethod(terms.d_sa_acoustic_z)
+    name = 'd_llaplace_t_sa1'
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
-                                           'parameter_3'], **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+    function = staticmethod(terms.d_llaplace_t_sa)
 
-        self.set_data_shape( ap )
+    sa_mode = 0
 
-        fargs = ( par1(), par2(), par3(), vg, ap.econn, 0 )
-
-        return fargs, (chunk_size, 1, 1, 1), 0
-
-class AcousticZSA2Term( ScalarScalar, Term ):
+class LaplaceLayerTSA2Term(LaplaceLayerTSA1Term):
     r"""
     :Description:
     Sensitivity analysis acoustic term (transversal direction).
 
     :Definition:
     .. math::
-        \int_{\Omega} \dvg w \partial_z \ul{v}\,\partial_z \ul{u}
+        \int_{\Omega} \dvg w \partial_N \ul{v}\,\partial_N \ul{u}
 
     :Arguments:
         parametr_1: :math:`\ul{u}`,
         parametr_2: :math:`\ul{v}`,
         parametr_3: :math:`w`
     """
-    name = 'd_sa_acoustic_z2'
-    arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
-    geometry = [(Volume, 'parameter_1')]
 
-    function = staticmethod(terms.d_sa_acoustic_z)
+    name = 'd_llaplace_t_sa2'
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
-                                           'parameter_3'], **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+    sa_mode = 1
 
-        self.set_data_shape( ap )
-
-        fargs = ( par1(), par2(), par3(), vg, ap.econn, 1 )
-
-        return fargs, (chunk_size, 1, 1, 1), 0
-
-class AcousticTerm( ScalarScalar, Term ):
+class LaplaceLayerTerm( ScalarScalar, Term ):
     r"""
     :Description:
     Acoustic term.
 
     :Definition:
     .. math::
-        \int_{\Omega} (p_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + p_2
-        \partial_z \ul{v}\,\partial_z \ul{u} ), \alpha = 1,\dots,N-1
+        \int_{\Omega} (c_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + c_2
+        \partial_N \ul{v}\,\partial_N \ul{u} ), \alpha = 1,\dots,N-1
 
     :Arguments:
-        material_1: :math:`p_1`,
-        material_2: :math:`p_2`,
+        material_1: :math:`c_1`,
+        material_2: :math:`c_2`,
         virtual:    :math:`\ul{v}`,
         state:      :math:`\ul{u}`
     """
-    name = 'dw_acoustic'
+    name = 'dw_llaplace'
     arg_types = (('material', 'material', 'virtual', 'state'),
                  ('material', 'material', 'parameter_1', 'parameter_2'))
     geometry = ([(Volume, 'virtual')],
                 [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
-    functions = {'weak': terms.dw_acoustic,
-                 'eval': terms.d_acoustic }
+    functions = {'weak': terms.dw_llaplace,
+                 'eval': terms.d_llaplace }
         
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, virtual, state = self.get_args( **kwargs )
@@ -182,7 +150,7 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
 
     :Definition:
     .. math::
-        \int_{\Omega} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y},
+        \int_{\Gamma} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y},
         \alpha = 1,\dots,N-1
 
     :Arguments:

@@ -11,27 +11,27 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 d_sa_acoustic_alpha( FMField *out,
- 			   FMField *stateU, FMField *stateV, FMField *stateW,
- 			   VolumeGeometry *vg,
- 			   int32 *conn, int32 nEl, int32 nEP,
- 			   int32 mode,
- 			   int32 *elList, int32 elList_nRow );
-
-int32 d_sa_acoustic_z( FMField *out,
+int32 d_llaplace_p_sa( FMField *out,
 		       FMField *stateU, FMField *stateV, FMField *stateW,
 		       VolumeGeometry *vg,
 		       int32 *conn, int32 nEl, int32 nEP,
 		       int32 mode,
 		       int32 *elList, int32 elList_nRow );
 
-int32 dw_acoustic( FMField *out, FMField *state,
+int32 d_llaplace_t_sa( FMField *out,
+		       FMField *stateU, FMField *stateV, FMField *stateW,
+		       VolumeGeometry *vg,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 mode,
+		       int32 *elList, int32 elList_nRow );
+
+int32 dw_llaplace( FMField *out, FMField *state,
 		   FMField *coef, FMField *coef2, VolumeGeometry *vg,
 		   int32 *conn, int32 nEl, int32 nEP,
 		   int32 *elList, int32 elList_nRow,
 		   int32 isDiff );
 
-int32 d_acoustic( FMField *out, FMField *stateU, FMField *stateV,
+int32 d_llaplace( FMField *out, FMField *stateU, FMField *stateV,
 		  FMField *coef, FMField *coef2, VolumeGeometry *vg,
 		  int32 *conn, int32 nEl, int32 nEP,
 		  int32 *elList, int32 elList_nRow );

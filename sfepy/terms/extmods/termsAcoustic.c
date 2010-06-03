@@ -2,14 +2,14 @@
 #include "terms.h"
 
 #undef __FUNC__
-#define __FUNC__ "d_sa_acoustic_alpha"
+#define __FUNC__ "d_llaplace_p_sa"
 /* 09.04.2009, c */
-int32 d_sa_acoustic_alpha( FMField *out,
-			   FMField *stateU, FMField *stateV, FMField *stateW,
-			   VolumeGeometry *vg,
-			   int32 *conn, int32 nEl, int32 nEP,
-			   int32 mode,
-			   int32 *elList, int32 elList_nRow )
+int32 d_llaplace_p_sa( FMField *out,
+		       FMField *stateU, FMField *stateV, FMField *stateW,
+		       VolumeGeometry *vg,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 mode,
+		       int32 *elList, int32 elList_nRow )
 {
   int32 ii, iel, dim, nQP, ret = RET_OK, iqp, iep, jj;
   FMField *nodval = 0, *nodval2 = 0;
@@ -122,9 +122,9 @@ int32 d_sa_acoustic_alpha( FMField *out,
 }
 
 #undef __FUNC__
-#define __FUNC__ "d_sa_acoustic_z"
+#define __FUNC__ "d_llaplace_t_sa"
 /* 09.04.2009, c */
-int32 d_sa_acoustic_z( FMField *out,
+int32 d_llaplace_t_sa( FMField *out,
 		       FMField *stateU, FMField *stateV, FMField *stateW,
 		       VolumeGeometry *vg,
 		       int32 *conn, int32 nEl, int32 nEP,
@@ -241,8 +241,8 @@ int32 d_sa_acoustic_z( FMField *out,
 }
 
 #undef __FUNC__
-#define __FUNC__ "dw_acoustic"
-int32 dw_acoustic( FMField *out, FMField *state,
+#define __FUNC__ "dw_llaplace"
+int32 dw_llaplace( FMField *out, FMField *state,
 		   FMField *coef, FMField *coef2, VolumeGeometry *vg,
 		   int32 *conn, int32 nEl, int32 nEP,
 		   int32 *elList, int32 elList_nRow,
@@ -335,8 +335,8 @@ int32 dw_acoustic( FMField *out, FMField *state,
 }
 
 #undef __FUNC__
-#define __FUNC__ "d_acoustic"
-int32 d_acoustic( FMField *out, FMField *stateU, FMField *stateV,
+#define __FUNC__ "d_llaplace"
+int32 d_llaplace( FMField *out, FMField *stateU, FMField *stateV,
 		  FMField *coef, FMField *coef2, VolumeGeometry *vg,
 		  int32 *conn, int32 nEl, int32 nEP,
 		  int32 *elList, int32 elList_nRow )
