@@ -5,6 +5,25 @@ import inspect
 # 30.05.2007, c
 class TestCommon( Struct ):
 
+    @staticmethod
+    def xfail(test_method):
+        """
+        Decorator that allows a test to fail.
+        """
+        def wrapper(self):
+            try:
+                ret = test_method(self)
+            except:
+                ret = False
+
+            if not ret:
+                print '--- test expected to fail.'
+                ret = True
+
+            return ret
+
+        return wrapper
+
     ##
     # 16.07.2007, c
     def get_number( self ):
