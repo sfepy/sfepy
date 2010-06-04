@@ -167,7 +167,7 @@ class ProblemDefinition( Struct ):
 
     def clear_equations( self ):
         self.integrals = None
-        self.geometries = None
+        self.geometries = {}
         self.equations = None
     
     ##
