@@ -1432,7 +1432,7 @@ class MEDMeshIO( MeshIO ):
         coors = coors.reshape(coors.shape[0]/n_nodes,n_nodes).transpose()
         dim = coors.shape[1]
 
-        ngroups = mesh_group.NOE.FAM.read()
+        ngroups = nm.abs(mesh_group.NOE.FAM.read())
 
         # Dict to map MED element names to SfePy descs
         #NOTE: The commented lines are elements which 
@@ -1473,7 +1473,7 @@ class MEDMeshIO( MeshIO ):
                 conn = conn.reshape(conn.shape[0]/n_conns,n_conns).transpose()-1
 
                 conns.append( conn )
-                mat_id = group.FAM.read()
+                mat_id = nm.abs(group.FAM.read())
 
                 mat_ids.append( mat_id )
                 descs.append( med_descs[md] )
