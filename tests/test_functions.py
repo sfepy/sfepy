@@ -61,17 +61,13 @@ regions = {
     'Circle' : ('nodes by get_circle', {}),
 }
 
-integrals = {
-    'i1' : ('v', 'gauss_o2_d2'),
-}
-
 ebcs = {
     'p_left' : ('Left', {'p.all' : 'get_p_edge'}),
     'p_right' : ('Right', {'p.all' : 'get_p_edge'}),
 }
 
 equations = {
-    'e1' : """dw_laplace.i1.Omega( mf3.a, q, p ) = 0""",
+    'e1' : """dw_laplace.2.Omega( mf3.a, q, p ) = 0""",
 }
 
 solver_0 = {
@@ -119,8 +115,9 @@ class Test( TestCommon ):
         assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
 
         mat3 = problem.materials['mf3']
-        assert_(nm.all(mat3.get_data(('Omega', 'i1'), 0, 'a') == 10.0))
-        assert_(nm.all(mat3.get_data(('Omega', 'i1'), 0, 'b') == 2.0))
+        key = mat3.get_keys(region_name='Omega')[0]
+        assert_(nm.all(mat3.get_data(key, 0, 'a') == 10.0))
+        assert_(nm.all(mat3.get_data(key, 0, 'b') == 2.0))
         assert_(mat3.get_data(None, None, 'c') == 'ahoj')
 
         return True
