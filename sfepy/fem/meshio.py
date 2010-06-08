@@ -1433,7 +1433,7 @@ class MEDMeshIO( MeshIO ):
         dim = coors.shape[1]
 
         ngroups = mesh_group.NOE.FAM.read()
-        assert_((ngroups <= 0).all())
+        assert_((ngroups >= 0).all())
         ngroups = nm.abs(ngroups)
 
         # Dict to map MED element names to SfePy descs
