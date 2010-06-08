@@ -1,6 +1,6 @@
 from sfepy.base.la import norm_l2_along_axis
 
-from common import common
+from quantum_common import common
 
 def fun_v(ts, coor, mode=None, region=None, ig=None):
     from numpy import sqrt
