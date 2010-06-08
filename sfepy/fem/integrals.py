@@ -11,34 +11,69 @@ class Integrals(Container):
     """
     
     @staticmethod
-    def from_conf(conf, names):
+    def from_conf(conf):
         objs = OneTypeList(Integral)
 
-        name_map = {}
         for desc in conf.itervalues():
-            name_map[desc.name] = desc
-
-        for name in names:
-            if not name_map.has_key(name): continue
-
-            int_conf = name_map[name]
-
-            if hasattr(int_conf, 'vals'):
-                aux = Integral(int_conf.name,
-                               kind=int_conf.kind,
-                               quad_name=int_conf.quadrature,
-                               coors=int_conf.vals,
-                               weights=int_conf.weights)
+            if hasattr(desc, 'vals'):
+                aux = Integral(desc.name,
+                               kind=desc.kind,
+                               quad_name=desc.quadrature,
+                               coors=desc.vals,
+                               weights=desc.weights)
 
             else:
-                aux = Integral(int_conf.name,
-                               kind=int_conf.kind,
-                               quad_name=int_conf.quadrature)
+                aux = Integral(desc.name,
+                               kind=desc.kind,
+                               quad_name=desc.quadrature)
                 
             objs.append(aux)
 
         obj = Integrals(objs)
         return obj
+
+    def get(self, name, dim, kind='v'):
+        """
+        Return existing or new integral.
+
+        Parameters
+        ----------
+        name : str
+            The name can either be a string representation of a
+            non-negative integer (the integral order) or 'a' (automatic
+            order) or a string beginning with 'i' (existing custom
+            integral name).
+        """
+        if name == 'a':
+            raise NotImplementedError
+
+        elif name[0] == 'i':
+            try:
+                obj = self[name]
+
+            except IndexError:
+                raise ValueError('integral %s is not defined!' % name)
+
+        else:
+            try:
+                order = int(name)
+
+            except:
+                raise ValueError('unsupported integral reference! (%s)' % name)
+
+            name = '__%s_o%s_d%d' % (kind, name, dim)
+            if self.has_key(name):
+                obj = self[name]
+
+            else:
+                # Create new integral, and add it to self.
+                quad_name = '_o%d_d%d' % (order, dim)
+                obj = Integral(name, kind, quad_name=quad_name)
+
+                self.append(obj)
+
+        return obj
+    
 
 class Integral(Struct):
     """
@@ -48,11 +83,10 @@ class Integral(Struct):
     _msg2 = 'WARNING: using %d instead!'
     
     def __init__(self, name, kind='v', quad_name='auto',
-                 coors=None, weights=None, term=None):
+                 coors=None, weights=None):
         self.name = name
         self.kind = kind
         self.quad_name = quad_name
-        self.term = term
         self.qps = {}
 
         if coors is None:
@@ -69,9 +103,6 @@ class Integral(Struct):
         else:
             match = _match_order_dim(self.quad_name)
             self.order, self.dim = [int( ii ) for ii in match.groups()]
-
-    def set_term(self, term):
-        self.term = term
 
     def get_actual_order(self, geometry):
         """

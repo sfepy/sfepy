@@ -461,21 +461,58 @@ class Term( Struct ):
 
         return name
 
+    def get_integral_info(self):
+        """
+        Get information on the term integral.
+
+        Returns
+        -------
+        dim : int
+            The integral dimension.
+        kind : 'v' or 's'
+            The integral kind.
+        """
+        geom = self.geometry
+
+        kind = ''
+
+        if geom:
+            gtype = geom[0][0]
+            dim = self.region.domain.shape.dim
+
+            if gtype == Volume:
+                out = dim
+                kind = 'v'
+
+            elif Surface in gtype:
+                out = dim - 1
+                kind = 's'
+
+            elif gtype == Edge:
+                out = dim - 2
+
+            else:
+                out = 0
+
+            assert_(out >= 0)
+
+        else:
+            out = None
+
+        return out, kind
+
     ##
     # c: 29.11.2007, r: 10.04.2008
     def describe_geometry( self, geometries, variables, integrals ):
-        """Takes reference to the used integral."""
+        """Takes reference to the used integral. Updates self.integral_name."""
         if not self.has_geometry: return
 
-        try:
-            integral = integrals[self.integral_name]
-        except IndexError:
-            msg = 'integral %s is not defined!' % self.integral_name
-            raise ValueError(msg)
-            
-        self.integral = integral
+        self.integral = integrals.get(self.integral_name,
+                                      *self.get_integral_info())
+        self.integral_name = self.integral.name
         
         tgs = self.get_geometry_types()
+        
         for var_name in self.get_variable_names():
             ## print '>>>>>', self.name, var_name
 
@@ -504,7 +541,7 @@ class Term( Struct ):
                     
                 field.aps.describe_geometry(field, geometries,
                                             tgs[var_name], region, self.region,
-                                            integral, ig_map=ig_map)
+                                            self.integral, ig_map=ig_map)
 
     def get_region(self):
         return self.region

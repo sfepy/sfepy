@@ -21,7 +21,7 @@ class Test( TestCommon ):
             """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )
-                 = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )""",
+                 = - dw_rhs.a.Y3( u, q, Nu, dcf, mode )""",
             """no_args() = 0""",
             """+ something( a, b, c ) = + something_else( c, a, d[-1] )""",
             """term_.a.a( u )""",

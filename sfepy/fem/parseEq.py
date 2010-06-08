@@ -19,6 +19,8 @@ def collect_term( term_descs, lc, itps ):
 ##         print name, integral, region
         tp = TermParse()
         tp.integral = toks.term_desc.integral
+        if not tp.integral:
+            tp.integral = 'a'
         tp.region = toks.term_desc.region
         tp.flag = toks.term_desc.flag
         if toks.mul[1]:
@@ -56,8 +58,10 @@ def create_bnf( term_descs, itps ):
     lbracket = Literal( '[' ).suppress()
     rbracket = Literal( ']' ).suppress()
 
-
     ident = Word( alphas, alphanums + "_")
+
+    integral = Combine((Literal('i') + Word(alphanums)) | Literal('a')
+                       | Word(nums))("integral")
 
     history = Optional( lbracket + inumber + rbracket, default = 0 )( "history" )
     history.setParseAction( lambda str, loc, toks: int( toks[0] ) )
@@ -78,9 +82,9 @@ def create_bnf( term_descs, itps ):
            + Optional( number + Literal( '*' ).suppress(),
                        default = ['1.0', ''] )( "mul" ) \
            + Combine( ident( "name" )\
-                      + Optional( "." + (ident( "integral" ) + "."
+                      + Optional( "." + (integral + "."
                                   + ident( "region" ) + "." + flag( "flag" ) |
-                                  ident( "integral" ) + "." + ident( "region" ) |
+                                  integral + "." + ident( "region" ) |
                                   ident( "region" )
                                   )))( "term_desc" ) + "("\
                                   + Optional( delimitedList( generalized_var ),
@@ -92,7 +96,7 @@ def create_bnf( term_descs, itps ):
     equation = StringStart() + OneOrMore( term )\
                + Optional( rhs1 | rhs2 ) + StringEnd()
 
-#    term.set_debug()
+    ## term.setDebug()
 
     return equation
     
@@ -102,7 +106,7 @@ if __name__ == "__main__":
     test_str = """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + 5.0 * d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p[-1], Nu, dcf, mode )
-                 = - dw_rhs.Y3.a( u, q, Nu, dcf, mode )"""
+                 = - dw_rhs.a.Y3( u, q, Nu, dcf, mode )"""
     
     term_descs = []
     bnf = create_bnf( term_descs, {} )

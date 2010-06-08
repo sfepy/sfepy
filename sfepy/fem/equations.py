@@ -130,15 +130,6 @@ class Equations( Container ):
             eq.describe_geometry( geometries, variables, integrals )
         output( '...done in %.2f s' % (time.clock() - tt) )
         
-
-    ##
-    # 16.11.2007, c
-    def get_term_integral_names( self ):
-        i_names = set()
-        for eq in self:
-            i_names.update( eq.get_term_integral_names() )
-        return i_names
-
     def get_variable_names( self ):
         """Return the list of names of all variables used in equations."""
         vns = set()
@@ -452,12 +443,3 @@ class Equation( Struct ):
     def describe_geometry( self, geometries, variables, integrals ):
         for term in self.terms:
             term.describe_geometry( geometries, variables, integrals )
-
-    ##
-    # 16.11.2007, c
-    def get_term_integral_names( self ):
-        i_names = set()
-        for term in self.terms:
-            if term.has_integral:
-                i_names.add(term.integral_name)
-        return i_names

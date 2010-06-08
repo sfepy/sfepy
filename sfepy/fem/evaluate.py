@@ -273,8 +273,7 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         else:
             variables.setup_extra_data()
 
-        i_names = equation.get_term_integral_names()
-        integrals = Integrals.from_conf( conf.integrals, i_names )
+        integrals = Integrals.from_conf(conf.integrals)
         
         geometries = {}
         equation.describe_geometry( geometries, variables, integrals )

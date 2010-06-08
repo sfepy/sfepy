@@ -21,9 +21,26 @@ class LinearPointSpringTerm( Term ):
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Point, 'virtual')]
+    integral_kind = 'v'
 
     def __init__(self, name, sign, **kwargs):
         Term.__init__(self, name, sign, dof_conn_type='point', **kwargs)
+
+    def get_integral_info(self):
+        """
+        Get information on the term integral.
+
+        Returns
+        -------
+        dim : int
+            The integral dimension.
+        kind : 'v' or 's'
+            The integral kind.
+        """
+        gtype = self.geometry[0][0]
+        dim = self.region.domain.shape.dim
+
+        return dim, 'v'
 
     ##
     # 10.07.2007, c

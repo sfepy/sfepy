@@ -8,10 +8,11 @@ from reader import Reader
 _required = ['filename_mesh', 'field_[0-9]+|fields',
              'ebc_[0-9]+|ebcs', 'fe', 'equations',
              'region_[0-9]+|regions', 'variable_[0-9]+|variables',
-             'material_[0-9]+|materials', 'integral_[0-9]+|integrals',
+             'material_[0-9]+|materials',
              'solver_[0-9]+|solvers']
 _other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
-          'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options']
+          'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
+          'integral_[0-9]+|integrals']
 
 ##
 # c: 19.02.2008, r: 19.02.2008

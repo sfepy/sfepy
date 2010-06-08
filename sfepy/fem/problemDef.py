@@ -187,15 +187,15 @@ class ProblemDefinition( Struct ):
         self.variables.setup_dof_conns(make_virtual=make_virtual,
                                        single_term=single_term)
 
-        i_names = equations.get_term_integral_names()
-        self.integrals = Integrals.from_conf( self.conf.integrals, i_names )
+        self.integrals = Integrals.from_conf(self.conf.integrals)
 
         self.geometries = {}
         equations.describe_geometry( self.geometries, self.variables,
                                      self.integrals )
 
-##         print self.geometries
-##         pause()
+        ## print self.integrals
+        ## print self.geometries
+        ## pause()
 
         if cache_override is None:
             cache_override = get_default_attr( self.conf.fe,
