@@ -222,6 +222,27 @@ class Material( Struct ):
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
+    def get_keys(self, region_name=None):
+        """
+        Get all data keys.
+
+        Parameters
+        ----------
+        region_name : str
+            If not None, only keys with this region are returned.
+        """
+        if self.datas is None:
+            keys = None
+
+        elif region_name is None:
+            keys = self.datas.keys()
+
+        else:
+            keys = [key for key in self.datas.keys()
+                    if (isinstance(key, tuple) and key[0] == region_name)]
+
+        return keys
+
     def set_all_data( self, datas ):
         """
         Use the provided data, set mode to 'user'.
