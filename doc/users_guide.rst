@@ -529,10 +529,12 @@ Variables use the FE approximation given by the specified field:
             's' : ('test field', 'temperature', 't'),
         }
 
+.. _ug_integrals:
+
 Integrals
 ^^^^^^^^^
 
-Define the integral type and quadrature rule. 
+Define the integral type and quadrature rule. This keyword is optional.
 
 * Long syntax::
     
@@ -544,6 +546,7 @@ Define the integral type and quadrature rule.
 
   where
 
+    * <name> - the integral name - it has to begin with 'i'!
     * <kind> - volume 'v' or surface 's' integral
     * <rule> - <family>_o<order>_d<dimension>, available quadratures are in sfe/fem/quadratures.py - it is still preliminary and incomplete
 
@@ -705,10 +708,22 @@ Equations can be built by combining terms listed in :ref:`term_table`.
 Examples
 """"""""
 
-* Laplace equation::
+* Laplace equation, named integral::
 
     equations = {
         'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
+    }
+
+* Laplace equation, simplified integral given by order::
+
+    equations = {
+        'Temperature' : """dw_laplace.2.Omega( coef.val, s, t ) = 0"""
+    }
+
+* Laplace equation, automatic integration order (not implemented yet!)::
+
+    equations = {
+        'Temperature' : """dw_laplace.a.Omega( coef.val, s, t ) = 0"""
     }
 
 * Navier-Stokes equations::

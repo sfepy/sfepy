@@ -281,6 +281,17 @@ formulation) is 0, where ``coef.val`` is a material constant. We are using the
 ``i1`` integral defined previously, over the domain specified by the region
 Omega.
 
+The above syntax is useful for defining *custom integrals* with
+user-defined quadrature points and weights, see :ref:`ug_integrals`. The
+above uniform integration can be more easily achieved by::
+
+    equations = {
+        'Temperature' : """dw_laplace.2.Omega( coef.val, s, t ) = 0"""
+    }
+
+The integration order is specified directly in place of the integral
+name. The integral definition is superfluous in this case.
+
 ::
 
     #! Linear solver parameters
