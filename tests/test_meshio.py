@@ -10,7 +10,9 @@ filename_meshes = ['/meshes/3d/cylinder.mesh',
                    '/meshes/various_formats/abaqus_tet.inp',
                    '/meshes/various_formats/hex4.mesh3d',
                    '/meshes/various_formats/tetra8.mesh3d',
-		   '/meshes/various_formats/cube.bdf']
+                   '/meshes/various_formats/cube.bdf',
+                   '/meshes/various_formats/med_2d_tri_quad.med',
+                   '/meshes/various_formats/med_3d_tet_hex.med']
 filename_meshes = [data_dir + name for name in filename_meshes]
 
 def mesh_hook(mesh, mode):
