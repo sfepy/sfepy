@@ -14,6 +14,8 @@ class TestCommon( Struct ):
             try:
                 ret = test_method(self)
             except:
+                if self.debug:
+                    raise
                 ret = False
 
             if not ret:
@@ -35,6 +37,8 @@ class TestCommon( Struct ):
     ##
     # c: 30.05.2007, r: 05.02.2008
     def run( self, debug = False ):
+        self.debug = debug
+
         ok = True
         n_fail = 0
 
