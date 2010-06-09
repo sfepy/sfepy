@@ -72,9 +72,74 @@ class CharacteristicFunction( Struct ):
     def get_local_chunk( self ):
         return self.local_chunk
 
-##
-# 24.07.2006, c
-class Terms( Container ):
+class Terms(Container):
+
+    def __init__(self, objs=None):
+        Container.__init__(self, objs=objs)
+
+        self.update_expression()
+
+    def insert(self, ii, obj):
+        Container.insert(self, ii, obj)
+        self.update_expression()
+
+    def append(self, obj):
+        Container.append(self, obj)
+        self.update_expression()
+
+    def update_expression(self):
+        self.expression = []
+        for term in self:
+            aux = [term.sign, term.name, term.integral, term.region.name]
+            aux += [arg.name for arg in term._args]
+            self.expression.append(aux)
+
+    def __mul__(self, other):
+        out = Terms()
+        for name, term in self.iteritems():
+            out.append(term * other)
+
+        return out
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __add__(self, other):
+        if isinstance(other, Term):
+            out = self.copy()
+            out.append(other)
+
+        elif isinstance(other, Terms):
+            out = Terms(self._objs + other._objs)
+
+        else:
+            raise ValueError('cannot add Terms with %s!' % other)
+
+        return out
+        
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        if isinstance(other, Term):
+            out = self + (-other)
+
+        elif isinstance(other, Terms):
+            out = self + (-other)
+
+        else:
+            raise ValueError('cannot subtract Terms with %s!' % other)
+
+        return out
+
+    def __rsub__(self, other):
+        return -self + other
+
+    def __pos__(self):
+        return self
+
+    def __neg__(self):
+        return -1.0 * self
 
     ##
     # 24.07.2006, c
@@ -121,12 +186,74 @@ Edge = 'Edge'
 Point = 'Point'
 SurfaceExtra = 'SurfaceExtra'
 
-##
-# 21.07.2006, c
-class Term( Struct ):
+class Term(Struct):
     name = ''
     arg_types = ()
     geometry = []
+
+    def __init__(self, name, integral, region, *args, **kwargs):
+
+        self.name = name
+        self.integral = integral
+        self.region = region
+        self._args = args
+        self._kwargs = kwargs
+
+        self.sign = 1.0
+
+    def __mul__(self, other):
+        success = False
+        try:
+            mul = float(other)
+        except:
+            pass
+        else:
+            success = True
+
+        if not success:
+            try:
+                mul = complex(other)
+            except:
+                pass
+            else:
+                success = True
+                
+        if not success:
+            raise ValueError('cannot multiply Term with %s!' % other)
+
+        out = self.copy(name=self.name)
+
+        out.sign = mul * self.sign
+
+        return out
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __add__(self, other):
+        if isinstance(other, Term):
+            out = Terms([self, other])
+
+        else:
+            out = NotImplemented
+
+        return out
+
+    def __sub__(self, other):
+        if isinstance(other, Term):
+            out = Terms([self, -1.0 * other])
+
+        else:
+            out = NotImplemented
+
+        return out
+
+    def __pos__(self):
+        return self
+
+    def __neg__(self):
+        out = -1.0 * self
+        return out
 
     @staticmethod
     def from_desc(constructor, desc, regions):
@@ -168,8 +295,8 @@ class Term( Struct ):
 
         return obj
 
-    def __init__(self, name, sign, region=None, integral_name=None,
-                 dof_conn_type='volume', function=None):
+    def _init(self, name, sign, region=None, integral_name=None,
+              dof_conn_type='volume', function=None):
         self.name = name
         self.sign = sign
         self.ats = list(self.arg_types)
