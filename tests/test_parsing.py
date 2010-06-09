@@ -17,7 +17,14 @@ class Test( TestCommon ):
 
         test_strs = [
             """- d_volume.i1.Omega( uc )""",
-            """2 * dw_term.i1.Omega( uc ) = - 3.0 * dw_term2.i1.Omega2( uc )""",
+            """- 2 * dw_term.i1.Omega( uc )
+             = - 3.0 * dw_term2.i1.Omega2( uc )""",
+            """2 * dw_term.i1.Omega( uc )
+             = 3.0 * dw_term2.i1.Omega2( uc )""",
+            """- (2 + 1j - 3) * dw_term.i1.Omega( uc )
+               = - (1j - 3.0 + 2.0j) * dw_term2.i1.Omega2( uc )""",
+            """(2 + 1j) * dw_term.i1.Omega( uc )
+               = (3.0 + 2.0j) * dw_term2.i1.Omega2( uc )""",
             """d_term1.Y( fluid, u, w, Nu, dcf, mode )
                  + d_term2.Omega( u, w, Nu, dcf, mode )
                  - d_another_term.Elsewhere( w, p, Nu, dcf, mode )

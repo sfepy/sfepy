@@ -1,6 +1,6 @@
 from pyparsing import Combine, Literal, Word, delimitedList, Group, Optional,\
      ZeroOrMore, OneOrMore, nums, alphas, alphanums,\
-     StringStart, StringEnd, CaselessLiteral
+     StringStart, StringEnd, CaselessLiteral, Forward, oneOf
 
 
 class TermParse( object ):
@@ -23,10 +23,7 @@ def collect_term( term_descs, lc, itps ):
             tp.integral = 'a'
         tp.region = toks.term_desc.region
         tp.flag = toks.term_desc.flag
-        if toks.mul[1]:
-            tp.sign = sign * complex( ''.join( toks.mul ) )
-        else:
-            tp.sign = sign * float( toks.mul[0] )
+        tp.sign = sign * eval(''.join( toks.mul ))
         tp.name = term_prefix + toks.term_desc.name
         tp.args = toks.args
         term_descs.append( tp )
@@ -55,6 +52,12 @@ def create_bnf( term_descs, itps ):
                        Optional( point + Optional( Word( nums ) ) ) +
                        Optional( e + Word( "+-"+nums, nums ) ) )
     number = fnumber + Optional( Literal( 'j' ), default = '' )
+    add_op = oneOf('+ -')
+    number_expr = Forward()
+    number_expr << ZeroOrMore('(') + number \
+                + ZeroOrMore(add_op + number_expr) \
+                + ZeroOrMore(')')
+        
     lbracket = Literal( '[' ).suppress()
     rbracket = Literal( ']' ).suppress()
 
@@ -79,7 +82,7 @@ def create_bnf( term_descs, itps ):
     flag = Literal( 'a' )
 
     term = Optional( Literal( '+' ) | Literal( '-' ), default = '+' )( "sign" )\
-           + Optional( number + Literal( '*' ).suppress(),
+           + Optional( number_expr + Literal( '*' ).suppress(),
                        default = ['1.0', ''] )( "mul" ) \
            + Combine( ident( "name" )\
                       + Optional( "." + (integral + "."
