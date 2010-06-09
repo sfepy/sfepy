@@ -21,6 +21,7 @@ class Test(TestCommon):
         from sfepy.fem \
              import Mesh, Domain, Field, FieldVariable, Material, Function
         from sfepy.fem.conditions import EssentialBC
+        from sfepy.terms.terms import Term
 
         ok = True
 
@@ -70,9 +71,10 @@ class Test(TestCommon):
 
         # Does not work below...
 
-        t1 = Term('lin_elastic', 'auto', omega, m, v, u)
+        t1 = Term('dw_lin_elastic', 'auto', omega, m, v, u)
 
         print t1
+        print t1 - (3 * t1 - 2 * t1) * 4 + t1 * 2.4j
 
         u.set_nodal_values(1.0)
         u_vec = u.get_vector() # coefficient vector w.r.t. the field space basis.
