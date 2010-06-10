@@ -15,8 +15,7 @@ def collect_term( term_descs, lc, itps ):
     def append( str, loc, toks ):
         sign = signs[toks.sign] * signs[lc[0]]
         term_prefix = itps.get( toks.term_desc.name, '' ) 
-##        print toks, lc, term_prefix
-##         print name, integral, region
+        ## print toks, lc, term_prefix
         tp = TermParse()
         tp.integral = toks.term_desc.integral
         if not tp.integral:
@@ -25,7 +24,8 @@ def collect_term( term_descs, lc, itps ):
         tp.flag = toks.term_desc.flag
         tp.sign = sign * eval(''.join( toks.mul ))
         tp.name = term_prefix + toks.term_desc.name
-        tp.args = toks.args
+        tp.args = ', '.join(toks.args[0])
+        ## print tp
         term_descs.append( tp )
     return append
 
@@ -58,26 +58,22 @@ def create_bnf( term_descs, itps ):
                 + ZeroOrMore(add_op + number_expr) \
                 + ZeroOrMore(')')
         
-    lbracket = Literal( '[' ).suppress()
-    rbracket = Literal( ']' ).suppress()
-
     ident = Word( alphas, alphanums + "_")
 
     integral = Combine((Literal('i') + Word(alphanums)) | Literal('a')
                        | Word(nums))("integral")
 
-    history = Optional( lbracket + inumber + rbracket, default = 0 )( "history" )
-    history.setParseAction( lambda str, loc, toks: int( toks[0] ) )
+    history = Optional('[' + inumber + ']', default='')("history")
 
-    variable = Group( Word( alphas, alphanums + '._' ) + history )
+    variable = Combine(Word(alphas, alphanums + '._') + history)
 
-    derivative = Group( Literal( 'd' ) + variable\
-                 + Literal( '/' ).suppress() + Literal( 'dt' ) )
+    derivative = Combine(Literal('d') + variable\
+                         + Literal('/') + Literal('dt'))
 
-    trace = Group( Literal( 'tr' ) + Literal( '(' ).suppress() + variable\
-                   + Literal( ')' ).suppress() )
+    trace = Combine(Literal('tr') + '(' + variable + ')')
     
     generalized_var = derivative | trace | variable
+    args = Group(delimitedList(generalized_var))
 
     flag = Literal( 'a' )
 
@@ -89,9 +85,8 @@ def create_bnf( term_descs, itps ):
                                   + ident( "region" ) + "." + flag( "flag" ) |
                                   integral + "." + ident( "region" ) |
                                   ident( "region" )
-                                  )))( "term_desc" ) + "("\
-                                  + Optional( delimitedList( generalized_var ),
-                                default = [] )( "args" ) + ")"
+                                )))( "term_desc" ) + "("\
+                                + Optional(args, default=[''])( "args" ) + ")"
     term.setParseAction( collect_term( term_descs, lc, itps ) )
 
     rhs1 = equal + OneOrMore( term )

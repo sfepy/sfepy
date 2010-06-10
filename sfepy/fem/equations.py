@@ -214,7 +214,7 @@ class Equation( Struct ):
         """
         Create terms, assign each term its region.
         """
-        terms = OneTypeList(Term)
+        terms = Terms()
         for td in self.term_descs:
             try:
                 constructor = term_table[td.name]
@@ -223,21 +223,22 @@ class Equation( Struct ):
                                                   sorted(term_table.keys()))
                 raise ValueError(msg)
 
-            ## print td
-            term = Term.from_desc(constructor, td, regions)
+            try:
+                region = regions[td.region]
+            except IndexError:
+                raise KeyError('region "%s" does not exist!' % td.region)
+
+            term = Term.from_desc(constructor, td, region)
             terms.append(term)
 
         return terms
 
-    def check_term_args(self, variables, materials, user=None):
+    def assign_term_args(self, variables, materials, user=None):
         """
-        Classify term arguments and also set the dynamic term types. Then
-        check term argument existence in variables, materials, user data. Also
-        check compatability of field and term subdomain lists (igs).
+        Assign all term arguments.
         """
         for term in self.terms:
-            term.classify_args(variables)
-            term.check_args(variables, materials, user)
+            term.assign_args(variables, materials, user)
 
     ##
     # 29.11.2006, c
@@ -290,7 +291,9 @@ class Equation( Struct ):
         caches.
         """
         self.terms = self.create_terms(regions)
-        self.check_term_args(variables, materials, user)
+        self.terms.setup()
+
+        self.assign_term_args(variables, materials, user)
         self.assign_term_caches(caches)
 
     def collect_conn_info(self, conn_info, variables):

@@ -136,7 +136,7 @@ class Material( Struct ):
         # Quadrature point function values.
         for equation in equations:
             for term in equation.terms:
-                names = [ii.split('.')[0] for ii in term.names.material]
+                names = [ii[0] for ii in term.names.material]
                 if self.name not in names: continue
 
                 key = (term.region.name, term.integral.name)

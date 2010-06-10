@@ -116,7 +116,7 @@ class Terms(Container):
         self.expression = []
         for term in self:
             aux = [term.sign, term.name, term.arg_str,
-                   term.integral, term.region.name]
+                   term.integral_def, term.region.name]
             self.expression.append(aux)
 
     def __mul__(self, other):
@@ -170,12 +170,6 @@ class Terms(Container):
         for term in self:
             term.setup()
 
-    ##
-    # 24.07.2006, c
-    def classify_args( self, variables ):
-        for term in self:
-            term.classify_args( variables )
-            
     ##
     # 24.07.2006, c
     # 02.08.2006
@@ -244,13 +238,9 @@ class Term(Struct):
         return obj
         
     @staticmethod
-    def from_desc(constructor, desc, regions):
-        try:
-            region = regions[desc.region]
-        except IndexError:
-            raise KeyError('region "%s" does not exist!' % desc.region)
-        obj = constructor(desc.name, desc.sign,
-                          region=region, integral_name=desc.integral)
+    def from_desc(constructor, desc, region):
+        obj = constructor(desc.name, desc.args, desc.integral, region)
+        obj.sign = desc.sign
 
         return obj
 
@@ -258,7 +248,7 @@ class Term(Struct):
 
         self.name = name
         self.arg_str = arg_str
-        self.integral = integral
+        self.integral_def = integral
         self.region = region
         self._kwargs = kwargs
 
@@ -319,8 +309,14 @@ class Term(Struct):
         return out
 
     def setup(self):
+        if hasattr(self.integral_def, 'name'):
+            self.integral_name = self.integral_def.name
+
+        else:
+            self.integral_name = str(self.integral_def)
+        
         self.char_fun = CharacteristicFunction(self.region)
-        self.function = self.set_default_attr('function', None)
+        self.function = self.get_default_attr('function', None)
         
         self.step = 0
         self.dt = 1.0
@@ -366,6 +362,10 @@ class Term(Struct):
                 elif kind == 'tr':
                     trace = True
 
+            match = _match_material_root(name)
+            if match:
+                name = (match.group(1), match.group(2))
+
             self.arg_names.append(name)
             self.arg_steps[name] = step
             self.arg_derivatives[name] = derivative
@@ -376,15 +376,14 @@ class Term(Struct):
         
         self.args = []
         for arg_name in self.arg_names:
-            match = _match_material_root(arg_name)
-            if match:
-                self.args.append((self._kwargs[match.group(1)],
-                                  match.group(2)))
-
-            else:
+            if isinstance(arg_name, str):
                 self.args.append(self._kwargs[arg_name])
 
+            else:
+                self.args.append((self._kwargs[arg_name[0]], arg_name[1]))
+
         self.classify_args()
+        self.check_args()
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """Subclasses either implement __call__ or plug in a proper _call()."""
@@ -393,14 +392,50 @@ class Term(Struct):
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
         msg = 'base class method "_call" called for %s' % self.__class__.__name__
         raise RuntimeError( msg )
+
+    def assign_args(self, variables, materials, user=None):
+        """
+        Check term argument existence in variables, materials, user data
+        and assign the arguments to terms. Also check compatibility of
+        field and term subdomain lists (igs).
+        """
+        if user is None:
+            user = {}
+
+        kwargs = {}
+        for arg_name in self.arg_names:
+            if isinstance(arg_name, str):
+                if arg_name in variables.names:
+                    kwargs[arg_name] = variables[arg_name]
+
+                elif arg_name in user:
+                    kwargs[arg_name] = user[arg_name]
+
+                else:
+                    raise ValueError('argument %s not found!' % arg_name)
+
+            else:
+                arg_name = arg_name[0]
+                if arg_name in materials.names:
+                    kwargs[arg_name] = materials[arg_name]
+
+                else:
+                    raise ValueError('material argument %s not found!'
+                                     % arg_name)
+                    
+        self.setup_args(**kwargs)
     
     def classify_args(self):
-        """state variable can be in place of parameter variable and vice
-        versa."""
-        self.names = Struct( name = 'arg_names',
-                             material = [], variable = [], user = [],
-                             state = [], virtual = [], parameter = [],
-                             material_split = [] )
+        """
+        Classify types of the term arguments and find matching call
+        signature.
+        
+        A state variable can be in place of a parameter variable and
+        vice versa.
+        """
+        self.names = Struct(name = 'arg_names',
+                            material = [], variable = [], user = [],
+                            state = [], virtual = [], parameter = [])
 
         msg = "variable '%s' requested by term '%s' does not exist!"
 
@@ -466,8 +501,6 @@ class Term(Struct):
 
             elif _match_material( arg_type ):
                 names = self.names.material
-                mat, par_name = self.args[ii]
-                self.names.material_split.append((mat.name, par_name))
 
             else:
                 names = self.names.user
@@ -488,24 +521,16 @@ class Term(Struct):
     def set_arg_types( self ):
         pass
 
-    def check_args(self, variables, materials, user=None):
-        """Common checking to all terms."""
-        check_names(self.get_variable_names(), variables.names,
-                    'variable(s) "%s" not found!')
-        check_names(self.get_material_names(), materials.names,
-                    'material(s) "%s" not found!')
+    def check_args(self):
+        """
+        Common checking to all terms.
 
-        if isinstance(user, dict):
-            check_names(self.get_user_names(), user.keys(),
-                        'user data "%s" not found!')
-
-        elif user is not None:
-            raise ValueError('user data must be a dict or None!')
-
+        Check compatibility of field and term subdomain lists (igs).
+        """
         igs = self.char_fun.igs
         vns = self.get_variable_names()
         for name in vns:
-            field = variables[name].get_field()
+            field = self._kwargs[name].get_field()
             if field is None:
                 continue
 
@@ -524,20 +549,13 @@ class Term(Struct):
                              (self.name, igs, name, field.igs(), field.name)
                     raise ValueError(msg)
 
-    ##
-    # 24.07.2006, c
-    def get_variable_names( self ):
+    def get_variable_names(self):
         return self.names.variable
 
-    ##
-    # 24.07.2006, c
-    # 02.08.2006
-    def get_material_names( self ):
-        return [aux[0] for aux in self.names.material_split]
+    def get_material_names(self):
+        return [aux[0] for aux in self.names.material]
 
-    ##
-    # 24.07.2006, c
-    def get_user_names( self ):
+    def get_user_names(self):
         return self.names.user
 
     ##
@@ -580,9 +598,11 @@ class Term(Struct):
 
         return key
 
-    def get_args( self, arg_types = None, **kwargs ):
-        """Extract arguments from **kwargs by type as specified in arg_types
-        (or self.ats)."""
+    def get_args(self, arg_types=None, **kwargs):
+        """
+        Return arguments by type as specified in arg_types (or
+        self.ats).
+        """
         ats = self.ats
         if arg_types is None:
             arg_types = ats
@@ -590,19 +610,18 @@ class Term(Struct):
 
         iname, region_name, ig = self.get_current_group()
         for at in arg_types:
-            ii = ats.index( at )
-            name = self.arg_names[ii]
-##             print at, ii, name
-            if at[:8] == 'material':
-##                 print self.names.material
-                im = self.names.material.index( name )
-                split = self.names.material_split[im]
-                mat = kwargs[split[0]]
-                mat_data = mat.get_data((region_name, self.integral_name),
-                                        ig, split[1])
-                args.append(mat_data)
+            ii = ats.index(at)
+            arg_name = self.arg_names[ii]
+            ## print at, ii, arg_name
+            if isinstance(arg_name, str):
+                args.append(self.args[ii])
+
             else:
-                args.append( kwargs[name] )
+                ## print self.names.material
+                mat, par_name = self.args[ii]
+                mat_data = mat.get_data((region_name, self.integral_name),
+                                        ig, par_name)
+                args.append(mat_data)
 
         return args
 
