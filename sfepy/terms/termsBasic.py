@@ -133,9 +133,7 @@ class IntegrateSurfaceTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
     use_caches = {'state_in_surface_qp' : [['parameter']]}
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
+    dof_conn_type = 'surface'
 
     ##
     # c: 24.04.2007, r: 15.01.2008
@@ -265,9 +263,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     name = 'dw_surface_integrate'
     arg_types = ('virtual',)
     geometry = [(Surface, 'virtual')]
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
+    dof_conn_type = 'surface'
 
     ##
     # 30.06.2008, c
@@ -309,9 +305,7 @@ class IntegrateSurfaceOperatorWTerm(Term):
     name = 'dw_surface_integrate_w'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
+    dof_conn_type = 'surface'
         
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         mat, virtual = self.get_args(**kwargs)
@@ -392,9 +386,7 @@ class SurfaceTerm( Term ):
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
     use_caches = {'surface' : [['parameter']]}
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface', **kwargs)
+    dof_conn_type = 'surface'
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
@@ -421,11 +413,10 @@ class VolumeSurfaceTerm( Term ):
     name = 'd_volume_surface'
     arg_types = ('parameter',)
     geometry = [(Surface, 'parameter')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.d_volume_surface, **kwargs)
-
+    function = staticmethod(terms.d_volume_surface)
+    
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
@@ -459,10 +450,9 @@ class SurfaceMomentTerm(Term):
     name = 'di_surface_moment'
     arg_types = ('parameter', 'shift')
     geometry = [(Surface, 'parameter')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.di_surface_moment, **kwargs)
+    function = staticmethod(terms.di_surface_moment)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         par, shift = self.get_args(**kwargs)

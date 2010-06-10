@@ -58,9 +58,7 @@ class ConvectTerm( Term ):
     arg_types = ('virtual', 'state')
     geometry = [(Volume, 'virtual')]
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, function=terms.term_ns_asm_convect,
-                      **kwargs)
+    function = staticmethod(terms.term_ns_asm_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( **kwargs )

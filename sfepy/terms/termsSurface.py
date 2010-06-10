@@ -21,10 +21,9 @@ class LinearTractionTerm( Term ):
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
     geometry = [(Surface, 'virtual')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.dw_surface_ltr, **kwargs)
+    function = staticmethod(terms.dw_surface_ltr)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -79,10 +78,9 @@ class SurfaceJumpTerm(Term):
     name = 'dw_jump'
     arg_types = ('material', 'virtual', 'state_1', 'state_2')
     geometry = [(Surface, 'virtual'), (Surface, 'state_1'), (Surface, 'state_2')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.dw_jump, **kwargs)
+    function = staticmethod(terms.dw_jump)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         coef, virtual, state1, state2 = self.get_args(**kwargs)

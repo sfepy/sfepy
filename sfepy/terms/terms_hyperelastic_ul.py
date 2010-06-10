@@ -7,9 +7,7 @@ class HyperElasticULBase( HyperElasticBase ):
     proper Term!
     """
     use_caches = {'finite_strain_ul' : [['state']]}
-    
-    def __init__(self, name, sign, **kwargs):
-        HyperElasticBase.__init__(self, name, sign, mode='ul', **kwargs)
+    mode = 'ul'
 
 class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
     r"""

@@ -21,10 +21,8 @@ class LinearPointSpringTerm( Term ):
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
     geometry = [(Point, 'virtual')]
+    dof_conn_type = 'point'
     integral_kind = 'v'
-
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='point', **kwargs)
 
     def get_integral_info(self):
         """

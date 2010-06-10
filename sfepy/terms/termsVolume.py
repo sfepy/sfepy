@@ -18,8 +18,7 @@ class LinearVolumeForceTerm( Term ):
     arg_types = ('material', 'virtual')
     geometry = [(Volume, 'virtual')]
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, function=terms.dw_volume_lvf, **kwargs)
+    function = staticmethod(terms.dw_volume_lvf)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )

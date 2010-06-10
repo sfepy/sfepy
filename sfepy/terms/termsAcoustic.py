@@ -161,10 +161,9 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
     name = 'd_acoustic_surface'
     arg_types = ('material', 'material', 'parameter')
     geometry = [(SurfaceExtra, 'parameter')]
-        
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.d_acoustic_surface, **kwargs)
+    dof_conn_type = 'surface'
+
+    function = staticmethod(terms.d_acoustic_surface)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, par = self.get_args( **kwargs )

@@ -21,8 +21,7 @@ class MassTerm( VectorVector, Term ):
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
     geometry = [(Volume, 'virtual')]
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, function=terms.dw_mass, **kwargs)
+    function = staticmethod(terms.dw_mass)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         ts, mat, virtual, state, state0 = self.get_args(**kwargs)        
@@ -183,10 +182,9 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
     name = 'dw_surface_mass_scalar'
     arg_types = ('virtual', 'state')
     geometry = [(Surface, 'virtual')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.dw_surf_mass_scalar, **kwargs)
+    function = staticmethod(terms.dw_surf_mass_scalar)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
@@ -294,9 +292,7 @@ class MassScalarFineCoarseTerm( Term ):
     arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
     geometry = [(Volume, 'virtual')]
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign,
-                      function=terms.dw_mass_scalar_fine_coarse, **kwargs)
+    function = staticmethod(terms.dw_mass_scalar_fine_coarse)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state, iemaps, pbase = self.get_args( **kwargs )

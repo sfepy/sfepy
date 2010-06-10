@@ -8,9 +8,7 @@ class HyperElasticTLBase( HyperElasticBase ):
     proper Term!
     """
     use_caches = {'finite_strain_tl' : [['state']]}
-
-    def __init__(self, name, sign, **kwargs):
-        HyperElasticBase.__init__(self, name, sign, mode='tl', **kwargs)
+    mode = 'tl'
 
 class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
     r"""
@@ -163,8 +161,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     term_function = {'stress' : terms.dq_tl_stress_bulk_pressure,
                      'tangent_modulus_u' : terms.dq_tl_tan_mod_bulk_pressure_u}
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, **kwargs)
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
 
         self.function = {
             'element_contribution' : terms.dw_he_rtm,
@@ -172,7 +170,6 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         }
         self.crt_data = Struct(stress = None,
                                tan_mod = nm.array([0], ndmin=4))
-
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         call_mode, = self.get_kwargs(['call_mode'], **kwargs)

@@ -485,10 +485,9 @@ class NSOFSurfMinDPressTerm(Term):
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
     geometry = [(Surface, 'parameter')]
+    dof_conn_type = 'surface'
 
-    def __init__(self, name, sign, **kwargs):
-        Term.__init__(self, name, sign, dof_conn_type='surface',
-                      function=terms.d_of_nsSurfMinDPress, **kwargs)
+    function = staticmethod(terms.d_of_nsSurfMinDPress)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
