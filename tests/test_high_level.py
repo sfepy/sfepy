@@ -69,12 +69,13 @@ class Test(TestCommon):
         print fix_u
         print shift_u
 
-        # Does not work below...
-
-        t1 = Term('dw_lin_elastic', 'auto', omega, m, v, u)
+        t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+                      'auto', omega, m=m, v=v, u=u)
 
         print t1
         print t1 - (3 * t1 - 2 * t1) * 4 + t1 * 2.4j
+
+        # Does not work below...
 
         u.set_nodal_values(1.0)
         u_vec = u.get_vector() # coefficient vector w.r.t. the field space basis.
