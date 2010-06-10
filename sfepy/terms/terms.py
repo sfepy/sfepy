@@ -8,6 +8,7 @@ except (ImportError, AttributeError):
 from sfepy.base.la import split_range, combine
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
+_match_args = re.compile('^([^\(\}]*)\((.*)\)$').match
 _match_var = re.compile( '^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
                         + '|^parameter(_[_a-zA-Z0-9]+)?$' ).match
 _match_state = re.compile( '^state(_[_a-zA-Z0-9]+)?$' ).match
@@ -114,8 +115,8 @@ class Terms(Container):
     def update_expression(self):
         self.expression = []
         for term in self:
-            aux = [term.sign, term.name, term.integral, term.region.name]
-            aux += [arg.name for arg in term._args]
+            aux = [term.sign, term.name, term.arg_str,
+                   term.integral, term.region.name]
             self.expression.append(aux)
 
     def __mul__(self, other):
@@ -164,6 +165,10 @@ class Terms(Container):
 
     def __neg__(self):
         return -1.0 * self
+
+    def setup(self):
+        for term in self:
+            term.setup()
 
     ##
     # 24.07.2006, c
@@ -214,13 +219,47 @@ class Term(Struct):
     name = ''
     arg_types = ()
     geometry = []
+    dof_conn_type = 'volume'
 
-    def __init__(self, name, integral, region, *args, **kwargs):
+    @staticmethod
+    def new(name, integral, region, **kwargs):
+        from sfepy.terms import term_table
+
+        arg_str = _match_args(name)
+        if arg_str is not None:
+            name, arg_str = arg_str.groups()
+
+        else:
+            raise ValueError('bad term syntax! (%s)' % name)
+
+        if name in term_table:
+            constructor = term_table[name]
+
+        else:
+            msg = "term '%s' is not in %s" % (name,
+                                              sorted(term_table.keys()))
+            raise ValueError(msg)
+
+        obj = constructor(name, arg_str, integral, region, **kwargs)
+        return obj
+        
+    @staticmethod
+    def from_desc(constructor, desc, regions):
+        try:
+            region = regions[desc.region]
+        except IndexError:
+            raise KeyError('region "%s" does not exist!' % desc.region)
+        obj = constructor(desc.name, desc.sign,
+                          region=region, integral_name=desc.integral)
+
+        return obj
+
+    def __init__(self, name, arg_str, integral, region, **kwargs):
 
         self.name = name
+        self.arg_str = arg_str
         self.integral = integral
         self.region = region
-        self._args = args
         self._kwargs = kwargs
 
         self.sign = 1.0
@@ -279,20 +318,40 @@ class Term(Struct):
         out = -1.0 * self
         return out
 
-    @staticmethod
-    def from_desc(constructor, desc, regions):
-        try:
-            region = regions[desc.region]
-        except IndexError:
-            raise KeyError('region "%s" does not exist!' % desc.region)
-        obj = constructor(desc.name, desc.sign,
-                          region=region, integral_name=desc.integral)
+    def setup(self):
+        self.char_fun = CharacteristicFunction(self.region)
+        self.function = self.set_default_attr('function', None)
+        
+        self.step = 0
+        self.dt = 1.0
+        self.has_integral = True
+        self.has_region = True
+        self.has_geometry = True
+        
+        self.itype = itype = None
+        aux = re.compile('([a-z]+)_.*').match(self.name)
+        if aux:
+            itype = aux.group(1)
+        self.raw_itype = itype
 
-        arg_names = []
-        arg_steps = {}
-        arg_derivatives = {}
-        arg_traces = {}
-        for arg in desc.args:
+        self.setup_formal_args()
+
+        if self._kwargs:
+            self.setup_args(**self._kwargs)
+
+        else:
+            self.args = []
+
+    def setup_formal_args(self):
+        self.arg_names = []
+        self.arg_steps = {}
+        self.arg_derivatives = {}
+        self.arg_traces = {}
+
+        parser = create_arg_parser()
+        self.arg_desc = parser.parseString(self.arg_str)
+
+        for arg in self.arg_desc:
             trace = False
             derivative = None
 
@@ -307,42 +366,26 @@ class Term(Struct):
                 elif kind == 'tr':
                     trace = True
 
-            arg_names.append( name )
-            arg_steps[name] = step
-            arg_derivatives[name] = derivative
-            arg_traces[name] = trace
+            self.arg_names.append(name)
+            self.arg_steps[name] = step
+            self.arg_derivatives[name] = derivative
+            self.arg_traces[name] = trace
 
-        obj.arg_names = arg_names
-        obj.arg_steps = arg_steps
-        obj.arg_derivatives = arg_derivatives
-        obj.arg_traces = arg_traces
-
-        return obj
-
-    def _init(self, name, sign, region=None, integral_name=None,
-              dof_conn_type='volume', function=None):
-        self.name = name
-        self.sign = sign
-        self.ats = list(self.arg_types)
-
-        self.char_fun = CharacteristicFunction(region)
-        self.region = region
-        self.integral_name = integral_name
-        self.dof_conn_type = dof_conn_type
-        self.function = get_default(function,
-                                    self.get_default_attr('function'), None)
-        self.step = 0
-        self.dt = 1.0
-        self.has_integral = True
-        self.has_region = True
-        self.has_geometry = True
+    def setup_args(self, **kwargs):
+        self._kwargs = kwargs
         
-        self.itype = itype = None
-        aux = re.compile('([a-z]+)_.*').match(name)
-        if aux:
-            itype = aux.group(1)
-        self.raw_itype = itype
-    
+        self.args = []
+        for arg_name in self.arg_names:
+            match = _match_material_root(arg_name)
+            if match:
+                self.args.append((self._kwargs[match.group(1)],
+                                  match.group(2)))
+
+            else:
+                self.args.append(self._kwargs[arg_name])
+
+        self.classify_args()
+
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """Subclasses either implement __call__ or plug in a proper _call()."""
         return self._call( diff_var, chunk_size, **kwargs )
@@ -351,26 +394,7 @@ class Term(Struct):
         msg = 'base class method "_call" called for %s' % self.__class__.__name__
         raise RuntimeError( msg )
     
-    ##
-    # 16.11.2005, c
-    def get_arg_names( self ):
-        return self.__arg_names
-
-    def set_arg_names( self, val ):
-        if isinstance( self.__class__.arg_types[0], tuple ):
-            n_arg = len( self.__class__.arg_types[0] )
-        else:
-            n_arg = len( self.__class__.arg_types )
-
-        if len( val ) != n_arg:
-            raise ValueError( 'equal shapes: %s, %s' \
-                              % (val, self.__class__.arg_types) )
-        self.__arg_names = val
-    arg_names = property( get_arg_names, set_arg_names )
-
-    ##
-    # 24.07.2006, c
-    def classify_args(self, variables):
+    def classify_args(self):
         """state variable can be in place of parameter variable and vice
         versa."""
         self.names = Struct( name = 'arg_names',
@@ -380,7 +404,7 @@ class Term(Struct):
 
         msg = "variable '%s' requested by term '%s' does not exist!"
 
-        if isinstance( self.arg_types[0], tuple ):
+        if isinstance(self.arg_types[0], tuple):
             assert_( len( self.modes ) == len( self.arg_types )\
                      == len( self.__class__.geometry ) )
             # Find matching call signature.
@@ -388,13 +412,10 @@ class Term(Struct):
             for it, arg_types in enumerate( self.arg_types ):
                 failed = False
                 for ii, arg_type in enumerate( arg_types ):
-                    name = self.__arg_names[ii]
+                    name = self.arg_names[ii]
                     if _match_var( arg_type ):
                         names = self.names.variable
-                        try:
-                            var = variables[name]
-                        except KeyError:
-                            raise KeyError( msg )
+                        var = self.args[ii]
 
                         if _match_state( arg_type ) and \
                                var.is_state_or_parameter():
@@ -416,10 +437,10 @@ class Term(Struct):
                 self.geometry = self.__class__.geometry[i_match]
                 self.mode = self.modes[i_match]
             elif len( matched ) == 0:
-                msg = 'cannot match arguments! (%s)' % self.__arg_names
+                msg = 'cannot match arguments! (%s)' % self.arg_names
                 raise ValueError( msg )
             else:
-                msg = 'ambiguous arguments! (%s)' % self.__arg_names
+                msg = 'ambiguous arguments! (%s)' % self.arg_names
                 raise ValueError( msg )
         else:
             arg_types = self.arg_types
@@ -429,13 +450,10 @@ class Term(Struct):
         self.ats = list( arg_types )
 
         for ii, arg_type in enumerate( arg_types ):
-            name = self.__arg_names[ii]
+            name = self.arg_names[ii]
             if _match_var( arg_type ):
                 names = self.names.variable
-                try:
-                    var = variables[name]
-                except KeyError:
-                    raise KeyError( msg )
+                var = self.args[ii]
 
                 if _match_state( arg_type ) and \
                        var.is_state_or_parameter():
@@ -448,12 +466,9 @@ class Term(Struct):
 
             elif _match_material( arg_type ):
                 names = self.names.material
-                match = _match_material_root( name )
-                if match:
-                    self.names.material_split.append( (match.group( 1 ),
-                                                      match.group( 2 )) )
-                else:
-                    self.names.material_split.append( (name, None) )
+                mat, par_name = self.args[ii]
+                self.names.material_split.append((mat.name, par_name))
+
             else:
                 names = self.names.user
             names.append( name )
