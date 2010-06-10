@@ -34,6 +34,30 @@ def vector_chunk_generator( total_size, chunk_size, shape_in,
         yield out, chunk
         ii += size
 
+def create_arg_parser():
+    from pyparsing import Combine, Literal, Word, delimitedList, Group, \
+         StringStart, StringEnd, Optional, nums, alphas, alphanums
+
+    inumber = Word("+-"+nums, nums)
+
+    history = Optional(Literal('[').suppress() + inumber
+                       + Literal(']').suppress(), default=0)("history")
+    history.setParseAction(lambda str, loc, toks: int(toks[0]))
+
+    variable = Group(Word(alphas, alphanums + '._') + history)
+
+    derivative = Group(Literal('d') + variable\
+                       + Literal('/').suppress() + Literal('dt'))
+
+    trace = Group(Literal('tr') + Literal('(').suppress() + variable \
+                  + Literal(')').suppress())
+    
+    generalized_var = derivative | trace | variable
+
+    args = StringStart() + delimitedList(generalized_var) + StringEnd()
+
+    return args
+
 ##
 # 22.01.2006, c
 class CharacteristicFunction( Struct ):
