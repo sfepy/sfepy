@@ -1616,6 +1616,14 @@ class FieldVariable(Variable):
 
         mesh.write(filename, io='auto', out=out)
 
+    def set_constant(self, val):
+        """
+        Set the variable to a constant value.
+        """
+        data = nm.empty((self.n_dof,), dtype=self.dtype)
+        data.fill(val)
+        self.data_from_any(data)
+        
     def set_from_mesh_vertices(self, data):
         """Set the variable using values at the mesh vertices."""
         ndata = self.field.interp_v_vals_to_n_vals(data)
