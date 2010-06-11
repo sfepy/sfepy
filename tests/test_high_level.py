@@ -19,7 +19,8 @@ class Test(TestCommon):
     def test_solving(self):
         import sfepy
         from sfepy.fem \
-             import Mesh, Domain, Field, FieldVariable, Material, Function
+             import Mesh, Domain, Field, FieldVariable, Material, \
+                    Function, Equation, Equations
         from sfepy.fem.conditions import EssentialBC
         from sfepy.terms.terms import Term
 
@@ -75,10 +76,22 @@ class Test(TestCommon):
         print t1
         print t1 - (3 * t1 - 2 * t1) * 4 + t1 * 2.4j
 
+        u.set_constant(1.0)
+        print u
+        # Coefficient vector w.r.t. the field space basis.
+        u_vec = u.get_full_state()
+        print u_vec
+
+        t2 = Term.new('dw_volume_lvf(f.val, v)', 1, gamma2, f=f, v=v)
+        print t2
+        eq = Equation('balance', t1 + t2)
+        print eq
+        print eq.terms[0]
+
+        eqs = Equations([eq])
+        
         # Does not work below...
 
-        u.set_nodal_values(1.0)
-        u_vec = u.get_vector() # coefficient vector w.r.t. the field space basis.
         vec = t1.evaluate() # Returns vector.
         vec = t1.evaluate(u=u_vec) # Returns the same vector.
         mtx = t1.evaluate(diff_var='u') # Returns matrix.
@@ -87,9 +100,6 @@ class Test(TestCommon):
 
         pause()
 
-        eq = Equation(t1 + Term('lin_volume_force', 1, gamma2, f, v))
-
-        eqs = Equations([eq], [fix_u])
 
         print u() # Nodal values.
         print u.get_vector() # Coefficient vector w.r.t. the field space basis.
