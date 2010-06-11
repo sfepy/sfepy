@@ -533,7 +533,7 @@ class Variables( Container ):
     # 18.10.2006
     def apply_ebc( self, vec, force_values = None ):
         """Apply essential (Dirichlet) boundary conditions."""
-        for var_name in self.bc_of_vars.iterkeys():
+        for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eq_ebc
@@ -650,7 +650,7 @@ class Variables( Container ):
     ##
     # 14.03.2007, c
     def has_ebc( self, vec, force_values = None ):
-        for var_name in self.bc_of_vars.iterkeys():
+        for var_name in self.di.var_names:
             eq_map = self[var_name].eq_map
             i0 = self.di.indx[var_name].start
             ii = i0 + eq_map.eq_ebc
