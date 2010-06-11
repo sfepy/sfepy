@@ -2,7 +2,7 @@ from sfepy.base.base import *
 import extmods.fem as fem
 from sfepy.terms import Term, DataCaches
 from region import Region
-from equations import Equation, Equations, build_args
+from equations import Equation, Equations
 from integrals import Integrals
 
 ##
@@ -32,8 +32,9 @@ class BasicEvaluator( Evaluator ):
             vec = self.make_full_vec( vec )
         try:
             pb = self.problem
-            vec_r = eval_residuals( vec, pb.equations, pb.conf.fe.chunk_size,
-                                    **self.data )
+            vec_r = eval_residuals(vec, pb.equations, pb.variables,
+                                   pb.conf.fe.chunk_size, **self.data)
+
         except StopIteration, exc:
             status = exc.args[0]
             output( 'error %d in term "%s" of equation "%s"!'\
@@ -53,9 +54,9 @@ class BasicEvaluator( Evaluator ):
             if mtx is None:
                 mtx = self.mtx
             mtx.data[:] = 0.0
-            mtx = eval_tangent_matrices( vec, mtx,
-                                         pb.equations, pb.conf.fe.chunk_size,
-                                         **self.data )
+            mtx = eval_tangent_matrices(vec, mtx,
+                                        pb.equations, pb.variables,
+                                        pb.conf.fe.chunk_size, **self.data)
         except StopIteration, exc:
             status = exc.args[0]
             output( ('error %d in term "%s" of derivative of equation "%s"'
@@ -130,14 +131,12 @@ class LCBCEvaluator( BasicEvaluator ):
         vec = BasicEvaluator.strip_state_vector( self, vec )
         return self.op_lcbc.T * vec
     
-def assemble_vector( vec, equation, variables, materials,
-                     chunk_size = 1000, **kwargs ):
+def assemble_vector(vec, equation, variables, chunk_size=1000, **kwargs):
     get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
 ##         print '>>>>>>', term.name, term.sign
         var_names = term.get_variable_names()
-        args = build_args( term, variables, materials, **kwargs )
         vn = term.get_virtual_name( variables = variables )
         dc_type = term.get_dof_conn_type()
 ##         print args
@@ -148,7 +147,7 @@ def assemble_vector( vec, equation, variables, materials,
 ##             print vn, dc.shape
 #            pause()
             for vec_in_els, iels, status in term( chunk_size = chunk_size,
-                                                  **args ):
+                                                  **kwargs ):
                 if status != 0:
                     raise StopIteration( status, term, equation )
 
@@ -172,8 +171,8 @@ def assemble_vector( vec, equation, variables, materials,
                                                  float( sign.real ),
                                                  float( sign.imag ), dc )
 
-def assemble_matrix( mtx, equation, variables, materials,
-                     chunk_size = 1000, group_can_fail = True, **kwargs ):
+def assemble_matrix(mtx, equation, variables, chunk_size=1000,
+                    group_can_fail=True, **kwargs):
     """Assemble tangent matrix. Supports backward time difference of state
     variables."""
     if not sp.isspmatrix_csr( mtx ):
@@ -185,7 +184,6 @@ def assemble_matrix( mtx, equation, variables, materials,
     for term in equation.terms:
 ##         print '>>>>>>', term.name, term.sign
         var_names = term.get_variable_names()
-        args = build_args( term, variables, materials, **kwargs )
         vn = term.get_virtual_name( variables = variables )
         sns = term.get_state_names( variables = variables )
         dc_type = term.get_dof_conn_type()
@@ -201,7 +199,7 @@ def assemble_matrix( mtx, equation, variables, materials,
 #                pause()
                 for mtx_in_els, iels, status in term( diff_var = sn,
                                                       chunk_size = chunk_size,
-                                                      **args ):
+                                                      **kwargs ):
                     if status != 0:
                         raise StopIteration( status, term, equation,
                                              var_name_col )
@@ -257,8 +255,9 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         if copy_materials:
             materials = materials.semideep_copy()
 
-    equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
-    equation.setup_terms( domain.regions, variables, materials, caches, kwargs )
+    equation = Equation.from_desc('tmp', term_desc, domain.regions,
+                                  variables, materials, caches=caches,
+                                  user=kwargs, term_prefixes=term_prefixes)
     variables.conn_info = {}
     equation.collect_conn_info(variables.conn_info, variables)
 
@@ -297,8 +296,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         if dw_mode == 'vector':
             residual = variables.create_stripped_state_vector()
-            assemble_vector( residual, equation, variables, materials,
-                             chunk_size, group_can_fail = False, **kwargs )
+            assemble_vector(residual, equation, variables,
+                            chunk_size, group_can_fail=False, **kwargs)
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
                 residual = op_lcbc.T * residual
@@ -309,8 +308,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
                 tangent_matrix = variables.create_matrix_graph()
 
             tangent_matrix.data[:] = 0.0
-            assemble_matrix( tangent_matrix, equation, variables, materials,
-                             chunk_size, group_can_fail = False, **kwargs )
+            assemble_matrix(tangent_matrix, equation, variables,
+                            chunk_size, group_can_fail=False, **kwargs)
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
                 tangent_matrix = op_lcbc.T * tangent_matrix * op_lcbc
@@ -327,10 +326,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         val = 0.0
         for term in equation.terms:
-            args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():
-                for aux, iels, status in term( chunk_size = chunk_size,
-                                               **args ):
+                for aux, iels, status in term(chunk_size=chunk_size, **kwargs):
                     val += term.sign * aux
             ret_val = val
 
@@ -338,10 +335,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         val = None
         for term in equation.terms:
-            args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():
-                for aux, iels, status in term( chunk_size = chunk_size,
-                                               **args ):
+                for aux, iels, status in term(chunk_size=chunk_size, **kwargs):
                     if val is None:
                         val = term.sign * aux
                     else:
@@ -352,10 +347,8 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         val = None
         for term in equation.terms:
-            args = build_args( term, variables, materials, **kwargs )
             for ig in term.iter_groups():
-                for aux, iels, status in term( chunk_size = chunk_size,
-                                               **args ):
+                for aux, iels, status in term(chunk_size=chunk_size, **kwargs):
                     if val is None:
                         val = term.sign * aux
                     else:
@@ -383,20 +376,15 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def eval_residuals( state, equations, chunk_size = 1000,
-                   **kwargs ):
-
-    variables = equations.variables
-    materials = equations.materials
-
-    variables.data_from_state( state )
-
-    residual = variables.create_stripped_state_vector()
+def eval_residuals(state, equations, variables, chunk_size=1000, **kwargs):
     equations.invalidate_term_caches()
 
+    variables.data_from_state(state)
+    residual = variables.create_stripped_state_vector()
+
     for equation in equations:
-        assemble_vector( residual, equation, variables, materials,
-                         chunk_size = chunk_size, **kwargs )
+        assemble_vector(residual, equation, variables,
+                        chunk_size=chunk_size, **kwargs)
 
     return residual
 
@@ -413,23 +401,18 @@ def eval_residuals( state, equations, chunk_size = 1000,
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def eval_tangent_matrices( state, tangent_matrix, equations, chunk_size = 1000,
-                         **kwargs ):
-
-    variables = equations.variables
-    materials = equations.materials
-
-    variables.data_from_state( state )
+def eval_tangent_matrices(state, tangent_matrix, equations, variables,
+                          chunk_size=1000, **kwargs):
+    variables.data_from_state(state)
 
     for equation in equations:
-        assemble_matrix( tangent_matrix, equation, variables, materials,
-                         chunk_size = chunk_size, **kwargs )
+        assemble_matrix(tangent_matrix, equation, variables,
+                        chunk_size=chunk_size, **kwargs)
 
     return tangent_matrix
 
-def assemble_by_blocks( conf_equations, problem,
-                        ebcs = None, epbcs = None,
-                        dw_mode = 'matrix', restore_variables = True ):
+def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
+                       dw_mode='matrix'):
     """Instead of a global matrix, return its building blocks as defined in
     `conf_equations`. The name and row/column variables of each block have to
     be encoded in the equation's name, as in:
@@ -451,13 +434,6 @@ def assemble_by_blocks( conf_equations, problem,
     else:
         raise TypeError('bad BC!')
     
-    equations = Equations.from_conf( conf_equations )
-    equations.setup_terms( problem.domain.regions, problem.variables,
-                           problem.materials )
-
-    var_names = equations.get_variable_names()
-    problem.select_variables( var_names )
-
     dummy = problem.create_state_vector()
 
     indx = problem.variables.get_indx
@@ -480,7 +456,4 @@ def assemble_by_blocks( conf_equations, problem,
         mtx = eval_term_op( dummy, mtx_term, problem, dw_mode = 'matrix' )
         matrices[mtx_name] = mtx[ir,ic]
 
-    if restore_variables:
-        problem.set_variables()
-    
     return matrices

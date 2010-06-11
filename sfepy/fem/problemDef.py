@@ -170,20 +170,24 @@ class ProblemDefinition( Struct ):
         self.geometries = {}
         self.equations = None
     
-    ##
-    # c: 18.04.2006, r: 13.06.2008
-    def set_equations( self, conf_equations = None, user = None,
-                       cache_override = None,
-                       keep_solvers = False, make_virtual = False,
-                       single_term = False ):
-        conf_equations = get_default( conf_equations,
-                                      self.conf.get_default_attr('equations',
-                                                                 None) )
-        equations = Equations.from_conf( conf_equations )
-        equations.setup_terms( self.domain.regions, self.variables,
-                               self.materials, user )
+    def set_equations(self, conf_equations=None, user=None,
+                      cache_override=None,
+                      keep_solvers=False, make_virtual=False,
+                      single_term=False):
+        """
+        Set equations of the problem. Regions, Variables and Materials
+        have to be already set.
+        """
+        conf_equations = get_default(conf_equations,
+                                     self.conf.get_default_attr('equations',
+                                                                None))
+        equations = Equations.from_conf(conf_equations,
+                                        self.domain.regions, self.variables,
+                                        self.materials, user=user)
 
-        # This uses the actual conn_info created in equations.setup_terms().
+        self.variables.conn_info = equations.collect_conn_info(self.variables)
+
+        # This uses the conn_info created above.
         self.variables.setup_dof_conns(make_virtual=make_virtual,
                                        single_term=single_term)
 
@@ -704,10 +708,13 @@ class ProblemDefinition( Struct ):
         array([ 5.68437535])
         """
         if state is None:
+            kwargs = copy(kwargs)
             vargs = {}
-            for key, val in kwargs.iteritems():
+            for key, val in kwargs.items():
                 if self.variables.has_key(key):
                     vargs[key] = val
+                    kwargs.pop(key)
+
             out = eval_term_op(vargs, expression, self, **kwargs)
 
         else:

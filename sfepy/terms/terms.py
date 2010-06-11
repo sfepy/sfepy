@@ -99,6 +99,32 @@ class CharacteristicFunction( Struct ):
 
 class Terms(Container):
 
+    @staticmethod
+    def from_desc(term_descs, regions):
+        """
+        Create terms, assign each term its region.
+        """
+        from sfepy.terms import term_table
+
+        terms = Terms()
+        for td in term_descs:
+            try:
+                constructor = term_table[td.name]
+            except:
+                msg = "term '%s' is not in %s" % (td.name,
+                                                  sorted(term_table.keys()))
+                raise ValueError(msg)
+
+            try:
+                region = regions[td.region]
+            except IndexError:
+                raise KeyError('region "%s" does not exist!' % td.region)
+
+            term = Term.from_desc(constructor, td, region)
+            terms.append(term)
+
+        return terms
+
     def __init__(self, objs=None):
         Container.__init__(self, objs=objs)
 
@@ -169,6 +195,54 @@ class Terms(Container):
     def setup(self):
         for term in self:
             term.setup()
+
+    def assign_args(self, variables, materials, user=None):
+        """
+        Assign all term arguments.
+        """
+        for term in self:
+            term.assign_args(variables, materials, user)
+
+    def assign_caches(self, caches):
+        """
+        History sizes for a particular cache instance are taken as maximum
+        of history_sizes requirements of all terms using the instance.
+        """
+        from sfepy.terms import cache_table
+
+        for term in self:
+            if not hasattr( term, 'use_caches' ): continue
+
+            ## print term.name
+            for name, arg_lists in term.use_caches.iteritems():
+                ## print term.arg_names
+                ## print name, arg_lists
+                for args in arg_lists:
+                    ## Order should be handled in terms...
+                    args = copy( args )
+                    if len(args) and (type( args[-1] ) == dict):
+                        history_sizes = args.pop()
+                    else:
+                        history_sizes = None
+                    ans = [term.get_arg_name( arg, full = True ) for arg in args]
+                    cname = '_'.join( [name] + ans )
+                    ## print term.name, name, arg_lists, args, self.name, cname
+                    ## print history_sizes
+                    ## debug()
+                    if caches.has_key( cname ):
+                        caches[cname].merge_history_sizes( history_sizes )
+
+                    else:
+                        ## print 'new'
+                        try:
+                            constructor = cache_table[name]
+                        except:
+                            raise RuntimeError, 'cache not found! %s in %s'\
+                                  % (name, sorted( cache_table.keys() ))
+                        cache = constructor( cname, ans, history_sizes )
+                        caches.insert_cache( cache )
+                caches.insert_term( cname, term.name, ans )
+            term.caches = caches
 
     ##
     # 24.07.2006, c
@@ -601,7 +675,8 @@ class Term(Struct):
     def get_args(self, arg_types=None, **kwargs):
         """
         Return arguments by type as specified in arg_types (or
-        self.ats).
+        self.ats). Arguments in **kwargs can override the ones assigned
+        at the term construction - this is useful for passing user data.
         """
         ats = self.ats
         if arg_types is None:
@@ -614,7 +689,11 @@ class Term(Struct):
             arg_name = self.arg_names[ii]
             ## print at, ii, arg_name
             if isinstance(arg_name, str):
-                args.append(self.args[ii])
+                if arg_name in kwargs:
+                    args.append(kwargs[arg_name])
+
+                else:
+                    args.append(self.args[ii])
 
             else:
                 ## print self.names.material
