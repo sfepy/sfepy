@@ -1701,7 +1701,7 @@ class AbaqusMeshIO( MeshIO ):
                 line = fd.readline().strip().split(',')
             except:
                 break
-            if line[0] == '*NODE':
+            if line[0].lower() == '*node':
                 ok = True
                 break
         fd.close()
