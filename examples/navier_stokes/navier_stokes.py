@@ -172,9 +172,8 @@ def verify_incompressibility( out, problem, state, extend = False ):
     vv = problem.variables
     one = nm.ones( (vv['pp'].field.n_nod,), dtype = nm.float64 )
     vv['pp'].data_from_data( one )
-    zero = eval_term_op( state,
-                         'dw_stokes.i1.Omega( u, pp )',
-                         problem, pp = one, call_mode = 'd_eval' )
+    zero = problem.evaluate('dw_stokes.i1.Omega( u, pp )', pp=one,
+                            call_mode='d_eval')
     print 'div( u ) = %.3e' % zero
 
     return out

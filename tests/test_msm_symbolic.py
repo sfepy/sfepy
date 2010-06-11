@@ -149,7 +149,6 @@ class Test( TestCommon ):
     ##
     # c: 09.05.2007, r: 08.07.2008
     def _build_rhs( self, equation, sols ):
-        from sfepy.fem.equations import build_args
 
         problem  = self.problem
         rhss = {}
@@ -166,9 +165,9 @@ class Test( TestCommon ):
             self.report( 'multiplicator: %f' % term.sign )
             self.report( '  symbolic:', expr )
             self.report( '  using argument map:', arg_map )
-            args = build_args( term, problem.variables, problem.materials )
+
             for sol_name, sol in sols.iteritems():
-                rhs = self._eval_term( sol[1], term, args, sops )
+                rhs = self._eval_term( sol[1], term, sops )
                 srhs = "(%s * (%s))" % (term.sign, rhs)
                 rhss.setdefault( sol_name, [] ).append( srhs )
 
@@ -179,7 +178,7 @@ class Test( TestCommon ):
 
     ##
     # c: 09.05.2007, r: 25.06.2008
-    def _eval_term( self, sol, term, args, sops ):
+    def _eval_term( self, sol, term, sops ):
         """Works for scalar, single unknown terms only!"""
         expr = term.symbolic['expression']
         arg_map = term.symbolic['map']
@@ -192,7 +191,7 @@ class Test( TestCommon ):
                 env[key] = sol
             else:
                 term.set_current_group(0)
-                env[key] = term.get_args( [val], **args )[0]
+                env[key] = term.get_args( [val] )[0]
 
             if val[:8] == 'material':
                 # Take the first value - constant in all QPs.
@@ -223,7 +222,6 @@ class Test( TestCommon ):
         problem  = self.problem
         rhs_mat = problem.materials['rhs']
 
-        # update data so that build_args() works...
         rhs_mat.function.set_extra_args(expression='0 * x')
 #        problem.time_update()
         

@@ -400,8 +400,7 @@ class PressureEigenvalueProblem( CorrMiniApp ):
 
         problem.select_variables( self.variables )
         mtx = assemble_by_blocks( self.equations, problem,
-                                  ebcs = self.ebcs, epbcs = self.epbcs,
-                                  restore_variables = False )
+                                  ebcs = self.ebcs, epbcs = self.epbcs )
         self.presolve( mtx )
 
         evp = self.solve_pressure_eigenproblem( mtx )

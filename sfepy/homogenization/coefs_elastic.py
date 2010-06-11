@@ -39,7 +39,7 @@ class CorrectorsPermeability( CorrDim ):
         equations = {}
         for key, eq in self.equations.iteritems():
             equations[key] = eq % tuple( self.regions )
-        problem.set_equations( equations )
+        problem.set_equations( equations, user={'ir' : None} )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
