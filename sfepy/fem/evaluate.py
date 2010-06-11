@@ -253,6 +253,10 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
     if caches is None:
         caches = DataCaches()
 
+    if update_materials:
+        if copy_materials:
+            materials = materials.semideep_copy()
+
     equation = Equation.from_desc( 'tmp', term_desc, term_prefixes )
     equation.setup_terms( domain.regions, variables, materials, caches, kwargs )
     variables.conn_info = {}
@@ -281,8 +285,6 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
     variables.set_data( state )
 
     if update_materials:
-        if copy_materials:
-            materials = materials.semideep_copy()
         materials.time_update(ts, domain,
                               [equation], variables, verbose=False)
 
