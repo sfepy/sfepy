@@ -1579,7 +1579,7 @@ def mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
     n_nod = coors.shape[0]
     
     remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
-    remap[ids] = nm.arange( n_nod, dtype=nm.int32 )
+    remap[ids] = nm.arange( n_nod, dtype = nm.int32 )
 
     tetras = remap[nm.array( tetras, dtype = nm.int32 )]
     hexas = remap[nm.array( hexas, dtype = nm.int32 )]
@@ -1588,6 +1588,30 @@ def mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
     mat_ids = [nm.array( ar, dtype = nm.int32 )
                for ar in [mat_tetras, mat_hexas]]
     descs = ['3_4', '3_8']
+
+    conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
+    conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
+    mesh._set_data( coors, ngroups, conns, mat_ids, descs )
+    return mesh
+
+def mesh_from_tri_quad( mesh, ids, coors, ngroups,
+                          tris, mat_tris,
+                          quads, mat_quads ):
+    ids = nm.asarray( ids, dtype = nm.int32 )
+    coors = nm.asarray( coors, dtype = nm.float64 )
+
+    n_nod = coors.shape[0]
+    
+    remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
+    remap[ids] = nm.arange( n_nod, dtype=nm.int32 )
+
+    tris = remap[nm.array( tris, dtype = nm.int32 )]
+    quads = remap[nm.array( quads, dtype = nm.int32 )]
+
+    conns = [tris, quads]
+    mat_ids = [nm.array( ar, dtype = nm.int32 )
+               for ar in [mat_tris, mat_quads]]
+    descs = ['2_3', '2_4']
 
     conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
     conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
@@ -1719,8 +1743,13 @@ class AbaqusMeshIO( MeshIO ):
         mat_tetras = []
         hexas = []
         mat_hexas = []
+        tris = []
+        mat_tris = []
+        quads = []
+        mat_quads = []
         nsets = {}
         ing = 1
+        dim = 0
 
         line = fd.readline().split(',')
         while 1:
@@ -1731,8 +1760,13 @@ class AbaqusMeshIO( MeshIO ):
                 while 1:
                     line = fd.readline().split(',')
                     if (not line[0]) or (line[0][0] == '*'): break
+                    if dim == 0:
+                        dim = len(line) - 1
                     ids.append( int( line[0] ) )
-                    coors.append( [float( coor ) for coor in line[1:4]] )
+                    if dim == 2:
+                        coors.append( [float( coor ) for coor in line[1:3]] )
+                    else:
+                        coors.append( [float( coor ) for coor in line[1:4]] )
 
             elif token == '*element':
 
@@ -1750,12 +1784,27 @@ class AbaqusMeshIO( MeshIO ):
                         mat_tetras.append( 0 )
                         tetras.append( [int( ic ) for ic in line[1:5]] )
 
+                elif line[1].find('CPS') >= 0 or line[1].find('CPE') >= 0:
+                    if line[1].find('4') >= 0:
+                        while 1:
+                            line = fd.readline().split(',')
+                            if (not line[0]) or (line[0][0] == '*'): break
+                            mat_quads.append( 0 )
+                            quads.append( [int( ic ) for ic in line[1:5]] )
+                    elif line[1].find('3') >= 0:
+                        while 1:
+                            line = fd.readline().split(',')
+                            if (not line[0]) or (line[0][0] == '*'): break
+                            mat_tris.append( 0 )
+                            tris.append( [int( ic ) for ic in line[1:4]] )
+                    else:
+                        raise ValueError('unknown element type! (%s)' % line[1])
                 else:
                     raise ValueError('unknown element type! (%s)' % line[1])
 
             elif token == '*nset':
 
-                if line[-1].strip() == 'GENERATE':
+                if line[-1].strip().lower() == 'generate':
                     line = fd.readline()
                     continue
 
@@ -1776,13 +1825,32 @@ class AbaqusMeshIO( MeshIO ):
         for ing, ii in nsets.iteritems():
             ngroups[nm.array(ii)-1] = ing
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
-                                     tetras, mat_tetras,
-                                     hexas, mat_hexas )
+        if dim == 3:
+            mesh = mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
+                                         tetras, mat_tetras,
+                                         hexas, mat_hexas )
+        else:
+            mesh = mesh_from_tri_quad( mesh, ids, coors, ngroups,
+                                       tris, mat_tris,
+                                       quads, mat_quads )
+            
         return mesh
 
     def read_dimension(self):
-        return 3
+        fd = open( self.filename, 'r' )
+        line = fd.readline().split(',')
+        while 1:
+            if not line[0]: break
+
+            token = line[0].strip().lower()
+            if token == '*node':
+                while 1:
+                    line = fd.readline().split(',')
+                    if (not line[0]) or (line[0][0] == '*'): break
+                    dim = len(line) - 1
+        
+        fd.close()
+        return dim
 
     def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
