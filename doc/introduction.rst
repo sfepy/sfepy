@@ -425,7 +425,7 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
      step with the ``cd`` command
    * Type:: 
 
-       python build_ext --inplace --compiler=mingw32
+       python setup.py build_ext --inplace --compiler=mingw32
 
  #. Run *SfePy* tests
 
