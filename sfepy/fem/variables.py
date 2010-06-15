@@ -76,15 +76,9 @@ class Variables( Container ):
 
             obj[var.name] = var
 
-        # Move into equations.
-        obj.setup_dtype()
-        obj.setup_ordering()
-        # Remove.
-        obj.domain = fields[0].domain
-
         return obj
 
-    def __init__(self):
+    def __init__(self, variables=None):
         Container.__init__(self, OneTypeList(Variable),
                            state = set(),
                            virtual = set(),
@@ -95,6 +89,13 @@ class Variables( Container ):
                            dual_map = None,
                            ordered_state = None,
                            ordered_virtual = None)
+
+        if variables is not None:
+            for var in variables:
+                self[var.name] = var
+
+        self.setup_dtype()
+        self.setup_ordering()
 
     def __setitem__(self, ii, var):
         Container.__setitem__(self, ii, var)
