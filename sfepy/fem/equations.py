@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-from materials import Materials
+from sfepy.fem import Materials, Variables
 from sfepy.terms import Terms, Term, DataCaches
 
 """
@@ -74,7 +74,7 @@ class ConnInfo(Struct):
 class Equations( Container ):
 
     @staticmethod
-    def from_conf(conf, regions, variables, materials, caches=None,
+    def from_conf(conf, variables, regions, materials, caches=None,
                   user=None, term_prefixes=None):
 
         objs = OneTypeList(Equation)
@@ -89,7 +89,7 @@ class Equations( Container ):
         for name, desc in conf.iteritems():
             output('equation "%s":' %  name)
             output(desc)
-            eq = Equation.from_desc(name, desc, regions, variables,
+            eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, caches=caches,
                                     user=user, term_prefixes=tps)
             objs.append(eq)
@@ -102,22 +102,35 @@ class Equations( Container ):
     def __init__(self, equations, caches=None):
         Container.__init__(self, equations)
 
+        self.variables = Variables(self.collect_variables())
+        self.variables.setup_dof_info() # Call after fields.setup_global_base().
+
         self.caches = get_default(caches, DataCaches())
 
-    def collect_conn_info(self, variables):
+    def collect_variables(self):
+        """
+        Collect variables present in the terms of all equations.
+        """
+        variables = []
+        for eq in self:
+            variables.extend(eq.collect_variables())
+
+        return variables
+
+    def collect_conn_info(self):
         """
         Collect connectivity information as defined by the equations.
         """
-        conn_info = {}
+        self.conn_info = {}
 
         for eq in self:
-            eq.collect_conn_info(conn_info, variables)
+            eq.collect_conn_info(self.conn_info, self.variables)
 
-        ## print_structs(conn_info)
+        ## print_structs(self.conn_info)
         ## pause()
 
-        return conn_info
-        
+        return self.conn_info
+
     ##
     # c: ??, r: 26.02.2008
     def describe_geometry( self, geometries, variables, integrals ):
@@ -179,7 +192,7 @@ class Equations( Container ):
 class Equation( Struct ):
 
     @staticmethod
-    def from_desc(name, desc, regions, variables, materials,
+    def from_desc(name, desc, variables, regions, materials,
                   caches=None, user=None, term_prefixes=None):
         if term_prefixes is None: term_prefixes = {}
 
@@ -202,6 +215,17 @@ class Equation( Struct ):
 
         caches = get_default(caches, DataCaches)
         self.terms.assign_caches(caches)
+
+    def collect_variables(self):
+        """
+        Collect variables present in the terms of the equation.
+        """
+        variables = []
+        for term in self.terms:
+            var_names = term.get_variable_names()
+            variables.extend(term.get_args_by_name(var_names))
+
+        return variables
 
     def collect_conn_info(self, conn_info, variables):
 
