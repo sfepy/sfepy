@@ -672,6 +672,22 @@ class Term(Struct):
 
         return key
 
+    def get_args_by_name(self, arg_names):
+        """
+        Return arguments by name.
+        """
+        out = []
+        for name in arg_names:
+            try:
+                ii = self.arg_names.index(name)
+
+            except ValueError:
+                raise ValueError('non-existing argument! (%s)' % name)
+
+            out.append(self.args[ii])
+
+        return out
+
     def get_args(self, arg_types=None, **kwargs):
         """
         Return arguments by type as specified in arg_types (or
