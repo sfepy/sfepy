@@ -40,13 +40,13 @@ class Materials( Container ):
         for mat in self:
             mat.reset()
 
-    def time_update(self, ts, domain, equations, variables, verbose=True):
+    def time_update(self, ts, domain, equations, verbose=True):
         """Update material parameters for given time, domain, and equations."""
         if verbose: output('updating materials...')
         tt = time.clock()
         for mat in self:
             if verbose: output(' ', mat.name)
-            mat.time_update(ts, domain, equations, variables)
+            mat.time_update(ts, domain, equations)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
@@ -128,7 +128,7 @@ class Material( Struct ):
 
         self.reset()
 
-    def iter_qps(self, equations, variables, only_new=True):
+    def iter_qps(self, equations, only_new=True):
         """
         Iterate groups of quadrature points, where the material data should be
         evaluated.
@@ -145,7 +145,7 @@ class Material( Struct ):
                 # Any term has at least one variable, all variables used
                 # in a term share the same integral.
                 var_name = term.names.variable[0]
-                var = variables[var_name]
+                var = term.get_args_by_name([var_name])[0]
 
                 aps = var.field.aps
 
@@ -184,7 +184,7 @@ class Material( Struct ):
 
         datas[ig] = data
 
-    def time_update(self, ts, domain, equations, variables):
+    def time_update(self, ts, domain, equations):
         """
         Evaluate material parameters in physical quadrature points.
 
@@ -197,7 +197,7 @@ class Material( Struct ):
 
         self.datas = {}
         # Quadrature point function values.
-        for key, igs, region, qps in self.iter_qps(equations, variables):
+        for key, igs, region, qps in self.iter_qps(equations):
             for ig in igs:
                 self.datas.setdefault(key, {})
                 if (qps.n_qp[ig] == 0):
