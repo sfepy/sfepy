@@ -416,6 +416,37 @@ class Container( Struct ):
         self._objs.append( obj )
         self.names.append( obj.name )
 
+    def get(self, ii, default=None, msg_if_none=None):
+        """
+        Get an item from Container - a wrapper around
+        Container.__getitem__() with defaults and custom error message.
+
+        Parameters
+        ----------
+        ii : int or str
+            The index or name of the item.
+        default : any, optional
+            The default value returned in case the item `ii` does not exist.
+        msg_if_none : str, optional
+            If not None, and if `default` is None and the item `ii` does
+            not exist, raise ValueError with this message.
+        """
+        try:
+            out = self[ii]
+
+        except (IndexError, ValueError):
+            if default is not None:
+                out = default
+
+            else:
+                if msg_if_none is not None:
+                    raise ValueError(msg_if_none)
+
+                else:
+                    raise
+
+        return out
+
     def remove_name( self, name ):
         ii = self.names.index[name]
         del self.names[ii]
