@@ -107,6 +107,11 @@ class Equations( Container ):
 
         self.caches = get_default(caches, DataCaches())
 
+        self.clear_geometries()
+
+    def clear_geometries(self):
+        self.geometries = {}
+
     def collect_variables(self):
         """
         Collect variables present in the terms of all equations.
@@ -116,6 +121,11 @@ class Equations( Container ):
             variables.extend(eq.collect_variables())
 
         return variables
+
+    def get_variable(self, name):
+        var = self.variables.get(name,
+                                 msg_if_none='unknown variable! (%s)' % name)
+        return var
 
     def collect_conn_info(self):
         """
@@ -131,14 +141,12 @@ class Equations( Container ):
 
         return self.conn_info
 
-    ##
-    # c: ??, r: 26.02.2008
-    def describe_geometry( self, geometries, variables, integrals ):
-        output( 'describing geometries...' )
+    def describe_geometry(self, integrals):
+        output('describing geometries...')
         tt = time.clock()
         for eq in self:
-            eq.describe_geometry( geometries, variables, integrals )
-        output( '...done in %.2f s' % (time.clock() - tt) )
+            eq.describe_geometry(self.geometries, self.variables, integrals)
+        output('...done in %.2f s' % (time.clock() - tt))
         
     def get_variable_names( self ):
         """Return the list of names of all variables used in equations."""
@@ -372,8 +380,7 @@ class Equation( Struct ):
                 vals.append(val)
             
             conn_info[key] = vals
-    ##
-    #
-    def describe_geometry( self, geometries, variables, integrals ):
+
+    def describe_geometry(self, geometries, variables, integrals):
         for term in self.terms:
-            term.describe_geometry( geometries, variables, integrals )
+            term.describe_geometry(geometries, variables, integrals)

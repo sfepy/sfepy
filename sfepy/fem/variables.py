@@ -342,48 +342,6 @@ class Variables( Container ):
             else:
                 return out[0]
 
-    def setup_extra_data(self):
-        """Dof connectivity key = (field.name, region.name, type, ig)"""
-        for key, ii, info in iter_dict_of_lists(self.conn_info,
-                                                return_keys=True):
-##             print key, ii
-##             print info
-            for var_name in info.all_vars:
-                self[var_name].setup_extra_data(info.ps_tg, info, info.is_trace)
-            
-    def setup_dof_conns(self, make_virtual=False, single_term=False):
-        """Dof connectivity key = (field.name, region.name, type, ig)"""
-        output('setting up dof connectivities...')
-        tt = time.clock()
-
-        self.has_virtual_dcs = make_virtual == True
-
-        dof_conns = {}
-        for key, ii, info in iter_dict_of_lists(self.conn_info,
-                                                return_keys=True):
-##             print key, ii
-##             print info
-
-            if info.primary is not None:
-                var = self[info.primary]
-                var.setup_extra_data(info.ps_tg, info, info.is_trace)
-                var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
-
-            if info.has_virtual and (ii == 0):
-                # This is needed regardless make_virtual.
-                var = self[info.virtual]
-                var.setup_extra_data(info.v_tg, info, False)
-
-                if make_virtual or single_term or (info.primary is None):
-                    var.setup_dof_conns(dof_conns, info.dc_type,
-                                        info.get_region(can_trace=False))
-
-##         print dof_conns
-##         pause()
-
-        self.dof_conns = dof_conns
-        output( '...done in %.2f s' % (time.clock() - tt) )
-
     def setup_a_dof_conns( self ):
         """Translate dofs to active dofs.
         Active dof connectivity key = (variable.name, region.name, type, ig)"""

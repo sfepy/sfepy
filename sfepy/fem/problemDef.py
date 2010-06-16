@@ -145,13 +145,11 @@ class ProblemDefinition( Struct ):
 ##         self.save_field_meshes( '.' )
 ##         pause()
 
-    ##
-    # c: 26.07.2006, r: 14.04.2008
-    def set_variables( self, conf_variables = None ):
-        conf_variables = get_default( conf_variables, self.conf.variables )
-        variables = Variables.from_conf( conf_variables, self.fields )
-        variables.setup_dof_info() # Call after fields.setup_global_base().
-        self.variables = variables
+    def set_variables(self, conf_variables=None):
+        """
+        Set definition of variables.
+        """
+        self.conf_variables = get_default(conf_variables, self.conf.variables)
         self.mtx_a = None
         self.solvers = None
         self.clear_equations()
@@ -167,7 +165,6 @@ class ProblemDefinition( Struct ):
 
     def clear_equations( self ):
         self.integrals = None
-        self.geometries = {}
         self.equations = None
     
     def set_equations(self, conf_equations=None, user=None,
@@ -181,24 +178,25 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
-        equations = Equations.from_conf(conf_equations,
-                                        self.domain.regions, self.variables,
+        variables = Variables.from_conf(self.conf_variables, self.fields )
+        equations = Equations.from_conf(conf_equations, variables,
+                                        self.domain.regions,
                                         self.materials, user=user)
 
-        self.variables.conn_info = equations.collect_conn_info(self.variables)
+        equations.collect_conn_info()
 
         # This uses the conn_info created above.
-        self.variables.setup_dof_conns(make_virtual=make_virtual,
-                                       single_term=single_term)
+        self.fields.setup_dof_conns(equations,
+                                    make_virtual=make_virtual,
+                                    single_term=single_term)
+        ## print self.fields.dof_conns
 
         self.integrals = Integrals.from_conf(self.conf.integrals)
 
-        self.geometries = {}
-        equations.describe_geometry( self.geometries, self.variables,
-                                     self.integrals )
+        equations.describe_geometry(self.integrals)
 
         ## print self.integrals
-        ## print self.geometries
+        ## print equations.geometries
         ## pause()
 
         if cache_override is None:
