@@ -501,10 +501,10 @@ class OneTypeList( list ):
     def __setitem__( self, key, value ):
         if (type( value ) in (list, tuple)):
             for ii, val in enumerate( value ):
-                if (val.__class__ != self.item_class):
+                if not isinstance(val, self.item_class):
                     raise TypeError
         else:
-            if (value.__class__ != self.item_class):
+            if not isinstance(value, self.item_class):
                 raise TypeError
         list.__setitem__( self, key, value )
 
