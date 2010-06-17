@@ -982,7 +982,7 @@ solution (the `hooks`), and for other settings.
         'chunk_size' : 1000
     }
 
-  * **Warninng** Due to a known "feature", make sure this is actually
+  * **Warning** Due to a known "feature", make sure this is actually
     higher than the total number of elements. This option is likely to
     be removed.
 
