@@ -84,15 +84,17 @@ class Region( Struct ):
     # 23.02.2007
     def __init__( self, name, definition, domain, parse_def ):
         """conns, vertex_groups are links to domain data"""
-        Struct.__init__( self,
-                         name = name, definition = definition,
-                         n_v_max = domain.shape.n_nod, domain = domain,
-                         parse_def = parse_def, all_vertices = None,
-                         igs = [], vertices = {}, edges = {}, faces = {},
-                         cells = {}, fis = {},
-                         volume = {}, surface = {}, length = {},
-                         can_cells = True, must_update = True,
-                         is_complete = False )
+        Struct.__init__(self,
+                        name = name, definition = definition,
+                        n_v_max = domain.shape.n_nod, domain = domain,
+                        parse_def = parse_def, all_vertices = None,
+                        igs = [], vertices = {}, edges = {}, faces = {},
+                        cells = {}, fis = {},
+                        volume = {}, surface = {}, length = {},
+                        can_cells = True, must_update = True,
+                        is_complete = False,
+                        mirror_region = None, ig_map = None,
+                        ig_map_i = None)
 
     ##
     # 15.06.2006, c
@@ -405,6 +407,39 @@ class Region( Struct ):
 
         tmp.update_vertices()
         return tmp
+
+    def setup_mirror_region(self):
+        """
+        Find the corresponding mirror region, set up element mapping.
+        """
+        for reg in self.domain.regions:
+            if (reg is not self) and \
+                   (len(reg.igs) == len(self.igs)) and \
+                   nm.all(self.all_vertices == reg.all_vertices):
+                mirror_region = reg
+                break
+        else:
+            raise ValueError('cannot find mirror region! (%s)' % self.name)
+
+        ig_map = {}
+        ig_map_i = {}
+        for igr in self.igs:
+            for igc in mirror_region.igs:
+                if nm.all(self.vertices[igr] ==
+                          mirror_region.vertices[igc]):
+                    ig_map[igc] = igr
+                    ig_map_i[igr] = igc
+                    break
+            else:
+                raise ValueError('cannot find mirror region group! (%d)' \
+                                 % igr)
+
+        self.mirror_region = mirror_region
+        self.ig_map = ig_map
+        self.ig_map_i = ig_map_i
+
+    def get_mirror_region(self):
+        return self.mirror_region, self.ig_map, self.ig_map_i
 
     def get_field_nodes(self, field, merge=False, clean=False,
                         warn=False, igs=None):
