@@ -29,13 +29,13 @@ class ConnInfo(Struct):
 
     def get_region(self, can_trace=True):
         if self.is_trace and can_trace:
-            return self.mirror_region
+            return self.region.get_mirror_region()[0]
         else:
             return self.region
 
     def get_region_name(self, can_trace=True):
         if self.is_trace and can_trace:
-            reg = self.mirror_region
+            reg = self.region.get_mirror_region()[0]
         else:
             reg = self.region
 
@@ -56,7 +56,8 @@ class ConnInfo(Struct):
                 if not self.is_trace:
                     ii = ig
                 else:
-                    ii = self.ig_map_i[ig]
+                    ig_map_i = self.region.get_mirror_region()[2]
+                    ii = ig_map_i[ig]
 
                 if self.state_igs is not None:
                     ic = self.state_igs.index(ii)
@@ -277,30 +278,7 @@ class Equation( Struct ):
                 is_any_trace = reduce(lambda x, y: x or y,
                                       term.arg_traces.values())
                 if is_any_trace:
-                    for reg in region.domain.regions:
-                        if (reg is not region) and \
-                               (len(reg.igs) == len(region.igs)) and \
-                               nm.all(region.all_vertices == reg.all_vertices):
-                            mirror_region = reg
-                            break
-                    else:
-                        raise ValueError('trace: cannot find mirror region! (%s)' \
-                                         % region)
-
-                    ig_map = {}
-                    ig_map_i = {}
-                    for igr in region.igs:
-                        for igc in mirror_region.igs:
-                            if nm.all(region.vertices[igr] ==
-                                      mirror_region.vertices[igc]):
-                                ig_map[igc] = igr
-                                ig_map_i[igr] = igc
-                                break
-                        else:
-                            raise ValueError('trace: cannot find group! (%s)' \
-                                             % geom_request)
-                else:
-                    mirror_region = ig_map = ig_map_i = None
+                    region.setup_mirror_region()
                 
             vals = []
             aux_pns = []
@@ -333,12 +311,7 @@ class Equation( Struct ):
                                v_tg = v_tg,
                                ps_tg = ps_tg,
                                region = region,
-                               mirror_region = mirror_region,
-                               all_vars = term_var_names,
-                               ig_map = ig_map, ig_map_i = ig_map_i)
-                if region is not None:
-                    ConnInfo.mirror_map[region.name] = (mirror_region,
-                                                        ig_map, ig_map_i)
+                               all_vars = term_var_names)
                 vals.append(val)
 
             pns += aux_pns
@@ -365,12 +338,7 @@ class Equation( Struct ):
                                v_tg = v_tg,
                                ps_tg = ps_tg,
                                region = region,
-                               mirror_region = mirror_region,
-                               all_vars = term_var_names,
-                               ig_map = ig_map, ig_map_i = ig_map_i)
-                if region is not None:
-                    ConnInfo.mirror_map[region.name] = (mirror_region,
-                                                        ig_map, ig_map_i)
+                               all_vars = term_var_names)
                 vals.append(val)
 
             if vn and (len(vals) == 0):
@@ -385,9 +353,7 @@ class Equation( Struct ):
                                v_tg = v_tg,
                                ps_tg = v_tg,
                                region = region,
-                               mirror_region = None,
-                               all_vars = term_var_names,
-                               ig_map = None, ig_map_i = None)
+                               all_vars = term_var_names)
                 vals.append(val)
             
             conn_info[key] = vals

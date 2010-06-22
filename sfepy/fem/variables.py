@@ -322,26 +322,6 @@ class Variables( Container ):
 ##             pause()
         return nods
 
-    def get_mirror_region(self, region,
-                          return_ig_map=False, return_ig_map_i=False):
-        for info in iter_dict_of_lists(self.conn_info):
-            if isinstance(region, str):
-                out = info.mirror_map[region]
-            else:
-                out = info.mirror_map[region.name]
-
-            if return_ig_map and return_ig_map_i:
-                return out
-
-            if return_ig_map:
-                return out[:2]
-
-            elif return_ig_map_i:
-                return (out[0], out[2])
-
-            else:
-                return out[0]
-
     def setup_a_dof_conns( self ):
         """Translate dofs to active dofs.
         Active dof connectivity key = (variable.name, region.name, type, ig)"""

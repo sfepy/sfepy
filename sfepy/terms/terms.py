@@ -812,9 +812,7 @@ class Term(Struct):
 ##                 print ':', tgs[var_name]
 
                 if is_trace:
-                    aux = variables.get_mirror_region(self.region,
-                                                      return_ig_map=True)
-                    region, ig_map = aux
+                    region, ig_map = self.region.get_mirror_region()[:2]
 
                 else:
                     region, ig_map = self.region, None
