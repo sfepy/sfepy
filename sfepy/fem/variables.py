@@ -525,6 +525,31 @@ class Variables( Container ):
     def set_state_part( self, state, part, var_name, stripped = False ):
         state[self.get_indx( var_name, stripped )] = part
 
+    def get_state_parts(self, vec):
+        """
+        Return parts of a state vector corresponding to individual state
+        variables.
+
+        Parameters
+        ----------
+        vec : array, optional
+            The state vector. If not given, then the data stored in the
+            variables are returned instead.
+
+        Returns
+        -------
+        out : dict
+            The dictionary of the state parts.
+        """
+        out = {}
+        for var in self.iter_state():
+            if vec is None:
+                out[var.name] = var()
+
+            else:
+                out[var.name] = vec[var.get_indx()]
+
+        return out
 
     def set_data(self, data, step = 0):
         """Set data (vectors of values) of variables.

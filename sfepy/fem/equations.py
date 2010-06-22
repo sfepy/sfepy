@@ -337,6 +337,24 @@ class Equations( Container ):
         """
         self.variables.set_data(vec, step=step)
 
+    def get_state_parts(self, vec=None):
+        """
+        Return parts of a state vector corresponding to individual state
+        variables.
+
+        Parameters
+        ----------
+        vec : array, optional
+            The state vector. If not given, then the data stored in the
+            variables are returned instead.
+
+        Returns
+        -------
+        out : dict
+            The dictionary of the state parts.
+        """
+        return self.variables.get_state_parts(vec)
+
     def set_data(self, data, step=0):
         """
         Set data (vectors of DOF values) of variables.
