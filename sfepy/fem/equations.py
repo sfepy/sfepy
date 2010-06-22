@@ -120,6 +120,9 @@ class Equations( Container ):
         for eq in self:
             variables.extend(eq.collect_variables())
 
+        # Make the list items unique.
+        variables = list(set(variables))
+
         return variables
 
     def get_variable(self, name):
@@ -227,11 +230,19 @@ class Equation( Struct ):
     def collect_variables(self):
         """
         Collect variables present in the terms of the equation.
+
+        Ensures that corresponding primary variables of test/parameter
+        variables are always in the list, even if they are not directly
+        used in the terms.
         """
         variables = []
         for term in self.terms:
             var_names = term.get_variable_names()
-            variables.extend(term.get_args_by_name(var_names))
+
+            aux = term.get_args_by_name(var_names)
+            for var in aux:
+                variables.append(var)
+                variables.append(var.get_primary())
 
         return variables
 
