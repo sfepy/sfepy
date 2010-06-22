@@ -146,12 +146,12 @@ class Equations( Container ):
 
         return self.conn_info
 
-    def describe_geometry(self, integrals):
-        output('describing geometries...')
+    def describe_geometry(self, integrals, verbose=True):
+        output('describing geometries...', verbose=verbose)
         tt = time.clock()
         for eq in self:
             eq.describe_geometry(self.geometries, self.variables, integrals)
-        output('...done in %.2f s' % (time.clock() - tt))
+        output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         
     def get_variable_names( self ):
         """Return the list of names of all variables used in equations."""

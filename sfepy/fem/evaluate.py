@@ -280,7 +280,7 @@ def eval_term( state, term_desc, conf, domain, fields, materials, ts,
             fields.setup_extra_data(equations)
 
         integrals = Integrals.from_conf(conf.integrals)
-        equations.describe_geometry(integrals)
+        equations.describe_geometry(integrals, verbose=False)
         variables = equations.variables
 
     else:
