@@ -5,6 +5,28 @@ from mesh import Mesh, make_point_cells
 import sfepy.terms as terms
 import extmods.geometry as gm
 
+def create_dof_conn(conn, dpn):
+    """Given element a node connectivity, create the dof connectivity."""
+    if dpn == 1:
+        dc = conn.copy()
+    else:
+        n_el, n_ep = conn.shape
+        n_ed = n_ep * dpn
+        dc = nm.empty( (n_el, n_ed), dtype = conn.dtype )
+        for ic in range( n_ed ):
+            inod = ic / dpn
+            idof = ic % dpn
+##                    iloc = ic
+            iloc = n_ep * idof + inod # Hack: For DBD order.
+            dc[:,iloc] = dpn * conn[:,inod] + idof
+
+    return dc
+
+def _fix_scalar_dc(dc1, dc2):
+    aux = nm.empty((dc2.shape[0], 1), dtype=nm.int32)
+    aux.fill(dc1)
+    return aux
+
 ##
 # 14.07.2006, c
 class Fields( Container ):
@@ -23,17 +45,23 @@ class Fields( Container ):
     from_conf = staticmethod( from_conf )
 
     def setup_extra_data(self, equations):
-        """Dof connectivity key = (field.name, region.name, type, ig)"""
+        """
+        Setup extra data required for non-volume integration.
+        """
         for key, ii, info in iter_dict_of_lists(equations.conn_info,
                                                 return_keys=True):
             ## print key, ii
             ## print info
             for var_name in info.all_vars:
                 var = equations.get_variable(var_name)
-                var.setup_extra_data(info.ps_tg, info, info.is_trace)
+                field = var.get_field()
+                field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
     def setup_dof_conns(self, equations, make_virtual=False, single_term=False):
-        """Dof connectivity key = (field.name, region.name, type, ig)"""
+        """
+        Dof connectivity key:
+            (field.name, var.n_components, region.name, type, ig)
+        """
         output('setting up dof connectivities...')
         tt = time.clock()
 
@@ -47,17 +75,19 @@ class Fields( Container ):
 
             if info.primary is not None:
                 var = equations.get_variable(info.primary)
-                var.setup_extra_data(info.ps_tg, info, info.is_trace)
-                var.setup_dof_conns(dof_conns, info.dc_type, info.get_region())
+                field = var.get_field()
+                field.setup_extra_data(info.ps_tg, info, info.is_trace)
+                field.setup_dof_conns(dof_conns, var.n_components,
+                                      info.dc_type, info.get_region())
 
-            if info.has_virtual and (ii == 0):
+            if info.has_virtual and not info.is_trace:
                 # This is needed regardless make_virtual.
                 var = equations.get_variable(info.virtual)
-                var.setup_extra_data(info.v_tg, info, False)
-
-                if make_virtual or single_term or (info.primary is None):
-                    var.setup_dof_conns(dof_conns, info.dc_type,
-                                        info.get_region(can_trace=False))
+                field = var.get_field()
+                field.setup_extra_data(info.v_tg, info, False)
+                field.setup_dof_conns(dof_conns, var.n_components,
+                                      info.dc_type,
+                                      info.get_region(can_trace=False))
 
         ## print dof_conns
         ## pause()
@@ -125,6 +155,8 @@ class Field( Struct ):
                         space = space,
                         poly_space_base = poly_space_base)
         self.domain = self.region.domain
+
+        self.clear_dof_conns()
 
         self.set_approx_order(approx_order)
 
@@ -220,6 +252,76 @@ class Field( Struct ):
     def setup_coors( self ):
         """Coordinates of field nodes."""
         self.aps.setup_coors( self.domain.mesh, self.cnt_vn )
+
+
+    def setup_extra_data(self, geometry, info, is_trace):
+        dct = info.dc_type.type
+        
+        if geometry != None:
+            geometry_flag = geometry.find('Surface') >= 0
+        else:
+            geometry_flag = False     
+            
+        if (dct == 'surface') or (geometry_flag):
+            reg = info.get_region()
+            reg.select_cells_of_surface(reset=False)
+
+            self.aps.setup_surface_data(reg)
+
+        elif dct == 'edge':
+            raise NotImplementedError('dof connectivity type %s' % dct)
+
+        elif dct == 'point':
+            self.aps.setup_point_data(self, info.region)
+
+        elif dct not in ('volume', 'scalar'):
+            raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def clear_dof_conns(self):
+        self.dof_conns = {}
+
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+        """Setup dof connectivities of various kinds as needed by terms."""
+        dct = dc_type.type
+
+        ##
+        # Expand nodes into dofs.
+        can_point = True
+        for region_name, ig, ap in self.aps.iter_aps(igs=region.igs):
+            region_name = region.name # True region name.
+            key = (self.name, dpn, region_name, dct, ig)
+            if key in dof_conns:
+                self.dof_conns[key] = dof_conns[key]
+
+                if dct == 'point':
+                    can_point = False
+                continue
+
+            if dct == 'volume':
+                dc = create_dof_conn(ap.econn, dpn)
+                self.dof_conns[key] = dc
+
+            elif dct == 'surface':
+                sd = ap.surface_data[region_name]
+                dc = create_dof_conn(sd.econn, dpn)
+                self.dof_conns[key] = dc
+
+            elif dct == 'edge':
+                raise NotImplementedError('dof connectivity type %s' % dct)
+
+            elif dct == 'point':
+                if can_point:
+                    # Point data only in the first group to avoid multiple
+                    # assembling of nodes on group boundaries.
+                    conn = ap.point_data[region_name]
+                    dc = create_dof_conn(conn, dpn)
+                    self.dof_conns[key] = dc
+                    can_point = False
+
+            else:
+                raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+        dof_conns.update(self.dof_conns)
 
     ##
     # c: 02.01.2008, r: 02.01.2008

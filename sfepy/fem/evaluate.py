@@ -133,7 +133,6 @@ class LCBCEvaluator( BasicEvaluator ):
         return self.op_lcbc.T * vec
     
 def assemble_vector(vec, equation, chunk_size=1000, **kwargs):
-    get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
         ## print '>>>>>>', term.name, term.sign
@@ -143,9 +142,9 @@ def assemble_vector(vec, equation, chunk_size=1000, **kwargs):
         ## print dc_type
 
         for ig in term.iter_groups():
-            dc = get_a_dof_conn( vn, True, dc_type, ig )
-##             print vn, dc.shape
-#            pause()
+            dc = vvar.get_dof_conn(dc_type, ig, active=True)
+            ## print vvar.name, dc.shape
+
             for vec_in_els, iels, status in term( chunk_size = chunk_size,
                                                   **kwargs ):
                 if status != 0:
@@ -179,8 +178,6 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
         raise TypeError, 'must be CSR matrix!'
     tmd = (mtx.data, mtx.indptr, mtx.indices)
 
-    get_a_dof_conn = variables.get_a_dof_conn
-
     for term in equation.terms:
         ## print '>>>>>>', term.name, term.sign
         vvar = term.get_virtual_variable()
@@ -188,13 +185,14 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
         dc_type = term.get_dof_conn_type()
 
         for ig in term.iter_groups():
-            rdc = get_a_dof_conn( vn, True, dc_type, ig )
-                cdc = get_a_dof_conn( sn, False, dc_type, ig, is_trace=is_trace )
+            rdc = vvar.get_dof_conn(dc_type, ig, active=True)
             ## print vvar.name, rdc.shape
 
             for svar in svars:
                 is_trace = term.arg_traces[svar.name]
                 ## print dc_type, ig, is_trace
+                cdc = svar.get_dof_conn(dc_type, ig, active=True,
+                                        is_trace=is_trace)
                 ## print svar.name, cdc.shape
                 ## pause()
                 for mtx_in_els, iels, status in term( diff_var = svar.name,
@@ -276,9 +274,10 @@ def eval_term( state, term_desc, conf, domain, fields, materials, ts,
         equations.collect_conn_info()
 
         if itype == 'dw':
-            variables.setup_dof_conns()
+            fields.setup_dof_conns(equations, single_term=True)
+
         else:
-            variables.setup_extra_data()
+            fields.setup_extra_data(equations)
 
         integrals = Integrals.from_conf(conf.integrals)
         equations.describe_geometry(integrals)

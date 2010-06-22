@@ -16,24 +16,7 @@ is_virtual = 1
 is_parameter = 2
 is_field = 10
 
-def create_dof_conn(conn, dpn):
-    """Given element a node connectivity, create the dof connectivity."""
-    if dpn == 1:
-        dc = conn.copy()
-    else:
-        n_el, n_ep = conn.shape
-        n_ed = n_ep * dpn
-        dc = nm.empty( (n_el, n_ed), dtype = conn.dtype )
-        for ic in range( n_ed ):
-            inod = ic / dpn
-            idof = ic % dpn
-##                    iloc = ic
-            iloc = n_ep * idof + inod # Hack: For DBD order.
-            dc[:,iloc] = dpn * conn[:,inod] + idof
-
-    return dc
-
-def create_a_dof_conn(eq, dc, indx):
+def create_adof_conn(eq, dc, indx):
     """Given a dof connectivity and equation mapping, create the active dof
     connectivity."""
     aux = eq[dc]
@@ -52,11 +35,6 @@ def zero_conf_ebc( conf ):
             newbc.dofs[dd] = 0.0
         new[key] = newbc
     return new
-
-def _fix_scalar_dc(dc1, dc2):
-    aux = nm.empty((dc2.shape[0], 1), dtype=nm.int32)
-    aux.fill(dc1)
-    return aux
 
 ##
 # 14.07.2006, c
@@ -126,7 +104,8 @@ class Variables( Container ):
 
     def link_duals(self):
         """
-        Link state variables with corresponding virtual variables.
+        Link state variables with corresponding virtual variables,
+        and assign link to self to each variable instance.
 
         Usually, when solving a PDE in the weak form, each state
         variable has to have a corresponding virtual variable.
@@ -137,6 +116,9 @@ class Variables( Container ):
         """
         
         self.dual_map = {}
+
+        for ii in self.state:
+            self[ii].dual_var_name = None
         for ii in self.virtual:
             vvar = self[ii]
             try:
@@ -151,6 +133,9 @@ class Variables( Container ):
 	    or (len(self.virtual) > len(self.state))):
                 msg = 'state and virtual variables do not match!'
                 raise ValueError(msg)
+
+        for var in self:
+            var._variables = self
 
     def setup_ordering(self):
 	"""
@@ -336,49 +321,9 @@ class Variables( Container ):
     def setup_adof_conns( self ):
         """Translate dofs to active dofs.
         Active dof connectivity key = (variable.name, region.name, type, ig)"""
-        adof_conns = {}
-        for key, dc in self.dof_conns.iteritems():
-            for var in self.iter_state():
-                if var.has_dof_conn_key(key):
-                    indx = self.adi.indx[var.name]
-                    eq = var.eq_map.eq
-                    akey = (var.name,) + key[1:]
-                    adof_conns[akey] = create_a_dof_conn(eq, dc, indx)
-
-##         print adof_conns
-##         pause()
-
-        self.adof_conns = adof_conns
-
-    def get_a_dof_conn(self, var_name, is_dual, dc_type, ig, is_trace=False):
-        """Get active dof connectivity of a variable.
-        
-        Note that primary and dual variables must have same Region!"""
-        if is_dual and not self.has_virtual_dcs:
-            var_name = self.dual_map[var_name]
-
-        if self[var_name].has_field:
-            if not is_trace:
-                region_name = dc_type.region_name
-                aig = ig
-
-            else:
-                region, ig_map = self.get_mirror_region(dc_type.region_name,
-                                                        return_ig_map_i=True)
-                region_name = region.name
-                aig = ig_map[ig]
-
-        else: # scalar variable, assume no traces.
-            if dc_type.type == 'scalar':
-                region_name = aig = None
-
-            else:
-                region_name = dc_type.region_name
-                aig = None
-
-        key = (var_name, region_name, dc_type.type, aig)
-        dc = self.adof_conns[key]
-        return dc
+        self.adof_conns = {}
+        for var in self:
+            var.setup_adof_conns(self.adof_conns, self.adi)
 
     def create_state_vector( self ):
         vec = nm.zeros( (self.di.ptr[-1],), dtype = self.dtype )
@@ -1164,6 +1109,86 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
+    def get_primary(self):
+        if self.is_state():
+            var = self
+
+        elif self.primary_var_name is not None:
+            var = self._variables[self.primary_var_name]
+
+        else:
+            var = self
+
+        return var
+
+    def get_dual(self):
+        if self.is_state():
+            var = self._variables[self.dual_var_name]
+
+        else:
+            var = self._variables[self.primary_var_name]
+
+        return var
+
+    def setup_adof_conns(self, adof_conns, adi):
+        """
+        Translate dof connectivity of the variable to active dofs.
+
+        Active dof connectivity key:
+            (variable.name, region.name, type, ig)
+        """
+        self.adof_conns = {}
+
+        for key, dc in self.field.dof_conns.iteritems():
+            var = self.get_primary()
+            akey = (var.name,) + key[2:]
+            if akey in adof_conns:
+                self.adof_conns[akey] = adof_conns[akey]
+
+            else:
+                if var.name in adi.indx:
+                    indx = adi.indx[var.name]
+                    eq = var.eq_map.eq
+
+                else: # Special variables.
+                    indx = var.indx
+                    eq = nm.arange(indx.stop, dtype=nm.int32)
+
+                self.adof_conns[akey] = create_adof_conn(eq, dc, indx)
+
+        adof_conns.update(self.adof_conns)
+
+    def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
+        """Get active dof connectivity of a variable.
+        
+        Note that primary and dual variables must have same Region!"""
+        if not active:
+            dc = self.field.get_dof_conn(dc_type, ig)
+
+        else:
+            var = self.get_primary()
+
+            if self.is_virtual():
+                var_name = var.name
+
+            else:
+                var_name = self.name
+
+        if not is_trace:
+            region_name = dc_type.region_name
+            aig = ig
+
+        else:
+            aux = self.field.domain.regions[dc_type.region_name]
+            region, _, ig_map = aux.get_mirror_region()
+            region_name = region.name
+            aig = ig_map[ig]
+
+        key = (var_name, region_name, dc_type.type, aig)
+        dc = self.adof_conns[key]
+
+        return dc
+
     def get_dof_info(self, active=False):
         details = Struct(name = 'field_var_dof_details',
                          n_nod = self.n_nod,
@@ -1175,70 +1200,6 @@ class FieldVariable(Variable):
             n_dof = self.n_dof
             
         return n_dof, details
-
-    def setup_extra_data(self, geometry, info, is_trace):
-        dct = info.dc_type.type
-        
-        if geometry != None:
-            geometry_flag = geometry.find('Surface') >= 0
-        else:
-            geometry_flag = False     
-            
-        if (dct == 'surface') or (geometry_flag):
-            reg = info.get_region()
-            reg.select_cells_of_surface(reset=False)
-
-            self.field.aps.setup_surface_data(reg)
-
-        elif dct == 'edge':
-            raise NotImplementedError('dof connectivity type %s' % dct)
-
-        elif dct == 'point':
-            self.field.aps.setup_point_data(self.field, info.region)
-
-        elif dct not in ('volume', 'scalar'):
-            raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-    def setup_dof_conns(self, dof_conns, dc_type, region):
-        """Setup dof connectivities of various kinds as needed by terms."""
-        dpn = self.n_components
-        field = self.field
-        dct = dc_type.type
-
-        ##
-        # Expand nodes into dofs.
-        can_point = True
-        for region_name, ig, ap in field.aps.iter_aps(igs=region.igs):
-            region_name = region.name # True region name.
-            key = (field.name, region_name, dct, ig)
-            if key in dof_conns: continue
-
-            if dct == 'volume':
-                dc = create_dof_conn(ap.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'surface':
-                sd = ap.surface_data[region_name]
-                dc = create_dof_conn(sd.econn, dpn)
-                dof_conns[key] = dc
-
-            elif dct == 'edge':
-                raise NotImplementedError('dof connectivity type %s' % dct)
-                
-            elif dct == 'point':
-                if can_point:
-                    # Point data only in the first group to avoid multiple
-                    # assembling of nodes on group boundaries.
-                    conn = ap.point_data[region_name]
-                    dc = create_dof_conn(conn, dpn)
-                    dof_conns[key] = dc
-                    can_point = False
-
-            else:
-                raise ValueError('unknown dof connectivity type! (%s)' % dct)
-
-    def has_dof_conn_key(self, key):
-        return self.field.name == key[0]
 
     def time_update(self, ts, functions):
         """
@@ -1751,6 +1712,3 @@ class ConstantVariable(Variable):
 
         key = (self.name, region_name, dct, None)
         dof_conns[key] = nm.zeros((1,), dtype=nm.int32)
-
-    def has_dof_conn_key(self, key):
-        return self.name == key[0]
