@@ -45,6 +45,9 @@ class Variables( Container ):
 
     @staticmethod
     def from_conf(conf, fields):
+        """
+        This method resets the variable counters for automatic order!
+        """
         Variable.reset()
 
         obj = Variables()
@@ -52,6 +55,9 @@ class Variables( Container ):
             var = Variable.from_conf(key, val, fields)
 
             obj[var.name] = var
+
+        obj.setup_dtype()
+        obj.setup_ordering()
 
         return obj
 
@@ -64,15 +70,16 @@ class Variables( Container ):
                            has_lcbc = False,
                            has_eq_map = False,
                            dual_map = None,
-                           ordered_state = None,
-                           ordered_virtual = None)
+                           ordered_state = [],
+                           ordered_virtual = [])
 
         if variables is not None:
             for var in variables:
                 self[var.name] = var
 
+            self.setup_ordering()
+
         self.setup_dtype()
-        self.setup_ordering()
 
     def __setitem__(self, ii, var):
         Container.__setitem__(self, ii, var)
@@ -99,8 +106,11 @@ class Variables( Container ):
         elif dtypes[nm.float64]:
             self.dtype = nm.float64
 
-        else:
+        elif dtypes[nm.complex128]:
             self.dtype = nm.complex128
+
+        else:
+            self.dtype = None
 
     def link_duals(self):
         """
@@ -141,12 +151,20 @@ class Variables( Container ):
 	"""
         Setup ordering of variables.
         """
+        self.link_duals()
+
+        orders = []
+        for var in self:
+            try:
+                orders.append(var._order)
+            except:
+                pass
+        orders.sort()
+
         self.ordered_state = [None] * len(self.state)
         for var in self.iter_state(ordered=False):
-            self.ordered_state[var._order] = var.name
-
-        if self.dual_map is None:
-            self.link_duals()
+            ii = orders.index(var._order)
+            self.ordered_state[ii] = var.name
 
 	self.ordered_virtual = [None] * len(self.virtual)
 	ii = 0
@@ -665,13 +683,13 @@ class Variables( Container ):
 class Variable( Struct ):
     _count = 0
     _orders = []
-    _all_vars = {}
+    _all_var_names = set()
 
     @staticmethod
     def reset():
         Variable._count = 0
         Variable._orders = []
-        Variable._all_vars = {}
+        Variable._all_var_names = set()
 
     def from_conf(key, conf, fields):
         aux = conf.kind.split()
@@ -752,7 +770,7 @@ class Variable( Struct ):
             self.data = None
 
         self._set_kind(kind, order, primary_var_name, special=special)
-        Variable._all_vars[name] = self
+        Variable._all_var_names.add(name)
 
     def _set_kind(self, kind, order, primary_var_name, special=None):
         if kind == 'unknown':
