@@ -7,18 +7,6 @@ import freeFormDef as ffd
 from sfepy.terms import CharacteristicFunction
 
 ##
-# 27.07.2006, c
-# 01.11.2007
-def set_state_to_vars( variables, var_map, vec_dp, vec_ap = None ):
-    # Set admissible state variables.
-    for dvar, avar in var_map.iteritems():
-        print '>>>>>>>>>>>>>>', dvar, avar
-        variables.non_state_data_from_state( dvar, vec_dp, avar )
-    if vec_ap is not None:
-        # Set adjoint state variables.
-        variables.data_from_state( vec_ap )
-
-##
 # c: 15.10.2007, r: 15.04.2008
 def update_mesh( shape_opt, pb, design ):
     output( 'mesh update (%d)!' % shape_opt.cache.i_mesh )
@@ -43,10 +31,11 @@ def update_mesh( shape_opt, pb, design ):
 ##
 # c: 19.04.2006, r: 15.04.2008
 def solve_problem_for_design(problem, design, shape_opt, opts,
+                             var_data=None,
                              use_cache=True, is_mesh_update=True):
     """use_cache == True means direct problem..."""
     pb = problem
-    
+
     if use_cache and nm.allclose( design, shape_opt.cache.design,
                                  rtol = opts.eps_r, atol = opts.eps_a ):
         output( 'cache!' )
@@ -56,8 +45,11 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
             ok = update_mesh( shape_opt, pb, design )
             if not ok: return None
             
+        # Restore materials.
+        pb.time_update()
+
         # Solve direct/adjoint problem.
-        vec = problem.solve()
+        vec = problem.solve(var_data=var_data)
 
         if use_cache:
             shape_opt.cache.vec = vec.copy()
@@ -90,9 +82,8 @@ def obj_fun( design, shape_opt, dpb, apb, opts ):
     vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
     if vec_dp is None:
         return None
-        
-    val = shape_opt.obj_fun( vec_dp, dpb.conf, dpb.domain, dpb.variables,
-                           dpb.materials, data = data )
+
+    val = shape_opt.obj_fun(vec_dp, dpb, data=data)
 #    print 'OF ok'
     return val
 
@@ -104,13 +95,15 @@ def obj_fun_grad( design, shape_opt, dpb, apb, opts ):
 #    print 'OFG'
     data = {}
     vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
-    set_state_to_vars( apb.variables, shape_opt.var_map, vec_dp )
+
+    var_data = dpb.equations.get_state_parts(vec_dp)
+    var_data = remap_dict(var_data, shape_opt.var_map)
+
     vec_ap = solve_problem_for_design(apb, design, shape_opt, opts,
+                                      var_data=var_data,
                                       use_cache=False, is_mesh_update=False)
-##     print apb.materials['stabil']
-##     pause()
-    vec_sa = shape_opt.sensitivity( vec_dp, vec_ap, apb.conf, apb.domain,
-                                  apb.variables, apb.materials, data = data )
+
+    vec_sa = shape_opt.sensitivity(var_data, vec_ap, apb, data=data)
 #    print 'OFG ok'
     return vec_sa
 
@@ -121,72 +114,41 @@ def obj_fun_grad( design, shape_opt, dpb, apb, opts ):
 # 22.10.2007
 # 24.10.2007
 # 25.10.2007
-def test_terms( idsgs, delta, shape_opt, vec_dp, vec_ap, pb ):
+def test_terms(idsgs, delta, shape_opt, dp_var_data, vec_ap, pb):
 
     dd = {}
     ccs = shape_opt.check_custom_sensitivity
 
-    ccs( 'd_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-##     pb.variables.non_state_data_from_state( 'p', vec_dp, 'r' )
+    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, p, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, r, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, p, p, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-##     indx = pb.variables.get_indx( 'r' )
-##     dummy = pb.create_state_vector()
-##     mtx_pp = eva.eval_term_op( dummy, 'dw_st_pspg_p.Omega_D( stabil.tau, q, r )',
-##                             pb, dw_mode = 'matrix' )[indx,indx]
-##     v_p = vec_dp[indx]
-##     v_r = vec_ap[indx]
-##     pp1 = sc.dot( v_r.T * mtx_pp, v_p )
-##     pp2 = eva.eval_term_op( vec_ap,
-##                           'd_sd_st_pspg_p.Omega_D( stabil.tau, r, p, r, mode )',
-##                           pb, mode = 0 )
-##     print pp1, pp2
-##     pause()
-##     import sfepy.base.plotutils as plu
-##     print mtx_pp
-##     plu.spy( mtx_pp )
-##     plu.pylab.show()
-##     pause()
-#    pb.time_update( None, conf_ebc = {} )
-#    vec_dp.fill( 1.0 )
-#    iop = eva.eval_term_op( vec_dp, 'dw_volume_integrate.Omega_C( q )',
-#                          pb, dw_mode = 'vector' )
-#    print iop, iop.shape
-#    print sc.dot( vec_dp, iop )
-#    oo = eva.eval_term_op( vec_dp, 'd_volume_integrate.Omega_C( p )', pb )
-#    print oo
-#    oo = eva.eval_term_op( vec_dp, 'd_volume.Omega_C( p )', pb )
-#    print oo
-#    debug()
+    ccs('d_sd_test_pq.i1.Omega_D( p, r, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_st_pspg_p.i1.Omega( stabil.tau, r, p, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
-    ccs( 'd_sd_st_pspg_p.i1.Omega( stabil.tau, r, r, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
-    ccs( 'd_sd_st_pspg_p.i1.Omega( stabil.tau, p, p, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_div.i1.Omega_D( u, r, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_test_pq.i1.Omega_D( p, r, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_div.i1.Omega_D( w, p, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_div.i1.Omega_D( u, r, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
-    ccs( 'd_sd_div.i1.Omega_D( w, p, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
-
-    ccs( 'd_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
-
-    ccs( 'd_sd_convect.i2.Omega_D( u, w, Nu, mode )',
-         idsgs, delta, vec_dp, vec_ap, pb, dd )
+    ccs('d_sd_convect.i2.Omega_D( u, w, Nu, mode )',
+        idsgs, delta, dp_var_data, vec_ap, pb, dd)
 
     # Restore materials.
     pb.time_update()
@@ -268,25 +230,31 @@ class ShapeOptimFlowCase( Struct ):
                 yield self.sp_boxes.interp_mesh_velocity( shape, self.dsg_vars,
                                                        idsg )
 
-    ##
-    # created: 25.01.2006
-    # last revision: 21.12.2007
-    def obj_fun( self, vec_dp, conf, domain, variables, materials,
-                data = None ):
-        """can use both apb, dpb variables"""
-        set_state_to_vars( variables, self.var_map, vec_dp )
+    def obj_fun(self, vec_dp, dpb, data=None):
+        """
+        Objective function evaluation for given direct problem state.
+        """
+        var_data = dpb.equations.get_state_parts(vec_dp)
+        var_data = remap_dict(var_data, self.var_map)
 
-        val = eva.eval_term( None, self.obj_fun_term, conf, domain,
-                             variables, materials, None, **data )
+        val = dpb.evaluate(self.obj_fun_term, copy_materials=False,
+                           var_names=self.var_map.keys(), **var_data)
+
         return nm.squeeze( val )
         
-    def sensitivity(self, vec_dp, vec_ap, conf, domain, variables, materials,
-                    data=None, select=None):
-        """can use both apb, dpb variables"""
-        set_state_to_vars( variables, self.var_map, vec_dp, vec_ap )
+    def sensitivity(self, dp_var_data, vec_ap, apb, data=None, select=None):
+        """
+        Sensitivity of objective function evaluation for given direct
+        and adjoint problem states.
+        """
+        var_data = apb.equations.get_state_parts(vec_ap)
+        var_data.update(dp_var_data)
+        var_names = var_data.keys() + ['Nu']
 
+        var_data.update(data)
+        
         dim = self.sp_boxes.dim
-        n_mesh_nod = domain.shape.n_nod
+        n_mesh_nod = apb.domain.shape.n_nod
 
         if select is None:
             idsgs = nm.arange( self.dsg_vars.n_dsg, dtype = nm.int32 )
@@ -298,13 +266,11 @@ class ShapeOptimFlowCase( Struct ):
         pbar = MyBar('sensitivity:')
         pbar.init(len(idsgs))
 
-        materials = materials.semideep_copy()
         shape = (n_mesh_nod, dim)
         for ii, nu in enumerate(self.generate_mesh_velocity(shape, idsgs)):
             pbar.update(ii)
-            vec_nu = nu.ravel()
-            variables['Nu'].data_from_data(vec_nu)
-            data.update({'mode' : 1})
+            var_data['Nu'] = nu.ravel()
+            var_data['mode'] = 1
 
             ## from sfepy.base.ioutils import write_vtk
             ## cc = nla.norm( vec_nu )
@@ -315,33 +281,35 @@ class ShapeOptimFlowCase( Struct ):
             ## write_vtk( fd, domain.mesh, out )
             ## fd.close()
             ## print ii
-            
-            val = eva.eval_term(None, self.sens_terms, conf, domain,
-                                variables, materials, None,
-                                copy_materials=False,
-                                update_materials=ii==0, **data)
+
+            val = apb.evaluate(self.sens_terms, copy_materials=False,
+                               update_materials=ii==0,
+                               new_geometries=ii==0,
+                               var_names=var_names, **var_data)
 
             sa.append( val )
 
         vec_sa = nm.array( sa, nm.float64 )
         return vec_sa
 
-    def check_custom_sensitivity(self, term_desc, idsg, delta, vec_dp, vec_ap,
-                                 pb, data=None):
+    def check_custom_sensitivity(self, term_desc, idsg, delta,
+                                 dp_var_data, vec_ap, pb, data=None):
 
-        variables = pb.variables
         domain = pb.domain
         regions = domain.regions
         materials = pb.materials
-        
-        # Set admissible state variables.
-        set_state_to_vars( variables, self.var_map, vec_dp, vec_ap )
 
         if data is None:
             data = {}
         else:
             data = copy( data )
-            
+
+        var_data = pb.equations.get_state_parts(vec_ap)
+        var_data.update(dp_var_data)
+        var_names = var_data.keys() + ['Nu']
+
+        var_data.update(data)
+
         dim = self.sp_boxes.dim
         n_mesh_nod = domain.shape.n_nod
 
@@ -351,29 +319,28 @@ class ShapeOptimFlowCase( Struct ):
         coors0 = domain.mesh.coors
 
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), [idsg] ):
-            vec_nu = nu.ravel()
-            variables['Nu'].data_from_data( vec_nu, slice( 0, len( vec_nu ) ) )
+            var_data['Nu'] = nu.ravel()
+            var_data['mode'] = 1
 
-            data['mode'] = 1
-
-            aux = eva.eval_term_op(None, term_desc, pb,
-                                   copy_materials=False,
-                                   update_materials=True, **data)
+            aux = pb.evaluate(term_desc, copy_materials=False,
+                              update_materials=True,
+                              var_names=var_names, **var_data)
             a_grad.append( aux )
 
-            data['mode'] = 0
+            var_data['mode'] = 0
 
             coorsp = coors0 + delta * nu
             pb.set_mesh_coors( coorsp, update_state = True )
-            valp = eva.eval_term_op(None, term_desc, pb,
-                                    copy_materials=False,
-                                    update_materials=False, **data)
+            valp = pb.evaluate(term_desc, copy_materials=False,
+                               update_materials=False,
+                               var_names=var_names, **var_data)
 
             coorsm = coors0 - delta * nu
             pb.set_mesh_coors( coorsm, update_state = True )
-            valm = eva.eval_term_op(None, term_desc, pb,
-                                    copy_materials=False,
-                                    update_materials=False, **data)
+            valm = pb.evaluate(term_desc, copy_materials=False,
+                               update_materials=False,
+                               var_names=var_names, **var_data)
+
             d_grad.append( 0.5 * (valp - valm) / delta )
             
         pb.set_mesh_coors( coors0, update_state = True )
@@ -387,22 +354,21 @@ class ShapeOptimFlowCase( Struct ):
         output( '-> ratio:', a_grad / d_grad )
         pause()
 
-    def check_sensitivity(self, idsgs, delta, vec_dp, vec_ap, dpb,
-                          conf, domain, variables, materials, data=None):
+    def check_sensitivity(self, idsgs, delta, dp_var_data, vec_ap, dpb,
+                          apb, data=None):
         if data is None:
             data = {}
         else:
             data = copy( data )
         
-        a_grad = self.sensitivity( vec_dp, vec_ap, conf, dpb.domain,
-                                  dpb.variables, dpb.materials,
-                                  data = data, select = idsgs )
+        a_grad = self.sensitivity(dp_var_data, vec_ap, apb,
+                                  data=data, select=idsgs)
         output( a_grad )
         
         d_grad = []
 
         dim = self.sp_boxes.dim
-        n_mesh_nod = domain.shape.n_nod
+        n_mesh_nod = dpb.domain.shape.n_nod
 
         coors0 = dpb.get_mesh_coors().copy()
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), idsgs ):
@@ -410,19 +376,19 @@ class ShapeOptimFlowCase( Struct ):
             coorsp = coors0 + delta * nu
             dpb.set_mesh_coors( coorsp, update_state = True )
 
+            dpb.time_update()
             vec_dp = dpb.solve()
 
-            valp = self.obj_fun( vec_dp, conf, domain, variables, materials,
-                                data )
+            valp = self.obj_fun(vec_dp, dpb, data)
             output( 'obj_fun+:', valp )
 
             coorsm = coors0 - delta * nu
             dpb.set_mesh_coors( coorsm, update_state = True )
 
+            dpb.time_update()
             vec_dp = dpb.solve()
 
-            valm = self.obj_fun( vec_dp, conf, domain, variables, materials,
-                                data )
+            valm = self.obj_fun(vec_dp, dpb, data)
             output( 'obj_fun-:', valm )
             
             d_grad.append( 0.5 * (valp - valm) / delta )

@@ -189,10 +189,11 @@ def solve_adjoint(conf, options, dpb, vec_dp, data):
     apb.set_equations(equations)
     apb.time_update(None, conf_ebc=ebc)
 
-    so.set_state_to_vars( apb.variables, opts.var_map, vec_dp )
+    var_data = dpb.equations.get_state_parts(vec_dp)
+    var_data = remap_dict(var_data, opts.var_map)
 
     nls_conf = apb.get_solver_conf(opts.nls_adjoint)
-    vec_ap = apb.solve(nls_conf=nls_conf)
+    vec_ap = apb.solve(nls_conf=nls_conf, var_data=var_data)
 
     trunk = io.get_trunk(conf.filename_mesh)
     apb.save_state(trunk + '_adjoint.vtk', vec_ap)
@@ -206,24 +207,19 @@ def solve_adjoint(conf, options, dpb, vec_dp, data):
         # Test shape sensitivity.
         if shape_opt.test_terms_if_test:
             so.test_terms([options.test], opts.term_delta, shape_opt,
-                          vec_dp, vec_ap, apb)
+                          var_data, vec_ap, apb)
 
-        shape_opt.check_sensitivity([options.test], opts.delta, vec_dp, vec_ap,
-                                    dpb, apb.conf,
-                                    apb.domain, apb.variables,
-                                    apb.materials, data)
+        shape_opt.check_sensitivity([options.test], opts.delta,
+                                    var_data, vec_ap, dpb, apb, data)
     ##
     # Compute objective function.
-    val = shape_opt.obj_fun(vec_dp, apb.conf, apb.domain,
-                            apb.variables, apb.materials, data=data)
+    val = shape_opt.obj_fun(vec_dp, apb, data=data)
     print 'actual obj_fun:', val
     ## pause()
 
     ##
     # Compute shape sensitivity.
-    vec_sa = shape_opt.sensitivity( vec_dp, vec_ap, apb.conf, apb.domain,
-                                  apb.variables, apb.materials,
-                                  data = data )
+    vec_sa = shape_opt.sensitivity(var_data, vec_ap, apb, data=data)
     print 'actual sensitivity:', vec_sa
 
     ## pylab.plot(vec_sa)
