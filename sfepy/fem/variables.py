@@ -583,9 +583,8 @@ class Variables( Container ):
                        extend = True ):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
-
-        n_nod = self.domain.shape.n_nod
         di = self.di
+        domain = self[0].field.domain
 
         if var_info is None:
             var_info = {}
@@ -610,7 +609,7 @@ class Variables( Container ):
             if var.field.approx_order != '0':
                 # Has vertex data.
                 if extend:
-                    ext = var.extend_data( aux, n_nod, fill_value )
+                    ext = var.extend_data( aux, domain.shape.n_nod, fill_value )
                 else:
                     ext = var.remove_extra_data( aux )
 
@@ -619,7 +618,7 @@ class Variables( Container ):
                                     var_name = key, dofs = var.dofs )
             else:
                 if extend:
-                    ext = extend_cell_data(aux, self.domain, var.field.region,
+                    ext = extend_cell_data(aux, domain, var.field.region,
                                            val=fill_value)
                 else:
                     ext = aux
