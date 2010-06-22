@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.fem import Materials, Variables
+from extmods.fem import raw_graph
 from sfepy.terms import Terms, Term, DataCaches
 
 """
@@ -178,10 +179,108 @@ class Equations( Container ):
         for cache in self.caches.itervalues():
             cache.set_mode( cache_override )
 
-    def time_update( self, ts ):
+    def time_update(self, ts, regions, ebcs=None, epbcs=None, lcbcs=None,
+                    functions=None):
+        self.variables.time_update(ts, functions)
+
+        self.variables.equation_mapping(ebcs, epbcs, regions, ts, functions)
+        self.variables.setup_lcbc_operators(lcbcs, regions)
+        self.variables.setup_adof_conns()
+
         for eq in self:
             for term in eq.terms:
-                term.time_update( ts )
+                term.time_update(ts)
+
+    def setup_initial_conditions(self, ics, regions, functions):
+        self.variables.setup_initial_conditions(ics, regions, functions)
+
+    def create_matrix_graph( self, var_names = None, vvar_names = None ):
+        """
+        Create tangent matrix graph. Order of dof connectivities is not
+        important here...
+        """
+        if not self.variables.has_virtuals():
+            output('no matrix (no test variables)!')
+            return None
+
+        shape = self.variables.get_matrix_shape()
+        output( 'matrix shape:', shape )
+        if nm.prod( shape ) == 0:
+            output( 'no matrix (zero size)!' )
+            return None
+
+        adcs = self.variables.adof_conns
+
+        # Only volume dof connectivities are used, with the exception of trace
+        # surface dof connectivities.
+        shared = set()
+        rdcs = []
+        cdcs = []
+        for key, ii, info in iter_dict_of_lists(self.conn_info,
+                                                return_keys=True):
+            dct = info.dc_type.type
+            if not (dct in ('volume', 'scalar') or info.is_trace):
+                continue
+
+            rn, cn = info.virtual, info.state
+            if (rn is None) or (cn is None):
+                continue
+
+            rreg_name = info.get_region_name(can_trace=False)
+            creg_name = info.get_region_name()
+
+            for rig, cig in info.iter_igs():
+                rkey = (self.variables.dual_map[rn], rreg_name, dct, rig)
+                ckey = (cn, creg_name, dct, cig)
+
+                dc_key = (rkey, ckey)
+                ## print dc_key
+
+                if not dc_key in shared:
+                    try:
+                        rdcs.append(adcs[rkey])
+                        cdcs.append(adcs[ckey])
+                    except:
+                        debug()
+                    shared.add(dc_key)
+
+        ## print shared
+        for ii in range(len(rdcs)):
+            if (rdcs[ii].ndim == 1) and (cdcs[ii].ndim == 2):
+                rdcs[ii] = _fix_scalar_dc(rdcs[ii], cdcs[ii])
+
+            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 2):
+                cdcs[ii] = _fix_scalar_dc(cdcs[ii], rdcs[ii])
+
+            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 1):
+                rdcs[ii] = nm.array(rdcs[ii], ndmin=2)
+                cdcs[ii] = nm.array(cdcs[ii], ndmin=2)
+
+        ##     print rdcs[ii], cdcs[ii]
+        ## pause()
+
+        if not shared:
+            # No virtual, state variable -> no matrix.
+            output( 'no matrix (empty dof connectivities)!' )
+            return None
+
+        output( 'assembling matrix graph...' )
+        tt = time.clock()
+
+        ret, prow, icol = raw_graph( int( shape[0] ), int( shape[1] ),
+                                    len( rdcs ), rdcs, cdcs )
+        output( '...done in %.2f s' % (time.clock() - tt) )
+        nnz = prow[-1]
+        output( 'matrix structural nonzeros: %d (%.2e%% fill)' \
+                % (nnz, float( nnz ) / nm.prod( shape ) ) )
+        ## print ret, prow, icol, nnz
+
+        data = nm.zeros( (nnz,), dtype = self.variables.dtype )
+        matrix = sp.csr_matrix( (data, icol, prow), shape )
+        ## matrix.save( 'matrix', format = '%d %d %e\n' )
+        ## pause()
+
+        return matrix
 
     ##
     # c: 02.04.2008, r: 02.04.2008
@@ -198,6 +297,80 @@ class Equations( Container ):
         for eq in self:
             for term in eq.terms:
                 term.advance(ts)
+
+        self.variables.advance(ts)
+
+    ##
+    # Interface to self.variables.
+    def create_state_vector(self):
+        return self.variables.create_state_vector()
+
+    def create_stripped_state_vector(self):
+        return self.variables.create_stripped_state_vector()
+
+    def strip_state_vector(self, vec, follow_epbc=True):
+        """
+        Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,
+        values of EPBC master dofs are not simply thrown away, but added to the
+        corresponding slave dofs, just like when assembling.
+        """
+        return self.variables.strip_state_vector(vec, follow_epbc=follow_epbc)
+
+    def make_full_vec(self, svec, var_name=None, force_value=None):
+        """
+        Make a full vector satisfying E(P)BC
+        from a stripped vector. For a selected variable if var_name is set.
+        """
+        return self.variables.make_full_vec(svec, var_name=var_name,
+                                            force_value=force_value)
+
+    def set_variables_from_state(self, vec, step=0):
+        """
+        Set data (vectors of DOF values) of variables.
+
+        Paramters
+        ---------
+        data : array
+            The state vector.
+        step : int
+            The time history step, 0 (default) = current.
+        """
+        self.variables.set_data(vec, step=step)
+
+    def set_data(self, data, step=0):
+        """
+        Set data (vectors of DOF values) of variables.
+
+        Paramters
+        ---------
+        data : dict
+            The dictionary of {variable_name : data vector}.
+        step : int
+            The time history step, 0 (default) = current.
+        """
+        self.variables.set_data(data, step=step)
+
+    def apply_ebc(self, vec, force_values=None):
+        """
+        Apply essential (Dirichlet) boundary conditions to a state vector.
+        """
+        self.variables.apply_ebc(vec, force_values=force_values)
+
+    def apply_ic(self, vec, force_values=None):
+        """
+        Apply initial conditions to a state vector.
+        """
+        self.variables.apply_ic(vec, force_values=force_values)
+
+    def state_to_output(self, vec, fill_value=None, var_info=None,
+                        extend=True):
+        return self.variables.state_to_output(vec,
+                                              fill_value=fill_value,
+                                              var_info=var_info,
+                                              extend=extend)
+
+    def get_lcbc_operator(self):
+        return self.variables.get_lcbc_operator()
 
 ##
 # 21.07.2006, c

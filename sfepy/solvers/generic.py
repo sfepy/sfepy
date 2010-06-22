@@ -25,22 +25,7 @@ def save_only( conf, save_names, problem = None ):
         problem.save_region_field_meshes( save_names.region_field_meshes )
 
     if save_names.ebc is not None:
-        if not hasattr( problem, 'variables' ):
-            problem.set_variables( conf.variables )
-        try:
-            ts = TimeStepper.from_conf( conf.ts )
-            ts.set_step( 0 )
-        except:
-            ts = None
-        try:
-            problem.variables.equation_mapping( conf.ebcs, conf.epbcs,
-                                                problem.domain.regions, ts,
-                                                conf.funmod )
-        except Exception, e:
-            output( 'cannot make equation mapping!' )
-            output( 'reason: %s' % e )
-        else:
-            problem.save_ebc( save_names.ebc )
+        problem.save_ebc( save_names.ebc )
 
 ##
 # 20.03.2007, c
@@ -104,7 +89,7 @@ def time_step_function(ts, state0, problem, data, nls_status=None):
 
             else:
                 # Just initialize data of state variables.
-                problem.variables.data_from_state( state )
+                problem.equations.set_variables_from_state(state)
 
         if problem.is_linear():
             # Assemble linear system matrix for all

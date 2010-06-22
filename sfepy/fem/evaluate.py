@@ -4,6 +4,7 @@ from sfepy.terms import Term, DataCaches
 from region import Region
 from equations import Equation, Equations
 from integrals import Integrals
+from variables import Variables
 
 ##
 # 02.10.2007, c
@@ -32,7 +33,7 @@ class BasicEvaluator( Evaluator ):
             vec = self.make_full_vec( vec )
         try:
             pb = self.problem
-            vec_r = eval_residuals(vec, pb.equations, pb.variables,
+            vec_r = eval_residuals(vec, pb.equations,
                                    pb.conf.fe.chunk_size, **self.data)
 
         except StopIteration, exc:
@@ -54,9 +55,9 @@ class BasicEvaluator( Evaluator ):
             if mtx is None:
                 mtx = self.mtx
             mtx.data[:] = 0.0
-            mtx = eval_tangent_matrices(vec, mtx,
-                                        pb.equations, pb.variables,
+            mtx = eval_tangent_matrices(vec, mtx, pb.equations,
                                         pb.conf.fe.chunk_size, **self.data)
+
         except StopIteration, exc:
             status = exc.args[0]
             output( ('error %d in term "%s" of derivative of equation "%s"'
@@ -76,11 +77,11 @@ class BasicEvaluator( Evaluator ):
         self.problem.update_vec( vec, delta )
 
     def strip_state_vector( self, vec ):
-        return self.problem.variables.strip_state_vector( vec,
-                                                          follow_epbc = False )
+        return self.problem.equations.strip_state_vector(vec,
+                                                         follow_epbc=False)
 
     def make_full_vec( self, vec ):
-        return self.problem.variables.make_full_vec( vec )
+        return self.problem.equations.make_full_vec(vec)
 
 ##
 # 04.10.2007, c
@@ -90,7 +91,7 @@ class LCBCEvaluator( BasicEvaluator ):
     # 04.10.2007, c
     def __init__( self, problem, mtx = None, **kwargs ):
         BasicEvaluator.__init__( self, problem, mtx, **kwargs )
-        self.op_lcbc = problem.variables.get_lcbc_operator()
+        self.op_lcbc = problem.equations.get_lcbc_operator()
 
     ##
     # 04.10.2007, c
@@ -131,17 +132,16 @@ class LCBCEvaluator( BasicEvaluator ):
         vec = BasicEvaluator.strip_state_vector( self, vec )
         return self.op_lcbc.T * vec
     
-def assemble_vector(vec, equation, variables, chunk_size=1000, **kwargs):
+def assemble_vector(vec, equation, chunk_size=1000, **kwargs):
     get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
-##         print '>>>>>>', term.name, term.sign
-        var_names = term.get_variable_names()
-        vn = term.get_virtual_name( variables = variables )
+        ## print '>>>>>>', term.name, term.sign
+        vvar = term.get_virtual_variable()
         dc_type = term.get_dof_conn_type()
-##         print args
-##         print vn
-##         print dc_type
+        ## print vvar
+        ## print dc_type
+
         for ig in term.iter_groups():
             dc = get_a_dof_conn( vn, True, dc_type, ig )
 ##             print vn, dc.shape
@@ -171,7 +171,7 @@ def assemble_vector(vec, equation, variables, chunk_size=1000, **kwargs):
                                                  float( sign.real ),
                                                  float( sign.imag ), dc )
 
-def assemble_matrix(mtx, equation, variables, chunk_size=1000,
+def assemble_matrix(mtx, equation, chunk_size=1000,
                     group_can_fail=True, **kwargs):
     """Assemble tangent matrix. Supports backward time difference of state
     variables."""
@@ -182,22 +182,22 @@ def assemble_matrix(mtx, equation, variables, chunk_size=1000,
     get_a_dof_conn = variables.get_a_dof_conn
 
     for term in equation.terms:
-##         print '>>>>>>', term.name, term.sign
-        var_names = term.get_variable_names()
-        vn = term.get_virtual_name( variables = variables )
-        sns = term.get_state_names( variables = variables )
+        ## print '>>>>>>', term.name, term.sign
+        vvar = term.get_virtual_variable()
+        svars = term.get_state_variables(unknown_only=True)
         dc_type = term.get_dof_conn_type()
 
         for ig in term.iter_groups():
             rdc = get_a_dof_conn( vn, True, dc_type, ig )
-#            print vn, rdc.shape
-            for sn in sns:
-                is_trace = term.arg_traces[sn]
-##                 print sn, dc_type, ig, is_trace
                 cdc = get_a_dof_conn( sn, False, dc_type, ig, is_trace=is_trace )
-#                print sn, cdc.shape
-#                pause()
-                for mtx_in_els, iels, status in term( diff_var = sn,
+            ## print vvar.name, rdc.shape
+
+            for svar in svars:
+                is_trace = term.arg_traces[svar.name]
+                ## print dc_type, ig, is_trace
+                ## print svar.name, cdc.shape
+                ## pause()
+                for mtx_in_els, iels, status in term( diff_var = svar.name,
                                                       chunk_size = chunk_size,
                                                       **kwargs ):
                     if status != 0:
@@ -208,7 +208,7 @@ def assemble_matrix(mtx, equation, variables, chunk_size=1000,
                                                       cdc.shape[1]) )
 
                     sign = term.sign
-                    if term.arg_derivatives[sn]:
+                    if term.arg_derivatives[svar.name]:
                         sign *= 1.0 / term.dt
 
                     if mtx.dtype == nm.float64:
@@ -233,13 +233,15 @@ def eval_term_op( state, term_desc, problem, **kwargs ):
     """Convenience wrapper of eval_term() in a context of ProblemDefinition
     instance."""
     return eval_term( state, term_desc, problem.conf,
-                      problem.domain, problem.variables, problem.materials,
-                      problem.get_timestepper(),
+                      problem.domain, problem.fields, problem.materials,
+                      problem.get_timestepper(), problem.ebcs,
+                      problem.epbcs, problem.lcbcs, problem.functions,
                       chunk_size = problem.domain.shape.n_el, **kwargs )
 
 ##
 # c: 03.01.2006, r: 05.03.2008
-def eval_term( state, term_desc, conf, domain, variables, materials, ts,
+def eval_term( state, term_desc, conf, domain, fields, materials, ts,
+               ebcs, epbcs, lcbcs, functions,
                funmod = None, chunk_size = 1000, term_prefixes = None,
                caches = None, ret_caches = False,
                override = True, new_geometries = True,
@@ -255,11 +257,10 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         if copy_materials:
             materials = materials.semideep_copy()
 
-    equation = Equation.from_desc('tmp', term_desc, domain.regions,
-                                  variables, materials, caches=caches,
+    variables = Variables.from_conf(conf.variables, fields)
+    equation = Equation.from_desc('tmp', term_desc, variables, domain.regions,
+                                  materials, caches=caches,
                                   user=kwargs, term_prefixes=term_prefixes)
-    variables.conn_info = {}
-    equation.collect_conn_info(variables.conn_info, variables)
 
     for cache in caches.itervalues():
         cache.set_mode( override = override )
@@ -271,32 +272,34 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
         itype = equation.terms[0].itype
 
     if new_geometries:
+        equations = Equations([equation], caches=caches)
+        equations.collect_conn_info()
+
         if itype == 'dw':
             variables.setup_dof_conns()
         else:
             variables.setup_extra_data()
 
         integrals = Integrals.from_conf(conf.integrals)
-        
-        geometries = {}
-        equation.describe_geometry( geometries, variables, integrals )
+        equations.describe_geometry(integrals)
+        variables = equations.variables
 
-    variables.set_data( state )
+    else:
+        variables.setup_dof_info()
+
+    variables.set_data(state)
 
     if update_materials:
         materials.time_update(ts, domain,
-                              [equation], variables, verbose=False)
+                              [equation], verbose=False)
 
     if itype == 'dw':
-        if not variables.has_eq_map:
-            variables.equation_mapping( conf.ebcs, conf.epbcs,
-                                        domain.regions, ts, funmod )
-            variables.setup_lcbc_operators( conf.lcbcs, domain.regions )
-            variables.setup_a_dof_conns() 
+        equations.time_update(ts, domain.regions,
+                              ebcs, epbcs, lcbcs, functions)
 
         if dw_mode == 'vector':
             residual = variables.create_stripped_state_vector()
-            assemble_vector(residual, equation, variables,
+            assemble_vector(residual, equation,
                             chunk_size, group_can_fail=False, **kwargs)
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
@@ -305,10 +308,10 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 
         elif dw_mode == 'matrix':
             if tangent_matrix is None:
-                tangent_matrix = variables.create_matrix_graph()
+                tangent_matrix = equations.create_matrix_graph()
 
             tangent_matrix.data[:] = 0.0
-            assemble_matrix(tangent_matrix, equation, variables,
+            assemble_matrix(tangent_matrix, equation,
                             chunk_size, group_can_fail=False, **kwargs)
             if variables.has_lcbc:
                 op_lcbc = variables.op_lcbc
@@ -376,14 +379,14 @@ def eval_term( state, term_desc, conf, domain, variables, materials, ts,
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def eval_residuals(state, equations, variables, chunk_size=1000, **kwargs):
+def eval_residuals(state, equations, chunk_size=1000, **kwargs):
     equations.invalidate_term_caches()
 
-    variables.data_from_state(state)
-    residual = variables.create_stripped_state_vector()
+    equations.set_variables_from_state(state)
+    residual = equations.create_stripped_state_vector()
 
     for equation in equations:
-        assemble_vector(residual, equation, variables,
+        assemble_vector(residual, equation,
                         chunk_size=chunk_size, **kwargs)
 
     return residual
@@ -401,12 +404,12 @@ def eval_residuals(state, equations, variables, chunk_size=1000, **kwargs):
 # 11.10.2006
 # 16.02.2007
 # 03.09.2007
-def eval_tangent_matrices(state, tangent_matrix, equations, variables,
+def eval_tangent_matrices(state, tangent_matrix, equations,
                           chunk_size=1000, **kwargs):
-    variables.data_from_state(state)
+    equations.set_variables_from_state(state)
 
     for equation in equations:
-        assemble_matrix(tangent_matrix, equation, variables,
+        assemble_matrix(tangent_matrix, equation,
                         chunk_size=chunk_size, **kwargs)
 
     return tangent_matrix

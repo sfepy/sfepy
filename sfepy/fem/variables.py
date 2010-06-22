@@ -5,9 +5,8 @@ import sfepy.base.la as la
 from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
      TreeItem
 from sfepy.fem.integrals import Integral
-from extmods.fem import raw_graph, evaluate_at
+from extmods.fem import evaluate_at
 from sfepy.fem.utils import extend_cell_data
-from sfepy.fem.conditions import Conditions
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator
@@ -212,13 +211,13 @@ class Variables( Container ):
         else:
             self.vdi = self.di
 
-    def setup_lcbc_operators(self, lcbc, regions):
+    def setup_lcbc_operators(self, lcbcs, regions):
         """
         Prepare linear combination BC operator matrix.
         """
-        if lcbc is None: return
+        if lcbcs is None: return
 
-        self.lcbcs = Conditions.from_conf(lcbc)
+        self.lcbcs = lcbcs
         lcbc_of_vars = self.lcbcs.group_by_variables()
 
         # Assume disjoint regions.
@@ -244,19 +243,25 @@ class Variables( Container ):
         else:
             raise ValueError( 'no LCBC defined!' )
 
-    def equation_mapping(self, ebc, epbc, regions, ts, functions,
+    def equation_mapping(self, ebcs, epbcs, regions, ts, functions,
                          vregions=None):
 
         if vregions is None:
             vregions = regions
 
-        self.ebcs = Conditions.from_conf(ebc)
-        self.epbcs = Conditions.from_conf(epbc)
+        self.ebcs = ebcs
+        self.epbcs = epbcs
 
         ##
         # Assing EBC, PBC to variables and regions.
-        self.bc_of_vars = self.ebcs.group_by_variables()
-        self.bc_of_vars = self.epbcs.group_by_variables(self.bc_of_vars)
+        if ebcs is not None:
+            self.bc_of_vars = self.ebcs.group_by_variables()
+
+        else:
+            self.bc_of_vars = {}
+
+        if epbcs is not None:
+            self.bc_of_vars = self.epbcs.group_by_variables(self.bc_of_vars)
 
         ##
         # List EBC nodes/dofs for each variable.
@@ -289,8 +294,14 @@ class Variables( Container ):
 
         self.has_eq_map = True
 
-    def setup_initial_conditions(self, conf_ics, regions, functions):
-        self.ics = Conditions.from_conf(conf_ics)
+    def get_matrix_shape(self):
+        if not self.has_eq_map:
+            raise ValueError('call equation_mapping() first!')
+
+        return (self.avdi.ptr[-1], self.adi.ptr[-1])
+
+    def setup_initial_conditions(self, ics, regions, functions):
+        self.ics = ics
         self.ic_of_vars = self.ics.group_by_variables()
 
         for var_name in self.di.var_names:
@@ -322,7 +333,7 @@ class Variables( Container ):
 ##             pause()
         return nods
 
-    def setup_a_dof_conns( self ):
+    def setup_adof_conns( self ):
         """Translate dofs to active dofs.
         Active dof connectivity key = (variable.name, region.name, type, ig)"""
         adof_conns = {}
@@ -368,94 +379,6 @@ class Variables( Container ):
         key = (var_name, region_name, dc_type.type, aig)
         dc = self.adof_conns[key]
         return dc
-        
-    def create_matrix_graph( self, var_names = None, vvar_names = None ):
-        """
-        Create tangent matrix graph. Order of dof connectivities is not
-        important here...
-        """
-        if not self.has_virtuals():
-            output( 'no matrix (no test variables)!' )
-            return None
-
-        shape = (self.avdi.ptr[-1], self.adi.ptr[-1])
-        output( 'matrix shape:', shape )
-        if nm.prod( shape ) == 0:
-            output( 'no matrix (zero size)!' )
-            return None
-
-        adcs = self.adof_conns
-
-        # Only volume dof connectivities are used, with the exception of trace
-        # surface dof connectivities.
-        shared = set()
-        rdcs = []
-        cdcs = []
-        for key, ii, info in iter_dict_of_lists(self.conn_info,
-                                                return_keys=True):
-            dct = info.dc_type.type
-            if not (dct in ('volume', 'scalar') or info.is_trace):
-                continue
-
-            rn, cn = info.virtual, info.state
-            if (rn is None) or (cn is None):
-                continue
-            
-            rreg_name = info.get_region_name(can_trace=False)
-            creg_name = info.get_region_name()
-
-            for rig, cig in info.iter_igs():
-                rkey = (self.dual_map[rn], rreg_name, dct, rig)
-                ckey = (cn, creg_name, dct, cig)
-                
-                dc_key = (rkey, ckey)
-##                 print dc_key
-                if not dc_key in shared:
-                    try:
-                        rdcs.append(adcs[rkey])
-                        cdcs.append(adcs[ckey])
-                    except:
-                        debug()
-                    shared.add(dc_key)
-
-##         print shared
-        for ii in range(len(rdcs)):
-            if (rdcs[ii].ndim == 1) and (cdcs[ii].ndim == 2):
-                rdcs[ii] = _fix_scalar_dc(rdcs[ii], cdcs[ii])
-
-            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 2):
-                cdcs[ii] = _fix_scalar_dc(cdcs[ii], rdcs[ii])
-
-            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 1):
-                rdcs[ii] = nm.array(rdcs[ii], ndmin=2)
-                cdcs[ii] = nm.array(cdcs[ii], ndmin=2)
-
-##             print rdcs[ii], cdcs[ii]
-##         pause()
-
-        if not shared:
-            # No virtual, state variable -> no matrix.
-            output( 'no matrix (empty dof connectivities)!' )
-            return None
-        
-        output( 'assembling matrix graph...' )
-        tt = time.clock()
-
-#	shape = nm.array( shape, dtype = nm.long )
-        ret, prow, icol = raw_graph( int( shape[0] ), int( shape[1] ),
-                                    len( rdcs ), rdcs, cdcs )
-        output( '...done in %.2f s' % (time.clock() - tt) )
-        nnz = prow[-1]
-        output( 'matrix structural nonzeros: %d (%.2e%% fill)' \
-                % (nnz, float( nnz ) / nm.prod( shape ) ) )
-##         print ret, prow, icol, nnz
-	
-        data = nm.zeros( (nnz,), dtype = self.dtype )
-        matrix = sp.csr_matrix( (data, icol, prow), shape )
-##         matrix.save( 'matrix', format = '%d %d %e\n' )
-##         pause()
-
-        return matrix
 
     def create_state_vector( self ):
         vec = nm.zeros( (self.di.ptr[-1],), dtype = self.dtype )

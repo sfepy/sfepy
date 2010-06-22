@@ -117,8 +117,9 @@ class Oseen( NonlinearSolver ):
         hook = problem.functions[conf.stabilization_hook]
         stabil, ns, ii = hook(problem)
 
-        update_var = problem.variables.non_state_data_from_state
-        make_full_vec = problem.variables.make_full_vec
+        variables = problem.get_variables()
+        update_var = variables.non_state_data_from_state
+        make_full_vec = variables.make_full_vec
 
         print 'problem size:'
         print '    velocity: %s' % ii['us']
@@ -147,8 +148,7 @@ class Oseen( NonlinearSolver ):
             print '|u|_max: %.2e' % u_norm
 
             stabil.function.set_extra_args(b_norm = b_norm)
-            stabil.time_update(None, problem.domain, problem.equations,
-                               problem.variables)
+            stabil.time_update(None, problem.domain, problem.equations)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
             print 'stabilization parameters:'
             print '                   gamma: %.12e' % max_pars['gamma']

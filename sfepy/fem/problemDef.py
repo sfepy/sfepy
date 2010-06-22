@@ -13,6 +13,7 @@ from variables import Variables
 from materials import Materials
 from equations import Equations
 from integrals import Integrals
+from sfepy.fem.conditions import Conditions
 import fea as fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, eval_term_op
@@ -74,6 +75,8 @@ class ProblemDefinition( Struct ):
         obj.setup_output()
 
         obj.set_regions(conf.regions, conf.materials, obj.functions)
+
+        obj.clear_equations()
 
         if init_fields:
             obj.set_fields( conf.fields )
@@ -166,7 +169,10 @@ class ProblemDefinition( Struct ):
     def clear_equations( self ):
         self.integrals = None
         self.equations = None
-    
+        self.ebcs = None
+        self.epbcs = None
+        self.lcbcs = None
+
     def set_equations(self, conf_equations=None, user=None,
                       cache_override=None,
                       keep_solvers=False, make_virtual=False,
@@ -259,22 +265,7 @@ class ProblemDefinition( Struct ):
     # 29.01.2006, c
     # 25.07.2006
     def create_state_vector( self ):
-        return self.variables.create_state_vector()
-
-    def update_bc( self, ts, conf_ebc, conf_epbc, conf_lcbc, functions,
-                   create_matrix = False ):
-        """Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
-        create_matrix to True."""
-        self.variables.equation_mapping(conf_ebc, conf_epbc,
-                                        self.domain.regions, ts, functions)
-        self.variables.setup_lcbc_operators(conf_lcbc, self.domain.regions)
-                
-        self.variables.setup_a_dof_conns()
-        if (self.mtx_a is None) or create_matrix:
-            self.mtx_a = self.variables.create_matrix_graph()
-##             import sfepy.base.plotutils as plu
-##             plu.spy( self.mtx_a )
-##             plu.pylab.show()
+        return self.equations.create_state_vector()
 
     ##
     # c: 13.06.2008, r: 13.06.2008
@@ -299,17 +290,28 @@ class ProblemDefinition( Struct ):
 
         self.materials.time_update(ts, self.domain, self.equations)
 
-    def update_equations(self, ts=None, functions=None):
+    def update_equations(self, ts=None, ebcs=None, epbcs=None,
+                         lcbcs=None, functions=None, create_matrix=False):
+        """
+        Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
+        create_matrix to True.
+        """
         if ts is None:
             ts = self.get_default_ts(step=0)
         functions = get_default(functions, self.functions)
 
-        self.equations.time_update(ts)
-        self.variables.time_update(ts, functions)
+        self.equations.time_update(ts, self.domain.regions,
+                                   ebcs, epbcs, lcbcs, functions)
 
-    def time_update( self, ts = None,
-                     conf_ebc = None, conf_epbc = None, conf_lcbc = None,
-                     functions = None, create_matrix = False ):
+        if (self.mtx_a is None) or create_matrix:
+            self.mtx_a = self.equations.create_matrix_graph()
+            ## import sfepy.base.plotutils as plu
+            ## plu.spy( self.mtx_a )
+            ## plu.plt.show()
+
+    def time_update(self, ts=None,
+                    conf_ebc=None, conf_epbc=None, conf_lcbc=None,
+                    functions=None, create_matrix=False):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
 
@@ -318,15 +320,20 @@ class ProblemDefinition( Struct ):
         conf_epbc = get_default( conf_epbc, self.conf.epbcs )
         conf_lcbc = get_default( conf_lcbc, self.conf.lcbcs )
         functions = get_default(functions, self.functions)
-        self.update_bc(ts, conf_ebc, conf_epbc, conf_lcbc, functions,
-                       create_matrix)
+
+        self.ebcs = Conditions.from_conf(conf_ebc)
+        self.epbcs = Conditions.from_conf(conf_epbc)
+        self.lcbcs = Conditions.from_conf(conf_lcbc)
+
         self.update_materials(ts)
-        self.update_equations(ts)
+        self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
+                              functions, create_matrix)
 
     def setup_ic( self, conf_ics = None, functions = None ):
         conf_ics = get_default(conf_ics, self.conf.ics)
+        ics = Conditions.from_conf(conf_ics)
         functions = get_default(functions, self.functions)
-        self.variables.setup_initial_conditions(conf_ics,
+        self.equations.setup_initial_conditions(ics,
                                                 self.domain.regions, functions)
 
     def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
@@ -357,17 +364,17 @@ class ProblemDefinition( Struct ):
     # 19.09.2006
     def apply_ebc( self, vec, force_values = None ):
         """Apply essential (Dirichlet) boundary conditions."""
-        self.variables.apply_ebc( vec, force_values )
+        self.equations.apply_ebc( vec, force_values )
 
     def apply_ic( self, vec, force_values = None ):
         """Apply initial conditions."""
-        self.variables.apply_ic( vec, force_values )
+        self.equations.apply_ic( vec, force_values )
 
     ##
     # 25.07.2006, c
     def update_vec( self, vec, delta ):
-        self.variables.update_vec( vec, delta )
-        
+        self.equations.update_vec( vec, delta )
+
     ##
     # c: 18.04.2006, r: 07.05.2008
     def state_to_output( self, vec, fill_value = None, var_info = None,
@@ -385,8 +392,8 @@ class ProblemDefinition( Struct ):
         corresponding to the unknown variables, each transformed to shape
         (n_mesh_nod, n_dof per node) - all values in extra nodes are removed.
         """
-        return self.variables.state_to_output( vec, fill_value,
-                                               var_info, extend )
+        return self.equations.state_to_output(vec, fill_value,
+                                              var_info, extend)
 
     ##
     # 26.07.2006, c
@@ -420,7 +427,6 @@ class ProblemDefinition( Struct ):
     # 08.06.2007, c
     def advance( self, ts ):
         self.equations.advance( ts )
-        self.variables.advance( ts )
 
     ##
     # c: 01.03.2007, r: 23.06.2008
@@ -441,7 +447,7 @@ class ProblemDefinition( Struct ):
             import os.path as op
 
             meshes = {}
-            for var in self.variables.iter_state():
+            for var in self.equations.variables.iter_state():
                 rname = var.field.region.name
                 if meshes.has_key( rname ):
                     mesh = meshes[rname]
@@ -461,22 +467,46 @@ class ProblemDefinition( Struct ):
             self.domain.mesh.write( filename, io = 'auto', out = out,
                                     float_format = float_format, **kwargs )
 
-    ##
-    # c: 19.09.2006, r: 27.02.2008
-    def save_ebc( self, filename, force = True, default = 0.0 ):
-        output( 'saving ebc...' )
-        state = self.create_state_vector()
-        state.fill( default )
+    def save_ebc(self, filename, force=True, default=0.0):
+        """
+        Save essential boundary conditions as state variables.
+        """
+        output('saving ebc...')
+        variables = self.get_variables(auto_create=True)
+
+        ebcs = Conditions.from_conf(self.conf.ebcs)
+        epbcs = Conditions.from_conf(self.conf.epbcs)
+
+        try:
+            ts = TimeStepper.from_conf(self.conf.ts)
+            ts.set_step(0)
+
+        except:
+            ts = None
+
+        try:
+            variables.equation_mapping(ebcs, epbcs,
+                                       self.domain.regions, ts, self.functions)
+        except Exception, e:
+            output( 'cannot make equation mapping!' )
+            output( 'reason: %s' % e )
+
+        state = variables.create_state_vector()
+        state.fill(default)
+
         if force:
-            vals = dict_from_keys_init([self.variables[ii]
-                                        for ii in self.variables.state])
-            for ii, key in enumerate( vals.iterkeys() ):
+            vals = dict_from_keys_init(variables.state)
+            for ii, key in enumerate(vals.iterkeys()):
                 vals[key] = ii + 1
-            self.apply_ebc( state, force_values = vals )
+
+            variables.apply_ebc(state, force_values=vals)
+
         else:
-            self.apply_ebc( state )
-        self.save_state( filename, state, fill_value = default )
-        output( '...done' )
+            variables.apply_ebc(state)
+
+        out = variables.state_to_output(state, extend=True)
+        self.save_state(filename, out=out, fill_value=default)
+        output('...done')
 
     def save_regions( self, filename_trunk, region_names = None ):
 	"""Save regions as meshes."""
@@ -591,7 +621,7 @@ class ProblemDefinition( Struct ):
                 raise AttributeError('call ProblemDefinition.init_solvers() or'\
                       ' set reuse to False!')
         else:
-            if self.variables.has_lcbc:
+            if self.equations.variables.has_lcbc:
                 ev = LCBCEvaluator( self, **kwargs )
             else:
                 ev = BasicEvaluator( self, **kwargs )
@@ -675,7 +705,7 @@ class ProblemDefinition( Struct ):
         else:
             state = state0.copy()
 
-        self.variables.set_data(var_data)
+        self.equations.set_data(var_data)
 
         self.apply_ebc( state, force_values = force_values )
 
@@ -687,7 +717,7 @@ class ProblemDefinition( Struct ):
         
         return state
 
-    def evaluate(self, expression, state=None, **kwargs):
+    def evaluate(self, expression, state=None, var_names=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of eval_term_op().
 
@@ -705,10 +735,18 @@ class ProblemDefinition( Struct ):
         array([ 5.68437535])
         """
         if state is None:
+            if var_names is None:
+                variables = self.get_variables()
+                if variables is not None:
+                    var_names = variables.names
+
+                else:
+                    var_names = []
+
             kwargs = copy(kwargs)
             vargs = {}
             for key, val in kwargs.items():
-                if self.variables.has_key(key):
+                if key in var_names:
                     vargs[key] = val
                     kwargs.pop(key)
 
@@ -730,7 +768,20 @@ class ProblemDefinition( Struct ):
 
     def init_variables( self, state ):
         """Initialize variables with history."""
-        self.variables.init_state( state )
+        self.equations.variables.init_state( state )
+
+    def get_variables(self, auto_create=False):
+        if self.equations is not None:
+            variables = self.equations.variables
+
+        elif auto_create:
+            variables = Variables.from_conf(self.conf.variables, self.fields)
+            variables.setup_dof_info()
+
+        else:
+            variables = None
+
+        return variables
 
     def get_output_name(self, suffix=None, extra=None, mode=None):
         """Return default output file name, based on the output format,
