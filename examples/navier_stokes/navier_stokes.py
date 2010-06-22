@@ -169,10 +169,10 @@ def verify_incompressibility( out, problem, state, extend = False ):
     from sfepy.base.base import Struct, debug, nm
     from sfepy.fem import eval_term_op
 
-    vv = problem.variables
-    one = nm.ones( (vv['pp'].field.n_nod,), dtype = nm.float64 )
-    vv['pp'].data_from_data( one )
-    zero = problem.evaluate('dw_stokes.i1.Omega( u, pp )', pp=one,
+    vv = problem.get_variables()
+    one = nm.ones( (vv['p'].field.n_nod,), dtype = nm.float64 )
+    vv['p'].data_from_any( one )
+    zero = problem.evaluate('dw_stokes.i1.Omega( u, p )', p=one, u=vv['u'](),
                             call_mode='d_eval')
     print 'div( u ) = %.3e' % zero
 

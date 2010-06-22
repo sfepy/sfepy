@@ -166,11 +166,13 @@ class Test( TestCommon ):
         vec = self.vec
         problem  = self.problem
 
+        variables = problem.get_variables()
+
         ok = True
         for var_name, expression in sol.iteritems():
-            coor = problem.variables[var_name].field.get_coor()
+            coor = variables[var_name].field.get_coor()
             ana_sol = self.eval_coor_expression( expression, coor )
-            num_sol = problem.variables.get_state_part_view( vec, var_name )
+            num_sol = variables.get_state_part_view( vec, var_name )
             ret = self.compare_vectors( ana_sol, num_sol,
                                        label1 = 'analytical %s' % var_name,
                                        label2 = 'numerical %s' % var_name )
@@ -195,9 +197,10 @@ class Test( TestCommon ):
         region_names = ['Left', 'Right', 'Gamma']
         values = [5.0, -5.0, 0.0]
 
-        get_state = problem.variables.get_state_part_view
+        variables = problem.get_variables()
+        get_state = variables.get_state_part_view
         state = vec.copy()
-        
+
         problem.time_update( conf_ebc = {}, conf_epbc = {} )
 #        problem.save_ebc( 'aux.vtk' )
 
@@ -205,7 +208,7 @@ class Test( TestCommon ):
         ev = BasicEvaluator( problem )
         aux = ev.eval_residual( state )
 
-        field = problem.variables['t'].field
+        field = variables['t'].field
 
         name = op.join( self.options.out_dir,
                         op.split( problem.domain.mesh.name )[1] + '_%02d.mesh' ) 
@@ -219,8 +222,7 @@ class Test( TestCommon ):
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
-                val1 = eval_term_op(None, flux_term, problem,
-                                    update_materials=True)
+                val1 = problem.evaluate(flux_term, t=variables['t']())
 
                 rvec = get_state( aux, 't', True )
                 reg = problem.domain.regions[region_name]

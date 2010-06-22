@@ -145,22 +145,23 @@ class Test( TestCommon ):
 
         region_names = ['Gamma']
 
-        get_state = problem.variables.get_state_part_view
+        variables = problem.get_variables()
+        get_state = variables.get_state_part_view
         state = vec.copy()
-        
+
         problem.time_update( conf_ebc = {}, conf_epbc = {} )
-#        problem.save_ebc( 'aux.vtk' )
+        ## problem.save_ebc( 'aux.vtk' )
 
         problem.apply_ebc( state )
         ev = BasicEvaluator( problem )
         aux = ev.eval_residual( state )
 
-        field = problem.variables['t'].field
+        field = variables['t'].field
 
         ok = True
         for ii, region_name in enumerate( region_names ):
             flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
-            val1 = eval_term_op(None, flux_term, problem, update_materials=True)
+            val1 = problem.evaluate(flux_term, t=variables['t']())
 
             rvec = get_state( aux, 't', True )
             reg = problem.domain.regions[region_name]
@@ -172,5 +173,5 @@ class Test( TestCommon ):
             self.report( '%d. %s: |%e - %e| = %e < %.2e'\
                          % (ii, region_name, val1, val2, abs( val1 - val2 ),
                             eps) )
-        
+
         return ok

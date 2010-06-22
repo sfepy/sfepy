@@ -17,8 +17,8 @@ class Test( TestInput ):
         pb = ProblemDefinition.from_conf( self.test_conf )
         pb.time_update()
 
-        vvs = pb.variables
-        set = vvs.set_state_part
+        vvs = pb.get_variables()
+        setv = vvs.set_state_part
         make_full = vvs.make_full_vec
 
         svec_u = nm.ones( (vvs.adi.n_dof['u'],), dtype = nm.float64 )
@@ -26,8 +26,8 @@ class Test( TestInput ):
         svec_phi.fill( 2.0 )
 
         svec = vvs.create_stripped_state_vector()
-        set( svec, svec_u, 'u', stripped = True )
-        set( svec, svec_phi, 'phi', stripped = True )
+        setv( svec, svec_u, 'u', stripped = True )
+        setv( svec, svec_phi, 'phi', stripped = True )
 
         vec = make_full( svec )
 

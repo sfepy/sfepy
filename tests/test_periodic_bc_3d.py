@@ -111,32 +111,4 @@ functions = {
     'match_z_plane' : (match_z_plane,),
 }
 
-from sfepy.base.testing import TestCommon
-
-##
-# 01.06.2007, c
-class Test( TestCommon ):
-
-    ##
-    # 01.06.2007, c
-    def from_conf( conf, options ):
-        from sfepy.fem import ProblemDefinition
-        problem = ProblemDefinition.from_conf( conf, init_equations = False )
-
-        test = Test( problem = problem,
-                     conf = conf, options = options )
-        return test
-    from_conf = staticmethod( from_conf )
-
-    ##
-    # c: 01.06.2007, r: 18.02.2008
-    def test_pbc( self ):
-        problem  = self.problem
-        conf = self.conf
-        
-        problem.variables.equation_mapping(conf.ebcs, conf.epbcs,
-                                           problem.domain.regions,
-                                           None, problem.functions)
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
-        return problem.variables.has_ebc( state )
+from test_periodic_bc_2d import Test

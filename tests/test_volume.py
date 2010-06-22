@@ -24,9 +24,9 @@ regions = {
 }
 
 expressions = {
-    'volume_s': ('d_volume.i1.Omega( p )', 'p'),
-    'volume_u': ('d_volume.i1.Omega( u )', 'u'),
-    'surface' : ('d_volume_surface.i2.Gamma( p )', 'p'),
+    'volume_s': 'd_volume.i1.Omega( p )',
+    'volume_u': 'd_volume.i1.Omega( u )',
+    'surface' : 'd_volume_surface.i2.Gamma( p )',
 }
 
 fe = {
@@ -52,25 +52,19 @@ class Test( TestCommon ):
     from_conf = staticmethod( from_conf )
 
     def test_volume( self ):
-        
         from sfepy.base.base import select_by_names
         from sfepy.fem import eval_term_op
 
         ok = True
-        pb = self.problem
+
         volumes = {}
         avg = 0.0
-        for key, aux in expressions.items():
-            term, var = aux
+        for key, term in expressions.items():
+            val = self.problem.evaluate(term)
 
-            variables = select_by_names( pb.conf.variables, var )
-            pb.set_variables( variables )
-
-            dummy = pb.create_state_vector()
-            val = eval_term_op( dummy, term, pb )
             volumes[key] = val
             avg += val
-            
+
         avg /= len(volumes)
 
         for key, val in volumes.items():

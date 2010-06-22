@@ -116,12 +116,18 @@ class Test( TestCommon ):
     ##
     # c: 01.06.2007, r: 18.02.2008
     def test_pbc( self ):
+        from sfepy.fem import Variables, Conditions
+
         problem  = self.problem
         conf = self.conf
-        
-        problem.variables.equation_mapping(conf.ebcs, conf.epbcs,
-                                           problem.domain.regions,
-                                           None, problem.functions)
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
-        return problem.variables.has_ebc( state )
+
+        ebcs = Conditions.from_conf(conf.ebcs)
+        epbcs = Conditions.from_conf(conf.epbcs)
+
+        variables = Variables.from_conf(conf.variables, problem.fields)
+        variables.setup_dof_info()
+        variables.equation_mapping(ebcs, epbcs, problem.domain.regions,
+                                   None, problem.functions)
+        state = variables.create_state_vector()
+        variables.apply_ebc(state)
+        return variables.has_ebc(state)

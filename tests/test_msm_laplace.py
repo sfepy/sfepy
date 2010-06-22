@@ -141,6 +141,8 @@ class Test( TestCommon ):
         import os.path as op
         problem  = self.problem
 
+        variables = problem.get_variables()
+
         sols = self._build_rhs( self.conf.solutions )
 
         ok = True
@@ -155,9 +157,9 @@ class Test( TestCommon ):
             problem.time_update()
             problem.equations.reset_term_caches()
             vec = problem.solve()
-            coor = problem.variables[var_name].field.get_coor()
+            coor = variables[var_name].field.get_coor()
             ana_sol = self.eval_coor_expression( sol_expr, coor )
-            num_sol = problem.variables.get_state_part_view( vec, var_name )
+            num_sol = variables.get_state_part_view( vec, var_name )
 
             ana_norm = nm.linalg.norm( ana_sol, nm.inf )
             ret = self.compare_vectors( ana_sol, num_sol,

@@ -92,7 +92,7 @@ class Test( TestCommon ):
     def from_conf( conf, options ):
         from sfepy.fem import ProblemDefinition
 
-        problem = ProblemDefinition.from_conf(conf, init_variables=False)
+        problem = ProblemDefinition.from_conf(conf)
         test = Test(problem = problem, conf = conf, options = options)
         return test
     from_conf = staticmethod( from_conf )
@@ -104,8 +104,7 @@ class Test( TestCommon ):
 
         problem.materials.time_update(ts,
                                       problem.domain,
-                                      problem.equations,
-                                      problem.variables)
+                                      problem.equations)
 
         coors = problem.domain.get_mesh_coors()
         mat1 = problem.materials['mf1']
@@ -127,7 +126,6 @@ class Test( TestCommon ):
         import os.path as op
         problem = self.problem
 
-        problem.set_variables(self.conf.variables) 
         problem.set_equations(self.conf.equations) 
 
         problem.time_update()

@@ -223,8 +223,7 @@ class Test( TestCommon ):
         rhs_mat = problem.materials['rhs']
 
         rhs_mat.function.set_extra_args(expression='0 * x')
-#        problem.time_update()
-        
+
         ok = True
         for eq_name, equation in equations.iteritems():
             problem.set_equations( {eq_name : equation} )
@@ -233,7 +232,10 @@ class Test( TestCommon ):
             rhss = self._build_rhs( problem.equations[eq_name],
                                    self.conf.solutions )
             erhs = problem.conf.equations_rhs[eq_name]  
+
             problem.set_equations( {eq_name : equation + erhs} )
+            variables = problem.get_variables()
+
             for sol_name, sol in problem.conf.solutions.iteritems():
                 self.report( 'testing', sol_name )
                 var_name, sol_expr = sol
@@ -246,9 +248,9 @@ class Test( TestCommon ):
                 problem.time_update()
                 problem.equations.reset_term_caches()
                 vec = problem.solve()
-                coor = problem.variables[var_name].field.get_coor()
+                coor = variables[var_name].field.get_coor()
                 ana_sol = self.eval_coor_expression( sol_expr, coor )
-                num_sol = problem.variables.get_state_part_view( vec, var_name )
+                num_sol = variables.get_state_part_view( vec, var_name )
 
                 ana_norm = nm.linalg.norm( ana_sol, nm.inf )
                 ret = self.compare_vectors( ana_sol, num_sol,

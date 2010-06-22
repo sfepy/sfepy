@@ -116,7 +116,7 @@ class Test( TestCommon ):
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
         from sfepy.base.base import select_by_names
-        from sfepy.fem import eval_term_op, Function
+        from sfepy.fem import Function, Variables
 
         ok = True
         pb = self.problem
@@ -124,35 +124,34 @@ class Test( TestCommon ):
             term_template, (prefix, par_name, d_vars, dw_vars, mat_mode) = aux
             print term_template, prefix, par_name, d_vars, dw_vars, mat_mode
 
-            var_names = nm.unique1d( d_vars + dw_vars )
-            variables = select_by_names( pb.conf.variables, var_names )
-            pb.set_variables( variables )
+            term1 = term_template % ((prefix,) + d_vars)
+
+            variables = Variables.from_conf(self.conf.variables, pb.fields)
+            variables.setup_dof_info()
 
             vecs = {}
             for var_name in d_vars:
-                var = pb.variables[var_name]
+                var = variables[var_name]
                 n_dof = var.field.n_nod * var.field.shape[0]
                 vecs[var_name] = nm.arange( n_dof, dtype = nm.float64 )
                 var.data_from_data( vecs[var_name] )
 
-            term1 = term_template % ((prefix,) + d_vars)
-            pb.set_equations( {'eq': term1} )
-
             pb.materials['m'].function.set_extra_args(term = mat_mode)
-            pb.time_update()
 
-            dummy = pb.create_state_vector()
             if prefix == 'd':
-                val1 = eval_term_op( dummy, term1, pb )
+                val1 = pb.evaluate(term1, var_names=d_vars, **vecs)
+
             else:
-                val1 = eval_term_op( dummy, term1, pb, call_mode = 'd_eval' )
-                
+                val1 = pb.evaluate(term1, call_mode='d_eval',
+                                   var_names=d_vars, **vecs)
+
             self.report( '%s: %s' % (term1, val1) )
-            
+
             term2 = term_template % (('dw',) + dw_vars[:2])
 
-            vec = eval_term_op( dummy, term2, pb )
-            pvec = pb.variables.get_state_part_view(vec, dw_vars[2])
+            vec = pb.evaluate(term2, var_names=dw_vars, **vecs)
+
+            pvec = variables.get_state_part_view(vec, dw_vars[2])
             val2 = nm.dot( vecs[par_name], pvec )
             self.report( '%s: %s' % (term2, val2) )
 
@@ -161,5 +160,5 @@ class Test( TestCommon ):
             self.report( 'relative difference: %e -> %s' % (err, _ok) )
 
             ok = ok and _ok
-            
+
         return ok

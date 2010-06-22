@@ -134,11 +134,13 @@ def create_stabil_mat(problem):
           'u' : 'u', 'b' : 'b', 'v' : 'v',
           'fluid' : 'fluid', 'omega' : 'omega', 'i1' : 'i1', 'i2' : 'i2'}
 
+    variables = problem.get_variables()
+
     # Indices to the state vector.
     ii = {}
-    ii['u'] = problem.variables.get_indx(ns['u'])
-    ii['us'] = problem.variables.get_indx(ns['u'], stripped=True)
-    ii['ps'] = problem.variables.get_indx(ns['p'], stripped=True)
+    ii['u'] = variables.get_indx(ns['u'])
+    ii['us'] = variables.get_indx(ns['u'], stripped=True)
+    ii['ps'] = variables.get_indx(ns['p'], stripped=True)
 
     stabil_mat = problem.materials['stabil']
     stabil = dict_to_struct(stabil_mat.datas['special'], flag=(1,))
@@ -174,7 +176,7 @@ def create_stabil_mat(problem):
             for ig in term.iter_groups():
                 # This sets term.ig - for 1 group only!!!
                 break
-            var = problem.variables[ns['u']]
+            var = variables[ns['u']]
             ap, vg = var.get_approximation( term.get_current_group(), 'Volume' )
             delta = 1.0
             mode = diameter_modes[stabil.diameter_mode]
