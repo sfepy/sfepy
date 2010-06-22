@@ -913,6 +913,19 @@ class Term(Struct):
         out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
         return out
 
+    def get_virtual_variable(self):
+        return self.get_args_by_name(self.names.virtual)[0]
+
+    def get_state_variables(self, unknown_only=False):
+        variables = self.get_args_by_name(self.names.state)
+
+        if unknown_only:
+            variables = [var for var in variables
+                         if (var.kind == 'unknown') and
+                         (self.arg_steps[var.name] == 0)]
+
+        return variables
+
 ##     def get_quadrature_orders(self):
 ##         """Curently, it just takes the order of the term integral."""
 ##         return self.integral.order
