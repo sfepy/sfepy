@@ -891,8 +891,9 @@ class Term(Struct):
             yield ig
 
     def time_update( self, ts ):
-        self.step = ts.step
-        self.dt = ts.dt
+        if ts is not None:
+            self.step = ts.step
+            self.dt = ts.dt
 
     def advance(self, ts):
         """Advance to the next time step. Implemented in subclasses."""

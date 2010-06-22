@@ -1223,7 +1223,8 @@ class FieldVariable(Variable):
         Store time step, set variable data for variables with the setter
         function.
         """
-        self.dt = ts.dt
+        if ts is not None:
+            self.dt = ts.dt
 
         if hasattr(self, 'special') and ('setter' in self.special):
             setter_name = self.special['setter']
