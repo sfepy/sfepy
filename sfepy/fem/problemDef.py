@@ -405,8 +405,8 @@ class ProblemDefinition( Struct ):
     # created: 26.07.2006
     # last revision: 21.12.2007
     def set_mesh_coors( self, coors, update_state = False ):
-        fea.set_mesh_coors( self.domain, self.fields, self.geometries,
-                          coors, update_state )
+        fea.set_mesh_coors(self.domain, self.fields, self.equations.geometries,
+                           coors, update_state )
 
     def get_dim( self, get_sym = False ):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
