@@ -286,7 +286,7 @@ def eval_term( state, term_desc, conf, domain, fields, materials, ts,
     else:
         variables.setup_dof_info()
 
-    variables.set_data(state)
+    variables.set_data(state, ignore_unknown=True)
 
     if update_materials:
         materials.time_update(ts, domain,

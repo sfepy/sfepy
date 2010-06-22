@@ -355,18 +355,21 @@ class Equations( Container ):
         """
         return self.variables.get_state_parts(vec)
 
-    def set_data(self, data, step=0):
+    def set_data(self, data, step=0, ignore_unknown=False):
         """
         Set data (vectors of DOF values) of variables.
 
-        Paramters
-        ---------
-        data : dict
+        Parameters
+        ----------
+        data : array
             The dictionary of {variable_name : data vector}.
-        step : int
+        step : int, optional
             The time history step, 0 (default) = current.
+        ignore_unknown : bool, optional
+            Ignore unknown variable names if `data` is a dict.
         """
-        self.variables.set_data(data, step=step)
+        self.variables.set_data(data, step=step,
+                                ignore_unknown=ignore_unknown)
 
     def apply_ebc(self, vec, force_values=None):
         """

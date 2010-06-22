@@ -705,7 +705,7 @@ class ProblemDefinition( Struct ):
         else:
             state = state0.copy()
 
-        self.equations.set_data(var_data)
+        self.equations.set_data(var_data, ignore_unknown=True)
 
         self.apply_ebc( state, force_values = force_values )
 

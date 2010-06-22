@@ -551,12 +551,18 @@ class Variables( Container ):
 
         return out
 
-    def set_data(self, data, step = 0):
-        """Set data (vectors of values) of variables.
+    def set_data(self, data, step=0, ignore_unknown=False):
+        """
+        Set data (vectors of DOF values) of variables.
 
-        Arguments:
-        data .. state vector or dictionary of {variable_name : data vector}
-        step .. time history step, 0 = current.
+        Parameters
+        ----------
+        data : array
+            The state vector or dictionary of {variable_name : data vector}.
+        step : int, optional
+            The time history step, 0 (default) = current.
+        ignore_unknown : bool, optional
+            Ignore unknown variable names if `data` is a dict.
         """
         if data is None: return
         
@@ -565,10 +571,16 @@ class Variables( Container ):
             for key, val in data.iteritems():
                 try:
                     var = self[key]
-                except (ValueError, IndexError):
-                    raise KeyError('unknown variable! (%s)' % key)
 
-                var.data_from_any(val, step=step)
+                except (ValueError, IndexError):
+                    if ignore_unknown:
+                        pass
+
+                    else:
+                        raise KeyError('unknown variable! (%s)' % key)
+
+                else:
+                    var.data_from_any(val, step=step)
 
         elif isinstance(data, nm.ndarray):
             self.data_from_state(data)
