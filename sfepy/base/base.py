@@ -870,6 +870,16 @@ def invert_dict( d, is_val_tuple = False ):
             di[val] = key
     return di
 
+def remap_dict(d, map):
+    """
+    Utility function to remap state dict keys according to var_map.
+    """
+    out = {}
+    for new_key, key in map.iteritems():
+        out[new_key] = d[key]
+
+    return out
+
 ##
 # 24.08.2006, c
 # 05.09.2006
