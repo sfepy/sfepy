@@ -704,9 +704,14 @@ def main():
             output("...mesh written to tmp/mesh.vtk")
             return
 
-        else:
+        elif options.dft:
             output('the --dft option requires input file') 
             return
+
+        else:
+            parser.print_help()
+            return
+
     else:
         parser.print_help()
         return
