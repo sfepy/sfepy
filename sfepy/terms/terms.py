@@ -781,22 +781,20 @@ class Term(Struct):
 
         return out, kind
 
-    ##
-    # c: 29.11.2007, r: 10.04.2008
-    def describe_geometry( self, geometries, variables, integrals ):
-        """Takes reference to the used integral. Updates self.integral_name."""
+    def describe_geometry(self, geometries, integrals):
+        """
+        Takes reference to the used integral. Updates
+        self.integral_name.
+        """
         if not self.has_geometry: return
 
         self.integral = integrals.get(self.integral_name,
                                       *self.get_integral_info())
         self.integral_name = self.integral.name
-        
-        tgs = self.get_geometry_types()
-        
-        for var_name in self.get_variable_names():
-            ## print '>>>>>', self.name, var_name
 
-            variable = variables[var_name]
+        tgs = self.get_geometry_types()
+
+        for variable in self.get_variables():
             if not variable.has_field: continue
 
             field = variable.field
@@ -805,20 +803,20 @@ class Term(Struct):
             if not is_trace:
                 assert_( field.region.contains( self.region ) )
 
-##             print field.name, field.region_name
-##             print field.bases
+            ## print field.name, field.region_name
+            ## print field.bases
 
-            if tgs.has_key( var_name ):
-##                 print ':', tgs[var_name]
+            if tgs.has_key(variable.name):
 
                 if is_trace:
                     region, ig_map = self.region.get_mirror_region()[:2]
 
                 else:
                     region, ig_map = self.region, None
-                    
+
                 field.aps.describe_geometry(field, geometries,
-                                            tgs[var_name], region, self.region,
+                                            tgs[variable.name],
+                                            region, self.region,
                                             self.integral, ig_map=ig_map)
 
     def get_region(self):
@@ -913,6 +911,9 @@ class Term(Struct):
         key = self.get_current_group()
         out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
         return out
+
+    def get_variables(self):
+        return self.get_args_by_name(self.names.variable)
 
     def get_virtual_variable(self):
         return self.get_args_by_name(self.names.virtual)[0]

@@ -150,7 +150,7 @@ class Equations( Container ):
         output('describing geometries...', verbose=verbose)
         tt = time.clock()
         for eq in self:
-            eq.describe_geometry(self.geometries, self.variables, integrals)
+            eq.describe_geometry(self.geometries, integrals)
         output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         
     def get_variable_names( self ):
@@ -554,6 +554,6 @@ class Equation( Struct ):
             
             conn_info[key] = vals
 
-    def describe_geometry(self, geometries, variables, integrals):
+    def describe_geometry(self, geometries, integrals):
         for term in self.terms:
-            term.describe_geometry(geometries, variables, integrals)
+            term.describe_geometry(geometries, integrals)
