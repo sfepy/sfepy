@@ -1137,6 +1137,7 @@ class FieldVariable(Variable):
 
         self.has_field = True
         self.has_bc = True
+        self._variables = None
 
     def set_field(self, field):
         """
@@ -1168,7 +1169,11 @@ class FieldVariable(Variable):
             var = self
 
         elif self.primary_var_name is not None:
-            var = self._variables[self.primary_var_name]
+            if self._variables is not None:
+                var = self._variables[self.primary_var_name]
+
+            else:
+                var = None
 
         else:
             var = self

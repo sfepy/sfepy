@@ -437,7 +437,9 @@ class Equation( Struct ):
             aux = term.get_args_by_name(var_names)
             for var in aux:
                 variables.append(var)
-                variables.append(var.get_primary())
+                pvar = var.get_primary()
+                if pvar is not None:
+                    variables.append(pvar)
 
         return variables
 
