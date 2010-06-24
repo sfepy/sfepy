@@ -4,13 +4,6 @@ from sfepy.base.base import *
 from sfepy.base.conf import transform_variables, transform_fields
 from sfepy.base.testing import TestCommon
 
-fields = {
-    'scalar_si' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P2'}),
-    'vector_si' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P2'}),
-    'scalar_tp' : ((1,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
-    'vector_tp' : ((3,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
-}
-
 variables = {
     'u'       : ('unknown field', 'f', 0),
     'v'       : ('test field',    'f', 'u'),
@@ -21,14 +14,23 @@ def in_dir(adir):
 
 def do_interpolation(m2, m1, data, field_name):
     """Interpolate data from m1 to m2. """
-    from sfepy.fem import Domain, Fields, Variables
+    from sfepy.fem import Domain, Field, Variables
+
+    fields = {
+        'scalar_si' : ((1,1), 'Omega', 2),
+        'vector_si' : ((3,1), 'Omega', 2),
+        'scalar_tp' : ((1,1), 'Omega', 1),
+        'vector_tp' : ((3,1), 'Omega', 1),
+    }
+
     d1 = Domain('d1', m1)
 
     omega1 = d1.create_region('Omega', 'all')
 
-    fc = {'f' : fields[field_name]}
-    ff = Fields.from_conf(transform_fields(fc), d1.regions)
-    field1 = ff[0]
+    f = fields[field_name]
+
+    field1 = Field('f', nm.float64, f[0], d1.regions[f[1]], approx_order=f[2])
+    ff = {field1.name : field1}
 
     vv = Variables.from_conf(transform_variables(variables), ff)
     vv.setup_dof_info()
@@ -38,8 +40,8 @@ def do_interpolation(m2, m1, data, field_name):
     d2 = Domain('d2', m2)
     omega2 = d2.create_region('Omega', 'all')
 
-    ff2 = Fields.from_conf(transform_fields(fc), d2.regions)
-    field2 = ff2[0]
+    field2 = Field('f', nm.float64, f[0], d2.regions[f[1]], approx_order=f[2])
+    ff2 = {field2.name : field2}
 
     vv2 = Variables.from_conf(transform_variables(variables), ff2)
     vv2.setup_dof_info()
@@ -111,7 +113,7 @@ class Test(TestCommon):
 
     def test_interpolation_two_meshes(self):
         from sfepy import data_dir
-        from sfepy.fem import Mesh, Domain, Fields, Variables
+        from sfepy.fem import Mesh, Domain, Field, Variables
 
         m1 = Mesh('source mesh', data_dir + '/meshes/3d/block.mesh')
 
@@ -122,14 +124,6 @@ class Test(TestCommon):
         dd = bbox[1,:] - bbox[0,:]
         data = nm.sin(4.0 * nm.pi * m1.coors[:,0:1] / dd[0]) \
                * nm.cos(4.0 * nm.pi * m1.coors[:,1:2] / dd[1])
-
-        fields1 = {
-            'scalar_tp' : ((1,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
-        }
-
-        fields2 = {
-            'scalar_si' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P0'}),
-        }
 
         variables1 = {
             'u'       : ('unknown field', 'scalar_tp', 0),
@@ -143,14 +137,14 @@ class Test(TestCommon):
 
         d1 = Domain('d1', m1)
         omega1 = d1.create_region('Omega', 'all')
-        ff1 = Fields.from_conf(transform_fields(fields1), d1.regions)
-        field1 = ff1[0]
-        
+        field1 = Field('scalar_tp', nm.float64, (1,1), omega1, approx_order=1)
+        ff1 = {field1.name : field1}
+
         d2 = Domain('d2', m2)
         omega2 = d2.create_region('Omega', 'all')
-        ff2 = Fields.from_conf(transform_fields(fields2), d2.regions)
-        field2 = ff2[0]
-        
+        field2 = Field('scalar_si', nm.float64, (1,1), omega2, approx_order=0)
+        ff2 = {field2.name : field2}
+
         vv1 = Variables.from_conf(transform_variables(variables1), ff1)
         vv1.setup_dof_info()
         u1 = vv1['u']
