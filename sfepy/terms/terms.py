@@ -632,34 +632,21 @@ class Term(Struct):
     def get_user_names(self):
         return self.names.user
 
-    ##
-    # c: 24.07.2006, r: 04.07.2008
-    def get_virtual_name( self, variables = None ):
+    def get_virtual_name(self):
         if not self.names.virtual:
             return None
-        
-        name = self.names.virtual[0]
-        if variables is None:
-            return name
-        else:
-            if variables[name].kind == 'test':
-                return name
-            else:
-                msg = 'variable %s is not virtual!' % name
-                raise ValueError( msg )
 
-    ##
-    # c: 24.07.2006, r: 04.07.2008
-    def get_state_names( self, variables = None ):
-        """If variables are given, return only true unknowns whose data are of
-        the current time step (0)."""
-        if variables is None:
-            return copy( self.names.state )
-        else:
-            return [st for st in self.names.state
-                    if (variables[st].kind == 'unknown') and
-                    (self.arg_steps[st] == 0)]
-            
+        var = self.get_virtual_variable()
+        return var.name
+
+    def get_state_names(self):
+        """
+        If variables are given, return only true unknowns whose data are of
+        the current time step (0).
+        """
+        variables = self.get_state_variables()
+        return [var.name for var in variables]
+
     ##
     # 26.07.2007, c
     def get_parameter_names( self ):
