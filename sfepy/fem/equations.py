@@ -176,17 +176,17 @@ class Equations( Container ):
             if not (dct in ('volume', 'scalar') or info.is_trace):
                 continue
 
-            rn, cn = info.virtual, info.state
-            if (rn is None) or (cn is None):
+            rvar, cvar = info.virtual, info.state
+            if (rvar is None) or (cvar is None):
                 continue
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()
 
             for rig, cig in info.iter_igs():
-                prn = self.variables[rn].primary_var_name
-                rkey = (prn, rreg_name, dct, rig)
-                ckey = (cn, creg_name, dct, cig)
+                rname = rvar.get_primary_name()
+                rkey = (rname, rreg_name, dct, rig)
+                ckey = (cvar.name, creg_name, dct, cig)
 
                 dc_key = (rkey, ckey)
                 ## print dc_key

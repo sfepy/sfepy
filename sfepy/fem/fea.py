@@ -7,8 +7,8 @@ import extmods.geometry as gm
 def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
     domain.mesh.coors = coors.copy()
     if update_state:
-        fields.setup_coors()
         for field in fields:
+            field.setup_coors()
             field.aps.update_geometry( field, domain.regions, geometries )
 
 

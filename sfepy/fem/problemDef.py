@@ -8,7 +8,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords, transform_variab
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
-from fields import Fields
+from fields import fields_from_conf, setup_dof_conns
 from variables import Variables
 from materials import Materials
 from equations import Equations
@@ -140,13 +140,9 @@ class ProblemDefinition( Struct ):
         materials = Materials.from_conf(conf_materials, functions)
         self.materials = materials
 
-    ##
-    # c: 23.04.2007, r: 09.07.2008
-    def set_fields( self, conf_fields = None ):
-        conf_fields = get_default( conf_fields, self.conf.fields )
-        self.fields = Fields.from_conf(conf_fields, self.domain.regions)
-##         self.save_field_meshes( '.' )
-##         pause()
+    def set_fields(self, conf_fields=None):
+        conf_fields = get_default(conf_fields, self.conf.fields)
+        self.fields = fields_from_conf(conf_fields, self.domain.regions)
 
     def set_variables(self, conf_variables=None):
         """
@@ -184,7 +180,7 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
-        variables = Variables.from_conf(self.conf_variables, self.fields )
+        variables = Variables.from_conf(self.conf_variables, self.fields)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         self.materials, user=user)
@@ -192,9 +188,9 @@ class ProblemDefinition( Struct ):
         equations.collect_conn_info()
 
         # This uses the conn_info created above.
-        self.fields.setup_dof_conns(equations,
-                                    make_virtual=make_virtual,
-                                    single_term=single_term)
+        self.dof_conns = {}
+        setup_dof_conns(equations.conn_info, dof_conns=self.dof_conns,
+                        make_virtual=make_virtual, single_term=single_term)
         ## print self.fields.dof_conns
 
         self.integrals = Integrals.from_conf(self.conf.integrals)

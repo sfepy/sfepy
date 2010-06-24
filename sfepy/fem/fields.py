@@ -27,79 +27,61 @@ def _fix_scalar_dc(dc1, dc2):
     aux.fill(dc1)
     return aux
 
-##
-# 14.07.2006, c
-class Fields( Container ):
+def fields_from_conf(conf, regions):
+    fields = {}
+    for key, val in conf.iteritems():
+        field = Field.from_conf(val, regions)
+        fields[field.name] = field
 
-    ##
-    # 14.07.2006, c
-    def from_conf(conf, regions):
+    return fields
 
-        objs = OneTypeList( Field )
-        for key, val in conf.iteritems():
-            objs.append(Field.from_conf(val, regions))
+def setup_extra_data(conn_info):
+    """
+    Setup extra data required for non-volume integration.
+    """
+    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
+        ## print key, ii
+        ## print info
+        for var in info.all_vars:
+            field = var.get_field()
+            field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
-        obj = Fields( objs )
+def setup_dof_conns(conn_info, dof_conns=None,
+                    make_virtual=False, single_term=False):
+    """
+    Dof connectivity key:
+        (field.name, var.n_components, region.name, type, ig)
+    """
+    output('setting up dof connectivities...')
+    tt = time.clock()
 
-        return obj
-    from_conf = staticmethod( from_conf )
+    dof_conns = get_default(dof_conns, {})
 
-    def setup_extra_data(self, equations):
-        """
-        Setup extra data required for non-volume integration.
-        """
-        for key, ii, info in iter_dict_of_lists(equations.conn_info,
-                                                return_keys=True):
-            ## print key, ii
-            ## print info
-            for var_name in info.all_vars:
-                var = equations.get_variable(var_name)
-                field = var.get_field()
-                field.setup_extra_data(info.ps_tg, info, info.is_trace)
+    for key, ii, info in iter_dict_of_lists(conn_info, return_keys=True):
+        ## print key, ii
+        ## print info
 
-    def setup_dof_conns(self, equations, make_virtual=False, single_term=False):
-        """
-        Dof connectivity key:
-            (field.name, var.n_components, region.name, type, ig)
-        """
-        output('setting up dof connectivities...')
-        tt = time.clock()
+        if info.primary is not None:
+            var = info.primary
+            field = var.get_field()
+            field.setup_extra_data(info.ps_tg, info, info.is_trace)
+            field.setup_dof_conns(dof_conns, var.n_components,
+                                  info.dc_type, info.get_region())
 
-        self.has_virtual_dcs = make_virtual == True
+        if info.has_virtual and not info.is_trace:
+            # This is needed regardless make_virtual.
+            var = info.virtual
+            field = var.get_field()
+            field.setup_extra_data(info.v_tg, info, False)
+            field.setup_dof_conns(dof_conns, var.n_components,
+                                  info.dc_type,
+                                  info.get_region(can_trace=False))
 
-        dof_conns = {}
-        for key, ii, info in iter_dict_of_lists(equations.conn_info,
-                                                return_keys=True):
-            ## print key, ii
-            ## print info
+    ## print dof_conns
+    ## pause()
+    output('...done in %.2f s' % (time.clock() - tt))
 
-            if info.primary is not None:
-                var = equations.get_variable(info.primary)
-                field = var.get_field()
-                field.setup_extra_data(info.ps_tg, info, info.is_trace)
-                field.setup_dof_conns(dof_conns, var.n_components,
-                                      info.dc_type, info.get_region())
-
-            if info.has_virtual and not info.is_trace:
-                # This is needed regardless make_virtual.
-                var = equations.get_variable(info.virtual)
-                field = var.get_field()
-                field.setup_extra_data(info.v_tg, info, False)
-                field.setup_dof_conns(dof_conns, var.n_components,
-                                      info.dc_type,
-                                      info.get_region(can_trace=False))
-
-        ## print dof_conns
-        ## pause()
-
-        self.dof_conns = dof_conns
-        output('...done in %.2f s' % (time.clock() - tt))
-
-    ##
-    # 19.07.2006, c
-    def setup_coors( self ):
-        for field in self:
-            field.setup_coors()
+    return dof_conns
 
 ##
 # 14.07.2006, c

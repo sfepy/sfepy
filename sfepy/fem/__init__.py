@@ -11,7 +11,7 @@ from mesh_generators import gen_block_mesh, gen_cylinder_mesh
 from conditions import Conditions
 from domain import Domain
 from region import Region
-from fields import Fields, Field
+from fields import Field, setup_dof_conns
 from variables import Variables, Variable, FieldVariable
 from materials import Materials, Material
 from equations import Equations, Equation

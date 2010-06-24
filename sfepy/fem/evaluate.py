@@ -5,6 +5,7 @@ from region import Region
 from equations import Equation, Equations
 from integrals import Integrals
 from variables import Variables
+from fields import setup_dof_conns, setup_extra_data
 
 ##
 # 02.10.2007, c
@@ -274,10 +275,10 @@ def eval_term( state, term_desc, conf, domain, fields, materials, ts,
         equations.collect_conn_info()
 
         if itype == 'dw':
-            fields.setup_dof_conns(equations, single_term=True)
+            setup_dof_conns(equations.conn_info, single_term=True)
 
         else:
-            fields.setup_extra_data(equations)
+            setup_extra_data(equations.conn_info)
 
         integrals = Integrals.from_conf(conf.integrals)
         equations.describe_geometry(integrals, verbose=False)

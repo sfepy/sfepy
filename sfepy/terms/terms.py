@@ -706,26 +706,21 @@ class Term(Struct):
         return key
 
     def get_conn_info(self):
-        vn = self.get_virtual_name()
-        sns = self.get_state_names()
-        pns = self.get_parameter_names()
+        vvar = self.get_virtual_variable()
+        svars = self.get_state_variables()
+        pvars = self.get_parameter_variables()
 
-        variables = self.get_variables(as_list=False)
-        var_names = self.get_variable_names()
-
-        pn_map = {}
-        for var in variables.itervalues():
-            pn_map[var.name] = var.get_primary_name()
+        all_vars = self.get_variables()
 
         dc_type = self.get_dof_conn_type()
         tgs = self.get_geometry_types()
 
         v_igs = v_tg = None
-        if vn is not None:
-            field = variables[vn].get_field()
+        if vvar is not None:
+            field = vvar.get_field()
             if field is not None:
                 v_igs = field.igs()
-                v_tg = tgs[vn]
+                v_tg = tgs[vvar.name]
 
         region = self.get_region()
         if region is not None:
@@ -735,28 +730,28 @@ class Term(Struct):
                 region.setup_mirror_region()
 
         vals = []
-        aux_pns = []
-        for sn in sns:
+        aux_pvars = []
+        for svar in svars:
             # Allow only true state variables.
-            if not variables[sn].is_state():
-                aux_pns.append(sn)
+            if not svar.is_state():
+                aux_pvars.append(svar)
                 continue
 
-            field = variables[sn].get_field()
+            field = svar.get_field()
             if field is not None:
                 s_igs = field.igs()
             else:
                 s_igs = None
-            is_trace = self.arg_traces[sn]
+            is_trace = self.arg_traces[svar.name]
 
-            if sn in tgs:
-                ps_tg = tgs[sn]
+            if svar.name in tgs:
+                ps_tg = tgs[svar.name]
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                           state = sn, state_igs = s_igs,
-                           primary = sn, primary_igs = s_igs,
+            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
+                           state = svar, state_igs = s_igs,
+                           primary = svar, primary_igs = s_igs,
                            has_virtual = True,
                            has_state = True,
                            is_trace = is_trace,
@@ -764,41 +759,41 @@ class Term(Struct):
                            v_tg = v_tg,
                            ps_tg = ps_tg,
                            region = region,
-                           all_vars = var_names)
+                           all_vars = all_vars)
             vals.append(val)
 
-        pns += aux_pns
-        for pn in pns:
-            field = variables[pn].get_field()
+        pvars += aux_pvars
+        for pvar in pvars:
+            field = pvar.get_field()
             if field is not None:
                 p_igs = field.igs()
             else:
                 p_igs = None
-            is_trace = self.arg_traces[pn]
+            is_trace = self.arg_traces[pvar.name]
 
-            if pn in tgs:
-                ps_tg = tgs[pn]
+            if pvar.name in tgs:
+                ps_tg = tgs[pvar.name]
             else:
                 ps_tg = v_tg
 
-            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
                            state = None, state_igs = [],
-                           primary = pn_map[pn], primary_igs = p_igs,
-                           has_virtual = vn is not None,
+                           primary = pvar.get_primary(), primary_igs = p_igs,
+                           has_virtual = vvar is not None,
                            has_state = False,
                            is_trace = is_trace,
                            dc_type = dc_type,
                            v_tg = v_tg,
                            ps_tg = ps_tg,
                            region = region,
-                           all_vars = var_names)
+                           all_vars = all_vars)
             vals.append(val)
 
-        if vn and (len(vals) == 0):
+        if vvar and (len(vals) == 0):
             # No state, parameter variables, just the virtual one.
-            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                           state = pn_map[vn], state_igs = v_igs,
-                           primary = pn_map[vn], primary_igs = v_igs,
+            val = ConnInfo(virtual = vvar, virtual_igs = v_igs,
+                           state = vvar.get_primary(), state_igs = v_igs,
+                           primary = vvar.get_primary(), primary_igs = v_igs,
                            has_virtual = True,
                            has_state = False,
                            is_trace = False,
@@ -806,7 +801,7 @@ class Term(Struct):
                            v_tg = v_tg,
                            ps_tg = v_tg,
                            region = region,
-                           all_vars = var_names)
+                           all_vars = all_vars)
             vals.append(val)
 
         return vals
@@ -1064,7 +1059,14 @@ class Term(Struct):
         return variables
 
     def get_virtual_variable(self):
-        return self.get_args_by_name(self.names.virtual)[0]
+        aux = self.get_args_by_name(self.names.virtual)
+        if len(aux) == 1:
+            var = aux[0]
+
+        else:
+            var = None
+
+        return var
 
     def get_state_variables(self, unknown_only=False):
         variables = self.get_args_by_name(self.names.state)
@@ -1076,6 +1078,8 @@ class Term(Struct):
 
         return variables
 
+    def get_parameter_variables(self):
+        return self.get_args_by_name(self.names.parameter)
 ##     def get_quadrature_orders(self):
 ##         """Curently, it just takes the order of the term integral."""
 ##         return self.integral.order
