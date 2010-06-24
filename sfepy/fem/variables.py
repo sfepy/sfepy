@@ -69,7 +69,6 @@ class Variables( Container ):
                            has_virtual_dcs = False,
                            has_lcbc = False,
                            has_eq_map = False,
-                           dual_map = None,
                            ordered_state = [],
                            ordered_virtual = [])
 
@@ -118,39 +117,25 @@ class Variables( Container ):
         and assign link to self to each variable instance.
 
         Usually, when solving a PDE in the weak form, each state
-        variable has to have a corresponding virtual variable.
-
-        As it is possible to use state variables in place of parameter
-        variables in term evaluation, the above requirement is relaxed -
-        it is possible to define more state variables than virtual ones.
+        variable has a corresponding virtual variable.
         """
-        
-        self.dual_map = {}
-
         for ii in self.state:
             self[ii].dual_var_name = None
+
         for ii in self.virtual:
             vvar = self[ii]
             try:
                 self[vvar.primary_var_name].dual_var_name = vvar.name
             except IndexError:
-                msg = 'variable %s is not active!' % vvar.primary_var_name
-                raise ValueError(msg)
-
-            self.dual_map[vvar.name] = vvar.primary_var_name
-
-	if ((len(self.dual_map) != len(set(self.dual_map.values())))
-	    or (len(self.virtual) > len(self.state))):
-                msg = 'state and virtual variables do not match!'
-                raise ValueError(msg)
-
-        for var in self:
-            var._variables = self
+                pass
 
     def setup_ordering(self):
 	"""
         Setup ordering of variables.
         """
+        for var in self:
+            var._variables = self
+
         self.link_duals()
 
         orders = []

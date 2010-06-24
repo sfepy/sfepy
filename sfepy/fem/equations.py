@@ -184,7 +184,8 @@ class Equations( Container ):
             creg_name = info.get_region_name()
 
             for rig, cig in info.iter_igs():
-                rkey = (self.variables.dual_map[rn], rreg_name, dct, rig)
+                prn = self.variables[rn].primary_var_name
+                rkey = (prn, rreg_name, dct, rig)
                 ckey = (cn, creg_name, dct, cig)
 
                 dc_key = (rkey, ckey)
