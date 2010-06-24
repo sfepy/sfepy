@@ -25,52 +25,6 @@ def parse_definition(equation_def, itps):
 
     return term_descs
 
-class ConnInfo(Struct):
-    mirror_map = {}
-
-    def get_region(self, can_trace=True):
-        if self.is_trace and can_trace:
-            return self.region.get_mirror_region()[0]
-        else:
-            return self.region
-
-    def get_region_name(self, can_trace=True):
-        if self.is_trace and can_trace:
-            reg = self.region.get_mirror_region()[0]
-        else:
-            reg = self.region
-
-        if reg is not None:            
-            return reg.name
-        else:
-            return None
-
-    def iter_igs(self):
-        if self.region is not None:
-            for ig in self.region.igs:
-                if self.virtual_igs is not None:
-                    ir = self.virtual_igs.index(ig)
-                    rig = self.virtual_igs[ir]
-                else:
-                    rig = None
-
-                if not self.is_trace:
-                    ii = ig
-                else:
-                    ig_map_i = self.region.get_mirror_region()[2]
-                    ii = ig_map_i[ig]
-
-                if self.state_igs is not None:
-                    ic = self.state_igs.index(ii)
-                    cig = self.state_igs[ic]
-                else:
-                    cig = None
-                    
-                yield rig, cig
-
-        else:
-            yield None, None
-
 ##
 # 21.07.2006, c
 class Equations( Container ):
@@ -139,7 +93,7 @@ class Equations( Container ):
         self.conn_info = {}
 
         for eq in self:
-            eq.collect_conn_info(self.conn_info, self.variables)
+            eq.collect_conn_info(self.conn_info)
 
         ## print_structs(self.conn_info)
         ## pause()
@@ -443,116 +397,12 @@ class Equation( Struct ):
 
         return variables
 
-    def collect_conn_info(self, conn_info, variables):
+    def collect_conn_info(self, conn_info):
 
         for term in self.terms:
             key = (self.name,) + term.get_conn_key()
 
-            vn = term.get_virtual_name()
-            sns = term.get_state_names()
-            pns = term.get_parameter_names()
-
-            term_var_names = term.get_variable_names()
-            pn_map = variables.get_primary_names(term_var_names)
-
-##             print key
-##             print vn, sns, pns
-##             pause()
-                
-            dc_type = term.get_dof_conn_type()
-            tgs = term.get_geometry_types()
-
-            v_igs = v_tg = None
-            if vn is not None:
-                field = variables[vn].get_field()
-                if field is not None:
-                    v_igs = field.igs()
-                    v_tg = tgs[vn]
-
-            region = term.get_region()
-            if region is not None:
-                is_any_trace = reduce(lambda x, y: x or y,
-                                      term.arg_traces.values())
-                if is_any_trace:
-                    region.setup_mirror_region()
-                
-            vals = []
-            aux_pns = []
-            for sn in sns:
-                # Allow only true state variables.
-                if not variables[sn].is_state():
-                    aux_pns.append(sn)
-                    continue
-                
-                
-                field = variables[sn].get_field()
-                if field is not None:
-                    s_igs = field.igs()
-                else:
-                    s_igs = None
-                is_trace = term.arg_traces[sn]
-
-                if sn in tgs:
-                    ps_tg = tgs[sn]
-                else:
-                    ps_tg = v_tg
-
-                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                               state = sn, state_igs = s_igs,
-                               primary = sn, primary_igs = s_igs,
-                               has_virtual = True,
-                               has_state = True,
-                               is_trace = is_trace,
-                               dc_type = dc_type,
-                               v_tg = v_tg,
-                               ps_tg = ps_tg,
-                               region = region,
-                               all_vars = term_var_names)
-                vals.append(val)
-
-            pns += aux_pns
-            for pn in pns:
-                field = variables[pn].get_field()
-                if field is not None:
-                    p_igs = field.igs()
-                else:
-                    p_igs = None
-                is_trace = term.arg_traces[pn]
-
-                if pn in tgs:
-                    ps_tg = tgs[pn]
-                else:
-                    ps_tg = v_tg
-
-                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                               state = None, state_igs = [],
-                               primary = pn_map[pn], primary_igs = p_igs,
-                               has_virtual = vn is not None,
-                               has_state = False,
-                               is_trace = is_trace,
-                               dc_type = dc_type,
-                               v_tg = v_tg,
-                               ps_tg = ps_tg,
-                               region = region,
-                               all_vars = term_var_names)
-                vals.append(val)
-
-            if vn and (len(vals) == 0):
-                # No state, parameter variables, just the virtual one.
-                val = ConnInfo(virtual = vn, virtual_igs = v_igs,
-                               state = pn_map[vn], state_igs = v_igs,
-                               primary = pn_map[vn], primary_igs = v_igs,
-                               has_virtual = True,
-                               has_state = False,
-                               is_trace = False,
-                               dc_type = dc_type,
-                               v_tg = v_tg,
-                               ps_tg = v_tg,
-                               region = region,
-                               all_vars = term_var_names)
-                vals.append(val)
-            
-            conn_info[key] = vals
+            conn_info[key] = term.get_conn_info()
 
     def describe_geometry(self, geometries, integrals):
         for term in self.terms:

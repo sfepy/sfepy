@@ -97,6 +97,52 @@ class CharacteristicFunction( Struct ):
     def get_local_chunk( self ):
         return self.local_chunk
 
+class ConnInfo(Struct):
+    mirror_map = {}
+
+    def get_region(self, can_trace=True):
+        if self.is_trace and can_trace:
+            return self.region.get_mirror_region()[0]
+        else:
+            return self.region
+
+    def get_region_name(self, can_trace=True):
+        if self.is_trace and can_trace:
+            reg = self.region.get_mirror_region()[0]
+        else:
+            reg = self.region
+
+        if reg is not None:
+            return reg.name
+        else:
+            return None
+
+    def iter_igs(self):
+        if self.region is not None:
+            for ig in self.region.igs:
+                if self.virtual_igs is not None:
+                    ir = self.virtual_igs.index(ig)
+                    rig = self.virtual_igs[ir]
+                else:
+                    rig = None
+
+                if not self.is_trace:
+                    ii = ig
+                else:
+                    ig_map_i = self.region.get_mirror_region()[2]
+                    ii = ig_map_i[ig]
+
+                if self.state_igs is not None:
+                    ic = self.state_igs.index(ii)
+                    cig = self.state_igs[ic]
+                else:
+                    cig = None
+
+                yield rig, cig
+
+        else:
+            yield None, None
+
 class Terms(Container):
 
     @staticmethod
@@ -659,6 +705,112 @@ class Term(Struct):
 
         return key
 
+    def get_conn_info(self):
+        vn = self.get_virtual_name()
+        sns = self.get_state_names()
+        pns = self.get_parameter_names()
+
+        variables = self.get_variables(as_list=False)
+        var_names = self.get_variable_names()
+
+        pn_map = {}
+        for var in variables.itervalues():
+            pn_map[var.name] = var.get_primary_name()
+
+        dc_type = self.get_dof_conn_type()
+        tgs = self.get_geometry_types()
+
+        v_igs = v_tg = None
+        if vn is not None:
+            field = variables[vn].get_field()
+            if field is not None:
+                v_igs = field.igs()
+                v_tg = tgs[vn]
+
+        region = self.get_region()
+        if region is not None:
+            is_any_trace = reduce(lambda x, y: x or y,
+                                  self.arg_traces.values())
+            if is_any_trace:
+                region.setup_mirror_region()
+
+        vals = []
+        aux_pns = []
+        for sn in sns:
+            # Allow only true state variables.
+            if not variables[sn].is_state():
+                aux_pns.append(sn)
+                continue
+
+            field = variables[sn].get_field()
+            if field is not None:
+                s_igs = field.igs()
+            else:
+                s_igs = None
+            is_trace = self.arg_traces[sn]
+
+            if sn in tgs:
+                ps_tg = tgs[sn]
+            else:
+                ps_tg = v_tg
+
+            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                           state = sn, state_igs = s_igs,
+                           primary = sn, primary_igs = s_igs,
+                           has_virtual = True,
+                           has_state = True,
+                           is_trace = is_trace,
+                           dc_type = dc_type,
+                           v_tg = v_tg,
+                           ps_tg = ps_tg,
+                           region = region,
+                           all_vars = var_names)
+            vals.append(val)
+
+        pns += aux_pns
+        for pn in pns:
+            field = variables[pn].get_field()
+            if field is not None:
+                p_igs = field.igs()
+            else:
+                p_igs = None
+            is_trace = self.arg_traces[pn]
+
+            if pn in tgs:
+                ps_tg = tgs[pn]
+            else:
+                ps_tg = v_tg
+
+            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                           state = None, state_igs = [],
+                           primary = pn_map[pn], primary_igs = p_igs,
+                           has_virtual = vn is not None,
+                           has_state = False,
+                           is_trace = is_trace,
+                           dc_type = dc_type,
+                           v_tg = v_tg,
+                           ps_tg = ps_tg,
+                           region = region,
+                           all_vars = var_names)
+            vals.append(val)
+
+        if vn and (len(vals) == 0):
+            # No state, parameter variables, just the virtual one.
+            val = ConnInfo(virtual = vn, virtual_igs = v_igs,
+                           state = pn_map[vn], state_igs = v_igs,
+                           primary = pn_map[vn], primary_igs = v_igs,
+                           has_virtual = True,
+                           has_state = False,
+                           is_trace = False,
+                           dc_type = dc_type,
+                           v_tg = v_tg,
+                           ps_tg = v_tg,
+                           region = region,
+                           all_vars = var_names)
+            vals.append(val)
+
+        return vals
+
     def get_args_by_name(self, arg_names):
         """
         Return arguments by name.
@@ -899,8 +1051,17 @@ class Term(Struct):
         out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
         return out
 
-    def get_variables(self):
-        return self.get_args_by_name(self.names.variable)
+    def get_variables(self, as_list=True):
+
+        if as_list:
+            variables = self.get_args_by_name(self.names.variable)
+
+        else:
+            variables = {}
+            for var in self.get_args_by_name(self.names.variable):
+                variables[var.name] = var
+
+        return variables
 
     def get_virtual_variable(self):
         return self.get_args_by_name(self.names.virtual)[0]
