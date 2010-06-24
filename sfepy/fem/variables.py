@@ -182,19 +182,6 @@ class Variables( Container ):
             names = [var.name for var in self if var.is_kind( kind )]
         return names
 
-    def get_primary_names(self, var_names):
-        """Return a dictionary of names of primary variables corresponding
-        to the variables named in var_names."""
-        primary_names = {}
-        for name in var_names:
-            var = self[name]
-            if var.is_state():
-                primary_names[name] = var.name
-            else:
-                primary_names[name] = var.primary_var_name
-
-        return primary_names
-
     def has_virtuals(self):
         return len(self.virtual) > 0
 
@@ -887,6 +874,15 @@ class Variable( Struct ):
 
     def is_complex( self ):
         return self.dtype in complex_types
+
+    def get_primary_name(self):
+        if self.is_state():
+            name = self.name
+
+        else:
+            name = self.primary_var_name
+
+        return name
 
     def init_state( self, state, indx ):
         """Initialize data of variables with history."""
