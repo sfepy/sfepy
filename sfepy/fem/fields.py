@@ -112,7 +112,7 @@ class Field( Struct ):
         shape : int/str
             Field shape: 1 or 'scalar', space dimension (2 or 3) or 'vector'.
             The field shape determines the shape of the FE base functions and
-            can be different from a FieldVariable instance shape. 
+            can be different from a FieldVariable instance shape. (TODO)
         region : Region
             The region where the field is defined.
         space : str
@@ -124,8 +124,8 @@ class Field( Struct ):
         """
         if isinstance(shape, str):
             try:
-                shape = {'scalar' : 1,
-                         'vector' : region.domain.shape.dim}[shape]
+                shape = {'scalar' : (1,),
+                         'vector' : (region.domain.shape.dim,)}[shape]
             except KeyError:
                 raise ValueError('unsupported field shape! (%s)', shape)
 
