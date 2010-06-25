@@ -254,41 +254,8 @@ class Terms(Container):
         History sizes for a particular cache instance are taken as maximum
         of history_sizes requirements of all terms using the instance.
         """
-        from sfepy.terms import cache_table
-
         for term in self:
-            if not hasattr( term, 'use_caches' ): continue
-
-            ## print term.name
-            for name, arg_lists in term.use_caches.iteritems():
-                ## print term.arg_names
-                ## print name, arg_lists
-                for args in arg_lists:
-                    ## Order should be handled in terms...
-                    args = copy( args )
-                    if len(args) and (type( args[-1] ) == dict):
-                        history_sizes = args.pop()
-                    else:
-                        history_sizes = None
-                    ans = [term.get_arg_name( arg, full = True ) for arg in args]
-                    cname = '_'.join( [name] + ans )
-                    ## print term.name, name, arg_lists, args, self.name, cname
-                    ## print history_sizes
-                    ## debug()
-                    if caches.has_key( cname ):
-                        caches[cname].merge_history_sizes( history_sizes )
-
-                    else:
-                        ## print 'new'
-                        try:
-                            constructor = cache_table[name]
-                        except:
-                            raise RuntimeError, 'cache not found! %s in %s'\
-                                  % (name, sorted( cache_table.keys() ))
-                        cache = constructor( cname, ans, history_sizes )
-                        caches.insert_cache( cache )
-                caches.insert_term( cname, term.name, ans )
-            term.caches = caches
+            term.assign_caches(caches)
 
     ##
     # 24.07.2006, c
@@ -512,6 +479,50 @@ class Term(Struct):
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
         msg = 'base class method "_call" called for %s' % self.__class__.__name__
         raise RuntimeError( msg )
+
+    def assign_caches(self, caches=None):
+        from sfepy.terms import cache_table, DataCaches
+
+        if not hasattr(self, 'use_caches'):
+            return
+
+        if caches is None:
+            caches = DataCaches()
+
+        ## print self.name
+        for name, arg_lists in self.use_caches.iteritems():
+            ## print self.arg_names
+            ## print name, arg_lists
+            for args in arg_lists:
+                ## Order should be handled in terms...
+                args = copy(args)
+
+                if len(args) and (type( args[-1] ) == dict):
+                    history_sizes = args.pop()
+
+                else:
+                    history_sizes = None
+
+                ans = [self.get_arg_name(arg, full=True) for arg in args]
+                cname = '_'.join([name] + ans)
+
+                ## print self.name, name, arg_lists, args, cname
+                ## print history_sizes
+
+                if caches.has_key(cname):
+                    caches[cname].merge_history_sizes(history_sizes)
+
+                else:
+                    ## print 'new'
+                    try:
+                        constructor = cache_table[name]
+                    except:
+                        raise RuntimeError, 'cache not found! %s in %s'\
+                              % (name, sorted(cache_table.keys()))
+                    cache = constructor(cname, ans, history_sizes)
+                    caches.insert_cache(cache)
+            caches.insert_term(cname, self.name, ans)
+        self.caches = caches
 
     def assign_args(self, variables, materials, user=None):
         """
