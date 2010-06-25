@@ -1081,6 +1081,14 @@ class Term(Struct):
     def get_parameter_variables(self):
         return self.get_args_by_name(self.names.parameter)
 
+    def get_materials(self, join=False):
+        materials = self.get_args_by_name(self.names.material)
+
+        if join:
+            materials = list(set(mat[0] for mat in materials))
+
+        return materials
+
     def get_qp_key(self):
         """
         Return a key identifying uniquely the term quadrature points.
