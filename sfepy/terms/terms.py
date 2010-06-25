@@ -1080,6 +1080,27 @@ class Term(Struct):
 
     def get_parameter_variables(self):
         return self.get_args_by_name(self.names.parameter)
+
+    def get_qp_key(self):
+        """
+        Return a key identifying uniquely the term quadrature points.
+        """
+        return (self.region.name, self.integral.name)
+
+    def get_physical_qps(self):
+        """
+        Get physical quadrature points corresponding to the term region
+        and integral.
+        """
+        # Any term has at least one variable, all variables used
+        # in a term share the same integral.
+        var = self.get_variables()[0]
+
+        aps = var.field.aps
+        qps = aps.get_physical_qps(self.region, self.integral)
+
+        return qps
+
 ##     def get_quadrature_orders(self):
 ##         """Curently, it just takes the order of the term integral."""
 ##         return self.integral.order

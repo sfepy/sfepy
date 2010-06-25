@@ -139,17 +139,10 @@ class Material( Struct ):
                 names = [ii[0] for ii in term.names.material]
                 if self.name not in names: continue
 
-                key = (term.region.name, term.integral.name)
+                key = term.get_qp_key()
                 if only_new and (key in self.datas): continue
 
-                # Any term has at least one variable, all variables used
-                # in a term share the same integral.
-                var_name = term.names.variable[0]
-                var = term.get_args_by_name([var_name])[0]
-
-                aps = var.field.aps
-
-                qps = aps.get_physical_qps(term.region, term.integral)
+                qps = term.get_physical_qps()
 
                 yield key, term.igs(), term.region, qps
 
@@ -184,32 +177,46 @@ class Material( Struct ):
 
         datas[ig] = data
 
-    def time_update(self, ts, domain, equations):
+    def update_data(self, ts, region, key, ig, qps):
         """
-        Evaluate material parameters in physical quadrature points.
+        Update the material parameters in quadrature points.
 
-        Do nothing, if ``self.mode == 'user'`` or ``self.kind ==
-        'stationary'`` and the parameters are already set.
+        Parameters
+        ----------
+        ts : TimeStepper
+            The time stepper.
+        region : Region
+            The region where the update occurs.
+        key : tuple
+            The (region_name, integral_name) data key.
+        ig : int
+            The element group id.
+        qps : Struct
+            Information about the quadrature points.
         """
-        self.data = None
-        if ((self.mode == 'user')
-            or self.datas and (self.kind == 'stationary')): return
+        self.datas.setdefault(key, {})
 
-        self.datas = {}
-        # Quadrature point function values.
-        for key, igs, region, qps in self.iter_qps(equations):
-            for ig in igs:
-                self.datas.setdefault(key, {})
-                if (qps.n_qp[ig] == 0):
-                    self.set_data(key, ig, qps, None)
-                    continue
+        if (qps.n_qp[ig] == 0):
+            self.set_data(key, ig, qps, None)
 
-                data = self.function(ts, qps.values[ig], mode='qp',
-                                     region=region, ig=ig,
-                                     **self.extra_args)
+        else:
+            data = self.function(ts, qps.values[ig], mode='qp',
+                                 region=region, ig=ig,
+                                 **self.extra_args)
 
-                self.set_data(key, ig, qps, data)
+            self.set_data(key, ig, qps, data)
 
+    def update_special_data(self, ts, domain):
+        """
+        Update the special material parameters.
+
+        Parameters
+        ----------
+        ts : TimeStepper
+            The time stepper.
+        domain : Domain
+            The whole domain.
+        """
         # Special function values (e.g. flags).
         datas = self.function(ts, domain.get_mesh_coors(), mode='special')
         if datas is not None:
@@ -222,6 +229,24 @@ class Material( Struct ):
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
+    def time_update(self, ts, domain, equations):
+        """
+        Evaluate material parameters in physical quadrature points.
+
+        Do nothing, if ``self.mode == 'user'`` or ``self.kind ==
+        'stationary'`` and the parameters are already set.
+        """
+        self.data = None
+        if ((self.mode == 'user')
+            or self.datas and (self.kind == 'stationary')): return
+
+        self.datas = {}
+        for key, igs, region, qps in self.iter_qps(equations):
+            for ig in igs:
+                self.update_data(ts, region, key, ig, qps)
+
+        self.update_special_data(ts, domain)
+
     def get_keys(self, region_name=None):
         """
         Get all data keys.
@@ -231,7 +256,7 @@ class Material( Struct ):
         region_name : str
             If not None, only keys with this region are returned.
         """
-        if self.datas is None:
+        if not self.datas:
             keys = None
 
         elif region_name is None:
@@ -261,7 +286,7 @@ class Material( Struct ):
         to ``None``.
         """
         self.mode = None
-        self.datas = None
+        self.datas = {}
         self.special_names = set()
         self.constant_names = set()
         self.data = None
@@ -292,7 +317,7 @@ class Material( Struct ):
                   '(material: %s, key: %s)' % (self.name, key)
             raise ValueError( msg )
 
-        if self.datas is None:
+        if not self.datas:
             raise ValueError( 'material data not set! (call time_update())' )
 
         if name in self.special_names:
