@@ -919,24 +919,43 @@ class Variable( Struct ):
             self.data[step] = data
             self.indx = indx
 
-    def __call__( self, step = 0, derivative = None, dt = None ):
-        """Returns:
-             if `derivative` is None: a view of the data vector,
-             otherwise: required derivative of the data vector
-             at time step given by `step`.
+    def __call__(self, step=0, derivative=None, dt=None):
+        """
+        Return vector of degrees of freedom of the variable.
 
-           Supports only the backward difference w.r.t. time."""
+        Parameters
+        ----------
+        step : int, default 0
+            The time step (0 means current, -1 previous, ...).
+        derivative : None or 'dt'
+            If not None, return time derivative of the DOF vector,
+            approximated by the backward finite difference.
+
+        Returns
+        -------
+        vec : array
+            The DOF vector. If `derivative` is None: a view of the data vector,
+             otherwise: required derivative of the DOF vector
+             at time step given by `step`.
+        """
         if derivative is None:
-            return self.data[step][self.indx]
+            data = self.data[step]
+            if data is not None:
+                return data[self.indx]
+
+            else:
+                raise ValueError('data of variable are not set! (%s, step %d)' \
+                                 % (self.name, step))
+
         else:
             if self.history is None:
                 msg = 'set history type of variable %s to use derivatives!'\
                       % self.name
-                raise ValueError( msg )
-            dt = get_default( dt, self.dt )
-##            print self.name, step, dt
-            return (self( step = step ) - self( step = step-1 )) / dt
-            
+                raise ValueError(msg)
+            dt = get_default(dt, self.dt)
+
+            return (self(step=step) - self(step=step-1)) / dt
+
     def get_initial_condition( self ):
         if self.initial_condition is None:
             return 0.0
