@@ -55,19 +55,20 @@ class SimpleApp( Application ):
         return Struct( **locals() )
     process_options = staticmethod( process_options )
 
-    def __init__( self, conf, options, output_prefix, **kwargs ):
+    def __init__(self, conf, options, output_prefix,
+		 init_equations=False, **kwargs):
         """`kwargs` are passed to  ProblemDefinition.from_conf()
 
         Command-line options have precedence over conf.options."""
         Application.__init__( self, conf, options, output_prefix )
         self.setup_options()
 
-        is_vars = True
+        is_eqs = init_equations
         if hasattr(options, 'solve_not') and options.solve_not:
-            is_vars = False
-        self.problem = ProblemDefinition.from_conf( conf,
-                                                    init_variables=is_vars,
-                                                    **kwargs )
+            is_eqs = False
+        self.problem = ProblemDefinition.from_conf(conf,
+						   init_equations=is_eqs,
+						   **kwargs)
 
         self.setup_output_info( self.problem, self.options )
 

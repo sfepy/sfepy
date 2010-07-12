@@ -10,7 +10,7 @@ def save_only( conf, save_names, problem = None ):
     """Save information available prior to setting equations and
     solving them."""
     if problem is None:
-        problem = ProblemDefinition.from_conf( conf, init_variables = False )
+        problem = ProblemDefinition.from_conf(conf, init_equations=False)
 
     if save_names.regions is not None:
         problem.save_regions( save_names.regions )
@@ -178,9 +178,9 @@ def solve_direct(conf, options, problem=None, step_hook=None,
                  nls_status=None):
     """Generic (simple) problem solver."""
     if problem is None:
-        is_vars = not options.solve_not
-	problem = ProblemDefinition.from_conf( conf,
-                                               init_variables=is_vars )
+        is_eqs = not options.solve_not
+	problem = ProblemDefinition.from_conf(conf,
+					      init_equations=is_eqs )
 	if options.output_filename_trunk:
 	    ofn_trunk = options.output_filename_trunk
 	    problem.ofn_trunk = ofn_trunk

@@ -32,7 +32,6 @@ class ProblemDefinition( Struct ):
     def from_conf_file(conf_filename,
                        required=None, other=None,
                        init_fields = True,
-                       init_variables = True,
                        init_equations = True,
                        init_solvers = True):
 
@@ -46,7 +45,6 @@ class ProblemDefinition( Struct ):
 
         obj = ProblemDefinition.from_conf(conf,
                                           init_fields=init_fields,
-                                          init_variables=init_variables,
                                           init_equations=init_equations,
                                           init_solvers=init_solvers)
         return obj
@@ -54,7 +52,6 @@ class ProblemDefinition( Struct ):
     
     def from_conf( conf,
                    init_fields = True,
-                   init_variables = True,
                    init_equations = True,
                    init_solvers = True ):
         if conf.options.get_default_attr('absolute_mesh_path', False):
@@ -81,11 +78,8 @@ class ProblemDefinition( Struct ):
         if init_fields:
             obj.set_fields( conf.fields )
 
-            if init_variables:
-                obj.set_variables( conf.variables )
-
-                if init_equations:
-                    obj.set_equations( conf.equations )
+	    if init_equations:
+		obj.set_equations( conf.equations )
 
         if init_solvers:
             obj.set_solvers( conf.solvers, conf.options )
@@ -180,6 +174,7 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
+	self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
@@ -305,6 +300,18 @@ class ProblemDefinition( Struct ):
             ## plu.spy( self.mtx_a )
             ## plu.plt.show()
 
+    def update_bcs(self, conf_ebc=None, conf_epbc=None, conf_lcbc=None):
+	"""
+	Update boundary conditions.
+	"""
+        conf_ebc = get_default(conf_ebc, self.conf.ebcs)
+        conf_epbc = get_default(conf_epbc, self.conf.epbcs)
+        conf_lcbc = get_default(conf_lcbc, self.conf.lcbcs)
+
+        self.ebcs = Conditions.from_conf(conf_ebc)
+        self.epbcs = Conditions.from_conf(conf_epbc)
+        self.lcbcs = Conditions.from_conf(conf_lcbc)
+
     def time_update(self, ts=None,
                     conf_ebc=None, conf_epbc=None, conf_lcbc=None,
                     functions=None, create_matrix=False):
@@ -312,16 +319,8 @@ class ProblemDefinition( Struct ):
             ts = self.get_default_ts( step = 0 )
 
         self.ts = ts
-        conf_ebc = get_default( conf_ebc, self.conf.ebcs )
-        conf_epbc = get_default( conf_epbc, self.conf.epbcs )
-        conf_lcbc = get_default( conf_lcbc, self.conf.lcbcs )
-        functions = get_default(functions, self.functions)
-
-        self.ebcs = Conditions.from_conf(conf_ebc)
-        self.epbcs = Conditions.from_conf(conf_epbc)
-        self.lcbcs = Conditions.from_conf(conf_lcbc)
-
         self.update_materials(ts)
+	self.update_bcs(conf_ebc, conf_epbc, conf_lcbc)
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
@@ -332,8 +331,9 @@ class ProblemDefinition( Struct ):
         self.equations.setup_initial_conditions(ics,
                                                 self.domain.regions, functions)
 
-    def select_bcs( self, ts = None, ebc_names = None, epbc_names = None,
-                    lcbc_names = None ):
+    def select_bcs(self, ebc_names=None, epbc_names=None,
+		   lcbc_names=None, create_matrix=False):
+
         if ebc_names is not None:
             conf_ebc = select_by_names( self.conf.ebcs, ebc_names )
         else:
@@ -349,7 +349,9 @@ class ProblemDefinition( Struct ):
         else:
             conf_lcbc = None
 
-        self.time_update( ts, conf_ebc, conf_epbc, conf_lcbc )
+	self.update_bcs(conf_ebc, conf_epbc, conf_lcbc)
+        self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
+                              self.functions, create_matrix)
 
     def get_timestepper( self ):
         return self.ts
@@ -771,13 +773,21 @@ class ProblemDefinition( Struct ):
             variables = self.equations.variables
 
         elif auto_create:
-            variables = Variables.from_conf(self.conf.variables, self.fields)
-            variables.setup_dof_info()
+	    self.create_variables()
 
         else:
             variables = None
 
         return variables
+
+    def create_variables(self, var_names=None):
+	if var_names is not None:
+	    self.select_variables(var_names)
+
+	variables = Variables.from_conf(self.conf_variables, self.fields)
+	variables.setup_dof_info()
+
+	return variables
 
     def get_output_name(self, suffix=None, extra=None, mode=None):
         """Return default output file name, based on the output format,
