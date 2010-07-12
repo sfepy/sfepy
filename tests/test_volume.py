@@ -45,7 +45,7 @@ class Test( TestCommon ):
     def from_conf( conf, options ):
         from sfepy.fem import ProblemDefinition
 
-        problem = ProblemDefinition.from_conf( conf, init_variables = False )
+        problem = ProblemDefinition.from_conf(conf, init_equations=False)
         test = Test( problem = problem,
                      conf = conf, options = options )
         return test
