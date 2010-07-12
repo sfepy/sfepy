@@ -14,7 +14,11 @@ import os.path as op
 from optparse import OptionParser
 from math import pi
 
-from scipy.optimize import broyden3, bisection
+from scipy.optimize import broyden3
+try:
+    from scipy.optimize import bisect
+except ImportError:
+    from scipy.optimize import bisection as bisect
 from scipy.optimize.nonlin import excitingmixing
 
 import sfepy
@@ -23,7 +27,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
-from sfepy.fem import eval_term_op, MeshIO, ProblemDefinition
+from sfepy.fem import MeshIO, ProblemDefinition
 import sfepy.base.ioutils as io
 from sfepy.solvers import Solver, eig
 
@@ -76,7 +80,7 @@ def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
 ##     pylab.show()
 
     try:
-        e_f = bisection( objective, eigs[0], eigs[-1], xtol = 1e-12 )
+        e_f = bisect(objective, eigs[0], eigs[-1], xtol=1e-12)
     except AssertionError:
         e_f = None
 ##     print eigs
@@ -202,10 +206,10 @@ class SchroedingerApp( SimpleApp ):
         return evp
 
     def _interp_to_nodes(self, v_qp):
-        self.problem.variables['scalar'].data_from_qp(v_qp, 'i1')
+	variable = self.problem.create_variables(['scalar'])['scalar']
+        variable.data_from_qp(v_qp, 'i1')
 
-        return self.problem.variables['scalar']()
-        
+        return variable()
 
     def iterate( self, v_hxc_qp, eig_solver, mtx_b, log, file_output,
                  n_electron = None ):
@@ -217,7 +221,8 @@ class SchroedingerApp( SimpleApp ):
         opts = self.app_options
 
         n_electron = get_default( n_electron, opts.n_electron )
-        
+
+        pb.set_equations(pb.conf.equations)
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
 
         sh = self.qp_shape
@@ -225,8 +230,9 @@ class SchroedingerApp( SimpleApp ):
         v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
         v_hxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
         pb.materials['mat_v'].set_extra_args(vhxc=v_hxc_qp)
-        pb.set_equations(pb.conf.equations)
         pb.update_materials()
+
+	variables = pb.get_variables()
 
         v_hxc_qp.shape = sh
 
@@ -236,9 +242,9 @@ class SchroedingerApp( SimpleApp ):
 
         output( 'assembling lhs...' )
         tt = time.clock()
-        mtx_a = eval_term_op( dummy, pb.conf.equations['lhs'], pb,
-                              dw_mode = 'matrix', tangent_matrix = pb.mtx_a,
-                              update_materials = False )
+        mtx_a = pb.evaluate(pb.conf.equations['lhs'], dummy,
+			    dw_mode='matrix', tangent_matrix=pb.mtx_a,
+			    update_materials=False)
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         assert_( nm.alltrue( nm.isfinite( mtx_a.data ) ) )
@@ -263,9 +269,9 @@ class SchroedingerApp( SimpleApp ):
 
         output( "saving solutions, iter=%d..." % self.itercount )
         out = {}
-        var_name = pb.variables.get_names( kind = 'state' )[0]
+        var_name = variables.get_names( kind = 'state' )[0]
         for ii in xrange( n_eigs_ok ):
-            vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+            vec_phi = variables.make_full_vec( mtx_s_phi[:,ii] )
             update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
         name = op.join( opts.output_dir, "iter%d" % self.itercount )
         pb.save_state('.'.join((name, opts.output_format)), out=out)
@@ -273,7 +279,7 @@ class SchroedingerApp( SimpleApp ):
 
         n_qp = nm.zeros_like(v_hxc_qp)
         for ii in xrange( n_eigs_ok ):
-            vec_phi = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+            vec_phi = variables.make_full_vec( mtx_s_phi[:,ii] )
             phi_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
                                  Psi=vec_phi)
             n_qp += weights[ii] * (phi_qp ** 2)
@@ -281,7 +287,7 @@ class SchroedingerApp( SimpleApp ):
        ## charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
        ## print charge
 
-        var = pb.variables['Psi']
+        var = variables['Psi']
         ap, vg = var.get_approximation(('i1', 'Omega', 0), 'Volume')
 
         det = vg.variable(1)
@@ -292,7 +298,8 @@ class SchroedingerApp( SimpleApp ):
         ## charge = out.sum()
 
         vec_n = self._interp_to_nodes(n_qp)
-        charge_n = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
+        charge_n = pb.evaluate("di_volume_integrate.i1.Omega(Psi)",
+			       var_names=['Psi'], Psi=vec_n)
 
         ##
         # V_xc in quadrature points.
@@ -359,13 +366,15 @@ class SchroedingerApp( SimpleApp ):
         pb.set_equations( pb.conf.equations )
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
 
+	variables = pb.get_variables()
+
         dummy = pb.create_state_vector()
 
         output( 'assembling rhs...' )
         tt = time.clock()
-        mtx_b = eval_term_op( dummy, pb.conf.equations['rhs'], pb,
-                              dw_mode = 'matrix',
-                              tangent_matrix = pb.mtx_a.copy() )
+        mtx_b = pb.evaluate(pb.conf.equations['rhs'], dummy,
+			    dw_mode='matrix',
+			    tangent_matrix=pb.mtx_a.copy())
         output( '...done in %.2f s' % (time.clock() - tt) )
         assert_( nm.alltrue( nm.isfinite( mtx_b.data ) ) )
 
@@ -391,7 +400,7 @@ class SchroedingerApp( SimpleApp ):
         eig_solver = Solver.any_from_conf( eig_conf )
 
         # Just to get the shape. Assumes one element group only!!!
-        aux = nm.zeros((pb.variables.di.ptr[-1],), dtype=nm.float64)
+        aux = nm.zeros((variables.di.ptr[-1],), dtype=nm.float64)
         v_hxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
                                Psi=aux)
         v_hxc_qp.fill(0.0)
@@ -418,19 +427,21 @@ class SchroedingerApp( SimpleApp ):
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
 
         fun = pb.materials['mat_v'].function
-        vec_v_ion = fun(None, pb.variables['scalar'].field.get_coor(),
+	variable = self.problem.create_variables(['scalar'])['scalar']
+        vec_v_ion = fun(None, variable.field.get_coor(),
                         mode='qp')['V_ion'].squeeze()
 
         vec_v_xc = self._interp_to_nodes(v_xc_qp)
         vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
         vec_v_sum = self._interp_to_nodes(v_hxc_qp + v_ion_qp)
-        
+
         coor = pb.domain.get_mesh_coors()
         r2 = norm_l2_along_axis(coor, squared=True)
         vec_nr2 = vec_n * r2
 
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
         mtx_phi = self.make_full( mtx_s_phi )
+
         out = {}
         update_state_to_output(out, pb, vec_n, 'n')
         update_state_to_output(out, pb, vec_nr2, 'nr2')
@@ -466,16 +477,16 @@ class SchroedingerApp( SimpleApp ):
 
         output( 'assembling lhs...' )
         tt = time.clock()
-        mtx_a = eval_term_op( dummy, pb.conf.equations['lhs'], pb,
-                              dw_mode = 'matrix',
-                              tangent_matrix = pb.mtx_a )
+        mtx_a = pb.evaluate(pb.conf.equations['lhs'], dummy,
+			    dw_mode='matrix',
+			    tangent_matrix=pb.mtx_a)
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         output( 'assembling rhs...' )
         tt = time.clock()
-        mtx_b = eval_term_op( dummy, pb.conf.equations['rhs'], pb,
-                              dw_mode = 'matrix',
-                              tangent_matrix = pb.mtx_a.copy() )
+        mtx_b = pb.evaluate(pb.conf.equations['rhs'], dummy,
+			    dw_mode='matrix',
+			    tangent_matrix=pb.mtx_a.copy())
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         n_eigs = get_default( opts.n_eigs, mtx_a.shape[0] )
@@ -543,12 +554,12 @@ class SchroedingerApp( SimpleApp ):
         return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
 
     def make_full( self, mtx_s_phi ):
-        pb = self.problem
+        variables = self.problem.get_variables()
 
-        mtx_phi = nm.empty( (pb.variables.di.ptr[-1], mtx_s_phi.shape[1]),
+        mtx_phi = nm.empty( (variables.di.ptr[-1], mtx_s_phi.shape[1]),
                             dtype = nm.float64 )
         for ii in xrange( mtx_s_phi.shape[1] ):
-            mtx_phi[:,ii] = pb.variables.make_full_vec( mtx_s_phi[:,ii] )
+            mtx_phi[:,ii] = variables.make_full_vec( mtx_s_phi[:,ii] )
 
         return mtx_phi
 
