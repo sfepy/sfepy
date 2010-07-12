@@ -148,13 +148,18 @@ class ProblemDefinition( Struct ):
         self.clear_equations()
 ##         print variables.di
 ##         pause()
-        
-    def select_variables( self, variable_names ):
+
+    def select_variables(self, variable_names, only_conf=False):
         if type(variable_names) == dict:
             conf_variables = transform_variables(variable_names)
+
         else:
-            conf_variables = select_by_names( self.conf.variables, variable_names )
-        self.set_variables( conf_variables )
+            conf_variables = select_by_names(self.conf.variables, variable_names)
+
+	if not only_conf:
+	    self.set_variables( conf_variables )
+
+	return conf_variables
 
     def clear_equations( self ):
         self.integrals = None
@@ -781,10 +786,19 @@ class ProblemDefinition( Struct ):
         return variables
 
     def create_variables(self, var_names=None):
-	if var_names is not None:
-	    self.select_variables(var_names)
+	"""
+	Create variables with names in `var_names`. Their definitions
+        have to be present in `self.conf.variables`.
 
-	variables = Variables.from_conf(self.conf_variables, self.fields)
+	Notes
+	-----
+	This method does not change `self.equations`, so it should not
+        have any side effects.
+	"""
+	if var_names is not None:
+	    conf_variables = self.select_variables(var_names, only_conf=True)
+
+	variables = Variables.from_conf(conf_variables, self.fields)
 	variables.setup_dof_info()
 
 	return variables
