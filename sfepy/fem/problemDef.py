@@ -798,6 +798,9 @@ class ProblemDefinition( Struct ):
 	if var_names is not None:
 	    conf_variables = self.select_variables(var_names, only_conf=True)
 
+	else:
+	    conf_variables = self.conf.variables
+
 	variables = Variables.from_conf(conf_variables, self.fields)
 	variables.setup_dof_info()
 
