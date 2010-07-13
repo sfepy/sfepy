@@ -190,8 +190,8 @@ def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
             eigenmomenta[ii,:] = 0.0
 
         else:
-            pb.variables[u_name].data_from_data( vec_phi.copy() )
-            val = eval_term_op( None, em_equation, pb )
+	    val = pb.evaluate(em_equation, var_names=[u_name],
+			      **{u_name : vec_phi.copy()})
             eigenmomenta[ii,:] = val
 
     return eigenmomenta

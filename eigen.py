@@ -18,8 +18,6 @@ from sfepy.base.plotutils import plt
 
 def make_save_hook( base_name, post_process_hook = None, file_per_var = None ):
     def save_phono_correctors( state, problem, ir, ic ):
-        get_state = problem.variables.get_state_part_view
-
         problem.save_state( (base_name % (ir, ic)) + '.vtk', state,
                             post_process_hook = post_process_hook,
                             file_per_var = file_per_var )
@@ -427,10 +425,12 @@ class AcousticBandGapsApp( SimpleApp ):
 
         n_eigs = eigs.shape[0]
 
-        mtx_phi = nm.empty( (problem.variables.di.ptr[-1], mtx_s_phi.shape[1]),
+	variables = problem.get_variables()
+
+        mtx_phi = nm.empty( (variables.di.ptr[-1], mtx_s_phi.shape[1]),
                            dtype = nm.float64 )
 
-        make_full = problem.variables.make_full_vec
+        make_full = variables.make_full_vec
         if eig_problem in ['simple', 'simple_liquid']:
             for ii in xrange( n_eigs ):
                 mtx_phi[:,ii] = make_full( mtx_s_phi[:,ii] )
@@ -443,9 +443,9 @@ class AcousticBandGapsApp( SimpleApp ):
             eliminated_var = schur['eliminated_var']
 
             mtx_s_phi_schur = - sc.dot( mtx_dib, mtx_s_phi )
-            aux = nm.empty( (problem.variables.adi.ptr[-1],),
+            aux = nm.empty( (variables.adi.ptr[-1],),
                             dtype = nm.float64 )
-            set = problem.variables.set_state_part
+            set = variables.set_state_part
             for ii in xrange( n_eigs ):
                 set( aux, mtx_s_phi[:,ii], primary_var, stripped = True )
                 set( aux, mtx_s_phi_schur[:,ii], eliminated_var,
@@ -453,7 +453,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
                 mtx_phi[:,ii] = make_full( aux )
 
-            indx = problem.variables.get_indx( primary_var )
+            indx = variables.get_indx( primary_var )
             eig_vectors = mtx_phi[indx,:]
 
         save = self.app_options.save
@@ -506,8 +506,7 @@ class AcousticBandGapsApp( SimpleApp ):
             dconf.options['output_dir'] = self.problem.output_dir
 
             volume = eval_term_op( None, opts.volume % 'Y', self.problem )
-            problem = ProblemDefinition.from_conf( dconf,
-                                                   init_variables = False )
+            problem = ProblemDefinition.from_conf(dconf, init_equations=False)
             he = HomogenizationEngine( problem, self.options, volume = volume )
             coefs = he()
 
