@@ -114,13 +114,11 @@ integral_1 = {
 }
 
 equations = {
-    'namespaces' : {
-    'dw_' : ('stokes', 'div_grad', 'convect'),
-    },
     'balance' :
-    """div_grad.i1.Y1Y2( fluid.viscosity, v, u ) - stokes.i1.Y1Y2( v, p ) = 0""",
+    """dw_div_grad.i1.Y1Y2( fluid.viscosity, v, u )
+     - dw_stokes.i1.Y1Y2( v, p ) = 0""",
     'incompressibility' :
-    """stokes.i1.Y1Y2( u, q ) = 0""",
+    """dw_stokes.i1.Y1Y2( u, q ) = 0""",
 }
 
 material_1 = {

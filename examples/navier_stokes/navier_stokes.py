@@ -110,27 +110,13 @@ integral_2 = {
 ##
 # Stationary Navier-Stokes equations.
 equations = {
-    'namespaces' : {
-    'dw_' : ('stokes', 'div_grad', 'convect'),
-    },
     'balance' :
-    """+ div_grad.i2.Omega( fluid.viscosity, v, u ) + convect.i2.Omega( v, u )
-       - stokes.i1.Omega( v, p ) = 0""",
+    """+ dw_div_grad.i2.Omega( fluid.viscosity, v, u )
+       + dw_convect.i2.Omega( v, u )
+       - dw_stokes.i1.Omega( v, p ) = 0""",
     'incompressibility' :
-    """stokes.i1.Omega( u, q ) = 0""",
+    """dw_stokes.i1.Omega( u, q ) = 0""",
 }
-
-##
-# Stokes equations.
-## equations = {
-##     'namespaces' : {
-##     'dw_' : ('div', 'grad', 'divgrad'),
-##     },
-##     'balance' :
-##     """+ div_grad.i1.Omega( fluid, v, u ) - grad.i1.Omega( v, p ) = 0""",
-##     'incompressibility' :
-##     """div.i1.Omega( q, u ) = 0""",
-## }
 
 ##
 # FE assembling parameters.
