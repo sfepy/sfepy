@@ -225,7 +225,7 @@ class Material( Struct ):
 
         # Special constant values.
         if self.flags.get('special_constant'):
-            datas = self.function(None, None)
+            datas = self.function(None, None, mode='special_constant')
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 

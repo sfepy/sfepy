@@ -56,18 +56,22 @@ class ConstantFunction(Function):
                         vkey = key.split('.')[1]
                         out[vkey] = val
 
-            elif (mode == 'qp') or (mode is None):
+            elif (mode == 'qp'):
                 for key, val in values.iteritems():
                     if '.' in key: continue
- 
-                    if coors is None:
-                        out[key] = val
-                    else:
-                        val = nm.array(val, dtype=nm.float64, ndmin=3)
-                        out[key] = nm.tile(val, (coors.shape[0],1,1))
+
+                    val = nm.array(val, dtype=nm.float64, ndmin=3)
+                    out[key] = nm.tile(val, (coors.shape[0], 1, 1))
+
+            elif (mode == 'special_constant') or (mode is None):
+                for key, val in values.iteritems():
+                    if '.' in key: continue
+
+                    out[key] = val
+
             else:
                 raise ValueError('unknown function mode! (%s)' % mode)
             return out
-        
+
         Function.__init__(self, name = name, function = get_constants,
                           is_constant = True)
