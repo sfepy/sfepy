@@ -489,6 +489,16 @@ class Container( Struct ):
     def get_names( self ):
         return [obj.name for obj in self._objs]
 
+    def as_dict(self):
+        """
+        Return stored objects in a dictionary with object names as keys.
+        """
+        out = {}
+        for key, val in self.iteritems():
+            out[key] = val
+
+        return out
+
 ##
 # 30.11.2004, c
 # 01.12.2004
