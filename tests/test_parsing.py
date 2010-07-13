@@ -41,7 +41,7 @@ class Test( TestCommon ):
         for test_str in test_strs:
             term_descs[:] = []
             try:
-                bnf = create_bnf( term_descs, {} )
+                bnf = create_bnf(term_descs)
                 bnf.parseString( test_str )
             except:
                 self.report( 'failed: %s' % test_str )

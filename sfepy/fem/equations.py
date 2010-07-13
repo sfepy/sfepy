@@ -10,14 +10,14 @@ Note:
   used in equations
 """
 
-def parse_definition(equation_def, itps):
+def parse_definition(equation_def):
     """
     Parse equation definition string to create term description list.
     """
     from parseEq import create_bnf
 
     term_descs = []
-    bnf = create_bnf(term_descs, itps)
+    bnf = create_bnf(term_descs)
     try:
         bnf.parseString(equation_def)
     except:
@@ -31,12 +31,11 @@ class Equations( Container ):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, caches=None,
-                  user=None, term_prefixes=None):
+                  user=None):
 
         objs = OneTypeList(Equation)
 
         conf = copy(conf)
-        tps = conf.pop('namespaces', {})
 
         if caches is None:
             caches = DataCaches()
@@ -47,7 +46,7 @@ class Equations( Container ):
             output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, caches=caches,
-                                    user=user, term_prefixes=tps)
+                                    user=user)
             objs.append(eq)
             ii += 1
 
@@ -354,12 +353,8 @@ class Equation( Struct ):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials,
-                  caches=None, user=None, term_prefixes=None):
-        if term_prefixes is None: term_prefixes = {}
-
-        itps = invert_dict(term_prefixes, True)
-
-        term_descs = parse_definition(desc, itps)
+                  caches=None, user=None):
+        term_descs = parse_definition(desc)
         terms = Terms.from_desc(term_descs, regions)
 
         terms.setup()

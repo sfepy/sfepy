@@ -10,12 +10,11 @@ class TermParse( object ):
             ss += "  %s:\n    %s\n" % (key, self.__dict__[key])
         return ss
 
-def collect_term( term_descs, lc, itps ):
+def collect_term(term_descs, lc):
     signs = {'+' : 1.0, '-': -1.0}
     def append( str, loc, toks ):
         sign = signs[toks.sign] * signs[lc[0]]
-        term_prefix = itps.get( toks.term_desc.name, '' ) 
-        ## print toks, lc, term_prefix
+        ## print toks, lc
         tp = TermParse()
         tp.integral = toks.term_desc.integral
         if not tp.integral:
@@ -23,7 +22,7 @@ def collect_term( term_descs, lc, itps ):
         tp.region = toks.term_desc.region
         tp.flag = toks.term_desc.flag
         tp.sign = sign * eval(''.join( toks.mul ))
-        tp.name = term_prefix + toks.term_desc.name
+        tp.name = toks.term_desc.name
         tp.args = ', '.join(toks.args[0])
         ## print tp
         term_descs.append( tp )
@@ -36,7 +35,7 @@ def rhs( lc ):
             lc[0] = '-'
     return aux
         
-def create_bnf( term_descs, itps ):
+def create_bnf(term_descs):
     """term_descs .. list of TermParse objects
     (sign, term_name, term_arg_names), where sign can be real or complex
     multiplier"""
@@ -87,7 +86,7 @@ def create_bnf( term_descs, itps ):
                                   ident( "region" )
                                 )))( "term_desc" ) + "("\
                                 + Optional(args, default=[''])( "args" ) + ")"
-    term.setParseAction( collect_term( term_descs, lc, itps ) )
+    term.setParseAction(collect_term(term_descs, lc))
 
     rhs1 = equal + OneOrMore( term )
     rhs2 = equal + zero
@@ -107,7 +106,7 @@ if __name__ == "__main__":
                  = - dw_rhs.a.Y3( u, q, Nu, dcf, mode )"""
     
     term_descs = []
-    bnf = create_bnf( term_descs, {} )
+    bnf = create_bnf(term_descs)
     out = bnf.parseString( test_str )
 
     print 'out:', out, '\n'
