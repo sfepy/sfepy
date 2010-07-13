@@ -420,15 +420,14 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
     `conf_equations`. The name and row/column variables of each block have to
     be encoded in the equation's name, as in:
 
-    ebcs, epbcs must be either lists of BC names, or BC configuration
-    dictionaries 
-
-    Caveat: problem.variables must already contain all the variables used in
-    conf_equations!
-
     conf_equations = {
       'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
     }
+
+    Notes
+    -----
+    `ebcs`, `epbcs` must be either lists of BC names, or BC configuration
+    dictionaries.
     """
     if isinstance( ebcs, list ) and isinstance( epbcs, list ):
         bc_mode = 0
@@ -436,10 +435,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         bc_mode = 1
     else:
         raise TypeError('bad BC!')
-    
-    dummy = problem.create_state_vector()
 
-    indx = problem.variables.get_indx
     matrices = {}
     for key, mtx_term in conf_equations.iteritems():
         ks = key.split( ',' )
@@ -447,16 +443,22 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         output( mtx_name, var_names )
 
         problem.set_equations( {'eq': mtx_term}, single_term=True )
+	variables = problem.get_variables()
+	indx = variables.get_indx
+	dummy = variables.create_state_vector()
 
         if bc_mode == 0:
             problem.select_bcs( ebc_names = ebcs, epbc_names = epbcs )
+
         else:
             problem.time_update( conf_ebc = ebcs, conf_epbc = epbcs )
 
         ir = indx( var_names[0], stripped = True, allow_dual = True )
         ic = indx( var_names[1], stripped = True, allow_dual = True )
 
-        mtx = eval_term_op( dummy, mtx_term, problem, dw_mode = 'matrix' )
+        mtx = problem.evaluate(mtx_term, dummy, dw_mode='matrix',
+                               copy_materials=False,
+			       update_materials=False)
         matrices[mtx_name] = mtx[ir,ic]
 
     return matrices
