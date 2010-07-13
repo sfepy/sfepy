@@ -56,7 +56,7 @@ class SimpleApp( Application ):
     process_options = staticmethod( process_options )
 
     def __init__(self, conf, options, output_prefix,
-		 init_equations=False, **kwargs):
+		 init_equations=True, **kwargs):
         """`kwargs` are passed to  ProblemDefinition.from_conf()
 
         Command-line options have precedence over conf.options."""
