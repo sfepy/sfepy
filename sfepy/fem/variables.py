@@ -860,6 +860,13 @@ class Variable( Struct ):
     def is_complex( self ):
         return self.dtype in complex_types
 
+    def init_data(self, step=0):
+        """
+        Initialize the dof vector data of time step `step` to zeros.
+        """
+        if self.is_state_or_parameter():
+            self.data[step] = nm.zeros((self.n_dof,), dtype=self.dtype)
+
     def get_primary_name(self):
         if self.is_state():
             name = self.name
