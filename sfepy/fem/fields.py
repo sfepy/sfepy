@@ -47,7 +47,7 @@ def setup_extra_data(conn_info):
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
 def setup_dof_conns(conn_info, dof_conns=None,
-                    make_virtual=False, single_term=False):
+                    make_virtual=False):
     """
     Dof connectivity key:
         (field.name, var.n_components, region.name, type, ig)

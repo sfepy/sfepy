@@ -442,7 +442,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         mtx_name, var_names = ks[0], ks[1:]
         output( mtx_name, var_names )
 
-        problem.set_equations( {'eq': mtx_term}, single_term=True )
+        problem.set_equations({'eq': mtx_term})
 	variables = problem.get_variables()
 	indx = variables.get_indx
 	dummy = variables.create_state_vector()

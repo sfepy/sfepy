@@ -170,8 +170,7 @@ class ProblemDefinition( Struct ):
 
     def set_equations(self, conf_equations=None, user=None,
                       cache_override=None,
-                      keep_solvers=False, make_virtual=False,
-                      single_term=False):
+                      keep_solvers=False, make_virtual=False):
         """
         Set equations of the problem. Regions, Variables and Materials
         have to be already set.
@@ -190,7 +189,7 @@ class ProblemDefinition( Struct ):
         # This uses the conn_info created above.
         self.dof_conns = {}
         setup_dof_conns(equations.conn_info, dof_conns=self.dof_conns,
-                        make_virtual=make_virtual, single_term=single_term)
+                        make_virtual=make_virtual)
         ## print self.fields.dof_conns
 
         self.integrals = Integrals.from_conf(self.conf.integrals)
