@@ -135,43 +135,45 @@ class Test( TestCommon ):
     from_conf = staticmethod( from_conf )
 
     
-    ##
-    # c: 14.04.2008, r: 14.04.2008
-    def test_vector_matrix( self ):
-        from sfepy.fem import eval_term_op
+    def test_vector_matrix(self):
         problem  = self.problem
 
         problem.set_equations()
         problem.time_update()
 
         state = problem.create_state_vector()
-        problem.apply_ebc( state )
+        problem.apply_ebc(state)
 
-        aux1 = eval_term_op( state, "dw_diffusion.i1.Omega( m.K, q, p )",
-                           problem, dw_mode = 'vector' )
-        aux1g = problem.equations.make_full_vec( aux1 )
+        problem.equations.set_data(state)
 
-        problem.time_update( conf_ebc = {}, conf_epbc = {} )
-        mtx = eval_term_op( state, "dw_diffusion.i1.Omega( m.K, q, p )",
-                          problem, dw_mode = 'matrix' )
+        aux1 = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
+                                mode='weak', dw_mode='vector')
+        aux1g = problem.equations.make_full_vec(aux1)
+
+        problem.time_update(conf_ebc={}, conf_epbc={})
+        mtx = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
+                               mode='weak', dw_mode='matrix')
         aux2g = mtx * state
-        problem.time_update( conf_ebc = self.conf.ebcs,
-                            conf_epbc = self.conf.epbcs )
-        aux2 = problem.equations.strip_state_vector( aux2g, follow_epbc = True )
+        problem.time_update(conf_ebc=self.conf.ebcs,
+                            conf_epbc=self.conf.epbcs)
+        aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
 
-        ret = self.compare_vectors( aux1, aux2,
-                                   label1 = 'vector mode',
-                                   label2 = 'matrix mode' )
+        ret = self.compare_vectors(aux1, aux2,
+                                   label1='vector mode',
+                                   label2='matrix mode')
         if not ret:
-            self.report( 'variable %s: failed' % var_name )
+            self.report('variable %s: failed' % var_name)
 
         return ret
 
     def test_surface_evaluate(self):
+        from sfepy.fem import FieldVariable
         problem = self.problem
-        
-        p = problem.create_state_vector()
-        p.fill(1.0)
+
+        p = problem.get_variables()['p']
+        vec = nm.empty(p.n_dof, dtype=p.dtype)
+        vec[:] = 1.0
+        p.data_from_any(vec)
 
         expr = 'd_surface_integrate.isurf.Left( p )'
         val = problem.evaluate(expr, p=p)
@@ -179,14 +181,15 @@ class Test( TestCommon ):
         self.report('with unknown: %s, value: %s, ok: %s' \
                     % (expr, val, ok1))
 
-        ## problem.conf.edit('variables',
-        ##                   {'r' : ('parameter field', 'pressure', 'p')})
+        r = FieldVariable('r', 'parameter', p.get_field(), 1,
+                          primary_var_name='(set-to-None)')
+        r.data_from_any(vec)
 
-        ## expr = 'd_surface_integrate.isurf.Left( r )'
-        ## val = problem.evaluate(expr, r=p)
-        ## ok2 = nm.abs(val - 1.0) < 1e-15
-        ## self.report('with parameter: %s, value: %s, ok: %s' \
-        ##             % (expr, val, ok2))
+        expr = 'd_surface_integrate.isurf.Left( r )'
+        val = problem.evaluate(expr, r=r)
+        ok2 = nm.abs(val - 1.0) < 1e-15
+        self.report('with parameter: %s, value: %s, ok: %s' \
+                    % (expr, val, ok2))
         ok2 = True
 
         return ok1 and ok2
@@ -194,25 +197,26 @@ class Test( TestCommon ):
     def test_dq_de(self):
         problem = self.problem
 
-        p = problem.create_state_vector()
-        p[:] = nm.arange(p.shape[0], dtype=p.dtype)
+        p = problem.get_variables()['p']
+        val = nm.arange(p.n_dof, dtype=p.dtype)
+        p.data_from_any(val)
 
-        val1 = problem.evaluate('de_grad.i1.Omega( p )', p)
+        val1 = problem.evaluate('de_grad.i1.Omega( p )', mode='el_avg')
         self.report('de_grad: min, max:', val1.min(), val1.max())
 
         # Works with one group only, which is the case here.
         var = problem.equations.variables['p']
         ap, vg = var.get_approximation(('i1', 'Omega', 0))
-        aux1 = problem.evaluate('dq_grad.i1.Omega( p )', p)
+        aux1 = problem.evaluate('dq_grad.i1.Omega( p )', mode='qp')
         aux2 = nm.zeros((aux1.shape[0], 1) + aux1.shape[2:], dtype=aux1.dtype)
         vg.integrate(aux2, aux1)
         val2 = aux2 / vg.variable(2)
         self.report('dq_grad: min, max:', val2.min(), val2.max())
 
-        ok = self.compare_vectors( val1, val2,
-                                   label1 = 'de mode',
-                                   label2 = 'dq mode' )
+        ok = self.compare_vectors(val1, val2,
+                                  label1='de mode',
+                                  label2='dq mode')
         if not ok:
-            self.report( 'variable %s: failed' % var_name )
+            self.report('variable %s: failed' % var_name)
 
         return ok
