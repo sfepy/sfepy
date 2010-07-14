@@ -1127,6 +1127,103 @@ class Term(Struct):
 
         return qps
 
+    def standalone_setup(self):
+        from sfepy.fem import setup_dof_conns
+
+        conn_info = {'aux' : self.get_conn_info()}
+        variables = self.get_variables()
+
+        ## fields = list(set([var.field for var in variables]))
+        ## print fields
+
+        setup_dof_conns(conn_info)
+
+        geometries = {}
+        self.describe_geometry(geometries)
+        ## print geometries
+
+        materials = self.get_materials(join=True)
+        ## print materials
+
+        self.assign_caches()
+
+        key = self.get_qp_key()
+        qps = self.get_physical_qps()
+        for mat in materials:
+            for ig in self.igs():
+                mat.update_data(None, self.region, key, ig, qps)
+                mat.update_special_data(None, self.region.domain)
+
+    def evaluate(self, mode='eval', diff_var=None,
+                 standalone=True, ret_status=False, **kwargs):
+        """
+        Evaluate the term.
+
+        Parameters
+        ----------
+        mode : 'eval' (default), or 'weak'
+            The term evaluation mode.
+
+        Returns
+        -------
+        val : float or array
+            In 'eval' mode, the term returns a single value (the
+            integral, it does not need to be a scalar), while in 'weak'
+            mode it returns an array for each element.
+        status : int, optional
+            The flag indicating evaluation success (0) or failure
+            (nonzero). Only provided if `ret_status` is True.
+        iels : array of ints, optional
+            The local elements indices in 'weak' mode. Only provided in
+            'weak' mode.
+        """
+        if standalone:
+            self.standalone_setup()
+
+        huge_int = 1000000000
+
+        if mode == 'eval':
+            val = 0.0
+            for ig in self.iter_groups():
+                for aux, iels, status in self(chunk_size=huge_int,
+                                              call_mode='d_eval', **kwargs):
+                    val += self.sign * aux
+
+        elif mode in ('el_avg', 'qp', 'weak'):
+            val = None
+            iels = nm.empty((0, 2), dtype=nm.int32)
+            status = 0
+            for ig in self.iter_groups():
+                for _val, _iels, _status in self(diff_var=diff_var,
+                                                 chunk_size=huge_int,
+                                                 **kwargs):
+
+                    if val is None:
+                        val = self.sign * _val
+
+                    else:
+                        val = nm.r_[val, self.sign * _val]
+
+                    aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
+                                _iels[:,None]]
+                    iels = nm.r_[iels, aux]
+                    status += _status
+
+        # Setup return value.
+        if mode == 'eval':
+            out = (val,)
+
+        else:
+            out = (val, iels)
+
+        if ret_status:
+            out = out + (status,)
+
+        if len(out) == 1:
+            out = out[0]
+
+        return out
+
 ##     def get_quadrature_orders(self):
 ##         """Curently, it just takes the order of the term integral."""
 ##         return self.integral.order

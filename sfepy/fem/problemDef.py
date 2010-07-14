@@ -9,14 +9,14 @@ from functions import Functions
 from mesh import Mesh
 from domain import Domain
 from fields import fields_from_conf, setup_dof_conns
-from variables import Variables
+from variables import Variables, Variable
 from materials import Materials
 from equations import Equations
 from integrals import Integrals
 from sfepy.fem.conditions import Conditions
 import fea as fea
 from sfepy.solvers.ts import TimeStepper
-from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, eval_term_op
+from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, evaluate
 from sfepy.solvers import Solver
 
 ##
@@ -720,44 +720,56 @@ class ProblemDefinition( Struct ):
         
         return state
 
-    def evaluate(self, expression, state=None, var_names=None, **kwargs):
+    def evaluate(self, expression, try_equations=True, auto_init=False,
+                 copy_materials=True, integrals=None,
+                 ebcs=None, epbcs=None, lcbcs=None,
+                 ts=None, functions=None, mode='eval', **kwargs):
         """
-        Evaluate an expression, convenience wrapper of eval_term_op().
+        Evaluate an expression, convenience wrapper of
+        sfepy.fem.evaluate.evaluate().
 
         Parameters
         ----------
-        state .. state vector
-        kwargs .. dictionary of {variable_name : data vector}, and other
-        arguments supported by eval_term()
-
+	...
 
         Examples
         --------
-        >>> problem.evaluate("di_volume_integrate.i1.Omega(Psi)",
-        ... Psi=data['n'].data)
-        array([ 5.68437535])
+        ...
         """
-        if state is None:
-            if var_names is None:
-                variables = self.get_variables()
-                if variables is not None:
-                    var_names = variables.names
-
-                else:
-                    var_names = []
-
-            kwargs = copy(kwargs)
-            vargs = {}
-            for key, val in kwargs.items():
-                if key in var_names:
-                    vargs[key] = val
-                    kwargs.pop(key)
-
-            out = eval_term_op(vargs, expression, self, **kwargs)
+        if try_equations and self.equations is not None:
+            variables = self.equations.variables.as_dict()
 
         else:
-            out = eval_term_op(state, expression, self, **kwargs)
-            
+            variables = {}
+
+        _kwargs = copy(kwargs)
+        for key, val in kwargs.iteritems():
+            if isinstance(val, Variable):
+                variables[val.name] = val
+                _kwargs.pop(key)
+        kwargs = _kwargs
+
+        if copy_materials:
+            materials = self.materials.semideep_copy()
+
+        else:
+            materials = self.materials
+
+        ebcs = get_default(ebcs, self.ebcs)
+        epbcs = get_default(epbcs, self.epbcs)
+        lcbcs = get_default(lcbcs, self.lcbcs)
+        ts = get_default(ts, self.get_timestepper())
+        functions = get_default(functions, self.functions)
+        integrals = get_default(integrals,
+                                Integrals.from_conf(self.conf.integrals))
+
+        out = evaluate(expression, self.fields, materials,
+                       variables.itervalues(), integrals,
+                       ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
+                       ts=ts, functions=functions,
+                       auto_init=auto_init, mode=mode,
+                       kwargs=kwargs)
+
         return out
 
     ##

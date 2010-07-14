@@ -403,3 +403,44 @@ class Equation( Struct ):
     def describe_geometry(self, geometries):
         for term in self.terms:
             term.describe_geometry(geometries)
+
+    def evaluate(self, mode='eval', dw_mode='vector'):
+        """
+        Parameters
+        ----------
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode.
+        """
+        if mode == 'eval':
+            val = 0.0
+            for term in self.terms:
+                aux, status = term.evaluate(mode=mode,
+                                            standalone=False,
+                                            ret_status=True)
+
+                val += aux
+
+            out = val
+
+        elif mode in ('el_avg', 'qp'):
+
+            vals = []
+            for term in self.terms:
+                val, iels, status = term.evaluate(mode=mode,
+                                                  standalone=False,
+                                                  ret_status=True)
+                vals.append(val)
+
+
+            if len(vals) == 1:
+                vals = vals[0]
+
+            out = vals
+
+        elif mode == 'weak':
+            pass
+
+        else:
+            raise ValueError('unknown evaluation mode! (%s)' % mode)
+
+        return out

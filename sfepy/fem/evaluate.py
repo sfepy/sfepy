@@ -226,6 +226,51 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
                                                      float( sign.imag ),
                                                      rdc, cdc )
 
+def evaluate(expression, fields, materials, variables, integrals,
+             ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
+             auto_init=False, mode='eval', kwargs=None):
+    """
+    Parameters
+    ----------
+    mode : one of 'eval', 'el_avg', 'qp', 'weak'
+        The evaluation mode.
+    """
+    if kwargs is None:
+        kwargs = {}
+
+    domain = fields[fields.keys()[0]].domain
+    caches = DataCaches()
+
+    # Create temporary variables.
+    aux_vars = Variables(variables)
+    equations = Equations.from_conf({'tmp' : expression},
+                                    aux_vars, domain.regions,
+                                    materials, integrals,
+                                    caches=caches, user=kwargs)
+    equations.collect_conn_info()
+
+    # The true variables used in the expression.
+    variables = equations.variables
+    if auto_init:
+        for var in variables:
+            var.init_data(step=0)
+
+    materials.time_update(ts, domain, equations, verbose=False)
+
+    if mode != 'eval':
+        setup_dof_conns(equations.conn_info)
+        equations.time_update(ts, domain.regions,
+                              ebcs, epbcs, lcbcs, functions)
+
+    else:
+        setup_extra_data(equations.conn_info)
+
+    equations.describe_geometry(verbose=False)
+
+    out = equations[0].evaluate(mode=mode)
+
+    return out
+
 ##
 # 01.10.2007, c
 def eval_term_op( state, term_desc, problem, **kwargs ):
