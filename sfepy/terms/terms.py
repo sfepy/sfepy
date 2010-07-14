@@ -733,6 +733,11 @@ class Term(Struct):
                 v_igs = field.igs()
                 v_tg = tgs[vvar.name]
 
+        else:
+            # No virtual variable -> all unknowns are in fact known parameters.
+            pvars += svars
+            svars = []
+
         region = self.get_region()
         if region is not None:
             is_any_trace = reduce(lambda x, y: x or y,
