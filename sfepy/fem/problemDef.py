@@ -180,9 +180,12 @@ class ProblemDefinition( Struct ):
                                                                 None))
 	self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
+
+        self.integrals = Integrals.from_conf(self.conf.integrals)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
-                                        self.materials, user=user)
+                                        self.materials, self.integrals,
+                                        user=user)
 
         equations.collect_conn_info()
 
@@ -192,9 +195,7 @@ class ProblemDefinition( Struct ):
                         make_virtual=make_virtual)
         ## print self.fields.dof_conns
 
-        self.integrals = Integrals.from_conf(self.conf.integrals)
-
-        equations.describe_geometry(self.integrals)
+        equations.describe_geometry()
 
         ## print self.integrals
         ## print equations.geometries

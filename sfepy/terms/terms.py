@@ -146,7 +146,7 @@ class ConnInfo(Struct):
 class Terms(Container):
 
     @staticmethod
-    def from_desc(term_descs, regions):
+    def from_desc(term_descs, regions, integrals=None):
         """
         Create terms, assign each term its region.
         """
@@ -166,7 +166,7 @@ class Terms(Container):
             except IndexError:
                 raise KeyError('region "%s" does not exist!' % td.region)
 
-            term = Term.from_desc(constructor, td, region)
+            term = Term.from_desc(constructor, td, region, integrals=integrals)
             terms.append(term)
 
         return terms
@@ -188,7 +188,7 @@ class Terms(Container):
         self.expression = []
         for term in self:
             aux = [term.sign, term.name, term.arg_str,
-                   term.integral_def, term.region.name]
+                   term.integral_name, term.region.name]
             self.expression.append(aux)
 
     def __mul__(self, other):
@@ -325,17 +325,23 @@ class Term(Struct):
         return obj
         
     @staticmethod
-    def from_desc(constructor, desc, region):
-        obj = constructor(desc.name, desc.args, desc.integral, region)
+    def from_desc(constructor, desc, region, integrals=None):
+        from sfepy.fem import Integrals
+        
+        if integrals is None:
+            integrals = Integrals()
+
+        obj = constructor(desc.name, desc.args, None, region)
+        obj.set_integral(integrals.get(desc.integral,
+                                       *obj.get_integral_info()))
         obj.sign = desc.sign
 
         return obj
 
     def __init__(self, name, arg_str, integral, region, **kwargs):
-
         self.name = name
         self.arg_str = arg_str
-        self.integral_def = integral
+        self.set_integral(integral)
         self.region = region
         self._kwargs = kwargs
 
@@ -395,13 +401,15 @@ class Term(Struct):
         out = -1.0 * self
         return out
 
-    def setup(self):
-        if hasattr(self.integral_def, 'name'):
-            self.integral_name = self.integral_def.name
+    def set_integral(self, integral):
+        """
+        Set the term integral.
+        """
+        self.integral = integral
+        if self.integral is not None:
+            self.integral_name = self.integral.name
 
-        else:
-            self.integral_name = str(self.integral_def)
-        
+    def setup(self):
         self.char_fun = CharacteristicFunction(self.region)
         self.function = self.get_default_attr('function', None)
         
@@ -931,16 +939,10 @@ class Term(Struct):
 
         return out, kind
 
-    def describe_geometry(self, geometries, integrals):
+    def describe_geometry(self, geometries):
         """
-        Takes reference to the used integral. Updates
-        self.integral_name.
         """
         if not self.has_geometry: return
-
-        self.integral = integrals.get(self.integral_name,
-                                      *self.get_integral_info())
-        self.integral_name = self.integral.name
 
         tgs = self.get_geometry_types()
 

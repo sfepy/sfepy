@@ -30,8 +30,8 @@ def parse_definition(equation_def):
 class Equations( Container ):
 
     @staticmethod
-    def from_conf(conf, variables, regions, materials, caches=None,
-                  user=None):
+    def from_conf(conf, variables, regions, materials, integrals,
+                  caches=None, user=None):
 
         objs = OneTypeList(Equation)
 
@@ -45,7 +45,7 @@ class Equations( Container ):
             output('equation "%s":' %  name)
             output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
-                                    materials, caches=caches,
+                                    materials, integrals, caches=caches,
                                     user=user)
             objs.append(eq)
             ii += 1
@@ -99,11 +99,11 @@ class Equations( Container ):
 
         return self.conn_info
 
-    def describe_geometry(self, integrals, verbose=True):
+    def describe_geometry(self, verbose=True):
         output('describing geometries...', verbose=verbose)
         tt = time.clock()
         for eq in self:
-            eq.describe_geometry(self.geometries, integrals)
+            eq.describe_geometry(self.geometries)
         output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
         
     def get_variable_names( self ):
@@ -352,10 +352,10 @@ class Equations( Container ):
 class Equation( Struct ):
 
     @staticmethod
-    def from_desc(name, desc, variables, regions, materials,
+    def from_desc(name, desc, variables, regions, materials, integrals,
                   caches=None, user=None):
         term_descs = parse_definition(desc)
-        terms = Terms.from_desc(term_descs, regions)
+        terms = Terms.from_desc(term_descs, regions, integrals)
 
         terms.setup()
         terms.assign_args(variables, materials, user)
@@ -400,6 +400,6 @@ class Equation( Struct ):
 
             conn_info[key] = term.get_conn_info()
 
-    def describe_geometry(self, geometries, integrals):
+    def describe_geometry(self, geometries):
         for term in self.terms:
-            term.describe_geometry(geometries, integrals)
+            term.describe_geometry(geometries)
