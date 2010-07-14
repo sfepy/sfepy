@@ -404,7 +404,7 @@ class Equation( Struct ):
         for term in self.terms:
             term.describe_geometry(geometries)
 
-    def evaluate(self, mode='eval', dw_mode='vector'):
+    def evaluate(self, mode='eval', dw_mode='vector', asm_obj=None):
         """
         Parameters
         ----------
@@ -438,7 +438,16 @@ class Equation( Struct ):
             out = vals
 
         elif mode == 'weak':
-            pass
+
+            if dw_mode == 'vector':
+
+                for term in self.terms:
+                    val, iels, status = term.evaluate(mode=mode,
+                                                      standalone=False,
+                                                      ret_status=True)
+                    # Assemble to asm_obj...
+
+            out = asm_object
 
         else:
             raise ValueError('unknown evaluation mode! (%s)' % mode)
