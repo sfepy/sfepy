@@ -417,7 +417,6 @@ class Equation( Struct ):
                 aux, status = term.evaluate(mode=mode,
                                             standalone=False,
                                             ret_status=True)
-
                 val += aux
 
             out = val
@@ -430,7 +429,6 @@ class Equation( Struct ):
                                                   standalone=False,
                                                   ret_status=True)
                 vals.append(val)
-
 
             if len(vals) == 1:
                 vals = vals[0]
@@ -445,9 +443,25 @@ class Equation( Struct ):
                     val, iels, status = term.evaluate(mode=mode,
                                                       standalone=False,
                                                       ret_status=True)
-                    # Assemble to asm_obj...
+                    term.assemble_to(asm_obj, val, iels, mode=dw_mode)
 
-            out = asm_object
+            elif dw_mode == 'matrix':
+
+                for term in self.terms:
+                    svars = term.get_state_variables(unknown_only=True)
+
+                    for svar in svars:
+                        val, iels, status = term.evaluate(mode=mode,
+                                                          diff_var=svar.name,
+                                                          standalone=False,
+                                                          ret_status=True)
+                        term.assemble_to(asm_obj, val, iels,
+                                         mode=dw_mode, diff_var=svar)
+
+            else:
+                raise ValueError('unknown assembling mode! (%s)' % dw_mode)
+
+            out = asm_obj
 
         else:
             raise ValueError('unknown evaluation mode! (%s)' % mode)

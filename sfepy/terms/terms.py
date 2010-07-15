@@ -1189,7 +1189,7 @@ class Term(Struct):
                                               call_mode='d_eval', **kwargs):
                     val += self.sign * aux
 
-        elif mode in ('el_avg', 'qp', 'weak'):
+        elif mode in ('el_avg', 'qp'):
             val = None
             iels = nm.empty((0, 2), dtype=nm.int32)
             status = 0
@@ -1209,6 +1209,19 @@ class Term(Struct):
                     iels = nm.r_[iels, aux]
                     status += _status
 
+        elif mode == 'weak':
+            val = []
+            iels = []
+            status = 0
+            for ig in self.iter_groups():
+                for _val, _iels, _status in self(diff_var=diff_var,
+                                                 chunk_size=huge_int,
+                                                 **kwargs):
+
+                    val.append(self.sign * _val)
+                    iels.append((ig, _iels))
+                    status += _status
+
         # Setup return value.
         if mode == 'eval':
             out = (val,)
@@ -1223,6 +1236,68 @@ class Term(Struct):
             out = out[0]
 
         return out
+
+    def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
+        import sfepy.fem.extmods.fem as fem
+
+        vvar = self.get_virtual_variable()
+        dc_type = self.get_dof_conn_type()
+
+        if mode == 'vector':
+            for ii, (ig, _iels) in enumerate(iels):
+                vec_in_els = val[ii]
+
+                dc = vvar.get_dof_conn(dc_type, ig, active=True)
+                assert_(vec_in_els.shape[2] == dc.shape[1])
+
+                if asm_obj.dtype == nm.float64:
+                    fem.assemble_vector(asm_obj, vec_in_els, _iels, 1.0, dc)
+
+                else:
+                    assert_(asm_obj.dtype == nm.complex128)
+                    fem.assemble_vector_complex(asm_obj.real, asm_obj.imag,
+                                                vec_in_els.real,
+                                                vec_in_els.imag,
+                                                _iels,
+                                                1.0,
+                                                0.0, dc)
+
+        elif mode == 'matrix':
+            svar = diff_var
+            tmd = (asm_obj.data, asm_obj.indptr, asm_obj.indices)
+
+            for ii, (ig, _iels) in enumerate(iels):
+                mtx_in_els = val[ii]
+
+                rdc = vvar.get_dof_conn(dc_type, ig, active=True)
+
+                is_trace = self.arg_traces[svar.name]
+                ## print dc_type, ig, is_trace
+                cdc = svar.get_dof_conn(dc_type, ig, active=True,
+                                        is_trace=is_trace)
+                ## print svar.name, cdc.shape
+                assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
+
+                sign = 1.0
+                if self.arg_derivatives[svar.name]:
+                    sign *= 1.0 / self.dt
+
+                if asm_obj.dtype == nm.float64:
+                    fem.assemble_matrix(tmd[0], tmd[1], tmd[2], mtx_in_els,
+                                        _iels, sign, rdc, cdc)
+
+                else:
+                    assert_(asm_obj.dtype == nm.complex128)
+                    fem.assemble_matrix_complex(tmd[0].real, tmd[0].imag,
+                                                tmd[1], tmd[2],
+                                                mtx_in_els.real,
+                                                mtx_in_els.imag,
+                                                _iels,
+                                                sign, 0.0,
+                                                rdc, cdc)
+
+        else:
+            raise ValueError('unknown assembling mode! (%s)' % mode)
 
 ##     def get_quadrature_orders(self):
 ##         """Curently, it just takes the order of the term integral."""

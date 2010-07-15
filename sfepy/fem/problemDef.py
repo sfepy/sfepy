@@ -723,7 +723,8 @@ class ProblemDefinition( Struct ):
     def evaluate(self, expression, try_equations=True, auto_init=False,
                  copy_materials=True, integrals=None,
                  ebcs=None, epbcs=None, lcbcs=None,
-                 ts=None, functions=None, mode='eval', **kwargs):
+                 ts=None, functions=None, mode='eval', dw_mode='vector',
+                 **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         sfepy.fem.evaluate.evaluate().
@@ -767,7 +768,7 @@ class ProblemDefinition( Struct ):
                        variables.itervalues(), integrals,
                        ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                        ts=ts, functions=functions,
-                       auto_init=auto_init, mode=mode,
+                       auto_init=auto_init, mode=mode, dw_mode=dw_mode,
                        kwargs=kwargs)
 
         return out
