@@ -136,7 +136,7 @@ class Test( TestCommon ):
 
     
     def test_vector_matrix(self):
-        problem  = self.problem
+        problem = self.problem
 
         problem.set_equations()
         problem.time_update()
@@ -148,9 +148,9 @@ class Test( TestCommon ):
 
         aux1 = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                 mode='weak', dw_mode='vector')
-        aux1g = problem.equations.make_full_vec(aux1)
 
         problem.time_update(conf_ebc={}, conf_epbc={})
+
         mtx = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                mode='weak', dw_mode='matrix')
         aux2g = mtx * state
@@ -162,7 +162,7 @@ class Test( TestCommon ):
                                    label1='vector mode',
                                    label2='matrix mode')
         if not ret:
-            self.report('variable %s: failed' % var_name)
+            self.report('failed')
 
         return ret
 
@@ -217,6 +217,6 @@ class Test( TestCommon ):
                                   label1='de mode',
                                   label2='dq mode')
         if not ok:
-            self.report('variable %s: failed' % var_name)
+            self.report('failed')
 
         return ok
