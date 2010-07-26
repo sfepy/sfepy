@@ -911,6 +911,10 @@ class Term(Struct):
             The integral kind.
         """
         geom = self.geometry
+        if isinstance(geom, tuple):
+            # Argument set was not yet assigned, let's choose the first
+            # one.
+            geom = geom[0]
 
         kind = ''
 
