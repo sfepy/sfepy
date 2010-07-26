@@ -937,7 +937,7 @@ class Approximations( Container ):
                                         is_trace=is_trace,
                                         return_geometry=False)
 
-            bf = ap.get_base(integral.kind, 0, integral.name,
+            bf = ap.get_base(integral.kind, 0, integral=integral,
                              from_geometry=True)
             if integral.kind == 'v':
                 coors = region.domain.get_mesh_coors()

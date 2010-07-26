@@ -255,12 +255,11 @@ def evaluate(expression, fields, materials, variables, integrals,
         for var in variables:
             var.init_data(step=0)
 
-    materials.time_update(ts, domain, equations, verbose=False)
-
     asm_obj = None
 
     if mode != 'eval':
         setup_dof_conns(equations.conn_info)
+        materials.time_update(ts, domain, equations, verbose=False)
         equations.time_update(ts, domain.regions,
                               ebcs, epbcs, lcbcs, functions)
 
@@ -273,6 +272,7 @@ def evaluate(expression, fields, materials, variables, integrals,
 
     else:
         setup_extra_data(equations.conn_info)
+        materials.time_update(ts, domain, equations, verbose=False)
 
     equations.describe_geometry(verbose=False)
 
