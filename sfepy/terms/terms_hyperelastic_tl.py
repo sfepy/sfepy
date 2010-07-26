@@ -172,7 +172,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
                                tan_mod = nm.array([0], ndmin=4))
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        call_mode, = self.get_kwargs(['call_mode'], **kwargs)
+        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
         virtual, state, state_p = self.get_args(**kwargs)
         apv, vgv = virtual.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = state_p.get_approximation(self.get_current_group(), 'Volume')
@@ -184,7 +184,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         family_data = cache(['detF', 'invC'],
                             self.get_current_group(), 0, state=state)
 
-        if call_mode is None:
+        if term_mode is None:
 
             if mode < 2:
                 crt_data = self.compute_crt_data(family_data, mode, **kwargs)
@@ -214,14 +214,14 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
                     yield -out, chunk, status
 
 
-        elif call_mode == 'd_eval':
+        elif term_mode == 'd_eval':
             raise NotImplementedError
 
-        elif call_mode in ['de_strain', 'de_stress']:
+        elif term_mode in ['strain', 'stress']:
 
-            if call_mode == 'de_strain':
+            if term_mode == 'strain':
                 out_qp = cache('E', self.get_current_group(), 0, state=state)
-            elif call_mode == 'de_stress':
+            elif term_mode == 'stress':
                 out_qp = self.compute_crt_data(family_data, 0, **kwargs)
                 
             shape = (chunk_size, 1) + out_qp.shape[2:]
@@ -264,9 +264,9 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
     .. math::
          \begin{array}{l}
          \int_{\Omega} q J(\ul{u}) \\
-         \mbox{de\_volume mode: vector for } K \from \Ical_h: \int_{T_K}
+         \mbox{volume mode: vector for } K \from \Ical_h: \int_{T_K}
          J(\ul{u}) \\
-         \mbox{de\_rel\_volume mode: vector for } K \from \Ical_h:
+         \mbox{rel\_volume mode: vector for } K \from \Ical_h:
          \int_{T_K} J(\ul{u}) / \int_{T_K} 1
          \end{array}
 
@@ -286,7 +286,7 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         virtual, state = self.get_args( **kwargs )
-        call_mode = kwargs.get('call_mode')
+        term_mode = kwargs.get('term_mode')
 
         apv, vgv = state.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
@@ -299,11 +299,11 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
                                  self.get_current_group(), ih,
                                  state=state)
 
-        if call_mode == 'de_volume':
+        if term_mode == 'volume':
             n_el, _, _, _ = self.data_shape_s
             shape, mode = (n_el, 1, 1, 1), 2
 
-        elif call_mode == 'de_rel_volume':
+        elif term_mode == 'rel_volume':
             n_el, _, _, _ = self.data_shape_s
             shape, mode = (n_el, 1, 1, 1), 3
 
@@ -351,7 +351,7 @@ class DiffusionTLTerm(ScalarScalar, Term):
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
-        call_mode = kwargs.get('call_mode')
+        term_mode = kwargs.get('term_mode')
 
         apv, vgv = par.get_approximation(self.get_current_group(), 'Volume')
         aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
@@ -367,7 +367,7 @@ class DiffusionTLTerm(ScalarScalar, Term):
         mtxF, detF = cache(['F', 'detF'],
                            self.get_current_group(), ih, state=par)
 
-        if call_mode == 'de_diffusion_velocity':
+        if term_mode == 'diffusion_velocity':
             n_el, n_qp, dim, n_ep = self.data_shape
             shape, mode = (n_el, 1, dim, 1), 2
 

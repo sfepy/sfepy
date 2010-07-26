@@ -228,7 +228,7 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
 
 def evaluate(expression, fields, materials, variables, integrals,
              ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
-             auto_init=False, mode='eval', dw_mode='vector',
+             auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
              ret_variables=False, kwargs=None):
     """
     Parameters
@@ -258,18 +258,17 @@ def evaluate(expression, fields, materials, variables, integrals,
 
     asm_obj = None
 
-    if mode != 'eval':
+    if mode == 'weak':
         setup_dof_conns(equations.conn_info)
         materials.time_update(ts, domain, equations, verbose=False)
         equations.time_update(ts, domain.regions,
                               ebcs, epbcs, lcbcs, functions)
 
-        if mode == 'weak':
-            if dw_mode == 'vector':
-                asm_obj = equations.create_stripped_state_vector()
+        if dw_mode == 'vector':
+            asm_obj = equations.create_stripped_state_vector()
 
-            else:
-                asm_obj = equations.create_matrix_graph()
+        else:
+            asm_obj = equations.create_matrix_graph()
 
     else:
         setup_extra_data(equations.conn_info)
@@ -277,7 +276,8 @@ def evaluate(expression, fields, materials, variables, integrals,
 
     equations.describe_geometry(verbose=False)
 
-    out = equations[0].evaluate(mode=mode, dw_mode=dw_mode, asm_obj=asm_obj)
+    out = equations[0].evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                                asm_obj=asm_obj)
 
     if ret_variables:
         out = (out, variables)

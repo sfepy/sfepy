@@ -68,7 +68,7 @@ class HyperElasticBase( Term ):
                                 tan_mod = nm.array( [0], ndmin = 4 ) )
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        call_mode, = self.get_kwargs( ['call_mode'], **kwargs )
+        term_mode, = self.get_kwargs( ['term_mode'], **kwargs )
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
 
@@ -80,7 +80,7 @@ class HyperElasticBase( Term ):
                              self.get_current_group(), 0, state = state )
 ##         print family_data
 
-        if call_mode is None:
+        if term_mode is None:
 
             out = self.compute_crt_data( family_data, mode, **kwargs )
             if mode == 0:
@@ -97,14 +97,14 @@ class HyperElasticBase( Term ):
                               mtxF, detF, vg, chunk, mode, self.mode_ul )
                 yield out, chunk, status
 
-        elif call_mode == 'd_eval':
+        elif term_mode == 'd_eval':
             raise NotImplementedError
 
-        elif call_mode in ['de_strain', 'de_stress']:
+        elif term_mode in ['strain', 'stress']:
 
-            if call_mode == 'de_strain':
+            if term_mode == 'strain':
                 out_qp = cache( 'E', self.get_current_group(), 0, state = state )
-            elif call_mode == 'de_stress':
+            elif term_mode == 'stress':
                 out_qp = self.compute_crt_data( family_data, 0, **kwargs )
                 
             shape = (chunk_size, 1) + out_qp.shape[2:]
@@ -118,8 +118,8 @@ class DeformationGradientTerm(Term):
     r"""
     :Description:
     Deformation gradient :math:`F` in quadrature points for
-    `call_mode='dq_def_grad'` (default) or the jacobian :math:`J` if
-    `call_mode='dq_jacobian'`.
+    `term_mode='def_grad'` (default) or the jacobian :math:`J` if
+    `term_mode='jacobian'`.
 
     :Definition:
     .. math::
@@ -138,17 +138,17 @@ class DeformationGradientTerm(Term):
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         state, = self.get_args(**kwargs)
-        call_mode = kwargs.get('call_mode', 'dq_def_grad')
+        term_mode = kwargs.get('term_mode', 'dq_def_grad')
 
         ap, vg = state.get_approximation(self.get_current_group(), 'Volume')
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
 
         if diff_var is None:
-            if call_mode == 'dq_def_grad':
+            if term_mode == 'def_grad':
                 shape = (chunk_size, n_qp, dim, dim)
                 mode = 0
 
-            elif call_mode == 'dq_jacobian':
+            elif term_mode == 'jacobian':
                 shape = (chunk_size, n_qp, 1, 1)
                 mode = 1
 

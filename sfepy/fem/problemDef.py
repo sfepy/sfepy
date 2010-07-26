@@ -723,7 +723,8 @@ class ProblemDefinition( Struct ):
     def evaluate(self, expression, try_equations=True, auto_init=False,
                  copy_materials=True, integrals=None,
                  ebcs=None, epbcs=None, lcbcs=None,
-                 ts=None, functions=None, mode='eval', dw_mode='vector',
+                 ts=None, functions=None,
+                 mode='eval', dw_mode='vector', term_mode=None,
                  var_dict=None, ret_variables=False, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
@@ -768,7 +769,8 @@ class ProblemDefinition( Struct ):
                        variables.itervalues(), integrals,
                        ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                        ts=ts, functions=functions,
-                       auto_init=auto_init, mode=mode, dw_mode=dw_mode,
+                       auto_init=auto_init,
+                       mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                        ret_variables=ret_variables, kwargs=kwargs)
 
         return out

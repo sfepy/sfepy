@@ -404,7 +404,8 @@ class Equation( Struct ):
         for term in self.terms:
             term.describe_geometry(geometries)
 
-    def evaluate(self, mode='eval', dw_mode='vector', asm_obj=None):
+    def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
+                 asm_obj=None):
         """
         Parameters
         ----------
@@ -415,6 +416,7 @@ class Equation( Struct ):
             val = 0.0
             for term in self.terms:
                 aux, status = term.evaluate(mode=mode,
+                                            term_mode=term_mode,
                                             standalone=False,
                                             ret_status=True)
                 val += aux
@@ -426,6 +428,7 @@ class Equation( Struct ):
             vals = []
             for term in self.terms:
                 val, iels, status = term.evaluate(mode=mode,
+                                                  term_mode=term_mode,
                                                   standalone=False,
                                                   ret_status=True)
                 vals.append(val)
@@ -441,6 +444,7 @@ class Equation( Struct ):
 
                 for term in self.terms:
                     val, iels, status = term.evaluate(mode=mode,
+                                                      term_mode=term_mode,
                                                       standalone=False,
                                                       ret_status=True)
                     term.assemble_to(asm_obj, val, iels, mode=dw_mode)
@@ -452,6 +456,7 @@ class Equation( Struct ):
 
                     for svar in svars:
                         val, iels, status = term.evaluate(mode=mode,
+                                                          term_mode=term_mode,
                                                           diff_var=svar.name,
                                                           standalone=False,
                                                           ret_status=True)
