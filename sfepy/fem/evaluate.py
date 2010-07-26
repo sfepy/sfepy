@@ -228,7 +228,8 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
 
 def evaluate(expression, fields, materials, variables, integrals,
              ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
-             auto_init=False, mode='eval', dw_mode='vector', kwargs=None):
+             auto_init=False, mode='eval', dw_mode='vector',
+             ret_variables=False, kwargs=None):
     """
     Parameters
     ----------
@@ -277,6 +278,9 @@ def evaluate(expression, fields, materials, variables, integrals,
     equations.describe_geometry(verbose=False)
 
     out = equations[0].evaluate(mode=mode, dw_mode=dw_mode, asm_obj=asm_obj)
+
+    if ret_variables:
+        out = (out, variables)
 
     return out
 

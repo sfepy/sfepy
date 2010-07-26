@@ -724,7 +724,7 @@ class ProblemDefinition( Struct ):
                  copy_materials=True, integrals=None,
                  ebcs=None, epbcs=None, lcbcs=None,
                  ts=None, functions=None, mode='eval', dw_mode='vector',
-                 **kwargs):
+                 var_dict=None, ret_variables=False, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         sfepy.fem.evaluate.evaluate().
@@ -741,7 +741,7 @@ class ProblemDefinition( Struct ):
             variables = self.equations.variables.as_dict()
 
         else:
-            variables = {}
+            variables = get_default(var_dict, {})
 
         _kwargs = copy(kwargs)
         for key, val in kwargs.iteritems():
@@ -769,7 +769,7 @@ class ProblemDefinition( Struct ):
                        ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                        ts=ts, functions=functions,
                        auto_init=auto_init, mode=mode, dw_mode=dw_mode,
-                       kwargs=kwargs)
+                       ret_variables=ret_variables, kwargs=kwargs)
 
         return out
 
