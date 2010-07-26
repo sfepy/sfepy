@@ -111,7 +111,6 @@ class TestLCBC( TestCommon ):
         from sfepy.base.base import Struct
         from sfepy.solvers.generic import solve_stationary
         from sfepy.base.base import IndexedStruct
-        from sfepy.fem import eval_term_op
 
         status = IndexedStruct()
         problem, vec, data = solve_stationary( self.conf,
@@ -120,7 +119,7 @@ class TestLCBC( TestCommon ):
         self.report( 'converged: %s' % ok )
         out = problem.state_to_output( vec )
 
-        strain = eval_term_op( vec, 'de_cauchy_strain.i1.Y( u )', problem )
+        strain = problem.evaluate('de_cauchy_strain.i1.Y( u )', mode='el_avg')
         out['strain'] = Struct( name = 'output_data',
                                 mode = 'cell', data = strain,
                                 dof_types = None )

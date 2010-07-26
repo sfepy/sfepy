@@ -153,7 +153,6 @@ def verify_incompressibility( out, problem, state, extend = False ):
     be inserted into `out` dictionary), but here we just verify the weak
     incompressibility condition."""
     from sfepy.base.base import Struct, debug, nm
-    from sfepy.fem import eval_term_op
 
     vv = problem.get_variables()
     one = nm.ones( (vv['p'].field.n_nod,), dtype = nm.float64 )

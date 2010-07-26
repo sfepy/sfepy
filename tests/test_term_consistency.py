@@ -115,7 +115,6 @@ class Test( TestCommon ):
     ##
     # c: 19.05.2008, r: 19.05.2008
     def test_consistency_d_dw( self ):
-        from sfepy.base.base import select_by_names
         from sfepy.fem import Function, Variables
 
         ok = True
@@ -127,32 +126,32 @@ class Test( TestCommon ):
             term1 = term_template % ((prefix,) + d_vars)
 
             variables = Variables.from_conf(self.conf.variables, pb.fields)
-            variables.setup_dof_info()
 
-            vecs = {}
             for var_name in d_vars:
                 var = variables[var_name]
                 n_dof = var.field.n_nod * var.field.shape[0]
-                vecs[var_name] = nm.arange( n_dof, dtype = nm.float64 )
-                var.data_from_data( vecs[var_name] )
+                aux = nm.arange( n_dof, dtype = nm.float64 )
+                var.data_from_data(aux)
 
             pb.materials['m'].function.set_extra_args(term = mat_mode)
 
             if prefix == 'd':
-                val1 = pb.evaluate(term1, var_names=d_vars, **vecs)
+                val1 = pb.evaluate(term1, var_dict=variables.as_dict())
 
             else:
                 val1 = pb.evaluate(term1, call_mode='d_eval',
-                                   var_names=d_vars, **vecs)
+                                   var_dict=variables.as_dict())
 
             self.report( '%s: %s' % (term1, val1) )
 
             term2 = term_template % (('dw',) + dw_vars[:2])
 
-            vec = pb.evaluate(term2, var_names=dw_vars, **vecs)
+            vec, vv = pb.evaluate(term2, mode='weak',
+                                  var_dict=variables.as_dict(),
+                                  ret_variables=True)
 
-            pvec = variables.get_state_part_view(vec, dw_vars[2])
-            val2 = nm.dot( vecs[par_name], pvec )
+            pvec = vv.get_state_part_view(vec, dw_vars[2])
+            val2 = nm.dot( variables[par_name](), pvec )
             self.report( '%s: %s' % (term2, val2) )
 
             err = nm.abs( val1 - val2 ) / nm.abs( val1 )

@@ -189,7 +189,7 @@ class Test( TestCommon ):
         import os.path as op
         from sfepy.base.base import Struct
         from sfepy.base.la import rotation_matrix2d
-        from sfepy.fem.evaluate import eval_term_op, BasicEvaluator
+        from sfepy.fem.evaluate import BasicEvaluator
         problem  = self.problem
         vec = self.vec
 
@@ -222,7 +222,7 @@ class Test( TestCommon ):
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
-                val1 = problem.evaluate(flux_term, t=variables['t']())
+                val1 = problem.evaluate(flux_term, t=variables['t'])
 
                 rvec = get_state( aux, 't', True )
                 reg = problem.domain.regions[region_name]

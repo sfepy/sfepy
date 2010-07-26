@@ -80,25 +80,25 @@ def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct, debug
 
     val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
-                           state, call_mode='de_strain')
+                           mode='el_avg', term_mode='strain')
     out['green_strain'] = Struct(name = 'output_data',
                                  mode = 'cell', data = val,
                                  dof_types = None)
 
     val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
-                           state, call_mode='de_stress')
+                           mode='el_avg', term_mode='stress')
     out['neohook_stress'] = Struct(name = 'output_data',
                                    mode = 'cell', data = val,
                                    dof_types = None)
 
     val = problem.evaluate('dw_tl_bulk_pressure.i1.Omega( v, u, p )',
-                           state, call_mode='de_stress')
+                           mode='el_avg', term_mode='stress')
     out['bulk_pressure'] = Struct(name = 'output_data',
                                   mode = 'cell', data = val,
                                   dof_types = None)
 
     val = problem.evaluate('dw_tl_diffusion.i1.Omega( ps.k, ps.N_f, q, p, u[-1] )',
-                           state, call_mode='de_diffusion_velocity')
+                           mode='el_avg', term_mode='diffusion_velocity')
     out['diffusion_velocity'] = Struct(name = 'output_data',
                                        mode = 'cell', data = val,
                                        dof_types = None)

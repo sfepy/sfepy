@@ -8,11 +8,6 @@ fields = {
     'vector' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
 }
 
-variables = {
-    'p' : ('parameter field', 'scalar', None),
-    'u' : ('parameter field', 'vector', None),
-}
-
 integrals = {
     'i1' : ('v', 'gauss_o2_d3'),
     'i2' : ('s', 'gauss_o2_d2'),
@@ -24,9 +19,10 @@ regions = {
 }
 
 expressions = {
-    'volume_s': 'd_volume.i1.Omega( p )',
-    'volume_u': 'd_volume.i1.Omega( u )',
-    'surface' : 'd_volume_surface.i2.Gamma( p )',
+    'volume_p' : 'd_volume.i1.Omega( p )',
+    'volume_u' : 'd_volume.i1.Omega( u )',
+    'surface_p' : 'd_volume_surface.i2.Gamma( p )',
+    'surface_u' : 'd_volume_surface.i2.Gamma( u )',
 }
 
 fe = {
@@ -53,14 +49,21 @@ class Test( TestCommon ):
 
     def test_volume( self ):
         from sfepy.base.base import select_by_names
-        from sfepy.fem import eval_term_op
+        from sfepy.fem import FieldVariable
 
         ok = True
+
+        field_map = {'u' : 'vector', 'p' : 'scalar'}
 
         volumes = {}
         avg = 0.0
         for key, term in expressions.items():
-            val = self.problem.evaluate(term)
+            var_name = key[-1]
+            field = self.problem.fields[field_map[var_name]]
+            var = FieldVariable(var_name, 'parameter', field, 1,
+                                primary_var_name='(set-to-None)')
+
+            val = self.problem.evaluate(term, **{var_name : var})
 
             volumes[key] = val
             avg += val
@@ -75,4 +78,3 @@ class Test( TestCommon ):
             ok = ok and _ok
 
         return ok
-

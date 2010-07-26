@@ -87,15 +87,13 @@ def get_pars(ts, coor, mode, region, ig, output_dir='.'):
 
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
-    from sfepy.fem.evaluate import eval_term_op
 
-    dvel = eval_term_op(state,
-                        'de_diffusion_velocity.i1.Omega( m.K, p )', pb)
+    dvel = pb.evaluate('de_diffusion_velocity.i1.Omega( m.K, p )')
     out['dvel'] = Struct(name='output_data',
                          mode='cell', data=dvel,
                          dof_types=None)
 
-    stress = eval_term_op(state, 'de_cauchy_stress.i1.Omega( m.D, u )', pb)
+    stress = pb.evaluate('de_cauchy_stress.i1.Omega( m.D, u )')
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,
                                   dof_types=None)
