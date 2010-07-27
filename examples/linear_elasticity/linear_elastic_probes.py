@@ -39,7 +39,7 @@ options = {
 # the tensor form.
 from sfepy.mechanics.matcoefs import stiffness_tensor_lame
 
-solid = materials['solid'][1]
+solid = materials['solid'][0]
 lam, mu = solid['lam'], solid['mu']
 solid.update({
     'D' : stiffness_tensor_lame(3, lam=lam, mu=mu),
@@ -82,12 +82,12 @@ def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct
 
     # Cauchy strain averaged in elements.
-    strain = problem.evaluate('de_cauchy_strain.i1.Omega( u )', state)
+    strain = problem.evaluate('de_cauchy_strain.i1.Omega( u )')
     out['cauchy_strain'] = Struct(name='output_data',
                                   mode='cell', data=strain,
                                   dofs=None)
     # Cauchy stress averaged in elements.
-    stress = problem.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )', state)
+    stress = problem.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )')
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,
                                   dofs=None)
@@ -163,16 +163,11 @@ def probe_hook(data, probe, label, problem):
     """
     import matplotlib.pyplot as plt
     import matplotlib.font_manager as fm
+    from sfepy.fem import FieldVariable
 
     def get_it(name, var_name):
-        var = problem.variables[var_name]
-
-        if name == var_name:
-            indx = problem.variables.di.indx[var.name]
-            var.data_from_state(data[name].data, indx)
-
-        else:
-            var.data_from_data(data[name].data)
+        var = problem.create_variables([var_name])[var_name]
+        var.data_from_any(data[name].data)
 
         pars, vals = probe(var)
         vals = vals.squeeze()

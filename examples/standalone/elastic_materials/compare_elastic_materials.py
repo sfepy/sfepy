@@ -157,7 +157,7 @@ def store_top_u( displacements ):
     def _store( problem, ts, state ):
 
         top = problem.domain.regions['Top']
-        top_u = problem.variables['u'].get_state_in_region( top )
+        top_u = problem.get_variables()['u'].get_state_in_region( top )
         displacements.append( nm.mean( top_u[:,-1] ) )
 
     return _store
