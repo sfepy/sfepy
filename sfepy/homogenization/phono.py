@@ -3,6 +3,7 @@ from sfepy.base.plotutils import plt
 from sfepy.base.base import *
 from sfepy.solvers import eig
 from sfepy.base.progressbar import MyBar
+from sfepy.fem.evaluate import eval_equations
 from sfepy.homogenization.utils import coor_to_sym
 
 class AcousticMassTensor( Struct ):
@@ -169,7 +170,9 @@ def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
 
     eigenmomenta = nm.empty( (n_eigs, dim), dtype = nm.float64 )
 
-    var = pb.get_variables()[u_name]
+    equations, variables = pb.create_evaluable(em_equation)
+
+    var = variables[u_name]
 
     if pbar is not None:
         pbar.init( n_eigs - 1 )
@@ -193,7 +196,8 @@ def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
         else:
             var.data_from_any(vec_phi.copy())
 
-	    val = pb.evaluate(em_equation, verbose=False)
+            val = eval_equations(equations, variables)
+
             eigenmomenta[ii,:] = val
 
     return eigenmomenta
