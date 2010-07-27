@@ -1,5 +1,5 @@
 from sfepy.fem.periodic import *
-import sfepy.homogenization.coefs_elastic as ce
+import sfepy.homogenization.coefs_base as cb
 from sfepy.homogenization.utils import define_box_regions
 
 def expand_regions( eqs, expand ):
@@ -8,12 +8,22 @@ def expand_regions( eqs, expand ):
         out[key] = val % expand
     return out
 
-expr_elastic = """dw_lin_elastic.i2.%s( matrix.D, Pi1, Pi2 )"""
+expr_elastic = """dw_lin_elastic.3.%s( matrix.D, Pi1, Pi2 )"""
 
 eq_rs = {
-    'eq' : """dw_lin_elastic.i2.%s( matrix.D, v1, u1 )
-            + dw_lin_elastic.i2.%s( matrix.D, v1, Pi ) = 0""",
+    'eq' : """dw_lin_elastic.3.%s( matrix.D, v1, u1 )
+            + dw_lin_elastic.3.%s( matrix.D, v1, Pi ) = 0""",
 }
+
+def set_corrs_phono_rs(variables, ir, ic, pis):
+    variables['Pi'].data_from_any(pis.states[ir, ic])
+
+def set_elastic(variables, ir, ic, mode, pis, corrs_phono_rs):
+    mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
+
+    val = pis.states[ir, ic] + corrs_phono_rs.states[ir, ic]['u1']
+
+    variables[mode2var[mode]].data_from_any(val)
 
 def define_input( filename, region, bbox, geom ):
     """Uses materials, fe of master file, merges regions."""
@@ -37,9 +47,9 @@ def define_input( filename, region, bbox, geom ):
     coefs = {
         'elastic' : {
             'requires' : ['pis', 'corrs_phono_rs'],
-            'variables' : ['Pi1', 'Pi2', 'pi1', 'pi2'],
             'expression' : expr_elastic % region,
-            'class' : ce.ElasticCoef,
+            'set_variables' : set_elastic,
+            'class' : cb.CoefSymSym,
         },
     }
 
@@ -48,23 +58,20 @@ def define_input( filename, region, bbox, geom ):
     requirements = {
         'pis' : {
             'variables' : ['u1'],
-            'class' : ce.ShapeDimDim,
+            'class' : cb.ShapeDimDim,
         },
         'corrs_phono_rs' : {
             'requires' : ['pis'],
-            'variables' : ['u1', 'v1', 'Pi'],
             'ebcs' : ['fixed_u'],
             'epbcs' : all_periodic,
             'equations' : expand_regions( eq_rs, (region, region) ),
-            'class' : ce.CorrectorsElasticRS,
+            'set_variables' : set_corrs_phono_rs,
+            'class' : cb.CorrDimDim,
             'save_name' : 'corrs_phono',
+            'dump_variables' : ['u1'],
+            'save_variables' : ['u1'],
+            'is_linear' : True,
         },
-    }
-
-    integral_1 = {
-        'name' : 'i2',
-        'kind' : 'v',
-        'quadrature' : 'gauss_o3_d%d' % dim,
     }
 
     field_10 = {
@@ -78,8 +85,8 @@ def define_input( filename, region, bbox, geom ):
         'u1' : ('unknown field', 'displacement_matrix', 0),
         'v1' : ('test field', 'displacement_matrix', 'u1'),
         'Pi' : ('parameter field', 'displacement_matrix', 'u1'),
-        'Pi1' : ('parameter field', 'displacement_matrix', 'u1'),
-        'Pi2' : ('parameter field', 'displacement_matrix', 'u1'),
+        'Pi1' : ('parameter field', 'displacement_matrix', '(set-to-None)'),
+        'Pi2' : ('parameter field', 'displacement_matrix', '(set-to-None)'),
     }
 
     regions = define_box_regions(dim, bbox[0], bbox[1])
