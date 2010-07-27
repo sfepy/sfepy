@@ -819,7 +819,7 @@ class ProblemDefinition( Struct ):
             variables = self.equations.variables
 
         elif auto_create:
-	    self.create_variables()
+	    variables = self.create_variables()
 
         else:
             variables = None
