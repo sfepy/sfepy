@@ -245,3 +245,20 @@ def get_lattice_volume(axes):
         raise ValueError('wrong axes shape! (%s)' % axes.shape)
 
     return volume
+
+def get_volume(problem, field_name, region_name, quad_order=1):
+    """
+    Get volume of a given region using integration defined by a given
+    field. Both the region and the field have to be defined in
+    `problem`.
+    """
+    from sfepy.fem import FieldVariable
+
+    field = problem.fields[field_name]
+    var = FieldVariable('u', 'parameter', field, 1,
+                        primary_var_name='(set-to-None)')
+
+    vol = problem.evaluate('d_volume.%d.%s( u )' % (quad_order, region_name),
+                           u=var)
+
+    return vol
