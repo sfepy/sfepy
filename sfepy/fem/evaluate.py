@@ -279,6 +279,16 @@ def evaluate(expression, fields, materials, variables, integrals,
     out = equations[0].evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
                                 asm_obj=asm_obj)
 
+    if variables.has_lcbc and mode == 'weak':
+        op_lcbc = variables.op_lcbc
+        if dw_mode == 'vector':
+            out = op_lcbc.T * out
+
+        elif dw_mode == 'matrix':
+            out = op_lcbc.T * out * op_lcbc
+            out = out.tocsr()
+            out.sort_indices()
+
     if ret_variables:
         out = (out, variables)
 
