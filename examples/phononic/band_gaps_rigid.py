@@ -5,6 +5,8 @@ import numpy as nm
 from sfepy import data_dir
 from sfepy.base.base import output, pause, debug, Struct
 from sfepy.fem import MeshIO
+from sfepy.homogenization.utils import get_volume
+
 from gen_mesh import gen_concentric
 
 is_3D = False
@@ -67,15 +69,18 @@ options = {
     'output_dir' : os.path.join( cwd, 'output/' ),
     #############################################
 
-    'eigenmomentum' : {'var' : 'up',
+    'eigenmomentum' : {'var' : 'u',
                        'regions' : ['Y2', 'Y3'],
-                       'term' : '%.12e * di_volume_integrate.i1.%s( %s )'},
+                       'term' : '%.12e * di_volume_integrate.2.%s( u )'},
     # Used to compute average density.
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',
                             'Y3' : 'rigid',},
     'tensor_names' : {'elastic' : 'lame',},
-    'volume' : 'd_volume.i1.%s( uy )',
+    'volume' : lambda problem, region_name: get_volume(problem,
+                                                       'displacement_Y',
+                                                       region_name,
+                                                       quad_order=1),
     'eig_problem' : 'simple',
 
     'fig_name' : os.path.join(cwd, 'output', 'band_gaps_sym_025' + fig_suffix),
@@ -179,8 +184,6 @@ field_1 = {
 variables = {
     'u' : ('unknown field', 'displacement_Y23', 0),
     'v' : ('test field', 'displacement_Y23', 'u'),
-    'uy' : ('parameter field', 'displacement_Y', None),
-    'up' : ('parameter field', 'displacement_Y23', 'u'),
 }
 
 ebc_1 = {
@@ -195,26 +198,14 @@ lcbc_1 = {
     'dofs' : {'u.all' : 'rigid'},
 }
 
-integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
-    'quadrature' : 'gauss_o2_d%d' % dim,
-}
-
 ##
 # Eigenproblem equations.
 # dw_lin_elastic_iso.i1.Y3( rigid.lame, v, u ) should have no effect!
 equations = {
-    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lam, inclusion.mu, v, u )
-             + dw_lin_elastic_iso.i1.Y3( rigid.lam, rigid.mu, v, u )""",
-    'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )
-             + dw_mass_vector.i1.Y3( rigid.density, v, u )""",
-}
-
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000
+    'lhs' : """dw_lin_elastic_iso.2.Y2( inclusion.lam, inclusion.mu, v, u )
+             + dw_lin_elastic_iso.2.Y3( rigid.lam, rigid.mu, v, u )""",
+    'rhs' : """dw_mass_vector.2.Y2( inclusion.density, v, u )
+             + dw_mass_vector.2.Y3( rigid.density, v, u )""",
 }
 
 def clip( data, plot_range ):
@@ -281,12 +272,15 @@ def extend_cell_data( data, pb, rname, val = None ):
     return edata
 
 def post_process( out, problem, mtx_phi ):
-    from sfepy.fem import eval_term_op
+    var = problem.get_variables()['u']
 
     for key in out.keys():
         ii = int( key[1:] )
         vec = mtx_phi[:,ii].copy()
-        strain = eval_term_op( vec, 'de_cauchy_strain.i1.Y23( u )', problem )
+        var.data_from_any(vec)
+
+        strain = problem.evaluate('de_cauchy_strain.2.Y23( u )', u=var,
+                                  verbose=False)
         strain = extend_cell_data( strain, problem, 'Y23' )
         out['strain%03d' % ii] = Struct( name = 'output_data',
                                            mode = 'cell', data = strain,

@@ -4,6 +4,8 @@ import numpy as nm
 
 from sfepy import data_dir
 from sfepy.fem import MeshIO
+from sfepy.homogenization.utils import get_volume
+
 import coef_conf_elastic as cconf
 from parametric import vary_incident_wave_dir
 
@@ -51,14 +53,18 @@ options = {
     
 #    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
 
-    'eigenmomentum' : {'var' : 'up',
+    'eigenmomentum' : {'var' : 'u',
                        'regions' : ['Y2'],
-                       'term' : '%.12e * di_volume_integrate.i1.%s( %s )'},
+                       'term' : '%.12e * di_volume_integrate.2.%s( u )'},
+
     # Used to compute average density.
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',},
     'tensor_names' : {'elastic' : 'D',},
-    'volume' : 'd_volume.i1.%s( uy )',
+    'volume' : lambda problem, region_name: get_volume(problem,
+                                                       'displacement_Y',
+                                                       region_name,
+                                                       quad_order=1),
     'eig_problem' : 'simple',
 
     'dispersion' : 'simple',
@@ -158,8 +164,6 @@ field_1 = {
 variables = {
     'u' : ('unknown field', 'displacement_Y2', 0),
     'v' : ('test field', 'displacement_Y2', 'u'),
-    'uy' : ('parameter field', 'displacement_Y', None),
-    'up' : ('parameter field', 'displacement_Y2', 'u'),
 }
 
 ebc_1 = {
@@ -168,21 +172,9 @@ ebc_1 = {
     'dofs' : {'u.all' : 0.0},
 }
 
-integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
-    'quadrature' : 'gauss_o2_d%d' % dim,
-}
-
 equations = {
-    'lhs' : """dw_lin_elastic_iso.i1.Y2( inclusion.lam, inclusion.mu, v, u )""",
-    'rhs' : """dw_mass_vector.i1.Y2( inclusion.density, v, u )""",
-}
-
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000
+    'lhs' : """dw_lin_elastic_iso.2.Y2( inclusion.lam, inclusion.mu, v, u )""",
+    'rhs' : """dw_mass_vector.2.Y2( inclusion.density, v, u )""",
 }
 
 def clip( data, plot_range ):
