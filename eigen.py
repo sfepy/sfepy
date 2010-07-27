@@ -7,7 +7,7 @@ from optparse import OptionParser
 import sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.fem import eval_term_op, ProblemDefinition
+from sfepy.fem import ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
@@ -356,14 +356,11 @@ class AcousticBandGapsApp( SimpleApp ):
             problem.set_equations( conf.equations )
             problem.time_update()
 
-            dummy = problem.create_state_vector()
-            mtx_a = eval_term_op( dummy, conf.equations['lhs'], problem,
-                                  dw_mode = 'matrix',
-                                  tangent_matrix = problem.mtx_a )
+            mtx_a = problem.evaluate(conf.equations['lhs'], mode='weak',
+                                     auto_init=True, dw_mode='matrix')
 
-            mtx_m = eval_term_op( dummy, conf.equations['rhs'], problem,
-                                  dw_mode = 'matrix',
-                                  tangent_matrix = problem.mtx_a.copy() )
+            mtx_m = problem.evaluate(conf.equations['rhs'], mode='weak',
+                                     dw_mode='matrix')
 
         elif eig_problem == 'schur':
             # A = K + B^T D^{-1} B.
@@ -505,7 +502,7 @@ class AcousticBandGapsApp( SimpleApp ):
             dconf.regions.update( self.conf.regions )
             dconf.options['output_dir'] = self.problem.output_dir
 
-            volume = eval_term_op( None, opts.volume % 'Y', self.problem )
+            volume = opts.volume(self.problem, 'Y')
             problem = ProblemDefinition.from_conf(dconf, init_equations=False)
             he = HomogenizationEngine( problem, self.options, volume = volume )
             coefs = he()

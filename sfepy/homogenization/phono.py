@@ -2,7 +2,6 @@ from sfepy.base.plotutils import plt
 
 from sfepy.base.base import *
 from sfepy.solvers import eig
-from sfepy.fem.evaluate import eval_term_op
 from sfepy.base.progressbar import MyBar
 from sfepy.homogenization.utils import coor_to_sym
 
@@ -132,7 +131,7 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
 
     return eval( mode + '_callback' )
 
-def compute_density_volume_info( pb, volume_term, region_to_material ):
+def compute_density_volume_info( pb, get_volume, region_to_material ):
     """Computes volumes, densities of regions specified in
     `region_to_material`, average density and total volume."""
     average_density = 0.0
@@ -141,8 +140,9 @@ def compute_density_volume_info( pb, volume_term, region_to_material ):
     densities = {}
     for region_name, mat_name in region_to_material.iteritems():
         mat = pb.materials[mat_name]
-#        assert_( region_name == mat.region.name )
-        vol = eval_term_op( None, volume_term % region_name, pb )
+
+        vol = get_volume(pb, region_name)
+
         density = mat.get_constant_data('density')
         output( 'region %s: volume %f, density %f' % (region_name,
                                                       vol, density ) )
@@ -164,11 +164,12 @@ def compute_density_volume_info( pb, volume_term, region_to_material ):
 
 def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
                           transform = None, pbar = None ):
-
     dim = pb.domain.mesh.dim
     n_dof, n_eigs = eig_vectors.shape
 
     eigenmomenta = nm.empty( (n_eigs, dim), dtype = nm.float64 )
+
+    var = pb.get_variables()[u_name]
 
     if pbar is not None:
         pbar.init( n_eigs - 1 )
@@ -190,8 +191,9 @@ def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
             eigenmomenta[ii,:] = 0.0
 
         else:
-	    val = pb.evaluate(em_equation, var_names=[u_name],
-			      **{u_name : vec_phi.copy()})
+            var.data_from_any(vec_phi.copy())
+
+	    val = pb.evaluate(em_equation, verbose=False)
             eigenmomenta[ii,:] = val
 
     return eigenmomenta
@@ -216,7 +218,7 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     for rname in rnames:
         mat = pb.materials[region_to_material[rname]]
         density = mat.get_constant_data('density')
-        tt.append( term % (density, rname, u_name) )
+        tt.append( term % (density, rname) )
     em_eq = ' + '.join( tt )
     output( 'equation:', em_eq )
 
