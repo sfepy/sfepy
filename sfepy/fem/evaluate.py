@@ -34,8 +34,7 @@ class BasicEvaluator( Evaluator ):
             vec = self.make_full_vec( vec )
         try:
             pb = self.problem
-            vec_r = eval_residuals(vec, pb.equations,
-                                   pb.conf.fe.chunk_size, **self.data)
+            vec_r = pb.equations.eval_residuals(vec)
 
         except StopIteration, exc:
             status = exc.args[0]
@@ -56,8 +55,7 @@ class BasicEvaluator( Evaluator ):
             if mtx is None:
                 mtx = self.mtx
             mtx.data[:] = 0.0
-            mtx = eval_tangent_matrices(vec, mtx, pb.equations,
-                                        pb.conf.fe.chunk_size, **self.data)
+            mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
         except StopIteration, exc:
             status = exc.args[0]
@@ -132,99 +130,6 @@ class LCBCEvaluator( BasicEvaluator ):
     def strip_state_vector( self, vec ):
         vec = BasicEvaluator.strip_state_vector( self, vec )
         return self.op_lcbc.T * vec
-    
-def assemble_vector(vec, equation, chunk_size=1000, **kwargs):
-
-    for term in equation.terms:
-        ## print '>>>>>>', term.name, term.sign
-        vvar = term.get_virtual_variable()
-        dc_type = term.get_dof_conn_type()
-        ## print vvar
-        ## print dc_type
-
-        for ig in term.iter_groups():
-            dc = vvar.get_dof_conn(dc_type, ig, active=True)
-            ## print vvar.name, dc.shape
-
-            for vec_in_els, iels, status in term( chunk_size = chunk_size,
-                                                  **kwargs ):
-                if status != 0:
-                    raise StopIteration( status, term, equation )
-
-                check_finitness = False
-                if check_finitness and (not nm.isfinite( vec_in_els ).all()):
-                    print term.name, term.sign, ig
-                    debug()
-
-                assert_( vec_in_els.shape[2] == dc.shape[1] )
-
-                if vec.dtype == nm.float64:
-                    fem.assemble_vector( vec, vec_in_els, iels, term.sign, dc )
-
-                else:
-                    assert_( vec.dtype == nm.complex128 )
-                    sign = nm.array( term.sign, dtype = nm.complex128 )
-                    fem.assemble_vector_complex( vec.real, vec.imag,
-                                                 vec_in_els.real,
-                                                 vec_in_els.imag,
-                                                 iels,
-                                                 float( sign.real ),
-                                                 float( sign.imag ), dc )
-
-def assemble_matrix(mtx, equation, chunk_size=1000,
-                    group_can_fail=True, **kwargs):
-    """Assemble tangent matrix. Supports backward time difference of state
-    variables."""
-    if not sp.isspmatrix_csr( mtx ):
-        raise TypeError, 'must be CSR matrix!'
-    tmd = (mtx.data, mtx.indptr, mtx.indices)
-
-    for term in equation.terms:
-        ## print '>>>>>>', term.name, term.sign
-        vvar = term.get_virtual_variable()
-        svars = term.get_state_variables(unknown_only=True)
-        dc_type = term.get_dof_conn_type()
-
-        for ig in term.iter_groups():
-            rdc = vvar.get_dof_conn(dc_type, ig, active=True)
-            ## print vvar.name, rdc.shape
-
-            for svar in svars:
-                is_trace = term.arg_traces[svar.name]
-                ## print dc_type, ig, is_trace
-                cdc = svar.get_dof_conn(dc_type, ig, active=True,
-                                        is_trace=is_trace)
-                ## print svar.name, cdc.shape
-                ## pause()
-                for mtx_in_els, iels, status in term( diff_var = svar.name,
-                                                      chunk_size = chunk_size,
-                                                      **kwargs ):
-                    if status != 0:
-                        raise StopIteration( status, term, equation,
-                                             var_name_col )
-
-                    assert_( mtx_in_els.shape[2:] == (rdc.shape[1],
-                                                      cdc.shape[1]) )
-
-                    sign = term.sign
-                    if term.arg_derivatives[svar.name]:
-                        sign *= 1.0 / term.dt
-
-                    if mtx.dtype == nm.float64:
-                        fem.assemble_matrix( tmd[0], tmd[1], tmd[2], mtx_in_els,
-                                             iels, sign, rdc, cdc )
-
-                    else:
-                        assert_( mtx.dtype == nm.complex128 )
-                        sign = nm.array( term.sign, dtype = nm.complex128 )
-                        fem.assemble_matrix_complex( tmd[0].real, tmd[0].imag,
-                                                     tmd[1], tmd[2],
-                                                     mtx_in_els.real,
-                                                     mtx_in_els.imag,
-                                                     iels,
-                                                     float( sign.real ),
-                                                     float( sign.imag ),
-                                                     rdc, cdc )
 
 def create_evaluable(expression, fields, materials, variables, integrals,
                      ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
@@ -327,54 +232,6 @@ def evaluate(expression, fields, materials, variables, integrals,
         out = (out, variables)
 
     return out
-
-##
-# 21.11.2005, c
-# 27.11.2005
-# 02.12.2005
-# 09.12.2005
-# 14.12.2005
-# 21.03.2006
-# 24.07.2006
-# 25.07.2006
-# 22.08.2006
-# 11.10.2006
-# 16.02.2007
-# 03.09.2007
-def eval_residuals(state, equations, chunk_size=1000, **kwargs):
-    equations.invalidate_term_caches()
-
-    equations.set_variables_from_state(state)
-    residual = equations.create_stripped_state_vector()
-
-    for equation in equations:
-        assemble_vector(residual, equation,
-                        chunk_size=chunk_size, **kwargs)
-
-    return residual
-
-##
-# 22.11.2005, c
-# 26.11.2005
-# 02.12.2005
-# 09.12.2005
-# 14.12.2005
-# 21.03.2006
-# 24.07.2006
-# 25.07.2006
-# 22.08.2006
-# 11.10.2006
-# 16.02.2007
-# 03.09.2007
-def eval_tangent_matrices(state, tangent_matrix, equations,
-                          chunk_size=1000, **kwargs):
-    equations.set_variables_from_state(state)
-
-    for equation in equations:
-        assemble_matrix(tangent_matrix, equation,
-                        chunk_size=chunk_size, **kwargs)
-
-    return tangent_matrix
 
 def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
                        dw_mode='matrix'):

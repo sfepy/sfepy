@@ -373,6 +373,23 @@ class Equations( Container ):
 
         return out
 
+    def eval_residuals(self, state):
+        self.invalidate_term_caches()
+
+        self.set_variables_from_state(state)
+        residual = self.create_stripped_state_vector()
+
+        self.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
+
+        return residual
+
+    def eval_tangent_matrices(self, state, tangent_matrix):
+        self.set_variables_from_state(state)
+
+        self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
+
+        return tangent_matrix
+
 ##
 # 21.07.2006, c
 class Equation( Struct ):
