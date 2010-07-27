@@ -725,7 +725,7 @@ class ProblemDefinition( Struct ):
                  ebcs=None, epbcs=None, lcbcs=None,
                  ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
-                 var_dict=None, ret_variables=False, **kwargs):
+                 var_dict=None, ret_variables=False, verbose=True, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         sfepy.fem.evaluate.evaluate().
@@ -771,7 +771,8 @@ class ProblemDefinition( Struct ):
                        ts=ts, functions=functions,
                        auto_init=auto_init,
                        mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                       ret_variables=ret_variables, kwargs=kwargs)
+                       ret_variables=ret_variables, verbose=verbose,
+                       kwargs=kwargs)
 
         return out
 

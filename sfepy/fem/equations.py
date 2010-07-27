@@ -31,7 +31,7 @@ class Equations( Container ):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  caches=None, user=None):
+                  caches=None, user=None, verbose=True):
 
         objs = OneTypeList(Equation)
 
@@ -42,8 +42,9 @@ class Equations( Container ):
 
         ii = 0
         for name, desc in conf.iteritems():
-            output('equation "%s":' %  name)
-            output(desc)
+            if verbose:
+                output('equation "%s":' %  name)
+                output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
                                     materials, integrals, caches=caches,
                                     user=user)

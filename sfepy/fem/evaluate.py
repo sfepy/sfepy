@@ -229,7 +229,7 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
 def evaluate(expression, fields, materials, variables, integrals,
              ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
              auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
-             ret_variables=False, kwargs=None):
+             ret_variables=False, verbose=True, kwargs=None):
     """
     Parameters
     ----------
@@ -247,7 +247,8 @@ def evaluate(expression, fields, materials, variables, integrals,
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, domain.regions,
                                     materials, integrals,
-                                    caches=caches, user=kwargs)
+                                    caches=caches, user=kwargs,
+                                    verbose=verbose)
     equations.collect_conn_info()
 
     # The true variables used in the expression.
