@@ -1,6 +1,5 @@
 from sfepy.base.base import *
 from sfepy.applications import SimpleApp, Application
-from sfepy.fem import eval_term_op
 from sfepy.fem.region import sort_by_dependency
 from coefs_base import MiniAppBase
 
@@ -91,7 +90,8 @@ class HomogenizationEngine( SimpleApp ):
                                    post_process_hook = self.post_process_hook,
                                    file_per_var = opts.file_per_var )
             store( mini_app )
-            
+
+            problem.clear_equations()
             dep = mini_app( data = dependencies )
 
             dependencies[req] = dep
@@ -155,6 +155,7 @@ class HomogenizationEngine( SimpleApp ):
                     requires.append(key)
                     dependencies[key] = getattr(coefs, name)
 
+            problem.clear_equations()
             val = mini_app( self.volume, data = dependencies )
             setattr( coefs, coef_name, val )
             output( '...done' )
