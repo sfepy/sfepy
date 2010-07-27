@@ -348,6 +348,31 @@ class Equations( Container ):
     def get_lcbc_operator(self):
         return self.variables.get_lcbc_operator()
 
+    def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
+                 asm_obj=None):
+        """
+        Parameters
+        ----------
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode.
+        """
+        if mode == 'weak':
+            out = asm_obj
+
+        else:
+            out = {}
+
+        for eq in self:
+            eout = eq.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                               asm_obj=asm_obj)
+            if mode != 'weak':
+                out[eq.name] = eout
+
+        if (len(self) == 1) and (mode != 'weak'):
+            out = out.popitem()[1]
+
+        return out
+
 ##
 # 21.07.2006, c
 class Equation( Struct ):

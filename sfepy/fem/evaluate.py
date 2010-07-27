@@ -226,15 +226,16 @@ def assemble_matrix(mtx, equation, chunk_size=1000,
                                                      float( sign.imag ),
                                                      rdc, cdc )
 
-def evaluate(expression, fields, materials, variables, integrals,
-             ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
-             auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
-             ret_variables=False, verbose=True, kwargs=None):
+def create_evaluable(expression, fields, materials, variables, integrals,
+                     ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
+                     auto_init=False, mode='eval', verbose=True, kwargs=None):
     """
-    Parameters
-    ----------
-    mode : one of 'eval', 'el_avg', 'qp', 'weak'
-        The evaluation mode.
+    Returns
+    -------
+    equation : Equation instance
+        The equation that is ready to be evaluated.
+    variables : Variables instance
+        The variables used in the equation.
     """
     if kwargs is None:
         kwargs = {}
@@ -257,19 +258,11 @@ def evaluate(expression, fields, materials, variables, integrals,
         for var in variables:
             var.init_data(step=0)
 
-    asm_obj = None
-
     if mode == 'weak':
         setup_dof_conns(equations.conn_info)
         materials.time_update(ts, domain, equations, verbose=False)
         equations.time_update(ts, domain.regions,
                               ebcs, epbcs, lcbcs, functions)
-
-        if dw_mode == 'vector':
-            asm_obj = equations.create_stripped_state_vector()
-
-        else:
-            asm_obj = equations.create_matrix_graph()
 
     else:
         setup_extra_data(equations.conn_info)
@@ -277,8 +270,25 @@ def evaluate(expression, fields, materials, variables, integrals,
 
     equations.describe_geometry(verbose=False)
 
-    out = equations[0].evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                                asm_obj=asm_obj)
+    return equations, variables
+
+
+def eval_equations(equations, variables, clear_caches=True,
+                   mode='eval', dw_mode='vector', term_mode=None):
+    asm_obj = None
+
+    if mode == 'weak':
+        if dw_mode == 'vector':
+            asm_obj = equations.create_stripped_state_vector()
+
+        else:
+            asm_obj = equations.create_matrix_graph()
+
+    if clear_caches:
+        equations.invalidate_term_caches()
+
+    out = equations.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,
+                             asm_obj=asm_obj)
 
     if variables.has_lcbc and mode == 'weak':
         op_lcbc = variables.op_lcbc
@@ -289,6 +299,29 @@ def evaluate(expression, fields, materials, variables, integrals,
             out = op_lcbc.T * out * op_lcbc
             out = out.tocsr()
             out.sort_indices()
+
+    return out
+
+def evaluate(expression, fields, materials, variables, integrals,
+             ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
+             auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
+             ret_variables=False, verbose=True, kwargs=None):
+    """
+    Convenience function calling create_evaluable() and eval_equations().
+
+    Parameters
+    ----------
+    mode : one of 'eval', 'el_avg', 'qp', 'weak'
+        The evaluation mode.
+    """
+    aux = create_evaluable(expression, fields, materials, variables, integrals,
+                           ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs, ts=ts,
+                           functions=functions, auto_init=auto_init,
+                           mode=mode, verbose=verbose, kwargs=kwargs)
+    equations, variables = aux
+
+    out = eval_equations(equations, variables,
+                         mode=mode, dw_mode=dw_mode, term_mode=term_mode)
 
     if ret_variables:
         out = (out, variables)

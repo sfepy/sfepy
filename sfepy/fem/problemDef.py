@@ -14,6 +14,7 @@ from materials import Materials
 from equations import Equations
 from integrals import Integrals
 from sfepy.fem.conditions import Conditions
+from sfepy.fem.evaluate import create_evaluable, eval_equations
 import fea as fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, evaluate
@@ -720,24 +721,12 @@ class ProblemDefinition( Struct ):
         
         return state
 
-    def evaluate(self, expression, try_equations=True, auto_init=False,
-                 copy_materials=True, integrals=None,
-                 ebcs=None, epbcs=None, lcbcs=None,
-                 ts=None, functions=None,
-                 mode='eval', dw_mode='vector', term_mode=None,
-                 var_dict=None, ret_variables=False, verbose=True, **kwargs):
-        """
-        Evaluate an expression, convenience wrapper of
-        sfepy.fem.evaluate.evaluate().
+    def create_evaluable(self, expression, try_equations=True, auto_init=False,
+                         copy_materials=True, integrals=None,
+                         ebcs=None, epbcs=None, lcbcs=None,
+                         ts=None, functions=None,
+                         mode='eval', var_dict=None, verbose=True, **kwargs):
 
-        Parameters
-        ----------
-	...
-
-        Examples
-        --------
-        ...
-        """
         if try_equations and self.equations is not None:
             variables = self.equations.variables.as_dict()
 
@@ -765,14 +754,50 @@ class ProblemDefinition( Struct ):
         integrals = get_default(integrals,
                                 Integrals.from_conf(self.conf.integrals))
 
-        out = evaluate(expression, self.fields, materials,
-                       variables.itervalues(), integrals,
-                       ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
-                       ts=ts, functions=functions,
-                       auto_init=auto_init,
-                       mode=mode, dw_mode=dw_mode, term_mode=term_mode,
-                       ret_variables=ret_variables, verbose=verbose,
-                       kwargs=kwargs)
+        out = create_evaluable(expression, self.fields, materials,
+                               variables.itervalues(), integrals,
+                               ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
+                               ts=ts, functions=functions,
+                               auto_init=auto_init,
+                               mode=mode, verbose=verbose,
+                               kwargs=kwargs)
+
+        return out
+
+    def evaluate(self, expression, try_equations=True, auto_init=False,
+                 copy_materials=True, integrals=None,
+                 ebcs=None, epbcs=None, lcbcs=None,
+                 ts=None, functions=None,
+                 mode='eval', dw_mode='vector', term_mode=None,
+                 var_dict=None, ret_variables=False, verbose=True, **kwargs):
+        """
+        Evaluate an expression, convenience wrapper of
+        sfepy.fem.evaluate.evaluate().
+
+        Parameters
+        ----------
+	...
+
+        Examples
+        --------
+        ...
+        """
+        aux = self.create_evaluable(expression,
+                                    try_equations=try_equations,
+                                    auto_init=auto_init,
+                                    copy_materials=copy_materials,
+                                    integrals=integrals,
+                                    ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
+                                    ts=ts, functions=functions,
+                                    mode=mode, var_dict=var_dict,
+                                    verbose=verbose, **kwargs)
+        equations, variables = aux
+
+        out = eval_equations(equations, variables,
+                             mode=mode, dw_mode=dw_mode, term_mode=term_mode)
+
+        if ret_variables:
+            out = (out, variables)
 
         return out
 
