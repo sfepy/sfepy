@@ -497,7 +497,7 @@ class Variables( Container ):
     def set_state_part( self, state, part, var_name, stripped = False ):
         state[self.get_indx( var_name, stripped )] = part
 
-    def get_state_parts(self, vec):
+    def get_state_parts(self, vec=None):
         """
         Return parts of a state vector corresponding to individual state
         variables.
