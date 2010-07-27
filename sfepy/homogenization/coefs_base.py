@@ -1,5 +1,6 @@
 from sfepy.base.base import *
-from sfepy.fem import eval_term_op, assemble_by_blocks
+from sfepy.fem import assemble_by_blocks
+from sfepy.fem.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
@@ -43,6 +44,20 @@ class MiniAppBase( Struct ):
 
             output( '...done in %.2f s' % (time.clock() - tt) )
 
+class CorrSolution(Struct):
+    """
+    Class for holding solutions of corrector problems.
+    """
+
+    def iter_solutions(self):
+        if hasattr(self, 'components'):
+            for indx in self.components:
+                key = ('%d' * len(indx)) % indx
+                yield key, self.states[indx]
+
+        else:
+            yield '', self.state
+
 class CorrMiniApp( MiniAppBase ):
 
     def __init__( self, name, problem, kwargs ):
@@ -80,9 +95,9 @@ class CorrMiniApp( MiniAppBase ):
         else:
             return None
 
-    def get_output(self, state, comps=None, is_dump=False, extend=True):
-        to_output = self.problem.variables.state_to_output
-        get_state = self.problem.variables.get_state_part_view
+    def get_output(self, corr_sol, is_dump=False, extend=True):
+        variables = self.problem.get_variables()
+        to_output = variables.state_to_output
 
         if is_dump:
             var_names = self.dump_variables
@@ -92,56 +107,42 @@ class CorrMiniApp( MiniAppBase ):
             var_names = self.save_variables
 
         out = {}
-        if comps:
-            for ii, comp in enumerate(comps):
+        for key, sol in corr_sol.iter_solutions():
+            for var_name in var_names:
+                skey = var_name + '_' + key
+
+                dof_vector = sol[var_name]
+
                 if is_dump:
-                    for dvar in var_names:
-                        new_key = dvar + '_' + '%d'*len(comp) % comp
-                        data = get_state(state[comp], dvar)
-                        var_di = self.problem.variables[dvar] 
-                        shape = (var_di.n_dof / var_di.n_components,
-                                 var_di.n_components)
-                        out[new_key] = Struct(name = 'dump', mode = 'nodes',
-                                              data = data,
-                                              dofs = var_di.dofs,
-                                              shape = shape,
-                                              var_name = dvar)
+                        var = variables[var_name]
+                        shape = (var.n_dof / var.n_components,
+                                 var.n_components)
+                        out[skey] = Struct(name = 'dump', mode = 'nodes',
+                                           data = dof_vector,
+                                           dofs = var.dofs,
+                                           shape = shape,
+                                           var_name = var_name)
 
                 else:
-                    aux = to_output(state[comp], extend=extend)
+                    aux = to_output(dof_vector,
+                                    var_info={var_name: (True, var_name)},
+                                    extend=extend)
                     if self.post_process_hook is not None:
                         aux = self.post_process_hook(aux, self.problem,
-                                                     state[comp],
+                                                     None,
                                                      extend=extend)
 
-                    for key, val in aux.iteritems():
-                        new_key = key + '_' + '%d'*len( comp ) % comp
+                    for _key, val in aux.iteritems():
+                        new_key = _key + '_' + key
                         out[new_key] = val
 
-        else:
-            if is_dump:
-                for dvar in var_names:
-                    var_di = self.problem.variables[dvar]
-                    shape = (var_di.n_dof / var_di.n_components,
-                             var_di.n_components)
-                    out[dvar] = Struct(name = 'dump', mode = 'nodes',
-                                       data = get_state(state, dvar),
-                                       dofs = var_di.dofs,
-                                       shape = shape,
-                                       var_name = dvar)
-            else:
-                out.update(to_output(state, extend=extend))
-                if self.post_process_hook is not None:
-                    out = self.post_process_hook(out, self.problem,
-                                                 state,
-                                                 extend=extend)
         return out
-        
-    def save(self, state, problem, comps=None):
+
+    def save(self, state, problem):
         save_name = self.get_save_name()
         if save_name is not None:
             extend = not self.file_per_var
-            out = self.get_output(state, comps, extend=extend)
+            out = self.get_output(state, extend=extend)
 
             problem.save_state(save_name, out=out,
                                file_per_var=self.file_per_var)
@@ -149,8 +150,7 @@ class CorrMiniApp( MiniAppBase ):
         dump_name = self.get_dump_name()
         if dump_name is not None:
             problem.save_state(dump_name,
-                               out=self.get_output(state, comps,
-                                                   is_dump=True),
+                               out=self.get_output(state, is_dump=True),
                                file_per_var=False)
 
 class ShapeDimDim( CorrMiniApp ):
@@ -176,10 +176,10 @@ class ShapeDim( CorrMiniApp ):
 class CorrNN( CorrMiniApp ):
     """ __init__() kwargs:
         {
-             'variables' : [],
              'ebcs' : [],
              'epbcs' : [],
              'equations' : {},
+             'set_variables' : None,
         },
     """
 
@@ -194,31 +194,34 @@ class CorrNN( CorrMiniApp ):
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        problem.select_variables( self.variables )
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
+
+        variables = problem.get_variables()
 
         states = nm.zeros( (self.corr_dim, self.corr_dim), dtype = nm.object )
         clist = []
         for ir in range( self.corr_dim ):
             for ic in range( self.corr_dim ):
-                for name, val in self.get_variables( ir, ic, data ):
-                    problem.variables[name].data_from_data( val )
+                self.set_variables(variables, ir, ic, **data)
 
                 state = problem.solve()
-                assert_( problem.variables.has_ebc( state ) )
-                states[ir,ic] = state
+                assert_(variables.has_ebc(state))
+                states[ir,ic] = variables.get_state_parts()
 
                 clist.append( (ir, ic) )
 
-        self.save( states, problem, comps = clist )
+        corr_sol = CorrSolution(name = self.name,
+                                states = states,
+                                components = clist)
 
-        return Struct( name = self.name,
-                       states = states,
-                       di = problem.variables.di )
+        self.save(corr_sol, problem)
+
+        return corr_sol
 
 class CorrN( CorrMiniApp ):
 
@@ -583,28 +586,22 @@ class VolumeFractions( MiniAppBase ):
         return vf
 
 class CoefSymSym( MiniAppBase ):
-    
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym, sym), dtype = nm.float64 )
-        
+
+        equations, variables = problem.create_evaluable(self.expression)
+
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-            for name, val in self.get_variables( problem, irr, icr, data,
-                                                 'row' ):
-                problem.variables[name].data_from_data( val )
+            self.set_variables(variables, irr, icr, 'row', **data)
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                for name, val in self.get_variables( problem, irc, icc, data,
-                                                     'col' ):
-                    problem.variables[name].data_from_data( val )
+                self.set_variables(variables, irc, icc, 'col', **data)
 
-                val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval',
-                                    copy_materials = False,
-                                    update_materials = ((ir * ic) == 0))
+                val = eval_equations(equations, variables)
 
                 coef[ir,ic] = val
 
