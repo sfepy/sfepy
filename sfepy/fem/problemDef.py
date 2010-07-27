@@ -731,7 +731,16 @@ class ProblemDefinition( Struct ):
             variables = self.equations.variables.as_dict()
 
         else:
-            variables = get_default(var_dict, {})
+            if var_dict is None:
+                from sfepy.fem.equations import parse_definition
+
+                args = parse_definition(expression)[0].args
+                possible_var_names = [arg.strip() for arg in args.split(',')]
+
+                variables = self.create_variables(possible_var_names)
+
+            else:
+                variables = var_dict
 
         _kwargs = copy(kwargs)
         for key, val in kwargs.iteritems():
