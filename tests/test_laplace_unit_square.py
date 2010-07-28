@@ -152,10 +152,9 @@ class Test( TestCommon ):
     def from_conf( conf, options ):
         from sfepy.solvers.generic import solve_stationary
 
-        problem, vec, data = solve_stationary( conf )
+        problem, vec = solve_stationary(conf)
 
-        test = Test( problem = problem, vec = vec, data = data,
-                     conf = conf, options = options )
+        test = Test(problem=problem, vec=vec, conf=conf, options=options)
         return test
     from_conf = staticmethod( from_conf )
 

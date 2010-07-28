@@ -113,8 +113,7 @@ class TestLCBC( TestCommon ):
         from sfepy.base.base import IndexedStruct
 
         status = IndexedStruct()
-        problem, vec, data = solve_stationary( self.conf,
-                                              nls_status = status )
+        problem, vec = solve_stationary(self.conf, nls_status=status)
         ok = status.condition == 0
         self.report( 'converged: %s' % ok )
         out = problem.state_to_output( vec )

@@ -175,16 +175,14 @@ class Test( TestCommon ):
 
             self.report( 'isotropic' )
             self.conf.equations = self.conf.equations_iso
-            problem, vec1, data = solve_stationary( self.conf,
-                                                  nls_status = status )
+            problem, vec1 = solve_stationary(self.conf, nls_status=status)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
             self.report( 'general' )
             self.conf.equations = self.conf.equations_general
-            problem, vec2, data = solve_stationary( self.conf,
-                                                  nls_status = status )
+            problem, vec2 = solve_stationary(self.conf, nls_status=status)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )

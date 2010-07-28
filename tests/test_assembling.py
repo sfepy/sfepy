@@ -124,13 +124,12 @@ class Test( TestCommon ):
         import os.path as op
         from sfepy.solvers.generic import solve_stationary
 
-        problem, vec, data = solve_stationary( conf )
+        problem, vec = solve_stationary(conf)
         name = op.join( options.out_dir,
                         op.splitext( op.basename( __file__ ) )[0] + '.vtk' )
         problem.save_state( name, vec )
 
-        test = Test( problem = problem, vec = vec, data = data,
-                     conf = conf, options = options )
+        test = Test(problem=problem, vec=vec, conf=conf, options=options)
         return test
     from_conf = staticmethod( from_conf )
 
