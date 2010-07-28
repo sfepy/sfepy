@@ -16,7 +16,7 @@ def get_homog_coefs_linear( ts, coor, mode, region, ig,
     required, other = get_standard_keywords()
     required.remove( 'equations' )
         
-    conf = ProblemConf.from_file( micro_filename, required, other )
+    conf = ProblemConf.from_file(micro_filename, required, other, verbose=False)
 
     coefs_filename = conf.options.get_default_attr('coefs_filename', 'coefs.h5')
 

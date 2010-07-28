@@ -229,23 +229,26 @@ def compute_micro_u( corrs, strain, vu, dim, out = None ):
 
 def compute_stress_strain_u( pb, integral, region, material, vu, data ):
 
-    pb.select_variables( [vu] )
-    stress = pb.evaluate( 'de_cauchy_stress.%s.%s( %s, %s )'
-                          % (integral, region, material, vu),
-                          **{vu : data } )
-    strain = pb.evaluate( 'de_cauchy_strain.%s.%s( %s )'
-                          % (integral, region, vu),
-                          **{vu : data } )
+    var = pb.create_variables([vu])[vu]
+    var.data_from_any(data)
+
+    stress = pb.evaluate('de_cauchy_stress.%s.%s( %s, %s )'
+                         % (integral, region, material, vu), verbose=False,
+                         **{vu : var})
+    strain = pb.evaluate('de_cauchy_strain.%s.%s( %s )'
+                         % (integral, region, vu), verbose=False,
+                         **{vu : var})
 
     return extend_cell_data( stress, pb.domain, region ), \
            extend_cell_data( strain, pb.domain, region )
 
 def add_stress_p( out, pb, integral, region, vp, data ):
 
-    pb.select_variables( [vp] )
+    var = pb.create_variables([vp])[vp]
+    var.data_from_any(data)
 
-    press0 = pb.evaluate( 'de_average_variable.%s.%s( %s )' \
-                             % (integral, region, vp), **{vp : data } )
+    press0 = pb.evaluate('de_average_variable.%s.%s( %s )' \
+                         % (integral, region, vp), verbose=False, **{vp : var})
     press = extend_cell_data( press0, pb.domain, region )
     
     dim = pb.domain.mesh.dim
@@ -256,10 +259,9 @@ def add_stress_p( out, pb, integral, region, vp, data ):
 
 def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
 
-    pb.select_variables( [vu] )
-    avgmat = pb.evaluate( 'de_volume_average_mat.%s.%s( %s, %s )' \
-                              % (integral, region, material, vu) )
-    
+    avgmat = pb.evaluate('de_volume_average_mat.%s.%s( %s, %s )' \
+                         % (integral, region, material, vu), verbose=False)
+
     return extend_cell_data( nm.dot( avgmat, mac_strain ), pb.domain, region )
 
 
@@ -475,11 +477,11 @@ def recover_micro_hook( micro_filename, region, macro,
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
     required.remove( 'equations' )
-    pb = ProblemDefinition.from_conf_file( micro_filename,
-                                           required = required,
-                                           other = other,
-                                           init_variables = False,
-                                           init_solvers = False )
+    pb = ProblemDefinition.from_conf_file(micro_filename,
+                                          required=required,
+                                          other=other,
+                                          init_equations=False,
+                                          init_solvers=False)
 
     coefs_filename = pb.conf.options.get_default_attr('coefs_filename',
                                                       'coefs.h5')
