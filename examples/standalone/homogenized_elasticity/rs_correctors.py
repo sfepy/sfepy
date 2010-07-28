@@ -105,8 +105,8 @@ variables = {
     'uc'       : ('unknown field',   'displacement', 0),
     'vc'       : ('test field',      'displacement', 'uc'),
     'Pi'       : ('parameter field', 'displacement', 'uc'),
-    'Pi1'      : ('parameter field', 'displacement', 'uc'),
-    'Pi2'      : ('parameter field', 'displacement', 'uc'),
+    'Pi1'      : ('parameter field', 'displacement', '(set-to-None)'),
+    'Pi2'      : ('parameter field', 'displacement', '(set-to-None)'),
 }
 
 ##
@@ -167,14 +167,26 @@ integral_1 = {
 
 ##
 # Homogenized coefficients to compute.
+def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
+    mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
+
+    val = pis.states[ir, ic] + corrs_rs.states[ir, ic]['uc']
+
+    variables[mode2var[mode]].data_from_any(val)
+
 coefs = {
-    'E' : {'requires' : ['pis', 'corrs_rs'],
-           'variables' : ['Pi1', 'Pi2'],
-           'expression' : 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )'},
+    'E' : {
+        'requires' : ['pis', 'corrs_rs'],
+        'expression' : 'dw_lin_elastic.i3.Y( m.D, Pi1, Pi2 )',
+        'set_variables' : set_elastic,
+    },
 }
 
 ##
 # Data required to compute the homogenized coefficients.
+def set_corrs_rs(variables, ir, ic, pis):
+    variables['Pi'].data_from_any(pis.states[ir, ic])
+
 all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 requirements = {
     'pis' : {
@@ -183,14 +195,15 @@ requirements = {
     ##
     # Steady state correctors $\bar{\omega}^{rs}$.
     'corrs_rs' : {
-         'requires' : ['pis'],
-         'variables' : ['uc', 'vc', 'Pi'],
-         'save_variables' : ['uc'],
-         'ebcs' : ['fixed_u'],
-         'epbcs' : all_periodic,
-         'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
-                                = - dw_lin_elastic.i3.Y( m.D, vc, Pi )"""},
-         'save_name' : 'corrs_elastic',
+        'requires' : ['pis'],
+        'save_variables' : ['uc'],
+        'ebcs' : ['fixed_u'],
+        'epbcs' : all_periodic,
+        'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
+                             = - dw_lin_elastic.i3.Y( m.D, vc, Pi )"""},
+        'set_variables' : set_corrs_rs,
+        'save_name' : 'corrs_elastic',
+        'is_linear' : True,
     },
 }
 
@@ -236,8 +249,8 @@ def main():
     import os
     from sfepy.base.base import spause
     from sfepy.base.conf import ProblemConf, get_standard_keywords
-    from sfepy.fem import eval_term_op, ProblemDefinition
-    import sfepy.homogenization.coefs_elastic as ce
+    from sfepy.fem import ProblemDefinition
+    import sfepy.homogenization.coefs_base as cb
 
     nm.set_printoptions( precision = 3 )
 
@@ -257,9 +270,7 @@ Press 'q' to quit the example, press any other key to continue...""" )
     spause( r""">>>
 Now the input will be used to create a ProblemDefinition instance.
 ['q'/other key to quit/continue...]""" )
-    problem = ProblemDefinition.from_conf( conf,
-                                          init_variables = False,
-                                          init_equations = False )
+    problem = ProblemDefinition.from_conf(conf, init_equations=False)
     # The homogenization mini-apps need the output_dir.
     output_dir = os.path.join(os.path.split(__file__)[0], 'output')
     if not os.path.exists(output_dir):
@@ -277,7 +288,7 @@ using $\Pi$ operators, computed now. In fact, those operators are permuted
 coordinates of the mesh nodes.
 ['q'/other key to quit/continue...]""" )
     req = conf.requirements['pis']
-    mini_app = ce.ShapeDimDim( 'pis', problem, req )
+    mini_app = cb.ShapeDimDim( 'pis', problem, req )
     pis = mini_app()
     print pis
     spause( r""">>>
@@ -293,7 +304,7 @@ computed now.
     save_name = req.get( 'save_name', '' )
     name = os.path.join( output_dir, save_name )
 
-    mini_app = ce.CorrectorsElasticRS('steady rs correctors', problem, req)
+    mini_app = cb.CorrDimDim('steady rs correctors', problem, req)
     mini_app.setup_output(save_format='vtk',
                           file_per_var=False)
     corrs_rs = mini_app( data = {'pis': pis} )
@@ -311,7 +322,7 @@ Try to display them with:
     spause( r""">>>
 Then the volume of the domain is needed.
 ['q'/other key to quit/continue...]""" )
-    volume = eval_term_op( None, 'd_volume.i3.Y( uc )', problem )
+    volume = problem.evaluate('d_volume.i3.Y( uc )')
     print volume
 
     spause( r""">>>
@@ -321,9 +332,9 @@ Then the volume of the domain is needed.
     spause( r""">>>
 Finally, $E_{ijkl}$ can be computed.
 ['q'/other key to quit/continue...]""" )
-    mini_app = ce.ElasticCoef( 'homogenized elastic tensor',
-                               problem, conf.coefs['E'] )
-    c_e = mini_app( volume, data = {'pis': pis, 'corrs_rs' : corrs_rs} )
+    mini_app = cb.CoefSymSym('homogenized elastic tensor',
+                             problem, conf.coefs['E'])
+    c_e = mini_app(volume, data={'pis': pis, 'corrs_rs' : corrs_rs})
     print r""">>>
 The homogenized elastic coefficient $E_{ijkl}$, symmetric storage
 with rows, columns in 11, 22, 12 ordering:"""
