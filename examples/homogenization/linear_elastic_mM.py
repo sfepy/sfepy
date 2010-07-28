@@ -6,13 +6,12 @@ from sfepy.homogenization.recovery import save_recovery_region, recover_micro_ho
 
 def post_process( out, pb, state, extend = False ):
     from sfepy.base.base import Struct
-    from sfepy.fem.evaluate import eval_term_op
 
     if isinstance( state, dict ):
         pass
     else:
-        stress = eval_term_op( state, 'de_cauchy_stress.i1.Omega( solid.D, u )', pb )
-        strain = eval_term_op( state, 'de_cauchy_strain.i1.Omega( u )', pb )
+        stress = pb.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )')
+        strain = pb.evaluate('de_cauchy_strain.i1.Omega( u )')
         out['cauchy_strain'] = Struct( name = 'output_data',
                                        mode = 'cell', data = strain,
                                        dofs = None )
@@ -27,7 +26,7 @@ def post_process( out, pb, state, extend = False ):
 
             save_recovery_region( pb, rname );
 
-            rstrain = eval_term_op( state, 'de_cauchy_strain.i1.%s( u )' % rname, pb )
+            rstrain = pb.evaluate('de_cauchy_strain.i1.%s( u )' % rname)
 
             recover_micro_hook( pb.conf.options.micro_filename,
                                 region, {'strain' : rstrain} )

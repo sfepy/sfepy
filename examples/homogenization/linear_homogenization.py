@@ -9,7 +9,7 @@
 from sfepy.fem.periodic import *
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
 from sfepy.homogenization.utils import define_box_regions
-import sfepy.homogenization.coefs_elastic as ce
+import sfepy.homogenization.coefs_base as cb
 from sfepy import data_dir
 from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part
@@ -76,8 +76,8 @@ variables = {
     'u'     : ('unknown field', 'corrector', 0),
     'v'     : ('test field', 'corrector', 'u'),
     'Pi'    : ('parameter field', 'corrector', 'u'),
-    'Pi1' : ('parameter field', 'corrector', 'u'),
-    'Pi2' : ('parameter field', 'corrector', 'u'),
+    'Pi1' : ('parameter field', 'corrector', '(set-to-None)'),
+    'Pi2' : ('parameter field', 'corrector', '(set-to-None)'),
 }
 #! Functions
 functions = {
@@ -139,27 +139,42 @@ expr_coefs = """dw_lin_elastic.i1.Ym( matrix.D, Pi1, Pi2 )
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.
+def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
+    mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
+
+    val = pis.states[ir, ic] + corrs_rs.states[ir, ic]['u']
+
+    variables[mode2var[mode]].data_from_any(val)
+
 coefs = {
-    'D' : {'requires' : ['pis', 'corrs_rs'],
-           'variables' : ['Pi1', 'Pi2'],
-           'expression' : expr_coefs,
-           'class' : ce.ElasticCoef,},
+    'D' : {
+        'requires' : ['pis', 'corrs_rs'],
+        'expression' : expr_coefs,
+        'set_variables' : set_elastic,
+        'class' : cb.CoefSymSym,
+    },
     'filenames' : {},
 }
+
 # requirements for elastic homog. coefficients
+def set_corrs_rs(variables, ir, ic, pis):
+    variables['Pi'].data_from_any(pis.states[ir, ic])
+
 requirements = {
-    'pis' : { 'variables' : ['u'],
-              'class' : ce.ShapeDimDim,
-              },
-    'corrs_rs' : { 'requires' : ['pis'],
-                   'variables' : ['u', 'v', 'Pi'],
-                   'ebcs' : ['fixed_u'],
-                   'epbcs' : all_periodic,
-                   'equations' : equation_corrs,
-                   'class' : ce.CorrectorsElasticRS,
-                   'save_name' : 'corrs_le',
-                   'dump_variables' : ['u'],
-                   },
+    'pis' : {
+        'variables' : ['u'],
+        'class' : cb.ShapeDimDim,
+    },
+    'corrs_rs' : {
+        'requires' : ['pis'],
+        'ebcs' : ['fixed_u'],
+        'epbcs' : all_periodic,
+        'equations' : equation_corrs,
+        'set_variables' : set_corrs_rs,
+        'class' : cb.CorrDimDim,
+        'save_name' : 'corrs_le',
+        'dump_variables' : ['u'],
+    },
 }
 #! Solvers
 #! -------
