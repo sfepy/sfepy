@@ -219,9 +219,9 @@ class ProblemConf( Struct ):
     ProblemConf instance is used to construct a ProblemDefinition instance via
     ProblemDefinition.from_conf( conf ).
     """
-    ##
-    # c: 25.07.2006, r: 10.07.2008
-    def from_file( filename, required = None, other = None ):
+
+    @staticmethod
+    def from_file(filename, required=None, other=None, verbose=True):
         """
         Loads the problem definition from a file.
 
@@ -247,37 +247,35 @@ class ProblemConf( Struct ):
 
         """
         funmod = import_file( filename )
-        obj = ProblemConf()
 
         if "define" in funmod.__dict__:
             define_dict = funmod.__dict__["define"]()
         else:
             define_dict = funmod.__dict__
 
-        obj.__dict__.update( define_dict )
-
-        obj.setup( define_dict, funmod, filename, required, other )
+        obj = ProblemConf(define_dict, funmod, required, other, verbose)
 
         return obj
-    from_file = staticmethod( from_file )
 
-    def from_module( module, required = None, other = None ):
-        obj = ProblemConf()
-        obj.__dict__.update( module.__dict__ )
-
-        obj.setup( funmod = module, required = required, other = other )
+    @staticmethod
+    def from_module(module, required=None, other=None, verbose=True):
+        obj = ProblemConf(module.__dict__, funmod, required, other, verbose)
 
         return obj
-    from_module = staticmethod( from_module )
 
-    def from_dict( dict_, funmod, required = None, other = None ):
-        obj = ProblemConf()
-        obj.__dict__.update( dict_ )
-
-        obj.setup( funmod = funmod, required = required, other = other )
+    @staticmethod
+    def from_dict(dict_, funmod, required=None, other=None, verbose=True ):
+        obj = ProblemConf(dict_, funmod, required, other, verbose)
 
         return obj
-    from_dict = staticmethod( from_dict )
+
+    def __init__(self, define_dict, funmod=None, required=None, other=None,
+                 verbose=True):
+        self.__dict__.update(define_dict)
+        self.verbose = verbose
+
+        self.setup(funmod=funmod, required=required, other=other)
+
 
     def setup( self, define_dict = None, funmod = None, filename = None,
                required = None, other = None ):
@@ -334,16 +332,11 @@ class ProblemConf( Struct ):
 
         assert_( required_left_over == other_left_over )
 
-        err = False
-        if required_missing:
-            err = True
-            output( 'error: required missing:', required_missing )
-
-        if other_left_over:
+        if other_left_over and self.verbose:
             output( 'left over:', other_left_over )
 
-        if err:
-            raise ValueError
+        if required_missing:
+            raise ValueError('required missing: %s' % required_missing)
 
         return other_missing
 
