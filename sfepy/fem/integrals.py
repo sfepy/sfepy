@@ -82,7 +82,7 @@ class Integral(Struct):
     _msg1 = 'WARNING: quadrature order %d is not available for geometry %s!'
     _msg2 = 'WARNING: using %d instead!'
     
-    def __init__(self, name, kind='v', quad_name='auto',
+    def __init__(self, name, kind='v', order=None, quad_name=None,
                  coors=None, weights=None):
         self.name = name
         self.kind = kind
@@ -97,10 +97,16 @@ class Integral(Struct):
             self.coors = coors
             self.weights = weights
 
-        if self.quad_name in ('auto', 'custom'):
+        self.order = 0
+        self.dim = None
+
+        if order is not None:
+            self.order = order
+
+        elif self.quad_name in ('auto', 'custom'):
             self.order = -1
 
-        else:
+        elif quad_name is not None:
             match = _match_order_dim(self.quad_name)
             self.order, self.dim = [int( ii ) for ii in match.groups()]
 
