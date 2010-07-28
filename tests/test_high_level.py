@@ -12,21 +12,9 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        test = Test(conf=conf, options=options)
-        return test
-
-    @TestCommon.xfail
-    def test_solving(self):
         import sfepy
-        from sfepy.fem \
-             import Mesh, Domain, Field, FieldVariable, Material, \
-                    Function, Equation, Equations
-        from sfepy.fem.conditions import EssentialBC
-        from sfepy.terms.terms import Term
-
-        ok = True
-
-        mesh = Mesh.from_file('meshes/2d/special/square_triquad.mesh',
+        from sfepy.fem import Mesh, Domain, Field
+        mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
                               prefix_dir=sfepy.data_dir)
         domain = Domain('domain', mesh)
         dim = domain.shape.dim
@@ -40,75 +28,129 @@ class Test(TestCommon):
         gamma2 = domain.create_region('Gamma2',
                                       'nodes in x > %.10f' % (max_x - eps))
 
-        print domain
-
-        field = Field('fu', nm.float64, 'scalar', omega,
+        field = Field('fu', nm.float64, 'vector', omega,
                       space='H1', poly_space_base='lagrange', approx_order=2)
 
-        print field
+        test = Test(conf=conf, options=options, dim=dim,
+                    omega=omega, gamma1=gamma1, gamma2=gamma2,
+                    field=field)
+        return test
 
-        u = FieldVariable('u', 'unknown', field, dim)
-        v = FieldVariable('v', 'test', field, dim, primary_var_name='u')
+    def test_term_evaluation(self):
+        from sfepy.fem import Integral, FieldVariable
+        from sfepy.terms.terms import Term
 
-        print u
-        print v
+        integral = Integral('i', order=3)
+
+        u = FieldVariable('u', 'parameter', self.field, self.dim,
+                          primary_var_name='(set-to-None)')
+
+        term = Term.new('d_volume(u)', integral, self.omega, u=u)
+        term *= 10.0
+
+        term.setup()
+
+        vol = term.evaluate()
+
+        self.report('volume: %.8f == 2000.0' % vol)
+        ok = nm.allclose(vol, 2000.0, rtol=1e-15, atol=0)
+
+        ## vec = t1.evaluate() # Returns vector.
+        ## vec = t1.evaluate(u=u_vec) # Returns the same vector.
+        ## mtx = t1.evaluate(diff_var='u') # Returns matrix.
+        ## val = t1.evaluate(v=u_vec, u=u_vec) # Forbidden - virtual variable
+        ##                                     # cannot have value.
+
+        return ok
+
+    def test_term_arithmetics(self):
+        from sfepy.fem import FieldVariable, Integral
+        from sfepy.terms.terms import Term
+
+        integral = Integral('i', order=3)
+
+        u = FieldVariable('u', 'parameter', self.field, self.dim,
+                          primary_var_name='(set-to-None)')
+
+        t1 = Term.new('d_volume(u)', integral, self.omega, u=u)
+        t2 = Term.new('d_surface(u)', integral, self.gamma1, u=u)
+
+        expr = 2.2j * (t1 * 5.5 - 3j * t2) * 0.25
+
+        ok = len(expr) == 2
+        if not ok:
+            self.report('wrong expression length!')
+
+        _ok = nm.allclose(expr[0].sign, 3.025j, rtol=1e-15, atol=0)
+        if not _ok:
+            self.report('wrong sign of the first term!')
+        ok = ok and _ok
+
+        _ok = nm.allclose(expr[1].sign, 1.65, rtol=1e-15, atol=0)
+        if not _ok:
+            self.report('wrong sign of the second term!')
+        ok = ok and _ok
+
+        return ok
+
+    def test_variables(self):
+        from sfepy.fem import FieldVariable
+
+        u = FieldVariable('u', 'parameter', self.field, self.dim,
+                          primary_var_name='(set-to-None)')
+
+        u.set_constant(1.0)
+
+        vec = u() # Nodal values.
+
+        ok = nm.allclose(vec, 1.0)
+
+        ## print u() 
+        ## print u.get_vector() # Coefficient vector w.r.t. the field space basis.
+        ## print u(gamma1)
+        ## print u.get_vector(gamma2)
+
+        return ok
+
+    @TestCommon.xfail
+    def test_solving(self):
+        from sfepy.fem \
+             import FieldVariable, Material, ProblemDefinition, \
+                    Function, Equation, Equations, Integral
+        from sfepy.fem.conditions import EssentialBC
+        from sfepy.terms.terms import Term
+
+        ok = True
+
+        u = FieldVariable('u', 'unknown', self.field, self.dim)
+        v = FieldVariable('v', 'test', self.field, self.dim,
+                          primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
         f = Material('f', val=1.0)
 
-        print m
-        print f
-
         bc_fun = Function('fix_u_fun', fix_u_fun,
                           extra_args={'etra_arg' : 'hello'})
 
-        print bc_fun
+        fix_u = EssentialBC('fix_u', self.gamma1, {'u.all' : bc_fun})
+        shift_u = EssentialBC('shift_u', self.gamma2, {'u.0' : 0.1})
 
-        fix_u = EssentialBC('fix_u', gamma1, {'u.all' : bc_fun})
-        shift_u = EssentialBC('shift_u', gamma2, {'u.0' : 0.1})
-
-        print fix_u
-        print shift_u
+        integral = Integral('i', order=3)
 
         t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
-                      'auto', omega, m=m, v=v, u=u)
+                      integral, self.omega, m=m, v=v, u=u)
 
-        print t1
-        print t1 - (3 * t1 - 2 * t1) * 4 + t1 * 2.4j
-
-        u.set_constant(1.0)
-        print u
-        # Coefficient vector w.r.t. the field space basis.
-        u_vec = u.get_full_state()
-        print u_vec
-
-        t2 = Term.new('dw_volume_lvf(f.val, v)', 1, gamma2, f=f, v=v)
+        t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.gamma2, f=f, v=v)
         print t2
         eq = Equation('balance', t1 + t2)
         print eq
         print eq.terms[0]
 
         eqs = Equations([eq])
-        
-        # Does not work below...
 
-        vec = t1.evaluate() # Returns vector.
-        vec = t1.evaluate(u=u_vec) # Returns the same vector.
-        mtx = t1.evaluate(diff_var='u') # Returns matrix.
-        val = t1.evaluate(v=u_vec, u=u_vec) # Forbidden - virtual variable
-                                            # cannot have value.
-
-        pause()
-
-
-        print u() # Nodal values.
-        print u.get_vector() # Coefficient vector w.r.t. the field space basis.
-        print u(gamma1)
-        print u.get_vector(gamma2)
-
-        pb = ProblemDefinition('problem', eqs, nls, ls, ts=None)
-        pb.time_update(ebcs=[fix_u, shift_u])
-        pb.solve()
-        pb.save_solution('results.vtk')
+        ## pb = ProblemDefinition('problem', eqs, nls, ls, ts=None)
+        ## pb.time_update(ebcs=[fix_u, shift_u])
+        ## pb.solve()
+        ## pb.save_solution('results.vtk')
 
         return ok
