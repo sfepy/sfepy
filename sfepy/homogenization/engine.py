@@ -56,10 +56,10 @@ class HomogenizationEngine( SimpleApp ):
         self.problem = problem
         self.setup_options()
         self.setup_output_info( self.problem, self.options )
-        
+
         if volume is None:
-            self.volume = eval_term_op( None, self.app_options.total_volume,
-                                        self.problem )
+            self.volume = self.problem.evaluate(self.app_options.total_volume)
+
         else:
             self.volume = volume
 
@@ -156,7 +156,13 @@ class HomogenizationEngine( SimpleApp ):
                     dependencies[key] = getattr(coefs, name)
 
             problem.clear_equations()
-            val = mini_app( self.volume, data = dependencies )
+
+            # Pass only the direct dependencies, not the indirect ones.
+            data = {}
+            for key in requires:
+                data[key] = dependencies[key]
+
+            val = mini_app(self.volume, data=data)
             setattr( coefs, coef_name, val )
             output( '...done' )
 
