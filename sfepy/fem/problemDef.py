@@ -612,7 +612,7 @@ class ProblemDefinition( Struct ):
             field.write_mesh( filename_trunk + '_%s' )
         output( '...done' )
 
-    def get_evaluator( self, reuse = False, **kwargs ):
+    def get_evaluator(self, mtx=None, reuse=False):
         """
         Either create a new Evaluator instance (reuse == False),
         or return an existing instance, created in a preceding call to
@@ -626,16 +626,16 @@ class ProblemDefinition( Struct ):
                       ' set reuse to False!')
         else:
             if self.equations.variables.has_lcbc:
-                ev = LCBCEvaluator( self, **kwargs )
+                ev = LCBCEvaluator(self, mtx=mtx)
             else:
-                ev = BasicEvaluator( self, **kwargs )
+                ev = BasicEvaluator(self, mtx=mtx)
 
         self.evaluator = ev
         
         return ev
 
-    def init_solvers( self, nls_status = None, ls_conf = None, nls_conf = None,
-                      mtx = None, **kwargs ):
+    def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
+                     mtx=None, presolve=False):
         """Create and initialize solvers."""
         ls_conf = get_default( ls_conf, self.ls_conf,
                                'you must set linear solver!' )
@@ -643,13 +643,13 @@ class ProblemDefinition( Struct ):
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
         
-        ls = Solver.any_from_conf( ls_conf, mtx = mtx )
+        ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve)
 
         if get_default_attr(nls_conf, 'needs_problem_instance', False):
             extra_args = {'problem' : self}
         else:
             extra_args = {}
-        ev = self.get_evaluator( **kwargs )
+        ev = self.get_evaluator()
         nls = Solver.any_from_conf( nls_conf, fun = ev.eval_residual,
                                     fun_grad = ev.eval_tangent_matrix,
                                     lin_solver = ls, status = nls_status,
@@ -683,10 +683,9 @@ class ProblemDefinition( Struct ):
         else:
             nls_conf.problem = 'nonlinear'
 
-    def solve( self, state0 = None, nls_status = None,
-               ls_conf = None, nls_conf = None, force_values = None,
-               var_data = None,
-               **kwargs ):
+    def solve(self, state0=None, nls_status=None,
+              ls_conf=None, nls_conf=None, force_values=None,
+              var_data=None):
         """Solve self.equations in current time step.
 
         Parameters
@@ -697,12 +696,8 @@ class ProblemDefinition( Struct ):
         """
         solvers = self.get_solvers()
         if solvers is None:
-            self.init_solvers( nls_status, ls_conf, nls_conf, **kwargs )
+            self.init_solvers(nls_status, ls_conf, nls_conf)
             solvers = self.get_solvers()
-        else:
-            if kwargs:
-                ev = self.get_evaluator( reuse = True )
-                ev.set_term_args( **kwargs )
             
         if state0 is None:
             state = self.create_state_vector()

@@ -17,17 +17,12 @@ class Evaluator( Struct ):
 class BasicEvaluator( Evaluator ):
     ##
     # 02.10.2007, c
-    def __init__( self, problem, mtx = None, **kwargs ):
-        Evaluator.__init__( self, problem = problem, data = kwargs )
+    def __init__(self, problem, mtx=None):
+        Evaluator.__init__(self, problem=problem)
         if mtx is None:
             self.mtx = problem.mtx_a
         else:
             self.mtx = mtx
-
-    ##
-    # c: 11.04.2008, r: 11.04.2008
-    def set_term_args( self, **kwargs ):
-        self.data = kwargs
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
@@ -88,8 +83,8 @@ class LCBCEvaluator( BasicEvaluator ):
 
     ##
     # 04.10.2007, c
-    def __init__( self, problem, mtx = None, **kwargs ):
-        BasicEvaluator.__init__( self, problem, mtx, **kwargs )
+    def __init__(self, problem, mtx=None):
+        BasicEvaluator.__init__(self, problem, mtx)
         self.op_lcbc = problem.equations.get_lcbc_operator()
 
     ##

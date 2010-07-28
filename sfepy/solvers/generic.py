@@ -27,19 +27,8 @@ def save_only( conf, save_names, problem = None ):
     if save_names.ebc is not None:
         problem.save_ebc( save_names.ebc )
 
-##
-# 20.03.2007, c
-# 30.03.2007
-# 28.05.2007
-# 03.07.2007
-# 18.07.2007
-# 02.10.2007
-# 03.10.2007
-def solve_stationary( conf, data = None, save_names = None, nls_status = None ):
+def solve_stationary(conf, save_names=None, nls_status=None):
 
-    if data is None:
-        # Term-dependent data.
-        data = {}
     problem = ProblemDefinition.from_conf( conf )
 
     problem.time_update( None )
@@ -49,7 +38,7 @@ def solve_stationary( conf, data = None, save_names = None, nls_status = None ):
 
     state = problem.solve( nls_status = nls_status )
 
-    return problem, state, data
+    return problem, state
 
 
 def prepare_save_data( ts, conf ):
@@ -65,7 +54,7 @@ def prepare_save_data( ts, conf ):
 
     return ts.suffix, is_save
 
-def time_step_function(ts, state0, problem, data, nls_status=None):
+def time_step_function(ts, state0, problem, nls_status=None):
     problem.time_update( ts )
 
     if ts.step == 0:
@@ -77,7 +66,7 @@ def time_step_function(ts, state0, problem, data, nls_status=None):
 
             if problem.equations.caches:
                 # Initialize caches.
-                ev = problem.get_evaluator( ts = ts, **data )
+                ev = problem.get_evaluator()
                 try:
                     vec_r = ev.eval_residual( state, is_full = True )
                 except ValueError:
@@ -94,7 +83,7 @@ def time_step_function(ts, state0, problem, data, nls_status=None):
         if problem.is_linear():
             # Assemble linear system matrix for all
             # time steps.
-            ev = problem.get_evaluator( ts = ts, mtx = problem.mtx_a, **data )
+            ev = problem.get_evaluator(mtx=problem.mtx_a)
             try:
                 mtx_a = ev.eval_tangent_matrix( state, is_full = True )
             except ValueError:
@@ -104,18 +93,18 @@ def time_step_function(ts, state0, problem, data, nls_status=None):
             mtx_a = None
 
         # Initialize solvers (and possibly presolve the matrix).
-        problem.init_solvers(nls_status=nls_status, ts=ts, mtx=mtx_a, **data)
+        problem.init_solvers(nls_status=nls_status, mtx=mtx_a)
 
         if ts.is_quasistatic:
             # Ordinary solve.
-            state = problem.solve(state0=state0, ts=ts)
+            state = problem.solve(state0=state0)
 
         else:
             # Initialize variables with history.
             problem.init_variables( state0 )
 
     else:
-        state = problem.solve(state0=state0, ts=ts)
+        state = problem.solve(state0=state0)
 
     return state
 
@@ -125,8 +114,7 @@ def solve_evolutionary_op(problem,
                           nls_status=None):
     """TODO  return_history"""
     
-    data = {}
-    step_args = problem, data, nls_status
+    step_args = problem, nls_status
     time_solver = problem.get_time_solver(step_fun=time_step_function,
                                           step_args=step_args)
 
@@ -146,18 +134,15 @@ def solve_evolutionary_op(problem,
         if save_results and (is_save[ii] == ts.step):
             filename = problem.get_output_name( suffix = suffix % ts.step )
             problem.save_state(filename, state,
-                               post_process_hook=post_process_hook,
-                               ts=ts)
+                               post_process_hook=post_process_hook)
             ii += 1
 
         problem.advance( ts )
-    return state, data
+    return state
 
 def solve_stationary_op(problem, save_results=True, ts=None,
                         post_process_hook=None,
                         nls_status=None):
-    data = {}
-
     if ts is None:
         try:
             ts = problem.get_time_solver().ts
@@ -165,13 +150,13 @@ def solve_stationary_op(problem, save_results=True, ts=None,
             pass
 
     problem.time_update( ts )
-    state = problem.solve(ts=ts, nls_status=nls_status)
+    state = problem.solve(nls_status=nls_status)
 
     if save_results:
         problem.save_state( problem.get_output_name(), state,
                             post_process_hook = post_process_hook )
 
-    return state, data
+    return state
     
 def solve_direct(conf, options, problem=None, step_hook=None,
                  post_process_hook=None, post_process_hook_final=None,
@@ -216,21 +201,18 @@ def solve_direct(conf, options, problem=None, step_hook=None,
     if hasattr( conf.options, 'ts' ):
         ##
         # Time-dependent problem.
-        out = solve_evolutionary_op(problem, options,
-                                    step_hook=step_hook,
-                                    post_process_hook=post_process_hook,
-                                    nls_status=nls_status)
+        state = solve_evolutionary_op(problem, options,
+                                      step_hook=step_hook,
+                                      post_process_hook=post_process_hook,
+                                      nls_status=nls_status)
     else:
         ##
         # Stationary problem.
-        out = solve_stationary_op(problem, options,
-                                  post_process_hook=post_process_hook,
-                                  nls_status=nls_status)
-
-    state, data = out
-
+        state = solve_stationary_op(problem, options,
+                                    post_process_hook=post_process_hook,
+                                    nls_status=nls_status)
 
     if post_process_hook_final is not None: # User postprocessing.
-       post_process_hook_final(problem, state, data)
+       post_process_hook_final(problem, state)
 
-    return problem, state, data
+    return problem, state
