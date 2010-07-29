@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.fem import Materials, Variables
+from sfepy.fem.fields import setup_dof_conns
 from extmods.fem import raw_graph
 from sfepy.terms import Terms, Term, DataCaches
 
@@ -31,7 +32,8 @@ class Equations( Container ):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  caches=None, user=None, verbose=True):
+                  setup=True, caches=None, user=None, cache_override=False,
+                  make_virtual=False, verbose=True):
 
         objs = OneTypeList(Equation)
 
@@ -51,11 +53,15 @@ class Equations( Container ):
             objs.append(eq)
             ii += 1
 
-        obj = Equations(objs, caches=caches)
+        obj = Equations(objs, setup=setup, caches=caches,
+                        cache_override=cache_override,
+                        make_virtual=make_virtual, verbose=verbose)
 
         return obj
 
-    def __init__(self, equations, caches=None):
+    def __init__(self, equations, setup=True,
+                 caches=None, cache_override=False,
+                 make_virtual=False, verbose=True):
         Container.__init__(self, equations)
 
         self.variables = Variables(self.collect_variables())
@@ -65,8 +71,24 @@ class Equations( Container ):
 
         self.clear_geometries()
 
+        if setup:
+            self.setup(cache_override=cache_override,
+                       make_virtual=make_virtual, verbose=verbose)
+
     def clear_geometries(self):
         self.geometries = {}
+
+    def setup(self, cache_override=False, make_virtual=False, verbose=True):
+        self.collect_conn_info()
+
+        # This uses the conn_info created above.
+        self.dof_conns = {}
+        setup_dof_conns(self.conn_info, dof_conns=self.dof_conns,
+                        make_virtual=make_virtual, verbose=verbose)
+
+        self.describe_geometry(verbose=verbose)
+
+        self.set_cache_mode(cache_override)
 
     def collect_variables(self):
         """

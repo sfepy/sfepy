@@ -148,6 +148,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, domain.regions,
                                     materials, integrals,
+                                    setup=False,
                                     caches=caches, user=kwargs,
                                     verbose=verbose)
     equations.collect_conn_info()

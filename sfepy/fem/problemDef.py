@@ -8,7 +8,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords, transform_variab
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
-from fields import fields_from_conf, setup_dof_conns
+from fields import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials
 from equations import Equations
@@ -179,6 +179,10 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
+        if cache_override is None:
+            cache_override = get_default_attr( self.conf.fe,
+                                               'cache_override', True )
+
 	self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
 
@@ -186,26 +190,9 @@ class ProblemDefinition( Struct ):
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         self.materials, self.integrals,
-                                        user=user)
-
-        equations.collect_conn_info()
-
-        # This uses the conn_info created above.
-        self.dof_conns = {}
-        setup_dof_conns(equations.conn_info, dof_conns=self.dof_conns,
-                        make_virtual=make_virtual)
-        ## print self.fields.dof_conns
-
-        equations.describe_geometry()
-
-        ## print self.integrals
-        ## print equations.geometries
-        ## pause()
-
-        if cache_override is None:
-            cache_override = get_default_attr( self.conf.fe,
-                                               'cache_override', True )
-        equations.set_cache_mode( cache_override )
+                                        user=user,
+                                        cache_override=cache_override,
+                                        make_virtual=make_virtual)
 
         self.equations = equations
 
