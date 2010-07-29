@@ -253,28 +253,31 @@ class ProblemConf( Struct ):
         else:
             define_dict = funmod.__dict__
 
-        obj = ProblemConf(define_dict, funmod, required, other, verbose)
+        obj = ProblemConf(define_dict, funmod, filename,
+                          required, other, verbose)
 
         return obj
 
     @staticmethod
     def from_module(module, required=None, other=None, verbose=True):
-        obj = ProblemConf(module.__dict__, funmod, required, other, verbose)
+        obj = ProblemConf(module.__dict__, funmod, module.__name__,
+                          required, other, verbose)
 
         return obj
 
     @staticmethod
     def from_dict(dict_, funmod, required=None, other=None, verbose=True ):
-        obj = ProblemConf(dict_, funmod, required, other, verbose)
+        obj = ProblemConf(dict_, funmod, 'from_dict', required, other, verbose)
 
         return obj
 
-    def __init__(self, define_dict, funmod=None, required=None, other=None,
-                 verbose=True):
+    def __init__(self, define_dict, funmod=None, filename=None,
+                 required=None, other=None, verbose=True):
         self.__dict__.update(define_dict)
         self.verbose = verbose
 
-        self.setup(funmod=funmod, required=required, other=other)
+        self.setup(funmod=funmod, filename=filename,
+                   required=required, other=other)
 
 
     def setup( self, define_dict = None, funmod = None, filename = None,
