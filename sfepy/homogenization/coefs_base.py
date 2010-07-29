@@ -32,7 +32,7 @@ class MiniAppBase( Struct ):
             output('linear problem, trying to presolve...')
             tt = time.clock()
 
-            ev = problem.get_evaluator( mtx = problem.mtx_a )
+            ev = problem.get_evaluator()
 
             state = problem.create_state_vector()
             try:

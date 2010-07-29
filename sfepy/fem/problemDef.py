@@ -19,6 +19,8 @@ import fea as fea
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, evaluate
 from sfepy.solvers import Solver
+from sfepy.solvers.ls import ScipyDirect
+from sfepy.solvers.nls import Newton
 
 ##
 # 29.01.2006, c
@@ -27,21 +29,25 @@ class ProblemDefinition( Struct ):
     Problem definition, the top-level class holding all data necessary to solve
     a problem.
 
-    Contains: mesh, domain, materials, fields, variables, equations, solvers
+    It can be constructed from a :class:`ProblemConf` instance using
+    `ProblemDefinition.from_conf()` or directly from a problem
+    description file using `ProblemDefinition.from_conf_file()`
+
+    For interactive use, the constructor requires only the `equations`,
+    `nls` and `ls` keyword arguments.
     """
 
-    def from_conf_file(conf_filename,
-                       required=None, other=None,
-                       init_fields = True,
-                       init_equations = True,
-                       init_solvers = True):
+    @staticmethod
+    def from_conf_file(conf_filename, required=None, other=None,
+                       init_fields=True, init_equations=True,
+                       init_solvers=True):
 
         _required, _other = get_standard_keywords()
         if required is None:
             required = _required
         if other is None:
             other = _other
-            
+
         conf = ProblemConf.from_file(conf_filename, required, other)
 
         obj = ProblemDefinition.from_conf(conf,
@@ -49,28 +55,24 @@ class ProblemDefinition( Struct ):
                                           init_equations=init_equations,
                                           init_solvers=init_solvers)
         return obj
-    from_conf_file = staticmethod(from_conf_file)
-    
-    def from_conf( conf,
-                   init_fields = True,
-                   init_equations = True,
-                   init_solvers = True ):
+
+    @staticmethod
+    def from_conf(conf, init_fields=True, init_equations=True,
+                  init_solvers=True):
         if conf.options.get_default_attr('absolute_mesh_path', False):
             conf_dir = None
         else:
             conf_dir = op.dirname(conf.funmod.__file__)
 
         functions = Functions.from_conf(conf.functions)
-            
+
         mesh = Mesh.from_file(conf.filename_mesh, prefix_dir=conf_dir)
 
         domain = Domain(mesh.name, mesh)
 
-        obj = ProblemDefinition(conf = conf,
-                                functions = functions,
-                                domain = domain)
-
-        obj.setup_output()
+        obj = ProblemDefinition('prblem_from_conf', conf=conf,
+                                functions=functions, domain=domain,
+                                auto_conf=False, auto_solvers=False)
 
         obj.set_regions(conf.regions, conf.materials, obj.functions)
 
@@ -87,9 +89,67 @@ class ProblemDefinition( Struct ):
 
 
         obj.ts = None
-        
+
         return obj
-    from_conf = staticmethod( from_conf )
+
+    def __init__(self, name, conf=None, functions=None,
+                 domain=None, fields=None, materials=None,
+                 equations=None, auto_conf=True,
+                 nls=None, ls=None, ts=None, auto_solvers=True):
+        self.conf = conf
+        self.functions = functions
+
+        self.reset()
+
+        if auto_conf:
+            if equations is None:
+                raise ValueError('missing equations in auto_conf mode!')
+
+            self.equations = equations
+
+            if fields is None:
+                variables = self.equations.variables
+                fields = {}
+                for field in [var.get_field() for var in variables]:
+                    fields[field.name] = field
+
+            self.fields = fields
+
+            if domain is None:
+                domain = self.fields.values()[0].domain
+
+            if materials is None:
+                materials = Materials(self.equations.collect_materials())
+
+            self.domain = domain
+            self.materials = materials
+
+            if conf is None:
+                self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
+
+        else:
+            self.domain = domain
+            self.materials = materials
+
+        if auto_solvers:
+            if ls is None:
+                ls = ScipyDirect({})
+
+            if nls is None:
+                nls = Newton({}, lin_solver=ls)
+
+            ev = self.get_evaluator()
+            nls.fun = ev.eval_residual
+            nls.fun_grad = ev.eval_tangent_matrix
+
+            self.solvers = Struct(name='solvers', ls=ls, nls=nls)
+
+        self.setup_output()
+
+    def reset(self):
+        self.mtx_a = None
+        self.solvers = None
+        self.clear_equations()
 
     ##
     # 18.04.2006, c
@@ -107,7 +167,7 @@ class ProblemDefinition( Struct ):
         return obj
 
     def setup_output(self, output_filename_trunk=None, output_dir=None,
-                     output_format=None):
+                     output_format=None, float_format=None):
         """
         Sets output options to given values, or uses the defaults for
         each argument that is None.
@@ -115,7 +175,7 @@ class ProblemDefinition( Struct ):
         self.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
 
 	self.ofn_trunk = get_default(output_filename_trunk,
-                                     io.get_trunk(self.conf.filename_mesh))
+                                     io.get_trunk(self.domain.name))
 
         self.output_dir = get_default(output_dir, '.')
 
@@ -123,6 +183,16 @@ class ProblemDefinition( Struct ):
             os.makedirs(self.output_dir)
 
         self.output_format = get_default(output_format, 'vtk')
+
+        try:
+            _float_format = get_default_attr(self.conf.options,
+                                             'float_format', None)
+
+        except AttributeError:
+            _float_format = None
+
+        self.float_format = get_default(float_format, _float_format)
+
 
     def set_regions( self, conf_regions=None,
                      conf_materials=None, functions=None):
@@ -144,11 +214,7 @@ class ProblemDefinition( Struct ):
         Set definition of variables.
         """
         self.conf_variables = get_default(conf_variables, self.conf.variables)
-        self.mtx_a = None
-        self.solvers = None
-        self.clear_equations()
-##         print variables.di
-##         pause()
+        self.reset()
 
     def select_variables(self, variable_names, only_conf=False):
         if type(variable_names) == dict:
@@ -444,9 +510,6 @@ class ProblemDefinition( Struct ):
             if post_process_hook is not None:
                 out = post_process_hook( out, self, state, extend = extend )
 
-        float_format = get_default_attr( self.conf.options,
-                                         'float_format', None )
-
         if file_per_var:
             import os.path as op
 
@@ -464,12 +527,12 @@ class ProblemDefinition( Struct ):
                     if val.var_name == var.name:
                         vout[key] = val
                 base, suffix = op.splitext( filename )
-                mesh.write( base + '_' + var.name + suffix,
-                            io = 'auto', out = vout,
-                            float_format = float_format, **kwargs )
+                mesh.write(base + '_' + var.name + suffix,
+                           io='auto', out=vout,
+                           float_format=self.float_format, **kwargs)
         else:
-            self.domain.mesh.write( filename, io = 'auto', out = out,
-                                    float_format = float_format, **kwargs )
+            self.domain.mesh.write(filename, io='auto', out=out,
+                                   float_format=self.float_format, **kwargs)
 
     def save_ebc(self, filename, force=True, default=0.0):
         """
@@ -612,7 +675,7 @@ class ProblemDefinition( Struct ):
             field.write_mesh( filename_trunk + '_%s' )
         output( '...done' )
 
-    def get_evaluator(self, mtx=None, reuse=False):
+    def get_evaluator(self, reuse=False):
         """
         Either create a new Evaluator instance (reuse == False),
         or return an existing instance, created in a preceding call to
@@ -626,9 +689,9 @@ class ProblemDefinition( Struct ):
                       ' set reuse to False!')
         else:
             if self.equations.variables.has_lcbc:
-                ev = LCBCEvaluator(self, mtx=mtx)
+                ev = LCBCEvaluator(self)
             else:
-                ev = BasicEvaluator(self, mtx=mtx)
+                ev = BasicEvaluator(self)
 
         self.evaluator = ev
         

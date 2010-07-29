@@ -83,7 +83,7 @@ def time_step_function(ts, state0, problem, nls_status=None):
         if problem.is_linear():
             # Assemble linear system matrix for all
             # time steps.
-            ev = problem.get_evaluator(mtx=problem.mtx_a)
+            ev = problem.get_evaluator()
             try:
                 mtx_a = ev.eval_tangent_matrix( state, is_full = True )
             except ValueError:

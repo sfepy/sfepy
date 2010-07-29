@@ -15,14 +15,9 @@ class Evaluator( Struct ):
 ##
 # 02.10.2007, c
 class BasicEvaluator( Evaluator ):
-    ##
-    # 02.10.2007, c
-    def __init__(self, problem, mtx=None):
+
+    def __init__(self, problem):
         Evaluator.__init__(self, problem=problem)
-        if mtx is None:
-            self.mtx = problem.mtx_a
-        else:
-            self.mtx = mtx
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
@@ -41,14 +36,14 @@ class BasicEvaluator( Evaluator ):
             
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
         if isinstance( vec, str ) and vec == 'linear':
-            return get_default( mtx, self.mtx )
-        
+            return get_default(mtx, self.problem.mtx_a)
+
         if not is_full:
             vec = self.make_full_vec( vec )
         try:
             pb = self.problem
             if mtx is None:
-                mtx = self.mtx
+                mtx = pb.mtx_a
             mtx.data[:] = 0.0
             mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
@@ -83,8 +78,8 @@ class LCBCEvaluator( BasicEvaluator ):
 
     ##
     # 04.10.2007, c
-    def __init__(self, problem, mtx=None):
-        BasicEvaluator.__init__(self, problem, mtx)
+    def __init__(self, problem):
+        BasicEvaluator.__init__(self, problem)
         self.op_lcbc = problem.equations.get_lcbc_operator()
 
     ##
@@ -100,7 +95,7 @@ class LCBCEvaluator( BasicEvaluator ):
     # 04.10.2007, c
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
         if isinstance( vec, str ) and vec == 'linear':
-            return get_default( mtx, self.mtx )
+            return get_default(mtx, self.problem.mtx_a)
 
         if not is_full:
             vec = self.make_full_vec( vec )
