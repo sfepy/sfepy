@@ -6,6 +6,7 @@ Helper functions for the equation mapping.
 """
 from sfepy.base.base import *
 from sfepy.fem.utils import compute_nodal_normals
+from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
 
 def expand_nodes_to_equations(nods, dof_names, all_dof_names):
@@ -216,6 +217,9 @@ class EquationMap(Struct):
                 if type(val) == str:
                     fun = functions[val]
                     vv = fun(ts, coor, bc=bc)
+
+                elif isinstance(val, Function):
+                    vv = val(ts, coor, bc=bc)
 
                 else:
                     vv = nm.repeat([val], nods.shape[0] * len(dofs))
