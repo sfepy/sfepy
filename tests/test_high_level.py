@@ -112,25 +112,25 @@ class Test(TestCommon):
 
         return ok
 
-    @TestCommon.xfail
     def test_solving(self):
+        from sfepy.base.base import IndexedStruct
         from sfepy.fem \
              import FieldVariable, Material, ProblemDefinition, \
                     Function, Equation, Equations, Integral
-        from sfepy.fem.conditions import EssentialBC
+        from sfepy.fem.conditions import Conditions, EssentialBC
         from sfepy.terms.terms import Term
-
-        ok = True
+        from sfepy.solvers.ls import ScipyDirect
+        from sfepy.solvers.nls import Newton
 
         u = FieldVariable('u', 'unknown', self.field, self.dim)
         v = FieldVariable('v', 'test', self.field, self.dim,
                           primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
-        f = Material('f', val=1.0)
+        f = Material('f', val=00.0)
 
         bc_fun = Function('fix_u_fun', fix_u_fun,
-                          extra_args={'etra_arg' : 'hello'})
+                          extra_args={'extra_arg' : 'hello'})
 
         fix_u = EssentialBC('fix_u', self.gamma1, {'u.all' : bc_fun})
         shift_u = EssentialBC('shift_u', self.gamma2, {'u.0' : 0.1})
@@ -141,16 +141,33 @@ class Test(TestCommon):
                       integral, self.omega, m=m, v=v, u=u)
 
         t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.gamma2, f=f, v=v)
-        print t2
-        eq = Equation('balance', t1 + t2)
-        print eq
-        print eq.terms[0]
 
+        eq = Equation('balance', t1 + t2)
         eqs = Equations([eq])
 
-        ## pb = ProblemDefinition('problem', eqs, nls, ls, ts=None)
-        ## pb.time_update(ebcs=[fix_u, shift_u])
-        ## pb.solve()
-        ## pb.save_solution('results.vtk')
+        ls = ScipyDirect({})
+
+        nls_status = IndexedStruct()
+        nls = Newton({}, lin_solver=ls, status=nls_status)
+
+        pb = ProblemDefinition('elasticity', equations=eqs, nls=nls, ls=ls)
+        ## pb.save_regions_as_groups('regions')
+
+        pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+
+        vec = pb.solve()
+
+        name = op.join(self.options.out_dir, 'test_high_level_solving.vtk')
+        pb.save_state(name, vec)
+
+        ok = nls_status.condition == 0
+        if not ok:
+            self.report('solver did not converge!')
+
+        _ok = eqs.variables.has_ebc(vec)
+        if not _ok:
+            self.report('EBCs violated!')
+
+        ok = ok and _ok
 
         return ok
