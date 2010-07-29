@@ -90,6 +90,19 @@ class Equations( Container ):
 
         self.set_cache_mode(cache_override)
 
+    def collect_materials(self):
+        """
+        Collect materials present in the terms of all equations.
+        """
+        materials = []
+        for eq in self:
+            materials.extend(eq.collect_materials())
+
+        # Make the list items unique.
+        materials = list(set(materials))
+
+        return materials
+
     def collect_variables(self):
         """
         Collect variables present in the terms of all equations.
@@ -436,6 +449,16 @@ class Equation( Struct ):
 
         caches = get_default(caches, DataCaches)
         self.terms.assign_caches(caches)
+
+    def collect_materials(self):
+        """
+        Collect materials present in the terms of the equation.
+        """
+        materials = []
+        for term in self.terms:
+            materials.extend(term.get_materials(join=True))
+
+        return materials
 
     def collect_variables(self):
         """
