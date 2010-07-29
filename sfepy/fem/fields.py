@@ -47,13 +47,14 @@ def setup_extra_data(conn_info):
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
 
 def setup_dof_conns(conn_info, dof_conns=None,
-                    make_virtual=False):
+                    make_virtual=False, verbose=True):
     """
     Dof connectivity key:
         (field.name, var.n_components, region.name, type, ig)
     """
-    output('setting up dof connectivities...')
-    tt = time.clock()
+    if verbose:
+        output('setting up dof connectivities...')
+        tt = time.clock()
 
     dof_conns = get_default(dof_conns, {})
 
@@ -79,7 +80,8 @@ def setup_dof_conns(conn_info, dof_conns=None,
 
     ## print dof_conns
     ## pause()
-    output('...done in %.2f s' % (time.clock() - tt))
+    if verbose:
+        output('...done in %.2f s' % (time.clock() - tt))
 
     return dof_conns
 
