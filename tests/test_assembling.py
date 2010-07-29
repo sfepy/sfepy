@@ -148,13 +148,13 @@ class Test( TestCommon ):
         aux1 = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                 mode='weak', dw_mode='vector')
 
-        problem.time_update(conf_ebc={}, conf_epbc={})
+        problem.time_update(ebcs={}, epbcs={})
 
         mtx = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                mode='weak', dw_mode='matrix')
         aux2g = mtx * state
-        problem.time_update(conf_ebc=self.conf.ebcs,
-                            conf_epbc=self.conf.epbcs)
+        problem.time_update(ebcs=self.conf.ebcs,
+                            epbcs=self.conf.epbcs)
         aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
 
         ret = self.compare_vectors(aux1, aux2,

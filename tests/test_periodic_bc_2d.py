@@ -121,13 +121,12 @@ class Test( TestCommon ):
         problem  = self.problem
         conf = self.conf
 
-        ebcs = Conditions.from_conf(conf.ebcs)
-        epbcs = Conditions.from_conf(conf.epbcs)
+        ebcs = Conditions.from_conf(conf.ebcs, problem.domain.regions)
+        epbcs = Conditions.from_conf(conf.epbcs, problem.domain.regions)
 
         variables = Variables.from_conf(conf.variables, problem.fields)
         variables.setup_dof_info()
-        variables.equation_mapping(ebcs, epbcs, problem.domain.regions,
-                                   None, problem.functions)
+        variables.equation_mapping(ebcs, epbcs, None, problem.functions)
         state = variables.create_state_vector()
         variables.apply_ebc(state)
         return variables.has_ebc(state)

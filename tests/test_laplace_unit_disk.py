@@ -148,7 +148,7 @@ class Test( TestCommon ):
         get_state = variables.get_state_part_view
         state = vec.copy()
 
-        problem.time_update( conf_ebc = {}, conf_epbc = {} )
+        problem.time_update(ebcs={}, epbcs={})
         ## problem.save_ebc( 'aux.vtk' )
 
         problem.apply_ebc( state )
