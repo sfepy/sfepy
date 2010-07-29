@@ -27,6 +27,16 @@ class Solver(Struct):
         return Struct(**locals())
 
     def __init__(self, conf, **kwargs):
+        if isinstance(conf, dict):
+            conf = Struct(**conf)
+
+            if conf.get('name', None) is None:
+                conf.name = 'auto_' + self.__class__.__name__
+
+            if conf.get('kind', None) is None:
+                if hasattr(self.__class__, 'name'):
+                    conf.kind = self.__class__.name
+
         conf = self.__class__.process_conf(conf)
         Struct.__init__(self, conf=conf, **kwargs)
 
