@@ -133,20 +133,20 @@ class Equations( Container ):
         for cache in self.caches.itervalues():
             cache.set_mode( cache_override )
 
-    def time_update(self, ts, regions, ebcs=None, epbcs=None, lcbcs=None,
+    def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
                     functions=None):
         self.variables.time_update(ts, functions)
 
-        self.variables.equation_mapping(ebcs, epbcs, regions, ts, functions)
-        self.variables.setup_lcbc_operators(lcbcs, regions)
+        self.variables.equation_mapping(ebcs, epbcs, ts, functions)
+        self.variables.setup_lcbc_operators(lcbcs)
         self.variables.setup_adof_conns()
 
         for eq in self:
             for term in eq.terms:
                 term.time_update(ts)
 
-    def setup_initial_conditions(self, ics, regions, functions):
-        self.variables.setup_initial_conditions(ics, regions, functions)
+    def setup_initial_conditions(self, ics, functions):
+        self.variables.setup_initial_conditions(ics, functions)
 
     def create_matrix_graph( self, var_names = None, vvar_names = None ):
         """

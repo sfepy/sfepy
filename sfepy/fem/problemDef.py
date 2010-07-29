@@ -297,8 +297,7 @@ class ProblemDefinition( Struct ):
             ts = self.get_default_ts(step=0)
         functions = get_default(functions, self.functions)
 
-        self.equations.time_update(ts, self.domain.regions,
-                                   ebcs, epbcs, lcbcs, functions)
+        self.equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
 
         if (self.mtx_a is None) or create_matrix:
             self.mtx_a = self.equations.create_matrix_graph()
@@ -306,36 +305,50 @@ class ProblemDefinition( Struct ):
             ## plu.spy( self.mtx_a )
             ## plu.plt.show()
 
-    def update_bcs(self, conf_ebc=None, conf_epbc=None, conf_lcbc=None):
+    def set_bcs(self, ebcs=None, epbcs=None, lcbcs=None):
 	"""
 	Update boundary conditions.
 	"""
-        conf_ebc = get_default(conf_ebc, self.conf.ebcs)
-        conf_epbc = get_default(conf_epbc, self.conf.epbcs)
-        conf_lcbc = get_default(conf_lcbc, self.conf.lcbcs)
+        if isinstance(ebcs, Conditions):
+            self.ebcs = ebcs
 
-        self.ebcs = Conditions.from_conf(conf_ebc)
-        self.epbcs = Conditions.from_conf(conf_epbc)
-        self.lcbcs = Conditions.from_conf(conf_lcbc)
+        else:
+            conf_ebc = get_default(ebcs, self.conf.ebcs)
+            self.ebcs = Conditions.from_conf(conf_ebc, self.domain.regions)
+
+        if isinstance(epbcs, Conditions):
+            self.epbcs = epbcs
+
+        else:
+            conf_epbc = get_default(epbcs, self.conf.epbcs)
+            self.epbcs = Conditions.from_conf(conf_epbc, self.domain.regions)
+
+        if isinstance(lcbcs, Conditions):
+            self.lcbcs = lcbcs
+
+        else:
+            conf_lcbc = get_default(lcbcs, self.conf.lcbcs)
+            self.lcbcs = Conditions.from_conf(conf_lcbc, self.domain.regions)
 
     def time_update(self, ts=None,
-                    conf_ebc=None, conf_epbc=None, conf_lcbc=None,
+                    ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
         if ts is None:
             ts = self.get_default_ts( step = 0 )
 
         self.ts = ts
         self.update_materials(ts)
-	self.update_bcs(conf_ebc, conf_epbc, conf_lcbc)
+	self.set_bcs(ebcs, epbcs, lcbcs)
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
     def setup_ic( self, conf_ics = None, functions = None ):
         conf_ics = get_default(conf_ics, self.conf.ics)
-        ics = Conditions.from_conf(conf_ics)
+        ics = Conditions.from_conf(conf_ics, self.domain.regions)
+
         functions = get_default(functions, self.functions)
-        self.equations.setup_initial_conditions(ics,
-                                                self.domain.regions, functions)
+
+        self.equations.setup_initial_conditions(ics, functions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
 		   lcbc_names=None, create_matrix=False):
@@ -355,7 +368,7 @@ class ProblemDefinition( Struct ):
         else:
             conf_lcbc = None
 
-	self.update_bcs(conf_ebc, conf_epbc, conf_lcbc)
+	self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
         self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
                               self.functions, create_matrix)
 

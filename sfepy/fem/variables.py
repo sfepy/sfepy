@@ -186,7 +186,7 @@ class Variables( Container ):
         else:
             self.vdi = self.di
 
-    def setup_lcbc_operators(self, lcbcs, regions):
+    def setup_lcbc_operators(self, lcbcs):
         """
         Prepare linear combination BC operator matrix.
         """
@@ -201,7 +201,7 @@ class Variables( Container ):
         for var_name, bcs in lcbc_of_vars.iteritems():
             var = self[var_name]
 
-            lcbc_op = var.create_lcbc_operators( bcs, regions, offset )
+            lcbc_op = var.create_lcbc_operators(bcs, offset)
             lcbc_ops[var_name] = lcbc_op
 
             if lcbc_op is not None:
@@ -218,12 +218,7 @@ class Variables( Container ):
         else:
             raise ValueError( 'no LCBC defined!' )
 
-    def equation_mapping(self, ebcs, epbcs, regions, ts, functions,
-                         vregions=None):
-
-        if vregions is None:
-            vregions = regions
-
+    def equation_mapping(self, ebcs, epbcs, ts, functions):
         self.ebcs = ebcs
         self.epbcs = epbcs
 
@@ -245,12 +240,12 @@ class Variables( Container ):
             bcs = self.bc_of_vars.get(var.name, None)
 
             var_di = self.di.get_info(var_name)
-            var.equation_mapping(bcs, regions, var_di, ts, functions)
+            var.equation_mapping(bcs, var_di, ts, functions)
 
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
                 vvar_di = self.vdi.get_info(var_name)
-                vvar.equation_mapping(bcs, vregions, vvar_di, ts, functions)
+                vvar.equation_mapping(bcs, vvar_di, ts, functions)
 
             ## print var.eq_map
             ## pause()
@@ -275,7 +270,7 @@ class Variables( Container ):
 
         return (self.avdi.ptr[-1], self.adi.ptr[-1])
 
-    def setup_initial_conditions(self, ics, regions, functions):
+    def setup_initial_conditions(self, ics, functions):
         self.ics = ics
         self.ic_of_vars = self.ics.group_by_variables()
 
@@ -285,7 +280,7 @@ class Variables( Container ):
             ics = self.ic_of_vars.get(var.name, None)
             if ics is None: continue
 
-            var.setup_initial_conditions(ics, regions, self.di, functions)
+            var.setup_initial_conditions(ics, self.di, functions)
 
     ##
     # c: 09.01.2008, r: 09.01.2008
@@ -1329,7 +1324,7 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
-    def create_lcbc_operators(self, bcs, regions, offset):
+    def create_lcbc_operators(self, bcs, offset):
         if len(bcs) == 0: return None
 
         bcs.canonize_dof_names(self.dofs)
@@ -1339,13 +1334,13 @@ class FieldVariable(Variable):
         for bc in bcs:
             output('lcbc:', self.name, bc.name)
 
-            ops.add_from_bc(bc, self.field, regions)
+            ops.add_from_bc(bc, self.field)
 
         ops.finalize()
         
         return ops
 
-    def equation_mapping(self, bcs, regions, var_di, ts, functions, warn=False):
+    def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
         """Set n_adof."""
         
         self.eq_map = EquationMap('eq_map', self.dofs, var_di)
@@ -1353,23 +1348,17 @@ class FieldVariable(Variable):
             bcs.canonize_dof_names(self.dofs)
             bcs.sort()
 
-        self.eq_map.map_equations(bcs, self.field, regions, ts,
-                                  functions, warn=warn)
+        self.eq_map.map_equations(bcs, self.field, ts, functions, warn=warn)
         self.n_adof = self.eq_map.n_eq
 
-    def setup_initial_conditions(self, ics, regions, di, functions, warn=False):
+    def setup_initial_conditions(self, ics, di, functions, warn=False):
         """Setup of initial conditions."""
         ics.canonize_dof_names(self.dofs)
         ics.sort()
 
         for ic in ics:
+            region = ic.region
             dofs, val = ic.dofs
-
-            try:
-                region = regions[ic.region]
-            except IndexError:
-                msg = "no region '%s' used in IC %s!" % (ic.region, ic)
-                raise IndexError( msg )
 
             if warn:
                 clean_msg = ('warning: ignoring nonexistent' \

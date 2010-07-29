@@ -161,8 +161,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     if mode == 'weak':
         setup_dof_conns(equations.conn_info)
         materials.time_update(ts, domain, equations, verbose=False)
-        equations.time_update(ts, domain.regions,
-                              ebcs, epbcs, lcbcs, functions)
+        equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
 
     else:
         setup_extra_data(equations.conn_info)

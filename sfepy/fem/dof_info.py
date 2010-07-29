@@ -6,6 +6,7 @@ Helper functions for the equation mapping.
 """
 from sfepy.base.base import *
 from sfepy.fem.utils import compute_nodal_normals
+from sfepy.fem.conditions import EssentialBC
 
 def expand_nodes_to_equations(nods, dof_names, all_dof_names):
     """
@@ -147,7 +148,7 @@ class EquationMap(Struct):
         self.master = nm.empty((0,), dtype=nm.int32)
         self.slave = nm.empty((0,), dtype=nm.int32)
         
-    def map_equations(self, bcs, field, regions, ts, functions, warn=False):
+    def map_equations(self, bcs, field, ts, functions, warn=False):
         """
         Create the mapping of active DOFs from/to all DOFs.
 
@@ -159,8 +160,6 @@ class EquationMap(Struct):
             already be canonized.
         field : Field instance
             The field of the variable holding the DOFs.
-        regions : list
-            List of regions.
         ts : TimeStepper instance
             The time stepper.
         functions : Functions instance
@@ -184,18 +183,13 @@ class EquationMap(Struct):
         chains = []
 
         for bc in bcs:
-            if 'ebc' in bc.key:
+            if isinstance(bc, EssentialBC):
                 ntype = 'EBC'
-                rname = bc.region
+                region = bc.region
+
             else:
                 ntype = 'EPBC'
-                rname = bc.regions[0]
-
-            try:
-                region = regions[rname]
-            except IndexError:
-                msg = "no region '%s' used in BC %s!" % (rname, bc.name)
-                raise IndexError( msg )
+                region = bc.regions[0]
 
             ## print ir, key, bc
             ## debug()
@@ -232,7 +226,7 @@ class EquationMap(Struct):
                 if vv is not None: val_ebc[eq] = vv
 
             else: # EPBC.
-                region = regions[bc.regions[1]]
+                region = bc.regions[1]
                 slave_nod_list = region.get_field_nodes(field, clean=True,
                                                         warn=clean_msg)
                 ## print master_nod_list
@@ -483,7 +477,7 @@ class LCBCOperators(Container):
         self.n_op = 0
         self.ics = None
 
-    def add_from_bc(self, bc, field, regions):
+    def add_from_bc(self, bc, field):
         """
         Create a new LCBC operator described by `bc`, and add it to the
         container.
@@ -494,15 +488,8 @@ class LCBCOperators(Container):
             The LCBC condition description.
         field : Field instance
             The field of the variable.
-        regions : list
-            List of regions.
         """
-        try:
-            region = regions[bc.region]
-        except IndexError:
-            msg = "no region '%s' used in LCBC %s!" % (bc.region, bc.name)
-            raise IndexError(msg)
-
+        region = bc.region
         dofs, kind = bc.dofs
 
         nmaster = region.get_field_nodes(field, merge=True)

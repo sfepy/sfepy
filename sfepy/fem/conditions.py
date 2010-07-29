@@ -4,25 +4,38 @@ classes, as well as the initial condition class.
 """
 from sfepy.base.base import *
 
+def _get_region(name, regions, bc_name):
+    try:
+        region = regions[name]
+    except IndexError:
+        msg = "no region '%s' used in condition %s!" % (name, bc_name)
+        raise IndexError( msg )
+
+    return region
+
 class Conditions(Container):
     """
     Container for various conditions.
     """
     @staticmethod
-    def from_conf(conf):
+    def from_conf(conf, regions):
         conds = []
         for key, cc in conf.iteritems():
             if 'ebc' in key:
-                cond = EssentialBC(cc.name, cc.region, cc.dofs, key=key)
+                region = _get_region(cc.region, regions, cc.name)
+                cond = EssentialBC(cc.name, region, cc.dofs, key=key)
 
             elif 'epbc' in key:
-                cond = PeriodicBC(cc.name, cc.region, cc.dofs, cc.match, key=key)
-    
+                rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
+                cond = PeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key)
+
             elif 'lcbc' in key:
-                cond = LinearCombinationBC(cc.name, cc.region, cc.dofs, key=key)
+                region = _get_region(cc.region, regions, cc.name)
+                cond = LinearCombinationBC(cc.name, region, cc.dofs, key=key)
 
             elif 'ic' in key:
-                cond = InitialCondition(cc.name, cc.region, cc.dofs, key=key)
+                region = _get_region(cc.region, regions, cc.name)
+                cond = InitialCondition(cc.name, region, cc.dofs, key=key)
 
             else:
                 raise ValueError('unknown condition type! (%s)' % key)
