@@ -118,7 +118,7 @@ class Test(TestCommon):
              import FieldVariable, Material, ProblemDefinition, \
                     Function, Equation, Equations, Integral
         from sfepy.fem.conditions import Conditions, EssentialBC
-        from sfepy.terms.terms import Term
+        from sfepy.terms import Term
         from sfepy.solvers.ls import ScipyDirect
         from sfepy.solvers.nls import Newton
 
@@ -127,7 +127,7 @@ class Test(TestCommon):
                           primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
-        f = Material('f', val=00.0)
+        f = Material('f', val=[[0.02], [0.01]])
 
         bc_fun = Function('fix_u_fun', fix_u_fun,
                           extra_args={'extra_arg' : 'hello'})
@@ -140,7 +140,7 @@ class Test(TestCommon):
         t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
                       integral, self.omega, m=m, v=v, u=u)
 
-        t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.gamma2, f=f, v=v)
+        t2 = Term.new('dw_volume_lvf(f.val, v)', integral, self.omega, f=f, v=v)
 
         eq = Equation('balance', t1 + t2)
         eqs = Equations([eq])
