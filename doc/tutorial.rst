@@ -360,3 +360,298 @@ solvers with different convergence parameters if necessary.
 
 The ``chunk_size`` parameter can be used to tweak the tradeoff between faster
 CPU and higher memory usage.
+
+Interactive Example: Linear Elasticity
+--------------------------------------
+
+This example shows how to use *SfePy* interactively, but also how to
+make a custom simulation script. We will use ``isfepy`` for the
+explanation, but regular Python shell, or IPython would do as well,
+provided the proper modules are imported (see the help information
+printed on startup of ``isfepy``).
+
+We wish to solve the following linear elasticity problem:
+
+.. math::
+   :label: eq_linear_elasticity
+
+    - \pdiff{\sigma_{ij}(\ul{u})}{x_j} + f_i = 0 \mbox{ in }\Omega,
+    \quad \ul{u} = 0 \mbox{ on } \Gamma_1,
+    \quad u_1 = \bar{u}_1 \mbox{ on } \Gamma_2 \;,
+
+where the stress is defined as :math:`\sigma_{ij} = 2 \mu e_{ij} +
+\lambda e_{kk} \delta_{ij}`, :math:`\lambda`, :math:`\mu` are the Lamé's
+constants, the strain is :math:`e_{ij}(\ul{u}) =
+\frac{1}{2}(\pdiff{u_i}{x_j} + \pdiff{u_j}{x_i})` and :math:`\ul{f}` are
+volume forces. This can be written in general form as
+:math:`\sigma_{ij}(\ul{u}) = D_{ijkl} e_{kl}(\ul{u})`, where in our case
+:math:`D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il}
+\delta_{jk}) + \lambda \ \delta_{ij} \delta_{kl}`.
+
+In the weak form the equation :eq:`eq_linear_elasticity` is
+
+.. math::
+   :label: eq_wlinear_elasticity
+
+    \int_{\Omega} D_{ijkl} e_{kl}(\ul{u}) e_{kl}(\ul{v}) + \int_{\Omega}
+    f_i v_i = 0 \;,
+
+where :math:`\ul{v}` is the test function, and both :math:`\ul{u}`,
+:math:`\ul{v}` belong to a suitable function space.
+
+**Hint:** Whenever you create a new object (e.g. a Mesh instance, see
+below), try to print it using the `print` statement - it will give you
+insight about the object internals.
+
+The whole example summarized in a script is below in
+:ref:`tutorial_interactive_source`.
+
+Run the ``isfepy`` script::
+
+    $ ./isfepy
+
+The output should look like this:
+
+.. sourcecode:: ipython
+
+    Python 2.6.5 console for SfePy 2010.2-git-11cfd34 (8c4664610ed4b85851966326aaa7ce36e560ce7a)
+
+    These commands were executed:
+    >>> from sfepy.base.base import *
+    >>> from sfepy.fem import *
+    >>> from sfepy.applications import pde_solve
+    >>> from sfepy.postprocess import Viewer
+
+    When in SfePy source directory, try:
+    >>> pb, vec, data = pde_solve('examples/diffusion/poisson.py')
+    >>> view = Viewer(pb.get_output_name())
+    >>> view()
+
+    When in another directory (and SfePy is installed), try:
+    >>> from sfepy import data_dir
+    >>> pb, vec, data = pde_solve(data_dir + '/examples/diffusion/poisson.py')
+    >>> view = Viewer(pb.get_output_name())
+    >>> view()
+
+    Documentation can be found at http://sfepy.org
+
+    In [1]:
+
+Read a finite element mesh, that defines the domain :math:`\Omega`.
+
+.. sourcecode:: ipython
+
+    In [1]: mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
+
+Create a domain. The domain allows defining regions or subdomains.
+
+.. sourcecode:: ipython
+
+    In [2]: domain = Domain('domain', mesh)
+    sfepy: setting up domain edges...
+    sfepy: ...done in 0.01 s
+
+Define the regions - the whole domain :math:`\Omega`, where the solution
+is sought, and :math:`\Gamma_1`, :math:`\Gamma_2`, where the boundary
+conditions will be applied. As the domain is rectangular, we first get a
+bounding box to get correct bounds for selecting the boundary edges.
+
+.. sourcecode:: ipython
+
+    In [3]: min_x, max_x = domain.get_mesh_bounding_box()[:,0]
+    In [4]: eps = 1e-8 * (max_x - min_x)
+    In [5]: omega = domain.create_region('Omega', 'all')
+    In [6]: gamma1 = domain.create_region('Gamma1',
+       ...:                               'nodes in x < %.10f' % (min_x + eps))
+    In [7]: gamma2 = domain.create_region('Gamma2',
+       ...:                               'nodes in x > %.10f' % (max_x - eps))
+
+Next we define the actual finite element approximation using the
+:class:`Field` class.
+
+.. sourcecode:: ipython
+
+    In [8]: field = Field('fu', nm.float64, 'vector', omega,
+       ...:               space='H1', poly_space_base='lagrange', approx_order=2)
+
+Using the field `fu`, we can define both the unknown variable :math:`\ub` and
+the test variable :math:`\vb`.
+
+.. sourcecode:: ipython
+
+    In [9]: u = FieldVariable('u', 'unknown', field, mesh.dim)
+    In [10]: v = FieldVariable('v', 'test', field, mesh.dim,
+       ....:                   primary_var_name='u')
+
+Before we can define the terms to build the equation of linear
+elasticity, we have to create also the materials, i.e. define the
+(constitutive) parameters. The linear elastic material `m` will be
+defined using the two Lamé constants :math:`\lambda = 1`, :math:`\mu =
+1`. The volume forces will be defined also as a material, as a constant
+(column) vector :math:`[0.02, 0.01]^T`.
+
+.. sourcecode:: ipython
+
+    In [11]: m = Material('m', lam=1.0, mu=1.0)
+    In [12]: f = Material('f', val=[[0.02], [0.01]])
+
+One more thing needs to be defined - the numerical quadrature that will
+be used to integrate each term over its domain.
+
+.. sourcecode:: ipython
+
+    In [14]: integral = Integral('i', order=3)
+
+Now we are ready to define the two terms and build the equations.
+
+.. sourcecode:: ipython
+
+    In [15]: from sfepy.terms import Term
+    In [16]: t1 = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
+                  integral, omega, m=m, v=v, u=u)
+    In [17]: t2 = Term.new('dw_volume_lvf(f.val, v)', integral, omega, f=f, v=v)
+    In [18]: eq = Equation('balance', t1 + t2)
+    In [19]: eqs = Equations([eq])
+    sfepy: setting up dof connectivities...
+    sfepy: ...done in 0.00 s
+    sfepy: describing geometries...
+    sfepy: ...done in 0.00 s
+
+The equations have to be completed by boundary conditions. Let us clamp
+the left edge :math:`\Gamma_1`, and shift the right edge
+:math:`\Gamma_2` in the :math:`x` direction a bit, depending on the
+:math:`y` coordinate.
+
+.. sourcecode:: ipython
+
+   In [20]: from sfepy.fem.conditions import Conditions, EssentialBC
+   In [21]: fix_u = EssentialBC('fix_u', gamma1, {'u.all' : 0.0})
+   In [22]: def shift_u_fun(ts, coors, bc=None, shift=0.0):
+      ....:     val = shift * coors[:,1]**2
+      ....:     return val
+      ....:
+   In [23]: bc_fun = Function('shift_u_fun', shift_u_fun,
+      ....:                   extra_args={'shift' : 0.01})
+   In [24]: shift_u = EssentialBC('shift_u', gamma2, {'u.0' : bc_fun})
+
+The last thing to define before building the problem are the
+solvers. Here we just use a sparse direct SciPy solver and the SfePy
+Newton solver with default parameters. We also wish to store the
+convergence statistics of the Newton solver. As the problem is linear,
+it should converge in one iteration.
+
+.. sourcecode:: ipython
+
+    In [25]: from sfepy.solvers.ls import ScipyDirect
+    In [26]: from sfepy.solvers.nls import Newton
+    In [27]: ls = ScipyDirect({})
+    In [28]: nls_status = IndexedStruct()
+    In [29]: nls = Newton({}, lin_solver=ls, status=nls_status)
+
+Now we are ready to create a :class:`ProblemDefinition` instance. Note
+that the step above is not really necessary - the above solvers are
+constructed by default. We did them to get the `nls_status`.
+
+.. sourcecode:: ipython
+
+    In [30]: pb = ProblemDefinition('elasticity', equations=eqs, nls=nls, ls=ls)
+
+The :class:`ProblemDefinition` has several handy methods for
+debugging. Let us try saving the regions into a VTK file.
+
+.. sourcecode:: ipython
+
+    In [31]: pb.save_regions_as_groups('regions')
+    sfepy: saving regions as groups...
+    sfepy:   Omega
+    sfepy:   Gamma1
+    sfepy:   Gamma2
+    sfepy:   Gamma1
+    sfepy: ...done
+
+And view them.
+
+.. sourcecode:: ipython
+
+    In [32]: view = Viewer('regions.vtk')
+    In [33]: view()
+    sfepy: point scalars Gamma1 [ 0.  0.  0.]
+    sfepy: point scalars Gamma2 [ 11.   0.   0.]
+    sfepy: point scalars Omega [ 22.   0.   0.]
+    Out[33]: <sfepy.postprocess.viewer.ViewerGUI object at 0x93ea5f0>
+
+You should see this:
+
+.. image:: images/linear_elasticity_regions.png
+
+Finally, we apply the boundary conditions, solve the problem, save and
+view the results.
+
+.. sourcecode:: ipython
+
+    In [34]: pb.time_update(ebcs=Conditions([fix_u, shift_u]))
+    sfepy: updating materials...
+    sfepy:     m
+    sfepy:     f
+    sfepy: ...done in 0.01 s
+    sfepy: updating variables...
+    sfepy: ...done
+    sfepy: matrix shape: (1815, 1815)
+    sfepy: assembling matrix graph...
+    sfepy: ...done in 0.00 s
+    sfepy: matrix structural nonzeros: 39145 (1.19e-02% fill)
+    In [35]: vec = pb.solve()
+    sfepy: nls: iter: 0, residual: 1.343114e+01 (rel: 1.000000e+00)
+    sfepy:   rezidual:    0.00 [s]
+    sfepy:      solve:    0.01 [s]
+    sfepy:     matrix:    0.00 [s]
+    sfepy: nls: iter: 1, residual: 2.567997e-14 (rel: 1.911972e-15)
+    In [36]: print nls_status
+    -------> print(nls_status)
+    IndexedStruct
+      condition:
+        0
+      err:
+        2.56799662867e-14
+      err0:
+        13.4311385972
+      time_stats:
+        {'rezidual': 0.0, 'solve': 0.010000000000001563, 'matrix': 0.0}
+    In [37]: pb.save_state('linear_elasticity.vtk', vec)
+    In [38]: view = Viewer('linear_elasticity.vtk')
+    In [39]: view()
+    sfepy: point vectors u [ 0.  0.  0.]
+    Out[39]: <sfepy.postprocess.viewer.ViewerGUI object at 0xad61bf0>
+
+This is the resulting image:
+
+.. image:: images/linear_elasticity_solution1.png
+
+The default view is not very fancy. Let us show the displacements by
+shifting the mesh. Close the previous window and do:
+
+.. sourcecode:: ipython
+
+    In [56]: view(vector_mode='warp_norm', rel_scaling=2,
+       ....:      is_scalar_bar=True, is_wireframe=True)
+    sfepy: point vectors u [ 0.  0.  0.]
+    Out[56]: <sfepy.postprocess.viewer.ViewerGUI object at 0xad61bf0>
+
+And the result is:
+
+.. image:: images/linear_elasticity_solution2.png
+
+See the docstring of `view()` and play with its options.
+
+.. _tutorial_interactive_source:
+
+Complete Example as a Script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The source code: :download:`linear_elasticity.py
+<../examples/standalone/interactive/linear_elasticity.py>`. It should be
+run from the *SfePy* source directory so that it finds the mesh file.
+
+.. literalinclude:: ../examples/standalone/interactive/linear_elasticity.py
+   :linenos:
+
