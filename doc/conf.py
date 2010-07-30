@@ -28,6 +28,7 @@ import sys, os
 #doc_dir,conf_file = os.path.split(__file__)
 #sfepy_dir = os.path.abspath(os.path.join(doc_dir, os.path.pardir))
 #os.path.walk(sfepy_dir, add_to_sys_path, None)
+sys.path.append(os.path.abspath('sphinxext'))
 
 import sfepy
 sys.path.append(os.path.abspath('../script'))
@@ -45,7 +46,9 @@ gen_term_table.typeset('term_table.rst')
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.pngmath', 'numpydoc']
+extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
+              'sphinx.ext.doctest', 'sphinx.ext.pngmath', 'numpydoc',
+              'ipython_console_highlighting']
 #extensions = ['sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
