@@ -27,7 +27,8 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.la import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
-from sfepy.fem import MeshIO, ProblemDefinition
+from sfepy.fem import MeshIO, ProblemDefinition, Materials
+from sfepy.fem.evaluate import eval_equations
 import sfepy.base.ioutils as io
 from sfepy.solvers import Solver, eig
 
@@ -211,8 +212,9 @@ class SchroedingerApp( SimpleApp ):
 
         return variable()
 
-    def iterate( self, v_hxc_qp, eig_solver, mtx_b, log, file_output,
-                 n_electron = None ):
+    def iterate(self, v_hxc_qp, eig_solver,
+                mtx_a_equations, mtx_a_variables, mtx_b, log, file_output,
+                n_electron=None):
         from sfepy.physics import dft
 
         self.itercount += 1
@@ -222,29 +224,23 @@ class SchroedingerApp( SimpleApp ):
 
         n_electron = get_default( n_electron, opts.n_electron )
 
-        pb.set_equations(pb.conf.equations)
-        pb.select_bcs( ebc_names = ['ZeroSurface'] )
-
         sh = self.qp_shape
 
         v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
         v_hxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
-        pb.materials['mat_v'].set_extra_args(vhxc=v_hxc_qp)
-        pb.update_materials()
 
-	variables = pb.get_variables()
+        mat_v = Materials(mtx_a_equations.collect_materials())['mat_v']
+        mat_v.set_extra_args(vhxc=v_hxc_qp)
+        mat_v.time_update(None, pb.domain, mtx_a_equations)
 
         v_hxc_qp.shape = sh
 
-        v_ion_qp = pb.materials['mat_v'].get_data(('Omega', 'i1'), 0, 'V_ion')
-        
-        dummy = pb.create_state_vector()
+        v_ion_qp = mat_v.get_data(('Omega', 'i1'), 0, 'V_ion')
 
         output( 'assembling lhs...' )
         tt = time.clock()
-        mtx_a = pb.evaluate(pb.conf.equations['lhs'], dummy,
-			    dw_mode='matrix', tangent_matrix=pb.mtx_a,
-			    update_materials=False)
+        mtx_a = eval_equations(mtx_a_equations, mtx_a_variables,
+                               mode='weak', dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         assert_( nm.alltrue( nm.isfinite( mtx_a.data ) ) )
@@ -263,31 +259,35 @@ class SchroedingerApp( SimpleApp ):
             raise Exception("cannot find Fermi energy - exiting.")
         weights = smear_tuned(eigs)
         output( '...done' )
-        
+
         if (weights[-1] > 1e-12):
             output("last smearing weight is nonzero (%s eigs ok)!" % n_eigs_ok)
 
         output( "saving solutions, iter=%d..." % self.itercount )
         out = {}
-        var_name = variables.get_names( kind = 'state' )[0]
+        var_name = mtx_a_variables.get_names(kind='state')[0]
         for ii in xrange( n_eigs_ok ):
-            vec_phi = variables.make_full_vec( mtx_s_phi[:,ii] )
+            vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
             update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
         name = op.join( opts.output_dir, "iter%d" % self.itercount )
         pb.save_state('.'.join((name, opts.output_format)), out=out)
         output( "...solutions saved" )
 
+        output('computing total charge...')
+        tt = time.clock()
+        aux = pb.create_evaluable('dq_state_in_volume_qp.i1.Omega(Psi)')
+        psi_equations, psi_variables = aux
+        var = psi_variables['Psi']
+
         n_qp = nm.zeros_like(v_hxc_qp)
         for ii in xrange( n_eigs_ok ):
-            vec_phi = variables.make_full_vec( mtx_s_phi[:,ii] )
-            phi_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
-                                 Psi=vec_phi)
+            vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
+            var.data_from_any(vec_phi)
+
+            phi_qp = eval_equations(psi_equations, psi_variables)
             n_qp += weights[ii] * (phi_qp ** 2)
+        output('...done in %.2f s' % (time.clock() - tt))
 
-       ## charge = pb.evaluate("di_volume_integrate.i1.Omega(Psi)", Psi=vec_n)
-       ## print charge
-
-        var = variables['Psi']
         ap, vg = var.get_approximation(('i1', 'Omega', 0), 'Volume')
 
         det = vg.variable(1)
@@ -298,8 +298,9 @@ class SchroedingerApp( SimpleApp ):
         ## charge = out.sum()
 
         vec_n = self._interp_to_nodes(n_qp)
-        charge_n = pb.evaluate("di_volume_integrate.i1.Omega(Psi)",
-			       var_names=['Psi'], Psi=vec_n)
+
+        var.data_from_any(vec_n)
+        charge_n = pb.evaluate('di_volume_integrate.i1.Omega(Psi)', Psi=var)
 
         ##
         # V_xc in quadrature points.
@@ -310,17 +311,18 @@ class SchroedingerApp( SimpleApp ):
         assert_(nm.isfinite(v_xc_qp).all())
         v_xc_qp.shape = self.qp_shape
 
-        mat_key = pb.materials['mat_v'].datas.keys()[0]
+        mat_key = mat_v.datas.keys()[0]
         pb.set_equations( pb.conf.equations_vh )
         pb.select_bcs( ebc_names = ['VHSurface'] )
+        pb.update_materials()
 
         output( "solving Ax=b Poisson equation" )
         pb.materials['mat_n'].reset()
         pb.materials['mat_n'].set_all_data({mat_key : {0: {'N' : n_qp}}})
         vec_v_h = pb.solve()
 
-        v_h_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
-                             Psi=vec_v_h)
+        var.data_from_any(vec_v_h)
+        v_h_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)', Psi=var)
 
         v_hxc_qp = v_h_qp + v_xc_qp
         norm = nla.norm(v_hxc_qp.ravel())
@@ -366,21 +368,18 @@ class SchroedingerApp( SimpleApp ):
         pb.set_equations( pb.conf.equations )
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
 
-	variables = pb.get_variables()
-
-        dummy = pb.create_state_vector()
-
         output( 'assembling rhs...' )
         tt = time.clock()
-        mtx_b = pb.evaluate(pb.conf.equations['rhs'], dummy,
-			    dw_mode='matrix',
-			    tangent_matrix=pb.mtx_a.copy())
+        mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
+			    auto_init=True, dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
         assert_( nm.alltrue( nm.isfinite( mtx_b.data ) ) )
 
-        n_eigs = get_default( opts.n_eigs, pb.mtx_a.shape[0] )
-##         mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-##         mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+        ## mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+
+        aux = pb.create_evaluable(pb.conf.equations['lhs'], mode='weak',
+                                  dw_mode='matrix')
+        mtx_a_equations, mtx_a_variables = aux
 
         if self.options.plot:
             log_conf = {
@@ -400,9 +399,7 @@ class SchroedingerApp( SimpleApp ):
         eig_solver = Solver.any_from_conf( eig_conf )
 
         # Just to get the shape. Assumes one element group only!!!
-        aux = nm.zeros((variables.di.ptr[-1],), dtype=nm.float64)
-        v_hxc_qp = pb.evaluate("dq_state_in_volume_qp.i1.Omega(Psi)",
-                               Psi=aux)
+        v_hxc_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)')
         v_hxc_qp.fill(0.0)
         self.qp_shape = v_hxc_qp.shape
         vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
@@ -410,7 +407,9 @@ class SchroedingerApp( SimpleApp ):
         self.norm_v_hxc0 = nla.norm(vec_v_hxc)
         self.itercount = 0
         aux = wrap_function(self.iterate,
-                            (eig_solver, mtx_b, log, file_output))
+                            (eig_solver,
+                             mtx_a_equations, mtx_a_variables,
+                             mtx_b, log, file_output))
         ncalls, times, nonlin_v, results = aux
 
         # Create and call the DFT solver.
@@ -473,20 +472,16 @@ class SchroedingerApp( SimpleApp ):
         pb.set_equations( pb.conf.equations )
         pb.time_update()
 
-        dummy = pb.create_state_vector()
-
         output( 'assembling lhs...' )
         tt = time.clock()
-        mtx_a = pb.evaluate(pb.conf.equations['lhs'], dummy,
-			    dw_mode='matrix',
-			    tangent_matrix=pb.mtx_a)
+        mtx_a = pb.evaluate(pb.conf.equations['lhs'], mode='weak',
+			    auto_init=True, dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         output( 'assembling rhs...' )
         tt = time.clock()
-        mtx_b = pb.evaluate(pb.conf.equations['rhs'], dummy,
-			    dw_mode='matrix',
-			    tangent_matrix=pb.mtx_a.copy())
+        mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
+			    dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         n_eigs = get_default( opts.n_eigs, mtx_a.shape[0] )
