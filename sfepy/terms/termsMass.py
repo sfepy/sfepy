@@ -93,6 +93,11 @@ class MassScalarTerm(ScalarScalar, Term):
     functions = {'weak': terms.dw_mass_scalar,
                  'eval': terms.d_mass_scalar}
 
+    def check_mat_shape(self, mat):
+        assert_(mat.shape[1:] == (self.data_shape[1], 1, 1))
+        assert_((mat.shape[0] == 1)
+                or (mat.shape[0] == self.data_shape[0]))
+        
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
@@ -108,6 +113,8 @@ class MassScalarTerm(ScalarScalar, Term):
 
         else:
             coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+
+        self.check_mat_shape(coef)
 
         if state.is_real():
             fargs = coef, vec, bf, vg, ap.econn
@@ -130,6 +137,8 @@ class MassScalarTerm(ScalarScalar, Term):
 
         else:
             coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+
+        self.check_mat_shape(coef)
 
         return (coef, par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
 
