@@ -2,7 +2,7 @@ import os.path as op
 
 from sfepy.base.base import *
 from sfepy.base.progressbar import MyBar
-import sfepy.fem.evaluate as eva
+from sfepy.fem.evaluate import eval_equations
 import freeFormDef as ffd
 from sfepy.terms import CharacteristicFunction
 
@@ -44,9 +44,6 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
         if is_mesh_update:
             ok = update_mesh( shape_opt, pb, design )
             if not ok: return None
-            
-        # Restore materials.
-        pb.time_update()
 
         # Solve direct/adjoint problem.
         vec = problem.solve(var_data=var_data)
@@ -58,7 +55,7 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
             if shape_opt.save_iter_sols:
                 pb.save_state( op.join( shape_opt.save_dir, 'direct.%03d.vtk' )\
                               % (shape_opt.cache.i_mesh - 1), vec )
-                
+
             if shape_opt.save_control_points:
                 aux = shape_opt.sp_boxes.create_mesh_from_control_points()
                 aux.write( op.join( shape_opt.save_dir, 'cp.%03d.vtk' )\
@@ -72,39 +69,33 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
 ##     print vec
     return vec
 
-##
-# created:       19.04.2006
-# last revision: 21.12.2007
-def obj_fun( design, shape_opt, dpb, apb, opts ):
-
-#    print 'OF'
-    data = {}
-    vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
+def obj_fun(design, shape_opt, opts):
+    """
+    The objective function evaluation.
+    """
+    vec_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
     if vec_dp is None:
         return None
 
-    val = shape_opt.obj_fun(vec_dp, dpb, data=data)
-#    print 'OF ok'
+    val = shape_opt.obj_fun(vec_dp)
+
     return val
 
-##
-# created:       19.04.2006
-# last revision: 21.12.2007
-def obj_fun_grad( design, shape_opt, dpb, apb, opts ):
+def obj_fun_grad(design, shape_opt, opts):
+    """
+    The objective function gradient evaluation.
+    """
+    vec_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
 
-#    print 'OFG'
-    data = {}
-    vec_dp = solve_problem_for_design(dpb, design, shape_opt, opts )
-
-    var_data = dpb.equations.get_state_parts(vec_dp)
+    var_data = shape_opt.dpb.equations.get_state_parts(vec_dp)
     var_data = remap_dict(var_data, shape_opt.var_map)
 
-    vec_ap = solve_problem_for_design(apb, design, shape_opt, opts,
+    vec_ap = solve_problem_for_design(shape_opt.apb, design, shape_opt, opts,
                                       var_data=var_data,
                                       use_cache=False, is_mesh_update=False)
 
-    vec_sa = shape_opt.sensitivity(var_data, vec_ap, apb, data=data)
-#    print 'OFG ok'
+    vec_sa = shape_opt.sensitivity(var_data, vec_ap)
+
     return vec_sa
 
 ##
@@ -114,56 +105,50 @@ def obj_fun_grad( design, shape_opt, dpb, apb, opts ):
 # 22.10.2007
 # 24.10.2007
 # 25.10.2007
-def test_terms(idsgs, delta, shape_opt, dp_var_data, vec_ap, pb):
+def test_terms(idsgs, delta, shape_opt, dp_var_data, vec_ap):
 
     dd = {}
     ccs = shape_opt.check_custom_sensitivity
 
     ccs('d_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
     ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
     ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, p, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_test_pq.i1.Omega_D( p, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_div.i1.Omega_D( u, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_div.i1.Omega_D( w, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
+        idsgs, delta, dp_var_data, vec_ap)
 
     ccs('d_sd_convect.i2.Omega_D( u, w, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap, pb, dd)
-
-    # Restore materials.
-    pb.time_update()
+        idsgs, delta, dp_var_data, vec_ap)
 
 ##
 # 25.01.2006, c
 class ShapeOptimFlowCase( Struct ):
 
-    ##
-    # c: 25.01.2006, r: 15.04.2008
-    def from_conf( conf, domain ):
-#        print conf_design
+    def from_conf(conf, dpb, apb):
 
         opts = conf.options
-        regions = domain.regions
+        regions = dpb.domain.regions
         if opts.use_mesh_velocity:
             import tables as pt
             fd = pt.open_file( opts.mesh_velocity_filename, mode = 'r' )
@@ -185,24 +170,25 @@ class ShapeOptimFlowCase( Struct ):
         design_region = regions[opts.design_domain]
 
         from sfepy.fem.mesh import Mesh
-        cmm = Mesh.from_region( control_region, domain.mesh )
-        dmm = Mesh.from_region( design_region, domain.mesh )
+        cmm = Mesh.from_region(control_region, dpb.domain.mesh)
+        dmm = Mesh.from_region(design_region, dpb.domain.mesh)
         cmm.write( 'control.mesh', io = 'auto' )
         dmm.write( 'design.mesh', io = 'auto' )
 
         SOFC = ShapeOptimFlowCase
-        obj = SOFC( sp_boxes = sp_boxes,
-                    dsg_vars = dsg_vars,
-                    problem_type = opts.problem,
-                    objective_function_type = opts.objective_function,
-                    var_map = opts.var_map,
-                    nu = nu,
-                    use_mesh_velocity = opts.use_mesh_velocity,
-                    save_dir = opts.save_dir,
-                    save_iter_sols = opts.save_iter_sols,
-                    save_control_points = opts.save_control_points,
-                    save_dsg_vars = opts.save_dsg_vars,
-                    test_terms_if_test = opts.test_terms_if_test )
+        obj = SOFC(dpb=dpb, apb=apb,
+                   sp_boxes=sp_boxes,
+                   dsg_vars=dsg_vars,
+                   problem_type=opts.problem,
+                   objective_function_type=opts.objective_function,
+                   var_map=opts.var_map,
+                   nu=nu,
+                   use_mesh_velocity=opts.use_mesh_velocity,
+                   save_dir=opts.save_dir,
+                    save_iter_sols=opts.save_iter_sols,
+                   save_control_points=opts.save_control_points,
+                   save_dsg_vars=opts.save_dsg_vars,
+                   test_terms_if_test=opts.test_terms_if_test)
 
         equations = getattr( conf, '_'.join( ('equations_sensitivity',
                                               opts.problem,
@@ -213,8 +199,24 @@ class ShapeOptimFlowCase( Struct ):
 
         obj.n_var = dsg_vars.val.shape[0]
 
+        obj.create_evaluables()
+
         return obj
     from_conf = staticmethod( from_conf )
+
+    def create_evaluables(self):
+        variables = self.dpb.create_variables().as_dict()
+
+        aux = self.dpb.create_evaluable(self.obj_fun_term,
+                                        try_equations=False,
+                                        var_dict=variables)
+        self.of_equations, self.of_variables = aux
+
+        aux = self.apb.create_evaluable(self.sens_terms,
+                                        try_equations=False,
+                                        var_dict=variables,
+                                        extra_args={'mode' : 1})
+        self.ofg_equations, self.ofg_variables = aux
 
     ##
     # 07.03.2006, c
@@ -230,29 +232,31 @@ class ShapeOptimFlowCase( Struct ):
                 yield self.sp_boxes.interp_mesh_velocity( shape, self.dsg_vars,
                                                        idsg )
 
-    def obj_fun(self, vec_dp, dpb, data=None):
+    def obj_fun(self, vec_dp):
         """
         Objective function evaluation for given direct problem state.
         """
-        var_data = dpb.equations.get_state_parts(vec_dp)
+        var_data = self.dpb.equations.get_state_parts(vec_dp)
         var_data = remap_dict(var_data, self.var_map)
 
-        val = dpb.evaluate(self.obj_fun_term, copy_materials=False,
-                           var_names=self.var_map.keys(), **var_data)
+        self.of_equations.set_data(var_data, ignore_unknown=True)
+
+        val = eval_equations(self.of_equations, self.of_variables)
 
         return nm.squeeze( val )
-        
-    def sensitivity(self, dp_var_data, vec_ap, apb, data=None, select=None):
+
+    def sensitivity(self, dp_var_data, vec_ap, select=None):
         """
         Sensitivity of objective function evaluation for given direct
         and adjoint problem states.
         """
+        apb = self.apb
+
         var_data = apb.equations.get_state_parts(vec_ap)
         var_data.update(dp_var_data)
-        var_names = var_data.keys() + ['Nu']
 
-        var_data.update(data)
-        
+        self.ofg_equations.set_data(var_data, ignore_unknown=True)
+
         dim = self.sp_boxes.dim
         n_mesh_nod = apb.domain.shape.n_nod
 
@@ -269,8 +273,7 @@ class ShapeOptimFlowCase( Struct ):
         shape = (n_mesh_nod, dim)
         for ii, nu in enumerate(self.generate_mesh_velocity(shape, idsgs)):
             pbar.update(ii)
-            var_data['Nu'] = nu.ravel()
-            var_data['mode'] = 1
+            self.ofg_variables['Nu'].data_from_any(nu.ravel())
 
             ## from sfepy.base.ioutils import write_vtk
             ## cc = nla.norm( vec_nu )
@@ -282,10 +285,7 @@ class ShapeOptimFlowCase( Struct ):
             ## fd.close()
             ## print ii
 
-            val = apb.evaluate(self.sens_terms, copy_materials=False,
-                               update_materials=ii==0,
-                               new_geometries=ii==0,
-                               var_names=var_names, **var_data)
+            val = eval_equations(self.ofg_equations, self.ofg_variables)
 
             sa.append( val )
 
@@ -293,22 +293,31 @@ class ShapeOptimFlowCase( Struct ):
         return vec_sa
 
     def check_custom_sensitivity(self, term_desc, idsg, delta,
-                                 dp_var_data, vec_ap, pb, data=None):
+                                 dp_var_data, vec_ap):
+        pb = self.apb
 
         domain = pb.domain
         regions = domain.regions
         materials = pb.materials
 
-        if data is None:
-            data = {}
-        else:
-            data = copy( data )
+        variables = self.ofg_equations.variables
+        aux = self.dpb.create_evaluable(term_desc,
+                                        try_equations=False,
+                                        var_dict=variables,
+                                        extra_args={'mode' : 0})
+        check0_equations, check0_variables = aux
+
+        aux = self.dpb.create_evaluable(term_desc,
+                                        try_equations=False,
+                                        var_dict=variables,
+                                        extra_args={'mode' : 1})
+        check1_equations, check1_variables = aux
 
         var_data = pb.equations.get_state_parts(vec_ap)
         var_data.update(dp_var_data)
-        var_names = var_data.keys() + ['Nu']
 
-        var_data.update(data)
+        check0_equations.set_data(var_data, ignore_unknown=True)
+        check1_equations.set_data(var_data, ignore_unknown=True)
 
         dim = self.sp_boxes.dim
         n_mesh_nod = domain.shape.n_nod
@@ -319,30 +328,21 @@ class ShapeOptimFlowCase( Struct ):
         coors0 = domain.mesh.coors
 
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), [idsg] ):
-            var_data['Nu'] = nu.ravel()
-            var_data['mode'] = 1
+            check1_variables['Nu'].data_from_any(nu.ravel())
 
-            aux = pb.evaluate(term_desc, copy_materials=False,
-                              update_materials=True,
-                              var_names=var_names, **var_data)
+            aux = eval_equations(check1_equations, check1_variables)
             a_grad.append( aux )
-
-            var_data['mode'] = 0
 
             coorsp = coors0 + delta * nu
             pb.set_mesh_coors( coorsp, update_state = True )
-            valp = pb.evaluate(term_desc, copy_materials=False,
-                               update_materials=False,
-                               var_names=var_names, **var_data)
+            valp = eval_equations(check0_equations, check0_variables)
 
             coorsm = coors0 - delta * nu
             pb.set_mesh_coors( coorsm, update_state = True )
-            valm = pb.evaluate(term_desc, copy_materials=False,
-                               update_materials=False,
-                               var_names=var_names, **var_data)
+            valm = eval_equations(check0_equations, check0_variables)
 
             d_grad.append( 0.5 * (valp - valm) / delta )
-            
+
         pb.set_mesh_coors( coors0, update_state = True )
 
         a_grad = nm.array( a_grad, nm.float64 )
@@ -354,19 +354,13 @@ class ShapeOptimFlowCase( Struct ):
         output( '-> ratio:', a_grad / d_grad )
         pause()
 
-    def check_sensitivity(self, idsgs, delta, dp_var_data, vec_ap, dpb,
-                          apb, data=None):
-        if data is None:
-            data = {}
-        else:
-            data = copy( data )
-        
-        a_grad = self.sensitivity(dp_var_data, vec_ap, apb,
-                                  data=data, select=idsgs)
+    def check_sensitivity(self, idsgs, delta, dp_var_data, vec_ap):
+        a_grad = self.sensitivity(dp_var_data, vec_ap, select=idsgs)
         output( a_grad )
-        
+
         d_grad = []
 
+        dpb = self.dpb
         dim = self.sp_boxes.dim
         n_mesh_nod = dpb.domain.shape.n_nod
 
@@ -379,7 +373,7 @@ class ShapeOptimFlowCase( Struct ):
             dpb.time_update()
             vec_dp = dpb.solve()
 
-            valp = self.obj_fun(vec_dp, dpb, data)
+            valp = self.obj_fun(vec_dp)
             output( 'obj_fun+:', valp )
 
             coorsm = coors0 - delta * nu
@@ -388,11 +382,11 @@ class ShapeOptimFlowCase( Struct ):
             dpb.time_update()
             vec_dp = dpb.solve()
 
-            valm = self.obj_fun(vec_dp, dpb, data)
+            valm = self.obj_fun(vec_dp)
             output( 'obj_fun-:', valm )
-            
+
             d_grad.append( 0.5 * (valp - valm) / delta )
-            
+
         ##
         # Restore original mesh coordinates.
         dpb.set_mesh_coors( coors0, update_state = True )

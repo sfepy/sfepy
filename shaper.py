@@ -17,7 +17,6 @@ import sfepy.base.ioutils as io
 import sfepy.optimize.shapeOptim as so
 from sfepy.fem.problemDef import ProblemDefinition
 from sfepy.solvers import Solver
-from sfepy.fem.variables import zero_conf_ebc
 
 def solve_stokes(dpb, equations_stokes, nls_conf):
     dpb.set_equations(equations_stokes)
@@ -174,20 +173,18 @@ def solve_adjoint(conf, options, dpb, vec_dp, data):
     opts = conf.options
 
     if dpb:
-        apb = dpb.copy(share=['domain', 'conf', 'fields',
-                              'materials', 'mtx_a', 'solvers'])
-        ebc = zero_conf_ebc(conf.ebcs)
-        apb.set_variables(conf.variables) 
+        apb = dpb.copy('adjoint')
 
     else:
-        ebc = conf.ebcs = zero_conf_ebc(conf.ebcs)
         apb = ProblemDefinition.from_conf(conf)
 
     equations = getattr(conf, '_'.join(('equations_adjoint',
                                         opts.problem,
                                         opts.objective_function)))
     apb.set_equations(equations)
-    apb.time_update(None, conf_ebc=ebc)
+    apb.time_update(None)
+    apb.ebcs.zero_dofs()
+    apb.update_equations(None, ebcs=apb.ebcs)
 
     var_data = dpb.equations.get_state_parts(vec_dp)
     var_data = remap_dict(var_data, opts.var_map)
@@ -198,7 +195,7 @@ def solve_adjoint(conf, options, dpb, vec_dp, data):
     trunk = io.get_trunk(conf.filename_mesh)
     apb.save_state(trunk + '_adjoint.vtk', vec_ap)
 
-    shape_opt = so.ShapeOptimFlowCase.from_conf(conf, apb.domain)
+    shape_opt = so.ShapeOptimFlowCase.from_conf(conf, dpb, apb)
     ## print shape_opt
     ## pause()
 
@@ -207,19 +204,19 @@ def solve_adjoint(conf, options, dpb, vec_dp, data):
         # Test shape sensitivity.
         if shape_opt.test_terms_if_test:
             so.test_terms([options.test], opts.term_delta, shape_opt,
-                          var_data, vec_ap, apb)
+                          var_data, vec_ap)
 
         shape_opt.check_sensitivity([options.test], opts.delta,
-                                    var_data, vec_ap, dpb, apb, data)
+                                    var_data, vec_ap)
     ##
     # Compute objective function.
-    val = shape_opt.obj_fun(vec_dp, apb, data=data)
+    val = shape_opt.obj_fun(vec_dp)
     print 'actual obj_fun:', val
     ## pause()
 
     ##
     # Compute shape sensitivity.
-    vec_sa = shape_opt.sensitivity(var_data, vec_ap, apb, data=data)
+    vec_sa = shape_opt.sensitivity(var_data, vec_ap)
     print 'actual sensitivity:', vec_sa
 
     ## pylab.plot(vec_sa)
@@ -238,42 +235,39 @@ def solve_optimize( conf, options ):
     dpb.set_equations( equations )
 
     dpb.name = 'direct'
-    dpb.time_update( None )
+    dpb.time_update(None)
 
-    apb = dpb.copy( share = ['domain', 'conf', 'fields',
-                             'materials', 'mtx_a', 'solvers'] )
-    ebc = zero_conf_ebc( conf.ebcs )
-    apb.set_variables( conf.variables ) 
-
+    apb = dpb.copy('adjoint')
     equations = getattr( conf, '_'.join( ('equations_adjoint',
                                           opts.problem,
                                           opts.objective_function) ) )
 
     apb.set_equations( equations )
-    apb.name = 'adjoint'
-    apb.time_update( None, conf_ebc = ebc )
+    apb.time_update(None)
+    apb.ebcs.zero_dofs()
+    apb.update_equations(None, ebcs=apb.ebcs)
 
-    ls_conf = apb.get_solver_conf( opts.ls )
-    dnls_conf = apb.get_solver_conf( opts.nls_direct )
-    anls_conf = apb.get_solver_conf( opts.nls_adjoint )
-    opt_conf = apb.get_solver_conf( opts.optimizer )
+    ls_conf = dpb.get_solver_conf(opts.ls)
+    dnls_conf = dpb.get_solver_conf(opts.nls_direct)
+    anls_conf = dpb.get_solver_conf(opts.nls_adjoint)
+    opt_conf = dpb.get_solver_conf(opts.optimizer)
 
     dpb.init_solvers(ls_conf=ls_conf, nls_conf=dnls_conf)
 
     apb.init_solvers(ls_conf=ls_conf, nls_conf=anls_conf)
 
-    shape_opt = so.ShapeOptimFlowCase.from_conf( conf, apb.domain )
+    shape_opt = so.ShapeOptimFlowCase.from_conf(conf, dpb, apb)
     design0 = shape_opt.dsg_vars.val
     shape_opt.cache = Struct( design = design0 + 100,
                              vec_dp = None,
                              i_mesh = -1 )
 
     opt_status = IndexedStruct()
-    optimizer = Solver.any_from_conf( opt_conf,
-                                    obj_fun = so.obj_fun,
-                                    obj_fun_grad = so.obj_fun_grad,
-                                    status = opt_status,
-                                    obj_args = (shape_opt, dpb, apb, opts) )
+    optimizer = Solver.any_from_conf(opt_conf,
+                                     obj_fun=so.obj_fun,
+                                     obj_fun_grad=so.obj_fun_grad,
+                                     status=opt_status,
+                                     obj_args=(shape_opt, opts))
 
     ##
     # State problem solution for the initial design.
