@@ -96,6 +96,7 @@ class ProblemDefinition( Struct ):
                  domain=None, fields=None, materials=None,
                  equations=None, auto_conf=True,
                  nls=None, ls=None, ts=None, auto_solvers=True):
+        self.name = name
         self.conf = conf
         self.functions = functions
 
