@@ -129,7 +129,9 @@ class ProblemDefinition( Struct ):
 
         else:
             self.domain = domain
+            self.fields = fields
             self.materials = materials
+            self.equations = equations
 
         if auto_solvers:
             if ls is None:
@@ -151,19 +153,25 @@ class ProblemDefinition( Struct ):
         self.solvers = None
         self.clear_equations()
 
-    ##
-    # 18.04.2006, c
-    def copy( self, **kwargs ):
-        if 'share' in kwargs:
-            share = kwargs['share']
-            
-        obj = ProblemDefinition()
-        for key, val in self.__dict__.iteritems():
-##             print key
-            if key in share:
-                obj.__dict__[key] = val
-            else:
-                obj.__dict__[key] = copy( val )
+    def copy(self, name=None):
+        """
+        Make a copy of ProblemDefinition.
+        """
+        if name is None:
+            name = self.name + '_copy'
+        obj = ProblemDefinition(name, conf=self.conf,
+                                functions=self.functions,
+                                domain=self.domain, fields=self.fields,
+                                materials=self.materials,
+                                equations=self.equations,
+                                auto_conf=False, auto_solvers=False)
+
+        obj.ebcs = self.ebcs
+        obj.epbcs = self.epbcs
+        obj.lcbcs = self.lcbcs
+
+        obj.set_solvers(self.conf.solvers, self.conf.options)
+
         return obj
 
     def setup_output(self, output_filename_trunk=None, output_dir=None,
