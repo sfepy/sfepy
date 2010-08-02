@@ -25,18 +25,6 @@ def create_adof_conn(eq, dc, indx):
     return adc
 
 ##
-# c: 26.07.2006, r: 15.04.2008
-def zero_conf_ebc( conf ):
-    new = {}
-    for key, bcs in conf.iteritems():
-        newbc = copy( bcs )
-        newbc.dofs = {}
-        for dd, val in bcs.dofs.iteritems():
-            newbc.dofs[dd] = 0.0
-        new[key] = newbc
-    return new
-
-##
 # 14.07.2006, c
 class Variables( Container ):
     """
