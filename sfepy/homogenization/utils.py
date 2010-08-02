@@ -16,11 +16,13 @@ def create_pis(problem, var_name):
 
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim, dim), dtype = nm.object )
+    names = []
     for ir in range( dim ):
         for ic in range( dim ):
             pi = build_op_pi(var, ir, ic)
             pis[ir,ic] = pi
-    return pis
+            names.append('pi_%d%d' % (ir, ic))
+    return names, pis
 
 def create_scalar_pis( problem, var_name ):
     """\Pi^k = y_k, \ul{y} \in Y coordinates."""
@@ -29,9 +31,11 @@ def create_scalar_pis( problem, var_name ):
 
     dim = problem.domain.mesh.dim
     pis = nm.zeros( (dim,), dtype = nm.object )
+    names = []
     for ir in range( dim ):
         pis[ir] = nm.ascontiguousarray( coor[:,ir] )
-    return pis
+        names.append('pi_%d' % (ir,))
+    return names, pis
 
 def iter_sym( dim ):
     for ii in xrange( dim ):

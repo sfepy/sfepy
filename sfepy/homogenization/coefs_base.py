@@ -159,20 +159,24 @@ class ShapeDimDim( CorrMiniApp ):
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        pis = create_pis( problem, self.variables[0] )
+        clist, pis = create_pis( problem, self.variables[0] )
 
-        return Struct( name = self.name,
-                       states = pis )
+        corr_sol = CorrSolution(name = self.name,
+                                states = pis,
+                                components = clist)
+        return corr_sol
 
 class ShapeDim( CorrMiniApp ):
     
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        pis = create_scalar_pis( problem, self.variables[0] )
+        clist, pis = create_scalar_pis( problem, self.variables[0] )
 
-        return Struct( name = self.name,
-                       states = pis )
+        corr_sol = CorrSolution(name = self.name,
+                                states = pis,
+                                components = clist)
+        return corr_sol
 
 class CorrNN( CorrMiniApp ):
     """ __init__() kwargs:
@@ -185,12 +189,9 @@ class CorrNN( CorrMiniApp ):
     """
 
     def __init__( self, name, problem, kwargs ):
-        """When corr_dim is not in kwargs, problem dimension is used."""
+        """When dim is not in kwargs, problem dimension is used."""
         CorrMiniApp.__init__( self, name, problem, kwargs )
-        self.set_default_attr( 'corr_dim', problem.get_dim() )
-
-    def get_variables( self, ir, ic, data ):
-        return iter([])
+        self.set_default_attr( 'dim', problem.get_dim() )
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
@@ -204,10 +205,10 @@ class CorrNN( CorrMiniApp ):
 
         variables = problem.get_variables()
 
-        states = nm.zeros( (self.corr_dim, self.corr_dim), dtype = nm.object )
+        states = nm.zeros( (self.dim, self.dim), dtype = nm.object )
         clist = []
-        for ir in range( self.corr_dim ):
-            for ic in range( self.corr_dim ):
+        for ir in range( self.dim ):
+            for ic in range( self.dim ):
                 self.set_variables(variables, ir, ic, **data)
 
                 state = problem.solve()
@@ -227,40 +228,40 @@ class CorrNN( CorrMiniApp ):
 class CorrN( CorrMiniApp ):
 
     def __init__( self, name, problem, kwargs ):
-        """When corr_dim is not in kwargs, problem dimension is used."""
+        """When dim is not in kwargs, problem dimension is used."""
         CorrMiniApp.__init__( self, name, problem, kwargs )
-        self.set_default_attr( 'corr_dim', problem.get_dim() )
-
-    def get_variables( self, ir, data ):
-        return iter([])
+        self.set_default_attr( 'dim', problem.get_dim() )
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        problem.select_variables( self.variables )
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
 
-        states = nm.zeros( (self.corr_dim,), dtype = nm.object )
+        variables = problem.get_variables()
+
+        states = nm.zeros( (self.dim,), dtype = nm.object )
         clist = []
-        for ir in range( self.corr_dim ):
-            for name, val in self.get_variables( ir, data ):
-                problem.variables[name].data_from_data( val )
-
-            state = problem.solve()
-            assert_( problem.variables.has_ebc( state ) )
-            states[ir] = state
-
-            clist.append( (ir,) )
-
-        self.save( states, problem, comps = clist )
+        for ir in range( self.dim ):
+            self.set_variables(variables, ir, **data)
             
-        return Struct( name = self.name,
-                       states = states,
-                       di = problem.variables.di )
+            state = problem.solve()
+            assert_(variables.has_ebc(state))
+            states[ir] = variables.get_state_parts()
+
+            clist.append((ir,))
+
+        corr_sol = CorrSolution(name = self.name,
+                                states = states,
+                                components = clist)
+
+        self.save(corr_sol, problem)
+
+        return corr_sol
 
 class CorrDimDim( CorrNN ):
     pass
@@ -270,28 +271,31 @@ class CorrDim( CorrN ):
 
 class CorrOne( CorrMiniApp ):
 
-    def get_variables( self, data ):
-        return iter([])
-
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-
-        problem.select_variables( self.variables )
+        print self.equations
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.update_materials(problem.ts)
 
-        for name, val in self.get_variables( data ):
-            problem.variables[name].data_from_data( val )
+        self.init_solvers(problem)
+
+        variables = problem.get_variables()
+
+        if len(self.requires) > 0:
+            self.set_variables(variables, **data)
 
         state = problem.solve()
-        assert_( problem.variables.has_ebc( state ) )
+        assert_(variables.has_ebc(state))
+        state = variables.get_state_parts()
 
-        self.save( state, problem )
+        corr_sol = CorrSolution(name = self.name,
+                                state = state)
 
-        return Struct( name = self.name,
-                       state = state,
-                       di = problem.variables.di )
+        self.save(corr_sol, problem)
+
+        return corr_sol
 
 class CorrSum( CorrMiniApp ):
     
@@ -573,14 +577,15 @@ class VolumeFractions( MiniAppBase ):
     the whole domain."""
     def __call__( self, volume = None, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         vf = {}
         for region_name in self.regions:
             vkey = 'volume_%s' % region_name
             key = 'fraction_%s' % region_name
 
-            val = eval_term_op( None, self.expression % region_name, problem )
+            equations, variables = problem.create_evaluable(self.expression % region_name)
+            val = eval_equations(equations, variables)
+
             vf[vkey] = nm.asarray( val, dtype = nm.float64 )
             vf[key] = vf[vkey] / volume
 
@@ -683,30 +688,22 @@ class CoefDimSym( MiniAppBase ):
 class CoefNN( MiniAppBase ):
 
     def __init__( self, name, problem, kwargs ):
-        """When corr_dim is not in kwargs, problem dimension is used."""
+        """When dim is not in kwargs, problem dimension is used."""
         MiniAppBase.__init__( self, name, problem, kwargs )
-        self.set_default_attr( 'corr_dim', problem.get_dim() )
+        self.set_default_attr( 'dim', problem.get_dim() )
 
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
-        coef = nm.zeros( (self.corr_dim, self.corr_dim), dtype = nm.float64 )
+        coef = nm.zeros((self.dim, self.dim), dtype = nm.float64)
+        equations, variables = problem.create_evaluable(self.expression)
 
-        for ir in range( self.corr_dim ):
-            for name, val in self.get_variables( problem, ir, None, data,
-                                                 'row' ):
-                problem.variables[name].data_from_data( val )
+        for ir in range(self.dim):
+            self.set_variables(variables, ir, None, 'row', **data)
+            for ic in range(self.dim):
+                self.set_variables(variables, None, ic, 'col', **data)
 
-            for ic in range( self.corr_dim ):
-                for name, val in self.get_variables( problem, None, ic, data,
-                                                     'col' ):
-                    problem.variables[name].data_from_data( val )
-
-                val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval',
-                                    copy_materials = False,
-                                    update_materials = ((ir * ic) == 0) )
+                val = eval_equations(equations, variables)
 
                 coef[ir,ic] = val
 
@@ -717,24 +714,21 @@ class CoefNN( MiniAppBase ):
 class CoefN( MiniAppBase ):
 
     def __init__( self, name, problem, kwargs ):
-        """When corr_dim is not in kwargs, problem dimension is used."""
+        """When dim is not in kwargs, problem dimension is used."""
         MiniAppBase.__init__( self, name, problem, kwargs )
-        self.set_default_attr( 'corr_dim', problem.get_dim() )
+        self.set_default_attr( 'dim', problem.get_dim() )
 
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
-        coef = nm.zeros( (self.corr_dim, ), dtype = nm.float64 )
+        coef = nm.zeros((self.dim,), dtype = nm.float64)
+        equations, variables = problem.create_evaluable(self.expression)
 
-        for ir in range( self.corr_dim ):
-            for name, val in self.get_variables( problem, ir, data ):
-                problem.variables[name].data_from_data( val )
+        for ir in range(self.dim):
+            self.set_variables(variables, ir, **data)
+            
+            val = eval_equations(equations, variables)
 
-            val = eval_term_op( None, self.expression,
-                                problem, call_mode = 'd_eval',
-                                copy_materials = False,
-                                update_materials = ((ir) == 0) )
             coef[ir] = val
 
         coef /= volume
@@ -751,30 +745,17 @@ class CoefSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym,), dtype = nm.float64 )
 
-        for name, val in self.get_variables( problem, None, None, data, 'col' ):
-            problem.variables[name].data_from_data( val )
-
-        if isinstance( self.expression, tuple ):
-            coef[:] = eval_term_op( None, self.expression[0],
-                                    problem, shape = (sym,), mode = 'const' )
-            expression = self.expression[1]
-        else:
-            expression = self.expression
+        equations, variables = problem.create_evaluable(self.expression)
 
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
-            for name, val in self.get_variables( problem, ir, ic, data, 'row' ):
-                problem.variables[name].data_from_data( val )
-
-            val = eval_term_op( None, expression,
-                                problem, call_mode = 'd_eval',
-                                copy_materials = False,
-                                update_materials = ((ii) == 0) )
-            coef[ii] += val
+            self.set_variables(variables, ir, ic, 'row', **data)
+            
+            val = eval_equations(equations, variables)
+            coef[ii] = val
 
         coef /= volume
 
@@ -814,27 +795,15 @@ class CoefFMSym( MiniAppBase ):
         return coef
 
 class CoefOne( MiniAppBase ):
+        
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
+        equations, variables = problem.create_evaluable(self.expression)
 
-        coef = nm.zeros( (1,), dtype = nm.float64 )
+        self.set_variables(variables, **data)
+        val = eval_equations(equations, variables)
 
-        for name, val in self.get_variables( problem, data ):
-            problem.variables[name].data_from_data( val )
-
-        if isinstance( self.expression, tuple ):
-            coef[:] = eval_term_op( None, self.expression[0],
-                                    problem, shape = (1,), mode = 'const' )
-            expression = self.expression[1]
-        else:
-            expression = self.expression
-
-        val = eval_term_op( None, expression,
-                            problem, call_mode = 'd_eval' )
-        coef += val
-
-        coef /= volume
+        coef = val / volume
 
         return coef
 
@@ -871,7 +840,6 @@ class CoefSum( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
 
-        
         coef = nm.zeros_like(data[self.requires[0]])
         for i in range(len(self.requires)):
             coef += data[self.requires[i]]
@@ -896,7 +864,6 @@ class CoefEval( MiniAppBase ):
     """
     Evaluate expression.
     """
-    
     def __call__( self, volume, problem = None, data = None ):
 
         expr = self.expression
