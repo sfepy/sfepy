@@ -89,6 +89,14 @@ class Conditions(Container):
         self._objs.sort(cmp=lambda i1, i2: cmp(i1.key, i2.key))
         self.update()
 
+    def zero_dofs(self):
+        """
+        Set all boundary condition values to zero, if applicable.
+        """
+        for cond in self:
+            if isinstance(cond, EssentialBC):
+                cond.zero_dofs()
+
 def _canonize(dofs, all_dofs):
     """
     Helper function.
@@ -153,6 +161,20 @@ class EssentialBC(Condition):
     """
     def __init__(self, name, region, dofs, key=''):
         Condition.__init__(self, name=name, region=region, dofs=dofs, key=key)
+
+    def zero_dofs(self):
+        """
+        Set all essential boundary condition values to zero.
+        """
+        if self.is_single:
+            self.dofs[1] = 0.0
+
+        else:
+            new_dofs = {}
+            for key in self.dofs.iterkeys():
+                new_dofs[key] = 0.0
+
+            self.dofs = new_dofs
 
 class PeriodicBC(Condition):
     """
