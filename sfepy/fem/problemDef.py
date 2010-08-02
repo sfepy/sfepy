@@ -792,7 +792,8 @@ class ProblemDefinition( Struct ):
                          copy_materials=True, integrals=None,
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
-                         mode='eval', var_dict=None, verbose=True, **kwargs):
+                         mode='eval', var_dict=None, extra_args=None,
+                         verbose=True, **kwargs):
 
         if try_equations and self.equations is not None:
             variables = self.equations.variables.as_dict()
@@ -835,7 +836,7 @@ class ProblemDefinition( Struct ):
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,
-                               mode=mode, verbose=verbose,
+                               mode=mode, extra_args=extra_args, verbose=verbose,
                                kwargs=kwargs)
 
         return out
@@ -845,7 +846,8 @@ class ProblemDefinition( Struct ):
                  ebcs=None, epbcs=None, lcbcs=None,
                  ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
-                 var_dict=None, ret_variables=False, verbose=True, **kwargs):
+                 var_dict=None, ret_variables=False, verbose=True,
+                 extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
         sfepy.fem.evaluate.evaluate().
@@ -866,6 +868,7 @@ class ProblemDefinition( Struct ):
                                     ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                     ts=ts, functions=functions,
                                     mode=mode, var_dict=var_dict,
+                                    extra_args=None,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
 

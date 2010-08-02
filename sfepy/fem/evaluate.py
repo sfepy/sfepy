@@ -123,7 +123,8 @@ class LCBCEvaluator( BasicEvaluator ):
 
 def create_evaluable(expression, fields, materials, variables, integrals,
                      ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
-                     auto_init=False, mode='eval', verbose=True, kwargs=None):
+                     auto_init=False, mode='eval', extra_args=None,
+                     verbose=True, kwargs=None):
     """
     Returns
     -------
@@ -140,11 +141,19 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     # Create temporary variables.
     aux_vars = Variables(variables)
+
+    if extra_args is None:
+        extra_args = kwargs
+
+    else:
+        extra_args = copy(extra_args)
+        extra_args.update(kwargs)
+
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, domain.regions,
                                     materials, integrals,
                                     setup=False,
-                                    caches=caches, user=kwargs,
+                                    caches=caches, user=extra_args,
                                     verbose=verbose)
     equations.collect_conn_info()
 
@@ -200,7 +209,7 @@ def eval_equations(equations, variables, clear_caches=True,
 def evaluate(expression, fields, materials, variables, integrals,
              ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
              auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
-             ret_variables=False, verbose=True, kwargs=None):
+             ret_variables=False, extra_args=None, verbose=True, kwargs=None):
     """
     Convenience function calling create_evaluable() and eval_equations().
 
@@ -212,7 +221,8 @@ def evaluate(expression, fields, materials, variables, integrals,
     aux = create_evaluable(expression, fields, materials, variables, integrals,
                            ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs, ts=ts,
                            functions=functions, auto_init=auto_init,
-                           mode=mode, verbose=verbose, kwargs=kwargs)
+                           mode=mode, extra_args=extra_args,
+                           verbose=verbose, kwargs=kwargs)
     equations, variables = aux
 
     out = eval_equations(equations, variables,
