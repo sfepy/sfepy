@@ -273,9 +273,8 @@ class CorrOne( CorrMiniApp ):
 
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        print self.equations
-        problem.set_equations( self.equations )
 
+        problem.set_equations( self.equations )
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
         problem.update_materials(problem.ts)
 
@@ -283,7 +282,7 @@ class CorrOne( CorrMiniApp ):
 
         variables = problem.get_variables()
 
-        if len(self.requires) > 0:
+        if hasattr(self, 'set_variables'):
             self.set_variables(variables, **data)
 
         state = problem.solve()
