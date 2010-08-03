@@ -1199,9 +1199,9 @@ class FieldVariable(Variable):
                     indx = adi.indx[var.name]
                     eq = var.eq_map.eq
 
-                else: # Special variables.
-                    indx = var.indx
-                    eq = nm.arange(indx.stop, dtype=nm.int32)
+                else: # Special or pure parameter variables.
+                    indx = slice(0, var.n_dof)
+                    eq = nm.arange(var.n_dof, dtype=nm.int32)
 
                 self.adof_conns[akey] = create_adof_conn(eq, dc, indx)
 
