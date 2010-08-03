@@ -480,12 +480,13 @@ class ProblemDefinition( Struct ):
     def get_mesh_coors( self ):
         return self.domain.get_mesh_coors()
 
-    ##
-    # created: 26.07.2006
-    # last revision: 21.12.2007
-    def set_mesh_coors( self, coors, update_state = False ):
-        fea.set_mesh_coors(self.domain, self.fields, self.equations.geometries,
-                           coors, update_state )
+    def set_mesh_coors(self, coors, update_state=False):
+        if self.equations is None:
+            geom = {}
+        else:
+            geom = self.equations.geometries
+        fea.set_mesh_coors(self.domain, self.fields, geom,
+                           coors, update_state)
 
     def get_dim( self, get_sym = False ):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
