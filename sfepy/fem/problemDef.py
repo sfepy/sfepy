@@ -802,8 +802,10 @@ class ProblemDefinition( Struct ):
             if var_dict is None:
                 from sfepy.fem.equations import parse_definition
 
-                args = parse_definition(expression)[0].args
-                possible_var_names = [arg.strip() for arg in args.split(',')]
+                args = ','.join(aux.args
+                                for aux in parse_definition(expression))
+                aux = [arg.strip() for arg in args.split(',')]
+                possible_var_names = set(aux)
 
                 variables = self.create_variables(possible_var_names)
 
