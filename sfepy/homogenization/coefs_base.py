@@ -751,9 +751,11 @@ class CoefSym( MiniAppBase ):
 
         equations, variables = problem.create_evaluable(self.expression)
 
+        self.set_variables(variables, None, None, 'col', **data)
+
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
             self.set_variables(variables, ir, ic, 'row', **data)
-            
+
             val = eval_equations(equations, variables)
             coef[ii] = val
 
