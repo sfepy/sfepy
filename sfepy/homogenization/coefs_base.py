@@ -405,7 +405,6 @@ class PressureEigenvalueProblem( CorrMiniApp ):
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        problem.select_variables( self.variables )
         mtx = assemble_by_blocks( self.equations, problem,
                                   ebcs = self.ebcs, epbcs = self.epbcs )
         self.presolve( mtx )
@@ -423,13 +422,14 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
     def compute_correctors( self, evp, state0, ts, dump_name, save_name,
                             problem = None, vec_g = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
+
         problem.set_equations( self.equations )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
-        get_state = problem.variables.get_state_part_view
-        make_full_vec = problem.variables.make_full_vec
+        variables = problem.get_variables()
+        get_state = variables.get_state_part_view
+        make_full_vec = variables.make_full_vec
 
         eigs = evp.evp.eigs
         mtx_q = evp.evp.mtx_q
@@ -444,8 +444,7 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
         ##
         # follow_epbc = False -> R1 = - R2 as required. ? for other correctors?
-        sstate0 = problem.variables.strip_state_vector( state0,
-                                                        follow_epbc = False )
+        sstate0 = variables.strip_state_vector(state0, follow_epbc=False)
         vu, vp = self.dump_variables
         vec_p0 = get_state( sstate0, vp, True )
 ##         print state0
@@ -506,7 +505,10 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
         # For visualization...
         out = {}
         extend = not self.file_per_var
-        to_output = problem.variables.state_to_output
+
+        variables = self.problem.get_variables()
+        to_output = variables.state_to_output
+
         out.update( to_output( vec_u, var_info = {vu : (True, vu)},
                                extend = extend ) )
         out.update( to_output( vec_p, var_info = {vp : (True, vp)},
@@ -524,13 +526,15 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
     def verify_correctors( self, initial_state, filename, problem = None ):
 
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.verify_variables )
+
         problem.set_equations( self.verify_equations )
 
         io = HDF5MeshIO( filename )
         ts = TimeStepper( *io.read_time_stepper() )
 
-        get_state = problem.variables.get_state_part_view
+        variables = self.problem.get_variables()
+        get_state = variables.get_state_part_view
+
         vu, vp = self.dump_variables
         vdp = self.verify_variables[-1]
         
@@ -538,7 +542,7 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
         format = '====== time %%e (step %%%dd of %%%dd) ====='\
                  % ((ts.n_digit,) * 2)
-        vv = problem.variables
+        vv = variables
         ok = True
         for step, time in ts:
             output( format % (time, step + 1, ts.n_step) )
@@ -620,7 +624,6 @@ class CoefFMSymSym( MiniAppBase ):
     """
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         dim, sym = problem.get_dim( get_sym = True )
 
@@ -629,24 +632,20 @@ class CoefFMSymSym( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, sym, sym), dtype = nm.float64 )
 
-        gvars = self.get_variables
+        equations, variables = problem.create_evaluable(self.expression)
+
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
             io = HDF5MeshIO( self.get_filename( data, irr, icr ) )
+
             for step, time in ts:
-                for name, val in gvars( problem, io, step, None, None,
-                                        data, 'row' ):
-                    problem.variables[name].data_from_data( val )
+                self.set_variables(variables, io, step, None, None,
+                                   'row', **data)
 
                 for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                    for name, val in gvars( problem, None, None, irc, icc,
-                                            data, 'col' ):
-                        problem.variables[name].data_from_data( val )
+                    self.set_variables(variables, None, None, irc, icc,
+                                       'col', **data)
 
-                    val = eval_term_op( None, self.expression,
-                                        problem, call_mode = 'd_eval',
-                                        copy_materials = False,
-                                        update_materials = ((ir * step *
-                                                             ic) == 0) )
+                    val = eval_equations(equations, variables)
 
                     coef[step,ir,ic] = val
 
@@ -658,25 +657,19 @@ class CoefDimSym( MiniAppBase ):
 
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (dim, sym), dtype = nm.float64 )
 
+        equations, variables = problem.create_evaluable(self.expression)
+
         for ir in range( dim ):
-            for name, val in self.get_variables( problem, ir, None, data,
-                                                 'row' ):
-                problem.variables[name].data_from_data( val )
+            self.set_variables(variables, ir, None, 'row', **data)
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                for name, val in self.get_variables( problem, irc, icc, data,
-                                                     'col' ):
-                    problem.variables[name].data_from_data( val )
+                self.set_variables(variables, irc, icc, 'col', **data)
 
-                val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval',
-                                    copy_materials = False,
-                                    update_materials = ((ir * ic) == 0) )
+                val = eval_equations(equations, variables)
 
                 coef[ir,ic] = val
 
@@ -766,7 +759,6 @@ class CoefFMSym( MiniAppBase ):
     
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         dim, sym = problem.get_dim( get_sym = True )
 
@@ -775,20 +767,17 @@ class CoefFMSym( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, sym), dtype = nm.float64 )
 
-        gvars = self.get_variables
-        for name, val in self.get_variables( problem, None, None, data, 'col' ):
-            problem.variables[name].data_from_data( val )
+        equations, variables = problem.create_evaluable(self.expression)
+
+        self.set_variables(variables, None, None, 'col', **data)
 
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
             io = HDF5MeshIO( self.get_filename( data, ir, ic ) )
             for step, time in ts:
-                for name, val in gvars( problem, io, step, data, 'row' ):
-                    problem.variables[name].data_from_data( val )
+                self.set_variables(variables, io, step, 'row', **data)
 
-                val = eval_term_op( None, self.expression,
-                                    problem, call_mode = 'd_eval',
-                                    copy_materials = False,
-                                    update_materials = ((ii * step) == 0) )
+                val = eval_equations(equations, variables)
+
                 coef[step,ii] = val
 
         coef /= volume
@@ -811,7 +800,6 @@ class CoefOne( MiniAppBase ):
 class CoefFMOne( MiniAppBase ):
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        problem.select_variables( self.variables )
 
         aux = self.get_filename( data )
         io = HDF5MeshIO( self.get_filename( data ) )
@@ -819,18 +807,15 @@ class CoefFMOne( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, 1), dtype = nm.float64 )
 
-        gvars = self.get_variables
-        for name, val in self.get_variables( problem, None, None, data, 'col' ):
-            problem.variables[name].data_from_data( val )
+        equations, variables = problem.create_evaluable(self.expression)
+
+        self.set_variables(variables, None, None, 'col', **data)
 
         for step, time in ts:
-            for name, val in gvars( problem, io, step, data, 'row' ):
-                problem.variables[name].data_from_data( val )
+            self.set_variables(variables, io, step, 'row', **data)
 
-            val = eval_term_op( None, self.expression,
-                                problem, call_mode = 'd_eval',
-                                copy_materials = False,
-                                update_materials = ((step) == 0) )
+            val = eval_equations(equations, variables)
+
             coef[step] = val
 
         coef /= volume
