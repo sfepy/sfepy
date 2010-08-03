@@ -92,7 +92,14 @@ class HomogenizationEngine( SimpleApp ):
             store( mini_app )
 
             problem.clear_equations()
-            dep = mini_app( data = dependencies )
+
+            # Pass only the direct dependencies, not the indirect ones.
+            dep_requires = rargs.get('requires', [])
+            data = {}
+            for key in dep_requires:
+                data[key] = dependencies[key]
+
+            dep = mini_app(data=data)
 
             dependencies[req] = dep
             output( '...done' )
