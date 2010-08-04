@@ -1,4 +1,5 @@
 # c: 05.05.2008, r: 05.05.2008
+from optparse import OptionParser
 import sys
 sys.path.append( '.' )
 
@@ -105,8 +106,8 @@ variables = {
     'uc'       : ('unknown field',   'displacement', 0),
     'vc'       : ('test field',      'displacement', 'uc'),
     'Pi'       : ('parameter field', 'displacement', 'uc'),
-    'Pi1'      : ('parameter field', 'displacement', '(set-to-None)'),
-    'Pi2'      : ('parameter field', 'displacement', '(set-to-None)'),
+    'Pi1'      : ('parameter field', 'displacement', None),
+    'Pi2'      : ('parameter field', 'displacement', None),
 }
 
 ##
@@ -237,15 +238,29 @@ solver_1 = {
 
 ############################################
 # Mini-application below, computing the homogenized elastic coefficients.
+usage = """%prog [options]"""
+help = {
+    'no_pauses' : 'do not make pauses',
+}
 
 ##
 # c: 05.05.2008, r: 28.11.2008
 def main():
     import os
-    from sfepy.base.base import spause
+    from sfepy.base.base import spause, output
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem import ProblemDefinition
     import sfepy.homogenization.coefs_base as cb
+
+    parser = OptionParser(usage=usage, version='%prog')
+    parser.add_option('-n', '--no-pauses',
+                      action="store_true", dest='no_pauses',
+                      default=False, help=help['no_pauses'])
+    options, args = parser.parse_args()
+
+    if options.no_pauses:
+        def spause(*args):
+            output(*args)
 
     nm.set_printoptions( precision = 3 )
 
