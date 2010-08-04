@@ -146,6 +146,9 @@ class PermeabilityRTerm( Term ):
         else:
             raise StopIteration
 
+        if isinstance(index, list):
+            index = index[0]
+
         mat = nm.ascontiguousarray(mat[...,index:index+1])
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, mat, vg, ap.econn, chunk )
