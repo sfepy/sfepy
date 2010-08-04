@@ -275,14 +275,14 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
             problem.select_bcs( ebc_names = ebcs, epbc_names = epbcs )
 
         else:
-            problem.time_update( conf_ebc = ebcs, conf_epbc = epbcs )
+            problem.time_update(ebcs=ebcs, epbcs=epbcs)
 
         ir = indx( var_names[0], stripped = True, allow_dual = True )
         ic = indx( var_names[1], stripped = True, allow_dual = True )
 
-        mtx = problem.evaluate(mtx_term, dummy, dw_mode='matrix',
-                               copy_materials=False,
-			       update_materials=False)
+        mtx = problem.evaluate(mtx_term, auto_init=True,
+                               mode='weak', dw_mode='matrix',
+                               copy_materials=False)
         matrices[mtx_name] = mtx[ir,ic]
 
     return matrices
