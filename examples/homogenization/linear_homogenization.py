@@ -142,7 +142,7 @@ expr_coefs = """dw_lin_elastic.i1.Ym( matrix.D, Pi1, Pi2 )
 def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
     mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
 
-    val = pis.states[ir, ic] + corrs_rs.states[ir, ic]['u']
+    val = pis.states[ir, ic]['u'] + corrs_rs.states[ir, ic]['u']
 
     variables[mode2var[mode]].data_from_any(val)
 
@@ -156,10 +156,6 @@ coefs = {
     'filenames' : {},
 }
 
-# requirements for elastic homog. coefficients
-def set_corrs_rs(variables, ir, ic, pis):
-    variables['Pi'].data_from_any(pis.states[ir, ic])
-
 requirements = {
     'pis' : {
         'variables' : ['u'],
@@ -170,7 +166,7 @@ requirements = {
         'ebcs' : ['fixed_u'],
         'epbcs' : all_periodic,
         'equations' : equation_corrs,
-        'set_variables' : set_corrs_rs,
+        'set_variables' : [('Pi', 'pis', 'u')],
         'class' : cb.CorrDimDim,
         'save_name' : 'corrs_le',
         'dump_variables' : ['u'],

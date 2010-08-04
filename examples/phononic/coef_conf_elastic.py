@@ -15,13 +15,10 @@ eq_rs = {
             + dw_lin_elastic.3.%s( matrix.D, v1, Pi ) = 0""",
 }
 
-def set_corrs_phono_rs(variables, ir, ic, pis):
-    variables['Pi'].data_from_any(pis.states[ir, ic])
-
 def set_elastic(variables, ir, ic, mode, pis, corrs_phono_rs):
     mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
 
-    val = pis.states[ir, ic] + corrs_phono_rs.states[ir, ic]['u1']
+    val = pis.states[ir, ic]['u1'] + corrs_phono_rs.states[ir, ic]['u1']
 
     variables[mode2var[mode]].data_from_any(val)
 
@@ -65,7 +62,7 @@ def define_input( filename, region, bbox, geom ):
             'ebcs' : ['fixed_u'],
             'epbcs' : all_periodic,
             'equations' : expand_regions( eq_rs, (region, region) ),
-            'set_variables' : set_corrs_phono_rs,
+            'set_variables' : [('Pi', 'pis', 'u1')],
             'class' : cb.CorrDimDim,
             'save_name' : 'corrs_phono',
             'dump_variables' : ['u1'],

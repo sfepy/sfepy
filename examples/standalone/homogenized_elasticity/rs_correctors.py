@@ -170,7 +170,7 @@ integral_1 = {
 def set_elastic(variables, ir, ic, mode, pis, corrs_rs):
     mode2var = {'row' : 'Pi1', 'col' : 'Pi2'}
 
-    val = pis.states[ir, ic] + corrs_rs.states[ir, ic]['uc']
+    val = pis.states[ir, ic]['uc'] + corrs_rs.states[ir, ic]['uc']
 
     variables[mode2var[mode]].data_from_any(val)
 
@@ -181,11 +181,6 @@ coefs = {
         'set_variables' : set_elastic,
     },
 }
-
-##
-# Data required to compute the homogenized coefficients.
-def set_corrs_rs(variables, ir, ic, pis):
-    variables['Pi'].data_from_any(pis.states[ir, ic])
 
 all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 requirements = {
@@ -201,7 +196,7 @@ requirements = {
         'epbcs' : all_periodic,
         'equations' : {'eq' : """dw_lin_elastic.i3.Y( m.D, vc, uc )
                              = - dw_lin_elastic.i3.Y( m.D, vc, Pi )"""},
-        'set_variables' : set_corrs_rs,
+        'set_variables' : [('Pi', 'pis', 'uc')],
         'save_name' : 'corrs_elastic',
         'is_linear' : True,
     },

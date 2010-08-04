@@ -174,14 +174,7 @@ expr_coefs = {
 def set_elastic_u(variables, ir, ic, mode, pis, corrs_rs):
     mode2var = {'row' : 'Pi1u', 'col' : 'Pi2u'}
 
-    val = pis.states[ir, ic] + corrs_rs.states[ir, ic]['u']
-
-    variables[mode2var[mode]].data_from_any(val)
-
-def set_elastic_p(variables, ir, ic, mode, corrs_rs):
-    mode2var = {'row' : 'Pi1p', 'col' : 'Pi2p'}
-
-    val = corrs_rs.states[ir, ic]['p']
+    val = pis.states[ir, ic]['u'] + corrs_rs.states[ir, ic]['u']
 
     variables[mode2var[mode]].data_from_any(val)
 
@@ -195,7 +188,7 @@ coefs = {
     'elastic_p' : {
         'requires' : ['corrs_rs'],
         'expression' : expr_coefs['Q2'],
-        'set_variables' : set_elastic_p,
+        'set_variables' : [('Pi1p', 'corrs_rs', 'p'), ('Pi2p', 'corrs_rs', 'p')],
         'class' : cb.CoefSymSym,
     },
     'D' : {
@@ -204,10 +197,6 @@ coefs = {
     },
     'filenames' : {},
 }
-
-# requirements for elastic homog. coefficients
-def set_corrs_rs(variables, ir, ic, pis):
-    variables['Pi'].data_from_any(pis.states[ir, ic])
 
 requirements = {
     'pis' : {
@@ -219,7 +208,7 @@ requirements = {
         'ebcs' : ['fixed_u'],
         'epbcs' : all_periodic,
         'equations' : equation_corrs,
-        'set_variables' : set_corrs_rs,
+        'set_variables' : [('Pi', 'pis', 'u')],
         'class' : cb.CorrDimDim,
         'save_name' : 'corrs_le',
         'dump_variables' : ['u', 'p'],
