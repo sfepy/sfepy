@@ -7,28 +7,6 @@ from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
 
-def generate_ones( problem, var_names ):
-    for var_name in var_names:
-        one_var = problem.variables[var_name]
-        one = nm.ones( (one_var.field.n_nod,), dtype = nm.float64 )
-        yield var_name, one
-
-class CorrectorsElasticRS( CorrDimDim ):
-
-    def get_variables( self, ir, ic, data ):
-        """data: pis"""
-        pis = data[self.requires[0]]
-        yield (self.variables[-1], pis.states[ir,ic])
-
-class CorrectorsPressure( CorrOne ):
-
-    def get_variables( self, data ):
-        """data: None"""
-        return generate_ones( self.problem, self.variables[-2:] )
-
-class CorrectorsAlpha( CorrOne ):
-    pass
-
 class CorrectorsPermeability( CorrDim ):
 
     def __call__( self, problem = None, data = None, save_hook = None ):
@@ -167,39 +145,6 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         return Struct( name = self.name,
                        filename = filename )
 
-class ElasticCoef( CoefSymSym ):
-    """Homogenized elastic tensor $E_{ijkl}$."""
-
-    mode2var = {'row' : 0, 'col' : 1}
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-
-        pis, corrs = [data[ii] for ii in self.requires]
-
-        var_name = self.variables[self.mode2var[mode]]
-        c_name = problem.variables[var_name].primary_var_name
-
-        indx = corrs.di.indx[c_name]
-        omega = corrs.states[ir,ic][indx]
-        pi = pis.states[ir,ic] + omega
-        yield (var_name, pi)
-
-class ElasticPCoef( CoefSymSym ):
-    """Homogenized elastic tensor $E_{ijkl}$ - only pressure part."""
-
-    mode2var = {'row' : 0, 'col' : 1}
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-
-        corrs = data[self.requires[0]]
-
-        var_name = self.variables[self.mode2var[mode]]
-        c_name = problem.variables[var_name].primary_var_name
-
-        indx = corrs.di.indx[c_name]
-        omega = corrs.states[ir,ic][indx]
-        yield (var_name, omega)
-
 class ViscousFMCoef( CoefFMSymSym ):
     """Homogenized viscous fading memory tensor $H_{ijkl}$."""
  
@@ -223,37 +168,6 @@ class ViscousFMCoef( CoefFMSymSym ):
             indx = corrs.di.indx[c_name]
             pc = corrs.states[ir,ic][indx]
             yield var_name, pc
-
-class PBiotCoef( CoefSym ):
-    """Homogenized Biot-like coefficient."""
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-
-        pis, corrs = [data[ii] for ii in self.requires]
-
-        if mode == 'col':
-            # omega.
-            var_name = self.variables[0]
-            c_name = problem.variables[var_name].primary_var_name
-
-            indx = corrs.di.indx[c_name]
-            omega = corrs.state[indx]
-            yield (var_name, omega)
-
-        else:
-            var_name = self.variables[1]
-            yield var_name, pis.states[ir,ic]
-
-            var_name = self.variables[2]
-            c_name = problem.variables[var_name].primary_var_name
-
-            indx = corrs.di.indx[c_name]
-            pc = corrs.state[indx]
-
-            if ir == ic:
-                yield (var_name, pc)
-            else:
-                yield (var_name, nm.zeros_like(pc))
 
 class RBiotCoef( CoefFMSym ):
     """Homogenized fading memory Biot-like coefficient."""
@@ -288,25 +202,6 @@ class RBiotCoef( CoefFMSym ):
                 yield (var_name, pc)
             else:
                 yield (var_name, nm.zeros_like(pc))
-
-class ElasticBiotCoef( CoefSym ):
-    """Homogenized elastic Biot coefficient."""
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-
-        if mode == 'col':
-            for var_name, val in  generate_ones( self.problem,
-                                                 self.variables[0:1] ):
-                yield var_name, val
-
-        else:
-            var_name = self.variables[1]
-            c_name = problem.variables[var_name].primary_var_name
-
-            corrs = data[self.requires[0]]
-            indx = corrs.di.indx[c_name]
-            omega = corrs.states[ir,ic][indx]
-            yield var_name, omega
 
 class BiotFMCoef( CoefFMSym ):
     """Fading memory Biot coefficient."""
@@ -398,19 +293,6 @@ class GBarCoef( CoefOne ):
 
         return coef
 
-class GStarCoef( CoefOne ):
-    """Barenblatt-like G^* coefficient for incompressible interface Y_3."""
-
-    def get_variables( self, problem, data ):
-        # omega.
-        var_name = self.variables[0]
-        c_name = problem.variables[var_name].primary_var_name
-
-        corrs = data[self.requires[0]]
-        indx = corrs.di.indx[c_name]
-        val = corrs.state[indx]
-        yield var_name, val
-
 def eval_boundary_diff_vel_grad( problem, uc, pc, equation, region_name,
                                  pi = None ):
     set_state = problem.variables.set_state_part
@@ -481,25 +363,6 @@ class GPlusCoef( CoefFMOne ):
 
         return coef
 
-class IRBiotModulus( CoefOne ):
-    """Homogenized instantaneous reciprocal Biot modulus."""
-
-    def get_variables( self, problem, data ):
-
-        for var_name, val in  generate_ones( self.problem,
-                                             self.variables[0:2] ):
-            yield var_name, val
-        
-        corrs = data[self.requires[0]]
-
-        for ii in [2, 3]:
-            # omega and pp.
-            var_name = self.variables[ii]
-            c_name = problem.variables[var_name].primary_var_name
-            indx = corrs.di.indx[c_name]
-            val = corrs.state[indx]
-            yield var_name, val
-
 class FMRBiotModulus( CoefFMOne ):
     """Fading memory reciprocal Biot modulus."""
 
@@ -524,28 +387,3 @@ class FMRBiotModulus( CoefFMOne ):
             var_name = self.variables[3]
             c_name = problem.variables[var_name].primary_var_name
             yield var_name, step_data['d'+c_name].data
-
-class DiffusionCoef( CoefDimDim ):
-    """Homogenized diffusion coefficient."""
-
-    mode2var = {'row' : 0, 'col' : 1}
-
-    def get_variables( self, problem, ir, ic, data, mode ):
-
-        pressure = problem.variables[self.variables[0]]
-        coor = pressure.field.get_coor()
-        
-        corrs = data[self.requires[0]]
-
-        var_name = self.variables[self.mode2var[mode]]
-        c_name = problem.variables[var_name].primary_var_name
-        indx = corrs.di.indx[c_name]
-
-        if mode == 'row':
-            ii = ir
-        else:
-            ii = ic
-
-        val = coor[:,ii] + corrs.states[ii][indx]
-
-        yield var_name, val
