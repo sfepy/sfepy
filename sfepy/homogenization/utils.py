@@ -20,7 +20,7 @@ def create_pis(problem, var_name):
     for ir in range( dim ):
         for ic in range( dim ):
             pi = build_op_pi(var, ir, ic)
-            pis[ir,ic] = pi
+            pis[ir,ic] = {var_name : pi}
             names.append('pi_%d%d' % (ir, ic))
     return names, pis
 
@@ -33,7 +33,7 @@ def create_scalar_pis( problem, var_name ):
     pis = nm.zeros( (dim,), dtype = nm.object )
     names = []
     for ir in range( dim ):
-        pis[ir] = nm.ascontiguousarray( coor[:,ir] )
+        pis[ir] = {var_name : nm.ascontiguousarray( coor[:,ir] )}
         names.append('pi_%d' % (ir,))
     return names, pis
 
