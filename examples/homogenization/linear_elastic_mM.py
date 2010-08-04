@@ -24,7 +24,9 @@ def post_process( out, pb, state, extend = False ):
             rname = pb.conf.options.recovery_region
             region = pb.domain.regions[rname]
 
-            save_recovery_region( pb, rname );
+            filename = os.path.join(os.path.dirname(pb.get_output_name()),
+                                    'recovery_region.vtk')
+            save_recovery_region(pb, rname, filename=filename);
 
             rstrain = pb.evaluate('de_cauchy_strain.i1.%s( u )' % rname)
 
