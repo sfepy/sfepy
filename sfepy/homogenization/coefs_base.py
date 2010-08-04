@@ -631,6 +631,15 @@ class VolumeFractions( MiniAppBase ):
 
 class CoefSymSym( MiniAppBase ):
 
+    def set_variables_default(variables, ir, ic, mode, set_var, data):
+        mode2var = {'row' : 0, 'col' : 1}
+        idx = mode2var[mode]
+
+        val = data[set_var[idx][1]].states[ir, ic][set_var[idx][2]]
+        variables[set_var[idx][0]].data_from_any(val)
+
+    set_variables_default = staticmethod(set_variables_default)
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -640,10 +649,18 @@ class CoefSymSym( MiniAppBase ):
         equations, variables = problem.create_evaluable(self.expression)
 
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-            self.set_variables(variables, irr, icr, 'row', **data)
+            if isinstance(self.set_variables, list):
+                self.set_variables_default(variables, irr, icr, 'row',
+                                           self.set_variables, data)
+            else:
+                self.set_variables(variables, irr, icr, 'row', **data)
 
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
-                self.set_variables(variables, irc, icc, 'col', **data)
+                if isinstance(self.set_variables, list):
+                    self.set_variables_default(variables, irr, icr, 'col',
+                                               self.set_variables, data)
+                else:
+                    self.set_variables(variables, irc, icc, 'col', **data)
 
                 val = eval_equations(equations, variables)
 
