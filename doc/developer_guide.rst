@@ -560,7 +560,6 @@ sfepy.homogenization package
    src/sfepy/homogenization/coefficients
    src/sfepy/homogenization/coefs_base
    src/sfepy/homogenization/coefs_elastic
-   src/sfepy/homogenization/coefs_piezo
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/phono
