@@ -3,8 +3,7 @@ from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
      CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
      PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
      CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions, \
-     CorrMiniApp
-from sfepy.fem import eval_term_op
+     CorrMiniApp, CorrSolution
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper
 
@@ -35,28 +34,39 @@ class CorrectorsPermeability( CorrDim ):
     def __call__( self, problem = None, data = None, save_hook = None ):
         problem = get_default( problem, self.problem )
 
-        problem.select_variables( self.variables )
         equations = {}
         for key, eq in self.equations.iteritems():
             equations[key] = eq % tuple( self.regions )
-        problem.set_equations( equations, user={'ir' : None} )
+
+        index = [0]
+        problem.set_equations( equations, user={self.index_name : index} )
 
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.update_materials(problem.ts)
+
+        self.init_solvers(problem)
+
+        variables = problem.get_variables()
 
         dim = problem.get_dim()
         states = nm.zeros( (dim,), dtype = nm.object )
         clist = []
         for ir in range( dim ):
-            state = problem.solve( ir = ir )
-            assert_( problem.variables.has_ebc( state ) )
-            states[ir] = state
-            clist.append( (ir,) )
-            
-        self.save( states, problem, clist )
+            index[0] = ir # Set the index - this is visible in the term.
 
-        return Struct( name = self.name,
-                       states = states,
-                       di = problem.variables.di )
+            state = problem.solve()
+            assert_(variables.has_ebc(state))
+            states[ir] = variables.get_state_parts()
+
+            clist.append( (ir,) )
+
+        corr_sol = CorrSolution(name = self.name,
+                                states = states,
+                                components = clist)
+
+        self.save(corr_sol, problem)
+
+        return corr_sol
 
 class PressureRHSVector( CorrMiniApp ):
     
