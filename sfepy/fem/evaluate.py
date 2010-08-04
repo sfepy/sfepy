@@ -122,6 +122,7 @@ class LCBCEvaluator( BasicEvaluator ):
         return self.op_lcbc.T * vec
 
 def create_evaluable(expression, fields, materials, variables, integrals,
+                     update_materials=True,
                      ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                      auto_init=False, mode='eval', extra_args=None,
                      verbose=True, kwargs=None):
@@ -165,12 +166,14 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     if mode == 'weak':
         setup_dof_conns(equations.conn_info)
-        materials.time_update(ts, domain, equations, verbose=False)
+        if update_materials:
+            materials.time_update(ts, domain, equations, verbose=False)
         equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
 
     else:
         setup_extra_data(equations.conn_info)
-        materials.time_update(ts, domain, equations, verbose=False)
+        if update_materials:
+            materials.time_update(ts, domain, equations, verbose=False)
 
     equations.describe_geometry(verbose=False)
 
@@ -207,6 +210,7 @@ def eval_equations(equations, variables, clear_caches=True,
     return out
 
 def evaluate(expression, fields, materials, variables, integrals,
+             update_materials=True,
              ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
              auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
              ret_variables=False, extra_args=None, verbose=True, kwargs=None):
@@ -219,6 +223,7 @@ def evaluate(expression, fields, materials, variables, integrals,
         The evaluation mode.
     """
     aux = create_evaluable(expression, fields, materials, variables, integrals,
+                           update_materials=update_materials,
                            ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs, ts=ts,
                            functions=functions, auto_init=auto_init,
                            mode=mode, extra_args=extra_args,

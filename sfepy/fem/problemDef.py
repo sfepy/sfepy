@@ -836,6 +836,7 @@ class ProblemDefinition( Struct ):
 
         out = create_evaluable(expression, self.fields, materials,
                                variables.itervalues(), integrals,
+                               update_materials=copy_materials,
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,
