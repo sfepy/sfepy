@@ -795,7 +795,93 @@ class ProblemDefinition( Struct ):
                          ts=None, functions=None,
                          mode='eval', var_dict=None, extra_args=None,
                          verbose=True, **kwargs):
+        """
+        Create evaluable object (equations and corresponding variables)
+        from the `expression` string. Convenience function calling
+        :func:`create_evaluable()
+        <sfepy.fem.evaluate.create_evaluable()>` with defaults provided
+        by the ProblemDefinition instance `self`.
 
+        The evaluable can be repeatedly evaluated by calling
+        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`,
+        e.g. for different values of variables.
+
+        Parameters
+        ----------
+        expression : str
+            The expression to evaluate.
+        try_equations : bool
+            Try to get variables from `self.equations`. If this fails,
+            variables can either be provided in `var_dict`, as keyword
+            arguments, or are created automatically according to the
+            expression.
+        auto_init : bool
+            Set values of all variables to all zeros.
+        copy_materials : bool
+            Work with a copy of `self.materials`. Safe but can be slow.
+        integrals : Integrals instance, optional
+            The integrals to be used. Automatically created as needed if
+            not given.
+        ebcs : Conditions instance, optional
+            The essential (Dirichlet) boundary conditions for 'weak'
+            mode. If not given, `self.ebcs` are used.
+        epbcs : Conditions instance, optional
+            The periodic boundary conditions for 'weak'
+            mode. If not given, `self.epbcs` are used.
+        lcbcs : Conditions instance, optional
+            The linear combination boundary conditions for 'weak'
+            mode. If not given, `self.lcbcs` are used.
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, `self.ts` is used.
+        functions : Functions instance, optional
+            The user functions for boundary conditions, materials
+            etc. If not given, `self.functions` are used.
+        mode : one of 'eval', 'el_avg', 'qp', 'weak'
+            The evaluation mode - 'weak' means the finite element
+            assembling, 'qp' requests the values in quadrature points,
+            'el_avg' element averages and 'eval' means integration over
+            each term region.
+        var_dict : dict, optional
+            The variables (dictionary of (variable name) : (Variable
+            instance)) to be used in the expression. Use this if the
+            name of a variable conflicts with one of the parameters of
+            this method.
+        extra_args : dict, optional
+            Extra arguments to be passed to terms in the expression.
+        verbose : bool
+            If False, reduce verbosity.
+        **kwargs : keyword arguments
+            Additional variables can be passed as keyword arguments, see
+            `var_dict`.
+
+        Returns
+        -------
+        equations : Equations instance
+            The equations that can be evaluated.
+        variables : Variables instance
+            The corresponding variables. Set their values and use
+            :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`.
+
+        Examples
+        --------
+        `problem` is ProblemDefinition instance.
+
+        >>> out = problem.create_evaluable('dq_state_in_volume_qp.i1.Omega(u)')
+        >>> equations, variables = out
+
+        `vec` is a vector of coefficients compatible with the field
+        of 'u' - let's use all ones.
+
+        >>> vec = nm.ones((variables['u'].n_dof,), dtype=nm.float64)
+        >>> variables['u'].data_from_any(vec)
+        >>> vec_qp = eval_equations(equations, variables, mode='qp')
+
+        Try another vector:
+
+        >>> vec = 3 * nm.ones((variables['u'].n_dof,), dtype=nm.float64)
+        >>> variables['u'].data_from_any(vec)
+        >>> vec_qp = eval_equations(equations, variables, mode='qp')
+        """
         if try_equations and self.equations is not None:
             variables = self.equations.variables.as_dict()
 
@@ -854,15 +940,30 @@ class ProblemDefinition( Struct ):
                  extra_args=None, **kwargs):
         """
         Evaluate an expression, convenience wrapper of
-        sfepy.fem.evaluate.evaluate().
+        `self.create_evaluable()` and
+        :func:`eval_equations() <sfepy.fem.evaluate.eval_equations()>`.
 
         Parameters
         ----------
-	...
+        ... : arguments
+   	    See docstrings of `self.create_evaluable()`.
+        dw_mode : 'vector' or 'matrix'
+            The assembling mode for 'weak' evaluation mode.
+        term_mode : str
+            The term call mode - some terms support different call modes
+            and depending on the call mode different values are
+            returned.
+        ret_variables : bool
+            If True, return the variables that were created to evaluate
+            the expression.
 
-        Examples
-        --------
-        ...
+        Returns
+        -------
+        out : array
+            The result of the evaluation.
+        variables : Variables instance
+            The variables that were created to evaluate
+            the expression. Only provided if `ret_variables` is True.
         """
         aux = self.create_evaluable(expression,
                                     try_equations=try_equations,

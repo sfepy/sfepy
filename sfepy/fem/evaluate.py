@@ -127,6 +127,52 @@ def create_evaluable(expression, fields, materials, variables, integrals,
                      auto_init=False, mode='eval', extra_args=None,
                      verbose=True, kwargs=None):
     """
+    Create evaluable object (equations and corresponding variables)
+    from the `expression` string.
+
+    Parameters
+    ----------
+    expression : str
+        The expression to evaluate.
+    fields : dict
+        The dictionary of fields used in `variables`.
+    materials : Materials instance
+        The materials used in the expression.
+    variables : Variables instance
+        The variables used in the expression.
+    integrals : Integrals instance
+        The integrals to be used.
+    update_materials : bool
+        Call time update function of the materials. Safe but can be slow.
+    ebcs : Conditions instance, optional
+        The essential (Dirichlet) boundary conditions for 'weak'
+        mode.
+    epbcs : Conditions instance, optional
+        The periodic boundary conditions for 'weak'
+        mode.
+    lcbcs : Conditions instance, optional
+        The linear combination boundary conditions for 'weak'
+        mode.
+    ts : TimeStepper instance, optional
+        The time stepper.
+    functions : Functions instance, optional
+        The user functions for boundary conditions, materials
+        etc.
+    auto_init : bool
+        Set values of all variables to all zeros.
+    mode : one of 'eval', 'el_avg', 'qp', 'weak'
+        The evaluation mode - 'weak' means the finite element
+        assembling, 'qp' requests the values in quadrature points,
+        'el_avg' element averages and 'eval' means integration over
+        each term region.
+    extra_args : dict, optional
+        Extra arguments to be passed to terms in the expression.
+    verbose : bool
+        If False, reduce verbosity.
+    kwargs : dict, optional
+        The variables (dictionary of (variable name) : (Variable
+        instance)) to be used in the expression.
+
     Returns
     -------
     equation : Equation instance
@@ -182,6 +228,34 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
 def eval_equations(equations, variables, clear_caches=True,
                    mode='eval', dw_mode='vector', term_mode=None):
+    """
+    Evaluate the equations.
+
+    Parameters
+    ----------
+    equations : Equations instance
+        The equations returned by :func:`create_evaluable()`.
+    variables : Variables instance
+        The variables returned by :func:`create_evaluable()`.
+    clear_caches : bool
+        If True, clear term caches.
+    mode : one of 'eval', 'el_avg', 'qp', 'weak'
+        The evaluation mode - 'weak' means the finite element
+        assembling, 'qp' requests the values in quadrature points,
+        'el_avg' element averages and 'eval' means integration over
+        each term region.
+    dw_mode : 'vector' or 'matrix'
+        The assembling mode for 'weak' evaluation mode.
+    term_mode : str
+        The term call mode - some terms support different call modes
+        and depending on the call mode different values are
+        returned.
+
+    Returns
+    -------
+    out : array
+        The result of the evaluation.
+    """
     asm_obj = None
 
     if mode == 'weak':
@@ -215,12 +289,14 @@ def evaluate(expression, fields, materials, variables, integrals,
              auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
              ret_variables=False, extra_args=None, verbose=True, kwargs=None):
     """
-    Convenience function calling create_evaluable() and eval_equations().
+    Convenience function calling :func:`create_evaluable()` and
+    :func:`eval_equations()`.
 
     Parameters
     ----------
-    mode : one of 'eval', 'el_avg', 'qp', 'weak'
-        The evaluation mode.
+    ... : arguments
+        See docstrings of :func:`create_evaluable()` and
+        :func:`eval_equations()`.
     """
     aux = create_evaluable(expression, fields, materials, variables, integrals,
                            update_materials=update_materials,
