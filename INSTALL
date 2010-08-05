@@ -12,8 +12,8 @@ Dependencies:
     - some tests and functions use sympy
     - schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
     - log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
-    - isfepy requires ipython, mayavi2, matplotlib with WXAgg
-    - postproc.py, sfepy_gui.py require mayavi2
+    - isfepy requires ipython, mayavi, matplotlib with WXAgg
+    - postproc.py, sfepy_gui.py require mayavi
     - to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
 
 SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
@@ -27,10 +27,11 @@ in Debian:
 On Windows, all the required packages are part of the Enthought Python
 Distribution (EPD) [1] which is free for academic purposes. A completely
 free Python(x,y) [2] can be used too, but pyparsing has to be installed
-manually.
+manually, see [3] for step-by-step instructions.
 
 [1] http://www.enthought.com/products/epd.php
 [2] http://www.pythonxy.com/foreword.php
+[3] http://docs.sfepy.org/doc/introduction.html#running-on-windows-using-python-x-y
 
 SfePy can be used without any installation (see In-place compilation...) by
 running the scripts from the top-level directory of the distribution
@@ -89,7 +90,9 @@ Stand-alone examples:
 'python examples/standalone/homogenized_elasticity/rs_correctors.py'
 'python examples/standalone/elastic_materials/compare_elastic_materials.py'
 'python examples/standalone/live_plot/live_plot.py' ... requires GTKAgg
-matplotlib backend!
+ matplotlib backend!
+'python examples/standalone/interactive/linear_elasticity.py -s'
+ ... '-s' option requires Mayavi
 
 Testing:
 --------
@@ -97,7 +100,7 @@ Testing:
 Run './runTests.py' or './runTests.py --filter-less' in TOPDIR.
 
 Tests that save results save them into TOPDIR/output-tests directory. View the
-results (*.vtk) with a VTK-capable viewer (e.g. paraview, mayavi2).
+results (*.vtk) with a VTK-capable viewer (e.g. ParaView, Mayavi).
 
 No failures should be reported.
 
@@ -112,7 +115,7 @@ See also './runTests.py --help' for further options.
 Documentation:
 --------------
 
-SfePy is documented using Sphinx, see [3]. The documentation sources are in the
+SfePy is documented using Sphinx [3]. The documentation sources are in the
 doc directory. Those sources can be used to generate the documentation
 in many formats supported by Sphinx, notably in html and pdf (using LaTeX). The
 pdf version is already contained in the release, see doc/sfepy_manual.pdf. The
@@ -130,6 +133,6 @@ See also [1], [2].
 
 [1] http://sfepy.org
 [2] http://sfepy.kme.zcu.cz
-[3] http://sphinx.pocoo.org/ 
+[3] http://sphinx.pocoo.org/
 [4] http://docs.sfepy.org/doc
 [5] http://docs.sfepy.org/doc-devel
