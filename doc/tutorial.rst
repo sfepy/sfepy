@@ -351,15 +351,10 @@ solvers with different convergence parameters if necessary.
 
     #! FE assembling parameters
     #! ------------------------
-    #! 'chunk_size' determines maximum number of elements to assemble in one C
-    #! function call. Higher values mean faster assembling, but also more memory
-    #! usage.
+    #! 'chunk_size' is now unused, deprecated, and will be removed.
     fe = {
         'chunk_size' : 1000
     }
-
-The ``chunk_size`` parameter can be used to tweak the tradeoff between faster
-CPU and higher memory usage.
 
 Interactive Example: Linear Elasticity
 --------------------------------------
