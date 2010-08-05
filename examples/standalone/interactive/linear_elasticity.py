@@ -25,13 +25,15 @@ help = {
 }
 
 def main():
+    from sfepy import data_dir
+
     parser = OptionParser(usage=usage, version='%prog')
     parser.add_option('-s', '--show',
                       action="store_true", dest='show',
                       default=False, help=help['show'])
     options, args = parser.parse_args()
 
-    mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh')
+    mesh = Mesh.from_file(data_dir + '/meshes/2d/rectangle_tri.mesh')
     domain = Domain('domain', mesh)
 
     min_x, max_x = domain.get_mesh_bounding_box()[:,0]
