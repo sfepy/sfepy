@@ -62,7 +62,7 @@ def configuration(parent_package='',top_path=None):
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
 
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
-                                     'RELEASE_NOTES.txt',
+                                     'RELEASE_NOTES.txt', 'AUTHORS',
                                      'site_cfg_template.py')))
     config.add_data_files(('../../../share/sfepy/script', aux_scripts))
     config.add_data_dir(('../../../share/sfepy/meshes', 'meshes'))
