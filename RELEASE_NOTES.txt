@@ -1,6 +1,112 @@
 # created: 20.07.2007 (-1)
 # last revision: 06.05.2010
 
+from 2010.2 to 2010.3
+=====================
+
+- refactor for interactive use, making things simpler:
+  - redesign term evaluation: non-assembling modes, hierarchy of calls:
+    - hierarchy: ProblemDefinition.evaluate() - evaluate() -
+      Equation.evaluate() - Term.evaluate()
+    - each level can be used by itself
+    - 'eval', 'el_avg', 'qp' and 'weak' modes
+    - split call_mode into (call_)mode and new term_mode
+    - split evaluate() into create_evaluable() and eval_equations()
+  - new Domain methods to access underlying mesh
+  - refactor Field, remove Fields:
+    - update Field construction (remove bases)
+    - move DOF connectivity setup to fields
+  - refactor construction of Variables
+    - move field-specific methods into FieldVariable
+  - refactor Materials, Material:
+    - remove regions from Material definition:
+      - a Material instance is now really just a collection of values
+      - region is given by a term using the particular Material
+    - split material update code into several functions
+    - allow mixing special constants with parameters given by user-defined
+      function by passing mode='special_constant' to the function
+  - refactor construction of Equations, Equation:
+    - Equation.__init__() accepts Terms instance directly
+    - make parse_definition() a regular function
+    - update Equations to create and hold Variables
+    - variables collected from individual terms
+    - Equations now hold geometries instead of ProblemDefinition
+    - remove term prefixes (namespaces) from description of equations
+    - move setup of equations from ProblemDefinition to Equations
+    - move mirror region handling to Region
+    - move creation of ConnInfo into Term
+    - move assembling to Equations (and Term)
+  - refactor Terms, Term:
+    - allow override of term arguments in Term.get_args()
+    - new Term.new() factory constructor
+    - simplified equation parser (full argument parsing now in
+      create_arg_parser())
+    - support basic arithmetics
+    - set term integral at time of term construction
+  - new basic boundary condition classes:
+    BoundaryConditions, BoundaryCondition, EssentialBC, PeriodicBC,
+    LinearCombinationBC
+    - allow Function instances in conditions
+  - refactor linear combination BC
+    - new LCBCOperator, RigidOperator, NoPenetrationOperator,
+      LCBCOperators, make_global_lcbc_operator()
+  - refactor DofInfo into proper class (and module)
+  - refactor equation mapping into EquationMap class
+  - implement simplified integral specification in equations
+    - the integral can either be a string representation of a non-negative
+      integer (the integral order) or 'a' (automatic order) or a string
+      beginning with 'i' (existing custom integral name)
+    - integrals are created on demand
+  - ConnInfo now stores directly variables instead of their names
+  - update ProblemDefinition for interactive use:
+    - evaluators do not hold the tangent matrix
+    - split and update ProblemDefinition.time_update()
+  - remove unnecessary arguments from evaluators and generic solvers
+  - remove historical cruft, obsolete code
+  - update all examples
+  - update applications for new term evaluation:
+    - schroedinger.py
+    - shaper.py
+- simplify interactive construction of solvers:
+  - when a non-abstract class is used, name and kind are inferred
+    automatically
+- improve tests of examples:
+  - update TestInput to call hook functions and to use solve_direct()
+  - simplify TestInputEvolutionary
+  - check nonlinear solver stopping conditions also for evolutionary
+    problems
+- homogenization:
+  - new CoefSum and CorrSum
+  - new CoefEval - evaluate expression (e.g. 'c.A/2 + c.B*c.C')
+  - update for new evaluation code
+  - simplify saving/dumping of correctors by new CorrSolution class
+  - correctors stored by variables, not as the whole state vector
+  - user should provide set_variables() functions for all required
+    correctors/coefficients
+  - pass only the direct dependencies to coefficient and corrector mini_apps
+- mesh readers:
+  - add support for 2d abaqus quad and tri elements
+  - add full read and write support for comsol mesh format for sfepy
+    supported types
+- examples:
+  - update examples/quantum:
+    - unify 2D and 3D versions
+    - remove broken DFT examples
+  - new example + test (linear_elastic_tractions.py):
+    - employs simplified integral definition
+  - new examples/standalone/interactive/linear_elasticity.py
+- tests:
+  - new tests/test_high_level.py
+- documentation:
+  - improve docstrings:
+    - add argument description for all terms
+    - prepend term call signature(s) into term docstrings
+  - new tutorial "Interactive Example: Linear Elasticity"
+- many bug fixes
+- base:
+  - update Container class to be more dict-like
+- new AUTHORS file
+
 from 2010.1 to 2010.2
 =====================
 
