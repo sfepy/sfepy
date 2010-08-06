@@ -388,7 +388,7 @@ In the weak form the equation :eq:`eq_linear_elasticity` is
 .. math::
    :label: eq_wlinear_elasticity
 
-    \int_{\Omega} D_{ijkl} e_{kl}(\ul{u}) e_{kl}(\ul{v}) + \int_{\Omega}
+    \int_{\Omega} D_{ijkl} e_{kl}(\ul{u}) e_{ij}(\ul{v}) + \int_{\Omega}
     f_i v_i = 0 \;,
 
 where :math:`\ul{v}` is the test function, and both :math:`\ul{u}`,
