@@ -67,7 +67,7 @@ Distribution (EPD) <http://www.enthought.com/products/epd.php>`_, which is free
 for academic purposes. A completely free `Python(x,y)
 <http://www.pythonxy.com>`_ can be used too, but pyparsing has to
 be installed manually. Instructions for installing Python(x,y) can be found in
-`Running on Windows using Python(x,y) (tested on Windows XP Pro 32-bit)`_.
+`Running on Windows using Python(x,y)`_.
 
 *SfePy* can be used without any installation by running the scripts from the
 top-level directory of the distribution (TOPDIR), or can be installed locally or
