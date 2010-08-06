@@ -1,7 +1,7 @@
 import numpy as nm
 from linear_elastic import \
      filename_mesh, materials, regions, fields, ebcs, \
-     integrals, solvers, fe
+     integrals, solvers
 
 options = {
     'ts' : 'ts',
