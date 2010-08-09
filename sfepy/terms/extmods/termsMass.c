@@ -203,7 +203,7 @@ int32 d_mass_scalar( FMField *out, FMField *coef,
     bf_actt( ftfp, bf, fp );
 
     ele_extractNodalValuesDBD( st, stateQ, conn + nEP * iel );
-    fmf_mulATB_1n( fp, st, ftfp );
+    fmf_mulAB_1n( fp, st, ftfp );
     fmf_mul( fp, coef->val );
 
     fmf_sumLevelsMulF( out, fp, vg->det->val );
