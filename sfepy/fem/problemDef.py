@@ -10,7 +10,7 @@ from mesh import Mesh
 from domain import Domain
 from fields import fields_from_conf
 from variables import Variables, Variable
-from materials import Materials
+from materials import Materials, Material
 from equations import Equations
 from integrals import Integrals
 from sfepy.fem.conditions import Conditions
@@ -899,18 +899,28 @@ class ProblemDefinition( Struct ):
             else:
                 variables = var_dict
 
+        _materials = []
+
         _kwargs = copy(kwargs)
         for key, val in kwargs.iteritems():
             if isinstance(val, Variable):
                 variables[val.name] = val
                 _kwargs.pop(key)
+
+            elif isinstance(val, Material):
+                _materials.append(val)
+                _kwargs.pop(key)
+
         kwargs = _kwargs
 
         if copy_materials:
             materials = self.materials.semideep_copy()
 
         else:
-            materials = self.materials
+            materials = Materials(objs=self.materials.objs)
+
+        for mat in _materials:
+            materials[mat.name] = mat
 
         ebcs = get_default(ebcs, self.ebcs)
         epbcs = get_default(epbcs, self.epbcs)
