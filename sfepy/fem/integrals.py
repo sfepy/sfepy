@@ -79,7 +79,7 @@ class Integral(Struct):
     """
     Wrapper class around quadratures.
     """
-    _msg1 = 'WARNING: quadrature order %d is not available for geometry %s!'
+    _msg1 = 'WARNING: quadrature order %s is not available for geometry %s!'
     _msg2 = 'WARNING: using %d instead!'
     
     def __init__(self, name, kind='v', order=None, quad_name=None,
