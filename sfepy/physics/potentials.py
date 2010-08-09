@@ -129,9 +129,9 @@ class PotentialBase(Struct):
         out = -1.0 * self
         return out
 
-class CorePotential(PotentialBase):
+class Potential(PotentialBase):
     """
-    Single core potential.
+    Single potential.
     """
 
     def __init__(self, name, function, centre=None, dim=3):
@@ -141,7 +141,7 @@ class CorePotential(PotentialBase):
         if centre is None:
             centre = nm.array([0.0] * dim, dtype=nm.float64)
 
-        self.centre = centre
+        self.centre = nm.asarray(centre, dtype=nm.float64)
 
         self.sign = 1.0
 
