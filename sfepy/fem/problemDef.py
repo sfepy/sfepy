@@ -973,7 +973,7 @@ class ProblemDefinition( Struct ):
                                     ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                     ts=ts, functions=functions,
                                     mode=mode, var_dict=var_dict,
-                                    extra_args=None,
+                                    extra_args=extra_args,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
 
