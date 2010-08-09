@@ -348,23 +348,10 @@ class Term(Struct):
         self.sign = 1.0
 
     def __mul__(self, other):
-        success = False
         try:
-            mul = float(other)
-        except:
-            pass
-        else:
-            success = True
+            mul = as_float_or_complex(other)
 
-        if not success:
-            try:
-                mul = complex(other)
-            except:
-                pass
-            else:
-                success = True
-                
-        if not success:
+        except ValueError:
             raise ValueError('cannot multiply Term with %s!' % other)
 
         out = self.copy(name=self.name)
