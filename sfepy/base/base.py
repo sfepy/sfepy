@@ -997,3 +997,29 @@ def ordered_iteritems(adict):
     for ii in order:
         key = keys[ii]
         yield key, adict[key]
+
+def as_float_or_complex(val):
+    """
+    Try to cast val to Python float, and if this fails, to Python
+    complex type.
+    """
+    success = False
+    try:
+        out = float(val)
+    except:
+        pass
+    else:
+        success = True
+
+    if not success:
+        try:
+            out = complex(val)
+        except:
+            pass
+        else:
+            success = True
+
+    if not success:
+        raise ValueError('cannot cast %s to float or complex!' % val)
+
+    return out
