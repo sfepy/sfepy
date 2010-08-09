@@ -346,14 +346,20 @@ class SchroedingerApp( SimpleApp ):
         file_output("|V_H|:     ", nla.norm(v_h_qp.ravel()))
         file_output("|V_XC|:    ", nla.norm(v_xc_qp.ravel()))
         file_output("|V_HXC|:   ", norm)
-        file_output("-"*70)
 
 	if self.iter_hook is not None: # User postprocessing.
-            data = Struct(eigs = eigs, mtx_s_phi = mtx_s_phi,
+            pb.select_bcs(ebc_names=['ZeroSurface'])
+            mtx_phi = self.make_full(mtx_s_phi)
+
+            data = Struct(iteration = self.itercount,
+                          eigs = eigs, weights = weights,
+                          mtx_s_phi = mtx_s_phi, mtx_phi = mtx_phi,
                           vec_n = vec_n, vec_v_h = vec_v_h,
                           n_qp = n_qp, v_ion_qp = v_ion_qp, v_h_qp = v_h_qp,
-                          v_xc_qp = v_xc_qp)
+                          v_xc_qp = v_xc_qp, file_output = file_output)
 	    self.iter_hook(self.problem, data = data)
+
+        file_output("-"*70)
 
         self.norm_v_hxc0 = norm
         
