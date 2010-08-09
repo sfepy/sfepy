@@ -133,7 +133,33 @@ class Test( TestCommon ):
         return test
     from_conf = staticmethod( from_conf )
 
-    
+    def test_eval_matrix(self):
+        problem = self.problem
+
+        problem.set_equations()
+        problem.time_update(ebcs={}, epbcs={})
+
+        var = problem.get_variables()['p']
+
+        vec = nm.arange(var.n_dof, dtype=var.dtype)
+
+        var.data_from_any(vec)
+
+        val1 = problem.evaluate('dw_diffusion.i1.Omega( m.K, p, p )',
+                                mode='eval', p=var)
+
+        mtx = problem.evaluate('dw_diffusion.i1.Omega( m.K, q, p )',
+                               mode='weak', dw_mode='matrix')
+
+        val2 = nm.dot(vec, mtx * vec)
+
+        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-15
+
+        self.report('eval: %s, weak: %s, ok: %s' \
+                    % (val1, val2, ok))
+
+        return ok
+
     def test_vector_matrix(self):
         problem = self.problem
 
