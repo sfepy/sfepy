@@ -338,6 +338,10 @@ Example::
 The VTK and HDF5 formats can be used for storing the results. The format
 can be selected in options, see :ref:`miscellaneous_options`.
 
+The following geometry elements are supported:
+
+.. image:: images/elements.png
+
 Regions
 ^^^^^^^
 
@@ -435,46 +439,53 @@ Fields
 Fields correspond to FE spaces
 
 * Long syntax::
-    
+
 	field_<number> = {
        	    'name' : <name>,
-            'dim' : (<dofs>,1),
-            'domain' : <region_name>,
-            'bases' : {<subregion_name> : <bases>}
-	    ['dtype' : <dtype>]
+	    'dtype' : <data_type>,
+            'shape' : <shape>,
+            'region' : <region_name>,
+            'approx_order' : <approx_order>
     	}
 
-
   where
-    * <dofs> - number of DOFs per node
-    * <dtype> - 'real' or 'complex' values
-    * <bases> - approximation on subdomains, e.g.  {'Omega_1' : 3_4_P1, 'Omega_2' : '3_8_Q1'} 
-	
-  * Example: P1 elements in 2D on a whole domain Omega::
+    * <data_type> is a numpy type (float64 or complex128) or
+      'real' or 'complex'
+    * <shape> is the number of DOFs per node: 1 or (1,) or 'scalar', space
+      dimension (2, or (2,) or 3 or (3,)) or 'vector'; it can be other
+      positive integer than just 1, 2, or 3
+    * <region_name> is the name of region where the field is defined
+    * <approx_order> is the FE approximation order, e.g. 0, 1, 2, '1B' (1
+      with bubble)
+
+  * Example: scalar P1 elements in 2D on a region Omega::
 
         field_1 = {
             'name' : 'temperature',
-            'dim' : (1,1),
-            'domain' : 'Omega',
-            'bases' : {'Omega' : '2_3_P1'}
+	    'dtype' : 'real',
+            'shape' : 'scalar',
+            'region' : 'Omega',
+            'approx_order' : 1
         }
-	
+
 * Short syntax::
 
      	  fields = {
-	      <name> : ((<dofs>,1), <dtype>, <region_name>, {<subregion_name> : <bases>})
+	      <name> : (<data_type>, <shape>, <region_name>, <approx_order>)
 	  }
 
-* The following elements/approximations can be used:
+  * Example: scalar P1 elements in 2D on a region Omega::
 
-  * 2D: 2_3_P1, 2_3_P1B, 2_3_P2, 2_3_P2B, 2_4_Q0, 2_4_Q1
-  * 3D: 3_4_P0, 3_4_P1, 3_4_P1B, 3_4_P2, 3_4_P2B, 3_8_Q0, 3_8_Q1
+        fields = {
+            'temperature' : ('real', 1, 'Omega', 1),
+        }
 
-The letter 'P' indicates a polynomial space on the simplex geometry, while 'Q'
-on the tensor product geometry. The numbers behind the letters indicate
-approximation order. Optional bubble function enrichment is marked by 'B'.
+* The following approximation orders can be used:
 
-.. image:: images/elements.png
+  * simplex elements: 1, 2, '1B', '2B'
+  * tensor product elements: 0, 1, '1B'
+
+  Optional bubble function enrichment is marked by 'B'.
 
 Variables
 ^^^^^^^^^
