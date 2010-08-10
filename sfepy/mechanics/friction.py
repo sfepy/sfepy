@@ -34,9 +34,9 @@ Solution in \hat{V}_h^c (not needed!):
 """
 from sfepy.base.base import *
 import sfepy.base.la as la
-from sfepy.fem import Mesh, Domain, Field, Fields, Variables
+from sfepy.fem import Mesh, Domain, Field, Variables
 from sfepy.fem.fe_surface import FESurface
-from sfepy.fem.variables import compute_nodal_normals
+from sfepy.fem.utils import compute_nodal_normals
 
 def edge_data_to_output(coors, conn, e_sort, data):
     out = nm.zeros_like(coors)
