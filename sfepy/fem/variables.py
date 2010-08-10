@@ -798,10 +798,8 @@ class Variable( Struct ):
                 self.special = special
 
         else:
-            obj.flags.add( is_other )
-            msg = 'unknown variable kind: %s' % kind
-            raise NotImplementedError( msg )
-            
+            raise NotImplementedError('unknown variable kind: %s' % kind)
+
         self.kind = kind
 
     ##
@@ -818,10 +816,6 @@ class Variable( Struct ):
     # 26.07.2007, c
     def is_parameter( self ):
         return is_parameter in self.flags
-    ##
-    # 26.07.2007, c
-    def is_other( self ):
-        return is_other in self.flags
 
     def is_state_or_parameter( self ):
         return (is_state in self.flags) or (is_parameter in self.flags)
