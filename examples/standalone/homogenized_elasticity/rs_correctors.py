@@ -11,7 +11,7 @@ def define_regions( filename ):
     """Define various subdomain for a given mesh file. This function is called
     below."""
     regions = {}
-    is3d = False
+    dim = 2
     
     regions['Y'] = ('all', {})
 
@@ -26,7 +26,7 @@ def define_regions( filename ):
 
     # Sides and corners.
     regions.update( define_box_regions( 2, (wx, wy) ) )
-    return is3d, regions, mat_ids
+    return dim, regions, mat_ids
 
 ##
 # c: 05.05.2008, r: 05.05.2008
@@ -65,7 +65,7 @@ filename_mesh = 'meshes/osteonT1_11.mesh'
 ##
 # Define regions (subdomains, boundaries) - $Y$, $Y_i$, ...
 # depending on a mesh used.
-is3d, regions, mat_ids = define_regions( filename_mesh )
+dim, regions, mat_ids = define_regions( filename_mesh )
 
 functions = {
     'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
@@ -77,26 +77,15 @@ functions = {
     'match_y_line' : (match_y_line,),
 }
 
-if is3d:
-    dim, geom = 3, '3_4'
-else:
-    dim, geom = 2, '2_3'
-
 ##
 # Define fields: 'displacement' in $Y$,
 # 'pressure_m' in $Y_m$.
 field_1 = {
     'name' : 'displacement',
-    'dim' : (dim,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '%s_P1' % geom}
-}
-
-field_2 = {
-    'name' : 'pressure_m',
-    'dim' : (1,1),
-    'domain' : 'Ym',
-    'bases' : {'Ym' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 ##

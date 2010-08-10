@@ -26,7 +26,7 @@ def define():
     }
 
     fields = {
-        'displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_8_Q1'}),
+        'displacement': ('real', 3, 'Omega', 1),
     }
 
     materials = {

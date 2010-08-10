@@ -23,7 +23,6 @@ conf_dir = os.path.dirname(__file__)
 io = MeshIO.any_from_filename(filename_mesh,
                               prefix_dir=conf_dir)
 bbox, dim = io.read_bounding_box(ret_dim = True)
-geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 if homogeneous:
     matrix_region = 'Y'
@@ -71,7 +70,7 @@ options = {
     'incident_wave_dir' : [1.0, 1.0],
     'dispersion_conf' : {
         'input' : cconf.define_input(filename_mesh,
-                                     matrix_region, bbox, geom),
+                                     matrix_region, bbox),
         'module' : cconf,
     },
 
@@ -149,16 +148,18 @@ if homogeneous:
 
 field_0 = {
     'name' : 'displacement_Y',
-    'dim' : (dim,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 field_1 = {
     'name' : 'displacement_Y2',
-    'dim' : (dim,1),
-    'domain' : 'Y2',
-    'bases' : {'Y2' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y2',
+    'approx_order' : 1,
 }
 
 variables = {

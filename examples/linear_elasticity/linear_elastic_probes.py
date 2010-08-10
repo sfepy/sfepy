@@ -47,7 +47,7 @@ solid.update({
 
 # Update fields and variables to be able to use probes for tensors.
 fields.update({
-    'sym_tensor': ((6,1), 'real', 'Omega', {'Omega' : '3_4_P0'}),
+    'sym_tensor': ('real', 6, 'Omega', 0),
 })
 
 variables.update({

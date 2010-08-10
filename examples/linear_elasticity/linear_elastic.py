@@ -45,7 +45,7 @@ materials = {
 #! A displacement field (three DOFs/node) will be computed on a region
 #! called 'Omega' using P1 (four-node tetrahedral) finite elements.
 fields = {
-    'displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'displacement': ('real', 'vector', 'Omega', 1),
 }
 #! Integrals
 #! ---------

@@ -40,18 +40,18 @@ region_6 = {
 
 field_1 = {
     'name' : '3_displacement',
-    'dim' : (3,1),
-    'flags' : (),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P2'}
+    'dtype' : 'real',
+    'shape' : (3,),
+    'region' : 'Omega',
+    'approx_order' : 2,
 }
 
 field_2 = {
     'name' : 'pressure',
-    'dim' : (1,1),
-    'flags' : (),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P1'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 variable_1 = {

@@ -14,16 +14,18 @@ regions = {
 
 field_1 = {
     'name' : 'displacement',
-    'dim' : (3,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_8_Q1'}
+    'dtype' : nm.float64,
+    'shape' : (3,),
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 field_2 = {
     'name' : 'pressure',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_8_Q1'}
+    'dtype' : nm.float64,
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 variables = {

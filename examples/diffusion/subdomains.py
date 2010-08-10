@@ -30,8 +30,8 @@ materials = {
 }
 
 fields = {
-    'pressure1' : ((1,1), 'real', 'Omega1', {'Omega1' : '2_4_Q1'}),
-    'pressure2' : ((1,1), 'real', 'Omega2', {'Omega2' : '2_4_Q1'}),
+    'pressure1' : ('real', 1, 'Omega1', 1),
+    'pressure2' : ('real', 1, 'Omega2', 1),
 }
 
 variables = {

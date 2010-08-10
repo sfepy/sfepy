@@ -10,17 +10,18 @@ material_1 = {
     'values' : {'val' : 1.0},
 }
 
+field_1 = {
+    'name' : 'temperature',
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 1,
+}
+
 if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 0',
-    }
-
-    field_1 = {
-        'name' : 'temperature',
-        'dim' : (1,1),
-        'domain' : 'Omega',
-        'bases' : {'Omega' : '3_8_Q1'}
     }
     integral_1 = {
         'name' : 'i1',
@@ -36,13 +37,6 @@ elif filename_mesh.find('cube_big_tetra.mesh') >= 0:
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 6',
-    }
-
-    field_1 = {
-        'name' : 'temperature',
-        'dim' : (1,1),
-        'domain' : 'Omega',
-        'bases' : {'Omega' : '3_4_P1'}
     }
     integral_1 = {
         'name' : 'i1',

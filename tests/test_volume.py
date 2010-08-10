@@ -4,8 +4,8 @@ from sfepy import data_dir
 filename_mesh = data_dir + '/meshes/3d/elbow.mesh'
 
 fields = {
-    'scalar' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
-    'vector' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'scalar' : ('real', 'scalar', 'Omega', 1),
+    'vector' : ('real', 'vector', 'Omega', 1),
 }
 
 integrals = {

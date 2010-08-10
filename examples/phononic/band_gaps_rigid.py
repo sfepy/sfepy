@@ -165,20 +165,21 @@ material_3 = {
 conf_dir = os.path.dirname(__file__)
 dim = MeshIO.any_from_filename(filename_mesh,
                                prefix_dir=conf_dir).read_dimension()
-geom = {3 : '3_4', 2 : '2_3'}[dim]
 
 field_0 = {
     'name' : 'displacement_Y',
-    'dim' : (dim,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 field_1 = {
     'name' : 'displacement_Y23',
-    'dim' : (dim,1),
-    'domain' : 'Y23',
-    'bases' : {'Y23' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y23',
+    'approx_order' : 1,
 }
 
 variables = {

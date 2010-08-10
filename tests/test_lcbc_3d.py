@@ -44,10 +44,10 @@ material_1 = {
 
 field_1 = {
     'name' : '3_displacement',
-    'dim' : (3,1),
-    'flags' : (),
-    'domain' : 'Y',
-    'bases' : {'Y' : '3_4_P1'}
+    'dtype' : 'real',
+    'shape' : 'vector',
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 variable_1 = {

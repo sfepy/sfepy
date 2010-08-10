@@ -7,17 +7,16 @@ filename_meshes = ['/meshes/3d/cube_medium_tetra.mesh',
                    '/meshes/3d/cube_medium_hexa.mesh']
 filename_meshes = [data_dir + name for name in filename_meshes]
 
-all_your_bases = [{'Omega' : '3_4_P1'},
-                {'Omega' : '3_4_P2'},
-                {'Omega' : '3_8_Q1'}]
+all_your_bases = [1, 2, 1]
 
 filename_mesh = None
 
 field_1 = {
     'name' : '3_displacement',
-    'dim' : (3,1),
-    'domain' : 'Omega',
-    'bases' : None
+    'dtype' : 'real',
+    'shape' : (3,),
+    'region' : 'Omega',
+    'approx_order' : None,
 }
 
 def get_pars( dim, full = False ):
@@ -160,17 +159,20 @@ class Test( TestCommon ):
 
         ok = True
         self.solutions = []
-        for ii, bases in enumerate( all_your_bases ):
+        for ii, approx_order in enumerate(all_your_bases):
             fname = filename_meshes[ii]
 
             self.conf.filename_mesh = fname
-            fields = {'field_1' :
-                       {'name' : '3_displacement',
-                        'dim' : (3,1),
-                        'domain' : 'Omega',
-                        'bases' : bases}}
+            fields = {'field_1' : {
+                          'name' : '3_displacement',
+                          'dtype' : 'real',
+                          'shape' : (3,),
+                          'region' : 'Omega',
+                          'approx_order' : approx_order,
+                    }
+            }
             self.conf.edit('fields', fields)
-            self.report( 'mesh: %s, base: %s' % (fname, bases) )
+            self.report( 'mesh: %s, base: %s' % (fname, approx_order) )
             status = IndexedStruct()
 
             self.report( 'isotropic' )
@@ -189,11 +191,11 @@ class Test( TestCommon ):
 
             self.solutions.append( (vec1, vec2) )
 
-            name = op.join( self.options.out_dir,
-                            '_'.join( ('test_elasticity_small_strain',
-                                      op.splitext( op.basename( fname ) )[0],
-                                      bases.values()[0] ))
-                            + '.vtk' )
+            name = op.join(self.options.out_dir,
+                           '_'.join(('test_elasticity_small_strain',
+                                     op.splitext(op.basename(fname))[0],
+                                     '%d' % approx_order))
+                           + '.vtk')
             problem.save_state( name, vec1 )
 
 ##             trunk = op.join( self.options.out_dir,

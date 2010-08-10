@@ -68,18 +68,18 @@ region_23 = {
 
 field_1 = {
     'name' : '2_velocity',
-    'dim' : (2,1),
-    'flags' : (),
-    'domain' : 'Y1Y2',
-    'bases' : {'Y1Y2' : '2_3_P2'}
+    'dtype' : 'real',
+    'shape' : (2,),
+    'region' : 'Y1Y2',
+    'approx_order' : 2,
 }
 
 field_2 = {
     'name' : 'pressure',
-    'dim' : (1,1),
-    'flags' : (),
-    'domain' : 'Y1Y2',
-    'bases' : {'Y1Y2' : '2_3_P1'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Y1Y2',
+    'approx_order' : 1,
 }
 
 variable_1 = {

@@ -16,9 +16,10 @@ options = {
 
 field_1 = {
     'name' : 'displacement',
-    'dim' : (3,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P1'}
+    'dtype' : nm.float64,
+    'shape' : 3,
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 material_1 = {

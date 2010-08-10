@@ -7,9 +7,10 @@ dim = 2
 
 field_1 = {
     'name' : 'a_harmonic_field',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '2_3_P1'}
+    'dtype' : 'real',
+    'shape' : 'scalar',
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 variables = {

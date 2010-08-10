@@ -44,17 +44,12 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
         'function' : 'fun_v',
     }
 
-    if dim == 3:
-        base_approx = "3_4_P1"
-    else:
-        base_approx = "2_3_P1"
-
     field_0 = {
         'name' : 'field_Psi',
-        'dim' : (1,1),
-        'flags' : (),
-        'domain' : 'Omega',
-        'bases' : {'Omega' : base_approx}
+        'dtype' : 'real',
+        'shape' : 'scalar',
+        'region' : 'Omega',
+        'approx_order' : 1,
     }
 
     if dim == 3:

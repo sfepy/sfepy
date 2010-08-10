@@ -59,7 +59,7 @@ materials = {
 }
 
 fields = {
-    '3_displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    '3_displacement': ('real', 3, 'Omega', 1),
 }
 
 integrals = {

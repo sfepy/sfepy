@@ -25,8 +25,8 @@ regions = {
 }
 
 fields = {
-    'velocity' : ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
-    'pressure' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'velocity' : ('real', 3, 'Omega', 1),
+    'pressure' : ('real', 1, 'Omega', 1),
 }
 
 variables = {

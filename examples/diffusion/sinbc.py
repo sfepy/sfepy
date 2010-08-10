@@ -23,10 +23,10 @@ region_4 = {
 
 field_1 = {
     'name' : 'temperature',
-    'dim' : (1,1),
-    'flags' : (),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '2_3_P2'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 2,
 }
 
 variable_1 = {

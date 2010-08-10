@@ -25,7 +25,7 @@ regions = {
 }
 
 fields = {
-    'temperature' : ((1,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'temperature' : ('real', 1, 'Omega', 1),
 }
 
 variables = {

@@ -22,7 +22,7 @@ def set_elastic(variables, ir, ic, mode, pis, corrs_phono_rs):
 
     variables[mode2var[mode]].data_from_any(val)
 
-def define_input( filename, region, bbox, geom ):
+def define_input(filename, region, bbox):
     """Uses materials, fe of master file, merges regions."""
     filename_mesh = filename
 
@@ -73,9 +73,10 @@ def define_input( filename, region, bbox, geom ):
 
     field_10 = {
         'name' : 'displacement_matrix',
-        'dim' : (dim,1),
-        'domain' : region,
-        'bases' : {region : '%s_P1' % geom}
+        'dtype' : nm.float64,
+        'shape' : dim,
+        'region' : region,
+        'approx_order' : 1,
     }
 
     variables = {

@@ -64,9 +64,8 @@ materials = {
 #! Fields
 #! ------
 #! Scalar field for corrector basis functions.
-geom = {2 : '2_4', 3 : '3_8'}[dim]
 fields = {
-    'corrector' : ((dim,1), 'real', 'Y', {'Y' : '%s_Q1' % geom}),
+    'corrector' : ('real', dim, 'Y', 1),
 }
 #! Variables
 #! ---------

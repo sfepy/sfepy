@@ -11,9 +11,10 @@ material_2 = {
 
 field_1 = {
     'name' : 'pressure',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '2_3_P2'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 2,
 }
 
 variables = {

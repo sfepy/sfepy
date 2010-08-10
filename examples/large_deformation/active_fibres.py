@@ -19,7 +19,7 @@ options = {
 
 
 fields = {
-    'displacement': ((3,1), 'real', 'Omega', {'Omega' : '3_4_P1'}),
+    'displacement': (nm.float64, 3, 'Omega', 1),
 }
 
 materials = {

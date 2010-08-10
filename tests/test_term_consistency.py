@@ -3,25 +3,22 @@ from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
-is3d = False
-
-if is3d:
-    dim, geom = 3, '3_4'
-else:
-    dim, geom = 2, '2_3'
+dim = 2
 
 field_1 = {
     'name' : 'scalar_field',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '%s_P1' % geom}
+    'dtype' : 'real',
+    'shape' : 'scalar',
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 field_2 = {
     'name' : 'vector_field',
-    'dim' : (dim,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '%s_P1' % geom}
+    'dtype' : 'real',
+    'shape' : 'vector',
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 variables = {

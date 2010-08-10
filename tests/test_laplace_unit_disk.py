@@ -19,10 +19,10 @@ material_2 = {
 
 field_1 = {
     'name' : 'a_harmonic_field',
-    'dim' : (1,1),
-    'flags' : (),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '2_3_P2'}
+    'dtype' : 'real',
+    'shape' : 'scalar',
+    'region' : 'Omega',
+    'approx_order' : 2,
 }
 
 variable_1 = {

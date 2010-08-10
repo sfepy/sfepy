@@ -70,16 +70,18 @@ functions = {
 
 field_0 = {
     'name' : 'displacement',
-    'dim' : (dim,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : dim,
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 field_2 = {
     'name' : 'potential',
-    'dim' : (1,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '%s_P1' % geom}
+    'dtype' : nm.float64,
+    'shape' : (1,),
+    'region' : 'Y',
+    'approx_order' : 1,
 }
 
 variables = {

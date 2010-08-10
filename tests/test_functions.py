@@ -45,7 +45,7 @@ materials = {
 }
 
 fields = {
-    'pressure' : ((1,1), 'real', 'Omega', {'Omega' : '2_3_P2'}),
+    'pressure' : (nm.float64, 1, 'Omega', 2),
 }
 
 variables = {

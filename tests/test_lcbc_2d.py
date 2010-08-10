@@ -51,9 +51,10 @@ material_1 = {
 
 field_1 = {
     'name' : '2_displacement',
-    'dim' : (2,1),
-    'domain' : 'Y',
-    'bases' : {'Y' : '2_3_P2'}
+    'dtype' : 'real',
+    'shape' : 'vector',
+    'region' : 'Y',
+    'approx_order' : 2,
 }
 
 variable_1 = {

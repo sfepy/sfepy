@@ -23,7 +23,7 @@ regions = {
 }
 
 fields = {
-    'accoustic_pressure' : ((1,1), 'complex', 'Omega', {'Omega' : '2_4_Q1'}),
+    'accoustic_pressure' : ('complex', 1, 'Omega', 1),
 }
 
 variables = {

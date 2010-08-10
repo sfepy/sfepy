@@ -12,16 +12,18 @@ options = {
 
 field_1 = {
     'name' : '3_velocity',
-    'dim' : (3,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P1B'}
+    'dtype' : 'real',
+    'shape' : (3,),
+    'region' : 'Omega',
+    'approx_order' : '1B',
 }
 
 field_2 = {
     'name' : 'pressure',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '3_4_P1'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 # Can use logical operations '&' (and), '|' (or).

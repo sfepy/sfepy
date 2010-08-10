@@ -50,7 +50,7 @@ def cinc_simple(coors, mode):
 
 def define_regions(filename):
     if filename.find('simple.mesh'):
-        dim, geom = 3, '3_4_P'
+        dim = 3
         regions = {
             'Omega' : ('all', {}),
             'Walls' : ('nodes of surface -n (r.Outlet +n r.Inlet)',
@@ -63,7 +63,7 @@ def define_regions(filename):
     else:
         raise ValueError('unknown mesh %s!' % filename)
 
-    return regions, dim, geom
+    return regions, dim
 
 def get_pars(ts, coor, mode, region, ig, output_dir='.'):
     if mode == 'qp':
@@ -122,19 +122,21 @@ def define_input(filename, output_dir):
                       get_pars(ts, coors, mode, region, ig,
                                output_dir=output_dir),),
     }
-    regions, dim, geom = define_regions(filename_mesh)
+    regions, dim = define_regions(filename_mesh)
 
     field_1 = {
         'name' : 'displacement',
-        'dim' : (dim,1),
-        'domain' : 'Omega',
-        'bases' : {'Omega' : '%s1' % geom}
+        'dtype' : nm.float64,
+        'shape' : dim,
+        'region' : 'Omega',
+        'approx_order' : 1,
     }
     field_2 = {
         'name' : 'pressure',
-        'dim' : (1,1),
-        'domain' : 'Omega',
-        'bases' : {'Omega' : '%s1' % geom}
+        'dtype' : nm.float64,
+        'shape' : 1,
+        'region' : 'Omega',
+        'approx_order' : 1,
     }
 
     variables = {
