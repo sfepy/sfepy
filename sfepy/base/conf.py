@@ -122,13 +122,16 @@ def transform_fields( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['dim', 'type', 'domain','bases'] )
-            setattr( c2, 'dtype', dtypes[c2.type] )
+            c2 = tuple_to_conf(key, conf,
+                               ['dtype', 'shape', 'region', 'approx_order'])
+            if c2.dtype in dtypes:
+                c2.dtype = dtypes[c2.dtype]
             d2['field_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
-            c2.set_default_attr('type', 'real')
-            setattr( c2, 'dtype', dtypes[c2.type] )
+            c2.set_default_attr('dtype', nm.float64)
+            if c2.dtype in dtypes:
+                c2.dtype = dtypes[c2.dtype]
             d2['field_'+c2.name] = c2
     return d2
 

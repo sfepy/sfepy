@@ -92,12 +92,16 @@ class Field( Struct ):
 
     def from_conf(conf, regions):
         """To refactor... very hackish now."""
-        approx_order = conf.bases.values()[0][5:]
+        space = conf.get_default_attr('space', 'H1')
+        poly_space_base = conf.get_default_attr('poly_space_base', 'lagrange')
+
         obj = Field(name = conf.name,
-                    dtype = getattr( conf, 'dtype', nm.float64 ),
-                    shape = conf.dim[:1],
-                    region = regions[conf.domain],
-                    approx_order = approx_order)
+                    dtype = conf.dtype,
+                    shape = conf.shape,
+                    region = regions[conf.region],
+                    space = space,
+                    poly_space_base = poly_space_base,
+                    approx_order = conf.approx_order)
         return obj
     from_conf = staticmethod( from_conf )
 
@@ -111,10 +115,12 @@ class Field( Struct ):
             Object name.
         dtype : numpy.dtype
             Field data type: float64 or complex128.
-        shape : int/str
-            Field shape: 1 or 'scalar', space dimension (2 or 3) or 'vector'.
-            The field shape determines the shape of the FE base functions and
-            can be different from a FieldVariable instance shape. (TODO)
+        shape : int/tuple/str
+            Field shape: 1 or (1,) or 'scalar', space dimension (2, or
+            (2,) or 3 or (3,)) or 'vector'. The field shape determines
+            the shape of the FE base functions and can be different from
+            a FieldVariable instance shape. (TODO)
+
         region : Region
             The region where the field is defined.
         space : str
@@ -130,6 +136,9 @@ class Field( Struct ):
                          'vector' : (region.domain.shape.dim,)}[shape]
             except KeyError:
                 raise ValueError('unsupported field shape! (%s)', shape)
+
+        elif isinstance(shape, int):
+            shape = (shape,)
 
         Struct.__init__(self,
                         name = name,
