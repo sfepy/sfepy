@@ -128,7 +128,7 @@ class Field( Struct ):
         poly_space_base : str
             The name of polynomial space base.
         approx_order : int/str
-            FE approxiamtion order, e.g. 0, 1, 2, '1B' (1 with bubble).
+            FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
         """
         if isinstance(shape, str):
             try:
