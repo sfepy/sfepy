@@ -660,20 +660,13 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if self.arg_traces[name]:
-                if not nm.all(nm.setmember1d(self.region.all_vertices,
-                                             field.region.all_vertices)):
-                    msg = ('%s: incompatible regions: (self, trace of field %s)'
-                           + '(%s in %s)') %\
-                           (self.name, field.name,
-                            self.region.all_vertices, field.region.all_vertices)
-                    raise ValueError(msg)
-            else:
-                if not set( igs ).issubset( set( field.aps.igs ) ):
-                    msg = ('%s: incompatible regions: (self, field)'
-                           + ' (%s(%s) in %s(%s)') %\
-                             (self.name, igs, name, field.igs(), field.name)
-                    raise ValueError(msg)
+            if not nm.all(nm.setmember1d(self.region.all_vertices,
+                                         field.region.all_vertices)):
+                msg = ('%s: incompatible regions: (self, field %s)'
+                       + '(%s in %s)') %\
+                       (self.name, field.name,
+                        self.region.all_vertices, field.region.all_vertices)
+                raise ValueError(msg)
 
     def get_variable_names(self):
         return self.names.variable
