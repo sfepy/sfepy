@@ -35,6 +35,7 @@ Solution in \hat{V}_h^c (not needed!):
 from sfepy.base.base import *
 import sfepy.base.la as la
 from sfepy.fem import Mesh, Domain, Field, Variables
+from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.utils import compute_nodal_normals
 
@@ -57,6 +58,8 @@ class DualMesh(Struct):
         """
         domain = region.domain
 
+        self.dim = domain.shape.dim
+
         self.region = copy(region)
         self.region.setup_face_indices(domain.fa)
 
@@ -78,8 +81,6 @@ class DualMesh(Struct):
 
         self.surfaces = surfaces = {}
         self.dual_surfaces = dual_surfaces = {}
-        
-        el_map = {}
 
         for ig, conn in enumerate(domain.mesh.conns):
             surface = FESurface(None, self.region, self.gel.faces, conn, ig)
@@ -87,8 +88,6 @@ class DualMesh(Struct):
 
             dual_surface = self.describe_dual_surface(surface)
             dual_surfaces[ig] = dual_surface
-
-            print dual_surface
 
     def describe_dual_surface(self, surface):
         n_fa, n_edge = surface.n_fa, self.sgel.n_edge
@@ -121,7 +120,7 @@ class DualMesh(Struct):
                                         return_inverse=True)
         ueo = edges_per_face[e_sort]
 
-        # edge centre, edge point 1, face centre, edge point 2.
+        # edge centre, edge point 1, face centre, edge point 2
         conn = nm.empty((n_edge * n_fa, 4), dtype=nm.int32)
         conn[:,0] = e_id
         conn[:,1] = ee[:,0]
@@ -129,6 +128,40 @@ class DualMesh(Struct):
                     + coor_offset
         conn[:,3] = ee[:,1]
 
+        # face centre, edge point 2, edge point 1
+        tri_conn = nm.ascontiguousarray(conn[:,[2,1,3]])
+
+        # Ensure orientation - outward normal.
+        cc = dual_coors[tri_conn]
+        v1 = cc[:,1] - cc[:,0]
+        v2 = cc[:,2] - cc[:,0]
+
+        normals = nm.cross(v1, v2)
+        nn = nodal_normals[surface.leconn].sum(axis=1).repeat(n_edge, 0)
+        centre_normals = (1.0 / surface.n_fp) * nn
+        centre_normals /= la.norm_l2_along_axis(centre_normals)[:,None]
+        dot = nm.sum(normals * centre_normals, axis=1)
+
+        assert_((dot > 0.0).all())
+
+        # Prepare mapping from reference triangle e_R to a
+        # triangle within reference face e_D.
+        gel = self.gel.surface_facet
+        ref_coors = gel.coors
+        ref_centre = nm.dot(self.bf.squeeze(), ref_coors)
+        cc = nm.r_[ref_coors, ref_centre[None,:]]
+        rconn = nm.empty((n_edge, 3), dtype=nm.int32)
+        rconn[:,0] = gel.n_vertex
+        rconn[:,1] = gel.edges[:,0]
+        rconn[:,2] = gel.edges[:,1]
+
+        map_er_ed = VolumeMapping(cc, rconn, gel)
+
+        # Prepare mapping from reference triangle e_R to a
+        # physical triangle e.
+        map_er_e = SurfaceMapping(dual_coors, tri_conn, gel)
+
+        # Compute triangle basis (edge) vectors.
         nn = surface.nodes[ueo]
         edge_coors = mesh_coors[nn]
 
@@ -145,11 +178,31 @@ class DualMesh(Struct):
         edge_ortho = nm.cross(edge_normals, edge_dirs)
         edge_ortho /= la.norm_l2_along_axis(edge_ortho)[:,None]
 
+        # Primary face - dual sub-faces map.
+        # i-th row: indices to conn corresponding to sub-faces of i-th face.
+        face_map = nm.arange(n_fa * n_edge, dtype=nm.int32)
+        face_map.shape = (n_fa, n_edge)
+
+        n_nod = n_fa * n_edge
+        n_components = self.dim - 1
+
         dual_surface = Struct(name = 'dual_surface_description',
+                              dim = self.dim,
+                              n_dual_fa = conn.shape[0],
+                              n_dual_fp = self.dim,
+                              n_fa = n_fa,
+                              n_edge = n_edge,
+                              n_nod = n_nod,
+                              n_components = n_components,
+                              n_dof = n_nod * n_components,
                               dual_coors = dual_coors,
                               coor_offset = coor_offset,
                               e_sort = e_sort,
                               conn = conn,
+                              tri_conn = tri_conn,
+                              map_er_e = map_er_e,
+                              map_er_ed = map_er_ed,
+                              face_map = face_map,
                               nodal_normals = nodal_normals,
                               edge_centre_coors = edge_centre_coors,
                               edge_normals = edge_normals,
@@ -217,5 +270,4 @@ class DualMesh(Struct):
         dual_mesh = Mesh.from_data('dual_mesh_vectors', coors, None, conns,
                                    mat_ids, ['2_4'] * len(conns))
         dual_mesh.write(filename, io='auto', out=out)
-
 
