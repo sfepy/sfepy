@@ -155,11 +155,11 @@ class DualMesh(Struct):
         rconn[:,1] = gel.edges[:,0]
         rconn[:,2] = gel.edges[:,1]
 
-        map_er_ed = VolumeMapping(cc, rconn, gel)
+        map_er_ed = VolumeMapping(cc, rconn, gel=gel)
 
         # Prepare mapping from reference triangle e_R to a
         # physical triangle e.
-        map_er_e = SurfaceMapping(dual_coors, tri_conn, gel)
+        map_er_e = SurfaceMapping(dual_coors, tri_conn, gel=gel)
 
         # Compute triangle basis (edge) vectors.
         nn = surface.nodes[ueo]
