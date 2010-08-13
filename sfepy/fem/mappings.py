@@ -4,23 +4,26 @@ Finite element reference mappings.
 from sfepy.base.base import *
 
 from sfepy.fem.poly_spaces import PolySpace
-import sfepy.fem.extmods.geometry as gm
+import extmods.geometry as gm
 
 class Mapping(Struct):
     """
     Base class for mappings.
     """
 
-    def __init__(self, coors, conn, gel, order=1):
+    def __init__(self, coors, conn, poly_space=None, gel=None, order=1):
         self.coors = coors
         self.conn = conn
 
         self.n_el, self.n_ep = conn.shape
         self.dim = self.coors.shape[1]
 
-        self.poly_space = PolySpace.any_from_args(None, gel, order,
-                                                  base='lagrange',
-                                                  force_bubble=False)
+        if poly_space is None:
+            poly_space = PolySpace.any_from_args(None, gel, order,
+                                                 base='lagrange',
+                                                 force_bubble=False)
+
+        self.poly_space = poly_space
 
     def get_base(self, coors, diff=False):
         """
@@ -50,6 +53,9 @@ class Mapping(Struct):
 
     def _describe(self, geo, qp_coors, weights):
         bf_g = self.get_base(qp_coors, diff=True)
+
+        if nm.allclose(bf_g, 0.0):
+            raise ValueError('zero base function gradient!')
 
         try:
             geo.describe(self.coors, self.conn, bf_g, weights)
