@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 import extmods.meshutils as mu
@@ -290,7 +291,7 @@ class Approximation( Struct ):
         if not self.surface_data:
             return 0, 0, 0, 0
         sd = self.surface_data[key]
-        bf_sg = self.bf[(iname, sd.face_type, 1)]
+        bf_sg = self.get_base(sd.face_type, 1, iname)
         n_qp, dim, n_fp = bf_sg.shape
         assert_( n_fp == sd.n_fp )
         
@@ -383,7 +384,6 @@ class Approximation( Struct ):
         if coors is None:
             coors = field.aps.coors
 
-
         if gtype == 'Volume':
             if integral is None:
                 from sfepy.fem import Integral
@@ -391,54 +391,34 @@ class Approximation( Struct ):
                 quad_name = 'gauss_o1_d%d' % dim
                 integral = Integral('i_tmp', 'v', quad_name)
 
-                self.get_base('v', 1, integral=integral)
+            qp = self.get_qp('v', integral.name, integral)
 
-            shape = self.get_v_data_shape(integral.name)
-                
-            if shape[0] == 0:
-                return None
-            
-            bf_vg, weights = self.get_base( 'v', 1, integral = integral,
-                                          base_only = False )
-            if nm.allclose(bf_vg, 0.0): # Constant bubble.
-                bf_vg, weights = self.get_base( 'v', 1, integral = integral,
-                                                base_only = False,
-                                                from_geometry = True )
+            mapping = VolumeMapping(coors, self.econn,
+                                    poly_space=self.interp.poly_spaces['v'])
+
+            try:
+                vg = mapping.get_mapping(qp.vals, qp.weights)
+
+            except ValueError: # Constant bubble.
                 domain = self.region.domain
                 group = domain.groups[self.ig]
                 coors = domain.get_mesh_coors()
-                gconn = group.conn
-                shape = shape[:3] + (group.shape.n_ep,)
-            else:
-                gconn = self.econn
 
-            vg = gm.VolumeGeometry( *shape )
-            vg.mode = gm.GM_Material
-            try:
-                vg.describe( coors, gconn, bf_vg, weights )
-            except:
-                gm.errclear()
-                raise
-            return vg
+                ps = self.interp.gel.interp.poly_spaces['v']
+                mapping = VolumeMapping(coors, group.conn, poly_space=ps)
+
+                vg = mapping.get_mapping(qp.vals, qp.weights)
+
+            out = vg
 
         elif (gtype == 'Surface') or (gtype == 'SurfaceExtra'):
             sd = self.surface_data[region.name]
-##             print sd
-##             print integral
-            bf_sg, weights = self.get_base( sd.face_type, 1, integral = integral,
-                                          base_only = False )
-##             print bf_sg, weights 
+            qp = self.get_qp(sd.face_type, integral.name, integral)
 
-            sg = gm.SurfaceGeometry( *self.get_s_data_shape( integral.name,
-                                                          region.name ) )
-            sg.mode = gm.GM_Material
+            ps = self.interp.poly_spaces[sd.face_type]
+            mapping = SurfaceMapping(coors, sd.econn, poly_space=ps)
 
-##             print sg
-            try:
-                sg.describe( coors, sd.econn, bf_sg, weights )
-            except:
-                gm.errclear()
-                raise
+            sg = mapping.get_mapping(qp.vals, qp.weights)
 
             if gtype == 'SurfaceExtra':
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
@@ -447,16 +427,15 @@ class Approximation( Struct ):
                 bf_bg = self.get_base( sd.bkey, 1, integral = integral )
                 sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
 
-##                 sg.str( sys.stdout, 0 )
-##                 pause()
-            
-            return sg
+            out =  sg
 
         elif gtype == 'Point':
-            pass
-        
+            out = None
+
         else:
             raise ValueError('unknown geometry type: %s' % gtype)
+
+        return out
 
     ##
     #
