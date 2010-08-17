@@ -1280,7 +1280,7 @@ class FieldVariable(Variable):
         data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
         for region_name, ig, ap in self.field.aps.iter_aps():
             ap_key = (integral_name, region_name, ig)
-            aux, vg = self.get_approximation(ap_key, 'Volume')
+            aux, vg = self.get_approximation(ap_key, 'volume')
 
             volume = nm.squeeze(vg.variable(2))
             iels = domain.regions[region_name].cells[ig]
@@ -1369,15 +1369,15 @@ class FieldVariable(Variable):
             
             self.initial_condition = ic_vec
 
-    def get_approximation( self, key, kind = 'Volume', is_trace = False ):
+    def get_approximation( self, key, kind = 'volume', is_trace = False ):
         return self.field.aps.get_approximation(key, kind, is_trace)
 
     ##
     # c: 28.11.2006, r: 15.01.2008
-    def get_data_shapes( self, key, kind = 'Volume' ):
+    def get_data_shapes( self, key, kind = 'volume' ):
         iname, ig = key[0], key[-1]
         ap = self.field.aps.aps_per_group[ig]
-        if kind == 'Volume':
+        if kind == 'volume':
             shape = ap.get_v_data_shape( iname )
         else:
             region_name = key[1]
@@ -1439,7 +1439,7 @@ class FieldVariable(Variable):
         igs = nm.unique1d(cells[:,0])
         for ig in igs:
             ap = field.aps.aps_per_group[ig]
-            vg = ap.describe_geometry(field, 'Volume', field.region)
+            vg = ap.describe_geometry(field, 'volume', field.region)
 
             ii = nm.where(cells[:,0] == ig)[0]
             aux = domain.get_element_diameters(ig, cells[ii,1].copy(), vg,

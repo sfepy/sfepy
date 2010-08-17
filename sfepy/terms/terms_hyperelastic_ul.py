@@ -26,7 +26,6 @@ class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
     """
     name = 'dw_ul_he_neohook'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'trB', 'B']
     term_function = {'stress' : terms.dq_ul_he_stress_neohook,
@@ -67,7 +66,6 @@ class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
     """
     name = 'dw_ul_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'B']
     term_function = {'stress' : terms.dq_ul_he_stress_bulk,
@@ -107,7 +105,6 @@ class MooneyRivlinULTerm( VectorVector, HyperElasticULBase ):
     """
     name = 'dw_ul_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'trB', 'B', 'in2B']
     term_function = {'stress' : terms.dq_ul_he_stress_mooney_rivlin,

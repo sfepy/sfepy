@@ -290,17 +290,10 @@ class Terms(Container):
         for term in self:
             term.char_fun.set_current_group( ig )
 
-Volume = 'Volume'
-Surface = 'Surface'
-Edge = 'Edge'
-Point = 'Point'
-SurfaceExtra = 'SurfaceExtra'
-
 class Term(Struct):
     name = ''
     arg_types = ()
-    geometry = []
-    dof_conn_type = 'volume'
+    integration = 'volume'
 
     @staticmethod
     def new(name, integral, region, **kwargs):
@@ -399,13 +392,12 @@ class Term(Struct):
     def setup(self):
         self.char_fun = CharacteristicFunction(self.region)
         self.function = self.get_default_attr('function', None)
-        
+
         self.step = 0
         self.dt = 1.0
         self.has_integral = True
         self.has_region = True
-        self.has_geometry = True
-        
+
         self.itype = itype = None
         aux = re.compile('([a-z]+)_.*').match(self.name)
         if aux:
@@ -566,8 +558,7 @@ class Term(Struct):
         msg = "variable '%s' requested by term '%s' does not exist!"
 
         if isinstance(self.arg_types[0], tuple):
-            assert_( len( self.modes ) == len( self.arg_types )\
-                     == len( self.__class__.geometry ) )
+            assert_(len(self.modes) == len(self.arg_types))
             # Find matching call signature.
             matched = []
             for it, arg_types in enumerate( self.arg_types ):
@@ -595,7 +586,6 @@ class Term(Struct):
             if len( matched ) == 1:
                 i_match = matched[0]
                 arg_types = self.arg_types[i_match]
-                self.geometry = self.__class__.geometry[i_match]
                 self.mode = self.modes[i_match]
             elif len( matched ) == 0:
                 msg = 'cannot match arguments! (%s)' % self.arg_names
@@ -638,6 +628,8 @@ class Term(Struct):
                               % self.n_virtual )
 
         self.set_arg_types()
+
+        self.setup_integration()
 
         if (self.raw_itype == 'dw') and (self.mode == 'eval'):
             self.itype = 'd'
@@ -890,27 +882,20 @@ class Term(Struct):
         kind : 'v' or 's'
             The integral kind.
         """
-        geom = self.geometry
-        if isinstance(geom, tuple):
-            # Argument set was not yet assigned, let's choose the first
-            # one.
-            geom = geom[0]
-
         kind = ''
 
-        if geom:
-            gtype = geom[0][0]
+        if self.integration:
             dim = self.region.domain.shape.dim
 
-            if gtype == Volume:
+            if self.integration == 'volume':
                 out = dim
                 kind = 'v'
 
-            elif Surface in gtype:
+            elif 'surface' in self.integration:
                 out = dim - 1
                 kind = 's'
 
-            elif gtype == Edge:
+            elif self.integration == 'edge':
                 out = dim - 2
 
             else:
@@ -922,6 +907,27 @@ class Term(Struct):
             out = None
 
         return out, kind
+
+    def setup_integration(self):
+        self.has_geometry = True
+
+        self.geometry_types = {}
+        if isinstance(self.integration, str):
+            for var in self.get_variables():
+                self.geometry_types[var.name] = self.integration
+
+        else:
+            for arg_type, gtype in self.integration.iteritems():
+                var = self.get_args(arg_types=[arg_type])[0]
+                self.geometry_types[var.name] = gtype
+
+        gtypes = list(set(self.geometry_types.itervalues()))
+
+        if 'surface_extra' in gtypes:
+            self.dof_conn_type = 'volume'
+
+        elif len(gtypes):
+            self.dof_conn_type = gtypes[0]
 
     def describe_geometry(self, geometries):
         """
@@ -965,13 +971,7 @@ class Term(Struct):
         out : dict
             The required geometry types for each variable argument.
         """
-        geom = self.geometry
-        out = {}
-        if geom:
-            for (gtype, arg_type) in geom:
-                arg_name = self.get_arg_name( arg_type )
-                out[arg_name] = gtype
-        return out
+        return self.geometry_types
 
     def get_current_group(self):
         return (self.integral_name, self.region.name, self.char_fun.ig)
@@ -1042,10 +1042,13 @@ class Term(Struct):
         return variable( step = self.arg_steps[name],
                          derivative = self.arg_derivatives[name] )
 
-    def get_approximation(self, variable, kind = 'Volume' ):
+    def get_approximation(self, variable):
         is_trace = self.arg_traces[variable.name]
+        kind = self.geometry_types[variable.name]
         key = self.get_current_group()
+
         out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
+
         return out
 
     def get_variables(self, as_list=True):

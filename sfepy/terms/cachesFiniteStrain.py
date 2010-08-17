@@ -53,7 +53,7 @@ class FiniteStrainTLDataCache( DataCache ):
     def update( self, key, group_indx, ih, **kwargs ):
 ##         print 'update!', key, group_indx, ih
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
 
         ckey = self.g_to_c( group_indx )
 
@@ -114,7 +114,7 @@ class FiniteStrainSurfaceTLDataCache(DataCache):
     def update( self, key, group_indx, ih, **kwargs ):
 ##         print 'update!', key, group_indx, ih
         state = self.get_args(**kwargs)[0]
-        ap, sg = state.get_approximation(group_indx, 'SurfaceExtra')
+        ap, sg = state.get_approximation(group_indx, 'surface_extra')
         sd = ap.surface_data[group_indx[1]]
 
         ckey = self.g_to_c(group_indx)
@@ -176,7 +176,7 @@ class FiniteStrainULDataCache( DataCache ):
     def update( self, key, group_indx, ih, **kwargs ):
 ##         print 'update!', key, group_indx, ih
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
 
         ckey = self.g_to_c( group_indx )
 

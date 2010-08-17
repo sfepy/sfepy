@@ -20,8 +20,7 @@ class LinearPointSpringTerm( Term ):
     """
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Point, 'virtual')]
-    dof_conn_type = 'point'
+    integration = 'point'
     integral_kind = 'v'
 
     def get_integral_info(self):
@@ -35,7 +34,6 @@ class LinearPointSpringTerm( Term ):
         kind : 'v' or 's'
             The integral kind.
         """
-        gtype = self.geometry[0][0]
         dim = self.region.domain.shape.dim
 
         return dim, 'v'
@@ -46,7 +44,7 @@ class LinearPointSpringTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """TODO: projection to direction"""
         mat, virtual, state = self.get_args( **kwargs )
-        ap, pg = virtual.get_approximation( self.get_current_group(), 'Point' )
+        ap, pg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if self.char_fun.i_current > 0:

@@ -22,7 +22,7 @@ class StateInVolumeQPDataCache( DataCache ):
 
     def update( self, key, group_indx, ih, **kwargs ):
         state, get_vector = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
         ckey = self.g_to_c( group_indx )
 
         if ih == 0:
@@ -45,7 +45,7 @@ class StateInSurfaceQPDataCache( DataCache ):
         
     def init_data( self, key, ckey, **kwargs ):
         state, = self.get_args( **kwargs )
-        n_fa, n_qp = state.get_data_shapes( ckey, kind = 'Surface' )[:2]
+        n_fa, n_qp = state.get_data_shapes( ckey, kind = 'surface' )[:2]
         shape = (n_fa, n_qp, state.n_components, 1)
 
         DataCache.init_data( self, key, ckey, shape )
@@ -54,7 +54,7 @@ class StateInSurfaceQPDataCache( DataCache ):
         ckey = self.g_to_c( group_indx )
         state, = self.get_args( **kwargs )
 
-        ap, sg = state.get_approximation( group_indx, 'Surface' )
+        ap, sg = state.get_approximation( group_indx, 'surface' )
         sd = ap.surface_data[group_indx[1]]
         bf = ap.get_base( sd.face_type, 0, group_indx[0] )
         self.function( self.data[key][ckey][ih], state(), 0, bf, sd.econn )
@@ -85,7 +85,7 @@ class CauchyStrainDataCache( DataCache ):
             raise NotImplementedError
         state, get_vector = self.get_args( **kwargs )
 
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
         vec = get_vector( state )
         self.function( self.data['strain'][ckey][ih], vec, 0, vg, ap.econn )
         is_finite = nm.isfinite( self.data[key][ckey][ih] )
@@ -116,7 +116,7 @@ class GradScalarDataCache( DataCache ):
 
     def update( self, key, group_indx, ih, **kwargs ):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
         ckey = self.g_to_c( group_indx )
 
         self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
@@ -153,7 +153,7 @@ class DivVectorDataCache( DataCache ):
 
     def update( self, key, group_indx, ih, **kwargs ):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'Volume' )
+        ap, vg = state.get_approximation( group_indx, 'volume' )
         ckey = self.g_to_c( group_indx )
 
         self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
@@ -193,4 +193,4 @@ class SurfaceDataCache( DataCache ):
         ckey = self.g_to_c( group_indx )
         self.data[key][ckey][ih] = region.get_volume( field, ckey,
                                                       update = True,
-                                                      mode = 'Surface' )
+                                                      mode = 'surface' )

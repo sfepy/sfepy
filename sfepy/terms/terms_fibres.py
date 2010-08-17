@@ -29,7 +29,6 @@ class FibresActiveTLTerm(VectorVector, HyperElasticTLBase):
     name = 'dw_tl_fib_a'
     arg_types = ('material_1', 'material_2', 'material_3',
                  'material_4', 'material_5', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
     family_data_names = ['E']
     
     def compute_crt_data( self, family_data, mode, **kwargs ):

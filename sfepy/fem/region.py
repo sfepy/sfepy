@@ -546,7 +546,7 @@ class Region( Struct ):
         else:
             return True
 
-    def update_geometry_info( self, field, key, mode = 'Volume' ):
+    def update_geometry_info( self, field, key, mode = 'volume' ):
         """
         key: iname, aregion_name, ig
         TODO: surfaces, lengths
@@ -567,17 +567,13 @@ class Region( Struct ):
 
         volume = vg.variable( 2 )
         volume.shape = (nm.prod( volume.shape ),)
-        if mode == 'Volume':
+        if mode == 'volume':
             val[key] = nm.sum( volume[self.cells[ig]] )
         else:
             val[key] = nm.sum( volume[:] )
         self.volume[field.name] = val
 
-    ##
-    # created:       16.07.2007
-    # last revision: 13.12.2007
-    def get_volume( self, field, key = None,
-                   update = False, mode = 'Volume' ):
+    def get_volume(self, field, key=None, update=False, mode='volume'):
         if update:
             self.update_geometry_info( field, key, mode )
 

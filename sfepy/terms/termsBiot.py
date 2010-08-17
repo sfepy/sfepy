@@ -6,10 +6,8 @@ class BiotGrad( CouplingVectorScalar ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
@@ -30,10 +28,8 @@ class BiotDiv( CouplingVectorScalar ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, state, virtual = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
@@ -54,8 +50,8 @@ class BiotEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par_v, par_s = self.get_args( **kwargs )
-        aps, vgs = par_s.get_approximation( self.get_current_group(), 'Volume' )
-        apv, vgv = par_v.get_approximation( self.get_current_group(), 'Volume' )
+        aps, vgs = self.get_approximation(par_s)
+        apv, vgv = self.get_approximation(par_v)
 
         self.set_data_shape( aps, apv )
         return (mat, par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
@@ -107,9 +103,6 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):
@@ -145,7 +138,6 @@ class BiotStressTerm(CauchyStrainTerm):
     """
     name = 'de_biot_stress'
     arg_types = ('material', 'parameter')
-    geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
     function = staticmethod(terms.de_cauchy_stress)
@@ -176,7 +168,6 @@ class BiotStressQTerm(Term):
     """
     name = 'dq_biot_stress'
     arg_types = ('material', 'parameter')
-    geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
@@ -184,7 +175,7 @@ class BiotStressQTerm(Term):
             raise StopIteration
 
         mat, par = self.get_args(**kwargs)
-        ap, vg = par.get_approximation(self.get_current_group(), 'Volume')
+        ap, vg = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
 
         shape = (chunk_size, n_qp, dim * (dim + 1) / 2, 1)
@@ -203,10 +194,8 @@ class BiotGradTH( CouplingVectorScalarTH ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
@@ -237,10 +226,8 @@ class BiotDivTH( CouplingVectorScalarTH ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, state, virtual = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
@@ -296,8 +283,6 @@ class BiotTHTerm( BiotGradTH, BiotDivTH, Term ):
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
                  ('ts', 'material', 'state', 'virtual'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')])
     modes = ('grad', 'div')
 
     def set_arg_types( self ):
@@ -320,10 +305,8 @@ class BiotGradETH( CouplingVectorScalar ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
@@ -353,10 +336,8 @@ class BiotDivETH( CouplingVectorScalar ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, state, virtual = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
@@ -415,8 +396,6 @@ class BiotETHTerm( BiotGradETH, BiotDivETH, Term ):
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),
                  ('ts', 'material_0', 'material_1', 'state', 'virtual'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')])
     modes = ('grad', 'div')
     use_caches = {'exp_history' : [['material_0', 'material_1', 'state']]}
 

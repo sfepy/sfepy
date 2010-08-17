@@ -384,7 +384,7 @@ class Approximation( Struct ):
         if coors is None:
             coors = field.aps.coors
 
-        if gtype == 'Volume':
+        if gtype == 'volume':
             if integral is None:
                 from sfepy.fem import Integral
                 dim = field.domain.shape.dim
@@ -411,7 +411,7 @@ class Approximation( Struct ):
 
             out = vg
 
-        elif (gtype == 'Surface') or (gtype == 'SurfaceExtra'):
+        elif (gtype == 'surface') or (gtype == 'surface_extra'):
             sd = self.surface_data[region.name]
             qp = self.get_qp(sd.face_type, integral.name, integral)
 
@@ -420,7 +420,7 @@ class Approximation( Struct ):
 
             sg = mapping.get_mapping(qp.vals, qp.weights)
 
-            if gtype == 'SurfaceExtra':
+            if gtype == 'surface_extra':
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
 
                 self.create_bqp( region.name, integral )
@@ -429,7 +429,7 @@ class Approximation( Struct ):
 
             out =  sg
 
-        elif gtype == 'Point':
+        elif gtype == 'point':
             out = None
 
         else:
@@ -533,7 +533,7 @@ class Approximations( Container ):
                 if not ig in igs: continue
             yield self.region_names_per_group[ig], ig, ap
 
-    def get_approximation(self, key, kind='Volume', is_trace=False,
+    def get_approximation(self, key, kind='volume', is_trace=False,
                           return_geometry=True):
         """
         Returns
@@ -840,10 +840,10 @@ class Approximations( Container ):
 
             ##
             # Prepare common bases.
-            if gtype == 'Volume':
+            if gtype == 'volume':
                 ap.get_base( 'v', 0, integral = integral )
                 ap.get_base( 'v', 1, integral = integral )
-            elif (gtype == 'Surface') or (gtype == 'SurfaceExtra'):
+            elif (gtype == 'surface') or (gtype == 'surfac_eextra'):
                 pass
 
             geom_key = (integral.name, gtype, region.name, ap.name)
@@ -851,7 +851,7 @@ class Approximations( Container ):
 
             if geom_key in geometries:
                 self.geometries[geom_key] = geometries[geom_key]
-                if gtype == 'SurfaceExtra':
+                if gtype == 'surface_extra':
                     ap.create_bqp( region.name, integral )
 
             else:
@@ -864,9 +864,9 @@ class Approximations( Container ):
                                                  self.coors )
                     self.geometries[geom_key] = geometries[geom_key] = geom
                     # Make an alias Surface -> SurfaceExtra.
-                    if gtype == 'SurfaceExtra':
+                    if gtype == 'surface_extra':
                         key2 = list(geom_key)
-                        key2[1] = 'Surface'
+                        key2[1] = 'surface'
                         key2 = tuple(key2)
                         self.geometries[key2] = geometries[key2] = geom
 
@@ -906,7 +906,7 @@ class Approximations( Container ):
         phys_qps = Struct(group_indx = {},
                           el_indx = {},
                           n_qp = {})
-        kinds = {'v' : 'Volume', 's' : 'Surface'}
+        kinds = {'v' : 'volume', 's' : 'surface'}
         ii = 0
         values = []
         d_values = {}

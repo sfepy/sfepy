@@ -25,15 +25,13 @@ class DiffusionTerm( ScalarScalar, Term ):
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
     symbolic = {'expression': 'div( K * grad( u ) )',
                 'map' : {'u' : 'state', 'K' : 'material'}}
 
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -51,7 +49,7 @@ class DiffusionTerm( ScalarScalar, Term ):
     
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
 
         self.set_data_shape( ap )
         n_el, n_qp, dim, n_ep = self.data_shape
@@ -99,8 +97,6 @@ class LaplaceTerm(DiffusionTerm):
     name = 'dw_laplace'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
@@ -132,13 +128,12 @@ class PermeabilityRTerm( Term ):
     """
     name = 'dw_permeability_r'
     arg_types = ('material', 'virtual', 'index')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_permeability_r)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, index = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -170,11 +165,10 @@ class DiffusionRTerm( PermeabilityRTerm ):
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
-    geometry = [(Volume, 'virtual')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -202,14 +196,12 @@ class DiffusionVelocityTerm( Term ):
     """
     name = 'de_diffusion_velocity'
     arg_types = ('material','parameter')
-    geometry = [(Volume, 'parameter')]
 
     function = staticmethod(terms.de_diffusion_velocity)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, parameter = self.get_args( **kwargs )
-        ap, vg = parameter.get_approximation( self.get_current_group(),
-                                              'Volume' )
+        ap, vg = self.get_approximation(parameter)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:

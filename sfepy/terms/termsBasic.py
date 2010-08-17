@@ -16,12 +16,11 @@ class IntegrateVolumeTerm( Term ):
     """
     name = 'di_volume_integrate'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         field_dim = par.field.shape[0]
@@ -51,11 +50,10 @@ class IntegrateVolumeOperatorTerm( Term ):
     """
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
-    geometry = [(Volume, 'virtual')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         field_dim = virtual.field.shape[0]
@@ -91,11 +89,10 @@ class IntegrateVolumeOperatorWTerm(Term):
     """
     name = 'dw_volume_integrate_w'
     arg_types = ('material', 'virtual',)
-    geometry = [(Volume, 'virtual')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
         field_dim = virtual.field.shape[0]
         assert_( field_dim == 1 )
@@ -131,9 +128,8 @@ class IntegrateSurfaceTerm( Term ):
     """
     name = 'd_surface_integrate'
     arg_types = ('parameter',)
-    geometry = [(Surface, 'parameter')]
+    integration = 'surface'
     use_caches = {'state_in_surface_qp' : [['parameter']]}
-    dof_conn_type = 'surface'
 
     ##
     # c: 24.04.2007, r: 15.01.2008
@@ -142,7 +138,7 @@ class IntegrateSurfaceTerm( Term ):
         Integrates over surface.
         """
         par, = self.get_args( **kwargs )
-        ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par)
         shape = (chunk_size, 1, 1, 1)
 
         cache = self.get_cache( 'state_in_surface_qp', 0 )
@@ -173,7 +169,6 @@ class DotProductVolumeTerm( Term ):
     """
     name = 'd_volume_dot'
     arg_types = ('parameter_1', 'parameter_2')
-    geometry = [(Volume, 'parameter_1'), (Volume, 'parameter_2')]
     use_caches = {'state_in_volume_qp' : [['parameter_1'], ['parameter_2']]}
 
     ##
@@ -181,7 +176,7 @@ class DotProductVolumeTerm( Term ):
     # last revision: 13.12.2007
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
         shape = (chunk_size, 1, 1, 1)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
@@ -218,14 +213,14 @@ class DotProductSurfaceTerm( Term ):
     """
     name = 'd_surface_dot'
     arg_types = ('parameter_1', 'parameter_2')
-    geometry = [(Surface, 'parameter_1'), (Surface, 'parameter_2')]
+    integration = 'surface'
     use_caches = {'state_in_surface_qp' : [['parameter_1'], ['parameter_2']]}
 
     ##
     # c: 09.10.2007, r: 15.01.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2 = self.get_args( **kwargs )
-        ap, sg = par1.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par1)
         shape = (chunk_size, 1, 1, 1)
 
         cache = self.get_cache( 'state_in_surface_qp', 0 )
@@ -262,14 +257,13 @@ class IntegrateSurfaceOperatorTerm( Term ):
     """
     name = 'dw_surface_integrate'
     arg_types = ('virtual',)
-    geometry = [(Surface, 'virtual')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     ##
     # 30.06.2008, c
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
-        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
                                                      self.region.name )
         if diff_var is None:
@@ -304,12 +298,11 @@ class IntegrateSurfaceOperatorWTerm(Term):
     """
     name = 'dw_surface_integrate_w'
     arg_types = ('material', 'virtual')
-    geometry = [(Surface, 'virtual')]
-    dof_conn_type = 'surface'
-        
+    integration = 'surface'
+
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         mat, virtual = self.get_args(**kwargs)
-        ap, sg = virtual.get_approximation(self.get_current_group(), 'Surface')
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
                                                     self.region.name)
         if diff_var is None:
@@ -355,7 +348,6 @@ class VolumeTerm( Term ):
     """
     name = 'd_volume'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
     use_caches = {'volume' : [['parameter']]}
 
     ##
@@ -384,10 +376,8 @@ class SurfaceTerm( Term ):
     """
     name = 'd_surface'
     arg_types = ('parameter',)
-    geometry = [(Surface, 'parameter')]
     use_caches = {'surface' : [['parameter']]}
-    dof_conn_type = 'surface'
-        
+
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         shape = (1, 1, 1, 1)
@@ -412,14 +402,13 @@ class VolumeSurfaceTerm( Term ):
     """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
-    geometry = [(Surface, 'parameter')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     function = staticmethod(terms.d_volume_surface)
     
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
-        ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par)
         shape = (chunk_size, 1, 1, 1)
 
         sd = ap.surface_data[self.region.name]
@@ -449,14 +438,13 @@ class SurfaceMomentTerm(Term):
     """
     name = 'di_surface_moment'
     arg_types = ('parameter', 'shift')
-    geometry = [(Surface, 'parameter')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     function = staticmethod(terms.di_surface_moment)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         par, shift = self.get_args(**kwargs)
-        ap, sg = par.get_approximation(self.get_current_group(), 'Surface')
+        ap, sg = self.get_approximation(par)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
                                                     self.region.name)
         shape = (chunk_size, 1, dim, dim)
@@ -491,13 +479,12 @@ class AverageVolumeMatTerm( Term ):
     """
     name = 'de_volume_average_mat'
     arg_types = ('material', 'parameter')
-    geometry = [(Volume, 'parameter')]
 
     ##
     # c: 06.05.2008, r: 06.05.2008
     def prepare_data( self, chunk_size = None, **kwargs ):
         mat, par = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         shape = (chunk_size, 1) + mat.shape[2:]
@@ -533,11 +520,10 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     """
     name = 'di_volume_integrate_mat'
     arg_types = ('material', 'parameter', 'shape')
-    geometry = [(Volume, 'parameter')]
 
     def prepare_data( self, chunk_size = None, **kwargs ):
         mat, par, mat_shape = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         shape = (chunk_size, 1) + mat.shape[2:]
@@ -583,13 +569,11 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
     name = 'dw_volume_dot_w'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
 
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -616,7 +600,7 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
 
         self.set_data_shape( ap )
 
@@ -670,14 +654,13 @@ class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
     """
     name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
     function = staticmethod(terms.dw_volume_wdot_scalar)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -726,7 +709,6 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
     """
     name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'state_in_volume_qp' : [['state']],
                   'exp_history' : [['material_0', 'material_1', 'state']]}
 
@@ -734,7 +716,7 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -775,12 +757,11 @@ class AverageVariableTerm( Term ):
     """
     name = 'de_average_variable'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
     use_caches = {'state_in_volume_qp' : [['parameter']]}
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
 
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache( 'state', self.get_current_group(), 0,
@@ -807,14 +788,13 @@ class StateVQTerm(Term):
     """
     name = 'dq_state_in_volume_qp'
     arg_types = ('state',)
-    geometry = [(Volume, 'state')]
 
     function = staticmethod(terms.dq_state_in_qp)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """Ignores chunk_size."""
         state, = self.get_args(**kwargs)
-        ap, vg = state.get_approximation(self.get_current_group(), 'Volume')
+        ap, vg = self.get_approximation(state)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
 
         if diff_var is None:
@@ -844,14 +824,14 @@ class StateSQTerm(Term):
     """
     name = 'dq_state_in_surface_qp'
     arg_types = ('state',)
-    geometry = [(Surface, 'state')]
+    integration = 'surface'
 
     function = staticmethod(terms.dq_state_in_qp)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """Ignores chunk_size."""
         state, = self.get_args(**kwargs)
-        ap, sg = virtual.get_approximation(self.get_current_group(), 'Surface')
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
                                                     self.region.name)
 

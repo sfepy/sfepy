@@ -16,13 +16,12 @@ class LinearVolumeForceTerm( Term ):
     """
     name = 'dw_volume_lvf'
     arg_types = ('material', 'virtual')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_volume_lvf)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
         vdim = virtual.field.shape[0]
         

@@ -20,8 +20,7 @@ class LinearTractionTerm( Term ):
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
-    geometry = [(Surface, 'virtual')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     function = staticmethod(terms.dw_surface_ltr)
 
@@ -30,7 +29,7 @@ class LinearTractionTerm( Term ):
         Should work in scalar, vector and tensor modes (tensor probably broken).
         """
         traction, virtual = self.get_args( **kwargs )
-        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
                                                      self.region.name )
         if diff_var is None:
@@ -77,14 +76,13 @@ class SurfaceJumpTerm(Term):
     """
     name = 'dw_jump'
     arg_types = ('material', 'virtual', 'state_1', 'state_2')
-    geometry = [(Surface, 'virtual'), (Surface, 'state_1'), (Surface, 'state_2')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     function = staticmethod(terms.dw_jump)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         coef, virtual, state1, state2 = self.get_args(**kwargs)
-        ap, sg = virtual.get_approximation(self.get_current_group(), 'Surface')
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
                                                     self.region.name)
         if diff_var is None:
@@ -98,11 +96,11 @@ class SurfaceJumpTerm(Term):
 
         sd = ap.surface_data[self.region.name]
         bf = ap.get_base(sd.face_type, 0, self.integral_name)
-        
-        ap1, sg1 = self.get_approximation(state1, kind='Surface')
+
+        ap1, sg1 = self.get_approximation(state1)
         sd1 = ap1.surface_data[self.region.name]
 
-        ap2, sg2 = self.get_approximation(state2, kind='Surface')
+        ap2, sg2 = self.get_approximation(state2)
         sd2 = ap2.surface_data[self.region.name]
 
         for out, chunk in self.char_fun( chunk_size, shape ):

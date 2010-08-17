@@ -3,15 +3,14 @@ from sfepy.terms.terms import *
 class HDPMDiffusionVelocitySIntegratedTerm(Term):
     name = 'd_hdpm_surfdvel'
     arg_types = ('material', 'parameter')
-    geometry = [(SurfaceExtra, 'parameter')]
+    integration = 'surface_extra'
 
     function = staticmethod(terms.d_hdpm_surfdvel)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """? move surface pressure grad part into a cache ?"""
         mat, par = self.get_args( **kwargs )
-        ap, sg = par.get_approximation( self.get_current_group(),
-                                        'SurfaceExtra' )
+        ap, sg = self.get_approximation(par)
         n_fa, n_qp = ap.get_s_data_shape( self.integral_name,
                                           self.region.name )[:2]
         shape = (chunk_size, 1, 1, 1)

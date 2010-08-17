@@ -19,13 +19,12 @@ class MassTerm( VectorVector, Term ):
     """
     name = 'dw_mass'
     arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_mass)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        ts, mat, virtual, state, state0 = self.get_args(**kwargs)        
-        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
+        ts, mat, virtual, state, state0 = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape(ap)
         shape, mode = self.get_shape(diff_var, chunk_size)
@@ -53,11 +52,10 @@ class MassVectorTerm( MassTerm ):
     """
     name = 'dw_mass_vector'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        mat, virtual, state = self.get_args(**kwargs)        
-        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
+        mat, virtual, state = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape(ap)
         shape, mode = self.get_shape(diff_var, chunk_size)
@@ -87,8 +85,6 @@ class MassScalarTerm(ScalarScalar, Term):
     name = 'dw_mass_scalar'
     arg_types = (('virtual', 'state'),
                  ('parameter_1', 'parameter_2')) 
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1')])
     modes = ('weak', 'eval')
     functions = {'weak': terms.dw_mass_scalar,
                  'eval': terms.d_mass_scalar}
@@ -100,7 +96,7 @@ class MassScalarTerm(ScalarScalar, Term):
 
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -128,7 +124,7 @@ class MassScalarTerm(ScalarScalar, Term):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2 = self.get_args(['parameter_1', 'parameter_2'], **kwargs)
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
         self.set_data_shape( ap )
         bf = ap.get_base( 'v', 0, self.integral_name )
 
@@ -172,8 +168,6 @@ class MassScalarWTerm(MassScalarTerm):
     name = 'dw_mass_scalar_w'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2')) 
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1')])
 
 class MassScalarSurfaceTerm( ScalarScalar, Term ):
     r"""
@@ -190,15 +184,14 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
     """
     name = 'dw_surface_mass_scalar'
     arg_types = ('virtual', 'state')
-    geometry = [(Surface, 'virtual')]
-    dof_conn_type = 'surface'
+    integration = 'surface'
 
     function = staticmethod(terms.dw_surf_mass_scalar)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
-        
+        ap, sg = self.get_approximation(virtual)
+
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
@@ -239,7 +232,6 @@ class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     """
     name = 'dw_surface_mass_scalar_w'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Surface, 'virtual')]
 
 class BCNewtonTerm(MassScalarSurfaceTerm):
     r"""
@@ -258,7 +250,6 @@ class BCNewtonTerm(MassScalarSurfaceTerm):
     """
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
-    geometry = [(Surface, 'virtual'), (Surface, 'state')]
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         shift, = self.get_args(['material_2'], **kwargs)
@@ -299,7 +290,6 @@ class MassScalarFineCoarseTerm( Term ):
     """
     name = 'dw_mass_scalar_fine_coarse'
     arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_mass_scalar_fine_coarse)
         

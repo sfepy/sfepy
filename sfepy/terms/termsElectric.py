@@ -16,16 +16,13 @@ class ElectricSourceTerm( Term ):
     """
     name = 'dw_electric_source'
     arg_types = ('material', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
 
     function = staticmethod(terms.dw_electric_source)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, parameter = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = parameter.get_approximation( self.get_current_group(),
-                                                'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(parameter)
         n_el, n_qp, dim, n_ep = apr.get_v_data_shape( self.integral_name )
 
         if diff_var is None:

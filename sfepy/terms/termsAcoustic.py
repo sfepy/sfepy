@@ -18,7 +18,6 @@ class LaplaceLayerPSA1Term(ScalarScalar, Term):
     """
     name = 'd_llaplace_p_sa1'
     arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
-    geometry = [(Volume, 'parameter_1')]
 
     function = staticmethod(terms.d_llaplace_p_sa)
 
@@ -27,7 +26,7 @@ class LaplaceLayerPSA1Term(ScalarScalar, Term):
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
                                            'parameter_3'], **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
 
         self.set_data_shape( ap )
 
@@ -113,15 +112,13 @@ class LaplaceLayerTerm( ScalarScalar, Term ):
     name = 'dw_llaplace'
     arg_types = (('material', 'material', 'virtual', 'state'),
                  ('material', 'material', 'parameter_1', 'parameter_2'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
     functions = {'weak': terms.dw_llaplace,
                  'eval': terms.d_llaplace }
         
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
@@ -129,7 +126,7 @@ class LaplaceLayerTerm( ScalarScalar, Term ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
         self.set_data_shape( ap )
 
         return ((par1(), par2(), mat1, mat2, vg, ap.econn),
@@ -160,14 +157,13 @@ class AcousticSurfaceTerm( ScalarScalar, Term ):
     """
     name = 'd_acoustic_surface'
     arg_types = ('material', 'material', 'parameter')
-    geometry = [(SurfaceExtra, 'parameter')]
-    dof_conn_type = 'surface'
+    integration = 'surface_extra'
 
     function = staticmethod(terms.d_acoustic_surface)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, par = self.get_args( **kwargs )
-        ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par)
 
         self.set_data_shape( ap )
 
@@ -191,13 +187,12 @@ class AcousticIntegrateTerm( ScalarScalar, Term ):
     """
     name = 'dw_acoustic_integrate'
     arg_types = ('material', 'virtual')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_acoustic_integrate)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
@@ -218,13 +213,12 @@ class AcousticEvalAlphaTerm( Term ):
     """
     name = 'd_acoustic_alpha'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
-    
+
     function = staticmethod(terms.d_acoustic_alpha)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation()
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:

@@ -251,7 +251,7 @@ class Field( Struct ):
         dct = info.dc_type.type
         
         if geometry != None:
-            geometry_flag = geometry.find('Surface') >= 0
+            geometry_flag = 'surface' in geometry
         else:
             geometry_flag = False     
             

@@ -20,11 +20,10 @@ class AdjDivGradTerm(DivGradTerm):
     """
     name = 'dw_adj_div_grad'
     arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
-    geometry = [(Volume, 'virtual')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         weight, viscosity, virtual, parameter = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -55,13 +54,12 @@ class AdjConvect1Term(Term):
     """
     name = 'dw_adj_convect1'
     arg_types = ('virtual', 'state', 'parameter' )
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_adj_convect1)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state, parameter = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -97,7 +95,6 @@ class AdjConvect2Term(AdjConvect1Term):
     """
     name = 'dw_adj_convect2'
     arg_types = ('virtual', 'state', 'parameter' )
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_adj_convect2)
 
@@ -120,13 +117,12 @@ class AdjSUPGCtabilizationTerm(Term):
     """
     name = 'dw_st_adj_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_st_adj_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, par, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -165,15 +161,13 @@ class SUPGPAdj1StabilizationTerm(Term):
     """
     name = 'dw_st_adj1_supg_p'
     arg_types = ('material', 'virtual', 'state', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
 
     function = staticmethod(terms.dw_st_adj1_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, state, par = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        apr, vgr = virtual.get_approximation( cg, 'Volume' )
-        app, vgp = par.get_approximation( cg, 'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        app, vgp = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = apr.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -213,15 +207,13 @@ class SUPGPAdj2StabilizationTerm(Term):
     """
     name = 'dw_st_adj2_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     function = staticmethod(terms.dw_st_adj2_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, par, state = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        apr, vgr = virtual.get_approximation( cg, 'Volume' )
-        apc, vgc = state.get_approximation( cg, 'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
         n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -247,13 +239,12 @@ class TestPQTerm(Term):
     name = 'd_sd_test_pq'
     arg_types = ('parameter_p', 'parameter_q', 'parameter_mesh_velocity',
                 'mode')
-    geometry = [(Volume, 'parameter_p')]
 
     function = staticmethod(terms.d_sd_testPQ)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_p, par_q, par_mv, mode = self.get_args( **kwargs )
-        ap, vg = par_p.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par_p)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -291,17 +282,14 @@ class SDDivTerm(Term):
     name = 'd_sd_div'
     arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity',
                 'mode')
-    geometry = [(Volume, 'parameter_u'), (Volume, 'parameter_p'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_div)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_u, par_p, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_p, vg_p = par_p.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_p, vg_p = self.get_approximation(par_p)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -344,8 +332,6 @@ class SDDivGradTerm(Term):
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_u'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_div_grad)
 
@@ -356,9 +342,8 @@ class SDDivGradTerm(Term):
         mesh_v_field: mv_name ... mesh velsocity
         """
         weight, viscosity, par_u, par_w, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -394,17 +379,14 @@ class SDConvectTerm(Term):
     name = 'd_sd_convect'
     arg_types = ('parameter_u', 'parameter_w',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_u'), (Volume, 'parameter_w'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_convect)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_u, par_w, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_w, vg_w = par_w.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_w, vg_w = self.get_approximation(par_w)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -428,7 +410,6 @@ class SDConvectTerm(Term):
 class NSOFMinGrad1Term(Term):
     name = 'd_of_ns_min_grad1'
     arg_types = ('material_1', 'material_2', 'parameter')
-    geometry = [(Volume, 'parameter')]
 
     function = staticmethod(terms.d_of_nsMinGrad)
     
@@ -437,7 +418,7 @@ class NSOFMinGrad1Term(Term):
         parameter: fluid velocity
         """
         weight, viscosity, par = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
         shape = (1,)
 
         vec = par()
@@ -450,7 +431,6 @@ class NSOFMinGrad1Term(Term):
 class NSOFMinGrad2Term(NSOFMinGrad1Term):
     name = 'd_of_ns_min_grad2'
     arg_types = ('material_1', 'material_2', 'parameter')
-    geometry = [(Volume, 'parameter')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -458,7 +438,7 @@ class NSOFMinGrad2Term(NSOFMinGrad1Term):
         uses 1.0 instead of material.viscosity
         """
         weight, material, par = self.get_args( **kwargs )
-        ap, vg = par.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par)
         shape = (1,)
 
         vec = par()
@@ -484,8 +464,6 @@ class NSOFSurfMinDPressTerm(Term):
     """
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
-    geometry = [(Surface, 'parameter')]
-    dof_conn_type = 'surface'
 
     function = staticmethod(terms.d_of_nsSurfMinDPress)
 
@@ -498,7 +476,7 @@ class NSOFSurfMinDPressTerm(Term):
         parameter: fluid pressure
         """
         weight, press, par = self.get_args( **kwargs )
-        ap, sg = par.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par)
         shape = (1,)
 
         sd = ap.surface_data[self.region.name]
@@ -531,7 +509,6 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
     """
     name = 'dw_of_ns_surf_min_d_press_diff'
     arg_types = ('material', 'virtual')
-    geometry = [(Surface, 'virtual')]
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         """
@@ -541,7 +518,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
         virtual: fluid pressure-like
         """
         weight, virtual = self.get_args( **kwargs )
-        ap, sg = virtual.get_approximation( self.get_current_group(), 'Surface' )
+        ap, sg = self.get_approximation(par)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
                                                      self.region.name )
         shape = (chunk_size, 1, n_fp, 1 )
@@ -582,16 +559,13 @@ class SDGradDivStabilizationTerm(Term):
     name = 'd_sd_st_grad_div'
     arg_types = ('material', 'parameter_w', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_u'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_st_grad_div)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_w, par_u, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -638,16 +612,13 @@ class SDSUPGCStabilizationTerm(Term):
     name = 'd_sd_st_supg_c'
     arg_types = ('material', 'parameter_w', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_u'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_st_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_w, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -691,18 +662,14 @@ class SDPSPGCStabilizationTerm(Term):
     name = 'd_sd_st_pspg_c'
     arg_types = ('material', 'parameter_r', 'parameter_b', 'parameter_u',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_r'),
-                (Volume, 'parameter_u'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_st_pspg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_r, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_u, vg_u = par_u.get_approximation( cg, 'Volume' )
-        ap_r, vg_r = par_r.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_u, vg_u = self.get_approximation(par_u)
+        ap_r, vg_r = self.get_approximation(par_r)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
 
         if not chunk_size:
@@ -746,16 +713,13 @@ class SDPSPGPStabilizationTerm(Term):
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
                 'parameter_mesh_velocity', 'mode')
-    geometry = [(Volume, 'parameter_p'),
-                (Volume, 'parameter_mesh_velocity')]
 
     function = staticmethod(terms.d_sd_st_pspg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, par_r, par_p, par_mv, mode = self.get_args( **kwargs )
-        cg = self.get_current_group()
-        ap_p, vg_p = par_p.get_approximation( cg, 'Volume' )
-        ap_mv, vg_mv = par_mv.get_approximation( cg, 'Volume' )
+        ap_p, vg_p = self.get_approximation(par_p)
+        ap_mv, vg_mv = self.get_approximation(par_mv)
         n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape( self.integral_name )
         if not chunk_size:
             chunk_size = n_el

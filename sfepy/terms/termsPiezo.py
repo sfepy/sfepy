@@ -6,10 +6,8 @@ class PiezoCouplingGrad( CouplingVectorScalar ):
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
 
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
@@ -28,10 +26,8 @@ class PiezoCouplingDiv( CouplingVectorScalar ):
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, state, virtual = self.get_args( **kwargs )
 
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
@@ -51,12 +47,12 @@ class  PiezoCouplingEval( CouplingVectorScalar ):
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         if diff_var is not None:
             raise StopIteration
-        
+
         mat, par_v, par_s = self.get_args( **kwargs )
-        aps, vgs = par_s.get_approximation( self.get_current_group(),
-                                            'Volume' )
-        apv, vgv = par_v.get_approximation( self.get_current_group(),
-                                            'Volume' )
+
+        aps, vgs = self.get_approximation(par_s)
+        apv, vgv = self.get_approximation(par_v)
+
         self.set_data_shape( aps, apv )
 
         cache = self.get_cache( 'cauchy_strain', 0 )
@@ -97,9 +93,6 @@ class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad,
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):

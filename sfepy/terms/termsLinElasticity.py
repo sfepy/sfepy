@@ -41,8 +41,6 @@ class LinearElasticTerm( VectorVector, Term ):
     name = 'dw_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter_1'), (Volume, 'parameter_2')])
     modes = ('weak', 'eval')
 ##     symbolic = {'expression': expr,
 ##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
@@ -54,7 +52,7 @@ class LinearElasticTerm( VectorVector, Term ):
 
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -73,7 +71,7 @@ class LinearElasticTerm( VectorVector, Term ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = par1.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(par1)
 
         self.set_data_shape( ap )
 
@@ -118,13 +116,12 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     function = staticmethod(terms.dw_lin_elastic_iso)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         lam, mu, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -152,14 +149,13 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
     use_caches = {'cauchy_strain' : [['state', {'strain' : (-1,-1)}]]}
 
     function = staticmethod(terms.dw_lin_elastic)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mats, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -207,7 +203,6 @@ class LinearElasticETHTerm(VectorVector, Term):
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
     use_caches = {'cauchy_strain' : [['state']],
                   'exp_history' : [['material_0', 'material_1', 'state']]}
 
@@ -215,7 +210,7 @@ class LinearElasticETHTerm(VectorVector, Term):
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         ts, mat0, mat1, virtual, state = self.get_args(**kwargs)
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
@@ -266,8 +261,6 @@ class LinearPrestressTerm(VectorVector, Term):
     name = 'dw_lin_prestress'
     arg_types = (('material', 'virtual'),
                  ('material', 'parameter'))
-    geometry = ([(Volume, 'virtual')],
-                [(Volume, 'parameter')])
     modes = ('weak', 'eval')
 
     def check_mat_shape(self, mat):
@@ -277,7 +270,7 @@ class LinearPrestressTerm(VectorVector, Term):
 
     def get_fargs_weak(self, diff_var=None, chunk_size=None, **kwargs):
         mat, virtual = self.get_args(**kwargs)
-        ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape(ap)
         shape, mode = self.get_shape(diff_var, chunk_size)
@@ -291,7 +284,7 @@ class LinearPrestressTerm(VectorVector, Term):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, par = self.get_args(**kwargs)
-        ap, vg = par.get_approximation(self.get_current_group(), 'Volume')
+        ap, vg = self.get_approximation(par)
 
         self.set_data_shape(ap)
 
@@ -335,7 +328,6 @@ class CauchyStrainTerm( Term ):
     """
     name = 'de_cauchy_strain'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
 
     function = staticmethod(terms.de_cauchy_strain)
 
@@ -354,7 +346,7 @@ class CauchyStrainTerm( Term ):
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         parameter, = self.get_args( ['parameter'], **kwargs )
-        ap, vg = parameter.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(parameter)
 
         shape = self.get_shape( diff_var, chunk_size, ap )
         fargs = self.build_c_fun_args( parameter, ap, vg, **kwargs )
@@ -380,7 +372,6 @@ class CauchyStressTerm( CauchyStrainTerm ):
     """
     name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
-    geometry = [(Volume, 'parameter')]
     use_caches = {'cauchy_strain' : [['parameter']]}
 
     function = staticmethod(terms.de_cauchy_stress)
@@ -411,7 +402,6 @@ class CauchyStrainQTerm(Term):
    """
     name = 'dq_cauchy_strain'
     arg_types = ('parameter',)
-    geometry = [(Volume, 'parameter')]
     use_caches = {'cauchy_strain' : [['parameter']]}
 
     def get_strain(self, diff_var=None, chunk_size=None, **kwargs):
@@ -452,7 +442,6 @@ class CauchyStressQTerm(CauchyStrainQTerm):
     """
     name = 'dq_cauchy_stress'
     arg_types = ('material', 'parameter')
-    geometry = [(Volume, 'parameter')]
     use_caches = {'cauchy_strain' : [['parameter']]}
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):

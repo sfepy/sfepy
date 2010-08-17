@@ -70,7 +70,7 @@ class HyperElasticBase( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         term_mode, = self.get_kwargs( ['term_mode'], **kwargs )
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
 
         self.set_data_shape(ap)
         shape, mode = self.get_shape(diff_var, chunk_size)
@@ -132,7 +132,6 @@ class DeformationGradientTerm(Term):
     """
     name = 'dq_def_grad'
     arg_types = ('state',)
-    geometry = [(Volume, 'state')]
 
     function = staticmethod(terms.dq_def_grad)
 
@@ -140,7 +139,7 @@ class DeformationGradientTerm(Term):
         state, = self.get_args(**kwargs)
         term_mode = kwargs.get('term_mode', 'dq_def_grad')
 
-        ap, vg = state.get_approximation(self.get_current_group(), 'Volume')
+        ap, vg = self.get_approximation(state)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
 
         if diff_var is None:

@@ -17,13 +17,12 @@ class DivGradTerm( Term ):
     """
     name = 'dw_div_grad'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.term_ns_asm_div_grad)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -56,13 +55,12 @@ class ConvectTerm( Term ):
     """
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.term_ns_asm_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -97,13 +95,12 @@ class LinearConvectTerm( Term ):
     """
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_lin_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, par, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -138,13 +135,12 @@ class LinearConvectQTerm( Term ):
     """
     name = 'dq_lin_convect'
     arg_types = ('parameter', 'state')
-    geometry = [(Volume, 'state')]
 
     function = staticmethod(terms.dw_lin_convect)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, state = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(state)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -165,10 +161,8 @@ class StokesGrad( CouplingVectorScalar ):
 
     def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args(['virtual', 'state'], **kwargs)
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
@@ -188,10 +182,10 @@ class StokesDiv( CouplingVectorScalar ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         state, virtual = self.get_args(['state', 'virtual'], **kwargs)
-        apr, vgr = virtual.get_approximation( self.get_current_group(),
-                                              'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        ap, vg = self.get_approximation(virtual)
+        ap, vg = self.get_approximation(virtual)
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
 
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
@@ -211,11 +205,11 @@ class StokesEval( CouplingVectorScalar ):
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
         par_v, par_s = self.get_args(['parameter_v', 'parameter_s'], **kwargs)
-        aps, vgs = par_s.get_approximation( self.get_current_group(),
-                                            'Volume' )
-        apv, vgv = par_v.get_approximation( self.get_current_group(),
-                                            'Volume' )
+        aps, vgs = self.get_approximation(par_s)
+        apv, vgv = self.get_approximation(par_v)
+
         self.set_data_shape( aps, apv )
+
         return (par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
 
     def d_eval( self, out, par_v, par_s, vgv, chunk ):
@@ -262,9 +256,6 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
     arg_types = (('virtual', 'state'),
                  ('state', 'virtual'),
                  ('parameter_v', 'parameter_s'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
     def set_arg_types( self ):
@@ -312,9 +303,6 @@ class StokesWTerm(StokesTerm):
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_v', 'parameter_s'))
-    geometry = ([(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'virtual'), (Volume, 'state')],
-                [(Volume, 'parameter_v'), (Volume, 'parameter_s')])
     modes = ('grad', 'div', 'eval')
 
 class GradQTerm( Term ):
@@ -331,13 +319,12 @@ class GradQTerm( Term ):
     """
     name = 'dq_grad'
     arg_types = ('state',)
-    geometry = [(Volume, 'state')]
 
     function = staticmethod(terms.dq_grad)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(state)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -367,13 +354,12 @@ class GradETerm( Term ):
     """
     name = 'de_grad'
     arg_types = ('state',)
-    geometry = [(Volume, 'state')]
 
     function = staticmethod(terms.de_grad)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(state)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         vdim = ap.dim[0]
@@ -422,13 +408,12 @@ class GradDivStabilizationTerm( Term ):
     """
     name = 'dw_st_grad_div'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_st_grad_div)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         gamma, virtual, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -487,14 +472,14 @@ class PSPGCStabilizationTerm( Term ):
     """
     name = 'dw_st_pspg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     function = staticmethod(terms.dw_st_pspg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         tau, virtual, par, state = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
         n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -537,14 +522,13 @@ class SUPGPStabilizationTerm( Term ):
     """
     name = 'dw_st_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
 
     function = staticmethod(terms.dw_st_supg_p)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
-        apr, vgr = virtual.get_approximation( self.get_current_group(), 'Volume' )
-        apc, vgc = state.get_approximation( self.get_current_group(), 'Volume' )
+        apr, vgr = self.get_approximation(virtual)
+        apc, vgc = self.get_approximation(state)
         n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
 
         if diff_var is None:
@@ -587,13 +571,12 @@ class SUPGCStabilizationTerm( Term ):
     """
     name = 'dw_st_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
-    geometry = [(Volume, 'virtual')]
 
     function = staticmethod(terms.dw_st_supg_c)
         
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
-        ap, vg = virtual.get_approximation( self.get_current_group(), 'Volume' )
+        ap, vg = self.get_approximation(virtual)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
 
         if diff_var is None:

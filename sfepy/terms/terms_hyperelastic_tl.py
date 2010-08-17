@@ -28,7 +28,6 @@ class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
     """
     name = 'dw_tl_he_neohook'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'trC', 'invC']
     term_function = {'stress' : terms.dq_tl_he_stress_neohook,
@@ -70,7 +69,6 @@ class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
     """
     name = 'dw_tl_he_mooney_rivlin'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'trC', 'invC', 'C', 'in2C']
     term_function = {'stress' : terms.dq_tl_he_stress_mooney_rivlin,
@@ -112,7 +110,6 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
 
     name = 'dw_tl_bulk_penalty'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(Volume, 'virtual')]
 
     family_data_names = ['detF', 'invC']
     term_function = {'stress' : terms.dq_tl_he_stress_bulk,
@@ -154,7 +151,6 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
 
     name = 'dw_tl_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
-    geometry = [(Volume, 'virtual')]
     use_caches = {'finite_strain_tl' : [['state']],
                   'state_in_volume_qp' : [['state_p']]}
 
@@ -174,8 +170,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
         virtual, state, state_p = self.get_args(**kwargs)
-        apv, vgv = virtual.get_approximation(self.get_current_group(), 'Volume')
-        aps, vgs = state_p.get_approximation(self.get_current_group(), 'Volume')
+        apv, vgv = self.get_approximation(virtual)
+        aps, vgs = self.get_approximation(state_p)
 
         self.set_data_shape(apv, aps)
         shape, mode = self.get_shape_grad(diff_var, chunk_size)
@@ -276,7 +272,6 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
-    geometry = [(Volume, 'virtual'), (Volume, 'state')]
     use_caches = {'finite_strain_tl' : [['state',
                                          {'F' : (2, 2),
                                           'invC' : (2, 2),
@@ -288,8 +283,8 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
         virtual, state = self.get_args( **kwargs )
         term_mode = kwargs.get('term_mode')
 
-        apv, vgv = state.get_approximation(self.get_current_group(), 'Volume')
-        aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
+        apv, vgv = self.get_approximation(state)
+        aps, vgs = self.get_approximation(virtual)
 
         self.set_data_shape(apv, aps)
 
@@ -340,7 +335,6 @@ class DiffusionTLTerm(ScalarScalar, Term):
     """
     name = 'dw_tl_diffusion'
     arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
-    geometry = [(Volume, 'virtual'), (Volume, 'parameter')]
     use_caches = {'grad_scalar' : [['state']],
                   'finite_strain_tl' : [['parameter',
                                          {'F' : (2, 2),
@@ -353,8 +347,8 @@ class DiffusionTLTerm(ScalarScalar, Term):
         perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
         term_mode = kwargs.get('term_mode')
 
-        apv, vgv = par.get_approximation(self.get_current_group(), 'Volume')
-        aps, vgs = virtual.get_approximation(self.get_current_group(), 'Volume')
+        apv, vgv = self.get_approximation(par)
+        aps, vgs = self.get_approximation(virtual)
 
         self.set_data_shape(aps)
 
@@ -404,15 +398,14 @@ class SurfaceTractionTLTerm(VectorVector, Term):
     """
     name = 'dw_tl_surface_traction'
     arg_types = ('material', 'virtual', 'state')
-    geometry = [(SurfaceExtra, 'virtual')]
+    integration = 'surface_extra'
     use_caches = {'finite_strain_surface_tl' : [['state']]}
 
     function = staticmethod(terms.dw_tl_surface_traction)
 
     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
         trac_qp, virtual, state = self.get_args(**kwargs)
-        ap, sg = virtual.get_approximation(self.get_current_group(),
-                                            'SurfaceExtra')
+        ap, sg = self.get_approximation(virtual)
         sd = ap.surface_data[self.region.name]
 
         n_fa, n_qp = ap.get_s_data_shape(self.integral_name,
