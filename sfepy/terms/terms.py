@@ -711,7 +711,11 @@ class Term(Struct):
             field = vvar.get_field()
             if field is not None:
                 v_igs = field.igs()
-                v_tg = tgs[vvar.name]
+                if vvar.name in tgs:
+                    v_tg = tgs[vvar.name]
+
+                else:
+                    v_tg = None
 
         else:
             # No virtual variable -> all unknowns are in fact known parameters.
