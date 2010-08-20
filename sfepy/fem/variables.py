@@ -80,6 +80,8 @@ class Variables( Container ):
         elif var.is_parameter():
             self.parameter.add(var.name)
 
+        var._variables = self
+
     def setup_dtype( self ):
         """Setup data types of state variables - all have to be of the same
         data type, one of nm.float64 or nm.complex128."""
@@ -121,9 +123,6 @@ class Variables( Container ):
 	"""
         Setup ordering of variables.
         """
-        for var in self:
-            var._variables = self
-
         self.link_duals()
 
         orders = []
