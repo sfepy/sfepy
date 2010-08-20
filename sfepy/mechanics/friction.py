@@ -183,7 +183,11 @@ class DualMesh(Struct):
         face_map = nm.arange(n_fa * n_edge, dtype=nm.int32)
         face_map.shape = (n_fa, n_edge)
 
-        n_nod = n_fa * n_edge
+        # The actual connectivity for assembling (unique nodes per master
+        # faces).
+        asm_conn = e_id[face_map]
+
+        n_nod = ueo.shape[0] # One node per unique edge.
         n_components = self.dim - 1
 
         dual_surface = Struct(name = 'dual_surface_description',
@@ -203,6 +207,7 @@ class DualMesh(Struct):
                               map_er_e = map_er_e,
                               map_er_ed = map_er_ed,
                               face_map = face_map,
+                              asm_conn = asm_conn,
                               nodal_normals = nodal_normals,
                               edge_centre_coors = edge_centre_coors,
                               edge_normals = edge_normals,
