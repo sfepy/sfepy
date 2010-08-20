@@ -337,7 +337,7 @@ class Term(Struct):
         self.set_integral(integral)
         self.region = region
         self._kwargs = kwargs
-
+        self._integration = self.integration
         self.sign = 1.0
 
     def __mul__(self, other):
@@ -917,6 +917,9 @@ class Term(Struct):
                 self.geometry_types[var.name] = self.integration
 
         else:
+            if self.mode is not None:
+                self.integration = self._integration[self.mode]
+
             for arg_type, gtype in self.integration.iteritems():
                 var = self.get_args(arg_types=[arg_type])[0]
                 self.geometry_types[var.name] = gtype
