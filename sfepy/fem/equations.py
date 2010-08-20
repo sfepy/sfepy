@@ -432,12 +432,51 @@ class Equations( Container ):
 
         return residual
 
-    def eval_tangent_matrices(self, state, tangent_matrix):
+    def eval_tangent_matrices(self, state, tangent_matrix, by_blocks=False):
+        """
+        Evaluate (assemble) tangent matrices.
+
+        Parameters
+        ----------
+        state : array
+            The vector of DOF values. Note that it is needed only in
+            nonlinear terms.
+        tangent_matrix : csr_matrix
+            The preallocated CSR matrix with zero data.
+        by_blocks : bool
+            If True, return the individual blocks composing the whole
+            matrix. Each equation should then correspond to one
+            required block and should be named as `'block_name,
+            test_variable_name, unknown_variable_name'`.
+
+        Returns
+        -------
+        out : csr_matrix or dict of csr_matrix
+            The assembled matrix. If `by_blocks` is True, a dictionary
+            is returned instead, with keys given by `block_name` part
+            of the individual equation names.
+        """
         self.set_variables_from_state(state)
 
         self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
 
-        return tangent_matrix
+        if by_blocks:
+            out = {}
+
+            get_indx = self.variables.get_indx
+            for eq in self:
+                key, rname, cname = [aux.strip()
+                                     for aux in eq.name.split(',')]
+
+                ir = get_indx(rname, stripped=True, allow_dual=True)
+                ic = get_indx(cname, stripped=True, allow_dual=True)
+
+                out[key] = tangent_matrix[ir, ic]
+
+        else:
+            out = tangent_matrix
+
+        return out
 
 ##
 # 21.07.2006, c
