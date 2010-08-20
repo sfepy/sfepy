@@ -30,14 +30,11 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
             econn[ir] = ee[ir,face]
         mask[econn] += 1
         # Unit normals -> weights = ones.
-        integral = Integral(name='i', kind='s',
-                            quad_name='custom',
-                            coors=ap.interp.poly_spaces[face_type].node_coors,
-                            weights=nm.ones((n_fp,), dtype=nm.float64))
+        ps = ap.interp.poly_spaces[face_type]
+        weights = nm.ones((n_fp,), dtype=nm.float64)
 
-        bf_sg, weights = ap.get_base( face_type, 1,
-                                      integral = integral,
-                                      base_only = False )
+        coors = ps.node_coors
+        bf_sg = ps.eval_base(coors, diff=True)
 
         sg = SurfaceGeometry( n_fa, n_fp, dim, n_fp )
         sg.describe( field.aps.coors, econn, bf_sg, weights )
