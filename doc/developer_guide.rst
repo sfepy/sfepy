@@ -528,6 +528,7 @@ below are already more or less updated.
 
    src/sfepy/fem/conditions
    src/sfepy/fem/dof_info
+   src/sfepy/fem/equations
    src/sfepy/fem/evaluate
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
