@@ -183,10 +183,23 @@ class Equations( Container ):
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def create_matrix_graph( self, var_names = None, vvar_names = None ):
+    def create_matrix_graph(self, any_dof_conn=False):
         """
         Create tangent matrix graph. Order of dof connectivities is not
-        important here...
+        important here.
+
+        Parameters
+        ----------
+        any_dof_conn : bool
+            By default, only volume dof connectivities are used, with
+            the exception of trace surface dof connectivities. If True,
+            any kind of dof connectivities is allowed.
+
+        Returns
+        -------
+        matrix : csr_matrix
+            The matrix graph in the form of a CSR matrix with
+            preallocated structure and zero data.
         """
         if not self.variables.has_virtuals():
             output('no matrix (no test variables)!')
@@ -208,7 +221,8 @@ class Equations( Container ):
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
             dct = info.dc_type.type
-            if not (dct in ('volume', 'scalar') or info.is_trace):
+            if not (dct in ('volume', 'scalar') or info.is_trace
+                    or any_dof_conn):
                 continue
 
             rvar, cvar = info.virtual, info.state
