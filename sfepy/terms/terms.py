@@ -924,9 +924,10 @@ class Term(Struct):
             if self.mode is not None:
                 self.integration = self._integration[self.mode]
 
-            for arg_type, gtype in self.integration.iteritems():
-                var = self.get_args(arg_types=[arg_type])[0]
-                self.geometry_types[var.name] = gtype
+            if self.integration is not None:
+                for arg_type, gtype in self.integration.iteritems():
+                    var = self.get_args(arg_types=[arg_type])[0]
+                    self.geometry_types[var.name] = gtype
 
         gtypes = list(set(self.geometry_types.itervalues()))
 
