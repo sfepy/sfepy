@@ -6,6 +6,42 @@ from sfepy.base.base import *
 from sfepy.fem.poly_spaces import PolySpace
 import extmods.geometry as gm
 
+def get_physical_qps(region, integral):
+    """
+    Get physical quadrature points corresponding to the given region
+    and integral.
+    """
+    phys_qps = Struct(group_indx = {},
+                      el_indx = {},
+                      n_qp = {},
+                      values = {},
+                      is_uniform = True)
+
+    ii = 0
+    for ig in region.igs:
+        gmap = region.create_mapping(integral.kind[0], ig)
+
+        gel = gmap.get_geometry()
+        qp_coors, _ = integral.get_qp(gel.name)
+
+        qps = gmap.get_physical_qps(qp_coors)
+
+        phys_qps.n_qp[ig] = n_qp = qps.shape[0] * qps.shape[1]
+
+        phys_qps.group_indx[ig] = nm.arange(ii, ii + n_qp,
+                                            dtype=nm.int32)
+
+        aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_qp + 1)
+        aux[0] = 0
+        phys_qps.el_indx[ig] = nm.cumsum(aux)
+
+        ii += n_qp
+
+        qps.shape = (n_qp, qps.shape[2])
+        phys_qps.values[ig] = qps
+
+    return phys_qps
+
 class Mapping(Struct):
     """
     Base class for mappings.
