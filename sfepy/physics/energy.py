@@ -1,5 +1,6 @@
 from sfepy.base.base import *
 from sfepy.fem import Integrals
+from sfepy.fem.mappings import get_physical_qps
 
 def eval_ion_ion_energy(centres, charges):
     """
@@ -30,7 +31,7 @@ def eval_non_local_interaction(problem, region_name, var_name,
     integral = problem.integrals[integral_name]
 
     qp_key = (region.name, integral.name)
-    qps = aps.get_physical_qps(region, integral)
+    qps = get_physical_qps(region, integral)
     igs = qps.values.keys()
 
     ig = igs[0]

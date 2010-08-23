@@ -10,6 +10,7 @@ from sfepy.fem.utils import extend_cell_data
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator
+from sfepy.fem.mappings import get_physical_qps
 
 is_state = 0
 is_virtual = 1
@@ -1534,7 +1535,7 @@ class FieldVariable(Variable):
         elif strategy == 'projection':
             region = self.field.region
             integral = Integral(term=interp_term)
-            coors = self.field.aps.get_physical_qps(region, integral)
+            coors = get_physical_qps(region, integral)
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
