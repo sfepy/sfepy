@@ -31,7 +31,7 @@ int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
     iel = elList[ii];
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( forceQP, iel );
+    FMF_SetCell( forceQP, ii );
     FMF_SetCell( vg->det, iel );
 
     bf_actt_c1( outQP, bf, forceQP );
