@@ -25,6 +25,12 @@ class Mapping(Struct):
 
         self.poly_space = poly_space
 
+    def get_geometry(self):
+        """
+        Return reference element geometry as a GeometryElement instance.
+        """
+        return self.poly_space.geometry
+
     def get_base(self, coors, diff=False):
         """
         Get base functions or their gradient evaluated in given
