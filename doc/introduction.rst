@@ -180,7 +180,7 @@ Prerequisites
 First, you have to install the dependencies packages::
 
     sudo aptitude install python-scipy python-matplotlib python-tables
-    python-pyparsing libsuitesparse-dev 
+    python-pyparsing libsuitesparse-dev python-setuptools
 
 Then download and install the umfpack scikits in some local dir. In the
 following example it will be installed in $HOME/local::
@@ -199,7 +199,13 @@ scikits.umfpack in python should give no error::
 
     $ python
     >>> import scikits.umfpack
-    >>> 
+    >>>
+
+Next Download sympy 6.7 or later. Extract the contents.
+
+cd sympy-0.6.7
+
+python setup.py install --prefix=${HOME}/local
 
 Installing SfePy
 ++++++++++++++++
