@@ -88,7 +88,6 @@ def setup_dof_conns(conn_info, dof_conns=None,
 ##
 # 14.07.2006, c
 class Field( Struct ):
-    all_interps = {}
 
     def from_conf(conf, regions):
         """To refactor... very hackish now."""
@@ -155,7 +154,7 @@ class Field( Struct ):
 
         # To refactor below...
         self.setup_bases()
-        self.create_interpolants()
+        self.create_interpolant()
         self.setup_approximations()
 ##         print self.aps
 ##         pause()
@@ -187,40 +186,22 @@ class Field( Struct ):
     def setup_bases(self):
         """Setup FE bases according to self.approx_order and region cell
         types. Assumes one cell type for the whole region!"""
-        dim = self.domain.shape.dim
-        group = self.domain.groups[self.region.igs[0]]
-        n_ep = group.shape.n_ep
+        gel = self.domain.groups[self.region.igs[0]].gel
+        dim, n_ep = gel.dim, gel.n_vertex
 
         if n_ep == (dim + 1): # simplex
             kind = 'P'
         else: # tensor product
             kind = 'Q'
 
-        self.bases = {self.region.name :
-                      '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)}
+        self.gel = gel
+        self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
 
-    def create_interpolants(self):
-        """
-        One interpolant for each base, shared if same.
-        """
-        self.interps = {}
-        for region_name, base_name in self.bases.iteritems():
+    def create_interpolant(self):
+        self.interp = fea.Interpolant(self.base_name, self.gel)
 
-            if base_name in self.all_interps:
-                interp = self.all_interps[base_name]
-
-            else:
-                gel = self.domain.geom_els[base_name[:3]]
-                interp = fea.Interpolant(base_name, gel)
-                self.all_interps[base_name] = interp
-
-            self.interps[base_name] = interp
-            
-    ##
-    # 18.07.2006, c
-    # 05.09.2006
     def setup_approximations(self):
-        self.aps = fea.Approximations(self.bases, self.interps, self.domain)
+        self.aps = fea.Approximations(self.interp, self.region)
 
     ##
     #
@@ -234,7 +215,7 @@ class Field( Struct ):
         self.aps.describe_nodes()
         self.aps.setup_nodes()
 
-        aux = self.aps.setup_global_base( self.domain )
+        aux = self.aps.setup_global_base()
         self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
 
 ##         print self.n_nod, self.cnt_vn, self.cnt_en
@@ -280,7 +261,7 @@ class Field( Struct ):
         ##
         # Expand nodes into dofs.
         can_point = True
-        for region_name, ig, ap in self.aps.iter_aps(igs=region.igs):
+        for ig, ap in self.aps.iter_aps(igs=region.igs):
             region_name = region.name # True region name.
             key = (self.name, dpn, region_name, dct, ig)
             if key in dof_conns:
@@ -335,7 +316,7 @@ class Field( Struct ):
 
         if self.approx_order != '0':
             conns, mat_ids, descs = [], [], []
-            for region_name, ig, ap in self.aps.iter_aps():
+            for ig, ap in self.aps.iter_aps():
                 region = ap.region
                 group = region.domain.groups[ig]
                 if extra_nodes:
@@ -375,9 +356,9 @@ class Field( Struct ):
     # c: 20.07.2006, r: 15.01.2008
     def get_node_descs( self, region ):
         nds = {}
-        for region_name, ig, ap in self.aps.iter_aps():
+        for ig, ap in self.aps.iter_aps():
             if ig in region.igs:
-                nds[ig] = self.aps.node_descs[region_name]
+                nds[ig] = self.aps.node_desc
 
         return nds
 
@@ -431,7 +412,7 @@ class Field( Struct ):
     def interp_v_vals_to_n_vals( self, vec ):
         dim = vec.shape[1]
         enod_vol_val = nm.zeros( (self.n_nod, dim), nm.float64 )
-        for region_name, ig, ap in self.aps.iter_aps():
+        for ig, ap in self.aps.iter_aps():
             group = self.domain.groups[ig]
             offset = group.shape.n_ep
             conn = ap.econn[:,:offset]

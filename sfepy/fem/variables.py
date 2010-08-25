@@ -1312,7 +1312,8 @@ class FieldVariable(Variable):
 
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
         data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
-        for region_name, ig, ap in self.field.aps.iter_aps():
+        for ig, ap in self.field.aps.iter_aps():
+            region_name = ap.region.name
             ap_key = (integral_name, region_name, ig)
             aux, vg = self.get_approximation(ap_key, 'volume')
 

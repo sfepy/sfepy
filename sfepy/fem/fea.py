@@ -476,62 +476,32 @@ class Approximations( Container ):
     - no two interps can be in a same group -> no two aps (with different
     regions) can be in a same group -> aps can be uniquely indexed with ig"""
 
-    ##
-    # c: 23.11.2007, r: 15.01.2008
-    def __init__( self, bases, interps, domain ):
+    def __init__(self, interp, region):
 
-        self.igs = []
-        self.interps = {}
+        self.igs = region.igs
+        self.interp = interp
         self.aps_per_group = {}
-        self.region_names_per_group = {}
+        self.region = region
+
         objs = OneTypeList( Approximation )
-        for region_name, base_name in bases.iteritems():
-##             print region_name, base_name
+        for ig in region.igs:
+            ap = Approximation(interp.name + '_%s_ig%d' % (region.name, ig),
+                               interp, region, ig )
+            self.aps_per_group[ig] = ap
+            objs.append(ap)
 
-            try:
-                region = domain.regions[region_name]
-            except:
-                output( 'region %s does not exist' % region_name )
-                raise
-
-            interp = interps[base_name]
-
-            if region.name in self.interps:
-                if self.interps[region.name] is not interp:
-                    msg = 'interpolation mismatch! (%s == %s)'\
-                          % (self.interps[region.name].name, interp.name)
-                    raise ValueError(msg)
-            else:
-                self.interps[region.name] = interp
-            
-            for ig in region.igs:
-                if ig in self.igs:
-                    output( 'base regions must not share groups! (%s, %d)'\
-                            % (region.name, ig) )
-                    raise ValueError
-
-                self.igs.append( ig )
-                
-                ap = Approximation( base_name + '_%s_ig%d' % (region.name, ig),
-                                    interp, region, ig )
-                self.aps_per_group[ig] = ap
-                self.region_names_per_group[ig] = region.name
-                objs.append( ap )
-
-        self.update( objs )
+        self.update(objs)
 
         self.clear_geometries()
 
     def clear_geometries( self ):
         self.geometries = {}
 
-    ##
-    # c: 23.11.2007, r: 15.01.2008
-    def iter_aps( self, igs = None ):
+    def iter_aps(self, igs=None):
         for ig, ap in self.aps_per_group.iteritems():
             if igs is not None:
                 if not ig in igs: continue
-            yield self.region_names_per_group[ig], ig, ap
+            yield ig, ap
 
     def get_approximation(self, key, kind='volume', is_trace=False,
                           return_geometry=True):
@@ -575,17 +545,14 @@ class Approximations( Container ):
         self.fnt = fnt = {}
 
         self.node_descs = {}
-        for region_name, interp in self.interps.iteritems():
-            interp.list_extra_node_types( ent, fnt )
-            node_desc = interp.describe_nodes()
-            self.node_descs[region_name] = node_desc
+        self.interp.list_extra_node_types(ent, fnt)
+        self.node_desc = self.interp.describe_nodes()
 
 ##             print ent, fnt
 ##         pause()
 
-        for region_name, ig, ap in self.iter_aps():
-            ap.describe_nodes( self.node_descs[region_name] )
-            
+        for ig, ap in self.iter_aps():
+            ap.describe_nodes(self.node_desc)
 
     ##
     # c: 23.09.2005, r: 15.01.2008
@@ -593,9 +560,8 @@ class Approximations( Container ):
 
         self.edge_oris = {}
         self.face_oris = {}
-        for key1, key2, ap in self.iter_aps():
+        for _, ap in self.iter_aps():
 ##             print ap
-##             print key1, key2
             domain = ap.region.domain
             igs = ap.region.igs
             for ig in igs:
@@ -619,17 +585,16 @@ class Approximations( Container ):
 
         ##
         # Face node type permutation table.
-        
-    ##
-    # c: 30.09.2005, r: 04.02.2008
-    def setup_global_base( self, domain ):
+
+    def setup_global_base(self):
         """
         efaces: indices of faces into econn.
         """
+        region = self.region
+        node_desc = self.node_desc
 
         node_offset_table = nm.zeros( (4, len( self ) + 1), dtype = nm.int32 )
-##         print node_offset_table.shape
-        
+
         i_vertex, i_edge, i_face, i_bubble = 0, 1, 2, 3
 
         # Global node number.
@@ -637,23 +602,19 @@ class Approximations( Container ):
 
         ##
         # Vertex nodes.
-        n_v = domain.shape.n_nod
+        n_v = region.n_v_max
         cnt_vn = nm.empty( (n_v,), dtype = nm.int32 )
         cnt_vn.fill( -1 )
         
         node_offset_table[i_vertex,0] = iseq
         ia = 0
-        for region_name, ig, ap in self.iter_aps():
-            region = ap.region
-            node_desc = self.node_descs[region_name]
+        for ig, ap in self.iter_aps():
             n_ep = ap.n_ep['v']
-            group = region.domain.groups[ig]
-            
+
             ap.econn = nm.zeros( (region.shape[ig].n_cell, n_ep), nm.int32 )
 ##             print ap.econn.shape
 #            pause()
             if node_desc.vertex.size:
-                offset = group.shape.n_ep
                 vertices = region.get_vertices( ig )
                 n_new = (nm.where( cnt_vn[vertices] == -1 )[0]).shape[0]
                 cnt_vn[vertices] = vertices
@@ -672,9 +633,7 @@ class Approximations( Container ):
 ##         pause()
 ##         print iseq, remap
 ##         pause()
-        for region_name, ig, ap in self.iter_aps():
-            region = ap.region
-            node_desc = self.node_descs[region_name]
+        for ig, ap in self.iter_aps():
             group = region.domain.groups[ig]
             if node_desc.vertex.size:
                 offset = group.shape.n_ep
@@ -684,7 +643,7 @@ class Approximations( Container ):
 ##                 print ap.econn, nm.amax( ap.econn )
 ##                 pause()
 
-        ed, ned, fa, nfa = domain.get_neighbour_lists()
+        ed, ned, fa, nfa = region.domain.get_neighbour_lists()
         entt = self.ent_table
         cnt_en = nm.zeros( (entt.shape[1], ed.n_unique), nm.int32 ) - 1
 
@@ -692,10 +651,7 @@ class Approximations( Container ):
         # Edge nodes.
         node_offset_table[i_edge,0] = iseq
         ia = 0
-        for region_name, ig, ap in self.iter_aps():
-            region = ap.region
-            node_desc = self.node_descs[region_name]
-            group = region.domain.groups[ig]
+        for ig, ap in self.iter_aps():
             if node_desc.edge:
                 cptr0 = int( ned.pel[ned.pg[ig]] )
                 ori = self.edge_oris[ig]
@@ -710,7 +666,7 @@ class Approximations( Container ):
         #    cnt_fn = nm.zeros( (fntt.shape[1], fa.n_unique), nm.int32 ) - 1
         node_offset_table[i_face,0] = iseq
         ia = 0
-        for region_name, ig, ap in self.iter_aps():
+        for ig, ap in self.iter_aps():
             node_offset_table[i_face,ia+1] = iseq
             ia += 1
 
@@ -719,10 +675,7 @@ class Approximations( Container ):
         # Bubble nodes.
         node_offset_table[i_bubble,0] = iseq
         ia = 0
-        for region_name, ig, ap in self.iter_aps():
-            region = ap.region
-            node_desc = self.node_descs[region_name]
-            group = region.domain.groups[ig]
+        for ig, ap in self.iter_aps():
             if (node_desc.bubble):
                 n_bubble = node_desc.bubble[0].shape[0]
                 n_el = region.shape[ig].n_cell
@@ -742,7 +695,7 @@ class Approximations( Container ):
         self.node_offset_table = node_offset_table
 
         ia = 0
-        for region_name, ig, ap in self.iter_aps():
+        for ig, ap in self.iter_aps():
             ap.node_offsets = self.node_offset_table[:,ia:ia+2]
             ia += 1
 ##             print ia
@@ -750,9 +703,7 @@ class Approximations( Container ):
 ##             print ap.node_offsets
 #            pause()
             
-        for region_name, ig, ap in self.iter_aps():
-            node_desc = self.node_descs[region_name]
-
+        for ig, ap in self.iter_aps():
             gel = ap.interp.gel
             ap.efaces = gel.get_surface_entities().copy()
 
@@ -799,7 +750,7 @@ class Approximations( Container ):
 ##         print self.coors
 ##         print mesh.coors
 ##         pause()
-        for region_name, ig, ap in self.iter_aps():
+        for ig, ap in self.iter_aps():
             ap.eval_extra_coor( self.coors, mesh )
 
 ##         print self.coors
@@ -807,14 +758,14 @@ class Approximations( Container ):
 ##         pause()
 
     def setup_surface_data(self, region):
-        for region_name, ig, ap in self.iter_aps(igs=region.igs):
+        for ig, ap in self.iter_aps(igs=region.igs):
             if region.name not in ap.surface_data:
                 ap.setup_surface_data(region)
 
     def setup_point_data(self, field, region):
         # Point data only in the first group to avoid multiple
         # assembling of nodes on group boundaries.
-        for region_name, ig, ap in self.iter_aps(igs=region.igs[:1]):
+        for ig, ap in self.iter_aps(igs=region.igs[:1]):
             if region.name not in ap.point_data:
                 ap.setup_point_data(field, region)
 
@@ -831,8 +782,8 @@ class Approximations( Container ):
         """
         is_trace = region is not term_region
 
-        for region_name, ig, ap in self.iter_aps(igs=region.igs):
-##             print region_name, ig, ap.name
+        for ig, ap in self.iter_aps(igs=region.igs):
+##             print ig, ap.name
 
             # Store integral for possible future base function request.
             ap.integrals[integral.name] = integral
