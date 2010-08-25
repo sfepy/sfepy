@@ -802,6 +802,20 @@ class Variable( Struct ):
 
         self.kind = kind
 
+    def _setup_dofs(self, n_nod):
+        """
+        Setup number of DOFs and  DOF names.
+        """
+        self.n_nod = n_nod
+
+        self.n_dof = self.n_nod * self.n_components
+
+        if self.dof_name is None:
+            dof_name = 'aux'
+        else:
+            dof_name = self.dof_name
+        self.dofs = [dof_name + ('.%d' % ii) for ii in range(self.n_components)]
+
     ##
     # 11.07.2006, c
     def is_state( self ):
@@ -1117,13 +1131,13 @@ class FieldVariable(Variable):
         Variable.__init__(self, name, kind, n_components, order,
                           primary_var_name, special, flags, **kwargs)
 
-        self.set_field(field)
+        self._set_field(field)
 
         self.has_field = True
         self.has_bc = True
         self._variables = None
 
-    def set_field(self, field):
+    def _set_field(self, field):
         """
         Set field of the variable.
 
@@ -1131,14 +1145,7 @@ class FieldVariable(Variable):
         field.dtype.
         """
         self.field = field
-        self.n_nod = field.n_nod
-        self.n_dof = self.n_nod * self.n_components
-
-        if self.dof_name is None:
-            dof_name = 'aux'
-        else:
-            dof_name = self.dof_name
-        self.dofs = [dof_name + ('.%d' % ii) for ii in range(self.n_components)]
+        self._setup_dofs(field.n_nod)
 
         self.flags.add(is_field)
         self.dtype = field.dtype
