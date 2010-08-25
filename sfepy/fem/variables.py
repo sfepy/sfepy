@@ -816,6 +816,50 @@ class Variable( Struct ):
             dof_name = self.dof_name
         self.dofs = [dof_name + ('.%d' % ii) for ii in range(self.n_components)]
 
+    def get_primary(self):
+        """
+        Get the corresponding primary variable.
+
+        Returns
+        -------
+        var : Variable instance
+            The primary variable, or `self` for state
+            variables or if `primary_var_name` is None, or None if no other
+            variables are defined.
+        """
+        if self.is_state():
+            var = self
+
+        elif self.primary_var_name is not None:
+            if self._variables is not None:
+                var = self._variables[self.primary_var_name]
+
+            else:
+                var = None
+
+        else:
+            var = self
+
+        return var
+
+    def get_dual(self):
+        """
+        Get the dual variable.
+
+        Returns
+        -------
+        var : Variable instance
+            The primary variable for non-state variables, or the dual
+            variable for state variables.
+        """
+        if self.is_state():
+            var = self._variables[self.dual_var_name]
+
+        else:
+            var = self._variables[self.primary_var_name]
+
+        return var
+
     ##
     # 11.07.2006, c
     def is_state( self ):
@@ -1154,31 +1198,6 @@ class FieldVariable(Variable):
 
     def get_field(self):
         return self.field
-
-    def get_primary(self):
-        if self.is_state():
-            var = self
-
-        elif self.primary_var_name is not None:
-            if self._variables is not None:
-                var = self._variables[self.primary_var_name]
-
-            else:
-                var = None
-
-        else:
-            var = self
-
-        return var
-
-    def get_dual(self):
-        if self.is_state():
-            var = self._variables[self.dual_var_name]
-
-        else:
-            var = self._variables[self.primary_var_name]
-
-        return var
 
     def setup_adof_conns(self, adof_conns, adi):
         """
