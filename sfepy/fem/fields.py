@@ -446,3 +446,25 @@ class Field( Struct ):
             return self.aps.coors
         else:
             return self.aps.coors[nods]
+
+class SurfaceField(Field):
+    """
+    A field defined on a surface region.
+    """
+
+    def setup_bases(self):
+        """Setup FE bases according to self.approx_order and region cell
+        types. Assumes one cell type for the whole region!"""
+        gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
+        if gel is None:
+            raise ValueError('element group has no surface!')
+
+        dim, n_ep = gel.dim, gel.n_vertex
+
+        if n_ep == (dim + 1): # simplex
+            kind = 'P'
+        else: # tensor product
+            kind = 'Q'
+
+        self.gel = gel
+        self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
