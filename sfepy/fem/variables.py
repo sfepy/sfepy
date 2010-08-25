@@ -1744,6 +1744,44 @@ class FieldVariable(Variable):
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
+class MultiplierVariable(Variable):
+    """
+    A multiplier variable.
+
+    This class can represent Lagrange multipliers defined in nodes of a
+    field. Boundary conditions cannot be applied.
+    """
+    def __init__(self, name, kind, field, n_components, order=None,
+                 flags=None, **kwargs):
+        Variable.__init__(self, name, kind, n_components, order,
+                          flags=flags, **kwargs)
+
+        self._set_field(field)
+
+        self.has_field = False
+        self.has_bc = False
+        self._variables = None
+
+    def _set_field(self, field):
+        """
+        Set field of the variable.
+
+        Takes reference to a Field instance. Sets dtype according to
+        field.dtype.
+        """
+        self.field = field
+        self._setup_dofs(field.n_nod)
+
+        self.flags.add(is_field)
+        self.dtype = field.dtype
+
+    def get_dof_info(self):
+        details = Struct(name = 'multiplier_var_dof_details',
+                         n_nod = self.n_nod,
+                         dpn = self.n_components)
+
+        return self.n_dof, details
+
 class ConstantVariable(Variable):
     """A constant variable.
     """
