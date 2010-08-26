@@ -385,6 +385,14 @@ class RigidOperator(LCBCOperator):
 
         self.mtx = self.mtx[indx]
 
+def _save_normals(filename, normals, region, mesh):
+        nn = nm.zeros_like(mesh.coors)
+        nmax = region.all_vertices.shape[0]
+        nn[region.all_vertices] = normals[:nmax]
+        out = {'normals' : Struct(name = 'output_data',
+                                  mode = 'vertex', data = nn)}
+        mesh.write(filename, out=out, io='auto')
+
 class NoPenetrationOperator(LCBCOperator):
     """
     Transformation matrix operator for no-penetration LCBCs.
@@ -398,13 +406,7 @@ class NoPenetrationOperator(LCBCOperator):
         normals = compute_nodal_normals(nodes, region, field)
 
         if filename is not None:
-            mesh = field.domain.mesh
-            nn = nm.zeros_like(mesh.coors)
-            nmax = region.all_vertices.shape[0]
-            nn[region.all_vertices] = normals[:nmax]
-            out = {'normals' : Struct(name = 'output_data',
-                                      mode = 'vertex', data = nn)}
-            mesh.write(filename, out=out, io='auto')
+            _save_normals(filename, normals, region, field.domain.mesh)
 
         ii = nm.abs(normals).argmax(1)
         n_nod, dim = normals.shape

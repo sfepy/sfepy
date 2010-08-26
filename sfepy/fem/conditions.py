@@ -31,7 +31,9 @@ class Conditions(Container):
 
             elif 'lcbc' in key:
                 region = _get_region(cc.region, regions, cc.name)
-                cond = LinearCombinationBC(cc.name, region, cc.dofs, key=key)
+                filename = cc.get('filename', None)
+                cond = LinearCombinationBC(cc.name, region, cc.dofs, key=key,
+                                           filename=filename)
 
             elif 'ic' in key:
                 region = _get_region(cc.region, regions, cc.name)
@@ -224,9 +226,12 @@ class LinearCombinationBC(Condition):
         DOFs and the constraint type.
     key : str, optional
         The sorting key.
+    filename : str, optional
+        Some conditions can store data (e.g. normal vectors) into a file.
     """
-    def __init__(self, name, region, dofs, key=''):
-        Condition.__init__(self, name=name, region=region, dofs=dofs, key=key)
+    def __init__(self, name, region, dofs, key='', filename=None):
+        Condition.__init__(self, name=name, region=region, dofs=dofs,
+                           key=key, filename=filename)
 
 class InitialCondition(Condition):
     """
