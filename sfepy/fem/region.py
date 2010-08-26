@@ -532,6 +532,13 @@ class Region( Struct ):
             
         return nods
 
+    def get_n_cells(self, ig, is_surface=False):
+        if is_surface:
+            return self.shape[ig].n_face
+
+        else:
+            return self.shape[ig].n_cell
+
     ##
     # 22.02.2007, c
     def get_vertices( self, ig ):
