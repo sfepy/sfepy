@@ -460,6 +460,39 @@ class NoPenetrationOperator(LCBCOperator):
         ## print mtx
         ## pylab.show()
 
+class NormalDirectionOperator(LCBCOperator):
+    """
+    Transformation matrix operator for normal direction LCBCs.
+
+    The substitution (in 3D) is:
+
+    .. math::
+        [u_1, u_2, u_3]^T = [n_1, n_2, n_3]^T w
+
+    The new DOF is :math:`w`.
+    """
+    def __init__(self, name, nodes, region, field, dof_names, filename=None):
+        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+
+        dim = field.shape[0]
+        assert_(len(dof_names) == dim)
+
+        normals = compute_nodal_normals(nodes, region, field)
+
+        if filename is not None:
+            _save_normals(filename, normals, region, field.domain.mesh)
+
+        n_nod, dim = normals.shape
+
+        data = normals.ravel()
+        rows = nm.arange(data.shape[0])
+        cols = nm.repeat(nm.arange(n_nod), dim)
+
+        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, n_nod))
+
+        self.n_dof = n_nod
+        self.mtx = mtx.tocsr()
+
 class LCBCOperators(Container):
     """
     Container holding instances of LCBCOperator subclasses for a single
