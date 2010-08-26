@@ -125,7 +125,6 @@ class Test( TestCommon ):
         epbcs = Conditions.from_conf(conf.epbcs, problem.domain.regions)
 
         variables = Variables.from_conf(conf.variables, problem.fields)
-        variables.setup_dof_info()
         variables.equation_mapping(ebcs, epbcs, None, problem.functions)
         state = variables.create_state_vector()
         variables.apply_ebc(state)

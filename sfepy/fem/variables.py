@@ -83,6 +83,9 @@ class Variables( Container ):
 
         var._variables = self
 
+        self.setup_ordering()
+        self.setup_dof_info()
+
     def setup_dtype( self ):
         """Setup data types of state variables - all have to be of the same
         data type, one of nm.float64 or nm.complex128."""

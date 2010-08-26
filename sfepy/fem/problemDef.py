@@ -1037,7 +1037,6 @@ class ProblemDefinition( Struct ):
 	    conf_variables = self.conf.variables
 
 	variables = Variables.from_conf(conf_variables, self.fields)
-	variables.setup_dof_info()
 
 	return variables
 

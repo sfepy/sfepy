@@ -65,7 +65,6 @@ class Equations( Container ):
         Container.__init__(self, equations)
 
         self.variables = Variables(self.collect_variables())
-        self.variables.setup_dof_info() # Call after fields.setup_global_base().
 
         self.caches = get_default(caches, DataCaches())
 

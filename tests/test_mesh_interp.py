@@ -33,7 +33,6 @@ def do_interpolation(m2, m1, data, field_name):
     ff = {field1.name : field1}
 
     vv = Variables.from_conf(transform_variables(variables), ff)
-    vv.setup_dof_info()
     u1 = vv['u']
     u1.set_from_mesh_vertices(data)
 
@@ -44,7 +43,6 @@ def do_interpolation(m2, m1, data, field_name):
     ff2 = {field2.name : field2}
 
     vv2 = Variables.from_conf(transform_variables(variables), ff2)
-    vv2.setup_dof_info()
     u2 = vv2['u']
 
     # Performs interpolation, if other field differs from self.field
@@ -146,12 +144,10 @@ class Test(TestCommon):
         ff2 = {field2.name : field2}
 
         vv1 = Variables.from_conf(transform_variables(variables1), ff1)
-        vv1.setup_dof_info()
         u1 = vv1['u']
         u1.set_from_mesh_vertices(data)
 
         vv2 = Variables.from_conf(transform_variables(variables2), ff2)
-        vv2.setup_dof_info()
         u2 = vv2['u']
 
         # Performs interpolation, if other field differs from self.field
