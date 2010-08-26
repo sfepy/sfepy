@@ -348,7 +348,7 @@ class RigidOperator(LCBCOperator):
     """
 
     def __init__(self, name, nodes, field, dof_names, all_dof_names):
-        Struct.__init__(self, name=name)
+        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
         coors = field.get_coor(nodes)
         n_nod, dim = coors.shape
@@ -390,7 +390,7 @@ class NoPenetrationOperator(LCBCOperator):
     Transformation matrix operator for no-penetration LCBCs.
     """
     def __init__(self, name, nodes, region, field, dof_names, filename=None):
-        Struct.__init__(self, name=name)
+        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
 
         dim = field.shape[0]
         assert_(len(dof_names) == dim)
@@ -498,26 +498,37 @@ class LCBCOperators(Container):
 
         nmaster = region.get_field_nodes(field, merge=True)
 
-        eq = self.eq_map.eq
-        meq = eq[expand_nodes_to_equations(nmaster, dofs, self.eq_map.dof_names)]
-        assert_(nm.all( meq >= 0 ))
-
-        self.markers.append(self.offset + self.n_op + 1)
-        self.eq_lcbc[meq] = self.markers[-1]
-
         if kind == 'rigid':
             op = RigidOperator('%d_rigid' % len(self),
                                nmaster, field, dofs, self.eq_map.dof_names)
 
         elif kind == 'no_penetration':
             filename = get_default_attr(bc, 'filename', None)
-            op = NoPenetrationOperator('%d_rigid' % len(self),
+            op = NoPenetrationOperator('%d_no_penetration' % len(self),
                                        nmaster, region, field, dofs,
                                        filename=filename)
-        
+
+        elif kind == 'normal_direction':
+            filename = get_default_attr(bc, 'filename', None)
+            op = NormalDirectionOperator('%d_normal_direction' % len(self),
+                                         nmaster, region, field, dofs,
+                                         filename=filename)
+
+        self.append(op)
+
+    def append(self, op):
+        Container.append(self, op)
+
+        eq = self.eq_map.eq
+        meq = eq[expand_nodes_to_equations(op.nodes, op.dof_names,
+                                           self.eq_map.dof_names)]
+        assert_(nm.all(meq >= 0))
+
         op.treat_pbcs(meq)
 
-        self[op.name] = op
+        self.markers.append(self.offset + self.n_op + 1)
+        self.eq_lcbc[meq] = self.markers[-1]
+
         self.n_transformed_dof.append(op.n_dof)
         self.n_op = len(self)
 
