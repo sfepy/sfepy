@@ -1776,7 +1776,7 @@ class MultiplierVariable(Variable):
         self.flags.add(is_field)
         self.dtype = field.dtype
 
-    def get_dof_info(self):
+    def get_dof_info(self, active=False):
         details = Struct(name = 'multiplier_var_dof_details',
                          n_nod = self.n_nod,
                          dpn = self.n_components)
