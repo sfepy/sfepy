@@ -13,20 +13,18 @@ Data for each dual element:
 * connectivity of its sub-triangles
 * base directions t_1, t_2
 
-Surface integral ??
-
 Normal stresses:
 
-* Just assemble the rezidual as in r.h.s. of (91) and put nodal normals into
-  contact nodes into \hat{v}.
+* Assemble the rezidual and apply the LCBC operator described below.
 
-Solution in \hat{V}_h^c (not needed!):
+Solution in \hat{V}_h^c:
 
 * construct a restriction operator via LCBC just like in the no-penetration case
 * use the substitution:
-  w_1 = u_1
-  w_2 = (n_2 / n_1) * u_1
-  w_3 = (n_3 / n_1) * u_1
+  u_1 = n_1 * w
+  u_2 = n_2 * w
+  u_3 = n_3 * w
+  The new DOF is `w`.
 * for the record, no-penetration does:
   w_1 = - (1 / n_1) * (u_2 * n_2 + u_3 * n_3)
   w_2 = u_2
