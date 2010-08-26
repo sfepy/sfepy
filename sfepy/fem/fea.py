@@ -586,7 +586,7 @@ class Approximations( Container ):
         ##
         # Face node type permutation table.
 
-    def setup_global_base(self):
+    def setup_global_base(self, is_surface=False):
         """
         efaces: indices of faces into econn.
         """
@@ -610,8 +610,9 @@ class Approximations( Container ):
         ia = 0
         for ig, ap in self.iter_aps():
             n_ep = ap.n_ep['v']
+            n_cell = region.get_n_cells(ig, is_surface)
+            ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
 
-            ap.econn = nm.zeros( (region.shape[ig].n_cell, n_ep), nm.int32 )
 ##             print ap.econn.shape
 #            pause()
             if node_desc.vertex.size:
@@ -636,12 +637,15 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps():
             group = region.domain.groups[ig]
             if node_desc.vertex.size:
-                offset = group.shape.n_ep
-                cells = region.get_cells( ig )
-                ap.econn[:,:offset] = remap[group.conn[cells]]
-##                 print group.conn, nm.amax( group.conn )
-##                 print ap.econn, nm.amax( ap.econn )
-##                 pause()
+                if not is_surface:
+                    offset = group.shape.n_ep
+                    cells = region.get_cells( ig )
+                    ap.econn[:,:offset] = remap[group.conn[cells]]
+
+                else:
+                    faces = group.gel.get_surface_entities()
+                    aux = FESurface('aux', region, faces, group.conn, ig)
+                    ap.econn[:,:aux.n_fp] = aux.leconn
 
         ed, ned, fa, nfa = region.domain.get_neighbour_lists()
         entt = self.ent_table
@@ -662,7 +666,7 @@ class Approximations( Container ):
 ##                 pause()
             node_offset_table[i_edge,ia+1] = iseq
             ia += 1
-            
+
         #    cnt_fn = nm.zeros( (fntt.shape[1], fa.n_unique), nm.int32 ) - 1
         node_offset_table[i_face,0] = iseq
         ia = 0
@@ -678,12 +682,12 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps():
             if (node_desc.bubble):
                 n_bubble = node_desc.bubble[0].shape[0]
-                n_el = region.shape[ig].n_cell
-                aux = nm.arange( iseq, iseq + n_bubble * n_el )
-                aux.shape = (n_el, n_bubble)
+                n_cell = region.get_n_cells(ig, is_surface)
+                aux = nm.arange( iseq, iseq + n_bubble * n_cell )
+                aux.shape = (n_cell, n_bubble)
                 offset = node_desc.bubble[0][0,0]
                 ap.econn[:,offset:] = aux[:,:]
-                iseq += n_bubble * n_el
+                iseq += n_bubble * n_cell
 
             node_offset_table[i_bubble,ia+1] = iseq
             ia += 1

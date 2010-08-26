@@ -468,3 +468,11 @@ class SurfaceField(Field):
 
         self.gel = gel
         self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
+
+    def setup_global_base( self ):
+
+        self.aps.describe_nodes()
+        self.aps.setup_nodes()
+
+        aux = self.aps.setup_global_base(is_surface=True)
+        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
