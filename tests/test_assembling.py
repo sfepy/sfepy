@@ -230,12 +230,17 @@ class Test( TestCommon ):
         val1 = problem.evaluate('de_grad.i1.Omega( p )', mode='el_avg')
         self.report('de_grad: min, max:', val1.min(), val1.max())
 
-        # Works with one group only, which is the case here.
-        var = problem.equations.variables['p']
-        ap, vg = var.get_approximation(('i1', 'Omega', 0))
         aux1 = problem.evaluate('dq_grad.i1.Omega( p )', mode='qp')
         aux2 = nm.zeros((aux1.shape[0], 1) + aux1.shape[2:], dtype=aux1.dtype)
+
+        # Works with one group only, which is the case here.
+        var = problem.equations.variables['p']
+
+        integral = problem.integrals['i1']
+        vg = var.describe_geometry('volume', 'Omega', integral, 0)
+
         vg.integrate(aux2, aux1)
+
         val2 = aux2 / vg.variable(2)
         self.report('dq_grad: min, max:', val2.min(), val2.max())
 

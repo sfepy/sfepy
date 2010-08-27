@@ -177,7 +177,7 @@ def create_stabil_mat(problem):
                 # This sets term.ig - for 1 group only!!!
                 break
             var = variables[ns['u']]
-            ap, vg = var.get_approximation(term.get_current_group(), 'volume')
+            ap, vg = term.get_approximation(var)
             delta = 1.0
             mode = diameter_modes[stabil.diameter_mode]
             cells = region.get_cells( ig )
