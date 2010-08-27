@@ -76,8 +76,7 @@ class HyperElasticBase( Term ):
         shape, mode = self.get_shape(diff_var, chunk_size)
 
         cache = self.get_cache( self.function['finite_strain'][self.mode_ul], 0 )
-        family_data = cache( self.family_data_names,
-                             self.get_current_group(), 0, state = state )
+        family_data = cache(self.family_data_names, self, 0, state=state)
 ##         print family_data
 
         if term_mode is None:
@@ -90,8 +89,8 @@ class HyperElasticBase( Term ):
 
             fun = self.function['element_contribution']
 
-            mtxF, detF = cache( ['F', 'detF'],
-                                self.get_current_group(), 0, state = state )
+            mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
+
             for out, chunk in self.char_fun( chunk_size, shape ):
                 status = fun( out, self.crt_data.stress, self.crt_data.tan_mod,
                               mtxF, detF, vg, chunk, mode, self.mode_ul )
@@ -103,7 +102,8 @@ class HyperElasticBase( Term ):
         elif term_mode in ['strain', 'stress']:
 
             if term_mode == 'strain':
-                out_qp = cache( 'E', self.get_current_group(), 0, state = state )
+                out_qp = cache('E', self, 0, state=state)
+
             elif term_mode == 'stress':
                 out_qp = self.compute_crt_data( family_data, 0, **kwargs )
                 

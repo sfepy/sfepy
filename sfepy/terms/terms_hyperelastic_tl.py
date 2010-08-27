@@ -177,8 +177,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         shape, mode = self.get_shape_grad(diff_var, chunk_size)
 
         cache = self.get_cache('finite_strain_tl', 0)
-        family_data = cache(['detF', 'invC'],
-                            self.get_current_group(), 0, state=state)
+        family_data = cache(['detF', 'invC'], self, 0, state=state)
 
         if term_mode is None:
 
@@ -191,8 +190,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
 
                 fun = self.function['element_contribution']
 
-                mtxF, detF = cache(['F', 'detF'],
-                                   self.get_current_group(), 0, state=state)
+                mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
+
                 for out, chunk in self.char_fun(chunk_size, shape):
                     status = fun(out, self.crt_data.stress,
                                  self.crt_data.tan_mod, mtxF, detF,
@@ -200,10 +199,10 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
                     yield out, chunk, status
             else:
                 fun = self.function['element_contribution_dp']
-                
+
                 mtxF, invC, detF = cache(['F', 'invC', 'detF'],
-                                         self.get_current_group(), 0,
-                                         state=state)
+                                         self, 0, state=state)
+
                 bf = aps.get_base('v', 0, self.integral_name)
                 for out, chunk in self.char_fun(chunk_size, shape):
                     status = fun(out, bf, mtxF, invC, detF, vgv, 1, chunk, 1)
@@ -216,7 +215,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         elif term_mode in ['strain', 'stress']:
 
             if term_mode == 'strain':
-                out_qp = cache('E', self.get_current_group(), 0, state=state)
+                out_qp = cache('E', self, 0, state=state)
+
             elif term_mode == 'stress':
                 out_qp = self.compute_crt_data(family_data, 0, **kwargs)
                 
@@ -233,9 +233,8 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         p, = self.get_args(['state_p'], **kwargs)
 
         cache = self.get_cache('state_in_volume_qp', 0)
-        p_qp = cache('state', self.get_current_group(), 0,
-                     state=p, get_vector=self.get_vector)
-        
+        p_qp = cache('state', self, 0, state=p, get_vector=self.get_vector)
+
         if mode == 0:
             out = nm.empty_like(invC)
             fun = self.term_function['stress']
@@ -290,9 +289,7 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
         cache = self.get_cache('finite_strain_tl', 0)
         ih = self.arg_steps[state.name] # issue 104!
-        mtxF, invC, detF = cache(['F', 'invC', 'detF'],
-                                 self.get_current_group(), ih,
-                                 state=state)
+        mtxF, invC, detF = cache(['F', 'invC', 'detF'], self, ih, state=state)
 
         if term_mode == 'volume':
             n_el, _, _, _ = self.data_shape_s
@@ -358,8 +355,7 @@ class DiffusionTLTerm(ScalarScalar, Term):
             ih = 0
         else:
             ih = 1
-        mtxF, detF = cache(['F', 'detF'],
-                           self.get_current_group(), ih, state=par)
+        mtxF, detF = cache(['F', 'detF'], self, ih, state=par)
 
         if term_mode == 'diffusion_velocity':
             n_el, n_qp, dim, n_ep = self.data_shape
@@ -371,9 +367,8 @@ class DiffusionTLTerm(ScalarScalar, Term):
                 raise StopIteration
         
         cache = self.get_cache('grad_scalar', 0)
-        gp = cache('grad', self.get_current_group(), 0,
-                   state=state, get_vector=self.get_vector)
-        
+        gp = cache('grad', self, 0, state=state, get_vector=self.get_vector)
+
         return (gp, perm, ref_porosity, mtxF, detF, vgv), shape, mode
 
 class SurfaceTractionTLTerm(VectorVector, Term):
@@ -416,8 +411,7 @@ class SurfaceTractionTLTerm(VectorVector, Term):
 
         cache = self.get_cache('finite_strain_surface_tl', 0)
         detF, invF = cache(['detF', 'invF'],
-                           self.get_current_group(), 0,
-                           state=state, data_shape=self.data_shape)
+                           self, 0, state=state, data_shape=self.data_shape)
 
         bf = ap.get_base(sd.bkey, 0, self.integral_name)
 

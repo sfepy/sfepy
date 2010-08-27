@@ -15,7 +15,7 @@ class PiezoCouplingGrad( CouplingVectorScalar ):
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
             cache = self.get_cache( 'grad_scalar', 0 )
-            p_grad = cache( 'grad', self.get_current_group(), 0, state = state )
+            p_grad = cache('grad', self, 0, state=state)
         else:
             p_grad  = aux
 
@@ -35,8 +35,8 @@ class PiezoCouplingDiv( CouplingVectorScalar ):
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache( 'strain', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            strain = cache('strain', self, 0,
+                           state=state, get_vector=self.get_vector)
         else:
             strain = aux
 
@@ -56,10 +56,10 @@ class  PiezoCouplingEval( CouplingVectorScalar ):
         self.set_data_shape( aps, apv )
 
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.get_current_group(), 0,
-                        state = par_v, get_vector = self.get_vector )
+        strain = cache('strain', self, 0,
+                       state=par_v, get_vector=self.get_vector)
         cache = self.get_cache( 'grad_scalar', 0 )
-        p_grad = cache( 'grad', self.get_current_group(), 0, state = par_s )
+        p_grad = cache('grad', self, 0, state=par_s)
 
         return (strain, p_grad, mat, vgv), (chunk_size, 1, 1, 1), 0
 

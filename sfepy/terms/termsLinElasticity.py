@@ -60,8 +60,8 @@ class LinearElasticTerm( VectorVector, Term ):
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache( 'strain', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            strain = cache('strain', self, 0,
+                           state=state, get_vector=self.get_vector)
         else:
             strain = aux
 
@@ -78,11 +78,11 @@ class LinearElasticTerm( VectorVector, Term ):
         self.check_mat_shape( mat )
 
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain1 = cache( 'strain', self.get_current_group(), 0,
-                         state = par1, get_vector = self.get_vector )
+        strain1 = cache('strain', self, 0,
+                        state=par1, get_vector=self.get_vector)
         cache = self.get_cache( 'cauchy_strain', 1 )
-        strain2 = cache( 'strain', self.get_current_group(), 0,
-                         state = par2, get_vector = self.get_vector )
+        strain2 = cache('strain', self, 0,
+                        state=par2, get_vector=self.get_vector)
 
         return (1.0, strain1, strain2, mat, vg), (chunk_size, 1, 1, 1), 0
 
@@ -175,8 +175,8 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
             cache = self.get_cache( 'cauchy_strain', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    strain = cache( 'strain', self.get_current_group(), ii,
-                                    state = state, get_vector = self.get_vector )
+                    strain = cache('strain', self, ii,
+                                   state=state, get_vector=self.get_vector)
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, strain, mat, vg)
             return iter_kernel, shape, mode
@@ -217,13 +217,13 @@ class LinearElasticETHTerm(VectorVector, Term):
 
         if diff_var is None:
             cache = self.get_cache('cauchy_strain', 0)
-            strain = cache('strain', self.get_current_group(), 0,
+            strain = cache('strain', self, 0,
                            state=state, get_vector=self.get_vector)
 
             cache = self.get_cache('exp_history', 0)
-            increment = cache('increment', self.get_current_group(), 0,
+            increment = cache('increment', self, 0,
                               decay=mat1, values=strain)
-            history = cache('history', self.get_current_group(), 0)
+            history = cache('history', self, 0)
 
             fargs = (ts.dt, history + increment, mat0, vg)
             if ts.step == 0: # Just init the history in step 0.
@@ -291,7 +291,7 @@ class LinearPrestressTerm(VectorVector, Term):
         self.check_mat_shape(mat)
 
         cache = self.get_cache('cauchy_strain', 0)
-        strain = cache('strain', self.get_current_group(), 0,
+        strain = cache('strain', self, 0,
                        state=par, get_vector=self.get_vector)
 
         return (strain, mat, vg), (chunk_size, 1, 1, 1), 0
@@ -379,8 +379,8 @@ class CauchyStressTerm( CauchyStrainTerm ):
     def build_c_fun_args( self, state, ap, vg, **kwargs ):
         mat, = self.get_args( ['material'], **kwargs )
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.get_current_group(), 0,
-                        state = state, get_vector = self.get_vector )
+        strain = cache('strain', self, 0,
+                       state=state, get_vector=self.get_vector)
         return strain, mat, vg
 
 class CauchyStrainQTerm(Term):
@@ -411,7 +411,7 @@ class CauchyStrainQTerm(Term):
         par, = self.get_args(['parameter'], **kwargs)
 
         cache = self.get_cache('cauchy_strain', 0)
-        strain = cache('strain', self.get_current_group(), 0,
+        strain = cache('strain', self, 0,
                        state=par, get_vector=self.get_vector)
 
         shape = (chunk_size,) + strain.shape[1:]

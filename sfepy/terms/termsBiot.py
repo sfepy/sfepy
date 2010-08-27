@@ -15,8 +15,8 @@ class BiotGrad( CouplingVectorScalar ):
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
-            vec_qp = cache( 'state', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            vec_qp = cache('state', self, 0,
+                           state=state, get_vector=self.get_vector)
         else:
             vec_qp = aux
 
@@ -37,8 +37,8 @@ class BiotDiv( CouplingVectorScalar ):
         aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache( 'strain', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            strain = cache('strain', self, 0,
+                           state=state, get_vector=self.get_vector)
         else:
             strain = aux
 
@@ -58,12 +58,12 @@ class BiotEval( CouplingVectorScalar ):
 
     def d_eval( self, out, mat, par_v, par_s, vgv, chunk ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec_qp = cache( 'state', self.get_current_group(), 0,
-                        state = par_s, get_vector = self.get_vector )
+        vec_qp = cache('state', self, 0,
+                       state=par_s, get_vector=self.get_vector)
 
         cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache( 'strain', self.get_current_group(), 0,
-                        state = par_v, get_vector = self.get_vector )
+        strain = cache('strain', self, 0,
+                       state=par_v, get_vector=self.get_vector)
 
         function = terms.d_biot_div
         status = function( out, 1.0, vec_qp, strain, mat, vgv, chunk )
@@ -145,7 +145,7 @@ class BiotStressTerm(CauchyStrainTerm):
     def build_c_fun_args(self, state, ap, vg, **kwargs):
         mat, = self.get_args(['material'], **kwargs)
         cache = self.get_cache('state_in_volume_qp', 0)
-        state_qp = cache('state', self.get_current_group(), 0,
+        state_qp = cache('state', self, 0,
                          state=state, get_vector=self.get_vector)
 
         return state_qp, mat, vg
@@ -181,7 +181,7 @@ class BiotStressQTerm(Term):
         shape = (chunk_size, n_qp, dim * (dim + 1) / 2, 1)
 
         cache = self.get_cache('state_in_volume_qp', 0)
-        state_qp = cache('state', self.get_current_group(), 0,
+        state_qp = cache('state', self, 0,
                          state=par, get_vector=self.get_vector)
 
         for out, chunk in self.char_fun(chunk_size, shape):
@@ -216,8 +216,8 @@ class BiotGradTH( CouplingVectorScalarTH ):
             cache = self.get_cache( 'state_in_volume_qp', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    vec_qp = cache( 'state', self.get_current_group(), ii,
-                                    state = state, get_vector = self.get_vector )
+                    vec_qp = cache('state', self, ii,
+                                   state=state, get_vector=self.get_vector)
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, vec_qp, bf, mat, vgr)
             return iter_kernel, shape, mode
@@ -248,8 +248,8 @@ class BiotDivTH( CouplingVectorScalarTH ):
             cache = self.get_cache( 'cauchy_strain', 0 )
             def iter_kernel():
                 for ii, mat in enumerate( mats ):
-                    strain = cache( 'strain', self.get_current_group(), ii,
-                                    state = state, get_vector = self.get_vector )
+                    strain = cache('strain', self, ii,
+                                   state=state, get_vector=self.get_vector)
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
                     yield ii, (ts.dt, strain, bf, mat, vgc)
             return iter_kernel, shape, mode
@@ -314,13 +314,13 @@ class BiotGradETH( CouplingVectorScalar ):
         bf = apc.get_base( 'v', 0, self.integral_name )
         if diff_var is None:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
-            vec_qp = cache( 'state', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            vec_qp = cache('state', self, 0,
+                           state=state, get_vector=self.get_vector)
 
             cache = self.get_cache('exp_history', 0)
-            increment = cache('increment', self.get_current_group(), 0,
+            increment = cache('increment', self, 0,
                               decay=mat1, values=vec_qp)
-            history = cache('history', self.get_current_group(), 0)
+            history = cache('history', self, 0)
 
             fargs = (ts.dt, history + increment, bf, mat0, vgr)
             if ts.step == 0: # Just init the history in step 0.
@@ -345,13 +345,13 @@ class BiotDivETH( CouplingVectorScalar ):
         bf = apr.get_base( 'v', 0, self.integral_name )
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache( 'strain', self.get_current_group(), 0,
-                            state = state, get_vector = self.get_vector )
+            strain = cache('strain', self, 0,
+                           state=state, get_vector=self.get_vector)
 
             cache = self.get_cache('exp_history', 0)
-            increment = cache('increment', self.get_current_group(), 0,
+            increment = cache('increment', self, 0,
                               decay=mat1, values=strain)
-            history = cache('history', self.get_current_group(), 0)
+            history = cache('history', self, 0)
 
             fargs = (ts.dt, history + increment, bf, mat0, vgc)
             if ts.step == 0: # Just init the history in step 0.

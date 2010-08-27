@@ -214,10 +214,10 @@ class StokesEval( CouplingVectorScalar ):
 
     def d_eval( self, out, par_v, par_s, vgv, chunk ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache( 'state', self.get_current_group(), 0,
-                     state = par_s, get_vector = self.get_vector )
+        vec = cache('state', self, 0,
+                    state=par_s, get_vector=self.get_vector)
         cache = self.get_cache( 'div_vector', 0 )
-        div = cache( 'div', self.get_current_group(), 0, state = par_v )
+        div = cache('div', self, 0, state=par_v)
 
         out_qp = vec[chunk] * div[chunk]
 

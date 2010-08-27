@@ -55,11 +55,9 @@ class DiffusionTerm( ScalarScalar, Term ):
         n_el, n_qp, dim, n_ep = self.data_shape
 
         cache = self.get_cache( 'grad_scalar', 0 )
-        gp1 = cache( 'grad', self.get_current_group(), 0,
-                     state = par1, get_vector = self.get_vector )
+        gp1 = cache('grad', self, 0, state=par1, get_vector=self.get_vector)
         cache = self.get_cache( 'grad_scalar', 1 )
-        gp2 = cache( 'grad', self.get_current_group(), 0,
-                     state = par2, get_vector = self.get_vector )
+        gp2 = cache('grad', self, 0, state=par2, get_vector=self.get_vector)
 
         return (gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
 
