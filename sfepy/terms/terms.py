@@ -1050,6 +1050,13 @@ class Term(Struct):
         return variable( step = self.arg_steps[name],
                          derivative = self.arg_derivatives[name] )
 
+    def assign_geometries(self, geometries):
+        """
+        Initialize the shared dict of geometries.
+        """
+        if self.has_geometry:
+            self.geometries = geometries
+
     def get_approximation(self, variable):
         is_trace = self.arg_traces[variable.name]
         kind = self.geometry_types[variable.name]

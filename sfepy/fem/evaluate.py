@@ -203,6 +203,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
                                     caches=caches, user=extra_args,
                                     verbose=verbose)
     equations.collect_conn_info()
+    equations.assign_geometries()
 
     # The true variables used in the expression.
     variables = equations.variables
@@ -220,8 +221,6 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         setup_extra_data(equations.conn_info)
         if update_materials:
             materials.time_update(ts, domain, equations, verbose=False)
-
-    equations.describe_geometry(verbose=False)
 
     return equations, variables
 

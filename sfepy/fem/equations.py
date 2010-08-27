@@ -85,7 +85,7 @@ class Equations( Container ):
         setup_dof_conns(self.conn_info, dof_conns=self.dof_conns,
                         make_virtual=make_virtual, verbose=verbose)
 
-        self.describe_geometry(verbose=verbose)
+        self.assign_geometries()
 
         self.set_cache_mode(cache_override)
 
@@ -134,13 +134,10 @@ class Equations( Container ):
 
         return self.conn_info
 
-    def describe_geometry(self, verbose=True):
-        output('describing geometries...', verbose=verbose)
-        tt = time.clock()
+    def assign_geometries(self):
         for eq in self:
-            eq.describe_geometry(self.geometries)
-        output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
-        
+            eq.assign_geometries(self.geometries)
+
     def get_variable_names( self ):
         """Return the list of names of all variables used in equations."""
         vns = set()
@@ -545,9 +542,9 @@ class Equation( Struct ):
 
             conn_info[key] = term.get_conn_info()
 
-    def describe_geometry(self, geometries):
+    def assign_geometries(self, geometries):
         for term in self.terms:
-            term.describe_geometry(geometries)
+            term.assign_geometries(geometries)
 
     def evaluate(self, mode='eval', dw_mode='vector', term_mode=None,
                  asm_obj=None):
