@@ -191,31 +191,28 @@ class DataCache( Struct ):
                             # Data falling to disk. To finish...
                             data = self.data[key][ckey][0]
 
-    ##
-    # c: 13.12.2007, r: 15.01.2008
-    def g_to_c( self, group_indx ):
+    def get_key(self, term):
+        group_indx = term.get_current_group()
+
         if hasattr( self, 'region_matters' ) and self.region_matters:
             return group_indx
         else:
             return group_indx[0], group_indx[-1]
-        
 
-    def _call( self, key, group_indx, ih, **kwargs ):
-        """group_indx : term.get_current_group() - term.region.name ignored
-                  ih : history level index
-                       0 .. current, 1, 2, 3...
+    def _call(self, key, term, ih, **kwargs):
         """
-#        print key, group_indx, ih, kwargs
+        ih : history level index: 0 .. current, 1, 2, 3...
+        """
         if not key in self.valid.keys():
             err = 'invalid cache key: %s not in %s' % (key, self.keys())
             raise ValueError( err )
 
-        ckey = self.g_to_c( group_indx )
+        ckey = self.get_key(term)
         if not self.valid[key].has_key( ckey ):
             self.init_data( key, ckey, **kwargs )
 
         if (not self.valid[key][ckey] and (ih == 0)) or self.override:
-            self.update( key, group_indx, ih, **kwargs )
+            self.update(key, term, ih, **kwargs)
             self.valid[key][ckey] = True
 #            print self.name, key, ckey, ih, 'up'
 
@@ -228,17 +225,16 @@ class DataCache( Struct ):
             print ih, self.mem_sizes[key]
             raise NotImplementedError
 
-    def __call__( self, key, group_indx, ih, **kwargs ):
-        """group_indx : term.get_current_group() - term.region.name ignored
-                  ih : history level index
-                       0 .. current, 1, 2, 3...
+    def __call__(self, key, term, ih, **kwargs):
+        """
+        ih : history level index: 0 .. current, 1, 2, 3...
         """
         if isinstance( key, str ):
-            out = self._call( key, group_indx, ih, **kwargs )
+            out = self._call(key, term, ih, **kwargs)
 
         else:
             assert_( isinstance( key, list ) )
-            out = [self._call( k, group_indx, ih, **kwargs ) for k in key]
+            out = [self._call(k, term, ih, **kwargs) for k in key]
 
         return out
-    
+

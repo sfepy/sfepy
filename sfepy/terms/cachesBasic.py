@@ -20,13 +20,13 @@ class StateInVolumeQPDataCache( DataCache ):
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
+    def update(self, key, term, ih, **kwargs):
         state, get_vector = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'volume' )
-        ckey = self.g_to_c( group_indx )
+        ap, vg = term.get_approximation(state)
+        ckey = self.get_key(term)
 
         if ih == 0:
-            bf = ap.get_base( 'v', 0, group_indx[0] )
+            bf = ap.get_base('v', 0, term.integral.name)
             vec = get_vector( state )
             self.function( self.data[key][ckey][ih], vec, 0, bf, ap.econn )
         else:
@@ -50,13 +50,13 @@ class StateInSurfaceQPDataCache( DataCache ):
 
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-        ckey = self.g_to_c( group_indx )
+    def update(self, key, term, ih, **kwargs):
+        ckey = self.get_key(term)
         state, = self.get_args( **kwargs )
 
-        ap, sg = state.get_approximation( group_indx, 'surface' )
-        sd = ap.surface_data[group_indx[1]]
-        bf = ap.get_base( sd.face_type, 0, group_indx[0] )
+        ap, sg = term.get_approximation(state)
+        sd = ap.surface_data[term.region.name]
+        bf = ap.get_base(sd.face_type, 0, term.integral.name)
         self.function( self.data[key][ckey][ih], state(), 0, bf, sd.econn )
 
 class CauchyStrainDataCache( DataCache ):
@@ -77,15 +77,15 @@ class CauchyStrainDataCache( DataCache ):
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-        ckey = self.g_to_c( group_indx )
+    def update(self, key, term, ih, **kwargs):
+        ckey = self.get_key(term)
         if ih > 0:
             print 'history update!'
             print kwargs['history']
             raise NotImplementedError
         state, get_vector = self.get_args( **kwargs )
 
-        ap, vg = state.get_approximation( group_indx, 'volume' )
+        ap, vg = term.get_approximation(state)
         vec = get_vector( state )
         self.function( self.data['strain'][ckey][ih], vec, 0, vg, ap.econn )
         is_finite = nm.isfinite( self.data[key][ckey][ih] )
@@ -114,10 +114,10 @@ class GradScalarDataCache( DataCache ):
 #        print self.name, key, ckey, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
+    def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'volume' )
-        ckey = self.g_to_c( group_indx )
+        ap, vg = term.get_approximation(state)
+        ckey = self.get_key(term)
 
         self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
 
@@ -151,16 +151,16 @@ class DivVectorDataCache( DataCache ):
 #        print self.name, key, ig, shape
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
+    def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'volume' )
-        ckey = self.g_to_c( group_indx )
+        ap, vg = term.get_approximation(state)
+        ckey = self.get_key(term)
 
         self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
 
 class VolumeDataCache( DataCache ):
     name = 'volume'
-    arg_types = ('region','field')
+    arg_types = ('region', 'state')
 
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['volume'], history_sizes )
@@ -170,15 +170,21 @@ class VolumeDataCache( DataCache ):
 
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-        region, field = self.get_args( **kwargs )
-        ckey = self.g_to_c( group_indx )
-        self.data[key][ckey][ih] = region.get_volume( field, ckey,
-                                                      update = True )
+    def update(self, key, term, ih, **kwargs):
+        region, state = self.get_args( **kwargs )
+        ckey = self.get_key(term)
+
+        ap, vg = term.get_approximation(state)
+        volume = vg.variable(2)
+        volume.shape = (nm.prod(volume.shape),)
+
+        val = nm.sum(volume[region.cells[term.char_fun.ig]])
+
+        self.data[key][ckey][ih] = val
 
 class SurfaceDataCache( DataCache ):
     name = 'surface'
-    arg_types = ('region','field')
+    arg_types = ('region', 'state')
 
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['surface'], history_sizes )
@@ -188,9 +194,14 @@ class SurfaceDataCache( DataCache ):
 
         DataCache.init_data( self, key, ckey, shape )
 
-    def update( self, key, group_indx, ih, **kwargs ):
+    def update(self, key, term, ih, **kwargs):
         region, field = self.get_args( **kwargs )
-        ckey = self.g_to_c( group_indx )
-        self.data[key][ckey][ih] = region.get_volume( field, ckey,
-                                                      update = True,
-                                                      mode = 'surface' )
+        ckey = self.get_key(term)
+
+        ap, vg = term.get_approximation(state)
+        volume = vg.variable(2)
+        volume.shape = (nm.prod(volume.shape),)
+
+        val = nm.sum(volume)
+
+        self.data[key][ckey][ih] = val

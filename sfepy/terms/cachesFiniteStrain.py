@@ -50,12 +50,11 @@ class FiniteStrainTLDataCache( DataCache ):
 
         DataCache.init_datas( self, ckey, self.shapes )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-##         print 'update!', key, group_indx, ih
+    def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'volume' )
+        ap, vg = term.get_approximation(state)
 
-        ckey = self.g_to_c( group_indx )
+        ckey = self.get_key(term)
 
         self.function( self.data['F'][ckey][ih],
                        self.data['detF'][ckey][ih],
@@ -111,13 +110,12 @@ class FiniteStrainSurfaceTLDataCache(DataCache):
 
         DataCache.init_datas( self, ckey, self.shapes )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-##         print 'update!', key, group_indx, ih
+    def update(self, key, term, ih, **kwargs):
         state = self.get_args(**kwargs)[0]
-        ap, sg = state.get_approximation(group_indx, 'surface_extra')
-        sd = ap.surface_data[group_indx[1]]
+        ap, sg = term.get_approximation(state)
+        sd = ap.surface_data[term.region.name]
 
-        ckey = self.g_to_c(group_indx)
+        ckey = self.get_key(term)
 
         self.function( self.data['F'][ckey][ih],
                        self.data['detF'][ckey][ih],
@@ -173,12 +171,11 @@ class FiniteStrainULDataCache( DataCache ):
 
         DataCache.init_datas( self, ckey, self.shapes )
 
-    def update( self, key, group_indx, ih, **kwargs ):
-##         print 'update!', key, group_indx, ih
+    def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
-        ap, vg = state.get_approximation( group_indx, 'volume' )
+        ap, vg = term.get_approximation(state)
 
-        ckey = self.g_to_c( group_indx )
+        ckey = self.get_key(term)
 
         self.function( self.data['F'][ckey][ih],
                        self.data['detF'][ckey][ih],

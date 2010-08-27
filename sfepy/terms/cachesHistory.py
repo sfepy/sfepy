@@ -24,10 +24,10 @@ class ExpHistoryDataCache(DataCache):
         }
         DataCache.init_datas(self, ckey, self.shapes, zero=True)
 
-    def update(self, key, group_indx, ih, **kwargs):
+    def update(self, key, term, ih, **kwargs):
         decay, values = self.get_args(**kwargs)
 
-        ckey = self.g_to_c( group_indx )
+        ckey = self.get_key(term)
 
         self.data['increment'][ckey][ih] = values
         self.data['decay'][ckey][ih] = decay
