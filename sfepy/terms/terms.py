@@ -937,38 +937,6 @@ class Term(Struct):
         elif len(gtypes):
             self.dof_conn_type = gtypes[0]
 
-    def describe_geometry(self, geometries):
-        """
-        """
-        if not self.has_geometry: return
-
-        tgs = self.get_geometry_types()
-
-        for variable in self.get_variables():
-            if not variable.has_field: continue
-
-            field = variable.field
-
-            is_trace = self.arg_traces[variable.name]
-            if not is_trace:
-                assert_( field.region.contains( self.region ) )
-
-            ## print field.name, field.region_name
-            ## print field.bases
-
-            if tgs.has_key(variable.name):
-
-                if is_trace:
-                    region, ig_map = self.region.get_mirror_region()[:2]
-
-                else:
-                    region, ig_map = self.region, None
-
-                field.aps.describe_geometry(field, geometries,
-                                            tgs[variable.name],
-                                            region, self.region,
-                                            self.integral, ig_map=ig_map)
-
     def get_region(self):
         return self.region
 
@@ -1057,14 +1025,75 @@ class Term(Struct):
         if self.has_geometry:
             self.geometries = geometries
 
+    def describe_geometry(self, variable, geometry_type, ig):
+        """
+        The geometries are cached in `self.geometries` attribute, that
+        is shared among all terms in one `Equations` instance.
+        """
+        if variable.has_field:
+            is_trace = self.arg_traces[variable.name]
+            if not is_trace:
+                assert_(variable.field.region.contains(self.region))
+
+            if is_trace:
+                region = self.region.get_mirror_region()[0]
+
+            else:
+                region = self.region
+
+            geo = variable.describe_geometry(geometry_type, region,
+                                             self.integral, ig,
+                                             term_region=self.region)
+        else:
+            geo = None
+
+        return geo
+
     def get_approximation(self, variable):
+        """
+        Return approximation corresponding to `variable`. Also return
+        the corresponding geometry.
+        """
         is_trace = self.arg_traces[variable.name]
-        kind = self.geometry_types[variable.name]
-        key = self.get_current_group()
+        geometry_type = self.geometry_types[variable.name]
 
-        out = variable.get_approximation(key, kind=kind, is_trace=is_trace)
+        iname, region_name, ig = self.get_current_group()
 
-        return out
+        if is_trace:
+            region, ig_map, ig_map_i = self.region.get_mirror_region()
+            g_key = (iname, region.name, geometry_type, ig)
+            ig = ig_map_i[ig]
+
+        else:
+            g_key = (iname, region_name, geometry_type, ig)
+
+        ap = variable.get_approximation(ig)
+
+        # Store integral for possible future base function request.
+        ap.integrals[self.integral.name] = self.integral
+        ap.dim = variable.field.shape
+        if geometry_type == 'surface_extra':
+            ap.create_bqp(self.region.name, self.integral)
+
+        if is_trace:
+            # Make a mirror-region alias to SurfaceData.
+            sd = ap.surface_data
+            sd[self.region.name] = sd[region.name]
+
+        if g_key in self.geometries:
+            geo = self.geometries[g_key]
+
+        else:
+            geo = self.describe_geometry(variable, geometry_type, ig)
+            self.geometries[g_key] = geo
+
+            if geometry_type == 'surface_extra':
+                key2 = list(g_key)
+                key2[1] = 'surface'
+                key2 = tuple(key2)
+                self.geometries[key2] = geo
+
+        return ap, geo
 
     def get_variables(self, as_list=True):
 
@@ -1137,9 +1166,7 @@ class Term(Struct):
 
         setup_dof_conns(conn_info)
 
-        geometries = {}
-        self.describe_geometry(geometries)
-        ## print geometries
+        self.assign_geometries({})
 
         materials = self.get_materials(join=True)
         ## print materials

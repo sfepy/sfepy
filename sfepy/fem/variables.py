@@ -1210,6 +1210,22 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
+    def describe_geometry(self, geometry_type, region, integral, ig,
+                          term_region=None):
+        field = self.field
+
+        if isinstance(region, str):
+            region = field.region
+
+        if term_region is None:
+            term_region = region
+
+        geo = field.aps.describe_geometry(field, geometry_type, ig,
+                                          region, term_region,
+                                          integral)
+
+        return geo
+
     def setup_adof_conns(self, adof_conns, adi):
         """
         Translate dof connectivity of the variable to active dofs.
@@ -1407,8 +1423,8 @@ class FieldVariable(Variable):
             
             self.initial_condition = ic_vec
 
-    def get_approximation( self, key, kind = 'volume', is_trace = False ):
-        return self.field.aps.get_approximation(key, kind, is_trace)
+    def get_approximation(self, ig):
+        return self.field.aps.get_approximation(ig)
 
     ##
     # c: 28.11.2006, r: 15.01.2008

@@ -276,8 +276,9 @@ class Approximation( Struct ):
     def get_v_data_shape( self, iname = None ):
         """returns (n_el, n_qp, dim, n_ep)"""
         if iname:
-            return (self.region.shape[self.ig].n_cell,)\
-                   + self.bf[(iname, 'v', 1)].shape
+            bf_vg = self.get_base('v', 1, iname)
+            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape
+
         else:
             return (self.region.shape[self.ig].n_cell,
                     self.interp.gel.dim, self.n_ep['v'])
@@ -492,51 +493,21 @@ class Approximations( Container ):
 
         self.update(objs)
 
-        self.clear_geometries()
-
-    def clear_geometries( self ):
-        self.geometries = {}
-
     def iter_aps(self, igs=None):
         for ig, ap in self.aps_per_group.iteritems():
             if igs is not None:
                 if not ig in igs: continue
             yield ig, ap
 
-    def get_approximation(self, key, kind='volume', is_trace=False,
-                          return_geometry=True):
+    def get_approximation(self, ig):
         """
         Returns
         -------
-            Approximation instance for the given key: (integral name,
-            region name, ig).
-        """ 
-        geometries = self.geometries
+            Approximation instance for the given ig.
+        """
+        ap = self.aps_per_group[ig]
 
-        iname, region_name, ig = key
-
-        if is_trace:
-            g_key = (iname, kind, region_name, ig)
-            try:
-                ap, geometry = geometries[g_key]
-            except KeyError:
-                msg = 'no trace geometry %s in %s' % (key, geometries)
-                raise KeyError( msg )
-
-        else:
-            ap = self.aps_per_group[ig]
-            if return_geometry:
-                g_key = (iname, kind, region_name, ap.name)
-                try:
-                    geometry = geometries[g_key]
-                except KeyError:
-                    msg = 'no geometry %s in %s' % (g_key, geometries)
-                    raise KeyError( msg )
-
-        if return_geometry:
-            return ap, geometry
-        else:
-            return ap
+        return ap
 
     ##
     # c: 19.07.2006, r: 15.01.2008
@@ -773,80 +744,37 @@ class Approximations( Container ):
             if region.name not in ap.point_data:
                 ap.setup_point_data(field, region)
 
-
-    def describe_geometry(self, field, geometries, gtype, region, term_region,
-                          integral, ig_map=None, over_write=False):
-        """For all groups of approximations, compute jacobians, element volumes
-        and base function derivatives for Volume-type geometries, and
-        jacobians, normals and base function derivatives for Surface-type
-        geometries.
+    def describe_geometry(self, field, geometry_type, ig, region,
+                          term_region, integral):
+        """
+        For give approximation, compute jacobians, element volumes and
+        base function derivatives for Volume-type geometries, and
+        jacobians, normals and base function derivatives for
+        Surface-type geometries.
 
         Usually, region is term_region. Only if is_trace is True, then region
         is the mirror region and term_region is the true term region.
         """
         is_trace = region is not term_region
 
-        for ig, ap in self.iter_aps(igs=region.igs):
-##             print ig, ap.name
+        ap = self.aps_per_group[ig]
 
-            # Store integral for possible future base function request.
-            ap.integrals[integral.name] = integral
-            ap.dim = field.shape
-
-            ##
-            # Prepare common bases.
-            if gtype == 'volume':
-                ap.get_base( 'v', 0, integral = integral )
-                ap.get_base( 'v', 1, integral = integral )
-            elif (gtype == 'surface') or (gtype == 'surfac_eextra'):
-                pass
-
-            geom_key = (integral.name, gtype, region.name, ap.name)
-##             print field.name, geom_key
-
-            if geom_key in geometries:
-                self.geometries[geom_key] = geometries[geom_key]
-                if gtype == 'surface_extra':
-                    ap.create_bqp( region.name, integral )
-
-            else:
-                if geom_key in self.geometries:
-                    geometries[geom_key] = self.geometries[geom_key]
- 
-                else:
-##                     print 'new geometry: %s of %s' % (geom_key, ap.name)
-                    geom = ap.describe_geometry( field, gtype, region, integral,
-                                                 self.coors )
-                    self.geometries[geom_key] = geometries[geom_key] = geom
-                    # Make an alias Surface -> SurfaceExtra.
-                    if gtype == 'surface_extra':
-                        key2 = list(geom_key)
-                        key2[1] = 'surface'
-                        key2 = tuple(key2)
-                        self.geometries[key2] = geometries[key2] = geom
-
-            if is_trace:
-                # Make a mirror-region alias to SurfaceData.
-                sd = ap.surface_data
-                sd[term_region.name] = sd[region.name]
-
-                trace_key = (integral.name, gtype, term_region.name, ig_map[ig])
-                self.geometries[trace_key] = (ap, self.geometries[geom_key])
-
-        if over_write:
-            self.geometries = geometries
+        geo = ap.describe_geometry(field, geometry_type, region, integral,
+                                   self.coors)
+        return geo
 
     ##
     # created:       21.12.2007
     # last revision: 21.12.2007
     def update_geometry( self, field, regions, geometries ):
-        for geom_key, geom in self.geometries.iteritems():
-            iname, gtype, tregion_name, ap_name = geom_key
+        for geom_key, geom in geometries.iteritems():
+            iname, geometry_type, tregion_name, ap_name = geom_key
             ap = self[ap_name]
             integral = ap.integrals[iname]
-            geom = ap.describe_geometry( field, gtype, regions[tregion_name],
-                                         integral, self.coors )
-            self.geometries[geom_key] = geometries[geom_key] = geom
+            geom = ap.describe_geometry(field, geometry_type,
+                                        regions[tregion_name],
+                                        integral, self.coors)
+            geometries[geom_key] = geom
             
     ##
     # 03.05.2007, c
