@@ -90,7 +90,6 @@ class Region( Struct ):
                         parse_def = parse_def, all_vertices = None,
                         igs = [], vertices = {}, edges = {}, faces = {},
                         cells = {}, fis = {},
-                        volume = {}, surface = {}, length = {},
                         can_cells = True, must_update = True,
                         is_complete = False,
                         mirror_region = None, ig_map = None,
@@ -587,42 +586,6 @@ class Region( Struct ):
             return False
         else:
             return True
-
-    def update_geometry_info( self, field, key, mode = 'volume' ):
-        """
-        key: iname, aregion_name, ig
-        TODO: surfaces, lengths
-        ?call for all regions & fields in describe_geometry()?"""
-        if self.has_cells():
-            val = self.volume.setdefault( field.name, {} )
-        else:
-            self.volume[field.name] = 0.0
-            return
-
-        iname, ig = key
-        aps = field.aps
-        geometries = aps.geometries
-        ap = aps.aps_per_group[ig]
-        g_key = (iname, mode, self.name, ap.name)
-
-        vg = geometries[g_key]
-
-        volume = vg.variable( 2 )
-        volume.shape = (nm.prod( volume.shape ),)
-        if mode == 'volume':
-            val[key] = nm.sum( volume[self.cells[ig]] )
-        else:
-            val[key] = nm.sum( volume[:] )
-        self.volume[field.name] = val
-
-    def get_volume(self, field, key=None, update=False, mode='volume'):
-        if update:
-            self.update_geometry_info( field, key, mode )
-
-        if key is None:
-            return self.volume[field.name]
-        else:
-            return self.volume[field.name][key]
 
     def contains( self, other ):
         """Tests only igs for now!!!"""
