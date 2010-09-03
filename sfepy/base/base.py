@@ -188,7 +188,20 @@ class Struct( object ):
     def __init__( self, **kwargs ):
         if kwargs:
             self.__dict__.update( kwargs )
-        
+
+    def _format_sequence(self, seq, threshold):
+        threshold_half = threshold / 2
+
+        if len(seq) > threshold:
+            out = ', '.join(str(ii) for ii in seq[:threshold_half]) \
+                  + ', ..., ' \
+                  + ', '.join(str(ii) for ii in seq[threshold_half:])
+
+        else:
+            out = str(seq)
+
+        return out
+
     # 08.03.2005
     def __str__(self):
         """Print instance class, name and items in alphabetical order.
@@ -200,11 +213,20 @@ class Struct( object ):
         For attributes that are Struct instances, if
         the listed attribute name ends with '.', the attribute is printed fully
         by calling str(). Otherwise only its class name/name are printed.
+
+        Attributes that are NumPy arrays or SciPy sparse matrices are
+        printed in a brief form.
+
+        Only keys of dict attributes are printed. For the dict keys as
+        well as list or tuple attributes only several edge items are
+        printed if their length is greater than the threshold value 20.
         """
-        ss = "%s" % self.__class__.__name__
-        if hasattr( self, 'name' ):
-            ss += ":%s" % self.name
+        ss = '%s' % self.__class__.__name__
+        if hasattr(self, 'name'):
+            ss += ':%s' % self.name
         ss += '\n'
+
+        threshold = 20
 
         keys = self.__dict__.keys()
         str_attrs = sorted(self.get_default_attr('_str_attrs',
@@ -224,22 +246,50 @@ class Struct( object ):
             except KeyError:
                 continue
 
-            if (not full_print) and issubclass( val.__class__, Struct ):
-                ss += "  %s:\n    %s" % (key, val.__class__.__name__)
-                if hasattr( val, 'name' ):
-                    ss += ":%s" % val.name
-                ss += '\n'
+            if isinstance(val, Struct):
+                if not full_print:
+                    ss += '  %s:\n    %s' % (key, val.__class__.__name__)
+                    if hasattr(val, 'name'):
+                        ss += ':%s' % val.name
+                    ss += '\n'
+                else:
+                    aux = '\n' + str(val)
+                    aux = aux.replace('\n', '\n    ');
+                    ss += '  %s:\n%s\n' % (key, aux[1:])
+
+            elif isinstance(val, dict):
+                sval = self._format_sequence(val.keys(), threshold)
+                sval = sval.replace('\n', '\n    ')
+                ss += '  %s:\n    dict with keys: %s\n' % (key, sval)
+
+            elif isinstance(val, list):
+                sval = self._format_sequence(val, threshold)
+                sval = sval.replace('\n', '\n    ')
+                ss += '  %s:\n    list: %s\n' % (key, sval)
+
+            elif isinstance(val, tuple):
+                sval = self._format_sequence(val, threshold)
+                sval = sval.replace('\n', '\n    ')
+                ss += '  %s:\n    tuple: %s\n' % (key, sval)
+
+            elif isinstance(val, nm.ndarray):
+                ss += '  %s:\n    %s array of %s\n' % (key, val.shape, val.dtype)
+
+            elif isinstance(val, sp.spmatrix):
+                ss += '  %s:\n    %s spmatrix of %s, %d nonzeros\n' \
+                      % (key, val.shape, val.dtype, val.nnz)
+
             else:
-                aux = "\n" + str( val )
-                aux = aux.replace( "\n", "\n    " );
-                ss += "  %s:\n%s\n" % (key, aux[1:])
+                aux = '\n' + str(val)
+                aux = aux.replace('\n', '\n    ');
+                ss += '  %s:\n%s\n' % (key, aux[1:])
 
         other_keys = sorted(set(keys).difference(set(printed_keys)))
         if len(other_keys):
-            ss += "  other attributes:\n    %s\n" \
+            ss += '  other attributes:\n    %s\n' \
                   % '\n    '.join(key for key in other_keys)
 
-        return( ss.rstrip() )
+        return ss.rstrip()
 
     def __repr__( self ):
         ss = "%s" % self.__class__.__name__
