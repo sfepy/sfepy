@@ -179,37 +179,26 @@ class Equations( Container ):
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None):
+    def get_graph_conns(self, any_dof_conn=False, rdcs=None, cdcs=None):
         """
-        Create tangent matrix graph. Order of dof connectivities is not
-        important here.
+        Get DOF connectivities needed for creating tangent matrix graph.
 
         Parameters
         ----------
         any_dof_conn : bool
-            By default, only volume dof connectivities are used, with
-            the exception of trace surface dof connectivities. If True,
-            any kind of dof connectivities is allowed.
-        rdcs, cdcs : array, optional
-            Additional row and column dof connectivities, corresponding
+            By default, only volume DOF connectivities are used, with
+            the exception of trace surface DOF connectivities. If True,
+            any kind of DOF connectivities is allowed.
+        rdcs, cdcs : arrays, optional
+            Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.
 
         Returns
         -------
-        matrix : csr_matrix
-            The matrix graph in the form of a CSR matrix with
-            preallocated structure and zero data.
+        rdcs, cdcs : arrays
+            The row and column DOF connectivities defining the matrix
+            graph blocks.
         """
-        if not self.variables.has_virtuals():
-            output('no matrix (no test variables)!')
-            return None
-
-        shape = self.variables.get_matrix_shape()
-        output( 'matrix shape:', shape )
-        if nm.prod( shape ) == 0:
-            output( 'no matrix (zero size)!' )
-            return None
-
         if rdcs is None:
             rdcs = []
             cdcs = []
@@ -269,12 +258,45 @@ class Equations( Container ):
                 rdcs[ii] = nm.array(rdcs[ii], ndmin=2)
                 cdcs[ii] = nm.array(cdcs[ii], ndmin=2)
 
-        ##     print rdcs[ii], cdcs[ii]
-        ## pause()
+        return rdcs, cdcs
 
-        if not shared:
-            # No virtual, state variable -> no matrix.
-            output( 'no matrix (empty dof connectivities)!' )
+    def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None):
+        """
+        Create tangent matrix graph, i.e. preallocate and initialize the
+        sparse storage needed for the tangent matrix. Order of DOF
+        connectivities is not important.
+
+        Parameters
+        ----------
+        any_dof_conn : bool
+            By default, only volume DOF connectivities are used, with
+            the exception of trace surface DOF connectivities. If True,
+            any kind of DOF connectivities is allowed.
+        rdcs, cdcs : arrays, optional
+            Additional row and column DOF connectivities, corresponding
+            to the variables used in the equations.
+
+        Returns
+        -------
+        matrix : csr_matrix
+            The matrix graph in the form of a CSR matrix with
+            preallocated structure and zero data.
+        """
+        if not self.variables.has_virtuals():
+            output('no matrix (no test variables)!')
+            return None
+
+        shape = self.variables.get_matrix_shape()
+        output( 'matrix shape:', shape )
+        if nm.prod( shape ) == 0:
+            output( 'no matrix (zero size)!' )
+            return None
+
+        rdcs, cdcs = self.get_graph_conns(any_dof_conn=any_dof_conn,
+                                          rdcs=rdcs, cdcs=cdcs)
+
+        if not len(rdcs):
+            output('no matrix (empty dof connectivities)!')
             return None
 
         output( 'assembling matrix graph...' )
