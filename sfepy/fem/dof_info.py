@@ -598,12 +598,21 @@ class LCBCOperators(Container):
         
 def make_global_lcbc_operator(lcbc_ops, adi):
     """
-    Assemble all LCBC operatiors into a single matrix.
+    Assemble all LCBC operators into a single matrix.
+
+    Returns
+    -------
+    mtx_lc : csr_matrix
+        The global LCBC operator in the form of a CSR matrix.
+    lcdi : DofInfo
+        The global active LCBC-constrained DOF information.
     """
     n_dof = adi.ptr[-1]
     eq_lcbc = nm.zeros((n_dof,), dtype=nm.int32)
 
     n_dof_new = 0
+    n_free = {}
+    n_new = {}
     for var_name, lcbc_op in lcbc_ops.iteritems():
         ## print var_name, lcbc_op
         if lcbc_op is None: continue
@@ -611,10 +620,13 @@ def make_global_lcbc_operator(lcbc_ops, adi):
         indx = adi.indx[var_name]
         eq_lcbc[indx] = lcbc_op.eq_lcbc
 
-        n_dof_new += nm.sum(lcbc_op.n_transformed_dof)
+        n_free[var_name] = len(nm.where(lcbc_op.eq_lcbc == 0)[0])
+        n_new[var_name] = nm.sum(lcbc_op.n_transformed_dof)
+
+        n_dof_new += n_new[var_name]
 
     if n_dof_new == 0:
-        return None
+        return None, None
 
     ii = nm.nonzero( eq_lcbc )[0]
     n_constrained = ii.shape[0]
@@ -625,7 +637,20 @@ def make_global_lcbc_operator(lcbc_ops, adi):
     output( ' -> reduced %d' % (n_dof_reduced) )
 
     ir = nm.where( eq_lcbc == 0 )[0]
-    ic = nm.arange( n_dof_free, dtype = nm.int32 )
+
+    ic = nm.empty((n_dof_free,), dtype=nm.int32)
+    lcdi = DofInfo('lcbc_active_state_dof_info')
+    fdi = DofInfo('free_dof_info')
+    for var_name in adi.var_names:
+        nf = n_free.get(var_name, adi.n_dof[var_name])
+        nn = n_new.get(var_name, 0)
+        fdi.append_raw(var_name, nf)
+
+        ic[fdi.indx[var_name]] = lcdi.ptr[-1] + nm.arange(nf, dtype=nm.int32)
+
+        lcdi.append_raw(var_name, nn + nf)
+
+    assert_(lcdi.ptr[-1] == n_dof_reduced)
     mtx_lc = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
                            shape=(n_dof, n_dof_reduced), dtype=nm.float64)
 
@@ -633,12 +658,15 @@ def make_global_lcbc_operator(lcbc_ops, adi):
     cols = []
     data = []
     for var_name, lcbc_op in lcbc_ops.iteritems():
+        lcbc_op = lcbc_ops[var_name]
         if lcbc_op is None: continue
+
+        offset = fdi.indx[var_name].stop
 
         for ii, op in enumerate(lcbc_op):
             indx = nm.where(eq_lcbc == lcbc_op.markers[ii])[0]
-            icols = nm.arange(n_dof_free + lcbc_op.ics[ii],
-                              n_dof_free + lcbc_op.ics[ii+1])
+            icols = nm.arange(offset + lcbc_op.ics[ii],
+                              offset + lcbc_op.ics[ii+1])
 
             if isinstance(op.mtx, sp.spmatrix):
                 lr, lc, lv = sp.find(op.mtx)
@@ -665,4 +693,4 @@ def make_global_lcbc_operator(lcbc_ops, adi):
     ## print mtx_lc
     ## pylab.show()
 
-    return mtx_lc
+    return mtx_lc, lcdi

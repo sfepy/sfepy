@@ -198,7 +198,8 @@ class Variables( Container ):
             if lcbc_op is not None:
                 offset += lcbc_op.n_op
 
-        self.op_lcbc = make_global_lcbc_operator(lcbc_ops, self.adi)
+        self.op_lcbc, self.lcdi = make_global_lcbc_operator(lcbc_ops, self.adi)
+
         self.has_lcbc = self.op_lcbc is not None
 
     ##
