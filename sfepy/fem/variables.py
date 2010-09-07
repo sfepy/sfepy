@@ -1802,6 +1802,24 @@ class MultiplierVariable(Variable):
 
         return self.n_dof, details
 
+    def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
+        """
+        Trivial mapping (no boundary conditions). Set n_adof.
+        """
+        if bcs is not None:
+            raise ValueError('MultiplierVariable cannot have BC!')
+
+        self.eq_map = EquationMap('eq_map', self.dofs, var_di)
+        self.eq_map.map_equations(bcs, self.field, ts, functions, warn=warn)
+        self.n_adof = self.eq_map.n_eq
+
+    def setup_adof_conns(self, adof_conns, adi):
+        """
+        The multiplier variables have no connectivity, so do nothing. It
+        is up to user to allocate the global matrix entries properly.
+        """
+        self.adof_conns = {}
+
 class ConstantVariable(Variable):
     """A constant variable.
     """
