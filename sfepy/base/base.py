@@ -429,7 +429,8 @@ class Container( Struct ):
                     raise ValueError('bad index type! (%s)' % type(ii))
 
             if ii >= len(self.names):
-                self.append(obj)
+                self._objs.append( obj )
+                self.names.append( obj.name )
 
             else:
                 self._objs[ii] = obj
@@ -463,8 +464,7 @@ class Container( Struct ):
         self.names.insert(ii, obj.name)
 
     def append( self, obj ):
-        self._objs.append( obj )
-        self.names.append( obj.name )
+        self[len(self.names)] = obj
 
     def get(self, ii, default=None, msg_if_none=None):
         """
