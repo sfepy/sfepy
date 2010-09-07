@@ -87,6 +87,14 @@ class DofInfo(Struct):
         self.indx = {}
         self.details = {}
 
+    def _update_after_append(self, name):
+        self.ptr.append(self.ptr[-1] + self.n_dof[name])
+
+        ii = self.n_var
+        self.indx[name] = slice(int(self.ptr[ii]), int(self.ptr[ii+1]))
+
+        self.n_var += 1
+
     def append_variable(self, var, active=False):
         """
         Append DOFs of the given variable.
@@ -105,13 +113,26 @@ class DofInfo(Struct):
         self.var_names.append(name)
 
         self.n_dof[name], self.details[name] = var.get_dof_info(active=active)
+        self._update_after_append(name)
 
-        self.ptr.append(self.ptr[-1] + self.n_dof[name])
+    def append_raw(self, name, n_dof):
+        """
+        Append raw DOFs.
 
-        ii = self.n_var
-        self.indx[name] = slice(int(self.ptr[ii] ), int(self.ptr[ii+1]))
-        
-        self.n_var += 1
+        Parameters
+        ----------
+        name : str
+            The name of variable the DOFs correspond to.
+        n_dof : int
+            The number of DOFs.
+        """
+        if name in self.var_names:
+            raise ValueError('variable %s already present!' % name)
+
+        self.var_names.append(name)
+
+        self.n_dof[name], self.details[name] = n_dof, None
+        self._update_after_append(name)
 
     def get_info(self, var_name):
         """
