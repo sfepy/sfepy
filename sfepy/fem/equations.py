@@ -179,7 +179,7 @@ class Equations( Container ):
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)
 
-    def create_matrix_graph(self, any_dof_conn=False):
+    def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None):
         """
         Create tangent matrix graph. Order of dof connectivities is not
         important here.
@@ -190,6 +190,9 @@ class Equations( Container ):
             By default, only volume dof connectivities are used, with
             the exception of trace surface dof connectivities. If True,
             any kind of dof connectivities is allowed.
+        rdcs, cdcs : array, optional
+            Additional row and column dof connectivities, corresponding
+            to the variables used in the equations.
 
         Returns
         -------
@@ -207,13 +210,23 @@ class Equations( Container ):
             output( 'no matrix (zero size)!' )
             return None
 
+        if rdcs is None:
+            rdcs = []
+            cdcs = []
+
+        elif cdcs is None:
+            cdcs = copy(rdcs)
+
+        else:
+            assert_(len(rdcs) == len(cdcs))
+            if rdcs is cdcs: # Make sure the lists are not the same object.
+                rdcs = copy(rdcs)
+
         adcs = self.variables.adof_conns
 
         # Only volume dof connectivities are used, with the exception of trace
         # surface dof connectivities.
         shared = set()
-        rdcs = []
-        cdcs = []
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
             dct = info.dc_type.type
