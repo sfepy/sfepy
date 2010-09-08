@@ -223,6 +223,10 @@ class Material( Struct ):
             self.datas['special'] = datas
             self.special_names.update(datas.keys())
 
+    def update_special_constant_data(self):
+        """
+        Update the special constant material parameters.
+        """
         # Special constant values.
         if self.flags.get('special_constant'):
             datas = self.function(None, None, mode='special_constant')
@@ -246,6 +250,7 @@ class Material( Struct ):
                 self.update_data(ts, region, key, ig, qps)
 
         self.update_special_data(ts, domain)
+        self.update_special_constant_data()
 
     def get_keys(self, region_name=None):
         """
