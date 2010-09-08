@@ -181,7 +181,9 @@ class Variables( Container ):
         """
         Prepare linear combination BC operator matrix.
         """
-        if lcbcs is None: return
+        if lcbcs is None:
+            self.lcdi = self.adi
+            return
 
         self.lcbcs = lcbcs
         lcbc_of_vars = self.lcbcs.group_by_variables()
