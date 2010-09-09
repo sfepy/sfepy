@@ -617,6 +617,7 @@ class Approximations( Container ):
                     faces = group.gel.get_surface_entities()
                     aux = FESurface('aux', region, faces, group.conn, ig)
                     ap.econn[:,:aux.n_fp] = aux.leconn
+                    ap.surface_data[region.name] = aux
 
         ed, ned, fa, nfa = region.domain.get_neighbour_lists()
         entt = self.ent_table
@@ -732,9 +733,13 @@ class Approximations( Container ):
 ##         print self.coors.shape
 ##         pause()
 
-    def setup_surface_data(self, region):
+    def setup_surface_data(self, region, is_surface=False):
         for ig, ap in self.iter_aps(igs=region.igs):
             if region.name not in ap.surface_data:
+                if is_surface:
+                    msg = 'no surface data of surface field! (%s)' % region.name
+                    raise ValueError(msg)
+
                 ap.setup_surface_data(region)
 
     def setup_point_data(self, field, region):

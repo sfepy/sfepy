@@ -476,3 +476,38 @@ class SurfaceField(Field):
 
         aux = self.aps.setup_global_base(is_surface=True)
         self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
+
+    def setup_extra_data(self, geometry, info, is_trace):
+        dct = info.dc_type.type
+
+        if dct != 'surface':
+            msg = "dof connectivity type must be 'surface'! (%s)" % dct
+            raise ValueError(msg)
+
+        reg = info.get_region()
+        reg.select_cells_of_surface(reset=False)
+
+        self.aps.setup_surface_data(reg, is_surface=True)
+
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+        """Setup dof connectivities of various kinds as needed by terms."""
+        dct = dc_type.type
+
+        if dct != 'surface':
+            msg = "dof connectivity type must be 'surface'! (%s)" % dct
+            raise ValueError(msg)
+
+        ##
+        # Expand nodes into dofs.
+        for ig, ap in self.aps.iter_aps(igs=region.igs):
+            region_name = region.name # True region name.
+            key = (self.name, dpn, region_name, dct, ig)
+            if key in dof_conns:
+                self.dof_conns[key] = dof_conns[key]
+                continue
+
+            sd = ap.surface_data[region_name]
+            dc = create_dof_conn(sd.leconn, dpn)
+            self.dof_conns[key] = dc
+
+        dof_conns.update(self.dof_conns)
