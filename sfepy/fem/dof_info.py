@@ -595,8 +595,8 @@ class LCBCOperators(Container):
         Initializes the global column indices.
         """
         self.ics = nm.cumsum(nm.r_[0, self.n_transformed_dof])
-        
-def make_global_lcbc_operator(lcbc_ops, adi):
+
+def make_global_lcbc_operator(lcbc_ops, adi, new_only=False):
     """
     Assemble all LCBC operators into a single matrix.
 
@@ -606,6 +606,8 @@ def make_global_lcbc_operator(lcbc_ops, adi):
         The global LCBC operator in the form of a CSR matrix.
     lcdi : DofInfo
         The global active LCBC-constrained DOF information.
+    new_only : bool
+        If True, the operator columns will contain only new DOFs.
     """
     n_dof = adi.ptr[-1]
     eq_lcbc = nm.zeros((n_dof,), dtype=nm.int32)
@@ -636,32 +638,29 @@ def make_global_lcbc_operator(lcbc_ops, adi):
             % (n_dof, n_dof_free, n_constrained, n_dof_new) )
     output( ' -> reduced %d' % (n_dof_reduced) )
 
-    ir = nm.where( eq_lcbc == 0 )[0]
-
-    ic = nm.empty((n_dof_free,), dtype=nm.int32)
     lcdi = DofInfo('lcbc_active_state_dof_info')
     fdi = DofInfo('free_dof_info')
+    ndi = DofInfo('new_dof_info')
     for var_name in adi.var_names:
         nf = n_free.get(var_name, adi.n_dof[var_name])
         nn = n_new.get(var_name, 0)
         fdi.append_raw(var_name, nf)
-
-        ic[fdi.indx[var_name]] = lcdi.ptr[-1] + nm.arange(nf, dtype=nm.int32)
-
+        ndi.append_raw(var_name, nn)
         lcdi.append_raw(var_name, nn + nf)
 
     assert_(lcdi.ptr[-1] == n_dof_reduced)
-    mtx_lc = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
-                           shape=(n_dof, n_dof_reduced), dtype=nm.float64)
 
     rows = []
     cols = []
     data = []
     for var_name, lcbc_op in lcbc_ops.iteritems():
-        lcbc_op = lcbc_ops[var_name]
         if lcbc_op is None: continue
 
-        offset = fdi.indx[var_name].stop
+        if new_only:
+            offset = ndi.indx[var_name].start
+
+        else:
+            offset = lcdi.indx[var_name].start + fdi.n_dof[var_name]
 
         for ii, op in enumerate(lcbc_op):
             indx = nm.where(eq_lcbc == lcbc_op.markers[ii])[0]
@@ -684,8 +683,28 @@ def make_global_lcbc_operator(lcbc_ops, adi):
     cols = nm.concatenate(cols)
     data = nm.concatenate(data)
 
-    mtx_lc2 = sp.coo_matrix((data, (rows, cols)), shape=mtx_lc.shape)
-    mtx_lc = (mtx_lc + mtx_lc2).tocsr()
+    if new_only:
+        mtx_lc = sp.coo_matrix((data, (rows, cols)),
+                               shape=(n_dof, n_dof_new))
+
+    else:
+        mtx_lc = sp.coo_matrix((data, (rows, cols)),
+                               shape=(n_dof, n_dof_reduced))
+
+        ir = nm.where( eq_lcbc == 0 )[0]
+
+        ic = nm.empty((n_dof_free,), dtype=nm.int32)
+        for var_name in adi.var_names:
+            ii = nm.arange(fdi.n_dof[var_name], dtype=nm.int32)
+            ic[fdi.indx[var_name]] = lcdi.indx[var_name].start + ii
+
+        mtx_lc2 = sp.coo_matrix((nm.ones((ir.shape[0],)), (ir, ic)),
+                                shape=(n_dof, n_dof_reduced), dtype=nm.float64)
+
+
+        mtx_lc = mtx_lc + mtx_lc2
+
+    mtx_lc = mtx_lc.tocsr()
 
     ## import pylab
     ## from sfepy.base.plotutils import spy
