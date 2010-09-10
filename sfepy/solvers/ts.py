@@ -17,12 +17,11 @@ class TimeStepper( Struct ):
         return TimeStepper( conf.t0, conf.t1, conf.dt, conf.n_step )
     from_conf = staticmethod( from_conf )
 
-    def __init__( self, t0, t1, dt, n_step ):
-        self.t0, self.t1, self.dt, self.n_step = t0, t1, dt, int( n_step )
+    def __init__(self, t0, t1, dt, n_step, step=None):
+        self.set_from_data(t0, t1, dt, n_step, step=step)
 
-        self.time = None
-        self.step = None
-        self.nt = None
+    def set_from_data(self, t0, t1, dt, n_step, step=None):
+        self.t0, self.t1, self.dt, self.n_step = t0, t1, dt, int(n_step)
 
         if not hasattr( self, 'n_step' ):
             self.n_step = round( nm.floor( ((self.t1 - self.t0) / self.dt)
@@ -35,7 +34,13 @@ class TimeStepper( Struct ):
             self.times = nm.array( (self.t0,), dtype = nm.float64 )
 
         self.n_digit, self.format, self.suffix = get_print_info( self.n_step )
-        
+
+        self.set_step(step)
+
+    def set_from_ts(self, ts, step=None):
+        step = get_default(step, ts.step)
+        self.set_from_data(ts.t0, ts.t1, ts.dt, ts.n_step, step=step)
+
     def __iter__( self ):
         """ts.step, ts.time is consistent with step, time returned here
         ts.nt is normalized time in [0, 1]"""
@@ -85,10 +90,10 @@ class TimeStepper( Struct ):
 class SimpleTimeSteppingSolver( TimeSteppingSolver ):
     name = 'ts.simple'
 
-    def __init__( self, conf, **kwargs ):
+    def __init__(self, conf, ts=None, **kwargs):
         TimeSteppingSolver.__init__( self, conf, **kwargs )
 
-        self.ts = TimeStepper.from_conf( conf )
+        self.ts = get_default(ts, TimeStepper.from_conf(conf))
         self.ts.is_quasistatic = conf.get_default_attr('quasistatic', False)
 
         nd = self.ts.n_digit
