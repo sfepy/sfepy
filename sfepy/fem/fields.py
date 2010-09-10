@@ -469,13 +469,8 @@ class SurfaceField(Field):
         self.gel = gel
         self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
 
-    def setup_global_base( self ):
-
-        self.aps.describe_nodes()
-        self.aps.setup_nodes()
-
-        aux = self.aps.setup_global_base(is_surface=True)
-        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
+    def setup_approximations(self):
+        self.aps = fea.Approximations(self.interp, self.region, is_surface=True)
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
@@ -487,7 +482,7 @@ class SurfaceField(Field):
         reg = info.get_region()
         reg.select_cells_of_surface(reset=False)
 
-        self.aps.setup_surface_data(reg, is_surface=True)
+        self.aps.setup_surface_data(reg)
 
     def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""

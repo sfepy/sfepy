@@ -187,13 +187,14 @@ class Approximation( Struct ):
     # 10.10.2006
     # 11.07.2007
     # 17.07.2007
-    def __init__( self, name, interp, region, ig ):
+    def __init__(self, name, interp, region, ig, is_surface=False):
         """interp, region are borrowed."""
 
         self.name = name
         self.interp = interp
         self.region = region
         self.ig = ig
+        self.is_surface = is_surface
         self.surface_data = {}
         self.edge_data = {}
         self.point_data = {}
@@ -336,7 +337,7 @@ class Approximation( Struct ):
                     raise ValueError
 
             interp = self.interp
-            if key[0] == 's':
+            if (key[0] == 's') and not self.is_surface:
                 dim = interp.gel.dim - 1
                 n_fp = interp.gel.surface_facet.n_vertex
                 geometry = '%d_%d' % (dim, n_fp)
@@ -416,7 +417,12 @@ class Approximation( Struct ):
             sd = self.surface_data[region.name]
             qp = self.get_qp(sd.face_type, integral.name, integral)
 
-            ps = self.interp.poly_spaces[sd.face_type]
+            if not self.is_surface:
+                ps = self.interp.poly_spaces[sd.face_type]
+
+            else:
+                ps = self.interp.poly_spaces['v']
+
             mapping = SurfaceMapping(coors, sd.econn, poly_space=ps)
 
             sg = mapping.get_mapping(qp.vals, qp.weights)
@@ -477,17 +483,18 @@ class Approximations( Container ):
     - no two interps can be in a same group -> no two aps (with different
     regions) can be in a same group -> aps can be uniquely indexed with ig"""
 
-    def __init__(self, interp, region):
+    def __init__(self, interp, region, is_surface=False):
 
         self.igs = region.igs
         self.interp = interp
         self.aps_per_group = {}
         self.region = region
+        self.is_surface = is_surface
 
         objs = OneTypeList( Approximation )
         for ig in region.igs:
             ap = Approximation(interp.name + '_%s_ig%d' % (region.name, ig),
-                               interp, region, ig )
+                               interp, region, ig, is_surface=is_surface)
             self.aps_per_group[ig] = ap
             objs.append(ap)
 
@@ -557,7 +564,7 @@ class Approximations( Container ):
         ##
         # Face node type permutation table.
 
-    def setup_global_base(self, is_surface=False):
+    def setup_global_base(self):
         """
         efaces: indices of faces into econn.
         """
@@ -581,7 +588,7 @@ class Approximations( Container ):
         ia = 0
         for ig, ap in self.iter_aps():
             n_ep = ap.n_ep['v']
-            n_cell = region.get_n_cells(ig, is_surface)
+            n_cell = region.get_n_cells(ig, self.is_surface)
             ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
 
 ##             print ap.econn.shape
@@ -608,7 +615,7 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps():
             group = region.domain.groups[ig]
             if node_desc.vertex.size:
-                if not is_surface:
+                if not self.is_surface:
                     offset = group.shape.n_ep
                     cells = region.get_cells( ig )
                     ap.econn[:,:offset] = remap[group.conn[cells]]
@@ -654,7 +661,7 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps():
             if (node_desc.bubble):
                 n_bubble = node_desc.bubble[0].shape[0]
-                n_cell = region.get_n_cells(ig, is_surface)
+                n_cell = region.get_n_cells(ig, self.is_surface)
                 aux = nm.arange( iseq, iseq + n_bubble * n_cell )
                 aux.shape = (n_cell, n_bubble)
                 offset = node_desc.bubble[0][0,0]
@@ -733,11 +740,11 @@ class Approximations( Container ):
 ##         print self.coors.shape
 ##         pause()
 
-    def setup_surface_data(self, region, is_surface=False):
+    def setup_surface_data(self, region):
         for ig, ap in self.iter_aps(igs=region.igs):
             if region.name not in ap.surface_data:
-                if is_surface:
-                    msg = 'no surface data of surface field! (%s)' % region.name
+                if self.is_surface:
+                    msg = 'no sur data of surface field! (%s)' % region.name
                     raise ValueError(msg)
 
                 ap.setup_surface_data(region)
