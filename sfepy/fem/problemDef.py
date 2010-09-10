@@ -82,13 +82,10 @@ class ProblemDefinition( Struct ):
             obj.set_fields( conf.fields )
 
 	    if init_equations:
-		obj.set_equations( conf.equations )
+                obj.set_equations(conf.equations, user={'ts' : obj.ts})
 
         if init_solvers:
             obj.set_solvers( conf.solvers, conf.options )
-
-
-        obj.ts = None
 
         return obj
 
@@ -101,6 +98,8 @@ class ProblemDefinition( Struct ):
         self.functions = functions
 
         self.reset()
+
+        self.ts = get_default(ts, self.get_default_ts())
 
         if auto_conf:
             if equations is None:
@@ -297,7 +296,7 @@ class ProblemDefinition( Struct ):
             except:
                 conf = _find_suitable( kind + '.' )
             return conf
-        
+
         self.ts_conf = _get_solver_conf( 'ts' )
         self.nls_conf = _get_solver_conf( 'nls' )
         self.ls_conf = _get_solver_conf( 'ls' )
@@ -334,9 +333,14 @@ class ProblemDefinition( Struct ):
         t1 = get_default( t1, 1.0 )
         dt = get_default( dt, 1.0 )
         n_step = get_default( n_step, 1 )
-        ts = TimeStepper( t0, t1, dt, n_step )
-        ts.set_step( step )
+
+        ts = TimeStepper(t0, t1, dt, n_step, step=step)
+
         return ts
+
+    def update_time_stepper(self, ts):
+        if ts is not None:
+            self.ts.set_from_ts(ts)
 
     def reset_materials(self):
         """Clear material data so that next materials.time_update() is
@@ -344,10 +348,8 @@ class ProblemDefinition( Struct ):
         self.materials.reset()
 
     def update_materials(self, ts=None):
-        if ts is None:
-            ts = self.get_default_ts(step=0)
-
-        self.materials.time_update(ts, self.domain, self.equations)
+        self.update_time_stepper(ts)
+        self.materials.time_update(self.ts, self.domain, self.equations)
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
                          lcbcs=None, functions=None, create_matrix=False):
@@ -355,11 +357,10 @@ class ProblemDefinition( Struct ):
         Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
         create_matrix to True.
         """
-        if ts is None:
-            ts = self.get_default_ts(step=0)
+        self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
-        self.equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
+        self.equations.time_update(self.ts, ebcs, epbcs, lcbcs, functions)
 
         if (self.mtx_a is None) or create_matrix:
             self.mtx_a = self.equations.create_matrix_graph()
@@ -395,10 +396,6 @@ class ProblemDefinition( Struct ):
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
-        if ts is None:
-            ts = self.get_default_ts( step = 0 )
-
-        self.ts = ts
         self.update_materials(ts)
 	self.set_bcs(ebcs, epbcs, lcbcs)
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
@@ -501,11 +498,13 @@ class ProblemDefinition( Struct ):
     ##
     # c: 02.04.2008, r: 02.04.2008
     def init_time( self, ts ):
+        self.update_time_stepper(ts)
         self.equations.init_time( ts )
 
     ##
     # 08.06.2007, c
     def advance( self, ts ):
+        self.update_time_stepper(ts)
         self.equations.advance( ts )
 
     ##
@@ -555,15 +554,9 @@ class ProblemDefinition( Struct ):
         epbcs = Conditions.from_conf(self.conf.epbcs)
 
         try:
-            ts = TimeStepper.from_conf(self.conf.ts)
-            ts.set_step(0)
-
-        except:
-            ts = None
-
-        try:
             variables.equation_mapping(ebcs, epbcs,
-                                       self.domain.regions, ts, self.functions)
+                                       self.domain.regions, self.ts,
+                                       self.functions)
         except Exception, e:
             output( 'cannot make equation mapping!' )
             output( 'reason: %s' % e )
@@ -995,14 +988,13 @@ class ProblemDefinition( Struct ):
 
         return out
 
-    ##
-    # c: 06.02.2008, r: 04.04.2008
-    def get_time_solver( self, ts_conf = None, **kwargs ):
-        ts_conf = get_default( ts_conf, self.ts_conf,
-                             'you must set time-stepping solver!' )
-        
-        return Solver.any_from_conf( ts_conf, **kwargs )
+    def get_time_solver(self, ts_conf = None, **kwargs):
+        ts_conf = get_default(ts_conf, self.ts_conf,
+                              'you must set time-stepping solver!')
+        self.ts.set_from_data(ts_conf.t0, ts_conf.t1, ts_conf.dt,
+                              ts_conf.n_step)
 
+        return Solver.any_from_conf(ts_conf, ts=self.ts, **kwargs)
 
     def init_variables( self, state ):
         """Initialize variables with history."""
