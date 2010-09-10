@@ -409,6 +409,7 @@ class CauchyStrainQTerm(Term):
             raise StopIteration
 
         par, = self.get_args(['parameter'], **kwargs)
+        self.get_approximation(par)
 
         cache = self.get_cache('cauchy_strain', 0)
         strain = cache('strain', self, 0,
