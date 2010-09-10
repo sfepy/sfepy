@@ -149,6 +149,25 @@ class DofInfo(Struct):
                       indx = self.indx[var_name],
                       details = self.details[var_name])
 
+    def get_subset_info(self, var_names):
+        """
+        Return global DOF information for selected variables
+        only. Silently ignores non-existing variable names.
+
+        Parameters
+        ----------
+        var_names : list
+            The names of the selected variables.
+        """
+        di = DofInfo(self.name + ':subset')
+        for var_name in var_names:
+            if var_name not in self.var_names:
+                continue
+
+            di.append_raw(var_name, self.n_dof[var_name])
+
+        return di
+
 class EquationMap(Struct):
     """
     Map all DOFs to equations for active DOFs.
