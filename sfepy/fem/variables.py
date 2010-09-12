@@ -1320,7 +1320,7 @@ class FieldVariable(Variable):
             self.data_from_any(setter(ts, coor, region=region))
             output('data of %s set by %s()' % (self.name, setter_name))
 
-    def data_from_qp(self, data_qp, integral_name, step=0):
+    def data_from_qp(self, data_qp, integral, step=0):
         """u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
                = \sum_e \int_{volume_e} u / \sum volume_e"""
         domain = self.field.domain
@@ -1335,13 +1335,11 @@ class FieldVariable(Variable):
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
         data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
         for ig, ap in self.field.aps.iter_aps():
-            region_name = ap.region.name
-            ap_key = (integral_name, region_name, ig)
-            aux, vg = self.get_approximation(ap_key, 'volume')
+            vg = self.describe_geometry('volume', ap.region, integral, ig)
 
             volume = nm.squeeze(vg.variable(2))
-            iels = domain.regions[region_name].cells[ig]
-            
+            iels = ap.region.cells[ig]
+
             data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
             vg.integrate(data_e, data_qp[iels])
 
