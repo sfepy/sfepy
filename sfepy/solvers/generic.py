@@ -134,7 +134,8 @@ def solve_evolutionary_op(problem,
         if save_results and (is_save[ii] == ts.step):
             filename = problem.get_output_name( suffix = suffix % ts.step )
             problem.save_state(filename, state,
-                               post_process_hook=post_process_hook)
+                               post_process_hook=post_process_hook,
+                               ts=ts)
             ii += 1
 
         problem.advance( ts )
