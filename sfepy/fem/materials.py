@@ -177,6 +177,14 @@ class Material( Struct ):
 
         datas[ig] = data
 
+    def set_data_from_variable(self, var, name, equations):
+        for key, igs, region, qps in self.iter_qps(equations):
+            for ig in igs:
+                data = var.evaluate_at(qps.values[ig])
+                data.shape = data.shape + (1,)
+
+                self.set_data(key, ig, qps, {name : data})
+
     def update_data(self, ts, region, key, ig, qps):
         """
         Update the material parameters in quadrature points.
