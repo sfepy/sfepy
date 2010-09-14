@@ -1,5 +1,5 @@
 import sympy as sp
-from sympy import sin, cos, Plot, Basic, Symbol, sympify, zeronm, lambdify,\
+from sympy import sin, cos, Plot, Basic, Symbol, sympify, lambdify,\
      symbols
 from sympy.abc import x, y, z, t
 
@@ -21,7 +21,7 @@ def grad( f, variables = None ):
 #    import pdb; pdb.set_trace()
     f = sp.sympify( f )
 
-    out = sp.zeronm( n_var, 1)
+    out = sp.zeros((n_var, 1))
     for iv, var in enumerate( variables ):
        out[iv,0] = f.diff( var )
     return out
