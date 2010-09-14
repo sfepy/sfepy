@@ -92,10 +92,10 @@ class VectorVector( InstantaneousBase ):
     def set_data_shape( self, apr, apc = None ):
     
         if self.dof_conn_type == 'surface':
-            self.data_shape = apr.get_s_data_shape( self.integral_name,
+            self.data_shape = apr.get_s_data_shape( self.integral,
                                                     self.region.name )
         else:
-            self.data_shape = apr.get_v_data_shape( self.integral_name )
+            self.data_shape = apr.get_v_data_shape(self.integral)
 
         assert_( apr.dim == (self.data_shape[2],) )
 
@@ -117,10 +117,10 @@ class ScalarScalar( InstantaneousBase ):
     def set_data_shape( self, apr, apc = None ):
 
         if self.dof_conn_type == 'surface':
-            self.data_shape = apr.get_s_data_shape( self.integral_name,
+            self.data_shape = apr.get_s_data_shape( self.integral,
                                                     self.region.name )
         else:
-            self.data_shape = apr.get_v_data_shape( self.integral_name )
+            self.data_shape = apr.get_v_data_shape(self.integral)
 
         assert_( apr.dim == (1,) )
 
@@ -142,10 +142,10 @@ class VectorOrScalar( InstantaneousBase ):
     def set_data_shape( self, apr, apc = None ):
 
         if self.dof_conn_type == 'surface':
-            self.data_shape = apr.get_s_data_shape( self.integral_name,
+            self.data_shape = apr.get_s_data_shape( self.integral,
                                                     self.region.name )
         else:
-            self.data_shape = apr.get_v_data_shape( self.integral_name )
+            self.data_shape = apr.get_v_data_shape(self.integral)
 
         self.vdim = apr.dim[0]
 
@@ -168,13 +168,13 @@ class CouplingVectorScalar( InstantaneousBase ):
     def set_data_shape( self, apr, apc ):
         """Set element data shape and checks dimensions of approximations."""
         if self.dof_conn_type == 'surface':
-            self.data_shape_r = apr.get_s_data_shape( self.integral_name,
+            self.data_shape_r = apr.get_s_data_shape( self.integral,
                                                       self.region.name )
-            self.data_shape_c = apc.get_s_data_shape( self.integral_name,
+            self.data_shape_c = apc.get_s_data_shape( self.integral,
                                                       self.region.name )
         else:
-            self.data_shape_r = apr.get_v_data_shape( self.integral_name )
-            self.data_shape_c = apc.get_v_data_shape( self.integral_name )
+            self.data_shape_r = apr.get_v_data_shape(self.integral)
+            self.data_shape_c = apc.get_v_data_shape(self.integral)
 
         if self.mode == 'grad':
             dim_c = (1,)

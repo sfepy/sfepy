@@ -23,7 +23,7 @@ class ElectricSourceTerm( Term ):
         mat, virtual, parameter = self.get_args( **kwargs )
         apr, vgr = self.get_approximation(virtual)
         apc, vgc = self.get_approximation(parameter)
-        n_el, n_qp, dim, n_ep = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = apr.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, n_ep, 1)
@@ -31,7 +31,7 @@ class ElectricSourceTerm( Term ):
         else:
             raise StopIteration
 
-        bfr = apr.get_base( 'v', 0, self.integral_name )
+        bfr = apr.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, parameter(), mat, bfr, vgc,
                                     apc.econn, chunk, mode )

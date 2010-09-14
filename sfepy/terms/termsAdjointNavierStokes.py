@@ -24,7 +24,7 @@ class AdjDivGradTerm(DivGradTerm):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         weight, viscosity, virtual, parameter = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -60,7 +60,7 @@ class AdjConvect1Term(Term):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state, parameter = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -73,7 +73,7 @@ class AdjConvect1Term(Term):
 
         vec_w = state()
         vec_u = parameter()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_w, 0, vec_u, 0,
                                     bf, vg, ap.econn, chunk, mode )
@@ -123,7 +123,7 @@ class AdjSUPGCtabilizationTerm(Term):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         coef, virtual, par, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -136,7 +136,7 @@ class AdjSUPGCtabilizationTerm(Term):
 
         vec_w = state()
         vec_u = par()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_w, 0,
                                     coef, bf, vg, ap.econn,
@@ -168,7 +168,7 @@ class SUPGPAdj1StabilizationTerm(Term):
         coef, virtual, state, par = self.get_args( **kwargs )
         apr, vgr = self.get_approximation(virtual)
         app, vgp = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = apr.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -181,7 +181,7 @@ class SUPGPAdj1StabilizationTerm(Term):
 
         vec_w = state()
         vec_p = par()
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_p, 0, vec_w, 0,
                                     coef, bf, vgr, vgp,
@@ -214,13 +214,13 @@ class SUPGPAdj2StabilizationTerm(Term):
         coef, virtual, par, state = self.get_args( **kwargs )
         apr, vgr = self.get_approximation(virtual)
         apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_epr, 1 )
             mode = 0
         elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            n_epc = apc.get_v_data_shape(self.integral)[3]
             shape = (chunk_size, 1, dim * n_epr, n_epc )
             mode = 1
         else:
@@ -228,7 +228,7 @@ class SUPGPAdj2StabilizationTerm(Term):
 
         vec_u = par()
         vec_r = state()
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_r, 0,
                                     coef, bf, vgr, vgc,
@@ -245,7 +245,7 @@ class TestPQTerm(Term):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par_p, par_q, par_mv, mode = self.get_args( **kwargs )
         ap, vg = self.get_approximation(par_p)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -256,7 +256,7 @@ class TestPQTerm(Term):
         vec_q = par_q()
 ##         print par_p, par_q, par_mv, char_fun, mode
 ##         pause()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_p, 0, vec_q, 0, vec_mv, 0,
                                     bf, vg, ap.econn, chunk, mode )
@@ -290,7 +290,7 @@ class SDDivTerm(Term):
         ap_u, vg_u = self.get_approximation(par_u)
         ap_p, vg_p = self.get_approximation(par_p)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -300,7 +300,7 @@ class SDDivTerm(Term):
         vec_p = par_p()
         vec_u = par_u()
 
-        bf = ap_p.get_base( 'v', 0, self.integral_name )
+        bf = ap_p.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_p, 0, vec_mv, 0,
                                     bf, vg_u, vg_p, vg_mv,
@@ -344,7 +344,7 @@ class SDDivGradTerm(Term):
         weight, viscosity, par_u, par_w, par_mv, mode = self.get_args( **kwargs )
         ap_u, vg_u = self.get_approximation(par_u)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -387,7 +387,7 @@ class SDConvectTerm(Term):
         ap_u, vg_u = self.get_approximation(par_u)
         ap_w, vg_w = self.get_approximation(par_w)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -397,8 +397,8 @@ class SDConvectTerm(Term):
         vec_w = par_w()
         vec_u = par_u()
 
-        bf_u = ap_u.get_base( 'v', 0, self.integral_name )
-        bf_w = ap_w.get_base( 'v', 0, self.integral_name )
+        bf_u = ap_u.get_base('v', 0, self.integral)
+        bf_w = ap_w.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_w, 0, vec_mv, 0,
                                     bf_u, bf_w, vg_u, vg_w, vg_mv,
@@ -485,7 +485,7 @@ class NSOFSurfMinDPressTerm(Term):
 ##         sg.str( sys.stdout, 0 )
 ##         print self.char_fun.region
 ##         pause()
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        bf = ap.get_base( sd.face_type, 0, self.integral )
         for out, chunk in self.char_fun( chunk_size, shape,
                                         zero = True, set_shape = False ):
             lchunk = self.char_fun.get_local_chunk()
@@ -519,7 +519,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
         """
         weight, virtual = self.get_args( **kwargs )
         ap, sg = self.get_approximation(par)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
                                                      self.region.name )
         shape = (chunk_size, 1, n_fp, 1 )
 
@@ -527,7 +527,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
 
         aux = nm.array( [], dtype = nm.float64 )
 ##         print sd.econn, sd.econn.shape
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        bf = ap.get_base( sd.face_type, 0, self.integral )
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
 ##             print chunk, chunk.shape
@@ -566,7 +566,7 @@ class SDGradDivStabilizationTerm(Term):
         coef, par_w, par_u, par_mv, mode = self.get_args( **kwargs )
         ap_u, vg_u = self.get_approximation(par_u)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -619,7 +619,7 @@ class SDSUPGCStabilizationTerm(Term):
         coef, par_w, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
         ap_u, vg_u = self.get_approximation(par_u)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -630,7 +630,7 @@ class SDSUPGCStabilizationTerm(Term):
         vec_b = par_b()
         vec_u = par_u()
 
-        bf = ap_u.get_base( 'v', 0, self.integral_name )
+        bf = ap_u.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_b, 0,
                                     vec_w, 0, vec_mv, 0,
@@ -670,7 +670,7 @@ class SDPSPGCStabilizationTerm(Term):
         ap_u, vg_u = self.get_approximation(par_u)
         ap_r, vg_r = self.get_approximation(par_r)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
         if not chunk_size:
             chunk_size = n_el
@@ -681,7 +681,7 @@ class SDPSPGCStabilizationTerm(Term):
         vec_b = par_b()
         vec_u = par_u()
 
-        bf = ap_u.get_base( 'v', 0, self.integral_name )
+        bf = ap_u.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec_u, 0, vec_b, 0,
                                     vec_r, 0, vec_mv, 0,
@@ -720,7 +720,7 @@ class SDPSPGPStabilizationTerm(Term):
         coef, par_r, par_p, par_mv, mode = self.get_args( **kwargs )
         ap_p, vg_p = self.get_approximation(par_p)
         ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape(self.integral)
         if not chunk_size:
             chunk_size = n_el
         shape = (chunk_size, 1, 1, 1)

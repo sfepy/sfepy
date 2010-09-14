@@ -209,7 +209,7 @@ class DataCache( Struct ):
 
         ckey = self.get_key(term)
         if not self.valid[key].has_key( ckey ):
-            self.init_data( key, ckey, **kwargs )
+            self.init_data(key, ckey, term, **kwargs)
 
         if (not self.valid[key][ckey] and (ih == 0)) or self.override:
             self.update(key, term, ih, **kwargs)

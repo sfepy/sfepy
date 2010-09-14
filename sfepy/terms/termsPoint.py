@@ -45,7 +45,7 @@ class LinearPointSpringTerm( Term ):
         """TODO: projection to direction"""
         mat, virtual, state = self.get_args( **kwargs )
         ap, pg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if self.char_fun.i_current > 0:
             raise StopIteration

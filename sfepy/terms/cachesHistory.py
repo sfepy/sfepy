@@ -14,7 +14,7 @@ class ExpHistoryDataCache(DataCache):
         DataCache.__init__(self, name, arg_names,
                            ['history', 'increment', 'decay'], history_sizes)
 
-    def init_data(self, key, ckey, **kwargs):
+    def init_data(self, key, ckey, term, **kwargs):
         decay, values = self.get_args(**kwargs)
         shape = values.shape
         self.shapes = {

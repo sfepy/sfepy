@@ -11,7 +11,7 @@ class HDPMDiffusionVelocitySIntegratedTerm(Term):
         """? move surface pressure grad part into a cache ?"""
         mat, par = self.get_args( **kwargs )
         ap, sg = self.get_approximation(par)
-        n_fa, n_qp = ap.get_s_data_shape( self.integral_name,
+        n_fa, n_qp = ap.get_s_data_shape( self.integral,
                                           self.region.name )[:2]
         shape = (chunk_size, 1, 1, 1)
 

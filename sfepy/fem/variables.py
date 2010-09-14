@@ -1427,16 +1427,13 @@ class FieldVariable(Variable):
     def get_approximation(self, ig):
         return self.field.aps.get_approximation(ig)
 
-    ##
-    # c: 28.11.2006, r: 15.01.2008
-    def get_data_shapes( self, key, kind = 'volume' ):
-        iname, ig = key[0], key[-1]
+    def get_data_shapes(self, integral, ig, region_name=None):
         ap = self.field.aps.aps_per_group[ig]
-        if kind == 'volume':
-            shape = ap.get_v_data_shape( iname )
+        if region_name is None:
+            shape = ap.get_v_data_shape(integral)
+
         else:
-            region_name = key[1]
-            shape = ap.get_s_data_shape( iname, region_name )
+            shape = ap.get_s_data_shape(integral, region_name)
 
         return shape
 

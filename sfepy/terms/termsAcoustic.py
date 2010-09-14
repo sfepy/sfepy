@@ -219,7 +219,7 @@ class AcousticEvalAlphaTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, vg = self.get_approximation()
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (1, 1, dim-1, 1)

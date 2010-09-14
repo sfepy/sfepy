@@ -30,7 +30,7 @@ class LinearTractionTerm( Term ):
         """
         traction, virtual = self.get_args( **kwargs )
         ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
                                                      self.region.name )
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_fp, 1)
@@ -38,8 +38,8 @@ class LinearTractionTerm( Term ):
             raise StopIteration
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
-        gbf = ap.get_base( sd.face_type, 0, self.integral_name,
+        bf = ap.get_base( sd.face_type, 0, self.integral )
+        gbf = ap.get_base( sd.face_type, 0, self.integral,
                            from_geometry = True )
 
 ##        sg.str( sys.stdout, 0 )
@@ -83,7 +83,7 @@ class SurfaceJumpTerm(Term):
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         coef, virtual, state1, state2 = self.get_args(**kwargs)
         ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
         if diff_var is None:
             shape, mode = (chunk_size, 1, n_fp, 1), 0
@@ -95,7 +95,7 @@ class SurfaceJumpTerm(Term):
             raise StopIteration
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+        bf = ap.get_base(sd.face_type, 0, self.integral)
 
         ap1, sg1 = self.get_approximation(state1)
         sd1 = ap1.surface_data[self.region.name]

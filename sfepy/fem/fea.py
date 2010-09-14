@@ -27,15 +27,6 @@ def _interp_to_faces( vertex_vals, bfs, faces ):
 
     return( faces_vals )
 
-def _get_i_name( iname, integral, key ):
-    if iname is None:
-        if integral is None:
-            print 'no integral name given for key "%s"' % key
-            raise ValueError
-        else:
-            iname = integral.name
-    return iname
-
 class Interpolant( Struct ):
     """A simple wrapper around PolySpace."""
 
@@ -200,7 +191,6 @@ class Approximation( Struct ):
         self.point_data = {}
         self.qp_coors = {}
         self.bf = {}
-        self.integrals = {}
         self.n_ep = self.interp.get_n_nodes()
 
     ##
@@ -272,31 +262,26 @@ class Approximation( Struct ):
         mu.interp_vertex_data( coors, econn, mesh.coors,
                                group.conn[cells], bf, 0 )
 
-    ##
-    # 24.07.2006, c
-    def get_v_data_shape( self, iname = None ):
+    def get_v_data_shape(self, integral=None):
         """returns (n_el, n_qp, dim, n_ep)"""
-        if iname:
-            bf_vg = self.get_base('v', 1, iname)
+        if integral is not None:
+            bf_vg = self.get_base('v', 1, integral)
             return (self.region.shape[self.ig].n_cell,) + bf_vg.shape
 
         else:
             return (self.region.shape[self.ig].n_cell,
                     self.interp.gel.dim, self.n_ep['v'])
 
-    ##
-    # 05.09.2006, c
-    # 20.02.2007
-    # 17.07.2007
-    def get_s_data_shape( self, iname, key ):
+    def get_s_data_shape(self, integral, key):
         """returns (n_fa, n_qp, dim, n_fp)"""
         if not self.surface_data:
             return 0, 0, 0, 0
+
         sd = self.surface_data[key]
-        bf_sg = self.get_base(sd.face_type, 1, iname)
+        bf_sg = self.get_base(sd.face_type, 1, integral)
         n_qp, dim, n_fp = bf_sg.shape
-        assert_( n_fp == sd.n_fp )
-        
+        assert_(n_fp == sd.n_fp)
+
         return sd.n_fa, n_qp, dim + 1, n_fp
 
     ##
@@ -320,22 +305,15 @@ class Approximation( Struct ):
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
-    ##
-    # created:       29.11.2007
-    # last revision: 02.10.2008
-    def get_qp( self, key, iname, integral = None ):
-        """integrals are stored in self.integrals..."""
-        qpkey = (iname, key)
+    def get_qp(self, key, integral):
+        """
+        Get quadrature points and weights corresponding to the given key
+        and integral. The key is 'v' or 's#', where # is the number of
+        face vertices.
+        """
+        qpkey = (integral.name, key)
 
-        if not self.qp_coors.has_key( qpkey ):
-            if integral is None:
-                try:
-                    integral = self.integrals[iname]
-                except:
-                    print self.name
-                    print 'no integral given for key "%s"' % str( qpkey )
-                    raise ValueError
-
+        if not self.qp_coors.has_key(qpkey):
             interp = self.interp
             if (key[0] == 's') and not self.is_surface:
                 dim = interp.gel.dim - 1
@@ -345,18 +323,14 @@ class Approximation( Struct ):
             else:
                 geometry = interp.gel.name
 
-            vals, weights = integral.get_qp( geometry )
-            self.qp_coors[qpkey] = Struct( vals = vals, weights = weights )
-##             print self.name, self.qp_coors
-##             pause()
+            vals, weights = integral.get_qp(geometry)
+            self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
+
         return self.qp_coors[qpkey]
 
-    ##
-    # created:       29.11.2007
-    def get_base( self, key, derivative, iname = None, integral = None,
-                 from_geometry = False, base_only = True ):
-        iname = _get_i_name( iname, integral, key )
-        qp = self.get_qp( key, iname, integral )
+    def get_base(self, key, derivative, integral,
+                 from_geometry=False, base_only=True):
+        qp = self.get_qp(key, integral)
 
         if from_geometry:
             if key == 'v':
@@ -364,11 +338,11 @@ class Approximation( Struct ):
             else:
                 gkey = 's%d' % self.interp.gel.surface_facet.n_vertex
             ps = self.interp.gel.interp.poly_spaces[gkey]
-            bf_key = (iname, 'g' + key, derivative)
+            bf_key = (integral.name, 'g' + key, derivative)
 
         else:
             ps = self.interp.poly_spaces[key]
-            bf_key = (iname, key, derivative)
+            bf_key = (integral.name, key, derivative)
 
         if not self.bf.has_key( bf_key ):
             self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative)
@@ -393,7 +367,7 @@ class Approximation( Struct ):
                 quad_name = 'gauss_o1_d%d' % dim
                 integral = Integral('i_tmp', 'v', quad_name)
 
-            qp = self.get_qp('v', integral.name, integral)
+            qp = self.get_qp('v', integral)
 
             mapping = VolumeMapping(coors, self.econn,
                                     poly_space=self.interp.poly_spaces['v'])
@@ -415,7 +389,7 @@ class Approximation( Struct ):
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
             sd = self.surface_data[region.name]
-            qp = self.get_qp(sd.face_type, integral.name, integral)
+            qp = self.get_qp(sd.face_type, integral)
 
             if not self.is_surface:
                 ps = self.interp.poly_spaces[sd.face_type]
@@ -431,7 +405,7 @@ class Approximation( Struct ):
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
 
                 self.create_bqp( region.name, integral )
-                bf_bg = self.get_base( sd.bkey, 1, integral = integral )
+                bf_bg = self.get_base(sd.bkey, 1, integral)
                 sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
 
             out =  sg
@@ -442,34 +416,35 @@ class Approximation( Struct ):
         else:
             raise ValueError('unknown geometry type: %s' % gtype)
 
+        if out is not None:
+            # Store the integral used.
+            out.integral = integral
+
         return out
 
-    ##
-    #
-    def _create_bqp( self, skey, bf_s, weights, iname ):
+    def _create_bqp(self, skey, bf_s, weights, integral_name):
         interp = self.interp
         gel = interp.gel
         bkey = 'b%s' % skey[1:]
-        bqpkey = (iname, bkey)
+        bqpkey = (integral_name, bkey)
         coors, faces = gel.coors, gel.get_surface_entities()
 
-        vals = _interp_to_faces( coors, bf_s, faces )
-        self.qp_coors[bqpkey] = Struct( name = 'BQP_%s' % bkey,
-                                     vals = vals, weights = weights )
-##         print self.qp_coors[bqpkey]
+        vals = _interp_to_faces(coors, bf_s, faces)
+        self.qp_coors[bqpkey] = Struct(name = 'BQP_%s' % bkey,
+                                       vals = vals, weights = weights)
         interp.poly_spaces[bkey] = interp.poly_spaces['v']
         return bkey
 
-    def create_bqp(self, region_name, integral ):
+    def create_bqp(self, region_name, integral):
         sd = self.surface_data[region_name]
         bqpkey = (integral.name, sd.bkey)
         if not bqpkey in self.qp_coors:
-            bf_s = self.get_base( sd.face_type, 0, integral = integral,
-                                  from_geometry = True )
-            qp = self.get_qp( sd.face_type, None, integral )
+            bf_s = self.get_base(sd.face_type, 0, integral,
+                                 from_geometry=True)
+            qp = self.get_qp(sd.face_type, integral)
 
-            bkey = self._create_bqp( sd.face_type, bf_s, qp.weights,
-                                     integral.name )
+            bkey = self._create_bqp(sd.face_type, bf_s, qp.weights,
+                                    integral.name)
             assert_(bkey == sd.bkey)
 
 ##
@@ -782,10 +757,9 @@ class Approximations( Container ):
         for geom_key, geom in geometries.iteritems():
             iname, geometry_type, tregion_name, ap_name = geom_key
             ap = self[ap_name]
-            integral = ap.integrals[iname]
             geom = ap.describe_geometry(field, geometry_type,
                                         regions[tregion_name],
-                                        integral, self.coors)
+                                        geom.integral, self.coors)
             geometries[geom_key] = geom
             
     ##

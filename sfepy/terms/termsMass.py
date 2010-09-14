@@ -31,7 +31,7 @@ class MassTerm( VectorVector, Term ):
 
         dvec = state() - state0()
         rhodt = mat / ts.dt
-        bf = ap.get_base('v', 0, self.integral_name)
+        bf = ap.get_base('v', 0, self.integral)
 
         fargs = (rhodt, dvec, 0, bf, vg, ap.econn)
         return fargs, shape, mode
@@ -61,7 +61,7 @@ class MassVectorTerm( MassTerm ):
         shape, mode = self.get_shape(diff_var, chunk_size)
 
         vec = self.get_vector(state)
-        bf = ap.get_base('v', 0, self.integral_name)
+        bf = ap.get_base('v', 0, self.integral)
         fargs = (mat, vec, 0, bf, vg, ap.econn)
         return fargs, shape, mode
 
@@ -102,7 +102,7 @@ class MassScalarTerm(ScalarScalar, Term):
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
 
         if 'material' in [at[0] for at in self.arg_types]:
             coef, = self.get_args(['material'], **kwargs)
@@ -126,7 +126,7 @@ class MassScalarTerm(ScalarScalar, Term):
         par1, par2 = self.get_args(['parameter_1', 'parameter_2'], **kwargs)
         ap, vg = self.get_approximation(par1)
         self.set_data_shape( ap )
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
 
         if 'material' in [at[0] for at in self.arg_types]:
             coef, = self.get_args(['material'], **kwargs)
@@ -197,7 +197,7 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
         vec = self.get_vector( state )
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        bf = ap.get_base( sd.face_type, 0, self.integral )
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)

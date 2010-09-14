@@ -20,7 +20,7 @@ class BiotGrad( CouplingVectorScalar ):
         else:
             vec_qp = aux
 
-        bf = apc.get_base( 'v', 0, self.integral_name )
+        bf = apc.get_base('v', 0, self.integral)
 
         return (1.0, vec_qp, bf, mat, vgr), shape, mode
 
@@ -42,7 +42,7 @@ class BiotDiv( CouplingVectorScalar ):
         else:
             strain = aux
 
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
 
         return (1.0, strain, bf, mat, vgc), shape, mode
 
@@ -176,7 +176,7 @@ class BiotStressQTerm(Term):
 
         mat, par = self.get_args(**kwargs)
         ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         shape = (chunk_size, n_qp, dim * (dim + 1) / 2, 1)
 
@@ -203,7 +203,7 @@ class BiotGradTH( CouplingVectorScalarTH ):
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        bf = apc.get_base( 'v', 0, self.integral_name )
+        bf = apc.get_base('v', 0, self.integral)
         n_el, n_qp = self.data_shape_r[:2]
 
         if mode == 1:
@@ -235,7 +235,7 @@ class BiotDivTH( CouplingVectorScalarTH ):
         if (ts.step == 0) and (mode == 0):
             raise StopIteration
 
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
         n_el, n_qp = self.data_shape_r[:2]
 
         if mode == 1:
@@ -311,7 +311,7 @@ class BiotGradETH( CouplingVectorScalar ):
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
 
-        bf = apc.get_base( 'v', 0, self.integral_name )
+        bf = apc.get_base('v', 0, self.integral)
         if diff_var is None:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
             vec_qp = cache('state', self, 0,
@@ -342,7 +342,7 @@ class BiotDivETH( CouplingVectorScalar ):
         self.set_data_shape( apr, apc )
         shape, mode = self.get_shape_div( diff_var, chunk_size )
 
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
         if diff_var is None:
             cache = self.get_cache( 'cauchy_strain', 0 )
             strain = cache('strain', self, 0,

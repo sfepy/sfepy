@@ -21,7 +21,7 @@ class IntegrateVolumeTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         field_dim = par.field.shape[0]
         shape = (chunk_size, 1, field_dim, 1)
@@ -53,7 +53,7 @@ class IntegrateVolumeOperatorTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         field_dim = virtual.field.shape[0]
         assert_( field_dim == 1 )
@@ -63,7 +63,7 @@ class IntegrateVolumeOperatorTerm( Term ):
         else:
             raise StopIteration
 
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
@@ -92,7 +92,7 @@ class IntegrateVolumeOperatorWTerm(Term):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
         field_dim = virtual.field.shape[0]
         assert_( field_dim == 1 )
         
@@ -101,7 +101,7 @@ class IntegrateVolumeOperatorWTerm(Term):
         else:
             raise StopIteration
         
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
@@ -261,7 +261,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, = self.get_args( **kwargs )
         ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
                                                      self.region.name )
         if diff_var is None:
             shape = (chunk_size, 1, n_fp, 1 )
@@ -269,7 +269,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
             raise StopIteration
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        bf = ap.get_base( sd.face_type, 0, self.integral )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
@@ -300,7 +300,7 @@ class IntegrateSurfaceOperatorWTerm(Term):
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         mat, virtual = self.get_args(**kwargs)
         ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
         if diff_var is None:
             shape = (chunk_size, 1, n_fp, 1)
@@ -308,7 +308,7 @@ class IntegrateSurfaceOperatorWTerm(Term):
             raise StopIteration
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+        bf = ap.get_base(sd.face_type, 0, self.integral)
 
         ac = nm.ascontiguousarray
 
@@ -409,7 +409,7 @@ class VolumeSurfaceTerm( Term ):
         shape = (chunk_size, 1, 1, 1)
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral_name )
+        bf = ap.get_base( sd.face_type, 0, self.integral )
         coor = par.field.get_coor()
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
@@ -442,12 +442,12 @@ class SurfaceMomentTerm(Term):
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         par, shift = self.get_args(**kwargs)
         ap, sg = self.get_approximation(par)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
         shape = (chunk_size, 1, dim, dim)
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+        bf = ap.get_base(sd.face_type, 0, self.integral)
         coor = par.field.get_coor() \
                - nm.asarray(shift, dtype=nm.float64)[None,:]
         for out, chunk in self.char_fun(chunk_size, shape):
@@ -482,7 +482,7 @@ class AverageVolumeMatTerm( Term ):
     def prepare_data( self, chunk_size = None, **kwargs ):
         mat, par = self.get_args( **kwargs )
         ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         shape = (chunk_size, 1) + mat.shape[2:]
 
@@ -521,7 +521,7 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     def prepare_data( self, chunk_size = None, **kwargs ):
         mat, par, mat_shape = self.get_args( **kwargs )
         ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         shape = (chunk_size, 1) + mat.shape[2:]
 
@@ -579,7 +579,7 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
         vec_qp = cache('state', self, 0,
                        state=state, get_vector=self.get_vector)
 
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
 
         return (vec_qp, bf, mat, vg), shape, mode
 
@@ -666,7 +666,7 @@ class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
             raise StopIteration
 
         n_el, n_qp = self.data_shape[:2]
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
 
         if mode == 1:
             aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
@@ -718,7 +718,7 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         if diff_var is None:
             cache = self.get_cache( 'state_in_volume_qp', 0 )
             vec_qp = cache('state', self, 0,
@@ -792,7 +792,7 @@ class StateVQTerm(Term):
         """Ignores chunk_size."""
         state, = self.get_args(**kwargs)
         ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (n_el, n_qp, state.n_components, 1)
@@ -800,7 +800,7 @@ class StateVQTerm(Term):
             raise StopIteration
 
         vec = self.get_vector(state)
-        bf = ap.get_base('v', 0, self.integral_name)
+        bf = ap.get_base('v', 0, self.integral)
 
         out = nm.empty(shape, dtype=nm.float64)
         self.function(out, vec, 0, bf, ap.econn)
@@ -829,7 +829,7 @@ class StateSQTerm(Term):
         """Ignores chunk_size."""
         state, = self.get_args(**kwargs)
         ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral_name,
+        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
 
         if diff_var is None:
@@ -840,7 +840,7 @@ class StateSQTerm(Term):
         vec = self.get_vector(state)
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral_name)
+        bf = ap.get_base(sd.face_type, 0, self.integral)
 
         out = nm.empty(shape, dtype=nm.float64)
         self.function(out, vec, 0, bf, sd.econn)

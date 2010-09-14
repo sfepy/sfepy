@@ -1069,8 +1069,6 @@ class Term(Struct):
 
         ap = variable.get_approximation(ig)
 
-        # Store integral for possible future base function request.
-        ap.integrals[self.integral.name] = self.integral
         ap.dim = variable.field.shape
         if geometry_type == 'surface_extra':
             ap.create_bqp(self.region.name, self.integral)

@@ -11,10 +11,10 @@ class StateInVolumeQPDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, ['state'], history_sizes,
                             terms.dq_state_in_qp )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, aux = self.get_args( **kwargs )
 
-        n_el, n_qp = state.get_data_shapes( ckey )[:2]
+        n_el, n_qp = state.get_data_shapes(term.integral, ckey[-1])[:2]
         shape = (n_el, n_qp, state.n_components, 1)
 
 #        print self.name, key, ckey, shape
@@ -26,7 +26,7 @@ class StateInVolumeQPDataCache( DataCache ):
         ckey = self.get_key(term)
 
         if ih == 0:
-            bf = ap.get_base('v', 0, term.integral.name)
+            bf = ap.get_base('v', 0, term.integral)
             vec = get_vector( state )
             self.function( self.data[key][ckey][ih], vec, 0, bf, ap.econn )
         else:
@@ -43,9 +43,11 @@ class StateInSurfaceQPDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, ['state'], history_sizes,
                             terms.dq_state_in_qp )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
-        n_fa, n_qp = state.get_data_shapes( ckey, kind = 'surface' )[:2]
+
+        region_name, ig = term.get_current_group()[1:]
+        n_fa, n_qp = state.get_data_shapes(term.integral, ig, region_name)[:2]
         shape = (n_fa, n_qp, state.n_components, 1)
 
         DataCache.init_data( self, key, ckey, shape )
@@ -56,7 +58,7 @@ class StateInSurfaceQPDataCache( DataCache ):
 
         ap, sg = term.get_approximation(state)
         sd = ap.surface_data[term.region.name]
-        bf = ap.get_base(sd.face_type, 0, term.integral.name)
+        bf = ap.get_base(sd.face_type, 0, term.integral)
         self.function( self.data[key][ckey][ih], state(), 0, bf, sd.econn )
 
 class CauchyStrainDataCache( DataCache ):
@@ -67,10 +69,10 @@ class CauchyStrainDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, ['strain'],
                             history_sizes, terms.dq_cauchy_strain )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, aux = self.get_args( **kwargs )
 
-        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        n_el, n_qp, dim = state.get_data_shapes(term.integral, ckey[-1])[:3]
         sym = dim * (dim + 1) / 2
         shape = (n_el, n_qp, sym, 1)
 
@@ -105,10 +107,10 @@ class GradScalarDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, ['grad'], history_sizes,
                             terms.dq_grad )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
 
-        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        n_el, n_qp, dim = state.get_data_shapes(term.integral, ckey[-1])[:3]
         shape = (n_el, n_qp, dim, 1)
 
 #        print self.name, key, ckey, shape
@@ -125,10 +127,10 @@ class GradVectorDataCache( GradScalarDataCache ):
     name = 'grad_vector'
     arg_types = ('state',)
 
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
 
-        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        n_el, n_qp, dim = state.get_data_shapes(term.integral, ckey[-1])[:3]
         shape = (n_el, n_qp, dim, dim)
 
 #        print self.name, key, ckey, shape
@@ -142,10 +144,10 @@ class DivVectorDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, ['div'], history_sizes,
                             terms.dq_div_vector )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
 
-        n_el, n_qp = state.get_data_shapes( ckey )[:2]
+        n_el, n_qp = state.get_data_shapes(term.integral, ckey[-1])[:2]
         shape = (n_el, n_qp, 1, 1)
 
 #        print self.name, key, ig, shape
@@ -165,7 +167,7 @@ class VolumeDataCache( DataCache ):
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['volume'], history_sizes )
         
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         shape = (1, 1, 1, 1)
 
         DataCache.init_data( self, key, ckey, shape )
@@ -189,7 +191,7 @@ class SurfaceDataCache( DataCache ):
     def __init__( self, name, arg_names, history_sizes = None ):
         DataCache.__init__( self, name, arg_names, ['surface'], history_sizes )
          
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         shape = (1, 1, 1, 1)
 
         DataCache.init_data( self, key, ckey, shape )

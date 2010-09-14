@@ -23,7 +23,7 @@ class DivGradTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -61,7 +61,7 @@ class ConvectTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -73,7 +73,7 @@ class ConvectTerm( Term ):
             raise StopIteration
 
         vec = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec, 0, bf,
                                     vg, ap.econn, chunk, mode )
@@ -101,7 +101,7 @@ class LinearConvectTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, par, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -114,7 +114,7 @@ class LinearConvectTerm( Term ):
 
         vec1 = par()
         vec2 = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     bf, vg, ap.econn, chunk, mode )
@@ -141,7 +141,7 @@ class LinearConvectQTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, n_qp, dim, 1 )
@@ -151,7 +151,7 @@ class LinearConvectQTerm( Term ):
 
         vec1 = par()
         vec2 = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     bf, vg, ap.econn, chunk, mode )
@@ -168,7 +168,7 @@ class StokesGrad( CouplingVectorScalar ):
         shape, mode = self.get_shape_grad( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        bf = apc.get_base( 'v', 0, self.integral_name )
+        bf = apc.get_base('v', 0, self.integral)
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)
@@ -191,7 +191,7 @@ class StokesDiv( CouplingVectorScalar ):
         shape, mode = self.get_shape_div( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)
@@ -325,7 +325,7 @@ class GradQTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, n_qp, dim, 1 )
@@ -360,7 +360,7 @@ class GradETerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         state, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         vdim = ap.dim[0]
         
@@ -414,7 +414,7 @@ class GradDivStabilizationTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         gamma, virtual, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -480,13 +480,13 @@ class PSPGCStabilizationTerm( Term ):
         ap, vg = self.get_approximation(virtual)
         apr, vgr = self.get_approximation(virtual)
         apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, n_epr, 1 )
             mode = 0
         elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            n_epc = apc.get_v_data_shape(self.integral)[3]
             shape = (chunk_size, 1, n_epr, dim * n_epc )
             mode = 1
         else:
@@ -494,7 +494,7 @@ class PSPGCStabilizationTerm( Term ):
 
         vec1 = par()
         vec2 = state()
-        bf = apc.get_base( 'v', 0, self.integral_name )
+        bf = apc.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     tau, bf, vgr, vgc,
@@ -529,13 +529,13 @@ class SUPGPStabilizationTerm( Term ):
         delta, virtual, par, state = self.get_args( **kwargs )
         apr, vgr = self.get_approximation(virtual)
         apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_epr, 1 )
             mode = 0
         elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape( self.integral_name )[3]
+            n_epc = apc.get_v_data_shape(self.integral)[3]
             shape = (chunk_size, 1, dim * n_epr, n_epc )
             mode = 1
         else:
@@ -543,7 +543,7 @@ class SUPGPStabilizationTerm( Term ):
 
         vec1 = par()
         vec2 = state()
-        bf = apr.get_base( 'v', 0, self.integral_name )
+        bf = apr.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     delta, bf, vgr, vgc,
@@ -577,7 +577,7 @@ class SUPGCStabilizationTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         delta, virtual, par, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim * n_ep, 1 )
@@ -590,7 +590,7 @@ class SUPGCStabilizationTerm( Term ):
 
         vec1 = par()
         vec2 = state()
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, vec1, 0, vec2, 0,
                                     delta, bf, vg,

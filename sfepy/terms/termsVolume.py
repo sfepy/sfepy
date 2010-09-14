@@ -22,7 +22,7 @@ class LinearVolumeForceTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
         vdim = virtual.field.shape[0]
         
         if diff_var is None:
@@ -31,7 +31,7 @@ class LinearVolumeForceTerm( Term ):
         else:
             raise StopIteration
 
-        bf = ap.get_base( 'v', 0, self.integral_name )
+        bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
             status = self.function( out, bf, mat, vg, chunk )
             yield out, chunk, status

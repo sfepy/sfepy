@@ -132,7 +132,7 @@ class PermeabilityRTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual, index = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, n_ep, 1)
@@ -167,7 +167,7 @@ class DiffusionRTerm( PermeabilityRTerm ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, virtual = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, n_ep, 1)
@@ -200,7 +200,7 @@ class DiffusionVelocityTerm( Term ):
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         mat, parameter = self.get_args( **kwargs )
         ap, vg = self.get_approximation(parameter)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape( self.integral_name )
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             shape = (chunk_size, 1, dim, 1)

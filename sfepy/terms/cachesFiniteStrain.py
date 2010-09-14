@@ -32,10 +32,10 @@ class FiniteStrainTLDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, keys, history_sizes,
                             terms.dq_finite_strain_tl )
 
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
 
-        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        n_el, n_qp, dim = state.get_data_shapes(term.integral, ckey[-1])[:3]
         sym = dim * (dim + 1) / 2
 
         self.shapes = {
@@ -97,7 +97,7 @@ class FiniteStrainSurfaceTLDataCache(DataCache):
         DataCache.__init__( self, name, arg_names, keys, history_sizes,
                             terms.dq_tl_finite_strain_surface )
 
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, data_shape = self.get_args( **kwargs )
 
         n_fa, n_qp, dim, n_ep = data_shape
@@ -154,10 +154,10 @@ class FiniteStrainULDataCache( DataCache ):
         DataCache.__init__( self, name, arg_names, keys, history_sizes,
                             terms.dq_finite_strain_ul )
 
-    def init_data( self, key, ckey, **kwargs ):
+    def init_data(self, key, ckey, term, **kwargs):
         state, = self.get_args( **kwargs )
 
-        n_el, n_qp, dim = state.get_data_shapes( ckey )[:3]
+        n_el, n_qp, dim = state.get_data_shapes(term.integral, ckey[-1])[:3]
         sym = dim * (dim + 1) / 2
 
         self.shapes = {

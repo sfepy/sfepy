@@ -5,13 +5,13 @@ class CouplingVectorScalarTL(Struct):
     def set_data_shape(self, apv, aps):
         """Set element data shape and checks dimensions of approximations."""
         if self.dof_conn_type == 'surface':
-            self.data_shape_v = apv.get_s_data_shape(self.integral_name,
+            self.data_shape_v = apv.get_s_data_shape(self.integral,
                                                      self.region.name)
-            self.data_shape_s = aps.get_s_data_shape(self.integral_name,
+            self.data_shape_s = aps.get_s_data_shape(self.integral,
                                                      self.region.name)
         else:
-            self.data_shape_v = apv.get_v_data_shape(self.integral_name)
-            self.data_shape_s = aps.get_v_data_shape(self.integral_name)
+            self.data_shape_v = apv.get_v_data_shape(self.integral)
+            self.data_shape_s = aps.get_v_data_shape(self.integral)
 
         assert_(aps.dim == (1,))
         assert_(apv.dim == (self.data_shape_v[2],))
@@ -140,7 +140,7 @@ class DeformationGradientTerm(Term):
         term_mode = kwargs.get('term_mode', 'dq_def_grad')
 
         ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
         if diff_var is None:
             if term_mode == 'def_grad':

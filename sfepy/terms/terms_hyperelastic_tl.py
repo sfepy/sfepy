@@ -203,7 +203,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
                 mtxF, invC, detF = cache(['F', 'invC', 'detF'],
                                          self, 0, state=state)
 
-                bf = aps.get_base('v', 0, self.integral_name)
+                bf = aps.get_base('v', 0, self.integral)
                 for out, chunk in self.char_fun(chunk_size, shape):
                     status = fun(out, bf, mtxF, invC, detF, vgv, 1, chunk, 1)
                     yield -out, chunk, status
@@ -304,7 +304,7 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
             if self.step == 0: # Just init the history in step 0.
                 raise StopIteration
 
-        bf = aps.get_base('v', 0, self.integral_name)
+        bf = aps.get_base('v', 0, self.integral)
 
         return (bf, mtxF, invC, detF, vgv, 0), shape, mode
 
@@ -403,7 +403,7 @@ class SurfaceTractionTLTerm(VectorVector, Term):
         ap, sg = self.get_approximation(virtual)
         sd = ap.surface_data[self.region.name]
 
-        n_fa, n_qp = ap.get_s_data_shape(self.integral_name,
+        n_fa, n_qp = ap.get_s_data_shape(self.integral,
                                          self.region.name)[:2]
         n_el, dim, n_ep = ap.get_v_data_shape()
         self.data_shape = (n_fa, n_qp, dim, n_ep)
@@ -413,7 +413,7 @@ class SurfaceTractionTLTerm(VectorVector, Term):
         detF, invF = cache(['detF', 'invF'],
                            self, 0, state=state, data_shape=self.data_shape)
 
-        bf = ap.get_base(sd.bkey, 0, self.integral_name)
+        bf = ap.get_base(sd.bkey, 0, self.integral)
 
         assert_(trac_qp.shape[2] == trac_qp.shape[3] == dim)
 

@@ -332,7 +332,7 @@ class CauchyStrainTerm( Term ):
     function = staticmethod(terms.de_cauchy_strain)
 
     def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape( self.integral_name )
+        self.data_shape = apr.get_v_data_shape(self.integral)
         n_el, n_qp, dim, n_ep = self.data_shape
         
         if diff_var is None:
