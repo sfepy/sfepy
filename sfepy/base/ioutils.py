@@ -233,13 +233,13 @@ def read_sparse_matrix_hdf5( filename, output_format = None ):
         constructor = constructors[output_format]
 
     if format in ['csc', 'csr']:
-        mtx = constructor( (data.data.read(),
-                            data.indices.read(), data.indptr.read()),
-                           dims = info.shape.read(), dtype = dtype )
+        mtx = constructor((data.data.read(),
+                           data.indices.read(), data.indptr.read()),
+                          shape=info.shape.read(), dtype=dtype)
     elif format == 'coo':
-        mtx = constructor( (data.data.read(),
-                            nm.c_[data.rows.read(), data.cols.read()].T),
-                           dims = info.shape.read(), dtype = dtype )
+        mtx = constructor((data.data.read(),
+                           nm.c_[data.rows.read(), data.cols.read()].T),
+                          shape=info.shape.read(), dtype=dtype)
     else:
         print format
         raise ValueError
