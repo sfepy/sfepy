@@ -17,8 +17,10 @@ class FESurface(Struct):
 
         try:
             ee = volume_econn[face_indices[:,0]]
+
         except:
-            pdb.set_trace()
+            raise ValueError('missing region face indices! (%s)'
+                             % region.name)
 
         econn = nm.empty(faces.shape, dtype=nm.int32)
         for ir, face in enumerate( faces ):
