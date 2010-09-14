@@ -330,6 +330,9 @@ class Approximation( Struct ):
 
     def get_base(self, key, derivative, integral,
                  from_geometry=False, base_only=True):
+        if self.is_surface:
+            key = 'v'
+
         qp = self.get_qp(key, integral)
 
         if from_geometry:
