@@ -89,20 +89,31 @@ def setup_dof_conns(conn_info, dof_conns=None,
 # 14.07.2006, c
 class Field( Struct ):
 
+    @staticmethod
     def from_conf(conf, regions):
         """To refactor... very hackish now."""
         space = conf.get_default_attr('space', 'H1')
         poly_space_base = conf.get_default_attr('poly_space_base', 'lagrange')
 
-        obj = Field(name = conf.name,
-                    dtype = conf.dtype,
-                    shape = conf.shape,
-                    region = regions[conf.region],
-                    space = space,
-                    poly_space_base = poly_space_base,
-                    approx_order = conf.approx_order)
+        if isinstance(conf.region, tuple):
+            region_name, kind = conf.region
+            region = regions[region_name]
+            if kind == 'surface':
+                obj = SurfaceField(conf.name, conf.dtype, conf.shape, region,
+                                   space=space,
+                                   poly_space_base=poly_space_base,
+                                   approx_order=conf.approx_order)
+
+            else:
+                raise ValueError('unknown field kind! (%s)', kind)
+
+        else:
+            obj = Field(conf.name, conf.dtype, conf.shape, regions[conf.region],
+                        space=space,
+                        poly_space_base=poly_space_base,
+                        approx_order=conf.approx_order)
+
         return obj
-    from_conf = staticmethod( from_conf )
 
     def __init__(self, name, dtype, shape, region,
                  space='H1', poly_space_base='lagrange', approx_order=1):
@@ -451,6 +462,14 @@ class SurfaceField(Field):
     """
     A field defined on a surface region.
     """
+
+    def __init__(self, name, dtype, shape, region,
+                 space='H1', poly_space_base='lagrange', approx_order=1):
+        region.setup_face_indices()
+
+        Field.__init__(self, name, dtype, shape, region,
+                       space=space, poly_space_base=poly_space_base,
+                       approx_order=approx_order)
 
     def setup_bases(self):
         """Setup FE bases according to self.approx_order and region cell
