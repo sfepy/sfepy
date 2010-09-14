@@ -218,14 +218,17 @@ class Equations( Container ):
         shared = set()
         for key, ii, info in iter_dict_of_lists(self.conn_info,
                                                 return_keys=True):
-            dct = info.dc_type.type
-            if not (dct in ('volume', 'scalar') or info.is_trace
-                    or any_dof_conn):
-                continue
-
             rvar, cvar = info.virtual, info.state
             if (rvar is None) or (cvar is None):
                 continue
+
+            is_surface = rvar.is_surface or cvar.is_surface
+
+            dct = info.dc_type.type
+            if not (dct in ('volume', 'scalar') or is_surface
+                    or info.is_trace or any_dof_conn):
+                continue
+
 
             rreg_name = info.get_region_name(can_trace=False)
             creg_name = info.get_region_name()

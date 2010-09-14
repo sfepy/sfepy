@@ -1202,6 +1202,14 @@ class FieldVariable(Variable):
         Takes reference to a Field instance. Sets dtype according to
         field.dtype.
         """
+        from sfepy.fem.fields import SurfaceField
+
+        if isinstance(field, SurfaceField):
+            self.is_surface = True
+
+        else:
+            self.is_surface = False
+
         self.field = field
         self._setup_dofs(field.n_nod)
 
