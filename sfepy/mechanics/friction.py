@@ -59,7 +59,7 @@ class DualMesh(Struct):
         self.dim = domain.shape.dim
 
         self.region = copy(region)
-        self.region.setup_face_indices(domain.fa)
+        self.region.setup_face_indices()
 
         self.mesh_coors = domain.mesh.coors
 
