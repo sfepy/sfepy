@@ -406,7 +406,7 @@ evaluation function needs the FE base function. Then::
       def __call__(self, diff_var=None, chunk_size=None, **kwargs):
           mat, virtual, state = self.get_args(**kwargs)
           ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
-          n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral_name)
+          n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
           if diff_var is None:
               shape = (chunk_size, 1, dim * n_ep, 1)
@@ -417,7 +417,7 @@ evaluation function needs the FE base function. Then::
           else:
               raise StopIteration
 
-          bf = ap.get_base('v', 0, self.integral_name)
+          bf = ap.get_base('v', 0, self.integral)
           for out, chunk in self.char_fun(chunk_size, shape):
               status = self.some_function(out, bf, other_args, chunk)
 
@@ -476,7 +476,7 @@ attribute)::
   
           dvec = state() - state0()
           rhodt = mat / ts.dt
-          bf = ap.get_base('v', 0, self.integral_name)
+          bf = ap.get_base('v', 0, self.integral)
   
           fargs = (rhodt, dvec, 0, bf, vg, ap.econn)
           return fargs, shape, mode
