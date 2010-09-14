@@ -58,8 +58,14 @@ class StateInSurfaceQPDataCache( DataCache ):
 
         ap, sg = term.get_approximation(state)
         sd = ap.surface_data[term.region.name]
-        bf = ap.get_base(sd.face_type, 0, term.integral)
-        self.function( self.data[key][ckey][ih], state(), 0, bf, sd.econn )
+
+        if not ap.is_surface:
+            bf = ap.get_base(sd.face_type, 0, term.integral)
+            self.function(self.data[key][ckey][ih], state(), 0, bf, sd.econn)
+
+        else:
+            bf = ap.get_base('v', 0, term.integral)
+            self.function(self.data[key][ckey][ih], state(), 0, bf, sd.leconn)
 
 class CauchyStrainDataCache( DataCache ):
     name = 'cauchy_strain'
