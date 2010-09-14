@@ -325,7 +325,7 @@ def dot_sequences(mtx, vec, use_rows=False):
                              (nm.prod(vec.shape[0:-2], dtype=int),)
                              + vec.shape[-2:])
 
-        out_seq = dot_sequences(mtx_seq, vec_seq)
+        out_seq = dot_sequences(mtx_seq, vec_seq, use_rows=use_rows)
         out = nm.reshape(out_seq, mtx.shape[0:-2] + out_seq.shape[-2:])
 
     else:
