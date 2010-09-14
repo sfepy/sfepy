@@ -719,7 +719,7 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps(igs=region.igs):
             if region.name not in ap.surface_data:
                 if self.is_surface:
-                    msg = 'no sur data of surface field! (%s)' % region.name
+                    msg = 'no surface data of surface field! (%s)' % region.name
                     raise ValueError(msg)
 
                 ap.setup_surface_data(region)
