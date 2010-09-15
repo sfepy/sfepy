@@ -451,7 +451,9 @@ def recover_paraflow( problem, micro_problem, region,
 
         micro_problem.save_state(filename, out=out, ts=ts)
 
-def save_recovery_region( mac_pb, rname, filename = 'recovery_region.vtk' ):
+def save_recovery_region(mac_pb, rname, filename=None):
+    filename = get_default(filename, os.path.join(mac_pb.output_dir,
+                                                  'recovery_region.vtk'))
 
     region = mac_pb.domain.regions[rname]
 
@@ -467,8 +469,7 @@ def save_recovery_region( mac_pb, rname, filename = 'recovery_region.vtk' ):
                            data = mask[:,nm.newaxis,nm.newaxis,nm.newaxis],
                            dof_types = None )
 
-    mac_pb.save_state( os.path.join( mac_pb.output_dir, filename ),
-                       out = out )
+    mac_pb.save_state(filename, out=out)
 
 
 def recover_micro_hook( micro_filename, region, macro,
@@ -512,7 +513,8 @@ def recover_micro_hook( micro_filename, region, macro,
 
             # save data
             suffix = format % (ig, iel)
-            micro_name = pb.get_output_name( extra = suffix )
-            filename = op.join( output_dir, 'recovered_' + micro_name )
+            micro_name = pb.get_output_name(extra='recovered_' + suffix)
+            filename = op.join(output_dir, op.basename(micro_name))
+
             pb.save_state( filename, out = out )
 
