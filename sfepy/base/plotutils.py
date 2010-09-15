@@ -39,6 +39,10 @@ def spy( mtx, eps = None, color = 'b', **kwargs ):
     ax = plt.gca()
     ax.set_ylim( ax.get_ylim()[::-1] )
 
+def spy_and_show(mtx):
+    spy(mtx)
+    plt.show()
+
 ##
 # 13.12.2005, c
 def print_matrix_diff( title, legend, mtx1, mtx2, mtx_da, mtx_dr, iis ):
