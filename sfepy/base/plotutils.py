@@ -6,41 +6,39 @@ except (ImportError, RuntimeError):
     plt = None
     #print 'matplotlib import failed!'
 
-##
-# 13.12.2005, c
-# 16.12.2005
-# 04.08.2006
-# 22.08.2006
-def spy( mtx, eps = None, color = 'b', **kwargs ):
+def spy(mtx, eps=None, color='b', **kwargs):
+    """
+    Show sparsity structure of a `scipy.sparse` matrix.
+    """
     aux = mtx.tocoo()
-    ij, val = nm.concatenate( (aux.row[:,nm.newaxis],
-                               aux.col[:,nm.newaxis]), 1 ), aux.data
+    ij, val = nm.concatenate((aux.row[:,nm.newaxis],
+                              aux.col[:,nm.newaxis]), 1), aux.data
     n_item = aux.getnnz()
     n_row, n_col = aux.shape
 
     if eps is not None:
-        print 'using', eps
-        ij = nm.compress( nm.absolute( val ) > eps, ij, 0 )
+        output('using eps =', eps)
+        ij = nm.compress(nm.absolute(val) > eps, ij, 0)
         n_item = ij.shape[0]
     else:
-        print 'showing all'
+        output('showing all')
 
-    print n_item
+    output('n_item:', n_item)
     if n_item:
         args = {'marker' : '.', 'markersize' : 0.5, 'markeredgewidth' : 0.5}
-        args.update( kwargs )
-        plt.plot( ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle = 'None',
-                    **args )
-    plt.axis( [-0.5, n_row+0.5, -0.5, n_col+0.5] )
-    plt.axis( 'image' )
-    plt.xlabel( '%d x %d: %d nnz, %.2f\%% fill'
-                  % (n_row, n_col, n_item, 100. * n_item /
-                     (float( n_row ) * float( n_col )) ) )
+        args.update(kwargs)
+        plt.plot(ij[:,1] + 0.5, ij[:,0] + 0.5, color, linestyle='None',
+                 **args)
+    plt.axis([-0.5, n_row+0.5, -0.5, n_col+0.5])
+    plt.axis('image')
+    plt.xlabel(r'%d x %d: %d nnz, %.2f%% fill'
+               % (n_row, n_col, n_item, 100. * n_item /
+                  (float(n_row) * float(n_col))))
     ax = plt.gca()
-    ax.set_ylim( ax.get_ylim()[::-1] )
+    ax.set_ylim(ax.get_ylim()[::-1])
 
-def spy_and_show(mtx):
-    spy(mtx)
+def spy_and_show(mtx, **kwargs):
+    spy(mtx, **kwargs)
     plt.show()
 
 ##
