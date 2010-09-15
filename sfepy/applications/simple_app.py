@@ -86,8 +86,7 @@ class SimpleApp( Application ):
     def setup_output_info(self, problem, options):
         """Modifies both problem and options!"""
         if options.output_filename_trunk is None:
-            ofn_trunk = op.join(self.app_options.output_dir,
-                                 io.get_trunk(self.conf.filename_mesh))
+            ofn_trunk = io.get_trunk(self.conf.filename_mesh)
 	    options.output_filename_trunk = ofn_trunk
 
 	else:
@@ -102,8 +101,8 @@ class SimpleApp( Application ):
 
         problem.setup_output(output_filename_trunk=ofn_trunk,
                              output_dir=self.app_options.output_dir,
-                             output_format=output_format)
-
+                             output_format=output_format,
+                             file_per_var=self.app_options.file_per_var)
 
     def call( self ):
 	out = solve_direct( self.conf, self.options,

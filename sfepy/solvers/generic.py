@@ -135,6 +135,7 @@ def solve_evolutionary_op(problem,
             filename = problem.get_output_name( suffix = suffix % ts.step )
             problem.save_state(filename, state,
                                post_process_hook=post_process_hook,
+                               file_per_var=None,
                                ts=ts)
             ii += 1
 
@@ -154,8 +155,9 @@ def solve_stationary_op(problem, save_results=True, ts=None,
     state = problem.solve(nls_status=nls_status)
 
     if save_results:
-        problem.save_state( problem.get_output_name(), state,
-                            post_process_hook = post_process_hook )
+        problem.save_state(problem.get_output_name(), state,
+                           post_process_hook=post_process_hook,
+                           file_per_var=None)
 
     return state
     
@@ -165,15 +167,12 @@ def solve_direct(conf, options, problem=None, step_hook=None,
     """Generic (simple) problem solver."""
     if problem is None:
         is_eqs = not options.solve_not
-	problem = ProblemDefinition.from_conf(conf,
-					      init_equations=is_eqs )
-	if options.output_filename_trunk:
-	    ofn_trunk = options.output_filename_trunk
-	    problem.ofn_trunk = ofn_trunk
-	if options.output_format:
-	    problem.output_format = options.output_format
+	problem = ProblemDefinition.from_conf(conf, init_equations=is_eqs)
+
+        problem.setup_default_output(conf, options)
+
     ofn_trunk = problem.ofn_trunk
-    
+
     save_names = Struct( ebc = None, regions = None,
                          regions_as_groups = None, field_meshes = None,
                          region_field_meshes = None )

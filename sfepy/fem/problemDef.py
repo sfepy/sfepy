@@ -174,8 +174,43 @@ class ProblemDefinition( Struct ):
 
         return obj
 
+    def setup_default_output(self, conf=None, options=None):
+        """
+        Provide default values to `ProblemDefinition.setup_output()`
+        from `conf.options` and `options`.
+        """
+        conf = get_default(conf, self.conf)
+
+        if options and options.output_filename_trunk:
+            default_output_dir, of = op.split(options.output_filename_trunk)
+            default_trunk = io.get_trunk(of)
+
+        else:
+            default_trunk = None
+            default_output_dir = get_default_attr(conf.options,
+                                                  'output_dir', None)
+
+        if options and options.output_format:
+            default_output_format = options.output_format
+
+        else:
+            default_output_format = get_default_attr(conf.options,
+                                                    'output_format', None)
+
+        default_file_per_var = get_default_attr(conf.options,
+                                                'file_per_var', None)
+        default_float_format = get_default_attr(conf.options,
+                                                'float_format', None)
+
+        self.setup_output(output_filename_trunk=default_trunk,
+                          output_dir=default_output_dir,
+                          file_per_var=default_file_per_var,
+                          output_format=default_output_format,
+                          float_format=default_float_format)
+
     def setup_output(self, output_filename_trunk=None, output_dir=None,
-                     output_format=None, float_format=None):
+                     output_format=None, float_format=None,
+                     file_per_var=None):
         """
         Sets output options to given values, or uses the defaults for
         each argument that is None.
@@ -185,22 +220,16 @@ class ProblemDefinition( Struct ):
 	self.ofn_trunk = get_default(output_filename_trunk,
                                      io.get_trunk(self.domain.name))
 
-        self.output_dir = get_default(output_dir, '.')
+        self.output_dir = get_default(output_dir, os.curdir)
 
-        if not os.path.exists(self.output_dir):
+        if not op.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
         self.output_format = get_default(output_format, 'vtk')
 
-        try:
-            _float_format = get_default_attr(self.conf.options,
-                                             'float_format', None)
+        self.float_format = get_default(float_format, None)
 
-        except AttributeError:
-            _float_format = None
-
-        self.float_format = get_default(float_format, _float_format)
-
+        self.file_per_var = get_default(file_per_var, False)
 
     def set_regions( self, conf_regions=None,
                      conf_materials=None, functions=None):
@@ -507,11 +536,18 @@ class ProblemDefinition( Struct ):
         self.update_time_stepper(ts)
         self.equations.advance( ts )
 
-    ##
-    # c: 01.03.2007, r: 23.06.2008
-    def save_state( self, filename, state = None, out = None,
-                   fill_value = None, post_process_hook = None,
-                   file_per_var = False, **kwargs ):
+    def save_state(self, filename, state=None, out=None,
+                   fill_value=None, post_process_hook=None,
+                   file_per_var=False, **kwargs):
+        """
+        Parameters
+        ----------
+        file_per_var : bool or None
+            If True, data of each variable are stored in a separate
+            file. If None, it is set to the application option value.
+        """
+        file_per_var = get_default(file_per_var, self.file_per_var)
+
         extend = not file_per_var
         if (out is None) and (state is not None):
             out = self.state_to_output( state,
@@ -520,17 +556,17 @@ class ProblemDefinition( Struct ):
                 out = post_process_hook( out, self, state, extend = extend )
 
         if file_per_var:
-            import os.path as op
-
             meshes = {}
             for var in self.equations.variables.iter_state():
                 rname = var.field.region.name
                 if meshes.has_key( rname ):
                     mesh = meshes[rname]
                 else:
-                    mesh = Mesh.from_region( var.field.region, self.domain.mesh,
-                                            localize = True )
+                    mesh = Mesh.from_region(var.field.region, self.domain.mesh,
+                                            localize=True,
+                                            is_surface=var.is_surface)
                     meshes[rname] = mesh
+
                 vout = {}
                 for key, val in out.iteritems():
                     if val.var_name == var.name:
@@ -1033,17 +1069,19 @@ class ProblemDefinition( Struct ):
 	return variables
 
     def get_output_name(self, suffix=None, extra=None, mode=None):
-        """Return default output file name, based on the output format,
-        step suffix and mode. If present, the extra string is put just before
-        the output format suffix.
         """
-        out = self.ofn_trunk
+        Return default output file name, based on the output directory,
+        output format, step suffix and mode. If present, the extra
+        string is put just before the output format suffix.
+        """
+        out = op.join(self.output_dir, self.ofn_trunk)
+
         if suffix is not None:
             if mode is None:
                 mode = self.output_modes[self.output_format]
 
             if mode == 'sequence':
-                out = '.'.join((self.ofn_trunk, suffix))
+                out = '.'.join((out, suffix))
 
         if extra is not None:
             out = '.'.join((out, extra, self.output_format))
