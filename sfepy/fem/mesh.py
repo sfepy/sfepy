@@ -691,9 +691,11 @@ class Mesh( Struct ):
 
         return mesh
 
-    ##
-    # c: 17.02.2006, r: 28.04.2008
-    def from_region( region, mesh_in, ed = None, fa = None, localize = None ):
+    def from_region(region, mesh_in, ed=None, fa=None, localize=False,
+                    is_surface=False):
+        """
+        Create a mesh corresponding to a given region.
+        """
         mesh = Mesh( mesh_in.name + "_reg" )
         mesh.coors = mesh_in.coors.copy()
         mesh.ngroups = mesh_in.ngroups.copy()
@@ -701,46 +703,40 @@ class Mesh( Struct ):
         mesh.conns = []
         mesh.descs = []
         mesh.mat_ids = []
-        if region.has_cells():
-            for ig in region.igs:
-                mesh.descs.append( mesh_in.descs[ig] )
-                els = region.get_cells( ig )
-                mesh.mat_ids.append( mesh_in.mat_ids[ig][els,:].copy() )
-                mesh.conns.append( mesh_in.conns[ig][els,:].copy() )
 
-        if ed is not None:
-            for ig in region.igs:
-                edges = region.get_edges( ig )
-                mesh.descs.append( '1_2' )
-                mesh.mat_ids.append( ed.data[edges,0] + 1 )
-                mesh.conns.append( ed.data[edges,-2:].copy() )
+        if not is_surface:
 
-        if fa is not None:
-            for ig in region.igs:
-                faces = region.get_faces( ig )
-                fdata = fa.data[faces]
-                i3 = nm.where( fdata[:,-1] == -1 )[0]
-                i4 = nm.where( fdata[:,-1] != -1 )[0]
-                if i3.size:
-                    mesh.descs.append( '2_3' )
-                    mesh.mat_ids.append( fdata[i3,0] + 1 )
-                    mesh.conns.append( fdata[i3,-4:-1].copy() )
-                if i4.size:
-                    mesh.descs.append( '2_4' )
-                    mesh.mat_ids.append( fdata[i4,0] + 1 )
-                    mesh.conns.append( fdata[i4,-4:].copy() )
+            if region.has_cells():
+                for ig in region.igs:
+                    mesh.descs.append( mesh_in.descs[ig] )
+                    els = region.get_cells( ig )
+                    mesh.mat_ids.append( mesh_in.mat_ids[ig][els,:].copy() )
+                    mesh.conns.append( mesh_in.conns[ig][els,:].copy() )
 
-        if (ed is not None) or (fa is not None):
-            mesh.descs.append( {2 : '2_3', 3 : '3_4'}[mesh_in.dim] )
-            mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
-            mesh.conns.append(make_point_cells(region.all_vertices,
-                                               mesh_in.dim))
+            if ed is not None:
+                for ig in region.igs:
+                    edges = region.get_edges( ig )
+                    mesh.descs.append( '1_2' )
+                    mesh.mat_ids.append( ed.data[edges,0] + 1 )
+                    mesh.conns.append( ed.data[edges,-2:].copy() )
+
+            if fa is not None:
+                mesh._append_region_faces(region, fa)
+
+            if (ed is not None) or (fa is not None):
+                mesh.descs.append( {2 : '2_3', 3 : '3_4'}[mesh_in.dim] )
+                mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
+                mesh.conns.append(make_point_cells(region.all_vertices,
+                                                   mesh_in.dim))
+
+        else:
+            mesh._append_region_faces(region)
 
         mesh._set_shape_info()
 
         if localize:
             mesh.localize( region.all_vertices )
-        
+
         return mesh
     from_region = staticmethod( from_region )
 
@@ -857,7 +853,28 @@ class Mesh( Struct ):
         self.conns = [nm.asarray(conn, dtype=nm.int32) for conn in conns]
         self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
         self.descs = descs
-        
+
+    def _append_region_faces(self, region, fa=None):
+        if fa is None:
+            fa = region.domain.fa
+
+        for ig in region.igs:
+            faces = region.get_faces(ig)
+            fdata = fa.data[faces]
+
+            i3 = nm.where(fdata[:,-1] == -1)[0]
+            i4 = nm.where(fdata[:,-1] != -1)[0]
+
+            if i3.size:
+                self.descs.append('2_3')
+                self.mat_ids.append(fdata[i3,0] + 1)
+                self.conns.append(fdata[i3,-4:-1].copy())
+
+            if i4.size:
+                self.descs.append('2_4')
+                self.mat_ids.append(fdata[i4,0] + 1)
+                self.conns.append(fdata[i4,-4:].copy())
+
     def write(self, filename=None, io=None,
               coors=None, igs=None, out=None, float_format=None, **kwargs):
         """
