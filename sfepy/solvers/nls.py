@@ -178,10 +178,15 @@ class Newton( NonlinearSolver ):
             vec_dx0 = vec_dx;
             while 1:
                 tt = time.clock()
+
                 try:
                     vec_r = fun( vec_x )
-                except ValueError, exc:
-                    ok = False
+
+                except ValueError:
+                    if (it == 0) or (ls < conf.ls_min):
+                        output('giving up!')
+                        raise
+
                 else:
                     ok = True
 
@@ -208,12 +213,8 @@ class Newton( NonlinearSolver ):
                     red = conf.ls_red_warp;
                     output(  'rezidual computation failed for iter %d'
                              ' (new ls: %e)!' % (it, red * ls) )
-                    if (it == 0):
-                        raise
 
                 if ls < conf.ls_min:
-                    if not ok:
-                        raise RuntimeError('giving up...')
                     output( 'linesearch failed, continuing anyway' )
                     break
 
@@ -235,25 +236,19 @@ class Newton( NonlinearSolver ):
 
             tt = time.clock()
             if conf.problem == 'nonlinear':
-                try:
-                    mtx_a = fun_grad( vec_x )
-                except ValueError:
-                    ok = False
-                else:
-                    ok = True
+                mtx_a = fun_grad(vec_x)
+
             else:
-                mtx_a, ok = fun_grad( 'linear' ), True
+                mtx_a = fun_grad( 'linear' )
+
             time_stats['matrix'] = time.clock() - tt
-            if not ok:
-                raise RuntimeError('giving up...')
 
             if conf.check:
                 tt = time.clock()
                 wt = check_tangent_matrix( conf, vec_x, fun, fun_grad )
                 time_stats['check'] = time.clock() - tt - wt
-    ##            if conf.check == 2: pause()
 
-            tt = time.clock() 
+            tt = time.clock()
             vec_dx = lin_solver( vec_r, mtx = mtx_a )
             time_stats['solve'] = time.clock() - tt
 

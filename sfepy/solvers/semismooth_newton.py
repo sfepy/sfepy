@@ -122,9 +122,11 @@ class SemismoothNewton(Newton):
                     vec_a_r = fun_a(vec_x)
                     vec_b_r = fun_b(vec_x)
 
-                except ValueError, exc:
+                except ValueError:
                     vec_smooth_r = vec_semismooth_r = None
-                    ok = False
+                    if (it == 0) or (ls < conf.ls_min):
+                        output('giving up!')
+                        raise
 
                 else:
                     if conf.semismooth:
@@ -175,19 +177,14 @@ class SemismoothNewton(Newton):
                     red = conf.ls_red_warp;
                     output('rezidual computation failed for iter %d'
                            ' (new ls: %e)!' % (it, red * ls))
-                    if (it == 0):
-                        raise RuntimeError('giving up...')
-                        
-                if ls < conf.ls_min:
-                    if not ok:
-                        raise RuntimeError('giving up...')
 
+                if ls < conf.ls_min:
                     if step_mode == 'regular':
                         output('restore previous state')
                         vec_x = vec_x_last.copy()
                         vec_smooth_r, vec_a_r, vec_b_r, vec_semismooth_r = r_last
                         err = err_last
-                        reuse_matrix = True                        
+                        reuse_matrix = True
 
                         step_mode = 'steepest_descent'
 
@@ -222,19 +219,15 @@ class SemismoothNewton(Newton):
             tt = time.clock()
 
             if not reuse_matrix:
-                ok, mtx_jac = self.compute_jacobian(vec_x, fun_smooth_grad,
-                                                    fun_a_grad, fun_b_grad,
-                                                    vec_smooth_r,
-                                                    vec_a_r, vec_b_r)
+                mtx_jac = self.compute_jacobian(vec_x, fun_smooth_grad,
+                                                fun_a_grad, fun_b_grad,
+                                                vec_smooth_r,
+                                                vec_a_r, vec_b_r)
 
             else:
-                ok = True
                 reuse_matrix = False
 
             time_stats['matrix'] = time.clock() - tt
-
-            if not ok:
-                raise RuntimeError('giving up...')
 
             tt = time.clock() 
 
@@ -279,77 +272,70 @@ class SemismoothNewton(Newton):
                          vec_smooth_r, vec_a_r, vec_b_r):
         conf = self.conf
 
-        try:
-            mtx_jac = fun_smooth_grad(vec_x)
-            mtx_a = fun_a_grad(vec_x)
-            mtx_b = fun_b_grad(vec_x)
+        mtx_jac = fun_smooth_grad(vec_x)
+        mtx_a = fun_a_grad(vec_x)
+        mtx_b = fun_b_grad(vec_x)
 
-        except ValueError:
-            ok = False
+        n_s = vec_smooth_r.shape[0]
+        n_ns = vec_a_r.shape[0]
+
+        if conf.semismooth:
+            aa = nm.abs(vec_a_r)
+            ab = nm.abs(vec_b_r)
+            iz = nm.where((aa < (conf.macheps * max(aa.max(), 1.0)))
+                          & (ab < (conf.macheps * max(ab.max(), 1.0))))[0]
+            inz = nm.setdiff1d(nm.arange(n_ns), iz)
+
+            output('non_active/active: %d/%d' % (len(inz), len(iz)))
+
+            mul_a = nm.empty_like(vec_a_r)
+            mul_b = nm.empty_like(mul_a)
+
+            # Non-active part of the jacobian.
+            if len(inz) > 0:
+                a_r_nz = vec_a_r[inz]
+                b_r_nz = vec_b_r[inz]
+
+                sqrt_ab = nm.sqrt(a_r_nz**2.0 + b_r_nz**2.0)
+                mul_a[inz] = (a_r_nz / sqrt_ab) - 1.0
+                mul_b[inz] = (b_r_nz / sqrt_ab) - 1.0
+
+            # Active part of the jacobian.
+            if len(iz) > 0:
+                vec_z = nm.zeros_like(vec_x)
+                vec_z[n_s+iz] = 1.0
+
+                mtx_a_z = mtx_a[iz]
+                mtx_b_z = mtx_b[iz]
+
+                sqrt_ab = nm.empty_like(vec_a_r)
+                for ir in range(len(iz)):
+                    row_a_z = mtx_a_z[ir]
+                    row_b_z = mtx_b_z[ir]
+                    sqrt_ab[ir] = nm.sqrt((row_a_z * row_a_z.T).todense()
+                                          + (row_b_z * row_b_z.T).todense())
+                mul_a[iz] = ((mtx_a_z * vec_z) / sqrt_ab) - 1.0
+                mul_b[iz] = ((mtx_b_z * vec_z) / sqrt_ab) - 1.0
 
         else:
-            ok = True
+            iz = nm.where(vec_a_r > vec_b_r)[0]
+            mul_a = nm.zeros_like(vec_a_r)
+            mul_b = nm.ones_like(mul_a)
 
-            n_s = vec_smooth_r.shape[0]
-            n_ns = vec_a_r.shape[0]
+            mul_a[iz] = 1.0
+            mul_b[iz] = 0.0
 
-            if conf.semismooth:
-                aa = nm.abs(vec_a_r)
-                ab = nm.abs(vec_b_r)
-                iz = nm.where((aa < (conf.macheps * max(aa.max(), 1.0)))
-                              & (ab < (conf.macheps * max(ab.max(), 1.0))))[0]
-                inz = nm.setdiff1d(nm.arange(n_ns), iz)
+        # Assume the same sparsity structure!
+        for ir in range(n_ns):
+            ij0 = mtx_jac.indptr[n_s+ir]
+            ij1 = mtx_jac.indptr[n_s+ir+1]
+            i0 = mtx_a.indptr[ir]
+            i1 = mtx_a.indptr[ir+1]
+            assert_((ij1-ij0) == (i1 - i0))
+            assert_((mtx_b.indptr[ir+1] - mtx_b.indptr[ir]) == (i1 - i0))
 
-                output('non_active/active: %d/%d' % (len(inz), len(iz)))
+            val = ((mul_a[ir] * mtx_a.data[i0:i1])
+                   + (mul_b[ir] * mtx_b.data[i0:i1]))
+            mtx_jac.data[ij0:ij1] = val
 
-                mul_a = nm.empty_like(vec_a_r)
-                mul_b = nm.empty_like(mul_a)
-
-                # Non-active part of the jacobian.
-                if len(inz) > 0:
-                    a_r_nz = vec_a_r[inz]
-                    b_r_nz = vec_b_r[inz]
-
-                    sqrt_ab = nm.sqrt(a_r_nz**2.0 + b_r_nz**2.0)
-                    mul_a[inz] = (a_r_nz / sqrt_ab) - 1.0
-                    mul_b[inz] = (b_r_nz / sqrt_ab) - 1.0
-
-                # Active part of the jacobian.
-                if len(iz) > 0:
-                    vec_z = nm.zeros_like(vec_x)
-                    vec_z[n_s+iz] = 1.0
-
-                    mtx_a_z = mtx_a[iz]
-                    mtx_b_z = mtx_b[iz]
-
-                    sqrt_ab = nm.empty_like(vec_a_r)
-                    for ir in range(len(iz)):
-                        row_a_z = mtx_a_z[ir]
-                        row_b_z = mtx_b_z[ir]
-                        sqrt_ab[ir] = nm.sqrt((row_a_z * row_a_z.T).todense()
-                                              + (row_b_z * row_b_z.T).todense())
-                    mul_a[iz] = ((mtx_a_z * vec_z) / sqrt_ab) - 1.0
-                    mul_b[iz] = ((mtx_b_z * vec_z) / sqrt_ab) - 1.0
-
-            else:
-                iz = nm.where(vec_a_r > vec_b_r)[0]
-                mul_a = nm.zeros_like(vec_a_r)
-                mul_b = nm.ones_like(mul_a)
-
-                mul_a[iz] = 1.0
-                mul_b[iz] = 0.0
-
-            # Assume the same sparsity structure!
-            for ir in range(n_ns):
-                ij0 = mtx_jac.indptr[n_s+ir]
-                ij1 = mtx_jac.indptr[n_s+ir+1]
-                i0 = mtx_a.indptr[ir]
-                i1 = mtx_a.indptr[ir+1]
-                assert_((ij1-ij0) == (i1 - i0))
-                assert_((mtx_b.indptr[ir+1] - mtx_b.indptr[ir]) == (i1 - i0))
-
-                val = ((mul_a[ir] * mtx_a.data[i0:i1])
-                       + (mul_b[ir] * mtx_b.data[i0:i1]))
-                mtx_jac.data[ij0:ij1] = val
-
-        return ok, mtx_jac
+        return mtx_jac
