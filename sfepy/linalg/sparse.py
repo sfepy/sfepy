@@ -74,7 +74,7 @@ def compose_sparse(blocks):
     >>> import scipy.sparse as sp
     >>> A = sp.csr_matrix([[1, 0], [0, 1]])
     >>> B = sp.coo_matrix([[1, 1]])
-    >>> K = compose_sparse_to_csr([[A, B.T], [B, 0]])
+    >>> K = compose_sparse([[A, B.T], [B, 0]])
     >>> print K.todense()
     [[1 0 1]
      [0 1 1]
