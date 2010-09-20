@@ -421,6 +421,7 @@ class Viewer(Struct):
             if is_wireframe:
                 surf = add_surf(source, position)
                 surf.actor.property.representation = 'wireframe'
+                surf.actor.mapper.scalar_visibility = False
 
             if is_scalar_bar:
                 mm = active.children[0]
