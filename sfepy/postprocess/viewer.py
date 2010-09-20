@@ -445,8 +445,10 @@ class Viewer(Struct):
             surf = add_surf(source, (0.0, 0.0, 0.0))
             surf.actor.property.color = (0.8, 0.8, 0.8)
 
-            surf = add_surf(source, (0.0, 0.0, 0.0))
-            surf.actor.property.representation = 'wireframe'
+            if is_wireframe:
+                surf = add_surf(source, (0.0, 0.0, 0.0))
+                surf.actor.property.representation = 'wireframe'
+                surf.actor.mapper.scalar_visibility = False
 
     def show_scalar_bars(self, scalar_bars):
         for ii, (family, name, lm) in enumerate(scalar_bars):
