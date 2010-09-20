@@ -2,6 +2,7 @@ from sfepy.base.base import *
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from sfepy.solvers.nls import Newton, conv_test
+from sfepy.linalg.sparse import compose_sparse
 
 class SemismoothNewton(Newton):
     r"""
@@ -272,7 +273,7 @@ class SemismoothNewton(Newton):
                          vec_smooth_r, vec_a_r, vec_b_r):
         conf = self.conf
 
-        mtx_jac = fun_smooth_grad(vec_x)
+        mtx_s = fun_smooth_grad(vec_x)
         mtx_a = fun_a_grad(vec_x)
         mtx_b = fun_b_grad(vec_x)
 
@@ -325,17 +326,10 @@ class SemismoothNewton(Newton):
             mul_a[iz] = 1.0
             mul_b[iz] = 0.0
 
-        # Assume the same sparsity structure!
-        for ir in range(n_ns):
-            ij0 = mtx_jac.indptr[n_s+ir]
-            ij1 = mtx_jac.indptr[n_s+ir+1]
-            i0 = mtx_a.indptr[ir]
-            i1 = mtx_a.indptr[ir+1]
-            assert_((ij1-ij0) == (i1 - i0))
-            assert_((mtx_b.indptr[ir+1] - mtx_b.indptr[ir]) == (i1 - i0))
+        mtx_ns = sp.spdiags(mul_a, 0, n_ns, n_ns) * mtx_a \
+                 + sp.spdiags(mul_b, 0, n_ns, n_ns) * mtx_b
 
-            val = ((mul_a[ir] * mtx_a.data[i0:i1])
-                   + (mul_b[ir] * mtx_b.data[i0:i1]))
-            mtx_jac.data[ij0:ij1] = val
+        mtx_jac = compose_sparse([[mtx_s], [mtx_ns]]).tocsr()
+        mtx_jac.sort_indices()
 
         return mtx_jac
