@@ -88,7 +88,7 @@ def compose_sparse(blocks):
 
     for ir, row in enumerate(blocks):
         for ic, mtx in enumerate(row):
-            if mtx == 0:
+            if isinstance(mtx, int) and (mtx == 0):
                 continue
 
             if ic >= len(col_sizes):
@@ -124,10 +124,10 @@ def compose_sparse(blocks):
     datas = []
     for ir, row in enumerate(blocks):
         for ic, mtx in enumerate(row):
-            if mtx == 0:
+            if isinstance(mtx, int) and (mtx == 0):
                 continue
 
-            aux = mtx.tocoo()
+            aux = sp.coo_matrix(mtx)
 
             rows.append(aux.row + row_offsets[ir])
             cols.append(aux.col + col_offsets[ic])
