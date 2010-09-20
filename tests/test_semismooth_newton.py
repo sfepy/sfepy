@@ -60,18 +60,6 @@ def convert_to_csr(m_in):
 
     return m_out
 
-def preserve_nnz(ar):
-    nr, nc = ar.shape
-
-    aux = nm.zeros((nr+1,), dtype=nm.int32)
-    aux[1:] = nc
-    indptr = nm.cumsum(aux)
-    indices = nm.tile(nm.arange(nc, dtype=nm.int32), (nr, 1)).ravel()
-    data = ar.ravel()
-
-    mtx = sps.csr_matrix((data, indices, indptr), shape=ar.shape)
-    return mtx
-
 def define_matrices():
     e = sm.zeros((7, 1))
     e[0] = sm.sympify('u1')
@@ -184,13 +172,9 @@ class Test(TestCommon):
             mw = nm.c_[m['A'], -m['Bb'].T, mzl]
             mg = nm.c_[m['Bb'], nm.diag(xl), nm.diag(xg)]
 
-            # Allocate matrix structure also for the nonsmooth part.
-            mlz = nm.ones((xl.shape[0], nx), dtype=nm.float64)
-
-            mx = nm.r_[mw, mg, mlz]
+            mx = nm.r_[mw, mg]
 
             mx = sps.csr_matrix(mx)
-            mx.data[mx.indptr[offsets[2]]:] = 0.0
 
             return mx
 
@@ -224,7 +208,7 @@ class Test(TestCommon):
             ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
             ma[:,ig] = nm.sign(xg)[:,None] * self.m['C']
 
-            return -preserve_nnz(ma)
+            return -ma
 
         def fun_b(vec_x):
             xl = vec_x[il]
@@ -237,7 +221,7 @@ class Test(TestCommon):
             mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
             mb[:,il] = self.m['C']
 
-            return preserve_nnz(mb)
+            return mb
 
         vec_x0 = nm.zeros((nx,), dtype=nm.float64)
         vec_x0[il] = 1.0
