@@ -5,12 +5,7 @@ multiplier approach. There is also a rigid body movement constraint
 imposed on the Outlet region using the linear combination boundary
 conditions.
 """
-import os
-import numpy as nm
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
-
-from biot_npbc import coors_in_cylinder, cinc_simple, define_regions, \
-     get_pars
+from biot_npbc import cinc_simple, define_regions, get_pars
 
 def define():
     from sfepy import data_dir
@@ -23,12 +18,12 @@ def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
     dvel = pb.evaluate('de_diffusion_velocity.2.Omega( m.K, p )')
-    out['dvel'] = Struct(name='output_data',
+    out['dvel'] = Struct(name='output_data', var_name='p',
                          mode='cell', data=dvel,
                          dof_types=None)
 
     stress = pb.evaluate('de_cauchy_stress.2.Omega( m.D, u )')
-    out['cauchy_stress'] = Struct(name='output_data',
+    out['cauchy_stress'] = Struct(name='output_data', var_name='u',
                                   mode='cell', data=stress,
                                   dof_types=None)
     return out
@@ -40,6 +35,7 @@ def define_input(filename, output_dir):
         'output_dir' : output_dir,
         'output_format' : 'vtk',
         'post_process_hook' : 'post_process',
+        ## 'file_per_var' : True,
 
         'ls' : 'ls',
         'nls' : 'newton',
