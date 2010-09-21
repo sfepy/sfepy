@@ -569,8 +569,14 @@ class ProblemDefinition( Struct ):
 
                 vout = {}
                 for key, val in out.iteritems():
-                    if val.var_name == var.name:
-                        vout[key] = val
+                    try:
+                        if val.var_name == var.name:
+                            vout[key] = val
+
+                    except AttributeError:
+                        msg = 'missing var_name attribute in output!'
+                        raise ValueError(msg)
+
                 base, suffix = op.splitext( filename )
                 mesh.write(base + '_' + var.name + suffix,
                            io='auto', out=vout,
