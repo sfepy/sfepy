@@ -630,8 +630,7 @@ class ProblemDefinition( Struct ):
         for name in region_names:
 	    region = self.domain.regions[name]
             output( name )
-            aux = Mesh.from_region( region, self.domain.mesh, self.domain.ed,
-                                   self.domain.fa )
+            aux = Mesh.from_region(region, self.domain.mesh)
             aux.write( '%s_%s.mesh' % (filename_trunk, region.name),
                        io = 'auto' )
         output( '...done' )

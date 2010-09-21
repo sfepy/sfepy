@@ -691,15 +691,16 @@ class Mesh( Struct ):
 
         return mesh
 
-    def from_region(region, mesh_in, ed=None, fa=None, localize=False,
-                    is_surface=False):
+    @staticmethod
+    def from_region(region, mesh_in, save_edges=False, save_faces=False,
+                    localize=False, is_surface=False):
         """
         Create a mesh corresponding to a given region.
         """
         mesh = Mesh( mesh_in.name + "_reg" )
         mesh.coors = mesh_in.coors.copy()
         mesh.ngroups = mesh_in.ngroups.copy()
-        
+
         mesh.conns = []
         mesh.descs = []
         mesh.mat_ids = []
@@ -713,17 +714,18 @@ class Mesh( Struct ):
                     mesh.mat_ids.append( mesh_in.mat_ids[ig][els,:].copy() )
                     mesh.conns.append( mesh_in.conns[ig][els,:].copy() )
 
-            if ed is not None:
+            if save_edges:
+                ed = self.domain.ed
                 for ig in region.igs:
                     edges = region.get_edges( ig )
                     mesh.descs.append( '1_2' )
                     mesh.mat_ids.append( ed.data[edges,0] + 1 )
                     mesh.conns.append( ed.data[edges,-2:].copy() )
 
-            if fa is not None:
-                mesh._append_region_faces(region, fa)
+            if save_faces:
+                mesh._append_region_faces(region)
 
-            if (ed is not None) or (fa is not None):
+            if save_edges or save_faces:
                 mesh.descs.append( {2 : '2_3', 3 : '3_4'}[mesh_in.dim] )
                 mesh.mat_ids.append( -nm.ones_like( region.all_vertices ) )
                 mesh.conns.append(make_point_cells(region.all_vertices,
@@ -738,13 +740,11 @@ class Mesh( Struct ):
             mesh.localize( region.all_vertices )
 
         return mesh
-    from_region = staticmethod( from_region )
 
     ##
     # c: 02.01.2008, r: 02.01.2008
     def from_region_and_field( region, field ):
-        mesh, ed, fa = field.domain.mesh, field.domain.ed, field.domain.fa
-        mesh = Mesh.from_region( region, mesh, ed, fa )
+        mesh = Mesh.from_region(region, field.domain.mesh)
         mesh.name = mesh.name + '_field'
 
         nodes = region.get_field_nodes( field, merge = True )
@@ -854,13 +854,15 @@ class Mesh( Struct ):
         self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
         self.descs = descs
 
-    def _append_region_faces(self, region, fa=None):
-        if fa is None:
-            fa = region.domain.fa
+    def _append_region_faces(self, region):
+        from sfepy.fem.domain import dm_create_list
+
+        domain = region.domain
+        data, _, _ = dm_create_list(domain.groups, domain.mesh.n_nod, 1, 0)
 
         for ig in region.igs:
             faces = region.get_faces(ig)
-            fdata = fa.data[faces]
+            fdata = data[faces]
 
             i3 = nm.where(fdata[:,-1] == -1)[0]
             i4 = nm.where(fdata[:,-1] != -1)[0]
