@@ -342,6 +342,7 @@ class Viewer(Struct):
                                                    position, [0, 0, 1],
                                                    opacity=0.5 )
                     if 'iso_surface' in scalar_mode:
+			active.point_scalars_name = name
                         iso = add_iso_surface(active, position, opacity=0.3)
                 else:
                     surf = add_surf(active, position)
