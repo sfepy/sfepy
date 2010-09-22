@@ -6,146 +6,263 @@ from sfepy.fem.parseReg \
 import fea
 import extmods.meshutils as mu
 
-##
-# 14.01.2005
-# 22.02.2005
-# 04.08.2005
-def dm_create_list( groups, sentinel, mode, is_sort ):
+"""
+The keys are binary masks of the lexicographical ordering.
+A bit i set to one means v[i] < v[i+1]. 
+"""
+orientation_maps = {
+    2 : {0 : [[1, 0], -1],
+         1 : [[0, 1],  1],},
+    3 : {0 : [[2, 1, 0], -3],
+         1 : [[2, 0, 1],  2],
+         2 : [[1, 2, 0],  3],
+         5 : [[0, 2, 1], -1],
+         6 : [[1, 0, 2], -2],
+         7 : [[0, 1, 2],  1],},
+    4 : {0  : [[3, 2, 1, 0], -4],
+         5  : [[2, 3, 0, 1],  3],
+         11 : [[3, 0, 1, 2],  2],
+         22 : [[1, 2, 3, 0],  4],
+         41 : [[0, 3, 2, 1], -1],
+         52 : [[2, 1, 0, 3], -3],
+         58 : [[1, 0, 3, 2], -2],
+         63 : [[0, 1, 2, 3],  1],},
+}
 
-    n_gr = len( groups )
+def _get_signed_orientation(ori, ori_map):
+    """
+    Transform orientation according to `ori_map`, i.e. from bit mask
+    encoding to signed values.
+    """
+    i_from = nm.array(ori_map.keys())
+    i_to = [ii[1] for ii in ori_map.values()]
 
-    if mode == 0:
-        n_obj = [group.shape.n_edge_total for group in groups.itervalues()]
-        nn = 2
-    else:
-        n_obj = [group.shape.n_face_total for group in groups.itervalues()]
-        nn = 4
-        
-    objs = nm.zeros( (sum( n_obj ) + 2, 3 + nn), nm.int32 ) - 1
-    gptr = nm.zeros( (n_gr + 1,), nm.int32 )
-    eptr = nm.zeros( (n_gr,), nm.int32 )
+    i_map = nm.empty((i_from.max() + 1,), dtype=nm.int8)
+    i_map[i_from] = i_to
 
-    ii = 0
-    for ig, group in groups.iteritems():
-        conn, gel = group.conn, group.gel
-        if (mode == 0):
-            n_item, items = gel.n_edge, gel.edges
+    signed_ori = i_map[ori]
+
+    return signed_ori
+
+def _permute_facets(facets, ori, ori_map):
+    """
+    Return a copy of `facets` array with vertices sorted lexicographically.
+    """
+    permuted_facets = nm.empty_like(facets)
+
+    for key, ori_map in ori_map.iteritems():
+        perm = ori_map[0]
+        ip = nm.where(ori == key)[0]
+        for ic0, ic1 in enumerate(perm):
+            permuted_facets[ip,ic0] = facets[ip,ic1]
+
+    return permuted_facets
+
+def _orient_edges(ori, facets):
+    iw = nm.where(facets[:,0] < facets[:,1])[0]
+    ori[iw] += 1
+
+def _orient_faces3(ori, facets):
+    iw = nm.where(facets[:,0] < facets[:,1])[0]
+    ori[iw] += 1
+    iw = nm.where(facets[:,1] < facets[:,2])[0]
+    ori[iw] += 2
+    iw = nm.where(facets[:,0] < facets[:,2])[0]
+    ori[iw] += 4
+
+def _orient_faces4(ori, facets):
+    iw = nm.where(facets[:,0] < facets[:,1])[0]
+    ori[iw] += 1
+    iw = nm.where(facets[:,1] < facets[:,2])[0]
+    ori[iw] += 2
+    iw = nm.where(facets[:,2] < facets[:,3])[0]
+    ori[iw] += 4
+    iw = nm.where(facets[:,0] < facets[:,2])[0]
+    ori[iw] += 8
+    iw = nm.where(facets[:,1] < facets[:,3])[0]
+    ori[iw] += 16
+    iw = nm.where(facets[:,0] < facets[:,3])[0]
+    ori[iw] += 32
+
+class Facets(Struct):
+
+    @staticmethod
+    def from_domain(domain, kind):
+        groups = domain.groups
+
+        if kind == 'edges':
+            n_obj = [group.shape.n_edge_total for group in groups.itervalues()]
+            nn = 2
         else:
-            n_item, items = gel.n_face, gel.faces
+            n_obj = [group.shape.n_face_total for group in groups.itervalues()]
+            nn = 4
 
-#        print '::', ii
-        ii = mu.create_list( ii, objs, ig, conn, items, is_sort )[1]
-#        print '::', ii
+        n_all_obj = sum(n_obj)
+        indices = nm.zeros((n_all_obj, 3), nm.int32)
+        all_facets = nm.empty((n_all_obj, nn), nm.int32)
+        all_facets.fill(-1)
 
-        eptr[ig] = n_item
-        gptr[ig+1] = ii
+        single_facets = {}
 
-    aux = nm.repeat( nm.array( [sentinel], nm.int32 ), nn )
-    objs[-2,3:] = aux
-    objs[-1,3:] = aux + 1
+        ii = 0
+        for ig, group in groups.iteritems():
+            conn, gel = group.conn, group.gel
+            n_el = group.shape.n_el
+            n_all_item = n_obj[ig]
 
-##         print gptr, eptr
+            if kind == 'edges':
+                n_item, items = gel.n_edge, gel.edges
 
-    if (ii != sum( n_obj )):
-        msg = 'neighbour_list size mismatch! (%d == %d = sum( %s ))'\
-              % (ii, sum( n_obj ), n_obj)
-        raise ValueError( msg )
-
-    return( (objs, gptr, eptr) )
-
-##
-# c: 05.01.2005, r: 04.02.2008
-def dm_neighbour_list( obj_in, groups, ic, perm, mode ):
-
-    n_gr = len( groups )
-    n_el = [group.shape.n_el for group in groups.itervalues()]
-    if mode == 0:
-        n_obj = [group.shape.n_edge_total for group in groups.itervalues()]
-    else:
-        n_obj = [group.shape.n_face_total for group in groups.itervalues()]
-
-    data_s = obj_in.data_s
-
-    pg = nm.zeros( (n_gr + 1,), dtype = nm.int32 )
-    pg[1:] = n_el
-    pg = nm.cumsum( pg, dtype = nm.int32 )
-
-    pel = nm.zeros( (sum( n_el ) + 1,), nm.int32 )
-    for ig in range( n_gr ):
-        gel = groups[ig].gel
-        if (mode == 0):
-            n_item = gel.n_edge
-        else:
-            n_item = gel.n_face
-        for ie in range( n_el[ig] ):
-            pel[pg[ig]+ie+1] = n_item
-    pel = nm.cumsum( pel, dtype = nm.int32 )
-
-    pobj = nm.zeros( (sum( n_obj ) + 1,), dtype = nm.int32 ) + 1
-    mu.neighbour_list_ptr( pobj, pg, pel, data_s, ic, mode )
-    cnt_pobj = pobj.copy()
-    pobj = nm.cumsum( pobj, dtype = nm.int32 )
-
-    objs = nm.zeros( (pobj[-1],), dtype = nm.int32 )
-    uid = nm.zeros( (sum( n_obj ),), dtype = nm.int32 )
-    cnt = nm.zeros( (sum( n_obj ),), dtype = nm.int32 )
-    iu = mu.neighbour_list( objs, uid, cnt, \
-                           pg, pel, pobj, data_s, obj_in.uid, ic, perm, mode )[1]
-
-
-    if (nm.sometrue( cnt_pobj[1:] - cnt )):
-        msg = '%s\n%s\n%s\n' % (cnt_pobj[1:], cnt, cnt_pobj[1:] - cnt)
-        raise ValueError( msg )
-
-    if (iu != obj_in.n_unique):
-        msg = ' '.join( [iu, "==", obj_in.n_unique] )
-        raise ValueError( msg )
-
-    return( (pg, pel, pobj, objs, cnt, uid) )
-
-##
-# 05.01.2005
-# 04.08.2005
-# 31.10.2005
-def dm_print_neighbour_list( objs, obj_list, pauses = False ):
-    pg = obj_list.pg
-    pel = obj_list.pel
-    pd = obj_list.pd
-    data = obj_list.data
-    cnt = obj_list.cnt
-    for ig in range( len( pg ) - 1 ):
-        print ig
-        for iel in range( pg[ig+1] - pg[ig] ):
-            print "  ", iel
-            n_edge = pel[pg[ig]+iel+1] - pel[pg[ig]+iel]
-            for ii in range( n_edge ):
-                cptr = pel[pg[ig]+iel] + ii
-                ptr = pd[cptr]
-                print "    ", ii, ":", obj_list.uid[cptr]
-                for jj in range( cnt[cptr] ):
-                    print "      ", jj, data[ptr+jj], \
-                          objs.data[data[ptr+jj]]
-
-            if pauses:
-                spause()
-
-##
-# 21.12.2005, c
-def dm_mark_surface_faces( fa, nfa ):
-    """ flag: 0 .. inner, 1 .. triangle, 2 .. quadrangle"""
-    flag = nm.zeros( (fa.data.shape[0],), nm.int32 )
-
-    pd = nfa.pd
-    data = nfa.data
-    cnt = nfa.cnt
-    for ii in xrange( len( cnt ) ):
-        if (cnt[ii] == 1):
-            ptr = pd[ii]
-            if (fa.data[data[ptr],-1] == -1):
-                flag[data[ptr]] = 1
             else:
-                flag[data[ptr]] = 2
-    return flag
+                n_item, items = gel.n_face, gel.faces
+
+            n_fp = items.shape[1]
+            single_facets[ig] = items
+
+            io = slice(ii, ii + n_all_item)
+
+            indices[io,0] = ig
+
+            ie = nm.arange(n_el, dtype=nm.int32)
+            ie = nm.repeat(ie, n_item)
+            indices[io,1] = ie
+
+            iobj = nm.arange(n_item, dtype=nm.int32)
+            indices[io,2] = nm.tile(iobj, n_el)
+
+            facets = conn[:, items]
+            facets = facets.reshape((n_all_item, n_fp))
+
+            all_facets[io,:n_fp] = facets
+
+            ii += n_all_item
+
+        if (ii != sum( n_obj )):
+            msg = 'neighbour_list size mismatch! (%d == %d = sum( %s ))'\
+                  % (ii, sum( n_obj ), n_obj)
+            raise ValueError( msg )
+
+        obj = Facets('facets', kind, domain, single_facets,
+                     n_obj, indices, all_facets)
+
+        return obj
+
+    def __init__(self, name, kind, domain, single_facets,
+                 n_obj, indices, facets):
+        Struct.__init__(self, name=name, kind=kind, domain=domain,
+                        single_facets=single_facets,
+                        n_obj=n_obj, indices=indices, facets=facets)
+        self.n_all_obj, self.n_col = facets.shape
+        self.n_gr = len(self.n_obj)
+
+        self.indx = {}
+        ii = 0
+        for ig, nn in enumerate(self.n_obj):
+            self.indx[ig] = slice(ii, ii+nn)
+            ii += nn
+
+        self.n_fps = nm.empty(self.n_all_obj, dtype=nm.int32)
+        for ig, facet in self.single_facets.iteritems():
+            self.n_fps[self.indx[ig]] = facet.shape[1]
+
+    def sort_and_orient(self):
+        all_permuted_facets = nm.empty((self.n_all_obj + 2, self.n_col),
+                                     dtype=nm.int32)
+        all_permuted_facets.fill(-1)
+
+        sentinel = self.domain.shape.n_nod
+
+        aux = nm.repeat(nm.array([sentinel], nm.int32), self.n_col)
+        all_permuted_facets[-2] = aux
+        all_permuted_facets[-1] = aux + 1
+        oris = {}
+
+        for ig in range(self.n_gr):
+            io = self.indx[ig]
+            n_fp = self.single_facets[ig].shape[1]
+
+            facets = self.facets[io]
+
+            # Determine orientation.
+            ori = nm.zeros((facets.shape[0],), dtype=nm.int8)
+            if n_fp == 2: # Edges.
+                _orient_edges(ori, facets)
+
+            elif n_fp == 3: # Triangles.
+                _orient_faces3(ori, facets)
+
+            elif n_fp == 4: # Quads.
+                _orient_faces4(ori, facets)
+
+            else:
+                raise ValueError('unknown facet type! (%d vertices)' % n_fp)
+
+            ori_map = orientation_maps[n_fp]
+
+            permuted_facets = _permute_facets(facets, ori, ori_map)
+            all_permuted_facets[io] = permuted_facets
+
+            ori = _get_signed_orientation(ori, ori_map)
+
+            oris[ig] = ori
+
+        self.permuted_facets = all_permuted_facets
+        self.oris = oris
+
+    def setup_unique(self):
+        """
+        `sorted_facets` == `permuted_facets[perm]`
+        `permuted_facets` == `sorted_facets[perm_i]`
+        `uid` : unique id in order of `sorted_facets`
+        `uid_i` : unique id in order of `permuted_facets` or `facets`
+        """
+        ii = nm.arange(self.permuted_facets.shape[0], dtype=nm.int32)
+        aux = nm.concatenate((self.permuted_facets, ii[:,None]), 1).copy()
+        sort_cols = nm.arange(self.permuted_facets.shape[1],
+                              dtype=nm.int32)
+
+        mu.sort_rows(aux, sort_cols)
+
+        self.perm = perm = aux[:,-1].copy()
+        self.sorted_facets = aux[:,:-1].copy()
+        aux = nm.arange(perm.shape[0], dtype=nm.int32)
+        self.perm_i = nm.zeros_like(self.perm)
+        self.perm_i[perm] = aux
+
+        ic = nm.where(nm.diff(self.sorted_facets, axis=0).sum(1), 0, 1)
+        ic = ic.astype(nm.int32)
+
+        self.n_unique = len(ic) - nm.sum(ic) - 1
+        self.unique_list = nm.where(ic[:-1] == 0)[0].astype(nm.int32)
+        assert_(len(self.unique_list) == self.n_unique)
+
+        ii = nm.cumsum( ic[:-1] == 0, dtype = nm.int32 )
+        self.uid = ii.copy()
+        self.uid[0], self.uid[1:] = 0, ii[:-1]
+        self.uid_i = self.uid[self.perm_i[:-2]]
+
+    def setup_neighbours(self):
+        """
+        For each unique facet:
+           - indices of facets - sparse matrix (n_unique x n_all_obj)
+             mtx[i, j] == 1 if facet[j] has uid[i]
+           - number of elements it is in
+        """
+        ones = nm.ones((self.n_all_obj,), dtype=nm.bool)
+
+        self.mtx = sp.coo_matrix((ones, (self.uid, self.perm[:-2])))
+
+        self.n_in_el = self.mtx * ones.astype(nm.int32)
+
+    def mark_surface_facets(self):
+        """
+        flag: 0 .. inner, 2 .. edge, 3 .. triangle, 4 .. quadrangle
+        """
+        nn = self.n_in_el[self.uid]
+
+        flag = self.n_fps * (nn == 1)
+
+        return flag
 
 ##
 # 14.06.2006, c
@@ -396,7 +513,7 @@ class Domain( Struct ):
     def get_cell_offsets( self ):
         offs = {}
         off = 0
-        for group in self.iter_groups():
+        for group in self.iter_groupsself.nfa ():
             ig = group.ig
             offs[ig] = off
             off += group.shape.n_el
@@ -493,77 +610,33 @@ class Domain( Struct ):
                      for group in self.iter_groups()] ) > 0
         
 
-    ##
-    # c: 04.08.2005, r: 20.02.2008
-    def setup_neighbour_lists( self, create_edge_list = 1, create_face_list = 1 ):
-        mode_names = ['edges', 'faces']
-        
+    def setup_neighbour_lists(self, create_edge_list=True,
+                              create_face_list=True):
+        kinds = ['edges', 'faces']
+
         is_face = self.has_faces()
         flags = [create_edge_list, create_face_list and is_face]
-        sort_cols = [[3,4], [3,4,5,6]]
 
-        for mode in range( 2 ):
-            if flags[mode]:
-                output( 'setting up domain %s...' % mode_names[mode] )
+        for ii, kind in enumerate(kinds):
+            if flags[ii]:
+                output('setting up domain %s...' % kind)
 
                 tt = time.clock()
-                obj = Struct()
-                obj.data, obj.gptr, obj.eptr \
-                          = dm_create_list( self.groups,
-                                            self.mesh.n_nod, mode, 1 )
+                obj = Facets.from_domain(self, kind)
+                obj.sort_and_orient()
+                obj.setup_unique()
+                obj.setup_neighbours()
 
-#                print "t = ", time.clock() - tt
-                ii = nm.arange( obj.data.shape[0], dtype = nm.int32 );
-                ii.shape = (ii.shape[0], 1)
-                aux = nm.concatenate( (obj.data, ii), 1 ).copy()
-    ##             print aux.flags['contiguous']
-                mu.sort_rows( aux, nm.array( sort_cols[mode], nm.int32 ) )
-    ##             print "->", aux
+                if kind == 'edges':
+                    self.ed = obj
 
-#                print "t = ", time.clock() - tt
-                obj.perm = perm = aux[:,-1].copy()
-                obj.data_s = aux[:,:-1].copy()
-                aux = nm.arange( perm.shape[0], dtype = nm.int32 )
-                obj.perm_i = nm.zeros_like( obj.perm )
-                obj.perm_i[perm] = aux
-
-##                 print perm
-##                 print obj.perm_i
-
-                ic = nm.where( nm.sum( nm.absolute( \
-                    obj.data_s[1:,3:] - obj.data_s[:-1,3:] ), 1 ), 0, 1 )
-		ic = nm.asarray( ic, dtype = nm.int32 )
-##                 print ic, len( ic )
-                obj.n_data = len( ic ) - 1
-                obj.n_unique = len( ic ) - nm.sum( ic ) - 1
-                obj.unique_list = nm.asarray( nm.where( ic[:-1] == 0 )[0],
-					     dtype = nm.int32 )
-#               print "t = ", time.clock() - tt
-
-                assert_( len( obj.unique_list ) == obj.n_unique )
-#                print obj.n_unique, obj.unique_list, obj.unique_list.shape
-                ii = nm.cumsum( ic[:-1] == 0, dtype = nm.int32 )
-                obj.uid = ii.copy()
-                obj.uid[0], obj.uid[1:] = 0, ii[:-1]
-                obj.uid_i = obj.uid[obj.perm_i[:-2]]
-##                 print obj
-##                 debug()
-
-                nobj = Struct()
-                nobj.pg, nobj.pel, nobj.pd, nobj.data, nobj.cnt, nobj.uid \
-                         = dm_neighbour_list( obj, self.groups, ic, perm, mode )
-#                print "t = ", time.clock() - tt
-
-
-                if mode == 0:
-#                    dm_print_neighbour_list( obj, nobj, pauses = True )
-                    self.ed, self.ned = obj, nobj
                 else:
-                    self.fa, self.nfa = obj, nobj
+                    self.fa = obj
 
-                output( '...done in %.2f s' % (time.clock() - tt) )
+                output('...done in %.2f s' % (time.clock() - tt))
+
         if not is_face:
-            self.fa, self.nfa = None, None
+            self.fa = None
 
     ##
     # 19.07.2006
