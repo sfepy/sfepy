@@ -182,8 +182,6 @@ class StokesDiv( CouplingVectorScalar ):
 
     def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
         state, virtual = self.get_args(['state', 'virtual'], **kwargs)
-        ap, vg = self.get_approximation(virtual)
-        ap, vg = self.get_approximation(virtual)
         apr, vgr = self.get_approximation(virtual)
         apc, vgc = self.get_approximation(state)
 
