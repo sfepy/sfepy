@@ -513,7 +513,7 @@ class Domain( Struct ):
     def get_cell_offsets( self ):
         offs = {}
         off = 0
-        for group in self.iter_groupsself.nfa ():
+        for group in self.iter_groups():
             ig = group.ig
             offs[ig] = off
             off += group.shape.n_el
