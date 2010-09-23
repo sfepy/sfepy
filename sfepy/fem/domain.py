@@ -451,7 +451,7 @@ class Domain( Struct ):
 
         self.setup_groups()
         self.fix_element_orientation()
-        self.setup_neighbour_lists()
+        self.setup_facets()
         self.reset_regions()
 
     def setup_groups( self ):
@@ -599,16 +599,17 @@ class Domain( Struct ):
         return sum( [group.shape.n_face
                      for group in self.iter_groups()] ) > 0
         
-
-    def setup_neighbour_lists(self, create_edge_list=True,
-                              create_face_list=True):
+    def setup_facets(self, create_edges=True, create_faces=True):
+        """
+        Setup the edges and faces (in 3D) of domain elements.
+        """
         kinds = ['edges', 'faces']
 
         is_face = self.has_faces()
-        flags = [create_edge_list, create_face_list and is_face]
+        create = [create_edges, create_faces and is_face]
 
         for ii, kind in enumerate(kinds):
-            if flags[ii]:
+            if create[ii]:
                 output('setting up domain %s...' % kind)
 
                 tt = time.clock()
@@ -617,11 +618,8 @@ class Domain( Struct ):
                 obj.setup_unique()
                 obj.setup_neighbours()
 
-                if kind == 'edges':
-                    self.ed = obj
-
-                else:
-                    self.fa = obj
+                # 'ed' or 'fa'
+                setattr(self, kind[:2], obj)
 
                 output('...done in %.2f s' % (time.clock() - tt))
 

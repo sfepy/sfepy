@@ -87,7 +87,7 @@ def main():
 
     if domain.has_faces():
         domain.fix_element_orientation()
-        domain.setup_neighbour_lists( create_edge_list = False )
+        domain.setup_facets(create_edges=False)
 
         lst, surf_faces = domain.surface_faces()
 
