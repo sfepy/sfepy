@@ -748,10 +748,10 @@ class Domain( Struct ):
         flag = fa.mark_surface_facets()
 
         surf_faces = []
-        itri = nm.where( flag == 1 )[0]
+        itri = nm.where(flag == 3)[0]
         if itri.size:
             surf_faces.append( fa.facets[itri,:3] )
-        itet = nm.where( flag == 2 )[0]
+        itet = nm.where(flag == 4)[0]
         if itet.size:
             surf_faces.append( fa.facets[itet,:4] )
 
