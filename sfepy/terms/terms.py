@@ -1061,13 +1061,11 @@ class Term(Struct):
 
         if is_trace:
             region, ig_map, ig_map_i = self.region.get_mirror_region()
-            g_key = (iname, region.name, geometry_type, ig)
+            region_name = region.name
             ig = ig_map_i[ig]
 
-        else:
-            g_key = (iname, region_name, geometry_type, ig)
-
         ap = variable.get_approximation(ig)
+        g_key = (iname, region_name, geometry_type, ap.name)
 
         ap.dim = variable.field.shape
         if geometry_type == 'surface_extra':
