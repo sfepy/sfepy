@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.base.la import permutations
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parseReg \
@@ -6,28 +7,36 @@ from sfepy.fem.parseReg \
 import fea
 import extmods.meshutils as mu
 
-"""
-The keys are binary masks of the lexicographical ordering.
-A bit i set to one means v[i] < v[i+1]. 
-"""
-orientation_maps = {
-    2 : {0 : [[1, 0], -1],
-         1 : [[0, 1],  1],},
-    3 : {0 : [[2, 1, 0], -3],
-         1 : [[2, 0, 1],  2],
-         2 : [[1, 2, 0],  3],
-         5 : [[0, 2, 1], -1],
-         6 : [[1, 0, 2], -2],
-         7 : [[0, 1, 2],  1],},
-    4 : {0  : [[3, 2, 1, 0], -4],
-         5  : [[2, 3, 0, 1],  3],
-         11 : [[3, 0, 1, 2],  2],
-         22 : [[1, 2, 3, 0],  4],
-         41 : [[0, 3, 2, 1], -1],
-         52 : [[2, 1, 0, 3], -3],
-         58 : [[1, 0, 3, 2], -2],
-         63 : [[0, 1, 2, 3],  1],},
-}
+def _build_orientation_map(n_fp):
+    """
+    The keys are binary masks of the lexicographical ordering of facet
+    vertices. A bit i set to one means `v[i] < v[i+1]`.
+
+    The values are `[original_order, permutation, orientation]`, where
+    `permutation` can be used to sort facet vertices lexicographically,
+    and `orientation` is the order of the first vertex + 1 times the
+    sign. Hence `permuted_facet = facet[permutation]`.
+    """
+    indices = range(n_fp)
+
+    cmps = [(i1, i2) for i2 in indices for i1 in indices[:i2]]
+    powers = [2**ii for ii in range(len(cmps))]
+
+    ori_map = {}
+    for indx in permutations(indices):
+        key = 0
+        sign = 1
+        for ip, power in enumerate(powers):
+            i1, i2 = cmps[ip]
+            less = (indx[i1] < indx[i2])
+            key += power * less
+            if not less:
+                sign *= -1
+
+        isort = nm.argsort(indx)
+        ori_map[key] = [indx, isort, sign * (indx[0] + 1)]
+
+    return ori_map, cmps, powers
 
 def _get_signed_orientation(ori, ori_map):
     """
@@ -35,12 +44,13 @@ def _get_signed_orientation(ori, ori_map):
     encoding to signed values.
     """
     i_from = nm.array(ori_map.keys())
-    i_to = [ii[1] for ii in ori_map.values()]
+    i_to = [ii[-1] for ii in ori_map.values()]
 
-    i_map = nm.empty((i_from.max() + 1,), dtype=nm.int8)
+    i_map = nm.zeros((i_from.max() + 1,), dtype=nm.int8)
     i_map[i_from] = i_to
 
     signed_ori = i_map[ori]
+    assert_((signed_ori != 0).all())
 
     return signed_ori
 
@@ -48,41 +58,23 @@ def _permute_facets(facets, ori, ori_map):
     """
     Return a copy of `facets` array with vertices sorted lexicographically.
     """
-    permuted_facets = nm.empty_like(facets)
+    assert_((nm.setmember1d(nm.unique(ori), ori_map.keys())).all())
+
+    permuted_facets = facets.copy()
 
     for key, ori_map in ori_map.iteritems():
-        perm = ori_map[0]
+        perm = ori_map[1]
         ip = nm.where(ori == key)[0]
         for ic0, ic1 in enumerate(perm):
             permuted_facets[ip,ic0] = facets[ip,ic1]
 
     return permuted_facets
 
-def _orient_edges(ori, facets):
-    iw = nm.where(facets[:,0] < facets[:,1])[0]
-    ori[iw] += 1
-
-def _orient_faces3(ori, facets):
-    iw = nm.where(facets[:,0] < facets[:,1])[0]
-    ori[iw] += 1
-    iw = nm.where(facets[:,1] < facets[:,2])[0]
-    ori[iw] += 2
-    iw = nm.where(facets[:,0] < facets[:,2])[0]
-    ori[iw] += 4
-
-def _orient_faces4(ori, facets):
-    iw = nm.where(facets[:,0] < facets[:,1])[0]
-    ori[iw] += 1
-    iw = nm.where(facets[:,1] < facets[:,2])[0]
-    ori[iw] += 2
-    iw = nm.where(facets[:,2] < facets[:,3])[0]
-    ori[iw] += 4
-    iw = nm.where(facets[:,0] < facets[:,2])[0]
-    ori[iw] += 8
-    iw = nm.where(facets[:,1] < facets[:,3])[0]
-    ori[iw] += 16
-    iw = nm.where(facets[:,0] < facets[:,3])[0]
-    ori[iw] += 32
+def _orient_facets(ori, facets, cmps, powers):
+    for ip, power in enumerate(powers):
+        i1, i2 = cmps[ip]
+        iw = nm.where(facets[:,i1] < facets[:,i2])[0]
+        ori[iw] += power
 
 class Facets(Struct):
 
@@ -161,9 +153,11 @@ class Facets(Struct):
             self.indx[ig] = slice(ii, ii+nn)
             ii += nn
 
-        self.n_fps = nm.empty(self.n_all_obj, dtype=nm.int32)
+        self.n_fps_vec = nm.empty(self.n_all_obj, dtype=nm.int32)
+        self.n_fps = {}
         for ig, facet in self.single_facets.iteritems():
-            self.n_fps[self.indx[ig]] = facet.shape[1]
+            self.n_fps_vec[self.indx[ig]] = facet.shape[1]
+            self.n_fps[ig] = facet.shape[1]
 
     def sort_and_orient(self):
         all_permuted_facets = nm.empty((self.n_all_obj + 2, self.n_col),
@@ -176,38 +170,32 @@ class Facets(Struct):
         all_permuted_facets[-2] = aux
         all_permuted_facets[-1] = aux + 1
         oris = {}
+        ori_maps = {}
 
         for ig in range(self.n_gr):
             io = self.indx[ig]
-            n_fp = self.single_facets[ig].shape[1]
-
             facets = self.facets[io]
+
+            n_fp = self.n_fps[ig]
+            ori_map, cmps, powers = _build_orientation_map(n_fp)
 
             # Determine orientation.
             ori = nm.zeros((facets.shape[0],), dtype=nm.int8)
-            if n_fp == 2: # Edges.
-                _orient_edges(ori, facets)
+            _orient_facets(ori, facets, cmps, powers)
 
-            elif n_fp == 3: # Triangles.
-                _orient_faces3(ori, facets)
-
-            elif n_fp == 4: # Quads.
-                _orient_faces4(ori, facets)
-
-            else:
-                raise ValueError('unknown facet type! (%d vertices)' % n_fp)
-
-            ori_map = orientation_maps[n_fp]
-
+            # Permute each facet to have indices in ascending order, so
+            # that lexicographic sorting works.
             permuted_facets = _permute_facets(facets, ori, ori_map)
             all_permuted_facets[io] = permuted_facets
 
             ori = _get_signed_orientation(ori, ori_map)
 
             oris[ig] = ori
+            ori_maps[ig] = ori_map
 
         self.permuted_facets = all_permuted_facets
         self.oris = oris
+        self.ori_maps = ori_maps
 
     def setup_unique(self):
         """
@@ -229,7 +217,7 @@ class Facets(Struct):
         self.perm_i = nm.zeros_like(self.perm)
         self.perm_i[perm] = aux
 
-        ic = nm.where(nm.diff(self.sorted_facets, axis=0).sum(1), 0, 1)
+        ic = nm.where(nm.abs(nm.diff(self.sorted_facets, axis=0)).sum(1), 0, 1)
         ic = ic.astype(nm.int32)
 
         self.n_unique = len(ic) - nm.sum(ic) - 1
@@ -258,9 +246,9 @@ class Facets(Struct):
         """
         flag: 0 .. inner, 2 .. edge, 3 .. triangle, 4 .. quadrangle
         """
-        nn = self.n_in_el[self.uid]
+        nn = self.n_in_el[self.uid_i]
 
-        flag = self.n_fps * (nn == 1)
+        flag = self.n_fps_vec * (nn == 1)
 
         return flag
 
@@ -321,15 +309,16 @@ def region_leaf(domain, regions, rdef, functions):
         elif token == 'E_NOS':
 
             if domain.fa: # 3D.
-                fa, nfa = domain.fa, domain.nfa
+                fa = domain.fa
             else:
-                fa, nfa = domain.ed, domain.ned
+                fa = domain.ed
 
-            flag = dm_mark_surface_faces( fa, nfa )
+            flag = fa.mark_surface_facets()
             ii = nm.where( flag > 0 )[0]
-            aux = nm.unique1d( fa.data[ii,3:].ravel() )
+            aux = nm.unique1d(fa.facets[ii])
             if aux[0] == -1: # Triangular faces have -1 as 4. point.
                 aux = aux[1:]
+
             region.can_cells = False
             region.set_vertices( aux )
 
@@ -594,8 +583,10 @@ class Domain( Struct ):
         group = self.groups[ii]
 
         if mode == 'edges':
-            ori = nm.zeros( (group.shape.n_el, group.gel.n_edge), nm.int32 )
-            mu.orient_edges( ori, group.conn, group.gel.edges );
+            oo = nm.reshape(self.ed.oris[ii],
+                            (group.shape.n_el, group.gel.n_edge))
+            ori = ((1 - oo) / 2).astype(nm.int32)
+
         elif mode == 'faces':
             output( 'orient faces' )
             raise NotImplementedError
@@ -638,14 +629,15 @@ class Domain( Struct ):
         if not is_face:
             self.fa = None
 
-    ##
-    # 19.07.2006
-    # 24.08.2006
-    def get_neighbour_lists( self, force_faces = False ):
+    def get_facets(self, force_faces=False):
+        """
+        Return edge and face descriptions.
+        """
         if force_faces and not self.fa:
-            return self.ed, self.ned, self.ed, self.ned
+            return self.ed, self.ed
+
         else:
-            return self.ed, self.ned, self.fa, self.nfa
+            return self.ed, self.fa
 
     def reset_regions(self):
         """Reset the list of regions associated with the domain."""
@@ -755,22 +747,19 @@ class Domain( Struct ):
             print "no faces defined!"
             raise ValueError
 
-        fa = Struct()
-        fa.data, fa.gptr, fa.eptr \
-                 = dm_create_list( self.groups, self.mesh.n_nod, 1, 0 )
-
-        flag = dm_mark_surface_faces( fa, self.nfa )
+        fa = self.fa
+        flag = fa.mark_surface_facets()
 
         surf_faces = []
         itri = nm.where( flag == 1 )[0]
         if itri.size:
-            surf_faces.append( fa.data[itri,3:6] )
+            surf_faces.append( fa.facets[itri,:3] )
         itet = nm.where( flag == 2 )[0]
         if itet.size:
-            surf_faces.append( fa.data[itet,3:7] )
+            surf_faces.append( fa.facets[itet,:4] )
 
         isurf = nm.where( flag >= 1 )[0]
         if isurf.size:
-            lst = fa.data[isurf,0:3]
+            lst = fa.indices[isurf]
 
         return lst, surf_faces
