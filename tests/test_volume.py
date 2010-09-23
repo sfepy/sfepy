@@ -48,7 +48,6 @@ class Test( TestCommon ):
     from_conf = staticmethod( from_conf )
 
     def test_volume( self ):
-        from sfepy.base.base import select_by_names
         from sfepy.fem import FieldVariable
 
         ok = True
@@ -73,7 +72,8 @@ class Test( TestCommon ):
         for key, val in volumes.items():
             err = nm.abs( avg - val ) / nm.abs( avg )
             _ok = err < 1e-12
-            self.report( '"'"%s"'" - relative volume difference: %e -> %s'\
+            self.report('"'"%s"'" - volume: %e' % (key, val))
+            self.report('"'"%s"'" - relative volume difference: %e -> %s'\
                          % (key, err, _ok) )
             ok = ok and _ok
 
