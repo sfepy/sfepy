@@ -604,7 +604,7 @@ class Approximations( Container ):
                     ap.econn[:,:aux.n_fp] = aux.leconn
                     ap.surface_data[region.name] = aux
 
-        ed, ned, fa, nfa = region.domain.get_neighbour_lists()
+        ed, fa = region.domain.get_facets()
         entt = self.ent_table
         cnt_en = nm.zeros( (entt.shape[1], ed.n_unique), nm.int32 ) - 1
 
@@ -614,10 +614,10 @@ class Approximations( Container ):
         ia = 0
         for ig, ap in self.iter_aps():
             if node_desc.edge:
-                cptr0 = int( ned.pel[ned.pg[ig]] )
+                cptr0 = ed.indx[ig].start
                 ori = self.edge_oris[ig]
                 iseq = mu.assign_edge_nodes( iseq, ap.econn, cnt_en, \
-                                           ori, entt, ned.uid, \
+                                           ori, entt, ed.uid_i, \
                                            node_desc.edge, cptr0 )[1]
 ##                 print ap.econn
 ##                 pause()

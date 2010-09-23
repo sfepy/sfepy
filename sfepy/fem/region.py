@@ -197,24 +197,18 @@ class Region( Struct ):
             if can_cells:
                 self.update_groups( force = True )
         
-    ##
-    # 15.06.2006, c
-    # 02.08.2006
-    # 21.02.2007
-    # 23.02.2007
-    # 30.03.2007
-    def complete_description( self, ed, fa ):
-        """self.edges, self.faces list edge/face indices per group (pointers to
-        ed.data, fa.data) - repetitions among groups are possible."""
+    def complete_description(self, ed, fa):
+        """
+        self.edges, self.faces list edge/face indices per group
+        (pointers to ed.facets, fa.facets) - repetitions among groups
+        are possible.
+        """
         ##
         # Get edges, faces, etc. par subdomain.
-        edges = ed.data
+        edges = ed.facets
 
         if fa is not None:
-            faces = fa.data.copy()
-            # Treat both 3, 4 node faces.
-            ii = nm.where( faces[:,-1] == -1 )[0]
-            faces[ii,-1] = faces[ii,3]
+            faces = fa.facets
 
         self.edges = {}
         self.faces = {}
@@ -232,22 +226,23 @@ class Region( Struct ):
             mask = nm.zeros( self.n_v_max, nm.int32 )
             mask[vv] = 1
 
-            ied = nm.arange( ed.gptr[ig], ed.gptr[ig+1], dtype = nm.int32 )
-            aux = nm.sum( mask[edges[ied,3:5]], 1 )
-            # Points to ed.data.
-            redges = ied[nm.where( aux == 2 )[0]]
+            indx = ed.indx[ig]
+            aux = nm.sum(mask[edges[indx]], 1)
+            # Points to ed.facets.
+            redges = indx.start + nm.where( aux == 2 )[0]
             self.edges[ig] = redges
             if fa is None: continue
-            
-            ifa = nm.arange( fa.gptr[ig], fa.gptr[ig+1], dtype = nm.int32 )
-            aux = nm.sum( mask[faces[ifa,3:7]], 1 )
-            # Points to fa.data.
-            rfaces = ifa[nm.where( aux == 4 )[0]]
+
+            n_fp = fa.n_fps[ig]
+            indx = fa.indx[ig]
+            aux = nm.sum(mask[faces[indx,:n_fp]], 1)
+            # Points to fa.facets.
+            rfaces = indx.start + nm.where(aux == n_fp)[0]
             self.faces[ig] = rfaces
 
             self.shape[ig].n_edge = redges.shape[0]
             self.shape[ig].n_face = rfaces.shape[0]
-            
+
         self.is_complete = True
 
     def setup_face_indices(self, reset=True):
@@ -255,7 +250,7 @@ class Region( Struct ):
         Initialize an array (per group) of (iel, ifa) for each face.
         """
         if reset or not self.fis:
-            fa = self.domain.get_neighbour_lists(force_faces=True)[2]
+            fa = self.domain.get_facets(force_faces=True)[1]
 
             if self.faces:
                 faces = self.faces
@@ -265,10 +260,9 @@ class Region( Struct ):
             self.fis = {}
             for ig in self.igs:
                 rfaces = faces[ig]
-                aux = fa.data[rfaces]
-                assert_( nm.all( aux[:,0] == ig ) )
-                fi = aux[:,1:3].copy()
-                self.fis[ig] = fi
+                fi = fa.indices[rfaces]
+                assert_(nm.all(fi[:,0] == ig))
+                self.fis[ig] = fi[:,1:].copy()
 
     ##
     # 05.09.2006, c
