@@ -456,7 +456,6 @@ class Domain( Struct ):
 
     def setup_groups( self ):
 
-        n_gr = len( self.mesh.conns )
         n_nod, dim = self.mesh.coors.shape
         self.shape = Struct( n_gr = len( self.mesh.conns ), n_el = 0,
                              n_nod = n_nod, dim = dim )
@@ -661,7 +660,7 @@ class Domain( Struct ):
 
         stack = self._region_stack
         try:
-            out = self._bnf.parseString(select)
+            self._bnf.parseString(select)
         except ParseException:
             print 'parsing failed:', select
             raise
@@ -696,8 +695,6 @@ class Domain( Struct ):
         tt = time.clock()
 
         self.reset_regions()
-        stack = self._region_stack
-        bnf = self._bnf
 
         ##
         # Sort region definitions by dependencies.
