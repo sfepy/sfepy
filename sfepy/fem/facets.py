@@ -269,3 +269,14 @@ class Facets(Struct):
         coors = cc[self.facets[ii,:self.n_fps[ig]]]
 
         return coors, uid
+
+    def get_uid_per_elements(self, ig=0):
+        """
+        Get unique ids of facets for all elements in group `ig`.
+        """
+        n_facet = self.single_facets[ig].shape[0]
+
+        uid_i = self.uid_i[self.indx[ig]]
+        uid_i.shape = (uid_i.shape[0] / n_facet, n_facet)
+
+        return uid_i
