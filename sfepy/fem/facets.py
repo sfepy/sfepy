@@ -249,3 +249,23 @@ class Facets(Struct):
         flag = self.n_fps_vec * (nn == 1)
 
         return flag
+
+    def get_coors(self, ig=0):
+        """
+        Get the coordinates of vertices of unique facets in group `ig`.
+
+        Returns
+        -------
+        coors : array
+            The coordinates in an array of shape `(n_f, n_v, dim)`.
+        uid : array
+            The unique ids of facets in the order of `coors`.
+        """
+        cc = self.domain.get_mesh_coors()
+
+        uid_i = self.uid_i[self.indx[ig]]
+        uid, ii = nm.unique1d(uid_i, return_index=True)
+
+        coors = cc[self.facets[ii,:self.n_fps[ig]]]
+
+        return coors, uid
