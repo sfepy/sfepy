@@ -1,4 +1,7 @@
-from sfepy.base.base import *
+import numpy as nm
+import scipy.sparse as sp
+
+from sfepy.base.base import Struct, assert_
 from sfepy.base.la import permutations
 import extmods.meshutils as mu
 
