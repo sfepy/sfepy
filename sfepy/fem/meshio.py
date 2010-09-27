@@ -520,7 +520,7 @@ class VTKMeshIO( MeshIO ):
     ##
     # c: 22.07.2008
     def read_bounding_box( self, ret_fd = False, ret_dim = False ):
-        coors, fd = self.read_coors(ret_fd=ret_fd)
+        coors, fd = self.read_coors(ret_fd=True)
         dim = self.get_dimension(coors)
         
         bbox = nm.vstack( (nm.amin( coors[:,:dim], 0 ),
