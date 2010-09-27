@@ -90,13 +90,11 @@ def post_process(out, pb, state, extend=False):
 
     dvel = pb.evaluate('de_diffusion_velocity.i1.Omega( m.K, p )')
     out['dvel'] = Struct(name='output_data',
-                         mode='cell', data=dvel,
-                         dof_types=None)
+                         mode='cell', data=dvel, dofs=None)
 
     stress = pb.evaluate('de_cauchy_stress.i1.Omega( m.D, u )')
     out['cauchy_stress'] = Struct(name='output_data',
-                                  mode='cell', data=stress,
-                                  dof_types=None)
+                                  mode='cell', data=stress, dofs=None)
     return out
 
 def define_input(filename, output_dir):

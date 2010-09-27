@@ -119,9 +119,8 @@ class TestLCBC( TestCommon ):
         out = problem.state_to_output( vec )
 
         strain = problem.evaluate('de_cauchy_strain.i1.Y( u )', mode='el_avg')
-        out['strain'] = Struct( name = 'output_data',
-                                mode = 'cell', data = strain,
-                                dof_types = None )
+        out['strain'] = Struct(name='output_data',
+                               mode='cell', data=strain, dofs=None)
 
         name = op.join( self.options.out_dir,
                         op.split( self.conf.output_name )[1] )

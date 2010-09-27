@@ -77,27 +77,23 @@ def stress_strain( out, problem, state, extend = False ):
     ev = problem.evaluate
     strain = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='strain')
-    out['green_strain'] = Struct( name = 'output_data',
-                                  mode = 'cell', data = strain,
-                                  dof_types = None )
+    out['green_strain'] = Struct(name='output_data',
+                                 mode='cell', data=strain, dofs=None)
 
     stress = ev('dw_tl_he_neohook.i1.Omega( solid.mu, v, u )',
                 mode='el_avg', term_mode='stress')
-    out['neohook_stress'] = Struct( name = 'output_data',
-                                    mode = 'cell', data = stress,
-                                    dof_types = None )
+    out['neohook_stress'] = Struct(name='output_data',
+                                   mode='cell', data=stress, dofs=None)
 
     stress = ev('dw_tl_he_mooney_rivlin.i1.Omega( solid.kappa, v, u )',
                 mode='el_avg', term_mode='stress')
-    out['mooney_rivlin_stress'] = Struct( name = 'output_data',
-                                          mode = 'cell', data = stress,
-                                          dof_types = None )
+    out['mooney_rivlin_stress'] = Struct(name='output_data',
+                                         mode='cell', data=stress, dofs=None)
 
     stress = ev('dw_tl_bulk_penalty.i1.Omega( solid.K, v, u )',
                 mode='el_avg', term_mode= 'stress')
-    out['bulk_stress'] = Struct( name = 'output_data',
-                                 mode = 'cell', data = stress,
-                                 dof_types = None )
+    out['bulk_stress'] = Struct(name='output_data',
+                                mode='cell', data=stress, dofs=None)
 
     return out
 

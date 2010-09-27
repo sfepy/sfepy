@@ -460,14 +460,14 @@ def save_recovery_region(mac_pb, rname, filename=None):
     # Save recovery region characteristic function.
     out = {}
     mask = region.get_charfun( by_cell = False, val_by_id = False )
-    out['vmask'] = Struct( name = 'output_data',
-                           mode = 'vertex', data = mask[:,nm.newaxis],
-                           dof_types = None )
+    out['vmask'] = Struct(name='output_data',
+                          mode='vertex', data=mask[:,nm.newaxis],
+                          dofs=None)
     mask = region.get_charfun( by_cell = True, val_by_id = False )
-    out['cmask'] = Struct( name = 'output_data',
-                           mode = 'cell',
-                           data = mask[:,nm.newaxis,nm.newaxis,nm.newaxis],
-                           dof_types = None )
+    out['cmask'] = Struct(name='output_data',
+                          mode='cell',
+                          data=mask[:,nm.newaxis,nm.newaxis,nm.newaxis],
+                          dofs=None)
 
     mac_pb.save_state(filename, out=out)
 

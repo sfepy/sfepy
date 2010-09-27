@@ -81,27 +81,23 @@ def post_process(out, problem, state, extend=False):
 
     val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
                            mode='el_avg', term_mode='strain')
-    out['green_strain'] = Struct(name = 'output_data',
-                                 mode = 'cell', data = val,
-                                 dof_types = None)
+    out['green_strain'] = Struct(name='output_data',
+                                 mode='cell', data=val, dofs=None)
 
     val = problem.evaluate('dw_tl_he_neohook.i1.Omega( ps.mu, v, u )',
                            mode='el_avg', term_mode='stress')
-    out['neohook_stress'] = Struct(name = 'output_data',
-                                   mode = 'cell', data = val,
-                                   dof_types = None)
+    out['neohook_stress'] = Struct(name='output_data',
+                                   mode='cell', data=val, dofs=None)
 
     val = problem.evaluate('dw_tl_bulk_pressure.i1.Omega( v, u, p )',
                            mode='el_avg', term_mode='stress')
-    out['bulk_pressure'] = Struct(name = 'output_data',
-                                  mode = 'cell', data = val,
-                                  dof_types = None)
+    out['bulk_pressure'] = Struct(name='output_data',
+                                  mode='cell', data=val, dofs=None)
 
     val = problem.evaluate('dw_tl_diffusion.i1.Omega( ps.k, ps.N_f, q, p, u[-1] )',
                            mode='el_avg', term_mode='diffusion_velocity')
-    out['diffusion_velocity'] = Struct(name = 'output_data',
-                                       mode = 'cell', data = val,
-                                       dof_types = None)
+    out['diffusion_velocity'] = Struct(name='output_data',
+                                       mode='cell', data=val, dofs=None)
 
     return out
 

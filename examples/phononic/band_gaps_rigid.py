@@ -283,9 +283,9 @@ def post_process( out, problem, mtx_phi ):
         strain = problem.evaluate('de_cauchy_strain.2.Y23( u )', u=var,
                                   verbose=False)
         strain = extend_cell_data( strain, problem, 'Y23' )
-        out['strain%03d' % ii] = Struct( name = 'output_data',
-                                           mode = 'cell', data = strain,
-                                           dof_types = None )
+        out['strain%03d' % ii] = Struct(name='output_data',
+                                        mode='cell', data=strain,
+                                        dofs=None)
     return out
 
 def save_log( filename, bg, log_item ):
