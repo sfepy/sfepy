@@ -195,7 +195,7 @@ class Struct( object ):
         if len(seq) > threshold:
             out = ', '.join(str(ii) for ii in seq[:threshold_half]) \
                   + ', ..., ' \
-                  + ', '.join(str(ii) for ii in seq[threshold_half:])
+                  + ', '.join(str(ii) for ii in seq[-threshold_half:])
 
         else:
             out = str(seq)
