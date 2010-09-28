@@ -240,6 +240,57 @@ class Facets(Struct):
 
         self.n_in_el = self.mtx * ones.astype(nm.int32)
 
+    def find_group_interfaces(self, return_surface=True):
+        """
+        Find facets that create boundary between different element
+        groups, i.e. facets that each belongs to two elements in
+        different groups.
+
+        Parameters
+        ----------
+        return_surface : bool
+            If True, the surface facets are also returned.
+
+        Returns
+        -------
+        inter_facets : array
+            The array with indices to `self.facets` of shape `(n_i, 2)`,
+            where `n_i` is the number of the interface facets. Each row
+            corresponds to a single unique facet, each column to the
+            corresponding two facets from each side of the interface.
+        surface_facets : array, optional
+            The array with indices to `self.facets` of shape `(n_s,)`,
+            where `n_s` is the number of the surface facets.
+        """
+        mtx = self.mtx.tocsr()
+
+        # ... inner facets are in two elements
+        i2 = nm.where(self.n_in_el == 2)[0]
+
+        face_map = mtx[i2]
+        uid, ifacets = face_map.nonzero()
+
+        # ... sort by uid
+        ii = nm.argsort(uid)
+        ifacets = ifacets[ii]
+        ifacets.shape = (i2.shape[0], 2)
+
+        igs = self.indices[ifacets, 0]
+
+        # ... interface facets are in two groups
+        ii = nm.where(igs[:, 0] != igs[:, 1])[0]
+        inter_facets = ifacets[ii]
+
+        out = [inter_facets]
+
+        if return_surface:
+            i1 = nm.where(self.n_in_el == 1)[0]
+            face_map = mtx[i1]
+            _, surface_facets = face_map.nonzero()
+            out = out + [surface_facets]
+
+        return out
+
     def mark_surface_facets(self):
         """
         flag: 0 .. inner, 2 .. edge, 3 .. triangle, 4 .. quadrangle
