@@ -2,8 +2,7 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.base.la as la
-from sfepy.fem.mesh import make_inverse_connectivity, find_nearest_nodes, \
-     TreeItem
+from sfepy.fem.mesh import make_inverse_connectivity
 from sfepy.fem.integrals import Integral
 from extmods.fem import evaluate_at
 from sfepy.fem.utils import extend_cell_data
