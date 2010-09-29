@@ -624,3 +624,58 @@ class Mesh( Struct ):
         graph = sp.csr_matrix((data, icol, prow), shape)
 
         return graph
+
+    def explode_groups(self, eps):
+        """
+        Explode the mesh element groups by `eps`, i.e. split group
+        interface nodes and shrink each group towards its centre by
+        `eps`.
+
+        Parameters
+        ----------
+        eps : float in `[0.0, 1.0]`
+            The group shrinking factor.
+
+        Returns
+        -------
+        mesh : Mesh
+            The new mesh with exploded groups.
+        """
+        assert_(0.0 <= eps <= 1.0)
+
+        remap = nm.empty((self.n_nod,), dtype=nm.int32)
+        offset = 0
+
+        coors = []
+        ngroups = []
+        conns = []
+        mat_ids = []
+        descs = []
+        for ig, conn in enumerate(self.conns):
+            nodes = nm.unique(conn)
+            group_coors = self.coors[nodes]
+            n_nod = group_coors.shape[0]
+
+            centre = group_coors.sum(axis=0) / float(n_nod)
+            vectors = group_coors - centre[None, :]
+            new_coors = centre + (vectors * eps)
+
+            remap[nodes] = nm.arange(n_nod, dtype=nm.int32) + offset
+            new_conn = remap[conn]
+
+            coors.append(new_coors)
+            ngroups.append(self.ngroups[nodes])
+
+            conns.append(new_conn)
+            mat_ids.append(self.mat_ids[ig])
+            descs.append(self.descs[ig])
+
+            offset += n_nod
+
+        coors = nm.concatenate(coors, axis=0)
+        ngroups = nm.concatenate(ngroups, axis=0)
+
+        mesh = Mesh('exploded_' + self.name)
+        mesh._set_data(coors, ngroups, conns, mat_ids, descs)
+
+        return mesh
