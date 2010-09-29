@@ -1,8 +1,9 @@
-from sfepy.base.base import *
-import sfepy.base.la as la
-from meshio import MeshIO
+import time
+import numpy as nm
+import scipy.sparse as sp
 
-import os.path as op
+from sfepy.base.base import Struct, output, assert_
+from meshio import MeshIO
 
 ##
 # 28.05.2007, c
@@ -62,7 +63,6 @@ def find_map( x1, x2, eps = 1e-8, allow_double = False, join = True ):
 
 def merge_mesh( x1, ngroups1, conns1, x2, ngroups2, conns2, cmap, eps = 1e-8 ):
     """Merge two meshes in common coordinates found in x1, x2."""
-    nc = cmap.shape[0]
     n1 = x1.shape[0]
     n2 = x2.shape[0]
 
@@ -348,7 +348,7 @@ class Mesh( Struct ):
                     mesh.conns.append( mesh_in.conns[ig][els,:].copy() )
 
             if save_edges:
-                ed = self.domain.ed
+                ed = region.domain.ed
                 for ig in region.igs:
                     edges = region.get_edges( ig )
                     mesh.descs.append( '1_2' )
