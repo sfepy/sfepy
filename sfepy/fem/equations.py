@@ -263,7 +263,8 @@ class Equations( Container ):
 
         return rdcs, cdcs
 
-    def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None):
+    def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,
+                            shape=None):
         """
         Create tangent matrix graph, i.e. preallocate and initialize the
         sparse storage needed for the tangent matrix. Order of DOF
@@ -278,6 +279,10 @@ class Equations( Container ):
         rdcs, cdcs : arrays, optional
             Additional row and column DOF connectivities, corresponding
             to the variables used in the equations.
+        shape : tuple, optional
+            The required shape, if it is different from the shape
+            determined by the equations variables. This may be needed if
+            additional row and column DOF connectivities are passed in.
 
         Returns
         -------
@@ -289,7 +294,8 @@ class Equations( Container ):
             output('no matrix (no test variables)!')
             return None
 
-        shape = self.variables.get_matrix_shape()
+        shape = get_default(shape, self.variables.get_matrix_shape())
+
         output( 'matrix shape:', shape )
         if nm.prod( shape ) == 0:
             output( 'no matrix (zero size)!' )
