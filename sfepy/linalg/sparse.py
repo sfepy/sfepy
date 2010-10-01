@@ -51,7 +51,35 @@ def insert_sparse_to_csr(mtx1, mtx2, irs, ics):
     fem.assemble_matrix(mtx1.data, mtx1.indptr, mtx1.indices, data,
                         iels, 1.0, rows, cols)
 
-def compose_sparse(blocks):
+def _normalize_sizes(sizes):
+    """
+    Checks whether all the sizes are either slices or not. Transforms
+    slices into their sizes.
+    """
+    out = []
+    ns = 0
+    for size in sizes:
+        if isinstance(size, slice):
+            size = size.stop - size.start
+            ns += 1
+
+        else:
+            size = int(size)
+
+        out.append(size)
+
+    if ns:
+        if ns != len(sizes):
+            raise ValueError('cannot mix sizes with slices! (%s)' % (sizes,))
+
+        is_slice = True
+
+    else:
+        is_slice = False
+
+    return out, is_slice
+
+def compose_sparse(blocks, row_sizes=None, col_sizes=None):
     """
     Compose sparse matrices into a global sparse matrix.
 
@@ -61,6 +89,14 @@ def compose_sparse(blocks):
         The sequence of sequences of equal lengths - the individual
         sparse matrix blocks. The integer 0 can be used to mark an all-zero
         block, if its size can be determined from the other blocks.
+    row_sizes : sequence, optional
+        The required row sizes of the blocks. It can be either a
+        sequence of non-negative integers, or a sequence of slices with
+        non-negative limits. In any case the sizes have to be compatible
+        with the true block sizes. This allows to extend the matrix
+        shape as needed and to specify sizes of all-zero blocks.
+    col_sizes : sequence, optional
+        The required column sizes of the blocks. See `row_sizes`.
 
     Returns
     -------
@@ -83,8 +119,20 @@ def compose_sparse(blocks):
     if not len(blocks):
         raise ValueError('no matrix blocks!')
 
-    row_sizes = nm.array([-1] * len(blocks))
-    col_sizes = nm.array([-1] * len(blocks[0]))
+    if row_sizes is None:
+        row_sizes = nm.array([-1] * len(blocks))
+
+    else:
+        assert_(len(row_sizes) == len(blocks))
+
+    if col_sizes is None:
+        col_sizes = nm.array([-1] * len(blocks[0]))
+
+    else:
+        assert_(len(col_sizes) == len(blocks[0]))
+
+    rs, is_slice_r = _normalize_sizes(row_sizes)
+    cs, is_slice_c = _normalize_sizes(col_sizes)
 
     for ir, row in enumerate(blocks):
         for ic, mtx in enumerate(row):
@@ -94,30 +142,43 @@ def compose_sparse(blocks):
             if ic >= len(col_sizes):
                 raise ValueError('invalid row size at (%d, %d)!' % (ir, ic))
 
-            if row_sizes[ir] == -1:
-                row_sizes[ir] = mtx.shape[0]
+            if rs[ir] == -1:
+                rs[ir] = mtx.shape[0]
 
-            elif row_sizes[ir] != mtx.shape[0]:
+            elif rs[ir] != mtx.shape[0]:
                 msg = 'incompatible matrix block row size at (%d, %d)!' \
                       % (ir, ic)
                 raise ValueError(msg)
 
-            if col_sizes[ic] == -1:
-                col_sizes[ic] = mtx.shape[1]
+            if cs[ic] == -1:
+                cs[ic] = mtx.shape[1]
 
-            elif col_sizes[ic] != mtx.shape[1]:
+            elif cs[ic] != mtx.shape[1]:
                 msg = 'incompatible matrix block column size at (%d, %d)!' \
                       % (ic, ic)
                 raise ValueError(msg)
 
-    if nm.any(row_sizes == -1):
+    if nm.any(rs == -1):
         raise ValueError('incomplete row block sizes! (%s)' % row_sizes)
 
-    if nm.any(col_sizes == -1):
-        raise ValueError('incomplete column block sizes! (%s)' % row_sizes)
+    if nm.any(cs == -1):
+        raise ValueError('incomplete column block sizes! (%s)' % col_sizes)
 
-    row_offsets = nm.cumsum(nm.r_[0, row_sizes])
-    col_offsets = nm.cumsum(nm.r_[0, col_sizes])
+    if is_slice_r:
+        row_offsets = nm.array(nm.r_[0, [ii.start for ii in row_sizes]])
+        n_row = row_sizes[-1].stop
+
+    else:
+        row_offsets = nm.cumsum(nm.r_[0, rs])
+        n_row = row_offsets[-1]
+
+    if is_slice_c:
+        col_offsets = nm.array(nm.r_[0, [ii.start for ii in col_sizes]])
+        n_col = col_sizes[-1].stop
+
+    else:
+        col_offsets = nm.cumsum(nm.r_[0, cs])
+        n_col = col_offsets[-1]
 
     rows = []
     cols = []
@@ -137,7 +198,6 @@ def compose_sparse(blocks):
     cols = nm.concatenate(cols)
     datas = nm.concatenate(datas)
 
-    mtx = sp.coo_matrix((datas, (rows, cols)),
-                        shape=(row_offsets[-1], col_offsets[-1]))
+    mtx = sp.coo_matrix((datas, (rows, cols)), shape=(n_row, n_col))
 
     return mtx
