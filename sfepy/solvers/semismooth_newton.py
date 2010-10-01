@@ -244,8 +244,6 @@ class SemismoothNewton(Newton):
                     step_mode = 'steepest_descent'
                     vec_dx = mtx_jac.T * vec_r
 
-                    debug()
-
             else:
                 vec_dx = mtx_jac.T * vec_r
 
@@ -309,7 +307,7 @@ class SemismoothNewton(Newton):
                 mtx_a_z = mtx_a[iz]
                 mtx_b_z = mtx_b[iz]
 
-                sqrt_ab = nm.empty_like(vec_a_r)
+                sqrt_ab = nm.empty((iz.shape[0],), dtype=vec_a_r.dtype)
                 for ir in range(len(iz)):
                     row_a_z = mtx_a_z[ir]
                     row_b_z = mtx_b_z[ir]
