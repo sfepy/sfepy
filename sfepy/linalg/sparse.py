@@ -165,7 +165,7 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
         raise ValueError('incomplete column block sizes! (%s)' % col_sizes)
 
     if is_slice_r:
-        row_offsets = nm.array(nm.r_[0, [ii.start for ii in row_sizes]])
+        row_offsets = nm.array(nm.r_[0, [ii.stop for ii in row_sizes]])
         n_row = row_sizes[-1].stop
 
     else:
@@ -173,7 +173,7 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
         n_row = row_offsets[-1]
 
     if is_slice_c:
-        col_offsets = nm.array(nm.r_[0, [ii.start for ii in col_sizes]])
+        col_offsets = nm.array(nm.r_[0, [ii.stop for ii in col_sizes]])
         n_col = col_sizes[-1].stop
 
     else:
