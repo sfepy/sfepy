@@ -224,7 +224,8 @@ class ProblemConf( Struct ):
     """
 
     @staticmethod
-    def from_file(filename, required=None, other=None, verbose=True):
+    def from_file(filename, required=None, other=None, verbose=True,
+                  define_args=None):
         """
         Loads the problem definition from a file.
 
@@ -248,11 +249,19 @@ class ProblemConf( Struct ):
                 }
                 return locals()
 
+        Optionally, the define() function can accept keyword arguments
+        that should be defined using the `define_args` dictionary.
         """
         funmod = import_file( filename )
 
+
         if "define" in funmod.__dict__:
-            define_dict = funmod.__dict__["define"]()
+            if define_args is None:
+                define_dict = funmod.__dict__["define"]()
+
+            else:
+                define_dict = funmod.__dict__["define"](**define_args)
+
         else:
             define_dict = funmod.__dict__
 
