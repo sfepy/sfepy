@@ -263,7 +263,7 @@ class ProblemConf( Struct ):
 
     @staticmethod
     def from_module(module, required=None, other=None, verbose=True):
-        obj = ProblemConf(module.__dict__, funmod, module.__name__,
+        obj = ProblemConf(module.__dict__, module, module.__name__,
                           required, other, verbose)
 
         return obj
