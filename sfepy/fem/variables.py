@@ -1321,7 +1321,7 @@ class FieldVariable(Variable):
 
             region = self.field.region
             nod_list = region.get_field_nodes(self.field, clean=True)
-            nods = nm.unique1d(nm.hstack(nod_list))
+            nods = nm.unique(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
             self.data_from_any(setter(ts, coor, region=region))
@@ -1416,7 +1416,7 @@ class FieldVariable(Variable):
                 continue
 
             vv = nm.empty( (0,), dtype = self.dtype )
-            nods = nm.unique1d( nm.hstack( nod_list ) )
+            nods = nm.unique( nm.hstack( nod_list ) )
             coor = self.field.get_coor( nods )
             if type( val ) == str:
                 fun = functions[val]
@@ -1495,7 +1495,7 @@ class FieldVariable(Variable):
 
         diameters = nm.empty((cells.shape[0],), dtype=nm.float64)
 
-        igs = nm.unique1d(cells[:,0])
+        igs = nm.unique(cells[:,0])
         for ig in igs:
             ap = field.aps.aps_per_group[ig]
             vg = ap.describe_geometry(field, 'volume', field.region)

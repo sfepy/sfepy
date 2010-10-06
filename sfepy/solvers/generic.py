@@ -50,7 +50,7 @@ def prepare_save_data( ts, conf ):
         save_steps = ts.n_step
 
     is_save = nm.linspace( 0, ts.n_step - 1, save_steps ).astype( nm.int32 )
-    is_save = nm.unique1d( is_save )
+    is_save = nm.unique( is_save )
 
     return ts.suffix, is_save
 

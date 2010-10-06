@@ -400,7 +400,7 @@ class LCBCOperator(Struct):
         """
         Treat dofs with periodic BC.
         """
-        umeq, indx = nm.unique1d(master_equations, return_index=True)
+        umeq, indx = nm.unique(master_equations, return_index=True)
         indx.sort()
         self.mtx = self.mtx[indx]
 

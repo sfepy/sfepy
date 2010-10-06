@@ -431,7 +431,7 @@ class Field( Struct ):
             noff = ap.node_offsets.ravel()
             if noff[1] == noff[-1]:
                 # Vertex values only...
-                ii = nm.unique1d(conn) # Probably wrong?!
+                ii = nm.unique(conn) # Probably wrong?!
                 enod_vol_val[ii] = vec[ii]
                 continue
 

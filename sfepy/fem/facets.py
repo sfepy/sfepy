@@ -56,7 +56,7 @@ def _permute_facets(facets, ori, ori_map):
     """
     Return a copy of `facets` array with vertices sorted lexicographically.
     """
-    assert_((nm.setmember1d(nm.unique(ori), ori_map.keys())).all())
+    assert_((nm.in1d(nm.unique(ori), ori_map.keys())).all())
 
     permuted_facets = facets.copy()
 
@@ -315,7 +315,7 @@ class Facets(Struct):
         cc = self.domain.get_mesh_coors()
 
         uid_i = self.uid_i[self.indx[ig]]
-        uid, ii = nm.unique1d(uid_i, return_index=True)
+        uid, ii = nm.unique(uid_i, return_index=True)
 
         coors = cc[self.facets[ii,:self.n_fps[ig]]]
 

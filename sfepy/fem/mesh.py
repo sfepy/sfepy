@@ -254,7 +254,7 @@ class Mesh( Struct ):
         Create a mesh given a set of surface faces and the original mesh.
         """
         aux = nm.concatenate([faces.ravel() for faces in surf_faces])
-        inod = nm.unique1d(aux)
+        inod = nm.unique(aux)
 
         n_nod = len( inod )
         n_nod_m, dim = mesh_in.coors.shape
@@ -575,7 +575,7 @@ class Mesh( Struct ):
         mat_ids = []
         for ig, conn in enumerate(self.conns):
             aux = remap[conn]
-            ii = nm.unique1d(nm.where(aux == -1)[0])
+            ii = nm.unique(nm.where(aux == -1)[0])
             ii = nm.setdiff1d(nm.arange(conn.shape[0], dtype=nm.int32), ii)
             conns.append(aux[ii])
             mat_ids.append(self.mat_ids[ig][ii])

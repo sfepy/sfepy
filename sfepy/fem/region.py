@@ -138,9 +138,9 @@ class Region( Struct ):
             rcells = self.cells[ig]
             conn = group.conn
             nods = conn[rcells,:].ravel()
-            aux = nm.unique1d( nods )
+            aux = nm.unique( nods )
             self.vertices[ig] = aux
-            self.all_vertices = nm.unique1d( nm.r_[self.all_vertices, aux] )
+            self.all_vertices = nm.unique( nm.r_[self.all_vertices, aux] )
         
     ##
     # 15.06.2006, c
@@ -514,7 +514,7 @@ class Region( Struct ):
 
         if merge:
             nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique1d( nm.hstack( nods ) )
+            nods = nm.unique( nm.hstack( nods ) )
 
         elif clean:
             for nn in nods[:]:

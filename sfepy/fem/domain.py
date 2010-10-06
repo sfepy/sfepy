@@ -69,7 +69,7 @@ def region_leaf(domain, regions, rdef, functions):
 
             flag = fa.mark_surface_facets()
             ii = nm.where( flag > 0 )[0]
-            aux = nm.unique1d(fa.facets[ii])
+            aux = nm.unique(fa.facets[ii])
             if aux[0] == -1: # Triangular faces have -1 as 4. point.
                 aux = aux[1:]
 
@@ -217,7 +217,7 @@ class Domain( Struct ):
         for ii in range( self.shape.n_gr ):
             gel = self.geom_els[self.mesh.descs[ii]] # Shortcut.
             conn = self.mesh.conns[ii]
-            vertices = nm.unique1d( conn )
+            vertices = nm.unique( conn )
 
             n_vertex = vertices.shape[0]
             n_el, n_ep = conn.shape

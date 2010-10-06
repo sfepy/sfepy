@@ -98,7 +98,6 @@ class CharacteristicFunction( Struct ):
         return self.local_chunk
 
 class ConnInfo(Struct):
-    mirror_map = {}
 
     def get_region(self, can_trace=True):
         if self.is_trace and can_trace:
@@ -652,7 +651,7 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if not nm.all(nm.setmember1d(self.region.all_vertices,
+            if not nm.all(nm.in1d(self.region.all_vertices,
                                          field.region.all_vertices)):
                 msg = ('%s: incompatible regions: (self, field %s)'
                        + '(%s in %s)') %\

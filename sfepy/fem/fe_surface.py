@@ -28,7 +28,7 @@ class FESurface(Struct):
             econn[ir] = ee[ir,face]
 
         ef = econn.flat
-        nodes = nm.unique1d(ef)
+        nodes = nm.unique(ef)
 
         aux = -nm.ones((nm.max( ef ) + 1,), dtype=nm.int32)
         aux[nodes] = nm.arange(len(nodes), dtype=nm.int32)

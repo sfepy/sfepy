@@ -114,8 +114,8 @@ class DualMesh(Struct):
         eo = nm.empty((sh[0] * sh[1],), dtype=nm.object)
         eo[:] = [tuple(ii) for ii in edges_per_face]
 
-        ueo, e_sort, e_id = nm.unique1d(eo, return_index=True,
-                                        return_inverse=True)
+        ueo, e_sort, e_id = nm.unique(eo, return_index=True,
+                                      return_inverse=True)
         ueo = edges_per_face[e_sort]
 
         # edge centre, edge point 1, face centre, edge point 2
