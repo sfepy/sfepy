@@ -5,6 +5,7 @@ equations (active DOFs).
 Helper functions for the equation mapping.
 """
 from sfepy.base.base import *
+from sfepy.base.compat import unique
 from sfepy.fem.utils import compute_nodal_normals
 from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
@@ -400,7 +401,7 @@ class LCBCOperator(Struct):
         """
         Treat dofs with periodic BC.
         """
-        umeq, indx = nm.unique(master_equations, return_index=True)
+        umeq, indx = unique(master_equations, return_index=True)
         indx.sort()
         self.mtx = self.mtx[indx]
 

@@ -1,4 +1,5 @@
 from sfepy.base.base import *
+from sfepy.base.compat import in1d
 try:
     from sfepy.terms.extmods import terms
 except (ImportError, AttributeError):
@@ -651,8 +652,8 @@ class Term(Struct):
             if field is None:
                 continue
 
-            if not nm.all(nm.in1d(self.region.all_vertices,
-                                         field.region.all_vertices)):
+            if not nm.all(in1d(self.region.all_vertices,
+                               field.region.all_vertices)):
                 msg = ('%s: incompatible regions: (self, field %s)'
                        + '(%s in %s)') %\
                        (self.name, field.name,

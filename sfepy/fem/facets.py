@@ -2,6 +2,7 @@ import numpy as nm
 import scipy.sparse as sp
 
 from sfepy.base.base import Struct, assert_
+from sfepy.base.compat import in1d, unique
 from sfepy.base.la import permutations
 import extmods.meshutils as mu
 
@@ -56,7 +57,7 @@ def _permute_facets(facets, ori, ori_map):
     """
     Return a copy of `facets` array with vertices sorted lexicographically.
     """
-    assert_((nm.in1d(nm.unique(ori), ori_map.keys())).all())
+    assert_((in1d(nm.unique(ori), ori_map.keys())).all())
 
     permuted_facets = facets.copy()
 
@@ -315,7 +316,7 @@ class Facets(Struct):
         cc = self.domain.get_mesh_coors()
 
         uid_i = self.uid_i[self.indx[ig]]
-        uid, ii = nm.unique(uid_i, return_index=True)
+        uid, ii = unique(uid_i, return_index=True)
 
         coors = cc[self.facets[ii,:self.n_fps[ig]]]
 
