@@ -16,8 +16,9 @@ class Evaluator( Struct ):
 # 02.10.2007, c
 class BasicEvaluator( Evaluator ):
 
-    def __init__(self, problem):
-        Evaluator.__init__(self, problem=problem)
+    def __init__(self, problem, matrix_hook=None):
+        Evaluator.__init__(self, problem=problem,
+                           matrix_hook=matrix_hook)
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
@@ -55,6 +56,9 @@ class BasicEvaluator( Evaluator ):
                        exc.args[1].name, exc.args[2].desc, exc.args[3] ) )
             raise ValueError
 
+        if self.matrix_hook is not None:
+            mtx = self.matrix_hook(mtx, self.problem, call_mode='basic')
+
         return mtx
 
     ##
@@ -78,8 +82,8 @@ class LCBCEvaluator( BasicEvaluator ):
 
     ##
     # 04.10.2007, c
-    def __init__(self, problem):
-        BasicEvaluator.__init__(self, problem)
+    def __init__(self, problem, matrix_hook=None):
+        BasicEvaluator.__init__(self, problem, matrix_hook=matrix_hook)
         self.op_lcbc = problem.equations.get_lcbc_operator()
 
     ##
@@ -109,6 +113,10 @@ class LCBCEvaluator( BasicEvaluator ):
 ##         spy( mtx_r )
 ##         pylab.show()
 ##         print mtx_r.__repr__()
+
+        if self.matrix_hook is not None:
+            mtx_r = self.matrix_hook(mtx_r, self.problem, call_mode='lcbc')
+
         return mtx_r
 
     ##

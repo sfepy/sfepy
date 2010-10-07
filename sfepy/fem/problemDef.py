@@ -302,11 +302,13 @@ class ProblemDefinition( Struct ):
         if not keep_solvers:
             self.solvers = None
 
-    ##
-    # c: 16.10.2007, r: 20.02.2008
-    def set_solvers( self, conf_solvers = None, options = None ):
-        """If solvers are not set in options, use first suitable in
-        conf_solvers."""
+    def set_solvers(self, conf_solvers=None, options=None):
+        """
+        Choose which solvers should be used. If solvers are not set in
+        `options`, use first suitable in `conf_solvers`.
+
+        Also set `matrix_hook` function, if given in `options`.
+        """
         conf_solvers = get_default( conf_solvers, self.conf.solvers )
         self.solver_confs = {}
         for key, val in conf_solvers.iteritems():
@@ -338,6 +340,11 @@ class ProblemDefinition( Struct ):
             info += '\n                ls: %s' % self.ls_conf.name
         if info != 'using solvers:':
             output( info )
+
+        hook = options.get('matrix_hook', None)
+        if hook is not None:
+            hook = getattr(self.conf.funmod, hook)
+        self.matrix_hook = hook
 
     ##
     # Utility functions below.
@@ -733,9 +740,9 @@ class ProblemDefinition( Struct ):
                       ' set reuse to False!')
         else:
             if self.equations.variables.has_lcbc:
-                ev = LCBCEvaluator(self)
+                ev = LCBCEvaluator(self, matrix_hook=self.matrix_hook)
             else:
-                ev = BasicEvaluator(self)
+                ev = BasicEvaluator(self, matrix_hook=self.matrix_hook)
 
         self.evaluator = ev
         
