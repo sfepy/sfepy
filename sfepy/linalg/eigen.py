@@ -17,20 +17,32 @@ def sym_tri_eigen(diags):
     mtx = sps.dia_matrix((aux, (0, -1, 1)), shape=shape)
 
     eigs, _ = nm.linalg.eig(mtx.toarray())
+    eigs.sort()
 
     return eigs
 
-def cg_eigen(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
-             verbose=False):
+def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
+            verbose=False, report_step=10):
     """
     Make several iterations of the conjugate gradients and estimate so
     the eigenvalues of a (sparse) SPD matrix (Lanczos algorithm).
+
+    Returns
+    -------
+    vec : array
+        The approximate solution to the linear system.
+    n_it : int
+        The number of CG iterations used.
+    norm_rs : array
+        Convergence history of residual norms
+    eigs : array
+        The approximate eigenvalues sorted in ascending order.
     """
     n_row = mtx.shape[0]
     norm = nm.linalg.norm
 
     rhs = get_default(rhs, nm.random.rand(n_row))
-    i_max = get_default(i_max, max(n_row, 1000))
+    i_max = get_default(i_max, min(n_row, 100))
 
     lambda_max = 0
     lambda_min = 0
@@ -90,10 +102,9 @@ def cg_eigen(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
         diags[0, ii+1] = beta / alpha
 
         if verbose:
-            if ii % 100:
+            if (ii % report_step) == 1:
                 eigs = sym_tri_eigen(diags[:, :ii+1])
-                lambda_max = eigs.max()
-                lambda_min = eigs.min()
+                lambda_min, lambda_max = eigs[0], eigs[-1]
                 econd = lambda_max / lambda_min
                 output('%5d lambda: %e %e cond: %e |R|: %e\n'
                        % (ii, lambda_min, lambda_max, econd, norm_r))
@@ -107,11 +118,28 @@ def cg_eigen(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
         rho0 = rho1
 
     eigs = sym_tri_eigen(diags[:, :ii+1])
-    lambda_max = eigs.max()
-    lambda_min = eigs.min()
+    lambda_min, lambda_max = eigs[0], eigs[-1]
     econd = lambda_max / lambda_min
     if verbose:
         output('min: %e  max: %e  cond: %e\n'
                % (lambda_min, lambda_max, econd))
 
-    return x, ii, norm_rs, eigs
+    return x, ii, nm.array(norm_rs), eigs
+
+def arpack_eigs(mtx, nev=1, which='SM'):
+    """
+    Calculate several eigenvalues and corresponding eigenvectors of a
+    matrix using ARPACK from SciPy. The eigenvalues are sorted in
+    ascending order.
+    """
+    from scipy.sparse.linalg.interface import aslinearoperator
+    from scipy.sparse.linalg.eigen.arpack import speigs
+
+    matvec = aslinearoperator(mtx).matvec
+    eigs, vecs = speigs.ARPACK_eigs(matvec, mtx.shape[0], nev=nev, which=which)
+
+    ii = nm.argsort(eigs)
+    eigs = eigs[ii]
+    vecs = vecs[:,ii]
+
+    return eigs, vecs
