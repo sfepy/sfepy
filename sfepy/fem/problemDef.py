@@ -149,6 +149,7 @@ class ProblemDefinition( Struct ):
         self.setup_output()
 
     def reset(self):
+        self.matrix_hook = None
         self.mtx_a = None
         self.solvers = None
         self.clear_equations()
