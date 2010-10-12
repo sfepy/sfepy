@@ -1,9 +1,10 @@
-from sfepy.base.base import *
-import sfepy.base.la as la
+import time
+import numpy as nm
+
+from sfepy.base.base import output, iter_dict_of_lists, get_default, Struct
 import fea
-from mesh import Mesh, make_point_cells
-import sfepy.terms as terms
-import extmods.geometry as gm
+from sfepy.fem.mesh import Mesh, make_point_cells
+
 def parse_approx_order(approx_order):
     """
     Parse the uniform approximation order value (str or int).
