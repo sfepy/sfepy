@@ -4,6 +4,33 @@ import fea
 from mesh import Mesh, make_point_cells
 import sfepy.terms as terms
 import extmods.geometry as gm
+def parse_approx_order(approx_order):
+    """
+    Parse the uniform approximation order value (str or int).
+    """
+    ao_msg = 'unsupported approximation order! (%s)'
+    force_bubble = False
+    discontinuous = False
+
+    try:
+        ao = int(approx_order)
+    except ValueError:
+        mode = approx_order[-1].lower()
+        if mode == 'b':
+            ao = int(approx_order[:-1])
+            force_bubble = True
+
+        elif mode == 'd':
+            ao = int(approx_order[:-1])
+            discontinuous = True
+
+        else:
+            raise ValueError(ao_msg % approx_order)
+
+    if ao < 0:
+        raise ValueError(ao_msg % approx_order)
+
+    return ao, force_bubble, discontinuous
 
 def create_dof_conn(conn, dpn):
     """Given element a node connectivity, create the dof connectivity."""
@@ -95,6 +122,9 @@ class Field( Struct ):
         space = conf.get_default_attr('space', 'H1')
         poly_space_base = conf.get_default_attr('poly_space_base', 'lagrange')
 
+        approx_order = parse_approx_order(conf.approx_order)
+        ao, force_bubble, discontinuous = approx_order
+
         if isinstance(conf.region, tuple):
             region_name, kind = conf.region
             region = regions[region_name]
@@ -102,7 +132,7 @@ class Field( Struct ):
                 obj = SurfaceField(conf.name, conf.dtype, conf.shape, region,
                                    space=space,
                                    poly_space_base=poly_space_base,
-                                   approx_order=conf.approx_order)
+                                   approx_order=approx_order[:2])
 
             else:
                 raise ValueError('unknown field kind! (%s)', kind)
@@ -111,7 +141,7 @@ class Field( Struct ):
             obj = Field(conf.name, conf.dtype, conf.shape, regions[conf.region],
                         space=space,
                         poly_space_base=poly_space_base,
-                        approx_order=conf.approx_order)
+                        approx_order=approx_order[:2])
 
         return obj
 
@@ -139,6 +169,10 @@ class Field( Struct ):
             The name of polynomial space base.
         approx_order : int/str
             FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
+
+        Notes
+        -----
+        Assumes one cell type for the whole region!
         """
         if isinstance(shape, str):
             try:
@@ -162,9 +196,9 @@ class Field( Struct ):
         self.clear_dof_conns()
 
         self.set_approx_order(approx_order)
+        self.setup_geometry()
 
         # To refactor below...
-        self.setup_bases()
         self.create_interpolant()
         self.setup_approximations()
 ##         print self.aps
@@ -173,43 +207,28 @@ class Field( Struct ):
         self.setup_coors()
 
     def set_approx_order(self, approx_order):
-        """Set a uniform approximation order."""
-        
-        ao_msg = 'unsupported approximation order! (%s)'
-        force_bubble = False
+        """
+        Set a uniform approximation order.
+        """
+        if isinstance(approx_order, tuple):
+            self.approx_order = approx_order[0]
+            self.force_bubble = approx_order[1]
 
-        try:
-            ao = int(approx_order)
-        except ValueError:
-            if approx_order[-1] == 'B':
-                ao = int(approx_order[:-1])
-                force_bubble = True
-            else:
-                raise ValueError(ao_msg % approx_order)
+        else:
+            self.approx_order = approx_order
+            self.force_bubble = False
 
-        if ao < 0:
-            raise ValueError(ao_msg % approx_order)
-
-        self.approx_order = '%s' % approx_order
-        self._ao = ao
-        self.force_bubble = force_bubble
-
-    def setup_bases(self):
-        """Setup FE bases according to self.approx_order and region cell
-        types. Assumes one cell type for the whole region!"""
-        gel = self.domain.groups[self.region.igs[0]].gel
-        dim, n_ep = gel.dim, gel.n_vertex
-
-        if n_ep == (dim + 1): # simplex
-            kind = 'P'
-        else: # tensor product
-            kind = 'Q'
-
-        self.gel = gel
-        self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
+    def setup_geometry(self):
+        """
+        Setup the field region geometry.
+        """
+        self.gel = self.domain.groups[self.region.igs[0]].gel
 
     def create_interpolant(self):
-        self.interp = fea.Interpolant(self.base_name, self.gel)
+        name = '%s_%d%s' % (self.gel.name, self.approx_order,
+                            'B' * self.force_bubble)
+        self.interp = fea.Interpolant(name, self.gel, self.approx_order,
+                                      self.force_bubble)
 
     def setup_approximations(self):
         self.aps = fea.Approximations(self.interp, self.region)
@@ -471,22 +490,13 @@ class SurfaceField(Field):
                        space=space, poly_space_base=poly_space_base,
                        approx_order=approx_order)
 
-    def setup_bases(self):
-        """Setup FE bases according to self.approx_order and region cell
-        types. Assumes one cell type for the whole region!"""
-        gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
-        if gel is None:
+    def setup_geometry(self):
+        """
+        Setup the field region geometry.
+        """
+        self.gel = self.domain.groups[self.region.igs[0]].gel.surface_facet
+        if self.gel is None:
             raise ValueError('element group has no surface!')
-
-        dim, n_ep = gel.dim, gel.n_vertex
-
-        if n_ep == (dim + 1): # simplex
-            kind = 'P'
-        else: # tensor product
-            kind = 'Q'
-
-        self.gel = gel
-        self.base_name = '%d_%d_%s%s' % (dim, n_ep, kind, self.approx_order)
 
     def setup_approximations(self):
         self.aps = fea.Approximations(self.interp, self.region, is_surface=True)

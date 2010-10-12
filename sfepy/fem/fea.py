@@ -30,53 +30,21 @@ def _interp_to_faces( vertex_vals, bfs, faces ):
 class Interpolant( Struct ):
     """A simple wrapper around PolySpace."""
 
-    # A dirty hack to satisfy the tests. The key should be given by PolySpace.
-    _map = {
-        '2_3_P2'  : 's3',
-        '2_3_P2B' : 's3',
-        '3_4_P2'  : 's6',
-        '3_4_P2B' : 's6',
-    }
-
-    def __init__(self, name, gel):
+    def __init__(self, name, gel, approx_order=1, force_bubble=False):
         self.name = name
         self.gel = gel
 
-        is_bubble = name[-1] == 'B'
-        if is_bubble:
-            approx_order = int(name[-2])
-
-        else:
-            approx_order = int(name[-1])
-
-        if name in self._map:
-            skey = self._map[name]
-
-        else:
-            if gel.surface_facet is not None:
-                n_fp = gel.surface_facet.n_vertex
-
-            else:
-                n_fp = 2
-            skey = 's%d' % n_fp
-
-        key_map = {0 : 'v', 1 : skey}
-
-        is_bubble = name[-1] == 'B'
-        ## self.i_key_map = i_key_map = invert_dict(self.key_map)
-
-        poly_spaces = {}
-        for ii, gel in enumerate([gel, gel.surface_facet]):
-            if gel is None: continue
-            force_bubble = is_bubble and (ii == 0)
-
-            ps = PolySpace.any_from_args(None, gel, approx_order,
+        self.poly_spaces = poly_spaces = {}
+        poly_spaces['v'] = PolySpace.any_from_args(name, gel, approx_order,
+                                                   base='lagrange',
+                                                   force_bubble=force_bubble)
+        gel = gel.surface_facet
+        if gel is not None:
+            ps = PolySpace.any_from_args(name, gel, approx_order,
                                          base='lagrange',
-                                         force_bubble=force_bubble)
-            key = key_map[ii]
-            poly_spaces[key] = ps
-
-        self.poly_spaces = poly_spaces
+                                         force_bubble=False)
+            skey = 's%d' % ps.n_nod
+            poly_spaces[skey] = ps
 
     ##
     # 02.08.2005, c
