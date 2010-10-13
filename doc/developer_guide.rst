@@ -110,6 +110,13 @@ describe the changes properly.
 With git
 """"""""
 
+*NOTE*: The below is somewhat superceded by the gitwash tutorial, which was shamelessly borrowed from the *Numpy* project. Read this below.
+
+.. toctree::
+   :maxdepth: 2
+
+   dev/index
+
 With git there are some additional options. Before listing them, let us
 describe a typical development session and the related git commands:
 
