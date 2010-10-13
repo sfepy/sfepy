@@ -9,7 +9,7 @@ This section purports to document the *SfePy* internals. It is mainly useful for
 How to Contribute
 -----------------
 
-Read this section if you wish to contribute some work to the *SfePy* project.
+Read this section if you wish to contribute some work to the *SfePy* project. Contributions can be made in a variety of forms, not just code. Reporting bugs and contributing to the documentation, tutorials, and examples is in great need!
 
 Below we describe
 
@@ -55,7 +55,7 @@ Our persisting all star top priority issues include:
 
   * e.g., through generation of additional tutorial material
 
-So if you are a new user, let us know, please, what difficulties you have with
+So if you are a new user, please let us know what difficulties you have with
 this documentation. We greatly welcome a variety of contributions not limited
 to code only.
 
@@ -110,7 +110,7 @@ describe the changes properly.
 With git
 """"""""
 
-*NOTE*: The below is somewhat superceded by the gitwash tutorial, which was shamelessly borrowed from the *Numpy* project. Read this below.
+**NOTE**: This section is somewhat superceded by the `Contributing to SfePy` documentation, which was shamelessly borrowed from the *Numpy* project. Read this from the links below.
 
 .. toctree::
    :maxdepth: 2
