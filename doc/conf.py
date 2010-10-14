@@ -225,6 +225,7 @@ latex_preamble = r"""
 \newcommand{\uld}[1]{\dot{\underline{#1}}}
 \newcommand{\ull}[1]{\underline{\underline{#1}}}
 \newcommand{\dev}{\mathop{\rm dev}}
+\newcommand{\skewop}{\mathop{\rm skew}}
 \def\from{\leftarrow}
 \def\Vcal{\mathcal{V}}
 \def\Tcal{\mathcal{T}}

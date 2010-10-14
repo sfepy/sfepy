@@ -508,7 +508,6 @@ sfepy.base package
    src/sfepy/base/conf
    src/sfepy/base/getch
    src/sfepy/base/ioutils
-   src/sfepy/base/la
    src/sfepy/base/log
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
@@ -568,6 +567,16 @@ sfepy.homogenization package
    src/sfepy/homogenization/phono
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
+
+sfepy.linalg package
+^^^^^^^^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/linalg/eigen
+   src/sfepy/linalg/geometry
+   src/sfepy/linalg/sparse
+   src/sfepy/linalg/utils
 
 sfepy.interactive package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
