@@ -11,7 +11,7 @@ from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 
 from sfepy.base.base import *
 from sfepy.base.tasks import Process
-from sfepy.base.la import cycle
+from sfepy.linalg.utils import cycle
 from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.utils import mlab
 from sfepy.postprocess.sources import create_file_source, FileSource

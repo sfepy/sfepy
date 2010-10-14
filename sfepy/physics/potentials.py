@@ -2,7 +2,7 @@
 Classes for constructing potentials of atoms and molecules.
 """
 from sfepy.base.base import *
-from sfepy.base.la import norm_l2_along_axis
+from sfepy.linalg.utils import norm_l2_along_axis
 
 class CompoundPotential(Container):
     """

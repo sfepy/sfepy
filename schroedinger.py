@@ -24,7 +24,7 @@ from scipy.optimize.nonlin import excitingmixing
 import sfepy
 from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.base.la import norm_l2_along_axis
+from sfepy.linalg.utils import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
 from sfepy.fem import MeshIO, ProblemDefinition, Materials

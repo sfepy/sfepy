@@ -2,7 +2,7 @@
 Functions to compute some tensor-related quantities usual in continuum mechanics.
 """
 from sfepy.base.base import *
-from sfepy.base.la \
+from sfepy.linalg.utils \
      import apply_to_sequence, dot_sequences, make_axis_rotation_matrix
 
 def dim2sym(dim):

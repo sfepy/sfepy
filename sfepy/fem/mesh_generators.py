@@ -1,6 +1,6 @@
 from sfepy.base.base import *
 from sfepy.base.progressbar import MyBar
-from sfepy.base.la import cycle
+from sfepy.linalg.utils import cycle
 from sfepy.fem import Mesh
 
 def gen_block_mesh(dims, shape, centre, name='block'):

@@ -1,6 +1,6 @@
 import tables as pt
 from sfepy.base.base import *
-from sfepy.base.la import cycle
+from sfepy.linalg.utils import cycle
 from sfepy.fem.mesh import Mesh
 
 ##

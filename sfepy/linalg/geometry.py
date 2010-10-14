@@ -1,7 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import assert_, output
-from sfepy.base.la import norm_l2_along_axis as norm
+from sfepy.linalg.utils import norm_l2_along_axis as norm
 
 def transform_bar_to_space_coors(bar_coors, coors):
     """

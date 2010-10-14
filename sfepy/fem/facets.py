@@ -3,7 +3,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import Struct, assert_
 from sfepy.base.compat import in1d, unique
-from sfepy.base.la import permutations
+from sfepy.linalg.utils import permutations
 
 def _build_orientation_map(n_fp):
     """

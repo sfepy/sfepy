@@ -1,5 +1,5 @@
 from sfepy.base.base import *
-import sfepy.base.la as la
+import sfepy.linalg.utils as la
 from sfepy.fem.integrals import Integral
 from extmods.geometry import SurfaceGeometry
 

@@ -1,4 +1,4 @@
-from sfepy.base.la import norm_l2_along_axis
+from sfepy.linalg.utils import norm_l2_along_axis
 
 from quantum_common import common
 

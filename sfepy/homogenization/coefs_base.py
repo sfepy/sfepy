@@ -4,7 +4,7 @@ from sfepy.fem.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers import Solver, eig
-from sfepy.base.la import MatrixAction
+from sfepy.linalg.utils import MatrixAction
 from utils import iter_sym, create_pis, create_scalar_pis
 
 class MiniAppBase( Struct ):
