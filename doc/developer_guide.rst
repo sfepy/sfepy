@@ -568,6 +568,14 @@ sfepy.homogenization package
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 
+sfepy.interactive package
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/interactive
+
 sfepy.linalg package
 ^^^^^^^^^^^^^^^^^^^^
 .. toctree::
@@ -577,14 +585,6 @@ sfepy.linalg package
    src/sfepy/linalg/geometry
    src/sfepy/linalg/sparse
    src/sfepy/linalg/utils
-
-sfepy.interactive package
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. toctree::
-   :maxdepth: 2
-
-   src/sfepy/interactive
 
 sfepy.mechanics package
 ^^^^^^^^^^^^^^^^^^^^^^^
