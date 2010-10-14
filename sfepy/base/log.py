@@ -1,6 +1,6 @@
 from base import *
 from sfepy.base.tasks import Process, Pipe
-from sfepy.linalg.utils import cycle
+from sfepy.linalg import cycle
 
 try:
     import gobject

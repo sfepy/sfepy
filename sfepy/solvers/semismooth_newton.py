@@ -2,7 +2,7 @@ from sfepy.base.base import *
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from sfepy.solvers.nls import Newton, conv_test
-from sfepy.linalg.sparse import compose_sparse
+from sfepy.linalg import compose_sparse
 
 class SemismoothNewton(Newton):
     r"""

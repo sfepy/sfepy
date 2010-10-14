@@ -1,5 +1,5 @@
 from sfepy.terms.terms import *
-from sfepy.linalg.utils import dot_sequences
+from sfepy.linalg import dot_sequences
 
 class NonPenetrationTerm(Term):
     r"""

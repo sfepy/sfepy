@@ -61,7 +61,7 @@ class Test(TestCommon):
     def test_interpolation(self):
         from sfepy import data_dir
         from sfepy.fem import Mesh
-        from sfepy.linalg.utils import make_axis_rotation_matrix
+        from sfepy.linalg import make_axis_rotation_matrix
 
         fname = in_dir(self.options.out_dir)
 

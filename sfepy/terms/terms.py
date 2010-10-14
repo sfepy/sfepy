@@ -6,7 +6,7 @@ except (ImportError, AttributeError):
     from sfepy.base.base import output
     msg = 'sfepy extension modules are not compiled!\ntype "make"'
     raise ImportError( msg )
-from sfepy.linalg.utils import split_range, combine
+from sfepy.linalg import split_range, combine
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match

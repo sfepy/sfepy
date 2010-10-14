@@ -187,7 +187,7 @@ class Test( TestCommon ):
     def test_boundary_fluxes( self ):
         import os.path as op
         from sfepy.base.base import Struct
-        from sfepy.linalg.utils import rotation_matrix2d
+        from sfepy.linalg import rotation_matrix2d
         from sfepy.fem.evaluate import BasicEvaluator
         problem  = self.problem
         vec = self.vec

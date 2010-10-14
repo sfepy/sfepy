@@ -1,7 +1,7 @@
 from collections import deque
 
 from sfepy.base.base import *
-import sfepy.linalg.utils as la
+import sfepy.linalg as la
 from sfepy.fem.mesh import make_inverse_connectivity
 from sfepy.fem.integrals import Integral
 from extmods.fem import evaluate_at

@@ -32,7 +32,7 @@ Solution in \hat{V}_h^c:
 """
 from sfepy.base.base import *
 from sfepy.base.compat import unique
-import sfepy.linalg.utils as la
+import sfepy.linalg as la
 from sfepy.fem import Mesh, Domain, Field, Variables
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from sfepy.fem.fe_surface import FESurface

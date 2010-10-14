@@ -52,7 +52,7 @@ ebcs = {
 centre = nm.array( [0, 0], dtype = nm.float64 )
 
 def rotate_yz(ts, coor, bc):
-    from sfepy.linalg.utils import rotation_matrix2d
+    from sfepy.linalg import rotation_matrix2d
     from sfepy.base.base import debug
     
     vec = coor[:,1:3] - centre

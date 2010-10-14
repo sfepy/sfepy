@@ -9,7 +9,7 @@ class Test(TestCommon):
     def test_compose_sparse(self):
         import numpy as nm
         import scipy.sparse as sps
-        from sfepy.linalg.sparse import compose_sparse
+        from sfepy.linalg import compose_sparse
 
         ok = True
 
