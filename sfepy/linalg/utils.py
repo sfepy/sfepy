@@ -1,5 +1,8 @@
-from scipy.optimize import fsolve
-from base import *
+import numpy as nm
+import numpy.linalg as nla
+import scipy as sc
+
+from sfepy.base.base import assert_, insert_method, Struct
 
 def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
     """Compute l2 norm of rows (axis=1) or columns (axis=0) of a 2D array.
@@ -79,7 +82,6 @@ def cycle( bounds ):
         for ii in xrange( bounds[0] ):
             yield [ii]
     else:
-        out = [0] * nb
         for ii in xrange( bounds[0] ):
             for perm in cycle( bounds[1:] ):
                 yield [ii] + perm
@@ -157,10 +159,7 @@ def inverse_element_mapping( coors, e_coors, eval_base, ref_coors,
 
         xi0 = nm.array([0.0, 0.0, 0.0])
         xi = mini_newton( residual, xi0, matrix )
-##         print xi
-##         xi = fsolve( residual, xi0, fprime = matrix, warning = False )
-##         print xi
-        
+
     return xi
 
 ##
