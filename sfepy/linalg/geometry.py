@@ -1,7 +1,9 @@
 import numpy as nm
+import numpy.linalg as nla
 
 from sfepy.base.base import assert_, output
 from sfepy.linalg.utils import norm_l2_along_axis as norm
+from sfepy.linalg.utils import mini_newton
 
 def transform_bar_to_space_coors(bar_coors, coors):
     """
@@ -108,3 +110,128 @@ def get_simplex_circumcentres(coors, force_inside_eps=None):
         centres = transform_bar_to_space_coors(bar_coors, coors)
 
     return centres
+
+def barycentric_coors(coors, s_coors):
+    """
+    Get barycentric (area in 2D, volume in 3D) coordinates of points
+    with coordinates `coors` w.r.t. the simplex given by `s_coors`.
+
+    Returns
+    -------
+    bc : array
+        The barycentric coordinates. Then reference element coordinates
+        `xi = dot(bc.T, ref_coors)`.
+    """
+    n_v, dim = s_coors.shape
+    n_c, dim2 = coors.shape
+    assert_(dim == dim2)
+    assert_(n_v == (dim + 1))
+
+    mtx = nm.ones((n_v, n_v), nm.float64)
+    mtx[0:n_v-1,:] = s_coors.T
+
+    rhs = nm.empty((n_v,n_c), nm.float64)
+    rhs[0:n_v-1,:] = coors.T
+    rhs[n_v-1,:] = 1.0
+
+    bc = nla.solve(mtx, rhs)
+
+    return bc
+
+def points_in_simplex(coors, s_coors, eps=1e-8):
+    """
+    Test if points with coordinates `coors` are in the simplex given by
+    `s_coors`.
+    """
+    n_c, dim = coors.shape
+    bc = barycentric_coors(coors, s_coors)
+    flag = nm.ones((n_c,), dtype=nm.bool)
+    for idim in xrange(dim + 1):
+        flag &= nm.where((bc[idim,:] > -eps)
+                         & (bc[idim,:] < (1.0 + eps)), True, False)
+    return flag
+
+
+def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
+                            suppress_errors=False):
+    """
+    Given spatial element coordinates, find the inverse mapping for
+    points with coordinats X = X(xi), i.e. xi = xi(X).
+
+    Returns
+    -------
+    xi : array
+        The reference element coordinates.
+    """
+    n_v, dim = e_coors.shape
+    if coors.ndim == 2:
+        n_c, dim2 = coors.shape
+    else:
+        n_c, dim2 = 1, coors.shape[0]
+
+    assert_(dim == dim2)
+
+    if n_v == (dim + 1): # Simplex.
+        bc = barycentric_coors(coors, e_coors)
+        xi = nm.dot(bc.T, ref_coors)
+
+    else: # Tensor-product and other.
+        def residual(xi):
+            bf = eval_base(xi[nm.newaxis,:],
+                           suppress_errors=suppress_errors).squeeze()
+            res = coors - nm.dot(bf, e_coors)
+            return res.squeeze()
+
+        def matrix(xi):
+            bfg = eval_base(xi[nm.newaxis,:], diff=True,
+                            suppress_errors=suppress_errors).squeeze()
+            mtx = - nm.dot(bfg, e_coors)
+            return mtx
+
+        xi0 = nm.array([0.0, 0.0, 0.0])
+        xi = mini_newton(residual, xi0, matrix)
+
+    return xi
+
+def rotation_matrix2d(angle):
+    """
+    Construct a 2D (plane) rotation matrix corresponding to `angle`.
+    """
+    angle *= nm.pi / 180.0
+    mtx = nm.array([[nm.cos(angle), -nm.sin(angle)],
+                    [nm.sin(angle), nm.cos(angle)]], dtype=nm.float64)
+    return mtx
+
+def make_axis_rotation_matrix(direction, angle):
+    r"""
+    Create a rotation matrix :math:`\ull{R}` corresponding to the
+    rotation around a general axis :math:`\ul{d}` by a specified angle
+    :math:`\alpha`.
+
+    .. math::
+        \ull{R} = \ul{d}\ul{d}^T + \cos(\alpha) (I - \ul{d}\ul{d}^T) +
+        \sin(\alpha) \skewop(\ul{d})
+
+    Parameters
+    ----------
+    direction : array
+        The rotation axis direction vector :math:`\ul{d}`.
+    angle : float
+        The rotation angle :math:`\alpha`.
+
+    Returns
+    -------
+    mtx : array
+        The rotation matrix :math:`\ull{R}`.
+    """
+    d = nm.array(direction, dtype=nm.float64)
+    d /= nm.linalg.norm(d)
+
+    eye = nm.eye(3, dtype=nm.float64)
+    ddt = nm.outer(d, d)
+    skew = nm.array([[    0,  d[2],  -d[1]],
+                     [-d[2],     0,  d[0]],
+                     [d[1], -d[0],    0]], dtype=nm.float64)
+
+    mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
+    return mtx
