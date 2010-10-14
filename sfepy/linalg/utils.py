@@ -106,6 +106,41 @@ def combine( seqs ):
             for perm in combine( seqs[1:] ):
                 yield [ii] + perm
 
+def argsort_rows(seq):
+    """
+    Returns an index array that sorts the sequence `seq`. Works along
+    rows if `seq` is two-dimensional.
+    """
+    seq = nm.asanyarray(seq)
+    if seq.ndim == 1:
+        ii = nm.argsort(seq)
+
+    else:
+        ii = nm.lexsort(seq.T[::-1])
+
+    return ii
+
+def map_permutations(seq1, seq2, check_same_items=False):
+    """
+    Returns an index array `imap` such that `seq1[imap] == seq2`, if
+    both sequences have the same items - this is not checked by default!
+
+    In other words, finds the indices of items of `seq2` in `seq1`.
+    """
+    assert_(len(seq1) == len(seq2))
+
+    i1 = argsort_rows(seq1)
+    i2 = argsort_rows(seq2)
+
+    if check_same_items:
+        assert_((seq1[i1] == seq2[i2]).all())
+
+    ii = nm.argsort(i2)
+
+    imap = i1[ii]
+
+    return imap
+
 def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
     x = x0
     ii = 0
