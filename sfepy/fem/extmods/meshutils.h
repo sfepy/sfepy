@@ -3,9 +3,6 @@
 
 #include "common.h"
 
-int32 sort_rows( int32 *array, int32 n_row, int32 n_col,
-		int32 *i_sort_col, int32 n_sort_col );
-
 int32 assign_edge_nodes( int32 *p_iseq,  
 		       int32 *econn, int32 econn_n_row, int32 econn_n_col,
 		       int32 *cnt_en, int32 cnt_en_n_row, int32 cnt_en_n_col,

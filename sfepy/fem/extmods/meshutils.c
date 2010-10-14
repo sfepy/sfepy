@@ -1,7 +1,6 @@
 #include <stdlib.h>
 
 #include "meshutils.h"
-#include "sort.h"
 #include "geomtrans.h"
 
 int32 *ic;
@@ -30,39 +29,6 @@ int compare_row_cols( const void *obj_a, const void *obj_b )
   }
   
   return( ret );
-}
-
-/*!
-  @par Revision history:
-  - 07.02.2006
-*/
-int32 sort_rows( int32 *array, int32 n_row, int32 n_col,
-		int32 *i_sort_col, int32 n_sort_col )
-{
-/*   output( "%p %p\n", array, i_sort_col ); */
-  if ((array == 0) || (i_sort_col == 0)) {
-    output( "null pointer: %p %p\n", array, i_sort_col );
-  }
-
-  int32_sort_rows( array, n_row, n_col, i_sort_col, n_sort_col );
-/*   ic = i_sort_col; */
-/*   n_c = n_sort_col; */
-
-/*   qsort( array, n_row, n_col * sizeof( int32 ), &compareRowCols ); */
-
-/*   { */
-/*     int32 ir, ic; */
-
-/*     for (ir = 0; ir < n_row; ir++) { */
-/*       for (ic = 0; ic < n_col; ic++) { */
-/* 	output( "%d ", array[n_col*ir+ic] ); */
-/*       } */
-/*       output( "\n" ); */
-/*     } */
-/*   } */
-/*   array[0] = -1; */
-
-  return( RET_OK );
 }
 
 #define SwapValues( a, b, work ) do {\

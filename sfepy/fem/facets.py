@@ -4,7 +4,6 @@ import scipy.sparse as sp
 from sfepy.base.base import Struct, assert_
 from sfepy.base.compat import in1d, unique
 from sfepy.base.la import permutations
-import extmods.meshutils as mu
 
 def _build_orientation_map(n_fp):
     """
@@ -203,18 +202,11 @@ class Facets(Struct):
         `uid` : unique id in order of `sorted_facets`
         `uid_i` : unique id in order of `permuted_facets` or `facets`
         """
-        ii = nm.arange(self.permuted_facets.shape[0], dtype=nm.int32)
-        aux = nm.concatenate((self.permuted_facets, ii[:,None]), 1).copy()
-        sort_cols = nm.arange(self.permuted_facets.shape[1],
-                              dtype=nm.int32)
+        self.perm = nm.lexsort(self.permuted_facets.T[::-1])
+        self.sorted_facets = self.permuted_facets[self.perm]
 
-        mu.sort_rows(aux, sort_cols)
-
-        self.perm = perm = aux[:,-1].copy()
-        self.sorted_facets = aux[:,:-1].copy()
-        aux = nm.arange(perm.shape[0], dtype=nm.int32)
         self.perm_i = nm.zeros_like(self.perm)
-        self.perm_i[perm] = aux
+        self.perm_i[self.perm] = nm.arange(self.perm.shape[0], dtype=nm.int32)
 
         ic = nm.where(nm.abs(nm.diff(self.sorted_facets, axis=0)).sum(1), 0, 1)
         ic = ic.astype(nm.int32)

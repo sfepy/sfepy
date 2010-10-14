@@ -12,18 +12,6 @@
 %include common.i
 %include array.i
 
-%apply (int32 *array, int32 n_row, int32 n_col) {
-    (int32 *array, int32 n_row, int32 n_col)
-};
-
-%apply (int32 *array, int32 len) {
-    (int32 *i_sort_col, int32 n_sort_col)
-};
-
-int32 sort_rows( int32 *array, int32 n_row, int32 n_col,
-		int32 *i_sort_col, int32 n_sort_col );
-
-
 %apply (int32 *p_int32_in) {
     (int32 *p_iseq)
 };
