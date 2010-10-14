@@ -129,10 +129,14 @@ def map_permutations(seq1, seq2, check_same_items=False):
     """
     assert_(len(seq1) == len(seq2))
 
+    seq1 = nm.asanyarray(seq1)
+    seq2 = nm.asanyarray(seq2)
+
     i1 = argsort_rows(seq1)
     i2 = argsort_rows(seq2)
 
     if check_same_items:
+        assert_(seq1.shape == seq2.shape)
         assert_((seq1[i1] == seq2[i2]).all())
 
     ii = nm.argsort(i2)
