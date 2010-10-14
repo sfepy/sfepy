@@ -233,7 +233,7 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
 			   int32 isDiff )
 {
   int32 ii, iel, nFP, ret = RET_OK;
-  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0;
+  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0, *cftf = 0;
 
   nFP = bf->nCol;
 
@@ -241,6 +241,7 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
 
   if (isDiff) {
     fmf_createAlloc( &ftf, 1, sg->nQP, nFP, nFP );
+    fmf_createAlloc( &cftf, 1, sg->nQP, nFP, nFP );
 
     fmf_mulATB_nn( ftf, bf, bf );
 
@@ -253,8 +254,8 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
 	FMF_SetCell( coef, ii );
       }
 
-      fmf_mulAF( ftf, ftf, coef->val );
-      fmf_sumLevelsMulF( out, ftf, sg->det->val );
+      fmf_mulAF( cftf, ftf, coef->val );
+      fmf_sumLevelsMulF( out, cftf, sg->det->val );
 
       ERR_CheckGo( ret );
     }
@@ -287,6 +288,7 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
 end_label:
   if (isDiff) {
     fmf_freeDestroy( &ftf );
+    fmf_freeDestroy( &cftf );
   } else {
     fmf_freeDestroy( &st );
     fmf_freeDestroy( &fp );
