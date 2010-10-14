@@ -1,7 +1,6 @@
 from sfepy.base.base import *
 from sfepy.base.ioutils \
      import skip_read_line, read_token, read_array, read_list, pt
-import sfepy.base.la as la
 from sfepy.base.progressbar import MyBar
 import os.path as op
 
@@ -76,7 +75,9 @@ def split_by_mat_id( conns_in, mat_ids_in, descs_in ):
 
     for ig, conn in enumerate( conns_in ):
         one = nm.array( [-1], nm.int32 )
-        ii = la.diff( nm.concatenate( (one, mat_ids_in[ig], one) ) ).nonzero()[0]
+        aux = nm.concatenate((one, mat_ids_in[ig], one))
+        ii = nm.where(aux[1:] != aux[:-1])[0]
+
         n_gr = len( ii ) - 1;
 #        print ii, n_gr
         for igr in range( 0, n_gr ):
@@ -382,14 +383,14 @@ class MeditMeshIO( MeshIO ):
             iw = nm.where( flag == 1 )[0]
             if (len( iw ) > 0):
                 ar = nm.array( [0,1,2,3,4,6], nm.int32 )
-                conn.append( la.rect( conn_in, iw, ar ) )
+                conn.append(conn_in[iw[:, None], ar])
                 mat_id.append(mat_id_in[iw])
                 desc.append( '3_6' )
 
             ip = nm.where( flag == 2 )[0]
             if (len( ip ) > 0):
                 ar = nm.array( [0,1,2,3,4], nm.int32 )
-                conn.append( la.rect( conn_in, ip, ar ) )
+                conn.append(conn_in[ip[:, None], ar])
                 mat_id.append(mat_id_in[ip])
                 desc.append( '3_5' )
 

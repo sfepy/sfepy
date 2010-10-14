@@ -30,44 +30,6 @@ def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
 
     return vec
 
-
-##
-# 18.02.2005, c
-# 21.02.2005
-# 22.02.2005
-def unique( array_in, mode = 'flat' ):
-    from sfepy.fem.extmods.meshutils import sort_rows
-
-    if mode == 'flat':
-        aux = nm.sort( array_in.flat )
-        ic = nm.zeros( aux.shape, aux.dtype )
-        ic[-1] = 1
-        ic[:-1] = nm.where( diff( aux ), 1, 0 )
-    elif mode == 'rows':
-        aux = array_in.copy()
-        sort_rows( aux, nm.arange( aux.shape[1], dtype = nm.int32 ) )
-        ic = nm.zeros( aux.shape[0], aux.dtype )
-        ic[-1] = 1
-        ic[:-1] = nm.where( nm.sum( nm.abs( \
-                aux[1:,:] - aux[:-1,:] ), 1 ), 1, 0 )
-    else:
-        print 'unknown unique mode: %s' % mode
-        raise ValueError
-
-    array_out = aux[nm.where( ic )[0]]
-
-    return( array_out )
-
-##
-# 01.04.2005, c
-# 04.09.2006
-def rect( array, ir, ic ):
-    ind2, ind1 = nm.meshgrid( ic, ir )
-    return( array[ind1,ind2] )
-
-def diff( obj ):
-    return( obj[1:] - obj[:-1] )
-
 ##
 # 21.11.2005, c
 def split_range( n_item, step ):
