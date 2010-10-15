@@ -1,6 +1,6 @@
 .. _using-git:
 
-Working with *SfePy* source code
+Using git with *SfePy* source code
 ======================================
 
 Contents:

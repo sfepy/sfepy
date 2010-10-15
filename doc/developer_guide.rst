@@ -4,12 +4,17 @@
 Developer Guide
 ===============
 
-This section purports to document the *SfePy* internals. It is mainly useful for those who wish to develop *SfePy* and understand the inner workings of the code.
+This section purports to document the *SfePy* internals. It is mainly useful
+for those who wish to contribute to the development of  *SfePy* and understand
+the inner workings of the code.
 
 How to Contribute
 -----------------
 
-Read this section if you wish to contribute some work to the *SfePy* project. Contributions can be made in a variety of forms, not just code. Reporting bugs and contributing to the documentation, tutorials, and examples is in great need!
+Read this section if you wish to contribute some work to the *SfePy* project.
+Contributions can be made in a variety of forms, not just code. Reporting bugs
+and contributing to the documentation, tutorials, and examples is in great
+need!
 
 Below we describe
 
@@ -21,7 +26,8 @@ Below we describe
 Reporting problems
 ^^^^^^^^^^^^^^^^^^
 
-*Reporting a bug is the first way in which to contribute to an open source project*
+*Reporting a bug is the first way in which to contribute to an open source
+project*
 
 We use the site http://sfepy.org to provide a hub for the developers to post
 problems, ask questions, create wiki pages, etc. The address is currently just
@@ -79,11 +85,11 @@ another form.
 
 Having said that, to download the latest snapshot, do either (with git):
 
-- git clone git://git.sympy.org/sfepy.git
+- git clone git://github.com/sfepy/sfepy.git
 
 or (without git):
 
-- click this link: http://git.sympy.org/?p=sfepy.git;a=snapshot;h=HEAD;sf=tgz
+- click this link: http://github.com/sfepy/sfepy/tarball/master
 
 Then make the changes as you wish, following our `style guide
 <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
@@ -110,19 +116,24 @@ describe the changes properly.
 With git
 """"""""
 
-**NOTE**: This section is somewhat superceded by the `Contributing to SfePy` documentation, which was shamelessly borrowed from the *Numpy* project. Read this from the links below.
-
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   dev/index
+   dev/gitwash/index
 
-With git there are some additional options. Before listing them, let us
-describe a typical development session and the related git commands:
+**Note**: This section will get quickly get you started using git and github.
+For more in-depth reading about how these tools work with the *SfePy* source
+code and the general git development, read :ref:`using-git`, which was adapted
+from Matthew Brett's excellent `git tutorial
+<http://github.com/matthew-brett/gitwash>`_.
+
+With git there are some additional options for how to send changes to *SfePy*.
+Before listing them, let us describe a typical development session and the
+related git commands:
 
 #. Either clone a fresh copy by::
 
-     git clone git://git.sympy.org/sfepy.git
+     git clone git://github.com/sfepy/sfepy.git
 
    or update your local repository::
 

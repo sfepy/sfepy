@@ -68,8 +68,8 @@ should now contain a user section with your name and email::
         name = Your Name
         email = you@yourdomain.example.com
 
-Of course you'll need to replace ``Your Name`` and ``you@yourdomain.example.com``
-with your actual name and email address.
+Of course you'll need to replace ``Your Name`` and
+``you@yourdomain.example.com`` with your actual name and email address.
 
 Aliases
 -------
