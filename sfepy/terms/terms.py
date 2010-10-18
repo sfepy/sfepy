@@ -60,6 +60,21 @@ def create_arg_parser():
 
     return args
 
+def reorder_dofs_on_mirror(adof, dc, mirror_dc):
+    nadof = nm.zeros_like(adof)
+    for ifc in range(len(dc)):
+        fc = dc[ifc]
+        mfc = mirror_dc[ifc]
+        ndrange = range(len(fc));
+        lmap = -nm.ones((len(fc),), dtype=nm.int32)
+        for ind in ndrange:
+            for j in ndrange:
+                if mfc[ind] == fc[j]:
+                    lmap[ind] = j
+                    break;
+        nadof[ifc,:] = adof[ifc,lmap]
+
+    return nadof
 ##
 # 22.01.2006, c
 class CharacteristicFunction( Struct ):
@@ -1268,7 +1283,6 @@ class Term(Struct):
         if mode == 'vector':
             for ii, (ig, _iels) in enumerate(iels):
                 vec_in_els = val[ii]
-
                 dc = vvar.get_dof_conn(dc_type, ig, active=True)
                 assert_(vec_in_els.shape[2] == dc.shape[1])
 
@@ -1287,16 +1301,21 @@ class Term(Struct):
         elif mode == 'matrix':
             svar = diff_var
             tmd = (asm_obj.data, asm_obj.indptr, asm_obj.indices)
-
             for ii, (ig, _iels) in enumerate(iels):
                 mtx_in_els = val[ii]
-
                 rdc = vvar.get_dof_conn(dc_type, ig, active=True)
 
                 is_trace = self.arg_traces[svar.name]
                 ## print dc_type, ig, is_trace
                 cdc = svar.get_dof_conn(dc_type, ig, active=True,
                                         is_trace=is_trace)
+                if is_trace:
+                    # check correct dofs order in the mirror region
+                    rgnt = vvar.get_global_node_tab(dc_type, ig);
+                    cgnt = svar.get_global_node_tab(dc_type, ig,
+                                                    is_trace=is_trace);
+                    cdc = reorder_dofs_on_mirror(cdc, cgnt, rgnt)
+
                 ## print svar.name, cdc.shape
                 assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 

@@ -1264,6 +1264,30 @@ class FieldVariable(Variable):
 
         adof_conns.update(self.adof_conns)
 
+    def get_global_node_tab(self, dc_type, ig, is_trace=False):
+
+        if self.n_components == 1:
+
+            if not is_trace:
+                region_name = dc_type.region_name
+                aig = ig
+
+            else:
+                aux = self.field.domain.regions[dc_type.region_name]
+                region, _, ig_map = aux.get_mirror_region()
+                region_name = region.name
+                aig = ig_map[ig]
+
+            key = (self.field.name, self.n_components, region_name,
+                   dc_type.type, aig)
+            dc = self.field.dof_conns[key]
+            cnt_vn = self.field.cnt_vn
+            nodtab = cnt_vn[nm.where(cnt_vn >= 0)[0]][dc];
+        else:
+            raise NotImplementedError
+
+        return nodtab
+
     def get_dof_conn(self, dc_type, ig, active=False, is_trace=False):
         """Get active dof connectivity of a variable.
         

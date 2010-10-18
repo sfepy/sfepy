@@ -191,17 +191,18 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
         virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
         ap, sg = self.get_approximation(virtual)
+        aps, sgs = self.get_approximation(state)
 
         self.set_data_shape( ap )
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        sd = ap.surface_data[self.region.name]
+        sd = aps.surface_data[self.region.name]
+
         bf = ap.get_base( sd.face_type, 0, self.integral )
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)
-
         else:
             coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
 
