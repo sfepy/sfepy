@@ -127,9 +127,9 @@ class Approximation( Struct ):
         self.node_desc = node_desc
 
         self.has_extra_edge_nodes = self.has_extra_face_nodes = False
-        if self.node_desc.edge:
+        if self.node_desc.edge is not None:
             self.has_extra_edge_nodes = True
-        if self.node_desc.face:
+        if self.node_desc.face is not None:
             self.has_extra_face_nodes = True
 
 ##         print self.node_desc
@@ -498,7 +498,7 @@ class Approximations( Container ):
 
 ##             print ap.econn.shape
 #            pause()
-            if node_desc.vertex.size:
+            if node_desc.vertex is not None:
                 vertices = region.get_vertices( ig )
                 n_new = (nm.where( cnt_vn[vertices] == -1 )[0]).shape[0]
                 cnt_vn[vertices] = vertices
@@ -519,7 +519,7 @@ class Approximations( Container ):
 ##         pause()
         for ig, ap in self.iter_aps():
             group = region.domain.groups[ig]
-            if node_desc.vertex.size:
+            if node_desc.vertex is not None:
                 if not self.is_surface:
                     offset = group.shape.n_ep
                     cells = region.get_cells( ig )
@@ -540,7 +540,7 @@ class Approximations( Container ):
         node_offset_table[i_edge,0] = iseq
         ia = 0
         for ig, ap in self.iter_aps():
-            if node_desc.edge:
+            if node_desc.edge is not None:
                 cptr0 = ed.indx[ig].start
                 ori = self.edge_oris[ig]
                 iseq = mu.assign_edge_nodes( iseq, ap.econn, cnt_en, \
@@ -564,18 +564,18 @@ class Approximations( Container ):
         node_offset_table[i_bubble,0] = iseq
         ia = 0
         for ig, ap in self.iter_aps():
-            if (node_desc.bubble):
-                n_bubble = node_desc.bubble[0].shape[0]
+            if node_desc.bubble is not None:
+                n_bubble = node_desc.bubble.shape[0]
                 n_cell = region.get_n_cells(ig, self.is_surface)
                 aux = nm.arange( iseq, iseq + n_bubble * n_cell )
                 aux.shape = (n_cell, n_bubble)
-                offset = node_desc.bubble[0][0,0]
+                offset = node_desc.bubble[0]
                 ap.econn[:,offset:] = aux[:,:]
                 iseq += n_bubble * n_cell
 
             node_offset_table[i_bubble,ia+1] = iseq
             ia += 1
-            
+
 ##         print node_offset_table
         if node_offset_table[-1,-1] != iseq:
             raise RuntimeError
@@ -599,7 +599,7 @@ class Approximations( Container ):
                 nd = node_desc.edge
                 efs = []
                 for eof in gel.get_edges_per_face():
-                    ef = [nd[ie][:,0] for ie in eof]
+                    ef = [nd[ie] for ie in eof]
                     efs.append( ef )
                 efs = nm.array( efs ).squeeze()
                 if efs.ndim < 2:
@@ -608,8 +608,7 @@ class Approximations( Container ):
                 ap.efaces = nm.hstack( (ap.efaces, efs ) )
 
             if ap.has_extra_face_nodes:
-                nd = node_desc.face
-                efs = [ef[:,0] for ef in nd]
+                efs = node_desc.face
 #                print nd
                 efs = nm.array( efs ).squeeze()
                 if efs.ndim < 2:

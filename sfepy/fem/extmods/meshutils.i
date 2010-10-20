@@ -44,7 +44,7 @@
     $2 = alloc_mem( int32, $3 );
     for (ii = 0; ii < $3; ii++) {
       PyObject *oo = PyList_GetItem( $input, ii );
-      obj = helper_get_c_array_object( oo, PyArray_INT32, 2, 2 );
+      obj = helper_get_c_array_object( oo, PyArray_INT32, 1, 1 );
       if (!obj) return NULL;
       $1[ii] = (int32 *) obj->data;
       $2[ii] = obj->dimensions[0];

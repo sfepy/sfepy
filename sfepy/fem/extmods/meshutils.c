@@ -67,7 +67,7 @@ int32 assign_edge_nodes( int32 *p_iseq,
       ei = edge_desc[ii];
       n_en = edge_desc_n_row[ii];
       for (en = 0; en < n_en; en++) {
-	iep = ei[2*en];
+	iep = ei[en];
 	it = ntt[ntt_n_col*pori[ii]+en];
 	ui = puid[ii];
 	pcnt = cnt_en + cnt_en_n_col * it + ui;

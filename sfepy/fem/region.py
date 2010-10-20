@@ -490,21 +490,21 @@ class Region( Struct ):
                 continue
             
             nnew = nm.empty( (0,), dtype = nm.int32 )
-            if node_desc.vertex.size:
+            if node_desc.vertex is not None:
                 nnew = nm.concatenate( (nnew, field.remap[self.vertices[ig]]) )
 
-            if node_desc.edge:
+            if node_desc.edge is not None:
                 ed = field.domain.ed
                 # ed.uid_i[self.edges[ii]] == ed.uid[ed.perm_i[self.edges[ii]]]
                 enods = cnt_en[:cnt_en.shape[0],ed.uid_i[self.edges[ig]]].ravel()
                 enods = nm.compress( (enods >= 0), enods )
                 nnew = nm.concatenate( (nnew, enods) )
 
-            if node_desc.face:
+            if node_desc.face is not None:
                 print self.name, field.name
                 raise NotImplementedError
 
-            if node_desc.bubble and self.can_cells:
+            if (node_desc.bubble is not None) and self.can_cells:
                 noft = field.aps.node_offset_table
                 ia = field.aps.igs.index( ig )
                 enods = self.cells[ig] + noft[3,ia]
