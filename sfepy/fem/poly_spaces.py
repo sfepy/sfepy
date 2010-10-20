@@ -130,7 +130,31 @@ class LagrangeNodes(Struct):
                     iseq += 1
         return iseq
 
-                    
+class NodeDescription(Struct):
+
+    def _describe_facets(self, ii):
+        nts = self.node_types[ii]
+        ik = nm.where(nts[1:,1] > nts[:-1,1])[0]
+        ik = nm.r_[0, ik + 1, nts.shape[0]]
+        return [ii[ik[ir] : ik[ir+1]] for ir in range(len(ik) - 1)]
+
+    def __init__(self, node_types):
+        self.node_types = node_types
+
+        # Vertex nodes.
+        self.vertex = nm.where(node_types[:,0] == 0)[0]
+
+        # Edge nodes.
+        ii = nm.where(node_types[:,0] == 1)[0]
+        self.edge = self._describe_facets(ii)
+
+        # Face nodes.
+        ii = nm.where(node_types[:,0] == 2)[0]
+        self.face = self._describe_facets(ii)
+
+        # Bubble nodes.
+        self.bubble = nm.where(node_types[:,0] == 3)[0]
+
 class PolySpace(Struct):
     """Abstract polynomial space class."""
     _all = None
@@ -241,6 +265,9 @@ class PolySpace(Struct):
 
     def get_mtx_i(self):
         return self.mtx_i
+
+    def describe_nodes(self):
+        return NodeDescription(self.nts)
 
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""

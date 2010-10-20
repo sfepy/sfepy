@@ -84,50 +84,10 @@ class Interpolant( Struct ):
 
         return (et, ft)
 
-
-    ##
-    # 1. col ... iep, 2. col ... is_extra (simplified for now)
-    # c: 03.10.2005, r: 04.02.2008
     def describe_nodes( self ):
+        ps = self.poly_spaces['v']
+        node_desc = ps.describe_nodes()
 
-        def _describe_nodes_aux( inds ):
-            objs = []
-            ii = 0
-            while (ii < len( inds )):
-                nt = nts[inds[ii]]
-                first = nt[1]
-                obj = []
-                while (first == nt[1]):
-                    obj.append( [inds[ii], 1] )
-                    ii += 1
-                    if (ii >= len( inds )):
-                        break
-                    nt = nts[inds[ii]]
-                objs.append( nm.array( obj, dtype = nm.int32 ) )
-
-            return objs
-
-        nts = self.poly_spaces['v'].nts
-
-        node_desc = Struct()
-
-        # Vertex node.
-        ii = (nts[:,0] == 0).nonzero()[0]
-        zz = nm.zeros( (ii.shape[0], 1), dtype = nm.int32 )
-        node_desc.vertex = nm.concatenate( (ii[:,nm.newaxis], zz), 1 )
-
-        # Edge nodes.
-        inds = (nts[:,0] == 1).nonzero()[0]
-        node_desc.edge = _describe_nodes_aux( inds )
-        
-        # Face nodes.
-        inds = (nts[:,0] == 2).nonzero()[0]
-        node_desc.face = _describe_nodes_aux( inds )
-
-        # Bubble nodes.
-        inds = (nts[:,0] == 3).nonzero()[0]
-        node_desc.bubble = _describe_nodes_aux( inds )
-        
         return node_desc
 
     ##
@@ -468,7 +428,6 @@ class Approximations( Container ):
         self.ent = ent = {}
         self.fnt = fnt = {}
 
-        self.node_descs = {}
         self.interp.list_extra_node_types(ent, fnt)
         self.node_desc = self.interp.describe_nodes()
 
