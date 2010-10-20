@@ -139,10 +139,16 @@ class Field( Struct ):
                 raise ValueError('unknown field kind! (%s)', kind)
 
         else:
-            obj = Field(conf.name, conf.dtype, conf.shape, regions[conf.region],
-                        space=space,
-                        poly_space_base=poly_space_base,
-                        approx_order=approx_order[:2])
+            if discontinuous:
+                cls = DiscontinuousField
+
+            else:
+                cls = Field
+
+            obj = cls(conf.name, conf.dtype, conf.shape, regions[conf.region],
+                      space=space,
+                      poly_space_base=poly_space_base,
+                      approx_order=approx_order[:2])
 
         return obj
 
@@ -477,6 +483,20 @@ class Field( Struct ):
             return self.aps.coors
         else:
             return self.aps.coors[nods]
+
+class DiscontinuousField(Field):
+
+    def setup_global_base( self ):
+
+        self.aps.describe_nodes()
+        self.aps.setup_nodes()
+
+        # Get n_dof_per_vertex, n_dof_per_facet.
+        # Find all unique facets in the field region.
+        # Define global facet dof numbers (range(n_dof_per_facet * n_facet))
+
+        aux = self.aps.setup_global_base()
+        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
 
 class SurfaceField(Field):
     """
