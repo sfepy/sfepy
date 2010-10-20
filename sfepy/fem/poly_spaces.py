@@ -135,14 +135,26 @@ class NodeDescription(Struct):
     def _describe_facets(self, ii):
         nts = self.node_types[ii]
         ik = nm.where(nts[1:,1] > nts[:-1,1])[0]
-        ik = nm.r_[0, ik + 1, nts.shape[0]]
-        return [ii[ik[ir] : ik[ir+1]] for ir in range(len(ik) - 1)]
+
+        if len(ik) == 0:
+            ifacets = None
+
+        else:
+            ik = nm.r_[0, ik + 1, nts.shape[0]]
+            ifacets = [ii[ik[ir] : ik[ir+1]] for ir in range(len(ik) - 1)]
+
+        return ifacets
 
     def __init__(self, node_types):
         self.node_types = node_types
 
         # Vertex nodes.
-        self.vertex = nm.where(node_types[:,0] == 0)[0]
+        ii = nm.where(node_types[:,0] == 0)[0]
+        if len(ii):
+            self.vertex = ii
+
+        else:
+            self.vertex = None
 
         # Edge nodes.
         ii = nm.where(node_types[:,0] == 1)[0]
@@ -153,7 +165,12 @@ class NodeDescription(Struct):
         self.face = self._describe_facets(ii)
 
         # Bubble nodes.
-        self.bubble = nm.where(node_types[:,0] == 3)[0]
+        ii = nm.where(node_types[:,0] == 3)[0]
+        if len(ii):
+            self.bubble = ii
+
+        else:
+            self.bubble = None
 
 class PolySpace(Struct):
     """Abstract polynomial space class."""
