@@ -131,6 +131,9 @@ class LagrangeNodes(Struct):
         return iseq
 
 class NodeDescription(Struct):
+    """
+    Describe FE nodes defined on different parts of a reference element.
+    """
 
     def _describe_facets(self, ii):
         nts = self.node_types[ii]
@@ -138,39 +141,40 @@ class NodeDescription(Struct):
 
         if len(ik) == 0:
             ifacets = None
+            n_dof = 0
 
         else:
             ik = nm.r_[0, ik + 1, nts.shape[0]]
             ifacets = [ii[ik[ir] : ik[ir+1]] for ir in range(len(ik) - 1)]
+            n_dof = len(ifacets[0])
 
-        return ifacets
+        return ifacets, n_dof
+
+    def _describe_other(self, ii):
+        if len(ii):
+            return ii, len(ii)
+
+        else:
+            return None, 0
 
     def __init__(self, node_types):
         self.node_types = node_types
 
         # Vertex nodes.
         ii = nm.where(node_types[:,0] == 0)[0]
-        if len(ii):
-            self.vertex = ii
-
-        else:
-            self.vertex = None
+        self.vertex, self.n_vertex_nod = self._describe_other(ii)
 
         # Edge nodes.
         ii = nm.where(node_types[:,0] == 1)[0]
-        self.edge = self._describe_facets(ii)
+        self.edge, self.n_edge_nod = self._describe_facets(ii)
 
         # Face nodes.
         ii = nm.where(node_types[:,0] == 2)[0]
-        self.face = self._describe_facets(ii)
+        self.face, self.n_face_nod = self._describe_facets(ii)
 
         # Bubble nodes.
         ii = nm.where(node_types[:,0] == 3)[0]
-        if len(ii):
-            self.bubble = ii
-
-        else:
-            self.bubble = None
+        self.bubble, self.n_bubble_nod = self._describe_other(ii)
 
 class PolySpace(Struct):
     """Abstract polynomial space class."""
