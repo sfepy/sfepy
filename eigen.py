@@ -422,7 +422,7 @@ class AcousticBandGapsApp( SimpleApp ):
 
         n_eigs = eigs.shape[0]
 
-	variables = problem.get_variables()
+        variables = problem.get_variables()
 
         mtx_phi = nm.empty( (variables.di.ptr[-1], mtx_s_phi.shape[1]),
                            dtype = nm.float64 )

@@ -81,7 +81,7 @@ class ProblemDefinition( Struct ):
         if init_fields:
             obj.set_fields( conf.fields )
 
-	    if init_equations:
+            if init_equations:
                 obj.set_equations(conf.equations, user={'ts' : obj.ts})
 
         if init_solvers:
@@ -218,7 +218,7 @@ class ProblemDefinition( Struct ):
         """
         self.output_modes = {'vtk' : 'sequence', 'h5' : 'single'}
 
-	self.ofn_trunk = get_default(output_filename_trunk,
+        self.ofn_trunk = get_default(output_filename_trunk,
                                      io.get_trunk(self.domain.name))
 
         self.output_dir = get_default(output_dir, os.curdir)
@@ -261,10 +261,10 @@ class ProblemDefinition( Struct ):
         else:
             conf_variables = select_by_names(self.conf.variables, variable_names)
 
-	if not only_conf:
-	    self.set_variables( conf_variables )
+        if not only_conf:
+            self.set_variables( conf_variables )
 
-	return conf_variables
+        return conf_variables
 
     def clear_equations( self ):
         self.integrals = None
@@ -287,7 +287,7 @@ class ProblemDefinition( Struct ):
             cache_override = get_default_attr( self.conf.fe,
                                                'cache_override', True )
 
-	self.set_variables()
+        self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
 
         self.integrals = Integrals.from_conf(self.conf.integrals)
@@ -406,9 +406,9 @@ class ProblemDefinition( Struct ):
             ## plu.plt.show()
 
     def set_bcs(self, ebcs=None, epbcs=None, lcbcs=None):
-	"""
-	Update boundary conditions.
-	"""
+        """
+        Update boundary conditions.
+        """
         if isinstance(ebcs, Conditions):
             self.ebcs = ebcs
 
@@ -434,7 +434,7 @@ class ProblemDefinition( Struct ):
                     ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
         self.update_materials(ts)
-	self.set_bcs(ebcs, epbcs, lcbcs)
+        self.set_bcs(ebcs, epbcs, lcbcs)
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
 
@@ -447,7 +447,7 @@ class ProblemDefinition( Struct ):
         self.equations.setup_initial_conditions(ics, functions)
 
     def select_bcs(self, ebc_names=None, epbc_names=None,
-		   lcbc_names=None, create_matrix=False):
+                   lcbc_names=None, create_matrix=False):
 
         if ebc_names is not None:
             conf_ebc = select_by_names( self.conf.ebcs, ebc_names )
@@ -464,7 +464,7 @@ class ProblemDefinition( Struct ):
         else:
             conf_lcbc = None
 
-	self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
+        self.set_bcs(conf_ebc, conf_epbc, conf_lcbc)
         self.update_equations(self.ts, self.ebcs, self.epbcs, self.lcbcs,
                               self.functions, create_matrix)
 
@@ -629,14 +629,14 @@ class ProblemDefinition( Struct ):
         output('...done')
 
     def save_regions( self, filename_trunk, region_names = None ):
-	"""Save regions as meshes."""
+        """Save regions as meshes."""
 
-	if region_names is None:
-	    region_names = self.domain.regions.get_names()
+        if region_names is None:
+            region_names = self.domain.regions.get_names()
 
         output( 'saving regions...' )
         for name in region_names:
-	    region = self.domain.regions[name]
+            region = self.domain.regions[name]
             output( name )
             aux = Mesh.from_region(region, self.domain.mesh)
             aux.write( '%s_%s.mesh' % (filename_trunk, region.name),
@@ -644,7 +644,7 @@ class ProblemDefinition( Struct ):
         output( '...done' )
 
     def save_regions_as_groups(self, filename_trunk):
-	"""Save regions in a single mesh but mark them by using different
+        """Save regions in a single mesh but mark them by using different
         element/node group numbers.
 
         If regions overlap, the result is undetermined, with exception of the
@@ -998,7 +998,7 @@ class ProblemDefinition( Struct ):
         Parameters
         ----------
         ... : arguments
-   	    See docstrings of `self.create_evaluable()`.
+            See docstrings of `self.create_evaluable()`.
         dw_mode : 'vector' or 'matrix'
             The assembling mode for 'weak' evaluation mode.
         term_mode : str
@@ -1054,7 +1054,7 @@ class ProblemDefinition( Struct ):
             variables = self.equations.variables
 
         elif auto_create:
-	    variables = self.create_variables()
+            variables = self.create_variables()
 
         else:
             variables = None
@@ -1062,24 +1062,24 @@ class ProblemDefinition( Struct ):
         return variables
 
     def create_variables(self, var_names=None):
-	"""
-	Create variables with names in `var_names`. Their definitions
+        """
+        Create variables with names in `var_names`. Their definitions
         have to be present in `self.conf.variables`.
 
-	Notes
-	-----
-	This method does not change `self.equations`, so it should not
+        Notes
+        -----
+        This method does not change `self.equations`, so it should not
         have any side effects.
-	"""
-	if var_names is not None:
-	    conf_variables = self.select_variables(var_names, only_conf=True)
+        """
+        if var_names is not None:
+            conf_variables = self.select_variables(var_names, only_conf=True)
 
-	else:
-	    conf_variables = self.conf.variables
+        else:
+            conf_variables = self.conf.variables
 
-	variables = Variables.from_conf(conf_variables, self.fields)
+        variables = Variables.from_conf(conf_variables, self.fields)
 
-	return variables
+        return variables
 
     def get_output_name(self, suffix=None, extra=None, mode=None):
         """

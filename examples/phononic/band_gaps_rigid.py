@@ -385,7 +385,7 @@ def vary_y3_size( problem ):
         problem = ProblemDefinition.from_conf( conf )
 
         problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
-			      ['Y2', 'Y3'] )
+                              ['Y2', 'Y3'] )
         for region in problem.domain.regions:
             if not region.has_cells_if_can():
                 raise ValueError( 'region %s has no cells!' % region.name )

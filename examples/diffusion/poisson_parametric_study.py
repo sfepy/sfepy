@@ -177,11 +177,11 @@ def vary_omega1_size( problem ):
         problem = ProblemDefinition.from_conf( conf )
 
         problem.save_regions( join( output_dir, ('regions_' + d_format) % ii ),
-			      ['Omega_1'] )
+                              ['Omega_1'] )
         region = problem.domain.regions['Omega_1']
-	if not region.has_cells_if_can():
+        if not region.has_cells_if_can():
             print region
-	    raise ValueError( 'region %s has no cells!' % region.name )
+            raise ValueError( 'region %s has no cells!' % region.name )
 
         problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
         problem.output_format = output_format
@@ -193,12 +193,12 @@ def vary_omega1_size( problem ):
 
         filename = join( output_dir,
                          ('log_%s.txt' % d_format) % ii )
-	fd = open( filename, 'w' )
+        fd = open( filename, 'w' )
         log_item = '$r(\Omega_1)$: %f\n' % diameter
-	fd.write( log_item )
-	fd.write( 'solution:\n' )
-	nm.savetxt( fd, vec_dp )
-	fd.close()
+        fd.write( log_item )
+        fd.write( 'solution:\n' )
+        nm.savetxt( fd, vec_dp )
+        fd.close()
 
         yield None
 

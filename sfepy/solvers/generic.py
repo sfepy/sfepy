@@ -119,7 +119,7 @@ def solve_evolutionary_op(problem,
                                           step_args=step_args)
 
     suffix, is_save = prepare_save_data( time_solver.ts,
-					 problem.conf )
+                                         problem.conf )
 
     state0 = problem.create_state_vector()
     problem.setup_ic()
@@ -167,7 +167,7 @@ def solve_direct(conf, options, problem=None, step_hook=None,
     """Generic (simple) problem solver."""
     if problem is None:
         is_eqs = not options.solve_not
-	problem = ProblemDefinition.from_conf(conf, init_equations=is_eqs)
+        problem = ProblemDefinition.from_conf(conf, init_equations=is_eqs)
 
         problem.setup_default_output(conf, options)
 

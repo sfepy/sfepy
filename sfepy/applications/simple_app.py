@@ -56,7 +56,7 @@ class SimpleApp( Application ):
     process_options = staticmethod( process_options )
 
     def __init__(self, conf, options, output_prefix,
-		 init_equations=True, **kwargs):
+                 init_equations=True, **kwargs):
         """`kwargs` are passed to  ProblemDefinition.from_conf()
 
         Command-line options have precedence over conf.options."""
@@ -67,8 +67,8 @@ class SimpleApp( Application ):
         if hasattr(options, 'solve_not') and options.solve_not:
             is_eqs = False
         self.problem = ProblemDefinition.from_conf(conf,
-						   init_equations=is_eqs,
-						   **kwargs)
+                                                   init_equations=is_eqs,
+                                                   **kwargs)
 
         self.setup_output_info( self.problem, self.options )
 
@@ -87,9 +87,9 @@ class SimpleApp( Application ):
         """Modifies both problem and options!"""
         if options.output_filename_trunk is None:
             ofn_trunk = io.get_trunk(self.conf.filename_mesh)
-	    options.output_filename_trunk = ofn_trunk
+            options.output_filename_trunk = ofn_trunk
 
-	else:
+        else:
             ofn_trunk = options.output_filename_trunk
 
         if hasattr(options, 'output_format') \
@@ -105,10 +105,10 @@ class SimpleApp( Application ):
                              file_per_var=self.app_options.file_per_var)
 
     def call( self ):
-	out = solve_direct( self.conf, self.options,
+        out = solve_direct( self.conf, self.options,
                             problem=self.problem,
                             step_hook=self.step_hook,
                             post_process_hook=self.post_process_hook,
                             post_process_hook_final=self.post_process_hook_final)
 
-	return out
+        return out
