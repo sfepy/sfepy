@@ -201,13 +201,13 @@ class SchroedingerApp( SimpleApp ):
         output( "solution saved to %s" % self.problem.get_output_name() )
         output( "in %s" % self.app_options.output_dir )
 
-	if self.post_process_hook_final is not None: # User postprocessing.
-	    self.post_process_hook_final( self.problem, evp = evp )
+        if self.post_process_hook_final is not None: # User postprocessing.
+            self.post_process_hook_final( self.problem, evp = evp )
 
         return evp
 
     def _interp_to_nodes(self, v_qp):
-	variable = self.problem.create_variables(['scalar'])['scalar']
+        variable = self.problem.create_variables(['scalar'])['scalar']
         variable.data_from_qp(v_qp, 'i1')
 
         return variable()
@@ -347,7 +347,7 @@ class SchroedingerApp( SimpleApp ):
         file_output("|V_XC|:    ", nla.norm(v_xc_qp.ravel()))
         file_output("|V_HXC|:   ", norm)
 
-	if self.iter_hook is not None: # User postprocessing.
+        if self.iter_hook is not None: # User postprocessing.
             pb.select_bcs(ebc_names=['ZeroSurface'])
             mtx_phi = self.make_full(mtx_s_phi)
 
@@ -357,7 +357,7 @@ class SchroedingerApp( SimpleApp ):
                           vec_n = vec_n, vec_v_h = vec_v_h,
                           n_qp = n_qp, v_ion_qp = v_ion_qp, v_h_qp = v_h_qp,
                           v_xc_qp = v_xc_qp, file_output = file_output)
-	    self.iter_hook(self.problem, data = data)
+            self.iter_hook(self.problem, data = data)
 
         file_output("-"*70)
 
@@ -377,7 +377,7 @@ class SchroedingerApp( SimpleApp ):
         output( 'assembling rhs...' )
         tt = time.clock()
         mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
-			    auto_init=True, dw_mode='matrix')
+                            auto_init=True, dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
         assert_( nm.alltrue( nm.isfinite( mtx_b.data ) ) )
 
@@ -432,7 +432,7 @@ class SchroedingerApp( SimpleApp ):
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
 
         fun = pb.materials['mat_v'].function
-	variable = self.problem.create_variables(['scalar'])['scalar']
+        variable = self.problem.create_variables(['scalar'])['scalar']
         vec_v_ion = fun(None, variable.field.get_coor(),
                         mode='qp')['V_ion'].squeeze()
 
@@ -481,13 +481,13 @@ class SchroedingerApp( SimpleApp ):
         output( 'assembling lhs...' )
         tt = time.clock()
         mtx_a = pb.evaluate(pb.conf.equations['lhs'], mode='weak',
-			    auto_init=True, dw_mode='matrix')
+                            auto_init=True, dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         output( 'assembling rhs...' )
         tt = time.clock()
         mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
-			    dw_mode='matrix')
+                            dw_mode='matrix')
         output( '...done in %.2f s' % (time.clock() - tt) )
 
         n_eigs = get_default( opts.n_eigs, mtx_a.shape[0] )

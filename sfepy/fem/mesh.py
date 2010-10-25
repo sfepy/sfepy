@@ -619,7 +619,7 @@ class Mesh( Struct ):
         nnz = prow[-1]
         output('graph nonzeros: %d (%.2e%% fill)' \
                % (nnz, float(nnz) / nm.prod(shape)))
-	
+        
         data = nm.ones((nnz,), dtype=nm.bool)
         graph = sp.csr_matrix((data, icol, prow), shape)
 

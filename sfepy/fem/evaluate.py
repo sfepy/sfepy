@@ -350,9 +350,9 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         output( mtx_name, var_names )
 
         problem.set_equations({'eq': mtx_term})
-	variables = problem.get_variables()
-	indx = variables.get_indx
-	dummy = variables.create_state_vector()
+        variables = problem.get_variables()
+        indx = variables.get_indx
+        dummy = variables.create_state_vector()
 
         if bc_mode == 0:
             problem.select_bcs( ebc_names = ebcs, epbc_names = epbcs )

@@ -98,7 +98,7 @@ def generate_probes(filename_input, filename_results, options,
         probe_hooks = {None : getattr(conf.funmod, conf.options.probe_hook)}
 
     if options.output_filename_trunk is None:
-	    options.output_filename_trunk = problem.ofn_trunk
+            options.output_filename_trunk = problem.ofn_trunk
 
     filename_template = options.output_filename_trunk \
                         + ('_%%d.%s' % options.output_format)

@@ -13,7 +13,7 @@ class Application( Struct ):
                          conf = conf,
                          options = options,
                          output_prefix = output_prefix )
-	output.prefix = self.output_prefix
+        output.prefix = self.output_prefix
         self.restore()
 
     def setup_options( self ):

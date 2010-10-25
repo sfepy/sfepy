@@ -123,7 +123,7 @@ class Variables( Container ):
                 pass
 
     def setup_ordering(self):
-	"""
+        """
         Setup ordering of variables.
         """
         self.link_duals()
@@ -141,8 +141,8 @@ class Variables( Container ):
             ii = orders.index(var._order)
             self.ordered_state[ii] = var.name
 
-	self.ordered_virtual = [None] * len(self.virtual)
-	ii = 0
+        self.ordered_virtual = [None] * len(self.virtual)
+        ii = 0
         for var in self.iter_state(ordered=False):
             if var.dual_var_name is not None:
                 self.ordered_virtual[ii] = var.dual_var_name
