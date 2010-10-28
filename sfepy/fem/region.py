@@ -231,6 +231,8 @@ class Region( Struct ):
             # Points to ed.facets.
             redges = indx.start + nm.where( aux == 2 )[0]
             self.edges[ig] = redges
+            self.shape[ig].n_edge = redges.shape[0]
+
             if fa is None: continue
 
             n_fp = fa.n_fps[ig]
@@ -240,7 +242,6 @@ class Region( Struct ):
             rfaces = indx.start + nm.where(aux == n_fp)[0]
             self.faces[ig] = rfaces
 
-            self.shape[ig].n_edge = redges.shape[0]
             self.shape[ig].n_face = rfaces.shape[0]
 
         self.is_complete = True
@@ -527,7 +528,11 @@ class Region( Struct ):
 
     def get_n_cells(self, ig, is_surface=False):
         if is_surface:
-            return self.shape[ig].n_face
+            if self.domain.shape.dim == 2:
+                return self.shape[ig].n_edge
+
+            else:
+                return self.shape[ig].n_face
 
         else:
             return self.shape[ig].n_cell
