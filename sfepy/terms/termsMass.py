@@ -207,12 +207,12 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
             coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
 
         if state.is_real():
-            fargs = coef, vec, 0, bf, sg, sd.econn
+            fargs = coef, vec, 0, bf, sgs, sd.econn
 
         else:
             ac = nm.ascontiguousarray
-            fargs = [(coef, ac(vec.real), 0, bf, sg, sd.econn),
-                     (coef, ac(vec.imag), 0, bf, sg, sd.econn)]
+            fargs = [(coef, ac(vec.real), 0, bf, sgs, sd.econn),
+                     (coef, ac(vec.imag), 0, bf, sgs, sd.econn)]
             mode += 1j
 
         return fargs, shape, mode
