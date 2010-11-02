@@ -551,7 +551,17 @@ class Region( Struct ):
     # 05.06.2007, c
     def get_faces( self, ig ):
         return self.faces[ig]
-        
+
+    def get_surface_entities(self, ig):
+        """
+        Return either region edges (in 2D) or faces (in 3D) .
+        """
+        if self.domain.shape.dim == 2:
+            return self.edges[ig]
+
+        else:
+            return self.faces[ig]
+
     ##
     # 05.06.2007, c
     def get_cells( self, ig ):
