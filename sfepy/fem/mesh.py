@@ -339,7 +339,6 @@ class Mesh( Struct ):
         mesh.mat_ids = []
 
         if not is_surface:
-
             if region.has_cells():
                 for ig in region.igs:
                     mesh.descs.append( mesh_in.descs[ig] )
@@ -365,7 +364,7 @@ class Mesh( Struct ):
                                                    mesh_in.dim))
 
         else:
-            mesh._append_region_faces(region)
+            mesh._append_region_faces(region, force_faces=True)
 
         mesh._set_shape_info()
 
@@ -487,28 +486,27 @@ class Mesh( Struct ):
         self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
         self.descs = descs
 
-    def _append_region_faces(self, region):
-        from sfepy.fem.domain import dm_create_list
-
-        domain = region.domain
-        data, _, _ = dm_create_list(domain.groups, domain.mesh.n_nod, 1, 0)
+    def _append_region_faces(self, region, force_faces=False):
+        fa = region.domain.get_facets(force_faces=force_faces)[1]
+        if fa is None:
+            return
 
         for ig in region.igs:
-            faces = region.get_faces(ig)
-            fdata = data[faces]
+            faces = region.get_surface_entities(ig)
+            fdata = fa.facets[faces]
 
             i3 = nm.where(fdata[:,-1] == -1)[0]
             i4 = nm.where(fdata[:,-1] != -1)[0]
 
             if i3.size:
                 self.descs.append('2_3')
-                self.mat_ids.append(fdata[i3,0] + 1)
-                self.conns.append(fdata[i3,-4:-1].copy())
+                self.mat_ids.append(fa.indices[i3,0] + 1)
+                self.conns.append(fdata[i3,:-1])
 
             if i4.size:
                 self.descs.append('2_4')
-                self.mat_ids.append(fdata[i4,0] + 1)
-                self.conns.append(fdata[i4,-4:].copy())
+                self.mat_ids.append(fa.indices[i4,0] + 1)
+                self.conns.append(fdata[i4])
 
     def write(self, filename=None, io=None,
               coors=None, igs=None, out=None, float_format=None, **kwargs):
