@@ -51,6 +51,15 @@ class Mapping(Struct):
         self.coors = coors
         self.conn = conn
 
+        try:
+            self.coors[self.conn]
+
+        except IndexError:
+            output('coordinates shape: %s' % list(coors.shape))
+            output('connectivity: min: %d, max: %d' % (conn.min(), conn.max()))
+            msg = 'incompatible connectivity and coordinates (see above)'
+            raise IndexError(msg)
+
         self.n_el, self.n_ep = conn.shape
         self.dim = self.coors.shape[1]
 
