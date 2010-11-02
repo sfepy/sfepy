@@ -144,6 +144,8 @@ class NodeDescription(Struct):
             n_dof = 0
 
         else:
+            ii = ii.astype(nm.int32)
+
             ik = nm.r_[0, ik + 1, nts.shape[0]]
             ifacets = [ii[ik[ir] : ik[ir+1]] for ir in range(len(ik) - 1)]
             n_dof = len(ifacets[0])
