@@ -324,12 +324,12 @@ class Approximation( Struct ):
 
             if not self.is_surface:
                 ps = self.interp.poly_spaces[sd.face_type]
-                mapping = SurfaceMapping(coors, sd.econn, poly_space=ps)
 
             else:
                 ps = self.interp.poly_spaces['v']
-                mapping = SurfaceMapping(coors, sd.leconn, poly_space=ps)
 
+            econn = sd.get_connectivity(self.is_surface)
+            mapping = SurfaceMapping(coors, econn, poly_space=ps)
             sg = mapping.get_mapping(qp.vals, qp.weights)
 
             if gtype == 'surface_extra':
