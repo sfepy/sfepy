@@ -36,6 +36,26 @@ def add_scalar_cut_plane(obj, position, normal, opacity=1.0):
 
     return scp
 
+def add_vector_cut_plane(obj, position, normal, bbox, rel_scaling=None,
+                         scale_factor='auto', clamping=False,
+                         opacity=1.0):
+    vcp = mlab.pipeline.vector_cut_plane(obj, opacity=opacity)
+    if scale_factor == 'auto':
+        rng = vcp.glyph.glyph.range
+        scale_factor = get_glyphs_scale_factor(rng, rel_scaling, bbox)
+
+    vcp.glyph.color_mode = 'color_by_vector'
+    vcp.glyph.scale_mode = 'scale_by_vector'
+    vcp.glyph.glyph.clamping = clamping
+    vcp.glyph.glyph.scale_factor = scale_factor
+    vcp.glyph.glyph_source.glyph_position = 'tail'
+
+    vcp.actor.actor.position = position
+    vcp.implicit_plane.normal = normal
+    vcp.implicit_plane.widget.enabled = False
+
+    return vcp
+
 def add_iso_surface(obj, position, contours=10, opacity=1.0):
     obj = mlab.pipeline.iso_surface(obj, contours=contours, opacity=opacity)
     obj.actor.actor.position = position
@@ -378,7 +398,17 @@ class Viewer(Struct):
                     else:
                         opacity = 1.0
                     surf = add_surf(active, position, opacity=opacity)
-                    
+
+                if is_3d:
+                    if 'cut_plane' in vector_mode:
+                        for normal in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
+                            vcp = add_vector_cut_plane(active,
+                                                       position, normal, bbox,
+                                                       rel_scaling=rel_scaling,
+                                                       clamping=clamping,
+                                                       opacity=0.5)
+                            if sf is not None:
+                                vcp.glyph.glyph.scale_factor = sf
 
             elif kind == 'tensors':
                 if family == 'point':
@@ -571,6 +601,11 @@ class Viewer(Struct):
                 vector_mode = ('warp', 'norm')
             elif vector_mode in ('arrows', 'norm'):
                 vector_mode = (vector_mode,)
+            elif vector_mode == 'cut_plane':
+                if is_3d:
+                    vector_mode = ('cut_plane',)
+                else:
+                    vector_mode = ('arrows',)
             else:
                 raise ValueError('bad value of vector_mode parameter! (%s)'
                                  % vector_mode)
