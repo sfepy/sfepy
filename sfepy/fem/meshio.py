@@ -1341,11 +1341,19 @@ class HDF5MeshIO( MeshIO ):
         out = {}
         for data_group in step_group:
             key = data_group.dname.read()
-            out[key] = Struct( name = data_group.name.read(),
-                               mode = data_group.mode.read(),
-                               data = data_group.data.read(),
-                               dofs = tuple( data_group.dofs.read() ),
-                               shape = tuple( data_group.shape.read() ) )
+            name = data_group.name.read()
+            mode = data_group.mode.read()
+            data = data_group.data.read()
+            dofs = tuple(data_group.dofs.read())
+            try:
+                shape = tuple(data_group.shape.read())
+
+            except pt.exceptions.NoSuchNodeError:
+                shape = data.shape
+
+            out[key] = Struct(name=name, mode=mode, data=data,
+                              dofs=dofs, shape=shape)
+
             if out[key].dofs == (-1,):
                 out[key].dofs = None
 
