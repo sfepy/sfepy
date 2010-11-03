@@ -200,6 +200,7 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
         sd = aps.surface_data[self.region.name]
 
         bf = ap.get_base( sd.face_type, 0, self.integral )
+        econn = sd.get_connectivity(state.is_surface)
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)
@@ -207,12 +208,12 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
             coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
 
         if state.is_real():
-            fargs = coef, vec, 0, bf, sgs, sd.econn
+            fargs = coef, vec, 0, bf, sgs, econn
 
         else:
             ac = nm.ascontiguousarray
-            fargs = [(coef, ac(vec.real), 0, bf, sgs, sd.econn),
-                     (coef, ac(vec.imag), 0, bf, sgs, sd.econn)]
+            fargs = [(coef, ac(vec.real), 0, bf, sgs, econn),
+                     (coef, ac(vec.imag), 0, bf, sgs, econn)]
             mode += 1j
 
         return fargs, shape, mode
