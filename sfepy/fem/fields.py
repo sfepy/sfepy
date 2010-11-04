@@ -4,6 +4,7 @@ import numpy as nm
 from sfepy.base.base import output, iter_dict_of_lists, get_default, Struct
 import fea
 from sfepy.fem.mesh import Mesh, make_point_cells
+from sfepy.fem.utils import extend_cell_data
 
 def parse_approx_order(approx_order):
     """
@@ -287,6 +288,46 @@ class Field( Struct ):
 
         elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def extend_dofs(self, dofs, fill_value=None):
+        """
+        Extend DOFs to the whole domain using the `fill_value`, or the
+        smallest value in `dofs` if `fill_value` is None.
+        """
+        if fill_value is None:
+            if dofs.shape[1]: # Vector.
+                fill_value = nm.amin(nm.abs(dofs))
+            else: # Scalar.
+                fill_value = nm.amin(dofs)
+
+        if self.approx_order != '0':
+            cnt_vn = self.cnt_vn
+            indx = cnt_vn[cnt_vn >= 0]
+
+            n_nod = self.domain.shape.n_nod
+            new_dofs = nm.empty((n_nod, dofs.shape[1]), dtype=self.dtype)
+            new_dofs.fill(fill_value)
+            new_dofs[indx] = dofs[:indx.size]
+
+        else:
+            new_dofs = extend_cell_data(dofs, self.domain, self.region,
+                                        val=fill_value)
+
+        return new_dofs
+
+    def remove_extra_dofs(self, dofs):
+        """
+        Remove DOFs defined in higher order nodes (order > 1).
+        """
+        if self.approx_order != '0':
+            cnt_vn = self.cnt_vn
+            indx = self.remap[cnt_vn[cnt_vn >= 0]]
+            new_dofs = dofs[indx]
+
+        else:
+            new_dofs = dofs
+
+        return new_dofs
 
     def clear_dof_conns(self):
         self.dof_conns = {}

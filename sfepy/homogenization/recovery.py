@@ -333,7 +333,7 @@ def recover_bones( problem, micro_problem, region, eps0,
         # \eta_k \partial_k^x p
         p1 = combine_scalar_grad(corrs_permeability, p_grad, vn, ii)
 
-        p_hat_e = micro_p.extend_data(p_hat[:,None], micro_n_nod, val=0.0)
+        p_hat_e = micro_p.extend_dofs(p_hat[:,None], fill_value=0.0)
         p_mic = compute_p_from_macro(p_grad, micro_coor, ii)[:,None] \
                 + p_hat_e / eps0
         p_mic[nodes_yc] = p1[:,None]
@@ -433,7 +433,7 @@ def recover_paraflow( problem, micro_problem, region,
 
         p_corr = ps + pt
 
-        p_mic = micro_p.extend_data( p_corr[:,nm.newaxis], micro_n_nod )
+        p_mic = micro_p.extend_dofs(p_corr[:,nm.newaxis])
         p_mic[nodes_y1] = p1
         p_mic[nodes_y2] = p2
         

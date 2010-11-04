@@ -5,7 +5,6 @@ import sfepy.linalg as la
 from sfepy.fem.mesh import make_inverse_connectivity
 from sfepy.fem.integrals import Integral
 from extmods.fem import evaluate_at
-from sfepy.fem.utils import extend_cell_data
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator
@@ -581,7 +580,6 @@ class Variables( Container ):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
         di = self.di
-        domain = self[0].field.domain
 
         if var_info is None:
             var_info = {}
@@ -603,30 +601,23 @@ class Variables( Container ):
             else:
                 aux = nm.reshape( vec[indx], (di.n_dof[key] / dpn, dpn) )
 
+            if extend:
+                ext = var.extend_dofs(aux, fill_value)
+
+            else:
+                ext = var.remove_extra_dofs(aux)
+
             if var.field.approx_order != '0':
                 # Has vertex data.
-                if extend:
-                    ext = var.extend_data( aux, domain.shape.n_nod, fill_value )
-                else:
-                    ext = var.remove_extra_data( aux )
+                out[name] = Struct(name='output_data', mode='vertex', data=ext,
+                                   var_name=key, dofs=var.dofs)
 
-                out[name] = Struct( name = 'output_data',
-                                    mode = 'vertex', data = ext,
-                                    var_name = key, dofs = var.dofs )
             else:
-                if extend:
-                    ext = extend_cell_data(aux, domain, var.field.region,
-                                           val=fill_value)
-                else:
-                    ext = aux
-
                 ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
-                out[name] = Struct( name = 'output_data',
-                                    mode = 'cell', data = ext,
-                                    var_name = key, dofs = var.dofs )
+                out[name] = Struct(name='output_data', mode='cell', data=ext,
+                                   var_name=key, dofs=var.dofs)
 
-        out = self.convert_complex_output( out )
-        
+        out = self.convert_complex_output(out)
         return out
 
     def convert_complex_output( self, out_in ):
@@ -1484,31 +1475,18 @@ class FieldVariable(Variable):
 
         return out
 
-    def extend_data( self, data, n_nod, val = None ):
-        """Extend data (with value val) to cover whole domain."""
-        cnt_vn = self.field.cnt_vn
-        indx = cnt_vn[cnt_vn >= 0]
+    def extend_dofs(self, data, fill_value=None):
+        """
+        Extend DOFs to the whole domain using the `fill_value`, or the
+        smallest value in `dofs` if `fill_value` is None.
+        """
+        return self.field.extend_dofs(data, fill_value=fill_value)
 
-        if val is None:
-            if data.shape[1] > 1: # Vector.
-                val = nm.amin( nm.abs( data ) )
-            else: # Scalar.
-                val = nm.amin( data )
-
-        extdata = nm.empty( (n_nod, data.shape[1]), dtype = self.dtype )
-        extdata.fill( val )
-        extdata[indx] = data[:indx.size]
-
-        return extdata
-
-    ##
-    # c: 12.05.2008, r: 12.05.2008
-    def remove_extra_data( self, data ):
-        """Removes data in extra nodes."""
-        cnt_vn = self.field.cnt_vn
-        indx = self.field.remap[cnt_vn[cnt_vn >= 0]]
-        newdata = data[indx]
-        return newdata
+    def remove_extra_dofs(self, dofs):
+        """
+        Remove DOFs defined in higher order nodes (order > 1).
+        """
+        return self.field.remove_extra_dofs(dofs)
 
     def get_element_diameters(self, cells, mode, square=False):
         """Get diameters of selected elements."""
@@ -1542,17 +1520,14 @@ class FieldVariable(Variable):
         n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof / dpn, dpn))
 
+        ext = self.extend_dofs(aux, 0.0)
+
         out = {}
         if self.field.approx_order != '0':
-            ext = self.extend_data(aux, n_nod, 0.0)
-
             out[self.name] = Struct(name = 'output_data',
                                     mode = 'vertex', data = ext,
                                     var_name = self.name, dofs = self.dofs)
         else:
-            ext = extend_cell_data(aux, self.field.domain, self.field.region,
-                                   val=0.0)
-
             ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
             out[self.name] = Struct(name = 'output_data',
                                     mode = 'cell', data = ext,
