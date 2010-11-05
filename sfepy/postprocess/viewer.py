@@ -8,6 +8,7 @@ from  enthought.traits.ui.editors.range_editor import RangeEditor
 from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
+from dataset_manager import DatasetManager
 
 from sfepy.base.base import *
 from sfepy.base.tasks import Process
@@ -60,7 +61,47 @@ def add_iso_surface(obj, position, contours=10, opacity=1.0):
     obj = mlab.pipeline.iso_surface(obj, contours=contours, opacity=opacity)
     obj.actor.actor.position = position
     return obj
-    
+
+def add_subdomains_surface(obj, position, mat_id, mat_id_name='mat_id',
+                           threshold_limits=(None, None), single_color=False):
+    rm = mat_id.min(), mat_id.max()
+
+    if single_color:
+        mat_id[mat_id > rm[0]] = rm[1]
+
+    dm = DatasetManager(dataset=obj.outputs[0])
+    if mat_id_name not in dm.cell_scalars:
+        dm.add_array(mat_id, mat_id_name, 'cell')
+
+    dm.activate(mat_id_name, 'cell')
+
+    aa = mlab.pipeline.set_active_attribute(obj)
+    aa.cell_scalars_name = mat_id_name
+
+    threshold = mlab.pipeline.threshold(aa)
+    threshold.threshold_filter.progress = 1.0
+    if threshold_limits[0] is not None:
+        threshold.lower_threshold = threshold_limits[0] + 0.1
+    if threshold_limits[1] is not None:
+        threshold.upper_threshold = threshold_limits[1] - 0.1
+
+    surface = mlab.pipeline.surface(threshold, opacity=0.3)
+    surface.actor.actor.position = position
+
+    module_manager = surface.parent
+    lm = module_manager.scalar_lut_manager
+    lm.lut_mode = 'Blues'
+    if (rm[1] - rm[0]) == 1:
+        lm.reverse_lut = True
+
+    surface2 = mlab.pipeline.surface(dm.output, opacity=0.2)
+    surface2.actor.actor.position = position
+
+    module_manager = surface2.parent
+    module_manager.scalar_lut_manager.lut_mode = 'Blues'
+
+    return surface, surface2
+
 def add_glyphs(obj, position, bbox, rel_scaling=None,
                scale_factor='auto', clamping=False, color=None):
 
@@ -250,11 +291,13 @@ class Viewer(Struct):
             size = (600, 800)
         return size
 
-    def build_mlab_pipeline(self, file_source=None, is_3d=False, layout='rowcol',
+    def build_mlab_pipeline(self, file_source=None, is_3d=False,
+                            layout='rowcol',
                             scalar_mode='iso_surface',
                             vector_mode='arrows_norm',
                             rel_scaling=None, clamping=False,
-                            ranges=None, is_scalar_bar=False, is_wireframe=False,
+                            ranges=None, is_scalar_bar=False,
+                            is_wireframe=False, subdomains_args=None,
                             rel_text_width=None,
                             filter_names=None, group_names=None,
                             only_names=None):
@@ -266,6 +309,14 @@ class Viewer(Struct):
             filter_names = []
 
         self.source = source = self.file_source()
+
+        if subdomains_args is not None:
+            is_subdomains = True
+            mat_id = file_source.get_mat_id(subdomains_args['mat_id_name'])
+            output('mat_id range: [%d, %d]' % (mat_id.min(), mat_id.max()))
+
+        else:
+            is_subdomains = False
 
         bbox = file_source.get_bounding_box()
         dx = 1.1 * (bbox[1,:] - bbox[0,:])
@@ -449,6 +500,10 @@ class Viewer(Struct):
                 lm.use_default_range = False
                 lm.data_range = ranges[name]
 
+            if is_subdomains:
+                add_subdomains_surface(source, position, mat_id,
+                                       **subdomains_args)
+
             if is_wireframe:
                 surf = add_surf(source, position)
                 surf.actor.property.representation = 'wireframe'
@@ -476,6 +531,10 @@ class Viewer(Struct):
             # No data, so just show the mesh.
             surf = add_surf(source, (0.0, 0.0, 0.0))
             surf.actor.property.color = (0.8, 0.8, 0.8)
+
+            if is_subdomains:
+                add_subdomains_surface(source, (0.0, 0.0, 0.0), mat_id,
+                                       **subdomains_args)
 
             if is_wireframe:
                 surf = add_surf(source, (0.0, 0.0, 0.0))
@@ -513,7 +572,7 @@ class Viewer(Struct):
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
-                  rel_text_width=None,
+                  subdomains_args=None, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, group_names=None, step=0,
                   anti_aliasing=None):
@@ -551,6 +610,9 @@ class Viewer(Struct):
             If True, show a scalar bar for each data.
         is_wireframe : bool
             If True, show a wireframe of mesh surface bar for each data.
+        subdomains_args : tuple
+            Tuple of (mat_id_name, threshold_limits, single_color), see
+            :func:`add_subdomains_surface`, or None.
         rel_text_width : float
             Relative text width.
         fig_filename : str
@@ -682,6 +744,7 @@ class Viewer(Struct):
                                  ranges=ranges,
                                  is_scalar_bar=is_scalar_bar,
                                  is_wireframe=is_wireframe,
+                                 subdomains_args=subdomains_args,
                                  rel_text_width=rel_text_width,
                                  filter_names=filter_names,
                                  group_names=group_names,

@@ -103,6 +103,9 @@ help = {
     'draw only named data',
     'group_names' :
     'superimpose plots of data in each group',
+    'subdomains' :
+    'superimpose surfaces of subdomains over each data;' \
+    ' example value: mat_id,0,None,True',
     'anti_aliasing' :
     'value of anti-aliasing [default: mayavi2 default]',
 }
@@ -132,6 +135,28 @@ def parse_group_names(option, opt, value, parser):
         group_names = [tuple(group.split(',')) for group in value.split(':')]
         setattr(parser.values, option.dest, group_names)
 
+def parse_subdomains(option, opt, value, parser):
+    if value is not None:
+        print value
+        aux = value.split(',')
+
+        try:
+            tmin = int(aux[1])
+
+        except ValueError:
+            tmin = None
+
+        try:
+            tmax = int(aux[2])
+
+        except ValueError:
+            tmax = None
+
+        subdomains_args = {'mat_id_name' : aux[0],
+                           'threshold_limits' : (tmin, tmax),
+                           'single_color' : aux[3] == 'True'}
+        setattr(parser.values, option.dest, subdomains_args)
+
 def view_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, watch=options.watch,
@@ -152,6 +177,7 @@ def view_file(filename, filter_names, options, view=None):
              clamping=options.clamping, ranges=options.ranges,
              is_scalar_bar=options.is_scalar_bar,
              is_wireframe=options.is_wireframe,
+             subdomains_args=options.subdomains_args,
              rel_text_width=options.rel_text_width,
              fig_filename=options.filename, resolution=options.resolution,
              filter_names=filter_names, only_names=options.only_names,
@@ -238,6 +264,11 @@ def main():
     parser.add_option("--group-names", type='str', metavar='name1,...,nameN:...',
                       action="callback", dest="group_names",
                       callback=parse_group_names, help=help['group_names'])
+    parser.add_option("--subdomains", type='str',
+                      metavar='mat_id_name,threshold_limits,single_color',
+                      action="callback", dest="subdomains_args",
+                      callback=parse_subdomains, default=None,
+                      help=help['subdomains'])
     parser.add_option("--step", type='int', metavar='step',
                       action="store", dest="step",
                       default=0, help=help['step'])
