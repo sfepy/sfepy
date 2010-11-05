@@ -78,6 +78,16 @@ class FileSource(Struct):
     def get_step_range(self):
         return self.step_range
 
+    def get_mat_id(self, mat_id_name='mat_id'):
+        """
+        Get material ID numbers of the underlying mesh elements.
+        """
+        if self.source is not None:
+            dm = DatasetManager(dataset=self.source.outputs[0])
+
+            mat_id = dm.cell_scalars[mat_id_name]
+            return mat_id
+
     def file_changed(self):
         pass
 
@@ -187,6 +197,14 @@ class GenericFileSource(FileSource):
             self.step_range = (0, io.read_last_step())
 
         return self.step_range
+
+    def get_mat_id(self, mat_id_name='mat_id'):
+        """
+        Get material ID numbers of the underlying mesh elements.
+        """
+        if self.source is not None:
+            mat_id = nm.concatenate(self.mesh.mat_ids)
+            return mat_id
 
     def file_changed(self):
         self.step_range = (0, self.io.read_last_step())
