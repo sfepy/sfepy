@@ -529,8 +529,8 @@ class Container( Struct ):
             except:
                 return False
         else:
-            raise IndexError, 'unsupported index type: %s' % key
-        
+            raise IndexError('unsupported index type: %s' % ii)
+
     ##
     # 12.06.2007, c
     def print_names( self ):
