@@ -470,62 +470,6 @@ class Region( Struct ):
 
         return mapping
 
-    def get_field_nodes(self, field, merge=False, clean=False,
-                        warn=False, igs=None):
-        """
-        Get nodes of the field contained in the region.
-
-        Notes
-        -----
-        For one edge node type only! (should index row of cnt_en...)
-        """
-        if igs is None:
-            igs = self.igs
-        cnt_en = field.cnt_en
-
-        nods = []
-        node_descs = field.get_node_descs( self )
-        for ig, node_desc in node_descs.iteritems():
-            if not ig in igs:
-                nods.append( None )
-                continue
-            
-            nnew = nm.empty( (0,), dtype = nm.int32 )
-            if node_desc.vertex is not None:
-                nnew = nm.concatenate( (nnew, field.remap[self.vertices[ig]]) )
-
-            if node_desc.edge is not None:
-                ed = field.domain.ed
-                # ed.uid_i[self.edges[ii]] == ed.uid[ed.perm_i[self.edges[ii]]]
-                enods = cnt_en[:cnt_en.shape[0],ed.uid_i[self.edges[ig]]].ravel()
-                enods = nm.compress( (enods >= 0), enods )
-                nnew = nm.concatenate( (nnew, enods) )
-
-            if node_desc.face is not None:
-                print self.name, field.name
-                raise NotImplementedError
-
-            if (node_desc.bubble is not None) and self.can_cells:
-                noft = field.aps.node_offset_table
-                ia = field.aps.igs.index( ig )
-                enods = self.cells[ig] + noft[3,ia]
-                nnew = nm.concatenate( (nnew, enods) )
-
-            nods.append( nnew )
-
-        if merge:
-            nods = [nn for nn in nods if nn is not None]
-            nods = nm.unique( nm.hstack( nods ) )
-
-        elif clean:
-            for nn in nods[:]:
-                if nn is None:
-                    nods.remove(nn)
-                    if warn is not None:
-                        output(warn + ('%s' % region.name))
-            
-        return nods
-
     def get_n_cells(self, ig, is_surface=False):
         if is_surface:
             if self.domain.shape.dim == 2:

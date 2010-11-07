@@ -289,6 +289,63 @@ class Field( Struct ):
         elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
+    def get_dofs_in_region(self, region, merge=False, clean=False,
+                           warn=False, igs=None):
+        """
+        Return indices of DOFs that belong to the given region.
+
+        Notes
+        -----
+        For one edge node type only! (should index row of cnt_en...)
+        """
+        if igs is None:
+            igs = region.igs
+        cnt_en = self.cnt_en
+
+        nods = []
+        node_descs = self.get_node_descs(region)
+        for ig, node_desc in node_descs.iteritems():
+            if not ig in igs:
+                nods.append(None)
+                continue
+
+            nnew = nm.empty((0,), dtype=nm.int32)
+            if node_desc.vertex is not None:
+                nnew = nm.concatenate((nnew, self.remap[region.vertices[ig]]))
+
+            if node_desc.edge is not None:
+                ed = self.domain.ed
+                # ed.uid_i[region.edges[ii]]
+                # == ed.uid[ed.perm_i[region.edges[ii]]]
+                enods = cnt_en[:cnt_en.shape[0],
+                               ed.uid_i[region.edges[ig]]].ravel()
+                nnew = nm.concatenate((nnew, enods[enods >= 0]))
+
+            if node_desc.face is not None:
+                msg = 'face nodes for %s, %s' % (self.name, region.name)
+                raise NotImplementedError(msg)
+
+            if (node_desc.bubble is not None) and region.can_cells:
+                noft = self.aps.node_offset_table
+                ia = self.aps.igs.index( ig )
+                enods = region.cells[ig] + noft[3,ia]
+                nnew = nm.concatenate((nnew, enods))
+
+            nods.append(nnew)
+
+        if merge:
+            nods = [nn for nn in nods if nn is not None]
+            nods = nm.unique(nm.hstack(nods))
+
+        elif clean:
+            for nn in nods[:]:
+                if nn is None:
+                    nods.remove(nn)
+                    if warn is not None:
+                        output(warn + ('%s' % region.name))
+
+        return nods
+
     def extend_dofs(self, dofs, fill_value=None):
         """
         Extend DOFs to the whole domain using the `fill_value`, or the
