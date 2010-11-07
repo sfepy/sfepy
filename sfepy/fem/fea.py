@@ -225,7 +225,7 @@ class Approximation( Struct ):
     ##
     # 11.07.2007, c
     def setup_point_data( self, field, region ):
-        conn = region.get_field_nodes( field, merge = True, igs = region.igs )
+        conn = field.get_dofs_in_region(region, merge=True, igs=region.igs)
 ##         conn = [nods]\
 ##                + [nm.empty( (0,), dtype = nm.int32 )]\
 ##                * (len( region.igs ) - 1)

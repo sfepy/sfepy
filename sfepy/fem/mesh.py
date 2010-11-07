@@ -379,7 +379,7 @@ class Mesh( Struct ):
         mesh = Mesh.from_region(region, field.domain.mesh)
         mesh.name = mesh.name + '_field'
 
-        nodes = region.get_field_nodes( field, merge = True )
+        nodes = field.get_dofs_in_region(region, merge=True)
 
         aux = field.get_extra_nodes_as_simplices( nodes )
         mesh.coors = field.aps.coors

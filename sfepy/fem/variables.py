@@ -1335,7 +1335,7 @@ class FieldVariable(Variable):
             setter = functions[setter_name]
 
             region = self.field.region
-            nod_list = region.get_field_nodes(self.field, clean=True)
+            nod_list = self.field.get_dofs_in_region(region, clean=True)
             nods = nm.unique(nm.hstack(nod_list))
 
             coor = self.field.get_coor(nods)
@@ -1425,8 +1425,8 @@ class FieldVariable(Variable):
             else:
                 clean_msg = None
 
-            nod_list = region.get_field_nodes(self.field, clean=True,
-                                              warn=clean_msg)
+            nod_list = self.field.get_dofs_in_region(region, clean=True,
+                                                     warn=clean_msg)
             if len( nod_list ) == 0:
                 continue
 
@@ -1461,7 +1461,7 @@ class FieldVariable(Variable):
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
-        nods = region.get_field_nodes( self.field, merge = True, igs = igs )
+        nods = self.field.get_dofs_in_region(region, merge=True, igs=igs)
 ##         print nods, len( nods )
 ##         pause()
         eq = nm.empty( (len( nods ) * self.n_components,), dtype = nm.int32 )

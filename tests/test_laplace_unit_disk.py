@@ -164,7 +164,7 @@ class Test( TestCommon ):
 
             rvec = get_state( aux, 't', True )
             reg = problem.domain.regions[region_name]
-            nods = reg.get_field_nodes( field, merge = True )
+            nods = field.get_dofs_in_region(reg, merge=True)
             val2 = rvec[nods].sum() # Assume 1 dof per node.
 
             eps = 1e-2

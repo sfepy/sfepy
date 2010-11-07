@@ -265,8 +265,8 @@ class EquationMap(Struct):
                 clean_msg = None
 
             # Get master region nodes.
-            master_nod_list = region.get_field_nodes(field, clean=True,
-                                                     warn=clean_msg)
+            master_nod_list = field.get_dofs_in_region(region, clean=True,
+                                                       warn=clean_msg)
             if len(master_nod_list) == 0:
                 continue
 
@@ -294,8 +294,8 @@ class EquationMap(Struct):
 
             else: # EPBC.
                 region = bc.regions[1]
-                slave_nod_list = region.get_field_nodes(field, clean=True,
-                                                        warn=clean_msg)
+                slave_nod_list = field.get_dofs_in_region(region, clean=True,
+                                                          warn=clean_msg)
                 ## print master_nod_list
                 ## print slave_nod_list
 
@@ -594,7 +594,7 @@ class LCBCOperators(Container):
         region = bc.region
         dofs, kind = bc.dofs
 
-        nmaster = region.get_field_nodes(field, merge=True)
+        nmaster = field.get_dofs_in_region(region, merge=True)
 
         if kind == 'rigid':
             op = RigidOperator('%d_rigid' % len(self),

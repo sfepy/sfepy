@@ -286,7 +286,7 @@ class GBarCoef( CoefOne ):
 
         reg = problem.domain.regions[region_name]
         field = problem.variables[self.variables[1]].field
-        nods = reg.get_field_nodes( field, merge = True )
+        nods = field.get_dofs_in_region(reg, merge=True)
         coef[0] = vec[nods].sum()
 
         coef /= volume
@@ -317,7 +317,7 @@ def eval_boundary_diff_vel_grad( problem, uc, pc, equation, region_name,
     field = problem.variables['pc'].field
 
     reg = problem.domain.regions[region_name]
-    nods = reg.get_field_nodes( field, merge = True )
+    nods = field.get_dofs_in_region(reg, merge=True)
     val = pc[nods].sum()
 
 #    assert nm.all( problem.variables.di.ptr == problem.variables.adi.ptr )
