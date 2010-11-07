@@ -1768,7 +1768,7 @@ class FieldVariable(Variable):
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)
 
-class MultiplierVariable(Variable):
+class MultiplierVariable(FieldVariable):
     """
     A multiplier variable.
 
