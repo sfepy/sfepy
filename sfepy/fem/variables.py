@@ -607,6 +607,8 @@ class Variables( Container ):
             else:
                 ext = var.remove_extra_dofs(aux)
 
+            if ext is None: continue
+
             if var.field.approx_order != '0':
                 # Has vertex data.
                 out[name] = Struct(name='output_data', mode='vertex', data=ext,
