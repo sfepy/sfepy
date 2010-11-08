@@ -30,11 +30,15 @@ Solution in \hat{V}_h^c:
   w_2 = u_2
   w_3 = u_3
 """
-from sfepy.base.base import *
+import numpy as nm
+from copy import copy
+
+from sfepy.base.base import Struct, assert_
 from sfepy.base.compat import unique
 import sfepy.linalg as la
-from sfepy.fem import Mesh, Domain, Field, Variables
+from sfepy.fem import Mesh, Field, Region
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
+from sfepy.fem.conditions import EssentialBC
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.utils import compute_nodal_normals
 
@@ -81,12 +85,19 @@ class DualMesh(Struct):
         self.surfaces = surfaces = {}
         self.dual_surfaces = dual_surfaces = {}
 
+        n_nod = n_fa = 0
         for ig, conn in enumerate(domain.mesh.conns):
             surface = FESurface(None, self.region, self.gel.faces, conn, ig)
             surfaces[ig] = surface
 
             dual_surface = self.describe_dual_surface(surface)
             dual_surfaces[ig] = dual_surface
+
+            n_nod += dual_surface.n_nod
+            n_fa += dual_surface.n_fa
+
+        # Domain-like shape.
+        self.shape = Struct(n_nod=n_nod, n_el=n_fa, dim=self.dim)
 
     def describe_dual_surface(self, surface):
         n_fa, n_edge = surface.n_fa, self.sgel.n_edge
@@ -213,6 +224,46 @@ class DualMesh(Struct):
                               edge_ortho = edge_ortho)
 
         return dual_surface
+
+    def iter_groups(self, igs=None):
+        """
+        Domain-like functionality.
+        """
+        if igs is None:
+            for ig, dual_surface in self.dual_surfaces.iteritems():
+                vertices = nm.arange(dual_surface.n_nod, dtype=nm.int32)
+                group = Struct(ig=ig, vertices=vertices,
+                               conn=dual_surface.asm_conn)
+                yield group
+
+        else:
+            for ig in igs:
+                dual_surface = self.dual_surfaces[ig]
+                vertices = nm.arange(dual_surface.n_nod, dtype=nm.int32)
+                group = Struct(ig=ig, vertices=vertices,
+                               conn=dual_surface.asm_conn)
+                yield ig, group
+
+    def create_friction_bcs(self, dof_name):
+        """
+        Fix friction DOFs on surface boundary edges, i.e. that are not
+        shared by two friction surface faces.
+        """
+        bcs = []
+        for ig, dual_surface in self.dual_surfaces.iteritems():
+            e_id = dual_surface.conn[:, 0]
+            ii = nm.where(nm.bincount(e_id) == 1)
+
+            region = Region('__friction_%d' % ig, '', self, '')
+            region.set_vertices(ii)
+            region.is_complete = True
+
+            dofs = {'%s.all' % dof_name : 0.0}
+
+            bc = EssentialBC('__friction_%d' % ig, region, dofs)
+            bcs.append(bc)
+
+        return bcs
 
     def save(self, filename):
         coors = []
