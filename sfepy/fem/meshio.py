@@ -17,6 +17,7 @@ supported_formats = {
     '.bdf'  : 'nastran',
     '.neu'  : 'gambit',
     '.med'  : 'med',
+    '.cdb'  : 'ansys_cdb',
 }
 
 # Map mesh formats to read and write capabilities
@@ -33,6 +34,7 @@ supported_capabilities = {
     'nastran' : 'r',
     'gambit' : 'r',
     'med' : 'r',
+    'ansys_cdb' : 'r',
 }
 
 ##
@@ -43,11 +45,16 @@ def sort_by_mat_id( conns_in ):
     conns = []
     mat_ids = []
     for ig, conn in enumerate( conns_in ):
-        ii = nm.argsort( conn[:,-1], kind = 'mergesort' )
-        conn = conn[ii]
+        if conn.shape[0] > 0:
+            ii = nm.argsort( conn[:,-1], kind = 'mergesort' )
+            conn = conn[ii]
 
-        conns.append( conn[:,:-1].copy() )
-        mat_ids.append( conn[:,-1].copy() )
+            conns.append( conn[:,:-1].copy() )
+            mat_ids.append( conn[:,-1].copy() )
+        else:
+            conns.append([])
+            mat_ids.append([])
+
     return conns, mat_ids
 
 def sort_by_mat_id2( conns_in, mat_ids_in ):
@@ -56,11 +63,14 @@ def sort_by_mat_id2( conns_in, mat_ids_in ):
     conns = []
     mat_ids = []
     for ig, conn in enumerate( conns_in ):
-        mat_id = mat_ids_in[ig]
-
-        ii = nm.argsort( mat_id, kind = 'mergesort' )
-        conns.append( conn[ii] )
-        mat_ids.append( mat_id[ii] )
+        if conn.shape[0] > 0:
+            mat_id = mat_ids_in[ig]
+            ii = nm.argsort( mat_id, kind = 'mergesort' )
+            conns.append( conn[ii] )
+            mat_ids.append( mat_id[ii] )
+        else:
+            conns.append([])
+            mat_ids.append([])
 
     return conns, mat_ids
 
@@ -2123,6 +2133,103 @@ class NEUMeshIO( MeshIO ):
 
     def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
+
+class ANSYSCDBMeshIO( MeshIO ):
+    format = 'ansys_cdb'
+
+    @staticmethod
+    def make_format(format):
+        idx = [];
+        dtype = [];
+        start = 0;
+
+        for iform in format:
+            ret = iform.partition('i')
+            if not ret[1]:
+                ret = iform.partition('e')
+            if not ret[1]:
+                raise ValueError
+            aux = ret[2].partition('.')
+            step = int(aux[0])
+            for j in range(int(ret[0])):
+                idx.append((start, start+step))
+                start += step
+                dtype.append(ret[1])
+
+        return idx, dtype
+
+    def write( self, filename, mesh, out = None, **kwargs ):
+        raise NotImplementedError
+
+    def read_bounding_box( self ):
+        raise NotImplementedError
+
+    def read_dimension( self, ret_fd = False ):
+        return 3
+    
+    def read(self, mesh, **kwargs):
+
+        ids = []
+        coors = []
+        elems = []
+
+        fd = open( self.filename, 'r' )
+
+        while True:
+            row = fd.readline()
+            if not row: break
+            if len(row) == 0: continue
+            
+            row = row.split(',')
+
+            if (row[0] == 'NBLOCK'):
+                nval = int(row[1])
+                attr = row[2]
+                format = fd.readline()
+                format = format.strip()[1:-1].split(',')
+                idx, dtype = self.make_format(format)
+                
+                while True:
+                    row = fd.readline()
+                    if row[0] == 'N':
+                        break
+
+                    line = []
+                    for ival in range(nval):
+                        db, de = idx[ival]
+                        line.append(row[db:de])
+
+                    ids.append(int(line[0]))
+                    coors.append([float( coor ) for coor in line[3:]])
+                    
+            elif (row[0] == 'EBLOCK'):
+                nval = int(row[1])
+                attr = row[2]
+                nel = int(row[3])
+                format = fd.readline()
+                elems = read_array(fd, nel, nval, nm.int32)
+
+        fd.close()
+
+        tetras_idx = nm.where(elems[:,8] == 4)[0]
+        hexas_idx = nm.where(elems[:,8] == 8)[0]
+        el_hexas = elems[hexas_idx,11:]
+        el_tetras = elems[tetras_idx,11:]
+        # hack for stupid export filters
+        if el_hexas[0,-4] == el_hexas[0,-1]:
+            el_tetras = el_hexas[:,[0,1,2,4]]
+            tetras_idx = hexas_idx
+            hexas_idx = []
+            el_hexas = []
+
+        ngroups = nm.zeros((len(coors),), dtype = nm.int32)
+        mesh = mesh_from_tetra_hexa(mesh, ids, coors, ngroups,
+                                    el_tetras,
+                                    elems[tetras_idx,0],
+                                    el_hexas,
+                                    elems[hexas_idx,0])
+
+        return mesh
 
 def guess_format( filename, ext, formats, io_table ):
     """
