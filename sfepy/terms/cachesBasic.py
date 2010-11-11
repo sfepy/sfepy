@@ -203,7 +203,7 @@ class SurfaceDataCache( DataCache ):
         DataCache.init_data( self, key, ckey, shape )
 
     def update(self, key, term, ih, **kwargs):
-        region, field = self.get_args( **kwargs )
+        region, state = self.get_args( **kwargs )
         ckey = self.get_key(term)
 
         ap, vg = term.get_approximation(state)
