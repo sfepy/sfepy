@@ -49,8 +49,9 @@ from sfepy.base.testing import TestCommon, assert_
 # c: 05.02.2008
 class Test( TestCommon ):
     """Write test names explicitely to impose a given order of evaluation."""
-    tests = ['test_read_meshes', 'test_compare_same_meshes', 'test_read_dimension']
-    
+    tests = ['test_read_meshes', 'test_compare_same_meshes',
+             'test_read_dimension', 'test_write_read_meshes']
+
     ##
     # c: 05.02.2008, r: 05.02.2008
     def from_conf( conf, options ):
@@ -85,68 +86,75 @@ class Test( TestCommon ):
 
         return True
 
-    ##
-    # c: 05.02.2008, r: 05.02.2008
-    def test_compare_same_meshes( self ):
-        """Compare same meshes in various formats."""
+    def _compare_meshes(self, mesh0, mesh1):
         import numpy as nm
 
+        oks = []
+
+        ok0 = (mesh0.dim == mesh1.dim)
+        if not ok0:
+            self.report( 'dimension failed!' )
+        oks.append( ok0 )
+
+        ok0 = mesh0.n_nod == mesh1.n_nod
+        if not ok0:
+            self.report( 'number of nodes failed!' )
+        oks.append( ok0 )
+
+        ok0 = mesh0.n_el == mesh1.n_el
+        if not ok0:
+            self.report( 'number of elements failed!' )
+        oks.append( ok0 )
+
+        ok0 = mesh0.n_e_ps == mesh1.n_e_ps
+        if not ok0:
+            self.report( 'number of element points failed!' )
+        oks.append( ok0 )
+
+        ok0 = mesh0.descs == mesh1.descs
+        if not ok0:
+            self.report( 'element types failed!' )
+        oks.append( ok0 )
+
+        ok0 = nm.allclose( mesh0.coors, mesh1.coors )
+        if not ok0:
+            self.report( 'nodes failed!' )
+        oks.append( ok0 )
+
+        ok0 = nm.all( mesh0.ngroups == mesh1.ngroups )
+        if not ok0:
+            self.report( 'node groups failed!' )
+        oks.append( ok0 )
+
+        for ii in range( len( mesh0.mat_ids ) ):
+            ok0 = nm.all( mesh0.mat_ids[ii] == mesh1.mat_ids[ii] )
+            if not ok0:
+                self.report( 'material ids failed!' )
+            oks.append( ok0 )
+
+        for ii in range( len( mesh0.mat_ids ) ):
+            ok0 = nm.all( mesh0.conns[ii] == mesh1.conns[ii] )
+            if not ok0:
+                self.report( 'connectivities failed!' )
+            oks.append( ok0 )
+
+        return oks
+
+    def test_compare_same_meshes(self):
+        """
+        Compare same meshes in various formats.
+        """
         oks = []
         for i0, i1 in same:
             name0 = filename_meshes[i0]
             name1 = filename_meshes[i1]
-            self.report( 'comparing meshes from "%s" and "%s"' % (name0, name1) )
+            self.report('comparing meshes from "%s" and "%s"' % (name0, name1))
+
             mesh0 = self.meshes[name0]
             mesh1 = self.meshes[name1]
+            oks = self._compare_meshes(mesh0, mesh1)
 
-            ok0 = (mesh0.dim == mesh1.dim)
-            if not ok0:
-                self.report( 'dimension failed!' )
-            oks.append( ok0 )
-            
-            ok0 = mesh0.n_nod == mesh1.n_nod
-            if not ok0:
-                self.report( 'number of nodes failed!' )
-            oks.append( ok0 )
-
-            ok0 = mesh0.n_el == mesh1.n_el
-            if not ok0:
-                self.report( 'number of elements failed!' )
-            oks.append( ok0 )
-
-            ok0 = mesh0.n_e_ps == mesh1.n_e_ps
-            if not ok0:
-                self.report( 'number of element points failed!' )
-            oks.append( ok0 )
-
-            ok0 = mesh0.descs == mesh1.descs
-            if not ok0:
-                self.report( 'element types failed!' )
-            oks.append( ok0 )
-
-            ok0 = nm.allclose( mesh0.coors, mesh1.coors )
-            if not ok0:
-                self.report( 'nodes failed!' )
-            oks.append( ok0 )
-
-            ok0 = nm.all( mesh0.ngroups == mesh1.ngroups )
-            if not ok0:
-                self.report( 'node groups failed!' )
-            oks.append( ok0 )
-
-            for ii in range( len( mesh0.mat_ids ) ):
-                ok0 = nm.all( mesh0.mat_ids[ii] == mesh1.mat_ids[ii] )
-                if not ok0:
-                    self.report( 'material ids failed!' )
-                oks.append( ok0 )
-
-            for ii in range( len( mesh0.mat_ids ) ):
-                ok0 = nm.all( mesh0.conns[ii] == mesh1.conns[ii] )
-                if not ok0:
-                    self.report( 'connectivities failed!' )
-                oks.append( ok0 )
-
-        return sum( oks ) == len( oks )
+        return sum(oks) == len(oks)
 
     ##
     # c: 03.07.2008, r: 03.07.2008
@@ -170,3 +178,31 @@ class Test( TestCommon ):
                 self.report( 'read dimension %d -> ok' % dim )
 
         return ok
+
+    def test_write_read_meshes(self):
+        """
+        Try to write and then read all supported formats.
+        """
+        from sfepy.fem import Mesh
+        from sfepy.fem.meshio import supported_formats, supported_capabilities
+
+        conf_dir = op.dirname(__file__)
+        mesh0 = Mesh.from_file(data_dir
+                               + '/meshes/various_formats/small3d.mesh',
+                               prefix_dir=conf_dir)
+
+        oks = []
+        for suffix, format_ in supported_formats.iteritems():
+            if isinstance(format_, tuple):
+                continue
+            if 'w' not in supported_capabilities[format_]: continue
+
+            filename = op.join(self.options.out_dir, 'test_mesh_wr' + suffix)
+            self.report('%s format: %s' % (suffix, filename))
+
+            mesh0.write(filename, io='auto')
+            mesh1 = Mesh.from_file(filename)
+
+            oks.extend(self._compare_meshes(mesh0, mesh1))
+
+        return sum(oks) == len(oks)
