@@ -173,6 +173,12 @@ class HomogenizationEngine( SimpleApp ):
             setattr( coefs, coef_name, val )
             output( '...done' )
 
+        # remove "auxiliary" coefs
+        for coef_name in sorted_coef_names:
+            cstat = coef_info[coef_name].get('status', 'main')
+            if cstat == 'auxiliary':
+                delattr(coefs, coef_name)
+
         # Store filenames of all requirements as a "coefficient".
         if is_store_filenames:
             coefs.save_names = save_names
