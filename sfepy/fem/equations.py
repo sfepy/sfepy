@@ -65,10 +65,13 @@ class Equations( Container ):
         Container.__init__(self, equations)
 
         self.variables = Variables(self.collect_variables())
+        self.materials = Materials(self.collect_materials())
 
         self.caches = get_default(caches, DataCaches())
 
         self.clear_geometries()
+
+        self.domain = self.get_domain()
 
         if setup:
             self.setup(cache_override=cache_override,
@@ -76,6 +79,16 @@ class Equations( Container ):
 
     def clear_geometries(self):
         self.geometries = {}
+
+    def get_domain(self):
+        domain = None
+
+        for eq in self:
+            for term in eq.terms:
+                if term.has_region:
+                    domain = term.region.domain
+
+        return domain
 
     def setup(self, cache_override=False, make_virtual=False, verbose=True):
         self.collect_conn_info()
@@ -101,6 +114,13 @@ class Equations( Container ):
         materials = list(set(materials))
 
         return materials
+
+    def reset_materials(self):
+        """
+        Clear material data so that next materials.time_update() is
+        performed even for stationary materials.
+        """
+        self.materials.reset()
 
     def collect_variables(self):
         """
@@ -171,6 +191,8 @@ class Equations( Container ):
         self.variables.equation_mapping(ebcs, epbcs, ts, functions)
         self.variables.setup_lcbc_operators(lcbcs)
         self.variables.setup_adof_conns()
+
+        self.materials.time_update(ts, self.domain, self)
 
         for eq in self:
             for term in eq.terms:

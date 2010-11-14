@@ -10,7 +10,7 @@ from mesh import Mesh
 from domain import Domain
 from fields import fields_from_conf
 from variables import Variables, Variable
-from materials import Materials, Material
+from materials import Materials
 from equations import Equations
 from integrals import Integrals
 from sfepy.fem.conditions import Conditions
@@ -90,8 +90,7 @@ class ProblemDefinition( Struct ):
         return obj
 
     def __init__(self, name, conf=None, functions=None,
-                 domain=None, fields=None, materials=None,
-                 equations=None, auto_conf=True,
+                 domain=None, fields=None, equations=None, auto_conf=True,
                  nls=None, ls=None, ts=None, auto_solvers=True):
         self.name = name
         self.conf = conf
@@ -118,11 +117,7 @@ class ProblemDefinition( Struct ):
             if domain is None:
                 domain = self.fields.values()[0].domain
 
-            if materials is None:
-                materials = Materials(self.equations.collect_materials())
-
             self.domain = domain
-            self.materials = materials
 
             if conf is None:
                 self.conf = Struct(ebcs={}, epbcs={}, lcbcs={})
@@ -130,7 +125,6 @@ class ProblemDefinition( Struct ):
         else:
             self.domain = domain
             self.fields = fields
-            self.materials = materials
             self.equations = equations
 
         if auto_solvers:
@@ -163,7 +157,6 @@ class ProblemDefinition( Struct ):
         obj = ProblemDefinition(name, conf=self.conf,
                                 functions=self.functions,
                                 domain=self.domain, fields=self.fields,
-                                materials=self.materials,
                                 equations=self.equations,
                                 auto_conf=False, auto_solvers=False)
 
@@ -235,13 +228,10 @@ class ProblemDefinition( Struct ):
     def set_regions( self, conf_regions=None,
                      conf_materials=None, functions=None):
         conf_regions = get_default(conf_regions, self.conf.regions)
-        conf_materials = get_default(conf_materials, self.conf.materials)
         functions = get_default(functions, self.functions)
 
         self.domain.create_regions(conf_regions, functions)
-
-        materials = Materials.from_conf(conf_materials, functions)
-        self.materials = materials
+        self.conf_materials = get_default(conf_materials, self.conf.materials)
 
     def set_fields(self, conf_fields=None):
         conf_fields = get_default(conf_fields, self.conf.fields)
@@ -290,10 +280,12 @@ class ProblemDefinition( Struct ):
         self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
 
+        materials = Materials.from_conf(self.conf_materials, self.functions)
+
         self.integrals = Integrals.from_conf(self.conf.integrals)
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
-                                        self.materials, self.integrals,
+                                        materials, self.integrals,
                                         user=user,
                                         cache_override=cache_override,
                                         make_virtual=make_virtual)
@@ -379,15 +371,6 @@ class ProblemDefinition( Struct ):
         if ts is not None:
             self.ts.set_from_ts(ts)
 
-    def reset_materials(self):
-        """Clear material data so that next materials.time_update() is
-        performed even for stationary materials."""
-        self.materials.reset()
-
-    def update_materials(self, ts=None):
-        self.update_time_stepper(ts)
-        self.materials.time_update(self.ts, self.domain, self.equations)
-
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
                          lcbcs=None, functions=None, create_matrix=False):
         """
@@ -433,7 +416,6 @@ class ProblemDefinition( Struct ):
     def time_update(self, ts=None,
                     ebcs=None, epbcs=None, lcbcs=None,
                     functions=None, create_matrix=False):
-        self.update_materials(ts)
         self.set_bcs(ebcs, epbcs, lcbcs)
         self.update_equations(ts, self.ebcs, self.epbcs, self.lcbcs,
                               functions, create_matrix)
@@ -860,7 +842,8 @@ class ProblemDefinition( Struct ):
         auto_init : bool
             Set values of all variables to all zeros.
         copy_materials : bool
-            Work with a copy of `self.materials`. Safe but can be slow.
+            Work with a copy of `self.equations.materials` instead of
+            reusing them. Safe but can be slow.
         integrals : Integrals instance, optional
             The integrals to be used. Automatically created as needed if
             not given.
@@ -956,10 +939,10 @@ class ProblemDefinition( Struct ):
         kwargs = _kwargs
 
         if copy_materials:
-            materials = self.materials.semideep_copy()
+            materials = self.equations.materials.semideep_copy()
 
         else:
-            materials = Materials(objs=self.materials.objs)
+            materials = Materials(objs=self.equations.materials.objs)
 
         for mat in _materials:
             materials[mat.name] = mat
@@ -1044,6 +1027,15 @@ class ProblemDefinition( Struct ):
                               ts_conf.n_step)
 
         return Solver.any_from_conf(ts_conf, ts=self.ts, **kwargs)
+
+    def get_materials(self):
+        if self.equations is not None:
+            materials = self.equations.materials
+
+        else:
+            materials = None
+
+        return materials
 
     def init_variables( self, state ):
         """Initialize variables with history."""
