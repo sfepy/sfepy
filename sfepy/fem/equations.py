@@ -536,7 +536,7 @@ class Equation( Struct ):
         return obj
 
     def __init__(self, name, terms, caches=None):
-        obj = Struct.__init__(self, name = name)
+        Struct.__init__(self, name = name)
 
         if isinstance(terms, Term): # single Term
             terms = Terms([terms])
