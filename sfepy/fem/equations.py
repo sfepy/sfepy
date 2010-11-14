@@ -26,6 +26,23 @@ def parse_definition(equation_def):
 
     return term_descs
 
+def get_expression_arg_names(expression, strip_dots=True):
+    """
+    Parse expression and return set of all argument names. For arguments
+    with attribute-like syntax (e.g. materials), if `strip_dots` is
+    True, only base argument names are returned.
+    """
+    args = ','.join(aux.args for aux in parse_definition(expression))
+    args = [arg.strip() for arg in args.split(',')]
+
+    if strip_dots:
+        for ii, arg in enumerate(args[:]):
+            aux = arg.split('.')
+            if len(aux) == 2:
+                args[ii] = aux[0]
+
+    return set(args)
+
 ##
 # 21.07.2006, c
 class Equations( Container ):

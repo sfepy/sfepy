@@ -10,7 +10,7 @@ from mesh import Mesh
 from domain import Domain
 from fields import fields_from_conf
 from variables import Variables, Variable
-from materials import Materials
+from materials import Materials, Material
 from equations import Equations
 from integrals import Integrals
 from sfepy.fem.conditions import Conditions
@@ -74,7 +74,7 @@ class ProblemDefinition( Struct ):
                                 functions=functions, domain=domain,
                                 auto_conf=False, auto_solvers=False)
 
-        obj.set_regions(conf.regions, conf.materials, obj.functions)
+        obj.set_regions(conf.regions, obj.functions)
 
         obj.clear_equations()
 
@@ -231,7 +231,24 @@ class ProblemDefinition( Struct ):
         functions = get_default(functions, self.functions)
 
         self.domain.create_regions(conf_regions, functions)
+
+    def set_materials(self, conf_materials=None):
+        """
+        Set definition of materials.
+        """
         self.conf_materials = get_default(conf_materials, self.conf.materials)
+
+    def select_materials(self, material_names, only_conf=False):
+        if type(material_names) == dict:
+            conf_materials = transform_materials(material_names)
+
+        else:
+            conf_materials = select_by_names(self.conf.materials, material_names)
+
+        if not only_conf:
+            self.set_materials(conf_materials)
+
+        return conf_materials
 
     def set_fields(self, conf_fields=None):
         conf_fields = get_default(conf_fields, self.conf.fields)
@@ -280,6 +297,7 @@ class ProblemDefinition( Struct ):
         self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
 
+        self.set_materials()
         materials = Materials.from_conf(self.conf_materials, self.functions)
 
         self.integrals = Integrals.from_conf(self.conf.integrals)
@@ -907,17 +925,14 @@ class ProblemDefinition( Struct ):
         >>> variables['u'].data_from_any(vec)
         >>> vec_qp = eval_equations(equations, variables, mode='qp')
         """
+        from sfepy.fem.equations import get_expression_arg_names
+
         if try_equations and self.equations is not None:
             variables = self.equations.variables.as_dict()
 
         else:
             if var_dict is None:
-                from sfepy.fem.equations import parse_definition
-
-                args = ','.join(aux.args
-                                for aux in parse_definition(expression))
-                aux = [arg.strip() for arg in args.split(',')]
-                possible_var_names = set(aux)
+                possible_var_names = get_expression_arg_names(expression)
 
                 variables = self.create_variables(possible_var_names)
 
@@ -938,11 +953,17 @@ class ProblemDefinition( Struct ):
 
         kwargs = _kwargs
 
-        if copy_materials:
-            materials = self.equations.materials.semideep_copy()
+        materials = self.get_materials()
+        if materials is not None:
+            if copy_materials:
+                materials = materials.semideep_copy()
+
+            else:
+                materials = Materials(objs=materials.objs)
 
         else:
-            materials = Materials(objs=self.equations.materials.objs)
+            possible_mat_names = get_expression_arg_names(expression)
+            materials = self.create_materials(possible_mat_names)
 
         for mat in _materials:
             materials[mat.name] = mat
@@ -1034,6 +1055,26 @@ class ProblemDefinition( Struct ):
 
         else:
             materials = None
+
+        return materials
+
+    def create_materials(self, mat_names=None):
+        """
+        Create materials with names in `mat_names`. Their definitions
+        have to be present in `self.conf.materials`.
+
+        Notes
+        -----
+        This method does not change `self.equations`, so it should not
+        have any side effects.
+        """
+        if mat_names is not None:
+            conf_materials = self.select_materials(mat_names, only_conf=True)
+
+        else:
+            conf_materials = self.conf.materials
+
+        materials = Materials.from_conf(conf_materials, self.functions)
 
         return materials
 
