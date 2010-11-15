@@ -395,5 +395,15 @@ class ProblemConf( Struct ):
         else:
             return self._raw[key]
 
+    def get_item_by_name(self, key, item_name):
+        """
+        Return item with name `item_name` in configuration group given
+        by `key`.
+        """
+        val = getattr(self, key)
+        for item in val.itervalues():
+            if item.name == item_name:
+                return item
+
     def edit( self, key, newval ):
         self.__dict__[key] = transforms[key]( newval )
