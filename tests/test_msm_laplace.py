@@ -143,6 +143,7 @@ class Test( TestCommon ):
         problem  = self.problem
 
         variables = problem.get_variables()
+        materials = problem.get_materials()
 
         sols = self._build_rhs( self.conf.solutions )
 
@@ -154,7 +155,7 @@ class Test( TestCommon ):
             self.report( 'sol:', sol_expr )
             self.report( 'rhs:', rhs_expr )
             globals()['solution'][0] = sol_expr
-            problem.materials['rhs'].function.set_extra_args(expression=rhs_expr)
+            materials['rhs'].function.set_extra_args(expression=rhs_expr)
             problem.time_update()
             problem.equations.reset_term_caches()
             vec = problem.solve()

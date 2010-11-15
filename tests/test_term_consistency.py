@@ -130,7 +130,7 @@ class Test( TestCommon ):
                 aux = nm.arange( n_dof, dtype = nm.float64 )
                 var.data_from_data(aux)
 
-            pb.materials['m'].function.set_extra_args(term = mat_mode)
+            pb.functions['get_pars'].set_extra_args(term=mat_mode)
 
             if prefix == 'd':
                 val1 = pb.evaluate(term1, var_dict=variables.as_dict())

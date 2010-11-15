@@ -99,28 +99,36 @@ class Test( TestCommon ):
 
 
     def test_material_functions(self):
+        from sfepy.fem import Material
+
         problem = self.problem
+        conf = problem.conf
+
         ts = problem.get_default_ts(step=0)
 
-        problem.materials.time_update(ts,
-                                      problem.domain,
-                                      problem.equations)
+        conf_mat1 = conf.get_item_by_name('materials', 'mf1')
+        mat1 = Material.from_conf(conf_mat1, problem.functions)
+        mat1.time_update(ts, problem.domain, [])
 
         coors = problem.domain.get_mesh_coors()
-        mat1 = problem.materials['mf1']
         assert_(nm.all(coors[:,0] == mat1.get_data(None, None, 'x_0')))
 
-        mat2 = problem.materials['mf2']
+        conf_mat2 = conf.get_item_by_name('materials', 'mf2')
+        mat2 = Material.from_conf(conf_mat2, problem.functions)
+        mat2.time_update(ts, problem.domain, [])
+
         assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
 
-        mat3 = problem.materials['mf3']
+        materials = problem.get_materials()
+        materials.time_update(ts, problem.domain, problem.equations)
+        mat3 = materials['mf3']
         key = mat3.get_keys(region_name='Omega')[0]
+
         assert_(nm.all(mat3.get_data(key, 0, 'a') == 10.0))
         assert_(nm.all(mat3.get_data(key, 0, 'b') == 2.0))
         assert_(mat3.get_data(None, None, 'c') == 'ahoj')
 
         return True
-#        mat.time_update(ts, problem)
 
     def test_ebc_functions(self):
         import os.path as op

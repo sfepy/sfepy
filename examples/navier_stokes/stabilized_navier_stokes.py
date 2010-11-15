@@ -142,11 +142,12 @@ def create_stabil_mat(problem):
     ii['us'] = variables.get_indx(ns['u'], stripped=True)
     ii['ps'] = variables.get_indx(ns['p'], stripped=True)
 
-    stabil_mat = problem.materials['stabil']
+    materials = problem.get_materials()
+    stabil_mat = materials['stabil']
     stabil = dict_to_struct(stabil_mat.datas['special'], flag=(1,))
 
     # The viscosity.
-    fluid_mat = problem.materials[ns['fluid']]
+    fluid_mat = materials[ns['fluid']]
     viscosity = fluid_mat.function()['viscosity']
 
     # The Friedrich's constant.

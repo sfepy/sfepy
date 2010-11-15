@@ -221,10 +221,6 @@ class Test( TestCommon ):
             return True
 
         problem  = self.problem
-        rhs_mat = problem.materials['rhs']
-
-        rhs_mat.function.set_extra_args(expression='0 * x')
-
         ok = True
         for eq_name, equation in equations.iteritems():
             problem.set_equations( {eq_name : equation} )
@@ -236,6 +232,8 @@ class Test( TestCommon ):
 
             problem.set_equations( {eq_name : equation + erhs} )
             variables = problem.get_variables()
+            materials = problem.get_materials()
+            rhs_mat = materials['rhs']
 
             for sol_name, sol in problem.conf.solutions.iteritems():
                 self.report( 'testing', sol_name )

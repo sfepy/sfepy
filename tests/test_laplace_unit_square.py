@@ -186,9 +186,9 @@ class Test( TestCommon ):
     # c: 30.05.2007, r: 19.02.2008
     def test_boundary_fluxes( self ):
         import os.path as op
-        from sfepy.base.base import Struct
         from sfepy.linalg import rotation_matrix2d
         from sfepy.fem.evaluate import BasicEvaluator
+        from sfepy.fem import Material
         problem  = self.problem
         vec = self.vec
 
@@ -209,6 +209,9 @@ class Test( TestCommon ):
 
         field = variables['t'].field
 
+        conf_m = problem.conf.get_item_by_name('materials', 'm')
+        m = Material.from_conf(conf_m, problem.functions)
+
         name = op.join( self.options.out_dir,
                         op.split( problem.domain.mesh.name )[1] + '_%02d.mesh' ) 
 
@@ -221,7 +224,7 @@ class Test( TestCommon ):
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
-                val1 = problem.evaluate(flux_term, t=variables['t'])
+                val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
                 rvec = get_state( aux, 't', True )
                 reg = problem.domain.regions[region_name]

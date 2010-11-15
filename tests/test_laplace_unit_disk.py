@@ -137,8 +137,8 @@ class Test( TestCommon ):
     # 31.05.2007, c
     # 02.10.2007
     def test_boundary_fluxes( self ):
-        from sfepy.base.base import Struct
         from sfepy.fem.evaluate import BasicEvaluator
+        from sfepy.fem import Material
         problem  = self.problem
         vec = self.vec
 
@@ -157,10 +157,13 @@ class Test( TestCommon ):
 
         field = variables['t'].field
 
+        conf_m = problem.conf.get_item_by_name('materials', 'm')
+        m = Material.from_conf(conf_m, problem.functions)
+
         ok = True
         for ii, region_name in enumerate( region_names ):
             flux_term = 'd_hdpm_surfdvel.1.%s( m.K, t )' % region_name
-            val1 = problem.evaluate(flux_term, t=variables['t'])
+            val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
             rvec = get_state( aux, 't', True )
             reg = problem.domain.regions[region_name]
