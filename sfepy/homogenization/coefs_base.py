@@ -20,7 +20,6 @@ class MiniAppBase( Struct ):
     def __init__( self, name, problem, kwargs ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
 
-        self.problem.reset_materials()
         self.problem.clear_equations()
         self.set_default_attr( 'requires', [] )
         self.set_default_attr( 'is_linear', False )
