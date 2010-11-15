@@ -389,6 +389,16 @@ class ProblemDefinition( Struct ):
         if ts is not None:
             self.ts.set_from_ts(ts)
 
+    def update_materials(self, ts=None):
+        """
+        Update materials used in equations.
+        """
+        if self.equations is not None:
+            self.update_time_stepper(ts)
+            self.equations.materials.time_update(self.ts, self.domain,
+                                                 self.equations)
+
+
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
                          lcbcs=None, functions=None, create_matrix=False):
         """
