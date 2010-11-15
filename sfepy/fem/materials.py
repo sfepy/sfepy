@@ -143,6 +143,7 @@ class Material( Struct ):
                 if only_new and (key in self.datas): continue
 
                 qps = term.get_physical_qps()
+                self.datas.setdefault(key, {})
 
                 yield key, term.igs(), term.region, qps
 
