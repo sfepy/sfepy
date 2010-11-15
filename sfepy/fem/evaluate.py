@@ -219,6 +219,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         for var in variables:
             var.init_data(step=0)
 
+    # The true materials used in the expression.
+    materials = equations.materials
+
     if mode == 'weak':
         setup_dof_conns(equations.conn_info)
         if update_materials:
