@@ -22,7 +22,7 @@ class Solver(Struct):
         """
         get = conf.get_default_attr
         name = get('name', None, 'missing "name" in options!')
-        name = get('kind', None, 'missing "kind" in options!')
+        kind = get('kind', None, 'missing "kind" in options!')
 
         return Struct(**locals())
 
