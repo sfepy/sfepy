@@ -386,7 +386,42 @@ class GradETerm( Term ):
 
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
-                
+
+class DivQTerm(Term):
+    r"""
+    :Description:
+    Divergence term (weak form) in quadrature points.
+
+    :Definition:
+    .. math::
+        (\nabla \cdot \ul{u})|_{qp}
+
+    :Arguments:
+        state : :math:`\ul{u}`
+    """
+    name = 'dq_div'
+    arg_types = ('state',)
+
+    function = staticmethod(terms.dq_div_vector)
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        state, = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(state)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+        assert_(state.n_components == dim)
+
+        if diff_var is None:
+            shape = (chunk_size, n_qp, 1, 1)
+            mode = 0
+        else:
+            raise StopIteration
+
+        vec = state()
+        for out, chunk in self.char_fun(chunk_size, shape):
+            status = self.function(out, vec, 0, vg, ap.econn[chunk])
+            yield out, chunk, status
+
 ##
 # 26.07.2007, c
 class GradDivStabilizationTerm( Term ):
