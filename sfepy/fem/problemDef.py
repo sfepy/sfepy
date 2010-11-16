@@ -949,20 +949,6 @@ class ProblemDefinition( Struct ):
             else:
                 variables = var_dict
 
-        _materials = []
-
-        _kwargs = copy(kwargs)
-        for key, val in kwargs.iteritems():
-            if isinstance(val, Variable):
-                variables[val.name] = val
-                _kwargs.pop(key)
-
-            elif isinstance(val, Material):
-                _materials.append(val)
-                _kwargs.pop(key)
-
-        kwargs = _kwargs
-
         materials = self.get_materials()
         if materials is not None:
             if copy_materials:
@@ -975,8 +961,25 @@ class ProblemDefinition( Struct ):
             possible_mat_names = get_expression_arg_names(expression)
             materials = self.create_materials(possible_mat_names)
 
-        for mat in _materials:
-            materials[mat.name] = mat
+        _kwargs = copy(kwargs)
+        for key, val in kwargs.iteritems():
+            if isinstance(val, Variable):
+                if val.name != key:
+                    msg = 'inconsistent variable name! (%s == %s)' \
+                          % (val.name, key)
+                    raise ValueError(msg)
+                variables[val.name] = val
+                _kwargs.pop(key)
+
+            elif isinstance(val, Material):
+                if val.name != key:
+                    msg = 'inconsistent material name! (%s == %s)' \
+                          % (val.name, key)
+                    raise ValueError(msg)
+                materials[val.name] = val
+                _kwargs.pop(key)
+
+        kwargs = _kwargs
 
         ebcs = get_default(ebcs, self.ebcs)
         epbcs = get_default(epbcs, self.epbcs)
