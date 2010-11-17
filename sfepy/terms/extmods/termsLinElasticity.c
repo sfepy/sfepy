@@ -131,6 +131,8 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
 
   if (sym == 6) {
     for (iell = 0; iell < stress->nCell; iell++) {
+      FMF_SetCell( lam, iell );
+      FMF_SetCell( mu, iell );
       pstress = FMF_PtrCell( stress, iell );
       pstrain = FMF_PtrCell( strain, iell );
       if (1) {
@@ -256,8 +258,6 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
     for (ii = 0; ii < elList_nRow; ii++) {
       iel = elList[ii];
 
-      FMF_SetCell( lam, ii );
-      FMF_SetCell( mu, ii );
       FMF_SetCell( strain, ii );
       FMF_SetCell( vg->bfGM, iel );
 
