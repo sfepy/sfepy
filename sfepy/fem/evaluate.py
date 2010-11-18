@@ -61,14 +61,6 @@ class BasicEvaluator( Evaluator ):
 
         return mtx
 
-    ##
-    # 02.12.2005, c
-    # 09.12.2005
-    # 25.07.2006
-    # 02.10.2007
-    def update_vec( self, vec, delta ):
-        self.problem.update_vec( vec, delta )
-
     def strip_state_vector( self, vec ):
         return self.problem.equations.strip_state_vector(vec,
                                                          follow_epbc=False)
@@ -118,12 +110,6 @@ class LCBCEvaluator( BasicEvaluator ):
             mtx_r = self.matrix_hook(mtx_r, self.problem, call_mode='lcbc')
 
         return mtx_r
-
-    ##
-    # 04.10.2007, c
-    def update_vec( self, vec, delta_r ):
-        delta = self.op_lcbc * delta_r
-        BasicEvaluator.update_vec( self, vec, delta )
 
     def strip_state_vector( self, vec ):
         vec = BasicEvaluator.strip_state_vector( self, vec )

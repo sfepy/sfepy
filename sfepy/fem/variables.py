@@ -346,21 +346,6 @@ class Variables( Container ):
                 else:
                     vec[ii] = force_values
 
-    ##
-    # 27.11.2005, c
-    # 09.12.2005
-    # 25.07.2006
-    # 18.10.2006
-    def update_vec( self, vec, delta ):
-        for var_name in self.di.var_names:
-            eq_map = self[var_name].eq_map
-            i0 = self.di.indx[var_name].start
-            ii = i0 + eq_map.eqi
-##            print ii.shape, delta[adi.indx[var_name]].shape
-            vec[ii] -= delta[self.adi.indx[var_name]]
-            # EPBC.
-            vec[i0+eq_map.master] = vec[i0+eq_map.slave]
-
     def strip_state_vector( self, vec, follow_epbc = True ):
         """
         Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,

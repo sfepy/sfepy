@@ -494,11 +494,6 @@ class ProblemDefinition( Struct ):
         self.equations.apply_ic( vec, force_values )
 
     ##
-    # 25.07.2006, c
-    def update_vec( self, vec, delta ):
-        self.equations.update_vec( vec, delta )
-
-    ##
     # c: 18.04.2006, r: 07.05.2008
     def state_to_output( self, vec, fill_value = None, var_info = None,
                        extend = True ):
