@@ -101,7 +101,9 @@ def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
 
 def update_state_to_output( out, pb, vec, name, fill_value = None ):
     """Convert 'vec' to output for saving and insert it into 'out'. """
-    aux = pb.state_to_output( vec, fill_value )
+    state = problem.create_state()
+    state.set_full(vec)
+    aux = state.create_output_dict(fill_value=fill_value)
     key = aux.keys()[0]
     out[name] = aux[key]
 
@@ -569,10 +571,12 @@ class SchroedingerApp( SimpleApp ):
 
         save = self.app_options.save_eig_vectors
         out = get_default( out, {} )
+        state = pb.create_state()
         for ii in xrange( eigs.shape[0] ):
             if save is not None:
                 if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
-            aux = pb.state_to_output( mtx_phi[:,ii] )
+            state.set_full(mtx_phi[:,ii])
+            aux = state.create_output_dict()
             key = aux.keys()[0]
             out[key+'%03d' % ii] = aux[key]
 
