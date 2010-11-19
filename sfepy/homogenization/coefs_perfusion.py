@@ -40,12 +40,10 @@ class CorrRegion( CorrMiniApp ):
                 problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
             self.init_solvers(problem)
-        
-            state = problem.create_state_vector()
-            problem.apply_ebc( state )
+
             state = problem.solve()
-            assert_( problem.variables.has_ebc( state ) )
-            states[ir] = state
+            assert_(state.has_ebc())
+            states[ir] = state()
             clist.append( (ir,) )
 
         self.save( states, problem, clist )

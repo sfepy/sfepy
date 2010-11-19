@@ -33,9 +33,9 @@ class MiniAppBase( Struct ):
 
             ev = problem.get_evaluator()
 
-            state = problem.create_state_vector()
+            state = problem.create_state()
             try:
-                mtx_a = ev.eval_tangent_matrix( state, is_full = True )
+                mtx_a = ev.eval_tangent_matrix(state(), is_full=True)
             except ValueError:
                 raise ValueError('matrix evaluation failed, giving up...')
 
@@ -221,8 +221,8 @@ class CorrNN( CorrMiniApp ):
                     self.set_variables(variables, ir, ic, **data)
 
                 state = problem.solve()
-                assert_(variables.has_ebc(state))
-                states[ir,ic] = variables.get_state_parts()
+                assert_(state.has_ebc())
+                states[ir,ic] = state.get_parts()
 
                 clist.append( (ir, ic) )
 
@@ -268,8 +268,8 @@ class CorrN( CorrMiniApp ):
             else:
                 self.set_variables(variables, ir, **data)
             state = problem.solve()
-            assert_(variables.has_ebc(state))
-            states[ir] = variables.get_state_parts()
+            assert_(state.has_ebc())
+            states[ir] = state.get_parts()
 
             clist.append((ir,))
 
@@ -315,11 +315,10 @@ class CorrOne( CorrMiniApp ):
                 self.set_variables(variables, **data)
 
         state = problem.solve()
-        assert_(variables.has_ebc(state))
-        state = variables.get_state_parts()
+        assert_(state.has_ebc())
 
         corr_sol = CorrSolution(name = self.name,
-                                state = state)
+                                state = state.get_parts())
 
         self.save(corr_sol, problem)
 
@@ -587,12 +586,13 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
             problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
-            state0 = problem.create_state_vector()
-            state0[vv.di.indx[vu]] = data[vu].data
-            state0[vv.di.indx[vp]] = data[vp].data
+            state0 = problem.create_state()
+            state0.set_full(data[vu].data, vu)
+            state0.set_full(data[vp].data, vp)
             vv[vdp].data_from_data( data['d'+vp].data )
 
             state = problem.solve( state0 = state0, ts = ts )
+            state, state0 = state(), state0()
             err = nla.norm( state - state0 )
             output( state.min(), state.max() )
             output( state0.min(), state0.max() )

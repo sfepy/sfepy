@@ -44,11 +44,11 @@ class CorrScalar( CorrMiniApp ):
         for ival in range( len( self.requires ) ):
             for name, val in self.get_variables( problem, ival, data ):
                 problem.variables[name].data_from_data( val )
-            
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
+
+        state = problem.create_state()
+        state.apply_ebc()
         state = problem.solve()
-        assert_( problem.variables.has_ebc( state ) )
+        assert_(state.has_ebc())
 
         self.save( state, problem )
 
@@ -74,11 +74,11 @@ class CorrVector( CorrScalar ):
         for ival in range( len( self.requires ) ):
             for name, val in self.get_variables( problem, ival, data ):
                 problem.variables[name].data_from_data( val )
-            
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
+
+        state = problem.create_state()
+        state.apply_ebc()
         state = problem.solve()
-        assert_( problem.variables.has_ebc( state ) )
+        assert_(state.has_ebc())
 
         self.save( state, problem )
 

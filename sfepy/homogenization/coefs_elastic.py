@@ -55,9 +55,9 @@ class PressureRHSVector( CorrMiniApp ):
         problem.set_equations( self.equations )
         problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
 
-        state = problem.create_state_vector()
-        problem.apply_ebc( state )
-        
+        state = problem.create_state()
+        state.apply_ebc()
+
         vec = eval_term_op( state, self.equations.values()[0],
                             problem, dw_mode = 'vector' )
 ##         print vec.max(), vec.min()
@@ -295,21 +295,20 @@ class GBarCoef( CoefOne ):
 
 def eval_boundary_diff_vel_grad( problem, uc, pc, equation, region_name,
                                  pi = None ):
-    set_state = problem.variables.set_state_part
     get_state = problem.variables.get_state_part_view
 
     problem.set_equations( {'eq_2' : equation} )
 
-    state = problem.create_state_vector()
-    set_state( state, uc, 'uc' )
-    set_state( state, pc, 'pc' )
+    state = problem.create_state()
+    state.set_full(uc, 'uc')
+    state.set_full(pc, 'pc')
     if pi is not None:
         problem.variables['Pi'].data_from_data( pi )
 
     problem.time_update( conf_ebc = {}, conf_epbc = {} )
-    
-    problem.apply_ebc( state )
-    aux = problem.get_evaluator().eval_residual( state )
+
+    state.apply_ebc()
+    aux = problem.get_evaluator().eval_residual(state())
 
     pc = get_state( aux, 'pc', True )
     pc = problem.variables.make_full_vec( pc, 'pc', 0 )
