@@ -58,8 +58,8 @@ def time_step_function(ts, state0, problem, nls_status=None):
     problem.time_update( ts )
 
     if ts.step == 0:
-        problem.apply_ebc( state0 )
-        state = state0.copy()
+        state0.apply_ebc()
+        state = state0.copy(deep=True)
 
         if not ts.is_quasistatic:
             problem.init_time( ts )
@@ -68,7 +68,7 @@ def time_step_function(ts, state0, problem, nls_status=None):
                 # Initialize caches.
                 ev = problem.get_evaluator()
                 try:
-                    vec_r = ev.eval_residual( state, is_full = True )
+                    vec_r = ev.eval_residual(state(), is_full=True)
                 except ValueError:
                     output( 'initial residual evaluation failed, giving up...' )
                     raise
@@ -76,16 +76,12 @@ def time_step_function(ts, state0, problem, nls_status=None):
                     err = nla.norm( vec_r )
                     output( 'initial residual: %e' % err )
 
-            else:
-                # Just initialize data of state variables.
-                problem.equations.set_variables_from_state(state)
-
         if problem.is_linear():
             # Assemble linear system matrix for all
             # time steps.
             ev = problem.get_evaluator()
             try:
-                mtx_a = ev.eval_tangent_matrix( state, is_full = True )
+                mtx_a = ev.eval_tangent_matrix(state(), is_full=True)
             except ValueError:
                 output( 'matrix evaluation failed, giving up...' )
                 raise
@@ -101,7 +97,7 @@ def time_step_function(ts, state0, problem, nls_status=None):
 
         else:
             # Initialize variables with history.
-            problem.init_variables( state0 )
+            state0.init_history()
 
     else:
         state = problem.solve(state0=state0)
@@ -121,10 +117,10 @@ def solve_evolutionary_op(problem,
     suffix, is_save = prepare_save_data( time_solver.ts,
                                          problem.conf )
 
-    state0 = problem.create_state_vector()
+    state0 = problem.create_state()
     problem.setup_ic()
-    problem.apply_ic( state0 )
-    
+    state0.apply_ic()
+
     ii = 0
     for ts, state in time_solver( state0 ):
 

@@ -111,5 +111,5 @@ class SimpleTimeSteppingSolver( TimeSteppingSolver ):
             output( self.format % (time, step + 1, self.ts.n_step) )
 
             state = step_fun( self.ts, state0, *step_args )
-            state0 = state.copy()
+            state0 = state.copy(deep=True)
             yield self.ts, state
