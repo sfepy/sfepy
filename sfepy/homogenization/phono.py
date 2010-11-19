@@ -140,11 +140,11 @@ def compute_density_volume_info( pb, get_volume, region_to_material ):
     volumes = {}
     densities = {}
     for region_name, mat_name in region_to_material.iteritems():
-        mat = pb.materials[mat_name]
-
         vol = get_volume(pb, region_name)
 
-        density = mat.get_constant_data('density')
+        conf = pb.conf.get_item_by_name('materials', mat_name)
+        density = conf.values['density']
+
         output( 'region %s: volume %f, density %f' % (region_name,
                                                       vol, density ) )
 
@@ -219,8 +219,9 @@ def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
     rnames = conf_eigenmomentum['regions']
     term = conf_eigenmomentum['term']
     tt = []
+    materials = pb.get_materials()
     for rname in rnames:
-        mat = pb.materials[region_to_material[rname]]
+        mat = materials[region_to_material[rname]]
         density = mat.get_constant_data('density')
         tt.append( term % (density, rname) )
     em_eq = ' + '.join( tt )
@@ -740,7 +741,8 @@ def detect_band_gaps( pb, evp_kind, eigs, eig_vectors, opts, funmod,
         mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
     else:
         mat_name = opts.region_to_material[opts.liquid_region]
-        mat = pb.materials[mat_name]
+        materials = pb.get_materials()
+        mat = materials[mat_name]
         gamma = mat.get_constant_data('gamma')
         eta = mat.get_constant_data('eta')
 
