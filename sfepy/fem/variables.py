@@ -1169,6 +1169,7 @@ class FieldVariable(Variable):
 
         self.has_field = True
         self.has_bc = True
+        self.has_lcbc = False
         self._variables = None
 
     def _set_field(self, field):
@@ -1382,7 +1383,9 @@ class FieldVariable(Variable):
             ops.add_from_bc(bc, self.field)
 
         ops.finalize()
-        
+
+        self.has_lcbc = True
+
         return ops
 
     def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
