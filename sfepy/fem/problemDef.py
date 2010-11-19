@@ -13,6 +13,7 @@ from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations
 from integrals import Integrals
+from sfepy.fem.state import State
 from sfepy.fem.conditions import Conditions
 from sfepy.fem.evaluate import create_evaluable, eval_equations
 import fea as fea
@@ -365,12 +366,6 @@ class ProblemDefinition( Struct ):
     # 17.10.2007, c
     def get_solver_conf( self, name ):
         return self.solver_confs[name]
-    
-    ##
-    # 29.01.2006, c
-    # 25.07.2006
-    def create_state_vector( self ):
-        return self.equations.create_state_vector()
 
     ##
     # c: 13.06.2008, r: 13.06.2008
@@ -481,37 +476,8 @@ class ProblemDefinition( Struct ):
     def get_timestepper( self ):
         return self.ts
 
-    ##
-    # 29.01.2006, c
-    # 25.07.2006
-    # 19.09.2006
-    def apply_ebc( self, vec, force_values = None ):
-        """Apply essential (Dirichlet) boundary conditions."""
-        self.equations.apply_ebc( vec, force_values )
-
-    def apply_ic( self, vec, force_values = None ):
-        """Apply initial conditions."""
-        self.equations.apply_ic( vec, force_values )
-
-    ##
-    # c: 18.04.2006, r: 07.05.2008
-    def state_to_output( self, vec, fill_value = None, var_info = None,
-                       extend = True ):
-        """
-        Transforms state vector 'vec' to an output dictionary, that can be
-        passed as 'out' kwarg to Mesh.write(). 'vec' must have full size,
-        i.e. all fixed or periodic values must be included.
-
-        Example:
-        >>> out = problem.state_to_output( state )
-        >>> problem.save_state( 'file.vtk', out = out )
-
-        Then the  dictionary entries a formed by components of the state vector
-        corresponding to the unknown variables, each transformed to shape
-        (n_mesh_nod, n_dof per node) - all values in extra nodes are removed.
-        """
-        return self.equations.state_to_output(vec, fill_value,
-                                              var_info, extend)
+    def create_state(self):
+        return State(self.equations.variables)
 
     ##
     # 26.07.2006, c
@@ -563,8 +529,8 @@ class ProblemDefinition( Struct ):
 
         extend = not file_per_var
         if (out is None) and (state is not None):
-            out = self.state_to_output( state,
-                                      fill_value = fill_value, extend = extend )
+            out = state.create_output_dict(fill_value=fill_value,
+                                           extend=extend)
             if post_process_hook is not None:
                 out = post_process_hook( out, self, state, extend = extend )
 
@@ -605,18 +571,16 @@ class ProblemDefinition( Struct ):
         output('saving ebc...')
         variables = self.get_variables(auto_create=True)
 
-        ebcs = Conditions.from_conf(self.conf.ebcs)
-        epbcs = Conditions.from_conf(self.conf.epbcs)
+        ebcs = Conditions.from_conf(self.conf.ebcs, self.domain.regions)
+        epbcs = Conditions.from_conf(self.conf.epbcs, self.domain.regions)
 
         try:
-            variables.equation_mapping(ebcs, epbcs,
-                                       self.domain.regions, self.ts,
-                                       self.functions)
+            variables.equation_mapping(ebcs, epbcs, self.ts, self.functions)
         except Exception, e:
             output( 'cannot make equation mapping!' )
             output( 'reason: %s' % e )
 
-        state = variables.create_state_vector()
+        state = self.create_state()
         state.fill(default)
 
         if force:
@@ -624,12 +588,12 @@ class ProblemDefinition( Struct ):
             for ii, key in enumerate(vals.iterkeys()):
                 vals[key] = ii + 1
 
-            variables.apply_ebc(state, force_values=vals)
+            state.apply_ebc(force_values=vals)
 
         else:
-            variables.apply_ebc(state)
+            state.apply_ebc()
 
-        out = variables.state_to_output(state, extend=True)
+        out = state.create_output_dict(extend=True)
         self.save_state(filename, out=out, fill_value=default)
         output('...done')
 
@@ -818,22 +782,25 @@ class ProblemDefinition( Struct ):
         if solvers is None:
             self.init_solvers(nls_status, ls_conf, nls_conf)
             solvers = self.get_solvers()
-            
+
         if state0 is None:
-            state = self.create_state_vector()
+            state0 = State(self.equations.variables)
+
         else:
-            state = state0.copy()
+            if isinstance(state0, nm.ndarray):
+                state0 = State(self.equations.variables, vec=state0)
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
-        self.apply_ebc( state, force_values = force_values )
+        state0.apply_ebc(force_values=force_values)
 
-        ev = self.evaluator
+        vec0 = state0.get_reduced()
 
-        vec0 = ev.strip_state_vector( state )
-        vec = solvers.nls( vec0 )
-        state = ev.make_full_vec( vec )
-        
+        vec = solvers.nls(vec0)
+
+        state = state0.copy()
+        state.set_reduced(vec)
+
         return state
 
     def create_evaluable(self, expression, try_equations=True, auto_init=False,
