@@ -246,10 +246,10 @@ class Test( TestCommon ):
                 rhs_mat.function.set_extra_args(expression=rhs_expr)
                 problem.time_update()
                 problem.equations.reset_term_caches()
-                vec = problem.solve()
+                state = problem.solve()
                 coor = variables[var_name].field.get_coor()
                 ana_sol = self.eval_coor_expression( sol_expr, coor )
-                num_sol = variables.get_state_part_view( vec, var_name )
+                num_sol = state(var_name)
 
                 ana_norm = nm.linalg.norm( ana_sol, nm.inf )
                 ret = self.compare_vectors( ana_sol, num_sol,
@@ -262,9 +262,11 @@ class Test( TestCommon ):
 
                 fname = op.join( self.options.out_dir, self.conf.output_name )
                 out = {}
-                aux = problem.state_to_output( ana_sol )
+                astate = state.copy()
+                astate.set_full(ana_sol)
+                aux = astate.create_output_dict()
                 out['ana_t'] = aux['t']
-                aux = problem.state_to_output( num_sol )
+                aux = state.create_output_dict()
                 out['num_t'] = aux['t']
 
                 problem.domain.mesh.write( fname % '_'.join( (sol_name, eq_name) ),

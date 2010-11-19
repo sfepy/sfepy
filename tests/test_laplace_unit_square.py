@@ -152,9 +152,9 @@ class Test( TestCommon ):
     def from_conf( conf, options ):
         from sfepy.solvers.generic import solve_stationary
 
-        problem, vec = solve_stationary(conf)
+        problem, state = solve_stationary(conf)
 
-        test = Test(problem=problem, vec=vec, conf=conf, options=options)
+        test = Test(problem=problem, state=state, conf=conf, options=options)
         return test
     from_conf = staticmethod( from_conf )
 
@@ -162,8 +162,8 @@ class Test( TestCommon ):
     # 30.05.2007, c
     def test_solution( self ):
         sol = self.conf.solution
-        vec = self.vec
-        problem  = self.problem
+        vec = self.state()
+        problem = self.problem
 
         variables = problem.get_variables()
 
@@ -189,8 +189,7 @@ class Test( TestCommon ):
         from sfepy.linalg import rotation_matrix2d
         from sfepy.fem.evaluate import BasicEvaluator
         from sfepy.fem import Material
-        problem  = self.problem
-        vec = self.vec
+        problem = self.problem
 
         angles = [0, 30, 45]
         region_names = ['Left', 'Right', 'Gamma']
@@ -198,14 +197,14 @@ class Test( TestCommon ):
 
         variables = problem.get_variables()
         get_state = variables.get_state_part_view
-        state = vec.copy()
+        state = self.state.copy(deep=True)
 
         problem.time_update(ebcs={}, epbcs={})
 #        problem.save_ebc( 'aux.vtk' )
 
-        problem.apply_ebc( state )
+        state.apply_ebc()
         ev = BasicEvaluator( problem )
-        aux = ev.eval_residual( state )
+        aux = ev.eval_residual(state())
 
         field = variables['t'].field
 

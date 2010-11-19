@@ -125,12 +125,12 @@ class Test( TestCommon ):
         import os.path as op
         from sfepy.solvers.generic import solve_stationary
 
-        problem, vec = solve_stationary(conf)
+        problem, state = solve_stationary(conf)
         name = op.join( options.out_dir,
                         op.splitext( op.basename( __file__ ) )[0] + '.vtk' )
-        problem.save_state( name, vec )
+        problem.save_state( name, state )
 
-        test = Test(problem=problem, vec=vec, conf=conf, options=options)
+        test = Test(problem=problem, state=state, conf=conf, options=options)
         return test
     from_conf = staticmethod( from_conf )
 
@@ -167,10 +167,8 @@ class Test( TestCommon ):
         problem.set_equations()
         problem.time_update()
 
-        state = problem.create_state_vector()
-        problem.apply_ebc(state)
-
-        problem.equations.set_data(state)
+        state = problem.create_state()
+        state.apply_ebc()
 
         aux1 = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                 mode='weak', dw_mode='vector')
@@ -179,7 +177,7 @@ class Test( TestCommon ):
 
         mtx = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
                                mode='weak', dw_mode='matrix')
-        aux2g = mtx * state
+        aux2g = mtx * state()
         problem.time_update(ebcs=self.conf.ebcs,
                             epbcs=self.conf.epbcs)
         aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)

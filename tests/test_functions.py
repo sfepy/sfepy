@@ -137,13 +137,15 @@ class Test( TestCommon ):
         problem.set_equations(self.conf.equations) 
 
         problem.time_update()
-        vec = problem.solve()
+        state = problem.solve()
         name = op.join(self.options.out_dir,
                        op.splitext(op.basename(__file__))[0] + '_ebc.vtk')
-        problem.save_state(name, vec)
+        problem.save_state(name, state)
 
         ok = True
         domain = problem.domain
+
+        vec = state()
 
         iv = domain.regions['Left'].get_vertices(0)
         coors = domain.get_mesh_coors()[iv]

@@ -113,10 +113,10 @@ class TestLCBC( TestCommon ):
         from sfepy.base.base import IndexedStruct
 
         status = IndexedStruct()
-        problem, vec = solve_stationary(self.conf, nls_status=status)
+        problem, state = solve_stationary(self.conf, nls_status=status)
         ok = status.condition == 0
         self.report( 'converged: %s' % ok )
-        out = problem.state_to_output( vec )
+        out = state.create_output_dict()
 
         strain = problem.evaluate('de_cauchy_strain.i1.Y( u )', mode='el_avg')
         out['strain'] = Struct(name='output_data',

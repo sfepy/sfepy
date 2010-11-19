@@ -155,16 +155,16 @@ class Test(TestCommon):
 
         pb.time_update(ebcs=Conditions([fix_u, shift_u]))
 
-        vec = pb.solve()
+        state = pb.solve()
 
         name = op.join(self.options.out_dir, 'test_high_level_solving.vtk')
-        pb.save_state(name, vec)
+        pb.save_state(name, state)
 
         ok = nls_status.condition == 0
         if not ok:
             self.report('solver did not converge!')
 
-        _ok = eqs.variables.has_ebc(vec)
+        _ok = state.has_ebc()
         if not _ok:
             self.report('EBCs violated!')
 

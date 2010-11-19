@@ -177,26 +177,26 @@ class Test( TestCommon ):
 
             self.report( 'isotropic' )
             self.conf.equations = self.conf.equations_iso
-            problem, vec1 = solve_stationary(self.conf, nls_status=status)
+            problem, state1 = solve_stationary(self.conf, nls_status=status)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
             self.report( 'general' )
             self.conf.equations = self.conf.equations_general
-            problem, vec2 = solve_stationary(self.conf, nls_status=status)
+            problem, state2 = solve_stationary(self.conf, nls_status=status)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
-            self.solutions.append( (vec1, vec2) )
+            self.solutions.append((state1(), state2()))
 
             name = op.join(self.options.out_dir,
                            '_'.join(('test_elasticity_small_strain',
                                      op.splitext(op.basename(fname))[0],
                                      '%d' % approx_order))
                            + '.vtk')
-            problem.save_state( name, vec1 )
+            problem.save_state(name, state1)
 
 ##             trunk = op.join( self.options.out_dir,
 ##                              op.splitext( op.basename( fname ) )[0] )
