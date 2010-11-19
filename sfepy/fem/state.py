@@ -116,6 +116,8 @@ class State(Struct):
         if self.variables.has_lcbc:
             self.r_vec = r_vec
 
+        self.variables.set_data(self.vec)
+
     def set_full(self, vec, var_name=None):
         """
         Set the full DOF vector (including EBC and PBC DOFs). If
@@ -127,6 +129,7 @@ class State(Struct):
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.vec = vec
+            self.variables.set_data(self.vec)
 
         else:
             var = self.variables[var_name]
@@ -135,6 +138,7 @@ class State(Struct):
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.variables.set_state_part(self.vec, vec, var_name)
+            var.data_from_state(self.vec, var.get_indx())
 
     def __call__(self, var_name=None):
         """
