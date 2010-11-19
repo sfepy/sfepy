@@ -35,6 +35,8 @@ class State(Struct):
         if self.vec is None:
             self.vec = variables.create_state_vector()
 
+        self.variables.set_data(self.vec)
+
     def copy(self, deep=False):
         """
         Copy the state. By default, the new state contains the same
@@ -49,6 +51,15 @@ class State(Struct):
             other = State(self.variables)
 
         return other
+
+    def fill(self, value):
+        """
+        Fill the DOF vector with given value.
+        """
+        if self.r_vec is not None:
+            self.r_vec.fill(value)
+
+        self.vec.fill(value)
 
     def apply_ebc(self, force_values=None):
         """
