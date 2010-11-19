@@ -45,7 +45,8 @@ class State(Struct):
         """
         if deep:
             other = State(self.variables, self.vec.copy())
-            other.r_vec = self.r_vec.copy()
+            if self.r_vec is not None:
+                other.r_vec = self.r_vec.copy()
 
         else:
             other = State(self.variables)
@@ -61,11 +62,24 @@ class State(Struct):
 
         self.vec.fill(value)
 
+    def init_history(self):
+        """
+        Initialize variables with history.
+        """
+        self.variables.init_history()
+
     def apply_ebc(self, force_values=None):
         """
         Apply essential (Dirichlet) boundary conditions to the state.
         """
         self.variables.apply_ebc(self.vec, force_values=force_values)
+
+    def has_ebc(self):
+        """
+        Test whether the essential (Dirichlet) boundary conditions have
+        been applied to the DOF vector.
+        """
+        return self.variables.has_ebc(self.vec)
 
     def apply_ic(self, force_values=None):
         """
@@ -102,14 +116,25 @@ class State(Struct):
         if self.variables.has_lcbc:
             self.r_vec = r_vec
 
-    def set_full(self, vec):
+    def set_full(self, vec, var_name=None):
         """
-        Set the full DOF vector (including EBC and PBC DOFs).
+        Set the full DOF vector (including EBC and PBC DOFs). If
+        `var_name` is given, set only the DOF sub-vector corresponding to
+        the given variable.
         """
-        self.vec = vec
+        if var_name is None:
+            if self.variables.has_lcbc:
+                raise ValueError('cannot set full DOF vector with LCBCs!')
 
-        if self.variables.has_lcbc:
-            raise ValueError('cannot set full DOF vector with LCBCs!')
+            self.vec = vec
+
+        else:
+            var = self.variables[var_name]
+
+            if var.has_lcbc:
+                raise ValueError('cannot set full DOF vector with LCBCs!')
+
+            self.variables.set_state_part(self.vec, vec, var_name)
 
     def __call__(self, var_name=None):
         """
@@ -124,6 +149,18 @@ class State(Struct):
             out = self.variables.get_state_part_view(self.vec, var_name)
 
         return out
+
+    def get_parts(self):
+        """
+        Return parts of the DOF vector corresponding to individual state
+        variables.
+
+        Returns
+        -------
+        out : dict
+            The dictionary of the DOF vector parts.
+        """
+        return self.variables.get_state_parts(self.vec)
 
     def create_output_dict(self, fill_value=None, var_info=None,
                            extend=True):
