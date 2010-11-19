@@ -637,9 +637,9 @@ class Variables( Container ):
             for ii in self.state:
                 yield self[ii]
 
-    def init_state( self, state ):
+    def init_history(self):
         for var in self.iter_state():
-            var.init_state( state, self.di.indx[var.name] )
+            var.init_history()
 
     def time_update(self, ts, functions):
         output('updating variables...')
@@ -902,13 +902,12 @@ class Variable( Struct ):
 
         return name
 
-    def init_state( self, state, indx ):
+    def init_history(self):
         """Initialize data of variables with history."""
         if self.history is None: return
 
         self.data.append( None )
         self.step = 0
-        self.data_from_state( state, indx, step = 0 )
 
     def time_update(self, ts, functions):
         """Implemented in subclasses."""
