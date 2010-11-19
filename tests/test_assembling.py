@@ -1,4 +1,6 @@
 # c: 14.04.2008, r: 14.04.2008
+import os.path as op
+
 from sfepy import data_dir
 from sfepy.fem.periodic import *
 
@@ -122,7 +124,6 @@ class Test( TestCommon ):
     ##
     # c: 14.04.2008, r: 14.04.2008
     def from_conf( conf, options ):
-        import os.path as op
         from sfepy.solvers.generic import solve_stationary
 
         problem, state = solve_stationary(conf)
@@ -249,3 +250,11 @@ class Test( TestCommon ):
             self.report('failed')
 
         return ok
+
+    def test_save_ebc(self):
+        name = op.join(self.options.out_dir,
+                       op.splitext(op.basename(__file__))[0])
+        self.problem.save_ebc(name + '_ebc_f.vtk', force=True)
+        self.problem.save_ebc(name + '_ebc.vtk', default=-1, force=False)
+
+        return True
