@@ -1,9 +1,6 @@
 from sfepy.base.base import *
-import extmods.fem as fem
-from sfepy.terms import Term, DataCaches
-from region import Region
-from equations import Equation, Equations
-from integrals import Integrals
+from sfepy.terms import DataCaches
+from equations import Equations
 from variables import Variables
 from fields import setup_dof_conns, setup_extra_data
 
@@ -34,7 +31,7 @@ class BasicEvaluator( Evaluator ):
             raise ValueError
 
         return vec_r
-            
+
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
         if isinstance( vec, str ) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
@@ -86,7 +83,7 @@ class LCBCEvaluator( BasicEvaluator ):
         vec_r = BasicEvaluator.eval_residual( self, vec, is_full = True )
         vec_rr = self.op_lcbc.T * vec_r
         return vec_rr
-            
+
     ##
     # 04.10.2007, c
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
@@ -341,7 +338,6 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         problem.set_equations({'eq': mtx_term})
         variables = problem.get_variables()
         indx = variables.get_indx
-        dummy = variables.create_state_vector()
 
         if bc_mode == 0:
             problem.select_bcs( ebc_names = ebcs, epbc_names = epbcs )
