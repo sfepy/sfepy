@@ -442,20 +442,17 @@ int32 d_llaplace( FMField *out, FMField *stateU, FMField *stateV,
 		  int32 *conn, int32 nEl, int32 nEP,
 		  int32 *elList, int32 elList_nRow );
 
-int32 d_acoustic_surface( FMField *out, FMField *in,
-			  FMField *coef, FMField *coef2, SurfaceGeometry *sg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow );
+int32 dw_surf_llaplace( FMField *out, FMField *state, FMField *coef,
+			FMField *gbf, SurfaceGeometry *sg,
+		        int32 *conn, int32 nEl, int32 nEP,
+		        int32 *elList, int32 elList_nRow,
+		        int32 isDiff );
 
-int32 dw_acoustic_integrate( FMField *out, FMField *coef, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow,
-			     int32 isDiff );
-
-int32 d_acoustic_alpha( FMField *out, FMField *in,
-			VolumeGeometry *vg,
-			int32 *conn, int32 nEl, int32 nEP,
-			int32 *elList, int32 elList_nRow );
+int32 dw_surf_lcouple( FMField *out, FMField *state, FMField *coef,
+		       FMField *bf, FMField *gbf, SurfaceGeometry *sg,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 *elList, int32 elList_nRow,
+		       int32 isDiff );
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
 		       FMField *velocity, int32 voffset, FMField *bf,

@@ -32,7 +32,7 @@ class LaplaceLayerPSA1Term(ScalarScalar, Term):
 
         fargs = ( par1(), par2(), par3(), vg, ap.econn, self.sa_mode )
         return fargs, (chunk_size, 1, 1, 1), 0
-    
+
 class LaplaceLayerPSA2Term(LaplaceLayerPSA1Term):
     r"""
     :Description:
@@ -115,7 +115,7 @@ class LaplaceLayerTerm( ScalarScalar, Term ):
     modes = ('weak', 'eval')
     functions = {'weak': terms.dw_llaplace,
                  'eval': terms.d_llaplace }
-        
+
     def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
         mat1, mat2, virtual, state = self.get_args( **kwargs )
         ap, vg = self.get_approximation(virtual)
@@ -140,93 +140,115 @@ class LaplaceLayerTerm( ScalarScalar, Term ):
             self.function = self.functions['eval']
             use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
 
-class AcousticSurfaceTerm( ScalarScalar, Term ):
+class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
     r"""
     :Description:
-    Acoustic surface term (in-plane directions).
+    Acoustic term - derivatives in surface directions.
 
     :Definition:
     .. math::
-        \int_{\Gamma} \ul{n}\cdot \partial_{\alpha, 1/h z} \ul{y},
-        \alpha = 1,\dots,N-1
+        \int_{\Gamma} c \partial_\alpha \ul{v}\,\partial_\alpha \ul{u}, \alpha = 1,\dots,N-1
 
     :Arguments:
-        material_1: :math:`p_1`,
-        material_2: :math:`p_2`,
-        parameter:  :math:`z`
+        material: :math:`c`,
+        virtual:  :math:`\ul{v}`,
+        state:    :math:`\ul{u}`
     """
-    name = 'd_acoustic_surface'
-    arg_types = ('material', 'material', 'parameter')
-    integration = 'surface_extra'
+    name = 'dw_surface_llaplace'
+    arg_types = ('material', 'virtual', 'state')
+    integration = 'surface'
 
-    function = staticmethod(terms.d_acoustic_surface)
+    function = staticmethod(terms.dw_surf_llaplace)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat1, mat2, par = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
+    def get_fargs(self, diff_var = None, chunk_size = None, **kwargs):
+        coef, virtual, state = self.get_args(**kwargs)
+        ap, sg = self.get_approximation(virtual)
+        aps, sgs = self.get_approximation(state)
 
-        self.set_data_shape( ap )
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
 
-        fargs = (par(), mat1, mat2, sg, ap.econn)
+        vec = self.get_vector(state)
+        sd = aps.surface_data[self.region.name]
 
-        return fargs, (chunk_size, 1, 1, 1), 0
+        bfg = ap.get_base(sd.face_type, 1, self.integral)
+        econn = sd.get_connectivity(state.is_surface)
 
-class AcousticIntegrateTerm( ScalarScalar, Term ):
-    r"""
-    :Description:
-    Integration of acoustic term (in-plane directions).
+        if state.is_real():
+            fargs = vec, coef, bfg, sgs, econn
 
-    :Definition:
-    .. math::
-        \int_{\Omega} m  \partial_\alpha \ul{u},
-        \alpha = 1,\dots,N-1
-
-    :Arguments:
-        material: :math:`m`,
-        virtual:  :math:`\ul{v}`
-    """
-    name = 'dw_acoustic_integrate'
-    arg_types = ('material', 'virtual')
-
-    function = staticmethod(terms.dw_acoustic_integrate)
-
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        return (mat, vg, ap.econn), shape, mode
-
-class AcousticEvalAlphaTerm( Term ):
-    r"""
-    :Description:
-    Evaluation of acoustic term (in-plane directions).
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \partial_{\alpha} \ul{y},
-        \alpha = 1,\dots,N-1
-
-    :Arguments:
-        parameter: :math:`y`
-    """
-    name = 'd_acoustic_alpha'
-    arg_types = ('parameter',)
-
-    function = staticmethod(terms.d_acoustic_alpha)
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation()
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-        if diff_var is None:
-            shape = (1, 1, dim-1, 1)
         else:
-            raise StopIteration
+            ac = nm.ascontiguousarray
+            fargs = [(ac(vec.real), coef, bfg, sgs, econn),
+                     (ac(vec.imag), coef, bfg, sgs, econn)]
+            mode += 1j
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, par(), vg, ap.econn, chunk )
-            out1 = nm.sum( out, 0 )
-            yield out1, chunk, status
+        return fargs, shape, mode
+
+class SurfaceCoupleLayerTerm(ScalarScalar, Term):
+    r"""
+    :Description:
+    Acoustic term - derivatives in surface directions.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} c \ul{v}\,\partial_\alpha \ul{u},
+        \int_{\Gamma} c \partial_\alpha \ul{u}\,\ul{v}, \alpha = 1,\dots,N-1
+
+    :Arguments 1:
+        material: :math:`c`,
+        virtual:  :math:`\ul{v}`,
+        state:    :math:`\ul{u}`
+
+    :Arguments 2:
+        material: :math:`c`,
+        state:    :math:`\ul{u}`
+        virtual:  :math:`\ul{v}`,
+
+    """
+    name = 'dw_surface_lcouple'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'))
+    modes = ('bv_ns', 'nv_bs')
+    integration = 'surface'
+
+    function = staticmethod(terms.dw_surf_lcouple)
+
+    def get_fargs(self, diff_var = None, chunk_size = None, **kwargs):
+        if self.mode == 'nv_bs':
+            coef, state, virtual = self.get_args(**kwargs)
+        else:
+            coef, virtual, state = self.get_args(**kwargs)
+
+        ap, sg = self.get_approximation(virtual)
+        aps, sgs = self.get_approximation(state)
+
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        vec = self.get_vector(state)
+        sd = aps.surface_data[self.region.name]
+
+        bf = ap.get_base(sd.face_type, 0, self.integral)
+        bfg = ap.get_base(sd.face_type, 1, self.integral)
+        econn = sd.get_connectivity(state.is_surface)
+
+        aux = coef.shape
+
+        if self.mode == 'nv_bs':
+            bf, bfg = bfg, bf
+            coef.reshape((aux[0], aux[1], 1, nm.max(aux[2:])))
+
+        else:
+            coef.reshape((aux[0], aux[1], nm.max(aux[2:]), 1))
+
+        if state.is_real():
+            fargs = vec, coef, bf, bfg, sgs, econn
+
+        else:
+            ac = nm.ascontiguousarray
+            fargs = [(ac(vec.real), coef, bf, bfg, sgs, econn),
+                     (ac(vec.imag), coef, bf, bfg, sgs, econn)]
+            mode += 1j
+
+        return fargs, shape, mode
