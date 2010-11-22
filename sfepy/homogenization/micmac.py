@@ -43,12 +43,13 @@ def get_homog_coefs_linear( ts, coor, mode, region, ig,
 
     elif mode == 'qp':
         for key, val in coefs.__dict__.iteritems():
-            if type( val ) == nm.ndarray:
+            if type( val ) == nm.ndarray or type(val) == nm.float64:
                 out[key] = nm.tile( val, (coor.shape[0], 1, 1) )
             elif type(val) == dict:
                 for key2, val2 in val.iteritems():
-                    if type(val2) == nm.ndarray:
-                        out[key+'_'+key2] = nm.tile( val2, (coor.shape[0], 1, 1) )
+                    if type(val2) == nm.ndarray or type(val2) == nm.float64:
+                        out[key+'_'+key2] = \
+                                          nm.tile(val2, (coor.shape[0], 1, 1))
 
     else:
         out = None
