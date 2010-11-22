@@ -154,7 +154,7 @@ class CorrMiniApp( MiniAppBase ):
                                file_per_var=False)
 
 class ShapeDimDim( CorrMiniApp ):
-    
+
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -166,7 +166,7 @@ class ShapeDimDim( CorrMiniApp ):
         return corr_sol
 
 class ShapeDim( CorrMiniApp ):
-    
+
     def __call__( self, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -190,7 +190,7 @@ class CorrNN( CorrMiniApp ):
     def set_variables_default(variables, ir, ic, set_var, data):
         for (var, req, comp) in set_var:
             variables[var].data_from_any(data[req].states[ir,ic][comp])
-        
+
     set_variables_default = staticmethod(set_variables_default)
 
     def __init__( self, name, problem, kwargs ):
@@ -319,22 +319,6 @@ class CorrOne( CorrMiniApp ):
 
         corr_sol = CorrSolution(name = self.name,
                                 state = state.get_parts())
-
-        self.save(corr_sol, problem)
-
-        return corr_sol
-
-class CorrSum( CorrMiniApp ):
-    
-    def __call__( self, problem = None, data = None ):
-
-        corr = data[self.requires[0]].copy(deep=True)
-        for req in self.requires[1:]:
-            for i in range(len(corr.states)):
-                corr.states[i] += data[req].states[i]
-
-        corr_sol = CorrSolution(name = self.name,
-                                state = state)
 
         self.save(corr_sol, problem)
 
@@ -570,7 +554,7 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
         vu, vp = self.dump_variables
         vdp = self.verify_variables[-1]
-        
+
         p0 = get_state( initial_state, vp )
 
         format = '====== time %%e (step %%%dd of %%%dd) ====='\
@@ -727,7 +711,7 @@ class CoefDimSym( MiniAppBase ):
         coef /= volume
 
         return coef
-    
+
 class CoefNN( MiniAppBase ):
 
     def set_variables_default(variables, ir, ic, mode, set_var, data):
@@ -736,7 +720,7 @@ class CoefNN( MiniAppBase ):
         if mode == 'col':
             ir = ic
         idx = mode2var[mode]
-        
+
         val = data[set_var[idx][1]].states[ir][set_var[idx][2]]
         variables[set_var[idx][0]].data_from_any(val)
 
@@ -799,7 +783,7 @@ class CoefN( MiniAppBase ):
                                            data)
             else:
                 self.set_variables(variables, ir, **data)
-            
+
             val = eval_equations(equations, variables)
 
             coef[ir] = val
@@ -815,7 +799,7 @@ class CoefDim( CoefN ):
     pass
 
 class CoefSym( MiniAppBase ):
-    
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -837,7 +821,7 @@ class CoefSym( MiniAppBase ):
         return coef
 
 class CoefFMSym( MiniAppBase ):
-    
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
@@ -866,7 +850,7 @@ class CoefFMSym( MiniAppBase ):
         return coef
 
 class CoefOne( MiniAppBase ):
-        
+
     def set_variables_default(variables, set_var, data):
         for (var, req, comp) in set_var:
             variables[var].data_from_any(data[req].state[comp])
@@ -914,7 +898,7 @@ class CoefFMOne( MiniAppBase ):
         return coef
 
 class CoefSum( MiniAppBase ):
-    
+
     def __call__( self, volume, problem = None, data = None ):
 
         coef = nm.zeros_like(data[self.requires[0]])
