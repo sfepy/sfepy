@@ -723,7 +723,7 @@ class Output(Struct):
 
         def reset_file(filename):
             output_dir = os.path.dirname(filename)
-            if not os.path.exists(output_dir):
+            if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir)
 
             fd = open( filename, 'w' )
