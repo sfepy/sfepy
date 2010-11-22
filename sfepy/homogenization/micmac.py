@@ -2,7 +2,6 @@ from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from homogen import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
-from sfepy.base.ioutils import read_dict_hdf5
 import tables as pt
 from sfepy.fem.meshio import HDF5MeshIO
 import os.path as op
@@ -12,10 +11,10 @@ def get_homog_coefs_linear( ts, coor, mode, region, ig,
 
     oprefix = output.prefix
     output.prefix = 'micro:'
-    
+
     required, other = get_standard_keywords()
     required.remove( 'equations' )
-        
+
     conf = ProblemConf.from_file(micro_filename, required, other, verbose=False)
 
     coefs_filename = conf.options.get_default_attr('coefs_filename', 'coefs.h5')
@@ -29,7 +28,7 @@ def get_homog_coefs_linear( ts, coor, mode, region, ig,
 
     if regenerate:
         options = Struct( output_filename_trunk = None )
-            
+
         app = HomogenizationApp( conf, options, 'micro:' )
         coefs = app()
 
@@ -40,11 +39,17 @@ def get_homog_coefs_linear( ts, coor, mode, region, ig,
     out = {}
     if mode == None:
         for key, val in coefs.__dict__.iteritems():
-            out[key] = val 
+            out[key] = val
+
     elif mode == 'qp':
         for key, val in coefs.__dict__.iteritems():
             if type( val ) == nm.ndarray:
                 out[key] = nm.tile( val, (coor.shape[0], 1, 1) )
+            elif type(val) == dict:
+                for key2, val2 in val.iteritems():
+                    if type(val2) == nm.ndarray:
+                        out[key+'_'+key2] = nm.tile( val2, (coor.shape[0], 1, 1) )
+
     else:
         out = None
 
@@ -61,7 +66,7 @@ def get_correctors_from_file( coefs_filename = 'coefs.h5',
             dump_names = coefs.dump_names
         else:
             raise ValueError( ' "filenames" coefficient must be used!' )
-            
+
     out = {}
 
     for key, val in dump_names.iteritems():
