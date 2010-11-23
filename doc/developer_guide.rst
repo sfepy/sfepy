@@ -558,6 +558,7 @@ below are already more or less updated.
    src/sfepy/fem/probes
    src/sfepy/fem/problemDef
    src/sfepy/fem/quadratures
+   src/sfepy/fem/state
 
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
