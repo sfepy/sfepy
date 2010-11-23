@@ -1,6 +1,8 @@
 """
 Module for handling state variables.
 """
+import numpy as nm
+
 from sfepy.base.base import Struct
 
 class State(Struct):
@@ -184,3 +186,23 @@ class State(Struct):
         """
         return self.variables.state_to_output(self.vec, fill_value,
                                               var_info, extend)
+
+    def get_scaled_norm(self, vec):
+        """
+        Return the scaled norm of DOF vector `vec`.
+
+        Each component of `vec` is scaled by the norm of the
+        corresponding state part.
+
+        Examples
+        --------
+        >>> err = state0.get_scaled_norm(state() - state0())
+        """
+        parts = self.get_parts()
+
+        norm = 0.0
+        for key, part in parts.iteritems():
+            indx = self.variables[key].get_indx()
+            norm += nm.linalg.norm(vec[indx]) / nm.linalg.norm(part)
+
+        return norm
