@@ -3,6 +3,7 @@ Compare various elastic materials w.r.t. uniaxial tension/compression test.
 
 Requires Matplotlib.
 """
+from optparse import OptionParser
 import sys
 sys.path.append( '.' )
 from sfepy.base.base import *
@@ -163,7 +164,7 @@ def store_top_u( displacements ):
 
     return _store
 
-def solve_branch( problem, options, branch_function ):
+def solve_branch(problem, branch_function):
     from sfepy.solvers.generic import solve_evolutionary_op
 
     displacements = {}
@@ -174,16 +175,26 @@ def solve_branch( problem, options, branch_function ):
         load.set_function(branch_function)
 
         out = []
-        aux = solve_evolutionary_op( problem,
-                                     save_results = False,
-                                     step_hook = store_top_u( out ) )
+        solve_evolutionary_op(problem, save_results=False,
+                              step_hook=store_top_u(out))
         displacements[key] = nm.array( out, dtype = nm.float64 )
     return displacements
+
+usage = """%prog [options]"""
+helps = {
+    'no_plot' : 'do not show plot window',
+}
 
 def main():
     from sfepy.base.conf import ProblemConf, get_standard_keywords
     from sfepy.fem import ProblemDefinition
     from sfepy.base.plotutils import plt
+
+    parser = OptionParser(usage=usage, version='%prog')
+    parser.add_option('-n', '--no-plot',
+                      action="store_true", dest='no_plot',
+                      default=False, help=helps['no_plot'])
+    options, args = parser.parse_args()
 
     required, other = get_standard_keywords()
     # Use this file as the input file.
@@ -193,12 +204,10 @@ def main():
     problem = ProblemDefinition.from_conf( conf,
                                            init_equations = False )
 
-    options = Struct( output_filename_trunk = None )
-    
     # Solve the problem. Output is ignored, results stored by using the
     # step_hook.
-    u_t = solve_branch( problem, options, linear_tension )
-    u_c = solve_branch( problem, options, linear_compression )
+    u_t = solve_branch(problem, linear_tension)
+    u_c = solve_branch(problem, linear_compression)
 
     # Get pressure load by calling linear_*() for each time step.
     ts = problem.get_timestepper()
@@ -214,6 +223,7 @@ def main():
     for key in u_t.keys():
         displacements[key] = nm.r_[u_c[key][::-1], u_t[key]]
     load = nm.r_[load_c[::-1], load_t]
+
 
     if plt is None:
         print 'matplotlib cannot be imported, printing raw data!'
@@ -231,7 +241,9 @@ def main():
         plt.grid( True )
 
         plt.gcf().savefig( 'pressure_displacement.png' )
-        plt.show()
+
+        if not options.no_plot:
+            plt.show()
 
 if __name__ == '__main__':
     main()
