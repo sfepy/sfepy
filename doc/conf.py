@@ -47,7 +47,8 @@ gen_term_table.typeset('term_table.rst')
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
-              'sphinx.ext.doctest', 'sphinx.ext.pngmath', 'numpydoc',
+              'sphinx.ext.doctest', 'sphinx.ext.pngmath',
+              'sphinx.ext.viewcode', 'numpydoc',
               'ipython_console_highlighting']
 #extensions = ['sphinx.ext.autodoc']
 
