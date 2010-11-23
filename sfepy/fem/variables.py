@@ -561,8 +561,8 @@ class Variables( Container ):
                 raise IndexError( msg )
 
 
-    def state_to_output( self, vec, fill_value = None, var_info = None,
-                       extend = True ):
+    def state_to_output(self, vec, fill_value=None, var_info=None,
+                        extend=True):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
         di = self.di
@@ -579,33 +579,15 @@ class Variables( Container ):
             if key not in var_info.keys(): continue
             is_part, name = var_info[key]
 
-            details = di.details[key]
-            dpn = details.dpn
-
             if is_part:
-                aux = nm.reshape( vec, (di.n_dof[key] / dpn, dpn) )
-            else:
-                aux = nm.reshape( vec[indx], (di.n_dof[key] / dpn, dpn) )
-
-            if extend:
-                ext = var.extend_dofs(aux, fill_value)
+                aux = vec
 
             else:
-                ext = var.remove_extra_dofs(aux)
+                aux = vec[indx]
 
-            if ext is None: continue
+            out.update(var.create_output(aux, extend=extend,
+                                         fill_value=fill_value))
 
-            if var.field.approx_order != '0':
-                # Has vertex data.
-                out[name] = Struct(name='output_data', mode='vertex', data=ext,
-                                   var_name=key, dofs=var.dofs)
-
-            else:
-                ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
-                out[name] = Struct(name='output_data', mode='cell', data=ext,
-                                   var_name=key, dofs=var.dofs)
-
-        out = convert_complex_output(out)
         return out
 
     ##
@@ -1459,6 +1441,56 @@ class FieldVariable(Variable):
         Remove DOFs defined in higher order nodes (order > 1).
         """
         return self.field.remove_extra_dofs(dofs)
+
+
+    def create_output(self, vec=None, key=None, extend=True, fill_value=None):
+        """
+        Convert the DOF vector to a dictionary of output data usable by
+        Mesh.write().
+
+        Parameters
+        ----------
+        vec : array, optional
+            An alternative DOF vector to be used instead of the variable
+            DOF vector.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+        extend : bool
+            Extend the DOF values to cover the whole domain.
+        fill_value : float or complex
+           The value used to fill the missing DOF values if `extend` is True.
+        """
+        if vec is None:
+            vec = self()
+
+        key = get_default(key, self.name)
+
+        aux = nm.reshape(vec,
+                         (self.n_dof / self.n_components, self.n_components))
+
+        if extend:
+            ext = self.extend_dofs(aux, fill_value)
+
+        else:
+            ext = self.remove_extra_dofs(aux)
+
+        out = {}
+
+        if ext is not None:
+            if self.field.approx_order != '0':
+                # Has vertex data.
+                out[key] = Struct(name='output_data', mode='vertex', data=ext,
+                                  var_name=self.name, dofs=self.dofs)
+
+            else:
+                ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
+                out[key] = Struct(name='output_data', mode='cell', data=ext,
+                                  var_name=self.name, dofs=self.dofs)
+
+        out = convert_complex_output(out)
+
+        return out
 
     def get_element_diameters(self, cells, mode, square=False):
         """Get diameters of selected elements."""
