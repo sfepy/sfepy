@@ -206,10 +206,8 @@ class SurfaceDataCache( DataCache ):
         region, state = self.get_args( **kwargs )
         ckey = self.get_key(term)
 
-        ap, vg = term.get_approximation(state)
-        volume = vg.variable(2)
-        volume.shape = (nm.prod(volume.shape),)
+        ap, sg = term.get_approximation(state)
 
-        val = nm.sum(volume)
+        val = sg.totalArea
 
         self.data[key][ckey][ih] = val

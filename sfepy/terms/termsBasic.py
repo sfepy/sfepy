@@ -373,11 +373,11 @@ class SurfaceTerm( Term ):
     """
     name = 'd_surface'
     arg_types = ('parameter',)
+    integration = 'surface'
     use_caches = {'surface' : [['parameter']]}
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
         par, = self.get_args( **kwargs )
-        shape = (1, 1, 1, 1)
 
         cache = self.get_cache( 'surface', 0 )
         surface = cache('surface', self, 0,
