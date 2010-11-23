@@ -141,6 +141,28 @@ def join_conn_groups( conns, descs, mat_ids, concat = False ):
     else:
         return conns_out, descs_out, mat_ids_out
 
+def convert_complex_output(out_in):
+    """
+    Convert complex values in the output dictionary `out_in` to pairs of
+    real and imaginary parts.
+    """
+    out = {}
+    for key, val in out_in.iteritems():
+
+        if val.data.dtype in  complex_types:
+            rval = copy(val)
+            rval.data = val.data.real
+            out['real(%s)' % key] = rval
+
+            ival = copy(val)
+            ival.data = val.data.imag
+            out['imag(%s)' % key] = ival
+
+        else:
+            out[key] = val
+
+    return out
+
 ##
 # c: 05.02.2008
 class MeshIO( Struct ):

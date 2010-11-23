@@ -3,6 +3,7 @@ from collections import deque
 from sfepy.base.base import *
 import sfepy.linalg as la
 from sfepy.fem.mesh import make_inverse_connectivity
+from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral
 from extmods.fem import evaluate_at
 from sfepy.fem.dof_info \
@@ -604,25 +605,7 @@ class Variables( Container ):
                 out[name] = Struct(name='output_data', mode='cell', data=ext,
                                    var_name=key, dofs=var.dofs)
 
-        out = self.convert_complex_output(out)
-        return out
-
-    def convert_complex_output( self, out_in ):
-        out = {}
-        for key, val in out_in.iteritems():
-
-            if val.data.dtype in  complex_types:
-                rval = copy( val )
-                rval.data = val.data.real
-                out['real(%s)' % key] = rval
-
-                ival = copy( val )
-                ival.data = val.data.imag
-                out['imag(%s)' % key] = ival
-
-            else:
-                out[key] = val
-
+        out = convert_complex_output(out)
         return out
 
     ##
