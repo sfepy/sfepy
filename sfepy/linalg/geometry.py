@@ -236,20 +236,21 @@ def make_axis_rotation_matrix(direction, angle):
     mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
     return mtx
 
-def get_coors_in_cylinder(coors, centre, axis, radius, length, inside=True):
+def get_coors_in_tube(coors, centre, axis, radius_in, radius_out, length):
     """
-    Return indices of coordinates inside or outside a cylinder given by
-    centre, axis, radius and length.
+    Return indices of coordinates in a tube given by centre, axis vector,
+    inner and outer radii and length.
     """
-    vec = coors.T - centre
+    coors = nm.asarray(coors)
+    centre = nm.asarray(centre)
+
+    vec = coors.T - centre[:, None]
 
     drv = nm.cross(axis, vec, axisb=0)
     dr = nm.sqrt(nm.sum(drv * drv, 1))
     dl = nm.dot(axis, vec)
 
-    if inside:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius))[0]
-    else:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius))[0]
+    out = nm.where((dl >= 0.0) & (dl <= length) &
+                   (dr >= radius_in) & (dr <= radius_out))[0]
 
     return out
