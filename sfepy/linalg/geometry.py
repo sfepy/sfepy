@@ -235,3 +235,21 @@ def make_axis_rotation_matrix(direction, angle):
 
     mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
     return mtx
+
+def get_coors_in_cylinder(coors, centre, axis, radius, length, inside=True):
+    """
+    Return indices of coordinates inside or outside a cylinder given by
+    centre, axis, radius and length.
+    """
+    vec = coors.T - centre
+
+    drv = nm.cross(axis, vec, axisb=0)
+    dr = nm.sqrt(nm.sum(drv * drv, 1))
+    dl = nm.dot(axis, vec)
+
+    if inside:
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius))[0]
+    else:
+        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius))[0]
+
+    return out
