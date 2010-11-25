@@ -159,24 +159,42 @@ class NodeDescription(Struct):
         else:
             return None, 0
 
-    def __init__(self, node_types):
+    def _get_facet_nodes(self, ifacets, nodes):
+        if ifacets is None:
+            return None
+
+        else:
+            return [nodes[ii] for ii in ifacets]
+
+    def _get_nodes(self, ii, nodes):
+        if ii is None:
+            return None
+
+        else:
+            return nodes[ii]
+
+    def __init__(self, node_types, nodes):
         self.node_types = node_types
 
         # Vertex nodes.
         ii = nm.where(node_types[:,0] == 0)[0]
         self.vertex, self.n_vertex_nod = self._describe_other(ii)
+        self.vertex_nodes = self._get_nodes(self.vertex, nodes)
 
         # Edge nodes.
         ii = nm.where(node_types[:,0] == 1)[0]
         self.edge, self.n_edge_nod = self._describe_facets(ii)
+        self.edge_nodes = self._get_facet_nodes(self.edge, nodes)
 
         # Face nodes.
         ii = nm.where(node_types[:,0] == 2)[0]
         self.face, self.n_face_nod = self._describe_facets(ii)
+        self.face_nodes = self._get_facet_nodes(self.face, nodes)
 
         # Bubble nodes.
         ii = nm.where(node_types[:,0] == 3)[0]
         self.bubble, self.n_bubble_nod = self._describe_other(ii)
+        self.bubble_nodes = self._get_nodes(self.bubble, nodes)
 
 class PolySpace(Struct):
     """Abstract polynomial space class."""
@@ -290,7 +308,7 @@ class PolySpace(Struct):
         return self.mtx_i
 
     def describe_nodes(self):
-        return NodeDescription(self.nts)
+        return NodeDescription(self.nts, self.nodes)
 
 class LagrangeSimplexPolySpace(PolySpace):
     """Lagrange polynomial space on a simplex domain."""
