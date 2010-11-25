@@ -336,7 +336,7 @@ class Domain( Struct ):
         group = self.groups[ii]
 
         if mode == 'edges':
-            oo = nm.reshape(self.ed.oris[ii],
+            oo = nm.reshape(self.ed.signed_oris[ii],
                             (group.shape.n_el, group.gel.n_edge))
             ori = ((1 - oo) / 2).astype(nm.int32)
 

@@ -168,6 +168,7 @@ class Facets(Struct):
         all_permuted_facets[-2] = aux
         all_permuted_facets[-1] = aux + 1
         oris = {}
+        signed_oris = {}
         ori_maps = {}
 
         for ig in range(self.n_gr):
@@ -186,13 +187,15 @@ class Facets(Struct):
             permuted_facets = _permute_facets(facets, ori, ori_map)
             all_permuted_facets[io] = permuted_facets
 
-            ori = _get_signed_orientation(ori, ori_map)
+            signed_ori = _get_signed_orientation(ori, ori_map)
 
             oris[ig] = ori
+            signed_oris[ig] = signed_ori
             ori_maps[ig] = ori_map
 
         self.permuted_facets = all_permuted_facets
         self.oris = oris
+        self.signed_oris = signed_oris
         self.ori_maps = ori_maps
 
     def setup_unique(self):
