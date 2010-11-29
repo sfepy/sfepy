@@ -46,44 +46,6 @@ class Interpolant( Struct ):
             skey = 's%d' % ps.n_nod
             poly_spaces[skey] = ps
 
-    ##
-    # 02.08.2005, c
-    # 22.09.2005
-    # 23.09.2005
-    # 30.09.2005
-    # 03.10.2005
-    def list_extra_node_types( self, et, ft ):
-        gel = self.gel
-        ps = self.poly_spaces['v']
-        max_ao = nm.amax( nm.sum( ps.nodes, 1 ) )
-
-##         print nodes
-##         print 'sdsd', max_ao
-##         pause()
-
-        for ii, nt in enumerate( ps.nts ):
-            if (nt[0] == 1): # Edge node.
-                edge = gel.edges[nt[1]]
-                tpar = float( ps.nodes[ii,edge[1]] )
-                key = int( round( tpar / max_ao, 5 ) * 1e5 )
-                if not et.has_key( key ): et[key] = len( et )
-##                 print ii, nt
-##                 print tpar
-##                 print ps.nodes[ii], edge
-
-            elif (nt[0] == 2): # Face node.
-                face = gel.faces[nt[1]]
-                upar = float( ps.nodes[ii,face[1]] )
-                vpar = float( ps.nodes[ii,face[-1]] )
-                key = [int( round( ii / max_ao, 5 ) * 1e5 )
-                       for ii in [upar, vpar]]
-                key = tuple( key )
-                if not ft.has_key( key ): ft[key] = len( ft )
-##                 print upar, vpar
-##                 print ps.nodes[ii], face
-
-        return (et, ft)
-
     def describe_nodes( self ):
         ps = self.poly_spaces['v']
         node_desc = ps.describe_nodes()
@@ -422,52 +384,18 @@ class Approximations( Container ):
 
         return ap
 
-    ##
-    # c: 19.07.2006, r: 15.01.2008
-    def describe_nodes( self ):
-        self.ent = ent = {}
-        self.fnt = fnt = {}
-
-        self.interp.list_extra_node_types(ent, fnt)
+    def setup_facet_orientations(self):
         self.node_desc = self.interp.describe_nodes()
 
-##             print ent, fnt
-##         pause()
+        edge_nodes = self.node_desc.edge_nodes
+        if edge_nodes is not None:
+            ed = self.region.domain.ed
+            self.edge_dof_perms = ed.get_facet_dof_permutations(edge_nodes)
 
-        for ig, ap in self.iter_aps():
-            ap.describe_nodes(self.node_desc)
-
-    ##
-    # c: 23.09.2005, r: 15.01.2008
-    def setup_nodes( self ):
-
-        self.edge_oris = {}
-        self.face_oris = {}
-        for _, ap in self.iter_aps():
-##             print ap
-            domain = ap.region.domain
-            igs = ap.region.igs
-            for ig in igs:
-                if not self.edge_oris.has_key( ig ):
-                    self.edge_oris[ig] = domain.get_orientation( ig )
-                if not self.face_oris.has_key( ig ):
-                    self.face_oris[ig] = None
-#            pause()
-
-        ##
-        # Edge node type permutation table.
-        n_ent = len( self.ent )
-        entt = nm.zeros( (2, n_ent), nm.int32 )
-        entt[0] = nm.arange( n_ent )
-        entt[1] = nm.arange( n_ent - 1, -1, -1 )
-        self.ent_table = entt
-
-##         print self.ent
-##         print self.ent_table
-#        pause()
-
-        ##
-        # Face node type permutation table.
+        face_nodes = self.node_desc.face_nodes
+        if face_nodes is not None:
+            fa = self.region.domain.fa
+            self.face_dof_perms = fa.get_facet_dof_permutations(face_nodes)
 
     def setup_global_base(self):
         """

@@ -250,8 +250,7 @@ class Field( Struct ):
     # 19.07.2006, c
     def setup_global_base( self ):
 
-        self.aps.describe_nodes()
-        self.aps.setup_nodes()
+        self.aps.setup_facet_orientations()
 
         aux = self.aps.setup_global_base()
         self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
@@ -587,7 +586,7 @@ class DiscontinuousField(Field):
     def setup_global_base( self ):
 
         self.aps.describe_nodes()
-        self.aps.setup_nodes()
+        self.aps.setup_facet_orientations()
 
         # Get n_dof_per_vertex, n_dof_per_facet.
         # Find all unique facets in the field region.
