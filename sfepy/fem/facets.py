@@ -3,7 +3,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import Struct, assert_
 from sfepy.base.compat import in1d, unique
-from sfepy.linalg import permutations
+from sfepy.linalg import permutations, map_permutations
 
 def _build_orientation_map(n_fp):
     """
@@ -73,6 +73,64 @@ def _orient_facets(ori, facets, cmps, powers):
         i1, i2 = cmps[ip]
         iw = nm.where(facets[:,i1] < facets[:,i2])[0]
         ori[iw] += power
+
+_quad_ori_groups = {
+    0 : 0,
+    1 : 0,
+    3 : 7,
+    4 : 0,
+    6 : 7,
+    7 : 7,
+    11 : 11,
+    15 : 11,
+    20 : 52,
+    22 : 30,
+    30 : 30,
+    31 : 63,
+    32 : 33,
+    33 : 33,
+    41 : 33,
+    43 : 11,
+    48 : 56,
+    52 : 52,
+    56 : 56,
+    57 : 56,
+    59 : 63,
+    60 : 52,
+    62 : 30,
+    63 : 63,
+}
+
+_quad_orientations = {
+    0  : [0, 1, 3, 2],
+    7  : [3, 2, 0, 1],
+    11 : [2, 3, 0, 1],
+    30 : [1, 0, 2, 3],
+    33 : [1, 0, 3, 2],
+    52 : [2, 3, 1, 0],
+    56 : [3, 2, 1, 0],
+    63 : [0, 1, 2, 3],
+}
+
+def get_facet_dof_permutations(int_coors, ori_maps):
+    """
+    Prepare DOF permutation vector for each possible facet orientation.
+    """
+    dof_perms = {}
+
+    ori = nm.empty((int_coors.shape[0],), dtype=nm.int32)
+    for ig, ori_map in ori_maps.iteritems():
+        dof_perms[ig] = {}
+        for key in ori_map.iterkeys():
+            ori.fill(key)
+            permuted_int_coors = _permute_facets(int_coors, ori, ori_map)
+
+            perm = map_permutations(permuted_int_coors, int_coors,
+                                    check_same_items=True)
+
+            dof_perms[ig][key] = perm
+
+    return dof_perms
 
 class Facets(Struct):
 
@@ -327,3 +385,38 @@ class Facets(Struct):
         uid_i.shape = (uid_i.shape[0] / n_facet, n_facet)
 
         return uid_i
+
+    def get_dof_orientation_maps(self, nodes):
+        """
+        Given description of facet DOF nodes, return the corresponding
+        integer coordinates and orientation maps.
+
+        Notes
+        -----
+        Assumes single facet type in all groups.
+        """
+        inod = nm.arange(self.n_fps[0], dtype=nm.int32)
+
+        int_coors = nodes[0][:, inod]
+
+        if int_coors.shape[1] <= 3: # Simplex facet.
+            ori_maps = self.ori_maps
+
+        else: # Tensor product facet.
+            ori_maps = {}
+            for ig, ori_map in self.ori_maps.iteritems():
+                ori_maps[ig] = {}
+                for key in ori_map.iterkeys():
+                    new_key = _quad_ori_groups[key]
+                    ori_maps[ig][key] = [None, _quad_orientations[new_key]]
+
+        return int_coors, ori_maps
+
+    def get_facet_dof_permutations(self, nodes):
+        """
+        Given description of facet DOF nodes, return the DOF
+        permutations for all possible facet orientations.
+        """
+        int_coors, ori_maps = self.get_dof_orientation_maps(nodes)
+
+        return get_facet_dof_permutations(int_coors, ori_maps)
