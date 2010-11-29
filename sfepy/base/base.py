@@ -1048,6 +1048,26 @@ def ordered_iteritems(adict):
         key = keys[ii]
         yield key, adict[key]
 
+def dict_to_array(adict):
+    """
+    Convert a dictionary of 1D arrays of the same lengths with
+    non-negative integer keys to a single 2D array.
+    """
+    keys = adict.keys()
+    ik = nm.array(keys, dtype=nm.int32)
+    assert_((ik >= 0).all())
+
+    if ik.shape[0] == 0:
+        return nm.zeros((0,), dtype=nm.int32)
+
+    aux = adict[ik[0]]
+    out = nm.empty((ik.max() + 1, aux.shape[0]), dtype=aux.dtype)
+    out.fill(-1)
+    for key, val in adict.iteritems():
+        out[key] = val
+
+    return out
+
 def as_float_or_complex(val):
     """
     Try to cast val to Python float, and if this fails, to Python
