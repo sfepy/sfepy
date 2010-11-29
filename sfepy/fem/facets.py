@@ -1,7 +1,7 @@
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import Struct, assert_
+from sfepy.base.base import Struct, dict_to_array, assert_
 from sfepy.base.compat import in1d, unique
 from sfepy.linalg import permutations, map_permutations
 
@@ -419,4 +419,9 @@ class Facets(Struct):
         """
         int_coors, ori_maps = self.get_dof_orientation_maps(nodes)
 
-        return get_facet_dof_permutations(int_coors, ori_maps)
+        aux = get_facet_dof_permutations(int_coors, ori_maps)
+        dof_perms = {}
+        for ig, val in aux.iteritems():
+            dof_perms[ig] = dict_to_array(val)
+
+        return dof_perms
