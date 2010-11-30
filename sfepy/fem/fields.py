@@ -345,9 +345,7 @@ class Field( Struct ):
         Remove DOFs defined in higher order nodes (order > 1).
         """
         if self.approx_order != '0':
-            cnt_vn = self.cnt_vn
-            indx = self.remap[cnt_vn[cnt_vn >= 0]]
-            new_dofs = dofs[indx]
+            new_dofs = dofs[:self.aps.n_vertex_dof]
 
         else:
             new_dofs = dofs
