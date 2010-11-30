@@ -254,14 +254,13 @@ class Field( Struct ):
         """
         self.aps.setup_facet_orientations()
 
-        self.n_nod, self.remap = self.aps.setup_global_base()
+        self.n_nod = self.aps.setup_global_base()
 
     def setup_coors(self):
         """
         Setup coordinates of field nodes.
         """
         self.aps.setup_coors()
-
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
@@ -290,45 +289,18 @@ class Field( Struct ):
                            warn=False, igs=None):
         """
         Return indices of DOFs that belong to the given region.
-
-        Notes
-        -----
-        For one edge node type only! (should index row of cnt_en...)
         """
         if igs is None:
             igs = region.igs
-        cnt_en = self.cnt_en
 
         nods = []
-        node_descs = self.get_node_descs(region)
-        for ig, node_desc in node_descs.iteritems():
+        for ig in self.aps.igs:
             if not ig in igs:
                 nods.append(None)
                 continue
 
-            nnew = nm.empty((0,), dtype=nm.int32)
-            if node_desc.vertex is not None:
-                nnew = nm.concatenate((nnew, self.remap[region.vertices[ig]]))
-
-            if node_desc.edge is not None:
-                ed = self.domain.ed
-                # ed.uid_i[region.edges[ii]]
-                # == ed.uid[ed.perm_i[region.edges[ii]]]
-                enods = cnt_en[:cnt_en.shape[0],
-                               ed.uid_i[region.edges[ig]]].ravel()
-                nnew = nm.concatenate((nnew, enods[enods >= 0]))
-
-            if node_desc.face is not None:
-                msg = 'face nodes for %s, %s' % (self.name, region.name)
-                raise NotImplementedError(msg)
-
-            if (node_desc.bubble is not None) and region.can_cells:
-                noft = self.aps.node_offset_table
-                ia = self.aps.igs.index( ig )
-                enods = region.cells[ig] + noft[3,ia]
-                nnew = nm.concatenate((nnew, enods))
-
-            nods.append(nnew)
+            nn = self.aps.get_dofs_in_region(region, ig)
+            nods.append(nn)
 
         if merge:
             nods = [nn for nn in nods if nn is not None]

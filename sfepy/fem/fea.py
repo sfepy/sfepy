@@ -2,6 +2,7 @@ import numpy as nm
 
 from sfepy.base.base import Struct, Container, OneTypeList, assert_
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
+from sfepy.fem.dof_info import expand_nodes_to_dofs
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 
@@ -376,17 +377,23 @@ class Approximations( Container ):
         """
         self.init_econn()
 
-        self.n_vertex_dof, remap = self.setup_vertex_dofs()
-        self.n_edge_dof = self.setup_edge_dofs()
-        self.n_face_dof = self.setup_face_dofs()
-        self.n_bubble_dof = self.setup_bubble_dofs()
+        self.n_vertex_dof, self.vertex_remap = self.setup_vertex_dofs()
+
+        aux = self.setup_edge_dofs()
+        self.n_edge_dof, self.edge_dofs, self.edge_remap = aux
+
+        aux = self.setup_face_dofs()
+        self.n_face_dof, self.face_dofs, self.face_remap = aux
+
+        aux = self.setup_bubble_dofs()
+        self.n_bubble_dof, self.bubble_dofs, self.bubble_remaps = aux
 
         self.n_nod = self.n_vertex_dof + self.n_edge_dof \
                      + self.n_face_dof + self.n_bubble_dof
 
         self.setup_esurface()
 
-        return self.n_nod, remap
+        return self.n_nod
 
     def init_econn(self):
         """
@@ -402,7 +409,7 @@ class Approximations( Container ):
         Setup vertex DOF connectivity.
         """
         if self.node_desc.vertex is None:
-            return 0
+            return 0, None
 
         region = self.region
 
@@ -450,7 +457,9 @@ class Approximations( Container ):
         n_uid = uids.shape[0]
         remap = nm.empty((uids.max() + 1,), dtype=nm.int32)
         remap.fill(-1)
-        remap[uids] = nm.arange(n_uid, dtype=nm.int32)
+        remap[uids] = lids = nm.arange(n_uid, dtype=nm.int32)
+
+        all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
 
         for ig, ap in self.iter_aps():
             ori = facets.oris[ig]
@@ -461,10 +470,7 @@ class Approximations( Container ):
             uid = remap[g_uid]
 
             # Define global facet dof numbers.
-            gdofs = nm.repeat(uid, n_dof_per_facet)
-            gdofs.shape = (ii.shape[0], n_dof_per_facet)
-            idof = nm.arange(n_dof_per_facet, dtype=nm.int32)
-            gdofs = offset + n_dof_per_facet * gdofs + idof
+            gdofs = offset + expand_nodes_to_dofs(uid, n_dof_per_facet)
 
             # Elements of facets.
             iel = facets.indices[ii, 1]
@@ -477,15 +483,16 @@ class Approximations( Container ):
             ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
 
         n_dof = n_dof_per_facet * n_uid
+        assert_(n_dof == nm.prod(all_dofs.shape))
 
-        return n_dof
+        return n_dof, all_dofs, remap
 
     def setup_edge_dofs(self):
         """
         Setup edge DOF connectivity.
         """
         if self.node_desc.edge is None:
-            return 0
+            return 0, None, None
 
         return self._setup_facet_dofs(self.region.domain.ed,
                                       self.node_desc.edge,
@@ -498,7 +505,7 @@ class Approximations( Container ):
         Setup face DOF connectivity.
         """
         if self.node_desc.face is None:
-            return 0
+            return 0, None, None
 
         return self._setup_facet_dofs(self.region.domain.fa,
                                       self.node_desc.face,
@@ -510,22 +517,38 @@ class Approximations( Container ):
         """
         Setup bubble DOF connectivity.
         """
-        if self.node_desc.bubble is None:
-            return 0
+        if (self.node_desc.bubble is None) or self.is_surface:
+            return 0, None, None
 
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof = 0
+        n_dof_per_cell = self.node_desc.bubble.shape[0]
+        all_dofs = []
+        remaps = []
         for ig, ap in self.iter_aps():
-            n_bubble = self.node_desc.bubble.shape[0]
-            n_cell = self.region.get_n_cells(ig, self.is_surface)
-            aux = nm.arange(offset, offset + n_bubble * n_cell, dtype=nm.int32)
-            aux.shape = (n_cell, n_bubble)
+            ii = self.region.get_cells(ig)
+            n_cell = ii.shape[0]
+
+            group = self.region.domain.groups[ig]
+            nd = n_dof_per_cell * n_cell
+            remap = nm.empty((group.shape.n_el,), dtype=nm.int32)
+            remap.fill(-1)
+            remap[ii] = nm.arange(nd, dtype=nm.int32)
+            remaps.append(remap)
+
+            aux = nm.arange(offset, offset + n_dof_per_cell * n_cell,
+                            dtype=nm.int32)
+            aux.shape = (n_cell, n_dof_per_cell)
             iep = self.node_desc.bubble[0]
             ap.econn[:,iep:] = aux
+            all_dofs.append(aux)
 
-            n_dof += n_bubble * n_cell
+            n_dof += nd
 
-        return n_dof
+        all_dofs = nm.concatenate(all_dofs, axis=0)
+        assert_(n_dof == nm.prod(all_dofs.shape))
+
+        return n_dof, all_dofs, remaps
 
     def setup_esurface(self):
         """
@@ -571,6 +594,46 @@ class Approximations( Container ):
 
         for ig, ap in self.iter_aps():
             ap.eval_extra_coor(self.coors, mesh)
+
+    def _get_facet_dofs(self, facets, get_facets, remap, dofs, ig):
+        ii = get_facets(ig)
+        g_uid = facets.uid_i[ii]
+        uid = remap[g_uid]
+
+        return dofs[uid[uid >= 0]].ravel()
+
+    def get_dofs_in_region(self, region, ig):
+        """
+        Return indices of DOFs that belong to the given region and group.
+        """
+        node_desc = self.node_desc
+
+        dofs = nm.empty((0,), dtype=nm.int32)
+        if node_desc.vertex is not None:
+            ii = region.get_vertices(ig)
+            vdofs = self.vertex_remap[ii]
+            dofs = nm.concatenate((dofs, vdofs[vdofs >= 0]))
+
+        if node_desc.edge is not None:
+            edofs = self._get_facet_dofs(region.domain.ed,
+                                         region.get_edges,
+                                         self.edge_remap,
+                                         self.edge_dofs, ig)
+            dofs = nm.concatenate((dofs, edofs))
+
+        if node_desc.face is not None:
+            fdofs = self._get_facet_dofs(region.domain.fa,
+                                         region.get_faces,
+                                         self.face_remap,
+                                         self.face_dofs, ig)
+            dofs = nm.concatenate((dofs, fdofs))
+
+        if (node_desc.bubble is not None) and region.can_cells:
+            ii = region.get_cells(ig)
+            bdofs = self.bubble_dofs[self.bubble_remaps[ig][ii]].ravel()
+            dofs = nm.concatenate((dofs, bdofs[bdofs >= 0]))
+
+        return dofs
 
     def setup_surface_data(self, region):
         for ig, ap in self.iter_aps(igs=region.igs):
