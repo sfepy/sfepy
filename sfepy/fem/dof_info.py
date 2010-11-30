@@ -10,6 +10,20 @@ from sfepy.fem.utils import compute_nodal_normals
 from sfepy.fem.functions import Function
 from sfepy.fem.conditions import EssentialBC
 
+def expand_nodes_to_dofs(nods, n_dof_per_node):
+    """
+    Expand DOF node indices into DOFs given a constant number of DOFs
+    per node.
+    """
+    dofs = nm.repeat(nods, n_dof_per_node)
+    dofs.shape = (nods.shape[0], n_dof_per_node)
+
+    idof = nm.arange(n_dof_per_node, dtype=nm.int32)
+
+    dofs = n_dof_per_node * dofs + idof
+
+    return dofs
+
 def expand_nodes_to_equations(nods, dof_names, all_dof_names):
     """
     Expand vector of node indices to equations (DOF indices) based on
