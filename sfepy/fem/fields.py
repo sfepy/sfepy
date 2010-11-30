@@ -256,11 +256,11 @@ class Field( Struct ):
 
         self.n_nod, self.remap = self.aps.setup_global_base()
 
-    ##
-    # 19.07.2006, c
-    def setup_coors( self ):
-        """Coordinates of field nodes."""
-        self.aps.setup_coors( self.domain.mesh, self.cnt_vn )
+    def setup_coors(self):
+        """
+        Setup coordinates of field nodes.
+        """
+        self.aps.setup_coors()
 
 
     def setup_extra_data(self, geometry, info, is_trace):

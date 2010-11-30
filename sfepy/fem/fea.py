@@ -4,7 +4,6 @@ from sfepy.base.base import Struct, Container, OneTypeList, assert_
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
-import extmods.meshutils as mu
 
 def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
     domain.mesh.coors = coors.copy()
@@ -98,32 +97,18 @@ class Approximation( Struct ):
 ##         print self.node_desc
 ##        pause()
 
-    ##
-    # 03.10.2005, c
-    # 04.10.2005
-    # 10.10.2005
-    # 26.10.2005
-    # 19.07.2006
-    # 02.08.2006
-    # 04.08.2006
-    # 13.02.2007
-    # 20.02.2007
-    def eval_extra_coor( self, coors, mesh ):
-        """Evaluate coordinates of extra nodes."""
-        node_offsets = self.node_offsets
-        n_nod = nm.sum( node_offsets[1:,1] - node_offsets[1:,0] )
-#        print self.name
-#        print n_nod
-##         pause()
-
-        if n_nod == 0: return
-
+    def eval_extra_coor(self, coors, mesh):
+        """
+        Compute coordinates of extra nodes.
+        """
         ##
         # Evaluate geometry interpolation base functions in extra nodes.
         ginterp = self.interp.gel.interp
         ps = self.interp.poly_spaces['v']
 
         iex = (ps.nts[:,0] > 0).nonzero()[0]
+        if iex.shape[0] == 0: return
+
         qp_coors = ps.node_coors[iex,:]
 
         bf = ginterp.poly_spaces['v'].eval_base(qp_coors)
@@ -131,27 +116,14 @@ class Approximation( Struct ):
 
         ##
         # Evaulate extra coordinates with 'bf'.
-#        print self.econn.shape, self.sub.n_el
-
-        econn = nm.zeros_like( self.econn[:,iex] ).copy()
-        for ii in range( 1, 4 ):
-            ix = nm.where( ps.nts[:,0] == ii )[0]
-            if not len( ix ): continue
-            
-##             print ii, ix, iex[0], ix-iex[0]
-##             pause()
-            econn[:,ix-iex[0]] = self.econn[:,ix]
-
-##         print self.econn
-##         print econn
-##         print coors.shape, nm.amax( econn )
-##         pause()
+        econn = self.econn[:, iex].copy()
 
         region = self.region
         group = region.domain.groups[self.ig]
-        cells = region.get_cells( self.ig )
-        mu.interp_vertex_data( coors, econn, mesh.coors,
-                               group.conn[cells], bf, 0 )
+        cells = region.get_cells(self.ig)
+
+        ecoors = nm.dot(bf, mesh.coors[group.conn[cells]])
+        coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
     def get_v_data_shape(self, integral=None):
         """returns (n_el, n_qp, dim, n_ep)"""
@@ -585,31 +557,20 @@ class Approximations( Container ):
                     efs = efs[:,nm.newaxis]
                 ap.efaces = nm.hstack((ap.efaces, efs))
 
-    ##
-    # c: 19.07.2006, r: 15.01.2008
-    def setup_coors( self, mesh, cnt_vn ):
-        """id column is set to 1."""
-        noft = self.node_offset_table
-
-        n_nod = noft[-1,-1]
-        self.coors = nm.empty( (n_nod, mesh.dim), nm.float64 )
-#        print n_nod
+    def setup_coors(self):
+        """
+        Setup coordinates of extra nodes.
+        """
+        mesh = self.region.domain.mesh
+        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
 
         # Mesh vertex nodes.
-        inod = slice( noft[0,0], noft[0,-1] )
-#        print inod
-        if inod:
-            indx = cnt_vn[cnt_vn >= 0]
-            self.coors[inod,:] = mesh.coors[indx,:]
-##         print self.coors
-##         print mesh.coors
-##         pause()
-        for ig, ap in self.iter_aps():
-            ap.eval_extra_coor( self.coors, mesh )
+        if self.n_vertex_dof:
+            indx = self.region.all_vertices
+            self.coors[:self.n_vertex_dof] = mesh.coors[indx]
 
-##         print self.coors
-##         print self.coors.shape
-##         pause()
+        for ig, ap in self.iter_aps():
+            ap.eval_extra_coor(self.coors, mesh)
 
     def setup_surface_data(self, region):
         for ig, ap in self.iter_aps(igs=region.igs):
