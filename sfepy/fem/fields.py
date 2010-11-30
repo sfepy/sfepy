@@ -249,14 +249,12 @@ class Field( Struct ):
     ##
     # 19.07.2006, c
     def setup_global_base( self ):
-
+        """
+        Setup global DOF/base function indices and connectivity of the field.
+        """
         self.aps.setup_facet_orientations()
 
-        aux = self.aps.setup_global_base()
-        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
-
-##         print self.n_nod, self.cnt_vn, self.cnt_en
-#        pause()
+        self.n_nod, self.remap = self.aps.setup_global_base()
 
     ##
     # 19.07.2006, c

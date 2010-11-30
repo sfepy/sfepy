@@ -399,152 +399,195 @@ class Approximations( Container ):
 
     def setup_global_base(self):
         """
-        efaces: indices of faces into econn.
+        Setup global DOF/base function indices and connectivity.
         """
-        region = self.region
-        node_desc = self.node_desc
+        self.init_econn()
 
-        node_offset_table = nm.zeros( (4, len( self ) + 1), dtype = nm.int32 )
+        self.n_vertex_dof, remap = self.setup_vertex_dofs()
+        self.n_edge_dof = self.setup_edge_dofs()
+        self.n_face_dof = self.setup_face_dofs()
+        self.n_bubble_dof = self.setup_bubble_dofs()
 
-        i_vertex, i_edge, i_face, i_bubble = 0, 1, 2, 3
+        self.n_nod = self.n_vertex_dof + self.n_edge_dof \
+                     + self.n_face_dof + self.n_bubble_dof
 
-        # Global node number.
-        iseq = 0
+        self.setup_esurface()
 
-        ##
-        # Vertex nodes.
-        n_v = region.n_v_max
-        cnt_vn = nm.empty( (n_v,), dtype = nm.int32 )
-        cnt_vn.fill( -1 )
-        
-        node_offset_table[i_vertex,0] = iseq
-        ia = 0
+        return self.n_nod, remap
+
+    def init_econn(self):
+        """
+        Initialize the extended DOF connectivity.
+        """
         for ig, ap in self.iter_aps():
             n_ep = ap.n_ep['v']
-            n_cell = region.get_n_cells(ig, self.is_surface)
+            n_cell = self.region.get_n_cells(ig, self.is_surface)
             ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
 
-##             print ap.econn.shape
-#            pause()
-            if node_desc.vertex is not None:
-                vertices = region.get_vertices( ig )
-                n_new = (nm.where( cnt_vn[vertices] == -1 )[0]).shape[0]
-                cnt_vn[vertices] = vertices
-#                print n_new
-                iseq += n_new
-            node_offset_table[i_vertex,ia+1] = iseq
-            ia += 1
+    def setup_vertex_dofs(self):
+        """
+        Setup vertex DOF connectivity.
+        """
+        if self.node_desc.vertex is None:
+            return 0
+
+        region = self.region
+
+        vertices = []
+        for ig, ap in self.iter_aps():
+            ii = region.get_vertices(ig)
+            vertices.append(ii)
+
+        vertices = nm.unique(nm.concatenate(vertices))
+        n_dof = vertices.shape[0]
+        remap = nm.empty((vertices.max() + 1,), dtype=nm.int32)
+        remap.fill(-1)
+        remap[ii] = nm.arange(n_dof, dtype=nm.int32)
 
         ##
         # Remap vertex node connectivity to field-local numbering.
-        indx = nm.arange( iseq, dtype = nm.int32 )
-        remap = nm.empty( (n_v,), dtype = nm.int32 )
-        remap.fill( -1 )
-        remap[nm.where( cnt_vn >= 0 )[0]] = indx
-##         print remap
-##         pause()
-##         print iseq, remap
-##         pause()
         for ig, ap in self.iter_aps():
             group = region.domain.groups[ig]
-            if node_desc.vertex is not None:
-                if not self.is_surface:
-                    offset = group.shape.n_ep
-                    cells = region.get_cells( ig )
-                    ap.econn[:,:offset] = remap[group.conn[cells]]
+            if not self.is_surface:
+                offset = group.shape.n_ep
+                cells = region.get_cells(ig)
+                ap.econn[:,:offset] = remap[group.conn[cells]]
 
-                else:
-                    faces = group.gel.get_surface_entities()
-                    aux = FESurface('aux', region, faces, group.conn, ig)
-                    ap.econn[:,:aux.n_fp] = aux.leconn
-                    ap.surface_data[region.name] = aux
+            else:
+                faces = group.gel.get_surface_entities()
+                aux = FESurface('aux', region, faces, group.conn, ig)
+                ap.econn[:,:aux.n_fp] = aux.leconn
+                ap.surface_data[region.name] = aux
 
-        ed, fa = region.domain.get_facets()
-        entt = self.ent_table
-        cnt_en = nm.zeros( (entt.shape[1], ed.n_unique), nm.int32 ) - 1
+        return n_dof, remap
 
-        ##
-        # Edge nodes.
-        node_offset_table[i_edge,0] = iseq
-        ia = 0
+    def _setup_facet_dofs(self, facets, facet_desc, facet_perms,
+                          get_facets, offset):
+        """
+        Helper function to setup facet DOF connectivity, works for both
+        edges and faces.
+        """
+        facet_desc = nm.array(facet_desc)
+        n_dof_per_facet = facet_desc.shape[1]
+
+        # Prepare global facet id remapping to field-local numbering.
+        uids = []
         for ig, ap in self.iter_aps():
-            if node_desc.edge is not None:
-                cptr0 = ed.indx[ig].start
-                ori = self.edge_oris[ig]
-                iseq = mu.assign_edge_nodes( iseq, ap.econn, cnt_en, \
-                                           ori, entt, ed.uid_i, \
-                                           node_desc.edge, cptr0 )[1]
-##                 print ap.econn
-##                 pause()
-            node_offset_table[i_edge,ia+1] = iseq
-            ia += 1
+            ii = get_facets(ig)
+            uid_i = facets.uid_i[ii]
 
-        #    cnt_fn = nm.zeros( (fntt.shape[1], fa.n_unique), nm.int32 ) - 1
-        node_offset_table[i_face,0] = iseq
-        ia = 0
+            uids.append(uid_i)
+
+        uids = nm.unique(nm.concatenate(uids))
+        n_uid = uids.shape[0]
+        remap = nm.empty((uids.max() + 1,), dtype=nm.int32)
+        remap.fill(-1)
+        remap[uids] = nm.arange(n_uid, dtype=nm.int32)
+
         for ig, ap in self.iter_aps():
-            node_offset_table[i_face,ia+1] = iseq
-            ia += 1
+            ori = facets.oris[ig]
+            perms = facet_perms[ig][ori]
 
-        #    cnt_bn = nm.zeros( (fntt.shape[1], fa.n_unique), nm.int32 ) - 1
-        ##
-        # Bubble nodes.
-        node_offset_table[i_bubble,0] = iseq
-        ia = 0
+            ii = get_facets(ig)
+            g_uid = facets.uid_i[ii]
+            uid = remap[g_uid]
+
+            # Define global facet dof numbers.
+            gdofs = nm.repeat(uid, n_dof_per_facet)
+            gdofs.shape = (ii.shape[0], n_dof_per_facet)
+            idof = nm.arange(n_dof_per_facet, dtype=nm.int32)
+            gdofs = offset + n_dof_per_facet * gdofs + idof
+
+            # Elements of facets.
+            iel = facets.indices[ii, 1]
+
+            ies = facets.indices[ii, 2]
+            # DOF columns in econn for each facet.
+            iep = facet_desc[ies]
+
+            iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
+            ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+
+        n_dof = n_dof_per_facet * n_uid
+
+        return n_dof
+
+    def setup_edge_dofs(self):
+        """
+        Setup edge DOF connectivity.
+        """
+        if self.node_desc.edge is None:
+            return 0
+
+        return self._setup_facet_dofs(self.region.domain.ed,
+                                      self.node_desc.edge,
+                                      self.edge_dof_perms,
+                                      self.region.get_edges,
+                                      self.n_vertex_dof)
+
+    def setup_face_dofs(self):
+        """
+        Setup face DOF connectivity.
+        """
+        if self.node_desc.face is None:
+            return 0
+
+        return self._setup_facet_dofs(self.region.domain.fa,
+                                      self.node_desc.face,
+                                      self.face_dof_perms,
+                                      self.region.get_faces,
+                                      self.n_vertex_dof + self.n_edge_dof)
+
+    def setup_bubble_dofs(self):
+        """
+        Setup bubble DOF connectivity.
+        """
+        if self.node_desc.bubble is None:
+            return 0
+
+        offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
+        n_dof = 0
         for ig, ap in self.iter_aps():
-            if node_desc.bubble is not None:
-                n_bubble = node_desc.bubble.shape[0]
-                n_cell = region.get_n_cells(ig, self.is_surface)
-                aux = nm.arange( iseq, iseq + n_bubble * n_cell )
-                aux.shape = (n_cell, n_bubble)
-                offset = node_desc.bubble[0]
-                ap.econn[:,offset:] = aux[:,:]
-                iseq += n_bubble * n_cell
+            n_bubble = self.node_desc.bubble.shape[0]
+            n_cell = self.region.get_n_cells(ig, self.is_surface)
+            aux = nm.arange(offset, offset + n_bubble * n_cell, dtype=nm.int32)
+            aux.shape = (n_cell, n_bubble)
+            iep = self.node_desc.bubble[0]
+            ap.econn[:,iep:] = aux
 
-            node_offset_table[i_bubble,ia+1] = iseq
-            ia += 1
+            n_dof += n_bubble * n_cell
 
-##         print node_offset_table
-        if node_offset_table[-1,-1] != iseq:
-            raise RuntimeError
-        
-        self.node_offset_table = node_offset_table
+        return n_dof
 
-        ia = 0
-        for ig, ap in self.iter_aps():
-            ap.node_offsets = self.node_offset_table[:,ia:ia+2]
-            ia += 1
-##             print ia
-##             print ap.econn
-##             print ap.node_offsets
-#            pause()
-            
+    def setup_esurface(self):
+        """
+        Setup extended surface entities (edges in 2D, faces in 3D),
+        i.e. indices of surface entities into the extended connectivity.
+        """
+        node_desc = self.node_desc
+
         for ig, ap in self.iter_aps():
             gel = ap.interp.gel
             ap.efaces = gel.get_surface_entities().copy()
 
-            if ap.has_extra_edge_nodes:
-                nd = node_desc.edge
+            nd = node_desc.edge
+            if nd is not None:
                 efs = []
                 for eof in gel.get_edges_per_face():
-                    ef = [nd[ie] for ie in eof]
-                    efs.append( ef )
-                efs = nm.array( efs ).squeeze()
-                if efs.ndim < 2:
-                    efs = efs[:,nm.newaxis]
-#                print efs
-                ap.efaces = nm.hstack( (ap.efaces, efs ) )
+                    efs.append(nm.concatenate([nd[ie] for ie in eof]))
+                efs = nm.array(efs).squeeze()
 
-            if ap.has_extra_face_nodes:
-                efs = node_desc.face
-#                print nd
-                efs = nm.array( efs ).squeeze()
                 if efs.ndim < 2:
                     efs = efs[:,nm.newaxis]
-#                print efs
-                ap.efaces = nm.hstack( (ap.efaces, efs ) )
-                
-        return iseq, remap, cnt_vn, cnt_en
+                ap.efaces = nm.hstack((ap.efaces, efs))
+
+            efs = node_desc.face
+            if efs is not None:
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                ap.efaces = nm.hstack((ap.efaces, efs))
 
     ##
     # c: 19.07.2006, r: 15.01.2008
