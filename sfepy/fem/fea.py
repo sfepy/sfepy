@@ -3,6 +3,7 @@ import numpy as nm
 from sfepy.base.base import Struct, Container, OneTypeList, assert_
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from sfepy.fem.dof_info import expand_nodes_to_dofs
+from sfepy.fem.utils import prepare_remap
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 
@@ -413,11 +414,8 @@ class Approximations( Container ):
 
         region = self.region
 
-        vertices = region.all_vertices
-        n_dof = vertices.shape[0]
-        remap = nm.empty((vertices.max() + 1,), dtype=nm.int32)
-        remap.fill(-1)
-        remap[vertices] = nm.arange(n_dof, dtype=nm.int32)
+        remap = prepare_remap(region.all_vertices, region.n_v_max)
+        n_dof = remap.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
@@ -455,9 +453,8 @@ class Approximations( Container ):
 
         uids = nm.unique(nm.concatenate(uids))
         n_uid = uids.shape[0]
-        remap = nm.empty((uids.max() + 1,), dtype=nm.int32)
-        remap.fill(-1)
-        remap[uids] = lids = nm.arange(n_uid, dtype=nm.int32)
+        lids = nm.arange(n_uid, dtype=nm.int32)
+        remap = prepare_remap(uids, facets.n_unique)
 
         all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
 
@@ -528,12 +525,10 @@ class Approximations( Container ):
         for ig, ap in self.iter_aps():
             ii = self.region.get_cells(ig)
             n_cell = ii.shape[0]
+            nd = n_dof_per_cell * n_cell
 
             group = self.region.domain.groups[ig]
-            nd = n_dof_per_cell * n_cell
-            remap = nm.empty((group.shape.n_el,), dtype=nm.int32)
-            remap.fill(-1)
-            remap[ii] = nm.arange(nd, dtype=nm.int32)
+            remap = prepare_remap(ii, group.shape.n_el)
             remaps.append(remap)
 
             aux = nm.arange(offset, offset + n_dof_per_cell * n_cell,
