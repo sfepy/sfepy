@@ -1,9 +1,10 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import Struct, Container, OneTypeList, assert_
 from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 import extmods.meshutils as mu
-import extmods.geometry as gm
 
 def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
     domain.mesh.coors = coors.copy()
