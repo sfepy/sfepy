@@ -3,6 +3,17 @@ import sfepy.linalg as la
 from sfepy.fem.integrals import Integral
 from extmods.geometry import SurfaceGeometry
 
+def prepare_remap(indices, n_full):
+    """
+    Prepare vector for remapping range `[0, n_full]` to its subset given
+    by `indices`.
+    """
+    remap = nm.empty((n_full,), dtype=nm.int32)
+    remap.fill(-1)
+    remap[indices] = nm.arange(indices.shape[0], dtype=nm.int32)
+
+    return remap
+
 def compute_nodal_normals(nodes, region, field, return_imap=False):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
