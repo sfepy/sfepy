@@ -434,16 +434,11 @@ class Approximations( Container ):
 
         region = self.region
 
-        vertices = []
-        for ig, ap in self.iter_aps():
-            ii = region.get_vertices(ig)
-            vertices.append(ii)
-
-        vertices = nm.unique(nm.concatenate(vertices))
+        vertices = region.all_vertices
         n_dof = vertices.shape[0]
         remap = nm.empty((vertices.max() + 1,), dtype=nm.int32)
         remap.fill(-1)
-        remap[ii] = nm.arange(n_dof, dtype=nm.int32)
+        remap[vertices] = nm.arange(n_dof, dtype=nm.int32)
 
         ##
         # Remap vertex node connectivity to field-local numbering.
