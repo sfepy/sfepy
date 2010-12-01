@@ -505,36 +505,31 @@ class Field( Struct ):
         enod_vol_val = self.interp_v_vals_to_n_vals( nod_vol_val )
 
         return enod_vol_val
-    
-    ##
-    # 05.06.2006, c
-    # 25.07.2006
-    # 31.08.2006
-    def interp_v_vals_to_n_vals( self, vec ):
-        dim = vec.shape[1]
-        enod_vol_val = nm.zeros( (self.n_nod, dim), nm.float64 )
-        for ig, ap in self.aps.iter_aps():
-            group = self.domain.groups[ig]
-            offset = group.shape.n_ep
-            conn = ap.econn[:,:offset]
 
-            noff = ap.node_offsets.ravel()
-            if noff[1] == noff[-1]:
-                # Vertex values only...
-                ii = nm.unique(conn) # Probably wrong?!
-                enod_vol_val[ii] = vec[ii]
-                continue
+    def interp_v_vals_to_n_vals(self, vec):
+        """
+        Interpolate a function defined by vertex DOF values using the FE
+        geometry base (P1 or Q1) into the extra nodes, i.e. define the
+        extra DOF values.
+        """
+        if not self.aps.node_desc.has_extra_nodes():
+            enod_vol_val = vec.copy()
 
-            econn = ap.econn
+        else:
+            dim = vec.shape[1]
+            enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
+            for ig, ap in self.aps.iter_aps():
+                group = self.domain.groups[ig]
+                econn = ap.econn
 
-            ginterp = ap.interp.gel.interp
-            coors = ap.interp.poly_spaces['v'].node_coors
+                coors = ap.interp.poly_spaces['v'].node_coors
 
-            bf = ginterp.poly_spaces['v'].eval_base(coors)
-            bf = bf[:,0,:].copy()
-            
-            fea.mu.interp_vertex_data(enod_vol_val, econn, vec, group.conn,
-                                      bf, 0)
+                ginterp = ap.interp.gel.interp
+                bf = ginterp.poly_spaces['v'].eval_base(coors)
+                bf = bf[:,0,:].copy()
+
+                evec = nm.dot(bf, vec[group.conn])
+                enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
 
