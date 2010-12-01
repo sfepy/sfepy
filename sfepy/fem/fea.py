@@ -531,7 +531,7 @@ class Approximations( Container ):
             remap = prepare_remap(ii, group.shape.n_el)
             remaps.append(remap)
 
-            aux = nm.arange(offset, offset + n_dof_per_cell * n_cell,
+            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
                             dtype=nm.int32)
             aux.shape = (n_cell, n_dof_per_cell)
             iep = self.node_desc.bubble[0]
