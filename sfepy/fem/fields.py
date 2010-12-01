@@ -429,8 +429,13 @@ class Field( Struct ):
                 mat_ids.append(mesh.mat_ids[ig])
                 descs.append(mesh.descs[ig])
 
-            mesh = Mesh.from_data(self.name,
-                                  self.aps.coors, None, conns,
+            if extra_nodes:
+                coors = self.aps.coors
+
+            else:
+                coors = self.aps.coors[:self.aps.n_vertex_dof]
+
+            mesh = Mesh.from_data(self.name, coors, None, conns,
                                   mat_ids, descs)
 
         return mesh
