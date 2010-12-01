@@ -415,7 +415,7 @@ class Approximations( Container ):
         region = self.region
 
         remap = prepare_remap(region.all_vertices, region.n_v_max)
-        n_dof = remap.shape[0]
+        n_dof = region.all_vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
