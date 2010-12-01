@@ -206,11 +206,8 @@ class Field( Struct ):
         self.set_approx_order(approx_order)
         self.setup_geometry()
 
-        # To refactor below...
         self.create_interpolant()
         self.setup_approximations()
-##         print self.aps
-##         pause()
         self.setup_global_base()
         self.setup_coors()
 
@@ -459,16 +456,6 @@ class Field( Struct ):
         tmp.write( io = 'auto' )
 
     ##
-    # c: 20.07.2006, r: 15.01.2008
-    def get_node_descs( self, region ):
-        nds = {}
-        for ig, ap in self.aps.iter_aps():
-            if ig in region.igs:
-                nds[ig] = self.aps.node_desc
-
-        return nds
-
-    ##
     # Modify me for bubble-only approximations to not generate vertex nodes.
     # 12.10.2005, c
     # 26.10.2005
@@ -551,16 +538,10 @@ class Field( Struct ):
 class DiscontinuousField(Field):
 
     def setup_global_base( self ):
-
-        self.aps.describe_nodes()
+        """
+        Setup global DOF/base function indices and connectivity of the field.
+        """
         self.aps.setup_facet_orientations()
-
-        # Get n_dof_per_vertex, n_dof_per_facet.
-        # Find all unique facets in the field region.
-        # Define global facet dof numbers (range(n_dof_per_facet * n_facet))
-
-        aux = self.aps.setup_global_base()
-        self.n_nod, self.remap, self.cnt_vn, self.cnt_en = aux
 
 class SurfaceField(Field):
     """

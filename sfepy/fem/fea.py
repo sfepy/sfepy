@@ -85,20 +85,6 @@ class Approximation( Struct ):
         self.bf = {}
         self.n_ep = self.interp.get_n_nodes()
 
-    ##
-    # 19.07.2006, c
-    def describe_nodes( self, node_desc ):
-        self.node_desc = node_desc
-
-        self.has_extra_edge_nodes = self.has_extra_face_nodes = False
-        if self.node_desc.edge is not None:
-            self.has_extra_edge_nodes = True
-        if self.node_desc.face is not None:
-            self.has_extra_face_nodes = True
-
-##         print self.node_desc
-##        pause()
-
     def eval_extra_coor(self, coors, mesh):
         """
         Compute coordinates of extra nodes.
@@ -657,8 +643,6 @@ class Approximations( Container ):
         Usually, region is term_region. Only if is_trace is True, then region
         is the mirror region and term_region is the true term region.
         """
-        is_trace = region is not term_region
-
         ap = self.aps_per_group[ig]
 
         geo = ap.describe_geometry(field, geometry_type, region, integral,
