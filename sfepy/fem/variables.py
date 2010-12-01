@@ -1224,8 +1224,8 @@ class FieldVariable(Variable):
             key = (self.field.name, self.n_components, region_name,
                    dc_type.type, aig)
             dc = self.field.dof_conns[key]
-            cnt_vn = self.field.cnt_vn
-            nodtab = cnt_vn[nm.where(cnt_vn >= 0)[0]][dc];
+            inod = nm.where(self.field.aps.vertex_remap >= 0)[0]
+            nodtab = inod[dc];
         else:
             raise NotImplementedError
 
