@@ -196,6 +196,12 @@ class NodeDescription(Struct):
         self.bubble, self.n_bubble_nod = self._describe_other(ii)
         self.bubble_nodes = self._get_nodes(self.bubble, nodes)
 
+    def has_extra_nodes(self):
+        """
+        Return True if the element has some edge, face or bubble nodes.
+        """
+        return (self.n_edge_nod + self.n_face_nod + self.n_bubble_nod) > 0
+
 class PolySpace(Struct):
     """Abstract polynomial space class."""
     _all = None
