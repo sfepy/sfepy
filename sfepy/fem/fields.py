@@ -326,7 +326,7 @@ class Field( Struct ):
             else: # Scalar.
                 fill_value = nm.amin(dofs)
 
-        if self.approx_order != '0':
+        if self.approx_order != 0:
             indx = nm.where(self.aps.vertex_remap >= 0)[0]
 
             n_nod = self.domain.shape.n_nod
@@ -344,7 +344,7 @@ class Field( Struct ):
         """
         Remove DOFs defined in higher order nodes (order > 1).
         """
-        if self.approx_order != '0':
+        if self.approx_order != 0:
             new_dofs = dofs[:self.aps.n_vertex_dof]
 
         else:
@@ -415,7 +415,7 @@ class Field( Struct ):
         """
         mesh = self.domain.mesh
 
-        if self.approx_order != '0':
+        if self.approx_order != 0:
             conns, mat_ids, descs = [], [], []
             for ig, ap in self.aps.iter_aps():
                 region = ap.region
