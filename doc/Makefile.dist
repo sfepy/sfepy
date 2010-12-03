@@ -4,7 +4,7 @@ DESTDIR = $(DISTDIR)/$(CDIR)
 DISTFILES = doxygen.config Makefile.dist $(wildcard *.py) Makefile
 DISTDIRS := logo tex txt pages
 
-RELDISTFILES := sfepy_manual.pdf $(DISTFILES) $(shell find . -name "*.rst") $(shell find . -path "./images/*") $(shell find . -path "./sphinxext/*.py")
+RELDISTFILES := sfepy_manual.pdf $(DISTFILES) $(shell find . -name "*.rst") $(shell find . -path "./images/*") $(shell find . -path "./dev/*.png") $(shell find . -path "./dev/*.inc") $(shell find . -path "./sphinxext/*.py")
 RELDISTDIRS := logo
 
 dist:
