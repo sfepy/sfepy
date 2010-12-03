@@ -1,5 +1,7 @@
-Overview
-========
+.. _term_overview:
+
+Term Overview
+=============
 
 Term Syntax
 -----------

@@ -6,7 +6,12 @@
 Welcome to SfePy's documentation!
 =================================
 
+.. image:: images/sfepy_logo_small.png
 SfePy is a finite element analysis software written almost entirely in Python.
+
+SfePy can use many terms to build systems of partial differential
+equations (PDEs) to be solved - follow this quick link to the table of
+all available terms to see the full list: :ref:`term_overview` .
 
 Contents:
 
