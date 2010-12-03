@@ -88,8 +88,8 @@ solvers = {
     'ls' : ('ls.scipy_direct', {}),
     'newton' : ('nls.newton',
                 { 'i_max'      : 1,
-                  'eps_a'      : 1e-6,
-                  'eps_r'      : 1.0,
+                  'eps_a'      : 1e-2,
+                  'eps_r'      : 1e-10,
                   'problem'   : 'nonlinear'}),
 }
 #! FE assembling parameters
