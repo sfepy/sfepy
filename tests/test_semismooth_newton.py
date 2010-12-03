@@ -175,7 +175,6 @@ class Test(TestCommon):
             mx = nm.r_[mw, mg]
 
             mx = sps.csr_matrix(mx)
-
             return mx
 
         def fun_a(vec_x):
@@ -208,7 +207,7 @@ class Test(TestCommon):
             ma[:,iw] = - fc * nm.sign(sn)[:,None] * md
             ma[:,ig] = nm.sign(xg)[:,None] * self.m['C']
 
-            return -ma
+            return -sps.csr_matrix(ma)
 
         def fun_b(vec_x):
             xl = vec_x[il]
@@ -221,10 +220,9 @@ class Test(TestCommon):
             mb = nm.zeros((xl.shape[0], nx), dtype=nm.float64)
             mb[:,il] = self.m['C']
 
-            return mb
+            return sps.csr_matrix(mb)
 
-        vec_x0 = nm.zeros((nx,), dtype=nm.float64)
-        vec_x0[il] = 1.0
+        vec_x0 = 0.1 * nm.ones((nx,), dtype=nm.float64)
 
         lin_solver = Solver.any_from_conf(dict_to_struct(ls_conf))
         status = {}
