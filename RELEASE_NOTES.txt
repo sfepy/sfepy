@@ -1,5 +1,137 @@
 # created: 20.07.2007 (-1)
-# last revision: 06.08.2010
+# last revision: 03.12.2010
+
+from 2010.3 to 2010.4
+=====================
+
+- base:
+  - better printing formatting for basic data types
+- docs:
+  - use viewcode Sphinx extension
+  - add gitwash tutorial (adapted from Numpy)
+- sfepy.linalg:
+  - new insert_sparse_to_csr() - insert a sparse matrix into a CSR matrix
+  - new compose_sparse()
+  - improve structuring:
+    - move some functions from sfepy.linalg.utils to sfepy.linalg.geometry
+    - remove unneeded functions
+  - simplify importing:
+    - import all its contents into sfepy.linalg namespace
+  - new sfepy/linalg/eigen.py - eigenvalues utility functions
+  - new sfepy/linalg/geometry.py - barycentic coordinates and simplex utilities
+- conditions:
+  - make active LCBC-constrained DOF information always defined
+  - update make_global_lcbc_operator() to preserve matrix blocks
+    - also create and return global active LCBC-constrained DOF information
+  - new NormalDirectionOperator class
+- solvers:
+  - solvers: provide default name and kind for any type of conf
+  - allow (re)setting data of an existing TimeStepper instance
+  - use a single time stepper instance in ProblemDefinition
+    - pass the instance to .set_equations() as user data to satisfy
+      time-dependent term arguments
+  - update Newton, SemismoothNewton - raise original residual/matrix exceptions
+  - update SemismoothNewton to use compose_sparse()
+    - the Jacobian needs no longer to have the non-smooth part preallocated
+- refactoring of geometries (reference mappings) - merge 'geo' branch
+  - create geometries as needed on the fly, similarly to term caches
+  - equations only assign container for geometries to terms
+  - geometries no longer stored in Approximations instances
+    - greatly simplify Approximations.describe_geometry()
+- new sfepy/fem/mappings.py:
+  - handle reference element mappings by new Mapping, VolumeMapping,
+    SurfaceMapping classes
+- update Equations to create, hold and update Materials:
+  - only materials actually present in equations are updated during
+    ProblemDefinition.time_update() call now
+  - update materials in ProblemDefinition to be created on demand
+  - similar to creating variables
+- DOF vector synchronization with variables - merge 'state' branch
+  - new sfepy/fem/state.py
+  - new State class for handling state Variables
+- Domain and Mesh:
+  - new Facets class for handling edges and faces
+  - remove C code superseded by Facets
+  - remove unused code superseded by scipy.spatial
+  - new Mesh.explode_groups()
+- update Field:
+  - simplify Field, Approximations - assume single base and region
+  - new SurfaceField - subclass of Field
+    - enrich the field region syntax - allow (region, 'surface') tuple
+    - add is_surface attribute to Approximations, Approximation
+    - update Mesh.from_region() for surface field regions
+      - useful for saving SurfaceField variables with file_per_var option
+  - simplify setting Field approximation order and Interpolant construction
+  - move code for getting DOFs in a region to Field
+  - move DOF manipulation functions to Field
+- update Equations:
+  - allow passing additional connectivities to Equations.create_matrix_graph()
+  - allow passing single Term to Equation.__init__()
+  - update Equations.eval_tangent_matrices() - block assembling mode
+- update Variables:
+  - set _variables attribute in Variables.__setitem__()
+    so that any Variable has it once it is added to Variables
+  - new MultiplierVariable - subclass of FieldVariable
+- update Terms:
+  - allow different Term integration per call mode
+  - simplify setting of term geometry and connectivity types:
+    - new Term.integration attribute
+    - new Term.setup_integration() to determine geometry and connectivity
+      types according to the integration attribute
+    - remove Volume, Surface, Edge, Point, SurfaceExtra constants
+    - geometry types lower-cased
+- expression evaluation:
+  - pass integral instances instead of integral names where applicable
+    - pass Term instance to .init_data() of DataCache subclasses
+    - update all affected terms and term caches
+  - enable calling user functions on tangent matrix in evaluators
+  - check argument names consistency in ProblemDefinition.create_evaluable()
+- implement higher order elements - merge 'ori' branch:
+  - new NodeDescription class
+  - prepare all possible facet DOF permutations
+  - update Facets to store raw orientation
+  - reimplement Approximations.setup_global_base():
+    - for any polynomial degrees (including extra face DOFs), no C
+  - update computation of extra node coordinates, no C
+  - remove obsolete/unused methods and C functions
+  - prepare remap vectors and DOF indices for all DOF kinds
+- new sfepy/fem/projections.py
+  - start projections between FE spaces
+- homogenization:
+  - remove unused (obsolete) correctors and coefficients
+  - remove 'auxiliary' coefficients
+- new sfepy/mechanics/friction.py, DualMesh class
+- problem description file:
+  - allow optional arguments to define()
+  - update field keywords to match Field constructor arguments
+  - new ANSYS CDB file reader
+- output:
+  - new FieldVariable.create_output(), simplify Variables.state_to_output()
+  - update Variables.state_to_output() - allow skipping variables
+- new terms:
+  - dw_non_penetration (non-penetration condition term)
+  - dw_surface_lcouple (acoustic term - derivatives in surface directions)
+  - dw_surface_llaplace (acoustic term - derivatives in surface directions)
+  - dq_div (new divergence in QP term)
+- scripts:
+  - new friction_slip.py (work in progress)
+  - compare_elastic_materials.py: new --no-plot option
+  - postproc.py:
+    - new --subdomains option
+    - update Viewer - new vector cut plane plotting mode
+- tests and examples:
+  - new examples/biot/biot_npbc_lagrange.py + test
+    - uses dw_non_penetration term
+  - update tests/test_volume.py to report volumes
+  - update examples/navier_stokes/navier_stokes.py
+    - check divergence-free solution
+  - new tests/test_sparse.py - test compose_sparse()
+  - new 'linear_elastic_up.py' example + test
+    - linear elasticity, mixed formulation
+  - new test_eval_matrix()
+  - tests/test_meshio.py: new _compare_meshes(), test_write_read_meshes()
+  - new tests/test_projections.py
+- many bug fixes
 
 from 2010.2 to 2010.3
 =====================
