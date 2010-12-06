@@ -9,6 +9,7 @@
 #! (this boundary condition is named PerturbedSurface).
 #! The output is the displacement for each node, saved by default to
 #! simple_out.vtk. The material is linear elastic.
+from sfepy import data_dir
 
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
 
@@ -19,7 +20,7 @@ dim = 3
 approx_u = '3_4_P1'
 approx_p = '3_4_P0'
 order = 2
-filename_mesh = 'meshes/3d/cylinder.mesh'
+filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 #! Regions
 #! -------
 #! Whole domain 'Omega', left and right ends.
