@@ -58,10 +58,6 @@ class BasicEvaluator( Evaluator ):
 
         return mtx
 
-    def strip_state_vector( self, vec ):
-        return self.problem.equations.strip_state_vector(vec,
-                                                         follow_epbc=False)
-
     def make_full_vec( self, vec ):
         return self.problem.equations.make_full_vec(vec)
 
@@ -107,10 +103,6 @@ class LCBCEvaluator( BasicEvaluator ):
             mtx_r = self.matrix_hook(mtx_r, self.problem, call_mode='lcbc')
 
         return mtx_r
-
-    def strip_state_vector( self, vec ):
-        vec = BasicEvaluator.strip_state_vector( self, vec )
-        return self.op_lcbc.T * vec
 
 def create_evaluable(expression, fields, materials, variables, integrals,
                      update_materials=True,
