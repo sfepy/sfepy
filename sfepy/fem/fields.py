@@ -238,6 +238,23 @@ class Field( Struct ):
     def setup_approximations(self):
         self.aps = fea.Approximations(self.interp, self.region)
 
+    def get_true_order(self):
+        """
+        Get the true approximation order depending on the reference
+        element geometry.
+
+        For example, for P1 (linear) approximation the true order is 1,
+        while for Q1 (bilinear) approximation the true order is 2.
+        """
+        gel = self.gel
+        if (gel.dim + 1) == gel.n_vertex:
+            order = self.approx_order
+
+        else:
+            order = 2 * self.approx_order
+
+        return order
+
     ##
     #
     def igs( self ):
