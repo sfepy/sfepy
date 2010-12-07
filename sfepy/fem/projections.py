@@ -20,7 +20,7 @@ def create_mass_matrix(field):
     u = FieldVariable('u', 'unknown', field, 1)
     v = FieldVariable('v', 'test', field, 1, primary_var_name='u')
 
-    integral = Integral('i', order=field.approx_order**2)
+    integral = Integral('i', order=field.get_true_order()**2)
     term = Term.new('dw_mass_scalar(v, u)', integral, field.region, v=v, u=u)
     eq = Equation('aux', term)
     eqs = Equations([eq])
