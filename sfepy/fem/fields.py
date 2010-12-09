@@ -1,10 +1,12 @@
 import time
 import numpy as nm
 
-from sfepy.base.base import output, iter_dict_of_lists, get_default, Struct
+from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
+from sfepy.base.base import Struct
 import fea
-from sfepy.fem.mesh import Mesh, make_point_cells
+from sfepy.fem.mesh import Mesh, make_point_cells, make_inverse_connectivity
 from sfepy.fem.utils import extend_cell_data
+from sfepy.fem.extmods.fem import evaluate_at
 
 def parse_approx_order(approx_order):
     """
@@ -551,6 +553,131 @@ class Field( Struct ):
             return self.aps.coors
         else:
             return self.aps.coors[nods]
+
+    def evaluate_at(self, coors, source_vals, strategy='kdtree',
+                    close_limit=0.1, cache=None, ret_cells=False,
+                    ret_status=False):
+        """
+        Evaluate source DOF values corresponding to the field in the given
+        coordinates using the field interpolation.
+
+        Parameters
+        ----------
+        coors : array
+            The coordinates the source values should be interpolated into.
+        source_vals : array
+            The source DOF values corresponding to the field.
+        strategy : str, optional
+            The strategy for finding the elements that contain the
+            coordinates. Only 'kdtree' is supported for the moment.
+        close_limit : float, optional
+            The maximum limit distance of a point from the closest
+            element allowed for extrapolation.
+        cache : Struct, optional
+            To speed up a sequence of evaluations, the inverse
+            connectivity of the field mesh can be cached as
+            `cache.offsets`, `cache.iconn`.
+        ret_cells : bool, optional
+            If True, return also the cell indices the coordinates are in.
+        ret_status : bool, optional
+            If True, return also the status for each point: 0 is
+            success, 1 is extrapolation within `close_limit`, 2 is
+            extrapolation outside `close_limit`, 3 is failure.
+
+        Returns
+        -------
+        vals : array
+            The interpolated values.
+        cells : array
+            The cell indices, if `ret_cells` or `ret_status` are True.
+        status : array
+            The status, if `ret_status` is True.
+        """
+        mesh = self.create_mesh()
+        scoors = mesh.coors
+
+        output('interpolating from %d nodes to %d nodes...' % (scoors.shape[0],
+                                                               coors.shape[0]))
+
+        if cache is None:
+            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
+                                                       ret_offsets=True)
+        else:
+            offsets, iconn = cache.offsets, cache.iconn
+
+        if strategy == 'kdtree':
+            if cache is None:
+                from scipy.spatial import cKDTree as KDTree
+                ## from scipy.spatial import KDTree
+
+                tt = time.clock()
+                ctree = KDTree(scoors)
+                output('ctree: %f s' % (time.clock()-tt))
+
+            else:
+                ctree = cache.ctree
+
+            tt = time.clock()
+
+            vals = nm.empty((coors.shape[0], source_vals.shape[1]),
+                            dtype=source_vals.dtype)
+            cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
+            status = nm.empty((coors.shape[0],), dtype=nm.int32)
+
+            ics = ctree.query(coors)[1]
+            ics = nm.asarray(ics, dtype=nm.int32)
+
+            vertex_coorss, nodess, orders, mtx_is = [], [], [], []
+            conns, conns0 = [], []
+            for ap in self.aps:
+                ps = ap.interp.poly_spaces['v']
+                if ps.order == 0:
+                    # Use geometry element space and connectivity to locate an
+                    # element a point is in.
+                    ps = ap.interp.gel.interp.poly_spaces['v']
+                    assert_(ps.order == 1)
+
+                    orders.append(0) # Important!
+                    conn = ap.region.domain.groups[ap.ig].conn
+                    conns.append(conn)
+
+                else:
+                    orders.append(ps.order)
+                    conns.append(ap.econn)
+
+                vertex_coorss.append(ps.geometry.coors)
+                nodess.append(ps.nodes)
+                mtx_is.append(ps.get_mtx_i())
+
+                # Always the true connectivity for extracting source values.
+                conns0.append(ap.econn)
+
+            orders = nm.array(orders, dtype=nm.int32)
+
+            evaluate_at(vals, cells, status, coors, source_vals,
+                        ics, offsets, iconn,
+                        scoors, conns0, conns,
+                        vertex_coorss, nodess, orders, mtx_is,
+                        1, close_limit, 1e-15, 100, 1e-8)
+
+            output('interpolator: %f s' % (time.clock()-tt))
+
+        elif strategy == 'crawl':
+            raise NotImplementedError
+
+        else:
+            raise ValueError('unknown search strategy! (%s)' % strategy)
+
+        output('...done')
+
+        if ret_status:
+            return vals, cells, status
+
+        elif ret_cells:
+            return vals, cells
+
+        else:
+            return vals
 
 class DiscontinuousField(Field):
 

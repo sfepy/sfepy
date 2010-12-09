@@ -2,10 +2,8 @@ from collections import deque
 
 from sfepy.base.base import *
 import sfepy.linalg as la
-from sfepy.fem.mesh import make_inverse_connectivity
 from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral
-from extmods.fem import evaluate_at
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator
@@ -1596,100 +1594,20 @@ class FieldVariable(Variable):
 
         return coors
 
-    def evaluate_at(self, coors, strategy='kdtree', flag_same_mesh='different',
+    def evaluate_at(self, coors, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False):
         """
-        Evaluate self in the given physical coordinates.
+        Evaluate self in the given physical coordinates. Convenience
+        wrapper around :func:`Field.evaluate_at()`, see its docstring
+        for more details.
         """
-        # Assume different meshes -> general interpolation.
-        mesh = self.field.create_mesh()
-        scoors = mesh.coors
+        source_vals = self().reshape((self.n_nod, self.n_components))
+        out = self.field.evaluate_at(coors, source_vals, strategy=strategy,
+                                     close_limit=close_limit, cache=cache,
+                                     ret_cells=ret_cells, ret_status=ret_status)
 
-        output('interpolating from %d nodes to %d nodes...' % (scoors.shape[0],
-                                                               coors.shape[0]))
-
-        if cache is None:
-            offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
-                                                       ret_offsets=True)
-        else:
-            offsets, iconn = cache.offsets, cache.iconn
-
-        if strategy == 'kdtree':
-            if cache is None:
-                from scipy.spatial import cKDTree as KDTree
-                ## from scipy.spatial import KDTree
-
-                tt = time.clock()
-                ctree = KDTree(scoors)
-                output('ctree: %f s' % (time.clock()-tt))
-
-            else:
-                ctree = cache.ctree
-
-            tt = time.clock()
-
-            vals = nm.empty((coors.shape[0], self.n_components),
-                            dtype=self.dtype)
-            cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
-            status = nm.empty((coors.shape[0],), dtype=nm.int32)
-            source_vals = self()
-
-            ics = ctree.query(coors)[1]
-            ics = nm.asarray(ics, dtype=nm.int32)
-
-            vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-            conns, conns0 = [], []
-            for ap in self.field.aps:
-                ps = ap.interp.poly_spaces['v']
-                if ps.order == 0:
-                    # Use geometry element space and connectivity to locate an
-                    # element a point is in.
-                    ps = ap.interp.gel.interp.poly_spaces['v']
-                    assert_(ps.order == 1)
-
-                    orders.append(0) # Important!
-                    iels = ap.region.cells[ap.ig]
-                    conn = ap.region.domain.groups[ap.ig].conn
-                    conns.append(conn)
-
-                else:
-                    orders.append(ps.order)
-                    conns.append(ap.econn)
-
-                vertex_coorss.append(ps.geometry.coors)
-                nodess.append(ps.nodes)
-                mtx_is.append(ps.get_mtx_i())
-
-                # Always the true connectivity for extracting source values.
-                conns0.append(ap.econn)
-
-            orders = nm.array(orders, dtype=nm.int32)
-
-            evaluate_at(vals, cells, status, coors, source_vals,
-                        ics, offsets, iconn,
-                        scoors, conns0, conns,
-                        vertex_coorss, nodess, orders, mtx_is,
-                        1, close_limit, 1e-15, 100, 1e-8)
-
-            output('interpolator: %f s' % (time.clock()-tt))
-
-        elif strategy == 'crawl':
-            raise NotImplementedError
-
-        else:
-            raise ValueError('unknown search strategy! (%s)' % strategy)
-
-        output('...done')
-
-        if ret_status:
-            return vals, cells, status
-
-        elif ret_cells:
-            return vals, cells
-
-        else:
-            return vals
+        return out
 
     def set_from_other(self, other, strategy='projection',
                        search_strategy='kdtree', ordering_strategy='rcm',
@@ -1760,9 +1678,8 @@ class FieldVariable(Variable):
         perm = iter_nodes.get_permutation(iter_nodes.strategy)
 
         vals = other.evaluate_at(coors[perm], strategy=search_strategy,
-                                 flag_same_mesh=flag_same_mesh,
                                  close_limit=close_limit)
-        
+
         if strategy == 'interpolation':
             self.data_from_any(vals)
 
