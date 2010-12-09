@@ -575,8 +575,9 @@ class Field( Struct ):
             element allowed for extrapolation.
         cache : Struct, optional
             To speed up a sequence of evaluations, the inverse
-            connectivity of the field mesh can be cached as
-            `cache.offsets`, `cache.iconn`.
+            connectivity of the field mesh and the KDTree instance can
+            be cached as `cache.offsets`, `cache.iconn` and
+            `cache.kdtree`.
         ret_cells : bool, optional
             If True, return also the cell indices the coordinates are in.
         ret_status : bool, optional
