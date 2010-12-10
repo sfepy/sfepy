@@ -1476,7 +1476,9 @@ class FieldVariable(Variable):
         out = {}
 
         if ext is not None:
-            if self.field.approx_order != 0:
+            approx_order = self.field.get_output_approx_order()
+
+            if approx_order != 0:
                 # Has vertex data.
                 out[key] = Struct(name='output_data', mode='vertex', data=ext,
                                   var_name=self.name, dofs=self.dofs)

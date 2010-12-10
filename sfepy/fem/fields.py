@@ -368,6 +368,12 @@ class Field( Struct ):
 
         return new_dofs
 
+    def get_output_approx_order(self):
+        """
+        Get the approximation order used in the output file.
+        """
+        return min(self.approx_order, 1)
+
     def clear_dof_conns(self):
         self.dof_conns = {}
 
