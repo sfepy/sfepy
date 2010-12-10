@@ -1110,3 +1110,9 @@ class ProblemDefinition( Struct ):
             out = '.'.join((out, self.output_format))
 
         return out
+
+    def remove_bcs(self):
+        """
+        Convenience function to remove boundary conditions.
+        """
+        self.time_update(ebcs={}, epbcs={}, lcbcs={})
