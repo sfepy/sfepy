@@ -246,14 +246,14 @@ class Field( Struct ):
         element geometry.
 
         For example, for P1 (linear) approximation the true order is 1,
-        while for Q1 (bilinear) approximation the true order is 2.
+        while for Q1 (bilinear) approximation in 2D the true order is 2.
         """
         gel = self.gel
         if (gel.dim + 1) == gel.n_vertex:
             order = self.approx_order
 
         else:
-            order = 2 * self.approx_order
+            order = gel.dim * self.approx_order
 
         return order
 
