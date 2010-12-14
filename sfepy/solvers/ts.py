@@ -5,10 +5,13 @@ from sfepy.solvers.solvers import TimeSteppingSolver
 def get_print_info( n_step ):
     if n_step > 1:
         n_digit = int( nm.log10( n_step - 1 ) + 1 )
-        format = '%%%dd of %%%dd' % (n_digit, n_digit)
-        suffix = '%%0%dd' % n_digit
+
     else:
-        n_digit, format, suffix = 0, None, None
+        n_digit = 1
+
+    format = '%%%dd of %%%dd' % (n_digit, n_digit)
+    suffix = '%%0%dd' % n_digit
+
     return n_digit, format, suffix
 
 class TimeStepper( Struct ):
@@ -32,6 +35,7 @@ class TimeStepper( Struct ):
                                                endpoint = True, retstep = True )
         else:
             self.times = nm.array( (self.t0,), dtype = nm.float64 )
+            self.dt = self.t1 - self.t0
 
         self.n_digit, self.format, self.suffix = get_print_info( self.n_step )
 
