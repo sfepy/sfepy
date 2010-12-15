@@ -54,6 +54,20 @@ def prepare_save_data( ts, conf ):
 
     return ts.suffix, is_save
 
+def prepare_matrix(problem, state):
+    """
+    Pre-assemble tangent system matrix.
+    """
+    ev = problem.get_evaluator()
+    try:
+        mtx = ev.eval_tangent_matrix(state(), is_full=True)
+
+    except ValueError:
+        output('matrix evaluation failed, giving up...')
+        raise
+
+    return mtx
+
 def time_step_function(ts, state0, problem, nls_status=None):
     problem.time_update( ts )
 
@@ -77,29 +91,28 @@ def time_step_function(ts, state0, problem, nls_status=None):
                     output( 'initial residual: %e' % err )
 
         if problem.is_linear():
-            # Assemble linear system matrix for all
-            # time steps.
-            ev = problem.get_evaluator()
-            try:
-                mtx_a = ev.eval_tangent_matrix(state(), is_full=True)
-            except ValueError:
-                output( 'matrix evaluation failed, giving up...' )
-                raise
+            mtx = prepare_matrix(problem, state)
+
         else:
-            mtx_a = None
+            mtx = None
 
         # Initialize solvers (and possibly presolve the matrix).
-        problem.init_solvers(nls_status=nls_status, mtx=mtx_a)
+        problem.init_solvers(nls_status=nls_status, mtx=mtx)
 
         if ts.is_quasistatic:
             # Ordinary solve.
             state = problem.solve(state0=state0)
+            state.init_history()
 
         else:
             # Initialize variables with history.
             state0.init_history()
 
     else:
+        if (ts.step == 1) and ts.is_quasistatic and problem.is_linear():
+            mtx = prepare_matrix(problem, state0)
+            problem.init_solvers(nls_status=nls_status, mtx=mtx)
+
         state = problem.solve(state0=state0)
 
     return state

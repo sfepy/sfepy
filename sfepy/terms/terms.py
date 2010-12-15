@@ -410,6 +410,7 @@ class Term(Struct):
 
         self.step = 0
         self.dt = 1.0
+        self.is_quasistatic = False
         self.has_integral = True
         self.has_region = True
 
@@ -1019,6 +1020,7 @@ class Term(Struct):
         if ts is not None:
             self.step = ts.step
             self.dt = ts.dt
+            self.is_quasistatic = ts.is_quasistatic
 
     def advance(self, ts):
         """Advance to the next time step. Implemented in subclasses."""
@@ -1321,7 +1323,11 @@ class Term(Struct):
 
                 sign = 1.0
                 if self.arg_derivatives[svar.name]:
-                    sign *= 1.0 / self.dt
+                    if not self.is_quasistatic or (self.step > 0):
+                        sign *= 1.0 / self.dt
+
+                    else:
+                        sign = 0.0
 
                 if asm_obj.dtype == nm.float64:
                     fem.assemble_matrix(tmd[0], tmd[1], tmd[2], mtx_in_els,

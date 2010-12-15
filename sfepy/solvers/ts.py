@@ -20,8 +20,9 @@ class TimeStepper( Struct ):
         return TimeStepper( conf.t0, conf.t1, conf.dt, conf.n_step )
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, t0, t1, dt, n_step, step=None):
+    def __init__(self, t0, t1, dt, n_step, step=None, is_quasistatic=False):
         self.set_from_data(t0, t1, dt, n_step, step=step)
+        self.is_quasistatic = is_quasistatic
 
     def set_from_data(self, t0, t1, dt, n_step, step=None):
         self.t0, self.t1, self.dt, self.n_step = t0, t1, dt, int(n_step)
