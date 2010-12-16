@@ -205,6 +205,12 @@ class DofInfo(Struct):
 
         return di
 
+    def get_n_dof_total(self):
+        """
+        Return the total number of DOFs of all state variables.
+        """
+        return self.ptr[-1]
+
 class EquationMap(Struct):
     """
     Map all DOFs to equations for active DOFs.
