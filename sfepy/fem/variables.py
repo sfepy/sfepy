@@ -398,6 +398,8 @@ class Variables( Container ):
             # EPBC.
             vec[eq_map.master] = vec[eq_map.slave]
 
+        self.check_vector_size(svec, stripped=True)
+
         if self.has_lcbc:
             svec = self.op_lcbc * svec
 
@@ -454,18 +456,47 @@ class Variables( Container ):
         else:
             return self.di.indx[var_name]
 
-    ##
-    # 26.07.2006, c
-    # 12.04.2007
-    # 26.07.2007
-    def get_state_part_view( self, state, var_name, stripped = False ):
+    def check_vector_size(self, vec, stripped=False):
+        """
+        Check whether the shape of the DOF vector corresponds to the
+        total number of DOFs of the state variables.
+
+        Parameters
+        ----------
+        vec : array
+            The vector of DOF values.
+        stripped : bool
+            If True, the size of the DOF vector should be reduced,
+            i.e. without DOFs fixed by boundary conditions.
+        """
+        if not stripped:
+            n_dof = self.di.get_n_dof_total()
+
+            if vec.size != n_dof:
+                msg = 'incompatible data size!' \
+                      ' (%d (variables) == %d (DOF vector))' \
+                      % (n_dof, vec.size)
+                raise ValueError(msg)
+
+        else:
+            if self.has_lcbc:
+                n_dof = self.lcdi.get_n_dof_total()
+
+            else:
+                n_dof = self.adi.get_n_dof_total()
+
+            if vec.size != n_dof:
+                msg = 'incompatible data size!' \
+                      ' (%d (active variables) == %d (reduced DOF vector))' \
+                      % (n_dof, vec.size)
+                raise ValueError(msg)
+
+    def get_state_part_view(self, state, var_name, stripped=False):
+        self.check_vector_size(state, stripped=stripped)
         return state[self.get_indx( var_name, stripped )]
 
-    ##
-    # 26.07.2006, c
-    # 12.04.2007
-    # 26.07.2007
-    def set_state_part( self, state, part, var_name, stripped = False ):
+    def set_state_part(self, state, part, var_name, stripped=False):
+        self.check_vector_size(state, stripped=stripped)
         state[self.get_indx( var_name, stripped )] = part
 
     def get_state_parts(self, vec=None):
@@ -484,6 +515,9 @@ class Variables( Container ):
         out : dict
             The dictionary of the state parts.
         """
+        if vec is not None:
+            self.check_vector_size(vec)
+
         out = {}
         for var in self.iter_state():
             if vec is None:
@@ -508,7 +542,7 @@ class Variables( Container ):
             Ignore unknown variable names if `data` is a dict.
         """
         if data is None: return
-        
+
         if isinstance(data, dict):
 
             for key, val in data.iteritems():
@@ -531,20 +565,16 @@ class Variables( Container ):
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    ##
-    # 24.07.2006, c
-    # 25.07.2006
-    # 04.08.2006
-    def data_from_state( self, state = None ):
+    def data_from_state(self, state=None):
+        self.check_vector_size(state)
+
         for ii in self.state:
             var = self[ii]
             var.data_from_state( state, self.di.indx[var.name] )
 
-    ##
-    # 26.07.2006, c
-    # 02.08.2006
-    # 04.08.2006
-    def non_state_data_from_state( self, var_names, state, var_names_state ):
+    def non_state_data_from_state(self, var_names, state, var_names_state):
+        self.check_vector_size(state)
+
         if isinstance( var_names, str ):
             var_names = [var_names]
             var_names_state = [var_names_state]
@@ -563,6 +593,8 @@ class Variables( Container ):
                         extend=True):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
+        self.check_vector_size(vec)
+
         di = self.di
 
         if var_info is None:
