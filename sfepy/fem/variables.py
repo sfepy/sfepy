@@ -593,11 +593,11 @@ class Variables( Container ):
                         extend=True):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
-        self.check_vector_size(vec)
-
         di = self.di
 
         if var_info is None:
+            self.check_vector_size(vec)
+
             var_info = {}
             for name in di.var_names:
                 var_info[name] = (False, name)
