@@ -390,7 +390,7 @@ class ProblemDefinition( Struct ):
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
-            self.equations.time_update_materials(self.ts)
+            self.equations.time_update_materials(self.ts, self)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
@@ -790,6 +790,11 @@ class ProblemDefinition( Struct ):
             if isinstance(state0, nm.ndarray):
                 state0 = State(self.equations.variables, vec=state0)
 
+            else:
+                # This sets the current time step data in variables with
+                # history.
+                state0.set_full(state0().copy())
+
         self.equations.set_data(var_data, ignore_unknown=True)
 
         self.update_materials()
@@ -919,7 +924,7 @@ class ProblemDefinition( Struct ):
                 materials = materials.semideep_copy()
 
             else:
-                materials = Materials(objs=materials.objs)
+                materials = Materials(objs=materials._objs)
 
         else:
             possible_mat_names = get_expression_arg_names(expression)
@@ -955,12 +960,15 @@ class ProblemDefinition( Struct ):
 
         out = create_evaluable(expression, self.fields, materials,
                                variables.itervalues(), integrals,
-                               update_materials=copy_materials,
                                ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
                                ts=ts, functions=functions,
                                auto_init=auto_init,
                                mode=mode, extra_args=extra_args, verbose=verbose,
                                kwargs=kwargs)
+
+        if copy_materials:
+            equations = out[0]
+            equations.time_update_materials(self.ts, self)
 
         return out
 
@@ -1009,8 +1017,6 @@ class ProblemDefinition( Struct ):
                                     extra_args=extra_args,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
-
-        equations.time_update_materials(self.ts)
 
         out = eval_equations(equations, variables,
                              mode=mode, dw_mode=dw_mode, term_mode=term_mode)

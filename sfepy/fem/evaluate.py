@@ -105,7 +105,6 @@ class LCBCEvaluator( BasicEvaluator ):
         return mtx_r
 
 def create_evaluable(expression, fields, materials, variables, integrals,
-                     update_materials=True,
                      ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                      auto_init=False, mode='eval', extra_args=None,
                      verbose=True, kwargs=None):
@@ -125,8 +124,6 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         The variables used in the expression.
     integrals : Integrals instance
         The integrals to be used.
-    update_materials : bool
-        Call time update function of the materials. Safe but can be slow.
     ebcs : Conditions instance, optional
         The essential (Dirichlet) boundary conditions for 'weak'
         mode.
@@ -194,19 +191,12 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         for var in variables:
             var.init_data(step=0)
 
-    # The true materials used in the expression.
-    materials = equations.materials
-
     if mode == 'weak':
         setup_dof_conns(equations.conn_info)
-        if update_materials:
-            materials.time_update(ts, domain, equations, verbose=False)
         equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
 
     else:
         setup_extra_data(equations.conn_info)
-        if update_materials:
-            materials.time_update(ts, domain, equations, verbose=False)
 
     return equations, variables
 
