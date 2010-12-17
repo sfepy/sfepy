@@ -21,6 +21,27 @@ class State(Struct):
     `variables.strip_state_vector()`.
     """
 
+    @staticmethod
+    def from_variables(variables):
+        """
+        Create a State instance for the given variables.
+
+        The DOF vector is created using the DOF data in `variables`.
+
+        Parameters
+        ----------
+        variables : Variables instance
+            The variables.
+        """
+        parts = variables.get_state_parts()
+        vec = variables.create_state_vector()
+
+        for key, part in parts.iteritems():
+            indx = variables[key].get_indx()
+            vec[indx] = part
+
+        return State(variables, vec)
+
     def __init__(self, variables, vec=None):
         """
         Create a State instance for the given variables.
