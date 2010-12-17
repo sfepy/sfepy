@@ -209,11 +209,15 @@ class Equations( Container ):
         self.variables.setup_lcbc_operators(lcbcs)
         self.variables.setup_adof_conns()
 
-        self.materials.time_update(ts, self.domain, self)
-
         for eq in self:
             for term in eq.terms:
                 term.time_update(ts)
+
+    def time_update_materials(self, ts):
+        """
+        Update data materials for current time and possibly also state.
+        """
+        self.materials.time_update(ts, self.domain, self)
 
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)
