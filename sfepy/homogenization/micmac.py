@@ -6,8 +6,8 @@ import tables as pt
 from sfepy.fem.meshio import HDF5MeshIO
 import os.path as op
 
-def get_homog_coefs_linear( ts, coor, mode, region, ig,
-                            micro_filename = None, regenerate = False ):
+def get_homog_coefs_linear(ts, coor, mode,
+                           micro_filename=None, regenerate=False):
 
     oprefix = output.prefix
     output.prefix = 'micro:'

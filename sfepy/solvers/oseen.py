@@ -148,7 +148,7 @@ class Oseen( NonlinearSolver ):
             print '|u|_max: %.2e' % u_norm
 
             stabil.function.set_extra_args(b_norm = b_norm)
-            stabil.time_update(None, problem.domain, problem.equations)
+            stabil.time_update(None, problem.equations, problem)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
             print 'stabilization parameters:'
             print '                   gamma: %.12e' % max_pars['gamma']
