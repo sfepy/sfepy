@@ -46,9 +46,9 @@ def define_input(filename, output_dir):
                           cinc_simple(coors, 1),),
         'cinc_simple2' : (lambda coors, domain:
                           cinc_simple(coors, 2),),
-        'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
-                      get_pars(ts, coors, mode, region, ig,
-                               output_dir=output_dir),),
+        'get_pars' : (lambda ts, coors, mode=None, **kwargs:
+                      get_pars(ts, coors, mode,
+                               output_dir=output_dir, **kwargs),),
     }
     regions, dim = define_regions(filename_mesh)
 

@@ -65,7 +65,7 @@ def define_regions(filename):
 
     return regions, dim
 
-def get_pars(ts, coor, mode, region, ig, output_dir='.'):
+def get_pars(ts, coor, mode, output_dir='.', **kwargs):
     if mode == 'qp':
         n_nod, dim = coor.shape
         sym = (dim + 1) * dim / 2
@@ -82,7 +82,6 @@ def get_pars(ts, coor, mode, region, ig, output_dir='.'):
         perm = nm.eye(dim, dtype=nm.float64)
         out['K'] = nm.tile(perm, (coor.shape[0], 1, 1))
 
-        print coor.shape, region.name, ig
         return out
 
 def post_process(out, pb, state, extend=False):
@@ -116,9 +115,9 @@ def define_input(filename, output_dir):
                           cinc_simple(coors, 1),),
         'cinc_simple2' : (lambda coors, domain:
                           cinc_simple(coors, 2),),
-        'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
-                      get_pars(ts, coors, mode, region, ig,
-                               output_dir=output_dir),),
+        'get_pars' : (lambda ts, coors, mode=None, **kwargs:
+                      get_pars(ts, coors, mode,
+                               output_dir=output_dir, **kwargs),),
     }
     regions, dim = define_regions(filename_mesh)
 

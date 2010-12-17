@@ -62,18 +62,18 @@ fe = {
     'chunk_size' : 100000
 }
 
-def get_pars(ts, coors, mode=None, region=None, ig=None):
+def get_pars(ts, coors, mode=None, **kwargs):
     """
     We can define the coefficient `load.val` as a function of space.
 
     For scalar parameters, the shape has to be set to `(coors.shape[0], 1, 1)`.
     """
-    if mode == 'qp':        
+    if mode == 'qp':
         x = coors[:,0]
 
         val = 55.0 * (x - 0.05)
-             
-        val.shape = (coors.shape[0], 1, 1)         
+
+        val.shape = (coors.shape[0], 1, 1)
         return {'val' : val}
 
 def get_middle_ball(coors, domain=None):

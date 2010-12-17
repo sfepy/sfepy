@@ -31,7 +31,7 @@ materials = {
     'f2' : 'get_pars_fibres2',
 }
 
-def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0):
+def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0, **kwargs):
     """
     Parameters
     ----------
@@ -82,12 +82,12 @@ def get_pars_fibres(ts, coors, mode=None, which=0, vf=1.0):
     return out
 
 functions = {
-    'get_pars_fibres1' : (lambda ts, coors, mode=None, region=None, ig=None:
+    'get_pars_fibres1' : (lambda ts, coors, mode=None, **kwargs:
                           get_pars_fibres(ts, coors, mode=mode, which=0,
-                                          vf=vf_fibres1),),
-    'get_pars_fibres2' : (lambda ts, coors, mode=None, region=None, ig=None:
+                                          vf=vf_fibres1, **kwargs),),
+    'get_pars_fibres2' : (lambda ts, coors, mode=None, **kwargs:
                           get_pars_fibres(ts, coors, mode=mode, which=1,
-                                          vf=vf_fibres2),),
+                                          vf=vf_fibres2, **kwargs),),
 }
 
 variables = {

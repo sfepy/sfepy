@@ -28,9 +28,8 @@ def define_regions( filename ):
     regions.update( define_box_regions( 2, (wx, wy) ) )
     return dim, regions, mat_ids
 
-##
-# c: 05.05.2008, r: 05.05.2008
-def get_pars(ts, coor, mode=None, region=None, ig=None, mat_ids = []):
+def get_pars(ts, coor, mode=None, term=None, group_indx=None,
+             mat_ids = [], **kwargs):
     """Define material parameters:
          $D_ijkl$ (elasticity),
        in a given region."""
@@ -38,7 +37,7 @@ def get_pars(ts, coor, mode=None, region=None, ig=None, mat_ids = []):
         dim = coor.shape[1]
         sym = (dim + 1) * dim / 2
 
-        m2i = region.domain.mat_ids_to_i_gs
+        m2i = term.region.domain.mat_ids_to_i_gs
         matrix_igs = [m2i[im] for im in mat_ids]
 
         out = {}
@@ -50,14 +49,15 @@ def get_pars(ts, coor, mode=None, region=None, ig=None, mat_ids = []):
         oot = nm.outer( o, o )
         out['D'] = lam * oot + mu * nm.diag( o + 1.0 )
 
-        if ig not in matrix_igs: # channels
-            out['D'] *= 1e-1
-
         for key, val in out.iteritems():
             out[key] = nm.tile(val, (coor.shape[0], 1, 1))
 
+        for ig, indx in group_indx.iteritems():
+            if ig not in matrix_igs: # channels
+                out['D'][indx] *= 1e-1
+
         return out
-    
+
 ##
 # Mesh file.
 filename_mesh = 'meshes/osteonT1_11.mesh'
@@ -68,8 +68,8 @@ filename_mesh = 'meshes/osteonT1_11.mesh'
 dim, regions, mat_ids = define_regions( filename_mesh )
 
 functions = {
-    'get_pars' : (lambda ts, coors, mode=None, region=None, ig=None:
-                  get_pars(ts, coors, mode, region, ig, mat_ids=mat_ids),),
+    'get_pars' : (lambda ts, coors, **kwargs:
+                  get_pars(ts, coors, mat_ids=mat_ids, **kwargs),),
     'match_x_plane' : (match_x_plane,),
     'match_y_plane' : (match_y_plane,),
     'match_z_plane' : (match_z_plane,),

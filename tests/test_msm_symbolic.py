@@ -116,9 +116,7 @@ def ebc(ts, coor, bc, solution=None):
     val = TestCommon.eval_coor_expression( expression, coor )
     return nm.atleast_1d( val )
 
-##
-# c: 07.05.2007, r: 09.05.2008
-def rhs(ts, coor, mode=None, region=None, ig=None, expression=None):
+def rhs(ts, coor, mode=None, expression=None, **kwargs):
     if mode == 'qp':
         if expression is None:
             expression = '0.0 * x'

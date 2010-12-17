@@ -4,7 +4,7 @@ constrained to one-dimensional motion.
 """
 import numpy as nm
 
-def linear_tension(ts, coor, mode=None, region=None, ig=None):
+def linear_tension(ts, coor, mode=None, **kwargs):
     if mode == 'qp':
         val = nm.tile(1.0, (coor.shape[0], 1, 1))
 

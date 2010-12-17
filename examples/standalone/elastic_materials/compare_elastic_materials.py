@@ -142,12 +142,12 @@ def define():
 
 ##
 # Pressure tractions.
-def linear_tension(ts, coor, mode=None, region=None, ig=None):
+def linear_tension(ts, coor, mode=None, **kwargs):
     if mode == 'qp':
         val = nm.tile(0.1 * ts.step, (coor.shape[0], 1, 1))
         return {'val' : val}
 
-def linear_compression(ts, coor, mode=None, region=None, ig=None):
+def linear_compression(ts, coor, mode=None, **kwargs):
     if mode == 'qp':
         val = nm.tile(-0.1 * ts.step, (coor.shape[0], 1, 1))
         return {'val' : val}

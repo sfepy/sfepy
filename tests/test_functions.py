@@ -5,7 +5,8 @@ from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 
-def get_pars(ts, coors, mode=None, region=None, ig=None, extra_arg=None):
+def get_pars(ts, coors, mode=None, extra_arg=None,
+             equations=None, term=None, problem=None, **kwargs):
     if mode == 'special':
         if extra_arg == 'hello!':
             ic = 0
@@ -24,8 +25,8 @@ def get_circle(coors, domain=None):
     return nm.where(r < 0.2)[0]
 
 functions = {
-    'get_pars1' : (lambda ts, coors, mode=None, region=None, ig=None:
-                   get_pars(ts, coors, mode, region, ig, extra_arg='hello!'),),
+    'get_pars1' : (lambda ts, coors, mode=None, **kwargs:
+                   get_pars(ts, coors, mode, extra_arg='hello!', **kwargs),),
     'get_p_edge' : (get_p_edge,),
     'get_circle' : (get_circle,),
 }
@@ -33,8 +34,8 @@ functions = {
 # Just another way of adding a function, besides 'functions' keyword.
 function_1 = {
     'name' : 'get_pars2',
-    'function' : lambda ts, coors,mode=None,  region=None, ig=None:
-        get_pars(ts, coors, mode, region, ig, extra_arg='hi!'),
+    'function' : lambda ts, coors, mode=None, **kwargs:
+        get_pars(ts, coors, mode, extra_arg='hi!', **kwargs),
 }
 
 materials = {
@@ -108,19 +109,19 @@ class Test( TestCommon ):
 
         conf_mat1 = conf.get_item_by_name('materials', 'mf1')
         mat1 = Material.from_conf(conf_mat1, problem.functions)
-        mat1.time_update(ts, problem.domain, [])
+        mat1.time_update(ts, None, problem)
 
         coors = problem.domain.get_mesh_coors()
         assert_(nm.all(coors[:,0] == mat1.get_data(None, None, 'x_0')))
 
         conf_mat2 = conf.get_item_by_name('materials', 'mf2')
         mat2 = Material.from_conf(conf_mat2, problem.functions)
-        mat2.time_update(ts, problem.domain, [])
+        mat2.time_update(ts, None, problem)
 
         assert_(nm.all(coors[:,1] == mat2.get_data(None, None, 'x_1')))
 
         materials = problem.get_materials()
-        materials.time_update(ts, problem.domain, problem.equations)
+        materials.time_update(ts, problem.equations, problem)
         mat3 = materials['mf3']
         key = mat3.get_keys(region_name='Omega')[0]
 

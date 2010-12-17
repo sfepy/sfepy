@@ -157,9 +157,11 @@ def create_stabil_mat(problem):
     # Element diameter modes.
     diameter_modes = {'edge' : 0, 'volume' : 1, 'max' : 2}
 
-    def mat_fun(ts, coor, mode=None, region=None, ig=None,
-                b_norm=1.0):
+    def mat_fun(ts, coor, mode=None, term=None, problem=None,
+                b_norm=1.0, **kwargs):
         if mode != 'qp': return
+
+        region = term.region
 
         print '|b|_max (mat_fun):', b_norm
         gamma = viscosity + b_norm * c_friedrichs

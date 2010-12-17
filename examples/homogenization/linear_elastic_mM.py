@@ -40,9 +40,9 @@ def get_elements(coors, domain=None):
 
 functions = {
     'get_elements' : (get_elements,),
-    'get_homog' : (lambda ts, coors, mode = None, region = None, ig = None:
-                   get_homog_coefs_linear( ts, coors, mode, region, ig,
-                                           micro_filename = options['micro_filename'] ), )
+    'get_homog' : (lambda ts, coors, mode=None, **kwargs:
+                   get_homog_coefs_linear(ts, coors, mode,
+                                          micro_filename=options['micro_filename']),)
 }
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'

@@ -51,20 +51,18 @@ fe = {
     'chunk_size' : 100
 }
 
-##
-# c: 19.05.2008, r: 19.05.2008
-def get_pars( ts, coor, mode=None, region=None, ig=None, term = None ):
+def get_pars(ts, coor, mode=None, term=None, **kwargs):
     if mode == 'qp':
         n_nod, dim = coor.shape
         sym = (dim + 1) * dim / 2
 
-        if term == 'biot':
+        if 'biot' in term.name:
             val = nm.zeros( (sym, 1), dtype = nm.float64 )
             val[:dim] = 0.132
             val[dim:sym] = 0.092
-        elif term == 'biot_m':
+        elif 'volume_dot_w' in term.name:
             val = 1.0 / nm.array( [3.8], dtype = nm.float64 )
-        elif term == 'permeability':
+        elif 'diffusion' in term.name:
             val = nm.eye( dim, dtype = nm.float64 )
         else:
             raise ValueError
@@ -81,13 +79,13 @@ functions = {
 # index 2!), mat mode)
 test_terms = [
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv', 'tv'), 'biot')),
+     ('dw', 'ps1', ('pv1', 'ps1'), ('pv1', 'ts', 'us', 'uv', 'tv'))),
     ('%s_biot.i1.Omega( m.val, %s, %s )',
-     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'), 'biot')),
+     ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'))),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'permeability')),
+     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
     ('%s_volume_dot_w.i1.Omega( m.val, %s, %s )',
-     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'), 'biot_m')),
+     ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
 ]
 
 import numpy as nm
@@ -117,8 +115,8 @@ class Test( TestCommon ):
         ok = True
         pb = self.problem
         for aux in test_terms:
-            term_template, (prefix, par_name, d_vars, dw_vars, mat_mode) = aux
-            print term_template, prefix, par_name, d_vars, dw_vars, mat_mode
+            term_template, (prefix, par_name, d_vars, dw_vars) = aux
+            print term_template, prefix, par_name, d_vars, dw_vars
 
             term1 = term_template % ((prefix,) + d_vars)
 
@@ -129,8 +127,6 @@ class Test( TestCommon ):
                 n_dof = var.field.n_nod * var.field.shape[0]
                 aux = nm.arange( n_dof, dtype = nm.float64 )
                 var.data_from_data(aux)
-
-            pb.functions['get_pars'].set_extra_args(term=mat_mode)
 
             if prefix == 'd':
                 val1 = pb.evaluate(term1, var_dict=variables.as_dict())

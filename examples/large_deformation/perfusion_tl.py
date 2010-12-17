@@ -185,7 +185,7 @@ def get_pressure(ts, coor, bc):
     return val
 
 functions = {
-    'get_traction' : (lambda ts, coors, mode=None, region=None, ig=None:
+    'get_traction' : (lambda ts, coors, mode=None, **kwargs:
                       get_traction(ts, coors, mode=mode),),
     'get_pressure' : (get_pressure,),
 }

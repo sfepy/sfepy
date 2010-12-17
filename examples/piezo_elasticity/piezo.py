@@ -37,7 +37,7 @@ material_2 = {
     'function' : 'get_inclusion_pars',
 }
 
-def get_inclusion_pars(ts, coor, mode=None, region=None, ig=None):
+def get_inclusion_pars(ts, coor, mode=None, **kwargs):
     """TODO: implement proper 3D -> 2D transformation of constitutive
     matrices."""
     if mode == 'qp':
