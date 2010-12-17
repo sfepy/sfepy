@@ -1,4 +1,10 @@
-from sfepy.base.base import *
+import time
+from copy import copy
+
+import numpy as nm
+
+from sfepy.base.base import Struct, Container, OneTypeList
+from sfepy.base.base import output, get_default_attr, get_default
 from functions import ConstantFunction
 
 
@@ -40,13 +46,15 @@ class Materials( Container ):
         for mat in self:
             mat.reset()
 
-    def time_update(self, ts, domain, equations, verbose=True):
-        """Update material parameters for given time, domain, and equations."""
+    def time_update(self, ts, equations, problem=None, verbose=True):
+        """
+        Update material parameters for given time, problem, and equations.
+        """
         if verbose: output('updating materials...')
         tt = time.clock()
         for mat in self:
             if verbose: output(' ', mat.name)
-            mat.time_update(ts, domain, equations)
+            mat.time_update(ts, equations, problem)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
@@ -128,12 +136,12 @@ class Material( Struct ):
 
         self.reset()
 
-    def iter_qps(self, equations, only_new=True):
+    def iter_terms(self, equations, only_new=True):
         """
-        Iterate groups of quadrature points, where the material data should be
-        evaluated.
+        Iterate terms for which the material data should be evaluated.
         """
-        # Quadrature point function values.
+        if equations is None: raise StopIteration
+
         for equation in equations:
             for term in equation.terms:
                 names = [ii[0] for ii in term.names.material]
@@ -142,12 +150,11 @@ class Material( Struct ):
                 key = term.get_qp_key()
                 if only_new and (key in self.datas): continue
 
-                qps = term.get_physical_qps()
                 self.datas.setdefault(key, {})
 
-                yield key, term.igs(), term.region, qps
+                yield key, term
 
-    def set_data(self, key, ig, qps, data):
+    def set_data(self, key, ig, qps, data, indx):
         """
         Set the material data in quadrature points.
 
@@ -159,63 +166,74 @@ class Material( Struct ):
             The element group id.
         qps : Struct
             Information about the quadrature points.
-        data : dict.
+        data : dict
             The material data. Changes the shape of data!
+        indx : array
+            The indices of elements in the group `ig`.
         """
         datas = self.datas[key]
 
         # Restore shape to (n_el, n_qp, ...) until the C
         # core is rewritten to work with a bunch of physical
         # point values only.
+        group_data = {}
         if qps.is_uniform:
             if data is not None:
                 n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
-                for val in data.itervalues():
-                    val.shape = (val.shape[0] / n_qp, n_qp,
-                                 val.shape[1], val.shape[2])
+                for key, val in data.iteritems():
+                    aux = val[indx]
+                    aux.shape = (aux.shape[0] / n_qp, n_qp,
+                                 aux.shape[1], aux.shape[2])
+                    group_data[key] = aux
         else:
             raise NotImplementedError
 
-        datas[ig] = data
+        datas[ig] = group_data
 
     def set_data_from_variable(self, var, name, equations):
-        for key, igs, region, qps in self.iter_qps(equations):
-            for ig in igs:
+        for key, term in self.iter_terms(equations):
+            qps = term.get_physical_qps()
+            for ig in term.igs():
                 data = var.evaluate_at(qps.values[ig])
                 data.shape = data.shape + (1,)
 
                 self.set_data(key, ig, qps, {name : data})
 
-    def update_data(self, ts, region, key, ig, qps):
+    def update_data(self, key, ts, equations, term, problem=None):
         """
         Update the material parameters in quadrature points.
 
         Parameters
         ----------
-        ts : TimeStepper
-            The time stepper.
-        region : Region
-            The region where the update occurs.
         key : tuple
             The (region_name, integral_name) data key.
-        ig : int
-            The element group id.
-        qps : Struct
-            Information about the quadrature points.
+        ts : TimeStepper
+            The time stepper.
+        equations : Equations
+            The equations for which the update occurs.
+        term : Term
+            The term for which the update occurs.
+        problem : ProblemDefinition, optional
+            The problem definition for which the update occurs.
         """
         self.datas.setdefault(key, {})
 
-        if (qps.n_qp[ig] == 0):
-            self.set_data(key, ig, qps, None)
+        qps = term.get_physical_qps()
+        coors = nm.concatenate(qps.values.values(), axis=0)
 
-        else:
-            data = self.function(ts, qps.values[ig], mode='qp',
-                                 region=region, ig=ig,
-                                 **self.extra_args)
+        data = self.function(ts, coors, mode='qp',
+                             equations=equations, term=term, problem=problem,
+                             group_indx=qps.group_indx,
+                             **self.extra_args)
 
-            self.set_data(key, ig, qps, data)
+        for ig, indx in qps.group_indx.iteritems():
+            if (qps.n_qp[ig] == 0):
+                self.set_data(key, ig, qps, None, None)
 
-    def update_special_data(self, ts, domain):
+            else:
+                self.set_data(key, ig, qps, data, indx)
+
+    def update_special_data(self, ts, equations, problem=None):
         """
         Update the special material parameters.
 
@@ -223,26 +241,38 @@ class Material( Struct ):
         ----------
         ts : TimeStepper
             The time stepper.
-        domain : Domain
-            The whole domain.
+        equations : Equations
+            The equations for which the update occurs.
+        problem : ProblemDefinition, optional
+            The problem definition for which the update occurs.
         """
         # Special function values (e.g. flags).
-        datas = self.function(ts, domain.get_mesh_coors(), mode='special')
+        datas = self.function(ts, problem.get_mesh_coors(), mode='special',
+                              problem=problem, equations=equations,
+                              **self.extra_args)
         if datas is not None:
             self.datas['special'] = datas
             self.special_names.update(datas.keys())
 
-    def update_special_constant_data(self):
+    def update_special_constant_data(self, equations=None, problem=None):
         """
         Update the special constant material parameters.
+
+        Parameters
+        ----------
+        equations : Equations
+            The equations for which the update occurs.
+        problem : ProblemDefinition, optional
+            The problem definition for which the update occurs.
         """
         # Special constant values.
         if self.flags.get('special_constant'):
-            datas = self.function(None, None, mode='special_constant')
+            datas = self.function(None, None, mode='special_constant',
+                                  problem=problem, equations=equations)
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
-    def time_update(self, ts, domain, equations):
+    def time_update(self, ts, equations, problem=None):
         """
         Evaluate material parameters in physical quadrature points.
 
@@ -254,12 +284,11 @@ class Material( Struct ):
             or self.datas and (self.kind == 'stationary')): return
 
         self.datas = {}
-        for key, igs, region, qps in self.iter_qps(equations):
-            for ig in igs:
-                self.update_data(ts, region, key, ig, qps)
+        for key, term in self.iter_terms(equations):
+            self.update_data(key, ts, equations, term, problem=problem)
 
-        self.update_special_data(ts, domain)
-        self.update_special_constant_data()
+        self.update_special_data(ts, equations, problem=problem)
+        self.update_special_constant_data(equations, problem=problem)
 
     def get_keys(self, region_name=None):
         """
