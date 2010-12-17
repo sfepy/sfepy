@@ -390,8 +390,7 @@ class ProblemDefinition( Struct ):
         """
         if self.equations is not None:
             self.update_time_stepper(ts)
-            self.equations.materials.time_update(self.ts, self.domain,
-                                                 self.equations)
+            self.equations.time_update_materials(self.ts)
 
 
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
@@ -508,6 +507,7 @@ class ProblemDefinition( Struct ):
     def init_time( self, ts ):
         self.update_time_stepper(ts)
         self.equations.init_time( ts )
+        self.update_materials()
 
     ##
     # 08.06.2007, c
@@ -792,6 +792,8 @@ class ProblemDefinition( Struct ):
 
         self.equations.set_data(var_data, ignore_unknown=True)
 
+        self.update_materials()
+
         state0.apply_ebc(force_values=force_values)
 
         vec0 = state0.get_reduced()
@@ -1007,6 +1009,8 @@ class ProblemDefinition( Struct ):
                                     extra_args=extra_args,
                                     verbose=verbose, **kwargs)
         equations, variables = aux
+
+        equations.time_update_materials(self.ts)
 
         out = eval_equations(equations, variables,
                              mode=mode, dw_mode=dw_mode, term_mode=term_mode)

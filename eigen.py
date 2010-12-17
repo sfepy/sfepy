@@ -355,6 +355,7 @@ class AcousticBandGapsApp( SimpleApp ):
         if eig_problem in ['simple', 'simple_liquid']:
             problem.set_equations( conf.equations )
             problem.time_update()
+            problem.update_materials()
 
             mtx_a = problem.evaluate(conf.equations['lhs'], mode='weak',
                                      auto_init=True, dw_mode='matrix')
@@ -369,6 +370,7 @@ class AcousticBandGapsApp( SimpleApp ):
                                       epbcs = conf.epbcs )
             problem.set_equations( conf.equations )
             problem.time_update()
+            problem.update_materials()
 
             ls = Solver.any_from_conf( problem.ls_conf,
                                        presolve = True, mtx = mtx['D'] )
