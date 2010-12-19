@@ -46,7 +46,8 @@ class Materials( Container ):
         for mat in self:
             mat.reset()
 
-    def time_update(self, ts, equations, problem=None, verbose=True):
+    def time_update(self, ts, equations, problem=None,
+                    force=False, verbose=True):
         """
         Update material parameters for given time, problem, and equations.
         """
@@ -54,7 +55,7 @@ class Materials( Container ):
         tt = time.clock()
         for mat in self:
             if verbose: output(' ', mat.name)
-            mat.time_update(ts, equations, problem)
+            mat.time_update(ts, equations, problem, force=force)
         if verbose: output('...done in %.2f s' % (time.clock() - tt))
 
 ##
@@ -272,15 +273,17 @@ class Material( Struct ):
             self.datas['special_constant'] = datas
             self.constant_names.update(datas.keys())
 
-    def time_update(self, ts, equations, problem=None):
+    def time_update(self, ts, equations, problem=None, force=False):
         """
         Evaluate material parameters in physical quadrature points.
 
-        Do nothing, if ``self.mode == 'user'`` or ``self.kind ==
-        'stationary'`` and the parameters are already set.
+        Setting `force` to True forces the update to be done. If `force`
+        is False, do nothing, if ``self.mode == 'user'`` or ``self.kind
+        == 'stationary'`` and the parameters are already set.
         """
-        if ((self.mode == 'user')
-            or self.datas and (self.kind == 'stationary')): return
+        if not force and ((self.mode == 'user')
+                          or self.datas and (self.kind == 'stationary')):
+            return
 
         self.datas = {}
         for key, term in self.iter_terms(equations):
