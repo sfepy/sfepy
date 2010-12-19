@@ -279,7 +279,6 @@ class Material( Struct ):
         Do nothing, if ``self.mode == 'user'`` or ``self.kind ==
         'stationary'`` and the parameters are already set.
         """
-        self.data = None
         if ((self.mode == 'user')
             or self.datas and (self.kind == 'stationary')): return
 
@@ -317,7 +316,6 @@ class Material( Struct ):
         """
         self.mode = 'user'
         self.datas = datas
-        self.data = None
 
     def set_function(self, function):
         self.function = function
@@ -332,7 +330,6 @@ class Material( Struct ):
         self.datas = {}
         self.special_names = set()
         self.constant_names = set()
-        self.data = None
         self.extra_args = {}
 
     ##
