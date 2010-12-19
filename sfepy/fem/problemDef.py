@@ -790,11 +790,6 @@ class ProblemDefinition( Struct ):
             if isinstance(state0, nm.ndarray):
                 state0 = State(self.equations.variables, vec=state0)
 
-            else:
-                # This sets the current time step data in variables with
-                # history.
-                state0.set_full(state0().copy())
-
         self.equations.set_data(var_data, ignore_unknown=True)
 
         self.update_materials()
