@@ -1,5 +1,6 @@
-from sfepy.base.base import *
-from sfepy.fem import Integrals
+import numpy as nm
+import numpy.linalg as nla
+
 from sfepy.fem.mappings import get_physical_qps
 
 def eval_ion_ion_energy(centres, charges):
@@ -24,25 +25,20 @@ def eval_non_local_interaction(problem, region_name, var_name,
     Single element group only!
     """
     var = problem.get_variables()[var_name]
-    aps = var.field.aps
 
     region = problem.domain.regions[region_name]
 
     integral = problem.integrals[integral_name]
 
-    qp_key = (region.name, integral.name)
     qps = get_physical_qps(region, integral)
     igs = qps.values.keys()
 
     ig = igs[0]
     qp = qps.values[ig]
 
-    ap = aps[ig]
-
     n_el, n_qp = f1.shape[:2]
 
-    key = (integral.name, region.name, ig)
-    ap, vg = var.get_approximation(key)
+    vg = var.describe_geometry('volume', region.name, integral, ig)
 
     # Weighted jacobian.
     det = vg.variable(1)
@@ -67,7 +63,7 @@ def eval_non_local_interaction(problem, region_name, var_name,
         kernel.shape = val2.shape
         ## print'aa',   time.clock() - tt
 
-        tt = time.clock()
+        ## tt = time.clock()
         coef[ii] = (kernel * val2).sum()
         ## print 'bb', time.clock() - tt
 
