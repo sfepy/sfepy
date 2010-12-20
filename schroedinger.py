@@ -101,7 +101,7 @@ def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
 
 def update_state_to_output( out, pb, vec, name, fill_value = None ):
     """Convert 'vec' to output for saving and insert it into 'out'. """
-    state = problem.create_state()
+    state = pb.create_state()
     state.set_full(vec)
     aux = state.create_output_dict(fill_value=fill_value)
     key = aux.keys()[0]
