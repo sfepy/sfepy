@@ -11,26 +11,27 @@ for usage and help.
 """
 import os
 import os.path as op
+import time
 from optparse import OptionParser
 from math import pi
 
-from scipy.optimize import broyden3
+import numpy as nm
+import numpy.linalg as nla
+
 try:
     from scipy.optimize import bisect
 except ImportError:
     from scipy.optimize import bisection as bisect
-from scipy.optimize.nonlin import excitingmixing
 
 import sfepy
-from sfepy.base.base import *
+from sfepy.base.base import Struct, Output, output, get_default, assert_, pause
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
-from sfepy.fem import MeshIO, ProblemDefinition, Materials
+from sfepy.fem import Materials
 from sfepy.fem.evaluate import eval_equations
-import sfepy.base.ioutils as io
-from sfepy.solvers import Solver, eig
+from sfepy.solvers import Solver
 
 def guess_n_eigs( n_electron, n_eigs = None ):
     """
@@ -187,7 +188,7 @@ class SchroedingerApp( SimpleApp ):
         if hook is not None:
             hook = getattr( funmod, hook )
         self.iter_hook = hook
-    
+
     def call( self ):
         options = self.options
 
@@ -210,7 +211,7 @@ class SchroedingerApp( SimpleApp ):
 
     def _interp_to_nodes(self, v_qp):
         variable = self.problem.create_variables(['scalar'])['scalar']
-        variable.data_from_qp(v_qp, 'i1')
+        variable.data_from_qp(v_qp, self.problem.integrals['i1'])
 
         return variable()
 
@@ -233,7 +234,7 @@ class SchroedingerApp( SimpleApp ):
 
         mat_v = Materials(mtx_a_equations.collect_materials())['mat_v']
         mat_v.set_extra_args(vhxc=v_hxc_qp)
-        mat_v.time_update(None, pb.domain, mtx_a_equations)
+        mat_v.time_update(None, mtx_a_equations, pb)
 
         v_hxc_qp.shape = sh
 
@@ -290,7 +291,7 @@ class SchroedingerApp( SimpleApp ):
             n_qp += weights[ii] * (phi_qp ** 2)
         output('...done in %.2f s' % (time.clock() - tt))
 
-        ap, vg = var.get_approximation(('i1', 'Omega', 0), 'Volume')
+        vg = var.describe_geometry('volume', 'Omega', pb.integrals['i1'], 0)
 
         det = vg.variable(1)
         charge = (det * n_qp).sum()
@@ -319,9 +320,10 @@ class SchroedingerApp( SimpleApp ):
         pb.update_materials()
 
         output( "solving Ax=b Poisson equation" )
-        pb.materials['mat_n'].reset()
-        pb.materials['mat_n'].set_all_data({mat_key : {0: {'N' : n_qp}}})
-        vec_v_h = pb.solve()
+        mat_n = pb.get_materials()['mat_n']
+        mat_n.reset()
+        mat_n.set_all_data({mat_key : {0: {'N' : n_qp}}})
+        vec_v_h = pb.solve()()
 
         var.data_from_any(vec_v_h)
         v_h_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)', Psi=var)
@@ -370,8 +372,6 @@ class SchroedingerApp( SimpleApp ):
     def solve_eigen_problem_n( self ):
         opts = self.app_options
         pb = self.problem
-
-        dim = pb.domain.mesh.dim
 
         pb.set_equations( pb.conf.equations )
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
@@ -433,7 +433,7 @@ class SchroedingerApp( SimpleApp ):
         eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp = results
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
 
-        fun = pb.materials['mat_v'].function
+        fun = pb.functions['fun_v']
         variable = self.problem.create_variables(['scalar'])['scalar']
         vec_v_ion = fun(None, variable.field.get_coor(),
                         mode='qp')['V_ion'].squeeze()
@@ -469,8 +469,6 @@ class SchroedingerApp( SimpleApp ):
                        vec_v_h = vec_v_h, vec_v_xc = vec_v_xc )
 
     def solve_eigen_problem_1( self ):
-        from sfepy.fem import Mesh
-
         options = self.options
         opts = self.app_options
         pb = self.problem
@@ -570,6 +568,7 @@ class SchroedingerApp( SimpleApp ):
         pb = self.problem
 
         save = self.app_options.save_eig_vectors
+        n_eigs = self.app_options.n_eigs
         out = get_default( out, {} )
         state = pb.create_state()
         for ii in xrange( eigs.shape[0] ):
