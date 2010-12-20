@@ -58,6 +58,8 @@ def prepare_matrix(problem, state):
     """
     Pre-assemble tangent system matrix.
     """
+    problem.update_materials()
+
     ev = problem.get_evaluator()
     try:
         mtx = ev.eval_tangent_matrix(state(), is_full=True)
