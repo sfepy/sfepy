@@ -372,7 +372,7 @@ class Material( Struct ):
 
             if isinstance( datas[ig], Struct ):
                 return getattr( datas[ig], name )
-            elif datas[ig] is not None:
+            elif datas[ig]:
                 return datas[ig][name]
 
     def get_constant_data(self, name):
