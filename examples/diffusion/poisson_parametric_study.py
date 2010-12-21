@@ -23,7 +23,7 @@ import os
 import numpy as nm
 
 from sfepy import data_dir
-from sfepy.base.base import output, pause, debug
+from sfepy.base.base import output
 
 # Mesh.
 filename_mesh = data_dir + '/meshes/2d/special/circles_in_square.vtk'
@@ -50,9 +50,10 @@ regions = {
 # FE field defines the FE approximation: 2_3_P1 = 2D, P1 on triangles.
 field_1 = {
     'name' : 'temperature',
-    'dim' : (1,1),
-    'domain' : 'Omega',
-    'bases' : {'Omega' : '2_3_P1'}
+    'dtype' : 'real',
+    'shape' : (1,),
+    'region' : 'Omega',
+    'approx_order' : 1,
 }
 
 # Unknown and test functions (FE sense).
@@ -183,13 +184,15 @@ def vary_omega1_size( problem ):
             print region
             raise ValueError( 'region %s has no cells!' % region.name )
 
-        problem.ofn_trunk = ofn_trunk + '_' + (d_format % ii)
-        problem.output_format = output_format
+        ofn_trunk = ofn_trunk + '_' + (d_format % ii)
+        problem.setup_output(output_filename_trunk=ofn_trunk,
+                             output_dir=output_dir,
+                             output_format=output_format)
 
         out = []
         yield problem, out
 
-        out_problem, vec_dp, data = out[-1]
+        out_problem, state = out[-1]
 
         filename = join( output_dir,
                          ('log_%s.txt' % d_format) % ii )
@@ -197,7 +200,7 @@ def vary_omega1_size( problem ):
         log_item = '$r(\Omega_1)$: %f\n' % diameter
         fd.write( log_item )
         fd.write( 'solution:\n' )
-        nm.savetxt( fd, vec_dp )
+        nm.savetxt(fd, state())
         fd.close()
 
         yield None
