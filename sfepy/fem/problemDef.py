@@ -215,16 +215,24 @@ class ProblemDefinition( Struct ):
         self.ofn_trunk = get_default(output_filename_trunk,
                                      io.get_trunk(self.domain.name))
 
-        self.output_dir = get_default(output_dir, os.curdir)
-
-        if not op.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        self.set_output_dir(output_dir)
 
         self.output_format = get_default(output_format, 'vtk')
 
         self.float_format = get_default(float_format, None)
 
         self.file_per_var = get_default(file_per_var, False)
+
+    def set_output_dir(self, output_dir=None):
+        """
+        Set the directory for output files.
+
+        The directory is created if it does not exist.
+        """
+        self.output_dir = get_default(output_dir, os.curdir)
+
+        if not op.exists(self.output_dir):
+            os.makedirs(self.output_dir)
 
     def set_regions( self, conf_regions=None,
                      conf_materials=None, functions=None):
