@@ -117,7 +117,7 @@ def wrap_function( function, args ):
         tt = time.time()
 
         results[:] = function( x, *args )
-        eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp = results
+        v_hxc_qp = results[-1]
 
         tt2 = time.time()
         if tt2 < tt:
@@ -146,6 +146,8 @@ class SchroedingerApp( SimpleApp ):
         iter_fig_name = get( 'iter_fig_name', 'iterations.pdf' )
         # Called after DFT iteration, can do anything, no return value.
         iter_hook = get( 'iter_hook', None )
+        # Like iter_hook, but called after the solver finishes.
+        iter_hook_final = get('iter_hook_final', None)
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -188,6 +190,11 @@ class SchroedingerApp( SimpleApp ):
         if hook is not None:
             hook = getattr( funmod, hook )
         self.iter_hook = hook
+
+        hook = self.app_options.iter_hook_final
+        if hook is not None:
+            hook = getattr(funmod, hook)
+        self.iter_hook_final = hook
 
     def call( self ):
         options = self.options
@@ -366,8 +373,9 @@ class SchroedingerApp( SimpleApp ):
         file_output("-"*70)
 
         self.norm_v_hxc0 = norm
-        
-        return eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp
+
+        return eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
+               n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp
 
     def solve_eigen_problem_n( self ):
         opts = self.app_options
@@ -430,7 +438,8 @@ class SchroedingerApp( SimpleApp ):
 
         v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
         v_hxc_qp.shape = self.qp_shape
-        eigs, mtx_s_phi, vec_n, vec_v_h, v_ion_qp, v_xc_qp, v_hxc_qp = results
+        eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
+              n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp = results
         output( 'DFT iteration time [s]:', dft_status['time_stats'] )
 
         fun = pb.functions['fun_v']
@@ -448,6 +457,15 @@ class SchroedingerApp( SimpleApp ):
 
         pb.select_bcs( ebc_names = ['ZeroSurface'] )
         mtx_phi = self.make_full( mtx_s_phi )
+
+        if self.iter_hook_final is not None: # User postprocessing.
+            data = Struct(iteration=self.itercount,
+                          eigs=eigs, weights=weights,
+                          mtx_s_phi=mtx_s_phi, mtx_phi=mtx_phi,
+                          vec_n=vec_n, vec_v_h=vec_v_h,
+                          n_qp=n_qp, v_ion_qp=v_ion_qp, v_h_qp=v_h_qp,
+                          v_xc_qp=v_xc_qp, file_output=file_output)
+            self.iter_hook_final(self.problem, data=data)
 
         out = {}
         update_state_to_output(out, pb, vec_n, 'n')
