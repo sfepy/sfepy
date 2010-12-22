@@ -167,16 +167,6 @@ class SchroedingerApp( SimpleApp ):
         SimpleApp.__init__( self, conf, options, output_prefix,
                             init_equations = False )
 
-        output_dir = self.problem.output_dir
-
-        opts = self.app_options
-        opts.log_filename = op.join( output_dir, opts.log_filename )
-        opts.iter_fig_name = op.join( output_dir, opts.iter_fig_name )
-        self.mesh_results_name = op.join( opts.output_dir,
-                                          self.problem.get_output_name() )
-        self.eig_results_name = op.join( opts.output_dir,
-                                         self.problem.ofn_trunk + '_eigs.txt' )
-
     def setup_options( self ):
         SimpleApp.setup_options( self )
         opts = SchroedingerApp.process_options( self.conf.options )
@@ -196,8 +186,28 @@ class SchroedingerApp( SimpleApp ):
             hook = getattr(funmod, hook)
         self.iter_hook_final = hook
 
+    def setup_output(self):
+        """
+        Setup various file names for the output directory given by
+        `self.problem.output_dir`.
+        """
+        output_dir = self.problem.output_dir
+
+        opts = self.app_options
+        opts.output_dir = output_dir
+        opts.log_filename = op.join(output_dir, opts.log_filename)
+        opts.iter_fig_name = op.join(output_dir, opts.iter_fig_name)
+        self.mesh_results_name = op.join(opts.output_dir,
+                                         self.problem.get_output_name())
+        self.eig_results_name = op.join(opts.output_dir,
+                                        self.problem.ofn_trunk + '_eigs.txt')
+
     def call( self ):
         options = self.options
+
+        # This cannot be in __init__(), as parametric calls may change
+        # the output directory.
+        self.setup_output()
 
         if options.dft:
             if options.plot:
