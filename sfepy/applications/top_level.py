@@ -1,4 +1,4 @@
-from sfepy.base.base import *
+from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.applications import SimpleApp
 

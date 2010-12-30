@@ -1,6 +1,6 @@
-import os.path as op
+import os
 
-from sfepy.base.base import *
+from sfepy.base.base import Struct
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
 from sfepy.solvers.generic import solve_direct
