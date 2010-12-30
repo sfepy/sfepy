@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import TimeSteppingSolver
 
 

@@ -1,8 +1,8 @@
-from sfepy.base.base import *
+import numpy as nm
+import numpy.linalg as nla
 
-import sfepy.base.ioutils as io
+from sfepy.base.base import output, Struct
 from sfepy.fem import ProblemDefinition
-from sfepy.base.conf import get_standard_keywords
 
 ##
 # c: 03.07.2007, r: 27.02.2008

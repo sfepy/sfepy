@@ -1,4 +1,9 @@
-from sfepy.base.base import *
+import time
+
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
 
 ##

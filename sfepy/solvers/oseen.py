@@ -1,4 +1,9 @@
-from sfepy.base.base import *
+import time
+
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from nls import conv_test

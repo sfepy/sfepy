@@ -1,5 +1,11 @@
-from sfepy.base.base import *
-from sfepy.base.log import Log, get_logging_conf
+import time
+
+import numpy as nm
+import numpy.linalg as nla
+import scipy.sparse as sp
+
+from sfepy.base.base import output, get_default, debug, Struct
+from sfepy.base.log import get_logging_conf
 from sfepy.solvers.solvers import NonlinearSolver
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse

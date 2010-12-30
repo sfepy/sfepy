@@ -1,7 +1,7 @@
 """
 Base (abstract) solver classes.
 """
-from sfepy.base.base import *
+from sfepy.base.base import Struct
 
 class Solver(Struct):
     """

@@ -1,5 +1,6 @@
 import os
 import sfepy
+from sfepy.base.base import load_classes, insert_static_method
 from solvers import *
 from eigen import eig
 

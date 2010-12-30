@@ -1,6 +1,6 @@
 import scipy
 
-from sfepy.base.base import *
+from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import LinearSolver
 
 def try_imports(imports, fail_msg=None):
@@ -12,7 +12,7 @@ def try_imports(imports, fail_msg=None):
             pass
         else:
             if fail_msg is not None:
-                raise ValueError(failmsg)
+                raise ValueError(fail_msg)
     return locals()
 
 class ScipyDirect(LinearSolver):
