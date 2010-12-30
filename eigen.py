@@ -4,8 +4,13 @@ import os.path as op
 import shutil
 from optparse import OptionParser
 
+import numpy as nm
+import numpy.linalg as nla
+import scipy as sc
+
 import sfepy
-from sfepy.base.base import *
+from sfepy.base.base import output, set_defaults, get_default, assert_
+from sfepy.base.base import debug, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks

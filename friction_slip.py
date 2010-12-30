@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import os.path as op
 from optparse import OptionParser
 
-from sfepy.base.base import *
 from sfepy.fem import Mesh, Domain
 from sfepy.mechanics.friction import DualMesh
 

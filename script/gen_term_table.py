@@ -3,8 +3,9 @@ import sys
 from optparse import OptionParser
 import pyparsing as pp
 
+import numpy as nm
+
 sys.path.append( '.' )
-from sfepy.base.base import *
 from sfepy.terms import term_table
 
 def set_section(sec):

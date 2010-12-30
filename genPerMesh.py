@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from sfepy.base.base import *
+import numpy as nm
+
 from sfepy.fem.mesh import Mesh, find_map, merge_mesh, make_mesh
 from sfepy.linalg import cycle
 from optparse import OptionParser

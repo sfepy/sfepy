@@ -16,8 +16,10 @@ import sys
 import os.path as op
 from optparse import OptionParser
 
+import numpy as nm
+import scipy.sparse as sp
+
 import sfepy
-from sfepy.base.base import *
 from sfepy.fem import Mesh, Domain
 from sfepy.fem.extmods.fem import raw_graph
 from sfepy.fem.extmods.meshutils import graph_components

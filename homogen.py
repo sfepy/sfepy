@@ -3,7 +3,6 @@
 from optparse import OptionParser
 
 import sfepy
-from sfepy.base.base import *
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.homogenization.homogen_app import HomogenizationApp
 

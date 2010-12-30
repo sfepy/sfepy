@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 # 06.04.2005, c 
 # 16.06.2005
-import os.path as op
 from optparse import OptionParser
 
+import numpy as nm
+
 import sfepy
-from sfepy.base.base import *
+from sfepy.base.base import output, remap_dict, Struct, IndexedStruct
 from sfepy.base.conf import ProblemConf
 from sfepy.fem.evaluate import BasicEvaluator
-from sfepy.solvers.nls import Newton
-from sfepy.solvers.oseen import Oseen
-from sfepy.solvers.ls import Umfpack
-from sfepy.solvers.generic import solve_stationary
 import sfepy.base.ioutils as io
 #import sfepy.optimize.fluentutils as fluu
 import sfepy.optimize.shapeOptim as so

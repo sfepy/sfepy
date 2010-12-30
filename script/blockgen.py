@@ -2,7 +2,6 @@
 import sys
 sys.path.append( '.' )
 from optparse import OptionParser
-from sfepy.base.base import *
 from sfepy.fem import gen_block_mesh
 
 usage = """%prog [options]

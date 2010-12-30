@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 # 12.01.2007, c 
-import os.path as op
-import shutil
 from optparse import OptionParser
 
 import sfepy
-from sfepy.base.base import *
+from sfepy.base.base import output, get_default_attr
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.applications import SimpleApp
 

@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # 12.01.2007, c 
-import os.path as op
+import os
+import re
 from optparse import OptionParser
 
+import numpy as nm
+
 import sfepy
-from sfepy.base.base import *
+from sfepy.base.base import output, get_default_attr, assert_, Struct
 from sfepy.base.ioutils import read_array
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem import MeshIO, ProblemDefinition
