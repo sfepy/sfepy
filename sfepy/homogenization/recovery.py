@@ -1,8 +1,12 @@
-from sfepy.base.base import *
+import os
+
+import numpy as nm
+
+from sfepy.base.base import get_default, get_default_attr, Struct
 from sfepy.base.ioutils import get_print_info
 from sfepy.fem import extend_cell_data
 from sfepy.homogenization.utils import coor_to_sym
-from sfepy.base.conf import get_standard_keywords, ProblemConf
+from sfepy.base.conf import get_standard_keywords
 from sfepy.fem import ProblemDefinition
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.micmac import get_correctors_from_file

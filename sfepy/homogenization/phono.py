@@ -1,6 +1,10 @@
-from sfepy.base.plotutils import plt
+import time
 
-from sfepy.base.base import *
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import output, assert_, Struct
+from sfepy.base.plotutils import plt
 from sfepy.solvers import eig
 from sfepy.base.progressbar import MyBar
 from sfepy.fem.evaluate import eval_equations

@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from homogen import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients

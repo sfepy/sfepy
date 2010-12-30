@@ -1,4 +1,11 @@
-from sfepy.base.base import *
+import os
+import time
+
+import numpy as nm
+import numpy.linalg as nla
+import scipy as sc
+
+from sfepy.base.base import output, assert_, get_default, debug, Struct
 from sfepy.fem import assemble_by_blocks
 from sfepy.fem.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper

@@ -1,8 +1,9 @@
-from sfepy.base.base import *
-from sfepy.homogenization.coefs_base import CoefSymSym, CoefSym, CorrDimDim,\
-     CoefOne, CorrOne, CorrDim, CoefDimDim, ShapeDimDim,\
-     PressureEigenvalueProblem, TCorrectorsViaPressureEVP,\
-     CoefFMSymSym, CoefFMSym, CoefFMOne, TSTimes, VolumeFractions, \
+import numpy as nm
+
+from sfepy.base.base import output, assert_, get_default, Struct
+from sfepy.homogenization.coefs_base import CoefOne, CorrDim, \
+     TCorrectorsViaPressureEVP, \
+     CoefFMSymSym, CoefFMSym, CoefFMOne, \
      CorrMiniApp, CorrSolution
 from sfepy.fem.meshio import HDF5MeshIO
 from sfepy.solvers.ts import TimeStepper

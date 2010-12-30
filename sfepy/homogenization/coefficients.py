@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import ordered_iteritems, Struct
 from sfepy.base.ioutils import read_dict_hdf5, write_dict_hdf5
 from sfepy.homogenization.utils import iter_sym
 

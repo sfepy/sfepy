@@ -1,6 +1,7 @@
-from sfepy.base.base import *
-from sfepy.homogenization.coefs_base import VolumeFractions, \
-     CorrMiniApp, CoefN
+import numpy as nm
+
+from sfepy.base.base import assert_, get_default, Struct
+from sfepy.homogenization.coefs_base import CorrMiniApp, CoefN
 
 class CorrRegion( CorrMiniApp ):
 

@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+from copy import copy, deepcopy
+
+from sfepy.base.base import output, Struct
 from sfepy.applications import SimpleApp, Application
 from sfepy.fem.region import sort_by_dependency
 from coefs_base import MiniAppBase

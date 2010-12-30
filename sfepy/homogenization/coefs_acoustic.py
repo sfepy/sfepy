@@ -1,10 +1,10 @@
-from sfepy.base.base import *
-from sfepy.fem import eval_term_op
-from sfepy.homogenization.coefs_base import VolumeFractions, \
-     CorrMiniApp, MiniAppBase, CorrN, CoefN, CoefNN, \
-     create_scalar_pis
+import numpy as nm
 
-class CorrVector( CorrScalar ):
+from sfepy.base.base import assert_, get_default, Struct
+from sfepy.fem import eval_term_op
+from sfepy.homogenization.coefs_base import CorrMiniApp, MiniAppBase
+
+class CorrVector( CorrMiniApp ):
 
     def get_variables( self, problem, i, data ):
         yield ( self.variables[i], data[self.requires[i]].states )

@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import pause, Struct
 from sfepy.homogenization.utils import integrate_in_time
 
 def compute_mean_decay(coef):

@@ -1,4 +1,4 @@
-from sfepy.base.base import *
+import numpy as nm
 
 def build_op_pi(var, ir, ic):
     """\Pi_i^{rs} = y_s \delta_{ir} for r = `ir`, s = `ic`."""

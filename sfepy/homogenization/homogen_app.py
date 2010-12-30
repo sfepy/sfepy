@@ -1,7 +1,9 @@
 import os.path as op
 import shutil
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, get_default, Struct
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import MiniAppBase
 from sfepy.homogenization.engine import HomogenizationEngine
