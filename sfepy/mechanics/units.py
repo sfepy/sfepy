@@ -6,7 +6,9 @@ try:
 except ImportError:
     sm = None
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import get_default, invert_dict, Struct
 
 default_units_of_basic_quantities = {
     'length' : 'm',

@@ -1,10 +1,11 @@
 import os.path as op
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, assert_, remap_dict, pause, Struct
 from sfepy.base.progressbar import MyBar
 from sfepy.fem.evaluate import eval_equations
 import freeFormDef as ffd
-from sfepy.terms import CharacteristicFunction
 
 ##
 # c: 15.10.2007, r: 15.04.2008

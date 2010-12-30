@@ -1,5 +1,9 @@
 import tables as pt
-from sfepy.base.base import *
+
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import assert_, OneTypeList, Struct
 from sfepy.linalg import cycle
 from sfepy.fem.mesh import Mesh
 

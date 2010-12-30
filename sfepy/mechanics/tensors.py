@@ -1,7 +1,10 @@
 """
 Functions to compute some tensor-related quantities usual in continuum mechanics.
 """
-from sfepy.base.base import *
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import assert_, Struct
 from sfepy.linalg \
      import apply_to_sequence, dot_sequences, make_axis_rotation_matrix
 

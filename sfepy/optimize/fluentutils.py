@@ -1,5 +1,8 @@
 import os.path as op
-from sfepy.base.base import *
+import re
+
+import numpy as nm
+
 from sfepy.base.ioutils import write_bb
 
 ##

@@ -1,5 +1,8 @@
 """Some sparse matrix utilities missing in scipy."""
-from sfepy.base.base import *
+import numpy as nm
+import scipy.sparse as sp
+
+from sfepy.base.base import assert_
 
 def save_sparse_txt(filename, mtx, fmt='%d %d %f\n'):
     """Save a CSR/CSC sparse matrix into a text file"""

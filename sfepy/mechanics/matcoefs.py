@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-from sfepy.base.base import *
+import os
+
+import numpy as nm
+
+from sfepy.base.base import Struct
 
 ##
 # c: 22.07.2008
