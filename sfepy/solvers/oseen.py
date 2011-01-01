@@ -65,6 +65,8 @@ class Oseen( NonlinearSolver ):
 
         # With defaults.
         adimensionalize = get( 'adimensionalize', False )
+        if adimensionalize:
+            raise NotImplementedError
         check_navier_stokes_rezidual = get( 'check_navier_stokes_rezidual',
                                             False )
         i_max = get( 'i_max', 1 )
@@ -197,8 +199,8 @@ class Oseen( NonlinearSolver ):
 
             if adimensionalize:
                 output( 'adimensionalizing' )
-                mat.viscosity = viscosity / b_norm
-                vec_r[indx_us] /= b_norm
+                ## mat.viscosity = viscosity / b_norm
+                ## vec_r[indx_us] /= b_norm
 
             tt = time.clock()
             try:
@@ -222,7 +224,7 @@ class Oseen( NonlinearSolver ):
 
             if adimensionalize:
                 output( 'restoring pressure...' )
-                vec_dx[indx_ps] *= b_norm
+                ## vec_dx[indx_ps] *= b_norm
 
             dx_norm = nla.norm( vec_dx )
             output( '||dx||: %.2e' % dx_norm )
