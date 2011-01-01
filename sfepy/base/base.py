@@ -1,16 +1,10 @@
-##
-# 16.02.2005, c
-import numpy as nm
-import scipy as sc
-import scipy.linalg as nla
-import scipy.sparse as sp
-
-import glob, re, time, sys, os
+import time, sys, os
 from copy import copy, deepcopy
-from types import MethodType, UnboundMethodType
+from types import UnboundMethodType
 from getch import getch
 
-import atexit
+import numpy as nm
+import scipy.sparse as sp
 
 real_types = [nm.float64]
 complex_types = [nm.complex128]

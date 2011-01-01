@@ -1,10 +1,12 @@
-from base import *
+import numpy as nm
 
 try:
     import matplotlib.pyplot as plt
 except (ImportError, RuntimeError):
     plt = None
     #print 'matplotlib import failed!'
+
+from sfepy.base.base import output, pause
 
 def spy(mtx, eps=None, color='b', **kwargs):
     """

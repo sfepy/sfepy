@@ -1,5 +1,9 @@
-from base import *
 import inspect
+
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import Struct
 
 ##
 # 30.05.2007, c
