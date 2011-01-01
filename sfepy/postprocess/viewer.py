@@ -1,4 +1,7 @@
+import os
 import shutil, tempfile
+
+import numpy as nm
 
 from enthought.traits.api \
      import HasTraits, Instance, Button, Int, Bool, on_trait_change
@@ -10,8 +13,8 @@ from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 from dataset_manager import DatasetManager
 
-from sfepy.base.base import *
-from sfepy.base.tasks import Process
+from sfepy.base.base import insert_as_static_method
+from sfepy.base.base import output, get_arguments, get_default, Struct
 from sfepy.linalg import cycle
 from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.utils import mlab

@@ -1,4 +1,4 @@
-from sfepy.base.base import *
+from sfepy.base.base import output, OneTypeList, Struct
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import MeshIO
 from sfepy.solvers.ts import TimeStepper

@@ -1,13 +1,16 @@
-from sfepy.base.base import *
-from sfepy.postprocess.utils import mlab
-from sfepy.fem import Mesh
-from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
-from sfepy.solvers.ts import TimeStepper
+import os
 
-from dataset_manager import DatasetManager
+import numpy as nm
+
 from enthought.tvtk.api import tvtk
 from enthought.mayavi.sources.vtk_data_source import VTKDataSource
 from enthought.pyface.timer.api import Timer
+from dataset_manager import DatasetManager
+
+from sfepy.base.base import Struct
+from sfepy.postprocess.utils import mlab
+from sfepy.fem import Mesh
+from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
 
 def create_file_source(filename, watch=False, offscreen=True):
     """Factory function to create a file source corresponding to the
