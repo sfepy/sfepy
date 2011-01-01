@@ -1,6 +1,11 @@
+import time
 from collections import deque
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import real_types, complex_types
+from sfepy.base.base import assert_, get_default, get_default_attr
+from sfepy.base.base import output, OneTypeList, Container, Struct
 import sfepy.linalg as la
 from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral

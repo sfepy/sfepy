@@ -1,4 +1,11 @@
-from sfepy.base.base import *
+import sys
+from copy import copy
+
+import numpy as nm
+
+from sfepy.base.base import complex_types, dict_from_keys_init, assert_
+from sfepy.base.base import is_derived_class, insert_static_method
+from sfepy.base.base import output, get_default, get_default_attr, Struct
 from sfepy.base.ioutils \
      import skip_read_line, read_token, read_array, read_list, pt
 from sfepy.base.progressbar import MyBar

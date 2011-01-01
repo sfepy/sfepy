@@ -4,7 +4,10 @@ equations (active DOFs).
 
 Helper functions for the equation mapping.
 """
-from sfepy.base.base import *
+import numpy as nm
+import scipy.sparse as sp
+
+from sfepy.base.base import output, assert_, get_default_attr, Container, Struct
 from sfepy.base.compat import unique
 from sfepy.fem.utils import compute_nodal_normals
 from sfepy.fem.functions import Function

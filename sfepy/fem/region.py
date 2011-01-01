@@ -1,4 +1,9 @@
-from sfepy.base.base import *
+import re
+from copy import copy
+
+import numpy as nm
+
+from sfepy.base.base import assert_, Struct
 
 _depends = re.compile( 'r\.([a-zA-Z_0-9]+)' ).findall
 

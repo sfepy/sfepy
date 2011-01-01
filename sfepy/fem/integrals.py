@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, OneTypeList, Container, Struct
 from quadratures import QuadraturePoints, quadrature_tables
 
 import re

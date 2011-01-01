@@ -1,10 +1,14 @@
+import os
 import os.path as op
+from copy import copy
 
-import sfepy
-from sfepy.base.base import *
+import numpy as nm
 
+from sfepy.base.base import dict_from_keys_init, select_by_names
+from sfepy.base.base import output, get_default, get_default_attr, Struct
 import sfepy.base.ioutils as io
-from sfepy.base.conf import ProblemConf, get_standard_keywords, transform_variables
+from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
@@ -18,7 +22,7 @@ from sfepy.fem.conditions import Conditions
 from sfepy.fem.evaluate import create_evaluable, eval_equations
 import fea as fea
 from sfepy.solvers.ts import TimeStepper
-from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator, evaluate
+from sfepy.fem.evaluate import BasicEvaluator, LCBCEvaluator
 from sfepy.solvers import Solver
 from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton

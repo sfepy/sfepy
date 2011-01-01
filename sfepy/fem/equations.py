@@ -1,4 +1,11 @@
-from sfepy.base.base import *
+import time
+from copy import copy
+
+import numpy as nm
+import scipy.sparse as sp
+
+from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
+from sfepy.base.base import debug, OneTypeList, Container, Struct
 from sfepy.fem import Materials, Variables
 from sfepy.fem.fields import setup_dof_conns
 from extmods.fem import raw_graph

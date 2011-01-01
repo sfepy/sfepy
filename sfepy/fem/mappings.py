@@ -1,8 +1,9 @@
 """
 Finite element reference mappings.
 """
-from sfepy.base.base import *
+import numpy as nm
 
+from sfepy.base.base import output, Struct
 from sfepy.fem.poly_spaces import PolySpace
 import extmods.geometry as gm
 

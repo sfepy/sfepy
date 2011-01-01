@@ -2,7 +2,7 @@
 The Dirichlet, periodic and linear combination boundary condition
 classes, as well as the initial condition class.
 """
-from sfepy.base.base import *
+from sfepy.base.base import Container, Struct
 
 def _get_region(name, regions, bc_name):
     try:

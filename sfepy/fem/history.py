@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import get_default, OneTypeList, Container, Struct
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.meshio import HDF5MeshIO
 

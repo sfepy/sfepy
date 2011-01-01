@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import OneTypeList, Container, Struct
 
 class Functions(Container):
     """Container to hold all user-defined functions."""

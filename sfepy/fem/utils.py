@@ -1,6 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
 import sfepy.linalg as la
-from sfepy.fem.integrals import Integral
 from extmods.geometry import SurfaceGeometry
 
 def prepare_remap(indices, n_full):

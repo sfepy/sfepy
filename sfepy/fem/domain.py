@@ -1,4 +1,9 @@
-from sfepy.base.base import *
+import time
+import re
+
+import numpy as nm
+
+from sfepy.base.base import output, assert_, OneTypeList, Struct
 from sfepy.fem.facets import Facets
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents

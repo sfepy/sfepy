@@ -1,10 +1,14 @@
 """Classes for probing values of Variables, for example, along a line."""
+import time
+
+import numpy as nm
+import numpy.linalg as nla
 try:
     from scipy.spatial import cKDTree as KDTree
 except ImportError:
     from scipy.spatial import KDTree
 
-from sfepy.base.base import *
+from sfepy.base.base import output, Struct
 from sfepy.linalg import make_axis_rotation_matrix, norm_l2_along_axis
 from sfepy.fem.mesh import make_inverse_connectivity
 

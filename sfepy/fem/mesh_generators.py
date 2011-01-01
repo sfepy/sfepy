@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import assert_
 from sfepy.base.progressbar import MyBar
 from sfepy.linalg import cycle
 from sfepy.fem import Mesh

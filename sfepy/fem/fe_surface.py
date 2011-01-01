@@ -1,4 +1,6 @@
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import assert_, get_default, Struct
 
 class FESurface(Struct):
     """Description of a surface of a finite element domain."""

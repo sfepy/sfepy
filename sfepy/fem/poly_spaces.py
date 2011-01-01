@@ -1,5 +1,7 @@
-from sfepy.base.base import *
-from sfepy.linalg import cycle
+import numpy as nm
+import numpy.linalg as nla
+
+from sfepy.base.base import find_subclasses, Struct
 import extmods.fem as _fem
 
 class LagrangeNodes(Struct):

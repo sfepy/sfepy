@@ -36,7 +36,9 @@ Examples
 * gauss_o1_d3 # first order, 3D
 * my_int_o1_d3 # same as above
 """
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import Struct
 
 class QuadraturePoints(Struct):
     """
