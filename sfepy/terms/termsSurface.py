@@ -1,4 +1,4 @@
-from sfepy.terms.terms import *
+from sfepy.terms.terms import Term, terms
 
 ##
 # 22.08.2006, c

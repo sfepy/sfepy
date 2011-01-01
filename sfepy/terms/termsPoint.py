@@ -1,4 +1,6 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.terms.terms import Term, vector_chunk_generator
 
 ##
 # 10.07.2007, c

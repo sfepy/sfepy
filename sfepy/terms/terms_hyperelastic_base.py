@@ -1,4 +1,7 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.base.base import assert_, Struct
+from sfepy.terms.terms import Term, terms
 
 class CouplingVectorScalarTL(Struct):
     

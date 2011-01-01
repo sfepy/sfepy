@@ -1,4 +1,6 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.terms.terms import Term
 from sfepy.linalg import dot_sequences
 
 class NonPenetrationTerm(Term):

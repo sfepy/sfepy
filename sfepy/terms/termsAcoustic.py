@@ -1,4 +1,7 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.base.base import use_method_with_name
+from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_base import ScalarScalar
 
 class LaplaceLayerPSA1Term(ScalarScalar, Term):

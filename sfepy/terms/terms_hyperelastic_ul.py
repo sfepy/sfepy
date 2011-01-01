@@ -1,4 +1,6 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.terms.terms import terms
 from sfepy.terms.terms_base import VectorVector
 from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
 

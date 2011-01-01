@@ -1,4 +1,6 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.terms.terms import assert_, Struct
 
 class InstantaneousBase( Struct ):
     

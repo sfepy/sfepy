@@ -1,4 +1,4 @@
-from sfepy.base.base import *
+import numpy as nm
 
 def check_finiteness(data, info):
     is_finite = nm.isfinite(data)

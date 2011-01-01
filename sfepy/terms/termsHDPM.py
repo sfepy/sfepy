@@ -1,4 +1,6 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.terms.terms import Term, terms
 
 class HDPMDiffusionVelocitySIntegratedTerm(Term):
     name = 'd_hdpm_surfdvel'

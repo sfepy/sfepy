@@ -1,6 +1,8 @@
 from collections import deque
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import dict_from_keys_init, assert_, Container, Struct
 
 class DataCaches( Container ):
     def __init__( self, **kwargs ):

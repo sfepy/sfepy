@@ -1,12 +1,16 @@
-from sfepy.base.base import *
+import re
+from copy import copy
+
+import numpy as nm
+
+from sfepy.base.base import as_float_or_complex, assert_, Container, Struct
 from sfepy.base.compat import in1d
 try:
     from sfepy.terms.extmods import terms
 except (ImportError, AttributeError):
-    from sfepy.base.base import output
     msg = 'sfepy extension modules are not compiled!\ntype "make"'
     raise ImportError( msg )
-from sfepy.linalg import split_range, combine
+from sfepy.linalg import split_range
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
 _match_args = re.compile('^([^\(\}]*)\((.*)\)$').match

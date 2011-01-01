@@ -1,4 +1,7 @@
-from sfepy.terms.terms import *
+import numpy as nm
+
+from sfepy.base.base import assert_, Struct
+from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_hyperelastic_base \
      import CouplingVectorScalarTL, HyperElasticBase
 from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
