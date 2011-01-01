@@ -141,14 +141,15 @@ class State(Struct):
 
         self.variables.set_data(self.vec)
 
-    def set_full(self, vec, var_name=None):
+    def set_full(self, vec, var_name=None, force=False):
         """
         Set the full DOF vector (including EBC and PBC DOFs). If
-        `var_name` is given, set only the DOF sub-vector corresponding to
-        the given variable.
+        `var_name` is given, set only the DOF sub-vector corresponding
+        to the given variable. If `force` is True, setting variables
+        with LCBC DOFs is allowed.
         """
         if var_name is None:
-            if self.variables.has_lcbc:
+            if self.variables.has_lcbc and not force:
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.vec = vec
@@ -157,7 +158,7 @@ class State(Struct):
         else:
             var = self.variables[var_name]
 
-            if var.has_lcbc:
+            if var.has_lcbc and not force:
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.variables.set_state_part(self.vec, vec, var_name)
