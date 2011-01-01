@@ -1,7 +1,7 @@
 import time
 
 import numpy as nm
-import numpy.linalg as nla
+import scipy.linalg as sla
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import Solver, EigenvalueSolver
@@ -87,7 +87,7 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
         tt = time.clock()
         if n_eigs is None:
             mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
-            out = nla.eig( mtx_a, mtx_b, right = eigenvectors )
+            out = sla.eig( mtx_a, mtx_b, right = eigenvectors )
             if eigenvectors:
                 eigs = out[0]
             else:
