@@ -1,8 +1,9 @@
-from sfepy.base.base import *
+from copy import copy
+
+from sfepy.base.base import output, get_default, Struct
 from sfepy.terms import DataCaches
-from equations import Equations
-from variables import Variables
-from fields import setup_dof_conns, setup_extra_data
+from sfepy.fem import Equations, Variables
+from sfepy.fem.fields import setup_dof_conns, setup_extra_data
 
 ##
 # 02.10.2007, c
