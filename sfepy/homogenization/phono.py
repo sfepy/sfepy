@@ -80,7 +80,7 @@ class AppliedLoadTensor( Struct ):
         dim = ema.shape[1]
         fload = nm.zeros( (dim, dim), dtype = nm.float64 )
 
-        de = (freq**2) - (eigs)
+        de = (freq**2) - (self.eigs)
         if not nm.isfinite( de ).all():
             raise ValueError( 'frequency %e too close to resonance!' % freq )
 
@@ -192,8 +192,8 @@ def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
         if transform is None:
             vec_phi, is_zero = eig_vectors[:,ii], False
         else:
-            vec_phi, is_zero = transform( eig_vectors[:,ii], (n_nod, dim) )
-           
+            vec_phi, is_zero = transform(eig_vectors[:,ii], (n_dof / dim, dim))
+
         if is_zero:
             eigenmomenta[ii,:] = 0.0
 
