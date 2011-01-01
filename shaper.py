@@ -116,7 +116,7 @@ def solve_generic_direct(conf, options):
     nls_conf = dpb.get_solver_conf(opts.nls_direct)
     vec_dp = dpb.solve(nls_conf=nls_conf)
 
-    return dpb, vec_dp, data
+    return dpb, vec_dp, {}
 
 ##
 # c: 22.11.2006, r: 15.04.2008
@@ -146,6 +146,7 @@ def solve_direct( conf, options ):
 
         fd = pt.openFile( options.dump_filename, mode = 'w',
                           title = "Dump file" )
+        out = vec_dp.create_output_dict()
         for key, val in out.iteritems():
             fd.createArray( fd.root, key, nar.asarray( val.data ), 
                             '%s data' % val.mode )
