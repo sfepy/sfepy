@@ -2,8 +2,9 @@ import numpy as nm
 
 try:
     import matplotlib.pyplot as plt
+    import matplotlib as mpl
 except (ImportError, RuntimeError):
-    plt = None
+    plt = mpl = None
     #print 'matplotlib import failed!'
 
 from sfepy.base.base import output, pause
