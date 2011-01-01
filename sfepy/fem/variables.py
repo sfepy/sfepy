@@ -346,7 +346,7 @@ class Variables( Container ):
                 vec[ii] = var.get_initial_condition()
             else:
                 if isinstance( force_values, dict ):
-                    vec[ii] = force_values[var_name]
+                    vec[ii] = force_values[var.name]
                 else:
                     vec[ii] = force_values
 
@@ -1041,8 +1041,8 @@ class CloseNodesIterator(Struct):
         elif strategy == 'rcm':
             from sfepy.linalg import rcm
             perm = rcm(graph)
-            print 'rcm', time.clock() - tt
-            
+            ## print 'rcm', time.clock() - tt
+
         elif 'greedy' in strategy:
             ipop, iin = {'00' : (0, 0),
                          'e0' : (-1, 0),
@@ -1693,8 +1693,9 @@ class FieldVariable(Variable):
             coors = self.get_interp_coors(strategy)
 
         elif strategy == 'projection':
-            interp_term = Term() # TODO
-            coors = self.get_interp_coors(strategy, interp_term)
+            ## interp_term = Term() # TODO
+            ## coors = self.get_interp_coors(strategy, interp_term)
+            pass
 
         else:
             raise ValueError('unknown interpolation strategy! (%s)' % strategy)

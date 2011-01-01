@@ -1923,7 +1923,7 @@ class BDFMeshIO( MeshIO ):
             
             if aux[0] == 'CHEXA':
                 el3d += 1
-            elif row[0] == 'CTETRA':
+            elif aux[0] == 'CTETRA':
                 el3d += 1
 
         if el3d > 0:
