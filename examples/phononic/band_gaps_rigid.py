@@ -240,7 +240,7 @@ def select_y3_circ(coors, diameter=None):
     out = nm.where(r < diameter)[0]
 
     if out.shape[0] <= 3:
-        raise ValueError( 'too few nodes selected! (%d)' % n )
+        raise ValueError('too few nodes selected! (%d)' % out.shape[0])
 
     return out
 
