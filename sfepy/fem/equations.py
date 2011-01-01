@@ -299,18 +299,6 @@ class Equations( Container ):
                         debug()
                     shared.add(dc_key)
 
-        ## print shared
-        for ii in range(len(rdcs)):
-            if (rdcs[ii].ndim == 1) and (cdcs[ii].ndim == 2):
-                rdcs[ii] = _fix_scalar_dc(rdcs[ii], cdcs[ii])
-
-            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 2):
-                cdcs[ii] = _fix_scalar_dc(cdcs[ii], rdcs[ii])
-
-            elif (cdcs[ii].ndim == 1) and (rdcs[ii].ndim == 1):
-                rdcs[ii] = nm.array(rdcs[ii], ndmin=2)
-                cdcs[ii] = nm.array(cdcs[ii], ndmin=2)
-
         return rdcs, cdcs
 
     def create_matrix_graph(self, any_dof_conn=False, rdcs=None, cdcs=None,

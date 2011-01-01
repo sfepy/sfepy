@@ -53,11 +53,6 @@ def create_dof_conn(conn, dpn):
 
     return dc
 
-def _fix_scalar_dc(dc1, dc2):
-    aux = nm.empty((dc2.shape[0], 1), dtype=nm.int32)
-    aux.fill(dc1)
-    return aux
-
 def fields_from_conf(conf, regions):
     fields = {}
     for key, val in conf.iteritems():
