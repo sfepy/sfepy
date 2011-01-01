@@ -103,7 +103,7 @@ fe = {
     'chunk_size' : 1000
 }
 
-from sfepy.fem.periodic import *
+from sfepy.fem.periodic import match_x_plane, match_y_plane, match_z_plane
 
 functions = {
     'match_x_plane' : (match_x_plane,),

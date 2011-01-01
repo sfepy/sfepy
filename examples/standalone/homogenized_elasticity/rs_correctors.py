@@ -3,7 +3,9 @@ from optparse import OptionParser
 import sys
 sys.path.append( '.' )
 
-from sfepy.fem.periodic import *
+import numpy as nm
+
+import sfepy.fem.periodic as per
 from sfepy.homogenization.utils import define_box_regions
 
 # c: 05.05.2008, r: 05.05.2008
@@ -70,11 +72,11 @@ dim, regions, mat_ids = define_regions( filename_mesh )
 functions = {
     'get_pars' : (lambda ts, coors, **kwargs:
                   get_pars(ts, coors, mat_ids=mat_ids, **kwargs),),
-    'match_x_plane' : (match_x_plane,),
-    'match_y_plane' : (match_y_plane,),
-    'match_z_plane' : (match_z_plane,),
-    'match_x_line' : (match_x_line,),
-    'match_y_line' : (match_y_line,),
+    'match_x_plane' : (per.match_x_plane,),
+    'match_y_plane' : (per.match_y_plane,),
+    'match_z_plane' : (per.match_z_plane,),
+    'match_x_line' : (per.match_x_line,),
+    'match_y_line' : (per.match_y_line,),
 }
 
 ##

@@ -1,4 +1,6 @@
-from sfepy.fem.periodic import *
+import numpy as nm
+
+import sfepy.fem.periodic as per
 import sfepy.homogenization.coefs_base as cb
 from sfepy.homogenization.utils import define_box_regions
 
@@ -34,11 +36,11 @@ def define_input(filename, region, bbox):
     }
 
     functions = {
-        'match_x_plane' : (match_x_plane,),
-        'match_y_plane' : (match_y_plane,),
-        'match_z_plane' : (match_z_plane,),
-        'match_x_line' : (match_x_line,),
-        'match_y_line' : (match_y_line,),
+        'match_x_plane' : (per.match_x_plane,),
+        'match_y_plane' : (per.match_y_plane,),
+        'match_z_plane' : (per.match_z_plane,),
+        'match_x_line' : (per.match_x_line,),
+        'match_y_line' : (per.match_y_line,),
     }
 
     coefs = {

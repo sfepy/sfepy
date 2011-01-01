@@ -1,5 +1,7 @@
 import os.path as op
-from sfepy.base.testing import TestCommon, assert_
+
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
 

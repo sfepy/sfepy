@@ -1,7 +1,7 @@
 # 24.05.2007, c
 # last revision: 25.02.2008
 from sfepy import data_dir
-from sfepy.fem.periodic import *
+from sfepy.fem.periodic import match_y_line
 
 filename_mesh = data_dir + '/meshes/2d/special/channels_symm944t.mesh'
 

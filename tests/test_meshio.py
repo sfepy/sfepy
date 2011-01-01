@@ -43,7 +43,8 @@ filename_meshes.extend([mesh_hook, UserMeshIO(mesh_hook)])
 same = [(0, 1), (2, 3)]
 
 import os.path as op
-from sfepy.base.testing import TestCommon, assert_
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 
 ##
 # c: 05.02.2008

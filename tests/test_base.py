@@ -1,4 +1,5 @@
-from sfepy.base.testing import TestCommon, assert_
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 
 ##
 # 28.08.2007, c

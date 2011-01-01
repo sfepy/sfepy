@@ -1,8 +1,9 @@
 import sympy as sm
+import numpy as nm
 import scipy.sparse as sps
 
-from sfepy.base.base import *
-from sfepy.base.testing import TestCommon, assert_, debug
+from sfepy.base.base import dict_to_struct
+from sfepy.base.testing import TestCommon
 
 conf = {
     'name' : 'semismooth_newton',

@@ -6,7 +6,8 @@ Requires Matplotlib.
 from optparse import OptionParser
 import sys
 sys.path.append( '.' )
-from sfepy.base.base import *
+
+import numpy as nm
 
 def define():
     """Define the problem to solve."""

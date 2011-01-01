@@ -2,7 +2,9 @@ import os
 import sys
 sys.path.append( '.' )
 
-from sfepy.base.base import *
+import numpy as nm
+
+from sfepy.base.base import output, pause
 from sfepy.base.log import Log
 
 def main():

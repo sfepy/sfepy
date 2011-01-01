@@ -4,7 +4,8 @@ import numpy as nm
 import sfepy
 from sfepy.fem import Mesh, Domain, Field, FieldVariable
 
-from sfepy.base.testing import TestCommon, assert_
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
 

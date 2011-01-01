@@ -89,7 +89,7 @@ fe = {
     'chunk_size' : 1000
 }
 
-from sfepy.fem.periodic import *
+from sfepy.fem.periodic import match_x_line, match_y_line
 
 functions = {
     'match_x_line' : (match_x_line,),

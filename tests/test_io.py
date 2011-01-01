@@ -1,4 +1,5 @@
-from sfepy.base.testing import TestCommon, assert_
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 import numpy as nm
 import scipy.sparse as sp
 import os.path as op

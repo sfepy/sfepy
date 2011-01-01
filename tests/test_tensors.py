@@ -1,4 +1,4 @@
-from sfepy.base.testing import TestCommon, assert_, debug
+from sfepy.base.testing import TestCommon
 
 class Test(TestCommon):
 

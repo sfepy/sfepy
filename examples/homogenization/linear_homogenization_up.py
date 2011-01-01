@@ -7,14 +7,15 @@
 #$ \centerline{Example input file, \today}
 
 #! Homogenization of heterogeneous linear elastic material - mixed formulation
+import numpy as nm
 
-from sfepy.fem.periodic import *
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson, stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
+import sfepy.fem.periodic as per
+from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
 from sfepy.homogenization.utils import define_box_regions, get_box_volume
 import sfepy.homogenization.coefs_base as cb
 
 from sfepy import data_dir
-from sfepy.base.base import Struct, debug
+from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
 def recovery_le( pb, corrs, macro ):
@@ -97,9 +98,9 @@ variables = {
 }
 #! Functions
 functions = {
-    'match_x_plane' : (match_x_plane,),
-    'match_y_plane' : (match_y_plane,),
-    'match_z_plane' : (match_z_plane,),
+    'match_x_plane' : (per.match_x_plane,),
+    'match_y_plane' : (per.match_y_plane,),
+    'match_z_plane' : (per.match_z_plane,),
 }
 #! Boundary Conditions
 #! -------------------

@@ -1,7 +1,8 @@
 import os.path as op
 
-from sfepy.base.base import *
-from sfepy.base.conf import transform_variables, transform_fields
+import numpy as nm
+
+from sfepy.base.conf import transform_variables
 from sfepy.base.testing import TestCommon
 
 variables = {

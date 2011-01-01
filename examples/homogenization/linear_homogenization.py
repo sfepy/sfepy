@@ -6,7 +6,7 @@
 
 #! Homogenization of heterogeneous linear elastic material
 
-from sfepy.fem.periodic import *
+import sfepy.fem.periodic as per
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
 from sfepy.homogenization.utils import define_box_regions
 import sfepy.homogenization.coefs_base as cb
@@ -80,9 +80,9 @@ variables = {
 }
 #! Functions
 functions = {
-    'match_x_plane' : (match_x_plane,),
-    'match_y_plane' : (match_y_plane,),
-    'match_z_plane' : (match_z_plane,),
+    'match_x_plane' : (per.match_x_plane,),
+    'match_y_plane' : (per.match_y_plane,),
+    'match_z_plane' : (per.match_z_plane,),
 }
 #! Boundary Conditions
 #! -------------------

@@ -85,8 +85,8 @@ fe = {
     'chunk_size' : 1000
 }
 
-from sfepy.base.testing import TestCommon, assert_
-from sfepy.base.base import pause, debug
+from sfepy.base.base import assert_
+from sfepy.base.testing import TestCommon
 
 class Test( TestCommon ):
 

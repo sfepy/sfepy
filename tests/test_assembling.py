@@ -1,8 +1,10 @@
 # c: 14.04.2008, r: 14.04.2008
 import os.path as op
 
+import numpy as nm
+
 from sfepy import data_dir
-from sfepy.fem.periodic import *
+from sfepy.fem.periodic import match_y_line
 
 filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
 

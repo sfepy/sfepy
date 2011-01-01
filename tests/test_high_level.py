@@ -2,8 +2,7 @@ import time
 import os.path as op
 import numpy as nm
 
-from sfepy.base.testing import TestCommon, assert_
-from sfepy.base.base import pause, debug
+from sfepy.base.testing import TestCommon
 
 def fix_u_fun(ts, coors, bc=None, extra_arg=None):
     return nm.zeros_like(coors)
