@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # 13.07.2007, c
-import os, sys
+import os
 import os.path as op
 from optparse import OptionParser
 try:
     import pylab
 except:
     pylab = None
-    
-from sfepy.base.base import *
+
+import numpy as nm
+
+from sfepy.base.base import import_file, get_default_attr
 from sfepy.homogenization.coefficients import Coefficients
 
 ##
@@ -75,14 +77,19 @@ def load_coefs( filename ):
 
     try:
         options = import_file( coefs.filename ).options
+    except:
+        options = None
+
+    if options is not None:
         plot_info = options['plot_info']
         tex_names = options['tex_names']
-    except:
-        plot_info = coefs.plot_info
-        tex_names = coefs.tex_names
-        
+
+    else:
+        plot_info = get_default_attr(coefs, 'plot_info', {})
+        tex_names = get_default_attr(coefs, 'tex_names', {})
+
     return coefs, plot_info, tex_names
-    
+
 ##
 # c: 28.08.2007, r: 23.06.2008
 def plot_and_save( filename_in, dir_name, fname = None, keys = None,
