@@ -831,7 +831,7 @@ class StateSQTerm(Term):
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """Ignores chunk_size."""
         state, = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(virtual)
+        ap, sg = self.get_approximation(state)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
 

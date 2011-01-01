@@ -520,7 +520,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
         virtual: fluid pressure-like
         """
         weight, virtual = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
+        ap, sg = self.get_approximation(virtual)
         n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
                                                      self.region.name )
         shape = (chunk_size, 1, n_fp, 1 )

@@ -223,7 +223,7 @@ class StokesEval( CouplingVectorScalar ):
         out_qp = vec[chunk] * div[chunk]
 
         if 'material' in self.arg_types:
-            coef, = self.get_args(['material'], **kwargs)
+            coef, = self.get_args(['material'])
             out_qp *= coef[chunk]
 
         status = vgv.integrate_chunk( out, out_qp, chunk )
