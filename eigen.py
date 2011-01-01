@@ -465,7 +465,7 @@ class AcousticBandGapsApp( SimpleApp ):
         state = problem.create_state()
         for ii in xrange( n_eigs ):
             if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
-            state.set_full(mtx_phi[:,ii])
+            state.set_full(mtx_phi[:,ii], force=True)
             aux = state.create_output_dict()
             for name, val in aux.iteritems():
                 out[name+'%03d' % ii] = val
