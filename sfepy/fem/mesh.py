@@ -569,7 +569,10 @@ class Mesh( Struct ):
         if ref_coors is None:
             ref_coors = self.coors
 
-        self.coors[:] = nm.dot( ref_coors, mtx_t.T )
+        if mtx_t.shape[1] > self.coors.shape[1]:
+            self.coors[:] = nm.dot(ref_coors, mtx_t[:,:-1].T) + mtx_t[:,-1]
+        else:
+            self.coors[:] = nm.dot(ref_coors, mtx_t.T)
 
     def create_conn_graph(self, verbose=True):
         """
