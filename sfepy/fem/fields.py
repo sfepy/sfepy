@@ -415,16 +415,6 @@ class Field( Struct ):
 
         dof_conns.update(self.dof_conns)
 
-    ##
-    # c: 02.01.2008, r: 02.01.2008
-    def get_extra_nodes_as_simplices( self, iextra = None ):
-        dim = self.domain.mesh.dim
-        if iextra is None:
-            noft = self.aps.node_offset_table
-            iextra = nm.arange( noft[1,0], noft[-1,-1], dtype = nm.int32 )
-        extra = make_point_cells( iextra, dim )
-        return {2 : '2_3', 3 : '3_4'}[dim], -nm.ones_like( iextra ), extra
-
     def create_mesh(self, extra_nodes=True):
         """
         Create a mesh from the field region, optionally including the field
@@ -456,24 +446,6 @@ class Field( Struct ):
                                   mat_ids, descs)
 
         return mesh
-
-    ##
-    # c: 19.07.2006, r: 27.02.2008
-    def write_mesh( self, name_template, field_name = None ):
-        """Extra nodes are written as zero-size simplices (= points)."""
-        if field_name is None:
-            field_name = self.name
-
-        tmp = self.create_mesh(extra_nodes=False)
-
-        aux = self.get_extra_nodes_as_simplices()
-        tmp.descs.append( aux[0] )
-        tmp.mat_ids.append( aux[1] )
-        tmp.conns.append( aux[2] )
-
-##         print tmp
-##         pause()
-        tmp.write( io = 'auto' )
 
     ##
     # Modify me for bubble-only approximations to not generate vertex nodes.
