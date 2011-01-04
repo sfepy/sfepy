@@ -547,6 +547,7 @@ below are already more or less updated.
    src/sfepy/fem/dof_info
    src/sfepy/fem/equations
    src/sfepy/fem/evaluate
+   src/sfepy/fem/fields
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
    src/sfepy/fem/integrals
@@ -560,6 +561,7 @@ below are already more or less updated.
    src/sfepy/fem/projections
    src/sfepy/fem/quadratures
    src/sfepy/fem/state
+   src/sfepy/fem/variables
 
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
