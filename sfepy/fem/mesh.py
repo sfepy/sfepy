@@ -565,7 +565,10 @@ class Mesh( Struct ):
     ##
     # c: 18.01.2008, r: 18.01.2008
     def transform_coors( self, mtx_t, ref_coors = None ):
-        """x = T * x."""
+        """
+        T(dim,dim) : x = T * x,
+        T(dim,dim+1) : x = T[:,:-1] * x + T[:,-1].
+        """
         if ref_coors is None:
             ref_coors = self.coors
 
