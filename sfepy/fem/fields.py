@@ -4,8 +4,10 @@ import numpy as nm
 from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
 from sfepy.base.base import Struct
 import fea
-from sfepy.fem.mesh import Mesh, make_point_cells, make_inverse_connectivity
-from sfepy.fem.utils import extend_cell_data
+from sfepy.fem.mesh import Mesh, make_inverse_connectivity
+from sfepy.fem.utils import extend_cell_data, prepare_remap
+from sfepy.fem.fe_surface import FESurface
+from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.extmods.fem import evaluate_at
 
 def parse_approx_order(approx_order):
@@ -114,6 +116,20 @@ def setup_dof_conns(conn_info, dof_conns=None,
 ##
 # 14.07.2006, c
 class Field( Struct ):
+    """
+    Finite element field.
+
+    Notes
+    -----
+
+    - Region can span over several groups -> different Aproximation
+      instances
+    - interps and hence node_descs are per region (must have single
+      geometry!)
+    - no two interps can be in a same group -> no two aps (with
+      different regions) can be in a same group -> aps can be uniquely
+      indexed with ig
+    """
 
     @staticmethod
     def from_conf(conf, regions):
@@ -197,6 +213,7 @@ class Field( Struct ):
                         space = space,
                         poly_space_base = poly_space_base)
         self.domain = self.region.domain
+        self.igs = self.region.igs
 
         self.clear_dof_conns()
 
@@ -233,7 +250,13 @@ class Field( Struct ):
                                       self.force_bubble)
 
     def setup_approximations(self):
-        self.aps = fea.Approximations(self.interp, self.region)
+        self.aps = {}
+        self.aps_by_name = {}
+        for ig in self.igs:
+            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
+            ap = fea.Approximation(name, self.interp, self.region, ig)
+            self.aps[ig] = ap
+            self.aps_by_name[ap.name] = ap
 
     def get_true_order(self):
         """
@@ -252,49 +275,265 @@ class Field( Struct ):
 
         return order
 
-    ##
-    #
-    def igs( self ):
-        return self.aps.igs
-
-    ##
-    # 19.07.2006, c
-    def setup_global_base( self ):
+    def setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """
-        self.aps.setup_facet_orientations()
+        self.setup_facet_orientations()
 
-        self.n_nod = self.aps.setup_global_base()
+        self.init_econn()
+
+        self.n_vertex_dof, self.vertex_remap = self.setup_vertex_dofs()
+
+        aux = self.setup_edge_dofs()
+        self.n_edge_dof, self.edge_dofs, self.edge_remap = aux
+
+        aux = self.setup_face_dofs()
+        self.n_face_dof, self.face_dofs, self.face_remap = aux
+
+        aux = self.setup_bubble_dofs()
+        self.n_bubble_dof, self.bubble_dofs, self.bubble_remaps = aux
+
+        self.n_nod = self.n_vertex_dof + self.n_edge_dof \
+                     + self.n_face_dof + self.n_bubble_dof
+
+        self.setup_esurface()
+
+    def setup_facet_orientations(self):
+        self.node_desc = self.interp.describe_nodes()
+
+        edge_nodes = self.node_desc.edge_nodes
+        if edge_nodes is not None:
+            ed = self.domain.ed
+            self.edge_dof_perms = ed.get_facet_dof_permutations(edge_nodes)
+
+        face_nodes = self.node_desc.face_nodes
+        if face_nodes is not None:
+            fa = self.domain.fa
+            self.face_dof_perms = fa.get_facet_dof_permutations(face_nodes)
+
+    def init_econn(self):
+        """
+        Initialize the extended DOF connectivity.
+        """
+        for ig, ap in self.aps.iteritems():
+            n_ep = ap.n_ep['v']
+            n_cell = self.region.get_n_cells(ig)
+            ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
+
+    def setup_vertex_dofs(self):
+        """
+        Setup vertex DOF connectivity.
+        """
+        if self.node_desc.vertex is None:
+            return 0, None
+
+        region = self.region
+
+        remap = prepare_remap(region.all_vertices, region.n_v_max)
+        n_dof = region.all_vertices.shape[0]
+
+        ##
+        # Remap vertex node connectivity to field-local numbering.
+        for ig, ap in self.aps.iteritems():
+            group = self.domain.groups[ig]
+            offset = group.shape.n_ep
+            cells = region.get_cells(ig)
+            ap.econn[:,:offset] = remap[group.conn[cells]]
+
+        return n_dof, remap
+
+    def _setup_facet_dofs(self, facets, facet_desc, facet_perms,
+                          get_facets, offset):
+        """
+        Helper function to setup facet DOF connectivity, works for both
+        edges and faces.
+        """
+        facet_desc = nm.array(facet_desc)
+        n_dof_per_facet = facet_desc.shape[1]
+
+        # Prepare global facet id remapping to field-local numbering.
+        uids = []
+        for ig, ap in self.aps.iteritems():
+            ii = get_facets(ig)
+            uid_i = facets.uid_i[ii]
+
+            uids.append(uid_i)
+
+        uids = nm.unique(nm.concatenate(uids))
+        n_uid = uids.shape[0]
+        lids = nm.arange(n_uid, dtype=nm.int32)
+        remap = prepare_remap(uids, facets.n_unique)
+
+        all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
+
+        for ig, ap in self.aps.iteritems():
+            ori = facets.oris[ig]
+            perms = facet_perms[ig][ori]
+
+            ii = get_facets(ig)
+            g_uid = facets.uid_i[ii]
+            uid = remap[g_uid]
+
+            # Define global facet dof numbers.
+            gdofs = offset + expand_nodes_to_dofs(uid, n_dof_per_facet)
+
+            # Elements of facets.
+            iel = facets.indices[ii, 1]
+
+            ies = facets.indices[ii, 2]
+            # DOF columns in econn for each facet.
+            iep = facet_desc[ies]
+
+            iaux = nm.arange(gdofs.shape[0], dtype=nm.int32)
+            ap.econn[iel[:, None], iep] = gdofs[iaux[:, None], perms]
+
+        n_dof = n_dof_per_facet * n_uid
+        assert_(n_dof == nm.prod(all_dofs.shape))
+
+        return n_dof, all_dofs, remap
+
+    def setup_edge_dofs(self):
+        """
+        Setup edge DOF connectivity.
+        """
+        if self.node_desc.edge is None:
+            return 0, None, None
+
+        return self._setup_facet_dofs(self.domain.ed,
+                                      self.node_desc.edge,
+                                      self.edge_dof_perms,
+                                      self.region.get_edges,
+                                      self.n_vertex_dof)
+
+    def setup_face_dofs(self):
+        """
+        Setup face DOF connectivity.
+        """
+        if self.node_desc.face is None:
+            return 0, None, None
+
+        return self._setup_facet_dofs(self.domain.fa,
+                                      self.node_desc.face,
+                                      self.face_dof_perms,
+                                      self.region.get_faces,
+                                      self.n_vertex_dof + self.n_edge_dof)
+
+    def setup_bubble_dofs(self):
+        """
+        Setup bubble DOF connectivity.
+        """
+        if self.node_desc.bubble is None:
+            return 0, None, None
+
+        offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
+        n_dof = 0
+        n_dof_per_cell = self.node_desc.bubble.shape[0]
+        all_dofs = []
+        remaps = []
+        for ig, ap in self.aps.iteritems():
+            ii = self.region.get_cells(ig)
+            n_cell = ii.shape[0]
+            nd = n_dof_per_cell * n_cell
+
+            group = self.domain.groups[ig]
+            remap = prepare_remap(ii, group.shape.n_el)
+            remaps.append(remap)
+
+            aux = nm.arange(offset + n_dof, offset + n_dof + nd,
+                            dtype=nm.int32)
+            aux.shape = (n_cell, n_dof_per_cell)
+            iep = self.node_desc.bubble[0]
+            ap.econn[:,iep:] = aux
+            all_dofs.append(aux)
+
+            n_dof += nd
+
+        all_dofs = nm.concatenate(all_dofs, axis=0)
+        assert_(n_dof == nm.prod(all_dofs.shape))
+
+        return n_dof, all_dofs, remaps
+
+    def setup_esurface(self):
+        """
+        Setup extended surface entities (edges in 2D, faces in 3D),
+        i.e. indices of surface entities into the extended connectivity.
+        """
+        node_desc = self.node_desc
+
+        for ig, ap in self.aps.iteritems():
+            gel = ap.interp.gel
+            ap.efaces = gel.get_surface_entities().copy()
+
+            nd = node_desc.edge
+            if nd is not None:
+                efs = []
+                for eof in gel.get_edges_per_face():
+                    efs.append(nm.concatenate([nd[ie] for ie in eof]))
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                ap.efaces = nm.hstack((ap.efaces, efs))
+
+            efs = node_desc.face
+            if efs is not None:
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                ap.efaces = nm.hstack((ap.efaces, efs))
 
     def setup_coors(self):
         """
         Setup coordinates of field nodes.
         """
-        self.aps.setup_coors()
+        mesh = self.domain.mesh
+        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
+
+        # Mesh vertex nodes.
+        if self.n_vertex_dof:
+            indx = self.region.all_vertices
+            self.coors[:self.n_vertex_dof] = mesh.coors[indx]
+
+        for ig, ap in self.aps.iteritems():
+            ap.eval_extra_coor(self.coors, mesh)
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
-        
+
         if geometry != None:
             geometry_flag = 'surface' in geometry
         else:
-            geometry_flag = False     
-            
+            geometry_flag = False
+
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
             reg.select_cells_of_surface(reset=False)
 
-            self.aps.setup_surface_data(reg)
+            self.setup_surface_data(reg)
 
         elif dct == 'edge':
             raise NotImplementedError('dof connectivity type %s' % dct)
 
         elif dct == 'point':
-            self.aps.setup_point_data(self, info.region)
+            self.setup_point_data(self, info.region)
 
         elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
+
+    def setup_surface_data(self, region):
+        for ig, ap in self.aps.iteritems():
+            if ig not in region.igs: continue
+            if region.name not in ap.surface_data:
+                ap.setup_surface_data(region)
+
+    def setup_point_data(self, field, region):
+        # Point data only in the first group to avoid multiple
+        # assembling of nodes on group boundaries.
+        ap = self.aps[self.igs[0]]
+        if region.name not in ap.point_data:
+            ap.setup_point_data(field, region)
 
     def get_dofs_in_region(self, region, merge=False, clean=False,
                            warn=False, igs=None):
@@ -305,12 +544,12 @@ class Field( Struct ):
             igs = region.igs
 
         nods = []
-        for ig in self.aps.igs:
+        for ig in self.igs:
             if not ig in igs:
                 nods.append(None)
                 continue
 
-            nn = self.aps.get_dofs_in_region(region, ig)
+            nn = self.get_dofs_in_region_group(region, ig)
             nods.append(nn)
 
         if merge:
@@ -326,6 +565,46 @@ class Field( Struct ):
 
         return nods
 
+    def _get_facet_dofs(self, facets, get_facets, remap, dofs, ig):
+        ii = get_facets(ig)
+        g_uid = facets.uid_i[ii]
+        uid = remap[g_uid]
+
+        return dofs[uid[uid >= 0]].ravel()
+
+    def get_dofs_in_region_group(self, region, ig):
+        """
+        Return indices of DOFs that belong to the given region and group.
+        """
+        node_desc = self.node_desc
+
+        dofs = nm.empty((0,), dtype=nm.int32)
+        if node_desc.vertex is not None:
+            ii = region.get_vertices(ig)
+            vdofs = self.vertex_remap[ii]
+            dofs = nm.concatenate((dofs, vdofs[vdofs >= 0]))
+
+        if node_desc.edge is not None:
+            edofs = self._get_facet_dofs(self.domain.ed,
+                                         region.get_edges,
+                                         self.edge_remap,
+                                         self.edge_dofs, ig)
+            dofs = nm.concatenate((dofs, edofs))
+
+        if node_desc.face is not None:
+            fdofs = self._get_facet_dofs(self.domain.fa,
+                                         region.get_faces,
+                                         self.face_remap,
+                                         self.face_dofs, ig)
+            dofs = nm.concatenate((dofs, fdofs))
+
+        if (node_desc.bubble is not None) and region.can_cells:
+            ii = region.get_cells(ig)
+            bdofs = self.bubble_dofs[self.bubble_remaps[ig][ii]].ravel()
+            dofs = nm.concatenate((dofs, bdofs[bdofs >= 0]))
+
+        return dofs
+
     def extend_dofs(self, dofs, fill_value=None):
         """
         Extend DOFs to the whole domain using the `fill_value`, or the
@@ -338,7 +617,7 @@ class Field( Struct ):
                 fill_value = nm.amin(dofs)
 
         if self.approx_order != 0:
-            indx = nm.where(self.aps.vertex_remap >= 0)[0]
+            indx = nm.where(self.vertex_remap >= 0)[0]
 
             n_nod = self.domain.shape.n_nod
             new_dofs = nm.empty((n_nod, dofs.shape[1]), dtype=self.dtype)
@@ -356,7 +635,7 @@ class Field( Struct ):
         Remove DOFs defined in higher order nodes (order > 1).
         """
         if self.approx_order != 0:
-            new_dofs = dofs[:self.aps.n_vertex_dof]
+            new_dofs = dofs[:self.n_vertex_dof]
 
         else:
             new_dofs = dofs
@@ -379,7 +658,9 @@ class Field( Struct ):
         ##
         # Expand nodes into dofs.
         can_point = True
-        for ig, ap in self.aps.iter_aps(igs=region.igs):
+        for ig, ap in self.aps.iteritems():
+            if ig not in region.igs: continue
+
             region_name = region.name # True region name.
             key = (self.name, dpn, region_name, dct, ig)
             if key in dof_conns:
@@ -424,9 +705,8 @@ class Field( Struct ):
 
         if self.approx_order != 0:
             conns, mat_ids, descs = [], [], []
-            for ig, ap in self.aps.iter_aps():
-                region = ap.region
-                group = region.domain.groups[ig]
+            for ig, ap in self.aps.iteritems():
+                group = self.domain.groups[ig]
                 if extra_nodes:
                     conn = ap.econn
                 else:
@@ -437,10 +717,10 @@ class Field( Struct ):
                 descs.append(mesh.descs[ig])
 
             if extra_nodes:
-                coors = self.aps.coors
+                coors = self.coors
 
             else:
-                coors = self.aps.coors[:self.aps.n_vertex_dof]
+                coors = self.coors[:self.n_vertex_dof]
 
             mesh = Mesh.from_data(self.name, coors, None, conns,
                                   mat_ids, descs)
@@ -453,13 +733,13 @@ class Field( Struct ):
         geometry base (P1 or Q1) into the extra nodes, i.e. define the
         extra DOF values.
         """
-        if not self.aps.node_desc.has_extra_nodes():
+        if not self.node_desc.has_extra_nodes():
             enod_vol_val = vec.copy()
 
         else:
             dim = vec.shape[1]
             enod_vol_val = nm.zeros((self.n_nod, dim), dtype=nm.float64)
-            for ig, ap in self.aps.iter_aps():
+            for ig, ap in self.aps.iteritems():
                 group = self.domain.groups[ig]
                 econn = ap.econn
 
@@ -474,15 +754,47 @@ class Field( Struct ):
 
         return enod_vol_val
 
-    ##
-    # 08.08.2006, c
-    # 13.02.2007
-    def get_coor( self, nods = None, igs = None ):
-        """Will igs be ever needed?"""
+    def get_coor(self, nods=None):
+        """
+        Get coordinates of the field nodes.
+
+        Parameters
+        ----------
+        nods : array, optional
+           The indices of the required nodes. If not given, the
+           coordinates of all the nodes are returned.
+        """
         if nods is None:
-            return self.aps.coors
+            return self.coors
         else:
-            return self.aps.coors[nods]
+            return self.coors[nods]
+
+    def describe_geometry(self, geometry_type, ig, region,
+                          term_region, integral):
+        """
+        For give approximation, compute jacobians, element volumes and
+        base function derivatives for Volume-type geometries, and
+        jacobians, normals and base function derivatives for
+        Surface-type geometries.
+
+        Usually, region is term_region. Only if is_trace is True, then region
+        is the mirror region and term_region is the true term region.
+        """
+        ap = self.aps[ig]
+
+        geo = ap.describe_geometry(self, geometry_type, region, integral,
+                                   self.coors)
+        return geo
+
+    def update_geometry(self, regions, geometries):
+        for geom_key, geom in geometries.iteritems():
+            iname, geometry_type, tregion_name, ap_name = geom_key
+            ap = self.aps_by_name[ap_name]
+            geom = ap.describe_geometry(self, geometry_type,
+                                        regions[tregion_name],
+                                        geom.integral, self.coors)
+            geometries[geom_key] = geom
+
 
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
@@ -560,7 +872,7 @@ class Field( Struct ):
 
             vertex_coorss, nodess, orders, mtx_is = [], [], [], []
             conns, conns0 = [], []
-            for ap in self.aps:
+            for ap in self.aps.itervalues():
                 ps = ap.interp.poly_spaces['v']
                 if ps.order == 0:
                     # Use geometry element space and connectivity to locate an
@@ -569,7 +881,7 @@ class Field( Struct ):
                     assert_(ps.order == 1)
 
                     orders.append(0) # Important!
-                    conn = ap.region.domain.groups[ap.ig].conn
+                    conn = self.domain.groups[ap.ig].conn
                     conns.append(conn)
 
                 else:
@@ -616,7 +928,7 @@ class DiscontinuousField(Field):
         """
         Setup global DOF/base function indices and connectivity of the field.
         """
-        self.aps.setup_facet_orientations()
+        self.setup_facet_orientations()
 
 class SurfaceField(Field):
     """
@@ -640,7 +952,9 @@ class SurfaceField(Field):
             raise ValueError('element group has no surface!')
 
     def setup_approximations(self):
-        self.aps = fea.Approximations(self.interp, self.region, is_surface=True)
+        Field.setup_approximations(self)
+        for ap in self.aps.itervalues():
+            ap.is_surface = True
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
@@ -652,7 +966,51 @@ class SurfaceField(Field):
         reg = info.get_region()
         reg.select_cells_of_surface(reset=False)
 
-        self.aps.setup_surface_data(reg)
+        for ig, ap in self.aps.iteritems():
+            if ig not in reg.igs: continue
+
+            if reg.name not in ap.surface_data:
+                # Defined in setup_vertex_dofs()
+                msg = 'no surface data of surface field! (%s)' % reg.name
+                raise ValueError(msg)
+
+    def init_econn(self):
+        """
+        Initialize the extended DOF connectivity.
+        """
+        for ig, ap in self.aps.iteritems():
+            n_ep = ap.n_ep['v']
+            n_cell = self.region.get_n_cells(ig, True)
+            ap.econn = nm.zeros((n_cell, n_ep), nm.int32)
+
+    def setup_vertex_dofs(self):
+        """
+        Setup vertex DOF connectivity.
+        """
+        if self.node_desc.vertex is None:
+            return 0, None
+
+        region = self.region
+
+        remap = prepare_remap(region.all_vertices, region.n_v_max)
+        n_dof = region.all_vertices.shape[0]
+
+        ##
+        # Remap vertex node connectivity to field-local numbering.
+        for ig, ap in self.aps.iteritems():
+            group = self.domain.groups[ig]
+            faces = group.gel.get_surface_entities()
+            aux = FESurface('aux', region, faces, group.conn, ig)
+            ap.econn[:,:aux.n_fp] = aux.leconn
+            ap.surface_data[region.name] = aux
+
+        return n_dof, remap
+
+    def setup_bubble_dofs(self):
+        """
+        Setup bubble DOF connectivity.
+        """
+        return 0, None, None
 
     def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
         """Setup dof connectivities of various kinds as needed by terms."""
@@ -664,7 +1022,9 @@ class SurfaceField(Field):
 
         ##
         # Expand nodes into dofs.
-        for ig, ap in self.aps.iter_aps(igs=region.igs):
+        for ig, ap in self.aps.iteritems():
+            if ig not in region.igs: continue
+
             region_name = region.name # True region name.
             key = (self.name, dpn, region_name, dct, ig)
             if key in dof_conns:
