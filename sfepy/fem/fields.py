@@ -447,49 +447,6 @@ class Field( Struct ):
 
         return mesh
 
-    ##
-    # Modify me for bubble-only approximations to not generate vertex nodes.
-    # 12.10.2005, c
-    # 26.10.2005
-    # 26.05.2006
-    # 05.06.2006
-    # 25.07.2006
-    # 04.09.2006
-    def interp_c_vals_to_n_vals( self, vec ):
-        """len( vec ) == domain.n_el"""
-        n_els = [sub.n_el for sub in self.domain.subs]
-        oel = nm.cumsum( [0] + n_els )
-        if sum( n_els ) != vec.shape[0]:
-            print 'incomatible shape! (%d == %d)' % (sum( n_els ), vec.shape[0])
-            raise ValueError
-
-        ##
-        # Mesh vertex values. 
-        n_vertex = self.domain.n_nod
-        nod_vol = nm.zeros( (n_vertex,), nm.float64 )
-        dim = vec.shape[1]
-        nod_vol_val = nm.zeros( (n_vertex, dim ), nm.float64 )
-        for ii, ap in enumerate( self.aps ):
-            sub = ap.sub
-            ig = sub.iseq
-            vg = self.vgs[ii]
-            volume = nm.squeeze( vg.variable( 2 ) );
-
-            for ii in range( sub.conn.shape[1] ):
-                cc = sub.conn[:,ii]
-                nod_vol[cc] += volume
-                val = volume[:,nm.newaxis] * vec[oel[ig]:oel[ig+1],:]
-                ind2, ind1 = nm.meshgrid( nm.arange( dim ), cc )
-                nod_vol_val[ind1,ind2] += val
-        
-        nod_vol_val = nod_vol_val / nod_vol[:,nm.newaxis]
-
-        ##
-        # Field nodes values.
-        enod_vol_val = self.interp_v_vals_to_n_vals( nod_vol_val )
-
-        return enod_vol_val
-
     def interp_v_vals_to_n_vals(self, vec):
         """
         Interpolate a function defined by vertex DOF values using the FE
