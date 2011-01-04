@@ -200,7 +200,10 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
         shape, mode = self.get_shape( diff_var, chunk_size )
 
         vec = self.get_vector( state )
-        sd = aps.surface_data[self.region.name]
+        if self.region.name in ap.surface_data:
+            sd = ap.surface_data[self.region.name]
+        else:
+            sd = aps.surface_data[self.region.name]
 
         bf = ap.get_base( sd.face_type, 0, self.integral )
         econn = sd.get_connectivity(state.is_surface)
