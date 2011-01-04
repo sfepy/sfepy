@@ -562,12 +562,21 @@ class Mesh( Struct ):
 
         self._set_shape_info()
 
-    ##
-    # c: 18.01.2008, r: 18.01.2008
-    def transform_coors( self, mtx_t, ref_coors = None ):
+    def transform_coors(self, mtx_t, ref_coors=None):
         """
-        T(dim,dim) : x = T * x,
-        T(dim,dim+1) : x = T[:,:-1] * x + T[:,-1].
+        Transform coordinates of the mesh by the given transformation matrix.
+
+        Parameters
+        ----------
+        mtx_t : array
+           The transformation matrix `T` (2D array). It is applied
+           depending on its shape:
+
+           - `(dim, dim): x = T * x`
+           - `(dim, dim + 1): x = T[:, :-1] * x + T[:, -1]`
+        ref_coors : array, optional
+           Alternative coordinates to use for the transformation instead
+           of the mesh coordinates, with the same shape as `self.coors`.
         """
         if ref_coors is None:
             ref_coors = self.coors
