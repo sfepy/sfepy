@@ -410,8 +410,8 @@ class Equations( Container ):
         """
         Set data (vectors of DOF values) of variables.
 
-        Paramters
-        ---------
+        Parameters
+        ----------
         data : array
             The state vector.
         step : int
