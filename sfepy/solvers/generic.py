@@ -121,7 +121,7 @@ def solve_evolutionary_op(problem,
                           step_hook=None, post_process_hook=None,
                           nls_status=None):
     """TODO  return_history"""
-    
+
     step_args = problem, nls_status
     time_solver = problem.get_time_solver(step_fun=time_step_function,
                                           step_args=step_args)
@@ -171,13 +171,17 @@ def solve_stationary_op(problem, save_results=True, ts=None,
     
 def solve_direct(conf, options, problem=None, step_hook=None,
                  post_process_hook=None, post_process_hook_final=None,
-                 nls_status=None):
+                 pre_process_hook=None, nls_status=None):
     """Generic (simple) problem solver."""
+
     if problem is None:
         is_eqs = not options.solve_not
         problem = ProblemDefinition.from_conf(conf, init_equations=is_eqs)
 
         problem.setup_default_output(conf, options)
+
+    if pre_process_hook is not None: # User pre_processing.
+        pre_process_hook(problem)
 
     ofn_trunk = problem.ofn_trunk
 
@@ -203,7 +207,7 @@ def solve_direct(conf, options, problem=None, step_hook=None,
 
     if options.solve_not:
         return None, None, None
-            
+
     if hasattr( conf.options, 'ts' ):
         ##
         # Time-dependent problem.

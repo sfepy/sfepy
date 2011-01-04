@@ -26,6 +26,12 @@ def assign_standard_hooks(obj, get, mod):
         hook = getattr(mod, hook)
     obj.post_process_hook_final = hook
 
+    hook = get('pre_process_hook', None)
+    if hook is not None:
+        hook = getattr(mod, hook)
+
+    obj.pre_process_hook = hook
+
 class SimpleApp( Application ):
 
     def process_options( options ):
@@ -49,6 +55,8 @@ class SimpleApp( Application ):
         post_process_hook = get( 'post_process_hook', None )
         # Called after all time steps, or in the stationary case.
         post_process_hook_final = get( 'post_process_hook_final', None )
+        # Called in init process.
+        pre_process_hook = get( 'pre_process_hook', None )
 
         use_equations = get('use_equations', 'equations')
 
@@ -109,6 +117,7 @@ class SimpleApp( Application ):
                             problem=self.problem,
                             step_hook=self.step_hook,
                             post_process_hook=self.post_process_hook,
-                            post_process_hook_final=self.post_process_hook_final)
+                            post_process_hook_final=self.post_process_hook_final,
+                            pre_process_hook=self.pre_process_hook)
 
         return out
