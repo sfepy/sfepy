@@ -42,7 +42,6 @@ class TestInput(TestCommon):
                                      save_ebc = False, save_regions = False,
                                      save_regions_as_groups = False,
                                      save_field_meshes = False,
-                                     save_region_field_meshes = False,
                                      solve_not = False)
 
         return test

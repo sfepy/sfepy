@@ -679,26 +679,6 @@ class ProblemDefinition( Struct ):
         output( '...done' )
 
     ##
-    # created:       02.01.2008
-    # last revision: 27.02.2008
-    def save_region_field_meshes( self, filename_trunk ):
-
-        output( 'saving regions of fields...' )
-        for field in self.fields:
-            fregion = self.domain.regions[field.region_name]
-            output( 'field %s: saving regions...' % field.name )
-
-            for region in self.domain.regions:
-                if not fregion.contains( region ): continue
-                output( region.name )
-                aux = Mesh.from_region_and_field( region, field )
-                aux.write( '%s_%s_%s.mesh' % (filename_trunk,
-                                              region.name, field.name),
-                           io = 'auto' )
-            output( '...done' )
-        output( '...done' )
-
-    ##
     # c: 03.07.2007, r: 27.02.2008
     def save_field_meshes( self, filename_trunk ):
 

@@ -21,9 +21,6 @@ def save_only( conf, save_names, problem = None ):
     if save_names.field_meshes is not None:
         problem.save_field_meshes( save_names.field_meshes )
 
-    if save_names.region_field_meshes is not None:
-        problem.save_region_field_meshes( save_names.region_field_meshes )
-
     if save_names.ebc is not None:
         problem.save_ebc( save_names.ebc )
 
@@ -195,8 +192,6 @@ def solve_direct(conf, options, problem=None, step_hook=None,
         save_names.regions_as_groups = ofn_trunk + '_regions'
     if options.save_field_meshes:
         save_names.field_meshes = ofn_trunk + '_field'
-    if options.save_region_field_meshes:
-        save_names.region_field_meshes = ofn_trunk + '_region_field'
 
     is_extra_save = False
     for name, val in save_names.to_dict().iteritems():

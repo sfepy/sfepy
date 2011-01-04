@@ -38,8 +38,6 @@ help = {
     " element/node group numbers",
     'save_field_meshes' :
     "save meshes of problem fields (with extra DOF nodes)",
-    'save_region_field_meshes' :
-    "save meshes of regions of problem fields (with extra DOF nodes)",
     'solve_not' :
     "do not solve (use in connection with --save-*)",
     'list' :
@@ -72,9 +70,6 @@ def main():
     parser.add_option( "", "--save-field-meshes",
                        action = "store_true", dest = "save_field_meshes",
                        default = False, help = help['save_field_meshes'] )
-    parser.add_option( "", "--save-region-field-meshes",
-                       action = "store_true", dest = "save_region_field_meshes",
-                       default = False, help = help['save_region_field_meshes'] )
     parser.add_option( "", "--solve-not",
                        action = "store_true", dest = "solve_not",
                        default = False, help = help['solve_not'] )

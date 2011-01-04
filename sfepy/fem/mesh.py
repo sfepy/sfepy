@@ -373,26 +373,6 @@ class Mesh( Struct ):
 
         return mesh
 
-    ##
-    # c: 02.01.2008, r: 02.01.2008
-    def from_region_and_field( region, field ):
-        mesh = Mesh.from_region(region, field.domain.mesh)
-        mesh.name = mesh.name + '_field'
-
-        nodes = field.get_dofs_in_region(region, merge=True)
-
-        aux = field.get_extra_nodes_as_simplices( nodes )
-        mesh.coors = field.aps.coors
-        mesh.ngroups = nm.zeros( (mesh.coors.shape[0],), dtype = nm.int32 )
-        mesh.descs.append( aux[0] )
-        mesh.mat_ids.append( aux[1] )
-        mesh.conns.append( aux[2] )
-
-        mesh.localize( nodes )
-
-        return mesh
-    from_region_and_field = staticmethod( from_region_and_field )
-
     def from_data( name, coors, ngroups, conns, mat_ids, descs, igs = None ):
         """
         Create a mesh from mesh data.
