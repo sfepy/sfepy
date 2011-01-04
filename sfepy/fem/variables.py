@@ -1208,9 +1208,8 @@ class FieldVariable(Variable):
         if term_region is None:
             term_region = region
 
-        geo = field.aps.describe_geometry(field, geometry_type, ig,
-                                          region, term_region,
-                                          integral)
+        geo = field.describe_geometry(geometry_type, ig, region, term_region,
+                                      integral)
 
         return geo
 
@@ -1259,7 +1258,7 @@ class FieldVariable(Variable):
             key = (self.field.name, self.n_components, region_name,
                    dc_type.type, aig)
             dc = self.field.dof_conns[key]
-            inod = nm.where(self.field.aps.vertex_remap >= 0)[0]
+            inod = nm.where(self.field.vertex_remap >= 0)[0]
             nodtab = inod[dc];
         else:
             raise NotImplementedError
@@ -1343,7 +1342,7 @@ class FieldVariable(Variable):
 
         nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
         data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
-        for ig, ap in self.field.aps.iter_aps():
+        for ig, ap in self.field.aps.iteritems():
             vg = self.describe_geometry('volume', ap.region, integral, ig)
 
             volume = nm.squeeze(vg.variable(2))
@@ -1436,10 +1435,10 @@ class FieldVariable(Variable):
             self.initial_condition = ic_vec
 
     def get_approximation(self, ig):
-        return self.field.aps.get_approximation(ig)
+        return self.field.aps[ig]
 
     def get_data_shapes(self, integral, ig, region_name=None):
-        ap = self.field.aps.aps_per_group[ig]
+        ap = self.field.aps[ig]
         if region_name is None:
             shape = ap.get_v_data_shape(integral)
 
@@ -1540,7 +1539,7 @@ class FieldVariable(Variable):
 
         igs = nm.unique(cells[:,0])
         for ig in igs:
-            ap = field.aps.aps_per_group[ig]
+            ap = field.aps[ig]
             vg = ap.describe_geometry(field, 'volume', field.region)
 
             ii = nm.where(cells[:,0] == ig)[0]

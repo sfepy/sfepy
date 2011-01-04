@@ -730,7 +730,7 @@ class Term(Struct):
         if vvar is not None:
             field = vvar.get_field()
             if field is not None:
-                v_igs = field.igs()
+                v_igs = field.igs
                 if vvar.name in tgs:
                     v_tg = tgs[vvar.name]
 
@@ -759,7 +759,7 @@ class Term(Struct):
 
             field = svar.get_field()
             if field is not None:
-                s_igs = field.igs()
+                s_igs = field.igs
             else:
                 s_igs = None
             is_trace = self.arg_traces[svar.name]
@@ -786,7 +786,7 @@ class Term(Struct):
         for pvar in pvars:
             field = pvar.get_field()
             if field is not None:
-                p_igs = field.igs()
+                p_igs = field.igs
             else:
                 p_igs = None
             is_trace = self.arg_traces[pvar.name]

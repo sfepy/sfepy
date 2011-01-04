@@ -29,7 +29,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     imap[nodes] = nm.arange( nodes.shape[0], dtype = nm.int32 )
     
     for ig, fis in region.fis.iteritems():
-        ap = field.aps.aps_per_group[ig]
+        ap = field.aps[ig]
         n_fa = fis.shape[0]
         n_fp = ap.efaces.shape[1]
         face_type = 's%d' % n_fp
@@ -48,7 +48,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         bf_sg = ps.eval_base(coors, diff=True)
 
         sg = SurfaceGeometry( n_fa, n_fp, dim, n_fp )
-        sg.describe( field.aps.coors, econn, bf_sg, weights )
+        sg.describe(field.get_coor(), econn, bf_sg, weights)
 
         e_normals = sg.variable( 0 ).squeeze()
 
