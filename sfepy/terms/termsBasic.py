@@ -498,7 +498,8 @@ class AverageVolumeMatTerm( Term ):
         vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, mat[chunk], chunk )
+            lchunk = self.char_fun.get_local_chunk()
+            status = vg.integrate_chunk( out, mat[lchunk], chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
 
@@ -538,7 +539,8 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
         vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, mat[chunk], chunk )
+            lchunk = self.char_fun.get_local_chunk()
+            status = vg.integrate_chunk( out, mat[lchunk], chunk )
             out1 = nm.sum( out, 0 )
             out1.shape = mat_shape
             yield out1, chunk, status
@@ -591,11 +593,12 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
         if self.vdim > 1:
             raise NotImplementedError
 
+        lchunk = self.char_fun.get_local_chunk()
         bf_t = bf.transpose( (0, 2, 1) )
         if mode == 0:
-            vec = bf_t * mat[chunk] * vec_qp[chunk]
+            vec = bf_t * mat[lchunk] * vec_qp[chunk]
         else:
-            vec = bf_t * mat[chunk] * bf
+            vec = bf_t * mat[lchunk] * bf
         status = vg.integrate_chunk( out, vec, chunk )
         return status
 
@@ -616,11 +619,12 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
 
     def d_volume_dot_w( self, out, vec1_qp, vec2_qp, mat, vg, chunk ):
 
+        lchunk = self.char_fun.get_local_chunk()
         if self.vdim > 1:
-            vec = mat[chunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
+            vec = mat[lchunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
                                           axis = -1 )
         else:
-            vec = mat[chunk] * vec1_qp[chunk] * vec2_qp[chunk]
+            vec = mat[lchunk] * vec1_qp[chunk] * vec2_qp[chunk]
         status = vg.integrate_chunk( out, vec, chunk )
         return status
 
