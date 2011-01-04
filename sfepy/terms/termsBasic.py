@@ -98,20 +98,21 @@ class IntegrateVolumeOperatorWTerm(Term):
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
         field_dim = virtual.field.shape[0]
         assert_( field_dim == 1 )
-        
+
         if diff_var is None:
             shape = (chunk_size, 1, field_dim * n_ep, 1 )
         else:
             raise StopIteration
-        
+
         bf = ap.get_base('v', 0, self.integral)
         for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
             bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
                             (chunk.shape[0], 1, 1, 1) )
             bf_t = nm.ascontiguousarray(bf_t)
-            val = mat[chunk] * bf_t
+            val = mat[lchunk] * bf_t
             status = vg.integrate_chunk( out, val, chunk )
-            
+
             yield out, chunk, 0
 
 ## 24.04.2007, c
