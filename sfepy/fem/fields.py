@@ -535,6 +535,12 @@ class Field( Struct ):
         if region.name not in ap.point_data:
             ap.setup_point_data(field, region)
 
+    def get_vertices(self):
+        """
+        Return indices of vertices belonging to the field region.
+        """
+        return self.region.all_vertices
+
     def get_dofs_in_region(self, region, merge=False, clean=False,
                            warn=False, igs=None):
         """
