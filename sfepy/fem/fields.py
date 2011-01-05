@@ -623,7 +623,7 @@ class Field( Struct ):
                 fill_value = nm.amin(dofs)
 
         if self.approx_order != 0:
-            indx = nm.where(self.vertex_remap >= 0)[0]
+            indx = self.get_vertices()
 
             n_nod = self.domain.shape.n_nod
             new_dofs = nm.empty((n_nod, dofs.shape[1]), dtype=self.dtype)
