@@ -579,6 +579,28 @@ class NormalDirectionOperator(LCBCOperator):
         self.n_dof = n_nod
         self.mtx = mtx.tocsr()
 
+class IntegralMeanValueOperator(LCBCOperator):
+    """
+    Transformation matrix operator for integral mean value LCBCs.
+    All node DOFs are sumed to the new one.
+    """
+    def __init__(self, name, nodes, region, field, dof_names, filename=None):
+        Struct.__init__(self, name=name, nodes=nodes, dof_names=dof_names)
+
+        dim = field.shape[0]
+        assert_(len(dof_names) == dim)
+
+        n_nod = nodes.shape[0]
+
+        data = nm.ones((n_nod * dim,))
+        rows = nm.arange(data.shape[0])
+        cols = nm.zeros((data.shape[0],))
+
+        mtx = sp.coo_matrix((data, (rows, cols)), shape=(n_nod * dim, dim))
+
+        self.n_dof = dim
+        self.mtx = mtx.tocsr()
+
 class LCBCOperators(Container):
     """
     Container holding instances of LCBCOperator subclasses for a single
@@ -634,6 +656,12 @@ class LCBCOperators(Container):
             op = NormalDirectionOperator('%d_normal_direction' % len(self),
                                          nmaster, region, field, dofs,
                                          filename=filename)
+
+        elif kind == 'integral_mean_value':
+            filename = get_default_attr(bc, 'filename', None)
+            op = IntegralMeanValueOperator('%d_integral_mean_value' % len(self),
+                                           nmaster, region, field, dofs,
+                                           filename=filename)
 
         self.append(op)
 
