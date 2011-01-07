@@ -854,3 +854,28 @@ class StateSQTerm(Term):
         self.function(out, vec, 0, bf, sd.econn)
 
         yield out, nm.arange(n_fa, dtype=nm.int32), 0
+
+class SumNodalValuesTerm(Term):
+    r"""
+    :Description:
+    Sum nodal values.
+
+    :Arguments:
+        parameter : :math:`p` or :math:`\ul{u}`,
+    """
+    name = 'd_sum_vals'
+    arg_types = ('parameter',)
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        par, = self.get_args( **kwargs )
+        ap, vg = self.get_approximation(par)
+        shape = (chunk_size, 1, 1, 1)
+
+        vec = self.get_vector(par)
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            if len(vec.shape) > 1:
+                out1 = nm.sum(vec[ap.econn[chunk]], axis = -1)
+            else:
+                out1 = nm.sum(vec[ap.econn[chunk]])
+
+            yield out1, chunk, 0
