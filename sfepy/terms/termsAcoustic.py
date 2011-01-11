@@ -96,57 +96,10 @@ class LaplaceLayerTSA2Term(LaplaceLayerTSA1Term):
 
     sa_mode = 1
 
-class LaplaceLayerTerm( ScalarScalar, Term ):
-    r"""
-    :Description:
-    Acoustic term.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} (c_1 \partial_\alpha \ul{v}\,\partial_\alpha \ul{u} + c_2
-        \partial_N \ul{v}\,\partial_N \ul{u} ), \alpha = 1,\dots,N-1
-
-    :Arguments:
-        material_1: :math:`c_1`,
-        material_2: :math:`c_2`,
-        virtual:    :math:`\ul{v}`,
-        state:      :math:`\ul{u}`
-    """
-    name = 'dw_llaplace'
-    arg_types = (('material', 'material', 'virtual', 'state'),
-                 ('material', 'material', 'parameter_1', 'parameter_2'))
-    modes = ('weak', 'eval')
-    functions = {'weak': terms.dw_llaplace,
-                 'eval': terms.d_llaplace }
-
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat1, mat2, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        return (state(), mat1, mat2, vg, ap.econn), shape, mode
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat1, mat2, par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
-        self.set_data_shape( ap )
-
-        return ((par1(), par2(), mat1, mat2, vg, ap.econn),
-                (chunk_size, 1, 1, 1), 0)
-
-    def set_arg_types( self ):
-        if self.mode == 'weak':
-            self.function = self.functions['weak']
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-        else:
-            self.function = self.functions['eval']
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-
 class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
     r"""
     :Description:
-    Acoustic term - derivatives in surface directions.
+    Acoustic 'layer' term - derivatives in surface directions.
 
     :Definition:
     .. math::
@@ -191,7 +144,7 @@ class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
 class SurfaceCoupleLayerTerm(ScalarScalar, Term):
     r"""
     :Description:
-    Acoustic term - derivatives in surface directions.
+    Acoustic 'layer' term - derivatives in surface directions.
 
     :Definition:
     .. math::

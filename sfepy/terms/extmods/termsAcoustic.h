@@ -25,17 +25,6 @@ int32 d_llaplace_t_sa( FMField *out,
 		       int32 mode,
 		       int32 *elList, int32 elList_nRow );
 
-int32 dw_llaplace( FMField *out, FMField *state,
-		   FMField *coef, FMField *coef2, VolumeGeometry *vg,
-		   int32 *conn, int32 nEl, int32 nEP,
-		   int32 *elList, int32 elList_nRow,
-		   int32 isDiff );
-
-int32 d_llaplace( FMField *out, FMField *stateU, FMField *stateV,
-		  FMField *coef, FMField *coef2, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow );
-
 int32 dw_surf_llaplace( FMField *out, FMField *state, FMField *coef,
 			FMField *gbf, SurfaceGeometry *sg,
 		        int32 *conn, int32 nEl, int32 nEP,
