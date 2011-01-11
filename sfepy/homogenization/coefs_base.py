@@ -210,7 +210,9 @@ class CorrNN( CorrMiniApp ):
 
         problem.set_equations( self.equations )
 
-        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                           lcbc_names = self.get_default_attr('lcbcs', []))
+
         problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
@@ -259,7 +261,9 @@ class CorrN( CorrMiniApp ):
 
         problem.set_equations( self.equations )
 
-        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                           lcbc_names = self.get_default_attr('lcbcs', []))
+
         problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
@@ -307,7 +311,9 @@ class CorrOne( CorrMiniApp ):
 
         problem.set_equations( self.equations )
 
-        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                           lcbc_names = self.get_default_attr('lcbcs', []))
+
         problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
@@ -449,7 +455,8 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
         problem.set_equations( self.equations )
 
-        problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+        problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                           lcbc_names = self.get_default_attr('lcbcs', []))
 
         variables = problem.get_variables()
         get_state = variables.get_state_part_view
@@ -575,7 +582,8 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
             if step == 0:
                 assert_( nm.allclose( data[vp].data, p0 ) )
 
-            problem.select_bcs( ebc_names = self.ebcs, epbc_names = self.epbcs )
+            problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                               lcbc_names = self.get_default_attr('lcbcs', []))
 
             state0 = problem.create_state()
             state0.set_full(data[vu].data, vu)
