@@ -9,7 +9,7 @@ class DiffusionTerm( ScalarScalar, Term ):
     :Description:
     General diffusion term with permeability :math:`K_{ij}`. Can be
     evaluated. Can use derivatives.
-    
+
     :Definition:
     .. math::
         \int_{\Omega} K_{ij} \nabla_i q \nabla_j p \mbox{ , } \int_{\Omega}
@@ -216,3 +216,67 @@ class DiffusionVelocityTerm( Term ):
                                     mat, vg, ap.econn, chunk )
             out1 = out / vg.variable( 2 )[chunk]
             yield out1, chunk, status
+
+class DiffusionIntegrateTerm( Term ):
+    r"""
+    :Description:
+    Diffusion integrate term.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_j \bar{p}
+
+    :Arguments:
+        material: :math:`\ul{K}`,
+        parameter:  :math:`\bar{p}`,
+    """
+    name = 'd_diffusion_integrate'
+    arg_types = ('material', 'parameter')
+
+    function = staticmethod(terms.d_diffusion_integrate)
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, parameter = self.get_args( **kwargs )
+        ap, vg = self.get_approximation(parameter)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+        if diff_var is None:
+            shape = (chunk_size, 1, dim, 1)
+        else:
+            raise StopIteration
+
+        vec = parameter()
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function(out, vec, mat, vg, ap.econn, chunk)
+            out1 = nm.sum(out, 0)
+            out1.shape = (dim,)
+            yield out1, chunk, status
+
+class DiffusionSurfaceIntegrateTerm( ScalarScalar, Term ):
+    r"""
+    :Description:
+    Diffusion surface integrate term
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
+
+    :Arguments:
+        material: :math:`\ul{K}`,
+        parameter:  :math:`\bar{p}`,
+    """
+    name = 'd_surface_diffusion_integrate'
+    arg_types = ('material', 'parameter')
+    integration = 'surface_extra'
+
+    function = staticmethod(terms.d_surf_diffusion_integrate)
+
+    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par = self.get_args( **kwargs )
+        ap, sg = self.get_approximation(par)
+
+        self.set_data_shape( ap )
+
+        fargs = (par(), mat, sg, ap.econn)
+
+        return fargs, (chunk_size, 1, 1, 1), 0
