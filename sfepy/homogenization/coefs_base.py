@@ -337,6 +337,68 @@ class CorrOne( CorrMiniApp ):
 
         return corr_sol
 
+class CorrEqPar(CorrOne):
+    """
+    The corrector which equation can be parametrized via 'eq_pars',
+    the dimension is given by the number of parameters.
+
+    Example:
+
+        'equations': 'dw_diffusion.5.Y(mat.k, q, p) =
+                      dw_surface_integrate.5.%s(q)',
+        'eq_pars': ('bYMp', 'bYMm'),
+        'class': cb.CorrEqPar,
+
+    """
+
+    def __init__( self, name, problem, kwargs ):
+        """When dim is not in kwargs, problem dimension is used."""
+        CorrMiniApp.__init__(self, name, problem, kwargs)
+        self.set_default_attr('dim', len(self.eq_pars))
+
+    def __call__( self, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+
+        states = nm.zeros( (self.dim,), dtype = nm.object )
+        clist = []
+
+        eqns ={}
+        for ir in range( self.dim ):
+            for key_eq, val_eq in self.equations.iteritems():
+                eqns[key_eq] = val_eq % self.eq_pars[ir]
+
+            problem.set_equations(eqns)
+
+            problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
+                               lcbc_names = self.get_default_attr('lcbcs', []))
+
+            problem.update_materials(problem.ts)
+
+            self.init_solvers(problem)
+
+            variables = problem.get_variables()
+
+            if hasattr(self, 'set_variables'):
+                if isinstance(self.set_variables, list):
+                    self.set_variables_default(variables, self.set_variables,
+                                               data)
+                else:
+                    self.set_variables(variables, **data)
+
+            state = problem.solve()
+            assert_(state.has_ebc())
+
+            states[ir] = state.get_parts()
+            clist.append((ir,))
+
+        corr_sol = CorrSolution(name = self.name,
+                                states = states,
+                                components = clist)
+
+        self.save(corr_sol, problem)
+
+        return corr_sol
+
 class PressureEigenvalueProblem( CorrMiniApp ):
     """Pressure eigenvalue problem solver for time-dependent correctors."""
 
