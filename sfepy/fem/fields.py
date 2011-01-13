@@ -788,17 +788,15 @@ class Field( Struct ):
         """
         ap = self.aps[ig]
 
-        geo = ap.describe_geometry(self, geometry_type, region, integral,
-                                   self.coors)
+        geo = ap.describe_geometry(self, geometry_type, region, integral)
         return geo
 
     def update_geometry(self, regions, geometries):
         for geom_key, geom in geometries.iteritems():
-            iname, geometry_type, tregion_name, ap_name = geom_key
+            iname, region_name, geometry_type, ap_name = geom_key
             ap = self.aps_by_name[ap_name]
             geom = ap.describe_geometry(self, geometry_type,
-                                        regions[tregion_name],
-                                        geom.integral, self.coors)
+                                        regions[region_name], geom.integral)
             geometries[geom_key] = geom
 
 

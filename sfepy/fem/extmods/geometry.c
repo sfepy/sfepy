@@ -102,7 +102,7 @@ int32 vg_print( VolumeGeometry *obj, FILE *file, int32 mode )
 int32 vg_describe( VolumeGeometry *obj,
 		   float64 *coorIn, int32 nNod, int32 dim,
 		   int32 *conn, int32 nEl, int32 nEP,
-		   FMField *bfGR, FMField *weight )
+		   FMField *bfGR, FMField *ebfGR, FMField *weight )
 {
   int32 iel, inod, idim, pos, iqp, nQP, ret = RET_OK;
   FMField *mtxMR = 0, *mtxMRI = 0, *coor = 0;
@@ -111,7 +111,8 @@ int32 vg_describe( VolumeGeometry *obj,
   if (!((nEl == obj->nEl) &&
 	(dim == obj->dim) &&
 	(nQP == obj->nQP) &&
-	(nEP == obj->nEP))) {
+	(nEP == bfGR->nCol) &&
+	(ebfGR->nCol == obj->nEP))) {
     output( "nNod: %d, dim: %d, nEl: %d, nEP: %d\n",  nNod, dim, nEl, nEP );
     fmf_print( obj->bfGM, stdout, 1 );
     fmf_print( bfGR, stdout, 1 );
@@ -157,7 +158,7 @@ int32 vg_describe( VolumeGeometry *obj,
     // Inverse of Jacobi matrix reference to material system.
     geme_invert3x3( mtxMRI, mtxMR );
     // Base function gradient w.r.t. material system.
-    fmf_mulATB_nn( obj->bfGM, mtxMRI, bfGR );
+    fmf_mulATB_nn( obj->bfGM, mtxMRI, ebfGR );
 
     conn += nEP;
     
@@ -391,7 +392,7 @@ int32 sg_describe( SurfaceGeometry *obj,
   if (!((nFa == obj->nFa) &&
 	(dim == obj->dim) &&
 	(nQP == obj->nQP) &&
-	(nFP == obj->nFP))) {
+	(nFP == bfGR->nCol))) {
     output( "nNod: %d, dim: %d, nFa: %d, nFP: %d\n",  nNod, dim, nFa, nFP );
     fmf_print( obj->normal, stdout, 1 );
     fmf_print( bfGR, stdout, 1 );
@@ -584,7 +585,7 @@ int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
   - 04.05.2007, c
   - 30.05.2007
 */
-int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR,
+int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR, FMField *ebfBGR,
 			float64 *coorIn, int32 nNod, int32 dim,
 			int32 *fis, int32 nFa, int32 nFP,
 			int32 *conn, int32 nEl, int32 nEP )
@@ -606,6 +607,7 @@ int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR,
     
     FMF_SetCell( obj->bfBGM, ii );
     FMF_SetCell( bfBGR, ifa );
+    FMF_SetCell( ebfBGR, ifa );
 
     for (inod = 0; inod < nEP; inod++) {
       pos = dim*conn[nEP*iel+inod];
@@ -615,7 +617,7 @@ int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR,
     }
     fmf_mulAB_n1( mtxRM, bfBGR, volCoor0 );
     geme_invert3x3( mtxRMI, mtxRM );
-    fmf_mulAB_nn( obj->bfBGM, mtxRMI, bfBGR );
+    fmf_mulAB_nn( obj->bfBGM, mtxRMI, ebfBGR );
 /*     fmf_mulATBT_1n( mtxRM, volCoor0, bfBGR ); */
 /*     geme_invert3x3( mtxRMI, mtxRM ); */
 /*     fmf_mulATB_nn( obj->bfBGM, mtxRMI, bfBGR ); */

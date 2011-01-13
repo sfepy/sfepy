@@ -77,6 +77,7 @@ typedef struct VolumeGeometry {
   };
   %apply (FMField *in) {
       (FMField *bfGR),
+      (FMField *ebfGR),
       (FMField *weight)
   };
 
@@ -86,9 +87,9 @@ typedef struct VolumeGeometry {
   */
   int32 describe( float64 *coorIn, int32 nNod, int32 dim,
 		  int32 *conn, int32 nEl, int32 nEP,
-		  FMField *bfGR, FMField *weight ) {
+		  FMField *bfGR, FMField *ebfGR, FMField *weight ) {
     return( vg_describe( self, coorIn, nNod, dim,
-			 conn, nEl, nEP, bfGR, weight ) );
+			 conn, nEl, nEP, bfGR, ebfGR, weight ) );
   }
 
   /*!
@@ -242,6 +243,7 @@ typedef struct SurfaceGeometry {
   %apply (FMField *in) {
       (FMField *bfGR),
       (FMField *bfBGR),
+      (FMField *ebfBGR),
       (FMField *weight)
   };
 
@@ -323,11 +325,11 @@ typedef struct SurfaceGeometry {
     @par Revision history:
     - 04.05.2007, c
   */
-  int32 evaluate_bfbgm( FMField *bfBGR,
+  int32 evaluate_bfbgm( FMField *bfBGR, FMField *ebfBGR,
 			float64 *coorIn, int32 nNod, int32 dim,
 			int32 *fis, int32 nFa, int32 nFP,
 			int32 *conn, int32 nEl, int32 nEP ) {
-    return( sg_evaluateBFBGM( self, bfBGR, coorIn, nNod, dim,
+    return( sg_evaluateBFBGM( self, bfBGR, ebfBGR, coorIn, nNod, dim,
 			      fis, nFa, nFP, conn, nEl, nEP ) );
   }
 

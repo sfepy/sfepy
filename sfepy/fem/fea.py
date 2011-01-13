@@ -216,13 +216,14 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    def describe_geometry(self, field, gtype, region, integral=None, coors=None):
+    def describe_geometry(self, field, gtype, region, integral=None):
         """Compute jacobians, element volumes and base function derivatives
         for Volume-type geometries, and jacobians, normals and base function
         derivatives for Surface-type geometries.
         """
-        if coors is None:
-            coors = field.coors
+        domain = field.domain
+        group = domain.groups[self.ig]
+        coors = domain.get_mesh_coors()
 
         if gtype == 'volume':
             if integral is None:
@@ -233,21 +234,11 @@ class Approximation( Struct ):
 
             qp = self.get_qp('v', integral)
 
-            mapping = VolumeMapping(coors, self.econn,
-                                    poly_space=self.interp.poly_spaces['v'])
+            geo_ps = self.interp.get_geom_poly_space('v')
+            ps = self.interp.poly_spaces['v']
 
-            try:
-                vg = mapping.get_mapping(qp.vals, qp.weights)
-
-            except ValueError: # Constant bubble.
-                domain = self.region.domain
-                group = domain.groups[self.ig]
-                coors = domain.get_mesh_coors()
-
-                ps = self.interp.gel.interp.poly_spaces['v']
-                mapping = VolumeMapping(coors, group.conn, poly_space=ps)
-
-                vg = mapping.get_mapping(qp.vals, qp.weights)
+            mapping = VolumeMapping(coors, group.conn, poly_space=geo_ps)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
             out = vg
 
@@ -256,21 +247,28 @@ class Approximation( Struct ):
             qp = self.get_qp(sd.face_type, integral)
 
             if not self.is_surface:
-                ps = self.interp.poly_spaces[sd.face_type]
+                geo_ps = self.interp.get_geom_poly_space(sd.face_type)
 
             else:
-                ps = self.interp.poly_spaces['v']
+                geo_ps = self.interp.get_geom_poly_space('v')
 
             econn = sd.get_connectivity(self.is_surface)
-            mapping = SurfaceMapping(coors, econn, poly_space=ps)
+            conn = econn[:, :geo_ps.n_nod].copy()
+
+            mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
             sg = mapping.get_mapping(qp.vals, qp.weights)
 
             if gtype == 'surface_extra':
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
 
                 self.create_bqp( region.name, integral )
-                bf_bg = self.get_base(sd.bkey, 1, integral)
-                sg.evaluate_bfbgm( bf_bg, coors, sd.fis, self.econn )
+                qp = self.qp_coors[(integral.name, sd.bkey)]
+
+                ps = self.interp.get_geom_poly_space('v')
+                bf_bg = ps.eval_base(qp.vals, diff=True)
+                ebf_bg = self.get_base(sd.bkey, 1, integral)
+
+                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
 
             out =  sg
 
