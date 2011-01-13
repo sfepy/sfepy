@@ -220,6 +220,7 @@ class Test( TestCommon ):
             self.report( '%d: mesh rotation %d degrees' % (ia, angle) )
             problem.domain.mesh.transform_coors( rotation_matrix2d( angle ),
                                                  ref_coors = orig_coors )
+            problem.set_mesh_coors(problem.domain.mesh.coors, update_state=True)
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
@@ -234,5 +235,10 @@ class Test( TestCommon ):
                              (abs( val2 - values[ii] ) < 1e-10))
                 self.report( '  %d. %s: %e == %e == %e'\
                              % (ii, region_name, val1, val2, values[ii]) )
-        
+
+        # Restore original coordinates.
+        problem.domain.mesh.transform_coors(rotation_matrix2d(0),
+                                            ref_coors=orig_coors)
+        problem.set_mesh_coors(problem.domain.mesh.coors, update_state=True)
+
         return ok
