@@ -59,6 +59,19 @@ class Interpolant( Struct ):
             nn[key] = ps.nodes.shape[0]
         return nn
 
+    def get_geom_poly_space(self, key):
+        if key == 'v':
+            ps = self.gel.interp.poly_spaces['v']
+
+        elif key[0] == 's':
+            n_v = self.gel.surface_facet.n_vertex
+            ps = self.gel.interp.poly_spaces['s%d' % n_v]
+
+        else:
+            raise ValueError('bad polynomial space key! (%s)' % key)
+
+        return ps
+
 ##
 # 18.07.2006, c
 class Approximation( Struct ):
