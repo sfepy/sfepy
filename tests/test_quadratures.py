@@ -8,16 +8,22 @@ except ImportError:
 from sfepy.base.testing import TestCommon
 from sfepy.base.base import ordered_iteritems
 
+def symarray(prefix, shape):
+    """
+    Copied from SymPy so that the tests pass for its different versions.
+    """
+    arr = nm.empty(shape, dtype=object)
+    for index in nm.ndindex(shape):
+        arr[index] = sm.Symbol('%s_%s' % (prefix, '_'.join(map(str, index))))
+    return arr
+
 def get_poly(order, dim, is_simplex=False):
     """
     Construct a polynomial of given `order` in space dimension `dim`,
     and integrate it symbolically over a rectangular or simplex domain
     for coordinates in [0, 1].
     """
-    try:
-        xs = sm.symarray('x', dim)
-    except:
-        xs = sm.symarray(dim, 'x')
+    xs = symarray('x', dim)
 
     opd = max(1, int((order + 1) / dim))
 
