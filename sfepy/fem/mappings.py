@@ -3,7 +3,7 @@ Finite element reference mappings.
 """
 import numpy as nm
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import output, get_default, Struct
 from sfepy.fem.poly_spaces import PolySpace
 import extmods.geometry as gm
 
@@ -103,7 +103,66 @@ class Mapping(Struct):
 
         return qps
 
-    def _describe(self, geo, qp_coors, weights):
+class VolumeMapping(Mapping):
+    """
+    Mapping from reference domain to physical domain of the same space
+    dimension.
+    """
+
+    def get_mapping(self, qp_coors, weights, poly_space=None):
+        """
+        Get the mapping for given quadrature points, weights, and
+        polynomial space.
+
+        Returns
+        -------
+        geo : VolumeGeometry instance
+            The geometry object that describes the mapping.
+        """
+        poly_space = get_default(poly_space, self.poly_space)
+
+        geo = gm.VolumeGeometry(self.n_el, qp_coors.shape[0], self.dim,
+                                poly_space.n_nod)
+        geo.mode = gm.GM_Material
+
+        bf_g = self.get_base(qp_coors, diff=True)
+        ebf_g = poly_space.eval_base(qp_coors, diff=True)
+
+        if nm.allclose(bf_g, 0.0):
+            raise ValueError('zero base function gradient!')
+
+        try:
+            geo.describe(self.coors, self.conn, bf_g, ebf_g, weights)
+        except:
+            gm.errclear()
+            raise
+
+        return geo
+
+        return geo
+
+class SurfaceMapping(Mapping):
+    """
+    Mapping from reference domain to physical domain of the space
+    dimension higher by one.
+    """
+
+    def get_mapping(self, qp_coors, weights, poly_space=None):
+        """
+        Get the mapping for given quadrature points, weights, and
+        polynomial space.
+
+        Returns
+        -------
+        geo : SurfaceGeometry instance
+            The geometry object that describes the mapping.
+        """
+        poly_space = get_default(poly_space, self.poly_space)
+
+        geo = gm.SurfaceGeometry(self.n_el, qp_coors.shape[0], self.dim,
+                                 poly_space.n_nod)
+        geo.mode = gm.GM_Material
+
         bf_g = self.get_base(qp_coors, diff=True)
 
         if nm.allclose(bf_g, 0.0):
@@ -114,47 +173,5 @@ class Mapping(Struct):
         except:
             gm.errclear()
             raise
-
-class VolumeMapping(Mapping):
-    """
-    Mapping from reference domain to physical domain of the same space
-    dimension.
-    """
-
-    def get_mapping(self, qp_coors, weights):
-        """
-        Get the mapping for given quadrature points and weights.
-
-        Returns
-        -------
-        geo : VolumeGeometry instance
-            The geometry object that describes the mapping.
-        """
-        geo = gm.VolumeGeometry(self.n_el, qp_coors.shape[0], self.dim,
-                                self.n_ep)
-        geo.mode = gm.GM_Material
-        self._describe(geo, qp_coors, weights)
-
-        return geo
-
-class SurfaceMapping(Mapping):
-    """
-    Mapping from reference domain to physical domain of the space
-    dimension higher by one.
-    """
-
-    def get_mapping(self, qp_coors, weights):
-        """
-        Get the mapping for given quadrature points and weights.
-
-        Returns
-        -------
-        geo : SurfaceGeometry instance
-            The geometry object that describes the mapping.
-        """
-        geo = gm.SurfaceGeometry(self.n_el, qp_coors.shape[0], self.dim,
-                                 self.n_ep)
-        geo.mode = gm.GM_Material
-        self._describe(geo, qp_coors, weights)
 
         return geo
