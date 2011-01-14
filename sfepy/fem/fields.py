@@ -36,6 +36,9 @@ def parse_approx_order(approx_order):
     if ao < 0:
         raise ValueError(ao_msg % approx_order)
 
+    elif ao == 0:
+        discontinuous = True
+
     return ao, force_bubble, discontinuous
 
 def create_dof_conn(conn, dpn):
