@@ -934,6 +934,35 @@ class DiscontinuousField(Field):
         """
         self.setup_facet_orientations()
 
+        self.init_econn()
+
+        n_dof = 0
+        all_dofs = []
+        remaps = []
+        for ig, ap in self.aps.iteritems():
+            ii = self.region.get_cells(ig)
+            nd = nm.prod(ap.econn.shape)
+
+            group = self.domain.groups[ig]
+            remap = prepare_remap(ii, group.shape.n_el)
+            remaps.append(remap)
+
+            aux = nm.arange(n_dof, n_dof + nd, dtype=nm.int32)
+            aux.shape = ap.econn.shape
+
+            ap.econn[:] = aux
+            all_dofs.append(aux)
+
+            n_dof += nd
+
+        self.n_nod = n_dof
+
+        self.n_bubble_dof = n_dof
+        self.bubble_dofs = all_dofs
+        self.bubble_remaps = remaps
+
+        self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
+
 class SurfaceField(Field):
     """
     A field defined on a surface region.
