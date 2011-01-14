@@ -521,10 +521,10 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
         shape     : shape of :math:`m`
     """
     name = 'di_volume_integrate_mat'
-    arg_types = ('material', 'parameter', 'shape')
+    arg_types = ('material', 'parameter')
 
     def prepare_data( self, chunk_size = None, **kwargs ):
-        mat, par, mat_shape = self.get_args( **kwargs )
+        mat, par, = self.get_args( **kwargs )
         ap, vg = self.get_approximation(par)
         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
@@ -535,14 +535,13 @@ class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
     ##
     # c: 05.03.2008, r: 06.05.2008
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat_shape, = self.get_args( ['shape'], **kwargs )
         vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
 
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
             status = vg.integrate_chunk( out, mat[lchunk], chunk )
             out1 = nm.sum( out, 0 )
-            out1.shape = mat_shape
+            out1 = out1.squeeze()
             yield out1, chunk, status
 
 ##
