@@ -1061,6 +1061,16 @@ class DiscontinuousField(Field):
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, mesh)
 
+    def average_to_vertices(self, dofs):
+        """
+        Average DOFs of the discontinuous field into the field region
+        vertices.
+        """
+        data_qp, integral = self.interp_to_qp(dofs)
+        vertex_dofs = self.average_qp_to_vertices(data_qp, integral)
+
+        return vertex_dofs
+
 class SurfaceField(Field):
     """
     A field defined on a surface region.
