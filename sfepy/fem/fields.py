@@ -928,6 +928,16 @@ class Field( Struct ):
 
 class DiscontinuousField(Field):
 
+    def setup_approximations(self):
+        self.aps = {}
+        self.aps_by_name = {}
+        for ig in self.igs:
+            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
+            ap = fea.DiscontinuousApproximation(name, self.interp,
+                                                self.region, ig)
+            self.aps[ig] = ap
+            self.aps_by_name[ap.name] = ap
+
     def setup_global_base( self ):
         """
         Setup global DOF/base function indices and connectivity of the field.
@@ -961,6 +971,16 @@ class DiscontinuousField(Field):
         self.bubble_remaps = remaps
 
         self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
+
+    def setup_coors(self):
+        """
+        Setup coordinates of field nodes.
+        """
+        mesh = self.domain.mesh
+        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
+
+        for ig, ap in self.aps.iteritems():
+            ap.eval_extra_coor(self.coors, mesh)
 
 class SurfaceField(Field):
     """
