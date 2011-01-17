@@ -432,28 +432,24 @@ class Field( Struct ):
         offset = self.n_vertex_dof + self.n_edge_dof + self.n_face_dof
         n_dof = 0
         n_dof_per_cell = self.node_desc.bubble.shape[0]
-        all_dofs = []
-        remaps = []
+        all_dofs = {}
+        remaps = {}
         for ig, ap in self.aps.iteritems():
             ii = self.region.get_cells(ig)
             n_cell = ii.shape[0]
             nd = n_dof_per_cell * n_cell
 
             group = self.domain.groups[ig]
-            remap = prepare_remap(ii, group.shape.n_el)
-            remaps.append(remap)
+            remaps[ig] = prepare_remap(ii, group.shape.n_el)
 
             aux = nm.arange(offset + n_dof, offset + n_dof + nd,
                             dtype=nm.int32)
             aux.shape = (n_cell, n_dof_per_cell)
             iep = self.node_desc.bubble[0]
             ap.econn[:,iep:] = aux
-            all_dofs.append(aux)
+            all_dofs[ig] = aux
 
             n_dof += nd
-
-        all_dofs = nm.concatenate(all_dofs, axis=0)
-        assert_(n_dof == nm.prod(all_dofs.shape))
 
         return n_dof, all_dofs, remaps
 
@@ -609,8 +605,9 @@ class Field( Struct ):
 
         if (node_desc.bubble is not None) and region.can_cells:
             ii = region.get_cells(ig)
-            bdofs = self.bubble_dofs[self.bubble_remaps[ig][ii]].ravel()
-            dofs = nm.concatenate((dofs, bdofs[bdofs >= 0]))
+            group_els = self.bubble_remaps[ig][ii]
+            bdofs = self.bubble_dofs[ig][group_els[group_els >= 0]].ravel()
+            dofs = nm.concatenate((dofs, bdofs))
 
         return dofs
 
@@ -940,21 +937,20 @@ class DiscontinuousField(Field):
         self.init_econn()
 
         n_dof = 0
-        all_dofs = []
-        remaps = []
+        all_dofs = {}
+        remaps = {}
         for ig, ap in self.aps.iteritems():
             ii = self.region.get_cells(ig)
             nd = nm.prod(ap.econn.shape)
 
             group = self.domain.groups[ig]
-            remap = prepare_remap(ii, group.shape.n_el)
-            remaps.append(remap)
+            remaps[ig] = prepare_remap(ii, group.shape.n_el)
 
             aux = nm.arange(n_dof, n_dof + nd, dtype=nm.int32)
             aux.shape = ap.econn.shape
 
             ap.econn[:] = aux
-            all_dofs.append(aux)
+            all_dofs[ig] = aux
 
             n_dof += nd
 
