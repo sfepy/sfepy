@@ -760,6 +760,47 @@ class Field( Struct ):
 
         return enod_vol_val
 
+    def average_qp_to_vertices(self, data_qp, integral):
+        """
+        Average data given in quadrature points in region elements into
+        region vertices.
+
+        .. math::
+           u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
+               = \sum_e \int_{volume_e} u / \sum volume_e
+        """
+        domain = self.domain
+        if domain.shape.n_el != data_qp.shape[0]:
+            msg = 'incomatible shape! (%d == %d)' % (domain.shape.n_el,
+                                                     data_qp.shape[0])
+            raise ValueError(msg)
+
+        n_vertex = domain.shape.n_nod
+        dim = data_qp.shape[2]
+
+        nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
+        data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
+        for ig, ap in self.aps.iteritems():
+            vg = ap.describe_geometry(self, 'volume', ap.region, integral)
+
+            volume = nm.squeeze(vg.variable(2))
+            iels = ap.region.cells[ig]
+
+            data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
+            vg.integrate(data_e, data_qp[iels])
+
+            ir = nm.arange(dim, dtype=nm.int32)
+
+            conn = domain.groups[ig].conn
+            for ii, cc in enumerate(conn):
+                # Assumes unique nodes in cc!
+                ind2, ind1 = nm.meshgrid(ir, cc)
+                data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
+                nod_vol[cc] += volume[ii]
+        data_vertex /= nod_vol[:,nm.newaxis]
+
+        return data_vertex
+
     def get_coor(self, nods=None):
         """
         Get coordinates of the field nodes.

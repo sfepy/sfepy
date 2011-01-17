@@ -1329,37 +1329,11 @@ class FieldVariable(Variable):
             output('data of %s set by %s()' % (self.name, setter_name))
 
     def data_from_qp(self, data_qp, integral, step=0):
-        """u_n = \sum_e (u_{e,avg} * volume_e) / \sum_e volume_e
-               = \sum_e \int_{volume_e} u / \sum volume_e"""
-        domain = self.field.domain
-        if domain.shape.n_el != data_qp.shape[0]:
-            msg = 'incomatible shape! (%d == %d)' % (domain.shape.n_el,
-                                                     data_qp.shape[0])
-            raise ValueError(msg)
-
-        n_vertex = domain.shape.n_nod
-        dim = data_qp.shape[2]
-
-        nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
-        data_vertex = nm.zeros((n_vertex, dim), dtype=nm.float64)
-        for ig, ap in self.field.aps.iteritems():
-            vg = self.describe_geometry('volume', ap.region, integral, ig)
-
-            volume = nm.squeeze(vg.variable(2))
-            iels = ap.region.cells[ig]
-
-            data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
-            vg.integrate(data_e, data_qp[iels])
-
-            ir = nm.arange(dim, dtype=nm.int32)
-
-            conn = domain.groups[ig].conn
-            for ii, cc in enumerate(conn):
-                # Assumes unique nodes in cc!
-                ind2, ind1 = nm.meshgrid(ir, cc)
-                data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
-                nod_vol[cc] += volume[ii]
-        data_vertex /= nod_vol[:,nm.newaxis]
+        """
+        Set DOFs of variable using values in quadrature points
+        corresponding to the given integral.
+        """
+        data_vertex = self.field.average_qp_to_vertices(data_qp, integral)
 
         ##
         # Field nodes values - TODO!.
