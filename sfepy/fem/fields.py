@@ -8,6 +8,7 @@ from sfepy.fem.mesh import Mesh, make_inverse_connectivity
 from sfepy.fem.utils import extend_cell_data, prepare_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
+from sfepy.fem.integrals import Integral
 from sfepy.fem.extmods.fem import evaluate_at
 
 def parse_approx_order(approx_order):
@@ -759,6 +760,41 @@ class Field( Struct ):
                 enod_vol_val[econn] = nm.swapaxes(evec, 0, 1)
 
         return enod_vol_val
+
+    def interp_to_qp(self, dofs):
+        """
+        Interpolate DOFs into quadrature points.
+
+        The quadrature order is given by the field approximation order.
+
+        Parameters
+        ----------
+        dofs : array
+            The array of DOF values of shape `(n_nod, n_component)`.
+
+        Returns
+        -------
+        data_qp : array
+            The values interpolated into the quadrature points.
+        integral : Integral
+            The corresponding integral defining the quadrature points.
+        """
+        integral = Integral('i', order=self.get_true_order())
+
+        data_qp = []
+        for ig, ap in self.aps.iteritems():
+            bf = ap.get_base('v', False, integral)
+            bf = bf[:,0,:].copy()
+
+            vals = nm.dot(bf, dofs[ap.econn])
+            vals = nm.swapaxes(vals, 0, 1)
+            vals.shape = vals.shape + (1,)
+
+            data_qp.append(vals)
+
+        data_qp = nm.concatenate(data_qp, axis=0)
+
+        return data_qp, integral
 
     def average_qp_to_vertices(self, data_qp, integral):
         """
