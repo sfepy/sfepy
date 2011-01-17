@@ -1061,6 +1061,27 @@ class DiscontinuousField(Field):
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, mesh)
 
+    def extend_dofs(self, dofs, fill_value=None):
+        """
+        Extend DOFs to the whole domain using the `fill_value`, or the
+        smallest value in `dofs` if `fill_value` is None.
+        """
+        dofs = self.average_to_vertices(dofs)
+
+        new_dofs = Field.extend_dofs(self, dofs)
+
+        return new_dofs
+
+    def remove_extra_dofs(self, dofs):
+        """
+        Remove DOFs defined in higher order nodes (order > 1).
+        """
+        dofs = self.average_to_vertices(dofs)
+
+        new_dofs = Field.remove_extra_dofs(self, dofs)
+
+        return new_dofs
+
     def average_to_vertices(self, dofs):
         """
         Average DOFs of the discontinuous field into the field region
