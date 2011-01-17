@@ -1013,6 +1013,8 @@ class DiscontinuousField(Field):
 
         self.n_vertex_dof = self.n_edge_dof = self.n_face_dof = 0
 
+        self.setup_esurface()
+
     def setup_coors(self):
         """
         Setup coordinates of field nodes.
