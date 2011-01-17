@@ -12,6 +12,36 @@ def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
             field.setup_coors()
             field.update_geometry(domain.regions, geometries)
 
+def eval_nodal_coors(coors, mesh, region, poly_space, geom_poly_space,
+                     econn, ig, only_extra=True):
+    """
+    Compute coordinates of nodes corresponding to `poly_space`, given
+    mesh coordinates and `geom_poly_space`.
+    """
+    if only_extra:
+        iex = (poly_space.nts[:,0] > 0).nonzero()[0]
+        if iex.shape[0] == 0: return
+
+        qp_coors = poly_space.node_coors[iex, :]
+        econn = econn[:, iex].copy()
+
+    else:
+        qp_coors = poly_space.node_coors
+
+    ##
+    # Evaluate geometry interpolation base functions in (extra) nodes.
+    bf = geom_poly_space.eval_base(qp_coors)
+    bf = bf[:,0,:].copy()
+
+    ##
+    # Evaluate extra coordinates with 'bf'.
+    group = region.domain.groups[ig]
+    cells = region.get_cells(ig)
+
+    ecoors = nm.dot(bf, mesh.coors[group.conn[cells]])
+    coors[econn] = nm.swapaxes(ecoors, 0, 1)
+
+
 ##
 # 04.08.2005, c
 def _interp_to_faces( vertex_vals, bfs, faces ):
@@ -99,29 +129,10 @@ class Approximation( Struct ):
         """
         Compute coordinates of extra nodes.
         """
-        ##
-        # Evaluate geometry interpolation base functions in extra nodes.
-        ginterp = self.interp.gel.interp
+        gps = self.interp.gel.interp.poly_spaces['v']
         ps = self.interp.poly_spaces['v']
 
-        iex = (ps.nts[:,0] > 0).nonzero()[0]
-        if iex.shape[0] == 0: return
-
-        qp_coors = ps.node_coors[iex,:]
-
-        bf = ginterp.poly_spaces['v'].eval_base(qp_coors)
-        bf = bf[:,0,:].copy()
-
-        ##
-        # Evaulate extra coordinates with 'bf'.
-        econn = self.econn[:, iex].copy()
-
-        region = self.region
-        group = region.domain.groups[self.ig]
-        cells = region.get_cells(self.ig)
-
-        ecoors = nm.dot(bf, mesh.coors[group.conn[cells]])
-        coors[econn] = nm.swapaxes(ecoors, 0, 1)
+        eval_nodal_coors(coors, mesh, self.region, ps, gps, self.econn, self.ig)
 
     def get_v_data_shape(self, integral=None):
         """returns (n_el, n_qp, dim, n_ep)"""
@@ -308,3 +319,16 @@ class Approximation( Struct ):
             bkey = self._create_bqp(sd.face_type, bf_s, qp.weights,
                                     integral.name)
             assert_(bkey == sd.bkey)
+
+class DiscontinuousApproximation(Approximation):
+
+    def eval_extra_coor(self, coors, mesh):
+        """
+        Compute coordinates of extra nodes. For discontinuous
+        approximations, all nodes are treated as extra.
+        """
+        gps = self.interp.gel.interp.poly_spaces['v']
+        ps = self.interp.poly_spaces['v']
+
+        eval_nodal_coors(coors, mesh, self.region, ps, gps, self.econn, self.ig,
+                         only_extra=False)
