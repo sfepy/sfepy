@@ -1066,7 +1066,8 @@ class DiscontinuousField(Field):
         Extend DOFs to the whole domain using the `fill_value`, or the
         smallest value in `dofs` if `fill_value` is None.
         """
-        dofs = self.average_to_vertices(dofs)
+        if self.approx_order != 0:
+            dofs = self.average_to_vertices(dofs)
 
         new_dofs = Field.extend_dofs(self, dofs)
 
@@ -1076,7 +1077,8 @@ class DiscontinuousField(Field):
         """
         Remove DOFs defined in higher order nodes (order > 1).
         """
-        dofs = self.average_to_vertices(dofs)
+        if self.approx_order != 0:
+            dofs = self.average_to_vertices(dofs)
 
         new_dofs = Field.remove_extra_dofs(self, dofs)
 
