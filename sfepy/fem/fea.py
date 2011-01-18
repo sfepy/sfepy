@@ -187,7 +187,7 @@ class Approximation( Struct ):
 
         if not self.qp_coors.has_key(qpkey):
             interp = self.interp
-            if (key[0] == 's') and not self.is_surface:
+            if (key[0] == 's'):
                 dim = interp.gel.dim - 1
                 n_fp = interp.gel.surface_facet.n_vertex
                 geometry = '%d_%d' % (dim, n_fp)
@@ -202,9 +202,6 @@ class Approximation( Struct ):
 
     def get_base(self, key, derivative, integral,
                  from_geometry=False, base_only=True):
-        if self.is_surface:
-            key = 'v'
-
         qp = self.get_qp(key, integral)
 
         if from_geometry:
@@ -219,7 +216,7 @@ class Approximation( Struct ):
             ps = self.interp.poly_spaces[key]
             bf_key = (integral.name, key, derivative)
 
-        if not self.bf.has_key( bf_key ):
+        if not self.bf.has_key(bf_key):
             self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative)
 
         if base_only:
@@ -257,11 +254,7 @@ class Approximation( Struct ):
             sd = self.surface_data[region.name]
             qp = self.get_qp(sd.face_type, integral)
 
-            if not self.is_surface:
-                geo_ps = self.interp.get_geom_poly_space(sd.face_type)
-
-            else:
-                geo_ps = self.interp.get_geom_poly_space('v')
+            geo_ps = self.interp.get_geom_poly_space(sd.face_type)
 
             econn = sd.get_connectivity(self.is_surface)
             conn = econn[:, :geo_ps.n_nod].copy()
@@ -332,3 +325,27 @@ class DiscontinuousApproximation(Approximation):
 
         eval_nodal_coors(coors, mesh, self.region, ps, gps, self.econn, self.ig,
                          only_extra=False)
+
+class SurfaceApproximation(Approximation):
+
+    def __init__(self, name, interp, region, ig):
+        Approximation.__init__(self, name, interp, region, ig, is_surface=True)
+
+    def get_qp(self, key, integral):
+        """
+        Get quadrature points and weights corresponding to the given key
+        and integral. The key is 's#', where # is the number of
+        face vertices.
+        """
+        assert_(key[0] == 's')
+        qpkey = (integral.name, key)
+
+        if not self.qp_coors.has_key(qpkey):
+            interp = self.interp
+            geometry = interp.gel.name
+
+            vals, weights = integral.get_qp(geometry)
+            self.qp_coors[qpkey] = Struct(vals=vals, weights=weights)
+
+        return self.qp_coors[qpkey]
+

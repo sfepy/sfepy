@@ -1116,9 +1116,13 @@ class SurfaceField(Field):
             raise ValueError('element group has no surface!')
 
     def setup_approximations(self):
-        Field.setup_approximations(self)
-        for ap in self.aps.itervalues():
-            ap.is_surface = True
+        self.aps = {}
+        self.aps_by_name = {}
+        for ig in self.igs:
+            name = self.interp.name + '_%s_ig%d' % (self.region.name, ig)
+            ap = fea.SurfaceApproximation(name, self.interp, self.region, ig)
+            self.aps[ig] = ap
+            self.aps_by_name[ap.name] = ap
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
