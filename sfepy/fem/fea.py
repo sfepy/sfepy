@@ -102,6 +102,27 @@ class Interpolant( Struct ):
 
         return ps
 
+class SurfaceInterpolant(Interpolant):
+    """
+    Like Interpolant, but for use with SurfaceField and
+    SurfaceApproximation.
+    """
+
+    def __init__(self, name, gel, approx_order=1, force_bubble=False):
+        Interpolant.__init__(self, name, gel, approx_order=approx_order,
+                             force_bubble=force_bubble)
+
+        # Make alias 'v' <-> 's#'.
+        ps = self.poly_spaces['v']
+        self.poly_spaces['s%d' % ps.n_nod] = ps
+
+    def get_geom_poly_space(self, key):
+        assert_(key[0] == 's')
+
+        ps = self.gel.interp.poly_spaces['v']
+
+        return ps
+
 ##
 # 18.07.2006, c
 class Approximation( Struct ):

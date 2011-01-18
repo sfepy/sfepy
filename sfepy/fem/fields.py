@@ -1115,6 +1115,12 @@ class SurfaceField(Field):
         if self.gel is None:
             raise ValueError('element group has no surface!')
 
+    def create_interpolant(self):
+        name = '%s_%d%s' % (self.gel.name, self.approx_order,
+                            'B' * self.force_bubble)
+        self.interp = fea.SurfaceInterpolant(name, self.gel, self.approx_order,
+                                             self.force_bubble)
+
     def setup_approximations(self):
         self.aps = {}
         self.aps_by_name = {}
