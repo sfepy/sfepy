@@ -192,6 +192,9 @@ class Newton( NonlinearSolver ):
                         output('giving up!')
                         raise
 
+                    else:
+                        ok = False
+
                 else:
                     ok = True
 

@@ -135,6 +135,9 @@ class SemismoothNewton(Newton):
                         output('giving up!')
                         raise
 
+                    else:
+                        ok = False
+
                 else:
                     if conf.semismooth:
                         # Semi-smooth equation.
