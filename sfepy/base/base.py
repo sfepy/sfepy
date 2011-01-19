@@ -619,12 +619,14 @@ class Output(Struct):
     my_cool_app: 1 2 3 hello
     """
 
-    def __init__(self, prefix, filename=None, combined=False, **kwargs):
+    def __init__(self, prefix, filename=None, quiet=False, combined=False,
+                 append=False, **kwargs):
         Struct.__init__(self, **kwargs)
 
         self.prefix = prefix
 
-        self.set_output(filename, combined)
+        self.set_output(filename=filename, quiet=quiet,
+                        combined=combined, append=append)
         
     def __call__(self, *argc, **argv):
         """Call self.output_function.
