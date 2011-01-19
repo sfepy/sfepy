@@ -56,15 +56,20 @@ class FiniteStrainTLDataCache( DataCache ):
 
         ckey = self.get_key(term)
 
-        self.function( self.data['F'][ckey][ih],
-                       self.data['detF'][ckey][ih],
-                       self.data['C'][ckey][ih],
-                       self.data['trC'][ckey][ih],
-                       self.data['in2C'][ckey][ih],
-                       self.data['invC'][ckey][ih],
-                       self.data['E'][ckey][ih],
-                       state(), 0, vg, ap.econn )
-        
+        try:
+            self.function(self.data['F'][ckey][ih],
+                          self.data['detF'][ckey][ih],
+                          self.data['C'][ckey][ih],
+                          self.data['trC'][ckey][ih],
+                          self.data['in2C'][ckey][ih],
+                          self.data['invC'][ckey][ih],
+                          self.data['E'][ckey][ih],
+                          state(), 0, vg, ap.econn)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
         self.valid['F'][ckey] = True
         self.valid['detF'][ckey] = True
         self.valid['C'][ckey] = True
@@ -117,11 +122,16 @@ class FiniteStrainSurfaceTLDataCache(DataCache):
 
         ckey = self.get_key(term)
 
-        self.function( self.data['F'][ckey][ih],
-                       self.data['detF'][ckey][ih],
-                       self.data['invF'][ckey][ih],
-                       state(), 0, sg, sd.fis, ap.econn )
-        
+        try:
+            self.function(self.data['F'][ckey][ih],
+                          self.data['detF'][ckey][ih],
+                          self.data['invF'][ckey][ih],
+                          state(), 0, sg, sd.fis, ap.econn)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
         self.valid['F'][ckey] = True
         self.valid['detF'][ckey] = True
         self.valid['invF'][ckey] = True
@@ -177,15 +187,20 @@ class FiniteStrainULDataCache( DataCache ):
 
         ckey = self.get_key(term)
 
-        self.function( self.data['F'][ckey][ih],
-                       self.data['detF'][ckey][ih],
-                       self.data['B'][ckey][ih],
-                       self.data['trB'][ckey][ih],
-                       self.data['in2B'][ckey][ih],
-                       self.data['E'][ckey][ih],
-                       state(), state(step = -1),
-                       0, vg, ap.econn )
-        
+        try:
+            self.function(self.data['F'][ckey][ih],
+                          self.data['detF'][ckey][ih],
+                          self.data['B'][ckey][ih],
+                          self.data['trB'][ckey][ih],
+                          self.data['in2B'][ckey][ih],
+                          self.data['E'][ckey][ih],
+                          state(), state(step=-1),
+                          0, vg, ap.econn)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
         self.valid['F'][ckey] = True
         self.valid['detF'][ckey] = True
         self.valid['B'][ckey] = True
