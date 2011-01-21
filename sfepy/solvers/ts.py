@@ -17,21 +17,29 @@ def get_print_info( n_step ):
     return n_digit, format, suffix
 
 class TimeStepper( Struct ):
-    
+    """
+    Time stepper class.
+    """
+
     def from_conf( conf ):
         return TimeStepper( conf.t0, conf.t1, conf.dt, conf.n_step )
     from_conf = staticmethod( from_conf )
 
-    def __init__(self, t0, t1, dt, n_step, step=None, is_quasistatic=False):
-        self.set_from_data(t0, t1, dt, n_step, step=step)
+    def __init__(self, t0, t1, dt=None, n_step=None, step=None,
+                 is_quasistatic=False):
+        self.set_from_data(t0, t1, dt=dt, n_step=n_step, step=step)
         self.is_quasistatic = is_quasistatic
 
-    def set_from_data(self, t0, t1, dt, n_step, step=None):
-        self.t0, self.t1, self.dt, self.n_step = t0, t1, dt, int(n_step)
+    def set_from_data(self, t0, t1, dt=None, n_step=None, step=None):
+        self.t0, self.t1 = t0, t1
 
-        if not hasattr( self, 'n_step' ):
-            self.n_step = round( nm.floor( ((self.t1 - self.t0) / self.dt)
-                                          + 0.5 ) + 1.0 );
+        self.dt = get_default(dt, t1 - t0)
+
+        if n_step is None:
+            n_step = round(nm.floor(((self.t1 - self.t0) / self.dt)
+                                    + 0.5) + 1.0)
+
+        self.n_step = int(n_step)
 
         if self.n_step > 1:
             self.times, self.dt = nm.linspace( self.t0, self.t1, self.n_step,
