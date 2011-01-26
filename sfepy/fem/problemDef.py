@@ -553,7 +553,18 @@ class ProblemDefinition( Struct ):
 
         if file_per_var:
             meshes = {}
-            for var in self.equations.variables.iter_state():
+
+            if self.equations is None:
+                varnames = {}
+                for key, val in out.iteritems():
+                    varnames[val.var_name] = 1
+                varnames = varnames.keys()
+                outvars = self.create_variables(varnames)
+                itervars = outvars.__iter__
+            else:
+                itervars = self.equations.variables.iter_state
+
+            for var in itervars():
                 rname = var.field.region.name
                 if meshes.has_key( rname ):
                     mesh = meshes[rname]
