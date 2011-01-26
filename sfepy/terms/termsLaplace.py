@@ -181,6 +181,66 @@ class DiffusionRTerm( PermeabilityRTerm ):
             status = self.function( out, mat, vg, ap.econn, chunk )
             yield out, chunk, status
 
+class DiffusionCoupling(ScalarScalar, Term):
+    r"""
+    :Description:
+    Diffusion copupling term with material parameter :math:`K_{j}`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega}  p K_{j} \nabla_j q
+
+    :Arguments:
+        material : :math:`K_{j}`,
+        virtual  : :math:`q`,
+        state    : :math:`p`
+    """
+    name = 'dw_diffusion_coupling'
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    modes = ('weak0', 'weak1', 'eval')
+    functions = {'weak': terms.dw_diffusion_coupling,
+                 'eval': terms.d_diffusion_coupling}
+
+    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, virtual, state = self.get_args( **kwargs )
+        ap, vg = self.get_approximation(virtual)
+
+        self.set_data_shape( ap )
+        shape, mode = self.get_shape( diff_var, chunk_size )
+
+        term_mode = self.mode[-1]
+        vec = self.get_vector( state )
+        bf = ap.get_base('v', 0, self.integral)
+
+        n_el, n_qp, dim, n_ep = self.data_shape
+        if state.is_real():
+            return (vec, 0, mat, vg, bf, ap.econn), shape, mode, term_mode
+        else:
+            ac = nm.ascontiguousarray
+            mode += 1j
+            return [(ac(vec.real), 0, mat, bf, vg, ap.econn),
+                    (ac(vec.imag), 0, mat, bf, vg, ap.econn)], shape, mode, term_mode
+
+    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par1, par2 = self.get_args( **kwargs )
+        ap, vg = self.get_approximation(par1)
+
+        self.set_data_shape( ap )
+        n_el, n_qp, dim, n_ep = self.data_shape
+        bf = ap.get_base('v', 0, self.integral)
+
+        return (par1(), par2(), mat, bf, vg), (chunk_size, 1, 1, 1), 0
+
+    def set_arg_types( self ):
+        if self.mode[:-1] == 'weak':
+            self.function = self.functions['weak']
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+        else:
+            self.function = self.functions['eval']
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+
 class DiffusionVelocityTerm( Term ):
     r"""
     :Description:

@@ -31,6 +31,16 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
 int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 			 int32 *conn, int32 nEl, int32 nEP,
 			 int32 *elList, int32 elList_nRow );
+int32 dw_diffusion_coupling( FMField *out, FMField *state, int32 offset,
+			     FMField *mtxD, FMField *bf, VolumeGeometry *vg,
+			     int32 *conn, int32 nEl, int32 nEP,
+			     int32 *elList, int32 elList_nRow,
+			     int32 isDiff, int32 mode);
+int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
+			    FMField *mtxD, FMField *bf, VolumeGeometry *vg,
+			    int32 *conn, int32 nEl, int32 nEP,
+			    int32 *elList, int32 elList_nRow,
+			    int32 isDiff, int32 mode);
 int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
 			     FMField *mtxD, VolumeGeometry *vg,
 			     int32 *conn, int32 nEl, int32 nEP,

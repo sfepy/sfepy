@@ -391,6 +391,7 @@ int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
   return( ret );
 }
 
+
 #undef __FUNC__
 #define __FUNC__ "d_diffusion"
 /*!
@@ -469,6 +470,148 @@ int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 
  end_label:
   fmf_freeDestroy( &gtd ); 
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_diffusion_coupling"
+int32 dw_diffusion_coupling( FMField *out, FMField *state, int32 offset,
+			     FMField *mtxD, FMField *bf, VolumeGeometry *vg,
+			     int32 *conn, int32 nEl, int32 nEP,
+			     int32 *elList, int32 elList_nRow,
+			     int32 isDiff, int32 mode)
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *st = 0, *gtd = 0, *gtdg = 0, *gp = 0, *dgp = 0, *gtdgp = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  if (isDiff) {
+    fmf_createAlloc( &gtd, 1, nQP, nEP, 1 );
+    fmf_createAlloc( &gtdg, 1, nQP, nEP, nEP );
+  } else {
+    if (mode > 0) {
+      fmf_createAlloc( &gp, 1, nQP, dim, 1 );
+      fmf_createAlloc( &dgp, 1, nQP, 1, 1 );
+    }
+    else {
+      fmf_createAlloc( &gp, 1, nQP, 1, 1 );
+      fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
+    }
+    fmf_createAlloc( &st, 1, 1, nEP, 1 );
+
+    fmf_createAlloc( &gtdgp, 1, nQP, nEP, 1 );
+  }
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+    if (mtxD->nCell > 1) {
+      FMF_SetCell( mtxD, ii );
+    }
+
+    if (isDiff) {
+      fmf_mulATB_nn( gtd, vg->bfGM, mtxD );
+      if (mode > 0)
+	fmf_mulATBT_nn( gtdg, bf, gtd );
+      else
+	fmf_mulAB_nn( gtdg, gtd, bf );
+      fmf_sumLevelsMulF( out, gtdg, vg->det->val );
+    } else {
+      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
+      if (mode > 0) {
+	fmf_mulAB_n1( gp, vg->bfGM, st );
+	fmf_mulATB_nn( dgp, mtxD, gp );
+	fmf_mulATB_nn( gtdgp, bf, dgp );
+      }
+      else {
+	fmf_mulAB_n1( gp, bf, st );
+	fmf_mulAB_nn( dgp, mtxD, gp );
+	fmf_mulATB_nn( gtdgp, vg->bfGM, dgp );
+      }
+      fmf_sumLevelsMulF( out, gtdgp, vg->det->val );
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  if (isDiff) {
+    fmf_freeDestroy( &gtd );
+    fmf_freeDestroy( &gtdg );
+  } else {
+    fmf_freeDestroy( &st );
+    fmf_freeDestroy( &gp );
+    fmf_freeDestroy( &dgp );
+    fmf_freeDestroy( &gtdgp );
+  }
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_diffusion_coupling"
+int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
+			    FMField *mtxD, FMField *bf, VolumeGeometry *vg,
+			    int32 *conn, int32 nEl, int32 nEP,
+			    int32 *elList, int32 elList_nRow,
+			    int32 isDiff, int32 mode)
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *st = 0, *aux1 = 0, *aux2 = 0, *aux3 = 0, *aux4 = 0;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &aux1, 1, nQP, dim, 1 );
+  fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
+  fmf_createAlloc( &aux3, 1, nQP, nEP, 1 );
+  fmf_createAlloc( &aux4, 1, nQP, 1, 1 );
+  fmf_createAlloc( &st, 1, 1, nEP, 1 );
+
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+    if (mtxD->nCell > 1) {
+      FMF_SetCell( mtxD, ii );
+    }
+
+    ele_extractNodalValuesNBN( st, stateP, conn + nEP * iel );
+    if (mode > 0) {
+      fmf_mulAB_n1( aux2, vg->bfGM, st );
+      fmf_mulATB_nn( aux1, mtxD, aux2 );
+      fmf_mulATB_nn( aux3, bf, aux1 );
+    }
+    else {
+      fmf_mulAB_n1( aux1, bf, st );
+      fmf_mulAB_nn( aux2, mtxD, aux1 );
+      fmf_mulATB_nn( aux3, vg->bfGM, aux2 );
+    }
+    ele_extractNodalValuesNBN( st, stateQ, conn + nEP * iel );
+    fmf_mulATB_1n( aux4, st, aux3 );
+
+    fmf_sumLevelsMulF( out, aux4, vg->det->val );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &aux1 );
+  fmf_freeDestroy( &aux2 );
+  fmf_freeDestroy( &aux3 );
+  fmf_freeDestroy( &aux4 );
 
   return( ret );
 }
