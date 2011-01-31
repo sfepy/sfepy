@@ -496,16 +496,11 @@ class VTKMeshIO( MeshIO ):
     def read_coors(self, ret_fd=False):
         fd = open( self.filename, 'r' )
         while 1:
-            try:
-                line = fd.readline().split()
-                if not line: continue
-                if line[0] == 'POINTS':
-                    n_nod = int( line[1] )
-                    coors = read_array( fd, n_nod, -1, nm.float64 )
-                    break
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
+            line = skip_read_line(fd, no_eof=True).split()
+            if line[0] == 'POINTS':
+                n_nod = int( line[1] )
+                coors = read_array( fd, n_nod, -1, nm.float64 )
+                break
 
         if ret_fd:
             return coors, fd
@@ -560,16 +555,9 @@ class VTKMeshIO( MeshIO ):
         mode_status = 0
         coors = conns = desc = mat_id = None
         while 1:
-            try:
-                line = fd.readline()
-                if len( line ) == 0: break
-                elif len( line ) == 1: continue
-                if line[0] == '#': continue
-            except EOFError:
+            line = skip_read_line(fd)
+            if not line:
                 break
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
 
             if mode == 'header':
                 if mode_status == 0:
@@ -802,24 +790,21 @@ class VTKMeshIO( MeshIO ):
         filename = get_default( filename, self.filename )
 
         out = {}
-        
+
         fd = open( self.filename, 'r' )
         while 1:
-            line = fd.readline().split()
-            if not line: continue
+            line = skip_read_line(fd, no_eof=True).split()
             if line[0] == 'POINT_DATA':
                 break
 
         n_nod = int(line[1])
-        
-        line = fd.readline()
+
         while 1:
+            line = skip_read_line(fd)
             if not line:
                 break
-            # Skip empty lines.
+
             line = line.split()
-            while not line:
-                line = fd.readline().split()
 
             if line[0] == 'SCALARS':
                 name, dtype, nc = line[1:]
