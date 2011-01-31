@@ -276,24 +276,15 @@ class UserMeshIO(MeshIO):
 class MeditMeshIO( MeshIO ):
     format = 'medit'
 
-    ##
-    # c: 03.07.2008, r: 10.07.2008
-    def read_dimension( self, ret_fd = False ):
-        fd = open( self.filename, 'r' )
+    def read_dimension(self, ret_fd=False):
+        fd = open(self.filename, 'r')
         while 1:
-            try:
-                line = fd.readline()
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
-            if len( line ) == 1: continue
-            if line[0] == '#': continue
-            aux = line.split()
-            if aux[0] == 'Dimension':
-                if len( aux ) == 2:
-                    dim = int( aux[1] )
+            line = skip_read_line(fd, no_eof=True).split()
+            if line[0] == 'Dimension':
+                if len(line) == 2:
+                    dim = int(line[1])
                 else:
-                    dim = int( fd.readline() )
+                    dim = int(fd.readline())
                 break
 
         if ret_fd:
@@ -302,27 +293,14 @@ class MeditMeshIO( MeshIO ):
             fd.close()
             return dim
 
-    ##
-    # c: 22.07.2008
-    def read_bounding_box( self, ret_fd = False, ret_dim = False ):
-        fd = open( self.filename, 'r' )
+    def read_bounding_box(self, ret_fd=False, ret_dim=False):
+        fd = open(self.filename, 'r')
+
+        dim, fd  = self.read_dimension(ret_fd=True)
 
         while 1:
-            try:
-                line = fd.readline()
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
-            if len( line ) == 0: break
-            if len( line ) == 1: continue
-            if line[0] == '#': continue
-            aux = line.split()
-            if (aux[0] == 'Dimension'):
-                if len( aux ) == 2:
-                    dim = int( aux[1] )
-                else:
-                    dim = int( fd.readline() )            
-            elif (aux[0] == 'Vertices'):
+            line = skip_read_line(fd, no_eof=True).split()
+            if line[0] == 'Vertices':
                 num = int( read_token( fd ) )
                 nod = read_array( fd, num, dim + 1, nm.float64 )
                 break
@@ -343,22 +321,17 @@ class MeditMeshIO( MeshIO ):
                 fd.close()
                 return bbox
 
-    def read( self, mesh, **kwargs ):
-        dim, fd  = self.read_dimension( ret_fd = True )
+    def read(self, mesh, **kwargs):
+        dim, fd  = self.read_dimension(ret_fd=True)
 
         conns_in = []
         descs = []
         while 1:
-            try:
-                line = fd.readline()
-                if (len( line ) == 0): break
-                if len( line ) == 1: continue
-            except EOFError:
+            line = skip_read_line(fd).split()
+            if not line:
                 break
-            except:
-                output( "reading " + fd.name + " failed!" )
-                raise
-            ls = line.strip()
+
+            ls = line[0]
             if (ls == 'Vertices'):
                 num = int( read_token( fd ) )
                 nod = read_array( fd, num, dim + 1, nm.float64 )
