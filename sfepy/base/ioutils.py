@@ -58,36 +58,55 @@ def get_print_info(n_step, fill=None):
         n_digit, format = 0, None
     return n_digit, format
 
-##
-# c: 20.03.2008, r: 20.03.2008
-def skip_read_line( fd ):
+def skip_read_line(fd, no_eof=False):
+    """
+    Read the first non-empty line (if any) from the given file
+    object. Return an empty string at EOF, if `no_eof` is False. If it
+    is True, raise the EOFError instead.
+    """
+    ls = ''
     while 1:
         try:
-            line = fd.readline().strip()
+            line = fd.readline()
+
         except EOFError:
             break
-        except:
-            output( "reading " + fd.name + " failed!" )
-            raise
-        if (len( line ) == 0) or (line[0] == '#'): continue
-        return line
 
-##
-# 03.02.2004, c
-def read_token( file ):
-    
+        if not line:
+            if no_eof:
+                raise EOFError
+
+            else:
+                break
+
+        ls = line.strip()
+        if ls and (ls[0] != '#'):
+            break
+
+    return ls
+
+def read_token(fd):
+    """
+    Read a single token (sequence of non-whitespace characters) from the
+    given file object.
+
+    Notes
+    -----
+    Consumes the first whitespace character after the token.
+    """
     out = "";
     # Skip initial whitespace.
+
     while (1):
-        ch = file.read( 1 );
+        ch = fd.read(1)
         if (ch.isspace()): continue
-        elif (len( ch ) == 0): return out
+        elif (len(ch) == 0): return out
         else: break
 
     while (not(ch.isspace())):
         out = out + ch;
-        ch = file.read( 1 );
-        if (len( ch ) == 0): break
+        ch = fd.read(1)
+        if (len(ch) == 0): break
 
     return out
 
