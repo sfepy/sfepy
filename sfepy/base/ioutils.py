@@ -90,24 +90,6 @@ def read_token( file ):
         if (len( ch ) == 0): break
 
     return out
-            
-        
-##
-# 03.02.2004, c
-def read_tuple( file, n_item, n_tuple ):
-
-    out = ();
-    for it in range( 0, n_tuple ):
-        token = ();
-        for ii in range( 0, n_item ):
-            token = token + (read_token( file ),);
-#            print token[ii];
-        if (len( token[ii] ) == 0):
-            output( "Corrupted file (token %d)!" % ii )
-            raise "ERR_CorruptedFile"
-        out = out + (token,);
-
-    return out;
 
 ##
 # c: 12.02.2004, r: 20.03.2008
