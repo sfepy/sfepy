@@ -82,9 +82,9 @@ Generic Installation Instructions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Download the latest source release or the development version from our git
-repository http://git.sympy.org/?p=sfepy.git::
+repository http://github.com/sfepy/sfepy::
 
-    git clone git://git.sympy.org/sfepy.git
+    git clone git://github.com/sfepy/sfepy.git
 
 See the *Downloads* tab at http://sfepy.org for additional download options.
 
@@ -166,8 +166,6 @@ site_cfg.py::
 
     opt_flags = '-g -O2 -fPIC -DPIC -fno-strict-aliasing -fno-common -dynamic' 
     link_flags = '-dynamiclib -undefined dynamic_lookup -fPIC -DPIC' 
-
-(revision http://hg.sympy.org/sfepy/rev/609196c918be is needed) 
 
 Installation on Ubuntu
 """"""""""""""""""""""
@@ -423,7 +421,7 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
         * In msys, type::
 
             cd /c/src
-            git clone git://git.sympy.org/sfepy.git
+            git clone git://github.com/sfepy/sfepy.git
 
 #. Compile *SfePy* C extensions
 
