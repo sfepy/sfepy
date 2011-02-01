@@ -110,26 +110,20 @@ def read_token(fd):
 
     return out
 
-##
-# c: 12.02.2004, r: 20.03.2008
-def read_array( file, n_row, n_col, dtype ):
-    """n_col is basically ignored, n_col == -1 -> intentionally ignored."""
-    val = []
-    for ir in range( 0, n_row ):
-        try:
-            while 1:
-                line = file.readline().split()
-                if (len( line ) == 0) or (line[0] == "#"):
-                    continue
-                else:
-                    break
-        except:
-            output( "Array (%d, %d) reading failed!" % (n_row, n_col) )
-            raise
-        row = [float( ii ) for ii in line]
-        val.append( row )
+def read_array(fd, n_row, n_col, dtype):
+    """
+    Read a NumPy array of shape `(n_row, n_col)` from the given file
+    object and cast it to type `dtype`.
+    """
+    count = n_row * n_col
+    val = nm.fromfile(fd, sep=' ', count=count)
 
-    val = array( val, dtype );
+    if val.shape[0] < count:
+        raise ValueError("(%d, %d) array reading failed!" % (n_row, n_col))
+
+    val = nm.asarray(val, dtype=dtype)
+    val.shape = (n_row, n_col)
+
     return val
 
 ##
