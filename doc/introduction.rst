@@ -135,7 +135,7 @@ running the automated tests. From the source directory type::
 
 If a particular test fails, please run it in debug mode::
 
-    ./runTests.py --debug test/failing_test_name.py
+    ./runTests.py --debug tests/failing_test_name.py
 
 and report the output to the sfepy-devel mailing list.
 
