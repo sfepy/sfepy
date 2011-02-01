@@ -499,7 +499,7 @@ class VTKMeshIO( MeshIO ):
             line = skip_read_line(fd, no_eof=True).split()
             if line[0] == 'POINTS':
                 n_nod = int( line[1] )
-                coors = read_array( fd, n_nod, -1, nm.float64 )
+                coors = read_array(fd, n_nod, 3, nm.float64)
                 break
 
         if ret_fd:
@@ -572,7 +572,7 @@ class VTKMeshIO( MeshIO ):
                 line = line.split()
                 if line[0] == 'POINTS':
                     n_nod = int( line[1] )
-                    coors = read_array( fd, n_nod, -1, nm.float64 )
+                    coors = read_array(fd, n_nod, 3, nm.float64)
                     mode = 'cells'
 
             elif mode == 'cells':
@@ -586,7 +586,7 @@ class VTKMeshIO( MeshIO ):
                 line = line.split()
                 if line[0] == 'CELL_TYPES':
                     assert_( int( line[1] ) == n_el )
-                    cell_types = read_array( fd, n_el, -1, nm.int32 )
+                    cell_types = read_array(fd, n_el, 1, nm.int32)
                     mode = 'mat_id'
 
             elif mode == 'mat_id':
@@ -978,6 +978,10 @@ class ComsolMeshIO( MeshIO ):
     def _read_commented_int( self ):
         return int( skip_read_line( self.fd ).split( '#' )[0] )
 
+    def _skip_comment(self):
+        read_token(self.fd)
+        self.fd.readline()
+
     ##
     # c: 20.03.2008, r: 20.03.2008
     def read( self, mesh, **kwargs ):
@@ -1007,6 +1011,7 @@ class ComsolMeshIO( MeshIO ):
                 mode = 'points'
 
             elif mode == 'points':
+                self._skip_comment()
                 coors = read_array( fd, n_nod, dim, nm.float64 )
                 mode = 'cells'
 
@@ -1021,6 +1026,7 @@ class ComsolMeshIO( MeshIO ):
                     n_ep = self._read_commented_int()
                     n_el = self._read_commented_int()
                     if dim == 2:
+                        self._skip_comment()
                         aux = read_array( fd, n_el, n_ep, nm.int32 )
                         if t_name == 'tri':
                             conns.append( aux )
@@ -1035,6 +1041,7 @@ class ComsolMeshIO( MeshIO ):
                         else:
                             is_conn = False
                     elif dim == 3:
+                        self._skip_comment()
                         aux = read_array( fd, n_el, n_ep, nm.int32 )
                         if t_name == 'hex':
                             # Rearrange elelment node order to match SfePy
@@ -1060,6 +1067,7 @@ class ComsolMeshIO( MeshIO ):
                     n_domain = self._read_commented_int()
                     assert_( n_domain == n_el )
                     if is_conn:
+                        self._skip_comment()
                         mat_id = read_array( fd, n_domain, 1, nm.int32 )
                         mat_ids.append( mat_id )
                     else:
