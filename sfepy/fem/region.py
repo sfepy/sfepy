@@ -83,6 +83,29 @@ def _join( def1, op, def2 ):
 # 31.10.2005, c
 class Region( Struct ):
 
+    @staticmethod
+    def from_vertices(vertices, domain, name='region', can_cells=False):
+        """
+        Create a new region containing given vertices.
+
+        Parameters
+        ----------
+        vertices : array
+            The array of vertices.
+        domain : Domain instance
+            The domain containing the vertices.
+        name : str, optional
+            The name of the region.
+        can_cells : bool, optional
+            If True, the region can have cells.
+        """
+        obj = Region(name, 'given vertices', domain, '')
+        obj.set_vertices(vertices)
+        obj.switch_cells(can_cells) 
+        obj.complete_description(domain.ed, domain.fa)
+
+        return obj
+
     ##
     # 14.06.2006, c
     # 15.06.2006
