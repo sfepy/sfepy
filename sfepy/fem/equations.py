@@ -220,11 +220,11 @@ class Equations( Container ):
             for term in eq.terms:
                 term.time_update(ts)
 
-    def time_update_materials(self, ts, problem=None):
+    def time_update_materials(self, ts, problem=None, verbose=True):
         """
         Update data materials for current time and possibly also state.
         """
-        self.materials.time_update(ts, self, problem=problem)
+        self.materials.time_update(ts, self, problem=problem, verbose=verbose)
 
     def setup_initial_conditions(self, ics, functions):
         self.variables.setup_initial_conditions(ics, functions)

@@ -971,7 +971,7 @@ class ProblemDefinition( Struct ):
 
         if copy_materials:
             equations = out[0]
-            equations.time_update_materials(self.ts, self)
+            equations.time_update_materials(self.ts, self, verbose=verbose)
 
         return out
 
