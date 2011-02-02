@@ -583,7 +583,7 @@ class Equation( Struct ):
 
         self.terms.setup()
 
-        caches = get_default(caches, DataCaches)
+        caches = get_default(caches, DataCaches())
         self.terms.assign_caches(caches)
 
     def collect_materials(self):
