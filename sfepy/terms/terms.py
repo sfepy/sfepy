@@ -1190,12 +1190,8 @@ class Term(Struct):
 
         self.assign_caches()
 
-        key = self.get_qp_key()
-        qps = self.get_physical_qps()
         for mat in materials:
-            for ig in self.igs():
-                mat.update_data(None, self.region, key, ig, qps)
-                mat.update_special_data(None, self.region.domain)
+            mat.time_update(None, [Struct(terms=[self])])
 
     def evaluate(self, mode='eval', diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
