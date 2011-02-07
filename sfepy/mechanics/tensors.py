@@ -235,7 +235,7 @@ class StressTransform(Struct):
         Set :math:`\ull{F} = \pdiff{\ul{x}}{\ul{X}}` and optionally also
         :math:`J = \det(\ull{F})`.
         """
-        self.def_grad = def_grad
+        self.def_grad = nm.asarray(def_grad, dtype=nm.float64)
         self.n_el, self.n_qp, self.dim = self.def_grad.shape[:3]
 
         self.s2f = get_full_indices(self.dim)
@@ -246,7 +246,7 @@ class StressTransform(Struct):
                                               2, (1, 1))
 
         else:
-            self.jacobian = jacobian
+            self.jacobian = nm.asarray(jacobian, dtype=nm.float64)
 
     def _assert_symmetry(self, stress):
         i1, i2 = get_non_diagonal_indices(self.dim)
@@ -255,11 +255,12 @@ class StressTransform(Struct):
     def get_cauchy_from_2pk(self, stress_in):
         """
         Get the Cauchy stress given the second Piola-Kirchhoff stress.
-        
+
         .. math::
 
             \sigma_{ij} = J^{-1} F_{ik} S_{kl} F_{jl}
         """
+        stress_in = nm.asarray(stress_in, dtype=nm.float64)
 
         stress_in_full = stress_in[:,:,self.s2f,0]
 
@@ -268,7 +269,6 @@ class StressTransform(Struct):
 
         stress_out_full = val_ij / self.jacobian
 
-        ii = get_sym_indices(self.dim)
         sh = stress_out_full.shape
         stress_out_full.shape = (sh[0], sh[1], sh[2] * sh[3])
 
@@ -277,4 +277,3 @@ class StressTransform(Struct):
         stress_out = nm.empty_like(stress_in)
         stress_out[...,0] = stress_out_full[:,:,self.f2s]
         return stress_out
-        
