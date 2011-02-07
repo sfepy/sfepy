@@ -204,11 +204,11 @@ def dot_sequences(mtx, vec, use_rows=False):
 
         if use_rows:
             for ic in range(vec.shape[2]):
-                out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
+                out[:,:,ic] = dot_sequences(mtx, vec[:,ic,:])
 
         else:
             for ic in range(vec.shape[2]):
-                out[:,:,ic] = dot_sequences(mtx, vec[:,ic,:])
+                out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
 
     elif (vec.ndim >= 4) and (mtx.ndim >= 4) and (vec.ndim == mtx.ndim):
         mtx_seq = nm.reshape(mtx,
