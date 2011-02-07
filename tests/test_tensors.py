@@ -71,3 +71,61 @@ class Test(TestCommon):
         ok = ok and _ok
 
         return ok
+
+    def test_transform_data(self):
+        import numpy as nm
+        from sfepy.mechanics.tensors import transform_data
+
+        ok = True
+
+        coors = nm.eye(3)
+
+        data = nm.eye(3)
+        expected = nm.zeros((3, 3))
+        expected[[0, 1, 2], [0, 0, 2]] = 1.0
+
+        out = transform_data(data, coors)
+
+        _ok = nm.allclose(out, expected, rtol=0.0, atol=1e-14)
+        self.report('vectors in cylindrical coordinates: %s' % _ok)
+        ok = ok and _ok
+
+        data = nm.zeros((3, 6))
+        data[:, :3] = [[1, 2, 3]]
+        expected = data.copy()
+        expected[1, [0, 1]] = expected[1, [1, 0]]
+
+        out = transform_data(data, coors)
+
+        _ok = nm.allclose(out, expected, rtol=0.0, atol=1e-14)
+        self.report('sym. tensors in cylindrical coordinates: %s' % _ok)
+        ok = ok and _ok
+
+        return ok
+
+    def test_stress_transform(self):
+        import numpy as nm
+        from sfepy.mechanics.tensors import StressTransform
+
+        stress_2pk = nm.arange(6) + 1
+
+        def_grad = nm.array([[0.5047051 , 0.71142596, 0.10180901],
+                             [0.13427707, 0.87156371, 0.42612244],
+                             [0.27509466, 0.6262605 , 0.87659051]])
+        det = nm.linalg.det(def_grad)
+
+        aux = stress_2pk[[0, 3, 4, 3, 1, 5, 4, 5, 2]].reshape(3, 3)
+        expected = nm.dot(nm.dot(def_grad, aux), def_grad.T) / det
+        expected = expected.ravel()[[0, 4, 8, 1, 2, 5]][:, None]
+        expected = nm.tile(expected, (5, 1, 1, 1))
+
+        transform = StressTransform(nm.tile(def_grad, (5, 1, 1, 1)))
+
+        stress_2pk.shape = (6, 1)
+        ts = nm.tile(stress_2pk.reshape((6, 1)), (5, 1, 1, 1))
+        stress_cauchy = transform.get_cauchy_from_2pk(ts)
+
+        ok = nm.allclose(stress_cauchy, expected, rtol=0.0, atol=1e-12)
+        self.report('stress: Cauchy from second Piola-Kirchhoff: %s' % ok)
+
+        return ok
