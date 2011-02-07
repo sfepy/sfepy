@@ -77,7 +77,7 @@ class NonPenetrationTerm(Term):
                 ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
 
                 nl = normals * vec_qp
-                eftnl = dot_sequences(ebf_t, nl, use_rows=True)
+                eftnl = dot_sequences(ebf_t, nl)
                 sg.integrate_chunk(out, eftnl, lchunk, 1)
 
             else:
@@ -92,7 +92,7 @@ class NonPenetrationTerm(Term):
             ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
             bf_ = nm.tile(bf, (n_fa, 1, 1, 1))
 
-            eftn = dot_sequences(ebf_t, normals, use_rows=True)
+            eftn = dot_sequences(ebf_t, normals)
             eftnf = eftn * bf_
 
             if self.mode == 'grad':
