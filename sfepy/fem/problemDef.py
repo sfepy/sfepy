@@ -302,8 +302,10 @@ class ProblemDefinition( Struct ):
                       cache_override=None,
                       keep_solvers=False, make_virtual=False):
         """
-        Set equations of the problem. Regions, Variables and Materials
-        have to be already set.
+        Set equations of the problem using the `equations` problem
+        description entry.
+
+        Fields and Regions have to be already set.
         """
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
@@ -326,6 +328,16 @@ class ProblemDefinition( Struct ):
                                         cache_override=cache_override,
                                         make_virtual=make_virtual)
 
+        self.equations = equations
+
+        if not keep_solvers:
+            self.solvers = None
+
+    def set_equations_instance(self, equations, keep_solvers=False):
+        """
+        Set equations of the problem to `equations`.
+        """
+        self.reset()
         self.equations = equations
 
         if not keep_solvers:
