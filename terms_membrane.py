@@ -3,7 +3,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
-from sfepy.linalg import dot_sequences
+from sfepy.linalg import dot_sequences, apply_to_sequence
 from sfepy.fem.mappings import VolumeMapping
 from sfepy.terms.terms import Term
 
@@ -27,6 +27,8 @@ class TLMembraneTerm(Term):
 
         # Coordinates of element nodes.
         coors = vu.field.coors[sd.econn]
+
+        dim = coors.shape[1]
 
         # Local coordinate system.
         t1 = coors[:, 1, :] - coors[:, 0, :]
@@ -82,8 +84,24 @@ class TLMembraneTerm(Term):
         el_u_loc_qp = as_strided(el_u_loc, shape=sh, strides=strides)
 
         # Transformed (in-plane) displacement gradient with
-        # shape (n_el, n_qp, dim-1 (-> j), dim (-> i)), du_i/dx_j.
+        # shape (n_el, n_qp, 2 (-> a), 3 (-> i)), du_i/dX_a.
         du = dot_sequences(bfg, el_u_loc_qp)
+
+        # Deformation gradient F w.r.t. in plane coordinates.
+        # F_{ia} = dx_i / dX_a,
+        # a \in {1, 2} (rows), i \in {1, 2, 3} (columns).
+        mtx_f = du + nm.eye(dim - 1, dim, dtype=du.dtype)
+
+        # Right Cauchy-Green deformation tensor C.
+        # C_{ab} = F_{ka} F_{kb}, a, b \in {1, 2}.
+        mtx_c = dot_sequences(mtx_f, mtx_f, use_rows=True)
+
+        # C_33 from incompressibility.
+        mtx_c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
+                         + mtx_c[..., 0, 1]**2)[:, :, None, None]
+
+        # C^{-1}.
+        mtx_ci = apply_to_sequence(mtx_c, nm.linalg.inv, 2, (dim - 1, dim - 1))
 
         from debug import debug; debug()
 
