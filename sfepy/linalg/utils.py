@@ -199,14 +199,17 @@ def dot_sequences(mtx, vec, use_rows=False):
         out = nm.sum(mtx * vec[:,None,:], axis=2)
 
     elif (vec.ndim == 3) and (mtx.ndim == 3):
-        out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
-                       dtype=vec.dtype)
-
         if use_rows:
-            for ic in range(vec.shape[2]):
+            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[1]),
+                           dtype=vec.dtype)
+
+            for ic in range(vec.shape[1]):
                 out[:,:,ic] = dot_sequences(mtx, vec[:,ic,:])
 
         else:
+            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
+                           dtype=vec.dtype)
+
             for ic in range(vec.shape[2]):
                 out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
 
