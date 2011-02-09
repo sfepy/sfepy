@@ -67,12 +67,13 @@ class Test(TestCommon):
         from sfepy.terms.terms import Term
 
         integral = Integral('i', order=3)
+        integral_s = Integral('i', kind='s', order=3)
 
         u = FieldVariable('u', 'parameter', self.field, self.dim,
                           primary_var_name='(set-to-None)')
 
         t1 = Term.new('d_volume(u)', integral, self.omega, u=u)
-        t2 = Term.new('d_surface(u)', integral, self.gamma1, u=u)
+        t2 = Term.new('d_surface(u)', integral_s, self.gamma1, u=u)
 
         expr = 2.2j * (t1 * 5.5 - 3j * t2) * 0.25
 
