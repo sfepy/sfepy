@@ -353,11 +353,19 @@ class Term(Struct):
     def __init__(self, name, arg_str, integral, region, **kwargs):
         self.name = name
         self.arg_str = arg_str
-        self.set_integral(integral)
         self.region = region
         self._kwargs = kwargs
         self._integration = self.integration
         self.sign = 1.0
+
+        dim, kind = self.get_integral_info()
+        if integral is not None:
+            if kind != integral.kind:
+                msg = "integral kind for term %s must be '%s'! (is '%s')" \
+                      % (name, kind, integral.kind)
+                raise ValueError(msg)
+
+        self.set_integral(integral)
 
     def __mul__(self, other):
         try:
