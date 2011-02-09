@@ -57,7 +57,6 @@ class DataCache( Struct ):
         self.merge_history_sizes( history_sizes )
         self.step = 0
 
-        self.dtype = nm.float64
         self.geometry = 'volume'
         self.region_name = None
 
@@ -132,7 +131,7 @@ class DataCache( Struct ):
 
     ##
     # c: 28.11.2006, r: 02.04.2008
-    def init_data(self, key, ckey, shape, zero=False):
+    def init_data(self, key, ckey, shape, dtype=nm.float64, zero=False):
         if zero:
             create_fun, like_fun = nm.zeros, nm.zeros_like
         else:
@@ -143,17 +142,17 @@ class DataCache( Struct ):
         
         # Current time data.
         data[ckey] = deque()
-        arr = create_fun(shape, dtype=self.dtype)
+        arr = create_fun(shape, dtype=dtype)
         data[ckey].append(arr)
             
         # History data.
         for ih in xrange(self.mem_sizes[key] - 1):
             data[ckey].append(like_fun(arr))
 
-    def init_datas(self, ckey, shapes, zero=False):
+    def init_datas(self, ckey, shapes, dtype=nm.float64, zero=False):
         """Convenience function for multiple init_data() calls."""
         for key, shape in shapes.iteritems():
-            DataCache.init_data(self, key, ckey, shape, zero=zero)
+            DataCache.init_data(self, key, ckey, shape, dtype=dtype, zero=zero)
 
     ##
     # 30.11.2006, c
@@ -240,3 +239,19 @@ class DataCache( Struct ):
 
         return out
 
+    def function_complex(self, data, state, *args):
+        """
+        For complex `state`, call `self.function` for real and imaginary
+        components of `state`. For real `state` call `self.function` in
+        the usual way.
+        """
+        if state.dtype == nm.complex128:
+            shape = data.shape
+            dr = nm.zeros(shape, dtype=nm.float64)
+            di = nm.zeros(shape, dtype=nm.float64)
+            ac = nm.ascontiguousarray
+            self.function(dr, ac(state.real), *args)
+            self.function(di, ac(state.imag), *args)
+            data[...] = dr + 1j*di
+        else:
+            self.function(data, state, *args)

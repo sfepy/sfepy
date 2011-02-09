@@ -1,7 +1,6 @@
 import numpy as nm
 from sfepy.terms.extmods import terms
 from sfepy.terms.cache import DataCache
-from sfepy.base.base import pause, debug
 
 class StateInVolumeQPDataCache( DataCache ):
     name = 'state_in_volume_qp'
@@ -18,7 +17,7 @@ class StateInVolumeQPDataCache( DataCache ):
         shape = (n_el, n_qp, state.n_components, 1)
 
 #        print self.name, key, ckey, shape
-        DataCache.init_data( self, key, ckey, shape )
+        DataCache.init_data(self, key, ckey, shape, dtype=state.dtype)
 
     def update(self, key, term, ih, **kwargs):
         state, get_vector = self.get_args( **kwargs )
@@ -28,7 +27,8 @@ class StateInVolumeQPDataCache( DataCache ):
         if ih == 0:
             bf = ap.get_base('v', 0, term.integral)
             vec = get_vector( state )
-            self.function( self.data[key][ckey][ih], vec, 0, bf, ap.econn )
+            self.function_complex(self.data[key][ckey][ih], vec,
+                                  0, bf, ap.econn)
         else:
             print 'history update!'
             print kwargs['history']
@@ -49,8 +49,8 @@ class StateInSurfaceQPDataCache( DataCache ):
         region_name, ig = term.get_current_group()[1:]
         n_fa, n_qp = state.get_data_shapes(term.integral, ig, region_name)[:2]
         shape = (n_fa, n_qp, state.n_components, 1)
-
-        DataCache.init_data( self, key, ckey, shape )
+        
+        DataCache.init_data(self, key, ckey, shape, dtype=state.dtype)
 
     def update(self, key, term, ih, **kwargs):
         ckey = self.get_key(term)
@@ -62,7 +62,7 @@ class StateInSurfaceQPDataCache( DataCache ):
         bf = ap.get_base(sd.face_type, 0, term.integral)
         econn = sd.get_connectivity(ap.is_surface)
 
-        self.function(self.data[key][ckey][ih], state(), 0, bf, econn)
+        self.function_complex(self.data[key][ckey][ih], state(), 0, bf, econn)
 
 class CauchyStrainDataCache( DataCache ):
     name = 'cauchy_strain'
@@ -117,14 +117,15 @@ class GradScalarDataCache( DataCache ):
         shape = (n_el, n_qp, dim, 1)
 
 #        print self.name, key, ckey, shape
-        DataCache.init_data( self, key, ckey, shape )
+        DataCache.init_data(self, key, ckey, shape, dtype=state.dtype)
 
     def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
         ap, vg = term.get_approximation(state)
         ckey = self.get_key(term)
 
-        self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
+        self.function_complex(self.data[key][ckey][ih], state(),
+                              0, vg, ap.econn)
 
 class GradVectorDataCache( GradScalarDataCache ):
     name = 'grad_vector'
@@ -137,7 +138,7 @@ class GradVectorDataCache( GradScalarDataCache ):
         shape = (n_el, n_qp, dim, dim)
 
 #        print self.name, key, ckey, shape
-        DataCache.init_data( self, key, ckey, shape )
+        DataCache.init_data(self, key, ckey, shape, dtype=state.dtype)
 
 class DivVectorDataCache( DataCache ):
     name = 'div_vector'
@@ -154,14 +155,15 @@ class DivVectorDataCache( DataCache ):
         shape = (n_el, n_qp, 1, 1)
 
 #        print self.name, key, ig, shape
-        DataCache.init_data( self, key, ckey, shape )
+        DataCache.init_data(self, key, ckey, shape, dtype=state.dtype)
 
     def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
         ap, vg = term.get_approximation(state)
         ckey = self.get_key(term)
 
-        self.function( self.data[key][ckey][ih], state(), 0, vg, ap.econn )
+        self.function_complex(self.data[key][ckey][ih], state(),
+                              0, vg, ap.econn)
 
 class VolumeDataCache( DataCache ):
     name = 'volume'
