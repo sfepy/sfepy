@@ -3,25 +3,105 @@ from numpy.lib.stride_tricks import as_strided
 
 from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
-from sfepy.linalg import dot_sequences, apply_to_sequence
+from sfepy.linalg import dot_sequences
 from sfepy.fem.mappings import VolumeMapping
+from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms import Term
 
 class TLMembraneTerm(Term):
     r"""
+    Mooney-Rivlin membrane with plain stress assumption.
+
     :Arguments:
         virtual  : :math:`\ul{v}`,
         state    : :math:`\ul{u}`
     """
     name = 'dw_tl_membrane'
-    arg_types = ('material', 'virtual', 'state')
+    arg_types = ('material_a1', 'material_a2', 'virtual', 'state')
     integration = 'surface'
+
+    def get_shape(self, ap, diff_var, chunk_size):
+        n_el, n_qp, dim, n_ep = ap.get_s_data_shape(self.integral,
+                                                    self.region.name)
+        assert_(dim == 3)
+        dim -= 1
+
+        if diff_var is None:
+            return (chunk_size, 1, dim * n_ep, 1), 0
+
+        elif diff_var == self.get_arg_name( 'state' ):
+            return (chunk_size, 1, dim * n_ep, dim * n_ep), 1
+
+        else:
+            raise StopIteration
+
+    def compute_crt_data(self, mtx_c, c33, mode, **kwargs):
+        a1, a2 = self.get_args(['material_a1', 'material_a2'], **kwargs)
+
+        a12 = 2.0 * a1[..., 0, 0]
+        a22 = 2.0 * a2[..., 0, 0]
+
+        sh = mtx_c.shape
+        sym = dim2sym(sh[2])
+
+        c11 = mtx_c[..., 0, 0]
+        c12 = mtx_c[..., 0, 1]
+        c22 = mtx_c[..., 1, 1]
+        pressure = c33 * (a12 + a22 * (c11 + c22))
+
+        if mode == 0:
+            out = nm.empty((sh[0], sh[1], sym, 1))
+
+            # S_11, S_22, S_12.
+            out[..., 0, 0] = -pressure * c22 * c33 + a12 + a22 * (c22 + c33)
+            out[..., 1, 0] = -pressure * c11 * c33 + a12 + a22 * (c11 + c33)
+            out[..., 2, 0] = +pressure * c12 * c33 - a22 * c12
+
+        else:
+            out = nm.empty((sh[0], sh[1], sym, sym))
+
+            dp11 = a22 * c33 - pressure * c22 * c33
+            dp22 = a22 * c33 - pressure * c11 * c33
+            dp12 = 2.0 * pressure * c12 * c33
+
+            # D_11, D_22, D_33
+            out[..., 0, 0] = - 2.0 * ((a22 - pressure * c22) * c22 * c33**2
+                                      - c33 * c22 * dp11)
+            out[..., 1, 1] = - 2.0 * ((a22 - pressure * c11) * c11 * c33**2
+                                      - c33 * c11 * dp22)
+            out[..., 2, 2] = - a22 + pressure * (c33 + 2.0 * c12**2 * c33**2) \
+                             + c12 * c33 * dp12
+
+            # D_12, D_13, D_23
+            out[..., 0, 1] = 2.0 * ((a22 - pressure * c33
+                                     - (a22 - pressure * c22) * c11 * c33**2)
+                                    - c33 * c22 * dp22)
+            out[..., 0, 2] = 2.0 * (a22 - pressure * c22) * c12 * c33**2 \
+                             - c33 * c22 * dp12
+            out[..., 1, 2] = 2.0 * (a22 - pressure * c11) * c12 * c33**2 \
+                             - c33 * c11 * dp12
+
+            # D_21, D_31, D_32
+            out[..., 1, 0] = 2.0 * ((a22 - pressure * c33
+                                     - (a22 - pressure * c11) * c22 * c33**2)
+                                    - c33 * c11 * dp11)
+            out[..., 2, 0] = 2.0 * (-pressure * c12 * c22 * c33**2
+                                    + c12 * c33 * dp11)
+            out[..., 2, 1] = 2.0 * (-pressure * c12 * c11 * c33**2
+                                    + c12 * c33 * dp22)
+
+            ## out[..., 1, 0] = out[..., 0, 1]
+            ## out[..., 2, 0] = out[..., 0, 2]
+            ## out[..., 2, 1] = out[..., 1, 2]
+
+        return out
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """
         Membrane term evaluation function.
         """
-        mat, vv, vu = self.get_args(**kwargs)
+        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
+        vv, vu = self.get_args(['virtual', 'state'], **kwargs)
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
@@ -97,17 +177,37 @@ class TLMembraneTerm(Term):
         mtx_c = dot_sequences(mtx_f, mtx_f, use_rows=True)
 
         # C_33 from incompressibility.
-        mtx_c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
-                         + mtx_c[..., 0, 1]**2)[:, :, None, None]
+        c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
+                     + mtx_c[..., 0, 1]**2)
 
-        # C^{-1}.
-        mtx_ci = apply_to_sequence(mtx_c, nm.linalg.inv, 2, (dim - 1, dim - 1))
+        shape, mode = self.get_shape(ap, diff_var, chunk_size)
 
-        from debug import debug; debug()
+        if term_mode is None:
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
+            out = self.compute_crt_data(mtx_c, c33, mode, **kwargs)
 
-            out = None
+            ## if mode == 0:
+            ##     self.crt_data.stress = out
+            ## else:
+            ##     self.crt_data.tan_mod = out
 
-            yield out, lchunk, 0
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                lchunk = self.char_fun.get_local_chunk()
+                ## status = fun(out, self.crt_data.stress, self.crt_data.tan_mod,
+                ##              mtx_f, det_f, geo, lchunk, mode, 0)
+                yield out, lchunk, 0
+
+        elif term_mode in ['strain', 'stress']:
+
+            if term_mode == 'strain':
+                out_qp = None
+
+            elif term_mode == 'stress':
+                out_qp = None
+
+            shape = (chunk_size, 1) + out_qp.shape[2:]
+            for out, chunk in self.char_fun( chunk_size, shape ):
+                status = sg.integrate_chunk(out, out_qp[chunk], chunk)
+                out1 = out / sg.variable(2)[chunk]
+
+            yield out1, chunk, status
