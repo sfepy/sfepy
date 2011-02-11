@@ -1,4 +1,5 @@
 import numpy as nm
+from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
 import scipy as sc
 
@@ -162,6 +163,62 @@ def mini_newton( fun, x0, dfun, i_max = 100, eps = 1e-8 ):
         x = x - dx
         ii += 1
     return x
+
+def insert_strided_axis(ar, axis, length):
+    """
+    Insert a new axis of given length into an array using numpy stride
+    tricks, i.e. no copy is made.
+
+    Parameters
+    ----------
+    ar : array
+        The input array.
+    axis : int
+        The axis before which the new axis will be inserted.
+    length : int
+        The length of the inserted axis. 
+
+    Returns
+    -------
+    out : array
+        The output array sharing data with `ar`.
+
+    Examples
+    --------
+    >>> import numpy as nm
+    >>> from sfepy.linalg import insert_strided_axis
+    >>> ar = nm.random.rand(2, 1, 2)
+    >>> ar
+    array([[[ 0.18905119,  0.44552425]],
+
+           [[ 0.78593989,  0.71852473]]])
+    >>> ar.shape
+    (2, 1, 2)
+    >>> ar2 = insert_strided_axis(ar, 1, 3)
+    >>> ar2
+    array([[[[ 0.18905119,  0.44552425]],
+
+            [[ 0.18905119,  0.44552425]],
+
+            [[ 0.18905119,  0.44552425]]],
+
+
+           [[[ 0.78593989,  0.71852473]],
+
+            [[ 0.78593989,  0.71852473]],
+
+            [[ 0.78593989,  0.71852473]]]])
+    >>> ar2.shape
+    (2, 3, 1, 2)
+    """
+    shape = list(ar.shape)
+    shape.insert(axis, length)
+
+    strides = list(ar.strides)
+    strides.insert(axis, 0)
+
+    out = as_strided(ar, shape=shape, strides=strides)
+    return out
 
 def dot_sequences(mtx, vec, use_rows=False):
     """
