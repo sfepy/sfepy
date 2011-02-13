@@ -1,9 +1,8 @@
 import numpy as nm
-from numpy.lib.stride_tricks import as_strided
 
 from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
-from sfepy.linalg import dot_sequences
+from sfepy.linalg import dot_sequences, insert_strided_axis
 from sfepy.fem.mappings import VolumeMapping
 from sfepy.mechanics.tensors import dim2sym
 from sfepy.terms.terms import Term
@@ -11,6 +10,8 @@ from sfepy.terms.terms import Term
 class TLMembraneTerm(Term):
     r"""
     Mooney-Rivlin membrane with plain stress assumption.
+
+    Membrane thickness should be included in the material parameters.
 
     :Arguments:
         virtual  : :math:`\ul{v}`,
@@ -24,7 +25,6 @@ class TLMembraneTerm(Term):
         n_el, n_qp, dim, n_ep = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
         assert_(dim == 3)
-        dim -= 1
 
         if diff_var is None:
             return (chunk_size, 1, dim * n_ep, 1), 0
@@ -109,6 +109,7 @@ class TLMembraneTerm(Term):
         coors = vu.field.coors[sd.econn]
 
         dim = coors.shape[1]
+        sym2 = dim2sym(dim-1)
 
         # Local coordinate system.
         t1 = coors[:, 1, :] - coors[:, 0, :]
@@ -156,12 +157,7 @@ class TLMembraneTerm(Term):
         bfg = geo.variable(0)
 
         # Repeat el_u_loc by number of quadrature points.
-        sh = list(el_u_loc.shape)
-        sh.insert(1, bfg.shape[1])
-
-        strides = list(el_u_loc.strides)
-        strides.insert(1, 0)
-        el_u_loc_qp = as_strided(el_u_loc, shape=sh, strides=strides)
+        el_u_loc_qp = insert_strided_axis(el_u_loc, 1, bfg.shape[1])
 
         # Transformed (in-plane) displacement gradient with
         # shape (n_el, n_qp, 2 (-> a), 3 (-> i)), du_i/dX_a.
@@ -174,28 +170,50 @@ class TLMembraneTerm(Term):
 
         # Right Cauchy-Green deformation tensor C.
         # C_{ab} = F_{ka} F_{kb}, a, b \in {1, 2}.
-        mtx_c = dot_sequences(mtx_f, mtx_f, use_rows=True)
+        mtx_c = dot_sequences(mtx_f, mtx_f, 'ABT')
 
         # C_33 from incompressibility.
         c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
                      + mtx_c[..., 0, 1]**2)
 
+        # Discrete Green strain variation operator.
+        sh = mtx_f.shape
+        n_ep = bfg.shape[3]
+        mtx_b = nm.empty((sh[0], sh[1], sym2, dim * n_ep), dtype=nm.float64)
+        mtx_b[..., 0, 0*n_ep:1*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 0:1]
+        mtx_b[..., 0, 1*n_ep:2*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 1:2]
+        mtx_b[..., 0, 2*n_ep:3*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 2:3]
+        mtx_b[..., 1, 0*n_ep:1*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 0:1]
+        mtx_b[..., 1, 1*n_ep:2*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 1:2]
+        mtx_b[..., 1, 2*n_ep:3*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 2:3]
+        mtx_b[..., 2, 0*n_ep:1*n_ep] = bfg[..., 1, :] * mtx_f[..., 0, 0:1] \
+                                       + bfg[..., 0, :] * mtx_f[..., 1, 0:1]
+        mtx_b[..., 2, 1*n_ep:2*n_ep] = bfg[..., 0, :] * mtx_f[..., 1, 1:2] \
+                                       + bfg[..., 1, :] * mtx_f[..., 0, 1:2]
+        mtx_b[..., 2, 2*n_ep:3*n_ep] = bfg[..., 0, :] * mtx_f[..., 1, 2:3] \
+                                       + bfg[..., 1, :] * mtx_f[..., 0, 2:3]
+
         shape, mode = self.get_shape(ap, diff_var, chunk_size)
 
         if term_mode is None:
 
-            out = self.compute_crt_data(mtx_c, c33, mode, **kwargs)
+            crt = self.compute_crt_data(mtx_c, c33, mode, **kwargs)
 
-            ## if mode == 0:
-            ##     self.crt_data.stress = out
-            ## else:
-            ##     self.crt_data.tan_mod = out
+            if mode == 0:
+                bts = dot_sequences(mtx_b, crt, 'ATB')
 
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                lchunk = self.char_fun.get_local_chunk()
-                ## status = fun(out, self.crt_data.stress, self.crt_data.tan_mod,
-                ##              mtx_f, det_f, geo, lchunk, mode, 0)
-                yield out, lchunk, 0
+                for out, chunk in self.char_fun(chunk_size, shape):
+                    lchunk = self.char_fun.get_local_chunk()
+                    status = geo.integrate_chunk(out, bts, lchunk)
+
+                    # Transform to global coordinate system.
+                    # ...
+
+                    yield out, lchunk, 0
+
+            else:
+                pass
+
 
         elif term_mode in ['strain', 'stress']:
 
