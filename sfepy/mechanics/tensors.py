@@ -265,7 +265,7 @@ class StressTransform(Struct):
         stress_in_full = stress_in[:,:,self.s2f,0]
 
         val_il = dot_sequences(self.def_grad, stress_in_full)
-        val_ij = dot_sequences(val_il, self.def_grad, use_rows=True)
+        val_ij = dot_sequences(val_il, self.def_grad, mode='ABT')
 
         stress_out_full = val_ij / self.jacobian
 
