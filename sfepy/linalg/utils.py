@@ -220,12 +220,12 @@ def insert_strided_axis(ar, axis, length):
     out = as_strided(ar, shape=shape, strides=strides)
     return out
 
-def dot_sequences(mtx, vec, use_rows=False):
+def dot_sequences(mtx, vec, mode='AB'):
     """
     Computes dot product for each pair of items in the two sequences.
 
     Equivalent to
- 
+
     >>> out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
     >>>                dtype=vec.dtype)
     >>> for ir in range(mtx.shape[0]):
@@ -236,15 +236,24 @@ def dot_sequences(mtx, vec, use_rows=False):
     mtx : array
         The array of matrices with shape `(n_item, m, n)`.
     vec : array
-        The array of vectors with shape `(n_item, n)` or matrices with shape
-        `(n_item, n, k)`.
-    use_rows : bool
-        If `vec` is an array of matrices with `(n_item, k, n)` shape, 
+        The array of vectors with shape `(n_item, a)` or matrices with shape
+        `(n_item, a, b)`.
+    mode : one of 'AB', 'ATB', 'ABT', 'ATBT'
+
+        The mode of the dot product - the corresponding axes are dotted
+        together:
+
+        'AB'   : `a = n`
+        'ATB'  : `a = m`
+        'ABT'  : `b = n` (*)
+        'ATBT' : `b = m` (*)
+
+        (*) The 'BT' part is ignored for the vector second argument.
 
     Returns
     -------
     out : array
-       The resulting array of shape `(n_item, m)` or `(n_item, m, k)`.
+       The resulting array.
 
     Notes
     -----
@@ -253,22 +262,45 @@ def dot_sequences(mtx, vec, use_rows=False):
     is restored to `(n_1, ..., n_r, ?, ?)`.
     """
     if (vec.ndim == 2) and (mtx.ndim == 3):
-        out = nm.sum(mtx * vec[:,None,:], axis=2)
-
-    elif (vec.ndim == 3) and (mtx.ndim == 3):
-        if use_rows:
-            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[1]),
-                           dtype=vec.dtype)
-
-            for ic in range(vec.shape[1]):
-                out[:,:,ic] = dot_sequences(mtx, vec[:,ic,:])
+        if mode in ('AB', 'ABT'):
+            out = nm.sum(mtx * vec[:, None, :], axis=2)
 
         else:
+            out = nm.sum(mtx * vec[:, :, None], axis=1)
+
+    elif (vec.ndim == 3) and (mtx.ndim == 3):
+
+        if mode == 'AB':
             out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
                            dtype=vec.dtype)
 
             for ic in range(vec.shape[2]):
-                out[:,:,ic] = dot_sequences(mtx, vec[:,:,ic])
+                out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
+
+        elif mode == 'ABT':
+            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[1]),
+                           dtype=vec.dtype)
+
+            for ic in range(vec.shape[1]):
+                out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
+
+
+        elif mode == 'ATB':
+            out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[2]),
+                           dtype=vec.dtype)
+
+            for ic in range(vec.shape[2]):
+                out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
+
+        elif mode == 'ATBT':
+            out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[1]),
+                           dtype=vec.dtype)
+
+            for ic in range(vec.shape[1]):
+                out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
+
+        else:
+            raise ValueError('unknown dot mode! (%s)' % mode)
 
     elif (vec.ndim >= 4) and (mtx.ndim >= 4) and (vec.ndim == mtx.ndim):
         mtx_seq = nm.reshape(mtx,
@@ -279,7 +311,7 @@ def dot_sequences(mtx, vec, use_rows=False):
                              (nm.prod(vec.shape[0:-2], dtype=int),)
                              + vec.shape[-2:])
 
-        out_seq = dot_sequences(mtx_seq, vec_seq, use_rows=use_rows)
+        out_seq = dot_sequences(mtx_seq, vec_seq, mode=mode)
         out = nm.reshape(out_seq, mtx.shape[0:-2] + out_seq.shape[-2:])
 
     else:
