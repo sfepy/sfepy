@@ -1,7 +1,80 @@
 import numpy as nm
 
+from sfepy.base.base import assert_
+from sfepy.linalg import norm_l2_along_axis as norm
 from sfepy.linalg import dot_sequences, insert_strided_axis
+from sfepy.fem.mappings import VolumeMapping
 from sfepy.mechanics.tensors import dim2sym
+
+def create_transformation_matrix(coors):
+    """
+    Create a transposed coordinate transformation matrix, that
+    transforms 3D coordinates of element face nodes so that the
+    transformed nodes are in the `x-y` plane. The rotation is performed
+    w.r.t. the first node of each face.
+
+    Parameters
+    ----------
+    coors : array
+        The coordinates of element nodes, shape `(n_el, n_ep, dim)`.
+
+    Returns
+    -------
+    mtx_t : array
+        The transposed transformation matrix., i.e.
+        :math:`X_{inplane} = T X_{3D}`.
+    """
+    # Local coordinate system.
+    t1 = coors[:, 1, :] - coors[:, 0, :]
+    t2 = coors[:, -1, :] - coors[:, 0, :]
+    n = nm.cross(t1, t2)
+    t2 = nm.cross(n, t1)
+
+    t1 = t1 / norm(t1)[:, None]
+    t2 = t2 / norm(t2)[:, None]
+    n = n / norm(n)[:, None]
+
+    # Coordinate transformation matrix (transposed!).
+    mtx_t = nm.concatenate((t1[:, :, None],
+                            t2[:, :, None],
+                            n[:, :, None]), axis=2)
+
+    return mtx_t
+
+def create_mapping(coors, gel, order):
+    """
+    Create mapping from transformed (in `x-y` plane) element faces to
+    reference element faces.
+
+    Parameters
+    ----------
+    coors : array
+        The transformed coordinates of element nodes, shape `(n_el,
+        n_ep, dim)`. The function verifies that the all `z` components
+        are zero.
+    gel : GeometryElement instance
+        The geometry element corresponding to the faces.
+    order : int
+        The polynomial order of the mapping.
+
+    Returns
+    -------
+    mapping : VolumeMapping instance
+        The reference element face mapping.
+    """
+    # Strip 'z' component (should be 0 now...).
+    assert_(nm.allclose(coors[:, :, -1], 0.0, rtol=1e-12, atol=1e-12))
+    coors = coors[:, :, :-1].copy()
+
+    # Mapping from transformed element to reference element.
+    sh = coors.shape
+    seq_coors = coors.reshape((sh[0] * sh[1], sh[2]))
+    seq_conn = nm.arange(seq_coors.shape[0], dtype=nm.int32)
+    seq_conn.shape = sh[:2]
+
+    mapping = VolumeMapping(seq_coors, seq_conn, gel=gel, order=1)
+
+    return mapping
 
 def describe_deformation(el_disps, bfg):
     """
