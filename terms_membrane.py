@@ -1,10 +1,9 @@
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.linalg import norm_l2_along_axis as norm
-from sfepy.linalg import dot_sequences, insert_strided_axis
-from sfepy.fem.mappings import VolumeMapping
+from sfepy.linalg import dot_sequences
 from sfepy.mechanics.tensors import dim2sym
+import sfepy.mechanics.membranes as membranes
 from sfepy.terms.terms import Term
 
 class TLMembraneTerm(Term):
@@ -105,26 +104,16 @@ class TLMembraneTerm(Term):
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
+        dim = sg.dim
+
         # Coordinates of element nodes.
         coors = vu.field.coors[sd.econn]
 
-        dim = coors.shape[1]
-        sym2 = dim2sym(dim-1)
-
-        # Local coordinate system.
-        t1 = coors[:, 1, :] - coors[:, 0, :]
-        t2 = coors[:, -1, :] - coors[:, 0, :]
-        n = nm.cross(t1, t2)
-        t2 = nm.cross(n, t1)
-
-        t1 = t1 / norm(t1)[:, None]
-        t2 = t2 / norm(t2)[:, None]
-        n = n / norm(n)[:, None]
-
         # Coordinate transformation matrix (transposed!).
-        mtx_t = nm.concatenate((t1[:, :, None],
-                                t2[:, :, None],
-                                n[:, :, None]), axis=2)
+        mtx_t = membranes.create_transformation_matrix(coors)
+
+        # Transform coordinates to the local coordinate system.
+        coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
 
         # Displacements of element nodes.
         vec_u = vu.get_state_in_region(self.region, igs=[self.char_fun.ig])
@@ -133,21 +122,9 @@ class TLMembraneTerm(Term):
         # Transform displacements to the local coordinate system.
         el_u_loc = dot_sequences(mtx_t, el_u)
 
-        # Transform coordinates to the local coordinate system.
-        coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
-
-        # Strip 'z' component (should be 0 now...).
-        assert_(nm.allclose(coors_loc[:, :, -1], 0.0, rtol=1e-12, atol=1e-12))
-        coors_loc = coors_loc[:, :, :-1].copy()
-
         # Mapping from transformed element to reference element.
-        sh = coors_loc.shape
-        seq_coors = coors_loc.reshape((sh[0] * sh[1], sh[2]))
-        seq_conn = nm.arange(seq_coors.shape[0], dtype=nm.int32)
-        seq_conn.shape = sh[:2]
-
         gel = vu.field.gel.surface_facet
-        vm = VolumeMapping(seq_coors, seq_conn, gel=gel, order=1)
+        vm = membranes.create_mapping(coors_loc, gel, 1)
 
         qp = self.integral.get_qp(gel.name)
         geo = vm.get_mapping(*qp)
@@ -155,43 +132,9 @@ class TLMembraneTerm(Term):
         # Transformed base function gradient w.r.t. material coordinates
         # in quadrature points.
         bfg = geo.variable(0)
-
-        # Repeat el_u_loc by number of quadrature points.
-        el_u_loc_qp = insert_strided_axis(el_u_loc, 1, bfg.shape[1])
-
-        # Transformed (in-plane) displacement gradient with
-        # shape (n_el, n_qp, 2 (-> a), 3 (-> i)), du_i/dX_a.
-        du = dot_sequences(bfg, el_u_loc_qp)
-
-        # Deformation gradient F w.r.t. in plane coordinates.
-        # F_{ia} = dx_i / dX_a,
-        # a \in {1, 2} (rows), i \in {1, 2, 3} (columns).
-        mtx_f = du + nm.eye(dim - 1, dim, dtype=du.dtype)
-
-        # Right Cauchy-Green deformation tensor C.
-        # C_{ab} = F_{ka} F_{kb}, a, b \in {1, 2}.
-        mtx_c = dot_sequences(mtx_f, mtx_f, 'ABT')
-
-        # C_33 from incompressibility.
-        c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
-                     + mtx_c[..., 0, 1]**2)
-
-        # Discrete Green strain variation operator.
-        sh = mtx_f.shape
         n_ep = bfg.shape[3]
-        mtx_b = nm.empty((sh[0], sh[1], sym2, dim * n_ep), dtype=nm.float64)
-        mtx_b[..., 0, 0*n_ep:1*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 0:1]
-        mtx_b[..., 0, 1*n_ep:2*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 1:2]
-        mtx_b[..., 0, 2*n_ep:3*n_ep] = bfg[..., 0, :] * mtx_f[..., 0, 2:3]
-        mtx_b[..., 1, 0*n_ep:1*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 0:1]
-        mtx_b[..., 1, 1*n_ep:2*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 1:2]
-        mtx_b[..., 1, 2*n_ep:3*n_ep] = bfg[..., 1, :] * mtx_f[..., 1, 2:3]
-        mtx_b[..., 2, 0*n_ep:1*n_ep] = bfg[..., 1, :] * mtx_f[..., 0, 0:1] \
-                                       + bfg[..., 0, :] * mtx_f[..., 1, 0:1]
-        mtx_b[..., 2, 1*n_ep:2*n_ep] = bfg[..., 0, :] * mtx_f[..., 1, 1:2] \
-                                       + bfg[..., 1, :] * mtx_f[..., 0, 1:2]
-        mtx_b[..., 2, 2*n_ep:3*n_ep] = bfg[..., 0, :] * mtx_f[..., 1, 2:3] \
-                                       + bfg[..., 1, :] * mtx_f[..., 0, 2:3]
+
+        mtx_c, c33, mtx_b = membranes.describe_deformation(el_u_loc, bfg)
 
         shape, mode = self.get_shape(ap, diff_var, chunk_size)
 
@@ -206,14 +149,17 @@ class TLMembraneTerm(Term):
                     lchunk = self.char_fun.get_local_chunk()
                     status = geo.integrate_chunk(out, bts, lchunk)
 
-                    # Transform to global coordinate system.
-                    # ...
+                    # Transform to global coordinate system, one node at
+                    # a time.
+                    for iep in range(n_ep):
+                        fn = out[:, 0, iep * dim:(iep + 1) * dim, 0]
+                        fn[:] = dot_sequences(mtx_t[lchunk], fn)
 
                     yield out, lchunk, 0
 
             else:
-                pass
-
+                btd = dot_sequences(mtx_b, crt, 'ATB')
+                btdb = dot_sequences(btd, mtx_b)
 
         elif term_mode in ['strain', 'stress']:
 
