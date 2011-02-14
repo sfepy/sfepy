@@ -161,6 +161,29 @@ class TLMembraneTerm(Term):
                 btd = dot_sequences(mtx_b, crt, 'ATB')
                 btdb = dot_sequences(btd, mtx_b)
 
+                stress = self.compute_crt_data(mtx_c, c33, 0, **kwargs)
+
+                kts =  membranes.get_tangent_stress_matrix(stress, bfg)
+
+                mtx_k = kts + btdb
+
+                for out, chunk in self.char_fun(chunk_size, shape):
+                    lchunk = self.char_fun.get_local_chunk()
+                    status = geo.integrate_chunk(out, mtx_k, lchunk)
+
+                    # Transform to global coordinate system, one node at
+                    # a time.
+                    dot = dot_sequences
+                    tc = mtx_t[lchunk]
+                    for iepr in range(n_ep):
+                        ir = slice(iepr * dim, (iepr + 1) * dim)
+                        for iepc in range(n_ep):
+                            ic = slice(iepc * dim, (iepc + 1) * dim)
+                            fn = out[:, 0, ir, ic]
+                            fn[:] = dot(dot(tc, fn), tc, mode='ABT')
+
+                    yield out, lchunk, 0
+
         elif term_mode in ['strain', 'stress']:
 
             if term_mode == 'strain':
