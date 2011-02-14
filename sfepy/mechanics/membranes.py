@@ -146,3 +146,41 @@ def describe_deformation(el_disps, bfg):
                                    + bfg[..., 1, :] * mtx_f[..., 0, 2:3]
 
     return mtx_c, c33, mtx_b
+
+def get_tangent_stress_matrix(stress, bfg):
+    """
+    Get the tangent stress matrix of a thin incompressible 2D membrane
+    in 3D space, given a stress.
+
+    Parameters
+    ----------
+    stress : array
+        The components `11, 22, 12` of the second Piola-Kirchhoff stress
+        tensor, shape `(n_el, n_qp, 3, 1)`.
+    bfg : array
+        The in-plane base function gradients, shape `(n_el, n_qp, dim-1,
+        n_ep)`.
+
+    Returns
+    -------
+    mtx : array
+        The tangent stress matrix, shape `(n_el, n_qp, dim*n_ep, dim*n_ep)`.
+    """
+    n_el, n_qp, dim, n_ep = bfg.shape
+    dim += 1
+
+    mtx = nm.zeros((n_el, n_qp, dim * n_ep, dim * n_ep), dtype=nm.float64)
+
+    g1tg1 = dot_sequences(bfg[..., 0:1, :], bfg[..., 0:1, :], 'ATB')
+    g1tg2 = dot_sequences(bfg[..., 0:1, :], bfg[..., 1:2, :], 'ATB')
+    g2tg1 = dot_sequences(bfg[..., 1:2, :], bfg[..., 0:1, :], 'ATB')
+    g2tg2 = dot_sequences(bfg[..., 1:2, :], bfg[..., 1:2, :], 'ATB')
+
+    aux = stress[..., 0:1, :] * g1tg1 + stress[..., 2:3, :] * g1tg2 \
+          + stress[..., 2:3, :] * g2tg1 + stress[..., 1:2, :] * g2tg2
+
+    mtx[..., 0 * n_ep : 1 * n_ep, 0 * n_ep : 1 * n_ep] = aux
+    mtx[..., 1 * n_ep : 2 * n_ep, 1 * n_ep : 2 * n_ep] = aux
+    mtx[..., 2 * n_ep : 3 * n_ep, 2 * n_ep : 3 * n_ep] = aux
+
+    return mtx
