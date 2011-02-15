@@ -11,3 +11,9 @@ term_table = load_classes(term_files, [Term])
 cache_files = sfepy.get_paths('sfepy/terms/caches*.py')
 cache_table = load_classes(cache_files, [DataCache])
 del sfepy
+
+def register_term(cls):
+    """
+    Register a custom term.
+    """
+    term_table[cls.name] = cls
