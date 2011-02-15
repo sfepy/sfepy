@@ -128,7 +128,7 @@ def describe_deformation(el_disps, bfg):
 
     # C_33 from incompressibility.
     c33 = 1.0 / (mtx_c[..., 0, 0] * mtx_c[..., 1, 1]
-                 + mtx_c[..., 0, 1]**2)
+                 - mtx_c[..., 0, 1]**2)
 
     # Discrete Green strain variation operator.
     mtx_b = nm.empty((sh[0], sh[1], sym2, dim * n_ep), dtype=nm.float64)
