@@ -6,6 +6,72 @@ from sfepy.mechanics.tensors import dim2sym
 import sfepy.mechanics.membranes as membranes
 from sfepy.terms.terms import Term
 
+def eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode):
+    """
+    Evaluate stress or tangent stiffness of the Mooney-Rivlin membrane.
+
+    [1] Baoguo Wu, Xingwen Du and Huifeng Tan: A three-dimensional FE
+    nonlinear analysis of membranes, Computers & Structures 59 (1996),
+    no. 4, 601--605.
+    """
+    a12 = 2.0 * a1[..., 0, 0]
+    a22 = 2.0 * a2[..., 0, 0]
+
+    sh = mtx_c.shape
+    sym = dim2sym(sh[2])
+
+    c11 = mtx_c[..., 0, 0]
+    c12 = mtx_c[..., 0, 1]
+    c22 = mtx_c[..., 1, 1]
+    pressure = c33 * (a12 + a22 * (c11 + c22))
+
+    if mode == 0:
+        out = nm.empty((sh[0], sh[1], sym, 1))
+
+        # S_11, S_22, S_12.
+        out[..., 0, 0] = -pressure * c22 * c33 + a12 + a22 * (c22 + c33)
+        out[..., 1, 0] = -pressure * c11 * c33 + a12 + a22 * (c11 + c33)
+        out[..., 2, 0] = +pressure * c12 * c33 - a22 * c12
+
+    else:
+        out = nm.empty((sh[0], sh[1], sym, sym))
+
+        dp11 = a22 * c33 - pressure * c22 * c33
+        dp22 = a22 * c33 - pressure * c11 * c33
+        dp12 = 2.0 * pressure * c12 * c33
+
+        # D_11, D_22, D_33
+        out[..., 0, 0] = - 2.0 * ((a22 - pressure * c22) * c22 * c33**2
+                                  + c33 * c22 * dp11)
+        out[..., 1, 1] = - 2.0 * ((a22 - pressure * c11) * c11 * c33**2
+                                  + c33 * c11 * dp22)
+        out[..., 2, 2] = - a22 + pressure * (c33 + 2.0 * c12**2 * c33**2) \
+                         + c12 * c33 * dp12
+
+        # D_21, D_31, D_32
+        out[..., 1, 0] = 2.0 * ((a22 - pressure * c33
+                                 - (a22 - pressure * c11) * c22 * c33**2)
+                                - c33 * c11 * dp11)
+        out[..., 2, 0] = 2.0 * (-pressure * c12 * c22 * c33**2
+                                + c12 * c33 * dp11)
+        out[..., 2, 1] = 2.0 * (-pressure * c12 * c11 * c33**2
+                                + c12 * c33 * dp22)
+
+        out[..., 0, 1] = out[..., 1, 0]
+        out[..., 0, 2] = out[..., 2, 0]
+        out[..., 1, 2] = out[..., 2, 1]
+
+        # D_12, D_13, D_23
+        ## out[..., 0, 1] = 2.0 * ((a22 - pressure * c33
+        ##                          - (a22 - pressure * c22) * c11 * c33**2)
+        ##                         - c33 * c22 * dp22)
+        ## out[..., 0, 2] = 2.0 * (a22 - pressure * c22) * c12 * c33**2 \
+        ##                  - c33 * c22 * dp12
+        ## out[..., 1, 2] = 2.0 * (a22 - pressure * c11) * c12 * c33**2 \
+        ##                  - c33 * c11 * dp12
+
+    return out
+
 class TLMembraneTerm(Term):
     r"""
     Mooney-Rivlin membrane with plain stress assumption.
@@ -34,73 +100,12 @@ class TLMembraneTerm(Term):
         else:
             raise StopIteration
 
-    def compute_crt_data(self, mtx_c, c33, mode, **kwargs):
-        a1, a2 = self.get_args(['material_a1', 'material_a2'], **kwargs)
-
-        a12 = 2.0 * a1[..., 0, 0]
-        a22 = 2.0 * a2[..., 0, 0]
-
-        sh = mtx_c.shape
-        sym = dim2sym(sh[2])
-
-        c11 = mtx_c[..., 0, 0]
-        c12 = mtx_c[..., 0, 1]
-        c22 = mtx_c[..., 1, 1]
-        pressure = c33 * (a12 + a22 * (c11 + c22))
-
-        if mode == 0:
-            out = nm.empty((sh[0], sh[1], sym, 1))
-
-            # S_11, S_22, S_12.
-            out[..., 0, 0] = -pressure * c22 * c33 + a12 + a22 * (c22 + c33)
-            out[..., 1, 0] = -pressure * c11 * c33 + a12 + a22 * (c11 + c33)
-            out[..., 2, 0] = +pressure * c12 * c33 - a22 * c12
-
-        else:
-            out = nm.empty((sh[0], sh[1], sym, sym))
-
-            dp11 = a22 * c33 - pressure * c22 * c33
-            dp22 = a22 * c33 - pressure * c11 * c33
-            dp12 = 2.0 * pressure * c12 * c33
-
-            # D_11, D_22, D_33
-            out[..., 0, 0] = - 2.0 * ((a22 - pressure * c22) * c22 * c33**2
-                                      - c33 * c22 * dp11)
-            out[..., 1, 1] = - 2.0 * ((a22 - pressure * c11) * c11 * c33**2
-                                      - c33 * c11 * dp22)
-            out[..., 2, 2] = - a22 + pressure * (c33 + 2.0 * c12**2 * c33**2) \
-                             + c12 * c33 * dp12
-
-            # D_12, D_13, D_23
-            out[..., 0, 1] = 2.0 * ((a22 - pressure * c33
-                                     - (a22 - pressure * c22) * c11 * c33**2)
-                                    - c33 * c22 * dp22)
-            out[..., 0, 2] = 2.0 * (a22 - pressure * c22) * c12 * c33**2 \
-                             - c33 * c22 * dp12
-            out[..., 1, 2] = 2.0 * (a22 - pressure * c11) * c12 * c33**2 \
-                             - c33 * c11 * dp12
-
-            # D_21, D_31, D_32
-            out[..., 1, 0] = 2.0 * ((a22 - pressure * c33
-                                     - (a22 - pressure * c11) * c22 * c33**2)
-                                    - c33 * c11 * dp11)
-            out[..., 2, 0] = 2.0 * (-pressure * c12 * c22 * c33**2
-                                    + c12 * c33 * dp11)
-            out[..., 2, 1] = 2.0 * (-pressure * c12 * c11 * c33**2
-                                    + c12 * c33 * dp22)
-
-            ## out[..., 1, 0] = out[..., 0, 1]
-            ## out[..., 2, 0] = out[..., 0, 2]
-            ## out[..., 2, 1] = out[..., 1, 2]
-
-        return out
-
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         """
         Membrane term evaluation function.
         """
         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        vv, vu = self.get_args(['virtual', 'state'], **kwargs)
+        a1, a2, vv, vu = self.get_args(**kwargs)
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
@@ -111,7 +116,9 @@ class TLMembraneTerm(Term):
 
         # Coordinate transformation matrix (transposed!).
         mtx_t = membranes.create_transformation_matrix(coors)
-
+        ## from sfepy.linalg import insert_strided_axis
+        ## mtx_t = nm.eye(3)
+        ## mtx_t = insert_strided_axis(mtx_t, 0, 2)
         # Transform coordinates to the local coordinate system.
         coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
 
@@ -120,7 +127,9 @@ class TLMembraneTerm(Term):
         el_u = vec_u[sd.leconn]
 
         # Transform displacements to the local coordinate system.
-        el_u_loc = dot_sequences(mtx_t, el_u)
+        el_u_loc = dot_sequences(mtx_t, el_u, 'ATB')
+        ## print el_u_loc
+#        from debug import debug; debug()
 
         # Mapping from transformed element to reference element.
         gel = vu.field.gel.surface_facet
@@ -140,7 +149,7 @@ class TLMembraneTerm(Term):
 
         if term_mode is None:
 
-            crt = self.compute_crt_data(mtx_c, c33, mode, **kwargs)
+            crt = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode)
 
             if mode == 0:
                 bts = dot_sequences(mtx_b, crt, 'ATB')
@@ -153,7 +162,7 @@ class TLMembraneTerm(Term):
                     # a time.
                     for iep in range(n_ep):
                         fn = out[:, 0, iep * dim:(iep + 1) * dim, 0]
-                        fn[:] = dot_sequences(mtx_t[lchunk], fn)
+                        fn[:] = dot_sequences(mtx_t[lchunk], fn, 'AB')
 
                     yield out, lchunk, 0
 
@@ -161,7 +170,7 @@ class TLMembraneTerm(Term):
                 btd = dot_sequences(mtx_b, crt, 'ATB')
                 btdb = dot_sequences(btd, mtx_b)
 
-                stress = self.compute_crt_data(mtx_c, c33, 0, **kwargs)
+                stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
 
                 kts =  membranes.get_tangent_stress_matrix(stress, bfg)
 
@@ -180,7 +189,7 @@ class TLMembraneTerm(Term):
                         for iepc in range(n_ep):
                             ic = slice(iepc * dim, (iepc + 1) * dim)
                             fn = out[:, 0, ir, ic]
-                            fn[:] = dot(dot(tc, fn), tc, mode='ABT')
+                            fn[:] = dot(dot(tc, fn, 'AB'), tc, 'ABT')
 
                     yield out, lchunk, 0
 
