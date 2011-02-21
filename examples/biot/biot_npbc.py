@@ -2,6 +2,8 @@
 # c: 10.03.2009
 import os
 import numpy as nm
+
+from sfepy.linalg import get_coors_in_tube
 from sfepy.mechanics.matcoefs import stiffness_tensor_lame
 
 def define():
@@ -11,42 +13,25 @@ def define():
     output_dir = 'output'
     return define_input(filename, output_dir)
 
-def coors_in_cylinder(x, y, z, centre, axis, radius, length, inside=True):
-    """
-    Select coordinates in a cylinder given by centre, axis and length.
-    """
-    vec = nm.vstack((x, y, z)) - centre
-    
-    drv = nm.cross(axis, vec, axisb=0)
-    dr = nm.sqrt(nm.sum(drv * drv, 1))
-    dl = nm.dot(axis, vec)
-
-    if inside:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr <= radius))[0]
-    else:
-        out = nm.where((dl >= 0.0) & (dl <= length) & (dr >= radius))[0]
-
-    return out
-
 def cinc_simple(coors, mode):
     axis = nm.array([1, 0, 0], nm.float64)
     if mode == 0: # In
-        centre = nm.array([-0.00001, 0.0, 0.0], nm.float64).reshape((3,1))
+        centre = nm.array([-0.00001, 0.0, 0.0], nm.float64)
         radius = 0.019
         length = 0.00002
     elif mode == 1: # Out
-        centre = nm.array([0.09999, 0.0, 0.0], nm.float64).reshape((3,1))
+        centre = nm.array([0.09999, 0.0, 0.0], nm.float64)
         radius = 0.019
         length = 0.00002
     elif mode == 2: # Rigid
-        centre = nm.array([0.05, 0.0, 0.0], nm.float64).reshape((3,1))
+        centre = nm.array([0.05, 0.0, 0.0], nm.float64)
         radius = 0.015
         length = 0.03
     else:
         raise ValueError('unknown mode %s!' % mode)
 
-    return coors_in_cylinder(coors[:,0], coors[:,1], coors[:,2],
-                             centre, axis, radius, length)
+    return get_coors_in_tube(coors,
+                             centre, axis, -1, radius, length)
 
 def define_regions(filename):
     if filename.find('simple.mesh'):
