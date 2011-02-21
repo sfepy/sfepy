@@ -3,7 +3,8 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import as_float_or_complex, assert_, Container, Struct
+from sfepy.base.base import as_float_or_complex, get_default, assert_
+from sfepy.base.base import Container, Struct
 from sfepy.base.compat import in1d
 try:
     from sfepy.terms.extmods import terms
@@ -498,11 +499,10 @@ class Term(Struct):
     def assign_caches(self, caches=None):
         from sfepy.terms import cache_table, DataCaches
 
+        self.caches = caches = get_default(caches, DataCaches())
+
         if not hasattr(self, 'use_caches'):
             return
-
-        if caches is None:
-            caches = DataCaches()
 
         ## print self.name
         for name, arg_lists in self.use_caches.iteritems():
@@ -537,7 +537,6 @@ class Term(Struct):
                     cache = constructor(cname, ans, history_sizes)
                     caches.insert_cache(cache)
             caches.insert_term(cname, self.name, ans)
-        self.caches = caches
 
     def assign_args(self, variables, materials, user=None):
         """
