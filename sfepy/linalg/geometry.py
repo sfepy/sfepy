@@ -236,22 +236,39 @@ def make_axis_rotation_matrix(direction, angle):
     mtx = ddt + nm.cos(angle) * (eye - ddt) + nm.sin(angle) * skew
     return mtx
 
-def get_coors_in_tube(coors, centre, axis, radius_in, radius_out, length):
+def get_coors_in_tube(coors, centre, axis, radius_in, radius_out, length,
+                      inside_radii=True):
     """
-    Return indices of coordinates in a tube given by centre, axis vector,
-    inner and outer radii and length.
+    Return indices of coordinates inside a tube given by
+    centre, axis vector, inner and outer radii and length.
+
+    Parameters
+    ----------
+    inside_radii : bool, optional
+        If False, select points outside the radii, but within the tube
+        length.
+
+    Notes
+    -----
+    All float comparisons are done using `<=` or `>=` operators,
+    i.e. the points on the boundaries are taken into account.
     """
     coors = nm.asarray(coors)
     centre = nm.asarray(centre)
 
-    vec = coors.T - centre[:, None]
+    vec = coors - centre[None, :]
 
-    drv = nm.cross(axis, vec, axisb=0)
+    drv = nm.cross(axis, vec, axisb=1)
     dr = nm.sqrt(nm.sum(drv * drv, 1))
-    dl = nm.dot(axis, vec)
+    dl = nm.dot(vec, axis)
 
-    out = nm.where((dl >= 0.0) & (dl <= length) &
-                   (dr >= radius_in) & (dr <= radius_out))[0]
+    if inside_radii:
+        out = nm.where((dl >= 0.0) & (dl <= length) &
+                       (dr >= radius_in) & (dr <= radius_out))[0]
+
+    else:
+        out = nm.where((dl >= 0.0) & (dl <= length) &
+                       (dr <= radius_in) & (dr >= radius_out))[0]
 
     return out
 
