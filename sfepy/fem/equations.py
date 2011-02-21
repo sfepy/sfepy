@@ -226,6 +226,18 @@ class Equations( Container ):
         for cache in self.caches.itervalues():
             cache.set_mode( cache_override )
 
+    def print_terms(self):
+        """
+        Print names of equations and their terms.
+        """
+        output('equations:')
+        for eq in self:
+            output('  %s:' % eq.name)
+            for term in eq.terms:
+                output('    %+.2e * %s.%d.%s(%s)'
+                       % (term.sign, term.name, term.integral.order,
+                          term.region.name, term.arg_str))
+    
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
                     functions=None):
         self.variables.time_update(ts, functions)
