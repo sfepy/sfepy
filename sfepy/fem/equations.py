@@ -91,7 +91,7 @@ class Equations( Container ):
         self.variables = Variables(self.collect_variables())
         self.materials = Materials(self.collect_materials())
 
-        self.caches = get_default(caches, DataCaches())
+        self.setup_caches(caches=caches)
 
         self.clear_geometries()
 
@@ -100,6 +100,24 @@ class Equations( Container ):
         if setup:
             self.setup(cache_override=cache_override,
                        make_virtual=make_virtual, verbose=verbose)
+
+    def setup_caches(self, caches=None):
+        """
+        Ensure that all terms in equations share the same DataCaches
+        instance.
+        """
+        if not len(self):
+            self.caches = get_default(caches, DataCaches())
+
+        else:
+            caches = get_default(caches, self[0].terms[0].caches)
+            for eq in self:
+                for term in eq.terms:
+                    if not term.caches is caches:
+                        msg = 'terms must share a single DataCaches instance!'
+                        raise ValueError(msg)
+
+            self.caches = caches
 
     def clear_geometries(self):
         self.geometries = {}
