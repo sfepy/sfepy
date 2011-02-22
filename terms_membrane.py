@@ -4,6 +4,7 @@ from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.tensors import dim2sym
 import sfepy.mechanics.membranes as membranes
+from sfepy.fem.poly_spaces import PolySpace
 from sfepy.terms.terms import Term
 
 def eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode):
@@ -109,16 +110,12 @@ class TLMembraneTerm(Term):
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
-        dim = sg.dim
-
-        # Coordinates of element nodes.
-        coors = vu.field.coors[sd.econn]
+        # Coordinates of element vertices.
+        coors = vu.field.coors[sd.econn[:, :sg.nFP]]
 
         # Coordinate transformation matrix (transposed!).
         mtx_t = membranes.create_transformation_matrix(coors)
-        ## from sfepy.linalg import insert_strided_axis
-        ## mtx_t = nm.eye(3)
-        ## mtx_t = insert_strided_axis(mtx_t, 0, 2)
+
         # Transform coordinates to the local coordinate system.
         coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
 
@@ -127,16 +124,17 @@ class TLMembraneTerm(Term):
         el_u = vec_u[sd.leconn]
 
         # Transform displacements to the local coordinate system.
-        el_u_loc = dot_sequences(mtx_t, el_u, 'ATB')
+        # u_new = T^T u
+        el_u_loc = dot_sequences(el_u, mtx_t, 'AB')
         ## print el_u_loc
-#        from debug import debug; debug()
 
         # Mapping from transformed element to reference element.
         gel = vu.field.gel.surface_facet
         vm = membranes.create_mapping(coors_loc, gel, 1)
 
         qp = self.integral.get_qp(gel.name)
-        geo = vm.get_mapping(*qp)
+        ps = PolySpace.any_from_args(None, gel, vu.field.approx_order)
+        geo = vm.get_mapping(*qp, poly_space=ps)
 
         # Transformed base function gradient w.r.t. material coordinates
         # in quadrature points.
@@ -161,7 +159,8 @@ class TLMembraneTerm(Term):
                     # Transform to global coordinate system, one node at
                     # a time.
                     for iep in range(n_ep):
-                        fn = out[:, 0, iep * dim:(iep + 1) * dim, 0]
+                        ir = slice(iep, None, n_ep)
+                        fn = out[:, 0, ir, 0]
                         fn[:] = dot_sequences(mtx_t[lchunk], fn, 'AB')
 
                     yield out, lchunk, 0
@@ -185,9 +184,9 @@ class TLMembraneTerm(Term):
                     dot = dot_sequences
                     tc = mtx_t[lchunk]
                     for iepr in range(n_ep):
-                        ir = slice(iepr * dim, (iepr + 1) * dim)
+                        ir = slice(iepr, None, n_ep)
                         for iepc in range(n_ep):
-                            ic = slice(iepc * dim, (iepc + 1) * dim)
+                            ic = slice(iepc, None, n_ep)
                             fn = out[:, 0, ir, ic]
                             fn[:] = dot(dot(tc, fn, 'AB'), tc, 'ABT')
 
