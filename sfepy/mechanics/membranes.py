@@ -184,3 +184,35 @@ def get_tangent_stress_matrix(stress, bfg):
     mtx[..., 2 * n_ep : 3 * n_ep, 2 * n_ep : 3 * n_ep] = aux
 
     return mtx
+
+def get_invariants(mtx_c, c33):
+    """
+    Get the first and second invariants of the right Cauchy-Green
+    deformation tensor describing deformation of an incompressible
+    membrane.
+    
+    Parameters
+    ----------
+    mtx_c ; array
+        The in-plane right Cauchy-Green deformation tensor
+        :math:`C_{ij}`, :math:`i, j = 1, 2`, shape `(n_el, n_qp, dim-1,
+        dim-1)`.
+    c33 : array
+        The component :math:`C_{33}` computed from the incompressibility
+        condition, shape `(n_el, n_qp)`.
+
+    Returns
+    -------
+    i1 : array
+        The first invariant of :math:`C_{ij}`.
+    i2 : array
+        The second invariant of :math:`C_{ij}`.
+    """
+    i1 = mtx_c[..., 0, 0] + mtx_c[..., 1, 1] + c33
+
+    i2 = mtx_c[..., 0, 0] * mtx_c[..., 1,1] \
+         + mtx_c[..., 1, 1] * c33 \
+         + mtx_c[..., 0, 0] * c33 \
+         - mtx_c[..., 0, 1]**2
+
+    return i1, i2
