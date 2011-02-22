@@ -21,8 +21,14 @@ def create_transformation_matrix(coors):
     Returns
     -------
     mtx_t : array
-        The transposed transformation matrix., i.e.
-        :math:`X_{inplane} = T X_{3D}`.
+        The transposed transformation matrix :math:`T`, i.e.
+        :math:`X_{inplane} = T^T X_{3D}`.
+
+    Notes
+    -----
+    :math:`T = [t_1, t_2, n]`, where :math:`t_1`, :math:`t_2`, are unit
+    in-plane (column) vectors and :math:`n` is the unit normal vector,
+    all mutually orthonormal.
     """
     # Local coordinate system.
     t1 = coors[:, 1, :] - coors[:, 0, :]
