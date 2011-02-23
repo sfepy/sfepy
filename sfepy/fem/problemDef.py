@@ -152,11 +152,28 @@ class ProblemDefinition( Struct ):
 
         self.setup_output()
 
+        if hasattr(self.conf, 'options'):
+            self.setup_hooks(self.conf.options)
+
     def reset(self):
         self.matrix_hook = None
         self.mtx_a = None
         self.solvers = None
         self.clear_equations()
+
+    def setup_hooks(self, options):
+        """
+        Setup various hooks (user-defined functions), as given in `options`.
+
+        Supported hooks:
+          - `matrix_hook`
+            - check/modify tangent matrix in each nonlinear solver
+              iteration
+        """
+        hook = options.get('matrix_hook', None)
+        if hook is not None:
+            hook = getattr(self.conf.funmod, hook)
+        self.matrix_hook = hook
 
     def copy(self, name=None):
         """
@@ -347,8 +364,6 @@ class ProblemDefinition( Struct ):
         """
         Choose which solvers should be used. If solvers are not set in
         `options`, use first suitable in `conf_solvers`.
-
-        Also set `matrix_hook` function, if given in `options`.
         """
         conf_solvers = get_default( conf_solvers, self.conf.solvers )
         self.solver_confs = {}
@@ -381,11 +396,6 @@ class ProblemDefinition( Struct ):
             info += '\n                ls: %s' % self.ls_conf.name
         if info != 'using solvers:':
             output( info )
-
-        hook = options.get('matrix_hook', None)
-        if hook is not None:
-            hook = getattr(self.conf.funmod, hook)
-        self.matrix_hook = hook
 
     ##
     # Utility functions below.
