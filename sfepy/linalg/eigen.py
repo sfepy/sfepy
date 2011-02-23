@@ -1,28 +1,26 @@
 import numpy as nm
-import scipy.sparse as sps
+from scipy.linalg import eigvals_banded
 
 from sfepy.base.base import get_default, output
 
-def sym_tri_eigen(diags):
+def sym_tri_eigen(diags, select_indices=None):
     """
-    Compute eigenvalues of a symmetric tridiagonal matrix. Naive
-    implementation!
+    Compute eigenvalues of a symmetric tridiagonal matrix using
+    `scipy.linalg.eigvals_banded()`.
     """
-    n_row = diags.shape[1]
-    shape = (n_row, n_row)
+    if select_indices is not None:
+        n = diags.shape[1]
+        select_indices = nm.minimum(select_indices, n)
+        eigs = eigvals_banded(diags, lower=True, select='i',
+                              select_range=select_indices)
 
-    aux = nm.empty((3, n_row + 1), dtype=diags.dtype)
-    aux[:2, :-1] = diags
-    aux[2, 1:] = diags[1]
-    mtx = sps.dia_matrix((aux, (0, -1, 1)), shape=shape)
-
-    eigs, _ = nm.linalg.eig(mtx.toarray())
-    eigs.sort()
+    else:
+        eigs = eigvals_banded(diags, lower=True, select='a')
 
     return eigs
 
 def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
-            verbose=False, report_step=10):
+            select_indices=None, verbose=False, report_step=10):
     """
     Make several iterations of the conjugate gradients and estimate so
     the eigenvalues of a (sparse) SPD matrix (Lanczos algorithm).
@@ -101,13 +99,19 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
         diags[1, ii] = - nm.sqrt(beta) / alpha
         diags[0, ii+1] = beta / alpha
 
-        if verbose:
-            if (ii % report_step) == 1:
-                eigs = sym_tri_eigen(diags[:, :ii+1])
-                lambda_min, lambda_max = eigs[0], eigs[-1]
-                econd = lambda_max / lambda_min
-                output('%5d lambda: %e %e cond: %e |R|: %e\n'
-                       % (ii, lambda_min, lambda_max, econd, norm_r))
+        if verbose and (ii > 0):
+            if (ii % report_step) == 0:
+                eigs = sym_tri_eigen(diags[:, :ii+1],
+                                     select_indices=select_indices)
+                if select_indices is None:
+                    lambda_min, lambda_max = eigs[0], eigs[-1]
+                    econd = lambda_max / lambda_min
+                    output('%5d lambda: %e %e cond: %e |R|: %e\n'
+                           % (ii, lambda_min, lambda_max, econd, norm_r))
+
+                else:
+                    output('%5d |R|: %e\n'
+                           % (ii, norm_r))
 
         if (norm_r / norm_r0) < eps_a:
             if verbose:
@@ -117,10 +121,10 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
 
         rho0 = rho1
 
-    eigs = sym_tri_eigen(diags[:, :ii+1])
-    lambda_min, lambda_max = eigs[0], eigs[-1]
-    econd = lambda_max / lambda_min
-    if verbose:
+    eigs = sym_tri_eigen(diags[:, :ii+1], select_indices=select_indices)
+    if verbose and (select_indices is None):
+        lambda_min, lambda_max = eigs[0], eigs[-1]
+        econd = lambda_max / lambda_min
         output('min: %e  max: %e  cond: %e\n'
                % (lambda_min, lambda_max, econd))
 
