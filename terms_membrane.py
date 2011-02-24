@@ -84,7 +84,8 @@ class TLMembraneTerm(Term):
         state    : :math:`\ul{u}`
     """
     name = 'dw_tl_membrane'
-    arg_types = ('material_a1', 'material_a2', 'virtual', 'state')
+    arg_types = ('material_a1', 'material_a2', 'material_h0',
+                 'virtual', 'state')
     integration = 'surface'
 
     def get_shape(self, ap, diff_var, chunk_size):
@@ -106,7 +107,7 @@ class TLMembraneTerm(Term):
         Membrane term evaluation function.
         """
         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        a1, a2, vv, vu = self.get_args(**kwargs)
+        a1, a2, h0, vv, vu = self.get_args(**kwargs)
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
@@ -154,7 +155,7 @@ class TLMembraneTerm(Term):
 
                 for out, chunk in self.char_fun(chunk_size, shape):
                     lchunk = self.char_fun.get_local_chunk()
-                    status = geo.integrate_chunk(out, bts, lchunk)
+                    status = geo.integrate_chunk(out, bts * h0, lchunk)
 
                     # Transform to global coordinate system, one node at
                     # a time.
@@ -177,7 +178,7 @@ class TLMembraneTerm(Term):
 
                 for out, chunk in self.char_fun(chunk_size, shape):
                     lchunk = self.char_fun.get_local_chunk()
-                    status = geo.integrate_chunk(out, mtx_k, lchunk)
+                    status = geo.integrate_chunk(out, mtx_k * h0, lchunk)
 
                     # Transform to global coordinate system, one node at
                     # a time.
