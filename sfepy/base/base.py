@@ -548,9 +548,13 @@ class Container( Struct ):
 # 01.12.2004
 # 01.12.2004
 class OneTypeList( list ):
-    def __init__( self, item_class ):
+
+    def __init__(self, item_class, seq=None):
         self.item_class = item_class
-        pass
+
+        if seq is not None:
+            for obj in seq:
+                self.append(obj)
     
     def __setitem__( self, key, value ):
         if (type( value ) in (list, tuple)):
