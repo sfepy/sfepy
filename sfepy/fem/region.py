@@ -84,7 +84,8 @@ def _join( def1, op, def2 ):
 class Region( Struct ):
 
     @staticmethod
-    def from_vertices(vertices, domain, name='region', can_cells=False):
+    def from_vertices(vertices, domain, name='region',
+                      igs=None, can_cells=False):
         """
         Create a new region containing given vertices.
 
@@ -96,11 +97,21 @@ class Region( Struct ):
             The domain containing the vertices.
         name : str, optional
             The name of the region.
+        igs : list, optional
+            The allowed element groups. Other groups will be ignored,
+            even though the region might have vertices in them - the
+            same effect the 'forbid' flag has.
         can_cells : bool, optional
             If True, the region can have cells.
         """
         obj = Region(name, 'given vertices', domain, '')
+
         obj.set_vertices(vertices)
+
+        if igs is not None:
+            forbidden = nm.setdiff1d(obj.igs, igs)
+            obj.delete_groups(forbidden)
+
         obj.switch_cells(can_cells) 
         obj.complete_description(domain.ed, domain.fa)
 
