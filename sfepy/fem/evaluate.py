@@ -1,8 +1,8 @@
 from copy import copy
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, OneTypeList, Struct
 from sfepy.terms import DataCaches
-from sfepy.fem import Equations, Variables
+from sfepy.fem import Equations, Variables, Region
 from sfepy.fem.fields import setup_dof_conns, setup_extra_data
 
 ##
@@ -106,6 +106,7 @@ class LCBCEvaluator( BasicEvaluator ):
         return mtx_r
 
 def create_evaluable(expression, fields, materials, variables, integrals,
+                     regions=None,
                      ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
                      auto_init=False, mode='eval', extra_args=None,
                      verbose=True, kwargs=None):
@@ -125,6 +126,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         The variables used in the expression.
     integrals : Integrals instance
         The integrals to be used.
+    regions : Region instance or list of Region instances
+        The region(s) to be used. If not given, the regions defined
+        within the fields domain are used.
     ebcs : Conditions instance, optional
         The essential (Dirichlet) boundary conditions for 'weak'
         mode.
@@ -164,7 +168,15 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     if kwargs is None:
         kwargs = {}
 
-    domain = fields[fields.keys()[0]].domain
+    if regions is not None:
+        if isinstance(regions, Region):
+            regions = [regions]
+
+        regions = OneTypeList(Region, regions)
+
+    else:
+        regions = fields[fields.keys()[0]].domain.regions
+
     caches = DataCaches()
 
     # Create temporary variables.
@@ -178,8 +190,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         extra_args.update(kwargs)
 
     equations = Equations.from_conf({'tmp' : expression},
-                                    aux_vars, domain.regions,
-                                    materials, integrals,
+                                    aux_vars, regions, materials, integrals,
                                     setup=False,
                                     caches=caches, user=extra_args,
                                     verbose=verbose)
