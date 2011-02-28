@@ -68,8 +68,8 @@ class HyperElasticBase( Term ):
         }
 
         igs = self.region.igs
-        dummy = nm.array([0], ndmin=4) 
-        self.crt_data = Struct(stress={}.fromkeys(igs, dummy),
+        dummy = nm.array([0], ndmin=4)
+        self.crt_data = Struct(stress={}.fromkeys(igs, None),
                                tan_mod=dummy)
 
     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -90,18 +90,21 @@ class HyperElasticBase( Term ):
             out = self.compute_crt_data( family_data, mode, **kwargs )
 
             if mode == 0:
-                self.crt_data.stress[ig] = out
+                self.crt_data.stress[ig] = stress = out
 
             else:
                 self.crt_data.tan_mod = out
+
+                stress = self.crt_data.stress[ig]
+                if stress is None:
+                    stress = self.compute_crt_data(family_data, 0, **kwargs)
 
             fun = self.function['element_contribution']
 
             mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
 
             for out, chunk in self.char_fun( chunk_size, shape ):
-                status = fun( out, self.crt_data.stress[ig],
-                              self.crt_data.tan_mod,
+                status = fun( out, stress, self.crt_data.tan_mod,
                               mtxF, detF, vg, chunk, mode, self.mode_ul )
                 yield out, chunk, status
 
