@@ -403,6 +403,13 @@ class ProblemDefinition( Struct ):
         if info != 'using solvers:':
             output( info )
 
+    def set_solvers_instances(self, ls=None, nls=None):
+        """
+        Set the instances of linear and nonlinear solvers that will be
+        used in `ProblemDefinition.solve()` call.
+        """
+        self.solvers = Struct(name='solvers', ls=ls, nls=nls)
+
     ##
     # Utility functions below.
     ##
