@@ -43,7 +43,6 @@ class BasicEvaluator( Evaluator ):
             pb = self.problem
             if mtx is None:
                 mtx = pb.mtx_a
-            mtx.data[:] = 0.0
             mtx = pb.equations.eval_tangent_matrices(vec, mtx)
 
         except StopIteration, exc:

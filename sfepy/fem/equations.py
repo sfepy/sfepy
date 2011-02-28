@@ -566,8 +566,6 @@ class Equations( Container ):
         """
         self.set_variables_from_state(state)
 
-        self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
-
         if by_blocks:
             out = {}
 
@@ -579,9 +577,17 @@ class Equations( Container ):
                 ir = get_indx(rname, stripped=True, allow_dual=True)
                 ic = get_indx(cname, stripped=True, allow_dual=True)
 
+                tangent_matrix.data[:] = 0.0
+                eq.evaluate(mode='weak', dw_mode='matrix',
+                            asm_obj=tangent_matrix)
+
                 out[key] = tangent_matrix[ir, ic]
 
         else:
+            tangent_matrix.data[:] = 0.0
+
+            self.evaluate(mode='weak', dw_mode='matrix', asm_obj=tangent_matrix)
+
             out = tangent_matrix
 
         return out
