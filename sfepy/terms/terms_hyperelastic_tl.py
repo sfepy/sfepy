@@ -167,8 +167,10 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
             'element_contribution' : terms.dw_he_rtm,
             'element_contribution_dp' : terms.dw_tl_volume,
         }
-        self.crt_data = Struct(stress = None,
-                               tan_mod = nm.array([0], ndmin=4))
+        igs = self.region.igs
+        dummy = nm.array([0], ndmin=4)
+        self.crt_data = Struct(stress={}.fromkeys(igs, None),
+                               tan_mod=dummy)
 
     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
@@ -185,19 +187,25 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
         if term_mode is None:
 
             if mode < 2:
+                ig = self.char_fun.ig
+
                 crt_data = self.compute_crt_data(family_data, mode, **kwargs)
                 if mode == 0:
-                    self.crt_data.stress = crt_data
+                    self.crt_data.stress[ig] = stress = crt_data
+
                 else:
                     self.crt_data.tan_mod = crt_data
+
+                    stress = self.crt_data.stress[ig]
+                    if stress is None:
+                        stress = self.compute_crt_data(family_data, 0, **kwargs)
 
                 fun = self.function['element_contribution']
 
                 mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
 
                 for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, self.crt_data.stress,
-                                 self.crt_data.tan_mod, mtxF, detF,
+                    status = fun(out, stress, self.crt_data.tan_mod, mtxF, detF,
                                  vgv, chunk, mode, 0)
                     yield out, chunk, status
             else:
