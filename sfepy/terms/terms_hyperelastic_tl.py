@@ -312,8 +312,6 @@ class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
 
         else:
             shape, mode = self.get_shape_div(diff_var, chunk_size)
-            if self.step == 0: # Just init the history in step 0.
-                raise StopIteration
 
         bf = aps.get_base('v', 0, self.integral)
 
