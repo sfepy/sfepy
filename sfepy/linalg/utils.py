@@ -107,6 +107,21 @@ def combine( seqs ):
             for perm in combine( seqs[1:] ):
                 yield [ii] + perm
 
+def unique_rows(ar):
+    """
+    Return unique rows of a two-dimensional array `ar`.
+    """
+    ar = nm.asanyarray(ar)
+
+    # View the rows as a 1D structured array.
+    arv = ar.view(ar.shape[1] * [('', ar.dtype)])
+    uarv = nm.unique(arv)
+
+    # Restore the original dimensions.
+    uar = uarv.view(ar.dtype).reshape((-1, ar.shape[1]))
+
+    return uar
+
 def argsort_rows(seq):
     """
     Returns an index array that sorts the sequence `seq`. Works along
