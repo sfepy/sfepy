@@ -44,3 +44,29 @@ class Test(TestCommon):
         ok = ok and _ok
 
         return ok
+
+    def test_unique_rows(self):
+        import numpy as nm
+        from sfepy.linalg import unique_rows
+
+        a = nm.arange(1, 10).reshape(3, 3)
+
+        b = nm.r_[a, a]
+        c = unique_rows(b)
+
+        ok = (a == c).all()
+
+        return ok
+
+    def test_assemble1d(self):
+        import numpy as nm
+        from sfepy.linalg import assemble1d
+
+        a = nm.arange(5)
+        b = nm.arange(2)
+
+        assemble1d(b, [1, 1, 1, 1, 0, 0], a[[0, 2, 3, 4, 1, 1]])
+
+        ok = (b == [2, 10]).all()
+
+        return ok
