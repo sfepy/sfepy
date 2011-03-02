@@ -53,11 +53,22 @@ class InstantaneousBase( Struct ):
         elif call_mode == 'd_eval':
             if nm.isreal( mode ):
                 for out, chunk in self.char_fun( chunk_size, shape ):
-                    status = self.function( out, *fargs + (chunk,) )
+                    lchunk = self.char_fun.get_local_chunk()
+                    status = self.function( out, *fargs + (lchunk,) )
                     out1 = nm.sum( out )
                     yield out1, chunk, status
             else:
-                raise NotImplementedError
+                for out_rr, chunk in self.char_fun( chunk_size, shape ):
+                    lchunk = self.char_fun.get_local_chunk()
+                    out_ii = nm.zeros_like(out_rr)
+                    out_ri = nm.zeros_like(out_rr)
+                    out_ir = nm.zeros_like(out_rr)
+                    status1 = self.function(out_rr, *fargs[0] + (lchunk,))
+                    status2 = self.function(out_ii, *fargs[1] + (lchunk,))
+                    status3 = self.function(out_ri, *fargs[2] + (lchunk,))
+                    status4 = self.function(out_ir, *fargs[3] + (lchunk,))
+                    out = nm.sum(out_rr - out_ii + 1.0j * (out_ri + out_ir))
+                    yield out, chunk, status1 or status2 or status3 or status4
 
         else:
             msg = 'unknown call_mode %s for %s' % (call_mode, self.name)
