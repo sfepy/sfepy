@@ -112,11 +112,12 @@ def assemble1d(ar_out, indx, ar_in):
     Perform `ar_out[indx] += ar_in`, where items of `ar_in`
     corresponding to duplicate indices in `indx` are summed together.
     """
-    zz = nm.zeros_like(indx)
-    aux = sc.sparse.coo_matrix((ar_in, (indx, zz)), dtype=ar_in.dtype)
-    aux = aux.tocsr().tocoo() # This sums the duplicates.
+    if len(indx) > 0:
+        zz = nm.zeros_like(indx)
+        aux = sc.sparse.coo_matrix((ar_in, (indx, zz)), dtype=ar_in.dtype)
+        aux = aux.tocsr().tocoo() # This sums the duplicates.
 
-    ar_out[aux.row] += aux.data
+        ar_out[aux.row] += aux.data
 
 def unique_rows(ar):
     """
