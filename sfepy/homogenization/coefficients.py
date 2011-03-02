@@ -115,6 +115,8 @@ class Coefficients( Struct ):
                 fd.write( '\n' )
             elif isinstance( val, str ):
                 fd.write( val + '\n' )
+            elif isinstance( val, float ):
+                fd.write( '%e\n' % val )
             elif val.ndim == 0:
                 fd.write( format % val )
                 fd.write( '\n' )

@@ -30,6 +30,7 @@ class MiniAppBase( Struct ):
         self.problem.clear_equations()
         self.set_default_attr( 'requires', [] )
         self.set_default_attr( 'is_linear', False )
+        self.set_default_attr( 'dtype', nm.float64 )
 
     def init_solvers(self, problem):
         """For linear problems, assemble the matrix and try to presolve the
@@ -703,7 +704,7 @@ class CoefSymSym( MiniAppBase ):
         problem = get_default( problem, self.problem )
 
         dim, sym = problem.get_dim( get_sym = True )
-        coef = nm.zeros( (sym, sym), dtype = nm.float64 )
+        coef = nm.zeros( (sym, sym), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -741,7 +742,7 @@ class CoefFMSymSym( MiniAppBase ):
         aux = self.get_filename( data, 0, 0 )
         ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
 
-        coef = nm.zeros( (ts.n_step, sym, sym), dtype = nm.float64 )
+        coef = nm.zeros( (ts.n_step, sym, sym), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -770,7 +771,7 @@ class CoefDimSym( MiniAppBase ):
         problem = get_default( problem, self.problem )
 
         dim, sym = problem.get_dim( get_sym = True )
-        coef = nm.zeros( (dim, sym), dtype = nm.float64 )
+        coef = nm.zeros( (dim, sym), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -810,7 +811,7 @@ class CoefNN( MiniAppBase ):
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        coef = nm.zeros((self.dim, self.dim), dtype = nm.float64)
+        coef = nm.zeros((self.dim, self.dim), dtype = self.dtype )
         equations, variables = problem.create_evaluable(self.expression)
 
         if isinstance(self.set_variables, list):
@@ -850,7 +851,7 @@ class CoefN( MiniAppBase ):
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        coef = nm.zeros((self.dim,), dtype = nm.float64)
+        coef = nm.zeros((self.dim,), dtype = self.dtype)
         equations, variables = problem.create_evaluable(self.expression)
 
         for ir in range(self.dim):
@@ -861,7 +862,6 @@ class CoefN( MiniAppBase ):
                 self.set_variables(variables, ir, **data)
 
             val = eval_equations(equations, variables)
-
             coef[ir] = val
 
         coef /= volume
@@ -880,7 +880,7 @@ class CoefSym( MiniAppBase ):
         problem = get_default( problem, self.problem )
 
         dim, sym = problem.get_dim( get_sym = True )
-        coef = nm.zeros( (sym,), dtype = nm.float64 )
+        coef = nm.zeros( (sym,), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -906,7 +906,7 @@ class CoefFMSym( MiniAppBase ):
         aux = self.get_filename( data, 0, 0 )
         ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
 
-        coef = nm.zeros( (ts.n_step, sym), dtype = nm.float64 )
+        coef = nm.zeros( (ts.n_step, sym), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -956,7 +956,7 @@ class CoefFMOne( MiniAppBase ):
         io = HDF5MeshIO( self.get_filename( data ) )
         ts = TimeStepper( *io.read_time_stepper() )
 
-        coef = nm.zeros( (ts.n_step, 1), dtype = nm.float64 )
+        coef = nm.zeros( (ts.n_step, 1), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
@@ -995,5 +995,13 @@ class CoefEval( MiniAppBase ):
                                 "data['%s']" % self.requires[i])
 
         coef = eval(expr)
+
+        return coef
+
+class CoefNone( MiniAppBase ):
+
+    def __call__( self, volume, problem = None, data = None ):
+
+        coef = 0.0
 
         return coef
