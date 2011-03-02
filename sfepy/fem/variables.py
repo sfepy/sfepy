@@ -330,37 +330,19 @@ class Variables( Container ):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def strip_state_vector( self, vec, follow_epbc = True ):
+    def strip_state_vector(self, vec, follow_epbc=True):
         """
-        Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,
-        values of EPBC master dofs are not simply thrown away, but added to the
-        corresponding slave dofs, just like when assembling.
+        Get the reduced DOF vector, with EBC and PBC DOFs removed.
+
+        If 'follow_epbc' is True, values of EPBC master dofs are not
+        simply thrown away, but added to the corresponding slave dofs,
+        just like when assembling.
         """
-        svec = nm.empty( (self.adi.ptr[-1],), dtype = self.dtype )
-        for var_name in self.di.var_names:
-            eq_map = self[var_name].eq_map
-            i0 = self.di.indx[var_name].start
-            ii = i0 + eq_map.eqi
-##            print ii.shape, delta[adi.indx[var_name]].shape
-            aindx = self.adi.indx[var_name]
-            svec[aindx] = vec[ii]
-
-            if follow_epbc:
-                """ In [10]: a
-                    Out[10]: array([0, 1, 2, 3, 4])
-
-                    In [11]: a[[0,0,0,1,1]] += 1
-
-                    In [12]: a
-                    Out[12]: array([1, 2, 2, 3, 4])
-                    """
-                # svec[aindx.start + eq_map.eq[eq_map.slave]] += vec[eq_map.master]
-                for ii, im in enumerate( eq_map.master ):
-                    i1 = aindx.start + eq_map.eq[eq_map.slave[ii]]
-                    if i1 < 0: continue
-                    svec[i1] += vec[im]
-#                    print ii, i1, im, eq_map.slave[ii], svec[i1], vec[im]
-
+        svec = nm.empty((self.adi.ptr[-1],), dtype=self.dtype)
+        for var in self.iter_state():
+            aindx = self.adi.indx[var.name]
+            svec[aindx] = var.get_reduced(vec, self.di.indx[var.name].start,
+                                          follow_epbc)
         return svec
 
     def make_full_vec( self, svec, var_name = None, force_value = None ):
@@ -1455,6 +1437,30 @@ class FieldVariable(Variable):
 
             else:
                 vec[ii] = force_values
+
+    def get_reduced(self, vec, offset=0, follow_epbc=True):
+        """
+        Get the reduced DOF vector, with EBC and PBC DOFs removed.
+
+        Notes
+        -----
+        The full vector starts in `vec` at `offset`. If 'follow_epbc' is
+        True, values of EPBC master DOFs are not simply thrown away, but
+        added to the corresponding slave DOFs, just like when
+        assembling.
+        """
+        eq_map = self.eq_map
+        ii = offset + eq_map.eqi
+
+        r_vec = vec[ii]
+
+        if follow_epbc:
+            master = offset + eq_map.master
+            slave = eq_map.eq[eq_map.slave]
+            ii = slave >= 0
+            la.assemble1d(r_vec, slave[ii], vec[master[ii]])
+
+        return r_vec
 
     def extend_dofs(self, data, fill_value=None):
         """
