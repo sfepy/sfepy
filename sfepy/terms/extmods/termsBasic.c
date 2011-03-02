@@ -149,6 +149,51 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
+#define __FUNC__ "d_div_vector"
+int32 d_div_vector( FMField *out, FMField *state, int32 offset,
+		    VolumeGeometry *vg,
+		    int32 *conn, int32 nEl, int32 nEP,
+		    int32 *elList, int32 elList_nRow)
+{
+  int32 ii, iel, dim, nQP, ret = RET_OK;
+  FMField *st = 0, *aux = 0;
+  FMField gcl[1], stv[1];
+
+  state->val = FMF_PtrFirst( state ) + offset;
+
+  nQP = vg->bfGM->nLev;
+  dim = vg->bfGM->nRow;
+
+  fmf_createAlloc( &st, 1, 1, dim, nEP );
+  stv->nAlloc = -1;
+  fmf_pretend( stv, 1, 1, nEP * dim, 1, st->val );
+
+  gcl->nAlloc = -1;
+  fmf_pretend( gcl, 1, nQP, 1, nEP * dim, vg->bfGM->val0 );
+
+  fmf_createAlloc(&aux, 1, nQP, 1, 1);
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+    FMF_SetCell( out, ii );
+    FMF_SetCell( gcl, iel );
+    FMF_SetCell( vg->det, iel );
+
+    ele_extractNodalValuesDBD( st, state, conn + nEP * ii );
+    fmf_mulAB_n1( aux, gcl, stv );
+    fmf_sumLevelsMulF(out, aux, vg->det->val);
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &st );
+  fmf_freeDestroy( &aux );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "dw_volume_wdot_scalar"
 /*!
   @par Revision history:

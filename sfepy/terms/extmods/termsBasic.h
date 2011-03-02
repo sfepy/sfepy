@@ -25,6 +25,11 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );
 
+int32 d_div_vector( FMField *out, FMField *state, int32 offset,
+		    VolumeGeometry *vg,
+		    int32 *conn, int32 nEl, int32 nEP,
+		    int32 *elList, int32 elList_nRow);
+
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,
 			     int32 *elList, int32 elList_nRow,

@@ -416,7 +416,6 @@ class DivQTerm(Term):
 
         if diff_var is None:
             shape = (chunk_size, n_qp, 1, 1)
-            mode = 0
         else:
             raise StopIteration
 
@@ -424,6 +423,34 @@ class DivQTerm(Term):
         for out, chunk in self.char_fun(chunk_size, shape):
             status = self.function(out, vec, 0, vg, ap.econn[chunk])
             yield out, chunk, status
+
+class DivEvalTerm(Term):
+    r"""
+    :Description:
+    Evaluate divergence term.
+
+    :Definition:
+    .. math::
+         \int_{\Omega} \nabla \cdot \ul{u}
+
+    :Arguments:
+        parameter : :math:`\ul{u}`
+    """
+    name = 'd_div'
+    arg_types = ('parameter',)
+
+    function = staticmethod(terms.d_div_vector)
+
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        par, = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(par)
+        shape = (chunk_size, 1, 1, 1)
+
+        vec = par()
+        for out, chunk in self.char_fun(chunk_size, shape):
+            status = self.function(out, vec, 0, vg, ap.econn, chunk)
+            out1 = nm.sum(out)
+            yield out1, chunk, status
 
 ##
 # 26.07.2007, c
