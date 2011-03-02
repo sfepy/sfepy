@@ -460,6 +460,13 @@ class Container( Struct ):
     def append( self, obj ):
         self[len(self.names)] = obj
 
+    def extend(self, objs):
+        """
+        Extend the container items by the sequence `objs`.
+        """
+        for obj in objs:
+            self.append(obj)
+
     def get(self, ii, default=None, msg_if_none=None):
         """
         Get an item from Container - a wrapper around
