@@ -167,11 +167,12 @@ class DofInfo(Struct):
             raise ValueError('variable %s is not present!' % name)
 
         ii = self.var_names.index(name)
-        self.ptr[ii+1:] += n_dof - self.n_dof[name]
+        delta = n_dof - self.n_dof[name]
 
         self.n_dof[name] = n_dof
 
         for iv, nn in enumerate(self.var_names[ii:]):
+            self.ptr[ii+iv+1] += delta
             self.indx[nn] = slice(self.ptr[ii+iv], self.ptr[ii+iv+1])
 
     def get_info(self, var_name):
