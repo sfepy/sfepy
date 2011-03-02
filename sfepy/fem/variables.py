@@ -314,41 +314,21 @@ class Variables( Container ):
         vec = nm.zeros( (self.adi.ptr[-1],), dtype = self.dtype )
         return vec
 
-    ##
-    # 22.11.2005, c
-    # 25.07.2006
-    # 19.09.2006
-    # 18.10.2006
-    def apply_ebc( self, vec, force_values = None ):
-        """Apply essential (Dirichlet) boundary conditions."""
-        for var_name in self.di.var_names:
-            eq_map = self[var_name].eq_map
-            i0 = self.di.indx[var_name].start
-            ii = i0 + eq_map.eq_ebc
-##             print ii, eq_map.val_ebc
-##             pause()
-            if force_values is None:
-                vec[ii] = eq_map.val_ebc
-            else:
-                if isinstance( force_values, dict ):
-                    vec[ii] = force_values[var_name]
-                else:
-                    vec[ii] = force_values
-            # EPBC.
-            vec[i0+eq_map.master] = vec[i0+eq_map.slave]
-
-    def apply_ic( self, vec, force_values = None ):
-        """Apply initial conditions."""
+    def apply_ebc(self, vec, force_values=None):
+        """
+        Apply essential (Dirichlet) and periodic boundary conditions
+        defined for the state variables to vector `vec`.
+        """
         for var in self.iter_state():
-            ii = self.di.indx[var.name]
+            var.apply_ebc(vec, self.di.indx[var.name].start, force_values)
 
-            if force_values is None:
-                vec[ii] = var.get_initial_condition()
-            else:
-                if isinstance( force_values, dict ):
-                    vec[ii] = force_values[var.name]
-                else:
-                    vec[ii] = force_values
+    def apply_ic(self, vec, force_values=None):
+        """
+        Apply initial conditions defined for the state variables to
+        vector `vec`.
+        """
+        for var in self.iter_state():
+            var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
     def strip_state_vector( self, vec, follow_epbc = True ):
         """
@@ -1436,6 +1416,45 @@ class FieldVariable(Variable):
             out.shape = (len( nods ), self.n_components)
 
         return out
+
+    def apply_ebc(self, vec, offset=0, force_values=None):
+        """
+        Apply essential (Dirichlet) and periodic boundary conditions to
+        vector `vec`, starting at `offset`.
+        """
+        eq_map = self.eq_map
+        ii = offset + eq_map.eq_ebc
+
+        # EBC,
+        if force_values is None:
+            vec[ii] = eq_map.val_ebc
+
+        else:
+            if isinstance(force_values, dict ):
+                vec[ii] = force_values[self.name]
+
+            else:
+                vec[ii] = force_values
+
+        # EPBC.
+        vec[offset+eq_map.master] = vec[offset+eq_map.slave]
+
+    def apply_ic(self, vec, offset=0, force_values=None):
+        """
+        Apply initial conditions conditions to vector `vec`, starting at
+        `offset`.
+        """
+        ii = slice(offset, offset + self.n_dof)
+
+        if force_values is None:
+            vec[ii] = self.get_initial_condition()
+
+        else:
+            if isinstance(force_values, dict):
+                vec[ii] = force_values[self.name]
+
+            else:
+                vec[ii] = force_values
 
     def extend_dofs(self, data, fill_value=None):
         """
