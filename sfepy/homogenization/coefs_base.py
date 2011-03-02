@@ -522,7 +522,6 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
 
         variables = problem.get_variables()
         get_state = variables.get_state_part_view
-        make_full_vec = variables.make_full_vec
 
         eigs = evp.evp.eigs
         mtx_q = evp.evp.mtx_q
@@ -570,10 +569,10 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
             vec_u = action_aibt( vec_dp )
 ##             bbb = sc.dot( vec_dp.T, - mtx['C'] * vec_p0 )
 
-            vec_u = make_full_vec( vec_u, vu, None )
-            vec_p = make_full_vec( vec_p, vp, None )
+            vec_u = variables[vu].get_full(vec_u)
+            vec_p = variables[vp].get_full(vec_p)
             # BC nodes - time derivative of constant is zero!
-            vec_dp = make_full_vec( vec_dp, vp, 0.0 )
+            vec_dp = variables[vp].get_full(vec_dp, force_value=0.0)
 ##             aaa = sc.dot( vec_xi0.T, eigs * (eigs * e_e_qp) )
 ##             print aaa
 ##             print bbb
