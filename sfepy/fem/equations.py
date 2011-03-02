@@ -428,13 +428,12 @@ class Equations( Container ):
         """
         return self.variables.strip_state_vector(vec, follow_epbc=follow_epbc)
 
-    def make_full_vec(self, svec, var_name=None, force_value=None):
+    def make_full_vec(self, svec, force_value=None):
         """
-        Make a full vector satisfying E(P)BC
-        from a stripped vector. For a selected variable if var_name is set.
+        Make a full DOF vector satisfying E(P)BCs from a reduced DOF
+        vector.
         """
-        return self.variables.make_full_vec(svec, var_name=var_name,
-                                            force_value=force_value)
+        return self.variables.make_full_vec(svec, force_value)
 
     def set_variables_from_state(self, vec, step=0):
         """
