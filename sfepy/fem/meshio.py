@@ -855,13 +855,14 @@ class TetgenMeshIO( MeshIO ):
         import os
         fname = os.path.splitext(self.filename)[0]
         nodes=self.getnodes(fname+".node", MyBar("       nodes:"))
-        elements, regions = self.getele(fname+".ele", MyBar("       elements:"))
+        etype, elements, regions = self.getele(fname+".ele",
+                                               MyBar("       elements:"))
         descs = []
         conns = []
         mat_ids = []
         elements = nm.array( elements, dtype = nm.int32 )-1
         for key, value in regions.iteritems():
-            descs.append( "3_4" )
+            descs.append( etype )
             mat_ids.append( nm.ones_like(value) * key )
             conns.append( elements[nm.array(value)-1].copy() )
 
@@ -887,15 +888,19 @@ class TetgenMeshIO( MeshIO ):
         f=open(fnods)
         l=[int(x) for x in f.readline().split()]
         npoints,dim,nattrib,nbound=l
-        assert_( dim==3 )
+        if dim == 2:
+            ndapp = [0.0]
+        else:
+            ndapp = []
         if verbose: up.init(npoints)
         nodes=[]
         for line in f:
             if line[0]=="#": continue
             l=[float(x) for x in line.split()]
+            l = l[:(dim + 1)]
             assert_( int(l[0])==len(nodes)+1 )
             l = l[1:]
-            nodes.append(tuple(l))
+            nodes.append(tuple(l + ndapp))
             if verbose: up.update(len(nodes))
         assert_( npoints==len(nodes) )
         return nodes
@@ -927,22 +932,34 @@ class TetgenMeshIO( MeshIO ):
         l=[int(x) for x in f.readline().split()]
         ntetra,nnod,nattrib=l
         #we have either linear or quadratic tetrahedra:
-        assert_( nnod in [4,10] )
-        linear= (nnod==4)
-        if not linear:
-            raise Exception("Only linear tetrahedra reader is implemented")
+        elem = None
+        if nnod in [4,10]:
+            elem = '3_4'
+            linear = (nnod == 4)
+        if nnod in [3, 7]:
+            elem = '2_3'
+            linear = (nnod == 3)
+        if elem is None or not linear:
+            raise Exception("Only linear triangle and tetrahedra reader is implemented")
         if verbose: up.init(ntetra)
-        if nattrib!=1:
-            raise "tetgen didn't assign an entity number to each element \
-(option -A)"
+        # if nattrib!=1:
+        #     raise "tetgen didn't assign an entity number to each element (option -A)"
         els=[]
         regions={}
         for line in f:
             if line[0]=="#": continue
             l=[int(x) for x in line.split()]
-            assert_( len(l)-2 == 4 )
-            els.append((l[1],l[2],l[3],l[4]))
-            regionnum=l[5]
+            if elem == '2_3':
+                assert_((len(l) - 1 - nattrib) == 3 )
+                els.append((l[1],l[2],l[3]))
+            if elem == '3_4':
+                assert_((len(l) - 1 - nattrib) == 4 )
+                els.append((l[1],l[2],l[3],l[4]))
+            if nattrib == 1:
+                regionnum = l[-1]
+            else:
+                regionnum = 1
+
             if regionnum==0:
                 print "see %s, element # %d"%(fele,l[0])
                 raise "there are elements not belonging to any physical entity"
@@ -952,7 +969,7 @@ class TetgenMeshIO( MeshIO ):
                 regions[regionnum]=[l[0]]
             assert_( l[0]==len(els) )
             if verbose: up.update(l[0])
-        return els, regions
+        return elem, els, regions
 
     ##
     # c: 26.03.2008, r: 26.03.2008
