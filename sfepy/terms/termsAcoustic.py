@@ -4,97 +4,37 @@ from sfepy.base.base import use_method_with_name
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_base import ScalarScalar
 
-class LaplaceLayerPSA1Term(ScalarScalar, Term):
+class DiffusionSATerm(ScalarScalar, Term):
     r"""
     :Description:
-    Sensitivity analysis term -- in-plane directions.
+    Diffusion sensitivity analysis term.
 
     :Definition:
     .. math::
-        \int_{\Omega} \partial_\alpha w_k\, \partial_k \ul{u}\, \partial_\alpha
-        \ul{v}, \alpha = 1,\dots,N-1
+        \int_{\Omega} \left[ (\dvg \ul{\Vcal}) K_{ij} \nabla_i q\, \nabla_j p - K_{ij} (\nabla_j \ul{\Vcal} \nabla q) \nabla_i p - K_{ij} \nabla_j q (\nabla_i \ul{\Vcal} \nabla p)\right]
 
     :Arguments:
-        parametr_1: :math:`\ul{u}`,
-        parametr_2: :math:`\ul{v}`,
-        parametr_3: :math:`w`
+        material : :math:`K_{ij}`,
+        parametr_q: :math:`q`,
+        parametr_p: :math:`p`,
+        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
     """
-    name = 'd_llaplace_p_sa1'
-    arg_types = ('parameter_1', 'parameter_2', 'parameter_3')
 
-    function = staticmethod(terms.d_llaplace_p_sa)
+    name = 'd_diffusion_sa'
 
-    sa_mode = 0
+    arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_mesh_velocity')
+
+    function = staticmethod(terms.d_diffusion_sa)
 
     def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2, par3 = self.get_args( ['parameter_1', 'parameter_2',
-                                           'parameter_3'], **kwargs )
-        ap, vg = self.get_approximation(par1)
+        mat, par_q, par_p, par_v = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(par_p)
+        ap_v, vg_v = self.get_approximation(par_v)
 
         self.set_data_shape( ap )
 
-        fargs = ( par1(), par2(), par3(), vg, ap.econn, self.sa_mode )
+        fargs = (par_q(), par_p(), par_v(), mat, vg, vg_v, ap.econn, ap_v.econn)
         return fargs, (chunk_size, 1, 1, 1), 0
-
-class LaplaceLayerPSA2Term(LaplaceLayerPSA1Term):
-    r"""
-    :Description:
-    Sensitivity analysis term -- in-plane directions.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \dvg w \partial_\alpha \ul{u}\, \partial_\alpha \ul{v},
-        \alpha = 1,\dots,N-1
-
-    :Arguments:
-        parametr_1: :math:`\ul{u}`,
-        parametr_2: :math:`\ul{v}`,
-        parametr_3: :math:`w`
-    """
-
-    name = 'd_llaplace_p_sa2'
-
-    sa_mode = 1
-
-class LaplaceLayerTSA1Term(LaplaceLayerPSA1Term):
-    r"""
-    :Description:
-    Sensitivity analysis term -- transversal direction.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \partial_N w_k\, \partial_k \ul{v}\,\partial_N \ul{u}
-
-    :Arguments:
-        parametr_1: :math:`\ul{u}`,
-        parametr_2: :math:`\ul{v}`,
-        parametr_3: :math:`w`
-    """
-
-    name = 'd_llaplace_t_sa1'
-
-    function = staticmethod(terms.d_llaplace_t_sa)
-
-    sa_mode = 0
-
-class LaplaceLayerTSA2Term(LaplaceLayerTSA1Term):
-    r"""
-    :Description:
-    Sensitivity analysis acoustic term (transversal direction).
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \dvg w \partial_N \ul{v}\,\partial_N \ul{u}
-
-    :Arguments:
-        parametr_1: :math:`\ul{u}`,
-        parametr_2: :math:`\ul{v}`,
-        parametr_3: :math:`w`
-    """
-
-    name = 'd_llaplace_t_sa2'
-
-    sa_mode = 1
 
 class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
     r"""
@@ -103,20 +43,28 @@ class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
 
     :Definition:
     .. math::
-        \int_{\Gamma} c \partial_\alpha \ul{v}\,\partial_\alpha \ul{u}, \alpha = 1,\dots,N-1
+        \int_{\Gamma} c \partial_\alpha \ul{q}\,\partial_\alpha \ul{p}, \alpha = 1,\dots,N-1
 
-    :Arguments:
+    :Arguments 1:
         material: :math:`c`,
-        virtual:  :math:`\ul{v}`,
-        state:    :math:`\ul{u}`
+        virtual:  :math:`q`,
+        state:    :math:`p`
+
+    :Arguments 2:
+        material: :math:`c`,
+        parameter_1 : :math:`q`,
+        parameter_2 : :math:`p`
     """
-    name = 'dw_surface_llaplace'
-    arg_types = ('material', 'virtual', 'state')
+    name = 'dw_surface_laplace'
+    arg_types = [('material', 'virtual', 'state'),
+                 ('material', 'parameter_2', 'parameter_1')]
+    modes = ('weak', 'eval')
     integration = 'surface'
 
-    function = staticmethod(terms.dw_surf_llaplace)
+    functions = {'weak': terms.dw_surf_laplace,
+                 'eval': terms.d_surf_laplace}
 
-    def get_fargs(self, diff_var = None, chunk_size = None, **kwargs):
+    def get_fargs_weak(self, diff_var = None, chunk_size = None, **kwargs):
         coef, virtual, state = self.get_args(**kwargs)
         ap, sg = self.get_approximation(virtual)
         aps, sgs = self.get_approximation(state)
@@ -132,7 +80,6 @@ class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
 
         if state.is_real():
             fargs = vec, coef, bfg, sgs, econn
-
         else:
             ac = nm.ascontiguousarray
             fargs = [(ac(vec.real), coef, bfg, sgs, econn),
@@ -141,6 +88,40 @@ class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
 
         return fargs, shape, mode
 
+    def get_fargs_eval(self, diff_var = None, chunk_size = None, **kwargs):
+        coef, par2, par1 = self.get_args(**kwargs)
+        ap, sg = self.get_approximation(par2)
+        aps, sgs = self.get_approximation(par1)
+
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        sd = aps.surface_data[self.region.name]
+        bfg = ap.get_base(sd.face_type, 1, self.integral)
+        econn = sd.get_connectivity(par1.is_surface)
+
+        if par1.is_real() and par2.is_real():
+            fargs = (par1(), par2(), coef, bfg, sgs, econn)
+        else:
+            ac = nm.ascontiguousarray
+            p1 = self.get_vector(par1)
+            p2 = self.get_vector(par2)
+            fargs = [(ac(p1.real), ac(p2.real), coef, bfg, sgs, econn),
+                     (ac(p1.imag), ac(p2.imag), coef, bfg, sgs, econn),
+                     (ac(p1.real), ac(p2.imag), coef, bfg, sgs, econn),
+                     (ac(p1.imag), ac(p2.real), coef, bfg, sgs, econn)]
+            mode += 1j
+
+        return fargs, (chunk_size, 1, 1, 1), mode
+
+    def set_arg_types(self):
+        if self.mode == 'weak':
+            self.function = self.functions['weak']
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+        else:
+            self.function = self.functions['eval']
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+
 class SurfaceCoupleLayerTerm(ScalarScalar, Term):
     r"""
     :Description:
@@ -148,29 +129,36 @@ class SurfaceCoupleLayerTerm(ScalarScalar, Term):
 
     :Definition:
     .. math::
-        \int_{\Gamma} c \ul{v}\,\partial_\alpha \ul{u},
-        \int_{\Gamma} c \partial_\alpha \ul{u}\,\ul{v}, \alpha = 1,\dots,N-1
+        \int_{\Gamma} c q\,\partial_\alpha p,
+        \int_{\Gamma} c \partial_\alpha p\, q,
+        \int_{\Gamma} c \partial_\alpha r\, s,\alpha = 1,\dots,N-1
 
     :Arguments 1:
         material: :math:`c`,
-        virtual:  :math:`\ul{v}`,
-        state:    :math:`\ul{u}`
+        virtual:  :math:`q`,
+        state:    :math:`p`
 
     :Arguments 2:
         material: :math:`c`,
-        state:    :math:`\ul{u}`
-        virtual:  :math:`\ul{v}`,
+        virtual:  :math:`q`,
+        state:    :math:`p`
+
+    :Arguments 3:
+        material: :math:`c`,
+        parameter_1 : :math:`s`,
+        parameter_2 : :math:`r`
 
     """
     name = 'dw_surface_lcouple'
     arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'state', 'virtual'))
-    modes = ('bv_ns', 'nv_bs')
+                 ('material', 'state', 'virtual'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    modes = ('bv_ns', 'nv_bs', 'eval')
     integration = 'surface'
+    functions = {'weak': terms.dw_surf_lcouple,
+                 'eval': terms.d_surf_lcouple}
 
-    function = staticmethod(terms.dw_surf_lcouple)
-
-    def get_fargs(self, diff_var = None, chunk_size = None, **kwargs):
+    def get_fargs_weak(self, diff_var = None, chunk_size = None, **kwargs):
         if self.mode == 'nv_bs':
             coef, state, virtual = self.get_args(**kwargs)
         else:
@@ -186,25 +174,62 @@ class SurfaceCoupleLayerTerm(ScalarScalar, Term):
         sd = aps.surface_data[self.region.name]
 
         bf = ap.get_base(sd.face_type, 0, self.integral)
-        bfg = ap.get_base(sd.face_type, 1, self.integral)
+        bfg =  ap.get_base(sd.face_type, 1, self.integral)
         econn = sd.get_connectivity(state.is_surface)
 
         aux = coef.shape
-
         if self.mode == 'nv_bs':
             bf, bfg = bfg, bf
-            coef.reshape((aux[0], aux[1], 1, nm.max(aux[2:])))
+            ncoef = coef.reshape((aux[0], aux[1], 1, nm.max(aux[2:])))
 
         else:
-            coef.reshape((aux[0], aux[1], nm.max(aux[2:]), 1))
+            ncoef = coef.reshape((aux[0], aux[1], nm.max(aux[2:]), 1))
 
         if state.is_real():
-            fargs = vec, coef, bf, bfg, sgs, econn
+            fargs = vec, ncoef, bf, bfg, sgs, econn
 
         else:
             ac = nm.ascontiguousarray
-            fargs = [(ac(vec.real), coef, bf, bfg, sgs, econn),
-                     (ac(vec.imag), coef, bf, bfg, sgs, econn)]
+            fargs = [(ac(vec.real), ncoef, bf, bfg, sgs, econn),
+                     (ac(vec.imag), ncoef, bf, bfg, sgs, econn)]
             mode += 1j
 
         return fargs, shape, mode
+
+    def get_fargs_eval(self, diff_var = None, chunk_size = None, **kwargs):
+        coef, par2, par1 = self.get_args(**kwargs)
+        ap, sg = self.get_approximation(par2)
+        aps, sgs = self.get_approximation(par1)
+
+        self.set_data_shape(ap)
+        shape, mode = self.get_shape(diff_var, chunk_size)
+
+        sd = aps.surface_data[self.region.name]
+        bf = ap.get_base(sd.face_type, 0, self.integral)
+        bfg = ap.get_base(sd.face_type, 1, self.integral)
+        econn = sd.get_connectivity(par1.is_surface)
+
+        aux = coef.shape
+        ncoef = coef.reshape((aux[0], aux[1], 1, nm.max(aux[2:])))
+
+        if par1.is_real() and par2.is_real():
+            fargs = (par1(), par2(), ncoef, bf, bfg, sgs, econn)
+        else:
+            ac = nm.ascontiguousarray
+            p1 = self.get_vector(par1)
+            p2 = self.get_vector(par2)
+            fargs = [(ac(p1.real), ac(p2.real), ncoef, bf, bfg, sgs, econn),
+                     (ac(p1.imag), ac(p2.imag), ncoef, bf, bfg, sgs, econn),
+                     (ac(p1.real), ac(p2.imag), ncoef, bf, bfg, sgs, econn),
+                     (ac(p1.imag), ac(p2.real), ncoef, bf, bfg, sgs, econn)]
+            mode += 1j
+
+        return fargs, (chunk_size, 1, 1, 1), mode
+
+    def set_arg_types(self):
+        if self.mode == 'bv_ns' or self.mode == 'nv_bs':
+            self.function = self.functions['weak']
+            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+        else:
+            self.function = self.functions['eval']
+            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )

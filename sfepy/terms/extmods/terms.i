@@ -435,19 +435,13 @@ int32 dw_electric_source( FMField *out,
 			  int32 *elList, int32 elList_nRow,
 			  int32 mode );
 
-int32 d_llaplace_p_sa( FMField *out,
-		       FMField *stateU, FMField *stateV, FMField *stateW,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 mode,
-		       int32 *elList, int32 elList_nRow );
-
-int32 d_llaplace_t_sa( FMField *out,
-		       FMField *stateU, FMField *stateV, FMField *stateW,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 mode,
-		       int32 *elList, int32 elList_nRow );
+int32 d_diffusion_sa( FMField *out,
+		      FMField *stateQ, FMField *stateP, FMField *stateW,
+		      FMField *mtxD,
+		      VolumeGeometry *vg, VolumeGeometry *vg_w,
+		      int32 *conn, int32 nEl, int32 nEP,
+		      int32 *conn_w, int32 nEl_w, int32 nEP_w,
+		      int32 *elList, int32 elList_nRow );
 
 int32 dw_surf_llaplace( FMField *out, FMField *state, FMField *coef,
 			FMField *gbf, SurfaceGeometry *sg,
