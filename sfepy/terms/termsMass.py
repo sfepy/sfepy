@@ -1,7 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import use_method_with_name, assert_
-from sfepy.terms.terms import Term, terms
+from sfepy.terms.terms import Term, terms, reorder_dofs_on_mirror
 from sfepy.terms.terms_base import VectorVector, ScalarScalar
 
 class MassTerm( VectorVector, Term ):
@@ -87,7 +87,7 @@ class MassScalarTerm(ScalarScalar, Term):
     """
     name = 'dw_mass_scalar'
     arg_types = (('virtual', 'state'),
-                 ('parameter_1', 'parameter_2')) 
+                 ('parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
     functions = {'weak': terms.dw_mass_scalar,
                  'eval': terms.d_mass_scalar}
@@ -122,7 +122,7 @@ class MassScalarTerm(ScalarScalar, Term):
             fargs = [(coef, ac( vec.real ), bf, vg, ap.econn),
                      (coef, ac( vec.imag ), bf, vg, ap.econn)]
             mode += 1j
-            
+
         return fargs, shape, mode
 
     def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
@@ -206,7 +206,20 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
             sd = aps.surface_data[self.region.name]
 
         bf = ap.get_base( sd.face_type, 0, self.integral )
-        econn = sd.get_connectivity(state.is_surface)
+
+        is_trace = self.arg_traces[state.name]
+        if is_trace:
+            mirror_region, _, _ = self.region.get_mirror_region()
+            sds = aps.surface_data[mirror_region.name]
+            econn = sds.get_connectivity(state.is_surface)
+            dc_type = self.get_dof_conn_type()
+            ig = self.region.igs[0]
+            rgnt = virtual.get_global_node_tab(dc_type, ig);
+            cgnt = state.get_global_node_tab(dc_type, ig,
+                                             is_trace=is_trace);
+            econn = reorder_dofs_on_mirror(econn, cgnt, rgnt)
+        else:
+            econn = sd.get_connectivity(state.is_surface)
 
         if 'material' in self.arg_types:
             coef, = self.get_args(['material'], **kwargs)
@@ -215,7 +228,6 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
         if state.is_real():
             fargs = coef, vec, 0, bf, sgs, econn
-
         else:
             ac = nm.ascontiguousarray
             fargs = [(coef, ac(vec.real), 0, bf, sgs, econn),
