@@ -345,42 +345,23 @@ class Variables( Container ):
                                           follow_epbc)
         return svec
 
-    def make_full_vec( self, svec, var_name = None, force_value = None ):
+    def make_full_vec(self, svec, force_value=None):
         """
-        Make a full vector satisfying E(P)BC
-        from a stripped vector. For a selected variable if var_name is set.
+        Make a full DOF vector satisfying E(P)BCs from a reduced DOF
+        vector.
+
+        Passing a `force_value` overrides the EBC values.
         """
-        def _make_full_vec( vec, svec, eq_map ):
-            # EBC.
-            ii = eq_map.eq_ebc
-            if force_value is None:
-                vec[ii] = eq_map.val_ebc
-            else:
-                vec[ii] = force_value
-
-            # Stripped vector values.
-            ii = eq_map.eqi
-            vec[ii] = svec
-
-            # EPBC.
-            vec[eq_map.master] = vec[eq_map.slave]
-
         self.check_vector_size(svec, stripped=True)
 
         if self.has_lcbc:
             svec = self.op_lcbc * svec
 
-        if var_name is None:
-            vec = self.create_state_vector()
-
-            for var_name in self.di.var_names:
-                eq_map = self[var_name].eq_map
-                _make_full_vec( vec[self.di.indx[var_name]],
-                                svec[self.adi.indx[var_name]], eq_map )
-        else:
-            vec = nm.empty( (self.di.n_dof[var_name],), dtype = self.dtype )
-            eq_map = self[var_name].eq_map
-            _make_full_vec( vec, svec, eq_map )
+        vec = self.create_state_vector()
+        for var in self.iter_state():
+            indx = self.di.indx[var.name]
+            aindx = self.adi.indx[var.name]
+            var.get_full(svec, aindx.start, force_value, vec, indx.start)
 
         return vec
 
@@ -1461,6 +1442,39 @@ class FieldVariable(Variable):
             la.assemble1d(r_vec, slave[ii], vec[master[ii]])
 
         return r_vec
+
+    def get_full(self, r_vec, r_offset=0, force_value=None,
+                 vec=None, offset=0):
+        """
+        Get the full DOF vector satisfying E(P)BCs from a reduced DOF
+        vector.
+
+        Notes
+        -----
+        The reduced vector starts in `r_vec` at `r_offset`.
+        Passing a `force_value` overrides the EBC values. Optionally,
+        `vec` argument can be provided to store the full vector (in
+        place) starting at `offset`.
+        """
+        if vec is None:
+            vec = nm.empty(self.n_dof, dtype=r_vec.dtype)
+
+        else:
+            vec = vec[offset:offset+self.n_dof]
+
+        eq_map = self.eq_map
+        r_vec = r_vec[r_offset:r_offset+eq_map.n_eq]
+
+        # EBC.
+        vec[eq_map.eq_ebc] = get_default(force_value, eq_map.val_ebc)
+
+        # Reduced vector values.
+        vec[eq_map.eqi] = r_vec
+
+        # EPBC.
+        vec[eq_map.master] = vec[eq_map.slave]
+
+        return vec
 
     def extend_dofs(self, data, fill_value=None):
         """
