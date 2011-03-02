@@ -530,15 +530,59 @@ class Equations( Container ):
 
         return out
 
-    def eval_residuals(self, state):
+    def eval_residuals(self, state, by_blocks=False, names=None):
+        """
+        Evaluate (assemble) residual vectors.
+
+        Parameters
+        ----------
+        state : array
+            The vector of DOF values. Note that it is needed only in
+            nonlinear terms.
+        by_blocks : bool
+            If True, return the individual blocks composing the whole
+            residual vector. Each equation should then correspond to one
+            required block and should be named as `'block_name,
+            test_variable_name, unknown_variable_name'`.
+        names : list of str, optional
+            Optionally, select only blocks with the given `names`, if
+            `by_blocks` is True.
+
+        Returns
+        -------
+        out : array or dict of array
+            The assembled residual vector. If `by_blocks` is True, a
+            dictionary is returned instead, with keys given by
+            `block_name` part of the individual equation names.
+        """
         self.invalidate_term_caches()
 
         self.set_variables_from_state(state)
-        residual = self.create_stripped_state_vector()
 
-        self.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
+        if by_blocks:
+            names = get_default(names, self.names)
 
-        return residual
+            out = {}
+
+            get_indx = self.variables.get_indx
+            for name in names:
+                eq = self[name]
+                key, rname, cname = [aux.strip()
+                                     for aux in name.split(',')]
+
+                ir = get_indx(rname, stripped=True, allow_dual=True)
+
+                residual = self.create_stripped_state_vector()
+                eq.evaluate(mode='weak', dw_mode='vector', asm_obj=residual)
+
+                out[key] = residual[ir]
+
+        else:
+            out = self.create_stripped_state_vector()
+
+            self.evaluate(mode='weak', dw_mode='vector', asm_obj=out)
+
+        return out
 
     def eval_tangent_matrices(self, state, tangent_matrix, by_blocks=False):
         """
