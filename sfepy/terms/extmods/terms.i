@@ -443,17 +443,27 @@ int32 d_diffusion_sa( FMField *out,
 		      int32 *conn_w, int32 nEl_w, int32 nEP_w,
 		      int32 *elList, int32 elList_nRow );
 
-int32 dw_surf_llaplace( FMField *out, FMField *state, FMField *coef,
-			FMField *gbf, SurfaceGeometry *sg,
-		        int32 *conn, int32 nEl, int32 nEP,
-		        int32 *elList, int32 elList_nRow,
-		        int32 isDiff );
+int32 dw_surf_laplace( FMField *out, FMField *state, FMField *coef,
+		       FMField *gbf, SurfaceGeometry *sg,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 *elList, int32 elList_nRow,
+		       int32 isDiff );
+
+int32 d_surf_laplace( FMField *out, FMField *stateP, FMField *stateQ, FMField *coef,
+		      FMField *gbf, SurfaceGeometry *sg,
+		      int32 *conn, int32 nEl, int32 nEP,
+		      int32 *elList, int32 elList_nRow);
 
 int32 dw_surf_lcouple( FMField *out, FMField *state, FMField *coef,
 		       FMField *bf, FMField *gbf, SurfaceGeometry *sg,
 		       int32 *conn, int32 nEl, int32 nEP,
 		       int32 *elList, int32 elList_nRow,
 		       int32 isDiff );
+
+int32 d_surf_lcouple(FMField *out, FMField *stateP, FMField *stateQ, FMField *coef,
+		     FMField *bf, FMField *gbf, SurfaceGeometry *sg,
+		     int32 *conn, int32 nEl, int32 nEP,
+		     int32 *elList, int32 elList_nRow);
 
 int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
 		       FMField *velocity, int32 voffset, FMField *bf,
