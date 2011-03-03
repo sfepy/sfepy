@@ -9,7 +9,8 @@ from sfepy.fem.meshio import HDF5MeshIO
 import os.path as op
 
 def get_homog_coefs_linear(ts, coor, mode,
-                           micro_filename=None, regenerate=False):
+                           micro_filename=None, regenerate=False,
+                           coefs_filename=None):
 
     oprefix = output.prefix
     output.prefix = 'micro:'
@@ -18,8 +19,10 @@ def get_homog_coefs_linear(ts, coor, mode,
     required.remove( 'equations' )
 
     conf = ProblemConf.from_file(micro_filename, required, other, verbose=False)
-
-    coefs_filename = conf.options.get_default_attr('coefs_filename', 'coefs.h5')
+    if coefs_filename is None:
+        coefs_filename = conf.options.get_default_attr('coef_save_name', 'coefs.h5')
+        coefs_filename = op.join(conf.options.get_default_attr('output_dir', '.'),
+                                 coefs_filename) + '.h5'
 
     if not regenerate:
         if op.exists( coefs_filename ):
@@ -33,6 +36,8 @@ def get_homog_coefs_linear(ts, coor, mode,
 
         app = HomogenizationApp( conf, options, 'micro:' )
         coefs = app()
+        if type(coefs) is tuple:
+            coefs = coefs[0]
 
         coefs.to_file_hdf5( coefs_filename )
     else:
