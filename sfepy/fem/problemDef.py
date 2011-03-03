@@ -263,7 +263,7 @@ class ProblemDefinition( Struct ):
         """
         self.output_dir = get_default(output_dir, os.curdir)
 
-        if not op.exists(self.output_dir):
+        if self.output_dir and not op.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
     def set_regions( self, conf_regions=None,
