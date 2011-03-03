@@ -195,7 +195,7 @@ def compute_u_from_macro(strain, coor, iel, centre=None):
 
 
 
-def compute_p_from_macro(p_grad, coor, iel, centre=None):
+def compute_p_from_macro(p_grad, coor, iel, centre=None, extdim=0):
     r"""
     Macro-induced pressure.
     
@@ -209,7 +209,7 @@ def compute_p_from_macro(p_grad, coor, iel, centre=None):
 
     n_nod, dim = coor.shape
     pm = nm.zeros((n_nod,), dtype=nm.float64)
-    for ic in range(dim):
+    for ic in range(dim + extdim):
         pm += p_grad[iel,0,ic,0] * (coor[:,ic] - centre[ic])
     return pm
 
@@ -488,9 +488,9 @@ def recover_micro_hook( micro_filename, region, macro,
                                           init_equations=False,
                                           init_solvers=False)
 
-    coefs_filename = pb.conf.options.get_default_attr('coefs_filename',
-                                                      'coefs.h5')
+    coefs_filename = pb.conf.options.get_default_attr('coefs_filename', 'coefs')
     output_dir = pb.conf.options.get_default_attr('output_dir', '.')
+    coefs_filename = op.join(output_dir, coefs_filename) + '.h5'
 
     # Coefficients and correctors
     coefs = Coefficients.from_file_hdf5( coefs_filename )
@@ -519,6 +519,7 @@ def recover_micro_hook( micro_filename, region, macro,
             suffix = format % (ig, iel)
             micro_name = pb.get_output_name(extra='recovered_' + suffix)
             filename = op.join(output_dir, op.basename(micro_name))
-
-            pb.save_state( filename, out = out )
+            fpv = pb.conf.options.get_default_attr('file_per_var', False)
+            pb.save_state(filename, out=out,
+                          file_per_var=fpv)
 
