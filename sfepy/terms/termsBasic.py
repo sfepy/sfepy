@@ -32,8 +32,18 @@ class IntegrateVolumeTerm( Term ):
         cache = self.get_cache( 'state_in_volume_qp', 0 )
         vec = cache('state', self, 0, state=par, get_vector=self.get_vector)
 
+        ac = nm.ascontiguousarray
         for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, vec[chunk], chunk )
+            if vec.dtype == nm.complex128:
+                status_r = vg.integrate_chunk(out, ac(vec[chunk].real),
+                                              chunk)
+                out_imag = nm.zeros_like(out)
+                status_i = vg.integrate_chunk(out_imag, ac(vec[chunk].imag),
+                                              chunk)
+                status = status_r or status_i
+                out = out + 1j * out_imag
+            else:
+                status = vg.integrate_chunk(out, vec[chunk], chunk)
             out1 = nm.sum( out, 0 )
             out1.shape = (field_dim,)
             yield out1, chunk, status
@@ -147,9 +157,67 @@ class IntegrateSurfaceTerm( Term ):
         cache = self.get_cache( 'state_in_surface_qp', 0 )
         vec = cache('state', self, 0, state=par)
 
+        ac = nm.ascontiguousarray
         for out, chunk in self.char_fun( chunk_size, shape ):
             lchunk = self.char_fun.get_local_chunk()
-            status = sg.integrate_chunk( out, vec[lchunk], lchunk, 0 )
+            if vec.dtype == nm.complex128:
+                status_r = sg.integrate_chunk(out, ac(vec[lchunk].real),
+                                              lchunk, 0)
+                out_imag = nm.zeros_like(out)
+                status_i = sg.integrate_chunk(out_imag, ac(vec[lchunk].imag),
+                                              lchunk, 0)
+                status = status_r or status_i
+                out = out + 1j * out_imag
+            else:
+                status = sg.integrate_chunk(out, vec[lchunk], lchunk, 0)
+
+            out1 = nm.sum( out )
+            yield out1, chunk, status
+
+class IntegrateSurfaceWTerm( Term ):
+    r"""
+    :Description:
+    Integrate a variable over a surface.
+
+    :Definition:
+    .. math::
+        \int_\Gamma c y \mbox{ , for vectors: } \int_\Gamma c \ul{y} \cdot
+        \ul{n}
+
+    :Arguments:
+        material : :math:`c`,
+        parameter : :math:`y` or :math:`\ul{y}`,
+    """
+    name = 'd_surface_integrate_w'
+    arg_types = ('material', 'parameter')
+    integration = 'surface'
+    use_caches = {'state_in_surface_qp' : [['parameter']]}
+
+    ##
+    # c: 24.04.2007, r: 15.01.2008
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        """
+        Integrates over surface.
+        """
+        mat, par = self.get_args( **kwargs )
+        ap, sg = self.get_approximation(par)
+        shape = (chunk_size, 1, 1, 1)
+
+        cache = self.get_cache( 'state_in_surface_qp', 0 )
+        vec = cache('state', self, 0, state=par)
+
+        ac = nm.ascontiguousarray
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
+            val = mat[lchunk] * vec[lchunk]
+            if val.dtype == nm.complex128:
+                status_r = sg.integrate_chunk( out, ac(val.real), lchunk, 0 )
+                out_imag = nm.zeros_like(out)
+                status_i = sg.integrate_chunk( out_imag, ac(val.imag), lchunk, 0 )
+                status = status_r or status_i
+                out = out + 1j * out_imag
+            else:
+                status = sg.integrate_chunk( out, val, lchunk, 0 )
 
             out1 = nm.sum( out )
             yield out1, chunk, status
@@ -241,6 +309,58 @@ class DotProductSurfaceTerm( Term ):
             out1 = nm.sum( out )
             yield out1, chunk, status
 
+class DotProductSurfaceWTerm( Term ):
+    r"""
+    :Description:
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        material : :math:`c`,
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
+    name = 'd_surface_dot_w'
+    arg_types = ('material', 'parameter_1', 'parameter_2')
+    integration = 'surface'
+    use_caches = {'state_in_surface_qp' : [['parameter_1'], ['parameter_2']]}
+
+    ##
+    # c: 09.10.2007, r: 15.01.2008
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat, par1, par2 = self.get_args( **kwargs )
+        ap, sg = self.get_approximation(par1)
+        shape = (chunk_size, 1, 1, 1)
+
+        cache = self.get_cache( 'state_in_surface_qp', 0 )
+        vec1 = cache('state', self, 0, state=par1)
+        cache = self.get_cache( 'state_in_surface_qp', 1 )
+        vec2 = cache('state', self, 0, state=par2)
+
+        ac = nm.ascontiguousarray
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            lchunk = self.char_fun.get_local_chunk()
+            if vec1.shape[-1] > 1:
+                vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
+            else:
+                vec = vec1[lchunk] * vec2[lchunk]
+
+            vec = mat[lchunk] * vec
+            if vec.dtype == nm.complex128:
+                status_r = sg.integrate_chunk(out, ac(vec.real), lchunk, 0)
+                out_imag = nm.zeros_like(out)
+                status_i = sg.integrate_chunk(out_imag, ac(vec.imag), lchunk, 0)
+                status = status_r or status_i
+                out = out + 1j * out_imag
+            else:
+                status = sg.integrate_chunk( out, vec, lchunk, 0 )
+
+            out1 = nm.sum( out )
+            yield out1, chunk, status
 
 ##
 # 30.06.2008, c
