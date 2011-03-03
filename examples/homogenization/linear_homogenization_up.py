@@ -137,9 +137,9 @@ options = {
     'volume' : { #'variables' : ['u'],
                  #'expression' : 'd_volume.i1.Y( u )',
                  'value' : get_box_volume( dim, region_lbn, region_rtf ),
-                 },    
+                 },
     'output_dir' : 'output',
-    'coefs_filename' : 'output/coefs_le_up.h5',
+    'coefs_filename' : 'coefs_le_up',
     'recovery_hook' : 'recovery_le',
 }
 #! Equations

@@ -29,7 +29,7 @@ class HomogenizationApp( HomogenizationEngine ):
         print_digits = get( 'print_digits', 3 )
 
         float_format = get( 'float_format', '%8.3e' )
-        coef_save_name = get( 'coef_save_name', 'coefs' )
+        coefs_filename = get( 'coefs_filename', 'coefs' )
         tex_names = get( 'tex_names', None )
         
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
@@ -88,7 +88,7 @@ class HomogenizationApp( HomogenizationEngine ):
         nm.set_printoptions( precision = prec )
 ##        pause()
 
-        coef_save_name = op.join( opts.output_dir, opts.coef_save_name )
+        coef_save_name = op.join( opts.output_dir, opts.coefs_filename )
         coefs.to_file_hdf5( coef_save_name + '.h5' )
         coefs.to_file_txt( coef_save_name + '.txt',
                            opts.tex_names,
