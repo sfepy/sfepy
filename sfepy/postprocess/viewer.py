@@ -400,8 +400,14 @@ class Viewer(Struct):
             if kind == 'scalars':
                 if family == 'point':
                     active = mlab.pipeline.set_active_attribute(source)
+
                 else:
-                    active = mlab.pipeline.set_active_attribute(ctp)
+                    if is_3d and ('iso_surface' in scalar_mode):
+                        active = mlab.pipeline.set_active_attribute(ctp)
+
+                    else:
+                        active = mlab.pipeline.set_active_attribute(source)
+
                 setattr(active, '%s_%s_name' % (family, kind), name)
 
                 if is_3d:
