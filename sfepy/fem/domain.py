@@ -8,6 +8,7 @@ from sfepy.fem.facets import Facets
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parseReg import create_bnf, visit_stack, ParseException
+from sfepy.fem.refine import refine_3_4
 import fea
 import extmods.meshutils as mu
 
@@ -517,3 +518,25 @@ class Domain( Struct ):
             lst = fa.indices[isurf]
 
         return lst, surf_faces
+
+    def refine(self):
+        """
+        Uniformly refine the domain mesh.
+
+        Returns
+        -------
+        domain : Domain instance
+            The new domain with the refined mesh.
+
+        Notes
+        -----
+        Works for tetrahedra only! Does not preserve node groups!
+        """
+        for group in self.groups.itervalues():
+            if group.gel.name != '3_4':
+                raise NotImplementedError('refine() works only for tetrahedra!')
+
+        mesh = refine_3_4(self.mesh, self.ed)
+        domain = Domain(self.name + '_r', mesh)
+
+        return domain
