@@ -251,15 +251,8 @@ class Region( Struct ):
 
         self.edges = {}
         self.faces = {}
-        self.shape = {}
         for ig, group in self.domain.iter_groups( self.igs ):
             vv = self.vertices[ig]
-            if self.cells.has_key( ig ):
-                n_cell = self.cells[ig].shape[0]
-            else:
-                n_cell = 0
-            self.shape[ig] = Struct( n_vertex = vv.shape[0],
-                                     n_cell = n_cell )
             if len( vv ) == 0: continue
 
             mask = nm.zeros( self.n_v_max, nm.int32 )
@@ -270,7 +263,6 @@ class Region( Struct ):
             # Points to ed.facets.
             redges = indx.start + nm.where( aux == 2 )[0]
             self.edges[ig] = redges
-            self.shape[ig].n_edge = redges.shape[0]
 
             if fa is None: continue
 
@@ -281,9 +273,28 @@ class Region( Struct ):
             rfaces = indx.start + nm.where(aux == n_fp)[0]
             self.faces[ig] = rfaces
 
-            self.shape[ig].n_face = rfaces.shape[0]
+        self.update_shape()
 
         self.is_complete = True
+
+    def update_shape(self):
+        """
+        Update shape of each group according to region vertices, edges,
+        faces and cells.
+        """
+        aux = nm.array([])
+
+        self.shape = {}
+        for ig in self.igs:
+            n_vertex = self.vertices.get(ig, aux).shape[0]
+            n_edge = self.edges.get(ig, aux).shape[0]
+            n_face = self.faces.get(ig, aux).shape[0]
+            n_cell = self.cells.get(ig, aux).shape[0]
+
+            self.shape[ig] = Struct(n_vertex=n_vertex,
+                                    n_edge=n_edge,
+                                    n_face=n_face,
+                                    n_cell=n_cell)
 
     def setup_face_indices(self, reset=True):
         """
