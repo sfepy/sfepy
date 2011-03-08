@@ -3,7 +3,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import Struct, dict_to_array, assert_
 from sfepy.base.compat import in1d, unique
-from sfepy.linalg import permutations, map_permutations
+from sfepy.linalg import permutations, map_permutations, insert_strided_axis
 
 def _build_orientation_map(n_fp):
     """
@@ -355,9 +355,17 @@ class Facets(Struct):
 
         return flag
 
-    def get_coors(self, ig=0):
+    def get_coors(self, ig=None):
         """
         Get the coordinates of vertices of unique facets in group `ig`.
+
+        Parameters
+        ----------
+        ig : int, optional
+            The element group. If None, the coordinates for all groups
+            are returned, filled with zeros at places of missing
+            vertices, i.e. where facets having less then the full number
+            of vertices (`n_v`) are.
 
         Returns
         -------
@@ -368,10 +376,17 @@ class Facets(Struct):
         """
         cc = self.domain.get_mesh_coors()
 
-        uid_i = self.uid_i[self.indx[ig]]
-        uid, ii = unique(uid_i, return_index=True)
+        if ig is None:
+            uid, ii = unique(self.uid_i, return_index=True)
+            facets = self.facets[ii]
+            aux = insert_strided_axis(facets, 2, cc.shape[1])
+            coors = nm.where(aux >= 0, cc[facets], 0.0)
 
-        coors = cc[self.facets[ii,:self.n_fps[ig]]]
+        else:
+            uid_i = self.uid_i[self.indx[ig]]
+            uid, ii = unique(uid_i, return_index=True)
+
+            coors = cc[self.facets[ii,:self.n_fps[ig]]]
 
         return coors, uid
 
