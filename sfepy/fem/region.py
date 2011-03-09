@@ -238,40 +238,42 @@ class Region( Struct ):
         
     def complete_description(self, ed, fa):
         """
-        self.edges, self.faces list edge/face indices per group
-        (pointers to ed.facets, fa.facets) - repetitions among groups
-        are possible.
+        Complete the region description by listing edges and faces for
+        each element group.
+
+        Parameters
+        ----------
+        ed : Facets instance
+            The edge facets.
+        fa : Facets instance
+            The face facets.
+
+        Notes
+        ------
+        `self.edges`, `self.faces` simply list edge/face indices per
+        group (pointers to `ed.facets`, `fa.facets`) - repetitions among
+        groups are possible.
         """
         ##
         # Get edges, faces, etc. par subdomain.
-        edges = ed.facets
-
-        if fa is not None:
-            faces = fa.facets
+        mask = nm.zeros(self.n_v_max, dtype=nm.bool)
 
         self.edges = {}
         self.faces = {}
-        for ig, group in self.domain.iter_groups( self.igs ):
+        for ig, group in self.domain.iter_groups(self.igs):
             vv = self.vertices[ig]
-            if len( vv ) == 0: continue
+            if len(vv) == 0: continue
 
-            mask = nm.zeros( self.n_v_max, nm.int32 )
-            mask[vv] = 1
+            mask.fill(False)
+            mask[vv] = True
 
-            indx = ed.indx[ig]
-            aux = nm.sum(mask[edges[indx]], 1)
             # Points to ed.facets.
-            redges = indx.start + nm.where( aux == 2 )[0]
-            self.edges[ig] = redges
+            self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
 
             if fa is None: continue
 
-            n_fp = fa.n_fps[ig]
-            indx = fa.indx[ig]
-            aux = nm.sum(mask[faces[indx,:n_fp]], 1)
             # Points to fa.facets.
-            rfaces = indx.start + nm.where(aux == n_fp)[0]
-            self.faces[ig] = rfaces
+            self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
 
         self.update_shape()
 
