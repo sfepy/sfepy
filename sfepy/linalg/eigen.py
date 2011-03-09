@@ -1,7 +1,9 @@
 import numpy as nm
+import scipy.sparse as sp
 from scipy.linalg import eigvals_banded
 
 from sfepy.base.base import get_default, output
+from sfepy.linalg import infinity_norm
 
 def sym_tri_eigen(diags, select_indices=None):
     """
@@ -19,11 +21,32 @@ def sym_tri_eigen(diags, select_indices=None):
 
     return eigs
 
-def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
-            select_indices=None, verbose=False, report_step=10):
+def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
+            shift=None, select_indices=None, verbose=False, report_step=10):
     """
     Make several iterations of the conjugate gradients and estimate so
-    the eigenvalues of a (sparse) SPD matrix (Lanczos algorithm).
+    the eigenvalues of a (sparse SPD) matrix (Lanczos algorithm).
+
+    Parameters
+    ----------
+    mtx : spmatrix or array
+        The sparse matrix :math:`A`.
+    precond : spmatrix or array, optional
+        The preconditioner matrix. Any object that can be multiplied by
+        vector can be passed.
+    i_max : int
+        The maximum number of the Lanczos algorithm iterations.
+    eps_r : float
+        The relative stopping tolerance.
+    shift : float, optional
+        Eigenvalue shift for non-SPD matrices. If negative, the shift is
+        computed as :math:`\abs(shift) ||A||_{\infty}`.
+    select_indices : (min, max), optional
+        If given, computed only the eigenvalues with indices `min <= i <= max`.
+    verbose : bool
+        Verbosity control.
+    report_step : int
+        If `verbose` is True, report in every `report_step`-th step.
 
     Returns
     -------
@@ -32,7 +55,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
     n_it : int
         The number of CG iterations used.
     norm_rs : array
-        Convergence history of residual norms
+        Convergence history of residual norms.
     eigs : array
         The approximate eigenvalues sorted in ascending order.
     """
@@ -41,6 +64,15 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
 
     rhs = get_default(rhs, nm.random.rand(n_row))
     i_max = get_default(i_max, min(n_row, 100))
+
+    if shift is not None:
+        if shift < 0.0:
+            mtx_norm = infinity_norm(mtx)
+            output('matrix max norm:', mtx_norm, verbose=verbose)
+            shift = abs(shift) * mtx_norm
+
+        output('eigenvalue shift:', shift, verbose=verbose)
+        mtx = mtx + shift * sp.eye(n_row, n_row, dtype=mtx.dtype)
 
     lambda_max = 0
     lambda_min = 0
@@ -113,10 +145,9 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
                     output('%5d |R|: %e\n'
                            % (ii, norm_r))
 
-        if (norm_r / norm_r0) < eps_a:
-            if verbose:
-                output('converged on %d iters, |Ri|/|R0|: %e, econd: %e\n'
-                       % (ii, norm_r / norm_r0, econd))
+        if (norm_r / norm_r0) < eps_r:
+            output('converged on %d iters, |Ri|/|R0|: %e, econd: %e\n'
+                   % (ii, norm_r / norm_r0, econd), verbose=verbose)
             break
 
         rho0 = rho1
@@ -127,6 +158,9 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_a=1e-10,
         econd = lambda_max / lambda_min
         output('min: %e  max: %e  cond: %e\n'
                % (lambda_min, lambda_max, econd))
+
+    if shift is not None:
+        eigs -= shift
 
     return x, ii, nm.array(norm_rs), eigs
 
