@@ -440,3 +440,39 @@ class Facets(Struct):
             dof_perms[ig] = dict_to_array(val)
 
         return dof_perms
+
+    def get_complete_facets(self, vertices, ig=0, mask=None):
+        """
+        Get complete facets in group `ig` that are defined by the given
+        vertices, or mask, if given.
+
+        Parameters
+        ----------
+        vertices : array
+            The list of vertices.
+        ig : int
+            The group index.
+        mask : array, optional
+            Alternatively to `vertices`, a mask can be given with 1 at
+            indices equal to the vertices and 0 elsewhere.
+
+        Returns
+        -------
+        ifacets : array
+            The indices into `self.facets`.
+        """
+        n_fp = self.n_fps[ig]
+        indx = self.indx[ig]
+
+        ii = self.facets[indx,:n_fp]
+
+        if mask is None:
+            mask = nm.zeros(ii.max()+1, dtype=nm.bool)
+            mask[vertices] = True
+
+        aux = nm.sum(mask[ii], 1)
+
+        # Points to self.facets.
+        ifacets = indx.start + nm.where(aux == n_fp)[0]
+
+        return ifacets
