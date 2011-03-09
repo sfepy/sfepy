@@ -583,7 +583,8 @@ class Equations( Container ):
 
         return out
 
-    def eval_tangent_matrices(self, state, tangent_matrix, by_blocks=False):
+    def eval_tangent_matrices(self, state, tangent_matrix,
+                              by_blocks=False, names=None):
         """
         Evaluate (assemble) tangent matrices.
 
@@ -599,6 +600,9 @@ class Equations( Container ):
             matrix. Each equation should then correspond to one
             required block and should be named as `'block_name,
             test_variable_name, unknown_variable_name'`.
+        names : list of str, optional
+            Optionally, select only blocks with the given `names`, if
+            `by_blocks` is True.
 
         Returns
         -------
@@ -610,10 +614,13 @@ class Equations( Container ):
         self.set_variables_from_state(state)
 
         if by_blocks:
+            names = get_default(names, self.names)
+
             out = {}
 
             get_indx = self.variables.get_indx
-            for eq in self:
+            for name in names:
+                eq = self[name]
                 key, rname, cname = [aux.strip()
                                      for aux in eq.name.split(',')]
 
