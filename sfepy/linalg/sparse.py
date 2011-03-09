@@ -204,3 +204,43 @@ def compose_sparse(blocks, row_sizes=None, col_sizes=None):
     mtx = sp.coo_matrix((datas, (rows, cols)), shape=(n_row, n_col))
 
     return mtx
+
+def infinity_norm(mtx):
+    """
+    Infinity norm of a sparse matrix (maximum absolute row sum).  
+
+    Parameters
+    ----------
+    mtx : spmatrix or array
+        The sparse matrix.
+    
+    Returns
+    -------
+    norm : float
+        Infinity norm of the matrix.
+    
+    Notes
+    -----
+    - This serves as an upper bound on spectral radius.
+    - CSR and CSC avoid copying `indices` and `indptr` arrays.
+    - inspired by PyAMG
+
+    See Also
+    --------
+    scipy.linalg.norm : dense matrix norms
+    """
+    ones = nm.ones(mtx.shape[1], dtype=mtx.dtype)
+
+    if sp.isspmatrix_csr(mtx) or sp.isspmatrix_csc(mtx):
+        # Avoid copying index and ptr arrays.
+        abs_mtx = mtx.__class__((nm.abs(mtx.data), mtx.indices ,mtx.indptr),
+                                shape=mtx.shape)
+        norm = (abs_mtx * ones).max()
+
+    elif sp.isspmatrix(mtx):
+        norm = (abs(mtx) * ones).max()
+
+    else:
+        norm = nm.dot(nm.abs(mtx), ones).max()
+
+    return norm
