@@ -85,7 +85,7 @@ class Region( Struct ):
 
     @staticmethod
     def from_vertices(vertices, domain, name='region',
-                      igs=None, can_cells=False):
+                      igs=None, can_cells=False, surface_integral=False):
         """
         Create a new region containing given vertices.
 
@@ -103,6 +103,14 @@ class Region( Struct ):
             same effect the 'forbid' flag has.
         can_cells : bool, optional
             If True, the region can have cells.
+        surface_integral : bool, optional
+            If True, the each region surface facet (edge in 2D, face in
+            3D) can be listed only in one group.
+
+        Returns
+        -------
+        obj : Region instance
+            The new region.
         """
         obj = Region(name, 'given vertices', domain, '')
 
@@ -113,7 +121,8 @@ class Region( Struct ):
             obj.delete_groups(forbidden)
 
         obj.switch_cells(can_cells) 
-        obj.complete_description(domain.ed, domain.fa)
+        obj.complete_description(domain.ed, domain.fa,
+                                 surface_integral=surface_integral)
 
         return obj
 
@@ -236,7 +245,7 @@ class Region( Struct ):
             if can_cells:
                 self.update_groups( force = True )
         
-    def complete_description(self, ed, fa):
+    def complete_description(self, ed, fa, surface_integral=False):
         """
         Complete the region description by listing edges and faces for
         each element group.
@@ -247,12 +256,17 @@ class Region( Struct ):
             The edge facets.
         fa : Facets instance
             The face facets.
+        surface_integral : bool
+            If True, the each region surface facet (edge in 2D, face in
+            3D) can be listed only in one group. Sub-entities are
+            updated accordingly (vertices in 2D, vertices and edges in
+            3D).
 
         Notes
         ------
-        `self.edges`, `self.faces` simply list edge/face indices per
-        group (pointers to `ed.facets`, `fa.facets`) - repetitions among
-        groups are possible.
+        If `surface_integral` is False, `self.edges`, `self.faces` simply
+        list edge/face indices per group (pointers to `ed.facets`,
+        `fa.facets`) - repetitions among groups are possible.
         """
         ##
         # Get edges, faces, etc. par subdomain.
@@ -260,20 +274,64 @@ class Region( Struct ):
 
         self.edges = {}
         self.faces = {}
-        for ig, group in self.domain.iter_groups(self.igs):
-            vv = self.vertices[ig]
-            if len(vv) == 0: continue
 
-            mask.fill(False)
-            mask[vv] = True
+        if surface_integral:
+            if self.domain.shape.dim == 2:
+                allowed = nm.ones(ed.n_unique, dtype=nm.bool)
+                facets = ed
+                surf = self.edges
 
-            # Points to ed.facets.
-            self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+            else:
+                allowed = nm.ones(fa.n_unique, dtype=nm.bool)
+                facets = fa
+                surf = self.faces
 
-            if fa is None: continue
+            # Get unique surface facets.
+            for ig, group in self.domain.iter_groups(self.igs):
+                vv = self.vertices[ig]
+                if len(vv) == 0: continue
 
-            # Points to fa.facets.
-            self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
+                mask.fill(False)
+                mask[vv] = True
+
+                ifacets = facets.get_complete_facets(vv, ig, mask)
+                ii = facets.uid_i[ifacets]
+                surf[ig] = ifacets[allowed[ii]]
+                allowed[ii] = False
+
+            # Update vertices, cells, and, in 3D, edges.
+            for ig, group in self.domain.iter_groups(self.igs):
+                n_fp = facets.n_fps[ig]
+                vv = nm.unique(facets.facets[surf[ig], :n_fp])
+
+                self.vertices[ig] = vv
+
+                mask.fill(False)
+                mask[vv] = True
+
+                conn = group.conn
+                aux = nm.sum(mask[conn], 1, dtype=nm.int32)
+                rcells = nm.where(aux == conn.shape[1])[0]
+                self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
+
+                if self.domain.shape.dim == 3:
+                    self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+
+        else:
+            for ig, group in self.domain.iter_groups(self.igs):
+                vv = self.vertices[ig]
+                if len(vv) == 0: continue
+
+                mask.fill(False)
+                mask[vv] = True
+
+                # Points to ed.facets.
+                self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+
+                if fa is None: continue
+
+                # Points to fa.facets.
+                self.faces[ig] = fa.get_complete_facets(vv, ig, mask)
 
         self.update_shape()
 
