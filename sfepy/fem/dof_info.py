@@ -416,6 +416,35 @@ class EquationMap(Struct):
         self.n_ebc = self.eq_ebc.shape[0]
         self.n_epbc = self.master.shape[0]
 
+    def get_operator(self):
+        """
+        Get the matrix operator :math:`R` corresponding to the equation
+        mapping, such that the restricted matrix :math:`A_r` can be
+        obtained from the full matrix :math:`A` by :math:`A_r = R^T A
+        R`. All the matrices are w.r.t. a single variables that uses
+        this mapping.
+
+        Returns
+        -------
+        mtx : coo_matrix
+            The matrix :math:`R`.
+        """
+        # EBC.
+        rows = self.eqi
+        cols = nm.arange(self.n_eq, dtype=nm.int32) 
+
+        # EPBC.
+        ic = self.eq[self.slave]
+        ii = ic >= 0
+        rows = nm.r_[rows, self.master[ii]]
+        cols = nm.r_[cols, ic[ii]]
+
+        ones = nm.ones(rows.shape[0], dtype=nm.float64)
+        mtx = sp.coo_matrix((ones, (rows, cols)),
+                            shape=(self.eq.shape[0], self.n_eq))
+
+        return mtx
+
 class LCBCOperator(Struct):
     """
     Base class for LCBC operators.
