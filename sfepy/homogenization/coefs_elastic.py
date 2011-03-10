@@ -84,25 +84,30 @@ class TCorrectorsRSViaPressureEVP( TCorrectorsViaPressureEVP ):
         assert_( evp.epbcs == self.epbcs )
 
         dim = problem.get_dim()
-        
+
         filenames = nm.zeros( (dim, dim), dtype = nm.object )
+
+        self.setup_equations(self.equations)
 
         solve = self.compute_correctors
         for ir in range( dim ):
             for ic in range( dim ):
                 filenames[ir,ic] = self.get_dump_name() % (ir,ic)
                 savename = self.get_save_name() % (ir,ic)
-                solve( evp, -corrs.states[ir,ic], ts,
-                       filenames[ir,ic], savename )
+                solve(evp, -1.0, corrs.states[ir,ic], ts,
+                      filenames[ir,ic], savename)
 
 
         if self.check:
+            self.setup_equations(self.verify_equations)
+            self.init_solvers(problem)
+
             output( 'verifying correctors %s...' % self.name )
             verify = self.verify_correctors
             ok = True
             for ir in range( dim ):
                 for ic in range( dim ):
-                    oo = verify( -corrs.states[ir,ic], filenames[ir,ic] )
+                    oo = verify(-1.0, corrs.states[ir,ic], filenames[ir,ic])
                     ok = ok and oo
             output( '...done, ok: %s' % ok )
 
@@ -134,13 +139,18 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         filename = self.get_dump_name()
         savename = self.get_save_name()
 
+        self.setup_equations(self.equations)
+
         solve = self.compute_correctors
-        solve( evp, corrs.state, ts, filename, savename, vec_g = vec_g )
+        solve(evp, 1.0, corrs.state, ts, filename, savename, vec_g=vec_g)
 
         if self.check:
+            self.setup_equations(self.verify_equations)
+            self.init_solvers(problem)
+
             output( 'verifying correctors %s...' % self.name )
             verify = self.verify_correctors
-            ok = verify( corrs.state, filename )
+            ok = verify(1.0, corrs.state, filename)
             output( '...done, ok: %s' % ok )
 
         return Struct( name = self.name,

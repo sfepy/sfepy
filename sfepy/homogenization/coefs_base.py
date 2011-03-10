@@ -517,17 +517,20 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
     Time correctors via the pressure eigenvalue problem.
     """
 
-    def compute_correctors( self, evp, state0, ts, dump_name, save_name,
-                            problem = None, vec_g = None ):
+    def setup_equations(self, equations, problem=None):
+        """
+        Set equations, update boundary conditions and materials.
+        """
+        problem = get_default(problem, self.problem)
+
+        problem.set_equations(equations)
+        problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
+                           lcbc_names=self.get_default_attr('lcbcs', []))
+        problem.update_materials() # Assume parameters constant in time.
+
+    def compute_correctors(self, evp, sign, state0, ts, dump_name, save_name,
+                           problem=None, vec_g=None):
         problem = get_default( problem, self.problem )
-
-        problem.set_equations( self.equations )
-
-        problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
-                           lcbc_names = self.get_default_attr('lcbcs', []))
-
-        variables = problem.get_variables()
-        get_state = variables.get_state_part_view
 
         eigs = evp.evp.eigs
         mtx_q = evp.evp.mtx_q
@@ -540,11 +543,15 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
                     % (vec_g.max(), vec_g.min()) )
             one = nm.ones( (nc,), dtype = nm.float64 )
 
+        vu, vp = self.dump_variables
+
+        variables = problem.get_variables()
+        var_u = variables[vu]
+        var_p = variables[vp]
+
         ##
         # follow_epbc = False -> R1 = - R2 as required. ? for other correctors?
-        sstate0 = variables.strip_state_vector(state0, follow_epbc=False)
-        vu, vp = self.dump_variables
-        vec_p0 = get_state( sstate0, vp, True )
+        vec_p0 = sign * var_p.get_reduced(state0[vp], follow_epbc=False)
 ##         print state0
 ##         print vec_p0
 ##         print vec_p0.min(), vec_p0.max(), nla.norm( vec_p0 )
@@ -575,10 +582,10 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
             vec_u = action_aibt( vec_dp )
 ##             bbb = sc.dot( vec_dp.T, - mtx['C'] * vec_p0 )
 
-            vec_u = variables[vu].get_full(vec_u)
-            vec_p = variables[vp].get_full(vec_p)
+            vec_u = var_u.get_full(vec_u)
+            vec_p = var_p.get_full(vec_p)
             # BC nodes - time derivative of constant is zero!
-            vec_dp = variables[vp].get_full(vec_dp, force_value=0.0)
+            vec_dp = var_p.get_full(vec_dp, force_value=0.0)
 ##             aaa = sc.dot( vec_xi0.T, eigs * (eigs * e_e_qp) )
 ##             print aaa
 ##             print bbb
@@ -621,22 +628,22 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
         problem.save_state( save_name, out = out,
                             file_per_var = self.file_per_var, ts = ts )
 
-    def verify_correctors( self, initial_state, filename, problem = None ):
+    def verify_correctors(self, sign, state0, filename, problem=None):
 
         problem = get_default( problem, self.problem )
-
-        problem.set_equations( self.verify_equations )
 
         io = HDF5MeshIO( filename )
         ts = TimeStepper( *io.read_time_stepper() )
 
+        ts.set_step(0)
+        problem.equations.init_time(ts)
+
         variables = self.problem.get_variables()
-        get_state = variables.get_state_part_view
 
         vu, vp = self.dump_variables
         vdp = self.verify_variables[-1]
 
-        p0 = get_state( initial_state, vp )
+        p0 = sign * state0[vp]
 
         format = '====== time %%e (step %%%dd of %%%dd) ====='\
                  % ((ts.n_digit,) * 2)
@@ -649,22 +656,20 @@ class TCorrectorsViaPressureEVP( CorrMiniApp ):
             if step == 0:
                 assert_( nm.allclose( data[vp].data, p0 ) )
 
-            problem.select_bcs(ebc_names = self.ebcs, epbc_names = self.epbcs,
-                               lcbc_names = self.get_default_attr('lcbcs', []))
-
             state0 = problem.create_state()
             state0.set_full(data[vu].data, vu)
             state0.set_full(data[vp].data, vp)
             vv[vdp].data_from_data( data['d'+vp].data )
 
-            state = problem.solve( state0 = state0, ts = ts )
+            problem.update_time_stepper(ts)
+            state = problem.solve(state0)
             state, state0 = state(), state0()
-            err = nla.norm( state - state0 )
+            err = nla.norm(state - state0) / nla.norm(state0)
             output( state.min(), state.max() )
             output( state0.min(), state0.max() )
             output( '>>>>>', err )
 
-            ok = ok and (err < 1e-15)
+            ok = ok and (err < 1e-12)
             problem.advance( ts )
 
         return ok
