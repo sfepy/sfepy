@@ -34,7 +34,7 @@ class CorrectorsPermeability( CorrDim ):
             index[0] = ir # Set the index - this is visible in the term.
 
             state = problem.solve()
-            assert_(variables.has_ebc(state))
+            assert_(state.has_ebc())
             states[ir] = variables.get_state_parts()
 
             clist.append( (ir,) )
