@@ -179,6 +179,24 @@ class State(Struct):
 
         return out
 
+    def set_parts(self, parts, force=False):
+        """
+        Set parts of the DOF vector corresponding to individual state
+        variables.
+
+        Parameters
+        ----------
+        parts : dict
+            The dictionary of the DOF vector parts.
+        """
+        if self.variables.has_lcbc and not force:
+            raise ValueError('cannot set full DOF vector with LCBCs!')
+
+        self.variables.set_data(parts)
+        for key, part in parts.iteritems():
+            indx = self.variables.get_indx(key)
+            self.vec[indx] = part
+
     def get_parts(self):
         """
         Return parts of the DOF vector corresponding to individual state
