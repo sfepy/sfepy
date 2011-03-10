@@ -6,7 +6,6 @@ import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, assert_, get_default, debug, Struct
-from sfepy.fem import assemble_by_blocks
 from sfepy.fem.evaluate import eval_equations
 from sfepy.solvers.ts import TimeStepper
 from sfepy.fem.meshio import HDF5MeshIO
@@ -495,17 +494,22 @@ class PressureEigenvalueProblem( CorrMiniApp ):
         out = Struct( eigs = eigs, mtx_q = mtx_q )
         return out
 
-    def __call__( self, problem = None, data = None ):
-        problem = get_default( problem, self.problem )
+    def __call__(self, problem=None, data=None):
+        problem = get_default(problem, self.problem)
 
-        mtx = assemble_by_blocks( self.equations, problem,
-                                  ebcs = self.ebcs, epbcs = self.epbcs )
-        self.presolve( mtx )
+        problem.set_equations(self.equations)
+        problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
+                           lcbc_names=self.get_default_attr('lcbcs', []))
+        problem.update_materials()
 
-        evp = self.solve_pressure_eigenproblem( mtx )
-        return Struct( name = self.name,
-                       ebcs = self.ebcs, epbcs = self.epbcs,
-                       mtx = mtx, evp = evp )
+        mtx = problem.equations.eval_tangent_matrices(problem.create_state()(),
+                                                      problem.mtx_a,
+                                                      by_blocks=True)
+        self.presolve(mtx)
+
+        evp = self.solve_pressure_eigenproblem(mtx)
+        return Struct(name=self.name, ebcs=self.ebcs, epbcs=self.epbcs,
+                      mtx=mtx, evp=evp)
 
 class TCorrectorsViaPressureEVP( CorrMiniApp ):
     """
