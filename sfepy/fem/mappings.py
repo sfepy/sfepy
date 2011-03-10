@@ -29,8 +29,7 @@ def get_physical_qps(region, integral):
 
         phys_qps.n_qp[ig] = n_qp = qps.shape[0] * qps.shape[1]
 
-        phys_qps.group_indx[ig] = nm.arange(ii, ii + n_qp,
-                                            dtype=nm.int32)
+        phys_qps.group_indx[ig] = slice(ii, ii + n_qp)
 
         aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_qp + 1)
         aux[0] = 0
