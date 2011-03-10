@@ -44,7 +44,8 @@ class MiniAppBase( Struct ):
             try:
                 mtx_a = ev.eval_tangent_matrix(state(), is_full=True)
             except ValueError:
-                raise ValueError('matrix evaluation failed, giving up...')
+                output('matrix evaluation failed, giving up...')
+                raise
 
             problem.set_linear(True)
             problem.init_solvers(mtx=mtx_a, presolve=True)
