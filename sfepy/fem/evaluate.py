@@ -341,6 +341,7 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
         ir = indx( var_names[0], stripped = True, allow_dual = True )
         ic = indx( var_names[1], stripped = True, allow_dual = True )
 
+        problem.update_materials()
         mtx = problem.evaluate(mtx_term, auto_init=True,
                                mode='weak', dw_mode='matrix',
                                copy_materials=False)
