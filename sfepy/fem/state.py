@@ -37,7 +37,7 @@ class State(Struct):
         vec = variables.create_state_vector()
 
         for key, part in parts.iteritems():
-            indx = variables[key].get_indx()
+            indx = variables.get_indx(key)
             vec[indx] = part
 
         return State(variables, vec)
@@ -113,7 +113,7 @@ class State(Struct):
 
         self.variables.apply_ic(self.vec, force_values=force_values)
 
-    def get_reduced(self):
+    def get_reduced(self, follow_epbc=True):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
         """
@@ -126,7 +126,8 @@ class State(Struct):
                 r_vec = self.r_vec
 
         else:
-            r_vec = self.variables.strip_state_vector(self.vec)
+            r_vec = self.variables.strip_state_vector(self.vec,
+                                                      follow_epbc=follow_epbc)
 
         return r_vec
 
@@ -162,7 +163,7 @@ class State(Struct):
                 raise ValueError('cannot set full DOF vector with LCBCs!')
 
             self.variables.set_state_part(self.vec, vec, var_name)
-            var.data_from_state(self.vec, var.get_indx())
+            var.data_from_state(self.vec, self.variables.get_indx(var_name))
 
     def __call__(self, var_name=None):
         """
@@ -224,7 +225,7 @@ class State(Struct):
 
         norm = 0.0
         for key, part in parts.iteritems():
-            indx = self.variables[key].get_indx()
+            indx = self.variables.get_indx(key)
             norm += nm.linalg.norm(vec[indx]) / nm.linalg.norm(part)
 
         return norm

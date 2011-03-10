@@ -472,7 +472,7 @@ class Variables( Container ):
                 out[var.name] = var()
 
             else:
-                out[var.name] = vec[var.get_indx()]
+                out[var.name] = vec[self.di.indx[var.name]]
 
         return out
 
@@ -939,9 +939,6 @@ class Variable( Struct ):
 
     def get_full_state( self, step = 0 ):
         return self.data[step]
-
-    def get_indx( self ):
-        return self.indx
 
 class CloseNodesIterator(Struct):
 
