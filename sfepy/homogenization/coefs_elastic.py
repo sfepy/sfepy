@@ -156,30 +156,6 @@ class TCorrectorsPressureViaPressureEVP( TCorrectorsViaPressureEVP ):
         return Struct( name = self.name,
                        filename = filename )
 
-class ViscousFMCoef( CoefFMSymSym ):
-    """Homogenized viscous fading memory tensor $H_{ijkl}$."""
- 
-    def get_filename( self, data, ir, ic ):
-        tcorrs = data[self.requires[1]]
-        return tcorrs.filenames[ir,ic]
-
-    def get_variables( self, problem, io, step, ir, ic, data, mode ):
-
-        corrs = data[self.requires[0]]
-
-        if mode == 'row':
-            var_name = self.variables[0]
-            c_name = problem.variables[var_name].primary_var_name
-            dpc = io.read_data( step )['d'+c_name].data
-            yield var_name, dpc
-
-        else:
-            var_name = self.variables[1]
-            c_name = problem.variables[var_name].primary_var_name
-            indx = corrs.di.indx[c_name]
-            pc = corrs.states[ir,ic][indx]
-            yield var_name, pc
-
 class RBiotCoef( CoefFMSym ):
     """Homogenized fading memory Biot-like coefficient."""
 
@@ -213,56 +189,6 @@ class RBiotCoef( CoefFMSym ):
                 yield (var_name, pc)
             else:
                 yield (var_name, nm.zeros_like(pc))
-
-class BiotFMCoef( CoefFMSym ):
-    """Fading memory Biot coefficient."""
-
-    def get_filename( self, data, ir, ic ):
-        tcorrs = data[self.requires[0]]
-        return tcorrs.filenames[ir,ic]
-
-    def get_variables( self, problem, io, step, data, mode ):
-
-        if mode == 'col':
-            for var_name, val in  generate_ones( self.problem,
-                                                 self.variables[0:2] ):
-                yield var_name, val
-
-        else:
-            step_data = io.read_data( step )
-
-            var_name = self.variables[2]
-            c_name = problem.variables[var_name].primary_var_name
-            yield var_name, step_data[c_name].data
-
-            var_name = self.variables[3]
-            c_name = problem.variables[var_name].primary_var_name
-            yield var_name, step_data['d'+c_name].data
-
-class BiotFM2Coef( CoefFMSym ):
-    """Fading memory Biot coefficient, alternative form."""
-
-    def get_filename( self, data, ir, ic ):
-        tcorrs = data[self.requires[1]]
-        return tcorrs.filenames[ir,ic]
-
-    def get_variables( self, problem, io, step, data, mode ):
-
-        if mode == 'col':
-            var_name = self.variables[0]
-            c_name = problem.variables[var_name].primary_var_name
-
-            corrs = data[self.requires[0]]
-            indx = corrs.di.indx[c_name]
-            p0 = corrs.state[indx]
-            yield var_name, p0
-
-        else:
-            step_data = io.read_data( step )
-
-            var_name = self.variables[1]
-            c_name = problem.variables[var_name].primary_var_name
-            yield var_name, step_data[c_name].data
 
 class GBarCoef( CoefOne ):
     """
@@ -372,28 +298,3 @@ class GPlusCoef( CoefFMOne ):
         coef /= volume
 
         return coef
-
-class FMRBiotModulus( CoefFMOne ):
-    """Fading memory reciprocal Biot modulus."""
-
-    def get_filename( self, data ):
-        tcorrs = data[self.requires[0]]
-        return tcorrs.filename
-    
-    def get_variables( self, problem, io, step, data, mode ):
-
-        if mode == 'col':
-            for var_name, val in  generate_ones( self.problem,
-                                                 self.variables[0:2] ):
-                yield var_name, val
-
-        else:
-            step_data = io.read_data( step )
-
-            var_name = self.variables[2]
-            c_name = problem.variables[var_name].primary_var_name
-            yield var_name, step_data[c_name].data
-
-            var_name = self.variables[3]
-            c_name = problem.variables[var_name].primary_var_name
-            yield var_name, step_data['d'+c_name].data
