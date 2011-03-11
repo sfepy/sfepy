@@ -742,22 +742,26 @@ class CoefSymSym( MiniAppBase ):
 
 class CoefFMSymSym( MiniAppBase ):
     """
-    Base class for fading memory dim x dim coefficients.
+    Fading memory sym x sym coefficients.
     """
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         dim, sym = problem.get_dim( get_sym = True )
 
-        aux = self.get_filename( data, 0, 0 )
-        ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
+        filename = self.set_variables(None, None, None, 0, 0,
+                                      'filename', **data)
+        ts = TimeStepper(*HDF5MeshIO(filename).read_time_stepper())
 
         coef = nm.zeros( (ts.n_step, sym, sym), dtype = self.dtype )
 
         equations, variables = problem.create_evaluable(self.expression)
 
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
-            io = HDF5MeshIO( self.get_filename( data, irr, icr ) )
+            filename = self.set_variables(None, None, None, irr, icr,
+                                          'filename', **data)
+            io = HDF5MeshIO(filename)
 
             for step, time in ts:
                 self.set_variables(variables, io, step, None, None,
@@ -907,14 +911,17 @@ class CoefSym( MiniAppBase ):
         return coef
 
 class CoefFMSym( MiniAppBase ):
+    """
+    Fading memory sym coefficients.
+    """
 
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
         dim, sym = problem.get_dim( get_sym = True )
 
-        aux = self.get_filename( data, 0, 0 )
-        ts = TimeStepper( *HDF5MeshIO( aux ).read_time_stepper() )
+        filename = self.set_variables(None, 0, 0, 'filename', **data)
+        ts = TimeStepper(*HDF5MeshIO(filename).read_time_stepper())
 
         coef = nm.zeros( (ts.n_step, sym), dtype = self.dtype )
 
@@ -923,7 +930,8 @@ class CoefFMSym( MiniAppBase ):
         self.set_variables(variables, None, None, 'col', **data)
 
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
-            io = HDF5MeshIO( self.get_filename( data, ir, ic ) )
+            filename = self.set_variables(None, ir, ic, 'filename', **data)
+            io = HDF5MeshIO(filename)
             for step, time in ts:
                 self.set_variables(variables, io, step, 'row', **data)
 
@@ -959,11 +967,15 @@ class CoefOne( MiniAppBase ):
         return coef
 
 class CoefFMOne( MiniAppBase ):
+    """
+    Fading memory scalar coefficients.
+    """
+
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
 
-        aux = self.get_filename( data )
-        io = HDF5MeshIO( self.get_filename( data ) )
+        filename = self.set_variables(None, None, None, 'filename', **data)
+        io = HDF5MeshIO(filename)
         ts = TimeStepper( *io.read_time_stepper() )
 
         coef = nm.zeros( (ts.n_step, 1), dtype = self.dtype )
