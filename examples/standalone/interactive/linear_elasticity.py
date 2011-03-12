@@ -2,6 +2,9 @@
 from optparse import OptionParser
 import numpy as nm
 
+import sys
+sys.path.append('.')
+
 from sfepy.base.base import IndexedStruct
 from sfepy.fem import Mesh, Domain, Field, FieldVariable, Material, Integral
 from sfepy.fem import Function, Equation, Equations, ProblemDefinition
