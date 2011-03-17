@@ -90,6 +90,114 @@ def merge_mesh( x1, ngroups1, conns1, x2, ngroups2, conns2, cmap, eps = 1e-8 ):
     
     return xx, ngroups, conns
 
+def fix_double_nodes(coor, ngroups, conns, eps):
+    """
+    Detect and attempt fixing double nodes in a mesh.
+
+    The double nodes are nodes having the same coordinates
+    w.r.t. precision given by `eps`.
+    """
+    n_nod, dim = coor.shape
+    cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps, allow_double = True )
+    if cmap.size:
+        output('double nodes in input mesh!')
+        output('trying to fix...')
+
+        while cmap.size:
+            print cmap.size
+
+            # Just like in Variable.equation_mapping()...
+            ii = nm.argsort( cmap[:,1] )
+            scmap = cmap[ii]
+
+            eq = nm.arange( n_nod )
+            eq[scmap[:,1]] = -1
+            eqi = eq[eq >= 0]
+            eq[eqi] = nm.arange( eqi.shape[0] )
+            remap = eq.copy()
+            remap[scmap[:,1]] = eq[scmap[:,0]]
+            print coor.shape
+            coor = coor[eqi]
+            ngroups = ngroups[eqi]
+            print coor.shape
+            ccs = []
+            for conn in conns:
+                ccs.append( remap[conn] )
+            conns = ccs
+            cmap = find_map( coor, nm.zeros( (0,dim) ), eps = eps,
+                            allow_double = True )
+        output('...done')
+    return coor, ngroups, conns
+
+def get_min_edge_size(coor, conns):
+    """
+    Get the smallest edge length.
+    """
+    mes = 1e16
+    for conn in conns:
+        n_ep = conn.shape[1]
+        for ir in range( n_ep ):
+            x1 = coor[conn[:,ir]]
+            for ic in range( ir + 1, n_ep ):
+                x2 = coor[conn[:,ic]]
+                aux = nm.sqrt( nm.sum( (x2 - x1)**2.0, axis = 1 ).min() )
+                mes = min( mes, aux )
+
+    return mes
+
+##
+# 25.05.2007, c
+def get_min_vertex_distance( coor, guess ):
+    """Can miss the minimum, but is enough for our purposes."""
+    # Sort by x.
+    ix = nm.argsort( coor[:,0] )
+    scoor = coor[ix]
+
+    mvd = 1e16
+    
+    # Get mvd in chunks potentially smaller than guess.
+    n_coor = coor.shape[0]
+    print n_coor
+    
+    i0 = i1 = 0
+    x0 = scoor[i0,0]
+    while 1:
+        while ((scoor[i1,0] - x0) < guess) and (i1 < (n_coor - 1)):
+            i1 += 1
+
+#        print i0, i1, x0, scoor[i1,0]
+        aim, aa1, aa2, aux = get_min_vertex_distance_naive( scoor[i0:i1+1] )
+        if aux < mvd:
+            im, a1, a2 = aim, aa1 + i0, aa2 + i0
+        mvd = min( mvd, aux )
+        i0 = i1 = int( 0.5 * (i1 + i0 ) ) + 1
+#        i0 += 1
+        x0 = scoor[i0,0]
+#        print '-', i0
+
+        if i1 == n_coor - 1: break
+
+    print im, ix[a1], ix[a2], a1, a2, scoor[a1], scoor[a2]
+
+    return mvd
+        
+##
+# c: 25.05.2007, r: 05.05.2008
+def get_min_vertex_distance_naive( coor ):
+
+    ii = nm.arange( coor.shape[0] )
+    i1, i2 = nm.meshgrid( ii, ii )
+    i1 = i1.flatten()
+    i2 = i2.flatten()
+
+    ii = nm.where( i1 < i2 )
+    aux = coor[i1[ii]] - coor[i2[ii]]
+    aux = nm.sum( aux**2.0, axis = 1 )
+
+    im = aux.argmin()
+
+    return im, i1[ii][im], i2[ii][im], nm.sqrt( aux[im] )
+
 def make_mesh( coor, ngroups, conns, mesh_in ):
     """Create a mesh reusing mat_ids and descs of mesh_in."""
     mat_ids = []

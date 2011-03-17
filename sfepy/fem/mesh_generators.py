@@ -1,9 +1,11 @@
 import numpy as nm
 
-from sfepy.base.base import assert_
+from sfepy.base.base import output, assert_
 from sfepy.base.progressbar import MyBar
 from sfepy.linalg import cycle
-from sfepy.fem import Mesh
+from sfepy.fem.mesh import Mesh
+from sfepy.fem.mesh import find_map, merge_mesh, make_mesh, fix_double_nodes
+from sfepy.fem.mesh import get_min_edge_size, get_min_vertex_distance
 
 def gen_block_mesh(dims, shape, centre, name='block'):
     """Generate a 2D or 3D block mesh. The dimension is determined by the
@@ -228,6 +230,114 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     mesh = Mesh.from_data(name, coors, None, [conn], [mat_id], [desc])
     return mesh
+
+def compose_periodic_mesh(mesh_in, scale, repeat, eps, check_mvd=False):
+    """
+    Create a new mesh from a periodic mesh by scaling it and repeating
+    along each axis,
+
+    Parameters
+    ----------
+    mesh_in : Mesh instance
+        The input periodic mesh.
+    scale : float
+        The scale parameter.
+    repeat : array
+        The number of repetitions of `mesh_in` along each axis.
+    eps : float
+        Tolerance for finding matching mesh vertices.
+    check_mvd : bool
+        If True, verify periodicity by checking approximate minimum
+        vertex distance and minimum edge length.
+
+    Returns
+    -------
+    mesh_out : Mesh instance
+        The composed periodic mesh.
+    """
+    dim = mesh_in.dim
+    bbox = mesh_in.get_bounding_box()
+    mscale = bbox[1] - bbox[0]
+    output('bbox:\n', bbox)
+
+    centre0 = 0.5 * (bbox[1] + bbox[0])
+    output('centre:\n', centre0)
+
+    scale = float(scale)
+    if repeat is None:
+        repeat = [scale] * dim
+
+    repeat = nm.asarray(repeat)
+
+    # Normalize original coordinates.
+    coor0 = (mesh_in.coors - centre0) / (mscale)
+
+    aux = fix_double_nodes(coor0, mesh_in.ngroups, mesh_in.conns, eps)
+    coor0, ngroups0, mesh_in.conns = aux
+    
+    if check_mvd:
+        mes0 = get_min_edge_size(coor0, mesh_in.conns)
+        mvd0 = get_min_vertex_distance(coor0, mes0)
+        if mes0 > (mvd0 + eps):
+            output('          original min. "edge" length: %.5e' % mes0)
+            output('original approx. min. vertex distance: %.5e' % mvd0)
+            output('-> still double nodes in input mesh!')
+            output('try increasing eps')
+            raise ValueError('cannot fix double nodes!')
+
+    output('composing periodic mesh...')
+    for indx in cycle(repeat):
+        aindx = nm.array(indx, dtype=nm.float64)
+        centre = 0.5 * (2.0 * aindx - repeat + 1.0)
+        output(indx, centre)
+
+        if aindx.sum() == 0:
+            coor = coor0 + centre
+            ngroups = ngroups0
+            conns = mesh_in.conns
+        else:
+            coor1 = coor0 + centre
+            ngroups1 = ngroups0
+            conns1 = mesh_in.conns
+
+            cmap = find_map(coor, coor1, eps=eps)
+            if not cmap.size:
+                raise ValueError('non-periodic mesh!')
+
+            else:
+                output(cmap.size / 2)
+
+            coor, ngroups, conns = merge_mesh(coor, ngroups, conns,
+                                              coor1, ngroups1, conns1,
+                                              cmap, eps=eps)
+
+    if check_mvd:
+        mes = get_min_edge_size( coor, conns )
+        mvd = get_min_vertex_distance( coor, mes0 )
+
+        output('          original min. "edge" length: %.5e' % mes0)
+        output('             final min. "edge" length: %.5e' % mes)
+        output('original approx. min. vertex distance: %.5e' % mvd0)
+        output('   final approx. min. vertex distance: %.5e' % mvd)
+        if mvd < 0.99999 * mvd0:
+            if mvd0 < (mes0 - eps):
+                output('-> probably non-periodic input mesh!')
+                output('   - adjacent sides were not connected!')
+                output('   try increasing eps')
+            else:
+                output('-> input mesh might be periodic')
+                output('   try increasing eps')
+        else:
+            output('-> input mesh looks periodic')
+    else:
+        output('non-periodic input mesh detection skipped!')
+
+    # Renormalize.
+    coor = (coor * mscale) / scale
+    mesh_out = make_mesh(coor, ngroups, conns, mesh_in)
+    output('...done')
+
+    return mesh_out
 
 def main():
     mesh = gen_block_mesh(nm.array((1.0, 2.0, 3.0)),
