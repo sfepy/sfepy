@@ -131,18 +131,26 @@ def get_min_vertex_distance_naive( coor ):
 
 usage = """%prog [options] filename_in filename_out
 
-The program scales a periodic input mesh (a rectangle or box) in filename_in
-by a scale factor and generates a new mesh by repeating the scaled original
-mesh in a regular grid (scale x scale [x scale]), producing again a periodic
-rectagle or box mesh."""
+The program scales a periodic input mesh (a rectangle or box) in
+filename_in by a scale factor and generates a new mesh by repeating the
+scaled original mesh in a regular grid (scale x scale [x scale]) if
+repeat option is None, or in a grid nx x ny x nz for repeat 'nx,ny,nz',
+producing again a periodic rectangle or box mesh.
+"""
 
 help = {
     'scale' : 'scale factor [default: %default]',
+    'repeat' : 'repetition counts in each axial direction'
+               ' [default: %default]',
     'eps'   : 'coordinate precision [default: %default]',
     'test'  : 'test the code',
     'nomvd' : 'omit mesh periodicity test using minimum vertex distance'\
     + ' (it is demanding in cpu time and memory) [default: %default]',
 }
+
+def parse_repeat(option, opt, value, parser):
+    if value is not None:
+        setattr(parser.values, option.dest, [int(r) for r in value.split(',')])
 
 ##
 # c: 23.05.2007, r: 06.05.2008
@@ -152,6 +160,9 @@ def main():
     parser.add_option( "-s", "--scale", type = int, metavar = 'scale',
                        action = "store", dest = "scale",
                        default = 2, help = help['scale'] )
+    parser.add_option("-r", "--repeat", type='str', metavar='nx,ny[,nz]',
+                      action="callback", dest="repeat",
+                      callback=parse_repeat, default=None, help=help['repeat'])
     parser.add_option( "-e", "--eps", type = float, metavar = 'eps',
                        action = "store", dest = "eps",
                        default = 1e-8, help = help['eps'] )
@@ -175,9 +186,11 @@ def main():
         return
 
     print 'scale:', options.scale
+    print 'repeat:', options.repeat
     print 'eps:', options.eps
 
     mesh_in = Mesh.from_file( filename_in )
+    dim = mesh_in.dim
     bbox = mesh_in.get_bounding_box()
     print 'bbox:\n', bbox
     mscale = bbox[1] - bbox[0]
@@ -185,10 +198,13 @@ def main():
     print 'centre:\n', centre0
 
     scale = nm.array( options.scale, dtype = nm.float64 )
+    if options.repeat is None:
+        options.repeat = [options.scale] * dim
+
+    repeat = nm.array(options.repeat)
 
     # Normalize original coordinates.
     coor0 = (mesh_in.coors - centre0) / (mscale)
-    dim = mesh_in.dim
 
     aux = fix_double_nodes( coor0, mesh_in.ngroups, mesh_in.conns, options.eps )
     coor0, ngroups0, mesh_in.conns = aux
@@ -203,9 +219,9 @@ def main():
             print 'try increasing eps...'
             raise ValueError
 
-    for indx in cycle( [options.scale] * dim ):
+    for indx in cycle(repeat):
         aindx = nm.array( indx, dtype = nm.float64 )
-        centre = 0.5 * (2.0 * aindx - scale + 1.0)
+        centre = 0.5 * (2.0 * aindx - repeat + 1.0)
         print indx, centre
 
         if aindx.sum() == 0:
