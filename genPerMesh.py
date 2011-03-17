@@ -2,28 +2,9 @@
 import numpy as nm
 
 from sfepy.base.base import Output
-from sfepy.fem.mesh import Mesh, find_map, merge_mesh
+from sfepy.fem.mesh import Mesh
 from sfepy.fem.mesh_generators import compose_periodic_mesh
 from optparse import OptionParser
-
-##
-# 24.05.2007, c
-def test():
-    x1 = nm.fix( nm.random.rand( 5, 3 ) * 5 ) / 10
-    x2 = nm.fix( nm.random.rand( 10, 3 ) * 5 ) / 10
-    cmap = find_map( x1, x2 )
-    conn1 = nm.array( [[range( 5 )], [range( 5 )]] ).squeeze()
-    conn2 = nm.array( [[range( 10 )], [range( 10 )]] ).squeeze()
-    conn2.shape = (4, 5)
-
-    print x1
-    print conn1
-    print x2
-    print conn2
-    print cmap
-    xx, conns = merge_mesh( x1, [conn1], x2, [conn2], cmap )
-    print xx
-    print conns
 
 usage = """%prog [options] filename_in filename_out
 
@@ -39,7 +20,6 @@ help = {
     'repeat' : 'repetition counts in each axial direction'
                ' [default: %default]',
     'eps'   : 'coordinate precision [default: %default]',
-    'test'  : 'test the code',
     'nomvd' : 'omit mesh periodicity test using minimum vertex distance'\
     + ' (it is demanding in cpu time and memory) [default: %default]',
 }
@@ -59,17 +39,10 @@ def main():
     parser.add_option("-e", "--eps", type=float, metavar='eps',
                       action="store", dest="eps",
                       default=1e-8, help=help['eps'])
-    parser.add_option("-t", "--test",
-                      action="store_true", dest="test",
-                      default=False, help=help['test'])
     parser.add_option("-n", "--no-mvd",
                       action="store_true", dest="nomvd",
                       default=False, help=help['nomvd'])
     (options, args) = parser.parse_args()
-
-    if options.test:
-        test()
-        return
 
     if (len( args ) == 2):
         filename_in = args[0]
