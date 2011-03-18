@@ -117,7 +117,11 @@ class CorrMiniApp( MiniAppBase ):
         out = {}
         for key, sol in corr_sol.iter_solutions():
             for var_name in var_names:
-                skey = var_name + '_' + key
+                if key:
+                    skey = var_name + '_' + key
+
+                else:
+                    skey = var_name
 
                 dof_vector = sol[var_name]
 
