@@ -518,7 +518,8 @@ class Term(Struct):
                 else:
                     history_sizes = None
 
-                ans = [self.get_arg_name(arg, full=True) for arg in args]
+                ans = [self.get_arg_name(arg, full=True, join='_')
+                       for arg in args]
                 cname = '_'.join([name] + ans)
 
                 ## print self.name, name, arg_lists, args, cname
@@ -1014,8 +1015,8 @@ class Term(Struct):
     # c: 27.02.2007, r: 15.04.2008
     def get_cache( self, base_name, ii ):
         args = self.use_caches[base_name][ii]
-        ans = [self.get_arg_name( arg, full = True ) for arg in args
-               if not type( arg ) == dict]
+        ans = [self.get_arg_name(arg, full=True, join='_') for arg in args
+               if not type(arg) == dict]
 ##         print args, ans
 ##         pause()
         cname = '_'.join( [base_name] + ans )
