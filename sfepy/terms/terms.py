@@ -886,11 +886,29 @@ class Term(Struct):
         None)."""
         return [kwargs.get( name ) for name in keys]
 
-    ##
-    # 24.07.2006, c
-    def get_arg_name( self, arg_type, full = False ):
+    def get_arg_name(self, arg_type, full=False, join=None):
+        """
+        Get the name of the argument specified by `arg_type.`
+
+        Parameters
+        ----------
+        arg_type : str
+            The argument type string.
+        full : bool
+            If True, return the full name. For example, if the name of a
+            variable argument is 'u' and its time derivative is
+            requested, the full name is 'du/dt'.
+        join : str, optional
+            Optionally, the material argument name tuple can be joined
+            to a single string using the `join` string.
+
+        Returns
+        -------
+        name : str
+            The argument name.
+        """
         try:
-            ii = self.ats.index( arg_type )
+            ii = self.ats.index(arg_type)
         except ValueError:
             return None
 
@@ -898,7 +916,10 @@ class Term(Struct):
         if full:
             # Include derivatives.
             if self.arg_derivatives[name]:
-                name = 'd%s/%s' % (name, self.arg_derivatives[name] )
+                name = 'd%s/%s' % (name, self.arg_derivatives[name])
+
+        if (join is not None) and isinstance(name, tuple):
+            name = join.join(name)
 
         return name
 
