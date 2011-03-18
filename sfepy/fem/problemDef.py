@@ -1,5 +1,6 @@
 import os
 import os.path as op
+import time
 from copy import copy
 
 import numpy as nm
@@ -769,8 +770,13 @@ class ProblemDefinition( Struct ):
 
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
-        
+
+        if presolve:
+            tt = time.clock()
         ls = Solver.any_from_conf(ls_conf, mtx=mtx, presolve=presolve)
+        if presolve:
+            tt = time.clock() - tt
+            output('presolve: %.2f [s]' % tt)
 
         if get_default_attr(nls_conf, 'needs_problem_instance', False):
             extra_args = {'problem' : self}
