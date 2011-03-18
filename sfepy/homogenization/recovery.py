@@ -291,16 +291,15 @@ def recover_bones( problem, micro_problem, region, eps0,
 
     vu, vp, vn, vpp1, vppp1 = var_names
     vdp = 'd' + vp
-    
-    micro_u = micro_problem.variables[vu]
+
+    variables = micro_problem.create_variables()
+    to_output = variables.state_to_output
+
+    micro_u, micro_p = variables[vu], variables[vp]
+
     micro_coor = micro_u.field.get_coor()
 
-    micro_n_nod = micro_problem.domain.mesh.n_nod
-    micro_p = micro_problem.variables[vp]
-
     nodes_yc = micro_problem.domain.regions['Yc'].all_vertices
-
-    to_output = micro_problem.variables.state_to_output
 
     join = os.path.join
     aux = max(problem.domain.shape.n_gr, 2)
@@ -351,11 +350,16 @@ def recover_bones( problem, micro_problem, region, eps0,
 
         meval = micro_problem.evaluate
 
+        var_p = variables[vppp1]
+        var_p.data_from_any(p_aux)
         dvel_m1 = meval('de_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
-                        **{vppp1 : p_aux})
+                        verbose=False, **{vppp1 : var_p})
 
+        var_p = variables[vpp1]
+        var_p.data_from_any(p_hat)
         dvel_m2 = meval('de_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
-                        **{vpp1 : p_hat}) * eps0
+                        verbose=False,
+                        **{vpp1 : var_p}) * eps0
         
         out = {}
         out.update( to_output( u_mic, var_info = {vu : (True, vu)},
@@ -377,7 +381,8 @@ def recover_bones( problem, micro_problem, region, eps0,
         suffix = get_output_suffix(ig, iel, ts, naming_scheme, format,
                                    micro_problem.output_format)
         micro_name = micro_problem.get_output_name(extra=suffix)
-        filename = join( problem.output_dir, 'recovered_' + micro_name )
+        filename = join(problem.output_dir,
+                        'recovered_' + os.path.basename(micro_name))
 
         micro_problem.save_state(filename, out=out, ts=ts)
 
