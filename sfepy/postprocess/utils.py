@@ -13,8 +13,8 @@ if mlab:
 def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
     """Collect and print information on ranges of data in a dataset.
 
-    Parameters:
-
+    Parameters
+    ----------
     obj : a mayavi pipeline object
         The object to probe for data.
         
@@ -27,8 +27,8 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
     filter_names : list of strings
         Consider only data with names not in the list.
 
-    Returns:
-
+    Returns
+    -------
     ranges : dict
         The requested data ranges.
     """
@@ -75,6 +75,6 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
 
             if not return_only:
                 aux = (key,) + ranges[key][2:]
-                print '  "%s" %s range: %s %s l2_norm_range: %s %s' % aux
+                print '"%s" %s range: %s %s l2 norm range: %s %s' % aux
 
     return ranges
