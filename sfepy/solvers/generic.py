@@ -96,7 +96,8 @@ def time_step_function(ts, state0, problem, nls_status=None):
             mtx = None
 
         # Initialize solvers (and possibly presolve the matrix).
-        problem.init_solvers(nls_status=nls_status, mtx=mtx)
+        presolve = mtx is not None
+        problem.init_solvers(nls_status=nls_status, mtx=mtx, presolve=presolve)
 
         if ts.is_quasistatic:
             # Ordinary solve.
