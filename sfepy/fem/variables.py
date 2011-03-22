@@ -1,5 +1,4 @@
 import time
-from collections import deque
 
 import numpy as nm
 
@@ -674,7 +673,7 @@ class Variable( Struct ):
             for flag in flags:
                 self.flags.add(flag)
 
-        self.data = deque()
+        self.data = []
         self.data.append(None)
         self.indx = None
         self.n_dof = None
@@ -856,14 +855,19 @@ class Variable( Struct ):
         """Implemented in subclasses."""
         pass
 
-    def advance( self, ts ):
+    def advance(self, ts):
+        """
+        Advance in time the DOF state history. A copy of the DOF vector
+        is made to prevent history modification.
+        """
         if self.history is None: return
 
         self.step = ts.step + 1
         if self.history == 'previous':
-            self.data.rotate()
+            self.data[:] = [None, self.data[0].copy()]
+
         else:
-            self.data.append( None )
+            self.data.append(None)
 
     def data_from_state( self, state = None, indx = None, step = 0 ):
         """step: 0 = current,  """
