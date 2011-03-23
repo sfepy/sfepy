@@ -1,5 +1,194 @@
 # created: 20.07.2007 (-1)
 
+from 2010.4 to 2011.1
+=====================
+
+- implement discontinuous fields - merge 'discontinuous' branch
+  - use mesh connectivity to construct reference maps
+    - independently from approximations of variables (fields)
+    - always P1 or Q1, based on element geometry
+    - update Approximation.describe_geometry() and related functions 
+  - new DiscontinuousField, DiscontinuousApproximation classes
+  - use DiscontinuousField for P0, Q0 approximations
+  - new eval_nodal_coors()
+  - update Approximation.eval_extra_coor()
+  - new Field.average_qp_to_vertices(), .interp_to_qp()
+- update surface fields:
+  - new SurfaceApproximation class, used by SurfaceField
+  - new SurfaceInterpolant class, used by SurfaceField
+- fields:
+  - new Field.get_true_order(), .get_vertices()
+  - new Field.evaluate_at()
+    - allows different behaviour for Field subclasses
+  - new Field.get_output_approx_order() - correct output order
+  - remove Approximations class, move its functionality to Field
+    - simplification to remove a layer of code that was not needed
+    - Field.aps is an ordinary dict
+    - methods using is_surface split between Field and SurfaceField
+- state, variables, degrees of freedom:
+  - new DofInfo.get_n_dof_total()
+  - new Linear Combination BC operator: IntegralMeanValueOperator
+  - new EquationMap.get_operator()
+  - new State.from_variables(), .set_parts()
+  - add force argument to State.set_full()
+  - new Variables.check_vector_size(), use it to check DOF vectors
+  - fix Variables.state_to_output() for saving by parts
+  - fix Variable.advance() - prevent history modification
+  - new FieldVariable.apply_ebc(), .apply_ic()
+    - update Variables.apply_ebc(), .apply_ic()
+  - new FieldVariable.get_full()
+    - update Variables.make_full_vec(), remove var_name argument
+  - new FieldVariable.get_reduced()
+    - update Variables.strip_state_vector(), fix for non-first variables
+  - remove Variable.get_indx(), update State accordingly
+    - the indx attribute of a variable is local only, it does not index the
+      state vector - dangerous to expose it
+- materials: rewrite updating of material parameters
+  - allow material nonlinearity, i.e. parameters dependent on state
+  - ProblemDefinition instance needs to be passed into
+    Materials.time_update() and related functions
+  - material user function syntax changed
+    - takes ts, coors, mode, equations, term, problem and group_indx
+    - the coors argument are the QP coordinates for all element groups
+      merged
+- equations and evaluation:
+  - split Equations.time_update() - new Equations.time_update_materials()
+  - fix term evaluation with complex variables
+  - update Equations.eval_tangent_matrices() - names argument
+  - fix Equations.eval_tangent_matrices() for multi-variate terms
+    - clear the matrix there, not in BasicEvaluator.eval_tangent_matrix()
+  - update Equations.eval_residuals() - by_blocks, names arguments
+  - new Equations.print_terms()
+  - add regions argument to create_evaluable()
+- terms:
+  - new register_term()
+  - ensure that each Term instance has caches attribute
+  - ensure that all terms in equations share the same DataCaches instance
+    - new Equations.setup_caches()
+  - update Term.get_arg_name() - add docstring, join argument
+  - fix Term.assign_caches(), .get_cache() for material arguments
+  - update cachesBasic for complex values
+- mesh, domain, regions:
+  - generate meshes using: 2D - triangle, 3D - tetgen
+  - speed-up mesh reading by using numpy.fromfile()
+    - update read_array()
+  - update VTKMeshIO, ComsolMeshIO, VTKMeshIO, MeditMeshIO
+  - update skip_read_line(), read_token()
+  - coordinate transformation matrix can be defined in options
+  - allows translation in coordinate transformation
+  - new Domain.refine() - uniform tetrahedral mesh refinement
+    - new sfepy/fem/refine.py: refine_3_4()
+  - new Region.from_vertices()
+  - new Region.update_shape(), update Region.complete_description()
+  - new Facets.get_complete_facets()
+- problem definition:
+  - new ProblemDefinition.setup_hooks()
+  - fix ProblemDefinition.solve() for LCBCs
+  - new ProblemDefinition.set_output_dir(), .set_solvers_instances()
+  - update ProblemDefinition.init_solvers() to report presolve time
+  - new ProblemDefinition.set_equations_instance()
+- solvers:
+  - fix time_step_function() to allow presolve if possible
+  - fix Newton, SemismoothNewton exception handling (define ok)
+  - update/fix TimeStepper construction arguments
+  - new pre_process_hook - called in solve_direct
+  - fix TimeStepper, get_print_info() for n_step set to 1
+  - fix time stepping solver for quasistatic linear problems
+    - new prepare_matrix()
+- sfepy.linalg:
+  - new get_coors_in_ball()
+  - new assemble1d(), unique_rows(), infinity_norm()
+  - new insert_strided_axis()
+  - update cg_eigs(), sym_tri_eigen(), allow eigenvalue selection
+  - fix and update dot_sequences() - general mode argument
+- large deformation:
+  - fix HyperElasticBase for several element groups
+  - fix HyperElasticBase for matrix-only assembling
+  - compute stress in matrix mode if no previous residual mode call
+  - fix BulkPressureTLTerm (dw_tl_bulk_pressure) for several element groups
+  - update VolumeTLTerm to work in initial step
+  - fix error handling in hyperelastic term caches
+  - new sfepy/mechanics/membranes.py: functions for membranes
+    - new describe_deformation(), get_tangent_stress_matrix(),
+      create_transformation_matrix(), create_mapping(), get_invariants()
+- schroedinger: update and clean up
+  - update for recent changes (on the fly geometries, Materials under
+    Equations, for material nonlinearity, ...)
+  - add iter_hook_final application option
+  - fix getting parametric hook for inputs with define()
+- homogenization:
+  - update plotPerfusionCoefs.py
+  - new CorrEqPar - parametrized equation via 'eq_pars'
+  - update TCorrectorsViaPressureEVP for Variable.get_full()
+  - allow complex coefficients
+  - fix CorrectorsPermeability
+  - update PressureEigenvalueProblem
+  - remove obsolete fading memory coefficients
+    - remove ViscousFMCoef, BiotFMCoef, BiotFM2Coef, FMRBiotModulus
+  - update fading memory coefficients CoefFMSymSym, CoefFMSym, CoefFMOne
+  - fading corrector file names obtained by set_variables()
+  - update time dependent pressure eigenvalue problem based correctors
+  - update TCorrectorsViaPressureEVP
+  - update TCorrectorsRSViaPressureEVP, TCorrectorsPressureViaPressureEVP
+  - raise original exception in MiniAppBase.init_solvers()
+  - update recover_bones()
+  - fix variable names in CorrMiniApp.get_output() for no components
+- genPerMesh.py:
+  - new --repeat option
+  - split and move functionality into sfepy.fem
+  - move fix_double_nodes(), get_min_edge_size(), get_min_vertex_distance(),
+    get_min_vertex_distance_naive() into sfepy/fem/mesh.py
+  - new compose_periodic_mesh()
+  - remove broken --test option
+- new terms:
+  - d_sum_vals (sum nodal values, for use in postprocessing)
+  - d_diffusion_integrate (diffusion integral term)
+  - d_surf_diffusion_integrate (diffusion surface integral term)
+  - dw_diffusion_coupling (diffusion copupling term)
+  - new d_div term (evaluate divergence term)
+  - d_surface_integrate_w (integrate a variable over a surface)
+  - d_surface_dot_w (surface dot product for both scalar and vector fields)
+- clean up in acoustic terms
+ - some of them replaced by more general diffusion terms
+- simplify acoustic/diffusion sensitivity terms
+  - d_llaplace_p_sa1, d_llaplace_p_sa2,  d_llaplace_t_sa2 -> d_diffusion_sa
+  - dw_surface_llaplace -> dw_surface_laplace
+- remove obsolete code, clean up:
+  - BasicEvaluator.strip_state_vector(), LCBCEvaluator.strip_state_vector()
+  - remove obsolete function and code (_fix_scalar_dc())
+  - remove Field.get_extra_nodes_as_simplices(), .write_mesh()
+  - simple.py: remove --save-region-field-meshes option
+  - remove code depending on removed Field.get_extra_nodes_as_simplices()
+    - Mesh.from_region_and_field()
+    - ProblemDefinition.save_region_field_meshes()
+  - remove Field.interp_c_vals_to_n_vals()
+  - remove parameter 'shape' from term di_volume_integrate_mat
+  - remove read_tuple()
+- docs:
+  - new projections.rst, fields.rst, variables.rst
+- misc:
+  - remove star imports
+  - fix Output.__init__() arguments
+  - new Container.extend()
+  - allow construction of OneTypeList from sequence
+  - fix acoustic band gaps code
+  - new Interpolant.get_geom_poly_space()
+  - new make_l2_projection() for scalar field variables
+  - add tetrahedron quadratures of order 4 and 6
+  - update get_physical_qps() - use slices for efficiency
+  - update Viewer - plot scalar cell data as cell data if possible
+  - isfepy: update startup message
+- tests and examples:
+  - tests/test_projections.py: new test_projection_tri_quad()
+  - new examples/linear_elasticity/material_nonlinearity.py + test
+  - fix, update examples/diffusion/poisson_parametric_study.py
+  - update tests/test_tensors.py
+    - new test_transform_data(), test_stress_transform()
+  - new tests/test_linalg.py - test dot_sequences(), insert_strided_axis()
+  - update tests/test_linalg.py - new test_unique_rows(), test_assemble1d()
+  - new tests/test_domain.py - very basic tests of facets and refinement
+- many bug fixes
+
 from 2010.3 to 2010.4
 =====================
 
