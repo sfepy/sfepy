@@ -23,7 +23,7 @@ def sym_tri_eigen(diags, select_indices=None):
 
 def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
             shift=None, select_indices=None, verbose=False, report_step=10):
-    """
+    r"""
     Make several iterations of the conjugate gradients and estimate so
     the eigenvalues of a (sparse SPD) matrix (Lanczos algorithm).
 
