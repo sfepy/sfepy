@@ -1,4 +1,5 @@
 import scipy
+import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import LinearSolver
@@ -303,6 +304,8 @@ class PETScKrylovSolver( LinearSolver ):
 
 
     def set_matrix( self, mtx ):
+        mtx = sps.csr_matrix(mtx)
+
         pmtx = self.petsc.Mat().createAIJ( mtx.shape,
                                            csr = (mtx.indptr,
                                                   mtx.indices,
