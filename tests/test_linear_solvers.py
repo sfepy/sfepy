@@ -52,12 +52,12 @@ solvers = {
     'i00' : ('ls.pyamg',
              {'method' : 'ruge_stuben_solver',
               'accel' : 'cg',
-              'eps_a'   : 1e-12,}
+              'eps_r'   : 1e-12,}
     ),
     'i01' : ('ls.pyamg',
              {'method' : 'smoothed_aggregation_solver',
               'accel' : 'cg',
-              'eps_a'   : 1e-12,}
+              'eps_r'   : 1e-12,}
     ),
     'i10' : ('ls.petsc',
              {'method' : 'cg', # ksp_type
@@ -69,17 +69,17 @@ solvers = {
     'i20' : ('ls.scipy_iterative',
              {'method' : 'cg',
               'i_max'   : 1000,
-              'eps_a'   : 1e-12,}
+              'eps_r'   : 1e-12,}
     ),
     'i21' : ('ls.scipy_iterative',
              {'method' : 'bicgstab',
               'i_max'   : 1000,
-              'eps_a'   : 1e-12,}
+              'eps_r'   : 1e-12,}
     ),
     'i22' : ('ls.scipy_iterative',
              {'method' : 'qmr',
               'i_max'   : 1000,
-              'eps_a'   : 1e-12,}
+              'eps_r'   : 1e-12,}
     ),
 
     'newton' : ('nls.newton',

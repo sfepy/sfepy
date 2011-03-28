@@ -51,7 +51,7 @@ elif filename_mesh.find('cube_big_tetra.mesh') >= 0:
 
         'method' : 'cg',
         'i_max'   : 1000,
-        'eps_a'   : 1e-12,
+        'eps_r'   : 1e-12,
     }
 
 variable_1 = {
