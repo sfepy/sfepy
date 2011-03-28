@@ -126,15 +126,15 @@ class ScipyIterative( LinearSolver ):
                 'kind' : 'ls.scipy_iterative',
 
                 'method' : 'cg',
-                'i_max'   : 1000,
-                'eps_a'   : 1e-12,
+                'i_max' : 1000,
+                'eps_r' : 1e-12,
             }
         """
         get = conf.get_default_attr
 
         method = get( 'method', 'cg' )
         i_max = get( 'i_max', 100 )
-        eps_a = get( 'eps_a', 1e-8 )
+        eps_r = get('eps_r', 1e-8)
 
         common = LinearSolver.process_conf( conf )
         return Struct( **locals() ) + common
@@ -166,14 +166,21 @@ class ScipyIterative( LinearSolver ):
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=conf.eps_a,
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=conf.eps_r,
                                 maxiter=conf.i_max)
-        
+
         return sol
 
 ##
 # c: 02.05.2008, r: 02.05.2008
 class PyAMGSolver( LinearSolver ):
+    """
+    Interface to PyAMG solvers.
+
+    Notes
+    -----
+    Uses relative convergence tolerance, i.e. eps_r is scaled by `||b||`.
+    """
     name = 'ls.pyamg'
 
     def process_conf( conf ):
@@ -188,14 +195,14 @@ class PyAMGSolver( LinearSolver ):
 
                 'method' : 'smoothed_aggregation_solver',
                 'accel' : 'cg'
-                'eps_a'   : 1e-12,
+                'eps_r' : 1e-12,
             }
         """
         get = conf.get_default_attr
 
         method = get( 'method', 'smoothed_aggregation_solver' )
         accel = get( 'accel', None )
-        eps_a = get( 'eps_a', 1e-8 )
+        eps_r = get('eps_r', 1e-8)
 
         common = LinearSolver.process_conf( conf )
         return Struct( **locals() ) + common
@@ -233,8 +240,8 @@ class PyAMGSolver( LinearSolver ):
             self.mg = self.solver(mtx)
             self.mtx = mtx
 
-        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=conf.eps_a)
-        
+        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=conf.eps_r)
+
         return sol
 
 class PETScKrylovSolver( LinearSolver ):
