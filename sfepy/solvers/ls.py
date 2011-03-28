@@ -84,7 +84,8 @@ class ScipyDirect(LinearSolver):
             if self.mtx is not None:
                 self.solve = self.sls.factorized(self.mtx)
 
-    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 mtx=None, status=None):
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
@@ -113,6 +114,14 @@ class Umfpack(ScipyDirect):
 ##
 # c: 22.02.2008
 class ScipyIterative( LinearSolver ):
+    """
+    Interface to scipy iterative solvers.
+
+    Notes
+    -----
+    The `eps_r` tolerance is both absolute and relative - the solvers
+    stop when either the relative or the absolute residual is below it.
+    """
     name = 'ls.scipy_iterative'
 
     def process_conf( conf ):
@@ -151,7 +160,8 @@ class ScipyIterative( LinearSolver ):
             else:
                 import scipy.sparse.linalg.isolve as la
 
-        LinearSolver.__init__( self, conf, **kwargs )
+        LinearSolver.__init__(self, conf,
+                              eps_a=conf.eps_r, eps_r=conf.eps_r, **kwargs)
 
         try:
             solver = getattr( la, self.conf.method )
@@ -160,13 +170,16 @@ class ScipyIterative( LinearSolver ):
             output( 'using cg instead' )
             solver = la.cg
         self.solver = solver
-        
-    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 mtx=None, status=None):
         conf = get_default(conf, self.conf)
+        eps_a = get_default(eps_a, self.eps_a)
+        eps_r = get_default(eps_r, self.eps_r)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=conf.eps_r,
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=max(eps_a, eps_r),
                                 maxiter=conf.i_max)
 
         return sol
@@ -217,7 +230,7 @@ class PyAMGSolver( LinearSolver ):
             msg =  'cannot import pyamg!'
             raise ImportError( msg )
 
-        LinearSolver.__init__( self, conf, mg = None, **kwargs )
+        LinearSolver.__init__(self, conf, eps_r=conf.eps_r, mg=None, **kwargs)
 
         try:
             solver = getattr( pyamg, self.conf.method )
@@ -230,9 +243,11 @@ class PyAMGSolver( LinearSolver ):
         if hasattr( self, 'mtx' ):
             if self.mtx is not None:
                 self.mg = self.solver( self.mtx )
-        
-    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 mtx=None, status=None):
         conf = get_default(conf, self.conf)
+        eps_r = get_default(eps_r, self.eps_r)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
@@ -240,7 +255,7 @@ class PyAMGSolver( LinearSolver ):
             self.mg = self.solver(mtx)
             self.mtx = mtx
 
-        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=conf.eps_r)
+        sol = self.mg.solve(rhs, x0=x0, accel=conf.accel, tol=eps_r)
 
         return sol
 
@@ -294,7 +309,8 @@ class PETScKrylovSolver( LinearSolver ):
             msg = 'cannot import petsc4py!'
             raise ImportError( msg )
 
-        LinearSolver.__init__( self, conf, petsc = PETSc, pmtx = None, **kwargs )
+        LinearSolver.__init__(self, conf, eps_a=conf.eps_a, eps_r=conf.eps_r,
+                              petsc=PETSc, pmtx=None, **kwargs)
 
         ksp = PETSc.KSP().create()
 
@@ -319,9 +335,12 @@ class PETScKrylovSolver( LinearSolver ):
                                                   mtx.data) )
         sol, rhs = pmtx.getVecs()
         return pmtx, sol, rhs
-                
-    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 mtx=None, status=None):
         conf = get_default(conf, self.conf)
+        eps_a = get_default(eps_a, self.eps_a)
+        eps_r = get_default(eps_r, self.eps_r)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
@@ -332,7 +351,7 @@ class PETScKrylovSolver( LinearSolver ):
             self.ksp.setFromOptions() # PETSc.Options() not used yet...
             self.mtx = mtx
 
-        ksp.setTolerances(atol=conf.eps_a, rtol=conf.eps_r, max_it=conf.i_max)
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=conf.i_max)
 
         # Set PETSc rhs, solve, get solution from PETSc solution.
         if x0 is not None:
