@@ -93,21 +93,21 @@ class Newton( NonlinearSolver ):
                 'name' : 'newton',
                 'kind' : 'nls.newton',
 
-                'i_max'      : 2,
-                'eps_a'      : 1e-8,
-                'eps_r'      : 1e-2,
-                'macheps'   : 1e-16,
-                'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-                'ls_red'     : 0.1,
+                'i_max' : 2,
+                'eps_a' : 1e-8,
+                'eps_r' : 1e-2,
+                'macheps' : 1e-16,
+                'lin_red' : 1e-2, # Linear system error < (eps_a * lin_red).
+                'lin_precision' : None,
+                'ls_red' : 0.1,
                 'ls_red_warp' : 0.001,
-                'ls_on'      : 0.99999,
-                'ls_min'     : 1e-5,
-                'check'     : 0,
-                'delta'     : 1e-6,
-                'is_plot'    : False,
-                'log'        : None,
-                 # 'nonlinear' or 'linear' (ignore i_max)
-                'problem'   : 'nonlinear',
+                'ls_on' : 0.99999,
+                'ls_min' : 1e-5,
+                'check' : 0,
+                'delta' : 1e-6,
+                'is_plot' : False,
+                'log' : None, # 'nonlinear' or 'linear' (ignore i_max)
+                'problem' : 'nonlinear',
             }
         """
         get = conf.get_default_attr
@@ -117,6 +117,7 @@ class Newton( NonlinearSolver ):
         eps_r = get( 'eps_r', 1.0 )
         macheps = get( 'macheps', nm.finfo( nm.float64 ).eps )
         lin_red = get( 'lin_red', 1.0 )
+        lin_precision = get('lin_precision', None)
         ls_red = get( 'ls_red', 0.1 )
         ls_red_warp = get( 'ls_red_warp', 0.001 )
         ls_on = get( 'ls_on', 0.99999 )
@@ -164,6 +165,11 @@ class Newton( NonlinearSolver ):
         fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
         status = get_default( status, self.status )
+
+        ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
+        eps_a = get_default(ls_eps_a, 1.0)
+        eps_r = get_default(ls_eps_r, 1.0)
+        lin_red = conf.eps_a * conf.lin_red
 
         time_stats = {}
 
@@ -256,8 +262,17 @@ class Newton( NonlinearSolver ):
                 wt = check_tangent_matrix( conf, vec_x, fun, fun_grad )
                 time_stats['check'] = time.clock() - tt - wt
 
+            if conf.lin_precision is not None:
+                if ls_eps_a is not None:
+                    eps_a = max(err * conf.lin_precision, ls_eps_a)
+
+                elif ls_eps_r is not None:
+                    eps_r = max(conf.lin_precision, ls_eps_r)
+
+                lin_red = max(eps_a, err * eps_r)
+
             tt = time.clock()
-            vec_dx = lin_solver( vec_r, mtx = mtx_a )
+            vec_dx = lin_solver(vec_r, eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
             time_stats['solve'] = time.clock() - tt
 
             for kv in time_stats.iteritems():
@@ -265,7 +280,7 @@ class Newton( NonlinearSolver ):
 
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm( vec_e )
-            if lerr > (conf.eps_a * conf.lin_red):
+            if lerr > lin_red:
                 output( 'linear system not solved! (err = %e)' % lerr )
 
             vec_x -= vec_dx
