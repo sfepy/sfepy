@@ -51,11 +51,42 @@ class LinearSolver(Solver):
     Abstract linear solver class.
     """
 
-    def __init__(self, conf, mtx=None, status=None, **kwargs):
+    def __init__(self, conf, eps_a=None, eps_r=None,
+                 mtx=None, status=None, **kwargs):
         Solver.__init__(self, conf=conf, mtx=mtx, status=status, **kwargs)
-    
-    def __call__(self, rhs, x0=None, conf=None, mtx=None, status=None):
+
+        self.set_tolerance(eps_a=eps_a, eps_r=eps_r)
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 mtx=None, status=None):
         raise ValueError('called an abstract LinearSolver instance!')
+
+    def set_tolerance(self, eps_a=None, eps_r=None):
+        """
+        Set the required precision tolerance of the solver.
+
+        Parameters
+        ----------
+        eps_a : float
+            The absolute tolerance.
+        eps_r : float, optional
+            The relative tolerance w.r.t. initial residual.
+
+        Notes
+        -----
+        Some solvers (e.g. direct) may not need/use these settings. Some
+        solvers may support only one of the values.
+        """
+        self.eps_a = eps_a
+        self.eps_r = eps_r
+
+    def get_tolerance(self):
+        """
+        Return tuple `(eps_a, eps_r)` of absolute and relative tolerance
+        settings. Either value can be `None`, meaning that the solver
+        does not use that setting.
+        """
+        return self.eps_a, self.eps_r
 
 class NonlinearSolver(Solver):
     """
