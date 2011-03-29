@@ -172,15 +172,26 @@ class ProblemDefinition( Struct ):
           - `matrix_hook`
             - check/modify tangent matrix in each nonlinear solver
               iteration
+          - `nls_iter_hook`
+            - called prior to every iteration of nonlinear solver, if the
+              solver supports that
+            - takes the ProblemDefinition instance (`self`) as the first
+              argument
         """
-        if options is None:
-            self.matrix_hook = None
+        hook_names = ['nls_iter_hook', 'matrix_hook']
+        for hook_name in hook_names:
+            setattr(self, hook_name, None)
+            if options is not None:
+                hook = options.get(hook_name, None)
+                if hook is not None:
+                    hook = getattr(self.conf.funmod, hook)
+                    setattr(self, hook_name, hook)
 
-        else:
-            hook = options.get('matrix_hook', None)
-            if hook is not None:
-                hook = getattr(self.conf.funmod, hook)
-            self.matrix_hook = hook
+        iter_hook = self.nls_iter_hook
+        if iter_hook is not None:
+            self.nls_iter_hook = lambda *args, **kwargs: \
+                                 iter_hook(self, *args, **kwargs)
+
 
     def copy(self, name=None):
         """
@@ -783,10 +794,11 @@ class ProblemDefinition( Struct ):
         else:
             extra_args = {}
         ev = self.get_evaluator()
-        nls = Solver.any_from_conf( nls_conf, fun = ev.eval_residual,
-                                    fun_grad = ev.eval_tangent_matrix,
-                                    lin_solver = ls, status = nls_status,
-                                    **extra_args )
+
+        nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
+                                   fun_grad=ev.eval_tangent_matrix,
+                                   lin_solver=ls, iter_hook=self.nls_iter_hook,
+                                   status=nls_status, **extra_args)
 
         self.solvers = Struct( name = 'solvers', ls = ls, nls = nls )
 
