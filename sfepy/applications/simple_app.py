@@ -11,26 +11,13 @@ def assign_standard_hooks(obj, get, mod):
     Set standard hook function attributes from `mod` to `obj` using the
     `get` function.
     """
-    hook = get('step_hook', None)
-    if hook is not None:
-        hook = getattr(mod, hook)
-    obj.step_hook = hook
-
-    hook = get('post_process_hook', None)
-    if hook is not None:
-        hook = getattr(mod, hook)
-    obj.post_process_hook = hook
-
-    hook = get('post_process_hook_final', None)
-    if hook is not None:
-        hook = getattr(mod, hook)
-    obj.post_process_hook_final = hook
-
-    hook = get('pre_process_hook', None)
-    if hook is not None:
-        hook = getattr(mod, hook)
-
-    obj.pre_process_hook = hook
+    hook_names = ['step_hook', 'post_process_hook',
+                  'post_process_hook_final', 'pre_process_hook']
+    for hook_name in hook_names:
+        hook = get(hook_name, None)
+        if hook is not None:
+            hook = getattr(mod, hook)
+        setattr(obj, hook_name, hook)
 
 class SimpleApp( Application ):
 
