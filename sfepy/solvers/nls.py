@@ -151,19 +151,44 @@ class Newton( NonlinearSolver ):
         else:
             self.log = None
 
-    ##
-    # c: 02.12.2005, r: 04.04.2008
-    # 10.10.2007, from newton()
-    def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
-                  lin_solver = None, status = None ):
-        """setting conf.problem == 'linear' means 1 iteration and no rezidual
-        check!
+    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
+                 lin_solver=None, iter_hook=None, status=None):
+        """
+        Nonlinear system solver call.
+
+        Solves :math:`f(x) = 0` by the Newton method with backtracking
+        linesearch.
+
+        Parameters
+        ----------
+        vec_x0 : array
+            The initial guess vector :math:`x_0`.
+        conf : Struct instance, optional
+            The solver configuration parameters,
+        fun : function, optional
+            The function :math:`f(x)` whose zero is sought - the residual.
+        fun_grad : function, optional
+            The gradient of :math:`f(x)` - the tangent matrix.
+        lin_solver : LinearSolver instance, optional
+            The linear solver for each nonlinear iteration.
+        iter_hook : function, optional
+            User-supplied function to call before each iteration.
+        status : dict-like, optional
+            The user-supplied object to hold convergence statistics.
+
+        Notes
+        -----
+        * The optional parameters except `iter_hook` and `status` need
+          to be given either here or upon `Newton` construction.
+        * Setting `conf.problem == 'linear'` means 1 iteration and no
+          rezidual check!
         """
         import sfepy.base.plotutils as plu
         conf = get_default( conf, self.conf )
         fun = get_default( fun, self.fun )
         fun_grad = get_default( fun_grad, self.fun_grad )
         lin_solver = get_default( lin_solver, self.lin_solver )
+        iter_hook = get_default(iter_hook, self.iter_hook)
         status = get_default( status, self.status )
 
         ls_eps_a, ls_eps_r = lin_solver.get_tolerance()
@@ -180,10 +205,12 @@ class Newton( NonlinearSolver ):
         if self.log is not None:
             self.log.plot_vlines(color='r', linewidth=1.0)
 
-        err0 = -1.0
+        err = err0 = -1.0
         err_last = -1.0
         it = 0
         while 1:
+            if iter_hook is not None:
+                iter_hook(self, vec_x, it, err, err0)
 
             ls = 1.0
             vec_dx0 = vec_dx;
@@ -370,8 +397,8 @@ class ScipyBroyden( NonlinearSolver ):
             solver = so.broyden3
         self.solver = solver
 
-    def __call__( self, vec_x0, conf = None, fun = None, fun_grad = None,
-                  lin_solver = None, status = None ):
+    def __call__(self, vec_x0, conf=None, fun=None, fun_grad=None,
+                 lin_solver=None, iter_hook=None, status=None):
         if conf is not None:
             self.set_method( conf )
         else:
