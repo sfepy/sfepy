@@ -281,7 +281,8 @@ class Newton( NonlinearSolver ):
             vec_e = mtx_a * vec_dx - vec_r
             lerr = nla.norm( vec_e )
             if lerr > lin_red:
-                output( 'linear system not solved! (err = %e)' % lerr )
+                output('linear system not solved! (err = %e < %e)'
+                       % (lerr, lin_red))
 
             vec_x -= vec_dx
 
