@@ -94,12 +94,13 @@ class NonlinearSolver(Solver):
     """
 
     def __init__(self, conf, fun=None, fun_grad=None, lin_solver=None,
-                  status=None, **kwargs):
+                 iter_hook=None, status=None, **kwargs):
         Solver.__init__(self, conf=conf, fun=fun, fun_grad=fun_grad,
-                        lin_solver=lin_solver, status=status, **kwargs)
+                        lin_solver=lin_solver, iter_hook=iter_hook,
+                        status=status, **kwargs)
     
     def __call__(self, state0, conf=None, fun=None, fun_grad=None,
-                 lin_solver=None, status=None):
+                 lin_solver=None, iter_hook=None, status=None):
         raise ValueError('called an abstract NonlinearSolver instance!')
 
 class TimeSteppingSolver(Solver):
