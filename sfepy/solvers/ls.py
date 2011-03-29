@@ -1,3 +1,4 @@
+import numpy as nm
 import scipy
 import scipy.sparse as sps
 
@@ -170,6 +171,11 @@ class ScipyIterative( LinearSolver ):
             output( 'using cg instead' )
             solver = la.cg
         self.solver = solver
+        self.converged_reasons = {
+            0 : 'successful exit',
+            1 : 'number of iterations',
+            -1 : 'illegal input or breakdown',
+        }
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  mtx=None, status=None):
@@ -181,6 +187,9 @@ class ScipyIterative( LinearSolver ):
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=max(eps_a, eps_r),
                                 maxiter=conf.i_max)
+        output('%s convergence: %s (%s)'
+               % (self.conf.method,
+                  info, self.converged_reasons[nm.sign(info)]))
 
         return sol
 
@@ -325,6 +334,10 @@ class PETScKrylovSolver( LinearSolver ):
 
         self.ksp = ksp
 
+        self.converged_reasons = {}
+        for key, val in ksp.ConvergedReason.__dict__.iteritems():
+            if isinstance(val, int):
+                self.converged_reasons[val] = key
 
     def set_matrix( self, mtx ):
         mtx = sps.csr_matrix(mtx)
@@ -359,6 +372,8 @@ class PETScKrylovSolver( LinearSolver ):
         self.rhs[...] = rhs
         ksp.solve(self.rhs, self.sol)
         sol = self.sol[...].copy()
-        output('KSP convergence: %s' % ksp.reason)
-        
+        output('%s(%s) convergence: %s (%s)'
+               % (self.conf.method, self.conf.precond,
+                  ksp.reason, self.converged_reasons[ksp.reason]))
+
         return sol
