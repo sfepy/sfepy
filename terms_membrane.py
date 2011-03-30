@@ -88,6 +88,36 @@ class TLMembraneTerm(Term):
                  'virtual', 'state')
     integration = 'surface'
 
+    def __init__(self, *args, **kwargs):
+        Term.__init__(self, *args, **kwargs)
+
+        igs = self.region.igs
+        self.mtx_t = {}.fromkeys(igs, None)
+        self.membrane_geo = {}.fromkeys(igs, None)
+        self.bfg = {}.fromkeys(igs, None)
+
+    def describe_membrane_geometry(self, ig, field, sg, sd):
+        # Coordinates of element vertices.
+        coors = field.coors[sd.econn[:, :sg.nFP]]
+
+        # Coordinate transformation matrix (transposed!).
+        self.mtx_t[ig] = membranes.create_transformation_matrix(coors)
+
+        # Transform coordinates to the local coordinate system.
+        coors_loc = dot_sequences((coors - coors[:, 0:1, :]), self.mtx_t[ig])
+
+        # Mapping from transformed element to reference element.
+        gel = field.gel.surface_facet
+        vm = membranes.create_mapping(coors_loc, gel, 1)
+
+        qp = self.integral.get_qp(gel.name)
+        ps = PolySpace.any_from_args(None, gel, field.approx_order)
+        self.membrane_geo[ig] = vm.get_mapping(*qp, poly_space=ps)
+
+        # Transformed base function gradient w.r.t. material coordinates
+        # in quadrature points.
+        self.bfg[ig] = self.membrane_geo[ig].variable(0)
+
     def get_shape(self, ap, diff_var, chunk_size):
         n_el, n_qp, dim, n_ep = ap.get_s_data_shape(self.integral,
                                                     self.region.name)
@@ -111,14 +141,13 @@ class TLMembraneTerm(Term):
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
-        # Coordinates of element vertices.
-        coors = vu.field.coors[sd.econn[:, :sg.nFP]]
+        ig = self.char_fun.ig
+        if self.mtx_t[ig] is None:
+            self.describe_membrane_geometry(ig, vu.field, sg, sd)
 
-        # Coordinate transformation matrix (transposed!).
-        mtx_t = membranes.create_transformation_matrix(coors)
-
-        # Transform coordinates to the local coordinate system.
-        coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
+        mtx_t = self.mtx_t[ig]
+        bfg = self.bfg[ig]
+        geo = self.membrane_geo[ig]
 
         # Displacements of element nodes.
         vec_u = vu.get_state_in_region(self.region, igs=[self.char_fun.ig])
@@ -129,17 +158,6 @@ class TLMembraneTerm(Term):
         el_u_loc = dot_sequences(el_u, mtx_t, 'AB')
         ## print el_u_loc
 
-        # Mapping from transformed element to reference element.
-        gel = vu.field.gel.surface_facet
-        vm = membranes.create_mapping(coors_loc, gel, 1)
-
-        qp = self.integral.get_qp(gel.name)
-        ps = PolySpace.any_from_args(None, gel, vu.field.approx_order)
-        geo = vm.get_mapping(*qp, poly_space=ps)
-
-        # Transformed base function gradient w.r.t. material coordinates
-        # in quadrature points.
-        bfg = geo.variable(0)
         n_ep = bfg.shape[3]
 
         mtx_c, c33, mtx_b = membranes.describe_deformation(el_u_loc, bfg)
