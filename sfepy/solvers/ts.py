@@ -99,6 +99,72 @@ class TimeStepper( Struct ):
         else:
             raise ValueError
 
+class VariableTimeStepper(TimeStepper):
+    """
+    Time stepper class with a variable time step.
+    """
+
+    def set_from_data(self, t0, t1, dt=None, n_step=None, step=None):
+        self.t0, self.t1 = t0, t1
+
+        self.dtime = self.t1 - self.t0
+        dt = get_default(dt, self.dtime)
+
+        self.n_step0 = get_default(n_step,
+                                   self._get_n_step(self.t0, self.t1, dt))
+
+        if self.n_step0 > 1:
+            self.dt = self.dtime / (self.n_step0 - 1)
+
+        else:
+            self.dt = self.dtime
+
+        self.dt0 = self.dt
+
+        self.n_digit, self.format, self.suffix = get_print_info(5)
+
+        self.set_step(step)
+
+    def set_step(self, step=0, nt=0.0):
+        self.dts = []
+        self.step = 0
+        self.n_step = 1
+
+        if step is None:
+            self.times = [self.t0 + self.dt0 * nt]
+            self.nt = nt
+
+        else:
+            nt = float(step) / (self.n_step0 - 1)
+            self.times = [self.t0 + self.dt0 * nt]
+            self.nt = nt
+
+    def get_default_time_step(self):
+        return self.dt0
+
+    def set_time_step(self, dt):
+        self.dt = dt
+
+    def __iter__(self):
+        """
+        ts.step, ts.time is consistent with step, time returned here
+        ts.nt is normalized time in [0, 1]
+        """
+        self.set_step(0)
+
+        while self.nt < 1.0:
+            self.time = self.times[self.step]
+
+            yield self.step, self.time
+
+            self.step += 1
+            self.time += self.dt
+            self.normalize_time()
+
+            self.times.append(self.time)
+            self.dts.append(self.dt)
+            self.n_step = self.step + 1
+
 class SimpleTimeSteppingSolver( TimeSteppingSolver ):
     name = 'ts.simple'
 
