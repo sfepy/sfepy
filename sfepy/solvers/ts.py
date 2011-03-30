@@ -30,16 +30,16 @@ class TimeStepper( Struct ):
         self.set_from_data(t0, t1, dt=dt, n_step=n_step, step=step)
         self.is_quasistatic = is_quasistatic
 
+    def _get_n_step(self, t0, t1, dt):
+        n_step = int(round(nm.floor(((t1 - t0) / dt) + 0.5) + 1.0))
+        return n_step
+
     def set_from_data(self, t0, t1, dt=None, n_step=None, step=None):
         self.t0, self.t1 = t0, t1
 
-        self.dt = get_default(dt, t1 - t0)
-
-        if n_step is None:
-            n_step = round(nm.floor(((self.t1 - self.t0) / self.dt)
-                                    + 0.5) + 1.0)
-
-        self.n_step = int(n_step)
+        dt = get_default(dt, t1 - t0)
+        self.n_step = get_default(n_step,
+                                  self._get_n_step(self.t0, self.t1, dt))
 
         if self.n_step > 1:
             self.times, self.dt = nm.linspace( self.t0, self.t1, self.n_step,
@@ -72,13 +72,10 @@ class TimeStepper( Struct ):
     
             yield self.step, self.time
 
-    def normalize_time( self ):
-        if self.n_step > 1:
-            self.nt = float( self.step ) / (self.n_step - 1)
-        else:
-            self.nt = 0.0
-        
-    def set_step( self, step = -1, nt = 1.0 ):
+    def normalize_time(self):
+        self.nt = (self.time - self.t0) / (self.t1 - self.t0)
+
+    def set_step(self, step=0, nt=0.0):
         nm1 = self.n_step - 1
         if step is None:
             step = int( round( nt * nm1 ) )
