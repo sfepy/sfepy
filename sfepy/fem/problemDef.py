@@ -573,11 +573,9 @@ class ProblemDefinition( Struct ):
         self.equations.init_time( ts )
         self.update_materials()
 
-    ##
-    # 08.06.2007, c
-    def advance( self, ts ):
+    def advance(self, ts=None):
         self.update_time_stepper(ts)
-        self.equations.advance( ts )
+        self.equations.advance(self.ts)
 
     def save_state(self, filename, state=None, out=None,
                    fill_value=None, post_process_hook=None,
