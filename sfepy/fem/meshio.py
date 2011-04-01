@@ -232,6 +232,24 @@ class MeshIO( Struct ):
         """The default implementation: just return 0 as the last step."""
         return 0
     
+    def read_times(self, filename=None):
+        """
+        Read true time step data from individual time steps.
+
+        Returns
+        -------
+        times : array
+            The times of the time steps.
+        nts : array
+            The normalized times of the time steps, in [0, 1].
+
+        Notes
+        -----
+        The default implementation returns empty arrays.
+        """
+        aux = nm.array([], dtype=nm.float64)
+        return aux, aux
+
     def read( self, mesh, *args, **kwargs ):
         raise ValueError(MeshIO.call_msg)
 
@@ -1256,7 +1274,7 @@ class HDF5MeshIO( MeshIO ):
             output( 'pytables not imported!' )
             raise ValueError
 
-        step = get_default_attr( ts, 'step', 0 )
+        step = get_default_attr(ts, 'step', 0)
         if step == 0:
             # A new file.
             fd = pt.openFile( filename, mode = "w",
@@ -1353,6 +1371,34 @@ class HDF5MeshIO( MeshIO ):
                 ts_group.dt.read(), ts_group.n_step.read())
         fd.close()
         return out
+
+    def read_times(self, filename=None):
+        """
+        Read true time step data from individual time steps.
+
+        Returns
+        -------
+        times : array
+            The times of the time steps.
+        nts : array
+            The normalized times of the time steps, in [0, 1].
+        """
+        filename = get_default(filename, self.filename)
+        fd = pt.openFile(filename, mode='r')
+
+        times = []
+        nts = []
+        for step in xrange(fd.root.last_step[0] + 1):
+            gr_name = 'step%d/ts' % step
+            ts_group = fd.getNode(fd.root, gr_name)
+
+            times.append(ts_group.t.read())
+            nts.append(ts_group.nt.read())
+        fd.close()
+
+        times = nm.asarray(times, dtype=nm.float64)
+        nts = nm.asarray(nts, dtype=nm.float64)
+        return times, nts
 
     def _get_step_group( self, step, filename = None ):
         filename = get_default( filename, self.filename )
