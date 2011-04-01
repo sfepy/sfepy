@@ -29,6 +29,8 @@ help = {
     'dump to sequence of VTK files',
     'same_dir' :
     'store the dumped VTK files in the directory of filename_in',
+    'times' :
+    'extract and print times of individual time steps',
     'from' :
     'start dumping from time step ii [default: %default]',
     'to' :
@@ -54,6 +56,9 @@ def main():
     parser.add_option( "", "--same-dir",
                        action = "store_true", dest = "same_dir",
                        default = False, help = help['same_dir'] )
+    parser.add_option("", "--times",
+                      action="store_true", dest="times",
+                      default=False, help=help['times'])
     parser.add_option( "-f", "--from", type = int, metavar = 'ii',
                        action = "store", dest = "step_from",
                        default = 0, help = help['from'] )
@@ -77,6 +82,11 @@ def main():
     else:
         parser.print_help(),
         return
+
+    if options.times:
+        times, nts, dts = th.extract_times(filename_in)
+        for step, time in enumerate(times):
+            print '%d %e %e %e' % (step, time, nts[step], dts[step])
 
     if options.dump:
         trunk = get_default(options.output_filename_trunk,
