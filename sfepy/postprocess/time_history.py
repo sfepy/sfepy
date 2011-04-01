@@ -1,3 +1,5 @@
+import numpy as nm
+
 from sfepy.base.base import output, OneTypeList, Struct
 from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import MeshIO
@@ -45,6 +47,26 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
 
     output('...done')
     return ret
+
+def extract_times(filename):
+    """
+    Read true time step data from individual time steps.
+
+    Returns
+    -------
+    times : array
+        The times of the time steps.
+    nts : array
+        The normalized times of the time steps, in [0, 1].
+    dts : array
+        The true time deltas.
+    """
+    io = MeshIO.any_from_filename(filename)
+    times, nts = io.read_times()
+
+    dts = nm.ediff1d(times, to_end=0)
+
+    return times, nts, dts
 
 def extract_time_history(filename, extract, verbose=True):
     """Extract time history of a variable from a multi-time-step results file.
