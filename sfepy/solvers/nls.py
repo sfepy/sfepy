@@ -338,6 +338,7 @@ class Newton( NonlinearSolver ):
             status['time_stats'] = time_stats
             status['err0'] = err0
             status['err'] = err
+            status['n_iter'] = it
             status['condition'] = condition
 
         if conf.log.plot is not None:
