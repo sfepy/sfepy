@@ -15,9 +15,7 @@ from optparse import OptionParser
 import sfepy
 from sfepy.base.base import nm, dict_to_struct, get_default
 from sfepy.base.ioutils import get_trunk
-from sfepy.postprocess.time_history \
-     import dump_to_vtk, extract_time_history, average_vertex_var_in_cells, \
-            save_time_history
+import sfepy.postprocess.time_history as th
 
 usage = """%prog [options] filename_in
 
@@ -88,27 +86,27 @@ def main():
                                  os.path.basename(trunk))
         
         if options.step_to is None:
-            dump_to_vtk(filename_in,
-                        output_filename_trunk=trunk,
-                        step0=options.step_from)
+            th.dump_to_vtk(filename_in,
+                           output_filename_trunk=trunk,
+                           step0=options.step_from)
 
         else:
-            dump_to_vtk(filename_in,
-                        output_filename_trunk=trunk,
-                        steps=nm.arange(options.step_from,
-                                        options.step_to + 1,
-                                        options.step_by, dtype=nm.int))
+            th.dump_to_vtk(filename_in,
+                           output_filename_trunk=trunk,
+                           steps=nm.arange(options.step_from,
+                                           options.step_to + 1,
+                                           options.step_by, dtype=nm.int))
 
     if options.extract:
-        ths, ts = extract_time_history(filename_in, options.extract)
+        ths, ts = th.extract_time_history(filename_in, options.extract)
 ##         print ths
 
         if options.average:
-            ths = average_vertex_var_in_cells( ths )
+            ths = th.average_vertex_var_in_cells( ths )
 ##             print ths
 
         if options.output_filename_trunk:
-            save_time_history(ths, ts, options.output_filename_trunk + '.h5')
+            th.save_time_history(ths, ts, options.output_filename_trunk + '.h5')
 
         else:
             print dict_to_struct(ths, flag=(1, 1, 1)).str_all()
