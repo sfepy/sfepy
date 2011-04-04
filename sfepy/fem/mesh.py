@@ -726,7 +726,7 @@ class Mesh( Struct ):
 
         return graph
 
-    def explode_groups(self, eps):
+    def explode_groups(self, eps, return_emap=False):
         """
         Explode the mesh element groups by `eps`, i.e. split group
         interface nodes and shrink each group towards its centre by
@@ -736,16 +736,27 @@ class Mesh( Struct ):
         ----------
         eps : float in `[0.0, 1.0]`
             The group shrinking factor.
+        return_emap : bool, optional
+            If True, also return the mapping against original mesh
+            coordinates that result in the exploded mesh coordinates.
+            The mapping can be used to map mesh vertex data to the
+            exploded mesh vertices.
 
         Returns
         -------
         mesh : Mesh
             The new mesh with exploded groups.
+        emap : spmatrix, optional
+            The maping for exploding vertex values. Only provided if
+            `return_emap` is True.
         """
         assert_(0.0 <= eps <= 1.0)
 
         remap = nm.empty((self.n_nod,), dtype=nm.int32)
         offset = 0
+
+        if return_emap:
+            rows, cols = [], []
 
         coors = []
         ngroups = []
@@ -773,10 +784,25 @@ class Mesh( Struct ):
 
             offset += n_nod
 
+            if return_emap:
+                cols.append(nodes)
+                rows.append(remap[nodes])
+
         coors = nm.concatenate(coors, axis=0)
         ngroups = nm.concatenate(ngroups, axis=0)
 
-        mesh = Mesh('exploded_' + self.name)
-        mesh._set_data(coors, ngroups, conns, mat_ids, descs)
+        mesh = Mesh.from_data('exploded_' + self.name,
+                              coors, ngroups, conns, mat_ids, descs)
 
-        return mesh
+        if return_emap:
+            rows = nm.concatenate(rows)
+            cols = nm.concatenate(cols)
+            data = nm.ones(rows.shape[0], dtype=nm.float64)
+
+            emap = sp.coo_matrix((data, (rows, cols)),
+                                 shape=(mesh.n_nod, self.n_nod))
+
+            return mesh, emap
+
+        else:
+            return mesh
