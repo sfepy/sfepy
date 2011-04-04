@@ -303,13 +303,13 @@ class Viewer(Struct):
                             is_wireframe=False, subdomains_args=None,
                             rel_text_width=None,
                             filter_names=None, group_names=None,
-                            only_names=None):
+                            only_names=None,
+                            domain_specific=None):
         """Sets self.source, self.is_3d_data """
         file_source = get_default(file_source, self.file_source,
                                   'file_source not set!')
-
-        if filter_names is None:
-            filter_names = []
+        filter_names = get_default(filter_names, [])
+        domain_specific = get_default(domain_specific, {})
 
         self.source = source = self.file_source()
 
@@ -395,9 +395,14 @@ class Viewer(Struct):
 
             is_magnitude = False
             position = nm.array([dx[0] * ic, dx[1] * (n_row - ir - 1), 0])
-            
             output(family, kind, name, position)
-            if kind == 'scalars':
+
+            if name in domain_specific:
+                ds = domain_specific[name]
+                kind, name, active = ds(source, ctp, position,
+                                        family, kind, name)
+
+            elif kind == 'scalars':
                 if family == 'point':
                     active = mlab.pipeline.set_active_attribute(source)
 
@@ -584,7 +589,7 @@ class Viewer(Struct):
                   subdomains_args=None, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, group_names=None, step=0,
-                  anti_aliasing=None):
+                  anti_aliasing=None, domain_specific=None):
         """By default, all data (point, cell, scalars, vectors, tensors) are
         plotted in a grid layout, except data named 'node_groups', 'mat_id' which
         are usually not interesting.
@@ -644,6 +649,8 @@ class Viewer(Struct):
             The time step to display.
         anti_aliasing : int
             Value of anti-aliasing.
+        domain_specific : dict
+            Domain-specific drawing functions and configurations.
         """
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
@@ -757,7 +764,8 @@ class Viewer(Struct):
                                  rel_text_width=rel_text_width,
                                  filter_names=filter_names,
                                  group_names=group_names,
-                                 only_names=only_names)
+                                 only_names=only_names,
+                                 domain_specific=domain_specific)
         
         scene.scene.reset_zoom()
 
@@ -873,7 +881,8 @@ def make_animation(filename, view, roll, anim_format, options):
            fig_filename=options.fig_filename, resolution=options.resolution,
            filter_names=options.filter_names, only_names=options.only_names,
            group_names=options.group_names,
-           anti_aliasing=options.anti_aliasing)
+           anti_aliasing=options.anti_aliasing,
+           domain_specific=options.domain_specific)
 
     anim_name = viewer.encode_animation(options.fig_filename, anim_format,
                                         options.ffmpeg_options)

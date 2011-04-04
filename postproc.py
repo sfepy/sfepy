@@ -7,6 +7,7 @@ import sfepy
 from sfepy.base.base import pause, output, nm
 from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
 from sfepy.solvers.ts import get_print_info
+from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 usage = """%prog [options] filename
 
@@ -108,6 +109,8 @@ help = {
     ' example value: mat_id,0,None,True',
     'anti_aliasing' :
     'value of anti-aliasing [default: mayavi2 default]',
+    'domain_specific' :
+    'domain specific drawing functions and configurations',
 }
 
 def parse_view(option, opt, value, parser):
@@ -157,6 +160,20 @@ def parse_subdomains(option, opt, value, parser):
                            'single_color' : aux[3] == 'True'}
         setattr(parser.values, option.dest, subdomains_args)
 
+def parse_domain_specific(option, opt, value, parser):
+    if value is not None:
+        print value
+        out = {}
+        confs = value.split(':')
+        for conf in confs:
+            aux = conf.split(',')
+            var_name, fun_name = aux[:2]
+            args = aux[2:]
+
+            out[var_name] = DomainSpecificPlot(fun_name, args)
+
+        setattr(parser.values, option.dest, out)
+
 def view_file(filename, filter_names, options, view=None):
     if view is None:
         view = Viewer(filename, watch=options.watch,
@@ -182,7 +199,8 @@ def view_file(filename, filter_names, options, view=None):
              fig_filename=options.filename, resolution=options.resolution,
              filter_names=filter_names, only_names=options.only_names,
              group_names=options.group_names,
-             step=options.step, anti_aliasing=options.anti_aliasing)
+             step=options.step, anti_aliasing=options.anti_aliasing,
+             domain_specific=options.domain_specific)
 
     else:
         view.set_source_filename(filename)
@@ -275,6 +293,12 @@ def main():
     parser.add_option("--anti-aliasing", type='int', metavar='value',
                       action="store", dest="anti_aliasing",
                       default=None, help=help['anti_aliasing'])
+    parser.add_option("-d", "--domain-specific", type='str',
+                      metavar="'var_name0,function_name0," \
+                              "par0=val0,par1=val1,...:var_name1,...'",
+                      action="callback", dest="domain_specific",
+                      callback=parse_domain_specific, default=None,
+                      help=help['domain_specific'])
     options, args = parser.parse_args()
 
     if len(args) >= 1:
