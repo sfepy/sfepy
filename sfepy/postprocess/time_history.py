@@ -18,6 +18,7 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
 
     try:
         ts = TimeStepper(*io.read_time_stepper())
+        times, nts, dts = extract_times(filename)
 
     except:
         output('no time stepping info found, assuming single step')
@@ -29,6 +30,9 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
         ret = None
 
     else:
+        ts.times = times
+        ts.n_step = times.shape[0]
+
         if steps is None:
             iterator = ts.iter_from(step0)
 
