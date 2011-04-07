@@ -103,6 +103,7 @@ class Newton( NonlinearSolver ):
                 'ls_red_warp' : 0.001,
                 'ls_on' : 0.99999,
                 'ls_min' : 1e-5,
+                'give_up_warp' : False,
                 'check' : 0,
                 'delta' : 1e-6,
                 'is_plot' : False,
@@ -122,6 +123,7 @@ class Newton( NonlinearSolver ):
         ls_red_warp = get( 'ls_red_warp', 0.001 )
         ls_on = get( 'ls_on', 0.99999 )
         ls_min = get( 'ls_min', 1e-5 )
+        give_up_warp = get('give_up_warp', False)
         check = get( 'check', 0 )
         delta = get( 'delta', 1e-6)
         is_plot = get( 'is_plot', False )
@@ -251,6 +253,10 @@ class Newton( NonlinearSolver ):
                     output( 'linesearch: iter %d, (%.5e < %.5e) (new ls: %e)'\
                             % (it, err, err_last * conf.ls_on, red * ls) )
                 else: # Failure.
+                    if conf.give_up_warp:
+                        output('giving up!')
+                        break
+
                     red = conf.ls_red_warp;
                     output(  'rezidual computation failed for iter %d'
                              ' (new ls: %e)!' % (it, red * ls) )
@@ -273,6 +279,10 @@ class Newton( NonlinearSolver ):
 
             condition = conv_test( conf, it, err, err0 )
             if condition >= 0:
+                break
+
+            if (not ok) and conf.give_up_warp:
+                condition = 2
                 break
 
             tt = time.clock()
