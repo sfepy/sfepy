@@ -384,6 +384,8 @@ class Viewer(Struct):
         if c_names:
             ctp = mlab.pipeline.cell_to_point_data(source)
 
+        else:
+            ctp = None
 
         self.scalar_bars = []
 
