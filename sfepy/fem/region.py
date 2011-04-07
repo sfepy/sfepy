@@ -287,6 +287,7 @@ class Region( Struct ):
                 surf = self.faces
 
             # Get unique surface facets.
+            empty_igs = []
             for ig, group in self.domain.iter_groups(self.igs):
                 vv = self.vertices[ig]
                 if len(vv) == 0: continue
@@ -298,6 +299,11 @@ class Region( Struct ):
                 ii = facets.uid_i[ifacets]
                 surf[ig] = ifacets[allowed[ii]]
                 allowed[ii] = False
+
+                if not len(surf[ig]):
+                    empty_igs.append(ig)
+
+            self.delete_groups(empty_igs)
 
             # Update vertices, cells, and, in 3D, edges.
             for ig, group in self.domain.iter_groups(self.igs):
