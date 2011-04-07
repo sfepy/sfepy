@@ -50,7 +50,7 @@ class DomainSpecificPlot(Struct):
 
         return self.fun(*args, **_kwargs)
 
-def plot_displacements(source, ctp, position, family, kind, name,
+def plot_displacements(source, ctp, bbox, position, family, kind, name,
                        rel_scaling=1.0,
                        color_kind=None, color_name=None, opacity=1.0):
     """

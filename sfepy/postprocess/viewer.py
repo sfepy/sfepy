@@ -401,8 +401,13 @@ class Viewer(Struct):
 
             if name in domain_specific:
                 ds = domain_specific[name]
-                kind, name, active = ds(source, ctp, position,
-                                        family, kind, name)
+                out = ds(source, ctp, bbox, position, family, kind, name)
+                if len(out) == 4:
+                    kind, name, active, bars = out
+                    self.scalar_bars.extend(bars)
+
+                else:
+                    kind, name, active = out
 
             elif kind == 'scalars':
                 if family == 'point':
