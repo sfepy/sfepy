@@ -27,7 +27,15 @@ class DomainSpecificPlot(Struct):
     def __init__(self, fun_name, args):
         Struct.__init__(self, fun_name=fun_name)
 
-        self.fun = globals()[self.fun_name]
+        ii = fun_name.rfind('.')
+        if ii >= 0:
+            # Function in a user module.
+            mod_name, fun_name = fun_name[:ii], fun_name[ii+1:]
+            mod = __import__(mod_name, fromlist=[fun_name])
+            self.fun = getattr(mod, fun_name)
+
+        else:
+            self.fun = globals()[self.fun_name]
 
         kwargs = {}
         for arg in args:
