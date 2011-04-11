@@ -2,7 +2,7 @@ import numpy as nm
 
 from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
-from sfepy.mechanics.tensors import dim2sym
+from sfepy.mechanics.tensors import dim2sym, transform_data
 import sfepy.mechanics.membranes as membranes
 from sfepy.fem.poly_spaces import PolySpace
 from sfepy.terms.terms import Term
@@ -76,8 +76,6 @@ def eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode):
 class TLMembraneTerm(Term):
     r"""
     Mooney-Rivlin membrane with plain stress assumption.
-
-    Membrane thickness should be included in the material parameters.
 
     :Arguments:
         virtual  : :math:`\ul{v}`,
@@ -212,16 +210,24 @@ class TLMembraneTerm(Term):
                     yield out, lchunk, 0
 
         elif term_mode in ['strain', 'stress']:
-
             if term_mode == 'strain':
-                out_qp = None
+                out_qp = membranes.get_green_strain_sym3d(mtx_c, c33)
 
             elif term_mode == 'stress':
-                out_qp = None
+                n_el, n_qp, dm, _ = mtx_c.shape
+                dim = dm + 1
+                sym = dim2sym(dim)
+                out_qp = nm.zeros((n_el, n_qp, sym, 1), dtype=mtx_c.dtype)
+
+                stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
+                out_qp[..., 0:2, 0] = stress[..., 0:2, 0]
+                out_qp[..., 3, 0] = stress[..., 2, 0]
 
             shape = (chunk_size, 1) + out_qp.shape[2:]
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = sg.integrate_chunk(out, out_qp[chunk], chunk)
-                out1 = out / sg.variable(2)[chunk]
+            for out, chunk in self.char_fun(chunk_size, shape):
+                lchunk = self.char_fun.get_local_chunk()
+                status = geo.integrate_chunk(out, out_qp[lchunk], lchunk)
+                out = transform_data(out, mtx=mtx_t)
+                out1 = out / geo.variable(2)[lchunk]
 
             yield out1, chunk, status
