@@ -1243,7 +1243,7 @@ class Term(Struct):
             (nonzero). Only provided if `ret_status` is True.
         iels : array of ints, optional
             The local elements indices in 'weak' mode. Only provided in
-            'weak' mode.
+            non-'eval' modes.
         """
         if standalone:
             self.standalone_setup()
