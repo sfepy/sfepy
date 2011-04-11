@@ -209,7 +209,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         ii = get_full_indices(3)
 
         aux = data[:,ii]
-        aux2 = dot_sequences(dot_sequences(mtx, aux), mtx.transpose((0, 2, 1)))
+        aux2 = dot_sequences(dot_sequences(mtx, aux, 'AB'), mtx, 'ABT')
         assert nm.allclose(aux2[0], nm.dot(nm.dot(mtx[0], aux[0]), mtx[0].T))
 
         aux3 = aux2.reshape((aux2.shape[0], 9))
