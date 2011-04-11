@@ -222,3 +222,38 @@ def get_invariants(mtx_c, c33):
          - mtx_c[..., 0, 1]**2
 
     return i1, i2
+
+def get_green_strain_sym3d(mtx_c, c33):
+    """
+    Get the 3D Green strain tensor in symmetric storage.
+
+    Parameters
+    ----------
+    mtx_c ; array
+        The in-plane right Cauchy-Green deformation tensor
+        :math:`C_{ij}`, :math:`i, j = 1, 2`, shape `(n_el, n_qp, dim-1,
+        dim-1)`.
+    c33 : array
+        The component :math:`C_{33}` computed from the incompressibility
+        condition, shape `(n_el, n_qp)`.
+
+    Returns
+    -------
+    mtx_e : array
+        The membrane Green strain :math:`E_{ij} = \frac{1}{2} (C_{ij}) -
+        \delta_{ij}`, symmetric storage: items (11, 22, 33, 12, 13, 23),
+        shape `(n_el, n_qp, sym, 1)`.
+    """
+    n_el, n_qp, dm, _ = mtx_c.shape
+    dim = dm + 1
+    sym = dim2sym(dim)
+
+    mtx_e = nm.empty((n_el, n_qp, sym, 1), dtype=mtx_c.dtype)
+
+    mtx_e[..., 0, 0] = 0.5 * (mtx_c[..., 0, 0] - 1.0)
+    mtx_e[..., 1, 0] = 0.5 * (mtx_c[..., 1, 1] - 1.0)
+    mtx_e[..., 2, 0] = 0.5 * (c33 - 1.0)
+    mtx_e[..., 3, 0] = 0.5 * mtx_c[..., 0, 1]
+    mtx_e[..., 4:, 0] = 0.0
+
+    return mtx_e
