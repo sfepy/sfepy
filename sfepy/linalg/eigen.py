@@ -1,5 +1,6 @@
 import numpy as nm
 import scipy.sparse as sp
+from scipy.sparse.linalg import aslinearoperator
 from scipy.linalg import eigvals_banded
 
 from sfepy.base.base import get_default, output
@@ -73,6 +74,8 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
 
         output('eigenvalue shift:', shift, verbose=verbose)
         mtx = mtx + shift * sp.eye(n_row, n_row, dtype=mtx.dtype)
+
+    mtx = aslinearoperator(mtx)
 
     lambda_max = 0
     lambda_min = 0
