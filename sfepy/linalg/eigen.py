@@ -113,6 +113,10 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
         q = mtx * p
 
         alpha = rho0 / nm.dot(p, q)
+        if (not nm.isfinite(alpha)) or abs(alpha) < 1e-16:
+            output('precision limit reached!')
+            ii -= 1
+            break
 
         x = x + alpha * p
         r = r - alpha * q
