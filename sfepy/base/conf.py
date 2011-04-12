@@ -91,9 +91,13 @@ def transform_epbcs( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['region', 'dofs', 'match'] )
-            if len( conf ) == 3:
-                c2.filename = conf[2]
+            if len(conf) == 3:
+                c2 = tuple_to_conf(key, conf, ['region', 'dofs', 'match'])
+
+            else:
+                c2 = tuple_to_conf(key, conf,
+                                   ['region', 'times', 'dofs', 'match'])
+
             d2['epbcs_%s__%d' % (c2.name, ii)] = c2
         else:
             c2 = transform_to_struct_1( conf )
