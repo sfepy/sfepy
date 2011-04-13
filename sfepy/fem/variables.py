@@ -214,7 +214,7 @@ class Variables( Container ):
         else:
             raise ValueError( 'no LCBC defined!' )
 
-    def equation_mapping(self, ebcs, epbcs, ts, functions):
+    def equation_mapping(self, ebcs, epbcs, ts, functions, problem=None):
         """
         Create the mapping of active DOFs from/to all DOFs for all state
         variables.
@@ -246,13 +246,15 @@ class Variables( Container ):
             bcs = self.bc_of_vars.get(var.name, None)
 
             var_di = self.di.get_info(var_name)
-            active = var.equation_mapping(bcs, var_di, ts, functions)
+            active = var.equation_mapping(bcs, var_di, ts, functions,
+                                          problem=problem)
             active_bcs.update(active)
 
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
                 vvar_di = self.vdi.get_info(var_name)
-                active = vvar.equation_mapping(bcs, vvar_di, ts, functions)
+                active = vvar.equation_mapping(bcs, vvar_di, ts, functions,
+                                               problem=problem)
                 active_bcs.update(active)
 
             ## print var.eq_map
@@ -1324,7 +1326,8 @@ class FieldVariable(Variable):
 
         return ops
 
-    def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
+    def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
+                         warn=False):
         """
         Create the mapping of active DOFs from/to all DOFs.
 
@@ -1341,7 +1344,7 @@ class FieldVariable(Variable):
             bcs.sort()
 
         active_bcs = self.eq_map.map_equations(bcs, self.field, ts, functions,
-                                               warn=warn)
+                                               problem=problem, warn=warn)
         self.n_adof = self.eq_map.n_eq
 
         return active_bcs
@@ -1810,7 +1813,8 @@ class MultiplierVariable(FieldVariable):
 
         return self.n_dof, details
 
-    def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
+    def equation_mapping(self, bcs, var_di, ts, functions, problem=None,
+                         warn=False):
         """
         Trivial mapping (no boundary conditions). Sets n_adof.
 

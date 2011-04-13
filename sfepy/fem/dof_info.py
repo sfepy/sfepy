@@ -276,8 +276,9 @@ class EquationMap(Struct):
 
         self.master = nm.empty((0,), dtype=nm.int32)
         self.slave = nm.empty((0,), dtype=nm.int32)
-        
-    def map_equations(self, bcs, field, ts, functions, warn=False):
+
+    def map_equations(self, bcs, field, ts, functions, problem=None,
+                      warn=False):
         """
         Create the mapping of active DOFs from/to all DOFs.
 
@@ -293,6 +294,8 @@ class EquationMap(Struct):
             The time stepper.
         functions : Functions instance
             The registered functions.
+        problem : ProblemDefinition instance, optional
+            The problem that can be passed to user functions as a context.
         warn : bool, optional
             If True, warn about BC on non-existent nodes.
 
@@ -356,10 +359,10 @@ class EquationMap(Struct):
 
                 if type(val) == str:
                     fun = functions[val]
-                    vv = fun(ts, coor, bc=bc)
+                    vv = fun(ts, coor, bc=bc, problem=problem)
 
                 elif isinstance(val, Function):
-                    vv = val(ts, coor, bc=bc)
+                    vv = val(ts, coor, bc=bc, problem=problem)
 
                 else:
                     vv = nm.repeat([val], nods.shape[0] * len(dofs))

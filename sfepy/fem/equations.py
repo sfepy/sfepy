@@ -239,9 +239,9 @@ class Equations( Container ):
                 output('    %+.2e * %s.%d.%s(%s)'
                        % (term.sign, term.name, term.integral.order,
                           term.region.name, term.arg_str))
-    
+
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None):
+                    functions=None, problem=None):
         """
         Update the equations for current time step.
 
@@ -262,6 +262,8 @@ class Equations( Container ):
             The linear combination boundary conditions.
         functions : Functions instance, optional
             The user functions for boundary conditions, materials, etc.
+        problem : ProblemDefinition instance, optional
+            The problem that can be passed to user functions as a context.
 
         Returns
         -------
@@ -272,7 +274,8 @@ class Equations( Container ):
         """
         self.variables.time_update(ts, functions)
 
-        active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions)
+        active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
+                                                     problem=problem)
         graph_changed = active_bcs != self.active_bcs
         self.active_bcs = active_bcs
 
