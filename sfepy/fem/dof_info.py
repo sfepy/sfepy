@@ -215,6 +215,47 @@ class DofInfo(Struct):
         """
         return self.ptr[-1]
 
+def is_active_bc(bc, ts=None, functions=None):
+    """
+    Check whether the given boundary condition is active in the current
+    time.
+
+    Returns
+    -------
+    active : bool
+        True if the condition `bc` is active.
+    """
+    if (bc.times is None) or (ts is None):
+        active = True
+
+    elif isinstance(bc.times, list):
+        for tt in bc.times:
+            if tt[0] <= ts.time < tt[1]:
+                active = True
+                break
+
+        else:
+            active = False
+
+    else:
+        if isinstance(bc.times, str):
+            if functions is not None:
+                fun = functions[bc.times]
+
+            else:
+                raise ValueError('no functions given for bc %s!' % bc.name)
+
+        elif isinstance(bc.times, Function):
+            fun = bc.times
+
+        else:
+            raise ValueError('unknown times type! (%s)'
+                             % type(bc.times))
+
+        active = fun(ts)
+
+    return active
+
 class EquationMap(Struct):
     """
     Map all DOFs to equations for active DOFs.
