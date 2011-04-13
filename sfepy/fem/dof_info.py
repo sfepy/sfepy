@@ -309,7 +309,7 @@ class EquationMap(Struct):
         if bcs is None:
             self.val_ebc = nm.empty((0,), dtype=field.dtype)
             self._init_empty()
-            return
+            return set()
 
         eq_ebc = nm.zeros((self.var_di.n_dof,), dtype=nm.int32)
         val_ebc = nm.zeros((self.var_di.n_dof,), dtype=field.dtype)
