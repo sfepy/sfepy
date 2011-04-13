@@ -600,11 +600,19 @@ Define the integral type and quadrature rule. This keyword is optional.
 Boundary conditions
 ^^^^^^^^^^^^^^^^^^^
 
+The boundary conditions apply in a given region given by its name, and,
+optionally, in selected times. The times can be given either using a
+list of tuples `(t0, t1)` making the condition active for `t0 <= t <
+t1`, or by a name of a function taking the time argument and returning
+True or False depending on whether the condition is active at the given
+time or not.
+
 * Dirichlet (essential) boundary conditions, long syntax::
 
     ebc_<number> = {
         'name' : <name>,
         'region' : <region_name>,
+        ['times' : <times_specification>,]
         'dofs' : {<dof_specification> : <value>[,
                   <dof_specification> : <value>, ...]}
     }
@@ -614,21 +622,23 @@ Boundary conditions
         ebc_1 = {
             'name' : 'ZeroSurface',
             'region' : 'Surface',
+            'times' : [(0.5, 1.0), (2.3, 5)],
             'dofs' : {'u.all' : 0.0, 'phi.all' : 0.0},
         }
 
 * Dirichlet (essential) boundary conditions, short syntax::
 
     ebcs = {
-        <name> : (<region_name>, {<dof_specification> : <value>[,
-                                  <dof_specification> : <value>, ...]},...)
+        <name> : (<region_name>, [<times_specification>,]
+                  {<dof_specification> : <value>[,
+                   <dof_specification> : <value>, ...]},...)
     }
 
   * Example::
 
         ebcs = {
             'u1' : ('Left', {'u.all' : 0.0}),
-            'u2' : ('Right', {'u.0' : 0.1}),
+            'u2' : ('Right', [(0.0, 1.0)], {'u.0' : 0.1}),
             'phi' : ('Surface', {'phi.all' : 0.0}),
         }
 
