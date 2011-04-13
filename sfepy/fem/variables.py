@@ -10,7 +10,7 @@ from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
-            expand_nodes_to_equations, make_global_lcbc_operator
+            expand_nodes_to_equations, make_global_lcbc_operator, is_active_bc
 from sfepy.fem.mappings import get_physical_qps
 
 is_state = 0
@@ -178,7 +178,7 @@ class Variables( Container ):
         else:
             self.vdi = self.di
 
-    def setup_lcbc_operators(self, lcbcs):
+    def setup_lcbc_operators(self, lcbcs, ts=None, functions=None):
         """
         Prepare linear combination BC operator matrix.
         """
@@ -195,7 +195,8 @@ class Variables( Container ):
         for var_name, bcs in lcbc_of_vars.iteritems():
             var = self[var_name]
 
-            lcbc_op = var.create_lcbc_operators(bcs, offset)
+            lcbc_op = var.create_lcbc_operators(bcs, offset,
+                                                ts=ts, functions=functions)
             lcbc_ops[var_name] = lcbc_op
 
             if lcbc_op is not None:
@@ -1301,7 +1302,7 @@ class FieldVariable(Variable):
 
         self.data[step] = data
 
-    def create_lcbc_operators(self, bcs, offset):
+    def create_lcbc_operators(self, bcs, offset, ts=None, functions=None):
         if len(bcs) == 0: return None
 
         bcs.canonize_dof_names(self.dofs)
@@ -1309,6 +1310,10 @@ class FieldVariable(Variable):
 
         ops = LCBCOperators('lcbc:%s' % self.name, self.eq_map, offset)
         for bc in bcs:
+            # Skip conditions that are not active in the current time.
+            if not is_active_bc(bc, ts=ts, functions=functions):
+                continue
+
             output('lcbc:', self.name, bc.name)
 
             ops.add_from_bc(bc, self.field)
