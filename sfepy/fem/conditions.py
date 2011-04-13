@@ -21,19 +21,24 @@ class Conditions(Container):
     def from_conf(conf, regions):
         conds = []
         for key, cc in conf.iteritems():
+            times = cc.get('times', None)
+
             if 'ebc' in key:
                 region = _get_region(cc.region, regions, cc.name)
-                cond = EssentialBC(cc.name, region, cc.dofs, key=key)
+                cond = EssentialBC(cc.name, region, cc.dofs, key=key,
+                                   times=times)
 
             elif 'epbc' in key:
                 rs = [_get_region(ii, regions, cc.name) for ii in cc.region]
-                cond = PeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key)
+                cond = PeriodicBC(cc.name, rs, cc.dofs, cc.match, key=key,
+                                   times=times)
 
             elif 'lcbc' in key:
                 region = _get_region(cc.region, regions, cc.name)
                 filename = cc.get('filename', None)
                 cond = LinearCombinationBC(cc.name, region, cc.dofs, key=key,
-                                           filename=filename)
+                                           filename=filename,
+                                           times=times)
 
             elif 'ic' in key:
                 region = _get_region(cc.region, regions, cc.name)
@@ -160,9 +165,13 @@ class EssentialBC(Condition):
         DOFs and their values.
     key : str, optional
         The sorting key.
+    times : list or str, optional
+        The list of time intervals or a function returning True at time
+        steps, when the condition applies.
     """
-    def __init__(self, name, region, dofs, key=''):
-        Condition.__init__(self, name=name, region=region, dofs=dofs, key=key)
+    def __init__(self, name, region, dofs, key='', times=None):
+        Condition.__init__(self, name=name, region=region, dofs=dofs, key=key,
+                           times=times)
 
     def zero_dofs(self):
         """
@@ -196,10 +205,13 @@ class PeriodicBC(Condition):
         two regions.
     key : str, optional
         The sorting key.
+    times : list or str, optional
+        The list of time intervals or a function returning True at time
+        steps, when the condition applies.
     """
-    def __init__(self, name, regions, dofs, match, key=''):
+    def __init__(self, name, regions, dofs, match, key='', times=None):
         Condition.__init__(self, name=name, regions=regions, dofs=dofs,
-                           match=match, key=key)
+                           match=match, key=key, times=times)
 
     def canonize_dof_names(self, dofs):
         """
@@ -226,12 +238,15 @@ class LinearCombinationBC(Condition):
         DOFs and the constraint type.
     key : str, optional
         The sorting key.
+    times : list or str, optional
+        The list of time intervals or a function returning True at time
+        steps, when the condition applies.
     filename : str, optional
         Some conditions can store data (e.g. normal vectors) into a file.
     """
-    def __init__(self, name, region, dofs, key='', filename=None):
+    def __init__(self, name, region, dofs, key='', times=None, filename=None):
         Condition.__init__(self, name=name, region=region, dofs=dofs,
-                           key=key, filename=filename)
+                           key=key, times=times, filename=filename)
 
 class InitialCondition(Condition):
     """
