@@ -296,6 +296,11 @@ class EquationMap(Struct):
         warn : bool, optional
             If True, warn about BC on non-existent nodes.
 
+        Returns
+        -------
+        active_bcs : set
+            The set of boundary conditions active in the current time.
+
         Notes
         -----
         - Periodic bc: master and slave DOFs must belong to the same
@@ -311,7 +316,14 @@ class EquationMap(Struct):
         master_slave = nm.zeros((self.var_di.n_dof,), dtype=nm.int32)
         chains = []
 
+        active_bcs = set()
         for bc in bcs:
+            # Skip conditions that are not active in the current time.
+            if not is_active_bc(bc, ts=ts, functions=functions):
+                continue
+
+            active_bcs.add(bc)
+
             if isinstance(bc, EssentialBC):
                 ntype = 'EBC'
                 region = bc.region
@@ -456,6 +468,8 @@ class EquationMap(Struct):
         self.n_eq = self.eqi.shape[0]
         self.n_ebc = self.eq_ebc.shape[0]
         self.n_epbc = self.master.shape[0]
+
+        return active_bcs
 
     def get_operator(self):
         """

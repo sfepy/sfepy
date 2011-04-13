@@ -214,6 +214,15 @@ class Variables( Container ):
             raise ValueError( 'no LCBC defined!' )
 
     def equation_mapping(self, ebcs, epbcs, ts, functions):
+        """
+        Create the mapping of active DOFs from/to all DOFs for all state
+        variables.
+
+        Returns
+        -------
+        active_bcs : set
+            The set of boundary conditions active in the current time.
+        """
         self.ebcs = ebcs
         self.epbcs = epbcs
 
@@ -230,17 +239,20 @@ class Variables( Container ):
 
         ##
         # List EBC nodes/dofs for each variable.
+        active_bcs = set()
         for var_name in self.di.var_names:
             var = self[var_name]
             bcs = self.bc_of_vars.get(var.name, None)
 
             var_di = self.di.get_info(var_name)
-            var.equation_mapping(bcs, var_di, ts, functions)
+            active = var.equation_mapping(bcs, var_di, ts, functions)
+            active_bcs.update(active)
 
             if self.has_virtual_dcs:
                 vvar = self[var.dual_var_name]
                 vvar_di = self.vdi.get_info(var_name)
-                vvar.equation_mapping(bcs, vvar_di, ts, functions)
+                active = vvar.equation_mapping(bcs, vvar_di, ts, functions)
+                active_bcs.update(active)
 
             ## print var.eq_map
             ## pause()
@@ -258,6 +270,8 @@ class Variables( Container ):
             self.avdi = self.adi
 
         self.has_eq_map = True
+
+        return active_bcs
 
     def get_matrix_shape(self):
         if not self.has_eq_map:
@@ -1306,15 +1320,26 @@ class FieldVariable(Variable):
         return ops
 
     def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
-        """Set n_adof."""
-        
+        """
+        Create the mapping of active DOFs from/to all DOFs.
+
+        Sets n_adof.
+
+        Returns
+        -------
+        active_bcs : set
+            The set of boundary conditions active in the current time.
+        """
         self.eq_map = EquationMap('eq_map', self.dofs, var_di)
         if bcs is not None:
             bcs.canonize_dof_names(self.dofs)
             bcs.sort()
 
-        self.eq_map.map_equations(bcs, self.field, ts, functions, warn=warn)
+        active_bcs = self.eq_map.map_equations(bcs, self.field, ts, functions,
+                                               warn=warn)
         self.n_adof = self.eq_map.n_eq
+
+        return active_bcs
 
     def setup_initial_conditions(self, ics, di, functions, warn=False):
         """Setup of initial conditions."""
@@ -1782,7 +1807,12 @@ class MultiplierVariable(FieldVariable):
 
     def equation_mapping(self, bcs, var_di, ts, functions, warn=False):
         """
-        Trivial mapping (no boundary conditions). Set n_adof.
+        Trivial mapping (no boundary conditions). Sets n_adof.
+
+        Returns
+        -------
+        active_bcs : set
+            The empty set.
         """
         if bcs is not None:
             raise ValueError('MultiplierVariable cannot have BC!')
@@ -1790,6 +1820,8 @@ class MultiplierVariable(FieldVariable):
         self.eq_map = EquationMap('eq_map', self.dofs, var_di)
         self.eq_map.map_equations(bcs, self.field, ts, functions, warn=warn)
         self.n_adof = self.eq_map.n_eq
+
+        return set()
 
     def setup_adof_conns(self, adof_conns, adi):
         """

@@ -97,6 +97,8 @@ class Equations( Container ):
 
         self.domain = self.get_domain()
 
+        self.active_bcs = set()
+
         if setup:
             self.setup(cache_override=cache_override,
                        make_virtual=make_virtual, verbose=verbose)
@@ -240,15 +242,48 @@ class Equations( Container ):
     
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
                     functions=None):
+        """
+        Update the equations for current time step.
+
+        The update involves creating the mapping of active DOFs from/to
+        all DOFs for all state variables, the setup of linear
+        combination boundary conditions operators and the setup of
+        active DOF connectivities.
+
+        Parameters
+        ----------
+        ts : TimeStepper instance
+            The time stepper.
+        ebcs : Conditions instance, optional
+            The essential (Dirichlet) boundary conditions.
+        epbcs : Conditions instance, optional
+            The periodic boundary conditions.
+        lcbcs : Conditions instance, optional
+            The linear combination boundary conditions.
+        functions : Functions instance, optional
+            The user functions for boundary conditions, materials, etc.
+
+        Returns
+        -------
+        graph_changed : bool
+            The flag set to True if the current time step set of active
+            boundary conditions differs from the set of the previous
+            time step.
+        """
         self.variables.time_update(ts, functions)
 
-        self.variables.equation_mapping(ebcs, epbcs, ts, functions)
-        self.variables.setup_lcbc_operators(lcbcs)
+        active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions)
+        graph_changed = active_bcs != self.active_bcs
+        self.active_bcs = active_bcs
+
+        self.variables.setup_lcbc_operators(lcbcs, ts, functions)
         self.variables.setup_adof_conns()
 
         for eq in self:
             for term in eq.terms:
                 term.time_update(ts)
+
+        return graph_changed
 
     def time_update_materials(self, ts, problem=None, verbose=True):
         """

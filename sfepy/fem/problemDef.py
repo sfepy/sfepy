@@ -460,15 +460,37 @@ class ProblemDefinition( Struct ):
     def update_equations(self, ts=None, ebcs=None, epbcs=None,
                          lcbcs=None, functions=None, create_matrix=False):
         """
-        Assumes same EBC/EPBC/LCBC nodes for all time steps. Otherwise set
-        create_matrix to True.
+        Update equations for current time step.
+
+        The tangent matrix graph is automatically recomputed if the set
+        of active essential or periodic boundary conditions changed
+        w.r.t. the previous time step.
+
+        Parameters
+        ----------
+        ts : TimeStepper instance, optional
+            The time stepper. If not given, `self.ts` is used.
+        ebcs : Conditions instance, optional
+            The essential (Dirichlet) boundary conditions. If not given,
+            `self.ebcs` are used.
+        epbcs : Conditions instance, optional
+            The periodic boundary conditions. If not given, `self.epbcs`
+            are used.
+        lcbcs : Conditions instance, optional
+            The linear combination boundary conditions. If not given,
+            `self.lcbcs` are used.
+        functions : Functions instance, optional
+            The user functions for boundary conditions, materials,
+            etc. If not given, `self.functions` are used.
         """
         self.update_time_stepper(ts)
         functions = get_default(functions, self.functions)
 
-        self.equations.time_update(self.ts, ebcs, epbcs, lcbcs, functions)
+        graph_changed = self.equations.time_update(self.ts,
+                                                   ebcs, epbcs, lcbcs,
+                                                   functions)
 
-        if (self.mtx_a is None) or create_matrix:
+        if graph_changed or (self.mtx_a is None) or create_matrix:
             self.mtx_a = self.equations.create_matrix_graph()
             ## import sfepy.base.plotutils as plu
             ## plu.spy( self.mtx_a )
