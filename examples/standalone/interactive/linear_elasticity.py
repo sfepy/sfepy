@@ -14,7 +14,7 @@ from sfepy.solvers.ls import ScipyDirect
 from sfepy.solvers.nls import Newton
 from sfepy.postprocess import Viewer
 
-def shift_u_fun(ts, coors, bc=None, shift=0.0):
+def shift_u_fun(ts, coors, bc=None, problem=None, shift=0.0):
     """
     Define a displacement depending on the y coordinate.
     """

@@ -111,7 +111,7 @@ output_name = 'test_msm_symbolic_%s.vtk'
 ##
 # c: 07.05.2007, r: 09.05.2008
 solution = ['']
-def ebc(ts, coor, bc, solution=None):
+def ebc(ts, coor, solution=None):
     expression = solution[0]
     val = TestCommon.eval_coor_expression( expression, coor )
     return nm.atleast_1d( val )
@@ -126,7 +126,8 @@ def rhs(ts, coor, mode=None, expression=None, **kwargs):
         return {'val' : val}
 
 functions = {
-    'ebc' : (lambda ts, coor, bc: ebc(ts, coor, bc, solution=solution),),
+    'ebc' : (lambda ts, coor, **kwargs:
+             ebc(ts, coor, solution=solution),),
     'rhs' : (rhs,),
 }
 

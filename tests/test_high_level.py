@@ -4,7 +4,7 @@ import numpy as nm
 
 from sfepy.base.testing import TestCommon
 
-def fix_u_fun(ts, coors, bc=None, extra_arg=None):
+def fix_u_fun(ts, coors, bc=None, problem=None, extra_arg=None):
     return nm.zeros_like(coors)
 
 class Test(TestCommon):

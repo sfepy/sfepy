@@ -19,7 +19,7 @@ materials['solid'][0].update({'rho' : 1000.0})
 # Moving the PerturbedSurface region.
 ebcs['PerturbedSurface'][1].update({'u.0' : 'ebc_sin'})
 
-def ebc_sin(ts, coors, bc=None):
+def ebc_sin(ts, coors, **kwargs):
     val = 0.01 * nm.sin(2.0*nm.pi*ts.nt)
     return nm.tile(val, (coors.shape[0],))
 

@@ -14,7 +14,7 @@ def get_pars(ts, coors, mode=None, extra_arg=None,
             ic = 1
         return {('x_%s' % ic) : coors[:,ic]}
 
-def get_p_edge(ts, coors, bc=None):
+def get_p_edge(ts, coors, bc=None, **kwargs):
     if bc.name == 'p_left':
         return nm.sin(nm.pi * coors[:,1])
     else:

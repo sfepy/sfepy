@@ -92,7 +92,7 @@ output_name = 'test_msm_laplace_%s.vtk'
 ##
 # c: 07.05.2007, r: 09.05.2008
 solution = ['']
-def ebc(ts, coor, bc):
+def ebc(ts, coor, **kwargs):
     expression = solution[0]
     val = TestCommon.eval_coor_expression( expression, coor )
     return nm.atleast_1d( val )

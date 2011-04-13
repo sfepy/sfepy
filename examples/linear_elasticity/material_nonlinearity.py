@@ -58,7 +58,7 @@ def get_pars(ts, coors, mode='qp',
 
     return {'mu' : val}
 
-def pull(ts, coors, bc=None):
+def pull(ts, coors, **kwargs):
     val = nm.empty_like(coors[:,0])
     val.fill(0.01 * ts.step)
 

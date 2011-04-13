@@ -101,5 +101,5 @@ functions = {
     'get_pars' : (get_pars,),
     'get_load_variable' : (get_load_variable,),
     'get_middle_ball' : (get_middle_ball,),
-    'get_ebc' : (lambda ts, coor, bc: get_ebc(coor, 5.0),),
+    'get_ebc' : (lambda ts, coor, bc, problem, **kwargs: get_ebc(coor, 5.0),),
 }

@@ -100,12 +100,12 @@ fe = {
 import numpy as nm
 
 amplitude = 2.0
-def ebc_sin(ts, coor, bc):
+def ebc_sin(ts, coor, **kwargs):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 2. * nm.pi )
     return val
 
-def ebc_sin2(ts, coor, bc):
+def ebc_sin2(ts, coor, **kwargs):
     x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
     val = amplitude * nm.sin( (coor[:,0] - x0) * 3. * nm.pi )
     return val

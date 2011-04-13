@@ -51,10 +51,9 @@ ebcs = {
 
 centre = nm.array( [0, 0], dtype = nm.float64 )
 
-def rotate_yz(ts, coor, bc):
+def rotate_yz(ts, coor, **kwargs):
     from sfepy.linalg import rotation_matrix2d
-    from sfepy.base.base import debug
-    
+
     vec = coor[:,1:3] - centre
 
     angle = 10.0 * ts.step
@@ -64,7 +63,7 @@ def rotate_yz(ts, coor, bc):
     vec_rotated = nm.dot( vec, mtx )
 
     displacement = vec_rotated - vec
-    
+
     return displacement.T.flat
 
 functions = {

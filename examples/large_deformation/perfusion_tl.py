@@ -174,7 +174,7 @@ def get_traction(ts, coors, mode=None):
 
     return out
 
-def get_pressure(ts, coor, bc):
+def get_pressure(ts, coor, **kwargs):
     """Internal pressure Dirichlet boundary condition."""
     tt = ts.nt * 2.0 * nm.pi
 
