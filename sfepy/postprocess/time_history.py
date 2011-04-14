@@ -188,3 +188,36 @@ def save_time_history(ths, ts, filename_out):
     """Save time history and time-stepping information in a HDF5 file."""
     ths.update({'times' : ts.times, 'dt' : ts.dt})
     write_dict_hdf5(filename_out, ths)
+
+def guess_time_units(times):
+    """
+    Given a vector of times in seconds, return suitable time units and
+    new vector of times suitable for plotting.
+
+    Parameters
+    ----------
+    times : array
+        The vector of times in seconds.
+
+    Returns
+    -------
+    new_times : array
+        The vector of times in `units`.
+    units : str
+        The time units.
+    """
+    times = nm.asarray(times)
+
+    if (times[-1] / 60.0 / 60.0) > 10.0:
+        units = 'hours'
+        new_times = times / 60.0 / 60.0
+
+    elif (times[-1] / 60.0) > 10.0:
+        units = 'min.'
+        new_times = times / 60.0
+
+    else:
+        units = 's'
+        new_times = times
+
+    return new_times, units
