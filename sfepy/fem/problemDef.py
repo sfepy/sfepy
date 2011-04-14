@@ -489,6 +489,7 @@ class ProblemDefinition( Struct ):
         graph_changed = self.equations.time_update(self.ts,
                                                    ebcs, epbcs, lcbcs,
                                                    functions, self)
+        self.graph_changed = graph_changed
 
         if graph_changed or (self.mtx_a is None) or create_matrix:
             self.mtx_a = self.equations.create_matrix_graph()
