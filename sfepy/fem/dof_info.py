@@ -325,7 +325,7 @@ class EquationMap(Struct):
             if not is_active_bc(bc, ts=ts, functions=functions):
                 continue
 
-            active_bcs.add(bc)
+            active_bcs.add(bc.key)
 
             if isinstance(bc, EssentialBC):
                 ntype = 'EBC'
