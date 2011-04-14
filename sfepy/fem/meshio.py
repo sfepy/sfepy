@@ -1452,7 +1452,12 @@ class HDF5MeshIO( MeshIO ):
 
         groups = step_group._v_groups
         for name, data_group in groups.iteritems():
-            key = data_group.dname.read()
+            try:
+                key = data_group.dname.read()
+
+            except pt.exceptions.NoSuchNodeError:
+                continue
+
             if key == dname:
                 mode = data_group.mode.read()
                 fd.close()
