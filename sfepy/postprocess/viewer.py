@@ -300,7 +300,8 @@ class Viewer(Struct):
                             vector_mode='arrows_norm',
                             rel_scaling=None, clamping=False,
                             ranges=None, is_scalar_bar=False,
-                            is_wireframe=False, subdomains_args=None,
+                            is_wireframe=False, opacity=1.0,
+                            subdomains_args=None,
                             rel_text_width=None,
                             filter_names=None, group_names=None,
                             only_names=None,
@@ -426,18 +427,19 @@ class Viewer(Struct):
                     if 'cut_plane' in scalar_mode:
                         scp = add_scalar_cut_plane(active,
                                                    position, [1, 0, 0],
-                                                   opacity=0.5)
+                                                   opacity=0.5*opacity)
                         scp = add_scalar_cut_plane(active,
                                                    position, [0, 1, 0],
-                                                   opacity=0.5 )
+                                                   opacity=0.5*opacity)
                         scp = add_scalar_cut_plane(active,
                                                    position, [0, 0, 1],
-                                                   opacity=0.5 )
+                                                   opacity=0.5*opacity)
                     if 'iso_surface' in scalar_mode:
                         active.point_scalars_name = name
-                        iso = add_iso_surface(active, position, opacity=0.3)
+                        iso = add_iso_surface(active, position,
+                                              opacity=0.3*opacity)
                 else:
-                    surf = add_surf(active, position)
+                    surf = add_surf(active, position, opacity=opacity)
                 
             elif kind == 'vectors':
                 if family == 'point':
@@ -466,10 +468,10 @@ class Viewer(Struct):
                 if 'norm' in vector_mode:
                     active = mlab.pipeline.extract_vector_norm(active)
                     if 'arrows' in vector_mode:
-                        opacity = 0.3
+                        a_opacity = 0.3 * opacity
                     else:
-                        opacity = 1.0
-                    surf = add_surf(active, position, opacity=opacity)
+                        a_opacity = opacity
+                    surf = add_surf(active, position, opacity=a_opacity)
 
                 if is_3d:
                     if 'cut_plane' in vector_mode:
@@ -478,7 +480,7 @@ class Viewer(Struct):
                                                        position, normal, bbox,
                                                        rel_scaling=rel_scaling,
                                                        clamping=clamping,
-                                                       opacity=0.5)
+                                                       opacity=0.5*opacity)
                             if sf is not None:
                                 vcp.glyph.glyph.scale_factor = sf
 
@@ -503,9 +505,10 @@ class Viewer(Struct):
                                                    position, [0, 0, 1],
                                                    opacity=0.5 )
                     if 'iso_surface' in scalar_mode:
-                        iso = add_iso_surface(active, position, opacity=0.3)
+                        iso = add_iso_surface(active, position,
+                                              opacity=0.3*opacity)
                 else:
-                    surf = add_surf(active, position)
+                    surf = add_surf(active, position, opacity=opacity)
 
             else:
                 raise ValueError('bad kind! (%s)' % kind)
@@ -526,7 +529,7 @@ class Viewer(Struct):
                                        **subdomains_args)
 
             if is_wireframe:
-                surf = add_surf(source, position)
+                surf = add_surf(source, position, opacity=opacity)
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
@@ -550,7 +553,7 @@ class Viewer(Struct):
 
         if not names:
             # No data, so just show the mesh.
-            surf = add_surf(source, (0.0, 0.0, 0.0))
+            surf = add_surf(source, (0.0, 0.0, 0.0), opacity=opacity)
             surf.actor.property.color = (0.8, 0.8, 0.8)
 
             if is_subdomains:
@@ -558,7 +561,7 @@ class Viewer(Struct):
                                        **subdomains_args)
 
             if is_wireframe:
-                surf = add_surf(source, (0.0, 0.0, 0.0))
+                surf = add_surf(source, (0.0, 0.0, 0.0), opacity=opacity)
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
@@ -593,7 +596,7 @@ class Viewer(Struct):
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
-                  subdomains_args=None, rel_text_width=None,
+                  opacity=1.0, subdomains_args=None, rel_text_width=None,
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, group_names=None, step=0,
                   anti_aliasing=None, domain_specific=None):
@@ -631,6 +634,8 @@ class Viewer(Struct):
             If True, show a scalar bar for each data.
         is_wireframe : bool
             If True, show a wireframe of mesh surface bar for each data.
+        opacity : float
+            Global surface and wireframe opacity setting in [0.0, 1.0],
         subdomains_args : tuple
             Tuple of (mat_id_name, threshold_limits, single_color), see
             :func:`add_subdomains_surface`, or None.
@@ -767,6 +772,7 @@ class Viewer(Struct):
                                  ranges=ranges,
                                  is_scalar_bar=is_scalar_bar,
                                  is_wireframe=is_wireframe,
+                                 opacity=opacity,
                                  subdomains_args=subdomains_args,
                                  rel_text_width=rel_text_width,
                                  filter_names=filter_names,
@@ -884,6 +890,7 @@ def make_animation(filename, view, roll, anim_format, options):
            clamping=options.clamping, ranges=options.ranges,
            is_scalar_bar=options.is_scalar_bar,
            is_wireframe=options.is_wireframe,
+           opacity=options.opacity,
            rel_text_width=options.rel_text_width,
            fig_filename=options.fig_filename, resolution=options.resolution,
            filter_names=options.filter_names, only_names=options.only_names,

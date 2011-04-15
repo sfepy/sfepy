@@ -79,6 +79,8 @@ help = {
     'show scalar bar for each data',
     'is_wireframe' :
     'show wireframe of mesh surface for each data',
+    'opacity' :
+    'global surface and wireframe opacity in [0.0, 1.0] [default: %default]',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'watch' :
@@ -194,6 +196,7 @@ def view_file(filename, filter_names, options, view=None):
              clamping=options.clamping, ranges=options.ranges,
              is_scalar_bar=options.is_scalar_bar,
              is_wireframe=options.is_wireframe,
+             opacity=options.opacity,
              subdomains_args=options.subdomains_args,
              rel_text_width=options.rel_text_width,
              fig_filename=options.filename, resolution=options.resolution,
@@ -251,6 +254,9 @@ def main():
     parser.add_option("", "--wireframe",
                       action="store_true", dest="is_wireframe",
                       default=False, help=help['is_wireframe'])
+    parser.add_option("--opacity", type='float', metavar='opacity',
+                      action="store", dest="opacity",
+                      default=1.0, help=help['opacity'])
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])
