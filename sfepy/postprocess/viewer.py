@@ -600,19 +600,21 @@ class Viewer(Struct):
                   fig_filename='view.png', resolution = None,
                   filter_names=None, only_names=None, group_names=None, step=0,
                   anti_aliasing=None, domain_specific=None):
-        """By default, all data (point, cell, scalars, vectors, tensors) are
-        plotted in a grid layout, except data named 'node_groups', 'mat_id' which
-        are usually not interesting.
+        """
+        By default, all data (point, cell, scalars, vectors, tensors)
+        are plotted in a grid layout, except data named 'node_groups',
+        'mat_id' which are usually not interesting.
 
-        Parameters:
-
+        Parameters
+        ----------
         show : bool
             Call mlab.show().
         is_3d : bool
             If True, use scalar cut planes instead of surface for certain
             datasets. Also sets 3D view mode.
         view : tuple
-            Azimuth, elevation angles as in mlab.view().
+            Azimuth, elevation angles, distance and focal point as in
+            `mlab.view()`.
         roll : float
             Roll angle tuple as in mlab.roll().
         layout : str
@@ -958,7 +960,7 @@ class ViewerGUI(HasTraits):
 ##         output('...done')
 
         make_animation(self.viewer.filename,
-                       view[:2],
+                       view,
                        roll,
                        'avi',
                        Struct(**self.viewer.options))
