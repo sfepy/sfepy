@@ -41,7 +41,7 @@ def cg_eigs(mtx, rhs=None, precond=None, i_max=None, eps_r=1e-10,
         The relative stopping tolerance.
     shift : float, optional
         Eigenvalue shift for non-SPD matrices. If negative, the shift is
-        computed as :math:`\abs(shift) ||A||_{\infty}`.
+        computed as :math:`|shift| ||A||_{\infty}`.
     select_indices : (min, max), optional
         If given, computed only the eigenvalues with indices `min <= i <= max`.
     verbose : bool
