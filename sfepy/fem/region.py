@@ -79,6 +79,12 @@ def sort_by_dependency( graph ):
 def _join( def1, op, def2 ):
     return '(' + def1 + ' ' + op + ' ' + def2 + ')'
 
+def _try_delete(obj, ig):
+    try:
+        del obj[ig]
+    except KeyError:
+        pass
+
 ##
 # 31.10.2005, c
 class Region( Struct ):
@@ -221,17 +227,21 @@ class Region( Struct ):
         self.all_vertices = vertices.copy()
         self.must_update = False
 
-    ##
-    # c: 23.02.2007, r: 22.01.2008
-    def delete_groups( self, digs ):
-        """self.complete_description must be called after!"""
+    def delete_groups(self, digs):
+        """
+        Delete given element groups from the region.
+        """
         for ig in digs:
+            _try_delete(self.vertices, ig)
+            _try_delete(self.cells, ig)
+            _try_delete(self.faces, ig)
+            _try_delete(self.edges, ig)
             try:
-                del self.vertices[ig]
-                del self.cells[ig]
-                self.igs.remove( ig )
-            except KeyError:
+                self.igs.remove(ig)
+            except ValueError:
                 pass
+
+        self.update_shape()
 
     ##
     # 17.07.2007, c
