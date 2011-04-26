@@ -104,7 +104,7 @@ class Region( Struct ):
         can_cells : bool, optional
             If True, the region can have cells.
         surface_integral : bool, optional
-            If True, the each region surface facet (edge in 2D, face in
+            If True, then each region surface facet (edge in 2D, face in
             3D) can be listed only in one group.
 
         Returns
