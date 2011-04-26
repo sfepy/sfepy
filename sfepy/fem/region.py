@@ -132,6 +132,37 @@ class Region( Struct ):
 
         return obj
 
+    @staticmethod
+    def from_faces(faces, domain, name='region',
+                   igs=None, can_cells=False):
+        """
+        Create a new region containing given faces.
+
+        Parameters
+        ----------
+        faces : array
+            The array with indices to `domain.fa`.
+        domain : Domain instance
+            The domain containing the faces.
+        name : str, optional
+            The name of the region.
+        igs : list, optional
+            The allowed element groups. Other groups will be ignored,
+            even though the region might have faces in them - the
+            same effect the 'forbid' flag has.
+        can_cells : bool, optional
+            If True, the region can have cells.
+
+        Returns
+        -------
+        obj : Region instance
+            The new region.
+        """
+        obj = Region(name, 'given faces', domain, '')
+        obj.set_faces(faces, igs=igs, can_cells=can_cells)
+
+        return obj
+
     ##
     # 14.06.2006, c
     # 15.06.2006
@@ -225,6 +256,72 @@ class Region( Struct ):
         self.cells = {ig : nm.arange( n_cell, dtype = nm.int32 )}
         self.vertices = {ig: vertices.copy()}
         self.all_vertices = vertices.copy()
+        self.must_update = False
+
+    def set_faces(self, faces, igs=None, can_cells=False):
+        """
+        Set region data using given faces. The region description is
+        complete afterwards.
+
+        Parameters
+        ----------
+        faces : array
+            The array with indices to `domain.fa`.
+        igs : list, optional
+            The allowed element groups. Other groups will be ignored,
+            even though the region might have faces in them.
+        can_cells : bool, optional
+            If True, the region can have cells.
+        """
+        faces = nm.asarray(faces)
+
+        fa = self.domain.fa
+        ed = self.domain.ed
+
+        indices = fa.indices[faces]
+        facets = fa.facets[faces]
+
+        faces_igs = indices[:, 0]
+
+        self.igs = nm.unique(faces_igs)
+        if igs is not None:
+            self.igs = nm.intersect1d(self.igs, igs)
+
+        all_vertices = []
+        self.vertices = {}
+        self.edges = {}
+        self.faces = {}
+        self.cells = {}
+
+        mask = nm.zeros(self.n_v_max, dtype=nm.bool)
+
+        for ig, group in self.domain.iter_groups(self.igs):
+            n_fp = fa.n_fps[ig]
+
+            ii = faces_igs == ig
+
+            vv = nm.unique(facets[ii, :n_fp])
+            if len(vv) == 0: continue
+
+            self.vertices[ig] = vv
+
+            all_vertices.append(vv)
+
+            self.faces[ig] = faces[ii]
+            self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
+
+            if can_cells:
+                mask.fill(False)
+                mask[vv] = True
+
+                conn = group.conn
+                aux = nm.sum(mask[conn], 1, dtype=nm.int32)
+                rcells = nm.where(aux == conn.shape[1])[0]
+                self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
+
+        self.all_vertices = nm.unique(nm.hstack(all_vertices))
+
+        self.is_complete = True
         self.must_update = False
 
     def delete_groups(self, digs):
