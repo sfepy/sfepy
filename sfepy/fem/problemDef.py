@@ -708,7 +708,7 @@ class ProblemDefinition( Struct ):
                        io = 'auto' )
         output( '...done' )
 
-    def save_regions_as_groups(self, filename_trunk):
+    def save_regions_as_groups(self, filename_trunk, region_names=None):
         """Save regions in a single mesh but mark them by using different
         element/node group numbers.
 
@@ -717,6 +717,13 @@ class ProblemDefinition( Struct ):
 
         Region masks are also saved as scalar point data for output formats
         that support this.
+
+        Parameters
+        ----------
+        filename_trunk : str
+            The output filename without suffix.
+        region_names : list, optional
+            If given, only the listed regions are saved.
         """
 
         output( 'saving regions as groups...' )
@@ -726,8 +733,9 @@ class ProblemDefinition( Struct ):
         n_nod = self.domain.shape.n_nod
 
         # The whole domain region should go first.
-        names = self.domain.regions.get_names()
-        for region in self.domain.regions:
+        names = get_default(region_names, self.domain.regions.get_names())
+        for name in names:
+            region = self.domain.regions[name]
             if region.all_vertices.shape[0] == n_nod:
                 names.remove(region.name)
                 names = [region.name] + names
