@@ -455,6 +455,50 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
 }
 
 #undef __FUNC__
+#define __FUNC__ "dw_lin_strain_fib"
+int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
+			 VolumeGeometry *vg,
+			 int32 *elList, int32 elList_nRow )
+{
+  int32 ii, iel, dim, sym, nQP, nEP, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
+
+  nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
+  dim = vg->bfGM->nRow;
+  sym = (dim + 1) * dim / 2;
+
+  fmf_createAlloc( &aux1, 1, nQP, nEP * dim, sym );
+  fmf_createAlloc( &aux2, 1, nQP, nEP * dim, 1 );
+
+  for (ii = 0; ii < elList_nRow; ii++) {
+    iel = elList[ii];
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( mat, ii );
+    FMF_SetCell( vg->bfGM, iel );
+    FMF_SetCell( vg->det, iel );
+
+    form_sdcc_actOpGT_M3( aux1, vg->bfGM, mtxD );
+    fmf_mulAB_nn( aux2, aux1, mat );
+    fmf_sumLevelsMulF( out, aux2, vg->det->val );
+    fmf_print(aux1, stdout, 0);
+    fmf_print(aux2, stdout, 0);
+    fmf_print(mtxD, stdout, 0);
+    fmf_print(mat, stdout, 0);
+    fmf_print(out, stdout, 0);
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &aux1 );
+  fmf_freeDestroy( &aux2 );
+
+  return( ret );
+}
+
+#undef __FUNC__
 #define __FUNC__ "de_cauchy_strain"
 /*!
   @par Revision history:

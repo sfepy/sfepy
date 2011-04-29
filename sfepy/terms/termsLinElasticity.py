@@ -316,6 +316,40 @@ class LinearPrestressTerm(VectorVector, Term):
             use_method_with_name(self, self.get_fargs_eval, 'get_fargs')
             self.use_caches = {'cauchy_strain' : [['parameter']]}
 
+class LinearStrainFiberTerm(VectorVector, Term):
+    r"""
+    :Description:
+    Linear (pre)strain fiber term. Given fiber orientation :math:`\nu_{i}`.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} D_{ijkl} e_{ij}(\ul{v}) \left(\nu_i \nu_j\right)
+
+    :Arguments:
+        material_1 : :math:`D_{ijkl}`,
+        material_2 : :math:`\nu_i`,
+        virtual  : :math:`\ul{v}`
+
+    """
+    name = 'dw_lin_strain_fib'
+    arg_types = ('material_1', 'material_2', 'virtual')
+
+    function = staticmethod(terms.dw_lin_strain_fib)
+
+    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+        mat1, mat2, virtual = self.get_args(**kwargs)
+        ap, vg = self.get_approximation(virtual)
+        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+        if diff_var is None:
+            shape = (chunk_size, 1, dim * n_ep, 1)
+        else:
+            raise StopIteration
+
+        for out, chunk in self.char_fun( chunk_size, shape ):
+            status = self.function( out, mat1, mat2, vg, chunk )
+            yield out, chunk, status
+
 class CauchyStrainTerm( Term ):
     r"""
     :Description:
