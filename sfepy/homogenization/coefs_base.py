@@ -103,8 +103,9 @@ class CorrMiniApp( MiniAppBase ):
         else:
             return None
 
-    def get_output(self, corr_sol, is_dump=False, extend=True):
-        variables = self.problem.get_variables()
+    def get_output(self, corr_sol, is_dump=False, extend=True, variables=None):
+        if variables is None:
+            variables = self.problem.get_variables()
         to_output = variables.state_to_output
 
         if is_dump:
@@ -150,11 +151,12 @@ class CorrMiniApp( MiniAppBase ):
 
         return out
 
-    def save(self, state, problem):
+    def save(self, state, problem, variables=None):
         save_name = self.get_save_name()
         if save_name is not None:
             extend = not self.file_per_var
-            out = self.get_output(state, extend=extend)
+            out = self.get_output(state, extend=extend,
+                                  variables=variables)
 
             problem.save_state(save_name, out=out,
                                file_per_var=self.file_per_var)
@@ -162,7 +164,8 @@ class CorrMiniApp( MiniAppBase ):
         dump_name = self.get_dump_name()
         if dump_name is not None:
             problem.save_state(dump_name,
-                               out=self.get_output(state, is_dump=True),
+                               out=self.get_output(state, is_dump=True,
+                                                   variables=variables),
                                file_per_var=False)
 
 class ShapeDimDim( CorrMiniApp ):
@@ -339,6 +342,36 @@ class CorrOne( CorrMiniApp ):
                                 state = state.get_parts())
 
         self.save(corr_sol, problem)
+
+        return corr_sol
+
+class CorrSetBCS( CorrMiniApp ):
+
+    def __call__( self, problem = None, data = None ):
+        from sfepy.base.base import select_by_names
+        from sfepy.fem.variables import Variables
+        from sfepy.fem.state import State
+        from sfepy.fem.conditions import Conditions
+
+        problem = get_default(problem, self.problem)
+
+        conf_ebc = select_by_names(problem.conf.ebcs, self.ebcs)
+        conf_epbc = select_by_names(problem.conf.epbcs, self.epbcs)
+        ebcs = Conditions.from_conf(conf_ebc, problem.domain.regions)
+        epbcs = Conditions.from_conf(conf_epbc, problem.domain.regions)
+
+        conf_variables = select_by_names(problem.conf.variables, self.variable)
+        problem.set_variables(conf_variables)
+        variables = Variables.from_conf(conf_variables, problem.fields)
+        variables.equation_mapping(ebcs, epbcs, problem.ts, problem.functions)
+        state = State(variables)
+        state.fill(0.0)
+        state.apply_ebc()
+
+        corr_sol = CorrSolution(name = self.name,
+                                state = state.get_parts())
+
+        self.save(corr_sol, problem, variables)
 
         return corr_sol
 
