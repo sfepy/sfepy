@@ -311,32 +311,3 @@ class DiffusionIntegrateTerm( Term ):
             out1 = nm.sum(out, 0)
             out1.shape = (dim,)
             yield out1, chunk, status
-
-class DiffusionSurfaceIntegrateTerm( ScalarScalar, Term ):
-    r"""
-    :Description:
-    Diffusion surface integrate term
-
-    :Definition:
-    .. math::
-        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
-
-    :Arguments:
-        material: :math:`\ul{K}`,
-        parameter:  :math:`\bar{p}`,
-    """
-    name = 'd_surface_diffusion_integrate'
-    arg_types = ('material', 'parameter')
-    integration = 'surface_extra'
-
-    function = staticmethod(terms.d_surf_diffusion_integrate)
-
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
-
-        self.set_data_shape( ap )
-
-        fargs = (par(), mat, sg, ap.econn)
-
-        return fargs, (chunk_size, 1, 1, 1), 0

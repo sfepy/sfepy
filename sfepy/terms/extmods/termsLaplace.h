@@ -50,10 +50,6 @@ int32 d_diffusion_integrate( FMField *out, FMField *state,
 			     FMField *mtxD, VolumeGeometry *vg,
 			     int32 *conn, int32 nEl, int32 nEP,
 			     int32 *elList, int32 elList_nRow );
-int32 d_surf_diffusion_integrate( FMField *out, FMField *state,
-				  FMField *mtxD, SurfaceGeometry *sg,
-				  int32 *conn, int32 nEl, int32 nEP,
-				  int32 *elList, int32 elList_nRow );
 
 END_C_DECLS
 
