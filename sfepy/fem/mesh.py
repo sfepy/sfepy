@@ -660,6 +660,9 @@ class Mesh( Struct ):
         conns = []
         mat_ids = []
         for ig, conn in enumerate(self.conns):
+            if conn.shape[0] == 0:
+                continue
+
             aux = remap[conn]
             ii = nm.unique(nm.where(aux == -1)[0])
             ii = nm.setdiff1d(nm.arange(conn.shape[0], dtype=nm.int32), ii)
