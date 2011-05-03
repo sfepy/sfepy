@@ -34,6 +34,22 @@ def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
 
     return vec
 
+def normalize_vectors(vecs, eps=1e-8):
+    """
+    Normalize an array of vectors in place.
+
+    Parameters
+    ----------
+    vecs : array
+        The 2D array of vectors in rows.
+    eps : float
+        The tolerance for considering a vector to have zero norm. Such
+        vectors are left unchanged.
+    """
+    norms = norm_l2_along_axis(vecs, axis=1)
+    ii = norms > eps
+    vecs[ii] = vecs[ii] / norms[ii][:, None]
+
 ##
 # 21.11.2005, c
 def split_range( n_item, step ):
