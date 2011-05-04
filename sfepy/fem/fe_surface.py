@@ -52,17 +52,17 @@ class FESurface(Struct):
         self.face_type = face_type
         self.bkey = bkey
 
-    def get_connectivity(self, is_surface=False):
+    def get_connectivity(self, local=False):
         """
         Return the surface element connectivity.
 
         Parameters
         ----------
-        is_surface : bool
+        local : bool
             If True, return local connectivity w.r.t. surface nodes,
             otherwise return global connectivity w.r.t. all mesh nodes.
         """
-        if is_surface:
+        if local:
             return self.leconn
 
         else:
