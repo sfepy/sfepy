@@ -14,6 +14,19 @@ def prepare_remap(indices, n_full):
 
     return remap
 
+def invert_remap(remap):
+    """
+    Return the inverse of `remap`, i.e. a mapping from a sub-range
+    indices to a full range, see :func:`prepare_remap()`.
+    """
+    if remap is not None:
+        inverse = nm.where(remap >= 0)[0].astype(nm.int32)
+
+    else:
+        inverse = None
+
+    return inverse
+
 def compute_nodal_normals(nodes, region, field, return_imap=False):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
