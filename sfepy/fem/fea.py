@@ -249,6 +249,13 @@ class Approximation( Struct ):
         """Compute jacobians, element volumes and base function derivatives
         for Volume-type geometries, and jacobians, normals and base function
         derivatives for Surface-type geometries.
+
+        Notes
+        -----
+        - volume mappings are defined always for a element whole group,
+          although the field itself can be defined on its part only
+        - surface mappings are defined on the surface region
+        - surface mappings require field order to be > 0
         """
         domain = field.domain
         group = domain.groups[self.ig]
@@ -272,13 +279,15 @@ class Approximation( Struct ):
             out = vg
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
+            assert_(field.approx_order > 0)
+
             sd = self.surface_data[region.name]
             qp = self.get_qp(sd.face_type, integral)
 
             geo_ps = self.interp.get_geom_poly_space(sd.face_type)
 
             econn = sd.get_connectivity(self.is_surface)
-            conn = econn[:, :geo_ps.n_nod].copy()
+            conn = field.vertex_remap_i[econn[:, :geo_ps.n_nod]]
 
             mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
             sg = mapping.get_mapping(qp.vals, qp.weights)
