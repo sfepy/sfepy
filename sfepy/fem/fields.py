@@ -1,3 +1,16 @@
+"""
+Notes
+-----
+
+Important attributes of continuous (order > 0) :class:`Field` and
+:class:`SurfaceField` instances:
+
+- `vertex_remap` : `econn[:, :n_vertex] = vertex_remap[conn]`
+- `vertex_remap_i` : `conn = vertex_remap_i[econn[:, :n_vertex]]`
+
+where `conn` is the mesh vertex connectivity, `econn` is the
+region-local field connectivity.
+"""
 import time
 import numpy as nm
 
@@ -5,7 +18,7 @@ from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
 from sfepy.base.base import Struct
 import fea
 from sfepy.fem.mesh import Mesh, make_inverse_connectivity
-from sfepy.fem.utils import extend_cell_data, prepare_remap
+from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
@@ -288,6 +301,7 @@ class Field( Struct ):
         self.init_econn()
 
         self.n_vertex_dof, self.vertex_remap = self.setup_vertex_dofs()
+        self.vertex_remap_i = invert_remap(self.vertex_remap)
 
         aux = self.setup_edge_dofs()
         self.n_edge_dof, self.edge_dofs, self.edge_remap = aux
