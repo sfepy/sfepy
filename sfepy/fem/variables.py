@@ -1388,15 +1388,48 @@ class FieldVariable(Variable):
     def get_approximation(self, ig):
         return self.field.aps[ig]
 
-    def get_data_shapes(self, integral, ig, region_name=None):
+    def get_data_shape(self, ig, integral,
+                       shape_kind='volume', region_name=None):
+        """
+        Get element data dimensions for given approximation.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        integral : Integral instance
+            The integral describing used numerical quadrature.
+        shape_kind : 'volume' or 'surface'
+            The kind of requested data shape.
+        region_name : str
+            The name of surface region, required when `shape_kind` is
+            'surface'.
+
+        Returns
+        -------
+        data_shape : 4 ints
+            The `(n_el, n_qp, n_comp, n_en)` for volume shape kind and
+            `(n_fa, n_qp, n_comp, n_fn)` for surface shape kind.
+
+        Notes
+        -----
+        - `n_el`, `n_fa` = number of elements/facets
+        - `n_qp` = number of quadrature points per element/facet
+        - `n_comp` = number of variable components in a point/node
+        - `n_en`, `n_fn` = number of element/facet nodes
+        """
         ap = self.field.aps[ig]
-        if region_name is None:
-            shape = ap.get_v_data_shape(integral)
+        if shape_kind == 'surface':
+            data_shape = ap.get_s_data_shape(integral, region_name)
+
+        elif shape_kind == 'volume':
+            data_shape = ap.get_v_data_shape(integral)
 
         else:
-            shape = ap.get_s_data_shape(integral, region_name)
+            raise NotImplementedError('unsupported shape kind! (%s)'
+                                      % shape_kind)
 
-        return shape
+        return data_shape
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
