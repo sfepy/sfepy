@@ -1431,6 +1431,84 @@ class FieldVariable(Variable):
 
         return data_shape
 
+    def set_current_group(self, ig, integral,
+                          shape_kind='volume', region_name=None):
+        ap = self.field.aps[ig]
+
+        if shape_kind == 'surface':
+            sd = ap.surface_data[region_name]
+            key = sd.face_type
+
+        elif shape_kind == 'volume':
+            key = 'v'
+
+        self._ap = ap
+        self._data_shape = self.get_data_shape(ig, integral,
+                                               shape_kind, region_name)
+        self._bf = ap.get_base(key, 0, integral)
+        # This should be geo.bfg!
+        self._bfg = ap.get_base(key, 1, integral)
+        self._bfg = nm.tile(self._bfg, (self._data_shape[0], 1, 1, 1))
+
+        self._idof = None
+
+    def val(self):
+        """
+        Base function values in quadrature points.
+        """
+        if self._idof is None:
+            # Evaluation mode.
+            out = self.val_qp()
+
+        else:
+            out = self._bf[..., self._idof]
+
+        return out
+
+    def val_qp(self):
+        """
+        Return variable evaluated in quadrature points.
+        """
+        return self._bf
+
+    def grad(self):
+        """
+        Base function gradient (space elements) values in quadrature
+        points.
+        """
+        if self._idof is None:
+            out = self.grad_qp()
+
+        else:
+            out = self._bfg[..., self._idof : self._idof + 1]
+
+        return out
+
+    def grad_qp(self):
+        """
+        Return variable gradient evaluated in quadrature points.
+        """
+        vec = self()
+        evec = vec[self._ap.econn]
+
+        aux = la.insert_strided_axis(evec, 1, self._bfg.shape[1])[..., None]
+
+        out = la.dot_sequences(self._bfg, aux)
+
+        return out
+
+    def iter_dofs(self):
+        """
+        Iterate over element DOFs.
+
+        Sets current base function and its gradient.
+        """
+        n_ep = self._data_shape[-1]
+
+        for ii in xrange(n_ep):
+            self._idof = ii
+            yield ii
+
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
         nods = self.field.get_dofs_in_region(region, merge=True, igs=igs)
