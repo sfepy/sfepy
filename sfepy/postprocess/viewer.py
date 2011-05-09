@@ -822,9 +822,10 @@ class Viewer(Struct):
                 ),
                 HGroup(spring,
                        Item('button_view', show_label=False),
+                       Item('button_make_snapshots', show_label=False,
+                            enabled_when='has_several_steps == True'),
                        Item('button_make_animation', show_label=False,
                             enabled_when='has_several_steps == True'),),
-                
                 resizable=True,
                 buttons=['OK'],
             )
@@ -900,12 +901,17 @@ def make_animation(filename, view, roll, anim_format, options):
            anti_aliasing=options.anti_aliasing,
            domain_specific=options.domain_specific)
 
-    anim_name = viewer.encode_animation(options.fig_filename, anim_format,
-                                        options.ffmpeg_options)
+    op = os.path
+    if anim_format != 'png':
+        anim_name = viewer.encode_animation(options.fig_filename, anim_format,
+                                            options.ffmpeg_options)
 
-    import os.path as op
-    shutil.move(anim_name, op.join(options.output_dir, op.split(anim_name)[1]))
-    shutil.rmtree(output_dir)
+        shutil.move(anim_name, op.join(options.output_dir,
+                                       op.split(anim_name)[1]))
+        shutil.rmtree(output_dir)
+
+    else:
+        shutil.move(output_dir, op.join(options.output_dir, 'snapshots'))
 
     mlab.close(viewer.scene)
 
@@ -918,6 +924,7 @@ class ViewerGUI(HasTraits):
     set_step = Instance(SetStep)
     button_view = Button('print view')
     button_make_animation = Button('make animation')
+    button_make_snapshots = Button('make snapshots')
 
 ##     anim_process = Instance(Process)
 
@@ -963,4 +970,14 @@ class ViewerGUI(HasTraits):
                        view,
                        roll,
                        'avi',
+                       Struct(**self.viewer.options))
+
+    def _button_make_snapshots_fired(self):
+        view = mlab.view()
+        roll = mlab.roll()
+
+        make_animation(self.viewer.filename,
+                       view,
+                       roll,
+                       'png',
                        Struct(**self.viewer.options))
