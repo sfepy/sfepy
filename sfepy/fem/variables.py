@@ -1415,8 +1415,9 @@ class FieldVariable(Variable):
         -----
         - `n_el`, `n_fa` = number of elements/facets
         - `n_qp` = number of quadrature points per element/facet
-        - `n_comp` = number of variable components in a point/node
+        - `dim` = spatial dimension
         - `n_en`, `n_fn` = number of element/facet nodes
+        - `n_comp` = number of variable components in a point/node
         """
         ap = self.field.aps[ig]
         if shape_kind == 'surface':
@@ -1428,6 +1429,8 @@ class FieldVariable(Variable):
         else:
             raise NotImplementedError('unsupported shape kind! (%s)'
                                       % shape_kind)
+
+        data_shape += (self.n_components,)
 
         return data_shape
 
