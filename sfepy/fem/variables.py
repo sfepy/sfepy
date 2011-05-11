@@ -1133,6 +1133,9 @@ class FieldVariable(Variable):
         self.has_lcbc = False
         self._variables = None
 
+        self.clear_bases()
+        self.clear_current_group()
+
     def _set_field(self, field):
         """
         Set field of the variable.
@@ -1388,6 +1391,12 @@ class FieldVariable(Variable):
     def get_approximation(self, ig):
         return self.field.aps[ig]
 
+    def assign_geometries(self, geometries):
+        """
+        Initialize the shared dict of geometries.
+        """
+        self.geometries = geometries
+
     def get_data_shape(self, ig, integral,
                        shape_kind='volume', region_name=None):
         """
@@ -1434,24 +1443,66 @@ class FieldVariable(Variable):
 
         return data_shape
 
-    def set_current_group(self, ig, integral,
-                          shape_kind='volume', region_name=None):
-        ap = self.field.aps[ig]
+    def clear_bases(self):
+        """
+        Clear base functions, base function gradients and element data
+        dimensions.
+        """
+        self.bfs = {}
+        self.bfgs = {}
+        self.data_shapes = {}
 
-        if shape_kind == 'surface':
-            sd = ap.surface_data[region_name]
-            key = sd.face_type
+    def setup_bases(self, geo_key, ig, geo, integral, shape_kind='volume'):
+        """
+        Setup and cache base functions and base function gradients for
+        given geometry. Also cache element data dimensions.
+        """
+        if geo_key not in self.bfs:
+            ap = self.field.aps[ig]
 
-        elif shape_kind == 'volume':
-            key = 'v'
+            region_name = geo_key[1]
 
-        self._ap = ap
-        self._data_shape = self.get_data_shape(ig, integral,
-                                               shape_kind, region_name)
-        self._bf = ap.get_base(key, 0, integral)
-        # This should be geo.bfg!
-        self._bfg = ap.get_base(key, 1, integral)
-        self._bfg = nm.tile(self._bfg, (self._data_shape[0], 1, 1, 1))
+            self.data_shapes[geo_key] = self.get_data_shape(ig, integral,
+                                                            shape_kind,
+                                                            region_name)
+
+            if shape_kind == 'surface':
+                sd = ap.surface_data[region_name]
+                key = sd.face_type
+
+            elif shape_kind == 'volume':
+                key = 'v'
+
+            self.bfs[geo_key] = ap.get_base(key, 0, integral)
+            if integral.kind == 'v':
+                self.bfgs[geo_key] = geo.variable(0)
+
+            else:
+                try:
+                    self.bfgs[geo_key] = geo.variable(3)
+
+                except:
+                    self.bfgs[geo_key] = None
+
+    def clear_current_group(self):
+        """
+        Clear current group data.
+        """
+        self._ap = None
+        self._data_shape = None
+        self._bf = self._bfg = None
+
+    def set_current_group(self, geo_key, ig):
+        """
+        Set current group data, initialize current DOF counter to `None`.
+
+        The current group data are the approximation, element data
+        dimensions, base functions and base function gradients.
+        """
+        self._ap = self.field.aps[ig]
+        self._data_shape = self.data_shapes[geo_key]
+        self._bf = self.bfs[geo_key]
+        self._bfg = self.bfgs[geo_key]
 
         self._idof = None
 
@@ -1506,7 +1557,7 @@ class FieldVariable(Variable):
 
         Sets current base function and its gradient.
         """
-        n_ep = self._data_shape[-1]
+        n_ep = self._data_shape[3]
 
         for ii in xrange(n_ep):
             self._idof = ii
