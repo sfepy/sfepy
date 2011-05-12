@@ -214,9 +214,7 @@ class NewDiffusionTerm(NewTerm):
     """
     """
     name = 'dw_new_diffusion'
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2'))
-    modes = ('weak', 'eval')
+    arg_types = ('material', 'virtual', 'state')
 
     def __call__(self, mat, virtual, state, **kwargs):
 
