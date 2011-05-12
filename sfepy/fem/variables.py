@@ -1473,7 +1473,10 @@ class FieldVariable(Variable):
             elif shape_kind == 'volume':
                 key = 'v'
 
-            self.bfs[geo_key] = ap.get_base(key, 0, integral)
+            ebf = ap.get_base(key, 0, integral)
+            bf = la.insert_strided_axis(ebf, 0, ap.econn.shape[0])
+            self.bfs[geo_key] = bf
+
             if integral.kind == 'v':
                 self.bfgs[geo_key] = geo.variable(0)
 
@@ -1515,7 +1518,7 @@ class FieldVariable(Variable):
             out = self.val_qp()
 
         else:
-            out = self._bf[..., self._idof]
+            out = self._bf[..., self._idof : self._idof + 1]
 
         return out
 
@@ -1523,7 +1526,14 @@ class FieldVariable(Variable):
         """
         Return variable evaluated in quadrature points.
         """
-        return self._bf
+        vec = self()
+        evec = vec[self._ap.econn]
+
+        aux = la.insert_strided_axis(evec, 1, self._bf.shape[1])[..., None]
+
+        out = la.dot_sequences(self._bf, aux)
+
+        return out
 
     def grad(self):
         """
