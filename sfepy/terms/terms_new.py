@@ -226,3 +226,15 @@ class NewDiffusionTerm(NewTerm):
         val = dot(virtual.grad(), dot(mat, state.grad()), 'ATB')
 
         return val
+
+class NewMassScalarTerm(NewTerm):
+    """
+    """
+    name = 'dw_new_mass_scalar'
+    arg_types = ('virtual', 'state')
+
+    def __call__(self, virtual, state, **kwargs):
+
+        val = virtual.val() * state.val()
+
+        return val
