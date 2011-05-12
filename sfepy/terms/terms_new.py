@@ -119,15 +119,18 @@ class NewTerm(Term):
         shape_kind = self.get_shape_kind()
 
         if mode == 'eval':
+            var = self.get_variables()[0]
+
             val = 0.0
             for ig in self.iter_groups():
                 args = self.get_args(**kwargs)
-                for aux, iels, status in self(*args,
-                                              call_mode='d_eval', **kwargs):
-                    val += self.sign * aux
+
+                val_qp = self(*args, **kwargs)
+                _val = self.integrate(val_qp, var)
+                val += self.sign * _val.sum()
 
         elif mode in ('el_avg', 'qp'):
-            pass
+            raise NotImplementedError()
 
         elif mode == 'weak':
             varr = self.get_virtual_variable()
@@ -199,16 +202,18 @@ class NewTerm(Term):
 
         # Setup return value.
         if mode == 'eval':
-            out = (vals,)
+            out = (val,)
 
         else:
             out = (vals, iels)
 
+        # Hack: add zero status.
+        out = out + (0,)
+
         if len(out) == 1:
             out = out[0]
 
-        # Hack: add zero status.
-        return out + (0,)
+        return out
 
 class NewDiffusionTerm(NewTerm):
     """
