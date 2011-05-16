@@ -65,18 +65,15 @@ def add_iso_surface(obj, position, contours=10, opacity=1.0):
     obj.actor.actor.position = position
     return obj
 
-def add_subdomains_surface(obj, position, mat_id, mat_id_name='mat_id',
-                           threshold_limits=(None, None), single_color=False):
+def add_subdomains_surface(obj, position, mat_id_name='mat_id',
+                           threshold_limits=(None, None), **kwargs):
+    dm = DatasetManager(dataset=obj.outputs[0])
+    mat_id = dm.cell_scalars[mat_id_name]
+
     rm = mat_id.min(), mat_id.max()
 
-    if single_color:
-        mat_id[mat_id > rm[0]] = rm[1]
-
-    dm = DatasetManager(dataset=obj.outputs[0])
-    if mat_id_name not in dm.cell_scalars:
-        dm.add_array(mat_id, mat_id_name, 'cell')
-
-    dm.activate(mat_id_name, 'cell')
+    active = mlab.pipeline.set_active_attribute(obj)
+    active.cell_scalars_name = mat_id_name
 
     aa = mlab.pipeline.set_active_attribute(obj)
     aa.cell_scalars_name = mat_id_name
@@ -88,6 +85,9 @@ def add_subdomains_surface(obj, position, mat_id, mat_id_name='mat_id',
     if threshold_limits[1] is not None:
         threshold.upper_threshold = threshold_limits[1] - 0.1
 
+    threshold.auto_reset_lower = False
+    threshold.auto_reset_upper = False
+
     surface = mlab.pipeline.surface(threshold, opacity=0.3)
     surface.actor.actor.position = position
 
@@ -97,7 +97,7 @@ def add_subdomains_surface(obj, position, mat_id, mat_id_name='mat_id',
     if (rm[1] - rm[0]) == 1:
         lm.reverse_lut = True
 
-    surface2 = mlab.pipeline.surface(dm.output, opacity=0.2)
+    surface2 = mlab.pipeline.surface(active, opacity=0.2)
     surface2.actor.actor.position = position
 
     module_manager = surface2.parent
@@ -312,15 +312,20 @@ class Viewer(Struct):
         filter_names = get_default(filter_names, [])
         domain_specific = get_default(domain_specific, {})
 
-        self.source = source = self.file_source()
-
         if subdomains_args is not None:
             is_subdomains = True
-            mat_id = file_source.get_mat_id(subdomains_args['mat_id_name'])
-            output('mat_id range: [%d, %d]' % (mat_id.min(), mat_id.max()))
+            file_source.setup_mat_id(subdomains_args['mat_id_name'],
+                                     subdomains_args['single_color'])
 
         else:
             is_subdomains = False
+
+        self.source = source = self.file_source()
+
+        if subdomains_args is not None:
+            # Hack to prevent mayavi switching to point scalar on source
+            # change.
+            source.point_scalars_name = ''
 
         bbox = file_source.get_bounding_box()
         dx = 1.1 * (bbox[1,:] - bbox[0,:])
@@ -525,8 +530,7 @@ class Viewer(Struct):
                 lm.data_range = ranges[name]
 
             if is_subdomains:
-                add_subdomains_surface(source, position, mat_id,
-                                       **subdomains_args)
+                add_subdomains_surface(source, position, **subdomains_args)
 
             if is_wireframe:
                 surf = add_surf(source, position, opacity=opacity)
@@ -557,7 +561,7 @@ class Viewer(Struct):
             surf.actor.property.color = (0.8, 0.8, 0.8)
 
             if is_subdomains:
-                add_subdomains_surface(source, (0.0, 0.0, 0.0), mat_id,
+                add_subdomains_surface(source, (0.0, 0.0, 0.0),
                                        **subdomains_args)
 
             if is_wireframe:
@@ -894,6 +898,7 @@ def make_animation(filename, view, roll, anim_format, options):
            is_scalar_bar=options.is_scalar_bar,
            is_wireframe=options.is_wireframe,
            opacity=options.opacity,
+           subdomains_args=options.subdomains_args,
            rel_text_width=options.rel_text_width,
            fig_filename=options.fig_filename, resolution=options.resolution,
            filter_names=options.filter_names, only_names=options.only_names,
