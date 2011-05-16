@@ -25,12 +25,20 @@ def post_process(out, pb, state, extend=False):
     for vn in ['p', 'r']:
         try:
             dd = pb.evaluate('dw_new_diffusion.2.Omega(m.c, %s, %s)'
-                             % (vn, vn))
-            print dd
+                             % (vn, vn), verbose=False)
+            print 'dw_new_diffusion', vn, dd
+
+            dd = pb.evaluate('dw_diffusion.2.Omega(m.c, %s, %s)'
+                             % (vn, vn), verbose=False)
+            print 'dw_diffusion', vn, dd
 
             mass = pb.evaluate('dw_new_mass_scalar.2.Omega(%s, %s)'
-                               % (vn, vn))
-            print mass
+                               % (vn, vn), verbose=False)
+            print 'dw_new_mass_scalar', vn, mass
+
+            mass = pb.evaluate('dw_mass_scalar.2.Omega(%s, %s)'
+                               % (vn, vn), verbose=False)
+            print 'dw_mass_scalar', vn, mass
 
         except:
             pass
