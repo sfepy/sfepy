@@ -7,7 +7,7 @@ from enthought.mayavi.sources.vtk_data_source import VTKDataSource
 from enthought.pyface.timer.api import Timer
 from dataset_manager import DatasetManager
 
-from sfepy.base.base import Struct
+from sfepy.base.base import get_default, Struct
 from sfepy.postprocess.utils import mlab
 from sfepy.fem import Mesh
 from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
@@ -67,12 +67,17 @@ class FileSource(Struct):
 
     def reset(self):
         """Reset."""
+        self.mat_id_name = None
         self.source = None
         self.step_range = None
         self.notify_obj = None
         if self.watch:
             self.last_stat = os.stat(self.filename)
         self.set_step()
+
+    def setup_mat_id(self, mat_id_name='mat_id', single_color=False):
+        self.mat_id_name = mat_id_name
+        self.single_color = single_color
 
     def set_step(self, step=0):
         """Set step of a data sequence."""
@@ -164,7 +169,15 @@ class GenericFileSource(FileSource):
         self.n_nod, self.dim = self.mesh.coors.shape
 
     def create_source(self):
-        """Create a VTK source from data in a SfePy-supported file."""
+        """
+        Create a VTK source from data in a SfePy-supported file.
+
+        Notes
+        -----
+        All data need to be set here, otherwise time stepping will not
+        work properly - data added by user later will be thrown away on
+        time step change.
+        """
         if self.io is None:
             self.read_common(self.filename)
 
@@ -177,7 +190,16 @@ class GenericFileSource(FileSource):
 
         if out is not None:
             self.add_data_to_dataset(dataset, out)
-        
+
+        if self.mat_id_name is not None:
+            mat_id = nm.concatenate(self.mesh.mat_ids)
+            if self.single_color:
+                rm = mat_id.min(), mat_id.max()
+                mat_id[mat_id > rm[0]] = rm[1]
+
+            dm = DatasetManager(dataset=dataset)
+            dm.add_array(mat_id, self.mat_id_name, 'cell')
+
         src = VTKDataSource(data=dataset)
 #        src.print_traits()
 #        debug()
