@@ -86,7 +86,7 @@ class NewTerm(Term):
 
     def set_current_group(self, ig):
         """
-        Set current group for the term and all variable in its
+        Set current group for the term and all variables in its
         arguments.
         """
         self.char_fun.set_current_group(ig)
