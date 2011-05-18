@@ -723,6 +723,10 @@ class Variable( Struct ):
             self.dof_name = self.name
 
         elif kind == 'test':
+            if primary_var_name == self.name:
+                raise ValueError('primary variable for %s cannot be %s!'
+                                 % (self.name, primary_var_name))
+
             self.flags.add(is_virtual)
             msg = 'test variable %s: related unknown missing' % self.name
             self.primary_var_name = get_default(primary_var_name, None, msg)
