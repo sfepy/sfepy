@@ -1559,15 +1559,20 @@ class FieldVariable(Variable):
         ic : int, optional
             The index of variable component.
         ider : int, optional
-            The spatial derivative index.
+            The spatial derivative index. If not given, the whole
+            gradient is returned.
         """
-        ider = get_default(ider, 0)
+        if ider is None:
+            iders = slice(None)
+
+        else:
+            iders = slice(ider, ider + 1)
 
         if self._inod is None:
             out = self.grad_qp(ic=ic, ider=ider)
 
         else:
-            out = self._bfg[..., ider : ider + 1, self._inod : self._inod + 1]
+            out = self._bfg[..., iders, self._inod : self._inod + 1]
 
         return out
 
@@ -1580,15 +1585,20 @@ class FieldVariable(Variable):
         ic : int, optional
             The index of variable component.
         ider : int, optional
-            The spatial derivative index.
+            The spatial derivative index. If not given, the whole
+            gradient is returned.
         """
-        ider = get_default(ider, 0)
+        if ider is None:
+            iders = slice(None)
+
+        else:
+            iders = slice(ider, ider + 1)
 
         vec = self()[ic::self.n_components]
         evec = vec[self._ap.econn]
 
         aux = la.insert_strided_axis(evec, 1, self._bfg.shape[1])[..., None]
-        out = la.dot_sequences(self._bfg[:, :, ider : ider + 1, :], aux)
+        out = la.dot_sequences(self._bfg[:, :, iders, :], aux)
 
         return out
 
