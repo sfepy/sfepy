@@ -238,3 +238,23 @@ class NewMassScalarTerm(NewTerm):
         val = virtual.val() * state.val()
 
         return val
+
+class NewMassTerm(NewTerm):
+    """
+    Works for both scalar and vector variables.
+    """
+    name = 'dw_new_mass'
+    arg_types = ('virtual', 'state')
+
+    def __call__(self, virtual, state, **kwargs):
+
+        rindx = virtual.get_component_indices()
+        cindx = state.get_component_indices()
+
+        val = virtual.get_element_zeros()
+        for ir, irs in rindx:
+            for ic, ics in cindx:
+                if ir == ic:
+                    val += virtual.val(ir) * state.val(ic)
+
+        return val
