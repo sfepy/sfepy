@@ -32,6 +32,10 @@ def post_process(out, pb, state, extend=False):
                              % (vn, vn), verbose=False)
             print 'dw_diffusion', vn, dd
 
+            mass = pb.evaluate('dw_new_mass.2.Omega(%s, %s)'
+                               % (vn, vn), verbose=False)
+            print 'dw_new_mass', vn, mass
+
             mass = pb.evaluate('dw_new_mass_scalar.2.Omega(%s, %s)'
                                % (vn, vn), verbose=False)
             print 'dw_new_mass_scalar', vn, mass
@@ -82,7 +86,7 @@ ebcs = {
 equations = {
     'new equation' :
     """dw_new_diffusion.2.Omega(m.c, q, p)
-     + dw_new_mass_scalar.2.Omega(q, p)
+     + dw_new_mass.2.Omega(q, p)
      = 0""",
     'equation' :
     """dw_diffusion.2.Omega(m.c, s, r)
