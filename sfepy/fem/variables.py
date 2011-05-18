@@ -1478,14 +1478,16 @@ class FieldVariable(Variable):
             self.bfs[geo_key] = bf
 
             if integral.kind == 'v':
-                self.bfgs[geo_key] = geo.variable(0)
+                bfg = geo.variable(0)
 
             else:
                 try:
-                    self.bfgs[geo_key] = geo.variable(3)
+                    bfg = geo.variable(3)
 
                 except:
-                    self.bfgs[geo_key] = None
+                    bfg = None
+
+            self.bfgs[geo_key] = bfg
 
     def clear_current_group(self):
         """
@@ -1508,70 +1510,130 @@ class FieldVariable(Variable):
         self._bfg = self.bfgs[geo_key]
 
         self._idof = None
+        self._inod = None
+        self._ic = None
 
-    def val(self):
+    def val(self, ic=None):
         """
-        Base function values in quadrature points.
+        Return base function values in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
         """
-        if self._idof is None:
+        if self._inod is None:
             # Evaluation mode.
-            out = self.val_qp()
+            out = self.val_qp(ic=ic)
 
         else:
-            out = self._bf[..., self._idof : self._idof + 1]
+            out = self._bf[..., self._inod : self._inod + 1]
 
         return out
 
-    def val_qp(self):
+    def val_qp(self, ic=None):
         """
         Return variable evaluated in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
         """
-        vec = self()
+        vec = self()[ic::self.n_components]
         evec = vec[self._ap.econn]
 
         aux = la.insert_strided_axis(evec, 1, self._bf.shape[1])[..., None]
 
-        out = la.dot_sequences(self._bf, aux)
+        out = la.dot_sequences(aux, self._bf, 'ATBT')
 
         return out
 
-    def grad(self):
+    def grad(self, ic=None, ider=None):
         """
-        Base function gradient (space elements) values in quadrature
-        points.
+        Return base function gradient (space elements) values in
+        quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        ider : int, optional
+            The spatial derivative index.
         """
-        if self._idof is None:
-            out = self.grad_qp()
+        ider = get_default(ider, 0)
+
+        if self._inod is None:
+            out = self.grad_qp(ic=ic, ider=ider)
 
         else:
-            out = self._bfg[..., self._idof : self._idof + 1]
+            out = self._bfg[..., ider : ider + 1, self._inod : self._inod + 1]
 
         return out
 
-    def grad_qp(self):
+    def grad_qp(self, ic=None, ider=None):
         """
         Return variable gradient evaluated in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        ider : int, optional
+            The spatial derivative index.
         """
-        vec = self()
+        ider = get_default(ider, 0)
+
+        vec = self()[ic::self.n_components]
         evec = vec[self._ap.econn]
 
         aux = la.insert_strided_axis(evec, 1, self._bfg.shape[1])[..., None]
-
-        out = la.dot_sequences(self._bfg, aux)
+        out = la.dot_sequences(self._bfg[:, :, ider : ider + 1, :], aux)
 
         return out
 
     def iter_dofs(self):
         """
-        Iterate over element DOFs.
-
-        Sets current base function and its gradient.
+        Iterate over element DOFs (DOF by DOF).
         """
-        n_ep = self._data_shape[3]
+        n_en, n_c = self._data_shape[3:]
 
-        for ii in xrange(n_ep):
-            self._idof = ii
-            yield ii
+        for ii in xrange(n_en):
+            self._inod = ii
+            for ic in xrange(n_c):
+                self._ic = ic
+                self._idof = n_en * ic + ii
+                yield self._idof
+
+    def get_element_zeros(self):
+        """
+        Return array of zeros with correct shape and type for term
+        evaluation.
+        """
+        n_el, n_qp = self._data_shape[:2]
+
+        return nm.zeros((n_el, n_qp, 1,  1), dtype=self.dtype)
+
+    def get_component_indices(self):
+        """
+        Return indices of variable components according to current term
+        evaluation mode.
+
+        Returns
+        -------
+        indx : list of tuples
+            The list of `(ii, slice(ii, ii + 1))` of the variable
+            components. The first item is the index itself, the second
+            item is a convenience slice to index components of material
+            parameters.
+        """
+        if self._ic is None:
+            indx = [(ii, slice(ii, ii + 1)) for ii in range(self.n_components)]
+
+        else:
+            indx = [(ii, slice(ii, ii + 1)) for ii in [self._ic]]
+
+        return indx
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
