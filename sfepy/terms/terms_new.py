@@ -22,6 +22,8 @@ import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.terms.terms import Term
+from sfepy.terms.utils import get_range_indices
+from sfepy.mechanics.tensors import get_full_indices
 from sfepy.linalg import dot_sequences as dot
 
 class NewTerm(Term):
@@ -256,5 +258,40 @@ class NewMassTerm(NewTerm):
             for ic, ics in cindx:
                 if ir == ic:
                     val += virtual.val(ir) * state.val(ic)
+
+        return val
+
+class NewLinearElasticTerm(NewTerm):
+    """
+    """
+    name = 'dw_new_lin_elastic'
+    arg_types = ('material', 'virtual', 'state')
+
+    def __call__(self, mat, virtual, state, **kwargs):
+        """
+        Doubled out-of-diagonal strain entries!
+        """
+        rindx = virtual.get_component_indices()
+        cindx = state.get_component_indices()
+
+        kindx = lindx = get_range_indices(state.dim)
+        fi = nm.array(get_full_indices(state.dim))
+
+        val = virtual.get_element_zeros()
+        for ir, irs in rindx:
+            for ik, iks in kindx:
+                irk = fi[ir, ik]
+                irks = slice(irk, irk + 1)
+
+                erk = virtual.grad(ir, ik)
+
+                for ic, ics in cindx:
+                    for il, ils in lindx:
+                        icl = fi[ic, il]
+                        icls = slice(icl, icl + 1)
+
+                        ecl = state.grad(ic, il)
+
+                        val += mat[..., irks, icls] * erk * ecl
 
         return val
