@@ -1,7 +1,6 @@
 import os, glob
 
-from version import version as __version__
-from version import in_source_tree, top_dir
+from version import __version__, in_source_tree, top_dir
 
 if in_source_tree:
     data_dir = top_dir
