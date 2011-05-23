@@ -1137,12 +1137,15 @@ class FieldVariable(Variable):
         self.has_lcbc = False
         self._variables = None
 
+        self.clear_bases()
+        self.clear_current_group()
+
     def _set_field(self, field):
         """
         Set field of the variable.
 
         Takes reference to a Field instance. Sets dtype according to
-        field.dtype.
+        field.dtype. Sets `dim` attribute to spatial dimension.
         """
         from sfepy.fem.fields import SurfaceField
 
@@ -1158,7 +1161,7 @@ class FieldVariable(Variable):
         self.flags.add(is_field)
         self.dtype = field.dtype
 
-        self.current_ap = None
+        self.dim = field.coors.shape[1]
 
     def get_field(self):
         return self.field
@@ -1392,6 +1395,12 @@ class FieldVariable(Variable):
     def get_approximation(self, ig):
         return self.field.aps[ig]
 
+    def assign_geometries(self, geometries):
+        """
+        Initialize the shared dict of geometries.
+        """
+        self.geometries = geometries
+
     def get_data_shape(self, ig, integral,
                        shape_kind='volume', region_name=None):
         """
@@ -1419,8 +1428,9 @@ class FieldVariable(Variable):
         -----
         - `n_el`, `n_fa` = number of elements/facets
         - `n_qp` = number of quadrature points per element/facet
-        - `n_comp` = number of variable components in a point/node
+        - `dim` = spatial dimension
         - `n_en`, `n_fn` = number of element/facet nodes
+        - `n_comp` = number of variable components in a point/node
         """
         ap = self.field.aps[ig]
         if shape_kind == 'surface':
@@ -1433,7 +1443,211 @@ class FieldVariable(Variable):
             raise NotImplementedError('unsupported shape kind! (%s)'
                                       % shape_kind)
 
+        data_shape += (self.n_components,)
+
         return data_shape
+
+    def clear_bases(self):
+        """
+        Clear base functions, base function gradients and element data
+        dimensions.
+        """
+        self.bfs = {}
+        self.bfgs = {}
+        self.data_shapes = {}
+
+    def setup_bases(self, geo_key, ig, geo, integral, shape_kind='volume'):
+        """
+        Setup and cache base functions and base function gradients for
+        given geometry. Also cache element data dimensions.
+        """
+        if geo_key not in self.bfs:
+            ap = self.field.aps[ig]
+
+            region_name = geo_key[1]
+
+            self.data_shapes[geo_key] = self.get_data_shape(ig, integral,
+                                                            shape_kind,
+                                                            region_name)
+
+            if shape_kind == 'surface':
+                sd = ap.surface_data[region_name]
+                key = sd.face_type
+
+            elif shape_kind == 'volume':
+                key = 'v'
+
+            ebf = ap.get_base(key, 0, integral)
+            bf = la.insert_strided_axis(ebf, 0, ap.econn.shape[0])
+            self.bfs[geo_key] = bf
+
+            if integral.kind == 'v':
+                bfg = geo.variable(0)
+
+            else:
+                try:
+                    bfg = geo.variable(3)
+
+                except:
+                    bfg = None
+
+            self.bfgs[geo_key] = bfg
+
+    def clear_current_group(self):
+        """
+        Clear current group data.
+        """
+        self._ap = None
+        self._data_shape = None
+        self._bf = self._bfg = None
+
+    def set_current_group(self, geo_key, ig):
+        """
+        Set current group data, initialize current DOF counter to `None`.
+
+        The current group data are the approximation, element data
+        dimensions, base functions and base function gradients.
+        """
+        self._ap = self.field.aps[ig]
+        self._data_shape = self.data_shapes[geo_key]
+        self._bf = self.bfs[geo_key]
+        self._bfg = self.bfgs[geo_key]
+
+        self._idof = None
+        self._inod = None
+        self._ic = None
+
+    def val(self, ic=None):
+        """
+        Return base function values in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        """
+        if self._inod is None:
+            # Evaluation mode.
+            out = self.val_qp(ic=ic)
+
+        else:
+            out = self._bf[..., self._inod : self._inod + 1]
+
+        return out
+
+    def val_qp(self, ic=None):
+        """
+        Return variable evaluated in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        """
+        vec = self()[ic::self.n_components]
+        evec = vec[self._ap.econn]
+
+        aux = la.insert_strided_axis(evec, 1, self._bf.shape[1])[..., None]
+
+        out = la.dot_sequences(aux, self._bf, 'ATBT')
+
+        return out
+
+    def grad(self, ic=None, ider=None):
+        """
+        Return base function gradient (space elements) values in
+        quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        ider : int, optional
+            The spatial derivative index. If not given, the whole
+            gradient is returned.
+        """
+        if ider is None:
+            iders = slice(None)
+
+        else:
+            iders = slice(ider, ider + 1)
+
+        if self._inod is None:
+            out = self.grad_qp(ic=ic, ider=ider)
+
+        else:
+            out = self._bfg[..., iders, self._inod : self._inod + 1]
+
+        return out
+
+    def grad_qp(self, ic=None, ider=None):
+        """
+        Return variable gradient evaluated in quadrature points.
+
+        Parameters
+        ----------
+        ic : int, optional
+            The index of variable component.
+        ider : int, optional
+            The spatial derivative index. If not given, the whole
+            gradient is returned.
+        """
+        if ider is None:
+            iders = slice(None)
+
+        else:
+            iders = slice(ider, ider + 1)
+
+        vec = self()[ic::self.n_components]
+        evec = vec[self._ap.econn]
+
+        aux = la.insert_strided_axis(evec, 1, self._bfg.shape[1])[..., None]
+        out = la.dot_sequences(self._bfg[:, :, iders, :], aux)
+
+        return out
+
+    def iter_dofs(self):
+        """
+        Iterate over element DOFs (DOF by DOF).
+        """
+        n_en, n_c = self._data_shape[3:]
+
+        for ii in xrange(n_en):
+            self._inod = ii
+            for ic in xrange(n_c):
+                self._ic = ic
+                self._idof = n_en * ic + ii
+                yield self._idof
+
+    def get_element_zeros(self):
+        """
+        Return array of zeros with correct shape and type for term
+        evaluation.
+        """
+        n_el, n_qp = self._data_shape[:2]
+
+        return nm.zeros((n_el, n_qp, 1,  1), dtype=self.dtype)
+
+    def get_component_indices(self):
+        """
+        Return indices of variable components according to current term
+        evaluation mode.
+
+        Returns
+        -------
+        indx : list of tuples
+            The list of `(ii, slice(ii, ii + 1))` of the variable
+            components. The first item is the index itself, the second
+            item is a convenience slice to index components of material
+            parameters.
+        """
+        if self._ic is None:
+            indx = [(ii, slice(ii, ii + 1)) for ii in range(self.n_components)]
+
+        else:
+            indx = [(ii, slice(ii, ii + 1)) for ii in [self._ic]]
+
+        return indx
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
