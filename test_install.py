@@ -9,6 +9,7 @@ words to the expected ones.
 
 The output of failed commands is saved to 'test_install.log' file.
 """
+import time
 from optparse import OptionParser
 import shlex
 import subprocess
@@ -72,6 +73,8 @@ def main():
     fd = open('test_install.log', 'w')
     fd.close()
 
+    t0 = time.time()
+
     out, err = check_output('./simple.py examples/diffusion/poisson.py')
     report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
 
@@ -106,8 +109,17 @@ def main():
     out, err = check_output('python examples/standalone/interactive/linear_elasticity.py')
     report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
 
+    t1 = time.time()
+
     out, err = check_output('./runTests.py')
     report(out, 'tests', -2, 7, '0')
+
+    t2 = time.time()
+
+    fd = open('test_install_times.log', 'a+')
+    fd.write('%s: examples: %.2f [s], tests: %.2f [s]'
+             % (time.ctime(t0), t1 - t0, t2 - t1))
+    fd.close()
 
 if __name__ == '__main__':
     main()
