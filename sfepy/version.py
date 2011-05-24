@@ -1,6 +1,16 @@
 # SfePy version
 __version__ = '2011.1'
 
+# "Minimal" supported versions.
+NUMPY_MIN_VERSION = '1.3'
+SCIPY_MIN_VERSION = '0.7'
+MATPLOTLIB_MIN_VERSION = '1.0.0'
+PYPARSING_MIN_VERSION = '1.5.0'
+PYTABLES_MIN_VERSION = '2.1.2'
+IPYTHON_MIN_VERSION = '0.10.0'
+MAYAVI_MIN_VERSION = '3.3.0'
+SYMPY_MIN_VERSION = '0.6.7'
+CYTHON_MIN_VERSION = '0.12.1'
 
 def get_basic_info(version=__version__):
     """

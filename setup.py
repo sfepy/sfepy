@@ -12,7 +12,12 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 
-VERSION = '2011.1'
+from build_helpers import generate_a_pyrex_source, package_check, INFO
+# monkey-patch numpy distutils to use Cython instead of Pyrex
+from numpy.distutils.command.build_src import build_src
+build_src.generate_a_pyrex_source = generate_a_pyrex_source
+
+VERSION = INFO.__version__
 
 CLASSIFIERS = """\
 Development Status :: 3 - Alpha
@@ -57,7 +62,7 @@ def configuration(parent_package='',top_path=None):
         'hfm3_mesh.py',
         'mesh_to_vtk.py',
         'neu_mesh.py',
-        'spymatrix.py',
+        'spymatrix.py'
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
 
@@ -75,10 +80,44 @@ def configuration(parent_package='',top_path=None):
 
     return config
 
-def setup_package():
+def _mayavi_version(pkg_name):
+    from enthought.mayavi import version
+    return version.version
 
+def _cython_version(pkg_name):
+    from Cython.Compiler.Version import version
+    return version
+
+# Hard and soft dependency checking
+package_check('numpy', INFO.NUMPY_MIN_VERSION)
+package_check('scipy', INFO.SCIPY_MIN_VERSION)
+package_check('matplotlib', INFO.MATPLOTLIB_MIN_VERSION)
+package_check('pyparsing', INFO.PYPARSING_MIN_VERSION)
+package_check('tables', INFO.PYTABLES_MIN_VERSION)
+package_check('IPython', INFO.IPYTHON_MIN_VERSION, optional=True,
+              messages={'missing opt'
+                        : '%s was not found: '
+                        'isfepy will use regular Python shell',
+                        'opt suffix' : ''})
+package_check('enthought.mayavi',
+              INFO.MAYAVI_MIN_VERSION,
+              optional=True,
+              version_getter=_mayavi_version)
+package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
+              messages={'missing opt'
+                        : '%s was not found: some tests are going to fail!'})
+# Cython can be a build dependency
+package_check('cython',
+              INFO.CYTHON_MIN_VERSION,
+              optional=True,
+              version_getter=_cython_version,
+              messages={'opt suffix': ' - you will not be able '
+                        'to rebuild Cython source files into C files',
+                        'missing opt': 'Missing optional build-time '
+                        'package "%s"'})
+
+def setup_package():
     from numpy.distutils.core import setup
-    from numpy.distutils.misc_util import Configuration
 
     old_path = os.getcwd()
     local_path = os.path.dirname(os.path.abspath(sys.argv[0]))
