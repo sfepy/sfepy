@@ -12,7 +12,8 @@ DOCLINES = __doc__.split("\n")
 import os
 import sys
 
-from build_helpers import generate_a_pyrex_source, package_check, INFO
+from build_helpers import (generate_a_pyrex_source, package_check,
+                           cmdclass, INFO)
 # monkey-patch numpy distutils to use Cython instead of Pyrex
 from numpy.distutils.command.build_src import build_src
 build_src.generate_a_pyrex_source = generate_a_pyrex_source
@@ -172,7 +173,7 @@ def setup_package():
               classifiers = filter(None, CLASSIFIERS.split('\n')),
               platforms = ["Linux", "Mac OS-X", 'Windows'],
               scripts = main_scripts,
-#              cmdclass = {'install_scripts' : install_scripts},
+              cmdclass = cmdclass,
               configuration = configuration)
     finally:
         del sys.path[0]

@@ -13,7 +13,10 @@ The original version of this file was adapted from NiPy project [1].
 
 # Standard library imports
 import os
+import glob
+import fnmatch
 from os.path import join as pjoin, dirname
+from distutils.command.clean import clean
 from distutils.version import LooseVersion
 from distutils.dep_util import newer_group
 from distutils.errors import DistutilsError
@@ -24,6 +27,52 @@ from numpy.distutils import log
 import sfepy.version as INFO
 
 CYTHON_MIN_VERSION = INFO.CYTHON_MIN_VERSION
+
+
+def recursive_glob(top_dir, pattern):
+    """
+    Utility function working like `glob.glob()`, but working recursively
+    and returning generator.
+
+    Parameters
+    ----------
+    topdir : str
+        The top-level directory.
+    pattern : str or list of str
+        The pattern or list of patterns to match.
+    """
+    if isinstance(pattern, list):
+        for pat in pattern:
+            for fn in recursive_glob(top_dir, pat):
+                yield fn
+
+    else:
+        for dirpath, dirnames, filenames in os.walk(top_dir):
+            for fn in [fn for fn in filenames
+                       if fnmatch.fnmatchcase(fn, pattern)]:
+                yield os.path.join(dirpath, fn)
+
+class Clean(clean):
+    """
+    Distutils Command class to clean, enhanced to clean also files
+    generated during `python setup.py build_ext --inplace`.
+    """
+
+    def run(self):
+        clean.run(self)
+
+        print 'extra clean:'
+        suffixes = ['*.pyc', '*.o', '*.so', '*_wrap.c', '*.bak', '*~', '*%']
+        for filename in recursive_glob('sfepy', suffixes):
+            print filename
+            os.remove(filename)
+
+        for filename in glob.glob('*.pyc'):
+            print filename
+            os.remove(filename)
+
+# The command classes for distutils, used by setup.py.
+cmdclass = {'clean': Clean,}
 
 def have_good_cython():
     try:
