@@ -117,7 +117,7 @@ def main():
     t2 = time.time()
 
     fd = open('test_install_times.log', 'a+')
-    fd.write('%s: examples: %.2f [s], tests: %.2f [s]'
+    fd.write('%s: examples: %.2f [s], tests: %.2f [s]\n'
              % (time.ctime(t0), t1 - t0, t2 - t1))
     fd.close()
 
