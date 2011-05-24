@@ -17,6 +17,7 @@ def configuration(parent_package='',top_path=None):
         'interactive',
         'linalg',
         'mechanics',
+        'optimize',
         'physics',
         'postprocess',
         'solvers',

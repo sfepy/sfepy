@@ -69,6 +69,7 @@ def configuration(parent_package='',top_path=None):
 
     config.add_data_files(('sfepy', ('VERSION', 'INSTALL', 'README', 'LICENSE',
                                      'RELEASE_NOTES.txt', 'AUTHORS',
+                                     'build_helpers.py',
                                      'site_cfg_template.py')))
     config.add_data_files(('../../../share/sfepy/script', aux_scripts))
     config.add_data_dir(('../../../share/sfepy/meshes', 'meshes'))
@@ -149,16 +150,19 @@ def setup_package():
         'eigen.py',
         'extractor.py',
         'findSurf.py',
+        'friction_slip.py',
         'genPerMesh.py',
         'homogen.py',
         'isfepy',
+        'plotPerfusionCoefs.py',
         'postproc.py',
         'probe.py',
         'runTests.py',
         'schroedinger.py',
         'sfepy_gui.py',
+        'shaper.py',
         'simple.py',
-        'site_cfg_template.py',
+        'test_install.py',
     ]
 
     try:
