@@ -1,7 +1,0 @@
-DISTFILES := Makefile.dist $(wildcard *.py) meshes/
-
-dist:
-	mkdir -p $(DISTDIR)
-	cp -fa --parents $(DISTFILES) $(DISTDIR)
-
-reldist: dist
