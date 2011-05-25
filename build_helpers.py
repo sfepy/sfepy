@@ -13,8 +13,10 @@ The original version of this file was adapted from NiPy project [1].
 
 # Standard library imports
 import os
+import shutil
 import glob
 import fnmatch
+from distutils.cmd import Command
 from os.path import join as pjoin, dirname
 from distutils.command.clean import clean
 from distutils.version import LooseVersion
@@ -28,6 +30,85 @@ import sfepy.version as INFO
 
 CYTHON_MIN_VERSION = INFO.CYTHON_MIN_VERSION
 
+class NoOptionsDocs(Command):
+    user_options = [('None', None, 'this command has no options'),]
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+def get_sphinx_make_command():
+    if os.name in ['posix']:
+        return 'make'
+
+    elif os.name in ['nt']:
+        return 'make.bat'
+
+    else:
+        raise ValueError('unsupported system! (%s)' % os.name)
+
+class SphinxHTMLDocs(NoOptionsDocs):
+    description = """generate html docs by Sphinx"""
+
+    def run(self):
+        os.chdir('doc')
+
+        try:
+            cmd = get_sphinx_make_command()
+            os.system(cmd + ' html')
+
+        finally:
+            os.chdir('..')
+
+class SphinxPDFDocs(NoOptionsDocs):
+    description = """generate pdf docs by Sphinx"""
+
+    def run(self):
+        cwd = os.getcwd()
+
+        os.chdir('doc')
+
+        try:
+            cmd = get_sphinx_make_command()
+            os.system(cmd + ' latex')
+            os.chdir('_build/latex')
+            os.system(cmd + ' all-pdf')
+            os.chdir(cwd)
+            try:
+                os.remove('doc/sfepy_manual.pdf')
+
+            except:
+                pass
+            os.rename('doc/_build/latex/SfePy.pdf', 'doc/sfepy_manual.pdf')
+
+        finally:
+            os.chdir(cwd)
+
+class DoxygenDocs(NoOptionsDocs):
+    description = """generate docs by Doxygen"""
+
+    def run(self):
+        try:
+            shutil.rmtree('doc/html')
+
+        except OSError:
+            pass
+
+        fd_in = open('doc/doxygen.config', 'r')
+        fd_out = open('doc/doxygenrc', 'w')
+        for line in fd_in:
+            aux = line.split('=')
+            if len(aux) and (aux[0] == 'PROJECT_NUMBER'):
+                line = '='.join([aux[0], INFO.__version__])
+
+            fd_out.write(line)
+
+        fd_out.close()
+        fd_in.close()
+
+        os.system('doxygen doc/doxygenrc')
 
 def recursive_glob(top_dir, pattern):
     """
@@ -72,7 +153,12 @@ class Clean(clean):
             os.remove(filename)
 
 # The command classes for distutils, used by setup.py.
-cmdclass = {'clean': Clean,}
+cmdclass = {
+    'htmldocs' : SphinxHTMLDocs,
+    'pdfdocs' : SphinxPDFDocs,
+    'doxygendocs' : DoxygenDocs,
+    'clean': Clean,
+}
 
 def have_good_cython():
     try:
