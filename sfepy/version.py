@@ -32,7 +32,7 @@ def get_basic_info(version=__version__):
     master = op.join(top_dir, '.git/refs/heads/master')
     if op.isfile(master):
         fd = open(master, 'r')
-        version += ' (%s)' % fd.readline().strip()
+        version += '-git-%s' % fd.readline().strip()
         fd.close()
 
     in_source_tree = up_dir == '..'
