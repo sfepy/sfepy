@@ -92,22 +92,12 @@ See the *Downloads* tab at http://sfepy.org for additional download options.
 In-place compilation of C extension modules
 """""""""""""""""""""""""""""""""""""""""""
 
-There are two methods of compiling the C extension modules.
+1. Look at site_cfg_template.py and follow the instructions
+   therein. Usually no changes are necessary.
 
-1. Using the Makefile (Linux, Mac OS X)
+2. Run::
 
-    1. Look at site_cfg_template.py and follow the instructions therein.
-    2. (Optionally) edit the Makefile:
-
-        * compiler, swig command, ... 
-
-    3. ::
-    
-        make 
-
-2. Using distutils (all platforms)::
-
-    python setup.py build_ext --inplace 
+    python setup.py build_ext --inplace
 
 Installation
 """"""""""""
@@ -214,7 +204,7 @@ version).
 
 Uncompress the archive and enter the *SfePy* dir, then type::
 
-    make
+    python setup.py build_ext --inplace
 
 after a few minutes the compilation finishes.
 
