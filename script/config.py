@@ -14,25 +14,13 @@ system
 
     The operating system (posix or windows).
 
-archlib
+compile_flags
 
-    'lib' or 'lib64' depending on your architecture (32bit or 64bit)
-
-tetgen_path
-
-    Tetgen executable path.
-
-numpy_include
-
-    Full path to the numpy headers.  This path should end in numpy/core/include.
-
-opt_flags
-
-    Compiler optimization flags.
+    Extra compile flags added to the flags supplied by distutils.
 
 link_flags
 
-    Linker flags.
+    Extra linker flags added to the flags supplied by distutils.
 
 debug_flags
 
@@ -45,6 +33,10 @@ numpydoc_path
 is_release
 
     If set, the version is a release.
+
+tetgen_path
+
+    Tetgen executable path.
 
 New options should be added both to site_cfg_template.py and Config class below.
 
@@ -100,7 +92,7 @@ class Config( object ):
                 return site_cfg.python_version
         else:
             return "%d.%d" % tuple(sys.version_info[:2])
-    
+
     def system( self ):
         if has_attr( site_cfg, 'system' ) and site_cfg.system is not None:
             return site_cfg.system
@@ -112,39 +104,23 @@ class Config( object ):
             else:
                 raise ValueError(msg_unknown_os)
 
-    def archlib( self ):
-        if has_attr( site_cfg, 'archlib' ):
-            return site_cfg.archlib
-        else:
-            return 'lib'
+    def compile_flags( self ):
+        if has_attr(site_cfg, 'compile_flags'):
+            flags = site_cfg.compile_flags
 
-    def tetgen_path( self ):
-        if has_attr( site_cfg, 'tetgen_path' ):
-            return site_cfg.tetgen_path
         else:
-            return '/usr/bin'
+            flags = '-g -O2'
 
-    def numpy_include( self ):
-        if has_attr( site_cfg, 'numpy_include' ) and (site_cfg.numpy_include is not None):
-            return site_cfg.numpy_include
-        else:
-            numpypath = find_in_path( 'numpy' )
-            numpyfullpath = os.path.join( numpypath, 'core', 'include' )
-            if not os.path.exists(numpyfullpath):
-                print('could not find core/include in '+ numpypath)
-            return numpyfullpath
-
-    def opt_flags( self ):
-        if has_attr( site_cfg, 'opt_flags' ):
-            return site_cfg.opt_flags
-        else:
-            return '-g -O2 -fPIC -DPIC'
+        return flags.split()
 
     def link_flags( self ):
         if has_attr( site_cfg, 'link_flags' ):
-            return site_cfg.link_flags
+            flags =  site_cfg.link_flags
+
         else:
-            return '-shared -fPIC -DPIC'
+            flags = ''
+
+        return flags.split()
 
     def debug_flags( self ):
         if has_attr( site_cfg, 'debug_flags' ):
@@ -168,6 +144,12 @@ class Config( object ):
             return site_cfg.is_release
         else:
             return ''
+
+    def tetgen_path( self ):
+        if has_attr( site_cfg, 'tetgen_path' ):
+            return site_cfg.tetgen_path
+        else:
+            return '/usr/bin'
 
 usage = """Usage: %s option"""
 
