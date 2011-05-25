@@ -73,7 +73,7 @@ copyright = u'2010, Robert Cimrman and Contributors'
 # built documents.
 #
 # The short X.Y version.
-version = sfepy.__version__.split('-')[0]
+version = sfepy.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 
