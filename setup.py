@@ -62,7 +62,6 @@ def configuration(parent_package='',top_path=None):
         'gen_term_table.py',
         'hfm3_mesh.py',
         'mesh_to_vtk.py',
-        'neu_mesh.py',
         'spymatrix.py'
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
