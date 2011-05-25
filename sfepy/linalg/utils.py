@@ -3,6 +3,12 @@ from numpy.lib.stride_tricks import as_strided
 import numpy.linalg as nla
 import scipy as sc
 
+try:
+    from numpy.core.umath_tests import matrix_multiply
+
+except:
+    matrix_multiply = None
+
 from sfepy.base.base import assert_, insert_method, Struct
 
 def norm_l2_along_axis(ar, axis=1, n_item=None, squared=False):
@@ -300,65 +306,87 @@ def dot_sequences(mtx, vec, mode='AB'):
 
     Notes
     -----
-    For r-D arrays `(n_1, ..., n_r, ?, ?)` the arrays are first reshaped to
-    `(n_1 * ... * n_r, ?, ?)`, then the dot is performed, and finally the shape
-    is restored to `(n_1, ..., n_r, ?, ?)`.
+    Uses `numpy.core.umath_tests.matrix_multiply()` if available, which is much 
+    faster than the default implementation.
+
+    The default implementation uses `numpy.sum()` and element-wise
+    multiplication. For r-D arrays `(n_1, ..., n_r, ?, ?)` the arrays
+    are first reshaped to `(n_1 * ... * n_r, ?, ?)`, then the dot is
+    performed, and finally the shape is restored to `(n_1, ..., n_r, ?, ?)`.
     """
-    if (vec.ndim == 2) and (mtx.ndim == 3):
-        if mode in ('AB', 'ABT'):
-            out = nm.sum(mtx * vec[:, None, :], axis=2)
+    if matrix_multiply is not None:
+        if vec.ndim == mtx.ndim:
+            pass
 
         else:
-            out = nm.sum(mtx * vec[:, :, None], axis=1)
+            vec = vec[..., None]
 
-    elif (vec.ndim == 3) and (mtx.ndim == 3):
+        if 'BT' in mode:
+            ax = range(vec.ndim)
+            vec = vec.transpose((ax[:-2]) + [ax[-1], ax[-2]])
 
-        if mode == 'AB':
-            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
-                           dtype=vec.dtype)
+        if 'AT' in mode:
+            ax = range(mtx.ndim)
+            mtx = mtx.transpose((ax[:-2]) + [ax[-1], ax[-2]])
 
-            for ic in range(vec.shape[2]):
-                out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
-
-        elif mode == 'ABT':
-            out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[1]),
-                           dtype=vec.dtype)
-
-            for ic in range(vec.shape[1]):
-                out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
-
-
-        elif mode == 'ATB':
-            out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[2]),
-                           dtype=vec.dtype)
-
-            for ic in range(vec.shape[2]):
-                out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
-
-        elif mode == 'ATBT':
-            out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[1]),
-                           dtype=vec.dtype)
-
-            for ic in range(vec.shape[1]):
-                out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
-
-        else:
-            raise ValueError('unknown dot mode! (%s)' % mode)
-
-    elif (vec.ndim >= 4) and (mtx.ndim >= 4) and (vec.ndim == mtx.ndim):
-        mtx_seq = nm.reshape(mtx,
-                             (nm.prod(mtx.shape[0:-2], dtype=int),)
-                             + mtx.shape[-2:])
-
-        vec_seq = nm.reshape(vec,
-                             (nm.prod(vec.shape[0:-2], dtype=int),)
-                             + vec.shape[-2:])
-
-        out_seq = dot_sequences(mtx_seq, vec_seq, mode=mode)
-        out = nm.reshape(out_seq, mtx.shape[0:-2] + out_seq.shape[-2:])
+        out = matrix_multiply(mtx, vec)
 
     else:
-        raise ValueError('unsupported operand shape')
+        if (vec.ndim == 2) and (mtx.ndim == 3):
+            if mode in ('AB', 'ABT'):
+                out = nm.sum(mtx * vec[:, None, :], axis=2)
+
+            else:
+                out = nm.sum(mtx * vec[:, :, None], axis=1)
+
+        elif (vec.ndim == 3) and (mtx.ndim == 3):
+
+            if mode == 'AB':
+                out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[2]),
+                               dtype=vec.dtype)
+
+                for ic in range(vec.shape[2]):
+                    out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
+
+            elif mode == 'ABT':
+                out = nm.empty((vec.shape[0], mtx.shape[1], vec.shape[1]),
+                               dtype=vec.dtype)
+
+                for ic in range(vec.shape[1]):
+                    out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
+
+
+            elif mode == 'ATB':
+                out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[2]),
+                               dtype=vec.dtype)
+
+                for ic in range(vec.shape[2]):
+                    out[:, :, ic] = dot_sequences(mtx, vec[:, :, ic], mode=mode)
+
+            elif mode == 'ATBT':
+                out = nm.empty((vec.shape[0], mtx.shape[2], vec.shape[1]),
+                               dtype=vec.dtype)
+
+                for ic in range(vec.shape[1]):
+                    out[:, :, ic] = dot_sequences(mtx, vec[:, ic, :], mode=mode)
+
+            else:
+                raise ValueError('unknown dot mode! (%s)' % mode)
+
+        elif (vec.ndim >= 4) and (mtx.ndim >= 4) and (vec.ndim == mtx.ndim):
+            mtx_seq = nm.reshape(mtx,
+                                 (nm.prod(mtx.shape[0:-2], dtype=int),)
+                                 + mtx.shape[-2:])
+
+            vec_seq = nm.reshape(vec,
+                                 (nm.prod(vec.shape[0:-2], dtype=int),)
+                                 + vec.shape[-2:])
+
+            out_seq = dot_sequences(mtx_seq, vec_seq, mode=mode)
+            out = nm.reshape(out_seq, mtx.shape[0:-2] + out_seq.shape[-2:])
+
+        else:
+            raise ValueError('unsupported operand shape')
 
     return out
 
