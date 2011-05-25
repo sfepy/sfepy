@@ -36,18 +36,28 @@ def report(out, name, line, item, value, eps=None):
     Check that `item` at `line` of the output string `out` is equal
     to `value`. If not, print the output.
     """
-    status = out.split('\n')[line].split()
+    try:
+        status = out.split('\n')[line].split()
 
-    print '  comparing:', status[item], value
-
-    if eps is None:
-        ok = (status[item] == value)
+    except IndexError:
+        print '  not enough output from command!'
+        ok = False
 
     else:
         try:
-            ok = abs(float(status[item]) - float(value)) < eps
+            print '  comparing:', status[item], value
 
-        except:
+            if eps is None:
+                ok = (status[item] == value)
+
+            else:
+                try:
+                    ok = abs(float(status[item]) - float(value)) < eps
+
+                except:
+                    ok = False
+
+        except IndexError:
             ok = False
 
     if ok:
