@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
 def configuration(parent_package='', top_path=None):
-    import distutils.sysconfig as sysc
-    from numpy.distutils.misc_util import Configuration
     import os.path as op
+    import sys
+    from numpy.distutils.misc_util import Configuration
 
-    import sys;
     if 'script' not in sys.path:
         sys.path.append('script')
     from config import Config
-    system = Config().system()
+
+    site_config = Config()
     os_flag = {'posix' : 0, 'windows' : 1}
 
     auto_dir = op.dirname(__file__)
@@ -18,15 +18,16 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files(('sfepy/fem/extmods', ('version.h.in',)))
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('DEBUGFMF', None),
-               ('SFEPY_PLATFORM', os_flag[system])]
+               ('DEBUGFMF', site_config.debug_flags()),
+               ('SFEPY_PLATFORM', os_flag[site_config.system()])]
 
     src = ['fmfield.c', 'fem.c', 'fem.i', 'geommech.c', 'sort.c',
            'common_python.c']
     config.add_extension('_fem',
                          sources=src,
                          depends=['array.i', 'common.i', 'fmfield.i'],
-                         extra_compile_args=['-O2'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
@@ -35,7 +36,8 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_meshutils',
                          sources=src,
                          depends=['array.i', 'common.i'],
-                         extra_compile_args=['-O2'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
@@ -44,27 +46,10 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('_geometry',
                          sources=src,
                          depends=['array.i', 'common.i', 'fmfield.i'],
-                         extra_compile_args=['-O2'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
-
-    
-## gcc -g -O2 -fPIC -DPIC -D__SDIR__='"tests"' -DDEBUG_FMF -Iexamples -Iinput
-## -Isfepy -Isfepy/applications -Isfepy/base -Isfepy/eldesc -Isfepy/fem
-## -Isfepy/fem/extmods -Isfepy/geom -Isfepy/homogenization -Isfepy/mechanics
-## -Isfepy/solvers -Isfepy/terms -Isfepy/terms/extmods -Isfepy/physics
-## -Isfepy/physics/extmods -Itests -I/usr/include/python2.5
-## -I/home/share/software/usr/lib/python/site-packages/numpy/core/include -Wall
-## -c -DISRELEASE sfepy/fem/extmods/fmfield.c -o sfepy/fem/extmods/fmfield.o
-
-## swig -python -Iexamples -Iinput -Isfepy -Isfepy/applications -Isfepy/base
-## -Isfepy/eldesc -Isfepy/fem -Isfepy/fem/extmods -Isfepy/geom
-## -Isfepy/homogenization -Isfepy/mechanics -Isfepy/solvers -Isfepy/terms
-## -Isfepy/terms/extmods -Isfepy/physics -Isfepy/physics/extmods -Itests
-## -I/usr/include/python2.5
-## -I/home/share/software/usr/lib/python/site-packages/numpy/core/include
-## -DISRELEASE -o sfepy/fem/extmods/meshutils_wrap.c
-## sfepy/fem/extmods/meshutils.i
 
     return config
 
