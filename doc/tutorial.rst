@@ -1,6 +1,10 @@
 Tutorial
 ========
 
+.. contents:: Table of Contents
+   :local:
+   :backlinks: top
+
 *SfePy* can be used in two basic ways:
   #. a black-box partial differential equation (PDE) solver,
   #. a Python package to build custom applications involving solving PDEs by the
@@ -106,11 +110,19 @@ Postprocessing the results
 Example problem description file
 --------------------------------
 
-Here we discuss the contents of the ``examples/diffusion/poisson.py`` problem
+Here we discuss the contents of the :download:`examples/diffusion/poisson.py
+<../examples/diffusion/poisson.py>` problem
 description file. For additional examples, see the problem description files in
 the ``examples/`` directory of SfePy.
 
-Open the ``examples/diffusion/poisson.py`` file in your favorite text
+Long syntax of keywords
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The example uses **long syntax** of the keywords. In next subsection, we
+show the same example written in **short syntax**.
+
+Open the :download:`examples/diffusion/poisson.py
+<../examples/diffusion/poisson.py>` file in your favorite text
 editor. Note that the file is a regular python source code.
 
 :: 
@@ -147,14 +159,40 @@ material parameters with the corresponding region of the mesh.
 
 ::
 
+    #! Regions
+    #! -------
+    region_1000 = {
+        'name' : 'Omega',
+        'select' : 'elements of group 6',
+    }
+
+    region_03 = {
+        'name' : 'Gamma_Left',
+        'select' : 'nodes in (x < 0.00001)',
+    }
+
+    region_4 = {
+        'name' : 'Gamma_Right',
+        'select' : 'nodes in (x > 0.099999)',
+    }
+
+Regions assign names to various parts of the finite element mesh. The region
+names can later be referred to, for example when specifying portions of the mesh
+to apply boundary conditions to. Regions can be specified in a variety of ways,
+including by element or by node. Here, Omega is the elemental domain over which
+the PDE is solved and Gamma_Left and Gamma_Right define surfaces upon which the
+boundary conditions will be applied.
+
+::
+
     #! Fields
     #! ------
     #! A field is used mainly to define the approximation on a (sub)domain, i.e. to
     #$ define the discrete spaces $V_h$, where we seek the solution.
     #!
     #! The Poisson equation can be used to compute e.g. a temperature distribution,
-    #! so let us call our field 'temperature'. On a region called 'Omega'
-    #! (see below) it will be approximated using P1 finite elements.
+    #! so let us call our field 'temperature'. On the region 'Omega'
+    #! it will be approximated using P1 finite elements.
 
     field_1 = {
         'name' : 'temperature',
@@ -163,6 +201,9 @@ material parameters with the corresponding region of the mesh.
         'region' : 'Omega',
         'approx_order' : 1,
     }
+
+A field in a given region defines the finite element approximation.
+Several variables can use the same field, see below.
 
 ::
 
@@ -189,33 +230,8 @@ material parameters with the corresponding region of the mesh.
         'dual' : 't',
     }
 
-
-
-::
-
-    #! Regions
-    #! -------
-    region_1000 = {
-        'name' : 'Omega',
-        'select' : 'elements of group 6',
-    }
-
-    region_03 = {
-        'name' : 'Gamma_Left',
-        'select' : 'nodes in (x < 0.00001)',
-    }
-
-    region_4 = {
-        'name' : 'Gamma_Right',
-        'select' : 'nodes in (x > 0.099999)',
-    }
-
-Regions assign names to various parts of the finite element mesh. The region
-names can later be referred to, for example when specifying portions of the mesh
-to apply boundary conditions to. Regions can be specified in a variety of ways,
-including by element or by node. Here, Omega is the elemental domain over which
-the PDE is solved and Gamma_Left and Gamma_Right define surfaces upon which the
-boundary conditions will be applied.
+For each unknown (or state) variable there has to be a test (or virtual)
+variable defined, as usual in weak formulation of PDEs.
 
 ::
 
@@ -354,6 +370,16 @@ solvers with different convergence parameters if necessary.
     fe = {
         'chunk_size' : 1000
     }
+
+Short syntax of keywords
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The same diffusion equation example as above in **short syntax** reads,
+see :download:`examples/diffusion/poisson_short_syntax.py
+<../examples/diffusion/poisson_short_syntax.py>`, as follows:
+
+.. literalinclude:: ../examples/diffusion/poisson_short_syntax.py
+   :linenos:
 
 Interactive Example: Linear Elasticity
 --------------------------------------
