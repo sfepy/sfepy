@@ -19,14 +19,31 @@ material_2 = {
     'values' : {'val' : 1.0},
 }
 
+#! Regions
+#! -------
+region_1000 = {
+    'name' : 'Omega',
+    'select' : 'elements of group 6',
+}
+
+region_03 = {
+    'name' : 'Gamma_Left',
+    'select' : 'nodes in (x < 0.00001)',
+}
+
+region_4 = {
+    'name' : 'Gamma_Right',
+    'select' : 'nodes in (x > 0.099999)',
+}
+
 #! Fields
 #! ------
 #! A field is used mainly to define the approximation on a (sub)domain, i.e. to
 #$ define the discrete spaces $V_h$, where we seek the solution.
 #!
 #! The Poisson equation can be used to compute e.g. a temperature distribution,
-#! so let us call our field 'temperature'. On a region called 'Omega'
-#! (see below) it will be approximated using P1 finite elements.
+#! so let us call our field 'temperature'. On the region 'Omega'
+#! it will be approximated using P1 finite elements.
 
 field_1 = {
     'name' : 'temperature',
@@ -57,23 +74,6 @@ variable_2 = {
     'kind' : 'test field',
     'field' : 'temperature',
     'dual' : 't',
-}
-
-#! Regions
-#! -------
-region_1000 = {
-    'name' : 'Omega',
-    'select' : 'elements of group 6',
-}
-
-region_03 = {
-    'name' : 'Gamma_Left',
-    'select' : 'nodes in (x < 0.00001)',
-}
-
-region_4 = {
-    'name' : 'Gamma_Right',
-    'select' : 'nodes in (x > 0.099999)',
 }
 
 #! Boundary Conditions
