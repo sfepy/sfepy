@@ -56,6 +56,8 @@ The easisest way to run *SfePy* is through the GUI utility.
 
 * Viewing the output is described in the :ref:`postprocessing` section below
 
+.. _invoking_command_line:
+
 Invoking *SfePy* from the command line
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -113,7 +115,38 @@ Example problem description file
 Here we discuss the contents of the :download:`examples/diffusion/poisson.py
 <../examples/diffusion/poisson.py>` problem
 description file. For additional examples, see the problem description files in
-the ``examples/`` directory of SfePy.
+the ``examples/`` directory of *SfePy*.
+
+The problem at hand is the following:
+
+.. math::
+   :label: eq_laplace_static
+
+    c \Delta T = f \mbox{ in }\Omega,\quad T(t) = \bar{T}(t)
+    \mbox{ on } \Gamma \;,
+
+where :math:`\Gamma \subseteq \Omega` is a subset of the domain :math:`\Omega`
+boundary. For simplicity, we set :math:`f \equiv 0`, but we still work with
+the material constant :math:`c` even though it has no influence on the
+solution in this case. We also assume zero fluxes over :math:`\partial
+\Omega \setminus \Gamma`, i.e. :math:`\pdiff{T}{\ul{n}} = 0` there.  The
+particular boundary conditions used below are :math:`T = 2` on the left side
+of the cylindrical domain depicted in the previous section and :math:`T = -2`
+on the right side.
+
+The first step to do is to write :eq:`eq_laplace_static` in *weak
+formulation*, as usual in the finite element context:
+
+.. math::
+   :label: eq_wlaplace_static
+
+    \int_{\Omega} c\ \nabla T \cdot \nabla s = 0, \quad \forall s \in V_0 \;.
+
+The zero fluxes assumption leads to no boundary integral in
+:eq:`eq_wlaplace_static`. Comparing the above integral term with the
+long table in :ref:`term_overview`, we can see that *SfePy* contains
+this term under name `dw_laplace`. We are now ready to proceed to the
+actual problem definition.
 
 Long syntax of keywords
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -125,14 +158,8 @@ Open the :download:`examples/diffusion/poisson.py
 <../examples/diffusion/poisson.py>` file in your favorite text
 editor. Note that the file is a regular python source code.
 
-:: 
+::
 
-    #! Poisson Equation
-    #! ================
-    #$ \centerline{Example input file, \today}
-
-    #! Mesh
-    #! ----
     from sfepy import data_dir
 
     filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
@@ -142,16 +169,14 @@ particular problem. *SfePy* supports a variety of mesh formats.
 
 ::
 
-    #! Materials
-    #! ---------
-    #$ Here we define just a constant coefficient $c$ of the Poisson equation,
-    #$ using the 'values' attribute. Other possible attribute is 'function', for
-    #$ material coefficients computed/obtained at runtime.
-
     material_2 = {
         'name' : 'coef',
         'values' : {'val' : 1.0},
     }
+
+Here we define just a constant coefficient :math:`c` of the Poisson
+equation, using the ``'values'`` attribute. Other possible attribute is
+``'function'``, for material coefficients computed/obtained at runtime.
 
 Many finite element problems require the definition of material parameters.
 These can be handled in *SfePy* with material variables which associate the
@@ -159,8 +184,6 @@ material parameters with the corresponding region of the mesh.
 
 ::
 
-    #! Regions
-    #! -------
     region_1000 = {
         'name' : 'Omega',
         'select' : 'elements of group 6',
@@ -185,15 +208,6 @@ boundary conditions will be applied.
 
 ::
 
-    #! Fields
-    #! ------
-    #! A field is used mainly to define the approximation on a (sub)domain, i.e. to
-    #$ define the discrete spaces $V_h$, where we seek the solution.
-    #!
-    #! The Poisson equation can be used to compute e.g. a temperature distribution,
-    #! so let us call our field 'temperature'. On the region 'Omega'
-    #! it will be approximated using P1 finite elements.
-
     field_1 = {
         'name' : 'temperature',
         'dtype' : 'real',
@@ -202,19 +216,17 @@ boundary conditions will be applied.
         'approx_order' : 1,
     }
 
+A field is used mainly to define the approximation on a (sub)domain, i.e. to
+define the discrete spaces :math:`V_h`, where we seek the solution.
+
+The Poisson equation can be used to compute e.g. a temperature distribution,
+so let us call our field ``'temperature'``. On the region ``'Omega'``
+it will be approximated using linear finite elements.
+
 A field in a given region defines the finite element approximation.
 Several variables can use the same field, see below.
 
 ::
-
-    #! Variables
-    #! ---------
-    #! One field can be used to generate discrete degrees of freedom (DOFs) of
-    #! several variables. Here the unknown variable (the temperature) is called
-    #! 't', it's associated DOF name is 't.0' --- this will be referred to
-    #! in the Dirichlet boundary section (ebc). The corresponding test variable of
-    #! the weak formulation is called 's'. Notice that the 'dual' item of a test
-    #! variable must specify the unknown it corresponds to.
 
     variable_1 = {
         'name' : 't',
@@ -230,14 +242,19 @@ Several variables can use the same field, see below.
         'dual' : 't',
     }
 
+One field can be used to generate discrete degrees of freedom (DOFs) of
+several variables. Here the unknown variable (the temperature) is called
+``'t'``, it's associated DOF name is ``'t.0'`` --- this will be referred
+to in the Dirichlet boundary section (``ebc``). The corresponding test
+variable of the weak formulation is called ``'s'``. Notice that the
+``'dual'`` item of a test variable must specify the unknown it
+corresponds to.
+
 For each unknown (or state) variable there has to be a test (or virtual)
 variable defined, as usual in weak formulation of PDEs.
 
 ::
 
-    #! Boundary Conditions
-    #! -------------------
-    #! Essential (Dirichlet) boundary conditions can be specified as follows:
     ebc_1 = {
         'name' : 't1',
         'region' : 'Gamma_Left',
@@ -250,6 +267,8 @@ variable defined, as usual in weak formulation of PDEs.
         'dofs' : {'t.0' : -2.0},
     }
 
+Essential (Dirichlet) boundary conditions can be specified as above.
+
 Boundary conditions place restrictions on the finite element formulation and
 create a unique solution to the problem. Here, we specify that a temperature of
 +2 is applied to the left surface of the mesh and a temperature of -2 is applied
@@ -257,24 +276,6 @@ to the right surface.
 
 ::
 
-    #! Equations
-    #! ---------
-    #$ The weak formulation of the Poisson equation is:
-    #$ \begin{center}
-    #$ Find $t \in V$, such that
-    #$ $\int_{\Omega} c\ \nabla t : \nabla s = f, \quad \forall s \in V_0$.
-    #$ \end{center}
-    #$ The equation below directly corresponds to the discrete version of the
-    #$ above, namely:
-    #$ \begin{center}
-    #$ Find $\bm{t} \in V_h$, such that
-    #$ $\bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T G) \bm{t} = 0, \quad \forall \bm{s}
-    #$ \in V_{h0}$,
-    #$ \end{center}
-    #$ where $\nabla u \approx \bm{G} \bm{u}$. Below we use $f = 0$ (Laplace
-    #$ equation).
-    #! We also define an integral here: 'gauss_o1_d3' says that we wish to use
-    #! quadrature of the first order in three space dimensions.
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
@@ -289,6 +290,15 @@ quadrature over a 3 dimensional space.
     equations = {
         'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
     }
+
+The equation above directly corresponds to the discrete version of
+:eq:`eq_wlaplace_static`, namely:  Find :math:`\bm{t} \in V_h`, such that
+
+.. math::
+    \bm{s}^T (\int_{\Omega_h} c\ \bm{G}^T G) \bm{t} = 0, \quad
+    \forall \bm{s} \in V_{h0} \;,
+
+where :math:`\nabla u \approx \bm{G} \bm{u}`.
 
 The equations block is the heart of the *SfePy* problem definition file. Here,
 we are specifying that the Laplacian of the temperature (in the weak
@@ -309,9 +319,6 @@ name. The integral definition is superfluous in this case.
 
 ::
 
-    #! Linear solver parameters
-    #! ---------------------------
-    #! Use umfpack, if available, otherwise superlu.
     solver_0 = {
         'name' : 'ls',
         'kind' : 'ls.scipy_direct',
@@ -322,10 +329,6 @@ Here, we specify which kind of solver to use for linear equations.
 
 ::
 
-    #! Nonlinear solver parameters
-    #! ---------------------------
-    #! Even linear problems are solved by a nonlinear solver (KISS rule) - only one
-    #! iteration is needed and the final rezidual is obtained for free.
     solver_1 = {
         'name' : 'newton',
         'kind' : 'nls.newton',
@@ -348,12 +351,11 @@ Here, we specify which kind of solver to use for linear equations.
 Here, we specify the nonlinear solver kind and options. The convergence
 parameters can be adjusted if necessary, otherwise leave the default.
 
+Even linear problems are solved by a nonlinear solver (KISS rule) - only one
+iteration is needed and the final rezidual is obtained for free.
+
 ::
 
-    #! Options
-    #! -------
-    #! Use them for anything you like... Here we show how to tell which solvers
-    #! should be used - reference solvers by their names.
     options = {
         'nls' : 'newton',
         'ls' : 'ls',
@@ -364,12 +366,15 @@ solvers with different convergence parameters if necessary.
 
 ::
 
-    #! FE assembling parameters
-    #! ------------------------
-    #! 'chunk_size' is now unused, deprecated, and will be removed.
     fe = {
         'chunk_size' : 1000
     }
+
+FE assembling parameters: ``'chunk_size'`` is now unused, deprecated, and
+will be removed.
+
+That's it! Now it is possible to proceed as described in
+:ref:`invoking_command_line`.
 
 Short syntax of keywords
 ^^^^^^^^^^^^^^^^^^^^^^^^
