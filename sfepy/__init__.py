@@ -1,5 +1,6 @@
 import os, glob
 
+from config import Config
 from version import __version__, in_source_tree, top_dir
 
 if in_source_tree:

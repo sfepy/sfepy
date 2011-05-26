@@ -25,8 +25,9 @@ debug_flags = ''
 # not installed in a standard location.
 numpydoc_path = None
 
-# '1' for a release, '' otherwise.
-is_release = '1'
+# True for a release, False otherwise. If False, current git commit hash
+# is appended to version string, if the sources are in a repository.
+is_release = False
 
 # Tetgen executable path.
 tetgen_path = '/usr/bin/tetgen'
