@@ -5,9 +5,7 @@ def configuration(parent_package='', top_path=None):
     import sys
     from numpy.distutils.misc_util import Configuration
 
-    if 'script' not in sys.path:
-        sys.path.append('script')
-    from config import Config
+    from sfepy import Config
 
     site_config = Config()
     os_flag = {'posix' : 0, 'windows' : 1}
