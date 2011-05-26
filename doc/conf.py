@@ -30,11 +30,12 @@ import sys, os
 #os.path.walk(sfepy_dir, add_to_sys_path, None)
 sys.path.append(os.path.abspath('sphinxext'))
 
-import sfepy
+# This is needed for gen_term_table.
 sys.path.append(os.path.abspath('../script'))
-from config import Config
 
-numpydoc_path = Config().numpydoc_path()
+import sfepy
+
+numpydoc_path = sfepy.Config().numpydoc_path()
 
 if numpydoc_path is not None:
     sys.path.append(os.path.abspath(numpydoc_path))
