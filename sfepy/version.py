@@ -18,6 +18,7 @@ def get_basic_info(version=__version__):
     commit hash to `version`.
     """
     import os.path as op
+    from sfepy import Config
 
     # If installed, up_dir is '.', otherwise (in (git) source directory) '..'.
     for up_dir in ['..', '.']:
@@ -28,12 +29,14 @@ def get_basic_info(version=__version__):
     else:
         raise RuntimeError('cannot determine SfePy top level directory!')
 
-    # Append current git commit hash to __version__.
-    master = op.join(top_dir, '.git/refs/heads/master')
-    if op.isfile(master):
-        fd = open(master, 'r')
-        version += '-git-%s' % fd.readline().strip()
-        fd.close()
+    config = Config()
+    if not config.is_release():
+        # Append current git commit hash to __version__.
+        master = op.join(top_dir, '.git/refs/heads/master')
+        if op.isfile(master):
+            fd = open(master, 'r')
+            version += '-git-%s' % fd.readline().strip()
+            fd.close()
 
     in_source_tree = up_dir == '..'
 
