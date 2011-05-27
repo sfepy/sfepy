@@ -1,9 +1,14 @@
+Release Tasks
+=============
+
+A few notes on what to do during a release.
+
 Things to check before a release
 --------------------------------
 
 #. create tarball::
 
-   $ make reldist
+   $ python setup.py sdist
 
 #. check in-place build::
 
@@ -11,15 +16,8 @@ Things to check before a release
    $ # cd into
    $ # copy test_install.py
 
-   #. using Makefile::
-
-      $ make
-      $ ./test_install.py
-
-   #. using distutils::
-
-      $ python setup.py build_ext --inplace
-      $ ./test_install.py
+   $ python setup.py build_ext --inplace
+   $ ./test_install.py
 
 #. check that documentation can be built::
 
@@ -27,6 +25,14 @@ Things to check before a release
    $ cd doc/
    $ make html
    $ firefox _build/html/index.html
+
+   or use::
+
+   $ python setup.py htmldocs
+
+   try also::
+
+   $ python setup.py pdfdocs
 
 #. check installed build::
 
