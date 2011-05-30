@@ -25,6 +25,72 @@ please refer to the wikipedia page at
 http://en.wikipedia.org/wiki/Finite_element_method for a basic description of
 the Finite Element Method.
 
+Basic notions
+-------------
+
+The simplest way of using *SfePy* is to solve a system of PDEs defined
+in a **problem description file**, also referred to as **input
+file**. In such a file, the problem is described using several keywords
+that allow one to define the equations, variables, finite element
+approximations, solvers, solution domain and subdomains etc., see
+:ref:`sec-problem-description-file` for a full list of those keywords.
+
+The syntax of the problem description file is very simple yet powerful,
+as the file itself is just a regular Python module that can be normally
+imported - no special parsing is necessary. The keywords mentioned above
+are regular Python variables (usually of the `dict` type) with special
+names. Historically, the keywords exist in two flavors:
+
+* **long syntax** is the original one - it is longer to type, but the
+  individual fields are named, so it might be easier/understand to read
+  for newcomers.
+* **short syntax** was added later to offer brevity for "expert" use.
+
+Below we show:
+
+#. how to solve a problem given by a problem description file, and
+#. explain the elements of the file on several examples.
+
+But let us begin with a slight detour...
+
+Sneak peek: what is going on under the hood
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#. A top-level script (usually ``simple.py``, as in this tutorial) reads
+   in an input file.
+
+#. Following the contents of the input file, a :class:`ProblemDefinition
+   <sfepy.fem.problemDef.ProblemDefinition>` instance is created - this
+   is the input file coming to life. Let us call the instance
+   ``problem``.
+
+   * The ``problem`` sets up its domain, regions (various sub-domains),
+     fields (the FE approximations), the equations and the solvers. The
+     equations determine the materials and variables in use - only those
+     are fully instantiated, so the input file can safely contain
+     definitions of items that are not used actually.
+
+#. Prior to solution, ``problem.time_update()`` function has to be
+   called to setup boundary conditions, material parameters and other
+   potentially time-dependent data. This holds also for stationary
+   problems with a single "time step".
+
+#. The solution is then obtained by calling ``problem.solve()``
+   function.
+
+#. Finally, the solution can be stored using ``problem.save_state()``
+
+The above last three steps are essentially repeated for each time
+step. So that is it - using the code a black-box PDE solver shields the
+user from having to create the :class:`ProblemDefinition
+<sfepy.fem.problemDef.ProblemDefinition>` instance by hand. But note
+that this is possible, and often necessary when the flexibility of the
+default solvers is not enough. At the end of the tutorial an example
+demonstrating the interactive creation of the ``problem`` is shown, see
+:ref:`sec-interactive-example-linear-elasticity`.
+
+Now let us continue with running a simulation.
+
 Running a simulation
 --------------------
 
@@ -385,6 +451,8 @@ see :download:`examples/diffusion/poisson_short_syntax.py
 
 .. literalinclude:: ../examples/diffusion/poisson_short_syntax.py
    :linenos:
+
+.. _sec-interactive-example-linear-elasticity:
 
 Interactive Example: Linear Elasticity
 --------------------------------------
