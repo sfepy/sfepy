@@ -18,5 +18,6 @@ from equations import Equations, Equation
 from integrals import Integrals, Integral
 from problemDef import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
+from state import State
 from evaluate import assemble_by_blocks
 from utils import extend_cell_data
