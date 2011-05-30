@@ -11,8 +11,8 @@ routines - those are written in C and wrapped by `SWIG <http://www.swig.org>`_.
 computations in Python).
 
 *SfePy* was originally developed as a flexible framework to quickly implement
-and test the mathematical models developed within the `ZČU Projects
-<http://sfepy.kme.zcu.cz/index.cgi/Projects>`_. It has evolved, however, to a
+and test the mathematical models developed during our various
+research projects. It has evolved, however, to a
 rather full-featured (yet small) finite element code with many weak forms
 to build equations so there is a chance it might serve you as well.
 
@@ -25,7 +25,8 @@ where you can find:
 * mailing lists
 * issue tracking
 * git repository (bleeding edge code)
-* further documentation and examples
+* further documentation, examples, and some of the research projects
+  the code has been developed for.
 
 To discuss in real time, join our IRC channel #sfepy at freenode.
 
