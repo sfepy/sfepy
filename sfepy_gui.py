@@ -4,24 +4,20 @@ import os
 import glob
 import time
 from threading import Thread
-import numpy as np
 
 from enthought.traits.api \
      import HasTraits, Instance, Int, File, Directory, Button, Code, \
      on_trait_change
 from enthought.traits.ui.api \
      import View, Item, Group, CodeEditor, VSplit, HGroup, spring
-from enthought.tvtk.pyface.scene_editor import SceneEditor
 from enthought.pyface.timer.api import do_later
-from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
-from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 
 from sfepy.applications import pde_solve
-from sfepy.fem import ProblemDefinition
+from sfepy.fem import ProblemDefinition, State
 from sfepy.postprocess import Viewer, ViewerGUI
 
 def assign_solution_to_gui(gui, sol):
-    gui.problem, gui.vec, gui.data = sol
+    gui.problem, gui.vec = sol
 
 class SolveThread(Thread):
     def run(self):
@@ -44,8 +40,7 @@ class SfePyGUI(HasTraits):
     selected_line = Int(0)
     
     problem = Instance(ProblemDefinition)
-    vec = Instance(np.ndarray)
-    data = Instance(dict)
+    vec = Instance(State)
     solve_thread = Instance(SolveThread)
 
     time_tag = 0.0
