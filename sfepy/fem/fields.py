@@ -498,20 +498,23 @@ class Field( Struct ):
                     efs = efs[:,nm.newaxis]
                 ap.efaces = nm.hstack((ap.efaces, efs))
 
-    def setup_coors(self):
+    def setup_coors(self, coors=None):
         """
         Setup coordinates of field nodes.
         """
         mesh = self.domain.mesh
         self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
 
+        if coors is None:
+            coors = mesh.coors
+
         # Mesh vertex nodes.
         if self.n_vertex_dof:
             indx = self.region.all_vertices
-            self.coors[:self.n_vertex_dof] = mesh.coors[indx]
+            self.coors[:self.n_vertex_dof] = coors[indx]
 
         for ig, ap in self.aps.iteritems():
-            ap.eval_extra_coor(self.coors, mesh)
+            ap.eval_extra_coor(self.coors, coors)
 
     def setup_extra_data(self, geometry, info, is_trace):
         dct = info.dc_type.type
@@ -1065,15 +1068,18 @@ class DiscontinuousField(Field):
 
         self.setup_esurface()
 
-    def setup_coors(self):
+    def setup_coors(self, coors=None):
         """
         Setup coordinates of field nodes.
         """
         mesh = self.domain.mesh
         self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
 
+        if coors is None:
+            coors = mesh.coors
+
         for ig, ap in self.aps.iteritems():
-            ap.eval_extra_coor(self.coors, mesh)
+            ap.eval_extra_coor(self.coors, coors)
 
     def extend_dofs(self, dofs, fill_value=None):
         """

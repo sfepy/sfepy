@@ -571,13 +571,13 @@ class ProblemDefinition( Struct ):
     def get_mesh_coors( self ):
         return self.domain.get_mesh_coors()
 
-    def set_mesh_coors(self, coors, update_state=False):
+    def set_mesh_coors(self, coors, update_state=False, actual=False):
         if self.equations is None:
             geom = {}
         else:
             geom = self.equations.geometries
         fea.set_mesh_coors(self.domain, self.fields, geom,
-                           coors, update_state)
+                           coors, update_state, actual)
 
     def get_dim( self, get_sym = False ):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is

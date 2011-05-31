@@ -267,11 +267,14 @@ class Domain( Struct ):
             off += group.shape.n_el
         return offs
 
-    def get_mesh_coors(self):
+    def get_mesh_coors(self, actual=False):
         """
         Return the coordinates of the underlying mesh vertices.
         """
-        return self.mesh.coors
+        if actual and hasattr(self.mesh, 'coors_act'):
+            return self.mesh.coors_act
+        else:
+            return self.mesh.coors
 
     def get_mesh_bounding_box(self):
         """

@@ -5,14 +5,19 @@ from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 
-def set_mesh_coors( domain, fields, geometries, coors, update_state = False ):
-    domain.mesh.coors = coors.copy()
+def set_mesh_coors(domain, fields, geometries, coors,
+                   update_state = False, actual=False):
+    if actual:
+        domain.mesh.coors_act = coors.copy()
+    else:
+        domain.mesh.coors = coors.copy()
+
     if update_state:
         for field in fields.itervalues():
             field.setup_coors()
             field.update_geometry(domain.regions, geometries)
 
-def eval_nodal_coors(coors, mesh, region, poly_space, geom_poly_space,
+def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
                      econn, ig, only_extra=True):
     """
     Compute coordinates of nodes corresponding to `poly_space`, given
@@ -38,7 +43,7 @@ def eval_nodal_coors(coors, mesh, region, poly_space, geom_poly_space,
     group = region.domain.groups[ig]
     cells = region.get_cells(ig)
 
-    ecoors = nm.dot(bf, mesh.coors[group.conn[cells]])
+    ecoors = nm.dot(bf, mesh_coors[group.conn[cells]])
     coors[econn] = nm.swapaxes(ecoors, 0, 1)
 
 
@@ -146,14 +151,14 @@ class Approximation( Struct ):
         self.bf = {}
         self.n_ep = self.interp.get_n_nodes()
 
-    def eval_extra_coor(self, coors, mesh):
+    def eval_extra_coor(self, coors, mesh_coors):
         """
         Compute coordinates of extra nodes.
         """
         gps = self.interp.gel.interp.poly_spaces['v']
         ps = self.interp.poly_spaces['v']
 
-        eval_nodal_coors(coors, mesh, self.region, ps, gps, self.econn, self.ig)
+        eval_nodal_coors(coors, mesh_coors, self.region, ps, gps, self.econn, self.ig)
 
     def get_v_data_shape(self, integral=None):
         """returns (n_el, n_qp, dim, n_ep)"""
@@ -259,7 +264,6 @@ class Approximation( Struct ):
         """
         domain = field.domain
         group = domain.groups[self.ig]
-        coors = domain.get_mesh_coors()
 
         if gtype == 'volume':
             if integral is None:
@@ -273,26 +277,27 @@ class Approximation( Struct ):
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
 
+            coors = domain.get_mesh_coors(actual=True)
             mapping = VolumeMapping(coors, group.conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
             out = vg
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
-            assert_(field.approx_order > 0)
-
             sd = self.surface_data[region.name]
             qp = self.get_qp(sd.face_type, integral)
 
             geo_ps = self.interp.get_geom_poly_space(sd.face_type)
 
             econn = sd.get_connectivity(self.is_surface)
-            conn = field.vertex_remap_i[econn[:, :geo_ps.n_nod]]
-
-            mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
-            sg = mapping.get_mapping(qp.vals, qp.weights)
-
+            conn = econn[:, :geo_ps.n_nod].copy()
+            # This does not work for zero-order approximations!
+            coors = field.get_coor(actual=True)
+            coors2 = domain.get_mesh_coors(actual=True)
             if gtype == 'surface_extra':
+                mapping = SurfaceMapping(coors2[group.vertices], conn, poly_space=geo_ps)
+                sg = mapping.get_mapping(qp.vals, qp.weights)
+
                 sg.alloc_extra_data( self.get_v_data_shape()[2] )
 
                 self.create_bqp( region.name, integral )
@@ -302,7 +307,10 @@ class Approximation( Struct ):
                 bf_bg = ps.eval_base(qp.vals, diff=True)
                 ebf_bg = self.get_base(sd.bkey, 1, integral)
 
-                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
+                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors2, sd.fis, group.conn)
+            else:
+                mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
+                sg = mapping.get_mapping(qp.vals, qp.weights)
 
             out =  sg
 
@@ -345,7 +353,7 @@ class Approximation( Struct ):
 
 class DiscontinuousApproximation(Approximation):
 
-    def eval_extra_coor(self, coors, mesh):
+    def eval_extra_coor(self, coors, mesh_coors):
         """
         Compute coordinates of extra nodes. For discontinuous
         approximations, all nodes are treated as extra.
@@ -353,8 +361,8 @@ class DiscontinuousApproximation(Approximation):
         gps = self.interp.gel.interp.poly_spaces['v']
         ps = self.interp.poly_spaces['v']
 
-        eval_nodal_coors(coors, mesh, self.region, ps, gps, self.econn, self.ig,
-                         only_extra=False)
+        eval_nodal_coors(coors, mesh_coors, self.region, ps, gps,
+                         self.econn, self.ig, only_extra=False)
 
 class SurfaceApproximation(Approximation):
 
