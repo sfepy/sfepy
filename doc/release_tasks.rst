@@ -75,6 +75,7 @@ Web update and file uploading
 * upload the tarball to http://code.google.com/p/sfepy/downloads/list
 
   * make it featured, un-feature the previous release
+  * update download link at http://code.google.com/p/sfepy/wiki/Downloads
 
 * update news at http://code.google.com/p/sfepy/
 
