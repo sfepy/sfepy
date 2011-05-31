@@ -8,13 +8,14 @@ Things to check before a release
 
 #. create tarball::
 
+   set ``is_release = True`` in site_cfg.py
+
    $ python setup.py sdist
 
 #. check in-place build::
 
    $ # unpack the tarball
    $ # cd into
-   $ # copy test_install.py
 
    $ python setup.py build_ext --inplace
    $ ./test_install.py
@@ -22,15 +23,16 @@ Things to check before a release
 #. check that documentation can be built::
 
    $ # copy site_cfg.py
+   $ python setup.py htmldocs
+   $ firefox doc/_build/html/index.html
+
+   or use
+
    $ cd doc/
    $ make html
    $ firefox _build/html/index.html
 
-   or use::
-
-   $ python setup.py htmldocs
-
-   try also::
+   try also
 
    $ python setup.py pdfdocs
 
