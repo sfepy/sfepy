@@ -292,7 +292,7 @@ class Approximation( Struct ):
             econn = sd.get_connectivity(self.is_surface)
             conn = econn[:, :geo_ps.n_nod].copy()
             # This does not work for zero-order approximations!
-            coors = field.get_coor(actual=True)
+            coors = field.get_coor()
             coors2 = domain.get_mesh_coors(actual=True)
             if gtype == 'surface_extra':
                 mapping = SurfaceMapping(coors2[group.vertices], conn, poly_space=geo_ps)
