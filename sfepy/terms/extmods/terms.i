@@ -137,8 +137,7 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 
 int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 			   FMField *trB, FMField *in2B, FMField *vecES,
-			   FMField *state, FMField *state0,
-			   int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, VolumeGeometry *vg,
 			   int32 *conn, int32 nEl, int32 nEP );
 
 int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,

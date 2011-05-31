@@ -1,7 +1,5 @@
-import numpy as nm
 from sfepy.terms.extmods import terms
 from sfepy.terms.cache import DataCache
-from sfepy.base.base import pause, debug
 
 class FiniteStrainTLDataCache( DataCache ):
     """
@@ -183,7 +181,7 @@ class FiniteStrainULDataCache( DataCache ):
 
     def update(self, key, term, ih, **kwargs):
         state, = self.get_args( **kwargs )
-        ap, vg = term.get_approximation(state)
+        ap, vg = term.get_approximation(state, geom0=True)
 
         ckey = self.get_key(term)
 
@@ -194,8 +192,7 @@ class FiniteStrainULDataCache( DataCache ):
                           self.data['trB'][ckey][ih],
                           self.data['in2B'][ckey][ih],
                           self.data['E'][ckey][ih],
-                          state(), state(step=-1),
-                          0, vg, ap.econn)
+                          state(), 0, vg, ap.econn)
 
         except RuntimeError:
             terms.errclear()

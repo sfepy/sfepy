@@ -357,24 +357,11 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 #define __FUNC__ "dq_finite_strain_ul"
 int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 			   FMField *trB, FMField *in2B, FMField *vecES,
-			   FMField *state, FMField *state0,
-			   int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, VolumeGeometry *vg,
 			   int32 *conn, int32 nEl, int32 nEP )
 {
-  FMField *du = 0;
-  int32 ret;
-
-  fmf_createAlloc( &du, 1, 1, state->nCol, state->nRow );
-
-  /* relative displacement */
-  fmf_subAB_nn( du, state, state0 );
-  
-  ret = dq_finite_strain( mtxF, detF, vecBS, trB, in2B, 0, vecES,
-			  du, offset, vg, conn, nEl, nEP, 1 );
-
-  fmf_freeDestroy( &du );
- 
-  return( ret );
+  return( dq_finite_strain( mtxF, detF, vecBS, trB, in2B, 0, vecES,
+			    state, offset, vg, conn, nEl, nEP, 1 ) );
 }
 
 #undef __FUNC__
@@ -397,7 +384,7 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 
   for (ii = 0; ii < nFa; ii++) {
     iel = fis[ii*nFP+0];
-    
+
     FMF_SetCell( sg->bfBGM, ii );
     FMF_SetCell( mtxF, ii );
     FMF_SetCell( mtxFI, ii );
