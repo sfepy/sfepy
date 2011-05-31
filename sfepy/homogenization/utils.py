@@ -262,3 +262,26 @@ def get_volume(problem, field_name, region_name, quad_order=1):
                            u=var)
 
     return vol
+
+def set_nonlin_states(variables, nl_state, problem):
+    """
+    Setup reference state for nonlinear homogenization
+
+    Parameters
+    ----------
+    variables : dict
+        All problem variables
+    nl_state : reference state
+    problem : problem description
+    """
+
+    if nl_state is not None:
+        var_names = nl_state['variables']
+        var_fun = nl_state['set_states']
+        pvar_names = []
+        for ivar in var_names:
+            if ivar in variables:
+                pvar_names.append(ivar)
+        states = var_fun(problem, pvar_names, variables)
+        for ivar in pvar_names:
+            variables[ivar].data_from_any(states[ivar])
