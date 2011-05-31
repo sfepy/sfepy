@@ -93,7 +93,10 @@ class Equations( Container ):
 
         self.setup_caches(caches=caches)
 
-        self.clear_geometries()
+        if not hasattr(self, 'geometries'):
+            self.geometries = {}
+        else:
+            self.clear_geometries()
 
         self.domain = self.get_domain()
 
@@ -121,8 +124,14 @@ class Equations( Container ):
 
             self.caches = caches
 
-    def clear_geometries(self):
-        self.geometries = {}
+    def clear_geometries(self, save=False):
+        if save:
+            self.geometries0 = self.geometries.copy()
+            for eq in self:
+                for term in eq.terms:
+                    term.assign_geometries0(self.geometries0)
+
+        self.geometries.clear()
 
     def get_domain(self):
         domain = None

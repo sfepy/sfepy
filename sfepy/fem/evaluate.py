@@ -1,6 +1,7 @@
 from copy import copy
 
-from sfepy.base.base import output, get_default, OneTypeList, Struct
+from sfepy.base.base import output, get_default, OneTypeList, Struct,\
+     get_default_attr
 from sfepy.terms import DataCaches
 from sfepy.fem import Equations, Variables, Region
 from sfepy.fem.fields import setup_dof_conns, setup_extra_data
@@ -17,6 +18,32 @@ class BasicEvaluator( Evaluator ):
     def __init__(self, problem, matrix_hook=None):
         Evaluator.__init__(self, problem=problem,
                            matrix_hook=matrix_hook)
+
+    def new_ulf_iteration(self, nls, vec, it, err, err0):
+
+        pb = self.problem
+
+        vec = self.make_full_vec(vec)
+        pb.equations.set_variables_from_state(vec)
+
+        upd_vars = get_default_attr(pb.conf.options, 'mesh_update_variables', None)
+        for varname in upd_vars:
+            try:
+                state = pb.equations.variables[varname]
+            except IndexError:
+                msg = 'variable "%s" does not exist!' % varname
+                raise KeyError( msg )
+
+        nods = state.field.get_dofs_in_region(state.field.region, merge=True)
+        coors = pb.domain.get_mesh_coors().copy()
+        vs = state()
+        coors[nods,:] = coors[nods,:] + vs.reshape(len(nods), state.n_components)
+        if pb.ts.step == 1 and it == 0:
+            pb.equations.clear_geometries(save=True)
+        else:
+            pb.equations.clear_geometries()
+
+        pb.set_mesh_coors(coors, update_state=True, actual=True)
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
