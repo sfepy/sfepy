@@ -1075,6 +1075,13 @@ class Term(Struct):
         if self.has_geometry:
             self.geometries = geometries
 
+    def assign_geometries0(self, geometries):
+        """
+        Initialize the shared dict of geometries.
+        """
+        if self.has_geometry:
+            self.geometries0 = geometries
+
     def describe_geometry(self, variable, geometry_type, ig):
         """
         The geometries are cached in `self.geometries` attribute, that
@@ -1099,7 +1106,7 @@ class Term(Struct):
 
         return geo
 
-    def get_approximation(self, variable):
+    def get_approximation(self, variable, geom0=False):
         """
         Return approximation corresponding to `variable`. Also return
         the corresponding geometry.
@@ -1125,6 +1132,12 @@ class Term(Struct):
             # Make a mirror-region alias to SurfaceData.
             sd = ap.surface_data
             sd[self.region.name] = sd[region.name]
+
+        if geom0 and hasattr(self, 'geometries0'):
+            if g_key in self.geometries0:
+                geo = self.geometries0[g_key]
+
+                return ap, geo
 
         if g_key in self.geometries:
             geo = self.geometries[g_key]

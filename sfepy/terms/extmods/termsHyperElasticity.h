@@ -71,10 +71,20 @@ int32 dw_he_rtm( FMField *out,
 		 VolumeGeometry *vg,
 		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul );
 
+int32 de_he_rtm( FMField *out,
+		 FMField *stress, FMField *detF,
+		 VolumeGeometry *vg,
+		 int32 *elList, int32 elList_nRow,
+		 int32 mode_ul );
+
 int32 dq_tl_stress_bulk_pressure( FMField *out, FMField *pressure_qp,
 				  FMField *detF, FMField *vecInvCS );
+int32 dq_ul_stress_bulk_pressure( FMField *out, FMField *pressure_qp,
+				  FMField *detF);
 int32 dq_tl_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 				     FMField *detF, FMField *vecInvCS );
+int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
+				     FMField *detF );
 
 int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
@@ -99,6 +109,15 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
 		   int32 *conn, int32 nEl, int32 nEP,
 		   int32 *elList, int32 elList_nRow, int32 mode );
+
+int32 he_residuum_from_mtx(FMField *out, FMField *mtxD,
+			   FMField *state,
+			   int32 *conn, int32 nEl, int32 nEP,
+			   int32 *elList, int32 elList_nRow);
+int32 he_eval_from_mtx(FMField *out, FMField *mtxD,
+		       FMField *stateV, FMField *stateU,
+		       int32 *conn, int32 nEl, int32 nEP,
+		       int32 *elList, int32 elList_nRow);
 
 END_C_DECLS
 

@@ -3,9 +3,9 @@ import numpy as nm
 from sfepy.base.base import assert_, Struct
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_hyperelastic_base \
-     import CouplingVectorScalarTL, HyperElasticBase
+     import CouplingVectorScalarHE, HyperElasticBase
 from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
-            
+
 class HyperElasticTLBase( HyperElasticBase ):
     """Base class for all hyperelastic terms in TL formulation. This is not a
     proper Term!
@@ -35,7 +35,7 @@ class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
     family_data_names = ['detF', 'trC', 'invC']
     term_function = {'stress' : terms.dq_tl_he_stress_neohook,
                      'tangent_modulus' : terms.dq_tl_he_tan_mod_neohook}
-    
+
     def compute_crt_data( self, family_data, mode, **kwargs ):
         mat = self.get_args( ['material'], **kwargs )[0]
 
@@ -122,7 +122,7 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
         mat = self.get_args( ['material'], **kwargs )[0]
 
         detF, invC = family_data
-        
+
         if mode == 0:
             out = nm.empty_like( invC )
             fun = self.term_function['stress']
@@ -136,7 +136,7 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
 
         return out
 
-class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
+class BulkPressureTLTerm(CouplingVectorScalarHE, HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic bulk pressure term. Stress
@@ -230,7 +230,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
 
             elif term_mode == 'stress':
                 out_qp = self.compute_crt_data(family_data, 0, **kwargs)
-                
+
             shape = (chunk_size, 1) + out_qp.shape[2:]
             for out, chunk in self.char_fun(chunk_size, shape):
                 status = vgv.integrate_chunk(out, out_qp[chunk], chunk)
@@ -261,7 +261,7 @@ class BulkPressureTLTerm(CouplingVectorScalarTL, HyperElasticTLBase):
 
         return out
 
-class VolumeTLTerm(CouplingVectorScalarTL, InstantaneousBase, Term):
+class VolumeTLTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
     r"""
     :Description:
     Volume term (weak form) in the total Lagrangian formulation.
@@ -374,7 +374,7 @@ class DiffusionTLTerm(ScalarScalar, Term):
             shape, mode = self.get_shape(diff_var, chunk_size)
             if self.step == 0: # Just init the history in step 0.
                 raise StopIteration
-        
+
         cache = self.get_cache('grad_scalar', 0)
         gp = cache('grad', self, 0, state=state, get_vector=self.get_vector)
 
