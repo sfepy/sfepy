@@ -80,6 +80,8 @@ class ProblemDefinition( Struct ):
             mesh.transform_coors(trans_mtx)
 
         domain = Domain(mesh.name, mesh)
+        if get_default_attr(conf.options, 'ulf', False):
+            domain.mesh.coors_act = domain.mesh.coors.copy()
 
         obj = ProblemDefinition('prblem_from_conf', conf=conf,
                                 functions=functions, domain=domain,
@@ -823,6 +825,9 @@ class ProblemDefinition( Struct ):
         else:
             extra_args = {}
         ev = self.get_evaluator()
+
+        if get_default_attr(self.conf.options, 'ulf', False):
+            self.nls_iter_hook = ev.new_ulf_iteration
 
         nls = Solver.any_from_conf(nls_conf, fun=ev.eval_residual,
                                    fun_grad=ev.eval_tangent_matrix,
