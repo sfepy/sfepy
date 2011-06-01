@@ -110,19 +110,39 @@ class PotentialBase(Struct):
         if isinstance(other, PotentialBase):
             out = CompoundPotential([self, other])
 
+        elif nm.isscalar(other):
+            if other == 0:
+                out = self
+
+            else:
+                out = NotImplemented
+
         else:
             out = NotImplemented
 
         return out
+
+    def __radd__(self, other):
+        return self + other
 
     def __sub__(self, other):
         if isinstance(other, PotentialBase):
             out = CompoundPotential([self, -1.0 * other])
 
+        elif nm.isscalar(other):
+            if other == 0:
+                out = self
+
+            else:
+                out = NotImplemented
+
         else:
             out = NotImplemented
 
         return out
+
+    def __rsub__(self, other):
+        return -self + other
 
     def __pos__(self):
         return self
