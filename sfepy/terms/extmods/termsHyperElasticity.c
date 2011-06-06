@@ -785,7 +785,7 @@ int32 dq_ul_he_stress_mooney_rivlin( FMField *out, FMField *mat,
 				     FMField *vecBS, FMField *in2B )
 {
   int32 ii, iqp, ir, sym, nQP, ret = RET_OK;
-  float64 detF23, detF43, B1, B2, B3;
+  float64 detF23;
   float64 *pkappa, *pstress, *ptrB, *pB, *pBB, *pdetF,  *pin2B, *ptrace;
   FMField *vecBB;
 
@@ -809,12 +809,11 @@ int32 dq_ul_he_stress_mooney_rivlin( FMField *out, FMField *mat,
     pkappa = FMF_PtrCell( mat, ii );
     for (iqp = 0; iqp < nQP; iqp++) {
       detF23 = exp( -2.0/3.0 * log( pdetF[iqp] ) );
-      detF43 = detF23 * detF23;
-      B1 = 2 * pkappa[iqp] * detF43 * ptrB[iqp];
-      B2 = -2 * pkappa[iqp] * detF43;
-      B3 = -(4.0/3.0) * pkappa[iqp] * detF43 * pin2B[iqp];
       for (ir = 0; ir < sym; ir++) {
-	pstress[ir] = B1 * pB[ir] + B2 * pBB[ir] + B3 * ptrace[ir];
+	pstress[ir]
+	  = pkappa[iqp] * detF23 * detF23
+	  * (ptrB[iqp] * pB[ir] - pBB[ir]
+	     - (2.0/3.0) * pin2B[iqp] * ptrace[ir]);
       }
       pstress += sym;
       pBB += sym;
