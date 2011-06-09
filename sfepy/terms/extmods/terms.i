@@ -213,6 +213,10 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
 		    VolumeGeometry *vg, int32 transpose,
 		    int32 *elList, int32 elList_nRow,
 		    int32 mode );
+int32 dw_ul_volume( FMField *out, FMField *bf,
+		    FMField *detF, VolumeGeometry *vg, int32 transpose,
+		    int32 *elList, int32 elList_nRow,
+		    int32 mode );
 
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,

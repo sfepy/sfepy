@@ -1,10 +1,10 @@
 import numpy as nm
 
-from sfepy.base.base import Struct, use_method_with_name
+from sfepy.base.base import Struct
 from sfepy.terms.terms import terms, Term
 from sfepy.terms.terms_hyperelastic_base \
      import CouplingVectorScalarHE, HyperElasticBase
-from sfepy.terms.terms_base import VectorVector, ScalarScalar
+from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
 
 class HyperElasticULBase( HyperElasticBase ):
     """Base class for all hyperelastic terms in UL formulation. This is not a
@@ -291,7 +291,7 @@ class BulkPressureULTerm(CouplingVectorScalarHE, HyperElasticULBase):
 
         self.function = {
             'element_contribution' : terms.dw_he_rtm,
-            'element_contribution_dp' : terms.dw_tl_volume,
+            'element_contribution_dp' : terms.dw_ul_volume,
         }
         igs = self.region.igs
         self.crt_data = Struct(stress={}.fromkeys(igs, None),
@@ -331,9 +331,9 @@ class BulkPressureULTerm(CouplingVectorScalarHE, HyperElasticULBase):
 
                 for out, chunk in self.char_fun(chunk_size, shape):
                     status = fun(out, stress, self.crt_data.tan_mod[ig], mtxF, detF,
-                                 vgv, chunk, mode, 0)
-
+                                 vgv, chunk, mode, 1)
                     yield out, chunk, status
+
             else:
                 fun = self.function['element_contribution_dp']
 
@@ -342,9 +342,8 @@ class BulkPressureULTerm(CouplingVectorScalarHE, HyperElasticULBase):
 
                 bf = aps.get_base('v', 0, self.integral)
                 for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, bf, mtxF, B, detF, vgv, 1, chunk, 1)
+                    status = fun(out, bf, detF, vgv, 1, chunk, 1)
                     yield -out, chunk, status
-
 
         elif term_mode == 'd_eval':
             raise NotImplementedError
@@ -564,82 +563,95 @@ class BulkPressureULEvalTerm(Term):
 
             yield out1, chunk, status
 
-class MassScalarULHTerm(ScalarScalar, Term):
+class VolumeULTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
     r"""
     :Description:
-    Scalar field mass matrix/rezidual weighted by a scalar function :math:`c`.
+    Volume term (weak form) in the updated Lagrangian formulation.
 
     :Definition:
     .. math::
-        \int_{\Omega} c/J q p
+         \begin{array}{l}
+         \int_{\Omega} q J(\ul{u}) \\
+         \mbox{volume mode: vector for } K \from \Ical_h: \int_{T_K}
+         J(\ul{u}) \\
+         \mbox{rel\_volume mode: vector for } K \from \Ical_h:
+         \int_{T_K} J(\ul{u}) / \int_{T_K} 1
+         \end{array}
 
-    :Arguments 1:
-        material : :math:`c`,
-        virtual  : :math:`q`,
-        state    : :math:`p`,
-        state_u  :math:`\ul{w}`
-
-    :Arguments 2:
-        material    : :math:`c`,
-        parameter_1 : :math:`r`,
-        parameter_2 : :math:`p`,
-        state_u     : :math:`\ul{w}`
+    :Arguments:
+        virtual : :math:`q`,
+        state   : :math:`\ul{u}`
     """
-    name = 'dw_ul_mass_scalar_h'
-    arg_types = (('material', 'virtual', 'state', 'state_u'),
-                 ('material', 'parameter_1', 'parameter_2', 'state_u'))
-    modes = ('weak', 'eval')
-    functions = {'weak': terms.dw_mass_scalar,
-                 'eval': terms.d_mass_scalar}
+    name = 'dw_ul_volume'
+    arg_types = ('virtual', 'state')
+    use_caches = {'finite_strain_ul' : [['state',
+                                         {'F' : (2, 2),
+                                          'detF' : (2, 2)}]]}
 
-    family_data_names = ['detF', 'B']
-    use_caches = {'finite_strain_ul' : [['state_u']]}
+    function = staticmethod(terms.dw_ul_volume)
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state, state_u = self.get_args( ['virtual', 'state', 'state_u'], **kwargs )
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        virtual, state = self.get_args( **kwargs )
+        term_mode = kwargs.get('term_mode')
+
+        apv, vgv = self.get_approximation(state)
+        aps, vgs = self.get_approximation(virtual)
+
+        self.set_data_shape(apv, aps)
+
+        cache = self.get_cache('finite_strain_ul', 0)
+        ih = self.arg_steps[state.name] # issue 104!
+        mtxF, detF = cache(['F', 'detF'], self, ih, state=state)
+
+        if term_mode == 'volume':
+            n_el, _, _, _ = self.data_shape_s
+            shape, mode = (n_el, 1, 1, 1), 2
+
+        elif term_mode == 'rel_volume':
+            n_el, _, _, _ = self.data_shape_s
+            shape, mode = (n_el, 1, 1, 1), 3
+
+        else:
+            shape, mode = self.get_shape_div(diff_var, chunk_size)
+
+        bf = aps.get_base('v', 0, self.integral)
+
+        return (bf, detF, vgv, 0), shape, mode
+
+class CompressibilityULTerm(ScalarScalar, Term):
+    r"""
+    :Description:
+    Compressibility term in the updated Lagrangian formulation
+
+    :Definition:
+    .. math::
+        \int_{\Omega} 1\over \gamma p \, q
+
+    :Arguments:
+        material: :math:`\gamma`,
+        virtual    : :math:`q`,
+        state      : :math:`p`,
+    """
+    name = 'dw_ul_compressible'
+    arg_types = ('material', 'virtual', 'state', 'state_u')
+    use_caches = {'finite_strain_ul': [['state_u']]}
+
+    function = staticmethod(terms.dw_mass_scalar)
+
+    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+        bulk, virtual, state, state_u = self.get_args(**kwargs)
+
         ap, vg = self.get_approximation(virtual)
 
-        self.set_data_shape( ap )
+        self.set_data_shape(ap)
         shape, mode = self.get_shape( diff_var, chunk_size )
 
-        vec = self.get_vector( state )
+        cache = self.get_cache('finite_strain_ul', 0)
+        mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
+
+        coef = nm.divide(bulk, detF)
         bf = ap.get_base('v', 0, self.integral)
 
-        coef, = self.get_args(['material'], **kwargs)
-        cache = self.get_cache('finite_strain_ul', 0 )
-        family_data = cache(self.family_data_names, self, 0, state=state_u)
-        detF, B = family_data
-
-        coef0 = nm.divide(coef, detF)
-
-        if state.is_real():
-            fargs = coef, vec, bf, vg, ap.econn
-        else:
-            ac = nm.ascontiguousarray
-            fargs = [(coef0, ac( vec.real ), bf, vg, ap.econn),
-                     (coef0, ac( vec.imag ), bf, vg, ap.econn)]
-            mode += 1j
+        fargs = coef, state(), bf, vg, ap.econn
 
         return fargs, shape, mode
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args(['parameter_1', 'parameter_2'], **kwargs)
-        ap, vg = self.get_approximation(par1)
-        self.set_data_shape( ap )
-        bf = ap.get_base('v', 0, self.integral)
-
-        if 'material' in [at[0] for at in self.arg_types]:
-            coef, = self.get_args(['material'], **kwargs)
-
-        else:
-            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
-
-        return (coef, par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
-
-    def set_arg_types( self ):
-        if self.mode == 'weak':
-            self.function = self.functions['weak']
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-        else:
-            self.function = self.functions['eval']
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
