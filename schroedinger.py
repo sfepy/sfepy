@@ -183,6 +183,19 @@ class SchroedingerApp(SimpleApp):
         self.eig_results_name = op.join(opts.output_dir,
                                         self.problem.ofn_trunk + '_eigs.txt')
 
+        # Restart file names for DFT.
+        name = self.options.save_restart_filename
+        if name == 'auto':
+            name = op.join(output_dir,
+                           self.problem.ofn_trunk + '_restart.h5')
+        self.save_restart_filename = name
+
+        name = self.options.load_restart_filename
+        if name == 'auto':
+            name = op.join(output_dir,
+                           self.problem.ofn_trunk + '_restart.h5')
+        self.load_restart_filename = name
+
     def call(self):
         options = self.options
 
@@ -407,11 +420,21 @@ class SchroedingerApp(SimpleApp):
 
         # Just to get the shape. Assumes one element group only!!!
         v_hxc_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)')
-        v_hxc_qp.fill(0.0)
         self.qp_shape = v_hxc_qp.shape
+
+        if self.load_restart_filename is not None:
+            # Load a restart file.
+            aux = self.load_dict(self.load_restart_filename)['V_hxc_qp']
+            assert_(aux.shape == self.qp_shape)
+            v_hxc_qp[:] = aux
+
+        else:
+            v_hxc_qp.fill(0.0)
+
+        self.norm_v_hxc0 = nla.norm(v_hxc_qp)
+
         vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
 
-        self.norm_v_hxc0 = nla.norm(vec_v_hxc)
         self.itercount = 0
         aux = wrap_function(self.iterate,
                             (eig_solver,
@@ -448,6 +471,11 @@ class SchroedingerApp(SimpleApp):
 
         pb.select_bcs(ebc_names=['ZeroSurface'])
         mtx_phi = self.make_full(mtx_s_phi)
+
+        if self.save_restart_filename is not None:
+            # Save a restart file.
+            self.save_dict(self.save_restart_filename,
+                           {'V_hxc_qp' : v_hxc_qp})
 
         if self.iter_hook_final is not None: # User postprocessing.
             data = Struct(iteration=self.itercount,
@@ -588,7 +616,6 @@ class SchroedingerApp(SimpleApp):
         eigs.tofile(fd, ' ')
         fd.close()
 
-
 def fix_path(filename):
     return op.join(sfepy.data_dir, filename)
 
@@ -627,7 +654,7 @@ and visualize the result:
 
 help = {
     'filename' :
-    'basename of output file(s) [default: %default.vtk]',
+    'basename of output file(s) [default: <basename of input file mesh>]',
     'well' :
     'solve infinite potential well (particle in a box) problem',
     'oscillator' :
@@ -645,6 +672,12 @@ help = {
     'Do a DFT calculation (input file required)',
     'plot' :
     'plot convergence of DFT iterations (with --dft)',
+    'save_restart' :
+    'create restart file after DFT (with --dft)'
+    ' special value "auto" is replaced by <output_dir>/<mesh_name>_restart.h5]',
+    'load_restart' :
+    'load restart file to initialize DFT (with --dft)'
+    ' special value "auto" is replaced by <output_dir>/<mesh_name>_restart.h5]',
 }
 
 def main():
@@ -657,7 +690,7 @@ def main():
                       default=False, help=help['dim'])
     parser.add_option('-o', '', metavar='filename',
                       action='store', dest='output_filename_trunk',
-                      default='mesh', help=help['filename'])
+                      default=None, help=help['filename'])
     parser.add_option('--oscillator',
                       action='store_true', dest='oscillator',
                       default=False, help=help['oscillator'])
@@ -676,6 +709,12 @@ def main():
     parser.add_option('-p', '--plot',
                       action='store_true', dest='plot',
                       default=False, help=help['plot'])
+    parser.add_option('-r', '--save-restart', metavar='filename',
+                      action='store', dest='save_restart_filename',
+                      default=None, help=help['save_restart'])
+    parser.add_option('-l', '--load-restart', metavar='filename',
+                      action='store', dest='load_restart_filename',
+                      default=None, help=help['load_restart'])
 
     options, args = parser.parse_args()
 
