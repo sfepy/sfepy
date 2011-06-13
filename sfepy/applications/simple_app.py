@@ -108,3 +108,19 @@ class SimpleApp( Application ):
                             pre_process_hook=self.pre_process_hook)
 
         return out
+
+    def save_dict(self, filename, data):
+        """
+        Utility function to save a dictionary `data` to a HDF5 file
+        `filename`.
+        """
+        io.write_dict_hdf5(filename, data)
+
+    def load_dict(self, filename):
+        """
+        Utility function to load a dictionary `data` from a HDF5 file
+        `filename`.
+        """
+        data = io.read_dict_hdf5(filename)
+
+        return data
