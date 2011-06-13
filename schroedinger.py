@@ -33,74 +33,55 @@ from sfepy.fem import Materials
 from sfepy.fem.evaluate import eval_equations
 from sfepy.solvers import Solver
 
-def guess_n_eigs( n_electron, n_eigs = None ):
+def guess_n_eigs(n_electron, n_eigs=None):
     """
     Guess the number of eigenvalues (energies) to compute so that the smearing
     iteration converges. Passing n_eigs overrides the guess.
     """
     if n_eigs is not None: return n_eigs
-    
+
     if n_electron > 2:
         n_eigs = int(1.2 * ((0.5 * n_electron) + 5))
     else:
         n_eigs = n_electron
     return n_eigs
 
-def smear( energies, e_f, width, exponent ):
-    energies = nm.atleast_1d( energies )
+def smear(energies, e_f, width, exponent):
+    energies = nm.atleast_1d(energies)
 
     e1, e2 = e_f - width, e_f + width
 
-    val = nm.zeros_like( energies )
+    val = nm.zeros_like(energies)
 
-    ii = nm.where( energies <= e1 )[0]
+    ii = nm.where(energies <= e1)[0]
     val[ii] = 2.0
 
-    ii = nm.where( (energies > e1) & (energies <= e_f) )[0]
+    ii = nm.where((energies > e1) & (energies <= e_f))[0]
     val[ii] = 2.0 - nm.power((energies[ii] - e1) / width, exponent)
 
-    ii = nm.where( (energies > e_f) & (energies < e2) )[0]
+    ii = nm.where((energies > e_f) & (energies < e2))[0]
     val[ii] = 0.0 + nm.power((e2 - energies[ii]) / width, exponent)
 
     return val
 
-def setup_smearing( eigs, n_electron, width = 0.1, exponent = 2.0 ):
+def setup_smearing(eigs, n_electron, width=0.1, exponent=2.0):
 
-    def objective( e_f ):
-        r = nm.sum( smear( eigs, e_f, width, exponent ) ) - n_electron
-#        print e_f, r
+    def objective(e_f):
+        r = nm.sum(smear(eigs, e_f, width, exponent)) - n_electron
+
         return r
-
-##     import pylab
-##     x = nm.linspace(eigs[0], eigs[-1], 1000)
-##     pylab.plot( x, smear( x, -3, width, exponent ) )
-##     pylab.show()
-
-##     import pylab
-##     x = nm.linspace(eigs[0], eigs[-1], 1000)
-##     pylab.plot( x, [objective(y) for y in x] )
-##     pylab.show()
 
     try:
         e_f = bisect(objective, eigs[0], eigs[-1], xtol=1e-12)
     except AssertionError:
         e_f = None
-##     print eigs
-##     print e_f, e_f - width, e_f + width
-##     print objective(e_f)
-##     debug()
 
-    def smear_tuned( energies ):
-        return smear( energies, e_f, width, exponent )
-
-##     import pylab
-##     x = nm.linspace(eigs[0], eigs[-1], 1000)
-##     pylab.plot( x, smear_tuned( x ) )
-##     pylab.show()
+    def smear_tuned(energies):
+        return smear(energies, e_f, width, exponent)
 
     return e_f, smear_tuned
 
-def update_state_to_output( out, pb, vec, name, fill_value = None ):
+def update_state_to_output(out, pb, vec, name, fill_value=None):
     """Convert 'vec' to output for saving and insert it into 'out'. """
     state = pb.create_state()
     state.set_full(vec)
@@ -108,77 +89,77 @@ def update_state_to_output( out, pb, vec, name, fill_value = None ):
     key = aux.keys()[0]
     out[name] = aux[key]
 
-def wrap_function( function, args ):
+def wrap_function(function, args):
     ncalls = [0]
     times = []
     results = []
-    def function_wrapper( x ):
+    def function_wrapper(x):
         ncalls[0] += 1
         tt = time.time()
 
-        results[:] = function( x, *args )
+        results[:] = function(x, *args)
         v_hxc_qp = results[-1]
 
         tt2 = time.time()
         if tt2 < tt:
             raise RuntimeError, '%f >= %f' % (tt, tt2)
-        times.append( tt2 - tt )
+        times.append(tt2 - tt)
 
         return v_hxc_qp.ravel() - x
     return ncalls, times, function_wrapper, results
 
-class SchroedingerApp( SimpleApp ):
+class SchroedingerApp(SimpleApp):
 
-    def process_options( options ):
+    def process_options(options):
         """Application options setup. Sets default values for missing
         non-compulsory options."""
         get = options.get_default_attr
-        
-        eigen_solver = get( 'eigen_solver', None,
-                            'missing "eigensolver" in options!' )
 
-        n_electron = get( 'n_electron', 5 )
-        n_eigs = guess_n_eigs( n_electron, n_eigs = get( 'n_eigs', None ) )
+        eigen_solver = get('eigen_solver', None,
+                           'missing "eigensolver" in options!')
+
+        n_electron = get('n_electron', 5)
+        n_eigs = guess_n_eigs(n_electron, n_eigs=get('n_eigs', None))
         # None -> save all.
-        save_eig_vectors = get( 'save_eig_vectors', None )
+        save_eig_vectors = get('save_eig_vectors', None)
 
-        log_filename = get( 'log_filename', 'log.txt' )
-        iter_fig_name = get( 'iter_fig_name', 'iterations.pdf' )
+        log_filename = get('log_filename', 'log.txt')
+        iter_fig_name = get('iter_fig_name', 'iterations.pdf')
         # Called after DFT iteration, can do anything, no return value.
-        iter_hook = get( 'iter_hook', None )
+        iter_hook = get('iter_hook', None)
         # Like iter_hook, but called after the solver finishes.
         iter_hook_final = get('iter_hook_final', None)
 
-        return Struct( **locals() )
-    process_options = staticmethod( process_options )
+        return Struct(**locals())
+    process_options = staticmethod(process_options)
 
-    def process_dft_options( options ):
+    def process_dft_options(options):
         """Application DFT options setup. Sets default values for missing
         non-compulsory options."""
         get = options.get_default_attr
-        
-        dft_solver = get( 'dft_solver', None,
-                          'missing "dft" in options!' )
 
-        return Struct( **locals() )
-    process_dft_options = staticmethod( process_dft_options )
+        dft_solver = get('dft_solver', None,
+                         'missing "dft" in options!')
 
-    def __init__( self, conf, options, output_prefix, **kwargs ):
-        SimpleApp.__init__( self, conf, options, output_prefix,
-                            init_equations = False )
+        return Struct(**locals())
+    process_dft_options = staticmethod(process_dft_options)
 
-    def setup_options( self ):
-        SimpleApp.setup_options( self )
-        opts = SchroedingerApp.process_options( self.conf.options )
+    def __init__(self, conf, options, output_prefix, **kwargs):
+        SimpleApp.__init__(self, conf, options, output_prefix,
+                           init_equations=False)
+
+    def setup_options(self):
+        SimpleApp.setup_options(self)
+        opts = SchroedingerApp.process_options(self.conf.options)
         if self.options.dft:
-            opts += SchroedingerApp.process_dft_options( self.conf.options )
+            opts += SchroedingerApp.process_dft_options(self.conf.options)
         self.app_options += opts
 
         funmod = self.conf.funmod
 
         hook = self.app_options.iter_hook
         if hook is not None:
-            hook = getattr( funmod, hook )
+            hook = getattr(funmod, hook)
         self.iter_hook = hook
 
         hook = self.app_options.iter_hook_final
@@ -202,7 +183,7 @@ class SchroedingerApp( SimpleApp ):
         self.eig_results_name = op.join(opts.output_dir,
                                         self.problem.ofn_trunk + '_eigs.txt')
 
-    def call( self ):
+    def call(self):
         options = self.options
 
         # This cannot be in __init__(), as parametric calls may change
@@ -218,11 +199,11 @@ class SchroedingerApp( SimpleApp ):
         else:
             evp = self.solve_eigen_problem_1()
 
-        output( "solution saved to %s" % self.problem.get_output_name() )
-        output( "in %s" % self.app_options.output_dir )
+        output("solution saved to %s" % self.problem.get_output_name())
+        output("in %s" % self.app_options.output_dir)
 
         if self.post_process_hook_final is not None: # User postprocessing.
-            self.post_process_hook_final( self.problem, evp = evp )
+            self.post_process_hook_final(self.problem, evp=evp)
 
         return evp
 
@@ -242,7 +223,7 @@ class SchroedingerApp( SimpleApp ):
         pb = self.problem
         opts = self.app_options
 
-        n_electron = get_default( n_electron, opts.n_electron )
+        n_electron = get_default(n_electron, opts.n_electron)
 
         sh = self.qp_shape
 
@@ -257,41 +238,41 @@ class SchroedingerApp( SimpleApp ):
 
         v_ion_qp = mat_v.get_data(('Omega', 'i1'), 0, 'V_ion')
 
-        output( 'assembling lhs...' )
+        output('assembling lhs...')
         tt = time.clock()
         mtx_a = eval_equations(mtx_a_equations, mtx_a_variables,
                                mode='weak', dw_mode='matrix')
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        output('...done in %.2f s' % (time.clock() - tt))
 
-        assert_( nm.alltrue( nm.isfinite( mtx_a.data ) ) )
+        assert_(nm.alltrue(nm.isfinite(mtx_a.data)))
 
-        output( 'computing the Ax=Blx Kohn-Sham problem...' )
+        output('computing the Ax=Blx Kohn-Sham problem...')
         tt = time.clock()
-        eigs, mtx_s_phi = eig_solver( mtx_a, mtx_b,
-                                      opts.n_eigs, eigenvectors = True )
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        eigs, mtx_s_phi = eig_solver(mtx_a, mtx_b,
+                                     opts.n_eigs, eigenvectors=True)
+        output('...done in %.2f s' % (time.clock() - tt))
         n_eigs_ok = len(eigs)
 
-        output( 'setting-up smearing...' )
-        e_f, smear_tuned = setup_smearing( eigs, n_electron )
-        output( 'Fermi energy:', e_f )
+        output('setting-up smearing...')
+        e_f, smear_tuned = setup_smearing(eigs, n_electron)
+        output('Fermi energy:', e_f)
         if e_f is None:
             raise Exception("cannot find Fermi energy - exiting.")
         weights = smear_tuned(eigs)
-        output( '...done' )
+        output('...done')
 
         if (weights[-1] > 1e-12):
             output("last smearing weight is nonzero (%s eigs ok)!" % n_eigs_ok)
 
-        output( "saving solutions, iter=%d..." % self.itercount )
+        output("saving solutions, iter=%d..." % self.itercount)
         out = {}
         var_name = mtx_a_variables.get_names(kind='state')[0]
-        for ii in xrange( n_eigs_ok ):
+        for ii in xrange(n_eigs_ok):
             vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
-            update_state_to_output( out, pb, vec_phi, var_name+'%03d' % ii )
-        name = op.join( opts.output_dir, "iter%d" % self.itercount )
+            update_state_to_output(out, pb, vec_phi, var_name+'%03d' % ii)
+        name = op.join(opts.output_dir, "iter%d" % self.itercount)
         pb.save_state('.'.join((name, opts.output_format)), out=out)
-        output( "...solutions saved" )
+        output("...solutions saved")
 
         output('computing total charge...')
         tt = time.clock()
@@ -300,7 +281,7 @@ class SchroedingerApp( SimpleApp ):
         var = psi_variables['Psi']
 
         n_qp = nm.zeros_like(v_hxc_qp)
-        for ii in xrange( n_eigs_ok ):
+        for ii in xrange(n_eigs_ok):
             vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
             var.data_from_any(vec_phi)
 
@@ -332,11 +313,11 @@ class SchroedingerApp( SimpleApp ):
         v_xc_qp.shape = self.qp_shape
 
         mat_key = mat_v.datas.keys()[0]
-        pb.set_equations( pb.conf.equations_vh )
-        pb.select_bcs( ebc_names = ['VHSurface'] )
+        pb.set_equations(pb.conf.equations_vh)
+        pb.select_bcs(ebc_names=['VHSurface'])
         pb.update_materials()
 
-        output( "solving Ax=b Poisson equation" )
+        output("solving Ax=b Poisson equation")
         mat_n = pb.get_materials()['mat_n']
         mat_n.reset()
         mat_n.set_all_data({mat_key : {0: {'N' : n_qp}}})
@@ -349,15 +330,15 @@ class SchroedingerApp( SimpleApp ):
         norm = nla.norm(v_hxc_qp.ravel())
         dnorm = abs(norm - self.norm_v_hxc0)
         log(norm, max(dnorm,1e-20)) # logplot of pure 0 fails.
-        file_output( '%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
-                     % (self.itercount, norm, dnorm) )
+        file_output('%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
+                    % (self.itercount, norm, dnorm))
 
         file_output("-"*70)
         file_output('Fermi energy:', e_f)
         file_output("----------------------------------------")
         file_output(" #  |  eigs           | smearing")
         file_output("----|-----------------|-----------------")
-        for ii in xrange( n_eigs_ok ):
+        for ii in xrange(n_eigs_ok):
             file_output("% 3d | %-15s | %-15s" % (ii+1, eigs[ii], weights[ii]))
         file_output("----------------------------------------")
         file_output("charge_qp: ", charge)
@@ -372,13 +353,13 @@ class SchroedingerApp( SimpleApp ):
             pb.select_bcs(ebc_names=['ZeroSurface'])
             mtx_phi = self.make_full(mtx_s_phi)
 
-            data = Struct(iteration = self.itercount,
-                          eigs = eigs, weights = weights,
-                          mtx_s_phi = mtx_s_phi, mtx_phi = mtx_phi,
-                          vec_n = vec_n, vec_v_h = vec_v_h,
-                          n_qp = n_qp, v_ion_qp = v_ion_qp, v_h_qp = v_h_qp,
-                          v_xc_qp = v_xc_qp, file_output = file_output)
-            self.iter_hook(self.problem, data = data)
+            data = Struct(iteration=self.itercount,
+                          eigs=eigs, weights=weights,
+                          mtx_s_phi=mtx_s_phi, mtx_phi=mtx_phi,
+                          vec_n=vec_n, vec_v_h=vec_v_h,
+                          n_qp=n_qp, v_ion_qp=v_ion_qp, v_h_qp=v_h_qp,
+                          v_xc_qp=v_xc_qp, file_output=file_output)
+            self.iter_hook(self.problem, data=data)
 
         file_output("-"*70)
 
@@ -387,21 +368,21 @@ class SchroedingerApp( SimpleApp ):
         return eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
                n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp
 
-    def solve_eigen_problem_n( self ):
+    def solve_eigen_problem_n(self):
         opts = self.app_options
         pb = self.problem
 
-        pb.set_equations( pb.conf.equations )
-        pb.select_bcs( ebc_names = ['ZeroSurface'] )
+        pb.set_equations(pb.conf.equations)
+        pb.select_bcs(ebc_names=['ZeroSurface'])
 
-        output( 'assembling rhs...' )
+        output('assembling rhs...')
         tt = time.clock()
         mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
                             auto_init=True, dw_mode='matrix')
-        output( '...done in %.2f s' % (time.clock() - tt) )
-        assert_( nm.alltrue( nm.isfinite( mtx_b.data ) ) )
+        output('...done in %.2f s' % (time.clock() - tt))
+        assert_(nm.alltrue(nm.isfinite(mtx_b.data)))
 
-        ## mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+        ## mtx_b.save('b.txt', format='%d %d %.12f\n')
 
         aux = pb.create_evaluable(pb.conf.equations['lhs'], mode='weak',
                                   dw_mode='matrix')
@@ -417,12 +398,12 @@ class SchroedingerApp( SimpleApp ):
             log_conf = {
                 'is_plot' : False,
             }
-        log =  Log.from_conf( log_conf, ([r'$|F(x)|$'], [r'$|F(x)-x|$']) )
+        log =  Log.from_conf(log_conf, ([r'$|F(x)|$'], [r'$|F(x)-x|$']))
 
-        file_output = Output('', opts.log_filename, combined = True)
+        file_output = Output('', opts.log_filename, combined=True)
 
-        eig_conf = pb.get_solver_conf( opts.eigen_solver )
-        eig_solver = Solver.any_from_conf( eig_conf )
+        eig_conf = pb.get_solver_conf(opts.eigen_solver)
+        eig_solver = Solver.any_from_conf(eig_conf)
 
         # Just to get the shape. Assumes one element group only!!!
         v_hxc_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)')
@@ -442,15 +423,15 @@ class SchroedingerApp( SimpleApp ):
         dft_conf = pb.get_solver_conf(opts.dft_solver)
         dft_status = {}
         dft_solver = Solver.any_from_conf(dft_conf,
-                                          fun = nonlin_v,
-                                          status = dft_status)
+                                          fun=nonlin_v,
+                                          status=dft_status)
         v_hxc_qp = dft_solver(v_hxc_qp.ravel())
 
         v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
         v_hxc_qp.shape = self.qp_shape
         eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
               n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp = results
-        output( 'DFT iteration time [s]:', dft_status['time_stats'] )
+        output('DFT iteration time [s]:', dft_status['time_stats'])
 
         fun = pb.functions['fun_v']
         variable = self.problem.create_variables(['scalar'])['scalar']
@@ -465,8 +446,8 @@ class SchroedingerApp( SimpleApp ):
         r2 = norm_l2_along_axis(coor, squared=True)
         vec_nr2 = vec_n * r2
 
-        pb.select_bcs( ebc_names = ['ZeroSurface'] )
-        mtx_phi = self.make_full( mtx_s_phi )
+        pb.select_bcs(ebc_names=['ZeroSurface'])
+        mtx_phi = self.make_full(mtx_s_phi)
 
         if self.iter_hook_final is not None: # User postprocessing.
             data = Struct(iteration=self.itercount,
@@ -488,44 +469,42 @@ class SchroedingerApp( SimpleApp ):
         self.save_results(eigs, mtx_phi, out=out)
 
         if self.options.plot:
-            log( save_figure = opts.iter_fig_name )
+            log(save_figure=opts.iter_fig_name)
             pause()
             log(finished=True)
 
-        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi,
-                       vec_n = vec_n, vec_nr2 = vec_nr2,
-                       vec_v_h = vec_v_h, vec_v_xc = vec_v_xc )
+        return Struct(pb=pb, eigs=eigs, mtx_phi=mtx_phi,
+                      vec_n=vec_n, vec_nr2=vec_nr2,
+                      vec_v_h=vec_v_h, vec_v_xc=vec_v_xc)
 
-    def solve_eigen_problem_1( self ):
+    def solve_eigen_problem_1(self):
         options = self.options
         opts = self.app_options
         pb = self.problem
 
         dim = pb.domain.mesh.dim
 
-        pb.set_equations( pb.conf.equations )
+        pb.set_equations(pb.conf.equations)
         pb.time_update()
 
-        output( 'assembling lhs...' )
+        output('assembling lhs...')
         tt = time.clock()
         mtx_a = pb.evaluate(pb.conf.equations['lhs'], mode='weak',
                             auto_init=True, dw_mode='matrix')
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        output('...done in %.2f s' % (time.clock() - tt))
 
-        output( 'assembling rhs...' )
+        output('assembling rhs...')
         tt = time.clock()
         mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
                             dw_mode='matrix')
-        output( '...done in %.2f s' % (time.clock() - tt) )
+        output('...done in %.2f s' % (time.clock() - tt))
 
-        n_eigs = get_default( opts.n_eigs, mtx_a.shape[0] )
-##         mtx_a.save( 'a.txt', format='%d %d %.12f\n' )
-##         mtx_b.save( 'b.txt', format='%d %d %.12f\n' )
+        n_eigs = get_default(opts.n_eigs, mtx_a.shape[0])
 
-        output( 'computing resonance frequencies...' )
-        eig = Solver.any_from_conf( pb.get_solver_conf( opts.eigen_solver ) )
-        eigs, mtx_s_phi = eig( mtx_a, mtx_b, n_eigs )
-        output( '...done' )
+        output('computing resonance frequencies...')
+        eig = Solver.any_from_conf(pb.get_solver_conf(opts.eigen_solver))
+        eigs, mtx_s_phi = eig(mtx_a, mtx_b, n_eigs)
+        output('...done')
 
         bounding_box = pb.domain.mesh.get_bounding_box()
         # this assumes a box (3D), or a square (2D):
@@ -572,34 +551,30 @@ class SchroedingerApp( SimpleApp ):
                 output("%d:  %.8f   %.8f  %5.2f%%" % (i, exact, e, err))
         else:
             output(eigs)
-##         import sfepy.base.plotutils as plu
-##         plu.spy( mtx_b, eps = 1e-12 )
-##         plu.plt.show()
-##         pause()
 
-        mtx_phi = self.make_full( mtx_s_phi )
-        self.save_results( eigs, mtx_phi )
+        mtx_phi = self.make_full(mtx_s_phi)
+        self.save_results(eigs, mtx_phi)
 
-        return Struct( pb = pb, eigs = eigs, mtx_phi = mtx_phi )
+        return Struct(pb=pb, eigs=eigs, mtx_phi=mtx_phi)
 
-    def make_full( self, mtx_s_phi ):
+    def make_full(self, mtx_s_phi):
         variables = self.problem.get_variables()
 
-        mtx_phi = nm.empty( (variables.di.ptr[-1], mtx_s_phi.shape[1]),
-                            dtype = nm.float64 )
-        for ii in xrange( mtx_s_phi.shape[1] ):
-            mtx_phi[:,ii] = variables.make_full_vec( mtx_s_phi[:,ii] )
+        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
+                           dtype=nm.float64)
+        for ii in xrange(mtx_s_phi.shape[1]):
+            mtx_phi[:,ii] = variables.make_full_vec(mtx_s_phi[:,ii])
 
         return mtx_phi
 
-    def save_results( self, eigs, mtx_phi, out = None ):
+    def save_results(self, eigs, mtx_phi, out=None):
         pb = self.problem
 
         save = self.app_options.save_eig_vectors
         n_eigs = self.app_options.n_eigs
-        out = get_default( out, {} )
+        out = get_default(out, {})
         state = pb.create_state()
-        for ii in xrange( eigs.shape[0] ):
+        for ii in xrange(eigs.shape[0]):
             if save is not None:
                 if (ii > save[0]) and (ii < (n_eigs - save[1])): continue
             state.set_full(mtx_phi[:,ii])
@@ -610,7 +585,7 @@ class SchroedingerApp( SimpleApp ):
         pb.save_state(self.mesh_results_name, out=out)
 
         fd = open(self.eig_results_name, 'w')
-        eigs.tofile( fd, ' ' )
+        eigs.tofile(fd, ' ')
         fd.close()
 
 
@@ -651,54 +626,64 @@ and visualize the result:
 """
 
 help = {
-    'filename' : 'basename of output file(s) [default: %default.vtk]',
-    'well' : "solve infinite potential well (particle in a box) problem",
-    'oscillator' : "solve spherically symmetric linear harmonic oscillator (1 electron) problem",
-    'hydrogen' : "solve the hydrogen atom",
-    'boron' : "solve the boron atom with 1 electron",
-    "mesh": "creates a mesh",
-    "dim": "Create a 2D mesh, instead of the default 3D",
-    "dft": "Do a DFT calculation (input file required)",
-    "plot": "plot convergence of DFT iterations (with --dft)",
+    'filename' :
+    'basename of output file(s) [default: %default.vtk]',
+    'well' :
+    'solve infinite potential well (particle in a box) problem',
+    'oscillator' :
+    'solve spherically symmetric linear harmonic oscillator '
+    '(1 electron) problem',
+    'hydrogen' :
+    'solve the hydrogen atom',
+    'boron' :
+    'solve the boron atom with 1 electron',
+    'mesh' :
+    'creates a mesh',
+    'dim' :
+    'Create a 2D mesh, instead of the default 3D',
+    'dft' :
+    'Do a DFT calculation (input file required)',
+    'plot' :
+    'plot convergence of DFT iterations (with --dft)',
 }
 
 def main():
-    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
-    parser.add_option( "--mesh",
-                       action = "store_true", dest = "mesh",
-                       default = False, help = help['mesh'] )
-    parser.add_option( "--2d",
-                       action = "store_true", dest = "dim2",
-                       default = False, help = help['dim'] )
-    parser.add_option( "-o", "", metavar = 'filename',
-                       action = "store", dest = "output_filename_trunk",
-                       default = "mesh", help = help['filename'] )
-    parser.add_option( "--oscillator",
-                       action = "store_true", dest = "oscillator",
-                       default = False, help = help['oscillator'] )
-    parser.add_option( "--well",
-                       action = "store_true", dest = "well",
-                       default = False, help = help['well'] )
-    parser.add_option( "--hydrogen",
-                       action = "store_true", dest = "hydrogen",
-                       default = False, help = help['hydrogen'] )
-    parser.add_option( "--boron",
-                       action = "store_true", dest = "boron",
-                       default = False, help = help['boron'] )
-    parser.add_option( "--dft",
-                       action = "store_true", dest = "dft",
-                       default = False, help = help['dft'] )
-    parser.add_option( "-p", "--plot",
-                       action = "store_true", dest = "plot",
-                       default = False, help = help['plot'] )
+    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
+    parser.add_option('--mesh',
+                      action='store_true', dest='mesh',
+                      default=False, help=help['mesh'])
+    parser.add_option('--2d',
+                      action='store_true', dest='dim2',
+                      default=False, help=help['dim'])
+    parser.add_option('-o', '', metavar='filename',
+                      action='store', dest='output_filename_trunk',
+                      default='mesh', help=help['filename'])
+    parser.add_option('--oscillator',
+                      action='store_true', dest='oscillator',
+                      default=False, help=help['oscillator'])
+    parser.add_option('--well',
+                      action='store_true', dest='well',
+                      default=False, help=help['well'])
+    parser.add_option('--hydrogen',
+                      action='store_true', dest='hydrogen',
+                      default=False, help=help['hydrogen'])
+    parser.add_option('--boron',
+                      action='store_true', dest='boron',
+                      default=False, help=help['boron'])
+    parser.add_option('--dft',
+                      action='store_true', dest='dft',
+                      default=False, help=help['dft'])
+    parser.add_option('-p', '--plot',
+                      action='store_true', dest='plot',
+                      default=False, help=help['plot'])
 
     options, args = parser.parse_args()
 
-    if len( args ) == 1:
+    if len(args) == 1:
         filename_in = args[0];
         auto_mesh_name = False
-        
-    elif len( args ) == 0:
+
+    elif len(args) == 0:
         auto_mesh_name = True
 
         if options.oscillator:
@@ -760,7 +745,7 @@ def main():
         return
 
     required, other = get_standard_keywords()
-    conf = ProblemConf.from_file( filename_in, required, other )
+    conf = ProblemConf.from_file(filename_in, required, other)
 
     if auto_mesh_name and not sfepy.in_source_tree:
         conf.filename_mesh = "tmp/mesh.vtk"
@@ -768,9 +753,9 @@ def main():
 
     app = SchroedingerApp(conf, options, 'schroedinger:')
     opts = conf.options
-    if hasattr( opts, 'parametric_hook' ): # Parametric study.
+    if hasattr(opts, 'parametric_hook'): # Parametric study.
         parametric_hook = getattr(conf.funmod, opts.parametric_hook)
-        app.parametrize( parametric_hook )
+        app.parametrize(parametric_hook)
     app()
 
 if __name__ == '__main__':
