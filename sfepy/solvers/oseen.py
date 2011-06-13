@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import NonlinearSolver
+from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 from nls import conv_test
 
 ##
@@ -26,12 +26,13 @@ def scale_matrix( mtx, indx, factor ):
 class Oseen( NonlinearSolver ):
     name = 'nls.oseen'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_1 = {
                 'name' : 'oseen',
                 'kind' : 'nls.oseen',
@@ -52,37 +53,42 @@ class Oseen( NonlinearSolver ):
                                 'plot' : 'oseen_log.png'},
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = NonlinearSolver.process_conf(conf)
 
         # Compulsory.
         needs_problem_instance = get('needs_problem_instance', True)
         if not needs_problem_instance:
             msg = 'set solver option "needs_problem_instance" to True!'
             raise ValueError(msg)
-        
+
         stabilization_hook = get('stabilization_hook', None,
                                  'missing "stabilization_hook" in options!')
 
         # With defaults.
-        adimensionalize = get( 'adimensionalize', False )
+        adimensionalize = get('adimensionalize', False)
         if adimensionalize:
             raise NotImplementedError
-        check_navier_stokes_rezidual = get( 'check_navier_stokes_rezidual',
-                                            False )
-        i_max = get( 'i_max', 1 )
-        eps_a = get( 'eps_a', 1e-10 )
-        eps_r = get( 'eps_r', 1.0 )
-        macheps = get( 'macheps', nm.finfo( nm.float64 ).eps )
-        lin_red = get( 'lin_red', 1.0 )
-        is_plot = get( 'is_plot', False )
+
+        check = get('check_navier_stokes_rezidual', False)
 
         log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
-        common = NonlinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(needs_problem_instance=needs_problem_instance,
+                      stabilization_hook=stabilization_hook,
+                      adimensionalize=adimensionalize,
+                      check_navier_stokes_rezidual=check,
+                      i_max=get('i_max', 1),
+                      eps_a=get('eps_a', 1e-10),
+                      eps_r=get('eps_r', 1.0),
+                      macheps=get('macheps', nm.finfo(nm.float64).eps),
+                      lin_red=get('lin_red', 1.0),
+                      lin_precision=get('lin_precision', None),
+                      is_plot=get('is_plot', False),
+                      log=log,
+                      is_any_log=is_any_log) + common
 
     def __init__( self, conf, **kwargs ):
         NonlinearSolver.__init__( self, conf, **kwargs )

@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, debug, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import NonlinearSolver
+from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 
 def check_tangent_matrix( conf, vec_x0, fun, fun_grad ):
     """Verify the correctness of the tangent matrix as computed by fun_grad()
@@ -83,12 +83,13 @@ def conv_test( conf, it, err, err0 ):
 class Newton( NonlinearSolver ):
     name = 'nls.newton'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values for a linear problem.
-        
+
         Example configuration, all items::
-        
+
             solver_1 = {
                 'name' : 'newton',
                 'kind' : 'nls.newton',
@@ -111,31 +112,30 @@ class Newton( NonlinearSolver ):
                 'problem' : 'nonlinear',
             }
         """
-        get = conf.get_default_attr
-
-        i_max = get( 'i_max', 1 )
-        eps_a = get( 'eps_a', 1e-10 )
-        eps_r = get( 'eps_r', 1.0 )
-        macheps = get( 'macheps', nm.finfo( nm.float64 ).eps )
-        lin_red = get( 'lin_red', 1.0 )
-        lin_precision = get('lin_precision', None)
-        ls_red = get( 'ls_red', 0.1 )
-        ls_red_warp = get( 'ls_red_warp', 0.001 )
-        ls_on = get( 'ls_on', 0.99999 )
-        ls_min = get( 'ls_min', 1e-5 )
-        give_up_warp = get('give_up_warp', False)
-        check = get( 'check', 0 )
-        delta = get( 'delta', 1e-6)
-        is_plot = get( 'is_plot', False )
-        problem = get( 'problem', 'nonlinear' )
+        get = make_get_conf(conf, kwargs)
+        common = NonlinearSolver.process_conf(conf)
 
         log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
-        common = NonlinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(i_max=get('i_max', 1),
+                      eps_a=get('eps_a', 1e-10),
+                      eps_r=get('eps_r', 1.0),
+                      macheps=get('macheps', nm.finfo(nm.float64).eps),
+                      lin_red=get('lin_red', 1.0),
+                      lin_precision=get('lin_precision', None),
+                      ls_red=get('ls_red', 0.1),
+                      ls_red_warp=get('ls_red_warp', 0.001),
+                      ls_on=get('ls_on', 0.99999),
+                      ls_min=get('ls_min', 1e-5),
+                      give_up_warp=get('give_up_warp', False),
+                      check=get('check', 0),
+                      delta=get('delta', 1e-6),
+                      is_plot=get('is_plot', False),
+                      problem=get('problem', 'nonlinear'),
+                      log=log,
+                      is_any_log=is_any_log) + common
 
     def __init__(self, conf, **kwargs):
         NonlinearSolver.__init__( self, conf, **kwargs )
@@ -362,12 +362,13 @@ class ScipyBroyden( NonlinearSolver ):
 
     name = 'nls.scipy_broyden_like'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are left to scipy defaults. Unused options are ignored.
-        
+
         Example configuration, all items::
-        
+
             solver_1 = {
                 'name' : 'broyden',
                 'kind' : 'nls.scipy_broyden_like',
@@ -380,18 +381,15 @@ class ScipyBroyden( NonlinearSolver ):
                 'verbose' : True,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = NonlinearSolver.process_conf(conf)
 
-        method = get( 'method', 'broyden3' )
-        i_max = get( 'i_max' )
-        alpha = get( 'alpha' )
-        M = get( 'M' )
-        w0 = get( 'w0' )
-        verbose = get( 'verbose' )
-
-        common = NonlinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(method=get('method', 'broyden3'),
+                      i_max=get('i_max', 10),
+                      alpha=get('alpha', 0.9),
+                      M=get('M', 5),
+                      w0=get('w0', 0.1),
+                      verbose=get('verbose', False)) + common
 
     def __init__( self, conf, **kwargs ):
         NonlinearSolver.__init__( self, conf, **kwargs )

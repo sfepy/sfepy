@@ -3,7 +3,7 @@ import scipy
 import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, Struct
-from sfepy.solvers.solvers import LinearSolver
+from sfepy.solvers.solvers import make_get_conf, LinearSolver
 
 def try_imports(imports, fail_msg=None):
     for imp in imports:
@@ -20,12 +20,13 @@ def try_imports(imports, fail_msg=None):
 class ScipyDirect(LinearSolver):
     name = 'ls.scipy_direct'
 
-    def process_conf(conf):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_1100 = {
                 'name' : 'dls1100',
                 'kind' : 'ls.scipy_direct',
@@ -35,21 +36,19 @@ class ScipyDirect(LinearSolver):
                 'warn' : True,
             }
         """
-        get = conf.get_default_attr
-
-        method = get('method', 'auto')
-        presolve = get('presolve', False)
-        warn = get('warn', True)
-
+        get = make_get_conf(conf, kwargs)
         common = LinearSolver.process_conf(conf)
-        return Struct(**locals()) + common
-    process_conf = staticmethod(process_conf)
+
+        return Struct(method=get('method', 'auto'),
+                      presolve=get('presolve', False),
+                      warn=get('warn', True),
+                      i_max=None, eps_a=None, eps_r=None) + common
 
     def __init__(self, conf, **kwargs):
         LinearSolver.__init__(self, conf, **kwargs)
 
         um = self.sls = None
-        
+
         aux = try_imports(['import scipy.linsolve as sls',
                            'import scipy.splinalg.dsolve as sls',
                            'import scipy.sparse.linalg.dsolve as sls'],
@@ -86,7 +85,7 @@ class ScipyDirect(LinearSolver):
                 self.solve = self.sls.factorized(self.mtx)
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 mtx=None, status=None):
+                 i_max=None, mtx=None, status=None, **kwargs):
         conf = get_default(conf, self.conf)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
@@ -96,7 +95,7 @@ class ScipyDirect(LinearSolver):
             return self.solve(rhs)
         else:
             return self.sls.spsolve(mtx, rhs)
-                
+
     def _presolve(self):
         if hasattr(self, 'presolve'):
             return self.presolve
@@ -125,12 +124,13 @@ class ScipyIterative( LinearSolver ):
     """
     name = 'ls.scipy_iterative'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_110 = {
                 'name' : 'ls110',
                 'kind' : 'ls.scipy_iterative',
@@ -140,16 +140,14 @@ class ScipyIterative( LinearSolver ):
                 'eps_r' : 1e-12,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = LinearSolver.process_conf(conf)
 
-        method = get( 'method', 'cg' )
-        i_max = get( 'i_max', 100 )
-        eps_r = get('eps_r', 1e-8)
+        return Struct(method=get('method', 'cg'),
+                      i_max=get('i_max', 100),
+                      eps_a=None,
+                      eps_r=get('eps_r', 1e-8)) + common
 
-        common = LinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
-    
     ##
     # c: 22.02.2008, r: 23.06.2008
     def __init__( self, conf, **kwargs ):
@@ -161,8 +159,7 @@ class ScipyIterative( LinearSolver ):
             else:
                 import scipy.sparse.linalg.isolve as la
 
-        LinearSolver.__init__(self, conf,
-                              eps_a=conf.eps_r, eps_r=conf.eps_r, **kwargs)
+        LinearSolver.__init__(self, conf, **kwargs)
 
         try:
             solver = getattr( la, self.conf.method )
@@ -178,15 +175,14 @@ class ScipyIterative( LinearSolver ):
         }
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 mtx=None, status=None):
+                 i_max=None, mtx=None, status=None, **kwargs):
         conf = get_default(conf, self.conf)
-        eps_a = get_default(eps_a, self.eps_a)
-        eps_r = get_default(eps_r, self.eps_r)
+        eps_r = get_default(eps_r, self.conf.eps_r)
+        i_max = get_default(i_max, self.conf.i_max)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=max(eps_a, eps_r),
-                                maxiter=conf.i_max)
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
@@ -205,12 +201,13 @@ class PyAMGSolver( LinearSolver ):
     """
     name = 'ls.pyamg'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_102 = {
                 'name' : 'ls102',
                 'kind' : 'ls.pyamg',
@@ -220,15 +217,13 @@ class PyAMGSolver( LinearSolver ):
                 'eps_r' : 1e-12,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = LinearSolver.process_conf(conf)
 
-        method = get( 'method', 'smoothed_aggregation_solver' )
-        accel = get( 'accel', None )
-        eps_r = get('eps_r', 1e-8)
-
-        common = LinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(method=get('method', 'smoothed_aggregation_solver'),
+                      accel = get('accel', None),
+                      i_max=None, eps_a=None,
+                      eps_r=get('eps_r', 1e-8)) + common
 
     ##
     # c: 02.05.2008, r: 02.05.2008
@@ -254,7 +249,7 @@ class PyAMGSolver( LinearSolver ):
                 self.mg = self.solver( self.mtx )
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 mtx=None, status=None):
+                 i_max=None, mtx=None, status=None, **kwargs):
         conf = get_default(conf, self.conf)
         eps_r = get_default(eps_r, self.eps_r)
         mtx = get_default(mtx, self.mtx)
@@ -280,12 +275,13 @@ class PETScKrylovSolver( LinearSolver ):
     """
     name = 'ls.petsc'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_120 = {
                 'name' : 'ls120',
                 'kind' : 'ls.petsc',
@@ -297,17 +293,14 @@ class PETScKrylovSolver( LinearSolver ):
                 'i_max' : 1000, # maxits
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = LinearSolver.process_conf(conf)
 
-        method = get( 'method', 'cg' )
-        precond = get( 'precond', 'icc' )
-        eps_a = get( 'eps_a', 1e-8 )
-        eps_r = get( 'eps_r', 1e-8 )
-        i_max = get( 'i_max', 100 )
-
-        common = LinearSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(method=get('method', 'cg'),
+                      precond=get('precond', 'icc'),
+                      i_max=get('i_max', 100),
+                      eps_a=get('eps_a', 1e-8),
+                      eps_r=get('eps_r', 1e-8)) + common
 
     def __init__( self, conf, **kwargs ):
         try:
@@ -350,10 +343,11 @@ class PETScKrylovSolver( LinearSolver ):
         return pmtx, sol, rhs
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 mtx=None, status=None):
+                 i_max=None, mtx=None, status=None, **kwargs):
         conf = get_default(conf, self.conf)
         eps_a = get_default(eps_a, self.eps_a)
         eps_r = get_default(eps_r, self.eps_r)
+        i_max = get_default(i_max, self.conf.i_max)
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
@@ -364,7 +358,7 @@ class PETScKrylovSolver( LinearSolver ):
             self.ksp.setFromOptions() # PETSc.Options() not used yet...
             self.mtx = mtx
 
-        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=conf.i_max)
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=i_max)
 
         # Set PETSc rhs, solve, get solution from PETSc solution.
         if x0 is not None:

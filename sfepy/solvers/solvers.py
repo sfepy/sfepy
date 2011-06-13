@@ -1,7 +1,15 @@
 """
 Base (abstract) solver classes.
 """
-from sfepy.base.base import Struct
+from sfepy.base.base import assert_, Struct
+
+def make_get_conf(conf, kwargs):
+    def _get_conf_item(name, default=None, msg_if_none=None):
+        return kwargs.get(name,
+                          conf.get_default_attr(name, default=default,
+                                                msg_if_none=msg_if_none))
+
+    return _get_conf_item
 
 class Solver(Struct):
     """
@@ -16,7 +24,7 @@ class Solver(Struct):
     """
 
     @staticmethod
-    def process_conf(conf):
+    def process_conf(conf, kwargs=None):
         """
         Ensures conf contains 'name' and 'kind'.
         """
@@ -24,10 +32,13 @@ class Solver(Struct):
         name = get('name', None, 'missing "name" in options!')
         kind = get('kind', None, 'missing "kind" in options!')
 
-        return Struct(**locals())
+        return Struct(name=name, kind=kind)
 
-    def __init__(self, conf, **kwargs):
-        if isinstance(conf, dict):
+    def __init__(self, conf=None, **kwargs):
+        if conf is None:
+            conf = Struct()
+
+        elif isinstance(conf, dict):
             conf = Struct(**conf)
 
         if conf.get('name', None) is None:
@@ -40,8 +51,8 @@ class Solver(Struct):
             else:
                 raise ValueError('solver kind cannot be determined!')
 
-        conf = self.__class__.process_conf(conf)
-        Struct.__init__(self, conf=conf, **kwargs)
+        new_conf = self.process_conf(conf, kwargs)
+        Struct.__init__(self, conf=new_conf, orig_conf=conf, **kwargs)
 
     def __call__(self, **kwargs):
         raise ValueError('called an abstract Solver instance!')
@@ -50,35 +61,12 @@ class LinearSolver(Solver):
     """
     Abstract linear solver class.
     """
-
-    def __init__(self, conf, eps_a=None, eps_r=None,
-                 mtx=None, status=None, **kwargs):
+    def __init__(self, conf, mtx=None, status=None, **kwargs):
         Solver.__init__(self, conf=conf, mtx=mtx, status=status, **kwargs)
 
-        self.set_tolerance(eps_a=eps_a, eps_r=eps_r)
-
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 mtx=None, status=None):
+                 i_max=None, mtx=None, status=None, **kwargs):
         raise ValueError('called an abstract LinearSolver instance!')
-
-    def set_tolerance(self, eps_a=None, eps_r=None):
-        """
-        Set the required precision tolerance of the solver.
-
-        Parameters
-        ----------
-        eps_a : float
-            The absolute tolerance.
-        eps_r : float, optional
-            The relative tolerance w.r.t. initial residual.
-
-        Notes
-        -----
-        Some solvers (e.g. direct) may not need/use these settings. Some
-        solvers may support only one of the values.
-        """
-        self.eps_a = eps_a
-        self.eps_r = eps_r
 
     def get_tolerance(self):
         """
@@ -86,7 +74,7 @@ class LinearSolver(Solver):
         settings. Either value can be `None`, meaning that the solver
         does not use that setting.
         """
-        return self.eps_a, self.eps_r
+        return self.conf.eps_a, self.conf.eps_r
 
 class NonlinearSolver(Solver):
     """

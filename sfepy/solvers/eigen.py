@@ -4,7 +4,7 @@ import numpy as nm
 import scipy.linalg as sla
 
 from sfepy.base.base import output, get_default, Struct
-from sfepy.solvers.solvers import Solver, EigenvalueSolver
+from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
 
 ##
 # c: 25.09.2007, r: 08.04.2008
@@ -124,13 +124,14 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
     """Solver for symmetric problems."""
     name = 'eig.sgscipy'
-    
-    def process_conf( conf ):
+
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_20 = {
                 'name' : 'eigen2',
                 'kind' : 'eig.sgscipy',
@@ -138,13 +139,10 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
                 'force_n_eigs' : True,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = EigenvalueSolver.process_conf(conf)
 
-        force_n_eigs = get( 'force_n_eigs', False )
-
-        common = EigenvalueSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(force_n_eigs=get('force_n_eigs', False)) + common
 
     ##
     # c: 08.04..2008, r: 08.04..2008
@@ -202,12 +200,13 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
 class LOBPCGEigenvalueSolver( EigenvalueSolver ):
     name = 'eig.scipy_lobpcg'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_2 = {
                 'name' : 'lobpcg',
                 'kind' : 'eig.scipy_lobpcg',
@@ -220,18 +219,15 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
                 'verbosity' : 0,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = EigenvalueSolver.process_conf(conf)
 
-        i_max = get( 'i_max', 20 )
-        n_eigs = get( 'n_eigs', None )
-        eps_a = get( 'eps_a', None )
-        largest = get( 'largest', True )
-        precond = get( 'precond', None )
-        verbosity = get( 'verbosity', 0 )
-
-        common = EigenvalueSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(i_max=get('i_max', 20),
+                      n_eigs=get('n_eigs', None),
+                      eps_a=get('eps_a', None),
+                      largest=get('largest', True),
+                      precond=get('precond', None),
+                      verbosity=get('verbosity', 0)) + common
 
     def __init__( self, conf, **kwargs ):
         EigenvalueSolver.__init__( self, conf, **kwargs )
@@ -276,12 +272,13 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
 class PysparseEigenvalueSolver( EigenvalueSolver ):
     name = 'eig.pysparse'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_2 = {
                 'name' : 'eigen1',
                 'kind' : 'eig.pysparse',
@@ -294,18 +291,15 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
                 'strategy' : 1,
             }
         """
-        get = conf.get_default_attr
+        get = make_get_conf(conf, kwargs)
+        common = EigenvalueSolver.process_conf(conf)
 
-        i_max = get( 'i_max', 100 )
-        eps_a = get( 'eps_a', 1e-5 )
-        tau = get( 'tau', 0.0 )
-        method = get( 'method', 'qmrs' )
-        verbosity = get( 'verbosity', 0 )
-        strategy = get( 'strategy', 1 )
-
-        common = EigenvalueSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(i_max=get('i_max', 100),
+                      eps_a=get('eps_a', 1e-5),
+                      tau=get('tau', 0.0),
+                      method=get('method', 'qmrs'),
+                      verbosity=get('verbosity', 0),
+                      strategy=get('strategy', 1)) + common
 
     def _convert_mat(mtx):
         from pysparse import spmatrix

@@ -5,7 +5,7 @@ import numpy.linalg as nla
 
 from sfepy.base.base import output, get_default, pause, Struct
 from sfepy.base.log import Log, get_logging_conf
-from sfepy.solvers.solvers import OptimizationSolver
+from sfepy.solvers.solvers import make_get_conf, OptimizationSolver
 
 import scipy.optimize as sopt
 import scipy.optimize.linesearch as linesearch
@@ -100,12 +100,13 @@ def check_gradient( xit, aofg, fn_of, delta, check ):
 class FMinSteepestDescent( OptimizationSolver ):
     name = 'opt.fmin_sd'
 
-    def process_conf( conf ):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
-        
+
             solver_0 = {
                 'name'      : 'fmin_sd',
                 'kind'      : 'opt.fmin_sd',
@@ -130,32 +131,32 @@ class FMinSteepestDescent( OptimizationSolver ):
                 'yscales'   : ['linear', 'log', 'log', 'linear'],
             }
         """
-        get = conf.get_default_attr
-
-        i_max = get( 'i_max', 10 )
-        eps_rd = get( 'eps_rd', 1e-5 )
-        eps_of = get( 'eps_of', 1e-4 )
-        eps_ofg = get( 'eps_ofg', 1e-8 )
-        norm = get( 'norm', nm.Inf )
-        ls = get( 'ls', True )
-        ls_method = get( 'ls_method', 'backtracking' )
-        ls0 = get( 'ls0', 0.25 )
-        ls_red = get( 'ls_red', 0.5 )
-        ls_red_warp = get( 'ls_red_warp', 0.1 )
-        ls_on = get( 'ls_on', 0.99999 )
-        ls_min = get( 'ls_min', 1e-5 )
-        check = get( 'check', 0 )
-        delta = get( 'delta', 1e-6)
-        output = get( 'output', None )
-        yscales = get( 'yscales', ['linear', 'log', 'log', 'linear'] )
+        get = make_get_conf(conf, kwargs)
+        common = OptimizationSolver.process_conf(conf)
 
         log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
-        common = OptimizationSolver.process_conf( conf )
-        return Struct( **locals() ) + common
-    process_conf = staticmethod( process_conf )
+        return Struct(i_max=get('i_max', 10),
+                      eps_rd=get('eps_rd', 1e-5),
+                      eps_of=get('eps_of', 1e-4),
+                      eps_ofg=get('eps_ofg', 1e-8),
+                      norm=get('norm', nm.Inf),
+                      ls=get('ls', True),
+                      ls_method=get('ls_method', 'backtracking'),
+                      ls0=get('ls0', 0.25),
+                      ls_red=get('ls_red', 0.5),
+                      ls_red_warp=get('ls_red_warp', 0.1),
+                      ls_on=get('ls_on', 0.99999),
+                      ls_min=get('ls_min', 1e-5),
+                      check=get('check', 0),
+                      delta=get('delta', 1e-6),
+                      output=get('output', None),
+                      yscales=get('yscales',
+                                  ['linear', 'log', 'log', 'linear']),
+                      log=log,
+                      is_any_log=is_any_log) + common
 
     ##
     # 17.10.2007, c

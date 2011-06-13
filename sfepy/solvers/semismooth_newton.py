@@ -6,7 +6,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import output, get_default, debug, Struct
 from sfepy.base.log import get_logging_conf
-from sfepy.solvers.solvers import NonlinearSolver
+from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 from sfepy.solvers.nls import Newton, conv_test
 from sfepy.linalg import compose_sparse
 
@@ -37,10 +37,11 @@ class SemismoothNewton(Newton):
 
     _colors = {'regular' : 'g', 'steepest_descent' : 'k'}
 
-    def process_conf(conf):
+    @staticmethod
+    def process_conf(conf, kwargs):
         """
         Missing items are set to default values.
-        
+
         Example configuration, all items::
 
             solver_1 = {
@@ -62,28 +63,25 @@ class SemismoothNewton(Newton):
                 'log'        : {'plot' : 'convergence.png'},
             }
         """
-        get = conf.get_default_attr
-
-        semismooth = get('semismooth', True)
-
-        i_max = get('i_max', 1)
-        eps_a = get('eps_a', 1e-10)
-        eps_r = get('eps_r', 1.0)
-        macheps = get('macheps', nm.finfo(nm.float64).eps)
-        lin_red = get('lin_red', 1.0)
-        ls_red = {'regular' : get('ls_red_reg', 0.1),
-                  'steepest_descent' : get('ls_red_alt', 0.01)}
-        ls_red_warp = get('ls_red_warp', 0.001)
-        ls_on = get('ls_on', 0.99999)
-        ls_min = get('ls_min', 1e-5)
+        get = make_get_conf(conf, kwargs)
+        common = NonlinearSolver.process_conf(conf)
 
         log = get_logging_conf(conf)
         log = Struct(name='log_conf', **log)
         is_any_log = (log.text is not None) or (log.plot is not None)
 
-        common = NonlinearSolver.process_conf(conf)
-        return Struct(**locals()) + common
-    process_conf = staticmethod(process_conf)
+        return Struct(semismooth=get('semismooth', True),
+                      i_max=get('i_max', 1),
+                      eps_a=get('eps_a', 1e-10),
+                      eps_r=get('eps_r', 1.0),
+                      macheps=get('macheps', nm.finfo(nm.float64).eps),
+                      lin_red=get('lin_red', 1.0),
+                      ls_red=get('ls_red', 0.1),
+                      ls_red_warp=get('ls_red_warp', 0.001),
+                      ls_on=get('ls_on', 0.99999),
+                      ls_min=get('ls_min', 1e-5),
+                      log=log,
+                      is_any_log=is_any_log) + common
 
     def __call__(self, vec_x0, conf=None, fun_smooth=None, fun_smooth_grad=None,
                  fun_a=None, fun_a_grad=None, fun_b=None, fun_b_grad=None,
