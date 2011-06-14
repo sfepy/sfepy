@@ -420,5 +420,38 @@ class ProblemConf( Struct ):
             if item.name == item_name:
                 return item
 
+    def get_function(self, name):
+        """
+        Get a function object given its name.
+
+        It can be either in `ProblemConf.funmod`, or a `ProblemConf`
+        attribute directly.
+
+        Parameters
+        ----------
+        name : str or None
+            The function name.
+
+        Returns
+        -------
+        fun : function or None
+            The required function, or None if `name` was `None`.
+        """
+        if name is None:
+            fun = None
+
+        else:
+            try:
+                fun = getattr(self.funmod, name)
+
+            except AttributeError:
+                try:
+                    fun = getattr(self, name)
+
+                except AttributeError:
+                    raise ValueError('function %s cannot be found!' % name)
+
+        return fun
+
     def edit( self, key, newval ):
         self.__dict__[key] = transforms[key]( newval )
