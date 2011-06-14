@@ -26,6 +26,12 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir, '../../fem/extmods'],
                          define_macros=defines)
 
+    config.add_extension('cdft',
+                         sources=['dft.c', 'cdft.pyx'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir, '../../fem/extmods'],)
+
     return config
 
 if __name__ == '__main__':
