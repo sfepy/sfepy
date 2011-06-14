@@ -155,17 +155,9 @@ class SchroedingerApp(SimpleApp):
             opts += SchroedingerApp.process_dft_options(self.conf.options)
         self.app_options += opts
 
-        funmod = self.conf.funmod
-
-        hook = self.app_options.iter_hook
-        if hook is not None:
-            hook = getattr(funmod, hook)
-        self.iter_hook = hook
-
-        hook = self.app_options.iter_hook_final
-        if hook is not None:
-            hook = getattr(funmod, hook)
-        self.iter_hook_final = hook
+        get = self.conf.get_function
+        self.iter_hook = get(self.app_options.iter_hook)
+        self.iter_hook_final = get(self.app_options.iter_hook_final)
 
     def setup_output(self):
         """
