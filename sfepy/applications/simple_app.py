@@ -6,18 +6,15 @@ from sfepy.fem import ProblemDefinition
 from sfepy.solvers.generic import solve_direct
 from application import Application
 
-def assign_standard_hooks(obj, get, mod):
+def assign_standard_hooks(obj, get, conf):
     """
-    Set standard hook function attributes from `mod` to `obj` using the
+    Set standard hook function attributes from `conf` to `obj` using the
     `get` function.
     """
     hook_names = ['step_hook', 'post_process_hook',
                   'post_process_hook_final', 'pre_process_hook']
     for hook_name in hook_names:
-        hook = get(hook_name, None)
-        if hook is not None:
-            hook = getattr(mod, hook)
-        setattr(obj, hook_name, hook)
+        setattr(obj, hook_name, conf.get_function(get(hook_name, None)))
 
 class SimpleApp( Application ):
 
@@ -71,7 +68,7 @@ class SimpleApp( Application ):
         self.app_options = SimpleApp.process_options( self.conf.options )
 
         assign_standard_hooks(self, self.app_options.get_default_attr,
-                              self.conf.funmod)
+                              self.conf)
 
         # Override default equations, if use_equations is set.
         if hasattr(self.conf, 'equations'):
