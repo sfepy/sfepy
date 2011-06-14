@@ -41,15 +41,15 @@ class Integrals(Container):
         Parameters
         ----------
         name : str
-            The name can either be a string representation of a
-            non-negative integer (the integral order) or 'a' (automatic
-            order) or a string beginning with 'i' (existing custom
-            integral name).
+            The name can either be a non-negative integer, a string
+            representation of a non-negative integer (the integral
+            order) or 'a' (automatic order) or a string beginning with
+            'i' (existing custom integral name).
         """
         if name == 'a':
             raise NotImplementedError
 
-        elif name[0] == 'i':
+        elif isinstance(name, str) and (name[0] == 'i'):
             try:
                 obj = self[name]
 
