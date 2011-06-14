@@ -153,7 +153,7 @@ class PotentialBase(Struct):
 
 class Potential(PotentialBase):
     """
-    Single potential.
+    Single spherically symmetric potential.
     """
 
     def __init__(self, name, function, centre=None, dim=3):
@@ -168,8 +168,43 @@ class Potential(PotentialBase):
         self.sign = 1.0
 
     def __call__(self, coors):
-        r = norm_l2_along_axis(coors - self.centre)
+        r = self.get_distance(coors)
 
         pot = self.sign * self.function(r)
 
         return pot
+
+    def __iter__( self ):
+        """
+        Allow iteration even over a single potential.
+        """
+        yield self
+
+    def get_distance(self, coors):
+        """
+        Get the distance of points with coordinates `coors` of the
+        potential centre.
+        """
+        return norm_l2_along_axis(coors - self.centre)
+
+    def get_charge(self, coors, eps=1e-6):
+        """
+        Get charge corresponding to the potential by numerically
+        applying Laplacian in spherical coordinates.
+        """
+        r = self.get_distance(coors)
+
+        f0 = self.function(r)
+        fp1 = self.function(r + eps)
+        fp2 = self.function(r + 2.0 * eps)
+        fm1 = self.function(r - eps)
+        fm2 = self.function(r - 2.0 * eps)
+
+        # Second derivative w.r.t. r.
+        d2 = (fp2 - 2.0 * f0 + fm2) / (4.0 * eps * eps)
+        # First derivative w.r.t. r.
+        d1 = (fp1 - fm1) / (2.0 * eps)
+
+        charge = - self.sign / (4.0 * nm.pi) * (d2 + 2.0 * d1 / r)
+
+        return charge
