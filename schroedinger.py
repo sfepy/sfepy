@@ -313,7 +313,7 @@ class SchroedingerApp(SimpleApp):
         v_xc_qp = nm.zeros((nm.prod(self.qp_shape),), dtype=nm.float64)
         for ii, val in enumerate(n_qp.flat):
             ## print ii, val
-            v_xc_qp[ii] = dft.getvxc(val, 0)
+            v_xc_qp[ii] = dft.getvxc(val, 0, 0)
         assert_(nm.isfinite(v_xc_qp).all())
         v_xc_qp.shape = self.qp_shape
 
