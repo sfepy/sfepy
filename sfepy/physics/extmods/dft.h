@@ -4,7 +4,7 @@
 #include "common.h"
 BEGIN_C_DECLS
 
-double vxc(double n, int relat);
+double vxc(double n, int mode, int relat);
 
 END_C_DECLS
 

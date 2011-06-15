@@ -6,4 +6,4 @@
 %}
 
 %rename( "getvxc" ) vxc;
-double vxc(double n, int relat);
+double vxc(double n, int mode, int relat);
