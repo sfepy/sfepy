@@ -23,7 +23,6 @@ class LinearPointSpringTerm( Term ):
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
     integration = 'point'
-    integral_kind = 'v'
 
     def get_integral_info(self):
         """
@@ -31,14 +30,10 @@ class LinearPointSpringTerm( Term ):
 
         Returns
         -------
-        dim : int
-            The integral dimension.
         kind : 'v' or 's'
             The integral kind.
         """
-        dim = self.region.domain.shape.dim
-
-        return dim, 'v'
+        return 'v'
 
     ##
     # 10.07.2007, c

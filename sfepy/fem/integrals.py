@@ -34,7 +34,7 @@ class Integrals(Container):
         obj = Integrals(objs)
         return obj
 
-    def get(self, name, dim, kind='v'):
+    def get(self, name, kind='v'):
         """
         Return existing or new integral.
 
@@ -63,14 +63,13 @@ class Integrals(Container):
             except:
                 raise ValueError('unsupported integral reference! (%s)' % name)
 
-            name = '__%s_o%s_d%d' % (kind, name, dim)
+            name = '__%s_o%d' % (kind, order)
             if self.has_key(name):
                 obj = self[name]
 
             else:
                 # Create new integral, and add it to self.
-                quad_name = '_o%d_d%d' % (order, dim)
-                obj = Integral(name, kind, quad_name=quad_name)
+                obj = Integral(name, kind, order=order)
 
                 self.append(obj)
 
@@ -100,7 +99,6 @@ class Integral(Struct):
             self.weights = weights
 
         self.order = 0
-        self.dim = None
 
         if order is not None:
             self.order = order
@@ -110,7 +108,7 @@ class Integral(Struct):
 
         elif quad_name is not None:
             match = _match_order_dim(self.quad_name)
-            self.order, self.dim = [int( ii ) for ii in match.groups()]
+            self.order, dim = [int( ii ) for ii in match.groups()]
 
     def get_actual_order(self, geometry):
         """

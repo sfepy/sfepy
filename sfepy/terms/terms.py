@@ -359,7 +359,7 @@ class Term(Struct):
         self._integration = self.integration
         self.sign = 1.0
 
-        dim, kind = self.get_integral_info()
+        kind = self.get_integral_info()
         if integral is not None:
             if kind != integral.kind:
                 msg = "integral kind for term %s must be '%s'! (is '%s')" \
@@ -930,36 +930,27 @@ class Term(Struct):
 
         Returns
         -------
-        dim : int
-            The integral dimension.
         kind : 'v' or 's'
             The integral kind.
         """
-        kind = ''
-
         if self.integration:
-            dim = self.region.domain.shape.dim
-
             if self.integration == 'volume':
-                out = dim
                 kind = 'v'
 
             elif 'surface' in self.integration:
-                out = dim - 1
                 kind = 's'
 
-            elif self.integration == 'edge':
-                out = dim - 2
+            elif self.integration == 'point':
+                kind = None
 
             else:
-                out = 0
-
-            assert_(out >= 0)
+                raise ValueError('unsupported term integration! (%s)'
+                                 % self.integration)
 
         else:
-            out = None
+            kind = None
 
-        return out, kind
+        return kind
 
     def setup_integration(self):
         self.has_geometry = True

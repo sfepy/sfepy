@@ -268,9 +268,7 @@ class Approximation( Struct ):
         if gtype == 'volume':
             if integral is None:
                 from sfepy.fem import Integral
-                dim = field.domain.shape.dim
-                quad_name = 'gauss_o1_d%d' % dim
-                integral = Integral('i_tmp', 'v', quad_name)
+                integral = Integral('i_tmp', 'v', 1)
 
             qp = self.get_qp('v', integral)
 
