@@ -125,6 +125,8 @@ class SchroedingerApp(SimpleApp):
 
         log_filename = get('log_filename', 'log.txt')
         iter_fig_name = get('iter_fig_name', 'iterations.pdf')
+        # Save intermediate results during DFT iterations.
+        save_dft_iterations = get('save_dft_iterations', False)
         # Called after DFT iteration, can do anything, no return value.
         iter_hook = get('iter_hook', None)
         # Like iter_hook, but called after the solver finishes.
@@ -269,15 +271,16 @@ class SchroedingerApp(SimpleApp):
         if (weights[-1] > 1e-12):
             output("last smearing weight is nonzero (%s eigs ok)!" % n_eigs_ok)
 
-        output("saving solutions, iter=%d..." % self.itercount)
-        out = {}
-        var_name = mtx_a_variables.get_names(kind='state')[0]
-        for ii in xrange(n_eigs_ok):
-            vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
-            update_state_to_output(out, pb, vec_phi, var_name+'%03d' % ii)
-        name = op.join(opts.output_dir, "iter%d" % self.itercount)
-        pb.save_state('.'.join((name, opts.output_format)), out=out)
-        output("...solutions saved")
+        if opts.save_dft_iterations:
+            output("saving solutions, iter=%d..." % self.itercount)
+            out = {}
+            var_name = mtx_a_variables.get_names(kind='state')[0]
+            for ii in xrange(n_eigs_ok):
+                vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
+                update_state_to_output(out, pb, vec_phi, var_name+'%03d' % ii)
+            name = op.join(opts.output_dir, "iter%d" % self.itercount)
+            pb.save_state('.'.join((name, opts.output_format)), out=out)
+            output("...solutions saved")
 
         output('computing total charge...')
         tt = time.clock()
