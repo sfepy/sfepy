@@ -110,6 +110,14 @@ class Integral(Struct):
             match = _match_order_dim(self.quad_name)
             self.order, dim = [int( ii ) for ii in match.groups()]
 
+    def get_key(self):
+        """
+        Get the key string corresponding to the integral kind and order,
+        that can be used to distinguish various cached data evaluated
+        using the integral.
+        """
+        return '__%s_o%d' % (self.kind, self.order)
+
     def get_actual_order(self, geometry):
         """
         Return the actual integration order for given geometry.
