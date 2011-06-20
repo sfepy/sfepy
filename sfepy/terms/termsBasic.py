@@ -453,9 +453,7 @@ class IntegrateSurfaceOperatorWTerm(Term):
                 
             yield out, lchunk, status
 
-##
-# 16.07.2007, c
-class VolumeTerm( Term ):
+class VolumeTerm(Term):
     r"""
     :Description:
     Volume of a domain. Uses approximation of the parameter variable.
@@ -469,18 +467,14 @@ class VolumeTerm( Term ):
     """
     name = 'd_volume'
     arg_types = ('parameter',)
-    use_caches = {'volume' : [['parameter']]}
 
-    ##
-    # created:       16.07.2007
-    # last revision: 13.12.2007
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        shape = (1, 1, 1, 1)
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        par, = self.get_args(**kwargs)
 
-        cache = self.get_cache( 'volume', 0 )
-        volume = cache('volume', self, 0,
-                       region=self.char_fun.region, state=par)
+        ap, vg = self.get_approximation(par)
+        vol = vg.variable(2)
+        volume = nm.sum(vol[self.region.cells[self.char_fun.ig]])
+
         yield volume, 0, 0
 
 class SurfaceTerm( Term ):
@@ -498,14 +492,13 @@ class SurfaceTerm( Term ):
     name = 'd_surface'
     arg_types = ('parameter',)
     integration = 'surface'
-    use_caches = {'surface' : [['parameter']]}
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
+    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+        par, = self.get_args(**kwargs)
 
-        cache = self.get_cache( 'surface', 0 )
-        surface = cache('surface', self, 0,
-                        region=self.char_fun.region, state=par)
+        ap, sg = self.get_approximation(par)
+        surface = sg.totalArea
+
         yield surface, 0, 0
 
 class VolumeSurfaceTerm( Term ):
