@@ -264,6 +264,7 @@ class Approximation( Struct ):
         """
         domain = field.domain
         group = domain.groups[self.ig]
+        coors = domain.get_mesh_coors(actual=True)
 
         if gtype == 'volume':
             if integral is None:
@@ -275,40 +276,38 @@ class Approximation( Struct ):
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
 
-            coors = domain.get_mesh_coors(actual=True)
             mapping = VolumeMapping(coors, group.conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
             out = vg
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
-            sd = self.surface_data[region.name]
+            assert_(field.approx_order > 0)
+
+            sd = domain.surface_groups[self.ig][region.name]
+            esd = self.surface_data[region.name]
+
             qp = self.get_qp(sd.face_type, integral)
 
             geo_ps = self.interp.get_geom_poly_space(sd.face_type)
+            ps = self.interp.poly_spaces[esd.face_type]
 
-            econn = sd.get_connectivity(self.is_surface)
-            conn = econn[:, :geo_ps.n_nod].copy()
-            # This does not work for zero-order approximations!
-            coors = field.get_coor()
-            coors2 = domain.get_mesh_coors(actual=True)
+            conn = sd.get_connectivity(self.is_surface)
+
+            mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
+            sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
+
             if gtype == 'surface_extra':
-                mapping = SurfaceMapping(coors2[group.vertices], conn, poly_space=geo_ps)
-                sg = mapping.get_mapping(qp.vals, qp.weights)
+                sg.alloc_extra_data(self.get_v_data_shape()[2])
 
-                sg.alloc_extra_data( self.get_v_data_shape()[2] )
-
-                self.create_bqp( region.name, integral )
-                qp = self.qp_coors[(integral.name, sd.bkey)]
+                self.create_bqp(region.name, integral)
+                qp = self.qp_coors[(integral.name, esd.bkey)]
 
                 ps = self.interp.get_geom_poly_space('v')
                 bf_bg = ps.eval_base(qp.vals, diff=True)
-                ebf_bg = self.get_base(sd.bkey, 1, integral)
+                ebf_bg = self.get_base(esd.bkey, 1, integral)
 
-                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors2, sd.fis, group.conn)
-            else:
-                mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
-                sg = mapping.get_mapping(qp.vals, qp.weights)
+                sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
 
             out =  sg
 
