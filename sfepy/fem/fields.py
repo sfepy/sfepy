@@ -526,8 +526,8 @@ class Field( Struct ):
 
         if (dct == 'surface') or (geometry_flag):
             reg = info.get_region()
-            reg.select_cells_of_surface(reset=False)
-
+            # Calls reg.select_cells_of_surface(reset=False)...
+            self.domain.create_surface_group(reg)
             self.setup_surface_data(reg)
 
         elif dct == 'edge':
