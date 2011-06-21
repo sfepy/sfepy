@@ -571,7 +571,8 @@ class VTKMeshIO( MeshIO ):
         fd = open( self.filename, 'r' )
         mode = 'header'
         mode_status = 0
-        coors = conns = desc = mat_id = None
+        coors = conns = desc = mat_id = node_grps = None
+        finished = 0
         while 1:
             line = skip_read_line(fd)
             if not line:
@@ -605,28 +606,56 @@ class VTKMeshIO( MeshIO ):
                 if line[0] == 'CELL_TYPES':
                     assert_( int( line[1] ) == n_el )
                     cell_types = read_array(fd, n_el, 1, nm.int32)
+                    mode = 'cp_data'
+
+            elif mode == 'cp_data':
+                line = line.split()
+                if line[0] == 'CELL_DATA':
+                    assert_( int( line[1] ) == n_el )
+                    mode_status = 1
                     mode = 'mat_id'
+                elif line[0] == 'POINT_DATA':
+                    assert_( int( line[1] ) == n_nod )
+                    mode_status = 1
+                    mode = 'node_groups'
 
             elif mode == 'mat_id':
-                if mode_status == 0:
-                    line = line.split()
-                    if line[0] == 'CELL_DATA':
-                        assert_( int( line[1] ) == n_el )
-                        mode_status = 1
-                elif mode_status == 1:
-                    if line.strip() == 'SCALARS mat_id int 1':
+                if mode_status == 1:
+                    if 'SCALARS mat_id int' in line.strip():
                         mode_status = 2
                 elif mode_status == 2:
                     if line.strip() == 'LOOKUP_TABLE default':
                         mat_id = read_list( fd, n_el, int )
                         mode_status = 0
-                        mode = 'finished'
-            elif mode == 'finished':
+                        mode = 'cp_data'
+                        finished += 1
+
+            elif mode == 'node_groups':
+                if mode_status == 1:
+                    if 'SCALARS node_groups int' in line.strip():
+                        mode_status = 2
+                elif mode_status == 2:
+                    if line.strip() == 'LOOKUP_TABLE default':
+                        node_grps = read_list( fd, n_nod, int )
+                        mode_status = 0
+                        mode = 'cp_data'
+                        finished += 1
+
+            elif finished >= 2:
                 break
         fd.close()
- 
+
         if mat_id is None:
             mat_id = [[0]] * n_el
+        else:
+            if len(mat_id) < n_el:
+                mat_id = [[ii] for jj in mat_id for ii in jj]
+
+        if node_grps is None:
+            node_grps = [0] * n_nod
+        else:
+            if len(node_grps) < n_nod:
+                node_grps = [ii for jj in node_grps for ii in jj]
 
         dim = self.get_dimension(coors)
         if dim == 2:
@@ -655,7 +684,7 @@ class VTKMeshIO( MeshIO ):
         conns_in, mat_ids = sort_by_mat_id( conns )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, desc )
 
-        mesh._set_data( coors, None, conns, mat_ids, descs )
+        mesh._set_data( coors, node_grps, conns, mat_ids, descs )
 
         return mesh
 
