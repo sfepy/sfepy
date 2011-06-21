@@ -9,6 +9,7 @@ from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parseReg import create_bnf, visit_stack, ParseException
 from sfepy.fem.refine import refine_3_4
+from sfepy.fem.fe_surface import FESurface
 import fea
 import extmods.meshutils as mu
 
@@ -213,6 +214,7 @@ class Domain( Struct ):
         self.fix_element_orientation()
         self.setup_facets()
         self.reset_regions()
+        self.clear_surface_groups()
 
     def setup_groups( self ):
 
@@ -521,6 +523,36 @@ class Domain( Struct ):
             lst = fa.indices[isurf]
 
         return lst, surf_faces
+
+    def clear_surface_groups(self):
+        """
+        Remove surface group data.
+        """
+        self.surface_groups = {}
+
+    def create_surface_group(self, region):
+        """
+        Create a new surface group corresponding to `region` if it does
+        not exist yet.
+
+        Notes
+        -----
+        Surface groups define surface facet connectivity that is needed
+        for :class:`sfepy.fem.mappings.SurfaceMapping`.
+        """
+        for ig in region.igs:
+            groups = self.surface_groups.setdefault(ig, {})
+            if region.name not in groups:
+                region.select_cells_of_surface(reset=False)
+
+                group = self.groups[ig]
+                gel_faces = group.gel.get_surface_entities()
+
+                name = 'surface_group_%s_%d' % (region.name, ig)
+                surface_group = FESurface(name, region, gel_faces,
+                                          group.conn, ig)
+
+                groups[region.name] = surface_group
 
     def refine(self):
         """
