@@ -270,7 +270,8 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    def describe_geometry(self, field, gtype, region, integral=None):
+    def describe_geometry(self, field, gtype, region, integral=None,
+                          return_mapping=False):
         """Compute jacobians, element volumes and base function derivatives
         for Volume-type geometries, and jacobians, normals and base function
         derivatives for Surface-type geometries.
@@ -296,7 +297,8 @@ class Approximation( Struct ):
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
 
-            mapping = VolumeMapping(coors, group.conn, poly_space=geo_ps)
+            conn = group.conn[region.cells[self.ig]]
+            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
             out = vg
@@ -340,6 +342,9 @@ class Approximation( Struct ):
         if out is not None:
             # Store the integral used.
             out.integral = integral
+
+        if return_mapping:
+            out = (out, mapping)
 
         return out
 
