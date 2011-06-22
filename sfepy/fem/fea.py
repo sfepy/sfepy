@@ -203,6 +203,26 @@ class Approximation( Struct ):
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
+    def get_connectivity(self, region, integration):
+        """
+        Return the DOF connectivity for the given geometry type.
+
+        Parameters
+        ----------
+        region : Region instance
+            The region, used to index surface and volume connectivities.
+        integration : one of ('volume', 'surface', 'surface_extra')
+            The term integration type.
+        """
+        if integration == 'surface':
+            sd = self.surface_data[region.name]
+            conn = sd.get_connectivity(self.is_surface)
+
+        elif integration in ('volume', 'surface_extra'):
+            conn = self.econn[region.cells[self.ig]]
+
+        return conn
+
     def get_qp(self, key, integral):
         """
         Get quadrature points and weights corresponding to the given key
