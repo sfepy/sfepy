@@ -22,6 +22,22 @@ _match_parameter = re.compile( '^parameter(_[_a-zA-Z0-9]+)?$' ).match
 _match_material = re.compile( '^material(_[_a-zA-Z0-9]+)?$' ).match
 _match_material_root = re.compile( '(.+)\.(.*)' ).match
 
+def get_shape_kind(integration):
+    """
+    Get data shape kind for given integration type.
+    """
+    if integration == 'surface':
+        shape_kind = 'surface'
+
+    elif integration in ('volume', 'surface_extra'):
+        shape_kind = 'volume'
+
+    else:
+        raise NotImplementedError('unsupported term integration! (%s)'
+                                  % integration)
+
+    return shape_kind
+
 def vector_chunk_generator( total_size, chunk_size, shape_in,
                             zero = False, set_shape = True, dtype = nm.float64 ):
     if not chunk_size:
