@@ -241,6 +241,7 @@ class Field( Struct ):
         self.setup_approximations()
         self.setup_global_base()
         self.setup_coors()
+        self.clear_mappings(clear_all=True)
 
     def set_approx_order(self, approx_order):
         """
@@ -868,6 +869,60 @@ class Field( Struct ):
             return self.coors
         else:
             return self.coors[nods]
+
+    def clear_mappings(self, clear_all=False):
+        """
+        Clear current reference mappings.
+        """
+        self.mappings = {}
+        if clear_all:
+            self.mappings0 = {}
+
+    def save_mappings(self):
+        """
+        Save current reference mappings to `mappings0` attribute.
+        """
+        self.mappings0 = self.mappings.copy()
+
+    def create_mapping(self, ig, region, integral, integration):
+        """
+        Create a new reference mapping.
+        """
+        ap = self.aps[ig]
+
+        out = ap.describe_geometry(self, integration, region, integral)
+        return out
+
+    def get_mapping(self, ig, region, integral, integration):
+        """
+        For given region, integral and integration type, get a reference
+        mapping, i.e. jacobians, element volumes and base function
+        derivatives for Volume-type geometries, and jacobians, normals
+        and base function derivatives for Surface-type geometries
+        corresponding to the field approximation.
+
+        The mappings are cached in the field instance in `mappings`
+        attribute.  The mappings can be saved to `mappings0` using
+        `Field.save_mappings`.
+        """
+        ap = self.aps[ig]
+        # Share full group mappings.
+        if region.shape[ig].n_vertex == self.domain.groups[ig].shape.n_vertex:
+            region_name = ig
+
+        else:
+            region_name = region.name
+
+        key = (integral.get_key(), region_name, ig, integration)
+
+        # out is (geo, mapping) tuple.
+        out = self.mappings.get(key, None)
+        if out is None:
+            out = ap.describe_geometry(self, integration, region, integral,
+                                       return_mapping=True)
+            self.mappings[key] = out
+
+        return out[0]
 
     def describe_geometry(self, geometry_type, ig, region,
                           term_region, integral):
