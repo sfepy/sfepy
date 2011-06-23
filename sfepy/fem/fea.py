@@ -296,6 +296,7 @@ class Approximation( Struct ):
 
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
+            bf = self.get_base('v', 0, integral)
 
             conn = group.conn[region.cells[self.ig]]
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
@@ -313,6 +314,7 @@ class Approximation( Struct ):
 
             geo_ps = self.interp.get_geom_poly_space(sd.face_type)
             ps = self.interp.poly_spaces[esd.face_type]
+            bf = self.get_base(esd.face_type, 0, integral)
 
             conn = sd.get_connectivity(self.is_surface)
 
@@ -325,8 +327,8 @@ class Approximation( Struct ):
                 self.create_bqp(region.name, integral)
                 qp = self.qp_coors[(integral.name, esd.bkey)]
 
-                ps = self.interp.get_geom_poly_space('v')
-                bf_bg = ps.eval_base(qp.vals, diff=True)
+                v_geo_ps = self.interp.get_geom_poly_space('v')
+                bf_bg = v_geo_ps.eval_base(qp.vals, diff=True)
                 ebf_bg = self.get_base(esd.bkey, 1, integral)
 
                 sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
@@ -342,6 +344,10 @@ class Approximation( Struct ):
         if out is not None:
             # Store the integral used.
             out.integral = integral
+            out.qp = qp
+            out.ps = ps
+            # Store base.
+            out.bf = bf
 
         if return_mapping:
             out = (out, mapping)
