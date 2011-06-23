@@ -222,6 +222,9 @@ class Equations( Container ):
     ##
     # 27.02.2007, c
     def invalidate_term_caches( self ):
+        for var in self.variables.iter_state():
+            var.invalidate_evaluate_cache()
+
         for cache in self.caches.itervalues():
             cache.clear()
 
