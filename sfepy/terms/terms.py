@@ -1221,6 +1221,25 @@ class Term(Struct):
 
         return phys_qps
 
+    def get(self, variable, quantity_name):
+        """
+        Get the named quantity related to the variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of Variable.evaluate() that
+        initializes the arguments using the term data.
+        """
+        name = variable.name
+
+        data = variable.evaluate(self.char_fun.ig, mode=quantity_name,
+                                 region=self.region, integral=self.integral,
+                                 integration=self.geometry_types[name],
+                                 step=self.arg_steps[name],
+                                 time_derivative=self.arg_derivatives[name],
+                                 is_trace=self.arg_traces[name])
+        return data
+
     def standalone_setup(self):
         from sfepy.fem import setup_dof_conns
 
