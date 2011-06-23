@@ -12,6 +12,8 @@ from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator, is_active_bc
 from sfepy.fem.mappings import get_physical_qps
+from sfepy.terms.terms import get_shape_kind
+from sfepy.terms.extmods import terms
 
 is_state = 0
 is_virtual = 1
@@ -1139,6 +1141,7 @@ class FieldVariable(Variable):
 
         self.clear_bases()
         self.clear_current_group()
+        self.clear_evaluate_cache()
 
     def _set_field(self, field):
         """
@@ -1648,6 +1651,131 @@ class FieldVariable(Variable):
             indx = [(ii, slice(ii, ii + 1)) for ii in [self._ic]]
 
         return indx
+
+    def clear_evaluate_cache(self):
+        """
+        Clear current evaluate cache.
+        """
+        self.evaluate_cache = {}
+
+    def evaluate(self, ig, mode='val',
+                 region=None, integral=None, integration=None,
+                 step=0, time_derivative=None, is_trace=False,
+                 dt=None):
+        """
+        Evaluate various quantities related to the variable according to
+        `mode` in quadrature points defined by `integral`.
+
+        The evaluated data are cached in the variable instance in
+        `evaluate_cache` attribute.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        mode : one of 'val', 'grad', 'div', 'cauchy_strain'
+            The evaluation mode.
+        region : Region instance, optional
+            The region where the evaluation occurs. If None, the
+            underlying field region is used.
+        integral : Integral instance, optional
+            The integral defining quadrature points in which the
+            evaluation occurs. If None, the first order volume integral
+            is created. Must not be None for surface integrations.
+        integration : one of 'volume', 'surface', 'surface_extra'
+            The term integration type. If None, it is derived from
+            `integral`.
+        step : int, default 0
+            The time step (0 means current, -1 previous, ...).
+        derivative : None or 'dt'
+            If not None, return time derivative of the data,
+            approximated by the backward finite difference.
+        is_trace : bool, default False
+            Indicate evaluation of trace of the variable on a boundary
+            region.
+        dt : float, optional
+            The time step to be used if `derivative` is `'dt'`. If None,
+            the `dt` attribute of the variable is used.
+
+        Returns
+        -------
+        out : array
+            The 4-dimensional array of shape
+            `(n_el, n_qp, n_row, n_col)` with the requested data,
+            where `n_row`, `n_col` depend on `mode`.
+        """
+        cache = self.evaluate_cache.setdefault(mode, {})
+
+        field = self.field
+        if region is None:
+            region = field.region
+
+        else:
+            assert_(field.region.contains(region))
+
+        if is_trace:
+            region, ig_map, ig_map_i = region.get_mirror_region()
+
+        if integral is None:
+            if integration in ('surface', 'surface_extra'):
+                msg = 'integral must be given for surface integration!'
+                raise ValueError(msg)
+
+            integral = Integral('aux_1', 'v', 1)
+
+        if integration is None:
+            integration = {'v' : 'volume', 's' : 'surface'}[integral.kind]
+
+        geo, _, key = field.get_mapping(ig, region, integral, integration,
+                                        return_key=True)
+        key += (step, time_derivative)
+
+        if key in cache:
+            out = cache[key]
+
+        else:
+            vec = self(step=step, derivative=time_derivative, dt=dt)
+            ap = field.aps[ig]
+            conn = ap.get_connectivity(region, integration)
+
+            shape_kind = get_shape_kind(integration)
+            aux = self.get_data_shape(ig, integral, shape_kind, region.name)
+            n_el, n_qp, dim, n_en, n_comp = aux
+
+            if mode == 'val':
+                function = terms.dq_state_in_qp
+
+                out = nm.empty((n_el, n_qp, n_comp, 1), dtype=self.dtype)
+                function(out, vec, 0, geo.bf, conn)
+
+            elif mode == 'grad':
+                function = terms.dq_grad
+
+                out = nm.empty((n_el, n_qp, dim, n_comp), dtype=self.dtype)
+                function(out, vec, 0, geo, conn)
+
+            elif mode == 'div':
+                assert_(n_comp == dim)
+                function = terms.dq_div_vector
+
+                out = nm.empty((n_el, n_qp, 1, 1), dtype=self.dtype)
+                function(out, vec, 0, geo, conn)
+
+            elif mode == 'cauchy_strain':
+                assert_(n_comp == dim)
+                function = terms.dq_cauchy_strain
+
+                sym = (dim + 1) * dim / 2
+                out = nm.empty((n_el, n_qp, sym, 1), dtype=self.dtype)
+                function(out, vec, 0, geo, conn)
+
+            else:
+                raise ValueError('unsupported variable evaluation mode! (%s)'
+                                 % mode)
+
+            cache[key] = out
+
+        return out
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):
