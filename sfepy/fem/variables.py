@@ -1420,9 +1420,9 @@ class FieldVariable(Variable):
 
         Returns
         -------
-        data_shape : 4 ints
-            The `(n_el, n_qp, n_comp, n_en)` for volume shape kind and
-            `(n_fa, n_qp, n_comp, n_fn)` for surface shape kind.
+        data_shape : 5 ints
+            The `(n_el, n_qp, dim, n_en, n_comp)` for volume shape kind and
+            `(n_fa, n_qp, dim, n_fn, n_comp)` for surface shape kind.
 
         Notes
         -----
