@@ -1658,6 +1658,18 @@ class FieldVariable(Variable):
         """
         self.evaluate_cache = {}
 
+    def invalidate_evaluate_cache(self):
+        """
+        Invalidate current time step data in evaluate cache.
+
+        This should be done, for example, prior to every nonlinear
+        solver iteration.
+        """
+        for cache in self.evaluate_cache.itervalues():
+            for key in cache.keys():
+                if key[4] == 0: # Current time step.
+                    cache.pop(key)
+
     def evaluate(self, ig, mode='val',
                  region=None, integral=None, integration=None,
                  step=0, time_derivative=None, is_trace=False,
