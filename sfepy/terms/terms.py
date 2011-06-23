@@ -1221,6 +1221,24 @@ class Term(Struct):
 
         return phys_qps
 
+    def get_mapping(self, variable):
+        """
+        Get the reference mapping from a variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of Field.get_mapping() that
+        initializes the arguments using the term data.
+        """
+        integration = self.geometry_types[variable.name]
+
+        out = variable.field.get_mapping(self.char_fun.ig,
+                                         region=self.region,
+                                         integral=self.integral,
+                                         integration=integration)
+
+        return out
+
     def get(self, variable, quantity_name):
         """
         Get the named quantity related to the variable.
