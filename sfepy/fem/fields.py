@@ -893,7 +893,8 @@ class Field( Struct ):
         out = ap.describe_geometry(self, integration, region, integral)
         return out
 
-    def get_mapping(self, ig, region, integral, integration):
+    def get_mapping(self, ig, region, integral, integration,
+                    return_key=False):
         """
         For given region, integral and integration type, get a reference
         mapping, i.e. jacobians, element volumes and base function
@@ -922,7 +923,10 @@ class Field( Struct ):
                                        return_mapping=True)
             self.mappings[key] = out
 
-        return out[0]
+        if return_key:
+            out = out + (key,)
+
+        return out
 
     def describe_geometry(self, geometry_type, ig, region,
                           term_region, integral):
