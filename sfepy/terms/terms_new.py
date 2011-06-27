@@ -168,7 +168,7 @@ class NewTerm(Term):
                     aux = varc.get_data_shape(ig, self.integral,
                                               shape_kind, self.region.name)
                     n_elc, n_qpc, dim, n_enc, n_cc = aux
-                    n_col = n_cr * n_enr
+                    n_col = n_cc * n_enc
 
                     shape = (n_elr, 1, n_row, n_col)
                     val = nm.zeros(shape, dtype=varr.dtype)
