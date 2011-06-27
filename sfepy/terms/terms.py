@@ -1239,6 +1239,22 @@ class Term(Struct):
 
         return out
 
+    def get_data_shape(self, variable):
+        """
+        Get data shape information from variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of FieldVariable.get_data_shape() that
+        initializes the arguments using the term data.
+        """
+        integration = self.geometry_types[variable.name]
+        shape_kind = get_shape_kind(integration)
+
+        out = variable.get_data_shape(self.char_fun.ig, self.integral,
+                                      shape_kind, self.region.name)
+        return out
+
     def get(self, variable, quantity_name):
         """
         Get the named quantity related to the variable.
