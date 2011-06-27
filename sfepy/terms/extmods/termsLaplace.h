@@ -11,23 +11,17 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_laplace( FMField *out, FMField *state, int32 offset,
+int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow,
-		  int32 isDiff );
+                  int32 isDiff );
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow );
+		 FMField *coef, VolumeGeometry *vg );
 
-int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
+int32 dw_diffusion( FMField *out, FMField *grad,
 		    FMField *mtxD, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow );
+		   FMField *mtxD, VolumeGeometry *vg );
 int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 			 int32 *conn, int32 nEl, int32 nEP,
 			 int32 *elList, int32 elList_nRow );
@@ -41,10 +35,9 @@ int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
 			    int32 *conn, int32 nEl, int32 nEP,
 			    int32 *elList, int32 elList_nRow,
 			    int32 isDiff, int32 mode);
-int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+int32 de_diffusion_velocity( FMField *out, FMField *grad,
 			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow );
+			     int32 mode );
 
 int32 d_diffusion_integrate( FMField *out, FMField *state,
 			     FMField *mtxD, VolumeGeometry *vg,

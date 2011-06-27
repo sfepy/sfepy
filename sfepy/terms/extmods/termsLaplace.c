@@ -207,76 +207,48 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
   - 28.11.2005, c
   - 09.12.2005
 */
-int32 dw_laplace( FMField *out, FMField *state, int32 offset,
+int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow,
 		  int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *gtg = 0, *gu = 0, *gtgu = 0;
+  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  FMField *gtg = 0, *gtgu = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-
-  state->val = FMF_PtrFirst( state ) + offset;
 
   if (isDiff) {
     fmf_createAlloc( &gtg, 1, nQP, nEP, nEP );
   } else {
-    fmf_createAlloc( &st, 1, 1, nEP, 1 );
-    fmf_createAlloc( &gu, 1, nQP, dim, 1 );
     fmf_createAlloc( &gtgu, 1, nQP, nEP, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-/*     output( "%d %d\n", ii, iel ); */
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( coef, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-
-/*     fmf_print( coef, stdout, 0 ); */
-/*     fmf_print( vg->bfGM, stdout, 0 ); */
-/*     fmf_print( vg->det, stdout, 0 ); */
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
 
     if (isDiff) {
       laplace_build_gtg( gtg, vg->bfGM );
       fmf_mulAF( gtg, gtg, coef->val );
       fmf_sumLevelsMulF( out, gtg, vg->det->val );
-/*       fmf_print( out, stdout, 0 ); */
-/*       sys_pause(); */
     } else {
-      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-/*       build_gtg( gtg, vg->bfGM ); ERR_CheckGo( ret ); */
-/*       fmf_mulAB_n1( gtgu, gtg, stv ); */
-/*       fmf_print( gtgu, stdout, 0 ); */
-
-      laplace_act_g_m( gu, vg->bfGM, st );
-      laplace_act_gt_m( gtgu, vg->bfGM, gu );
+      FMF_SetCell( grad, ii );
+      laplace_act_gt_m( gtgu, vg->bfGM, grad );
       fmf_mulAF( gtgu, gtgu, coef->val );
       fmf_sumLevelsMulF( out, gtgu, vg->det->val );
-
-/*       fmf_print( stv, stdout, 0 ); */
-/*       fmf_print( gu, stdout, 0 ); */
-/*       fmf_print( gtgu, stdout, 0 ); */
-/*       fmf_print( out, stdout, 0 ); */
-/*       sys_pause(); */
     }
     ERR_CheckGo( ret );
   }
 
  end_label:
   if (isDiff) {
-    fmf_freeDestroy( &gtg ); 
+    fmf_freeDestroy( &gtg );
   } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &gu ); 
-    fmf_freeDestroy( &gtgu ); 
+    fmf_freeDestroy( &gtgu );
   }
 
   return( ret );
@@ -285,10 +257,9 @@ int32 dw_laplace( FMField *out, FMField *state, int32 offset,
 #undef __FUNC__
 #define __FUNC__ "d_laplace"
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow )
+		 FMField *coef, VolumeGeometry *vg )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
+  int32 ii, dim, nQP, ret = RET_OK;
   FMField *dgp2 = 0, *gp1tdgp2 = 0;
 
   nQP = vg->bfGM->nLev;
@@ -297,13 +268,11 @@ int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
   fmf_createAlloc( &dgp2, 1, nQP, dim, 1 );
   fmf_createAlloc( &gp1tdgp2, 1, nQP, 1, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->det, iel );
-    FMF_SetCell( gradP1, iel );
-    FMF_SetCell( gradP2, iel );
+    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( gradP1, ii );
+    FMF_SetCell( gradP2, ii );
     if (coef->nCell > 1) {
       FMF_SetCell( coef, ii );
     }
@@ -328,37 +297,29 @@ int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
   @par Revision history:
   - c: 03.08.2006, r: 23.01.2008
 */
-int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
+int32 dw_diffusion( FMField *out, FMField *grad,
 		    FMField *mtxD, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *gtd = 0, *gtdg = 0, *gp = 0, *dgp = 0, *gtdgp = 0;
+  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  FMField *gtd = 0, *gtdg = 0, *dgp = 0, *gtdgp = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
-
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-  state->val = FMF_PtrFirst( state ) + offset;
 
   if (isDiff) {
     fmf_createAlloc( &gtd, 1, nQP, nEP, dim );
     fmf_createAlloc( &gtdg, 1, nQP, nEP, nEP );
   } else {
-    fmf_createAlloc( &st, 1, 1, nEP, 1 );
-    fmf_createAlloc( &gp, 1, nQP, dim, 1 );
     fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
     fmf_createAlloc( &gtdgp, 1, nQP, nEP, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
     if (mtxD->nCell > 1) {
       FMF_SetCell( mtxD, ii );
     }
@@ -368,9 +329,8 @@ int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
       fmf_mulAB_nn( gtdg, gtd, vg->bfGM );
       fmf_sumLevelsMulF( out, gtdg, vg->det->val );
     } else {
-      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-      fmf_mulAB_n1( gp, vg->bfGM, st );
-      fmf_mulAB_nn( dgp, mtxD, gp );
+      FMF_SetCell( grad, ii );
+      fmf_mulAB_nn( dgp, mtxD, grad );
       fmf_mulATB_nn( gtdgp, vg->bfGM, dgp );
       fmf_sumLevelsMulF( out, gtdgp, vg->det->val );
     }
@@ -379,13 +339,11 @@ int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
 
  end_label:
   if (isDiff) {
-    fmf_freeDestroy( &gtd ); 
-    fmf_freeDestroy( &gtdg ); 
+    fmf_freeDestroy( &gtd );
+    fmf_freeDestroy( &gtdg );
   } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &gp ); 
-    fmf_freeDestroy( &dgp ); 
-    fmf_freeDestroy( &gtdgp ); 
+    fmf_freeDestroy( &dgp );
+    fmf_freeDestroy( &gtdgp );
   }
 
   return( ret );
@@ -399,10 +357,9 @@ int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
   - c: 12.03.2007, r: 23.01.2008
 */
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow )
+		   FMField *mtxD, VolumeGeometry *vg )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
+  int32 ii, dim, nQP, ret = RET_OK;
   FMField *dgp2 = 0, *gp1tdgp2 = 0;
 
   nQP = vg->bfGM->nLev;
@@ -411,13 +368,11 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
   fmf_createAlloc( &dgp2, 1, nQP, dim, 1 );
   fmf_createAlloc( &gp1tdgp2, 1, nQP, 1, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->det, iel );
-    FMF_SetCell( gradP1, iel );
-    FMF_SetCell( gradP2, iel );
+    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( gradP1, ii );
+    FMF_SetCell( gradP2, ii );
     if (mtxD->nCell > 1) {
       FMF_SetCell( mtxD, ii );
     }
@@ -623,46 +578,38 @@ int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
   @par Revision history:
   - c: 07.09.2006, r: 06.05.2008
 */
-int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+int32 de_diffusion_velocity( FMField *out, FMField *grad,
 			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow )
+			     int32 mode )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *gp = 0, *dgp = 0;
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *dgp = 0;
 
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-  state->val = FMF_PtrFirst( state ) + offset;
-
-  fmf_createAlloc( &st, 1, 1, nEP, 1 );
-  fmf_createAlloc( &gp, 1, nQP, dim, 1 );
   fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( grad, ii );
+    FMF_SetCell( vg->det, ii );
     if (mtxD->nCell > 1) {
       FMF_SetCell( mtxD, ii );
     }
 
-    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-    fmf_mulAB_n1( gp, vg->bfGM, st );
-    fmf_mulAB_nn( dgp, mtxD, gp );
+    fmf_mulAB_nn( dgp, mtxD, grad );
     fmf_sumLevelsMulF( out, dgp, vg->det->val );
+    if (mode == 1) {
+      FMF_SetCell( vg->volume, ii );
+      fmf_mulC( out, 1.0 / vg->volume->val[0] );
+    }
     ERR_CheckGo( ret );
   }
   fmfc_mulC( out, -1.0 );
 
  end_label:
-  fmf_freeDestroy( &st ); 
-  fmf_freeDestroy( &gp ); 
-  fmf_freeDestroy( &dgp ); 
+  fmf_freeDestroy( &dgp );
 
   return( ret );
 }

@@ -18,7 +18,7 @@ from sfepy.terms.terms_base import VectorVector, VectorVectorTH
 ## s[i,j] = D[i,j,k,l] * e[k,l]
 ## """
 
-class LinearElasticTerm( VectorVector, Term ):
+class LinearElasticTerm(Term):
     r"""
     :Description:
     General linear elasticity term, with :math:`D_{ijkl}` given in
@@ -48,57 +48,43 @@ class LinearElasticTerm( VectorVector, Term ):
 ##     symbolic = {'expression': expr,
 ##                 'map' : {'u' : 'state', 'D_sym' : 'material'}}
 
-    def check_mat_shape( self, mat ):
-        dim = self.data_shape[2]
+    def check_shapes(self, mat, virtual, state):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
         sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (self.data_shape[0], self.data_shape[1], sym, sym))
+        assert_(mat.shape == (n_el, n_qp, sym, sym))
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        if mode == 'weak':
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            if diff_var is None:
+                strain = self.get(state, 'cauchy_strain')
+                fmode = 0
 
-        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-        if diff_var is None:
-            cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache('strain', self, 0,
-                           state=state, get_vector=self.get_vector)
+            else:
+                strain = aux
+                fmode = 1
+
+            return 1.0, strain, mat, vg, fmode
+
+        elif mode == 'eval':
+            strain1 = self.get(virtual, 'cauchy_strain')
+            strain2 = self.get(state, 'cauchy_strain')
+
+            return 1.0, strain1, strain2, mat, vg
+
         else:
-            strain = aux
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        self.check_mat_shape( mat )
-
-        return (1.0, strain, mat, vg), shape, mode
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
-
-        self.set_data_shape( ap )
-
-        self.check_mat_shape( mat )
-
-        cache = self.get_cache( 'cauchy_strain', 0 )
-        strain1 = cache('strain', self, 0,
-                        state=par1, get_vector=self.get_vector)
-        cache = self.get_cache( 'cauchy_strain', 1 )
-        strain2 = cache('strain', self, 0,
-                        state=par2, get_vector=self.get_vector)
-
-        return (1.0, strain1, strain2, mat, vg), (chunk_size, 1, 1, 1), 0
-
-    def set_arg_types( self ):
+    def set_arg_types(self):
         if self.mode == 'weak':
             self.function = terms.dw_lin_elastic
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-            self.use_caches = {'cauchy_strain' : [['state', {'strain' : (1,1)}]]}
+
         else:
             self.function = terms.d_lin_elastic
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'cauchy_strain' : [['parameter_1'],
-                                                  ['parameter_2']]}
 
 class LinearElasticIsotropicTerm( VectorVector, Term ):
     r"""
@@ -350,11 +336,11 @@ class LinearStrainFiberTerm(VectorVector, Term):
             status = self.function( out, mat1, mat2, vg, chunk )
             yield out, chunk, status
 
-class CauchyStrainTerm( Term ):
+class CauchyStrainTerm(Term):
     r"""
     :Description:
     Cauchy strain tensor averaged in elements.
-    
+
     :Definition:
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
@@ -368,32 +354,23 @@ class CauchyStrainTerm( Term ):
 
     function = staticmethod(terms.de_cauchy_strain)
 
-    def get_shape( self, diff_var, chunk_size, apr, apc = None ):
-        self.data_shape = apr.get_v_data_shape(self.integral)
-        n_el, n_qp, dim, n_ep = self.data_shape
-        
-        if diff_var is None:
-            return chunk_size, 1, dim * (dim + 1) / 2, 1
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-    def build_c_fun_args( self, state, ap, vg, **kwargs ):
-        vec = state()
-        return vec, 0, vg, ap.econn
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        parameter, = self.get_args( ['parameter'], **kwargs )
-        ap, vg = self.get_approximation(parameter)
+        strain = self.get(parameter, 'cauchy_strain')
 
-        shape = self.get_shape( diff_var, chunk_size, ap )
-        fargs = self.build_c_fun_args( parameter, ap, vg, **kwargs )
-        
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, *fargs + (chunk,) )
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
 
-class CauchyStressTerm( CauchyStrainTerm ):
+        return strain, vg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, dim * (dim + 1) / 2, 1), parameter.dtype
+
+class CauchyStressTerm(Term):
     r"""
     :Description:
     Cauchy stress tensor averaged in elements.
@@ -409,16 +386,24 @@ class CauchyStressTerm( CauchyStrainTerm ):
     """
     name = 'de_cauchy_stress'
     arg_types = ('material', 'parameter')
-    use_caches = {'cauchy_strain' : [['parameter']]}
 
     function = staticmethod(terms.de_cauchy_stress)
 
-    def build_c_fun_args( self, state, ap, vg, **kwargs ):
-        mat, = self.get_args( ['material'], **kwargs )
-        cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache('strain', self, 0,
-                       state=state, get_vector=self.get_vector)
-        return strain, mat, vg
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
+
+        strain = self.get(parameter, 'cauchy_strain')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return strain, mat, vg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, dim * (dim + 1) / 2, 1), parameter.dtype
 
 class CauchyStrainQTerm(Term):
     r"""

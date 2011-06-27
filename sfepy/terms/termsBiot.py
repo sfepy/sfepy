@@ -5,74 +5,7 @@ from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_base import CouplingVectorScalar, CouplingVectorScalarTH
 from sfepy.terms.termsLinElasticity import CauchyStrainTerm
 
-class BiotGrad( CouplingVectorScalar ):
-
-    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
-
-        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-        if diff_var is None:
-            cache = self.get_cache( 'state_in_volume_qp', 0 )
-            vec_qp = cache('state', self, 0,
-                           state=state, get_vector=self.get_vector)
-        else:
-            vec_qp = aux
-
-        bf = apc.get_base('v', 0, self.integral)
-
-        return (1.0, vec_qp, bf, mat, vgr), shape, mode
-
-class BiotDiv( CouplingVectorScalar ):
-
-    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, state, virtual = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_div( diff_var, chunk_size )
-
-        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-        if diff_var is None:
-            cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache('strain', self, 0,
-                           state=state, get_vector=self.get_vector)
-        else:
-            strain = aux
-
-        bf = apr.get_base('v', 0, self.integral)
-
-        return (1.0, strain, bf, mat, vgc), shape, mode
-
-class BiotEval( CouplingVectorScalar ):
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par_v, par_s = self.get_args( **kwargs )
-        aps, vgs = self.get_approximation(par_s)
-        apv, vgv = self.get_approximation(par_v)
-
-        self.set_data_shape( aps, apv )
-        return (mat, par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
-
-    def d_eval( self, out, mat, par_v, par_s, vgv, chunk ):
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec_qp = cache('state', self, 0,
-                       state=par_s, get_vector=self.get_vector)
-
-        cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache('strain', self, 0,
-                       state=par_v, get_vector=self.get_vector)
-
-        function = terms.d_biot_div
-        status = function( out, 1.0, vec_qp, strain, mat, vgv, chunk )
-        return status
-
-class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
+class BiotTerm(Term):
     r"""
     :Description:
     Biot coupling term with :math:`\alpha_{ij}`
@@ -108,21 +41,52 @@ class BiotTerm( BiotGrad, BiotDiv, BiotEval, Term ):
                  ('material', 'parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
-    def set_arg_types( self ):
-        """Dynamically inherits from either BiotGrad, BiotDiv or BiotEval."""
+    def get_fargs(self, mat, var1, var2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if self.mode == 'grad':
+            # vector, scalar
+            vvar, svar, qp_name = var1, var2, 'val'
+
+        else:
+            # scalar, vector
+            vvar, svar, qp_name = var2, var1, 'cauchy_strain'
+
+        if mode == 'weak':
+            vvg, _ = self.get_mapping(vvar)
+            svg, _ = self.get_mapping(svar)
+
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            if diff_var is None:
+                val_qp = self.get(svar, qp_name)
+                fmode = 0
+
+            else:
+                val_qp = aux
+                fmode = 1
+
+            return 1.0, val_qp, svg.bf, mat, vvg, fmode
+
+        elif mode == 'eval':
+            vvg, _ = self.get_mapping(vvar)
+
+            strain = self.get(vvar, 'cauchy_strain')
+            pval = self.get(svar, 'val')
+
+            return 1.0, pval, strain, mat, vvg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def set_arg_types(self):
         if self.mode == 'grad':
             self.function = terms.dw_biot_grad
-            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['state']]}
+
         elif self.mode == 'div':
             self.function = terms.dw_biot_div
-            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
-            self.use_caches = {'cauchy_strain' : [['state']]}
+
         else:
-            self.function = self.d_eval
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
-                               'cauchy_strain' : [['parameter_v']]}
+            self.function = terms.d_biot_div
 
 
 class BiotStressTerm(CauchyStrainTerm):

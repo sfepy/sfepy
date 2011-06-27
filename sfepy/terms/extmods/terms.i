@@ -56,6 +56,7 @@
     (FMField *strain),
     (FMField *strainV),
     (FMField *strainU),
+    (FMField *grad),
     (FMField *gradP1),
     (FMField *gradP2),
     (FMField *pressure),
@@ -250,22 +251,16 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff );
 
-int32 dw_laplace( FMField *out, FMField *state, int32 offset,
+int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow,
-		  int32 isDiff );
+                  int32 isDiff );
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow );
-int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
+		 FMField *coef, VolumeGeometry *vg );
+int32 dw_diffusion( FMField *out, FMField *grad,
 		    FMField *mtxD, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow );
+		   FMField *mtxD, VolumeGeometry *vg );
 int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 			 int32 *conn, int32 nEl, int32 nEP,
 			 int32 *elList, int32 elList_nRow );
@@ -279,10 +274,9 @@ int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
 			    int32 *conn, int32 nEl, int32 nEP,
 			    int32 *elList, int32 elList_nRow,
 			    int32 isDiff, int32 mode);
-int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+int32 de_diffusion_velocity( FMField *out, FMField *grad,
 			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow );
+			     int32 mode );
 int32 d_diffusion_integrate( FMField *out, FMField *in,
 			     FMField *mtxD, VolumeGeometry *vg,
 			     int32 *conn, int32 nEl, int32 nEP,
@@ -295,11 +289,9 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
 			  int32 isDiff );
 int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 		      FMField *mtxD, VolumeGeometry *vg,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
-		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg,
-		     int32 *elList, int32 elList_nRow );
+		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg );
 
 int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
 			int32 *elList, int32 elList_nRow, int32 isDiff );
@@ -308,13 +300,11 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 			 VolumeGeometry *vg,
 			 int32 *elList, int32 elList_nRow );
 
-int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
-			VolumeGeometry *vg,
-			int32 *conn, int32 nEl, int32 nEP,
-			int32 *elList, int32 elList_nRow );
+int32 de_cauchy_strain( FMField *out, FMField *strain,
+			VolumeGeometry *vg, int32 mode );
 int32 de_cauchy_stress( FMField *out, FMField *strain,
 			FMField *mtxD,  VolumeGeometry *vg,
-			int32 *elList, int32 elList_nRow );
+			int32 mode );
 int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			VolumeGeometry *vg,
 			int32 *conn, int32 nEl, int32 nEP );
@@ -433,17 +423,14 @@ int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
 
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow,
 		   int32 isDiff );
 
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
-		  FMField *mtxD, VolumeGeometry *vg,
-		  int32 *elList, int32 elList_nRow );
+		  FMField *mtxD, VolumeGeometry *vg );
 
 int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			 FMField *mtxG, VolumeGeometry *vg,
