@@ -1274,6 +1274,13 @@ class Term(Struct):
                                  is_trace=self.arg_traces[name])
         return data
 
+    def check_shapes(self, *args, **kwargs):
+        """
+        Default implementation of function to check term argument shapes
+        at run-time.
+        """
+        pass
+
     def standalone_setup(self):
         from sfepy.fem import setup_dof_conns
 
@@ -1294,6 +1301,19 @@ class Term(Struct):
 
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None, **kwargs):
+        out = nm.empty(shape, dtype=nm.float64)
+
+        if mode == 'eval':
+            status = self.function(out, *fargs)
+            out1 = nm.sum(out)
+            return out1, status
+
+        else:
+            status = self.function(out, *fargs)
+
+            return out, status
 
     def evaluate(self, mode='eval', diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
@@ -1321,54 +1341,125 @@ class Term(Struct):
         if standalone:
             self.standalone_setup()
 
+        kwargs = kwargs.copy()
+        term_mode = kwargs.pop('term_mode', None)
+
         huge_int = 1000000000
 
         if mode == 'eval':
             val = 0.0
+            status = 0
             for ig in self.iter_groups():
-                for aux, iels, status in self(chunk_size=huge_int,
-                                              call_mode='d_eval', **kwargs):
-                    val += self.sign * aux
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
+
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
+
+                shape, dtype = self.get_eval_shape(*_args, **kwargs)
+
+                if dtype == nm.float64:
+                    _v, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif dtype == nm.complex128:
+                    _v, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                 **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)' % dtype)
+
+                val += _v
+                status += stat
+
+            val *= self.sign
 
         elif mode in ('el_avg', 'qp'):
-            val = None
+            vals = None
             iels = nm.empty((0, 2), dtype=nm.int32)
             status = 0
             for ig in self.iter_groups():
-                for _val, _iels, _status in self(diff_var=diff_var,
-                                                 chunk_size=huge_int,
-                                                 **kwargs):
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
 
-                    if val is None:
-                        val = self.sign * _val
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
 
-                    else:
-                        val = nm.r_[val, self.sign * _val]
+                shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
-                    aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
-                                _iels[:,None]]
-                    iels = nm.r_[iels, aux]
-                    status += _status
+                if dtype == nm.float64:
+                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif dtype == nm.complex128:
+                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                  **kwargs)
+
+                if vals is None:
+                    vals = val
+
+                else:
+                    vals = nm.r_[vals, val]
+
+                _iels = nm.arange(val.shape[0], dtype=nm.int32)
+                aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
+                            _iels[:,None]]
+                iels = nm.r_[iels, aux]
+                status += stat
+
+            vals *= self.sign
 
         elif mode == 'weak':
-            val = []
+            vals = []
             iels = []
             status = 0
-            for ig in self.iter_groups():
-                for _val, _iels, _status in self(diff_var=diff_var,
-                                                 chunk_size=huge_int,
-                                                 **kwargs):
 
-                    val.append(self.sign * _val)
-                    iels.append((ig, _iels))
-                    status += _status
+            varr = self.get_virtual_variable()
+            if diff_var is not None:
+                varc = self.get_variables(as_list=False)[diff_var]
+
+            for ig in self.iter_groups():
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
+
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
+
+                n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
+                n_row = n_cr * n_enr
+
+                if diff_var is None:
+                    shape = (n_elr, 1, n_row, 1)
+
+                else:
+                    n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+                    n_col = n_cc * n_enc
+
+                    shape = (n_elr, 1, n_row, n_col)
+
+                if varr.dtype == nm.float64:
+                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif varr.dtype == nm.complex128:
+                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                  **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)'
+                                     % varr.dtype)
+
+                vals.append(self.sign * val)
+                iels.append((ig, nm.arange(n_elr, dtype=nm.int32)))
+
+                status += stat
 
         # Setup return value.
         if mode == 'eval':
             out = (val,)
 
         else:
-            out = (val, iels)
+            out = (vals, iels)
 
         if ret_status:
             out = out + (status,)
