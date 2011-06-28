@@ -1034,15 +1034,19 @@ class Term(Struct):
     def igs( self ):
         return self.char_fun.igs
 
-    def needs_local_chunk(self):
-        """Returns a tuple of booleans telling whether the term requires local
-        element numbers in an assembling chunk to pass to an element
-        contribution function, and to an assembling function."""
-        ret = [False, False]
-        if self.dof_conn_type == 'surface':
-            ret[1] = True
-            
-        return tuple(ret)
+    def get_assembling_cells(self):
+        """
+        According to the term integration type, return either the term
+        region cell indices or local index sequence.
+        """
+        shape_kind = get_shape_kind(self.integration)
+        ig = self.char_fun.ig
+
+        cells = self.region.cells[ig]
+        if shape_kind == 'surface':
+            cells = nm.arange(cells.shape[0], dtype=nm.int32)
+
+        return cells
 
     ##
     # c: 05.12.2007, r: 15.01.2008
@@ -1344,8 +1348,6 @@ class Term(Struct):
         kwargs = kwargs.copy()
         term_mode = kwargs.pop('term_mode', None)
 
-        huge_int = 1000000000
-
         if mode == 'eval':
             val = 0.0
             status = 0
@@ -1401,7 +1403,7 @@ class Term(Struct):
                 else:
                     vals = nm.r_[vals, val]
 
-                _iels = self.region.cells[ig]
+                _iels = self.get_assembling_cells()
                 aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
                             _iels[:,None]]
                 iels = nm.r_[iels, aux]
@@ -1450,8 +1452,7 @@ class Term(Struct):
                                      % varr.dtype)
 
                 vals.append(self.sign * val)
-                iels.append((ig, self.region.cells[ig]))
-
+                iels.append((ig, self.get_assembling_cells()))
                 status += stat
 
         # Setup return value.
