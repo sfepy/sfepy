@@ -449,11 +449,6 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
     form_sdcc_actOpGT_M3( aux1, vg->bfGM, mtxD );
     fmf_mulAB_nn( aux2, aux1, mat );
     fmf_sumLevelsMulF( out, aux2, vg->det->val );
-    fmf_print(aux1, stdout, 0);
-    fmf_print(aux2, stdout, 0);
-    fmf_print(mtxD, stdout, 0);
-    fmf_print(mat, stdout, 0);
-    fmf_print(out, stdout, 0);
     ERR_CheckGo( ret );
   }
 
