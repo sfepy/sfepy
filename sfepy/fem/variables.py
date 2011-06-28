@@ -1442,6 +1442,10 @@ class FieldVariable(Variable):
         elif shape_kind == 'volume':
             data_shape = ap.get_v_data_shape(integral)
 
+            # Override ap.region with the required region.
+            region = self.field.domain.regions[region_name]
+            data_shape = (region.shape[ig].n_cell,) + data_shape[1:]
+
         else:
             raise NotImplementedError('unsupported shape kind! (%s)'
                                       % shape_kind)
