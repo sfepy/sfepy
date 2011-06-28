@@ -1401,7 +1401,7 @@ class Term(Struct):
                 else:
                     vals = nm.r_[vals, val]
 
-                _iels = nm.arange(val.shape[0], dtype=nm.int32)
+                _iels = self.region.cells[ig]
                 aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
                             _iels[:,None]]
                 iels = nm.r_[iels, aux]
@@ -1450,7 +1450,7 @@ class Term(Struct):
                                      % varr.dtype)
 
                 vals.append(self.sign * val)
-                iels.append((ig, nm.arange(n_elr, dtype=nm.int32)))
+                iels.append((ig, self.region.cells[ig]))
 
                 status += stat
 
