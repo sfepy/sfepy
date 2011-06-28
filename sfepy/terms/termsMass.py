@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name, assert_
+from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms, reorder_dofs_on_mirror
 from sfepy.terms.terms_base import VectorVector, ScalarScalar
 
@@ -89,65 +89,51 @@ class MassScalarTerm(ScalarScalar, Term):
     arg_types = (('virtual', 'state'),
                  ('parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
-    functions = {'weak': terms.dw_mass_scalar,
-                 'eval': terms.d_mass_scalar}
 
-    def check_mat_shape(self, mat):
-        assert_(mat.shape[1:] == (self.data_shape[1], 1, 1))
-        assert_((mat.shape[0] == 1)
-                or (mat.shape[0] == self.region.shape[self.char_fun.ig].n_cell))
+    def check_shapes(self, virtual, state):
+        assert_(virtual.n_components == 1)
+        assert_(state.n_components == 1)
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        if mode == 'weak':
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            if diff_var is None:
+                val_qp = self.get(state, 'val')
+                fmode = 0
 
-        vec = self.get_vector( state )
-        bf = ap.get_base('v', 0, self.integral)
+            else:
+                val_qp = aux
+                fmode = 1
 
-        if 'material' in [at[0] for at in self.arg_types]:
-            coef, = self.get_args(['material'], **kwargs)
+            coef = kwargs.get('material')
+            if coef is None:
+                coef = nm.ones((1, val_qp.shape[1], 1, 1), dtype=nm.float64)
 
-        else:
-            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
+            return coef, val_qp, vg.bf, vg, fmode
 
-        self.check_mat_shape(coef)
+        elif mode == 'eval':
+            val_qp1 = self.get(virtual, 'val')
+            val_qp2 = self.get(state, 'val')
 
-        if state.is_real():
-            fargs = coef, vec, bf, vg, ap.econn
-        else:
-            ac = nm.ascontiguousarray
-            fargs = [(coef, ac( vec.real ), bf, vg, ap.econn),
-                     (coef, ac( vec.imag ), bf, vg, ap.econn)]
-            mode += 1j
+            coef = kwargs.get('material')
+            if coef is None:
+                coef = nm.ones((1, val_qp.shape[1], 1, 1), dtype=nm.float64)
 
-        return fargs, shape, mode
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args(['parameter_1', 'parameter_2'], **kwargs)
-        ap, vg = self.get_approximation(par1)
-        self.set_data_shape( ap )
-        bf = ap.get_base('v', 0, self.integral)
-
-        if 'material' in [at[0] for at in self.arg_types]:
-            coef, = self.get_args(['material'], **kwargs)
+            return coef, val_qp1, val_qp2, vg.bf, vg
 
         else:
-            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
-
-        self.check_mat_shape(coef)
-
-        return (coef, par1(), par2(), bf, vg, ap.econn), (chunk_size, 1, 1, 1), 0
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
     def set_arg_types( self ):
         if self.mode == 'weak':
-            self.function = self.functions['weak']
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+            self.function = terms.dw_mass_scalar
+
         else:
-            self.function = self.functions['eval']
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            self.function = terms.d_mass_scalar
 
 class MassScalarWTerm(MassScalarTerm):
     r"""
@@ -170,7 +156,22 @@ class MassScalarWTerm(MassScalarTerm):
     """
     name = 'dw_mass_scalar_w'
     arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2')) 
+                 ('material', 'parameter_1', 'parameter_2'))
+
+    def check_shapes(self, mat, virtual, state):
+        MassScalarTerm.check_shapes(self, virtual, state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        assert_(mat.shape[1:] == (n_qp, 1, 1))
+#        assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
+
+    def get_fargs(self, material, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = MassScalarTerm.get_fargs(self, virtual, state,
+                                         mode, term_mode, diff_var,
+                                         material=material, **kwargs)
+        return fargs
 
 class MassScalarSurfaceTerm( ScalarScalar, Term ):
     r"""
