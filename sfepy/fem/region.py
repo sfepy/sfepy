@@ -520,15 +520,10 @@ class Region( Struct ):
 
         self.setup_face_indices(reset=reset)
 
-        if self.faces:
-            faces = self.faces
-        else:
-            faces = self.edges
-
         self.cells = {}
         for ig in self.igs:
             rcells = self.fis[ig][:,0]
-            self.cells[ig]= rcells
+            self.cells[ig] = nm.ascontiguousarray(rcells)
 
     ##
     # 02.03.2007, c
