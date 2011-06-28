@@ -24,40 +24,11 @@ class LinearTractionTerm( Term ):
 
     function = staticmethod(terms.dw_surface_ltr)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        Should work in scalar, vector and tensor modes (tensor probably broken).
-        """
-        traction, virtual = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
-                                                     self.region.name )
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_fp, 1)
-        else:
-            raise StopIteration
+    def get_fargs(self, traction, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
 
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-        gbf = ap.get_base( sd.face_type, 0, self.integral,
-                           from_geometry = True )
-
-##        sg.str( sys.stdout, 0 )
-##         print ap.bf[sd.face_type]
-##         pause()
-
-##         if ap.bf[sd.face_type].shape != gbf.shape:
-##             raise NotImplementedError, 'tractions on P1 edges only!'
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-##             print out.shape, lchunk.shape
-##             print traction.shape
-            status = self.function( out, bf, gbf,
-                                    traction, sg, lchunk )
-##             print out
-##             print nm.sum( out )
-##             pause()
-            yield out, lchunk, status
+        return sg.bf, traction, sg
 
 class SurfaceJumpTerm(Term):
     r"""

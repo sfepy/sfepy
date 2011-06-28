@@ -1,73 +1,8 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import CouplingVectorScalar
 
-class PiezoCouplingGrad( CouplingVectorScalar ):
-
-    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
-
-        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-        if diff_var is None:
-            cache = self.get_cache( 'grad_scalar', 0 )
-            p_grad = cache('grad', self, 0, state=state)
-        else:
-            p_grad  = aux
-
-        return (aux, p_grad, mat, vgr), shape, mode
-
-class PiezoCouplingDiv( CouplingVectorScalar ):
-
-    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, state, virtual = self.get_args( **kwargs )
-
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_div( diff_var, chunk_size )
-
-        aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-        if diff_var is None:
-            cache = self.get_cache( 'cauchy_strain', 0 )
-            strain = cache('strain', self, 0,
-                           state=state, get_vector=self.get_vector)
-        else:
-            strain = aux
-
-        return (strain, aux, mat, vgc), shape, mode + 2
-
-class  PiezoCouplingEval( CouplingVectorScalar ):
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        if diff_var is not None:
-            raise StopIteration
-
-        mat, par_v, par_s = self.get_args( **kwargs )
-
-        aps, vgs = self.get_approximation(par_s)
-        apv, vgv = self.get_approximation(par_v)
-
-        self.set_data_shape( aps, apv )
-
-        cache = self.get_cache( 'cauchy_strain', 0 )
-        strain = cache('strain', self, 0,
-                       state=par_v, get_vector=self.get_vector)
-        cache = self.get_cache( 'grad_scalar', 0 )
-        p_grad = cache('grad', self, 0, state=par_s)
-
-        return (strain, p_grad, mat, vgv), (chunk_size, 1, 1, 1), 0
-
-class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad,
-                         PiezoCouplingEval, Term ):
+class PiezoCouplingTerm(Term):
     r"""
     :Description:
     Piezoelectric coupling term. Can be evaluated.
@@ -98,19 +33,54 @@ class PiezoCouplingTerm( PiezoCouplingDiv, PiezoCouplingGrad,
                  ('material', 'parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
+    def get_fargs(self, mat, var1, var2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if self.mode == 'grad':
+            # vector, scalar
+            vvar, svar, qp_name = var1, var2, 'grad'
+
+        else:
+            # scalar, vector
+            vvar, svar, qp_name = var2, var1, 'cauchy_strain'
+
+        vvg, _ = self.get_mapping(vvar)
+
+        if mode == 'weak':
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            if diff_var is None:
+                # grad or strain according to mode.
+                val_qp = self.get(svar, qp_name)
+                fmode = 0
+
+            else:
+                val_qp = aux
+                fmode = 1
+
+            if self.mode == 'grad':
+                strain, grad = aux, val_qp
+
+            else:
+                strain, grad = val_qp, aux
+                fmode += 2
+
+            return strain, grad, mat, vvg, fmode
+
+        elif mode == 'eval':
+            strain = self.get(vvar, 'cauchy_strain')
+            grad = self.get(svar, 'grad')
+
+            return strain, grad, mat, vvg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
     def set_arg_types( self ):
-        """Dynamically inherits from either PiezoCouplingGrad or
-        PiezoCouplingDiv."""
         if self.mode == 'grad':
             self.function = terms.dw_piezo_coupling
-            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
-            self.use_caches = {'grad_scalar' : [['state']]}
+
         elif self.mode == 'div':
             self.function = terms.dw_piezo_coupling
-            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
-            self.use_caches = {'cauchy_strain' : [['state']]}
+
         else:
             self.function = terms.d_piezo_coupling
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'grad_scalar' : [['parameter_s']],
-                               'cauchy_strain' : [['parameter_v']]}

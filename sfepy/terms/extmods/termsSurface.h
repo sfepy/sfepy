@@ -11,9 +11,8 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
-		      FMField *traction, SurfaceGeometry *sg,
-		      int32 *elList, int32 elList_nRow );
+int32 dw_surface_ltr( FMField *out, FMField *bf,
+		      FMField *traction, SurfaceGeometry *sg );
 
 int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,
 	       FMField *bf, SurfaceGeometry *sg,

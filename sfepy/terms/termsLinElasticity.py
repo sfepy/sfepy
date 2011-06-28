@@ -108,16 +108,30 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
 
     function = staticmethod(terms.dw_lin_elastic_iso)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        lam, mu, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def check_shapes(self, lam, mu, virtual, state):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        assert_(lam.shape == (n_el, n_qp, 1, 1))
+        assert_(mu.shape == (n_el, n_qp, 1, 1))
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+    def get_fargs(self, lam, mu, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        vec = self.get_vector( state )
+        if mode == 'weak':
+            aux = nm.array([0], ndmin=4, dtype=nm.float64)
+            if diff_var is None:
+                strain = self.get(state, 'cauchy_strain')
+                fmode = 0
 
-        return (vec, 0, lam, mu, vg, ap.econn), shape, mode
+            else:
+                strain = aux
+                fmode = 1
+
+            return strain, lam, mu, vg, fmode
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
 class LinearElasticTHTerm( VectorVectorTH, Term ):
     r"""
@@ -414,47 +428,41 @@ class CauchyStrainQTerm(Term):
     indices ordered as :math:`[11, 22, 12]`. The last three (non-diagonal)
     components are doubled so that it is energetically conjugate to the Cauchy
     stress tensor with the same storage.
-    
+
     :Definition:
     .. math::
-        \ull{e}(\ul{w})|_{qp} 
+        \ull{e}(\ul{w})|_{qp}
 
     :Arguments:
         parameter : :math:`\ul{w}`
    """
     name = 'dq_cauchy_strain'
     arg_types = ('parameter',)
-    use_caches = {'cauchy_strain' : [['parameter']]}
 
-    def get_strain(self, diff_var=None, chunk_size=None, **kwargs):
-        if diff_var is not None:
-            raise StopIteration
+    @staticmethod
+    def function(out, strain):
+        out[:] = strain
 
-        par, = self.get_args(['parameter'], **kwargs)
-        self.get_approximation(par)
+        return 0
 
-        cache = self.get_cache('cauchy_strain', 0)
-        strain = cache('strain', self, 0,
-                       state=par, get_vector=self.get_vector)
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (self.get(parameter, 'cauchy_strain'),)
 
-        shape = (chunk_size,) + strain.shape[1:]
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-        return strain, shape
+        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        strain, shape = self.get_strain(diff_var, chunk_size, **kwargs)
-        
-        for out, chunk in self.char_fun(chunk_size, shape):
-            yield strain[chunk], chunk, 0
-
-class CauchyStressQTerm(CauchyStrainQTerm):
+class CauchyStressQTerm(Term):
     r"""
     :Description:
     Cauchy stress tensor in quadrature points, given in the usual vector form
     exploiting symmetry: in 3D it has 6 components with the indices ordered as
     :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
     indices ordered as :math:`[11, 22, 12]`.
-    
+
     :Definition:
     .. math::
         D_{ijkl} e_{kl}(\ul{w})|_{qp}
@@ -465,21 +473,24 @@ class CauchyStressQTerm(CauchyStrainQTerm):
     """
     name = 'dq_cauchy_stress'
     arg_types = ('material', 'parameter')
-    use_caches = {'cauchy_strain' : [['parameter']]}
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        strain, shape = self.get_strain(diff_var, chunk_size, **kwargs)
+    @staticmethod
+    def function(out, mat, strain):
+        mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
+        sc = strain.reshape((strain.shape[0] * strain.shape[1],)
+                            + strain.shape[2:])
 
-        mat, = self.get_args(['material'], **kwargs)
+        stress = nm.sum(mc * sc, axis=1)
+        out[:] = stress.reshape(strain.shape)
 
-        for out, chunk in self.char_fun(chunk_size, shape):
-            mc = mat[chunk]
-            sc = strain[chunk]
+        return 0
 
-            mc.shape = (mc.shape[0] * mc.shape[1],) + mc.shape[2:]
-            sc.shape = (sc.shape[0] * sc.shape[1],) + sc.shape[2:]
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return mat, self.get(parameter, 'cauchy_strain')
 
-            stress = nm.sum(mc * sc, axis=1)
-            stress.shape = strain[chunk].shape
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-            yield stress, chunk, 0
+        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype

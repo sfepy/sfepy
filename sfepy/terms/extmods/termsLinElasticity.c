@@ -206,34 +206,30 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
   @par Revision history:
   - 07.03.2006, c
 */
-int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
+int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
 			  FMField *lam, FMField *mu, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
 			  int32 isDiff )
 {
-  int32 ii, iel, dim, sym, nQP, ret = RET_OK;
-  FMField *stress = 0, *strain = 0;
-  FMField *st = 0, *res = 0, *disG = 0, *d11 = 0, *gtd11 = 0, *gtd11g = 0;
+  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
+  FMField *stress = 0;
+  FMField *res = 0, *d11 = 0, *gtd11 = 0, *gtd11g = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
   sym = (dim + 1) * dim / 2;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
   if (isDiff) {
     fmf_createAlloc( &d11, 1, nQP, sym, sym );
     fmf_createAlloc( &gtd11, 1, nQP, nEP * dim, sym );
     fmf_createAlloc( &gtd11g, 1, nQP, nEP * dim, nEP * dim );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
       FMF_SetCell( lam, ii );
       FMF_SetCell( mu, ii );
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
 
       mat_le_tanModuli11( d11, lam, mu, 0 );
 /*       fmf_print( d11, stdout, 0 ); */
@@ -246,35 +242,16 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
       ERR_CheckGo( ret );
     }
   } else {
-    state->val = FMF_PtrFirst( state ) + offset;
-
-    fmf_createAlloc( &strain, nEl, nQP, sym, 1 );
-    fmf_createAlloc( &stress, nEl, nQP, sym, 1 );
-
-    fmf_createAlloc( &st, 1, 1, nEP, dim );
-    fmf_createAlloc( &disG, 1, nQP, dim, dim );
+    fmf_createAlloc( &stress, strain->nCell, nQP, sym, 1 );
     fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( strain, ii );
-      FMF_SetCell( vg->bfGM, iel );
-
-      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-      fmf_mulAB_n1( disG, vg->bfGM, st );
-      form_sdcc_strainCauchy_VS( strain, disG );
-      ERR_CheckGo( ret );
-    }
     mat_le_stress( stress, strain, lam, mu );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
       FMF_SetCell( stress, ii );
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
 
       form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
       fmf_sumLevelsMulF( out, res, vg->det->val );
@@ -288,11 +265,8 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
     fmf_freeDestroy( &gtd11 );
     fmf_freeDestroy( &gtd11g );
   } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &res ); 
-    fmf_freeDestroy( &disG ); 
-    fmf_freeDestroy( &stress ); 
-    fmf_freeDestroy( &strain ); 
+    fmf_freeDestroy( &res );
+    fmf_freeDestroy( &stress );
   }
 
   return( ret );

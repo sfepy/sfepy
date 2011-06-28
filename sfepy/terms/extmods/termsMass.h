@@ -11,11 +11,9 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_mass( FMField *out, FMField *coef, FMField *state,
 	       FMField *bf, VolumeGeometry *vg,
-	       int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow,
-	       int32 isDiff );
+               int32 isDiff );
 
 int32 dw_mass_scalar( FMField *out, FMField *coef,
 		      FMField *state, FMField *bf, VolumeGeometry *vg,

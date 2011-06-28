@@ -2,44 +2,9 @@ import numpy as nm
 
 from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms, reorder_dofs_on_mirror
-from sfepy.terms.terms_base import VectorVector, ScalarScalar
+from sfepy.terms.terms_base import ScalarScalar
 
-class MassTerm( VectorVector, Term ):
-    r"""
-    :Description:
-    Inertial forces term.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}
-
-    :Arguments:
-        ts        : :class:`TimeStepper` instance,
-        material  : :math:`\rho`,
-        virtual   : :math:`\ul{v}`,
-        state     : :math:`\ul{u}`,
-        parameter : :math:`\ul{u}_0`
-    """
-    name = 'dw_mass'
-    arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
-
-    function = staticmethod(terms.dw_mass)
-
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        ts, mat, virtual, state, state0 = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(virtual)
-
-        self.set_data_shape(ap)
-        shape, mode = self.get_shape(diff_var, chunk_size)
-
-        dvec = state() - state0()
-        rhodt = mat / ts.dt
-        bf = ap.get_base('v', 0, self.integral)
-
-        fargs = (rhodt, dvec, 0, bf, vg, ap.econn)
-        return fargs, shape, mode
-
-class MassVectorTerm( MassTerm ):
+class MassVectorTerm(Term):
     r"""
     :Description:
     Vector field mass matrix/rezidual.
@@ -56,19 +21,24 @@ class MassVectorTerm( MassTerm ):
     name = 'dw_mass_vector'
     arg_types = ('material', 'virtual', 'state')
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        mat, virtual, state = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(virtual)
+    function = staticmethod(terms.dw_mass)
 
-        self.set_data_shape(ap)
-        shape, mode = self.get_shape(diff_var, chunk_size)
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        vec = self.get_vector(state)
-        bf = ap.get_base('v', 0, self.integral)
-        fargs = (mat, vec, 0, bf, vg, ap.econn)
-        return fargs, shape, mode
+        aux = nm.array([0], ndmin=4, dtype=nm.float64)
+        if diff_var is None:
+            val_qp = self.get(state, 'val')
+            fmode = 0
 
-class MassScalarTerm(ScalarScalar, Term):
+        else:
+            val_qp = aux
+            fmode = 1
+
+        return mat, val_qp, vg.bf, vg, fmode
+
+class MassScalarTerm(Term):
     r"""
     :Description:
     Scalar field mass matrix/rezidual.
