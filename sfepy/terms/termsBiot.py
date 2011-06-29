@@ -14,7 +14,7 @@ class BiotTerm(Term):
     the indices ordered as :math:`[11, 22, 12]`. Corresponds to weak
     forms of Biot gradient and divergence terms. Can be evaluated. Can
     use derivatives.
-    
+
     :Definition:
     .. math::
         \int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega}
@@ -41,27 +41,24 @@ class BiotTerm(Term):
                  ('material', 'parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
-    def get_fargs(self, mat, var1, var2,
+    def get_fargs(self, mat, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if self.mode == 'grad':
-            # vector, scalar
-            vvar, svar, qp_name = var1, var2, 'val'
+            qp_var, qp_name = svar, 'val'
 
         else:
-            # scalar, vector
-            vvar, svar, qp_name = var2, var1, 'cauchy_strain'
+            qp_var, qp_name = vvar, 'cauchy_strain'
 
         if mode == 'weak':
             vvg, _ = self.get_mapping(vvar)
             svg, _ = self.get_mapping(svar)
 
-            aux = nm.array([0], ndmin=4, dtype=nm.float64)
             if diff_var is None:
-                val_qp = self.get(svar, qp_name)
+                val_qp = self.get(qp_var, qp_name)
                 fmode = 0
 
             else:
-                val_qp = aux
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
             return 1.0, val_qp, svg.bf, mat, vvg, fmode
@@ -78,16 +75,18 @@ class BiotTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
+    def get_eval_shape(self, vvar, svar,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+
+        return (n_el, 1, 1, 1), vvar.dtype
+
     def set_arg_types(self):
-        if self.mode == 'grad':
-            self.function = terms.dw_biot_grad
-
-        elif self.mode == 'div':
-            self.function = terms.dw_biot_div
-
-        else:
-            self.function = terms.d_biot_div
-
+        self.function = {
+            'grad' : terms.dw_biot_grad,
+            'div' : terms.dw_biot_div,
+            'eval' : terms.d_biot_div,
+        }[self.mode]
 
 class BiotStressTerm(CauchyStrainTerm):
     r"""
