@@ -313,7 +313,7 @@ int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,
 	       int32 *elList, int32 elList_nRow, int32 mode );
 
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
-		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow );
+		     VolumeGeometry *vg );
 
 int32 dw_mass( FMField *out, FMField *coef, FMField *state,
 	       FMField *bf, VolumeGeometry *vg,

@@ -12,7 +12,7 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
-		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow );
+		     VolumeGeometry *vg );
 
 END_C_DECLS
 
