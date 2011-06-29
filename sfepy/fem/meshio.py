@@ -923,7 +923,7 @@ class TetgenMeshIO( MeshIO ):
     ##
     # c: 15.02.2008, r: 15.02.2008
     @staticmethod
-    def getnodes(fnods, up, verbose=True):
+    def getnodes(fnods, up, verbose=False):
         """
         Reads t.1.nodes, returns a list of nodes.
 
@@ -959,7 +959,7 @@ class TetgenMeshIO( MeshIO ):
     ##
     # c: 15.02.2008, r: 15.02.2008
     @staticmethod
-    def getele(fele, up, verbose=True):
+    def getele(fele, up, verbose=False):
         """
         Reads t.1.ele, returns a list of elements.
 
