@@ -16,8 +16,9 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files(('sfepy/fem/extmods', ('version.h.in',)))
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('DEBUGFMF', site_config.debug_flags()),
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
+    if '-DDEBUG_FMF' in site_config.debug_flags():
+        defines.append(('DEBUG_FMF', None))
 
     src = ['fmfield.c', 'fem.c', 'fem.i', 'geommech.c', 'sort.c',
            'common_python.c']

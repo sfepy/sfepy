@@ -15,8 +15,9 @@ def configuration(parent_package='', top_path=None):
     config = Configuration(auto_name, parent_package, top_path)
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('DEBUGFMF', site_config.debug_flags()),
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
+    if '-DDEBUG_FMF' in site_config.debug_flags():
+        defines.append(('DEBUG_FMF', None))
 
     src = ['rcm.c', 'rcm.i']
     fem_src = ['common_python.c']

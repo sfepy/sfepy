@@ -13,8 +13,9 @@ def configuration(parent_package='', top_path=None):
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
 
-    defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
-               ('DEBUGFMF', site_config.debug_flags())]
+    defines = [('__SDIR__', "'\"%s\"'" % auto_dir)]
+    if '-DDEBUG_FMF' in site_config.debug_flags():
+        defines.append(('DEBUG_FMF', None))
 
     src = ['dft.c', 'dft.i']
     config.add_extension('_dft',
