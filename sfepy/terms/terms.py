@@ -32,6 +32,9 @@ def get_shape_kind(integration):
     elif integration in ('volume', 'surface_extra'):
         shape_kind = 'volume'
 
+    elif integration == 'point':
+        shape_kind = 'point'
+
     else:
         raise NotImplementedError('unsupported term integration! (%s)'
                                   % integration)
@@ -1034,7 +1037,7 @@ class Term(Struct):
     def igs( self ):
         return self.char_fun.igs
 
-    def get_assembling_cells(self):
+    def get_assembling_cells(self, shape=None):
         """
         According to the term integration type, return either the term
         region cell indices or local index sequence.
@@ -1045,6 +1048,9 @@ class Term(Struct):
         cells = self.region.cells[ig]
         if shape_kind == 'surface':
             cells = nm.arange(cells.shape[0], dtype=nm.int32)
+
+        elif shape_kind == 'point':
+            cells = nm.arange(shape[0], dtype=nm.int32)
 
         return cells
 
@@ -1404,7 +1410,7 @@ class Term(Struct):
                 else:
                     vals = nm.r_[vals, val]
 
-                _iels = self.get_assembling_cells()
+                _iels = self.get_assembling_cells(val.shape)
                 aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
                             _iels[:,None]]
                 iels = nm.r_[iels, aux]
@@ -1453,7 +1459,7 @@ class Term(Struct):
                                      % varr.dtype)
 
                 vals.append(self.sign * val)
-                iels.append((ig, self.get_assembling_cells()))
+                iels.append((ig, self.get_assembling_cells(val.shape)))
                 status += stat
 
         # Setup return value.

@@ -1424,8 +1424,9 @@ class FieldVariable(Variable):
         Returns
         -------
         data_shape : 5 ints
-            The `(n_el, n_qp, dim, n_en, n_comp)` for volume shape kind and
-            `(n_fa, n_qp, dim, n_fn, n_comp)` for surface shape kind.
+            The `(n_el, n_qp, dim, n_en, n_comp)` for volume shape kind,
+            `(n_fa, n_qp, dim, n_fn, n_comp)` for surface shape kind and
+            `(n_nod, 0, 0, 1, n_comp)` for point shape kind.
 
         Notes
         -----
@@ -1434,6 +1435,7 @@ class FieldVariable(Variable):
         - `dim` = spatial dimension
         - `n_en`, `n_fn` = number of element/facet nodes
         - `n_comp` = number of variable components in a point/node
+        - `n_nod` = number of element nodes
         """
         ap = self.field.aps[ig]
         if shape_kind == 'surface':
@@ -1445,6 +1447,11 @@ class FieldVariable(Variable):
             # Override ap.region with the required region.
             region = self.field.domain.regions[region_name]
             data_shape = (region.shape[ig].n_cell,) + data_shape[1:]
+
+        elif shape_kind == 'point':
+            region = self.field.domain.regions[region_name]
+            dofs = self.field.get_dofs_in_region(region, merge=True)
+            data_shape = (dofs.shape[0], 0, 0, 1)
 
         else:
             raise NotImplementedError('unsupported shape kind! (%s)'

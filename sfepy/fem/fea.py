@@ -336,7 +336,7 @@ class Approximation( Struct ):
             out =  sg
 
         elif gtype == 'point':
-            out = None
+            out = mapping = None
 
         else:
             raise ValueError('unknown geometry type: %s' % gtype)
