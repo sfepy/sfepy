@@ -244,7 +244,7 @@ class StokesWTerm(StokesTerm):
                            material=material, **kwargs)
         return fargs
 
-class GradQTerm( Term ):
+class GradQTerm(Term):
     r"""
     :Description:
     Gradient term (weak form) in quadrature points.
@@ -257,31 +257,29 @@ class GradQTerm( Term ):
         state : :math:`p`
     """
     name = 'dq_grad'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
-    function = staticmethod(terms.dq_grad)
+    @staticmethod
+    def function(out, grad):
+        out[:] = grad
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        return 0
 
-        if diff_var is None:
-            shape = (chunk_size, n_qp, dim, 1 )
-            mode = 0
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (self.get(parameter, 'grad'),)
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, vg, ap.econn[chunk] )
-            yield out, chunk, status
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-class GradETerm( Term ):
+        return (n_el, n_qp, dim, 1), parameter.dtype
+
+class GradETerm(Term):
     r"""
     :Description:
     Gradient term (weak form) in averaged in elements.
-    
+
     :Definition:
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
@@ -292,41 +290,25 @@ class GradETerm( Term ):
         state : :math:`p` or :math:`\ul{w}`
     """
     name = 'de_grad'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
-    function = staticmethod(terms.de_grad)
+    function = staticmethod(terms.de_integrate)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-        vdim = ap.dim[0]
-        
-        if diff_var is None:
-            shape = (chunk_size, 1, dim, vdim )
-            mode = 0
-        else:
-            raise StopIteration
+        grad = self.get(parameter, 'grad')
 
-        ac = nm.ascontiguousarray
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if state.is_real():
-                status = self.function( out, vec, 0, vg, ap.econn, chunk )
-            else:
-                status_r = self.function(out, ac(vec.real), 0,
-                                         vg, ap.econn, chunk)
-                out_imag = nm.zeros_like(out)
-                status_i = self.function(out_imag, ac(vec.imag), 0,
-                                         vg, ap.econn, chunk)
+        return grad, vg, fmode
 
-                status = status_r or status_i
-                out = out + 1j * out_imag
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
+        return (n_el, 1, dim, 1), parameter.dtype
 
 class DivQTerm(Term):
     r"""
@@ -341,28 +323,27 @@ class DivQTerm(Term):
         state : :math:`\ul{u}`
     """
     name = 'dq_div'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
     function = staticmethod(terms.dq_div_vector)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        state, = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    @staticmethod
+    def function(out, div):
+        out[:] = div
 
-        assert_(state.n_components == dim)
+        return 0
 
-        if diff_var is None:
-            shape = (chunk_size, n_qp, 1, 1)
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (self.get(parameter, 'div'),)
 
-        vec = state()
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = self.function(out, vec, 0, vg, ap.econn[chunk])
-            yield out, chunk, status
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-class DivEvalTerm(Term):
+        return (n_el, n_qp, 1, 1), parameter.dtype
+
+class DivETerm(Term):
     r"""
     :Description:
     Evaluate divergence term.
@@ -374,21 +355,26 @@ class DivEvalTerm(Term):
     :Arguments:
         parameter : :math:`\ul{u}`
     """
-    name = 'd_div'
+    name = 'de_div'
     arg_types = ('parameter',)
 
-    function = staticmethod(terms.d_div_vector)
+    function = staticmethod(terms.de_integrate)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        par, = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-        vec = par()
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = self.function(out, vec, 0, vg, ap.econn, chunk)
-            out1 = nm.sum(out)
-            yield out1, chunk, status
+        div = self.get(parameter, 'div')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return div, vg, fmode
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, 1, 1), parameter.dtype
 
 ##
 # 26.07.2007, c
