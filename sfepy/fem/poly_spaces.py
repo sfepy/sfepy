@@ -332,7 +332,8 @@ class LagrangeSimplexPolySpace(PolySpace):
         self.mtx_i = nm.ascontiguousarray(nla.inv(mtx))
         self.rhs = nm.ones((n_v,), nm.float64)
 
-        self.nodes, self.nts, self.node_coors = self._define_nodes()
+        self.nodes, self.nts, node_coors = self._define_nodes()
+        self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
 
     def _define_nodes(self):
@@ -444,7 +445,9 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
         node_coors = nm.vstack((node_coors,
                                 nm.dot(tmp, self.geometry.coors) / n_v))
 
-        self.nodes, self.nts, self.node_coors = nodes, nts, node_coors
+        self.nodes, self.nts = nodes, nts
+        self.node_coors = nm.ascontiguousarray(node_coors)
+
         self.bnode = nodes[-1:,:]
 
         self.n_nod = self.nodes.shape[0]
@@ -490,7 +493,8 @@ class LagrangeTensorProductPolySpace(PolySpace):
                      coors = self.bbox[:,0:1])
         self.ps1d = LagrangeSimplexPolySpace('P_aux', g1d, order)
 
-        self.nodes, self.nts, self.node_coors = self._define_nodes()
+        self.nodes, self.nts, node_coors = self._define_nodes()
+        self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
 
     def _define_nodes(self):
