@@ -1311,7 +1311,8 @@ class Term(Struct):
 
         if mode == 'eval':
             status = self.function(out, *fargs)
-            out1 = nm.sum(out)
+            # Sum over elements but not over components.
+            out1 = nm.sum(out, 0).squeeze()
             return out1, status
 
         else:
