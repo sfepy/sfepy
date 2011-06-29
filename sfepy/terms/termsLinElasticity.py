@@ -58,13 +58,12 @@ class LinearElasticTerm(Term):
         vg, _ = self.get_mapping(state)
 
         if mode == 'weak':
-            aux = nm.array([0], ndmin=4, dtype=nm.float64)
             if diff_var is None:
                 strain = self.get(state, 'cauchy_strain')
                 fmode = 0
 
             else:
-                strain = aux
+                strain = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
             return 1.0, strain, mat, vg, fmode
@@ -78,6 +77,12 @@ class LinearElasticTerm(Term):
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
+
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
 
     def set_arg_types(self):
         if self.mode == 'weak':
@@ -118,13 +123,12 @@ class LinearElasticIsotropicTerm( VectorVector, Term ):
         vg, _ = self.get_mapping(state)
 
         if mode == 'weak':
-            aux = nm.array([0], ndmin=4, dtype=nm.float64)
             if diff_var is None:
                 strain = self.get(state, 'cauchy_strain')
                 fmode = 0
 
             else:
-                strain = aux
+                strain = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
             return strain, lam, mu, vg, fmode
@@ -378,7 +382,7 @@ class CauchyStrainTerm(Term):
 
         return strain, vg, fmode
 
-    def get_eval_shape(self, mat, parameter,
+    def get_eval_shape(self, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 

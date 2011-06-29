@@ -27,13 +27,12 @@ class MassVectorTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
 
-        aux = nm.array([0], ndmin=4, dtype=nm.float64)
         if diff_var is None:
             val_qp = self.get(state, 'val')
             fmode = 0
 
         else:
-            val_qp = aux
+            val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
             fmode = 1
 
         return mat, val_qp, vg.bf, vg, fmode
@@ -68,19 +67,19 @@ class MassScalarTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
 
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        coef = kwargs.get('material')
+        if coef is None:
+            coef = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
+
         if mode == 'weak':
-            aux = nm.array([0], ndmin=4, dtype=nm.float64)
             if diff_var is None:
                 val_qp = self.get(state, 'val')
                 fmode = 0
 
             else:
-                val_qp = aux
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
-
-            coef = kwargs.get('material')
-            if coef is None:
-                coef = nm.ones((1, val_qp.shape[1], 1, 1), dtype=nm.float64)
 
             return coef, val_qp, vg.bf, vg, fmode
 
@@ -88,15 +87,17 @@ class MassScalarTerm(Term):
             val_qp1 = self.get(virtual, 'val')
             val_qp2 = self.get(state, 'val')
 
-            coef = kwargs.get('material')
-            if coef is None:
-                coef = nm.ones((1, val_qp.shape[1], 1, 1), dtype=nm.float64)
-
             return coef, val_qp1, val_qp2, vg.bf, vg
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
+
+    def get_eval_shape(self, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
 
     def set_arg_types( self ):
         if self.mode == 'weak':
@@ -134,7 +135,7 @@ class MassScalarWTerm(MassScalarTerm):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
         assert_(mat.shape[1:] == (n_qp, 1, 1))
-#        assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
+        assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
 
     def get_fargs(self, material, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
