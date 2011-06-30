@@ -292,7 +292,11 @@ class GradETerm(Term):
     name = 'de_grad'
     arg_types = ('parameter',)
 
-    function = staticmethod(terms.de_integrate)
+    @staticmethod
+    def function(out, grad, vg, fmode):
+        status = vg.integrate(out, grad, fmode)
+
+        return status
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -358,7 +362,11 @@ class DivETerm(Term):
     name = 'de_div'
     arg_types = ('parameter',)
 
-    function = staticmethod(terms.de_integrate)
+    @staticmethod
+    def function(out, div, vg, fmode):
+        status = vg.integrate(out, div, fmode)
+
+        return status
 
     def get_fargs(self, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
