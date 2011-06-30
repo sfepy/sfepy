@@ -70,31 +70,6 @@ int32 dq_grad( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "de_integrate"
-int32 de_integrate( FMField *out, FMField *vals,
-                    VolumeGeometry *vg, int32 mode )
-{
-  int32 ii, ret = RET_OK;
-
-  for (ii = 0; ii < out->nCell; ii++) {
-    FMF_SetCell( out, ii );
-    FMF_SetCell( vals, ii );
-    FMF_SetCell( vg->det, ii );
-
-    fmf_sumLevelsMulF( out, vals, vg->det->val );
-    if (mode == 1) {
-      FMF_SetCell( vg->volume, ii );
-      fmf_mulC( out, 1.0 / vg->volume->val[0] );
-    }
-
-    ERR_CheckGo( ret );
-  }
-
- end_label:
-  return( ret );
-}
-
-#undef __FUNC__
 #define __FUNC__ "dq_div_vector"
 /*!
   @par Revision history:
