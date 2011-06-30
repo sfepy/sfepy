@@ -48,8 +48,6 @@ class LinearPointSpringTerm(Term):
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_dof, _, _, _, n_c = self.get_data_shape(state)
-
         vec = state.get_state_in_region(self.region)
 
         stiffness = mat['stiffness']
