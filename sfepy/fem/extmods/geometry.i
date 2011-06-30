@@ -140,8 +140,8 @@ typedef struct VolumeGeometry {
     @par Revision history:
     - 15.12.2005, c
   */
-  int32 integrate( FMField *out, FMField *in ) {
-    return( vg_integrate( self, out, in ) );
+   int32 integrate( FMField *out, FMField *in, int32 mode=0 ) {
+     return( vg_integrate( self, out, in, mode ) );
   }
   /*!
     @par Revision history:
@@ -309,8 +309,8 @@ typedef struct SurfaceGeometry {
     @par Revision history:
     - 24.04.2007, c
   */
-  int32 integrate( FMField *out, FMField *in ) {
-    return( sg_integrate( self, out, in ) );
+  int32 integrate( FMField *out, FMField *in, int32 mode=0 ) {
+    return( sg_integrate( self, out, in, mode ) );
   }
   /*!
     @par Revision history:

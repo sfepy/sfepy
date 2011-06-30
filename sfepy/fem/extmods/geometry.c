@@ -182,7 +182,8 @@ int32 vg_describe( VolumeGeometry *obj,
   @par Revision history:
   - 15.12.2005, c
 */
-int32 vg_integrate( VolumeGeometry *obj, FMField *out, FMField *in )
+int32 vg_integrate( VolumeGeometry *obj, FMField *out, FMField *in,
+                    int32 mode )
 {
   int32 iel;
 
@@ -191,6 +192,10 @@ int32 vg_integrate( VolumeGeometry *obj, FMField *out, FMField *in )
     FMF_SetCell( in, iel );
     FMF_SetCell( out, iel );
     fmf_sumLevelsMulF( out, in, obj->det->val );
+    if (mode == 1) {
+      FMF_SetCell( obj->volume, iel );
+      fmf_mulC( out, 1.0 / obj->volume->val[0] );
+    }
   }
 
   return( RET_OK );
@@ -479,7 +484,8 @@ int32 sg_describe( SurfaceGeometry *obj,
   @par Revision history:
   - 24.04.2007, c
 */
-int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in )
+int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in,
+                    int32 mode )
 {
   int32 dim, nQP, iel, ret = RET_OK;
   FMField *vn = 0;
@@ -487,13 +493,17 @@ int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in )
   dim = obj->normal->nRow;
   nQP = obj->normal->nLev;
 
-  if (in->nRow == 1) {
+  if ((in->nRow == 1) || (mode < 3)) {
     for (iel = 0; iel < obj->det->nCell; iel++) {
       FMF_SetCell( obj->det, iel );
       FMF_SetCell( in, iel );
       FMF_SetCell( out, iel );
 
       fmf_sumLevelsMulF( out, in, obj->det->val );
+      if (mode == 1) {
+        FMF_SetCell( obj->area, iel );
+        fmf_mulC( out, 1.0 / obj->area->val[0] );
+      }
       ERR_CheckGo( ret );
     }
   } else if (in->nRow == dim) {
@@ -509,6 +519,10 @@ int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in )
 /*       fmf_mulC( vn, -1.0 ); */
 
       fmf_sumLevelsMulF( out, vn, obj->det->val );
+      if (mode == 4) {
+        FMF_SetCell( obj->area, iel );
+        fmf_mulC( out, 1.0 / obj->area->val[0] );
+      }
       ERR_CheckGo( ret );
     }
   } else {
