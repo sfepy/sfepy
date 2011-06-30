@@ -202,7 +202,7 @@ class Test( TestCommon ):
         vec[:] = 1.0
         p.data_from_any(vec)
 
-        expr = 'd_surface_integrate.isurf.Left( p )'
+        expr = 'di_surface_integrate.isurf.Left( p )'
         val = problem.evaluate(expr, p=p)
         ok1 = nm.abs(val - 1.0) < 1e-15
         self.report('with unknown: %s, value: %s, ok: %s' \
@@ -212,7 +212,7 @@ class Test( TestCommon ):
                           primary_var_name='(set-to-None)')
         r.data_from_any(vec)
 
-        expr = 'd_surface_integrate.isurf.Left( r )'
+        expr = 'di_surface_integrate.isurf.Left( r )'
         val = problem.evaluate(expr, r=r)
         ok2 = nm.abs(val - 1.0) < 1e-15
         self.report('with parameter: %s, value: %s, ok: %s' \
