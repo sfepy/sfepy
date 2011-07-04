@@ -180,8 +180,9 @@ class ElasticConstants(Struct):
             self.relations = self._construct_relations()
 
         else:
-            from elastic_constants import relations
-            self.relations = relations
+            import elastic_constants as ec
+            self.relations = ec.relations
+            self.ec = ec
 
         ## print sorted(self.relations.keys())
         ## print len(self.relations)
@@ -291,11 +292,13 @@ relations = {
         values = {}
         for key, val in self.__dict__.iteritems():
             if (key in self.names) and (val is not None):
-                values[key] = val
+                sym = getattr(self.ec, key)
+                values[sym] = val
 
         known = values.keys()
         if len(known) != 2:
             raise ValueError('exactly two elastic constants must be provided!')
+        known = [ii.name for ii in known]
 
         unknown = set(self.names).difference(known)
 
