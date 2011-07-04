@@ -45,10 +45,13 @@ class CouplingVectorScalarHE(Struct):
         else:
             raise StopIteration
 
-class HyperElasticBase( Term ):
-    """Base class for all hyperelastic terms in TL/UL formulation.
+class HyperElasticBase(Term):
+    """
+    Base class for all hyperelastic terms in TL/UL formulation.
 
-    **Note** This is not a proper Term!
+    Note
+    ----
+    This is not a proper Term!
 
     `HyperElasticBase.__call__()` computes element contributions given either
     stress (-> rezidual) or tangent modulus (-> tangent sitffnes matrix),
@@ -60,70 +63,30 @@ class HyperElasticBase( Term ):
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
-        self.mode_ul = {'tl' : 0, 'ul' : 1}[self.mode]
-        self.call_mode = 0
-        self.function = {
-            'finite_strain' : { 0: 'finite_strain_tl',
-                                1: 'finite_strain_ul'},
-            'element_contribution' : terms.dw_he_rtm,
-        }
         igs = self.region.igs
-        self.crt_data = Struct(stress={}.fromkeys(igs, None),
-                               tan_mod={}.fromkeys(igs, None))
+        self.stress_cache = {}.fromkeys(igs, None)
 
-    def _call_smode( self, diff_var = None, chunk_size = None, **kwargs ):
-        term_mode, = self.get_kwargs( ['term_mode'], **kwargs )
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_family_data(self, state, data_names):
+        """
+        Note
+        ----
+        `data_names` argument is ignored for now.
+        """
+        cache = state.evaluate_cache.setdefault('tl_common', {})
 
-        self.set_data_shape(ap)
-        shape, mode = self.get_shape(diff_var, chunk_size)
+        vg, _, key = self.get_mapping(state, return_key=True)
 
-        cache = self.get_cache( self.function['finite_strain'][self.mode_ul], 0 )
-        family_data = cache(self.family_data_names, self, 0, state=state)
+        name = state.name
+        data_key = key + (self.arg_steps[name], self.arg_derivatives[name])
 
-        if term_mode is None:
-            ig = self.char_fun.ig
+        if data_key in cache:
+            out = cache[data_key]
 
-            out = self.compute_crt_data( family_data, mode, **kwargs )
+        else:
+            out = self.compute_family_data(state)
+            cache[data_key] = out
 
-            if mode == 0:
-                self.crt_data.stress[ig] = stress = out
-                self.crt_data.tan_mod[ig] = nm.array([0], ndmin=4)
-            else:
-                self.crt_data.tan_mod[ig] = out
-
-                stress = self.crt_data.stress[ig]
-                if stress is None:
-                    stress = self.compute_crt_data(family_data, 0, **kwargs)
-
-            fun = self.function['element_contribution']
-
-            mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
-
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = fun( out, stress, self.crt_data.tan_mod[ig],
-                              mtxF, detF, vg, chunk, mode, self.mode_ul )
-
-                yield out, chunk, status
-
-        elif term_mode == 'd_eval':
-            raise NotImplementedError
-
-        elif term_mode in ['strain', 'stress']:
-
-            if term_mode == 'strain':
-                out_qp = cache('E', self, 0, state=state)
-
-            elif term_mode == 'stress':
-                out_qp = self.compute_crt_data( family_data, 0, **kwargs )
-
-            shape = (chunk_size, 1) + out_qp.shape[2:]
-            for out, chunk in self.char_fun( chunk_size, shape ):
-                status = vg.integrate_chunk( out, out_qp[chunk], chunk )
-                out1 = out / vg.variable( 2 )[chunk]
-
-            yield out1, chunk, status
+        return out
 
     def _call_hmode( self, diff_var = None, chunk_size = None, **kwargs ):
         term_mode, = self.get_kwargs( ['term_mode'], **kwargs )

@@ -6,14 +6,144 @@ from sfepy.terms.terms_hyperelastic_base \
      import CouplingVectorScalarHE, HyperElasticBase
 from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
 
-class HyperElasticTLBase( HyperElasticBase ):
-    """Base class for all hyperelastic terms in TL formulation. This is not a
-    proper Term!
-    """
-    use_caches = {'finite_strain_tl' : [['state']]}
-    mode = 'tl'
+_msg_missing_data = 'missing family data!'
 
-class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
+class HyperElasticTLBase(HyperElasticBase):
+    """
+    Base class for all hyperelastic terms in TL formulation family.
+
+    The subclasses should have the following static method attributes:
+    - `stress_function()` (the stress)
+    - `tan_mod_function()` (the tangent modulus)
+
+    The common (family) data are cached in the evaluate cache of state
+    variable.
+    """
+    family_function = staticmethod(terms.dq_finite_strain_tl)
+    weak_function = staticmethod(terms.dw_he_rtm)
+    arg_types = (('material', 'virtual', 'state'),
+                 ('material', 'parameter_1', 'parameter_2'))
+    arg_types = ('material', 'virtual', 'state')
+
+    @staticmethod
+    def integrate(out, val_qp, vg, fmode):
+        status = vg.integrate(out, val_qp, fmode)
+
+        return status
+
+    @staticmethod
+    def function(out, fun, *args):
+        return fun(out, *args)
+
+    def compute_family_data(self, state):
+        ap, vg = self.get_approximation(state)
+
+        vec = self.get_vector(state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
+
+        shapes = {
+            'mtx_f' : (n_el, n_qp, dim, dim),
+            'det_f' : (n_el, n_qp, 1, 1),
+            'sym_c' : (n_el, n_qp, sym, 1),
+            'tr_c' : (n_el, n_qp, 1, 1),
+            'in2_c' : (n_el, n_qp, 1, 1),
+            'sym_inv_c' : (n_el, n_qp, sym, 1),
+            'green_strain' : (n_el, n_qp, sym, 1),
+        }
+        data = Struct(name='tl_family_data')
+        for key, shape in shapes.iteritems():
+            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
+
+        self.family_function(data.mtx_f,
+                             data.det_f,
+                             data.sym_c,
+                             data.tr_c,
+                             data.in2_c,
+                             data.sym_inv_c,
+                             data.green_strain,
+                             vec, 0, vg, ap.econn)
+
+        return data
+
+    def compute_stress(self, mat, family_data, **kwargs):
+        out = nm.empty_like(family_data.sym_inv_c)
+
+        get = family_data.get_default_attr
+        fargs = [get(name, msg_if_none=_msg_missing_data)
+                 for name in self.family_data_names]
+
+        self.stress_function(out, mat, *fargs)
+
+        return out
+
+    def compute_tan_mod(self, mat, family_data, **kwargs):
+        shape = list(family_data.sym_inv_c.shape)
+        shape[-1] = shape[-2]
+        out = nm.empty(shape, dtype=nm.float64)
+
+        get = family_data.get_default_attr
+        fargs = [get(name, msg_if_none=_msg_missing_data)
+                 for name in self.family_data_names]
+
+        self.tan_mod_function(out, mat, *fargs)
+
+        return out
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        family_data = self.get_family_data(state, self.family_data_names)
+
+        if mode == 'weak':
+            ig = self.char_fun.ig
+
+            if diff_var is None:
+                stress = self.compute_stress(mat, family_data, **kwargs)
+                self.stress_cache[ig] = stress
+                tan_mod = nm.array([0], ndmin=4)
+
+                fmode = 0
+
+            else:
+                stress = self.stress_cache[ig]
+                if stress is None:
+                    stress = self.compute_stress(mat, family_data, **kwargs)
+
+                tan_mod = self.compute_tan_mod(mat, family_data, **kwargs)
+                fmode = 1
+
+            mtx_f, det_f = family_data.mtx_f, family_data.det_f
+
+            return self.weak_function, stress, tan_mod, mtx_f, det_f, vg, fmode, 0
+
+        elif mode == 'el_avg':
+            if term_mode == 'strain':
+                out_qp = family_data.green_strain
+
+            elif term_mode == 'stress':
+                out_qp = self.compute_stress(mat, family_data, **kwargs)
+
+            else:
+                raise ValueError('unsupported term mode in %s! (%s)'
+                                 % (self.name, term_mode))
+
+            return self.integrate, out_qp, vg, 1
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
+
+        return (n_el, 1, sym, 1), state.dtype
+
+class NeoHookeanTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic neo-Hookean term. Effective stress
@@ -30,31 +160,12 @@ class NeoHookeanTLTerm( VectorVector, HyperElasticTLBase ):
         state    : :math:`\ul{u}`
     """
     name = 'dw_tl_he_neohook'
-    arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f', 'tr_c', 'sym_inv_c']
 
-    family_data_names = ['detF', 'trC', 'invC']
-    term_function = {'stress' : terms.dq_tl_he_stress_neohook,
-                     'tangent_modulus' : terms.dq_tl_he_tan_mod_neohook}
+    stress_function = staticmethod(terms.dq_tl_he_stress_neohook)
+    tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_neohook)
 
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
-
-        detF, trC, invC = family_data
-
-        if mode == 0:
-            out = nm.empty_like( invC )
-            fun = self.term_function['stress']
-        else:
-            shape = list( invC.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
-
-        fun( out, mat, detF, trC, invC )
-
-        return out
-
-class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
+class MooneyRivlinTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic Mooney-Rivlin term. Effective stress
@@ -71,31 +182,12 @@ class MooneyRivlinTLTerm( VectorVector, HyperElasticTLBase ):
         state    : :math:`\ul{u}`
     """
     name = 'dw_tl_he_mooney_rivlin'
-    arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f', 'tr_c', 'sym_inv_c', 'sym_c', 'in2_c']
 
-    family_data_names = ['detF', 'trC', 'invC', 'C', 'in2C']
-    term_function = {'stress' : terms.dq_tl_he_stress_mooney_rivlin,
-                     'tangent_modulus' : terms.dq_tl_he_tan_mod_mooney_rivlin}
+    stress_function = staticmethod(terms.dq_tl_he_stress_mooney_rivlin)
+    tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_mooney_rivlin)
 
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
-
-        detF, trC, invC, vecC, in2C = family_data
-
-        if mode == 0:
-            out = nm.empty_like( invC )
-            fun = self.term_function['stress']
-        else:
-            shape = list( invC.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
-
-        fun( out, mat, detF, trC, invC, vecC, in2C )
-
-        return out
-
-class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
+class BulkPenaltyTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic bulk penalty term. Stress
@@ -112,29 +204,10 @@ class BulkPenaltyTLTerm( VectorVector, HyperElasticTLBase ):
     """
 
     name = 'dw_tl_bulk_penalty'
-    arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f', 'sym_inv_c']
 
-    family_data_names = ['detF', 'invC']
-    term_function = {'stress' : terms.dq_tl_he_stress_bulk,
-                     'tangent_modulus' : terms.dq_tl_he_tan_mod_bulk }
-
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
-
-        detF, invC = family_data
-
-        if mode == 0:
-            out = nm.empty_like( invC )
-            fun = self.term_function['stress']
-        else:
-            shape = list( invC.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
-
-        fun( out, mat, detF, invC )
-
-        return out
+    stress_function = staticmethod(terms.dq_tl_he_stress_bulk)
+    tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_bulk)
 
 class BulkPressureTLTerm(CouplingVectorScalarHE, HyperElasticTLBase):
     r"""

@@ -181,7 +181,7 @@ int32 dw_he_rtm( FMField *out,
 		 FMField *stress, FMField *tan_mod,
 		 FMField *mtxF, FMField *detF,
 		 VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul );
+		 int32 isDiff, int32 mode_ul );
 
 int32 de_he_rtm( FMField *out,
 		 FMField *stress, FMField *detF,

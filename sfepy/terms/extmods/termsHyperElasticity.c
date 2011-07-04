@@ -423,12 +423,13 @@ int32 dw_he_rtm( FMField *out,
 		 FMField *stress, FMField *tan_mod,
 		 FMField *mtxF, FMField *detF,
 		 VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul )
+		 int32 isDiff, int32 mode_ul )
 {
-  int32 ii, iel, j, sym, nRow, nQP, ret = RET_OK, dim;
+  int32 ii, j, sym, nRow, nQP, nEP, ret = RET_OK, dim;
   FMField *aux = 0, *out_qp = 0, *btd = 0, *btdb = 0, *ktsc = 0, *iktsc = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   sym = stress->nRow;
   nRow = out->nRow; // dim * nEP.
   dim = vg->dim;
@@ -448,20 +449,18 @@ int32 dw_he_rtm( FMField *out,
     fmf_createAlloc( &ktsc, 1, nQP, nEP, nEP );
     fmf_createAlloc( &iktsc, 1, 1, nEP, nEP );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( stress, iel );
-      FMF_SetCell( tan_mod, iel );
-      FMF_SetCell( vg->bfGM, iel );
+      FMF_SetCell( stress, ii );
+      FMF_SetCell( tan_mod, ii );
+      FMF_SetCell( vg->bfGM, ii );
 
-      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( vg->det, ii );
 
       /* B^T D B. */
       if (mode_ul) {
 	/* ULF */
-	FMF_SetCell( detF, iel );
+	FMF_SetCell( detF, ii );
 	for (j = 0; j < nQP; j++) /* det/J */
 	  aux->val[j] = vg->det->val[j] / detF->val[j];
 
@@ -474,7 +473,7 @@ int32 dw_he_rtm( FMField *out,
       }
       else {
 	/* TLF */
-	FMF_SetCell( mtxF, iel );
+	FMF_SetCell( mtxF, ii );
 	form_tlcc_buildOpB_VS3( aux, mtxF, vg->bfGM );
 	fmf_mulATB_nn( btd, aux, tan_mod );
 	fmf_mulAB_nn( btdb, btd, aux );
@@ -494,18 +493,16 @@ int32 dw_he_rtm( FMField *out,
     }
   } else {
     fmf_createAlloc( &out_qp, 1, nQP, nRow, 1 );
-    
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
 
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( stress, iel );
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( stress, ii );
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
 
       if (mode_ul) {
 	/* ULF */
-	FMF_SetCell( detF, iel );
+	FMF_SetCell( detF, ii );
 	for (j = 0; j < nQP; j++) /* det/J */
 	  aux->val[j] = vg->det->val[j] / detF->val[j];
 
@@ -514,7 +511,7 @@ int32 dw_he_rtm( FMField *out,
       }
       else {
 	/* TLF */
-	FMF_SetCell( mtxF, iel );
+	FMF_SetCell( mtxF, ii );
 	form_tlcc_buildOpB_VS3( aux, mtxF, vg->bfGM );
 	fmf_mulATB_nn( out_qp, aux, stress );
 	fmf_sumLevelsMulF( out, out_qp, vg->det->val );
