@@ -41,6 +41,37 @@ def get_shape_kind(integration):
 
     return shape_kind
 
+def split_complex_args(args):
+    """
+    Split complex arguments to real and imaginary parts.
+
+    Returns
+    -------
+    rargs, iargs : lists
+        The two argument lists corresponding to `args` such that each
+        argument of numpy.complex128 data type is split to its real part
+        which is put to the first list and imaginary part going into the
+        second list.
+    same_args : bool
+        True if the lists are the same, i.e. no complex arguments were
+        in `args`.
+    """
+    rargs = []
+    iargs = []
+    same_args = True
+
+    for arg in args:
+        if isinstance(arg, nm.ndarray) and (arg.dtype == nm.complex128):
+            rargs.append(arg.real.copy())
+            iargs.append(arg.imag.copy())
+            same_args = False
+
+        else:
+            rargs.append(arg)
+            iargs.append(arg)
+
+    return rargs, iargs, same_args
+
 def vector_chunk_generator( total_size, chunk_size, shape_in,
                             zero = False, set_shape = True, dtype = nm.float64 ):
     if not chunk_size:
@@ -1312,7 +1343,8 @@ class Term(Struct):
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
 
-    def eval_real(self, shape, fargs, mode='eval', term_mode=None, **kwargs):
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
         out = nm.empty(shape, dtype=nm.float64)
 
         if mode == 'eval':
@@ -1325,6 +1357,27 @@ class Term(Struct):
             status = self.function(out, *fargs)
 
             return out, status
+
+    def eval_complex(self, shape, fargs, mode='eval', term_mode=None,
+                     diff_var=None, **kwargs):
+        rout = nm.empty(shape, dtype=nm.float64)
+
+        rfargs, ifargs, same_args = split_complex_args(fargs)
+
+        # Assuming linear forms. Then the matrix is the
+        # same both for real and imaginary part.
+        rstatus = self.function(rout, *rfargs)
+        if (diff_var is None) and not same_args:
+            iout = nm.empty(shape, dtype=nm.float64)
+            istatus = self.function(iout, *ifargs)
+
+            out = rout + 1j * iout
+            status = rstatus or istatus
+
+        else:
+            out, status = rout, rstatus
+
+        return out, status
 
     def evaluate(self, mode='eval', diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
@@ -1495,8 +1548,8 @@ class Term(Struct):
                 else:
                     assert_(asm_obj.dtype == nm.complex128)
                     fem.assemble_vector_complex(asm_obj.real, asm_obj.imag,
-                                                vec_in_els.real,
-                                                vec_in_els.imag,
+                                                vec_in_els.real.copy(),
+                                                vec_in_els.imag.copy(),
                                                 _iels,
                                                 1.0,
                                                 0.0, dc)
@@ -1536,10 +1589,19 @@ class Term(Struct):
 
                 else:
                     assert_(asm_obj.dtype == nm.complex128)
+
+                    if mtx_in_els.dtype == nm.complex128:
+                        rmtx_in_els = mtx_in_els.real.copy()
+                        imtx_in_els = mtx_in_els.imag.copy()
+
+                    else:
+                        rmtx_in_els = mtx_in_els
+                        imtx_in_els = nm.zeros_like(mtx_in_els)
+
                     fem.assemble_matrix_complex(tmd[0].real, tmd[0].imag,
                                                 tmd[1], tmd[2],
-                                                mtx_in_els.real,
-                                                mtx_in_els.imag,
+                                                rmtx_in_els,
+                                                imtx_in_els,
                                                 _iels,
                                                 sign, 0.0,
                                                 rdc, cdc)
