@@ -1272,11 +1272,17 @@ class Term(Struct):
         initializes the arguments using the term data.
         """
         integration = self.geometry_types[variable.name]
+        is_trace = self.arg_traces[variable.name]
 
-        out = variable.field.get_mapping(self.char_fun.ig,
-                                         region=self.region,
-                                         integral=self.integral,
-                                         integration=integration)
+        if is_trace:
+            region, ig_map, ig_map_i = self.region.get_mirror_region()
+            ig = ig_map_i[self.char_fun.ig]
+
+        else:
+            region = self.region
+            ig = self.char_fun.ig
+
+        out = variable.field.get_mapping(ig, region, self.integral, integration)
 
         return out
 
@@ -1290,10 +1296,19 @@ class Term(Struct):
         initializes the arguments using the term data.
         """
         integration = self.geometry_types[variable.name]
+        is_trace = self.arg_traces[variable.name]
         shape_kind = get_shape_kind(integration)
 
-        out = variable.get_data_shape(self.char_fun.ig, self.integral,
-                                      shape_kind, self.region.name)
+        if is_trace:
+            region, ig_map, ig_map_i = self.region.get_mirror_region()
+            ig = ig_map_i[self.char_fun.ig]
+
+        else:
+            region = self.region
+            ig = self.char_fun.ig
+
+        out = variable.get_data_shape(ig, self.integral,
+                                      shape_kind, region.name)
         return out
 
     def get(self, variable, quantity_name):

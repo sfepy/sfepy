@@ -1733,11 +1733,12 @@ class FieldVariable(Variable):
         if region is None:
             region = field.region
 
-        else:
-            assert_(field.region.contains(region))
-
         if is_trace:
             region, ig_map, ig_map_i = region.get_mirror_region()
+            ig = ig_map_i[ig]
+
+        if region is not field.region:
+            assert_(field.region.contains(region))
 
         if integral is None:
             if integration in ('surface', 'surface_extra'):
