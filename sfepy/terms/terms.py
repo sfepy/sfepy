@@ -1262,7 +1262,7 @@ class Term(Struct):
 
         return phys_qps
 
-    def get_mapping(self, variable):
+    def get_mapping(self, variable, return_key=False):
         """
         Get the reference mapping from a variable.
 
@@ -1282,7 +1282,9 @@ class Term(Struct):
             region = self.region
             ig = self.char_fun.ig
 
-        out = variable.field.get_mapping(ig, region, self.integral, integration)
+        out = variable.field.get_mapping(ig, region,
+                                         self.integral, integration,
+                                         return_key=return_key)
 
         return out
 
