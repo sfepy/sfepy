@@ -1,3 +1,5 @@
+import numpy as nm
+
 from sfepy.terms.terms import Term, terms
 
 ##
@@ -34,7 +36,7 @@ class SurfaceJumpTerm(Term):
     r"""
     :Description:
     Interface jump condition.
-    
+
     :Definition:
     .. math::
         \int_{\Gamma} q (p_1 - p_2 - c)
@@ -49,37 +51,42 @@ class SurfaceJumpTerm(Term):
     arg_types = ('material', 'virtual', 'state_1', 'state_2')
     integration = 'surface'
 
-    function = staticmethod(terms.dw_jump)
+    @staticmethod
+    def function(out, jump, bf1, bf2, sg, fmode):
+        bf_t = nm.tile(sg.bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        coef, virtual, state1, state2 = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-        if diff_var is None:
-            shape, mode = (chunk_size, 1, n_fp, 1), 0
-        elif diff_var == self.get_arg_name('state_1'):
-            shape, mode = (chunk_size, 1, n_fp, n_fp), 1
-        elif diff_var == self.get_arg_name('state_2'):
-            shape, mode = (chunk_size, 1, n_fp, n_fp), 2
+        if fmode == 0:
+            vec = bf_t * jump
+
+        elif fmode == 1:
+            vec = bf_t * bf1
+
         else:
-            raise StopIteration
+            vec = - bf_t * bf2
 
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral)
+        status = sg.integrate(out, vec)
 
-        ap1, sg1 = self.get_approximation(state1)
-        sd1 = ap1.surface_data[self.region.name]
+        return status
 
-        ap2, sg2 = self.get_approximation(state2)
-        sd2 = ap2.surface_data[self.region.name]
+    def get_fargs(self, coef, virtual, state1, state2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
+        sg1, _ = self.get_mapping(state1)
+        sg2, _ = self.get_mapping(state2)
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            status = self.function(out, coef, state1(), state2(),
-                                   bf, sg, sd1.econn, sd2.econn, lchunk, mode)
-##             print out
-##             print nm.sum( out )
-##             pause()
-            yield out, lchunk, status
-    
+        if diff_var is None:
+            val1 = self.get(state1, 'val')
+            val2 = self.get(state2, 'val')
+            jump = val1 - val2 - coef
+            fmode = 0
+
+        else:
+            jump = None
+
+            if diff_var == self.get_arg_name('state_1'):
+                fmode = 1
+
+            else:
+                fmode = 2
+
+        return jump, sg1.bf, sg2.bf, sg, fmode

@@ -43,8 +43,6 @@
     (FMField *stateQ),
     (FMField *stateR),
     (FMField *state0),
-    (FMField *state1),
-    (FMField *state2),
     (FMField *vecMV),
     (FMField *mtxD),
     (FMField *ref_porosity),
@@ -300,12 +298,6 @@ int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 
 int32 dw_surface_ltr( FMField *out, FMField *bf,
 		      FMField *traction, SurfaceGeometry *sg );
-
-int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,
-	       FMField *bf, SurfaceGeometry *sg,
-	       int32 *conn1, int32 nEl1, int32 nEP1,
-	       int32 *conn2, int32 nEl2, int32 nEP2,
-	       int32 *elList, int32 elList_nRow, int32 mode );
 
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
 		     VolumeGeometry *vg );
