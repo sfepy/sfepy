@@ -439,7 +439,7 @@ class DiffusionTLTerm(HyperElasticTLBase):
 
         return (n_el, 1, dim, 1), state.dtype
 
-class SurfaceTractionTLTerm(VectorVector, Term):
+class SurfaceTractionTLTerm(HyperElasticBase):
     r"""
     :Description:
     Surface traction term in the total Lagrangian formulation, expressed
@@ -461,31 +461,53 @@ class SurfaceTractionTLTerm(VectorVector, Term):
     """
     name = 'dw_tl_surface_traction'
     arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f', 'inv_f']
     integration = 'surface_extra'
-    use_caches = {'finite_strain_surface_tl' : [['state']]}
 
+    family_function = staticmethod(terms.dq_tl_finite_strain_surface)
     function = staticmethod(terms.dw_tl_surface_traction)
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        trac_qp, virtual, state = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(virtual)
+    def compute_family_data(self, state):
+        ap, sg = self.get_approximation(state)
         sd = ap.surface_data[self.region.name]
 
-        n_fa, n_qp = ap.get_s_data_shape(self.integral,
-                                         self.region.name)[:2]
-        n_el, dim, n_ep = ap.get_v_data_shape()
-        self.data_shape = (n_fa, n_qp, dim, n_ep)
-        shape, mode = self.get_shape(diff_var, chunk_size)
+        vec = self.get_vector(state)
 
-        cache = self.get_cache('finite_strain_surface_tl', 0)
-        detF, invF = cache(['detF', 'invF'],
-                           self, 0, state=state, data_shape=self.data_shape)
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
+        shapes = {
+            'mtx_f' : (n_el, n_qp, dim, dim),
+            'det_f' : (n_el, n_qp, 1, 1),
+            'inv_f' : (n_el, n_qp, dim, dim),
+        }
+        data = Struct(name='tl_surface_family_data')
+        for key, shape in shapes.iteritems():
+            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
+
+        self.family_function(data.mtx_f,
+                             data.det_f,
+                             data.inv_f,
+                             vec, 0, sg, sd.fis, ap.econn)
+
+        return data
+
+    def check_shapes(self, mat, virtual, state):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        assert_(mat.shape == (n_el, n_qp, dim, dim))
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(virtual)
+        sd = ap.surface_data[self.region.name]
         bf = ap.get_base(sd.bkey, 0, self.integral)
 
-        assert_(trac_qp.shape[2] == trac_qp.shape[3] == dim)
+        fd = self.get_family_data(state, 'tl_surface_common',
+                                  self.family_data_names)
+        if diff_var is None:
+            fmode = 0
 
-        return (trac_qp, detF, invF, bf, sg, sd.fis), shape, mode
+        else:
+            fmode = 1
 
-    def needs_local_chunk(self):
-        return True, False
+        return mat, fd.det_f, fd.inv_f, bf, sg, sd.fis, fmode

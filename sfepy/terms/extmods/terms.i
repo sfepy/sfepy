@@ -216,7 +216,6 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
 			      FMField *bf, SurfaceGeometry *sg,
 			      int32 *fis, int32 nFa, int32 nFP,
-			      int32 *elList, int32 elList_nRow,
 			      int32 mode );
 
 int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,

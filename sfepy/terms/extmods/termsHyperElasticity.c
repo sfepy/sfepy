@@ -1694,10 +1694,9 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
 			      FMField *bf, SurfaceGeometry *sg,
 			      int32 *fis, int32 nFa, int32 nFP,
-			      int32 *elList, int32 elList_nRow,
 			      int32 mode )
 {
-  int32 ii, iel, iqp, idr, idc, iep, ifa, nEP, nQP, dim, ret = RET_OK;
+  int32 ii, iqp, idr, idc, iep, ifa, nEP, nQP, dim, ret = RET_OK;
   float64 *pn2, *pbfBGS, *paux;
   FMField *n2 = 0, *stn2 = 0, *trq = 0;
   FMField *trdq = 0, *aux = 0, *staux = 0, *bfBGS = 0;
@@ -1719,16 +1718,15 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
     fmf_createAlloc( &trdq, 1, nQP, dim * nEP, dim * nEP );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii]; // Local number w.r.t. the surface.
+  for (ii = 0; ii < out->nCell; ii++) {
     ifa = fis[ii*nFP+1];
 
     FMF_SetCell( out, ii );
     FMF_SetCell( traction, ii );
     FMF_SetCell( detF, ii );
     FMF_SetCell( mtxFI, ii );
-    FMF_SetCell( sg->normal, iel );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
     FMF_SetCell( bf, ifa );
 
     fmf_mulATB_nn( n2, mtxFI, sg->normal );
@@ -1740,7 +1738,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
       fmf_sumLevelsMulF( out, trq, sg->det->val );
 
     } else {
-      FMF_SetCell( sg->bfBGM, iel );
+      FMF_SetCell( sg->bfBGM, ii );
 
       fmf_mulATB_nn( bfBGS, mtxFI, sg->bfBGM );
 
