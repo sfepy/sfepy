@@ -1299,7 +1299,6 @@ class Term(Struct):
         """
         integration = self.geometry_types[variable.name]
         is_trace = self.arg_traces[variable.name]
-        shape_kind = get_shape_kind(integration)
 
         if is_trace:
             region, ig_map, ig_map_i = self.region.get_mirror_region()
@@ -1310,7 +1309,7 @@ class Term(Struct):
             ig = self.char_fun.ig
 
         out = variable.get_data_shape(ig, self.integral,
-                                      shape_kind, region.name)
+                                      integration, region.name)
         return out
 
     def get(self, variable, quantity_name):

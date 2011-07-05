@@ -1428,7 +1428,7 @@ class FieldVariable(Variable):
         self.geometries = geometries
 
     def get_data_shape(self, ig, integral,
-                       shape_kind='volume', region_name=None):
+                       integration='volume', region_name=None):
         """
         Get element data dimensions for given approximation.
 
@@ -1438,8 +1438,8 @@ class FieldVariable(Variable):
             The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
-        shape_kind : 'volume' or 'surface'
-            The kind of requested data shape.
+        integration : 'volume', 'surface', 'surface_extra' or 'point'
+            The term integration type.
         region_name : str
             The name of surface region, required when `shape_kind` is
             'surface'.
@@ -1461,24 +1461,28 @@ class FieldVariable(Variable):
         - `n_nod` = number of element nodes
         """
         ap = self.field.aps[ig]
-        if shape_kind == 'surface':
+        if integration in ('surface', 'surface_extra'):
             data_shape = ap.get_s_data_shape(integral, region_name)
 
-        elif shape_kind == 'volume':
+            if integration == 'surface_extra':
+                n_en = ap.get_v_data_shape(integral)[-1]
+                data_shape = data_shape[:-1] + (n_en,)
+
+        elif integration == 'volume':
             data_shape = ap.get_v_data_shape(integral)
 
             # Override ap.region with the required region.
             region = self.field.domain.regions[region_name]
-            data_shape = (region.shape[ig].n_cell,) + data_shape[1:]
+            data_shape = (region.get_n_cells(ig),) + data_shape[1:]
 
-        elif shape_kind == 'point':
+        elif integration == 'point':
             region = self.field.domain.regions[region_name]
             dofs = self.field.get_dofs_in_region(region, merge=True)
             data_shape = (dofs.shape[0], 0, 0, 1)
 
         else:
-            raise NotImplementedError('unsupported shape kind! (%s)'
-                                      % shape_kind)
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
 
         data_shape += (self.n_components,)
 
@@ -1785,8 +1789,7 @@ class FieldVariable(Variable):
             ap = field.aps[ig]
             conn = ap.get_connectivity(region, integration)
 
-            shape_kind = get_shape_kind(integration)
-            aux = self.get_data_shape(ig, integral, shape_kind, region.name)
+            aux = self.get_data_shape(ig, integral, integration, region.name)
             n_el, n_qp, dim, n_en, n_comp = aux
 
             if self.dtype == nm.float64:
