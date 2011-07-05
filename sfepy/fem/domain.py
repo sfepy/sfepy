@@ -341,25 +341,6 @@ class Domain( Struct ):
             elif flag[0] == -1:
                 output( 'warning: element orienation not checked' )
 
-    ##
-    # 19.07.2006, c
-    def get_orientation( self, ii, mode = 'edges' ):
-        group = self.groups[ii]
-
-        if mode == 'edges':
-            oo = nm.reshape(self.ed.signed_oris[ii],
-                            (group.shape.n_el, group.gel.n_edge))
-            ori = ((1 - oo) / 2).astype(nm.int32)
-
-        elif mode == 'faces':
-            output( 'orient faces' )
-            raise NotImplementedError
-        else:
-            output( mode )
-            raise ValueError
-        
-        return ori
-
     def has_faces( self ):
         return sum( [group.shape.n_face
                      for group in self.iter_groups()] ) > 0
