@@ -889,6 +889,21 @@ class Variable( Struct ):
         if self.history == 'previous':
             self.data[:] = [None, self.data[0].copy()]
 
+            # Advance evaluate cache.
+            for cache in self.evaluate_cache.itervalues():
+                for key in cache.keys():
+                    if key[4] == -1: # Previous time step.
+                        key0 = list(key)
+                        key0[4] = 0
+                        key0 = tuple(key0)
+
+                        if key0 in cache:
+                            cache[key] = cache[key0]
+                            cache.pop(key0)
+
+                        else:
+                            cache.pop(key)
+
         else:
             self.data.append(None)
 
