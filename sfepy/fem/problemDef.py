@@ -997,7 +997,12 @@ class ProblemDefinition( Struct ):
         from sfepy.fem.equations import get_expression_arg_names
 
         if try_equations and self.equations is not None:
-            variables = self.equations.variables.as_dict()
+            # Make a copy, so that possible variable caches are preserved.
+            variables = {}
+            for key, var in self.equations.variables.as_dict().iteritems():
+                var = var.copy(name=key)
+                var.clear_evaluate_cache()
+                variables[key] = var
 
         else:
             if var_dict is None:
