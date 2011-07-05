@@ -1397,19 +1397,16 @@ int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
 		    VolumeGeometry *vg, int32 transpose,
-		    int32 *elList, int32 elList_nRow,
 		    int32 mode )
 {
-  int32 ii, iel, nQP, nEP, nRow, sym, ret = RET_OK;
+  int32 ii, nQP, nEP, nRow, sym, ret = RET_OK;
   FMField *aux = 0, *jcitb = 0, *fjcitb = 0;
 
   if (mode == 0) {
     fmf_createAllocCopy( &aux, bf );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->det, iel );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->det, ii );
 
       FMF_SetCell( out, ii );
       FMF_SetCell( detF, ii );
@@ -1431,11 +1428,9 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
     fmf_createAlloc( &jcitb, 1, nQP, 1, nRow );
     fmf_createAlloc( &fjcitb, 1, nQP, nEP, nRow );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
 
       FMF_SetCell( out, ii );
       FMF_SetCell( mtxF, ii );
@@ -1456,10 +1451,8 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
     }
   } else if (mode == 2){ // de_volume
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->det, iel );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->det, ii );
 
       FMF_SetCell( out, ii );
       FMF_SetCell( detF, ii );
@@ -1469,11 +1462,9 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
     }
   } else { // mode == 3, de_rel_volume
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( vg->volume, iel );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->det, ii );
+      FMF_SetCell( vg->volume, ii );
 
       FMF_SetCell( out, ii );
       FMF_SetCell( detF, ii );
@@ -1593,11 +1584,9 @@ int32 dw_ul_volume( FMField *out, FMField *bf,
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,
 		       FMField *mtxF, FMField *detF,
-		       VolumeGeometry *vg,
-		       int32 *elList, int32 elList_nRow,
-		       int32 mode )
+		       VolumeGeometry *vg, int32 mode )
 {
-  int32 ii, iel, iqp, dim, nEP, nQP, ret = RET_OK;
+  int32 ii, iqp, dim, nEP, nQP, ret = RET_OK;
   float64 val;
   FMField *gtd = 0, *gtdg = 0, *dgp = 0, *gtdgp = 0;
   FMField *coef = 0, *perm = 0, *mtxFI = 0, *aux = 0, *mtxK = 0, *w_qp = 0;
@@ -1625,12 +1614,10 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
     fmf_createAlloc( &w_qp, 1, nQP, dim, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
     FMF_SetCell( mtxF, ii );
     FMF_SetCell( detF, ii );
     FMF_SetCell( mtxD, ii );
@@ -1654,7 +1641,7 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
       fmf_mulAB_nn( aux, mtxFI, perm );
       fmf_mulABT_nn( mtxK, aux, mtxFI );
       fmf_mul( mtxK, detF->val );
-    
+
       if (mode == 1) {
 	fmf_mulATB_nn( gtd, vg->bfGM, mtxK );
 	fmf_mulAB_nn( gtdg, gtd, vg->bfGM );
@@ -1667,7 +1654,7 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
       }
     } else {
       // Diffusion velocity averaged in elements.
-      FMF_SetCell( vg->volume, iel );
+      FMF_SetCell( vg->volume, ii );
       FMF_SetCell( pressure_grad, ii );
 
       fmf_mulABT_nn( aux, perm, mtxFI );

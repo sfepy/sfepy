@@ -2,9 +2,7 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_hyperelastic_base \
-     import CouplingVectorScalarHE, HyperElasticBase
-from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
+from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
 
 _msg_missing_data = 'missing family data!'
 
@@ -208,7 +206,7 @@ class BulkPenaltyTLTerm(HyperElasticTLBase):
     stress_function = staticmethod(terms.dq_tl_he_stress_bulk)
     tan_mod_function = staticmethod(terms.dq_tl_he_tan_mod_bulk)
 
-class BulkPressureTLTerm(CouplingVectorScalarHE, HyperElasticTLBase):
+class BulkPressureTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic bulk pressure term. Stress
@@ -223,117 +221,100 @@ class BulkPressureTLTerm(CouplingVectorScalarHE, HyperElasticTLBase):
         state   : :math:`\ul{u}`,
         state_p : :math:`p`
     """
-
     name = 'dw_tl_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
-    use_caches = {'finite_strain_tl' : [['state']],
-                  'state_in_volume_qp' : [['state_p']]}
+    family_data_names = ['det_f', 'sym_inv_c']
 
-    term_function = {'stress' : terms.dq_tl_stress_bulk_pressure,
-                     'tangent_modulus_u' : terms.dq_tl_tan_mod_bulk_pressure_u}
+    family_function = staticmethod(terms.dq_finite_strain_tl)
+    weak_function = staticmethod(terms.dw_he_rtm)
+    weak_dp_function = staticmethod(terms.dw_tl_volume)
 
-    def __init__(self, *args, **kwargs):
-        Term.__init__(self, *args, **kwargs)
+    stress_function = staticmethod(terms.dq_tl_stress_bulk_pressure)
+    tan_mod_u_function = staticmethod(terms.dq_tl_tan_mod_bulk_pressure_u)
 
-        self.function = {
-            'element_contribution' : terms.dw_he_rtm,
-            'element_contribution_dp' : terms.dw_tl_volume,
-        }
-        igs = self.region.igs
-        dummy = nm.array([0], ndmin=4)
-        self.crt_data = Struct(stress={}.fromkeys(igs, None),
-                               tan_mod=dummy)
-
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        virtual, state, state_p = self.get_args(**kwargs)
-        apv, vgv = self.get_approximation(virtual)
-        aps, vgs = self.get_approximation(state_p)
-
-        self.set_data_shape(apv, aps)
-        shape, mode = self.get_shape_grad(diff_var, chunk_size)
-
-        cache = self.get_cache('finite_strain_tl', 0)
-        family_data = cache(['detF', 'invC'], self, 0, state=state)
-
-        if term_mode is None:
-
-            if mode < 2:
-                ig = self.char_fun.ig
-
-                crt_data = self.compute_crt_data(family_data, mode, **kwargs)
-                if mode == 0:
-                    self.crt_data.stress[ig] = stress = crt_data
-
-                else:
-                    self.crt_data.tan_mod = crt_data
-
-                    stress = self.crt_data.stress[ig]
-                    if stress is None:
-                        stress = self.compute_crt_data(family_data, 0, **kwargs)
-
-                fun = self.function['element_contribution']
-
-                mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
-
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, stress, self.crt_data.tan_mod, mtxF, detF,
-                                 vgv, chunk, mode, 0)
-                    yield out, chunk, status
-            else:
-                fun = self.function['element_contribution_dp']
-
-                mtxF, invC, detF = cache(['F', 'invC', 'detF'],
-                                         self, 0, state=state)
-
-                bf = aps.get_base('v', 0, self.integral)
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, bf, mtxF, invC, detF, vgv, 1, chunk, 1)
-                    yield -out, chunk, status
-
-
-        elif term_mode == 'd_eval':
-            raise NotImplementedError
-
-        elif term_mode in ['strain', 'stress']:
-
-            if term_mode == 'strain':
-                out_qp = cache('E', self, 0, state=state)
-
-            elif term_mode == 'stress':
-                out_qp = self.compute_crt_data(family_data, 0, **kwargs)
-
-            shape = (chunk_size, 1) + out_qp.shape[2:]
-            for out, chunk in self.char_fun(chunk_size, shape):
-                status = vgv.integrate_chunk(out, out_qp[chunk], chunk)
-                out1 = out / vgv.variable(2)[chunk]
-
-            yield out1, chunk, status
-
-    def compute_crt_data(self, family_data, mode, **kwargs):
-        detF, invC = family_data
-
-        p, = self.get_args(['state_p'], **kwargs)
-
-        cache = self.get_cache('state_in_volume_qp', 0)
-        p_qp = cache('state', self, 0, state=p, get_vector=self.get_vector)
+    def compute_data(self, family_data, mode, **kwargs):
+        det_f, sym_inv_c = family_data.det_f, family_data.sym_inv_c
+        p_qp = family_data.p_qp
 
         if mode == 0:
-            out = nm.empty_like(invC)
-            fun = self.term_function['stress']
+            out = nm.empty_like(sym_inv_c)
+            fun = self.stress_function
+
         elif mode == 1:
-            shape = list(invC.shape)
+            shape = list(sym_inv_c.shape)
             shape[-1] = shape[-2]
             out = nm.empty(shape, dtype=nm.float64)
-            fun = self.term_function['tangent_modulus_u']
+            fun = self.tan_mod_u_function
+
         else:
             raise ValueError('bad mode! (%d)' % mode)
 
-        fun(out, p_qp, detF, invC)
+        fun(out, p_qp, det_f, sym_inv_c)
 
         return out
 
-class VolumeTLTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
+    def get_fargs(self, virtual, state, state_p,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgv, _ = self.get_mapping(state)
+
+        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
+        fd.p_qp = self.get(state_p, 'val')
+
+        if mode == 'weak':
+            ig = self.char_fun.ig
+
+            if diff_var != state_p.name:
+                if diff_var is None:
+                    stress = self.compute_data(fd, 0, **kwargs)
+                    self.stress_cache[ig] = stress
+                    tan_mod = nm.array([0], ndmin=4)
+
+                    fmode = 0
+
+                else:
+                    stress = self.stress_cache[ig]
+                    if stress is None:
+                        stress = self.compute_data(fd, 0, **kwargs)
+
+                    tan_mod = self.compute_data(fd, 1, **kwargs)
+                    fmode = 1
+
+                fargs = (self.weak_function,
+                         stress, tan_mod, fd.mtx_f, fd.det_f, vgv, fmode, 0)
+
+            else:
+                vgs, _ = self.get_mapping(state_p)
+
+                fargs =  (self.weak_dp_function,
+                          -vgs.bf, fd.mtx_f, fd.sym_inv_c, fd.det_f, vgv, 1, 1)
+
+            return fargs
+
+        elif mode == 'el_avg':
+            if term_mode == 'strain':
+                out_qp = fd.green_strain
+
+            elif term_mode == 'stress':
+                out_qp = self.compute_data(fd, 0, **kwargs)
+
+            else:
+                raise ValueError('unsupported term mode in %s! (%s)'
+                                 % (self.name, term_mode))
+
+            return self.integrate, out_qp, vgv, 1
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, virtual, state, state_p,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
+
+        return (n_el, 1, sym, 1), state.dtype
+
+class VolumeTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Volume term (weak form) in the total Lagrangian formulation.
@@ -354,42 +335,48 @@ class VolumeTLTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
     """
     name = 'dw_tl_volume'
     arg_types = ('virtual', 'state')
-    use_caches = {'finite_strain_tl' : [['state',
-                                         {'F' : (2, 2),
-                                          'invC' : (2, 2),
-                                          'detF' : (2, 2)}]]}
+    family_data_names = ['mtx_f', 'det_f', 'sym_inv_c']
 
     function = staticmethod(terms.dw_tl_volume)
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        virtual, state = self.get_args( **kwargs )
-        term_mode = kwargs.get('term_mode')
+    def get_fargs(self, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgs, _ = self.get_mapping(virtual)
+        vgv, _ = self.get_mapping(state)
 
-        apv, vgv = self.get_approximation(state)
-        aps, vgs = self.get_approximation(virtual)
+        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
 
-        self.set_data_shape(apv, aps)
+        if mode == 'weak':
+            if diff_var is None:
+                fmode = 0
 
-        cache = self.get_cache('finite_strain_tl', 0)
-        ih = self.arg_steps[state.name] # issue 104!
-        mtxF, invC, detF = cache(['F', 'invC', 'detF'], self, ih, state=state)
+            else:
+                fmode = 1
 
-        if term_mode == 'volume':
-            n_el, _, _, _ = self.data_shape_s
-            shape, mode = (n_el, 1, 1, 1), 2
+        elif mode == 'eval':
+            if term_mode == 'volume':
+                fmode = 2
 
-        elif term_mode == 'rel_volume':
-            n_el, _, _, _ = self.data_shape_s
-            shape, mode = (n_el, 1, 1, 1), 3
+            elif term_mode == 'rel_volume':
+                fmode = 3
+
+            else:
+                raise ValueError('unsupported term evaluation mode in %s! (%s)'
+                                 % (self.name, term_mode))
 
         else:
-            shape, mode = self.get_shape_div(diff_var, chunk_size)
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        bf = aps.get_base('v', 0, self.integral)
+        return vgs.bf, fd.mtx_f, fd.sym_inv_c, fd.det_f, vgv, 0, fmode
 
-        return (bf, mtxF, invC, detF, vgv, 0), shape, mode
+    def get_eval_shape(self, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-class DiffusionTLTerm(ScalarScalar, Term):
+        return (n_el, 1, 1, 1), state.dtype
+
+class DiffusionTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Diffusion term in the total Lagrangian formulation with
@@ -413,44 +400,44 @@ class DiffusionTLTerm(ScalarScalar, Term):
     """
     name = 'dw_tl_diffusion'
     arg_types = ('material_1', 'material_2', 'virtual', 'state', 'parameter')
-    use_caches = {'grad_scalar' : [['state']],
-                  'finite_strain_tl' : [['parameter',
-                                         {'F' : (2, 2),
-                                          'invC' : (2, 2),
-                                          'detF' : (2, 2)}]]}
+    family_data_names = ['mtx_f', 'det_f']
 
     function = staticmethod(terms.dw_tl_diffusion)
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        perm, ref_porosity, virtual, state, par = self.get_args(**kwargs)
-        term_mode = kwargs.get('term_mode')
+    def get_fargs(self, perm, ref_porosity, virtual, state, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgv, _ = self.get_mapping(parameter)
 
-        apv, vgv = self.get_approximation(par)
-        aps, vgs = self.get_approximation(virtual)
+        fd = self.get_family_data(parameter, 'tl_common',
+                                  self.family_data_names)
+        grad = self.get(state, 'grad')
 
-        self.set_data_shape(aps)
+        if mode == 'weak':
+            if diff_var is None:
+                fmode = 0
 
-        cache = self.get_cache('finite_strain_tl', 0)
-        # issue 104!
-        if self.step == 0:
-            ih = 0
+            else:
+                fmode = 1
+
+        elif mode == 'el_avg':
+            if term_mode == 'diffusion_velocity':
+                fmode = 2
+
+            else:
+                raise ValueError('unsupported term evaluation mode in %s! (%s)'
+                                 % (self.name, term_mode))
+
         else:
-            ih = 1
-        mtxF, detF = cache(['F', 'detF'], self, ih, state=par)
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        if term_mode == 'diffusion_velocity':
-            n_el, n_qp, dim, n_ep = self.data_shape
-            shape, mode = (n_el, 1, dim, 1), 2
+        return grad, perm, ref_porosity, fd.mtx_f, fd.det_f, vgv, fmode
 
-        else:
-            shape, mode = self.get_shape(diff_var, chunk_size)
-            if self.step == 0: # Just init the history in step 0.
-                raise StopIteration
+    def get_eval_shape(self, perm, ref_porosity, virtual, state, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        cache = self.get_cache('grad_scalar', 0)
-        gp = cache('grad', self, 0, state=state, get_vector=self.get_vector)
-
-        return (gp, perm, ref_porosity, mtxF, detF, vgv), shape, mode
+        return (n_el, 1, dim, 1), state.dtype
 
 class SurfaceTractionTLTerm(VectorVector, Term):
     r"""
