@@ -83,7 +83,7 @@ class SurfaceJumpTerm(Term):
         else:
             jump = None
 
-            if diff_var == self.get_arg_name('state_1'):
+            if diff_var == state1.name:
                 fmode = 1
 
             else:
