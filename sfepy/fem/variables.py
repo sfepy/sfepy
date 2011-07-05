@@ -939,15 +939,23 @@ class Variable( Struct ):
             The DOF vector. If `derivative` is None: a view of the data vector,
              otherwise: required derivative of the DOF vector
              at time step given by `step`.
+
+        Notes
+        -----
+        If the previous time step is requested in step 0, the step 0
+        DOF vector is returned instead.
         """
         if derivative is None:
             data = self.data[step]
-            if data is not None:
-                return data[self.indx]
+            if data is None:
+                if (self.step == 0) and (step == -1):
+                    data = self.data[0]
 
-            else:
+            if data is None:
                 raise ValueError('data of variable are not set! (%s, step %d)' \
                                  % (self.name, step))
+
+            return data[self.indx]
 
         else:
             if self.history is None:
