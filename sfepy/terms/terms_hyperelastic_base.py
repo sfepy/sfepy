@@ -66,13 +66,13 @@ class HyperElasticBase(Term):
         igs = self.region.igs
         self.stress_cache = {}.fromkeys(igs, None)
 
-    def get_family_data(self, state, data_names):
+    def get_family_data(self, state, cache_name, data_names):
         """
         Note
         ----
         `data_names` argument is ignored for now.
         """
-        cache = state.evaluate_cache.setdefault('tl_common', {})
+        cache = state.evaluate_cache.setdefault(cache_name, {})
 
         vg, _, key = self.get_mapping(state, return_key=True)
 

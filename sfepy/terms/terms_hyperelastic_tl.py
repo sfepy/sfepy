@@ -19,11 +19,12 @@ class HyperElasticTLBase(HyperElasticBase):
     The common (family) data are cached in the evaluate cache of state
     variable.
     """
-    family_function = staticmethod(terms.dq_finite_strain_tl)
-    weak_function = staticmethod(terms.dw_he_rtm)
     arg_types = (('material', 'virtual', 'state'),
                  ('material', 'parameter_1', 'parameter_2'))
     arg_types = ('material', 'virtual', 'state')
+
+    family_function = staticmethod(terms.dq_finite_strain_tl)
+    weak_function = staticmethod(terms.dw_he_rtm)
 
     @staticmethod
     def integrate(out, val_qp, vg, fmode):
@@ -64,7 +65,6 @@ class HyperElasticTLBase(HyperElasticBase):
                              data.sym_inv_c,
                              data.green_strain,
                              vec, 0, vg, ap.econn)
-
         return data
 
     def compute_stress(self, mat, family_data, **kwargs):
@@ -95,13 +95,13 @@ class HyperElasticTLBase(HyperElasticBase):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
 
-        family_data = self.get_family_data(state, self.family_data_names)
+        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
 
         if mode == 'weak':
             ig = self.char_fun.ig
 
             if diff_var is None:
-                stress = self.compute_stress(mat, family_data, **kwargs)
+                stress = self.compute_stress(mat, fd, **kwargs)
                 self.stress_cache[ig] = stress
                 tan_mod = nm.array([0], ndmin=4)
 
@@ -110,21 +110,20 @@ class HyperElasticTLBase(HyperElasticBase):
             else:
                 stress = self.stress_cache[ig]
                 if stress is None:
-                    stress = self.compute_stress(mat, family_data, **kwargs)
+                    stress = self.compute_stress(mat, fd, **kwargs)
 
-                tan_mod = self.compute_tan_mod(mat, family_data, **kwargs)
+                tan_mod = self.compute_tan_mod(mat, fd, **kwargs)
                 fmode = 1
 
-            mtx_f, det_f = family_data.mtx_f, family_data.det_f
-
-            return self.weak_function, stress, tan_mod, mtx_f, det_f, vg, fmode, 0
+            return (self.weak_function,
+                    stress, tan_mod, fd.mtx_f, fd.det_f, vg, fmode, 0)
 
         elif mode == 'el_avg':
             if term_mode == 'strain':
-                out_qp = family_data.green_strain
+                out_qp = fd.green_strain
 
             elif term_mode == 'stress':
-                out_qp = self.compute_stress(mat, family_data, **kwargs)
+                out_qp = self.compute_stress(mat, fd, **kwargs)
 
             else:
                 raise ValueError('unsupported term mode in %s! (%s)'
