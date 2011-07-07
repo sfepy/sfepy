@@ -1,6 +1,5 @@
 import numpy as nm
 
-from sfepy.base.base import assert_
 from sfepy.terms.terms import Term, terms
 
 class DivGradTerm(Term):
@@ -384,9 +383,7 @@ class DivETerm(Term):
 
         return (n_el, 1, 1, 1), parameter.dtype
 
-##
-# 26.07.2007, c
-class GradDivStabilizationTerm( Term ):
+class GradDivStabilizationTerm(Term):
     r"""
     :Description:
     Grad-div stabilization term ( :math:`\gamma` is a global stabilization
@@ -405,31 +402,23 @@ class GradDivStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
 
     function = staticmethod(terms.dw_st_grad_div)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        gamma, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+    def get_fargs(self, gamma, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
+            div = self.get(state, 'div')
+            fmode = 0
+
         else:
-            raise StopIteration
+            div = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, gamma,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        return div, gamma, vg, fmode
 
-##
-# 31.07.2007, c
 from sfepy.terms.termsLaplace import LaplaceTerm
-class PSPGPStabilizationTerm( LaplaceTerm ):
+class PSPGPStabilizationTerm(LaplaceTerm):
     r"""
     :Description:
     PSPG stabilization term, pressure part ( :math:`\tau` is a local
@@ -446,9 +435,7 @@ class PSPGPStabilizationTerm( LaplaceTerm ):
     """
     name = 'dw_st_pspg_p'
 
-##
-# 31.07.2007, c
-class PSPGCStabilizationTerm( Term ):
+class PSPGCStabilizationTerm(Term):
     r"""
     :Description:
     PSPG stabilization term, convective part ( :math:`\tau` is a local
@@ -469,36 +456,24 @@ class PSPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_pspg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        tau, virtual, par, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
+
+    def get_fargs(self, tau, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sap, svg = self.get_approximation(virtual)
+        vap, vvg = self.get_approximation(state)
+
+        val_qp = self.get(parameter, 'val')
+        conn = vap.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
-            shape = (chunk_size, 1, n_epr, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape(self.integral)[3]
-            shape = (chunk_size, 1, n_epr, dim * n_epc )
-            mode = 1
+            fmode = 0
+
         else:
-            raise StopIteration
+            fmode = 1
 
-        vec1 = par()
-        vec2 = state()
-        bf = apc.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    tau, bf, vgr, vgc,
-                                    apc.econn, chunk, mode )
-            yield out, chunk, status
+        return val_qp, state(), tau, svg, vvg, conn, fmode
 
-##
-# 31.07.2007, c
-class SUPGPStabilizationTerm( Term ):
+class SUPGPStabilizationTerm(Term):
     r"""
     :Description:
     SUPG stabilization term, pressure part ( :math:`\delta` is a local
@@ -519,35 +494,25 @@ class SUPGPStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_supg_p)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        delta, virtual, par, state = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
+
+    def get_fargs(self, delta, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vvg, _ = self.get_mapping(virtual)
+        svg, _ = self.get_mapping(state)
+
+        val_qp = self.get(parameter, 'val')
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_epr, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape(self.integral)[3]
-            shape = (chunk_size, 1, dim * n_epr, n_epc )
-            mode = 1
+            grad = self.get(state, 'grad')
+            fmode = 0
+
         else:
-            raise StopIteration
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
 
-        vec1 = par()
-        vec2 = state()
-        bf = apr.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    delta, bf, vgr, vgc,
-                                    apr.econn, apc.econn, chunk, mode )
-            yield out, chunk, status
+        return val_qp, grad, delta, vvg, svg, fmode
 
-##
-# 31.07.2007, c
-class SUPGCStabilizationTerm( Term ):
+class SUPGCStabilizationTerm(Term):
     r"""
     :Description:
     SUPG stabilization term, convective part ( :math:`\delta` is a local
@@ -568,26 +533,18 @@ class SUPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_supg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        delta, virtual, par, state = self.get_args( **kwargs )
+
+    def get_fargs(self, delta, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+        val_qp = self.get(parameter, 'val')
+        conn = ap.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+            fmode = 0
 
-        vec1 = par()
-        vec2 = state()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    delta, bf, vg,
-                                    ap.econn, chunk, mode )
-            yield out, chunk, status
+        else:
+            fmode = 1
+
+        return val_qp, state(), delta, vg, conn, fmode
