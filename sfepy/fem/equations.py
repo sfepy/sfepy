@@ -604,8 +604,6 @@ class Equations( Container ):
             dictionary is returned instead, with keys given by
             `block_name` part of the individual equation names.
         """
-        self.invalidate_term_caches()
-
         self.set_variables_from_state(state)
 
         if by_blocks:

@@ -936,6 +936,8 @@ class Variable( Struct ):
             self.data[step] = data
             self.indx = indx
 
+        self.invalidate_evaluate_cache(step=step)
+
     def __call__(self, step=0, derivative=None, dt=None):
         """
         Return vector of degrees of freedom of the variable.
@@ -1696,16 +1698,17 @@ class FieldVariable(Variable):
         """
         self.evaluate_cache = {}
 
-    def invalidate_evaluate_cache(self):
+    def invalidate_evaluate_cache(self, step=0):
         """
-        Invalidate current time step data in evaluate cache.
+        Invalidate variable data in evaluate cache for time step given
+        by `step`  (0 is current, -1 previous, ...).
 
         This should be done, for example, prior to every nonlinear
         solver iteration.
         """
         for cache in self.evaluate_cache.itervalues():
             for key in cache.keys():
-                if key[4] == 0: # Current time step.
+                if key[4] == step: # Given time step to clear.
                     cache.pop(key)
 
     def evaluate(self, ig, mode='val',
