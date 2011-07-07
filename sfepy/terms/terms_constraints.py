@@ -26,67 +26,30 @@ class NonPenetrationTerm(Term):
                  ('state', 'virtual'))
     modes = ('grad', 'div')
     integration = 'surface'
-    use_caches = {'state_in_surface_qp' : [['state']]}
 
-    def __call__(self, diff_var=None, **kwargs):
-        if self.mode == 'grad':
-            virtual, state = self.get_args(**kwargs)
-            ap, sg = self.get_approximation(virtual)
-
-            cache = self.get_cache('state_in_surface_qp', 0)
-
-        else:
-            state, virtual = self.get_args(**kwargs)
-            ap, sg = self.get_approximation(state)
-
-            cache = self.get_cache('state_in_surface_qp', 0)
-
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-        rdim, cdim = virtual.n_components, state.n_components
-
-        if diff_var is None:
-            shape = (n_fa, 1, rdim * n_fp, 1)
-
-        elif diff_var == self.get_arg_name('state'):
-            shape = (n_fa, 1, rdim * n_fp, cdim * n_fp)
-
-        else:
-            raise StopIteration
-
-        sd = ap.surface_data[self.region.name]
-
-        # ap corresponds to \ul{u} field.
-        bf = ap.get_base(sd.face_type, 0, integral=self.integral)
-        ebf = nm.zeros((bf.shape[0], dim, n_fp * dim),
-                       dtype=nm.float64)
-        for ir in xrange(dim):
-            ebf[:, ir, ir*n_fp:(ir+1)*n_fp] = bf[:,0,:]
-
+    @staticmethod
+    def function(out, val_qp, ebf, bf, sg, diff_var, mode):
+        """
+        `ebf` belongs to vector variable, `bf` to scalar variable.
+        """
         normals = sg.variable(0)
-
-        out = nm.zeros(shape, dtype=nm.float64)
-
-        lchunk = nm.arange(n_fa, dtype=nm.int32)
+        n_fa = out.shape[0]
 
         if diff_var is None:
-            vec_qp = cache('state', self, 0,
-                           state=state, get_vector=self.get_vector)
-
-            if self.mode == 'grad':
+            if mode == 'grad':
                 ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
 
-                nl = normals * vec_qp
+                nl = normals * val_qp
                 eftnl = dot_sequences(ebf_t, nl)
-                sg.integrate_chunk(out, eftnl, lchunk, 1)
+                status = sg.integrate(out, eftnl, 0)
 
             else:
                 bf_t = nm.tile(bf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
 
-                ntu = (normals * vec_qp).sum(axis=-2)[...,None]
+                ntu = (normals * val_qp).sum(axis=-2)[...,None]
                 ftntu = (bf_t * ntu)
 
-                sg.integrate_chunk(out, ftntu, lchunk, 1)
+                status = sg.integrate(out, ftntu, 0)
 
         else:
             ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
@@ -95,11 +58,33 @@ class NonPenetrationTerm(Term):
             eftn = dot_sequences(ebf_t, normals)
             eftnf = eftn * bf_
 
-            if self.mode == 'grad':
-                sg.integrate_chunk(out, eftnf, lchunk, 1)
+            if mode == 'grad':
+                status = sg.integrate(out, eftnf, 0)
 
             else:
                 ftntef = nm.ascontiguousarray(eftnf.transpose((0, 1, 3, 2)))
-                sg.integrate_chunk(out, ftntef, lchunk, 1)
+                status = sg.integrate(out, ftntef, 0)
 
-        yield out, lchunk, 0
+        return status
+
+    def get_fargs(self, vvar, svar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if self.mode == 'grad':
+            qp_var = svar
+
+        else:
+            qp_var = vvar
+
+        val_qp = self.get(qp_var, 'val')
+
+        vsg, _ = self.get_mapping(vvar)
+        ssg, _ = self.get_mapping(svar)
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(vvar)
+
+        # Expand base corresponding to \ul{u} for all dofs.
+        bf = vsg.bf
+        ebf = nm.zeros((bf.shape[0], dim, n_fn * dim), dtype=nm.float64)
+        for ir in xrange(dim):
+            ebf[:, ir, ir*n_fn:(ir+1)*n_fn] = bf[:, 0, :]
+
+        return val_qp, ebf, ssg.bf, vsg, diff_var, self.mode
