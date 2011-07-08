@@ -161,7 +161,7 @@ class Test( TestCommon ):
 
         ok = True
         for ii, region_name in enumerate( region_names ):
-            flux_term = 'd_hdpm_surfdvel.1.%s( m.K, t )' % region_name
+            flux_term = 'd_surface_flux.1.%s( m.K, t )' % region_name
             val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
             rvec = get_state( aux, 't', True )
