@@ -143,6 +143,12 @@ class MassScalarWTerm(MassScalarTerm):
                                          material=material, **kwargs)
         return fargs
 
+    def get_eval_shape(self, material, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
+
 class MassScalarSurfaceTerm(MassScalarTerm):
     r"""
     :Description:
