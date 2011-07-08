@@ -178,18 +178,13 @@ int32 d_mass_scalar( FMField *out, FMField *coef,
   - 09.03.2009, c
 */
 int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
-			   FMField *state, int32 offset,
-			   FMField *bf, SurfaceGeometry *sg,
-			   int32 *conn, int32 nEl, int32 nEP,
-			   int32 *elList, int32 elList_nRow,
+			   FMField *state, FMField *bf, SurfaceGeometry *sg,
 			   int32 isDiff )
 {
-  int32 ii, iel, nFP, ret = RET_OK;
-  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0, *cftf = 0;
+  int32 ii, nFP, ret = RET_OK;
+  FMField *ftfp = 0, *ftf = 0, *cftf = 0;
 
   nFP = bf->nCol;
-
-  /* output( "%d %d %d %d %d\n", offset, nEl, nEP, bf->nLev, elList_nRow ); */
 
   if (isDiff) {
     fmf_createAlloc( &ftf, 1, sg->nQP, nFP, nFP );
@@ -197,11 +192,9 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
 
     fmf_mulATB_nn( ftf, bf, bf );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-      
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( sg->det, iel );
+      FMF_SetCell( sg->det, ii );
       if (coef->nCell > 1) {
 	FMF_SetCell( coef, ii );
       }
@@ -212,112 +205,30 @@ int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
       ERR_CheckGo( ret );
     }
   } else {
-    state->val = FMF_PtrFirst( state ) + offset;
-
-    fmf_createAlloc( &st, 1, 1, 1, nFP );
-    fmf_createAlloc( &fp, 1, sg->nQP, 1, 1 );
     fmf_createAlloc( &ftfp, 1, sg->nQP, nFP, 1 );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( sg->det, iel );
+      FMF_SetCell( sg->det, ii );
       if (coef->nCell > 1) {
 	FMF_SetCell( coef, ii );
       }
+      FMF_SetCell( state, ii );
 
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-      bf_act( fp, bf, st );
-      bf_actt( ftfp, bf, fp );
+      bf_actt( ftfp, bf, state );
       fmf_mulAF( ftfp, ftfp, coef->val );
       fmf_sumLevelsMulF( out, ftfp, sg->det->val );
 
       ERR_CheckGo( ret );
     }
   }
-  
+
 end_label:
   if (isDiff) {
     fmf_freeDestroy( &ftf );
     fmf_freeDestroy( &cftf );
   } else {
-    fmf_freeDestroy( &st );
-    fmf_freeDestroy( &fp );
     fmf_freeDestroy( &ftfp );
-  }
-
-  return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "dw_mass_scalar_fine_coarse"
-/*!
-  @par Revision history:
-  - 05.09.2007, c
-*/
-int32 dw_mass_scalar_fine_coarse( FMField *out, FMField *state, int32 offset,
-				  FMField *bf, FMField *cbfs,
-				  VolumeGeometry *vg,
-				  int32 *conn, int32 nEl, int32 nEP,
-				  int32 *iemap, int32 iemap_nRow,
-				  int32 *elList, int32 elList_nRow,
-				  int32 isDiff )
-{
-  int32 ii, iel, dim, nQP, nEPR, ret = RET_OK;
-  FMField *st = 0, *fp = 0, *ftfp = 0, *ftf = 0;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-  nEPR = vg->bfGM->nCol;
-
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-  if (isDiff) {
-    fmf_createAlloc( &ftf, 1, nQP, nEPR, nEP );
-
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( out, ii );
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( cbfs, iel );
-
-      fmf_mulATB_nn( ftf, bf, cbfs );
-      fmf_sumLevelsMulF( out, ftf, vg->det->val );
-
-      ERR_CheckGo( ret );
-    }
-  } else {
-    state->val = FMF_PtrFirst( state ) + offset;
-
-    fmf_createAlloc( &st, 1, 1, 1, nEP );
-    fmf_createAlloc( &fp, 1, nQP, 1, 1 );
-    fmf_createAlloc( &ftfp, 1, nQP, nEPR, 1 );
-
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( out, ii );
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( cbfs, iel );
-
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iemap[iel] );
-
-      bf_act( fp, cbfs, st );
-      bf_actt( ftfp, bf, fp );
-      fmf_sumLevelsMulF( out, ftfp, vg->det->val );
-
-      ERR_CheckGo( ret );
-    }
-  }
-
- end_label:
-  if (isDiff) {
-    fmf_freeDestroy( &ftf );
-  } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &fp ); 
-    fmf_freeDestroy( &ftfp ); 
   }
 
   return( ret );

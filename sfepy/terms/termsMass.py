@@ -1,8 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.terms.terms import Term, terms, reorder_dofs_on_mirror
-from sfepy.terms.terms_base import ScalarScalar
+from sfepy.terms.terms import Term, terms
 
 class MassVectorTerm(Term):
     r"""
@@ -65,7 +64,7 @@ class MassScalarTerm(Term):
 
     def get_fargs(self, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
+        geo, _ = self.get_mapping(state)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
         coef = kwargs.get('material')
@@ -81,13 +80,13 @@ class MassScalarTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vg.bf, vg, fmode
+            return coef, val_qp, geo.bf, geo, fmode
 
         elif mode == 'eval':
             val_qp1 = self.get(virtual, 'val')
             val_qp2 = self.get(state, 'val')
 
-            return coef, val_qp1, val_qp2, vg.bf, vg
+            return coef, val_qp1, val_qp2, geo.bf, geo
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
@@ -99,7 +98,7 @@ class MassScalarTerm(Term):
 
         return (n_el, 1, 1, 1), state.dtype
 
-    def set_arg_types( self ):
+    def set_arg_types(self):
         if self.mode == 'weak':
             self.function = terms.dw_mass_scalar
 
@@ -144,7 +143,7 @@ class MassScalarWTerm(MassScalarTerm):
                                          material=material, **kwargs)
         return fargs
 
-class MassScalarSurfaceTerm( ScalarScalar, Term ):
+class MassScalarSurfaceTerm(MassScalarTerm):
     r"""
     :Description:
     Scalar field mass matrix/rezidual on a surface.
@@ -163,55 +162,14 @@ class MassScalarSurfaceTerm( ScalarScalar, Term ):
 
     function = staticmethod(terms.dw_surf_mass_scalar)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( ['virtual', 'state'], **kwargs )
-        ap, sg = self.get_approximation(virtual)
-        aps, sgs = self.get_approximation(state)
-
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        vec = self.get_vector( state )
-        if self.region.name in ap.surface_data:
-            sd = ap.surface_data[self.region.name]
-        else:
-            sd = aps.surface_data[self.region.name]
-
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-
-        is_trace = self.arg_traces[state.name]
-        if is_trace:
-            mirror_region, _, _ = self.region.get_mirror_region()
-            sds = aps.surface_data[mirror_region.name]
-            econn = sds.get_connectivity(state.is_surface)
-            dc_type = self.get_dof_conn_type()
-            ig = self.region.igs[0]
-            rgnt = virtual.get_global_node_tab(dc_type, ig);
-            cgnt = state.get_global_node_tab(dc_type, ig,
-                                             is_trace=is_trace);
-            econn = reorder_dofs_on_mirror(econn, cgnt, rgnt)
-        else:
-            econn = sd.get_connectivity(state.is_surface)
-
-        if 'material' in self.arg_types:
-            coef, = self.get_args(['material'], **kwargs)
-        else:
-            coef = nm.ones((1, self.data_shape[1], 1, 1), dtype=nm.float64)
-
-        if state.is_real():
-            fargs = coef, vec, 0, bf, sgs, econn
-        else:
-            ac = nm.ascontiguousarray
-            fargs = [(coef, ac(vec.real), 0, bf, sgs, econn),
-                     (coef, ac(vec.imag), 0, bf, sgs, econn)]
-            mode += 1j
-
-        return fargs, shape, mode
+    def set_arg_types(self):
+        pass
 
 class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     r"""
     :Description:
-    Scalar field mass matrix/rezidual on a surface weighted by a scalar function.
+    Scalar field mass matrix/rezidual on a surface weighted by a scalar
+    function.
 
     :Definition:
     .. math::
@@ -224,6 +182,16 @@ class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     """
     name = 'dw_surface_mass_scalar_w'
     arg_types = ('material', 'virtual', 'state')
+
+    def check_shapes(self, coef, virtual, state):
+        pass
+
+    def get_fargs(self, coef, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = MassScalarSurfaceTerm.get_fargs(self, virtual, state,
+                                                mode, term_mode, diff_var,
+                                                material=coef, **kwargs)
+        return fargs
 
 class BCNewtonTerm(MassScalarSurfaceTerm):
     r"""
@@ -243,70 +211,14 @@ class BCNewtonTerm(MassScalarSurfaceTerm):
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        shift, = self.get_args(['material_2'], **kwargs)
-        call = MassScalarSurfaceTerm.get_fargs
-        fargs, shape, mode = call(self, diff_var, chunk_size, **kwargs)
+    def check_shapes(self, alpha, p_outer, virtual, state):
+        pass
 
-        if nm.isreal(mode):
-            fargs = (fargs[0] - shift,) + fargs[1:]
-        else:
-            raise NotImplementedError
-        
-        return fargs, shape, mode
+    def get_fargs(self, alpha, p_outer, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = MassScalarSurfaceTerm.get_fargs(self, virtual, state,
+                                                mode, term_mode, diff_var,
+                                                material=alpha, **kwargs)
+        fargs = fargs[:1] + (fargs[1] - p_outer,) + fargs[2:]
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        coef, = self.get_args(['material_1'], **kwargs)
-
-        call = MassScalarSurfaceTerm.__call__
-        for out, chunk, status in call(self, diff_var, chunk_size, **kwargs):
-            out = coef * out
-            yield out, chunk, status
-
-class MassScalarFineCoarseTerm( Term ):
-    r"""
-    :Description:
-    Scalar field mass matrix/rezidual for coarse to fine grid
-    interpolation. Field :math:`p_H` belong to the coarse grid, test field
-    :math:`q_h` to the fine grid.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} q_h p_H
-
-    :Arguments:
-        virtual : :math:`q_h`,
-        state   : :math:`p_H`,
-        iemaps  : coarse-fine element maps,
-        pbase   : coarse base functions
-    """
-    name = 'dw_mass_scalar_fine_coarse'
-    arg_types = ('virtual', 'state', 'iemaps', 'pbase' )
-
-    function = staticmethod(terms.dw_mass_scalar_fine_coarse)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state, iemaps, pbase = self.get_args( **kwargs )
-        apr, vgr = virtual.get_current_approximation()
-        apc, vgc = virtual.get_current_approximation()
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape()
-        
-        if diff_var is None:
-            shape = (chunk_size, 1, n_epr, 1)
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape()[3]
-            shape = (chunk_size, 1, n_epr, n_epc)
-            mode = 1
-        else:
-            raise StopIteration
-
-        vec = state()
-
-        cbfs = pbase[self.char_fun.ig]
-        iemap = iemaps[self.char_fun.ig]
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, apr.bf['v'], cbfs,
-                                    vgr, apc.econn, iemap, chunk, mode )
-            
-            yield out, chunk, status
+        return fargs

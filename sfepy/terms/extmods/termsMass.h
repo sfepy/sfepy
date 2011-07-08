@@ -24,19 +24,8 @@ int32 d_mass_scalar( FMField *out, FMField *coef,
 		     FMField *bf, VolumeGeometry *vg );
 
 int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
-			   FMField *state, int32 offset,
-			   FMField *bf, SurfaceGeometry *sg,
-			   int32 *conn, int32 nEl, int32 nEP,
-			   int32 *elList, int32 elList_nRow,
+			   FMField *state, FMField *bf, SurfaceGeometry *sg,
 			   int32 isDiff );
-
-int32 dw_mass_scalar_fine_coarse( FMField *out, FMField *state, int32 offset,
-				  FMField *bf, FMField *cbfs,
-				  VolumeGeometry *vg,
-				  int32 *conn, int32 nEl, int32 nEP,
-				  int32 *iemap, int32 iemap_nRow,
-				  int32 *elList, int32 elList_nRow,
-				  int32 isDiff );
 
 END_C_DECLS
 
