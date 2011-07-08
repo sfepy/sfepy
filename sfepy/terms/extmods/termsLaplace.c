@@ -658,3 +658,42 @@ int32 d_diffusion_integrate( FMField *out, FMField *in,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "d_surface_flux"
+int32 d_surface_flux( FMField *out, FMField *grad,
+                      FMField *mtxD, SurfaceGeometry *sg, int32 mode )
+{
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *dgp = 0, *ntdgp = 0;
+
+  nQP = sg->normal->nLev;
+  dim = sg->normal->nRow;
+
+  fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
+  fmf_createAlloc( &ntdgp, 1, nQP, 1, 1 );
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    FMF_SetCell( grad, ii );
+    FMF_SetCell( mtxD, ii );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
+
+    fmf_mulAB_nn( dgp, mtxD, grad );
+    fmf_mulATB_nn( ntdgp, sg->normal, dgp );
+
+    fmf_sumLevelsMulF( out, ntdgp, sg->det->val );
+    if (mode == 1) {
+      FMF_SetCell( sg->area, ii );
+      fmf_mulC( out, 1.0 / sg->area->val[0] );
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &dgp );
+  fmf_freeDestroy( &ntdgp );
+
+  return( ret );
+}

@@ -269,6 +269,8 @@ int32 d_diffusion_integrate( FMField *out, FMField *in,
 			     FMField *mtxD, VolumeGeometry *vg,
 			     int32 *conn, int32 nEl, int32 nEP,
 			     int32 *elList, int32 elList_nRow );
+int32 d_surface_flux( FMField *out, FMField *grad,
+                      FMField *mtxD, SurfaceGeometry *sg, int32 mode );
 
 int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
 			  FMField *lam, FMField *mu, VolumeGeometry *vg,
@@ -571,10 +573,3 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
-
-int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
-		       FMField *mtxD, SurfaceGeometry *sg,
-		       int32 *fis, int32 nFa, int32 nFP,
-		       int32 *faceList, int32 faceList_nRow,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow );

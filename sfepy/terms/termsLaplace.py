@@ -303,3 +303,38 @@ class DiffusionIntegrateTerm( Term ):
             out1 = nm.sum(out, 0)
             out1.shape = (dim,)
             yield out1, chunk, status
+
+class SurfaceFluxTerm(Term):
+    r"""
+    :Description:
+    Surface flux term.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
+
+    :Arguments:
+        material: :math:`\ul{K}`,
+        parameter:  :math:`\bar{p}`,
+    """
+    name = 'd_surface_flux'
+    arg_types = ('material', 'parameter')
+    integration = 'surface_extra'
+
+    function = staticmethod(terms.d_surface_flux)
+
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(parameter)
+
+        grad = self.get(parameter, 'grad')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return grad, mat, sg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_fa, 1, 1, 1), parameter.dtype
