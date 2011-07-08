@@ -10,8 +10,10 @@ def post_process( out, pb, state, extend = False ):
     if isinstance( state, dict ):
         pass
     else:
-        stress = pb.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )')
-        strain = pb.evaluate('de_cauchy_strain.i1.Omega( u )')
+        stress = pb.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )',
+                             mode='el_avg')
+        strain = pb.evaluate('de_cauchy_strain.i1.Omega( u )',
+                             mode='el_avg')
         out['cauchy_strain'] = Struct( name = 'output_data',
                                        mode = 'cell', data = strain,
                                        dofs = None )
@@ -28,7 +30,8 @@ def post_process( out, pb, state, extend = False ):
                                     'recovery_region.vtk')
             save_recovery_region(pb, rname, filename=filename);
 
-            rstrain = pb.evaluate('de_cauchy_strain.i1.%s( u )' % rname)
+            rstrain = pb.evaluate('de_cauchy_strain.i1.%s( u )' % rname,
+                                  mode='el_avg')
 
             recover_micro_hook( pb.conf.options.micro_filename,
                                 region, {'strain' : rstrain} )
