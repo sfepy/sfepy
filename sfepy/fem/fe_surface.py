@@ -44,6 +44,7 @@ class FESurface(Struct):
         # queried later.
         bkey = 'b%s' % face_type[1:]
 
+        self.ig = ig
         self.econn = econn
         self.fis = face_indices
         self.n_fa, self.n_fp = n_fa, n_fp
@@ -51,8 +52,46 @@ class FESurface(Struct):
         self.leconn = leconn
         self.face_type = face_type
         self.bkey = bkey
+        self.meconn = self.mleconn = None
 
-    def get_connectivity(self, local=False):
+    def setup_mirror_connectivity(self, region):
+        """
+        Setup mirror surface connectivity required to integrate over a
+        mirror region.
+
+        Notes
+        -----
+        Works only for linear 2D problems so far.
+        """
+        dim = region.domain.shape.dim
+
+        facets = region.domain.get_facets(force_faces=True)[1]
+        mregion, ig_map, ig_map_i = region.get_mirror_region()
+
+        mig = ig_map_i[self.ig]
+
+        off = nm.cumsum(nm.r_[0, facets.n_obj])
+        ii = region.get_surface_entities(self.ig) - off[self.ig]
+        mii = mregion.get_surface_entities(mig) - off[mig]
+
+        ori = facets.oris[self.ig][ii]
+        mori = facets.oris[mig][mii]
+
+        n_fp = facets.n_fps[self.ig]
+
+        if dim == 2:
+            assert_(((ori + mori) == 1).all())
+
+            if self.n_fp > n_fp:
+                raise NotImplementedError
+
+            self.meconn = self.econn[:, ::-1].copy()
+            self.mleconn = self.leconn[:, ::-1].copy()
+
+        else:
+            raise NotImplementedError
+
+    def get_connectivity(self, local=False, is_trace=False):
         """
         Return the surface element connectivity.
 
@@ -61,9 +100,19 @@ class FESurface(Struct):
         local : bool
             If True, return local connectivity w.r.t. surface nodes,
             otherwise return global connectivity w.r.t. all mesh nodes.
+        is_trace : bool
+            If True, return mirror connectivity according to `local`.
         """
-        if local:
-            return self.leconn
+        if not is_trace:
+            if local:
+                return self.leconn
+
+            else:
+                return self.econn
 
         else:
-            return self.econn
+            if local:
+                return self.mleconn
+
+            else:
+                return self.meconn
