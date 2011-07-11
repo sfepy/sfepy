@@ -1581,13 +1581,6 @@ class Term(Struct):
                 ## print dc_type, ig, is_trace
                 cdc = svar.get_dof_conn(dc_type, ig, active=True,
                                         is_trace=is_trace)
-                if is_trace:
-                    # check correct dofs order in the mirror region
-                    rgnt = vvar.get_global_node_tab(dc_type, ig);
-                    cgnt = svar.get_global_node_tab(dc_type, ig,
-                                                    is_trace=is_trace);
-                    cdc = reorder_dofs_on_mirror(cdc, cgnt, rgnt)
-
                 ## print svar.name, cdc.shape
                 assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 

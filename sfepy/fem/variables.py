@@ -1286,7 +1286,7 @@ class FieldVariable(Variable):
             region_name = region.name
             aig = ig_map[ig]
 
-        key = (var_name, region_name, dc_type.type, aig)
+        key = (var_name, region_name, dc_type.type, aig, is_trace)
         dc = self.adof_conns[key]
 
         return dc
@@ -1781,7 +1781,7 @@ class FieldVariable(Variable):
 
         geo, _, key = field.get_mapping(ig, region, integral, integration,
                                         return_key=True)
-        key += (step, time_derivative)
+        key += (step, time_derivative, is_trace)
 
         if key in cache:
             out = cache[key]
@@ -1789,7 +1789,7 @@ class FieldVariable(Variable):
         else:
             vec = self(step=step, derivative=time_derivative, dt=dt)
             ap = field.aps[ig]
-            conn = ap.get_connectivity(region, integration)
+            conn = ap.get_connectivity(region, integration, is_trace)
 
             shape = self.get_data_shape(ig, integral, integration, region.name)
 

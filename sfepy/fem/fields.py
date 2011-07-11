@@ -112,7 +112,8 @@ def setup_dof_conns(conn_info, dof_conns=None,
             field = var.get_field()
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
             field.setup_dof_conns(dof_conns, var.n_components,
-                                  info.dc_type, info.get_region())
+                                  info.dc_type, info.get_region(),
+                                  info.is_trace)
 
         if info.has_virtual and not info.is_trace:
             # This is needed regardless make_virtual.
@@ -529,7 +530,7 @@ class Field( Struct ):
             reg = info.get_region()
             # Calls reg.select_cells_of_surface(reset=False)...
             self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg)
+            self.setup_surface_data(reg, is_trace)
 
         elif dct == 'edge':
             raise NotImplementedError('dof connectivity type %s' % dct)
@@ -540,11 +541,16 @@ class Field( Struct ):
         elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
-    def setup_surface_data(self, region):
+    def setup_surface_data(self, region, is_trace=False):
         for ig, ap in self.aps.iteritems():
             if ig not in region.igs: continue
             if region.name not in ap.surface_data:
                 ap.setup_surface_data(region)
+
+        for ig, ap in self.aps.iteritems():
+            if region.name in ap.surface_data and is_trace:
+                sd = ap.surface_data[region.name]
+                sd.setup_mirror_connectivity(region)
 
     def setup_point_data(self, field, region):
         # Point data only in the first group to avoid multiple
@@ -676,7 +682,7 @@ class Field( Struct ):
     def clear_dof_conns(self):
         self.dof_conns = {}
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         dct = dc_type.type
 
@@ -687,7 +693,7 @@ class Field( Struct ):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig)
+            key = (self.name, dpn, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
 
@@ -701,7 +707,8 @@ class Field( Struct ):
 
             elif dct == 'surface':
                 sd = ap.surface_data[region_name]
-                dc = create_dof_conn(sd.econn, dpn)
+                conn = sd.get_connectivity(is_trace=is_trace)
+                dc = create_dof_conn(conn, dpn)
                 self.dof_conns[key] = dc
 
             elif dct == 'edge':

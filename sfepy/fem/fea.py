@@ -203,7 +203,7 @@ class Approximation( Struct ):
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
-    def get_connectivity(self, region, integration):
+    def get_connectivity(self, region, integration, is_trace=False):
         """
         Return the DOF connectivity for the given geometry type.
 
@@ -216,7 +216,7 @@ class Approximation( Struct ):
         """
         if integration == 'surface':
             sd = self.surface_data[region.name]
-            conn = sd.get_connectivity(self.is_surface)
+            conn = sd.get_connectivity(self.is_surface, is_trace=is_trace)
 
         elif integration in ('volume', 'surface_extra'):
             conn = self.econn[region.cells[self.ig]]

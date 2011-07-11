@@ -365,8 +365,8 @@ class Equations( Container ):
 
             for rig, cig in info.iter_igs():
                 rname = rvar.get_primary_name()
-                rkey = (rname, rreg_name, dct, rig)
-                ckey = (cvar.name, creg_name, dct, cig)
+                rkey = (rname, rreg_name, dct, rig, False)
+                ckey = (cvar.name, creg_name, dct, cig, info.is_trace)
 
                 dc_key = (rkey, ckey)
                 ## print dc_key
