@@ -1,10 +1,8 @@
 import numpy as nm
 
-from sfepy.terms.terms import Term, vector_chunk_generator
+from sfepy.terms.terms import Term
 
-##
-# 10.07.2007, c
-class LinearPointSpringTerm( Term ):
+class LinearPointSpringTerm(Term):
     r"""
     :Description:
     Linear springs constraining movement of FE nodes in a region; to use as a
@@ -35,37 +33,23 @@ class LinearPointSpringTerm( Term ):
         """
         return 'v'
 
-    ##
-    # 10.07.2007, c
-    # 18.07.2007
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """TODO: projection to direction"""
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, pg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-        if self.char_fun.i_current > 0:
-            raise StopIteration
-            
-        vec_u = state.get_state_in_region( self.region )
-        n_nod = vec_u.shape[0]
-##         print vec_u.shape
-##         pause()
-
-        stiffness = mat['stiffness']
+    @staticmethod
+    def function(out, stiffness, vec, diff_var):
         if diff_var is None:
-            shape = (chunk_size, 1, dim, 1)
-            for out, chunk in vector_chunk_generator( n_nod, chunk_size, shape ):
-                out[:,0,:,0] = - stiffness * vec_u[chunk]
-                yield out, chunk, 0
-
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim, dim)
-            eye = nm.eye( dim, dim, dtype = nm.float64 )
-            eye.shape = (1, 1) + eye.shape
-            for out, chunk in vector_chunk_generator( n_nod, chunk_size, shape ):
-                out[...] = - stiffness * eye
-                yield out, chunk, 0
+            out[:, 0, :, 0] = - stiffness * vec
 
         else:
-            raise StopIteration
+            dim = vec.shape[1]
+            eye = nm.eye(dim, dim, dtype=nm.float64)
+            eye.shape = (1, 1) + eye.shape
+            out[...] = - stiffness * eye
+
+        return 0
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vec = state.get_state_in_region(self.region)
+
+        stiffness = mat['stiffness']
+
+        return stiffness, vec, diff_var

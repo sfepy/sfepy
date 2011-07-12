@@ -4,7 +4,7 @@ from sfepy.base.base import use_method_with_name
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_base import ScalarScalar
 
-class DiffusionTerm( ScalarScalar, Term ):
+class DiffusionTerm(Term):
     r"""
     :Description:
     General diffusion term with permeability :math:`K_{ij}`. Can be
@@ -32,47 +32,43 @@ class DiffusionTerm( ScalarScalar, Term ):
     symbolic = {'expression': 'div( K * grad( u ) )',
                 'map' : {'u' : 'state', 'K' : 'material'}}
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad')
+                fmode = 0
 
-        vec = self.get_vector( state )
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
 
-        n_el, n_qp, dim, n_ep = self.data_shape
-        if state.is_real():
-            return (vec, 0, mat, vg, ap.econn), shape, mode
+            return grad, mat, vg, fmode
+
+        elif mode == 'eval':
+            grad1 = self.get(virtual, 'grad')
+            grad2 = self.get(state, 'grad')
+
+            return grad1, grad2, mat, vg
+
         else:
-            ac = nm.ascontiguousarray
-            mode += 1j
-            return [(ac(vec.real), 0, mat, vg, ap.econn),
-                    (ac(vec.imag), 0, mat, vg, ap.econn)], shape, mode
-    
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        self.set_data_shape( ap )
-        n_el, n_qp, dim, n_ep = self.data_shape
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        cache = self.get_cache( 'grad_scalar', 0 )
-        gp1 = cache('grad', self, 0, state=par1, get_vector=self.get_vector)
-        cache = self.get_cache( 'grad_scalar', 1 )
-        gp2 = cache('grad', self, 0, state=par2, get_vector=self.get_vector)
+        return (n_el, 1, 1, 1), state.dtype
 
-        return (gp1, gp2, mat, vg), (chunk_size, 1, 1, 1), 0
-
-    def set_arg_types( self ):
+    def set_arg_types(self):
         if self.mode == 'weak':
             self.function = terms.dw_diffusion
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+
         else:
             self.function = terms.d_diffusion
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'grad_scalar' : [['parameter_1'],
-                                                ['parameter_2']]}
 
 class LaplaceTerm(DiffusionTerm):
     r"""
@@ -105,12 +101,9 @@ class LaplaceTerm(DiffusionTerm):
     def set_arg_types(self):
         if self.mode == 'weak':
             self.function = terms.dw_laplace
-            use_method_with_name(self, self.get_fargs_weak, 'get_fargs')
+
         else:
             self.function = terms.d_laplace
-            use_method_with_name(self, self.get_fargs_eval, 'get_fargs')
-            self.use_caches = {'grad_scalar' : [['parameter_1'],
-                                                ['parameter_2']]}
 
 class PermeabilityRTerm( Term ):
     r"""
@@ -256,26 +249,25 @@ class DiffusionVelocityTerm( Term ):
         parameter : :math:`r`
     """
     name = 'de_diffusion_velocity'
-    arg_types = ('material','parameter')
+    arg_types = ('material', 'parameter')
 
     function = staticmethod(terms.de_diffusion_velocity)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, parameter = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(parameter)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim, 1)
-        else:
-            raise StopIteration
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-        vec = parameter()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0,
-                                    mat, vg, ap.econn, chunk )
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
+        grad = self.get(parameter, 'grad')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return grad, mat, vg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, dim, 1), parameter.dtype
 
 class DiffusionIntegrateTerm( Term ):
     r"""
@@ -311,3 +303,38 @@ class DiffusionIntegrateTerm( Term ):
             out1 = nm.sum(out, 0)
             out1.shape = (dim,)
             yield out1, chunk, status
+
+class SurfaceFluxTerm(Term):
+    r"""
+    :Description:
+    Surface flux term.
+
+    :Definition:
+    .. math::
+        \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
+
+    :Arguments:
+        material: :math:`\ul{K}`,
+        parameter:  :math:`\bar{p}`,
+    """
+    name = 'd_surface_flux'
+    arg_types = ('material', 'parameter')
+    integration = 'surface_extra'
+
+    function = staticmethod(terms.d_surface_flux)
+
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(parameter)
+
+        grad = self.get(parameter, 'grad')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return grad, mat, sg, fmode
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_fa, 1, 1, 1), parameter.dtype

@@ -12,6 +12,7 @@ from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
             expand_nodes_to_equations, make_global_lcbc_operator, is_active_bc
 from sfepy.fem.mappings import get_physical_qps
+from sfepy.fem.evaluate_variable import eval_real, eval_real_extra, eval_complex
 
 is_state = 0
 is_virtual = 1
@@ -887,6 +888,21 @@ class Variable( Struct ):
         if self.history == 'previous':
             self.data[:] = [None, self.data[0].copy()]
 
+            # Advance evaluate cache.
+            for cache in self.evaluate_cache.itervalues():
+                for key in cache.keys():
+                    if key[4] == -1: # Previous time step.
+                        key0 = list(key)
+                        key0[4] = 0
+                        key0 = tuple(key0)
+
+                        if key0 in cache:
+                            cache[key] = cache[key0]
+                            cache.pop(key0)
+
+                        else:
+                            cache.pop(key)
+
         else:
             self.data.append(None)
 
@@ -919,6 +935,8 @@ class Variable( Struct ):
             self.data[step] = data
             self.indx = indx
 
+        self.invalidate_evaluate_cache(step=step)
+
     def __call__(self, step=0, derivative=None, dt=None):
         """
         Return vector of degrees of freedom of the variable.
@@ -937,15 +955,23 @@ class Variable( Struct ):
             The DOF vector. If `derivative` is None: a view of the data vector,
              otherwise: required derivative of the DOF vector
              at time step given by `step`.
+
+        Notes
+        -----
+        If the previous time step is requested in step 0, the step 0
+        DOF vector is returned instead.
         """
         if derivative is None:
             data = self.data[step]
-            if data is not None:
-                return data[self.indx]
+            if data is None:
+                if (self.step == 0) and (step == -1):
+                    data = self.data[0]
 
-            else:
+            if data is None:
                 raise ValueError('data of variable are not set! (%s, step %d)' \
                                  % (self.name, step))
+
+            return data[self.indx]
 
         else:
             if self.history is None:
@@ -1139,6 +1165,7 @@ class FieldVariable(Variable):
 
         self.clear_bases()
         self.clear_current_group()
+        self.clear_evaluate_cache()
 
     def _set_field(self, field):
         """
@@ -1259,7 +1286,7 @@ class FieldVariable(Variable):
             region_name = region.name
             aig = ig_map[ig]
 
-        key = (var_name, region_name, dc_type.type, aig)
+        key = (var_name, region_name, dc_type.type, aig, is_trace)
         dc = self.adof_conns[key]
 
         return dc
@@ -1402,7 +1429,7 @@ class FieldVariable(Variable):
         self.geometries = geometries
 
     def get_data_shape(self, ig, integral,
-                       shape_kind='volume', region_name=None):
+                       integration='volume', region_name=None):
         """
         Get element data dimensions for given approximation.
 
@@ -1412,17 +1439,18 @@ class FieldVariable(Variable):
             The element group index.
         integral : Integral instance
             The integral describing used numerical quadrature.
-        shape_kind : 'volume' or 'surface'
-            The kind of requested data shape.
+        integration : 'volume', 'surface', 'surface_extra' or 'point'
+            The term integration type.
         region_name : str
             The name of surface region, required when `shape_kind` is
             'surface'.
 
         Returns
         -------
-        data_shape : 4 ints
-            The `(n_el, n_qp, n_comp, n_en)` for volume shape kind and
-            `(n_fa, n_qp, n_comp, n_fn)` for surface shape kind.
+        data_shape : 5 ints
+            The `(n_el, n_qp, dim, n_en, n_comp)` for volume shape kind,
+            `(n_fa, n_qp, dim, n_fn, n_comp)` for surface shape kind and
+            `(n_nod, 0, 0, 1, n_comp)` for point shape kind.
 
         Notes
         -----
@@ -1431,17 +1459,31 @@ class FieldVariable(Variable):
         - `dim` = spatial dimension
         - `n_en`, `n_fn` = number of element/facet nodes
         - `n_comp` = number of variable components in a point/node
+        - `n_nod` = number of element nodes
         """
         ap = self.field.aps[ig]
-        if shape_kind == 'surface':
+        if integration in ('surface', 'surface_extra'):
             data_shape = ap.get_s_data_shape(integral, region_name)
 
-        elif shape_kind == 'volume':
+            if integration == 'surface_extra':
+                n_en = ap.get_v_data_shape(integral)[-1]
+                data_shape = data_shape[:-1] + (n_en,)
+
+        elif integration == 'volume':
             data_shape = ap.get_v_data_shape(integral)
 
+            # Override ap.region with the required region.
+            region = self.field.domain.regions[region_name]
+            data_shape = (region.get_n_cells(ig),) + data_shape[1:]
+
+        elif integration == 'point':
+            region = self.field.domain.regions[region_name]
+            dofs = self.field.get_dofs_in_region(region, merge=True)
+            data_shape = (dofs.shape[0], 0, 0, 1)
+
         else:
-            raise NotImplementedError('unsupported shape kind! (%s)'
-                                      % shape_kind)
+            raise NotImplementedError('unsupported integration! (%s)'
+                                      % integration)
 
         data_shape += (self.n_components,)
 
@@ -1648,6 +1690,122 @@ class FieldVariable(Variable):
             indx = [(ii, slice(ii, ii + 1)) for ii in [self._ic]]
 
         return indx
+
+    def clear_evaluate_cache(self):
+        """
+        Clear current evaluate cache.
+        """
+        self.evaluate_cache = {}
+
+    def invalidate_evaluate_cache(self, step=0):
+        """
+        Invalidate variable data in evaluate cache for time step given
+        by `step`  (0 is current, -1 previous, ...).
+
+        This should be done, for example, prior to every nonlinear
+        solver iteration.
+        """
+        for cache in self.evaluate_cache.itervalues():
+            for key in cache.keys():
+                if key[4] == step: # Given time step to clear.
+                    cache.pop(key)
+
+    def evaluate(self, ig, mode='val',
+                 region=None, integral=None, integration=None,
+                 step=0, time_derivative=None, is_trace=False,
+                 dt=None):
+        """
+        Evaluate various quantities related to the variable according to
+        `mode` in quadrature points defined by `integral`.
+
+        The evaluated data are cached in the variable instance in
+        `evaluate_cache` attribute.
+
+        Parameters
+        ----------
+        ig : int
+            The element group index.
+        mode : one of 'val', 'grad', 'div', 'cauchy_strain'
+            The evaluation mode.
+        region : Region instance, optional
+            The region where the evaluation occurs. If None, the
+            underlying field region is used.
+        integral : Integral instance, optional
+            The integral defining quadrature points in which the
+            evaluation occurs. If None, the first order volume integral
+            is created. Must not be None for surface integrations.
+        integration : one of 'volume', 'surface', 'surface_extra'
+            The term integration type. If None, it is derived from
+            `integral`.
+        step : int, default 0
+            The time step (0 means current, -1 previous, ...).
+        derivative : None or 'dt'
+            If not None, return time derivative of the data,
+            approximated by the backward finite difference.
+        is_trace : bool, default False
+            Indicate evaluation of trace of the variable on a boundary
+            region.
+        dt : float, optional
+            The time step to be used if `derivative` is `'dt'`. If None,
+            the `dt` attribute of the variable is used.
+
+        Returns
+        -------
+        out : array
+            The 4-dimensional array of shape
+            `(n_el, n_qp, n_row, n_col)` with the requested data,
+            where `n_row`, `n_col` depend on `mode`.
+        """
+        cache = self.evaluate_cache.setdefault(mode, {})
+
+        field = self.field
+        if region is None:
+            region = field.region
+
+        if is_trace:
+            region, ig_map, ig_map_i = region.get_mirror_region()
+            ig = ig_map_i[ig]
+
+        if region is not field.region:
+            assert_(field.region.contains(region))
+
+        if integral is None:
+            if integration in ('surface', 'surface_extra'):
+                msg = 'integral must be given for surface integration!'
+                raise ValueError(msg)
+
+            integral = Integral('aux_1', 'v', 1)
+
+        if integration is None:
+            integration = {'v' : 'volume', 's' : 'surface'}[integral.kind]
+
+        geo, _, key = field.get_mapping(ig, region, integral, integration,
+                                        return_key=True)
+        key += (step, time_derivative, is_trace)
+
+        if key in cache:
+            out = cache[key]
+
+        else:
+            vec = self(step=step, derivative=time_derivative, dt=dt)
+            ap = field.aps[ig]
+            conn = ap.get_connectivity(region, integration, is_trace)
+
+            shape = self.get_data_shape(ig, integral, integration, region.name)
+
+            if self.dtype == nm.float64:
+                if integration != 'surface_extra':
+                    out = eval_real(vec, conn, geo, mode, shape)
+
+                else:
+                    out = eval_real_extra(vec, conn, geo, mode, shape)
+
+            else:
+                out = eval_complex(vec, conn, geo, mode, shape)
+
+            cache[key] = out
+
+        return out
 
     def get_state_in_region( self, region, igs = None, reshape = True,
                              step = 0 ):

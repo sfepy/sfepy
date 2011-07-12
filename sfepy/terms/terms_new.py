@@ -21,25 +21,12 @@ geometry, shared dict of geometries belongs to Equations
 import numpy as nm
 
 from sfepy.base.base import output
-from sfepy.terms.terms import Term
+from sfepy.terms.terms import Term, get_shape_kind
 from sfepy.terms.utils import get_range_indices
 from sfepy.mechanics.tensors import get_full_indices
 from sfepy.linalg import dot_sequences as dot
 
 class NewTerm(Term):
-
-    def get_shape_kind(self):
-        if self.integration == 'surface':
-            shape_kind = 'surface'
-
-        elif self.integration in ('volume', 'surface_extra'):
-            shape_kind = 'volume'
-
-        else:
-            raise NotImplementedError('unsupported term integration! (%s)'
-                                      % self.integration)
-
-        return shape_kind
 
     def assign_geometries(self, geometries):
         """
@@ -93,14 +80,14 @@ class NewTerm(Term):
         """
         self.char_fun.set_current_group(ig)
 
-        shape_kind = self.get_shape_kind()
+        shape_kind = get_shape_kind(self.integration)
         for var in self.get_variables():
             geo, geo_key, geo_ig = self.get_geometry(var)
             var.setup_bases(geo_key, geo_ig, geo, self.integral, shape_kind)
             var.set_current_group(geo_key, geo_ig)
 
     def integrate(self, val_qp, variable):
-        shape_kind = self.get_shape_kind()
+        shape_kind = get_shape_kind(self.integration)
 
         geo, _, _ = self.get_geometry(variable)
 
@@ -118,7 +105,7 @@ class NewTerm(Term):
         return val
 
     def evaluate(self, mode='eval', diff_var=None, **kwargs):
-        shape_kind = self.get_shape_kind()
+        shape_kind = get_shape_kind(self.integration)
 
         if mode == 'eval':
             var = self.get_variables()[0]
@@ -181,7 +168,7 @@ class NewTerm(Term):
                     aux = varc.get_data_shape(ig, self.integral,
                                               shape_kind, self.region.name)
                     n_elc, n_qpc, dim, n_enc, n_cc = aux
-                    n_col = n_cr * n_enr
+                    n_col = n_cc * n_enc
 
                     shape = (n_elr, 1, n_row, n_col)
                     val = nm.zeros(shape, dtype=varr.dtype)

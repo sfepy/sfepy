@@ -17,11 +17,13 @@ def define():
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    dvel = pb.evaluate('de_diffusion_velocity.2.Omega( m.K, p )')
+    dvel = pb.evaluate('de_diffusion_velocity.2.Omega( m.K, p )',
+                       mode='el_avg')
     out['dvel'] = Struct(name='output_data', var_name='p',
                          mode='cell', data=dvel, dofs=None)
 
-    stress = pb.evaluate('de_cauchy_stress.2.Omega( m.D, u )')
+    stress = pb.evaluate('de_cauchy_stress.2.Omega( m.D, u )',
+                         mode='el_avg')
     out['cauchy_stress'] = Struct(name='output_data', var_name='u',
                                   mode='cell', data=stress, dofs=None)
     return out

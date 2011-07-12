@@ -18,70 +18,47 @@ int32 divgrad_act_bg_m( FMField *out, FMField *gc, FMField *mtx );
 int32 convect_build_vtbg( FMField *out, FMField *gc, FMField *fv );
 int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv );
 
-int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
-			  FMField *viscosity, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff );
+int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
+			    FMField *viscosity, VolumeGeometry *vg,
+			    int32 isDiff );
 
+int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,
+                           FMField *bf, VolumeGeometry *vg,
+                           int32 isDiff );
 
-int32 term_ns_asm_convect( FMField *out, FMField *state, int32 offset,
-			  FMField *bf, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 isDiff );
-
-int32 dw_lin_convect( FMField *out,
-		      FMField *stateB, int32 offsetB,
-		      FMField *stateU, int32 offsetU,
+int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
 		      FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
-int32 dw_div( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_div( FMField *out, FMField *coef, FMField *div,
 	      FMField *bf, VolumeGeometry *vg,
-	      int32 *conn, int32 nEl, int32 nEP,
-	      int32 *elList, int32 elList_nRow,
 	      int32 isDiff );
 
-int32 dw_grad( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_grad( FMField *out, FMField *coef, FMField *state,
 	       FMField *bf, VolumeGeometry *vg,
-	       int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow,
 	       int32 isDiff );
 
 int32 dw_st_pspg_c( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateU, int32 offsetU,
-		    FMField *coef, FMField *bf_u,
+		    FMField *stateB, FMField *stateU,
+		    FMField *coef,
 		    VolumeGeometry *vg_p, VolumeGeometry *vg_u,
 		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_st_supg_p( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateP, int32 offsetP,
-		    FMField *coef, FMField *bf_u,
+		    FMField *stateB, FMField *gradP,
+		    FMField *coef,
 		    VolumeGeometry *vg_u, VolumeGeometry *vg_p,
-		    int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		    int32 *conn_p, int32 nEl_p, int32 nEP_p,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_st_supg_c( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateU, int32 offsetU,
-		    FMField *coef, FMField *bf, VolumeGeometry *vg,
+		    FMField *stateB, FMField *stateU,
+		    FMField *coef, VolumeGeometry *vg,
 		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
-int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
+int32 dw_st_grad_div( FMField *out, FMField *div,
 		      FMField *coef, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
 END_C_DECLS

@@ -112,7 +112,8 @@ def setup_dof_conns(conn_info, dof_conns=None,
             field = var.get_field()
             field.setup_extra_data(info.ps_tg, info, info.is_trace)
             field.setup_dof_conns(dof_conns, var.n_components,
-                                  info.dc_type, info.get_region())
+                                  info.dc_type, info.get_region(),
+                                  info.is_trace)
 
         if info.has_virtual and not info.is_trace:
             # This is needed regardless make_virtual.
@@ -241,6 +242,7 @@ class Field( Struct ):
         self.setup_approximations()
         self.setup_global_base()
         self.setup_coors()
+        self.clear_mappings(clear_all=True)
 
     def set_approx_order(self, approx_order):
         """
@@ -528,7 +530,7 @@ class Field( Struct ):
             reg = info.get_region()
             # Calls reg.select_cells_of_surface(reset=False)...
             self.domain.create_surface_group(reg)
-            self.setup_surface_data(reg)
+            self.setup_surface_data(reg, is_trace)
 
         elif dct == 'edge':
             raise NotImplementedError('dof connectivity type %s' % dct)
@@ -539,11 +541,16 @@ class Field( Struct ):
         elif dct not in ('volume', 'scalar'):
             raise ValueError('unknown dof connectivity type! (%s)' % dct)
 
-    def setup_surface_data(self, region):
+    def setup_surface_data(self, region, is_trace=False):
         for ig, ap in self.aps.iteritems():
             if ig not in region.igs: continue
             if region.name not in ap.surface_data:
                 ap.setup_surface_data(region)
+
+        for ig, ap in self.aps.iteritems():
+            if region.name in ap.surface_data and is_trace:
+                sd = ap.surface_data[region.name]
+                sd.setup_mirror_connectivity(region)
 
     def setup_point_data(self, field, region):
         # Point data only in the first group to avoid multiple
@@ -675,7 +682,7 @@ class Field( Struct ):
     def clear_dof_conns(self):
         self.dof_conns = {}
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         dct = dc_type.type
 
@@ -686,7 +693,7 @@ class Field( Struct ):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig)
+            key = (self.name, dpn, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
 
@@ -700,7 +707,8 @@ class Field( Struct ):
 
             elif dct == 'surface':
                 sd = ap.surface_data[region_name]
-                dc = create_dof_conn(sd.econn, dpn)
+                conn = sd.get_connectivity(is_trace=is_trace)
+                dc = create_dof_conn(conn, dpn)
                 self.dof_conns[key] = dc
 
             elif dct == 'edge':
@@ -868,6 +876,64 @@ class Field( Struct ):
             return self.coors
         else:
             return self.coors[nods]
+
+    def clear_mappings(self, clear_all=False):
+        """
+        Clear current reference mappings.
+        """
+        self.mappings = {}
+        if clear_all:
+            self.mappings0 = {}
+
+    def save_mappings(self):
+        """
+        Save current reference mappings to `mappings0` attribute.
+        """
+        self.mappings0 = self.mappings.copy()
+
+    def create_mapping(self, ig, region, integral, integration):
+        """
+        Create a new reference mapping.
+        """
+        ap = self.aps[ig]
+
+        out = ap.describe_geometry(self, integration, region, integral)
+        return out
+
+    def get_mapping(self, ig, region, integral, integration,
+                    return_key=False):
+        """
+        For given region, integral and integration type, get a reference
+        mapping, i.e. jacobians, element volumes and base function
+        derivatives for Volume-type geometries, and jacobians, normals
+        and base function derivatives for Surface-type geometries
+        corresponding to the field approximation.
+
+        The mappings are cached in the field instance in `mappings`
+        attribute.  The mappings can be saved to `mappings0` using
+        `Field.save_mappings`.
+        """
+        ap = self.aps[ig]
+        # Share full group mappings.
+        if region.shape[ig].n_vertex == self.domain.groups[ig].shape.n_vertex:
+            region_name = ig
+
+        else:
+            region_name = region.name
+
+        key = (integral.get_key(), region_name, ig, integration)
+
+        # out is (geo, mapping) tuple.
+        out = self.mappings.get(key, None)
+        if out is None:
+            out = ap.describe_geometry(self, integration, region, integral,
+                                       return_mapping=True)
+            self.mappings[key] = out
+
+        if return_key:
+            out = out + (key,)
+
+        return out
 
     def describe_geometry(self, geometry_type, ig, region,
                           term_region, integral):
@@ -1206,7 +1272,7 @@ class SurfaceField(Field):
         """
         return 0, None, None
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         dct = dc_type.type
 
@@ -1220,7 +1286,7 @@ class SurfaceField(Field):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig)
+            key = (self.name, dpn, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
                 continue

@@ -1,10 +1,35 @@
 import numpy as nm
 
-from sfepy.terms.terms_base import VectorVector
 from sfepy.terms.terms_hyperelastic_tl import HyperElasticTLBase
 from sfepy.homogenization.utils import iter_sym
 
-class FibresActiveTLTerm(VectorVector, HyperElasticTLBase):
+def fibre_function(out, pars, green_strain, fmode):
+    """
+    Depending on `fmode`, compute fibre stress (0) or tangent modulus (!= 0).
+    """
+    fmax, eps_opt, s, fdir, act = pars
+
+    eps = nm.zeros_like(fmax)
+    omega = nm.empty_like(green_strain)
+    for ii, (ir, ic) in enumerate(iter_sym(fdir.shape[2])):
+        omega[..., ii, 0] = fdir[..., ir, 0] * fdir[..., ic, 0]
+        eps[..., 0, 0] += omega[..., ii, 0] * green_strain[..., ii, 0]
+
+    tau = act * fmax * nm.exp(-((eps - eps_opt) / s)**2.0)
+
+    if fmode == 0:
+        out[:] = omega * tau
+
+    else:
+        for ir in range(omega.shape[2]):
+            for ic in range(omega.shape[2]):
+                out[..., ir, ic] = omega[..., ir, 0] * omega[..., ic, 0]
+
+        out[:] *= -2.0 * ((eps - eps_opt) / (s**2.0)) * tau
+
+    return out
+
+class FibresActiveTLTerm(HyperElasticTLBase):
     r"""
     :Description:
     Hyperelastic active fibres term. Effective stress
@@ -30,35 +55,21 @@ class FibresActiveTLTerm(VectorVector, HyperElasticTLBase):
     name = 'dw_tl_fib_a'
     arg_types = ('material_1', 'material_2', 'material_3',
                  'material_4', 'material_5', 'virtual', 'state')
-    family_data_names = ['E']
-    
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        pars = self.get_args(['material_1', 'material_2', 'material_3',
-                              'material_4', 'material_5'], **kwargs)
-        fmax, eps_opt, s, fdir, act = pars
-        strainE = family_data[0]
+    family_data_names = ['green_strain']
 
-        eps = nm.zeros_like(fmax)
-        omega = nm.empty_like(strainE)
-        for ii, (ir, ic) in enumerate(iter_sym(fdir.shape[2])):
-            omega[...,ii,0] = fdir[...,ir,0] * fdir[...,ic,0]
-            eps[...,0,0] += omega[...,ii,0] * strainE[...,ii,0]
+    def get_fargs(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = HyperElasticTLBase.get_fargs(self,
+                                             (mat1, mat2, mat3, mat4, mat5),
+                                             virtual, state,
+                                             mode, term_mode, diff_var,
+                                             **kwargs)
+        return fargs
 
-        tau = act * fmax * nm.exp(-((eps - eps_opt) / s)**2.0)
-        
-        if mode == 0:
-            out = omega * tau
+    @staticmethod
+    def stress_function(out, pars, green_strain):
+        fibre_function(out, pars, green_strain, 0)
 
-        else:
-            shape = list(strainE.shape)
-            shape[-1] = shape[-2]
-            out = nm.empty(shape, dtype=nm.float64)
-
-            for ir in range(omega.shape[2]):
-                for ic in range(omega.shape[2]):
-                    out[...,ir,ic] = omega[...,ir,0] * omega[...,ic,0]
-
-            out[:] *= -2.0 * ((eps - eps_opt) / (s**2.0)) * tau
-
-        return out
- 
+    @staticmethod
+    def tan_mod_function(out, pars, green_strain):
+        fibre_function(out, pars, green_strain, 1)

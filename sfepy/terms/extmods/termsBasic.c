@@ -70,38 +70,31 @@ int32 dq_grad( FMField *out, FMField *state, int32 offset,
 }
 
 #undef __FUNC__
-#define __FUNC__ "de_grad"
-int32 de_grad( FMField *out, FMField *state, int32 offset,
-	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow )
+#define __FUNC__ "dq_grad_extra"
+int32 dq_grad_extra( FMField *out, FMField *state, int32 offset,
+                     SurfaceGeometry *sg, int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *out_qp = 0;
+  int32 ii, nQP, ret = RET_OK;
+  FMField *st = 0;
 
   state->val = FMF_PtrFirst( state ) + offset;
 
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
+  nQP = sg->bfBGM->nLev;
 
   fmf_createAlloc( &st, 1, 1, nEP, out->nCol );
-  fmf_createAlloc( &out_qp, 1, nQP, dim, out->nCol );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
+  for (ii = 0; ii < nEl; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( sg->bfBGM, ii );
 
-    ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-    fmf_mulAB_n1( out_qp, vg->bfGM, st );
-    fmf_sumLevelsMulF( out, out_qp, vg->det->val );
+    ele_extractNodalValuesNBN( st, state, conn + nEP * ii );
+    fmf_mulAB_n1( out, sg->bfBGM, st );
 
     ERR_CheckGo( ret );
   }
 
  end_label:
   fmf_freeDestroy( &st );
-  fmf_freeDestroy( &out_qp );
 
   return( ret );
 }
@@ -144,51 +137,6 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 
  end_label:
   fmf_freeDestroy( &st ); 
-
-  return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "d_div_vector"
-int32 d_div_vector( FMField *out, FMField *state, int32 offset,
-		    VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow)
-{
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *aux = 0;
-  FMField gcl[1], stv[1];
-
-  state->val = FMF_PtrFirst( state ) + offset;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-  fmf_createAlloc( &st, 1, 1, dim, nEP );
-  stv->nAlloc = -1;
-  fmf_pretend( stv, 1, 1, nEP * dim, 1, st->val );
-
-  gcl->nAlloc = -1;
-  fmf_pretend( gcl, 1, nQP, 1, nEP * dim, vg->bfGM->val0 );
-
-  fmf_createAlloc(&aux, 1, nQP, 1, 1);
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-    FMF_SetCell( out, ii );
-    FMF_SetCell( gcl, iel );
-    FMF_SetCell( vg->det, iel );
-
-    ele_extractNodalValuesDBD( st, state, conn + nEP * ii );
-    fmf_mulAB_n1( aux, gcl, stv );
-    fmf_sumLevelsMulF(out, aux, vg->det->val);
-
-    ERR_CheckGo( ret );
-  }
-
- end_label:
-  fmf_freeDestroy( &st );
-  fmf_freeDestroy( &aux );
 
   return( ret );
 }
@@ -259,13 +207,11 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 
 #undef __FUNC__
 #define __FUNC__ "d_volume_surface"
-
 int32 d_volume_surface( FMField *out, FMField *in,
 			FMField *bf, SurfaceGeometry *sg,
-			int32 *conn, int32 nEl, int32 nEP,
-			int32 *elList, int32 elList_nRow )
+			int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, iel, dim, nQP, nFP, ret = RET_OK;
+  int32 ii, dim, nQP, nFP, ret = RET_OK;
   FMField *lcoor, *aux, *aux2;
   float64 val;
 
@@ -278,16 +224,14 @@ int32 d_volume_surface( FMField *out, FMField *in,
   fmf_createAlloc( &aux, 1, nQP, 1, dim );
   fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( sg->normal, iel );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
 
-    ele_extractNodalValuesNBN( lcoor, in, conn + nEP * iel );
+    ele_extractNodalValuesNBN( lcoor, in, conn + nEP * ii );
     fmf_mulAB_n1( aux, bf, lcoor );
-    fmf_mulAB_nn( aux2, aux, sg->normal );    
+    fmf_mulAB_nn( aux2, aux, sg->normal );
     fmf_sumLevelsMulF( out, aux2, sg->det->val );
     fmf_mulC( out, val );
     ERR_CheckGo( ret );
@@ -306,10 +250,9 @@ int32 d_volume_surface( FMField *out, FMField *in,
 
 int32 di_surface_moment( FMField *out, FMField *in,
 			 FMField *bf, SurfaceGeometry *sg,
-			 int32 *conn, int32 nEl, int32 nEP,
-			 int32 *elList, int32 elList_nRow )
+			 int32 *conn, int32 nEl, int32 nEP )
 {
-  int32 ii, iel, dim, nQP, nFP, ret = RET_OK;
+  int32 ii, dim, nQP, nFP, ret = RET_OK;
   FMField *lcoor, *aux, *aux2;
 
   nFP = bf->nCol;
@@ -320,16 +263,14 @@ int32 di_surface_moment( FMField *out, FMField *in,
   fmf_createAlloc( &aux, 1, nQP, 1, dim );
   fmf_createAlloc( &aux2, 1, nQP, dim, dim );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( sg->normal, iel );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->normal, ii );
+    FMF_SetCell( sg->det, ii );
 
-    ele_extractNodalValuesNBN( lcoor, in, conn + nEP * iel );
+    ele_extractNodalValuesNBN( lcoor, in, conn + nEP * ii );
     fmf_mulAB_n1( aux, bf, lcoor );
-    fmf_mulAB_nn( aux2, sg->normal, aux );    
+    fmf_mulAB_nn( aux2, sg->normal, aux );
     fmf_sumLevelsMulF( out, aux2, sg->det->val );
 
     ERR_CheckGo( ret );

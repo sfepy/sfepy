@@ -222,6 +222,9 @@ class Equations( Container ):
     ##
     # 27.02.2007, c
     def invalidate_term_caches( self ):
+        for var in self.variables.iter_state():
+            var.invalidate_evaluate_cache()
+
         for cache in self.caches.itervalues():
             cache.clear()
 
@@ -362,8 +365,8 @@ class Equations( Container ):
 
             for rig, cig in info.iter_igs():
                 rname = rvar.get_primary_name()
-                rkey = (rname, rreg_name, dct, rig)
-                ckey = (cvar.name, creg_name, dct, cig)
+                rkey = (rname, rreg_name, dct, rig, False)
+                ckey = (cvar.name, creg_name, dct, cig, info.is_trace)
 
                 dc_key = (rkey, ckey)
                 ## print dc_key
@@ -601,8 +604,6 @@ class Equations( Container ):
             dictionary is returned instead, with keys given by
             `block_name` part of the individual equation names.
         """
-        self.invalidate_term_caches()
-
         self.set_variables_from_state(state)
 
         if by_blocks:

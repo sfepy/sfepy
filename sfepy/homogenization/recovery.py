@@ -238,10 +238,10 @@ def compute_stress_strain_u( pb, integral, region, material, vu, data ):
 
     stress = pb.evaluate('de_cauchy_stress.%s.%s( %s, %s )'
                          % (integral, region, material, vu), verbose=False,
-                         **{vu : var})
+                         mode='el_avg', **{vu : var})
     strain = pb.evaluate('de_cauchy_strain.%s.%s( %s )'
                          % (integral, region, vu), verbose=False,
-                         **{vu : var})
+                         mode='el_avg', **{vu : var})
 
     return extend_cell_data( stress, pb.domain, region ), \
            extend_cell_data( strain, pb.domain, region )
@@ -251,8 +251,9 @@ def add_stress_p( out, pb, integral, region, vp, data ):
     var = pb.create_variables([vp])[vp]
     var.data_from_any(data)
 
-    press0 = pb.evaluate('de_average_variable.%s.%s( %s )' \
-                         % (integral, region, vp), verbose=False, **{vp : var})
+    press0 = pb.evaluate('di_volume_integrate.%s.%s( %s )' \
+                         % (integral, region, vp), verbose=False,
+                         mode='el_avg', **{vp : var})
     press = extend_cell_data( press0, pb.domain, region )
     
     dim = pb.domain.mesh.dim
@@ -263,8 +264,9 @@ def add_stress_p( out, pb, integral, region, vp, data ):
 
 def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
 
-    avgmat = pb.evaluate('de_volume_average_mat.%s.%s( %s, %s )' \
-                         % (integral, region, material, vu), verbose=False)
+    avgmat = pb.evaluate('di_integrate_mat.%s.%s( %s, %s )' \
+                         % (integral, region, material, vu), verbose=False,
+                         mode='el_avg')
 
     return extend_cell_data( nm.dot( avgmat, mac_strain ), pb.domain, region )
 
@@ -353,12 +355,12 @@ def recover_bones( problem, micro_problem, region, eps0,
         var_p = variables[vppp1]
         var_p.data_from_any(p_aux)
         dvel_m1 = meval('de_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
-                        verbose=False, **{vppp1 : var_p})
+                        verbose=False, mode='el_avg', **{vppp1 : var_p})
 
         var_p = variables[vpp1]
         var_p.data_from_any(p_hat)
         dvel_m2 = meval('de_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
-                        verbose=False,
+                        verbose=False, mode='el_avg',
                         **{vpp1 : var_p}) * eps0
         
         out = {}

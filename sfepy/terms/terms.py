@@ -22,6 +22,56 @@ _match_parameter = re.compile( '^parameter(_[_a-zA-Z0-9]+)?$' ).match
 _match_material = re.compile( '^material(_[_a-zA-Z0-9]+)?$' ).match
 _match_material_root = re.compile( '(.+)\.(.*)' ).match
 
+def get_shape_kind(integration):
+    """
+    Get data shape kind for given integration type.
+    """
+    if integration == 'surface':
+        shape_kind = 'surface'
+
+    elif integration in ('volume', 'surface_extra'):
+        shape_kind = 'volume'
+
+    elif integration == 'point':
+        shape_kind = 'point'
+
+    else:
+        raise NotImplementedError('unsupported term integration! (%s)'
+                                  % integration)
+
+    return shape_kind
+
+def split_complex_args(args):
+    """
+    Split complex arguments to real and imaginary parts.
+
+    Returns
+    -------
+    rargs, iargs : lists
+        The two argument lists corresponding to `args` such that each
+        argument of numpy.complex128 data type is split to its real part
+        which is put to the first list and imaginary part going into the
+        second list.
+    same_args : bool
+        True if the lists are the same, i.e. no complex arguments were
+        in `args`.
+    """
+    rargs = []
+    iargs = []
+    same_args = True
+
+    for arg in args:
+        if isinstance(arg, nm.ndarray) and (arg.dtype == nm.complex128):
+            rargs.append(arg.real.copy())
+            iargs.append(arg.imag.copy())
+            same_args = False
+
+        else:
+            rargs.append(arg)
+            iargs.append(arg)
+
+    return rargs, iargs, same_args
+
 def vector_chunk_generator( total_size, chunk_size, shape_in,
                             zero = False, set_shape = True, dtype = nm.float64 ):
     if not chunk_size:
@@ -1018,15 +1068,22 @@ class Term(Struct):
     def igs( self ):
         return self.char_fun.igs
 
-    def needs_local_chunk(self):
-        """Returns a tuple of booleans telling whether the term requires local
-        element numbers in an assembling chunk to pass to an element
-        contribution function, and to an assembling function."""
-        ret = [False, False]
-        if self.dof_conn_type == 'surface':
-            ret[1] = True
-            
-        return tuple(ret)
+    def get_assembling_cells(self, shape=None):
+        """
+        According to the term integration type, return either the term
+        region cell indices or local index sequence.
+        """
+        shape_kind = get_shape_kind(self.integration)
+        ig = self.char_fun.ig
+
+        cells = self.region.cells[ig]
+        if shape_kind == 'surface':
+            cells = nm.arange(cells.shape[0], dtype=nm.int32)
+
+        elif shape_kind == 'point':
+            cells = nm.arange(shape[0], dtype=nm.int32)
+
+        return cells
 
     ##
     # c: 05.12.2007, r: 15.01.2008
@@ -1037,6 +1094,8 @@ class Term(Struct):
             igs = self.igs()
 
         for ig in igs:
+            if self.integration == 'volume':
+                if not len(self.region.cells[ig]): continue
             self.set_current_group( ig )
             yield ig
 
@@ -1205,6 +1264,82 @@ class Term(Struct):
 
         return phys_qps
 
+    def get_mapping(self, variable, return_key=False):
+        """
+        Get the reference mapping from a variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of Field.get_mapping() that
+        initializes the arguments using the term data.
+        """
+        integration = self.geometry_types[variable.name]
+        is_trace = self.arg_traces[variable.name]
+
+        if is_trace:
+            region, ig_map, ig_map_i = self.region.get_mirror_region()
+            ig = ig_map_i[self.char_fun.ig]
+
+        else:
+            region = self.region
+            ig = self.char_fun.ig
+
+        out = variable.field.get_mapping(ig, region,
+                                         self.integral, integration,
+                                         return_key=return_key)
+
+        return out
+
+    def get_data_shape(self, variable):
+        """
+        Get data shape information from variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of FieldVariable.get_data_shape() that
+        initializes the arguments using the term data.
+        """
+        integration = self.geometry_types[variable.name]
+        is_trace = self.arg_traces[variable.name]
+
+        if is_trace:
+            region, ig_map, ig_map_i = self.region.get_mirror_region()
+            ig = ig_map_i[self.char_fun.ig]
+
+        else:
+            region = self.region
+            ig = self.char_fun.ig
+
+        out = variable.get_data_shape(ig, self.integral,
+                                      integration, region.name)
+        return out
+
+    def get(self, variable, quantity_name):
+        """
+        Get the named quantity related to the variable.
+
+        Notes
+        -----
+        This is a convenience wrapper of Variable.evaluate() that
+        initializes the arguments using the term data.
+        """
+        name = variable.name
+
+        data = variable.evaluate(self.char_fun.ig, mode=quantity_name,
+                                 region=self.region, integral=self.integral,
+                                 integration=self.geometry_types[name],
+                                 step=self.arg_steps[name],
+                                 time_derivative=self.arg_derivatives[name],
+                                 is_trace=self.arg_traces[name])
+        return data
+
+    def check_shapes(self, *args, **kwargs):
+        """
+        Default implementation of function to check term argument shapes
+        at run-time.
+        """
+        pass
+
     def standalone_setup(self):
         from sfepy.fem import setup_dof_conns
 
@@ -1225,6 +1360,42 @@ class Term(Struct):
 
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
+
+    def eval_real(self, shape, fargs, mode='eval', term_mode=None,
+                  diff_var=None, **kwargs):
+        out = nm.empty(shape, dtype=nm.float64)
+
+        if mode == 'eval':
+            status = self.function(out, *fargs)
+            # Sum over elements but not over components.
+            out1 = nm.sum(out, 0).squeeze()
+            return out1, status
+
+        else:
+            status = self.function(out, *fargs)
+
+            return out, status
+
+    def eval_complex(self, shape, fargs, mode='eval', term_mode=None,
+                     diff_var=None, **kwargs):
+        rout = nm.empty(shape, dtype=nm.float64)
+
+        rfargs, ifargs, same_args = split_complex_args(fargs)
+
+        # Assuming linear forms. Then the matrix is the
+        # same both for real and imaginary part.
+        rstatus = self.function(rout, *rfargs)
+        if (diff_var is None) and not same_args:
+            iout = nm.empty(shape, dtype=nm.float64)
+            istatus = self.function(iout, *ifargs)
+
+            out = rout + 1j * iout
+            status = rstatus or istatus
+
+        else:
+            out, status = rout, rstatus
+
+        return out, status
 
     def evaluate(self, mode='eval', diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
@@ -1252,54 +1423,122 @@ class Term(Struct):
         if standalone:
             self.standalone_setup()
 
-        huge_int = 1000000000
+        kwargs = kwargs.copy()
+        term_mode = kwargs.pop('term_mode', None)
 
         if mode == 'eval':
             val = 0.0
+            status = 0
             for ig in self.iter_groups():
-                for aux, iels, status in self(chunk_size=huge_int,
-                                              call_mode='d_eval', **kwargs):
-                    val += self.sign * aux
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
+
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
+
+                shape, dtype = self.get_eval_shape(*_args, **kwargs)
+
+                if dtype == nm.float64:
+                    _v, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif dtype == nm.complex128:
+                    _v, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                 **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)' % dtype)
+
+                val += _v
+                status += stat
+
+            val *= self.sign
 
         elif mode in ('el_avg', 'qp'):
-            val = None
+            vals = None
             iels = nm.empty((0, 2), dtype=nm.int32)
             status = 0
             for ig in self.iter_groups():
-                for _val, _iels, _status in self(diff_var=diff_var,
-                                                 chunk_size=huge_int,
-                                                 **kwargs):
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
 
-                    if val is None:
-                        val = self.sign * _val
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
 
-                    else:
-                        val = nm.r_[val, self.sign * _val]
+                shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
-                    aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
-                                _iels[:,None]]
-                    iels = nm.r_[iels, aux]
-                    status += _status
+                if dtype == nm.float64:
+                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif dtype == nm.complex128:
+                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                  **kwargs)
+
+                if vals is None:
+                    vals = val
+
+                else:
+                    vals = nm.r_[vals, val]
+
+                _iels = self.get_assembling_cells(val.shape)
+                aux = nm.c_[nm.repeat(ig, _iels.shape[0])[:,None],
+                            _iels[:,None]]
+                iels = nm.r_[iels, aux]
+                status += stat
+
+            vals *= self.sign
 
         elif mode == 'weak':
-            val = []
+            vals = []
             iels = []
             status = 0
-            for ig in self.iter_groups():
-                for _val, _iels, _status in self(diff_var=diff_var,
-                                                 chunk_size=huge_int,
-                                                 **kwargs):
 
-                    val.append(self.sign * _val)
-                    iels.append((ig, _iels))
-                    status += _status
+            varr = self.get_virtual_variable()
+            if diff_var is not None:
+                varc = self.get_variables(as_list=False)[diff_var]
+
+            for ig in self.iter_groups():
+                args = self.get_args(**kwargs)
+                self.check_shapes(*args)
+
+                _args = tuple(args) + (mode, term_mode, diff_var)
+                fargs = self.get_fargs(*_args, **kwargs)
+
+                n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
+                n_row = n_cr * n_enr
+
+                if diff_var is None:
+                    shape = (n_elr, 1, n_row, 1)
+
+                else:
+                    n_elc, n_qpc, dim, n_enc, n_cc = self.get_data_shape(varc)
+                    n_col = n_cc * n_enc
+
+                    shape = (n_elr, 1, n_row, n_col)
+
+                if varr.dtype == nm.float64:
+                    val, stat = self.eval_real(shape, fargs, mode, term_mode,
+                                               **kwargs)
+
+                elif varr.dtype == nm.complex128:
+                    val, stat = self.eval_complex(shape, fargs, mode, term_mode,
+                                                  **kwargs)
+
+                else:
+                    raise ValueError('unsupported term dtype! (%s)'
+                                     % varr.dtype)
+
+                vals.append(self.sign * val)
+                iels.append((ig, self.get_assembling_cells(val.shape)))
+                status += stat
 
         # Setup return value.
         if mode == 'eval':
             out = (val,)
 
         else:
-            out = (val, iels)
+            out = (vals, iels)
 
         if ret_status:
             out = out + (status,)
@@ -1327,8 +1566,8 @@ class Term(Struct):
                 else:
                     assert_(asm_obj.dtype == nm.complex128)
                     fem.assemble_vector_complex(asm_obj.real, asm_obj.imag,
-                                                vec_in_els.real,
-                                                vec_in_els.imag,
+                                                vec_in_els.real.copy(),
+                                                vec_in_els.imag.copy(),
                                                 _iels,
                                                 1.0,
                                                 0.0, dc)
@@ -1344,13 +1583,6 @@ class Term(Struct):
                 ## print dc_type, ig, is_trace
                 cdc = svar.get_dof_conn(dc_type, ig, active=True,
                                         is_trace=is_trace)
-                if is_trace:
-                    # check correct dofs order in the mirror region
-                    rgnt = vvar.get_global_node_tab(dc_type, ig);
-                    cgnt = svar.get_global_node_tab(dc_type, ig,
-                                                    is_trace=is_trace);
-                    cdc = reorder_dofs_on_mirror(cdc, cgnt, rgnt)
-
                 ## print svar.name, cdc.shape
                 assert_(mtx_in_els.shape[2:] == (rdc.shape[1], cdc.shape[1]))
 
@@ -1368,10 +1600,19 @@ class Term(Struct):
 
                 else:
                     assert_(asm_obj.dtype == nm.complex128)
+
+                    if mtx_in_els.dtype == nm.complex128:
+                        rmtx_in_els = mtx_in_els.real.copy()
+                        imtx_in_els = mtx_in_els.imag.copy()
+
+                    else:
+                        rmtx_in_els = mtx_in_els
+                        imtx_in_els = nm.zeros_like(mtx_in_els)
+
                     fem.assemble_matrix_complex(tmd[0].real, tmd[0].imag,
                                                 tmd[1], tmd[2],
-                                                mtx_in_els.real,
-                                                mtx_in_els.imag,
+                                                rmtx_in_els,
+                                                imtx_in_els,
                                                 _iels,
                                                 sign, 0.0,
                                                 rdc, cdc)

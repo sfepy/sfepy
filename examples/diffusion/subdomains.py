@@ -1,7 +1,11 @@
 """
-\Delta p_1 = g_1 in Omega_1
-\Delta p_2 = g_2 in Omega_2
-p_1 = p_2 + c on \Gamma_{12}
+(\nabla q_1, \nabla p_1)_\Omega_1 = (q_1, g_1)_\Omega_1
+(\nabla q_2, \nabla p_2)_\Omega_2 = (q_2, g_2)_\Omega_2
+
+\int_\Gamma_{12} q_1 (p_1 - tr(p_2) - c) = 0
+\int_\Gamma_{12} q_2 (tr(p_1) - p_2 - c) = 0
+
+\forall q_1, q_2
 """
 from sfepy import data_dir
 

@@ -43,8 +43,6 @@
     (FMField *stateQ),
     (FMField *stateR),
     (FMField *state0),
-    (FMField *state1),
-    (FMField *state2),
     (FMField *vecMV),
     (FMField *mtxD),
     (FMField *ref_porosity),
@@ -56,6 +54,10 @@
     (FMField *strain),
     (FMField *strainV),
     (FMField *strainU),
+    (FMField *vals),
+    (FMField *div),
+    (FMField *grad),
+    (FMField *gradP),
     (FMField *gradP1),
     (FMField *gradP2),
     (FMField *pressure),
@@ -95,7 +97,6 @@
 };
 %apply (int32 *array, int32 len) {
     (int32 *elList, int32 elList_nRow),
-    (int32 *iemap, int32 iemap_nRow),
     (int32 *faceList, int32 faceList_nRow)
 };
 
@@ -106,28 +107,20 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
 int32 dq_grad( FMField *out, FMField *state, int32 offset,
 	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP );
 
-int32 de_grad( FMField *out, FMField *state, int32 offset,
-	       VolumeGeometry *vg, int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow );
+int32 dq_grad_extra( FMField *out, FMField *state, int32 offset,
+                     SurfaceGeometry *sg, int32 *conn, int32 nEl, int32 nEP );
 
 int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 		     VolumeGeometry *vg,
 		     int32 *conn, int32 nEl, int32 nEP );
 
-int32 d_div_vector( FMField *out, FMField *state, int32 offset,
-		    VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow);
-
 int32 d_volume_surface( FMField *out, FMField *in,
 			FMField *bf, SurfaceGeometry *sg,
-			int32 *conn, int32 nEl, int32 nEP,
-			int32 *elList, int32 elList_nRow );
+			int32 *conn, int32 nEl, int32 nEP );
 
 int32 di_surface_moment( FMField *out, FMField *in,
 			 FMField *bf, SurfaceGeometry *sg,
-			 int32 *conn, int32 nEl, int32 nEP,
-			 int32 *elList, int32 elList_nRow );
+			 int32 *conn, int32 nEl, int32 nEP );
 
 int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 			   FMField *trC, FMField *in2C, FMField *vecInvCS,
@@ -191,7 +184,7 @@ int32 dw_he_rtm( FMField *out,
 		 FMField *stress, FMField *tan_mod,
 		 FMField *mtxF, FMField *detF,
 		 VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow, int32 isDiff, int32 mode_ul );
+		 int32 isDiff, int32 mode_ul );
 
 int32 de_he_rtm( FMField *out,
 		 FMField *stress, FMField *detF,
@@ -211,7 +204,6 @@ int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
 		    VolumeGeometry *vg, int32 transpose,
-		    int32 *elList, int32 elList_nRow,
 		    int32 mode );
 int32 dw_ul_volume( FMField *out, FMField *bf,
 		    FMField *detF, VolumeGeometry *vg, int32 transpose,
@@ -221,15 +213,12 @@ int32 dw_ul_volume( FMField *out, FMField *bf,
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,
 		       FMField *mtxF, FMField *detF,
-		       VolumeGeometry *vg,
-		       int32 *elList, int32 elList_nRow,
-		       int32 mode );
+		       VolumeGeometry *vg, int32 mode );
 
 int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
 			      FMField *bf, SurfaceGeometry *sg,
 			      int32 *fis, int32 nFa, int32 nFP,
-			      int32 *elList, int32 elList_nRow,
 			      int32 mode );
 
 int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
@@ -250,22 +239,16 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff );
 
-int32 dw_laplace( FMField *out, FMField *state, int32 offset,
+int32 dw_laplace( FMField *out, FMField *grad,
 		  FMField *coef, VolumeGeometry *vg,
-		  int32 *conn, int32 nEl, int32 nEP,
-		  int32 *elList, int32 elList_nRow,
-		  int32 isDiff );
+                  int32 isDiff );
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg,
-		 int32 *elList, int32 elList_nRow );
-int32 dw_diffusion( FMField *out, FMField *state, int32 offset,
+		 FMField *coef, VolumeGeometry *vg );
+int32 dw_diffusion( FMField *out, FMField *grad,
 		    FMField *mtxD, VolumeGeometry *vg,
-		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow );
+		   FMField *mtxD, VolumeGeometry *vg );
 int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
 			 int32 *conn, int32 nEl, int32 nEP,
 			 int32 *elList, int32 elList_nRow );
@@ -279,27 +262,24 @@ int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
 			    int32 *conn, int32 nEl, int32 nEP,
 			    int32 *elList, int32 elList_nRow,
 			    int32 isDiff, int32 mode);
-int32 de_diffusion_velocity( FMField *out, FMField *state, int32 offset,
+int32 de_diffusion_velocity( FMField *out, FMField *grad,
 			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow );
+			     int32 mode );
 int32 d_diffusion_integrate( FMField *out, FMField *in,
 			     FMField *mtxD, VolumeGeometry *vg,
 			     int32 *conn, int32 nEl, int32 nEP,
 			     int32 *elList, int32 elList_nRow );
+int32 d_surface_flux( FMField *out, FMField *grad,
+                      FMField *mtxD, SurfaceGeometry *sg, int32 mode );
 
-int32 dw_lin_elastic_iso( FMField *out, FMField *state, int32 offset,
+int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
 			  FMField *lam, FMField *mu, VolumeGeometry *vg,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
 			  int32 isDiff );
 int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
 		      FMField *mtxD, VolumeGeometry *vg,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
-		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg,
-		     int32 *elList, int32 elList_nRow );
+		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg );
 
 int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
 			int32 *elList, int32 elList_nRow, int32 isDiff );
@@ -308,151 +288,97 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
 			 VolumeGeometry *vg,
 			 int32 *elList, int32 elList_nRow );
 
-int32 de_cauchy_strain( FMField *out, FMField *state, int32 offset,
-			VolumeGeometry *vg,
-			int32 *conn, int32 nEl, int32 nEP,
-			int32 *elList, int32 elList_nRow );
+int32 de_cauchy_strain( FMField *out, FMField *strain,
+			VolumeGeometry *vg, int32 mode );
 int32 de_cauchy_stress( FMField *out, FMField *strain,
 			FMField *mtxD,  VolumeGeometry *vg,
-			int32 *elList, int32 elList_nRow );
+			int32 mode );
 int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
 			VolumeGeometry *vg,
 			int32 *conn, int32 nEl, int32 nEP );
 
-int32 dw_surface_ltr( FMField *out, FMField *bf, FMField *gbf,
-		      FMField *traction, SurfaceGeometry *sg,
-		      int32 *elList, int32 elList_nRow );
-
-int32 dw_jump( FMField *out, FMField *coef, FMField *state1, FMField *state2,
-	       FMField *bf, SurfaceGeometry *sg,
-	       int32 *conn1, int32 nEl1, int32 nEP1,
-	       int32 *conn2, int32 nEl2, int32 nEP2,
-	       int32 *elList, int32 elList_nRow, int32 mode );
+int32 dw_surface_ltr( FMField *out, FMField *bf,
+		      FMField *traction, SurfaceGeometry *sg );
 
 int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
-		     VolumeGeometry *vg, int32 *elList, int32 elList_nRow );
+		     VolumeGeometry *vg );
 
-int32 dw_mass( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_mass( FMField *out, FMField *coef, FMField *state,
 	       FMField *bf, VolumeGeometry *vg,
-	       int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow,
-	       int32 isDiff );
+               int32 isDiff );
 
 int32 dw_mass_scalar( FMField *out, FMField *coef,
 		      FMField *state, FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
 int32 d_mass_scalar( FMField *out, FMField *coef,
 		     FMField *stateP, FMField *stateQ,
-		     FMField *bf, VolumeGeometry *vg,
-		     int32 *conn, int32 nEl, int32 nEP,
-		     int32 *elList, int32 elList_nRow );
+		     FMField *bf, VolumeGeometry *vg );
 
 int32 dw_surf_mass_scalar( FMField *out, FMField *coef,
-			   FMField *state, int32 offset,
-			   FMField *bf, SurfaceGeometry *sg,
-			   int32 *conn, int32 nEl, int32 nEP,
-			   int32 *elList, int32 elList_nRow,
+			   FMField *state, FMField *bf, SurfaceGeometry *sg,
 			   int32 isDiff );
 
-int32 dw_mass_scalar_fine_coarse( FMField *out, FMField *state, int32 offset,
-				  FMField *bf, FMField *cbfs,
-				  VolumeGeometry *vg,
-				  int32 *conn, int32 nEl, int32 nEP,
-				  int32 *iemap, int32 iemap_nRow,
-				  int32 *elList, int32 elList_nRow,
-				  int32 isDiff );
-
-int32 term_ns_asm_div_grad( FMField *out, FMField *state, int32 offset,
+int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
 			    FMField *viscosity, VolumeGeometry *vg,
-			    int32 *conn, int32 nEl, int32 nEP,
-			    int32 *elList, int32 elList_nRow,
 			    int32 isDiff );
 
+int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,
+                           FMField *bf, VolumeGeometry *vg,
+                           int32 isDiff );
 
-int32 term_ns_asm_convect( FMField *out, FMField *state, int32 offset,
-			   FMField *bf, VolumeGeometry *vg,
-			   int32 *conn, int32 nEl, int32 nEP,
-			   int32 *elList, int32 elList_nRow,
-			   int32 isDiff );
-
-int32 dw_lin_convect( FMField *out,
-		      FMField *stateB, int32 offsetB,
-		      FMField *stateU, int32 offsetU,
+int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
 		      FMField *bf, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
-int32 dw_div( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_div( FMField *out, FMField *coef, FMField *div,
 	      FMField *bf, VolumeGeometry *vg,
-	      int32 *conn, int32 nEl, int32 nEP,
-	      int32 *elList, int32 elList_nRow,
 	      int32 isDiff );
 
-int32 dw_grad( FMField *out, FMField *coef, FMField *state, int32 offset,
+int32 dw_grad( FMField *out, FMField *coef, FMField *state,
 	       FMField *bf, VolumeGeometry *vg,
-	       int32 *conn, int32 nEl, int32 nEP,
-	       int32 *elList, int32 elList_nRow,
 	       int32 isDiff );
 
 int32 dw_st_pspg_c( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateU, int32 offsetU,
-		    FMField *coef, FMField *bf_u,
+		    FMField *stateB, FMField *stateU,
+		    FMField *coef,
 		    VolumeGeometry *vg_p, VolumeGeometry *vg_u,
 		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_st_supg_p( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateP, int32 offsetP,
-		    FMField *coef, FMField *bf_u,
+		    FMField *stateB, FMField *gradP,
+		    FMField *coef,
 		    VolumeGeometry *vg_u, VolumeGeometry *vg_p,
-		    int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		    int32 *conn_p, int32 nEl_p, int32 nEP_p,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_st_supg_c( FMField *out,
-		    FMField *stateB, int32 offsetB,
-		    FMField *stateU, int32 offsetU,
-		    FMField *coef, FMField *bf, VolumeGeometry *vg,
+		    FMField *stateB, FMField *stateU,
+		    FMField *coef, VolumeGeometry *vg,
 		    int32 *conn, int32 nEl, int32 nEP,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
-int32 dw_st_grad_div( FMField *out, FMField *state, int32 offset,
+int32 dw_st_grad_div( FMField *out, FMField *div,
 		      FMField *coef, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow,
 		      int32 isDiff );
 
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff );
 
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow,
 		   int32 isDiff );
 
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
-		  FMField *mtxD, VolumeGeometry *vg,
-		  int32 *elList, int32 elList_nRow );
+		  FMField *mtxD, VolumeGeometry *vg );
 
 int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			 FMField *mtxG, VolumeGeometry *vg,
-			 int32 *elList, int32 elList_nRow,
 			 int32 mode );
 
 int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
-			FMField *mtxG, VolumeGeometry *vg,
-			int32 *elList, int32 elList_nRow );
+			FMField *mtxG, VolumeGeometry *vg );
 
 int32 dw_electric_source( FMField *out,
 			  FMField *state,
@@ -647,10 +573,3 @@ int32 d_sd_st_pspg_p( FMField *out,
 		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
 		      int32 *elList, int32 elList_nRow,
 		      int32 mode );
-
-int32 d_hdpm_surfdvel( FMField *out, FMField *state, int32 offset,
-		       FMField *mtxD, SurfaceGeometry *sg,
-		       int32 *fis, int32 nFa, int32 nFP,
-		       int32 *faceList, int32 faceList_nRow,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow );

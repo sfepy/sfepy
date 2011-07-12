@@ -154,13 +154,12 @@ def verify_incompressibility( out, problem, state, extend = False ):
     """This hook is normally used for post-processing (additional results can
     be inserted into `out` dictionary), but here we just verify the weak
     incompressibility condition."""
-    from sfepy.base.base import Struct, debug, nm, output, assert_
+    from sfepy.base.base import nm, output, assert_
 
     vv = problem.get_variables()
     one = nm.ones( (vv['p'].field.n_nod,), dtype = nm.float64 )
     vv['p'].data_from_any( one )
-    zero = problem.evaluate('dw_stokes.i1.Omega( u, p )', p=one, u=vv['u'](),
-                            call_mode='d_eval')
+    zero = problem.evaluate('dw_stokes.i1.Omega( u, p )', p=one, u=vv['u']())
     output('div( u ) = %.3e' % zero)
 
     assert_(abs(zero) < 1e-14)

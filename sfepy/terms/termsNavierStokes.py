@@ -1,10 +1,8 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name, assert_
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import CouplingVectorScalar
 
-class DivGradTerm( Term ):
+class DivGradTerm(Term):
     r"""
     :Description:
     Diffusion term.
@@ -22,28 +20,24 @@ class DivGradTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
+            grad = self.get(state, 'grad').transpose((0, 1, 3, 2))
+            sh = grad.shape
+            grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+            fmode = 0
+
         else:
-            raise StopIteration
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, mat,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        return grad, mat, vg, fmode
 
-class ConvectTerm( Term ):
+class ConvectTerm(Term):
     r"""
     :Description:
     Nonlinear convective term.
@@ -60,29 +54,19 @@ class ConvectTerm( Term ):
     arg_types = ('virtual', 'state')
 
     function = staticmethod(terms.term_ns_asm_convect)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        vec = state()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, bf,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
+        val_qp = self.get(state, 'val')
 
-class LinearConvectTerm( Term ):
+        fmode = diff_var is not None
+
+        return grad, val_qp, vg.bf, vg, fmode
+
+class LinearConvectTerm(Term):
     r"""
     :Description:
     Linearized convective term.
@@ -90,6 +74,9 @@ class LinearConvectTerm( Term ):
     :Definition:
     .. math::
         \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
+
+    .. math::
+        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
 
     :Arguments:
         virtual   : :math:`\ul{v}`,
@@ -100,137 +87,35 @@ class LinearConvectTerm( Term ):
     arg_types = ('virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_lin_convect)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, par, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        vec1 = par()
-        vec2 = state()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    bf, vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        val_qp = self.get(parameter, 'val')
 
-class LinearConvectQTerm( Term ):
-    r"""
-    :Description:
-    Linearized convective term evaluated in quadrature points.
+        if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
+                fmode = 0
 
-    :Definition:
-    .. math::
-        ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
 
-    :Arguments:
-        parameter : :math:`\ul{b}`,
-        state     : :math:`\ul{u}`
-    """
-    name = 'dq_lin_convect'
-    arg_types = ('parameter', 'state')
+            return grad, val_qp, vg.bf, vg, fmode
 
-    function = staticmethod(terms.dw_lin_convect)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        elif mode == 'qp':
+            grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
+            fmode = 2
 
-        if diff_var is None:
-            shape = (chunk_size, n_qp, dim, 1 )
-            mode = 2
-        else:
-            raise StopIteration
-
-        vec1 = par()
-        vec2 = state()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    bf, vg, ap.econn, chunk, mode )
-            yield out, chunk, status
-
-class StokesGrad( CouplingVectorScalar ):
-
-    def get_fargs_grad( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state = self.get_args(['virtual', 'state'], **kwargs)
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_grad( diff_var, chunk_size )
-
-        vec = self.get_vector( state )
-        bf = apc.get_base('v', 0, self.integral)
-
-        if 'material' in self.arg_types:
-            coef, = self.get_args(['material'], **kwargs)
+            return grad, val_qp, vg.bf, vg, fmode
 
         else:
-            coef = nm.ones((1, self.data_shape_r[1], 1, 1), dtype=nm.float64)
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        return (coef, vec, 0, bf, vgr, apc.econn), shape, mode
-
-class StokesDiv( CouplingVectorScalar ):
-
-    def get_fargs_div( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, virtual = self.get_args(['state', 'virtual'], **kwargs)
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-
-        self.set_data_shape( apr, apc )
-        shape, mode = self.get_shape_div( diff_var, chunk_size )
-
-        vec = self.get_vector( state )
-        bf = apr.get_base('v', 0, self.integral)
-
-        if 'material' in self.arg_types:
-            coef, = self.get_args(['material'], **kwargs)
-
-        else:
-            coef = nm.ones((1, self.data_shape_r[1], 1, 1), dtype=nm.float64)
-
-        return (coef, vec, 0, bf, vgc, apc.econn), shape, mode
-
-class StokesEval( CouplingVectorScalar ):
-
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_v, par_s = self.get_args(['parameter_v', 'parameter_s'], **kwargs)
-        aps, vgs = self.get_approximation(par_s)
-        apv, vgv = self.get_approximation(par_v)
-
-        self.set_data_shape( aps, apv )
-
-        return (par_v, par_s, vgv), (chunk_size, 1, 1, 1), 0
-
-    def d_eval( self, out, par_v, par_s, vgv, chunk ):
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache('state', self, 0,
-                    state=par_s, get_vector=self.get_vector)
-        cache = self.get_cache( 'div_vector', 0 )
-        div = cache('div', self, 0, state=par_v)
-
-        out_qp = vec[chunk] * div[chunk]
-
-        if 'material' in self.arg_types:
-            coef, = self.get_args(['material'])
-            out_qp *= coef[chunk]
-
-        status = vgv.integrate_chunk( out, out_qp, chunk )
-        
-        return status
-
-class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
+class StokesTerm(Term):
     r"""
     :Description:
     Stokes problem coupling term. Corresponds to weak forms of gradient and
@@ -259,20 +144,65 @@ class StokesTerm( StokesDiv, StokesGrad, StokesEval, Term ):
                  ('parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
-    def set_arg_types( self ):
-        """Dynamically inherits from either StokesGrad or
-        StokesDiv."""
+    @staticmethod
+    def d_eval(out, coef, vec_qp, div, vvg):
+        out_qp = coef * vec_qp * div
+
+        status = vvg.integrate(out, out_qp)
+
+        return status
+
+    def get_fargs(self, vvar, svar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
         if self.mode == 'grad':
-            self.function = terms.dw_grad
-            use_method_with_name( self, self.get_fargs_grad, 'get_fargs' )
-        elif self.mode == 'div':
-            self.function = terms.dw_div
-            use_method_with_name( self, self.get_fargs_div, 'get_fargs' )
+            qp_var, qp_name = svar, 'val'
+
         else:
-            self.function = self.d_eval
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['parameter_s']],
-                               'div_vector' : [['parameter_v']]}
+            qp_var, qp_name = vvar, 'div'
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+        coef = kwargs.get('material')
+        if coef is None:
+            coef = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
+
+        if mode == 'weak':
+            vvg, _ = self.get_mapping(vvar)
+            svg, _ = self.get_mapping(svar)
+
+            if diff_var is None:
+                val_qp = self.get(qp_var, qp_name)
+                fmode = 0
+
+            else:
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return coef, val_qp, svg.bf, vvg, fmode
+
+        elif mode == 'eval':
+            vvg, _ = self.get_mapping(vvar)
+
+            div = self.get(vvar, 'div')
+            vec_qp = self.get(svar, 'val')
+
+            return coef, vec_qp, div, vvg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, vvar, svar,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+
+        return (n_el, 1, 1, 1), vvar.dtype
+
+    def set_arg_types(self):
+        self.function = {
+            'grad' : terms.dw_grad,
+            'div' : terms.dw_div,
+            'eval' : self.d_eval,
+        }[self.mode]
 
 class StokesWTerm(StokesTerm):
     r"""
@@ -306,7 +236,14 @@ class StokesWTerm(StokesTerm):
                  ('material', 'parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
-class GradQTerm( Term ):
+    def get_fargs(self, material, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = StokesTerm(self, virtual, state,
+                           mode, term_mode, diff_var,
+                           material=material, **kwargs)
+        return fargs
+
+class GradQTerm(Term):
     r"""
     :Description:
     Gradient term (weak form) in quadrature points.
@@ -319,31 +256,29 @@ class GradQTerm( Term ):
         state : :math:`p`
     """
     name = 'dq_grad'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
-    function = staticmethod(terms.dq_grad)
+    @staticmethod
+    def function(out, grad):
+        out[:] = grad
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        return 0
 
-        if diff_var is None:
-            shape = (chunk_size, n_qp, dim, 1 )
-            mode = 0
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (self.get(parameter, 'grad'),)
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, vg, ap.econn[chunk] )
-            yield out, chunk, status
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-class GradETerm( Term ):
+        return (n_el, n_qp, dim, 1), parameter.dtype
+
+class GradETerm(Term):
     r"""
     :Description:
     Gradient term (weak form) in averaged in elements.
-    
+
     :Definition:
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
@@ -354,41 +289,29 @@ class GradETerm( Term ):
         state : :math:`p` or :math:`\ul{w}`
     """
     name = 'de_grad'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
-    function = staticmethod(terms.de_grad)
+    @staticmethod
+    def function(out, grad, vg, fmode):
+        status = vg.integrate(out, grad, fmode)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        return status
 
-        vdim = ap.dim[0]
-        
-        if diff_var is None:
-            shape = (chunk_size, 1, dim, vdim )
-            mode = 0
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-        ac = nm.ascontiguousarray
+        grad = self.get(parameter, 'grad')
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if state.is_real():
-                status = self.function( out, vec, 0, vg, ap.econn, chunk )
-            else:
-                status_r = self.function(out, ac(vec.real), 0,
-                                         vg, ap.econn, chunk)
-                out_imag = nm.zeros_like(out)
-                status_i = self.function(out_imag, ac(vec.imag), 0,
-                                         vg, ap.econn, chunk)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
 
-                status = status_r or status_i
-                out = out + 1j * out_imag
+        return grad, vg, fmode
 
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, dim, 1), parameter.dtype
 
 class DivQTerm(Term):
     r"""
@@ -403,28 +326,27 @@ class DivQTerm(Term):
         state : :math:`\ul{u}`
     """
     name = 'dq_div'
-    arg_types = ('state',)
+    arg_types = ('parameter',)
 
     function = staticmethod(terms.dq_div_vector)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        state, = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    @staticmethod
+    def function(out, div):
+        out[:] = div
 
-        assert_(state.n_components == dim)
+        return 0
 
-        if diff_var is None:
-            shape = (chunk_size, n_qp, 1, 1)
-        else:
-            raise StopIteration
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (self.get(parameter, 'div'),)
 
-        vec = state()
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = self.function(out, vec, 0, vg, ap.econn[chunk])
-            yield out, chunk, status
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-class DivEvalTerm(Term):
+        return (n_el, n_qp, 1, 1), parameter.dtype
+
+class DivETerm(Term):
     r"""
     :Description:
     Evaluate divergence term.
@@ -436,25 +358,32 @@ class DivEvalTerm(Term):
     :Arguments:
         parameter : :math:`\ul{u}`
     """
-    name = 'd_div'
+    name = 'de_div'
     arg_types = ('parameter',)
 
-    function = staticmethod(terms.d_div_vector)
+    @staticmethod
+    def function(out, div, vg, fmode):
+        status = vg.integrate(out, div, fmode)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        par, = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
+        return status
 
-        vec = par()
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = self.function(out, vec, 0, vg, ap.econn, chunk)
-            out1 = nm.sum(out)
-            yield out1, chunk, status
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-##
-# 26.07.2007, c
-class GradDivStabilizationTerm( Term ):
+        div = self.get(parameter, 'div')
+
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return div, vg, fmode
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, 1, 1, 1), parameter.dtype
+
+class GradDivStabilizationTerm(Term):
     r"""
     :Description:
     Grad-div stabilization term ( :math:`\gamma` is a global stabilization
@@ -473,31 +402,23 @@ class GradDivStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'state')
 
     function = staticmethod(terms.dw_st_grad_div)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        gamma, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+    def get_fargs(self, gamma, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
+            div = self.get(state, 'div')
+            fmode = 0
+
         else:
-            raise StopIteration
+            div = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
 
-        vec = state()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, gamma,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        return div, gamma, vg, fmode
 
-##
-# 31.07.2007, c
 from sfepy.terms.termsLaplace import LaplaceTerm
-class PSPGPStabilizationTerm( LaplaceTerm ):
+class PSPGPStabilizationTerm(LaplaceTerm):
     r"""
     :Description:
     PSPG stabilization term, pressure part ( :math:`\tau` is a local
@@ -514,9 +435,7 @@ class PSPGPStabilizationTerm( LaplaceTerm ):
     """
     name = 'dw_st_pspg_p'
 
-##
-# 31.07.2007, c
-class PSPGCStabilizationTerm( Term ):
+class PSPGCStabilizationTerm(Term):
     r"""
     :Description:
     PSPG stabilization term, convective part ( :math:`\tau` is a local
@@ -537,36 +456,24 @@ class PSPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_pspg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        tau, virtual, par, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
+
+    def get_fargs(self, tau, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sap, svg = self.get_approximation(virtual)
+        vap, vvg = self.get_approximation(state)
+
+        val_qp = self.get(parameter, 'val')
+        conn = vap.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
-            shape = (chunk_size, 1, n_epr, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape(self.integral)[3]
-            shape = (chunk_size, 1, n_epr, dim * n_epc )
-            mode = 1
+            fmode = 0
+
         else:
-            raise StopIteration
+            fmode = 1
 
-        vec1 = par()
-        vec2 = state()
-        bf = apc.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    tau, bf, vgr, vgc,
-                                    apc.econn, chunk, mode )
-            yield out, chunk, status
+        return val_qp, state(), tau, svg, vvg, conn, fmode
 
-##
-# 31.07.2007, c
-class SUPGPStabilizationTerm( Term ):
+class SUPGPStabilizationTerm(Term):
     r"""
     :Description:
     SUPG stabilization term, pressure part ( :math:`\delta` is a local
@@ -587,35 +494,25 @@ class SUPGPStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_supg_p)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        delta, virtual, par, state = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
+
+    def get_fargs(self, delta, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vvg, _ = self.get_mapping(virtual)
+        svg, _ = self.get_mapping(state)
+
+        val_qp = self.get(parameter, 'val')
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_epr, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape(self.integral)[3]
-            shape = (chunk_size, 1, dim * n_epr, n_epc )
-            mode = 1
+            grad = self.get(state, 'grad')
+            fmode = 0
+
         else:
-            raise StopIteration
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
 
-        vec1 = par()
-        vec2 = state()
-        bf = apr.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    delta, bf, vgr, vgc,
-                                    apr.econn, apc.econn, chunk, mode )
-            yield out, chunk, status
+        return val_qp, grad, delta, vvg, svg, fmode
 
-##
-# 31.07.2007, c
-class SUPGCStabilizationTerm( Term ):
+class SUPGCStabilizationTerm(Term):
     r"""
     :Description:
     SUPG stabilization term, convective part ( :math:`\delta` is a local
@@ -636,26 +533,18 @@ class SUPGCStabilizationTerm( Term ):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_supg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        delta, virtual, par, state = self.get_args( **kwargs )
+
+    def get_fargs(self, delta, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
         ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+        val_qp = self.get(parameter, 'val')
+        conn = ap.get_connectivity(self.region, self.integration)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+            fmode = 0
 
-        vec1 = par()
-        vec2 = state()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec1, 0, vec2, 0,
-                                    delta, bf, vg,
-                                    ap.econn, chunk, mode )
-            yield out, chunk, status
+        else:
+            fmode = 1
+
+        return val_qp, state(), delta, vg, conn, fmode

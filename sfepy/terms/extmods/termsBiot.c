@@ -11,10 +11,9 @@
 */
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		    int32 *elList, int32 elList_nRow,
 		    int32 isDiff )
 {
-  int32 ii, iel, nEPU, nEP, dim, nQP, ret = RET_OK;
+  int32 ii, nEPU, nEP, dim, nQP, ret = RET_OK;
   FMField *dfp = 0, *gtdfp = 0, *gtd = 0, *gtdf = 0;
 
   nQP = vg->bfGM->nLev;
@@ -24,7 +23,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 
 /*   fmf_print( mtxD, stdout, 0 ); */
 
-  if (isDiff == 1) { 
+  if (isDiff == 1) {
     fmf_createAlloc( &gtd, 1, nQP, dim * nEPU, 1 );
     fmf_createAlloc( &gtdf, 1, nQP, dim * nEPU, nEP );
   } else {
@@ -33,20 +32,18 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
     fmf_createAlloc( &gtdfp, 1, nQP, dim * nEPU, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-      
-    if (isDiff == 1) { 
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
+
+    if (isDiff == 1) {
       form_sdcc_actOpGT_M3( gtd, vg->bfGM, mtxD );
       fmf_mulAB_nn( gtdf, gtd, bf );
       fmf_sumLevelsMulF( out, gtdf, vg->det->val );
     } else {
-      FMF_SetCell( pressure_qp, iel );
+      FMF_SetCell( pressure_qp, ii );
       fmf_mulAB_nn( dfp, mtxD, pressure_qp );
       form_sdcc_actOpGT_VS3( gtdfp, vg->bfGM, dfp );
       fmf_sumLevelsMulF( out, gtdfp, vg->det->val );
@@ -78,10 +75,9 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
 */
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		   int32 *elList, int32 elList_nRow,
 		   int32 isDiff )
 {
-  int32 ii, iel, nEPP, nEP, dim, sym, nQP, ret = RET_OK;
+  int32 ii, nEPP, nEP, dim, sym, nQP, ret = RET_OK;
   FMField *dtg = 0, *ftdtg = 0, *dtgu = 0, *ftdtgu = 0;
   FMField drow[1];
 
@@ -93,7 +89,7 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
 
 /*   fmf_print( mtxD, stdout, 0 ); */
 
-  if (isDiff == 1) { 
+  if (isDiff == 1) {
     fmf_createAlloc( &dtg, 1, nQP, 1, dim * nEP );
     fmf_createAlloc( &ftdtg, 1, nQP, nEPP, dim * nEP );
 
@@ -104,21 +100,19 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
     fmf_createAlloc( &ftdtgu, 1, nQP, nEPP, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-      
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
+
     if (isDiff == 1) {
       drow->val = mtxD->val;
       form_sdcc_actOpG_RM3( dtg, drow, vg->bfGM );
       fmf_mulATB_nn( ftdtg, bf, dtg );
       fmf_sumLevelsMulF( out, ftdtg, vg->det->val );
     } else {
-      FMF_SetCell( strain, iel );
+      FMF_SetCell( strain, ii );
       fmf_mulATB_nn( dtgu, mtxD, strain );
       fmf_mulATB_nn( ftdtgu, bf, dtgu );
       fmf_sumLevelsMulF( out, ftdtgu, vg->det->val );
@@ -148,10 +142,9 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
   - c: 05.03.2008, r: 05.03.2008
 */
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
-		  FMField *mtxD, VolumeGeometry *vg,
-		  int32 *elList, int32 elList_nRow )
+		  FMField *mtxD, VolumeGeometry *vg )
 {
-  int32 ii, iel, nQP, ret = RET_OK;
+  int32 ii, nQP, ret = RET_OK;
   FMField *dtgu = 0, *pftdtgu = 0;
 
   nQP = vg->bfGM->nLev;
@@ -161,15 +154,13 @@ int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
   fmf_createAlloc( &dtgu, 1, nQP, 1, 1 );
   fmf_createAlloc( &pftdtgu, 1, nQP, 1, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->det, iel );
-    FMF_SetCell( state, iel );
-    FMF_SetCell( strain, iel );
-      
+    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( state, ii );
+    FMF_SetCell( strain, ii );
+
     fmf_mulATB_nn( dtgu, mtxD, strain );
     fmf_mulATB_nn( pftdtgu, state, dtgu );
     fmf_sumLevelsMulF( out, pftdtgu, vg->det->val );

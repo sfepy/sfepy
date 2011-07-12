@@ -1,54 +1,161 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name, assert_
+from sfepy.base.base import assert_
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import VectorOrScalar, ScalarScalar, ScalarScalarTH
+from sfepy.terms.terms_base import ScalarScalar, ScalarScalarTH
 
-class IntegrateVolumeTerm( Term ):
+class IntegrateVolumeTerm(Term):
     r"""
     :Description:
-    Integrate a variable over a volume.
-    
+    Depending on evaluation mode, integrate a variable over a volume
+    region ('eval'), average it in elements or interpolate it into
+    volume quadrature points ('qp').
 
     :Definition:
     .. math::
         \int_\Omega y \mbox{ , } \int_\Omega \ul{y}
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} \ul{y} / \int_{T_K} 1
+
+    .. math::
+         y|_{qp} \mbox{ , } \ul{y}|_{qp}
 
     :Arguments:
         parameter : :math:`y` or :math:`\ul{y}`
     """
     name = 'di_volume_integrate'
     arg_types = ('parameter',)
-    use_caches = {'state_in_volume_qp' : [['parameter']]}
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    @staticmethod
+    def function(out, val_qp, vg, fmode):
+        if fmode == 2:
+            out[:] = val_qp
+            status = 0
 
-        field_dim = par.field.shape[0]
-        shape = (chunk_size, 1, field_dim, 1)
+        else:
+            status = vg.integrate(out, val_qp, fmode)
 
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache('state', self, 0, state=par, get_vector=self.get_vector)
+        return status
 
-        ac = nm.ascontiguousarray
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if vec.dtype == nm.complex128:
-                status_r = vg.integrate_chunk(out, ac(vec[chunk].real),
-                                              chunk)
-                out_imag = nm.zeros_like(out)
-                status_i = vg.integrate_chunk(out_imag, ac(vec[chunk].imag),
-                                              chunk)
-                status = status_r or status_i
-                out = out + 1j * out_imag
-            else:
-                status = vg.integrate_chunk(out, vec[chunk], chunk)
-            out1 = nm.sum( out, 0 )
-            out1.shape = (field_dim,)
-            yield out1, chunk, status
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-class IntegrateVolumeOperatorTerm( Term ):
+        val = self.get(parameter, 'val')
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+
+        return val, vg, fmode
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, n_c, 1), parameter.dtype
+
+class IntegrateSurfaceTerm(Term):
+    r"""
+    :Description:
+    Depending on evaluation mode, integrate a variable over a surface
+    region ('eval'), average it in element faces or interpolate it into
+    surface quadrature points ('qp'). For vector variables, setting
+    `term_mode` to `'flux'` leads to computing corresponding fluxes for
+    the three modes instead.
+
+    :Definition:
+    .. math::
+        \int_\Gamma y \mbox{ , } \int_\Gamma \ul{y}
+        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \mbox{ flux }
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} \ul{y} / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} (\ul{y} \cdot \ul{n}) / \int_{T_K} 1
+
+    .. math::
+         y|_{qp} \mbox{ , } \ul{y}|_{qp}
+        \mbox{ , } (\ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
+
+    :Arguments:
+        parameter : :math:`y` or :math:`\ul{y}`,
+    """
+    name = 'di_surface_integrate'
+    arg_types = ('parameter',)
+    integration = 'surface'
+
+    @staticmethod
+    def function(out, val_qp, sg, fmode):
+        if fmode == 2:
+            out[:] = val_qp
+            status = 0
+
+        elif fmode == 5:
+            normal = sg.variable(0)
+            out[:] = dot_sequences(val_qp, normal)
+            status = 0
+
+        else:
+            status = sg.integrate(out, val_qp, fmode)
+
+        return status
+
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(parameter)
+
+        val_qp = self.get(parameter, 'val')
+        mat = kwargs.get('material')
+        if mat is not None:
+            val_qp *= mat
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+        if term_mode == 'flux':
+            n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
+            if n_c == dim:
+                fmode += 3
+
+        return val_qp, sg, fmode
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
+
+        return (n_fa, 1, 1, 1), parameter.dtype
+
+class IntegrateSurfaceWTerm(IntegrateSurfaceTerm):
+    r"""
+    :Description:
+    Integrate a variable over a surface.
+
+    :Definition:
+    .. math::
+        \int_\Gamma c y \mbox{ , for vectors: } \int_\Gamma c \ul{y} \cdot
+        \ul{n}
+
+    :Arguments:
+        material : :math:`c`,
+        parameter : :math:`y` or :math:`\ul{y}`,
+    """
+    name = 'di_surface_integrate_w'
+    arg_types = ('material', 'parameter')
+    integration = 'surface'
+
+    def get_fargs(self, material, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        fargs = IntegrateSurfaceTerm.get_fargs(self, parameter,
+                                               mode, term_mode, diff_var,
+                                               material=material, **kwargs)
+        return fargs
+
+class IntegrateVolumeOperatorTerm(Term):
     r"""
     :Description:
     Volume integral of a test function.
@@ -63,26 +170,20 @@ class IntegrateVolumeOperatorTerm( Term ):
     name = 'dw_volume_integrate'
     arg_types = ('virtual',)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    @staticmethod
+    def function(out, bf, geo):
+        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.ascontiguousarray(bf_t)
+        status = geo.integrate(out, bf_t)
 
-        field_dim = virtual.field.shape[0]
-        assert_( field_dim == 1 )
-        
-        if diff_var is None:
-            shape = (chunk_size, 1, field_dim * n_ep, 1 )
-        else:
-            raise StopIteration
+        return status
 
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
-                            (chunk.shape[0], 1, 1, 1) )
-            bf_t = nm.ascontiguousarray(bf_t)
-            status = vg.integrate_chunk( out, bf_t, chunk )
-            yield out, chunk, 0
+    def get_fargs(self, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        assert_(virtual.n_components == 1)
+        geo, _ = self.get_mapping(virtual)
+
+        return geo.bf, geo
 
 class IntegrateVolumeOperatorWTerm(Term):
     r"""
@@ -102,269 +203,22 @@ class IntegrateVolumeOperatorWTerm(Term):
     name = 'dw_volume_integrate_w'
     arg_types = ('material', 'virtual',)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-        field_dim = virtual.field.shape[0]
-        assert_( field_dim == 1 )
+    @staticmethod
+    def function(out, mat, bf, geo):
+        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.ascontiguousarray(bf_t)
+        status = geo.integrate(out, mat * bf_t)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, field_dim * n_ep, 1 )
-        else:
-            raise StopIteration
+        return status
 
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            bf_t = nm.tile( bf.transpose( (0, 2, 1) ),
-                            (chunk.shape[0], 1, 1, 1) )
-            bf_t = nm.ascontiguousarray(bf_t)
-            val = mat[lchunk] * bf_t
-            status = vg.integrate_chunk( out, val, chunk )
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        assert_(virtual.n_components == 1)
+        geo, _ = self.get_mapping(virtual)
 
-            yield out, chunk, 0
+        return mat, geo.bf, geo
 
-## 24.04.2007, c
-class IntegrateSurfaceTerm( Term ):
-    r"""
-    :Description:
-    Integrate a variable over a surface.
-    
-    :Definition:
-    .. math::
-        \int_\Gamma y \mbox{ , for vectors: } \int_\Gamma \ul{y} \cdot
-        \ul{n}
-
-    :Arguments:
-        parameter : :math:`y` or :math:`\ul{y}`,
-    """
-    name = 'd_surface_integrate'
-    arg_types = ('parameter',)
-    integration = 'surface'
-    use_caches = {'state_in_surface_qp' : [['parameter']]}
-
-    ##
-    # c: 24.04.2007, r: 15.01.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        Integrates over surface.
-        """
-        par, = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_surface_qp', 0 )
-        vec = cache('state', self, 0, state=par)
-
-        ac = nm.ascontiguousarray
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            if vec.dtype == nm.complex128:
-                status_r = sg.integrate_chunk(out, ac(vec[lchunk].real),
-                                              lchunk, 0)
-                out_imag = nm.zeros_like(out)
-                status_i = sg.integrate_chunk(out_imag, ac(vec[lchunk].imag),
-                                              lchunk, 0)
-                status = status_r or status_i
-                out = out + 1j * out_imag
-            else:
-                status = sg.integrate_chunk(out, vec[lchunk], lchunk, 0)
-
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-class IntegrateSurfaceWTerm( Term ):
-    r"""
-    :Description:
-    Integrate a variable over a surface.
-
-    :Definition:
-    .. math::
-        \int_\Gamma c y \mbox{ , for vectors: } \int_\Gamma c \ul{y} \cdot
-        \ul{n}
-
-    :Arguments:
-        material : :math:`c`,
-        parameter : :math:`y` or :math:`\ul{y}`,
-    """
-    name = 'd_surface_integrate_w'
-    arg_types = ('material', 'parameter')
-    integration = 'surface'
-    use_caches = {'state_in_surface_qp' : [['parameter']]}
-
-    ##
-    # c: 24.04.2007, r: 15.01.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        Integrates over surface.
-        """
-        mat, par = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_surface_qp', 0 )
-        vec = cache('state', self, 0, state=par)
-
-        ac = nm.ascontiguousarray
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            val = mat[lchunk] * vec[lchunk]
-            if val.dtype == nm.complex128:
-                status_r = sg.integrate_chunk( out, ac(val.real), lchunk, 0 )
-                out_imag = nm.zeros_like(out)
-                status_i = sg.integrate_chunk( out_imag, ac(val.imag), lchunk, 0 )
-                status = status_r or status_i
-                out = out + 1j * out_imag
-            else:
-                status = sg.integrate_chunk( out, val, lchunk, 0 )
-
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-##
-# 26.09.2007, c
-class DotProductVolumeTerm( Term ):
-    r"""
-    :Description:
-    Volume :math:`L^2(\Omega)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_volume_dot'
-    arg_types = ('parameter_1', 'parameter_2')
-    use_caches = {'state_in_volume_qp' : [['parameter_1'], ['parameter_2']]}
-
-    ##
-    # created:       26.09.2007
-    # last revision: 13.12.2007
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1 = cache('state', self, 0, state=par1, get_vector=self.get_vector)
-        cache = self.get_cache( 'state_in_volume_qp', 1 )
-        vec2 = cache('state', self, 0, state=par2, get_vector=self.get_vector)
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if vec1.shape[-1] > 1:
-                vec = nm.sum( vec1[chunk] * vec2[chunk], axis = -1 )
-            else:
-                vec = vec1[chunk] * vec2[chunk]
-            status = vg.integrate_chunk( out, vec, chunk )
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-##
-# 09.10.2007, c
-class DotProductSurfaceTerm( Term ):
-    r"""
-    :Description:
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_surface_dot'
-    arg_types = ('parameter_1', 'parameter_2')
-    integration = 'surface'
-    use_caches = {'state_in_surface_qp' : [['parameter_1'], ['parameter_2']]}
-
-    ##
-    # c: 09.10.2007, r: 15.01.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par1, par2 = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par1)
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_surface_qp', 0 )
-        vec1 = cache('state', self, 0, state=par1)
-        cache = self.get_cache( 'state_in_surface_qp', 1 )
-        vec2 = cache('state', self, 0, state=par2)
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            if vec1.shape[-1] > 1:
-                vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
-            else:
-                vec = vec1[lchunk] * vec2[lchunk]
-
-            status = sg.integrate_chunk( out, vec, lchunk, 0 )
-
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-class DotProductSurfaceWTerm( Term ):
-    r"""
-    :Description:
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        material : :math:`c`,
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_surface_dot_w'
-    arg_types = ('material', 'parameter_1', 'parameter_2')
-    integration = 'surface'
-    use_caches = {'state_in_surface_qp' : [['parameter_1'], ['parameter_2']]}
-
-    ##
-    # c: 09.10.2007, r: 15.01.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par1)
-        shape = (chunk_size, 1, 1, 1)
-
-        cache = self.get_cache( 'state_in_surface_qp', 0 )
-        vec1 = cache('state', self, 0, state=par1)
-        cache = self.get_cache( 'state_in_surface_qp', 1 )
-        vec2 = cache('state', self, 0, state=par2)
-
-        ac = nm.ascontiguousarray
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            if vec1.shape[-1] > 1:
-                vec = nm.sum( vec1[lchunk] * vec2[lchunk], axis = -1 )
-            else:
-                vec = vec1[lchunk] * vec2[lchunk]
-
-            vec = mat[lchunk] * vec
-            if vec.dtype == nm.complex128:
-                status_r = sg.integrate_chunk(out, ac(vec.real), lchunk, 0)
-                out_imag = nm.zeros_like(out)
-                status_i = sg.integrate_chunk(out_imag, ac(vec.imag), lchunk, 0)
-                status = status_r or status_i
-                out = out + 1j * out_imag
-            else:
-                status = sg.integrate_chunk( out, vec, lchunk, 0 )
-
-            out1 = nm.sum( out )
-            yield out1, chunk, status
-
-##
-# 30.06.2008, c
-class IntegrateSurfaceOperatorTerm( Term ):
+class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
     r"""
     :Description:
     Surface integral of a test function.
@@ -380,30 +234,7 @@ class IntegrateSurfaceOperatorTerm( Term ):
     arg_types = ('virtual',)
     integration = 'surface'
 
-    ##
-    # 30.06.2008, c
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
-                                                     self.region.name )
-        if diff_var is None:
-            shape = (chunk_size, 1, n_fp, 1 )
-        else:
-            raise StopIteration
-
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            bf_t = nm.tile( bf.transpose( (0, 2, 1) ), (chunk.shape[0], 1, 1, 1) )
-            bf_t = nm.ascontiguousarray(bf_t)
-            status = sg.integrate_chunk( out, bf_t, lchunk, 1 )
-
-            yield out, lchunk, 0
-
-class IntegrateSurfaceOperatorWTerm(Term):
+class IntegrateSurfaceOperatorWTerm(IntegrateVolumeOperatorWTerm):
     r"""
     :Description:
     Surface integral of a test function weighted by a scalar function
@@ -421,37 +252,107 @@ class IntegrateSurfaceOperatorWTerm(Term):
     arg_types = ('material', 'virtual')
     integration = 'surface'
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        mat, virtual = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-        if diff_var is None:
-            shape = (chunk_size, 1, n_fp, 1)
+class DotProductVolumeTerm(Term):
+    r"""
+    :Description:
+    Volume :math:`L^2(\Omega)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
+    name = 'd_volume_dot'
+    arg_types = ('parameter_1', 'parameter_2')
+
+    @staticmethod
+    def function(out, val1, val2, geo):
+        if val1.shape[-1] > 1:
+            out_qp = nm.sum(val1 * val2, axis=-1)
+
         else:
-            raise StopIteration
+            out_qp = val1 * val2
 
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral)
+        status = geo.integrate(out, out_qp)
 
-        ac = nm.ascontiguousarray
+        return status
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            bf_t = nm.tile(bf.transpose((0, 2, 1) ), (chunk.shape[0], 1, 1, 1))
-            bf_t = nm.ascontiguousarray(bf_t)
-            val =  mat[lchunk] * bf_t
-            if virtual.is_real:
-                status = sg.integrate_chunk(out, val, lchunk, 1)
-            else:
-                status_r = sg.integrate_chunk(out, ac(val.real), lchunk, 1)
-                out_imag = nm.zeros_like(out)
-                status_i = sg.integrate_chunk(out_imag, ac(val.imag), lchunk, 1)
+    def get_fargs(self, par1, par2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        geo, _ = self.get_mapping(par1)
 
-                status = status_r or status_i
-                out = out + 1j * out_imag
-                
-            yield out, lchunk, status
+        val1 = self.get(par1, 'val')
+        val2 = self.get(par2, 'val')
+
+        return val1, val2, geo
+
+    def get_eval_shape(self, par1, par2,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(par1)
+
+        return (n_cell, 1, 1, 1), par1.dtype
+
+class DotProductSurfaceTerm(DotProductVolumeTerm):
+    r"""
+    :Description:
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
+    name = 'd_surface_dot'
+    arg_types = ('parameter_1', 'parameter_2')
+    integration = 'surface'
+
+class DotProductSurfaceWTerm(DotProductVolumeTerm):
+    r"""
+    :Description:
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        material : :math:`c`,
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
+    name = 'd_surface_dot_w'
+    arg_types = ('material', 'parameter_1', 'parameter_2')
+    integration = 'surface'
+
+    @staticmethod
+    def function(out, mat, val1, val2, geo):
+        if val1.shape[-1] > 1:
+            out_qp = nm.sum(val1 * val2, axis=-1)
+
+        else:
+            out_qp = val1 * val2
+
+        status = geo.integrate(out, mat * out_qp)
+
+        return status
+
+    def get_fargs(self, mat, par1, par2,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        geo, _ = self.get_mapping(par1)
+
+        val1 = self.get(par1, 'val')
+        val2 = self.get(par2, 'val')
+
+        return mat, val1, val2, geo
 
 class VolumeTerm(Term):
     r"""
@@ -468,16 +369,25 @@ class VolumeTerm(Term):
     name = 'd_volume'
     arg_types = ('parameter',)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        par, = self.get_args(**kwargs)
+    @staticmethod
+    def function(out, geo):
+        out[:] = geo.variable(2)
 
-        ap, vg = self.get_approximation(par)
-        vol = vg.variable(2)
-        volume = nm.sum(vol[self.region.cells[self.char_fun.ig]])
+        return 0
 
-        yield volume, 0, 0
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        geo, _ = self.get_mapping(parameter)
 
-class SurfaceTerm( Term ):
+        return geo,
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(parameter)
+
+        return (n_cell, 1, 1, 1), parameter.dtype
+
+class SurfaceTerm(VolumeTerm):
     r"""
     :Description:
     Surface of a domain. Uses approximation of the parameter variable.
@@ -493,15 +403,7 @@ class SurfaceTerm( Term ):
     arg_types = ('parameter',)
     integration = 'surface'
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        par, = self.get_args(**kwargs)
-
-        ap, sg = self.get_approximation(par)
-        surface = sg.totalArea
-
-        yield surface, 0, 0
-
-class VolumeSurfaceTerm( Term ):
+class VolumeSurfaceTerm(Term):
     r"""
     :Description:
     Volume of a domain, using a surface integral. Uses approximation of the
@@ -519,29 +421,28 @@ class VolumeSurfaceTerm( Term ):
     integration = 'surface'
 
     function = staticmethod(terms.d_volume_surface)
-    
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
+
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(parameter)
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-        coor = par.field.get_coor()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            status = self.function( out, coor, bf,
-                                    sg, sd.econn.copy(), lchunk )
+        coor = parameter.field.get_coor()
 
-            out1 = nm.sum( out )
-            yield out1, chunk, status
+        return coor, sg.bf, sg, sd.econn.copy()
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
+
+        return (n_fa, 1, 1, 1), parameter.dtype
 
 class SurfaceMomentTerm(Term):
     r"""
     :Description:
     Surface integral of the outer product of the unit outward normal
     :math:`\ul{n}` and the coordinate :math:`\ul{x}` shifted by :math:`\ul{x}_0`
-    
+
     :Definition:
     .. math::
         \int_{\Gamma} \ul{n} (\ul{x} - \ul{x}_0)
@@ -556,34 +457,33 @@ class SurfaceMomentTerm(Term):
 
     function = staticmethod(terms.di_surface_moment)
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        par, shift = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(par)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-        shape = (chunk_size, 1, dim, dim)
+    def get_fargs(self, parameter, shift,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, sg = self.get_approximation(parameter)
 
         sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral)
-        coor = par.field.get_coor() \
+        coor = parameter.field.get_coor() \
                - nm.asarray(shift, dtype=nm.float64)[None,:]
-        for out, chunk in self.char_fun(chunk_size, shape):
-            lchunk = self.char_fun.get_local_chunk()
-            status = self.function(out, coor, bf,
-                                   sg, sd.econn.copy(), lchunk)
 
-            out1 = nm.sum(out, axis=0).squeeze()
-            yield out1, chunk, status
+        return coor, sg.bf, sg, sd.econn.copy()
 
-##
-# c: 06.05.2008
-class AverageVolumeMatTerm( Term ):
+    def get_eval_shape(self, parameter, shift,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
+
+        return (n_fa, 1, 1, 1), parameter.dtype
+
+class IntegrateMatTerm(Term):
     r"""
     :Description:
-    Material parameter :math:`m` averaged in elements. Uses
-    approximation of :math:`y` variable.
+    Material parameter :math:`m` integrated over a volume/surface region
+    or averaged in its elements/faces. Uses approximation of :math:`y`
+    variable.
 
     :Definition:
+    .. math::
+        \int_\Omega m
+
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
 
@@ -591,81 +491,37 @@ class AverageVolumeMatTerm( Term ):
         material  : :math:`m` (can have up to two dimensions),
         parameter : :math:`y`
     """
-    name = 'de_volume_average_mat'
+    name = 'di_integrate_mat'
     arg_types = ('material', 'parameter')
 
-    ##
-    # c: 06.05.2008, r: 06.05.2008
-    def prepare_data( self, chunk_size = None, **kwargs ):
-        mat, par = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    @staticmethod
+    def function(out, mat, geo, fmode):
+        status = geo.integrate(out, mat, fmode)
 
-        shape = (chunk_size, 1) + mat.shape[2:]
+        return status
 
-        return vg, mat, shape
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        geo, _ = self.get_mapping(parameter)
 
-    ##
-    # c: 06.05.2008, r: 14.07.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            status = vg.integrate_chunk( out, mat[lchunk], chunk )
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
+        return mat, geo, fmode
 
-##
-# c: 05.03.2008
-class IntegrateVolumeMatTerm( AverageVolumeMatTerm ):
-    r"""
-    :Description:
-    Integrate material parameter :math:`m` over a domain. Uses
-    approximation of :math:`y` variable.
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+        n_row, n_col = mat.shape[-2:]
 
-    :Definition:
-    .. math::
-        \int_\Omega m
+        return (n_el, 1, n_row, n_col), mat.dtype
 
-    :Arguments:
-        material  : :math:`m` (can have up to two dimensions),
-        parameter : :math:`y`, shape : shape of material parameter,
-        shape     : shape of :math:`m`
-    """
-    name = 'di_volume_integrate_mat'
-    arg_types = ('material', 'parameter')
-
-    def prepare_data( self, chunk_size = None, **kwargs ):
-        mat, par, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-        shape = (chunk_size, 1) + mat.shape[2:]
-
-        return vg, mat, shape
-
-    ##
-    # c: 05.03.2008, r: 06.05.2008
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        vg, mat, shape = self.prepare_data( chunk_size, **kwargs )
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-            status = vg.integrate_chunk( out, mat[lchunk], chunk )
-            out1 = nm.sum( out, 0 )
-            out1 = out1.squeeze()
-            yield out1, chunk, status
-
-##
-# c: 05.03.2008
-class DotProductVolumeWTerm( VectorOrScalar, Term ):
+class DotProductVolumeWTerm(Term):
     r"""
     :Description:
     Volume :math:`L^2(\Omega)` weighted dot product for both scalar
     and vector (not implemented in weak form!) fields. Can be evaluated. Can
     use derivatives.
-    
+
     :Definition:
     .. math::
         \int_\Omega y q p \mbox{ , } \int_\Omega y \ul{v} \cdot \ul{u} \mbox{ , }
@@ -686,70 +542,72 @@ class DotProductVolumeWTerm( VectorOrScalar, Term ):
                  ('material', 'parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    @staticmethod
+    def dw_volume_dot_w(out, mat, val_qp, vvg, svg, fmode):
+        bf_t = vvg.bf.transpose((0, 2, 1))
+        if fmode == 0:
+            vec = bf_t * mat * val_qp
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec_qp = cache('state', self, 0,
-                       state=state, get_vector=self.get_vector)
-
-        bf = ap.get_base('v', 0, self.integral)
-
-        return (vec_qp, bf, mat, vg), shape, mode
-
-    def dw_volume_dot_w( self, out, vec_qp, bf, mat, vg, chunk, mode ):
-        if self.vdim > 1:
-            raise NotImplementedError
-
-        lchunk = self.char_fun.get_local_chunk()
-        bf_t = bf.transpose( (0, 2, 1) )
-        if mode == 0:
-            vec = bf_t * mat[lchunk] * vec_qp[chunk]
         else:
-            vec = bf_t * mat[lchunk] * bf
-        status = vg.integrate_chunk( out, vec, chunk )
+            vec = bf_t * mat * svg.bf
+
+        status = vvg.integrate(out, vec)
+
         return status
 
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
+    @staticmethod
+    def d_volume_dot_w(out, mat, val1_qp, val2_qp, vg):
+        if val1_qp.shape[2] > 1:
+            vec = mat * nm.sum(val1_qp * val2_qp, axis=-1)
 
-        self.set_data_shape( ap )
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec1_qp = cache('state', self, 0,
-                        state=par1, get_vector=self.get_vector)
-        cache = self.get_cache( 'state_in_volume_qp', 1 )
-        vec2_qp = cache('state', self, 0,
-                        state=par2, get_vector=self.get_vector)
-
-        return (vec1_qp, vec2_qp, mat, vg), (chunk_size, 1, 1, 1), 0
-
-    def d_volume_dot_w( self, out, vec1_qp, vec2_qp, mat, vg, chunk ):
-
-        lchunk = self.char_fun.get_local_chunk()
-        if self.vdim > 1:
-            vec = mat[lchunk] * nm.sum( vec1_qp[chunk] * vec2_qp[chunk],
-                                          axis = -1 )
         else:
-            vec = mat[lchunk] * vec1_qp[chunk] * vec2_qp[chunk]
-        status = vg.integrate_chunk( out, vec, chunk )
+            vec = mat * val1_qp * val2_qp
+
+        status = vg.integrate(out, vec)
+
         return status
 
-    def set_arg_types( self ):
+    def get_fargs(self, mat, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vvg, _ = self.get_mapping(virtual)
+        svg, _ = self.get_mapping(state)
+
+        if mode == 'weak':
+            if state.n_components > 1:
+                raise NotImplementedError
+
+            if diff_var is None:
+                val_qp = self.get(state, 'val')
+                fmode = 0
+
+            else:
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return mat, val_qp, vvg, svg, fmode
+
+        elif mode == 'eval':
+            val1_qp = self.get(virtual, 'val')
+            val2_qp = self.get(state, 'val')
+
+            return mat, val1_qp, val2_qp, vvg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
+
+    def set_arg_types(self):
         if self.mode == 'weak':
             self.function = self.dw_volume_dot_w
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['state']]}
+
         else:
             self.function = self.d_volume_dot_w
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
-            self.use_caches = {'state_in_volume_qp' : [['parameter_1'],
-                                                       ['parameter_2']]}
 
 ##
 # c: 03.04.2008
@@ -859,114 +717,6 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
 
         return fargs, shape, mode
 
-class AverageVariableTerm( Term ):
-    r"""
-    :Description:
-    Variable :math:`y` averaged in elements.
-
-    :Definition:
-    .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} y /
-        \int_{T_K} 1
-
-    :Arguments:
-        parameter : :math:`y`
-    """
-    name = 'de_average_variable'
-    arg_types = ('parameter',)
-    use_caches = {'state_in_volume_qp' : [['parameter']]}
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-
-        cache = self.get_cache( 'state_in_volume_qp', 0 )
-        vec = cache('state', self, 0,
-                    state=par, get_vector=self.get_vector)
-        vdim = vec.shape[2]
-        shape = (chunk_size, 1, vdim, 1)
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = vg.integrate_chunk( out, vec[chunk], chunk )
-            out1 = out / vg.variable( 2 )[chunk]
-            yield out1, chunk, status
-
-class StateVQTerm(Term):
-    r"""
-    :Description:
-    State interpolated into volume quadrature points.
-
-    :Definition:
-    .. math::
-        \ul{u}|_{qp} \mbox{ , } p|_{qp}
-
-    :Arguments:
-        state : :math:`\ul{u}` or :math:`p`
-    """
-    name = 'dq_state_in_volume_qp'
-    arg_types = ('state',)
-
-    function = staticmethod(terms.dq_state_in_qp)
-
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        """Ignores chunk_size."""
-        state, = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(state)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-        if diff_var is None:
-            shape = (n_el, n_qp, state.n_components, 1)
-        else:
-            raise StopIteration
-
-        vec = self.get_vector(state)
-        bf = ap.get_base('v', 0, self.integral)
-
-        out = nm.empty(shape, dtype=nm.float64)
-        self.function(out, vec, 0, bf, ap.econn)
-
-        yield out, nm.arange(n_el, dtype=nm.int32), 0
-
-class StateSQTerm(Term):
-    r"""
-    :Description:
-    State interpolated into surface quadrature points.
-
-    :Definition:
-    .. math::
-        \ul{u}|_{qp} \mbox{ , } p|_{qp}
-
-    :Arguments:
-        state : :math:`\ul{u}` or :math:`p`
-    """
-    name = 'dq_state_in_surface_qp'
-    arg_types = ('state',)
-    integration = 'surface'
-
-    function = staticmethod(terms.dq_state_in_qp)
-
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        """Ignores chunk_size."""
-        state, = self.get_args(**kwargs)
-        ap, sg = self.get_approximation(state)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-
-        if diff_var is None:
-            shape = (chunk_size, n_qp, state.n_components, 1)
-        else:
-            raise StopIteration
-
-        vec = self.get_vector(state)
-
-        sd = ap.surface_data[self.region.name]
-        bf = ap.get_base(sd.face_type, 0, self.integral)
-
-        out = nm.empty(shape, dtype=nm.float64)
-        self.function(out, vec, 0, bf, sd.econn)
-
-        yield out, nm.arange(n_fa, dtype=nm.int32), 0
-
 class SumNodalValuesTerm(Term):
     r"""
     :Description:
@@ -978,16 +728,20 @@ class SumNodalValuesTerm(Term):
     name = 'd_sum_vals'
     arg_types = ('parameter',)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par, = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        shape = (chunk_size, 1, 1, 1)
+    @staticmethod
+    def function(out, vec):
+        out[:] = vec
 
-        vec = self.get_vector(par)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            if len(vec.shape) > 1:
-                out1 = nm.sum(vec[ap.econn[chunk]], axis = -1)
-            else:
-                out1 = nm.sum(vec[ap.econn[chunk]])
+        return 0
 
-            yield out1, chunk, 0
+    def get_fargs(self, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vec = parameter.get_state_in_region(self.region)
+
+        return vec
+
+    def get_eval_shape(self, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        return (n_el, n_c), parameter.dtype

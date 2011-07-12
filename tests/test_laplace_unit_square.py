@@ -85,7 +85,6 @@ integral_2 = {
 
 equations = {
     'Temperature' : """dw_laplace.i1.Omega( coef.val, s, t ) = 0"""
-#    'Temperature' : """dw_hdpm_d.i1.Omega( m.K, s, t ) = 0"""
 }
 
 solution = {
@@ -223,7 +222,7 @@ class Test( TestCommon ):
             problem.set_mesh_coors(problem.domain.mesh.coors, update_state=True)
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
-                flux_term = 'd_hdpm_surfdvel.i2.%s( m.K, t )' % region_name
+                flux_term = 'd_surface_flux.i2.%s( m.K, t )' % region_name
                 val1 = problem.evaluate(flux_term, t=variables['t'], m=m)
 
                 rvec = get_state( aux, 't', True )

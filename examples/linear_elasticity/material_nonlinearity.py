@@ -13,11 +13,11 @@ filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    mu = pb.evaluate('de_volume_average_mat.2.Omega(nonlinear.mu, u)',
+    mu = pb.evaluate('di_integrate_mat.2.Omega(nonlinear.mu, u)',
                      mode='el_avg', copy_materials=False, verbose=False)
     out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
 
-    strain = pb.evaluate('de_cauchy_strain.2.Omega(u)')
+    strain = pb.evaluate('de_cauchy_strain.2.Omega(u)', mode='el_avg')
     out['strain'] = Struct(name='strain', mode='cell', data=strain, dofs=None)
 
     return out
@@ -39,7 +39,7 @@ def get_pars(ts, coors, mode='qp',
     uvar = equations.variables['u']
 
     strain = problem.evaluate('dq_cauchy_strain.%d.Omega(u)' % order,
-                              u=uvar)
+                              u=uvar, mode='qp')
     if ts.step > 0:
         strain0 = strains[-1]
 

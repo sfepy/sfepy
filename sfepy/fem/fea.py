@@ -203,6 +203,26 @@ class Approximation( Struct ):
         conn.shape += (1,)
         self.point_data[region.name] = conn
 
+    def get_connectivity(self, region, integration, is_trace=False):
+        """
+        Return the DOF connectivity for the given geometry type.
+
+        Parameters
+        ----------
+        region : Region instance
+            The region, used to index surface and volume connectivities.
+        integration : one of ('volume', 'surface', 'surface_extra')
+            The term integration type.
+        """
+        if integration == 'surface':
+            sd = self.surface_data[region.name]
+            conn = sd.get_connectivity(self.is_surface, is_trace=is_trace)
+
+        elif integration in ('volume', 'surface_extra'):
+            conn = self.econn[region.cells[self.ig]]
+
+        return conn
+
     def get_qp(self, key, integral):
         """
         Get quadrature points and weights corresponding to the given key
@@ -250,7 +270,8 @@ class Approximation( Struct ):
         else:
             return self.bf[bf_key], qp.weights
 
-    def describe_geometry(self, field, gtype, region, integral=None):
+    def describe_geometry(self, field, gtype, region, integral=None,
+                          return_mapping=False):
         """Compute jacobians, element volumes and base function derivatives
         for Volume-type geometries, and jacobians, normals and base function
         derivatives for Surface-type geometries.
@@ -275,8 +296,10 @@ class Approximation( Struct ):
 
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
+            bf = self.get_base('v', 0, integral)
 
-            mapping = VolumeMapping(coors, group.conn, poly_space=geo_ps)
+            conn = group.conn[region.cells[self.ig]]
+            mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
             out = vg
@@ -291,6 +314,7 @@ class Approximation( Struct ):
 
             geo_ps = self.interp.get_geom_poly_space(sd.face_type)
             ps = self.interp.poly_spaces[esd.face_type]
+            bf = self.get_base(esd.face_type, 0, integral)
 
             conn = sd.get_connectivity(self.is_surface)
 
@@ -303,8 +327,8 @@ class Approximation( Struct ):
                 self.create_bqp(region.name, integral)
                 qp = self.qp_coors[(integral.name, esd.bkey)]
 
-                ps = self.interp.get_geom_poly_space('v')
-                bf_bg = ps.eval_base(qp.vals, diff=True)
+                v_geo_ps = self.interp.get_geom_poly_space('v')
+                bf_bg = v_geo_ps.eval_base(qp.vals, diff=True)
                 ebf_bg = self.get_base(esd.bkey, 1, integral)
 
                 sg.evaluate_bfbgm(bf_bg, ebf_bg, coors, sd.fis, group.conn)
@@ -312,7 +336,7 @@ class Approximation( Struct ):
             out =  sg
 
         elif gtype == 'point':
-            out = None
+            out = mapping = None
 
         else:
             raise ValueError('unknown geometry type: %s' % gtype)
@@ -320,6 +344,13 @@ class Approximation( Struct ):
         if out is not None:
             # Store the integral used.
             out.integral = integral
+            out.qp = qp
+            out.ps = ps
+            # Store base.
+            out.bf = bf
+
+        if return_mapping:
+            out = (out, mapping)
 
         return out
 
