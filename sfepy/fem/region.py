@@ -321,6 +321,7 @@ class Region( Struct ):
 
         self.all_vertices = nm.unique(nm.hstack(all_vertices))
 
+        self.update_shape()
         self.is_complete = True
         self.must_update = False
 
