@@ -1094,6 +1094,8 @@ class Term(Struct):
             igs = self.igs()
 
         for ig in igs:
+            if self.integration == 'volume':
+                if not len(self.region.cells[ig]): continue
             self.set_current_group( ig )
             yield ig
 
