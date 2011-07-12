@@ -1272,7 +1272,7 @@ class SurfaceField(Field):
         """
         return 0, None, None
 
-    def setup_dof_conns(self, dof_conns, dpn, dc_type, region):
+    def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
         dct = dc_type.type
 
@@ -1286,7 +1286,7 @@ class SurfaceField(Field):
             if ig not in region.igs: continue
 
             region_name = region.name # True region name.
-            key = (self.name, dpn, region_name, dct, ig)
+            key = (self.name, dpn, region_name, dct, ig, is_trace)
             if key in dof_conns:
                 self.dof_conns[key] = dof_conns[key]
                 continue
