@@ -4,9 +4,112 @@
 Developer Guide
 ===============
 
+.. contents:: Table of Contents
+   :local:
+   :backlinks: top
+
 This section purports to document the *SfePy* internals. It is mainly useful
 for those who wish to contribute to the development of  *SfePy* and understand
 the inner workings of the code.
+
+SfePy Directory Structure
+-------------------------
+
+Here we list and describe the directories that are in the main sfepy
+directory.
+
+.. list-table:: Top directory structure.
+   :widths: 10 90
+   :header-rows: 1
+
+   * - name
+     - description
+   * - `build/`
+     - directory created by the build process (generated)
+   * - `doc/`
+     - source files of this documentation
+   * - `examples/`
+     - example problem description files
+   * - `meshes/`
+     - finite element mesh files in various formats shared by the examples
+   * - `output/`
+     - default output directory for storing results of the examples
+   * - `output-tests/`
+     - output directory for tests
+   * - `script/`
+     - various small scripts (simple mesh generators, mesh format
+       convertors etc.)
+   * - `sfepy/`
+     - the source code
+   * - `tests/`
+     - the tests run by `runTests.py`
+   * - `tmp/`
+     - directory for temporary files (generated)
+
+New users/developers (after going through the :ref:`sec-tutorial`)
+should explore the `examples/` directory. For developers, the principal
+directory is `sfepy/`, which has the following contents:
+
+.. list-table:: `sfepy/` directory structure.
+   :widths: 10 80 10
+   :header-rows: 1
+
+   * - name
+     - description
+     - field-specific
+   * - `applications/`
+     - top level application classes (e.g. :class:`SimpleApp` that
+       implements all that `simple.py` script does)
+     -
+   * - `base/`
+     - common utilities and classes used by most of the other modules
+     -
+   * - `fem/`
+     - the finite element core: modules taking care of boundary
+       conditions, degrees of freedom, approximations, variables,
+       equations, meshes, regions, quadratures, etc.
+     -
+   * - `geom/`
+     - some utilities to interface with tetgen and triangle mesh generators
+     -
+   * - `homogenization/`
+     - the homogenization engine and supporting modules - highly
+       specialized code, one of the reasons of *SfePy* existence
+     - *
+   * - `interactive/`
+     - setup of IPython-based shell `isfepy`
+     -
+   * - `linalg/`
+     - linear algebra functions not covered by NumPy and SciPy
+     -
+   * - `mechanics/`
+     - modules for (continuum) mechanics: elastic constant
+       conversions, tensor, units utilities, etc.
+     - *
+   * - `optimize/`
+     - modules for shape optimization based on free-form deformation
+     - *
+   * - `physics/`
+     - small utilities for quantum physics (`schroedinger.py`)
+     - *
+   * - `postprocess/`
+     - Mayavi-based post-processing modules (`postproc.py`, `sfepy_gui.py`)
+     -
+   * - `solvers/`
+     - interface classes to various internal/external solvers (linear,
+       nonlinear, eigenvalue, optimization, time stepping)
+     -
+   * - `terms/`
+     - implementation of the terms (weak formulation integrals), see
+       :ref:`term_overview`
+     -
+
+The directories in the "field-specific" column are mostly interesting
+for specialists working in the respective fields.
+
+The `fem/` is the heart of the code, while the `terms/` contains the
+particular integral forms usable to build equations - new term writers
+should look there.
 
 How to Contribute
 -----------------
