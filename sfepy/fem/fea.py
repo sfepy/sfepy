@@ -272,14 +272,16 @@ class Approximation( Struct ):
 
     def describe_geometry(self, field, gtype, region, integral=None,
                           return_mapping=False):
-        """Compute jacobians, element volumes and base function derivatives
-        for Volume-type geometries, and jacobians, normals and base function
-        derivatives for Surface-type geometries.
+        """
+        Compute jacobians, element volumes and base function derivatives
+        for Volume-type geometries (volume mappings), and jacobians,
+        normals and base function derivatives for Surface-type
+        geometries (surface mappings).
 
         Notes
         -----
-        - volume mappings are defined always for a element whole group,
-          although the field itself can be defined on its part only
+        - volume mappings can be defined on a part of an element group,
+          although the field has to be defined always on the whole group.
         - surface mappings are defined on the surface region
         - surface mappings require field order to be > 0
         """
