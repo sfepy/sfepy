@@ -128,7 +128,13 @@ class IntegrateSurfaceTerm(Term):
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
 
-        return (n_fa, 1, 1, 1), parameter.dtype
+        if mode != 'qp':
+            n_qp = 1
+
+        if term_mode == 'flux':
+            n_c = 1
+
+        return (n_fa, n_qp, n_c, 1), parameter.dtype
 
 class IntegrateSurfaceWTerm(IntegrateSurfaceTerm):
     r"""
