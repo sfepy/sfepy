@@ -223,6 +223,10 @@ class Field( Struct ):
         elif isinstance(shape, int):
             shape = (shape,)
 
+        if not self.check_region(region):
+            raise ValueError('unsuitable region for field %s! (%s)' %
+                             (name, region.name))
+
         Struct.__init__(self,
                         name = name,
                         dtype = dtype,
@@ -243,6 +247,26 @@ class Field( Struct ):
         self.setup_global_base()
         self.setup_coors()
         self.clear_mappings(clear_all=True)
+
+    def check_region(self, region):
+        """
+        Check whether the `region` can be used for the
+        field. Non-surface fields require the region to span whole
+        element groups.
+
+        Returns
+        -------
+        ok : bool
+            True if the region is usable for the field.
+        """
+        ok = True
+        for ig in region.igs:
+            shape = region.domain.groups[ig].shape
+            if region.shape[ig].n_vertex < shape.n_vertex:
+                ok = False
+                break
+
+        return ok
 
     def set_approx_order(self, approx_order):
         """
@@ -1192,6 +1216,25 @@ class SurfaceField(Field):
         Field.__init__(self, name, dtype, shape, region,
                        space=space, poly_space_base=poly_space_base,
                        approx_order=approx_order)
+
+    def check_region(self, region):
+        """
+        Check whether the `region` can be used for the
+        field.
+
+        Returns
+        -------
+        ok : bool
+            True if the region is usable for the field.
+        """
+        ok = True
+        for ig in region.igs:
+            n_cell = region.get_n_cells(ig, True)
+            if n_cell == 0:
+                ok = False
+                break
+
+        return ok
 
     def setup_geometry(self):
         """
