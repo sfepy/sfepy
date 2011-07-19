@@ -238,9 +238,9 @@ class StokesWTerm(StokesTerm):
 
     def get_fargs(self, material, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = StokesTerm(self, virtual, state,
-                           mode, term_mode, diff_var,
-                           material=material, **kwargs)
+        fargs = StokesTerm.get_fargs(self, virtual, state,
+                                     mode, term_mode, diff_var,
+                                     material=material, **kwargs)
         return fargs
 
 class GradQTerm(Term):
