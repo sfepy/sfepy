@@ -1066,7 +1066,7 @@ int32 evaluate_at( FMField *out,
 	fmf_pretend( bc, 1, 1, 2, 1, bc_max->val );
 	fmf_pretend( base1d, 1, 1, 1, nEPs[ig], b1d_max->val );
 
-	fmf_fillC( xi, 0.0 );
+	fmf_fillC( xi, 0.5 * (vmin + vmax) );
 
 	// Newton method
 	ii = 0;
@@ -1112,10 +1112,16 @@ int32 evaluate_at( FMField *out,
 	  fmf_addAB_nn( xi, xi, xint );
 	  ii += 1;
 	}
+        if (ii == i_max) {
+          ok = 2;
+          // Newton did not converge.
+          // Use centre if nothing better is available, but do not spoil
+          // possible d_min (see below).
+          fmf_fillC( xi, 0.5 * (vmin + vmax) );
+        }
       }
       /* fmf_print( xi, stdout, 0 ); */
       /* fmf_print( bf, stdout, 0 ); */
-      
 
       if (n_v == (dim + 1)) {
 	// dist == 0 for 0 <= bc <= 1.
@@ -1128,14 +1134,19 @@ int32 evaluate_at( FMField *out,
 	}
 
       } else {
-	// dist == 0 for vmin <= xi <= vmax.
-	dist = 0.0;
-	for (id = 0; id < dim; id++) {
-	  aux = Min( Max( xi->val[id] - vmax, 0.0 ), 100.0 );
-	  dist += aux * aux;
-	  aux = Min( Max( vmin - xi->val[id], 0.0 ), 100.0 );
-	  dist += aux * aux;
-	}
+        if (ok != 2) {
+          // dist == 0 for vmin <= xi <= vmax.
+          dist = 0.0;
+          for (id = 0; id < dim; id++) {
+            aux = Min( Max( xi->val[id] - vmax, 0.0 ), 100.0 );
+            dist += aux * aux;
+            aux = Min( Max( vmin - xi->val[id], 0.0 ), 100.0 );
+            dist += aux * aux;
+          }
+        } else {
+          dist = d_min + 1.0;
+          ok = 0;
+        }
       }
       /* output("CCC %d, %d, %f\n", ie, ii, dist ); */
 
