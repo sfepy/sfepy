@@ -3,6 +3,7 @@ import os
 from sfepy.base.base import Struct
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
+from sfepy.fem.meshio import MeshIO
 from sfepy.solvers.generic import solve_direct
 from application import Application
 
@@ -78,7 +79,13 @@ class SimpleApp( Application ):
     def setup_output_info(self, problem, options):
         """Modifies both problem and options!"""
         if options.output_filename_trunk is None:
-            ofn_trunk = io.get_trunk(self.conf.filename_mesh)
+            filename_mesh = self.conf.filename_mesh
+            if isinstance(filename_mesh, MeshIO):
+                ofn_trunk = filename_mesh.get_filename_trunk()
+
+            else:
+                ofn_trunk = io.get_trunk(filename_mesh)
+
             options.output_filename_trunk = ofn_trunk
 
         else:
