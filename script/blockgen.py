@@ -19,8 +19,6 @@ help = {
     'centre of the block [default: %default]',
 }
 
-##
-# c: 19.06.2008, r: 19.06.2008
 def main():
     parser = OptionParser( usage = usage, version = "%prog" )
     parser.add_option( "-o", "", metavar = 'filename',
@@ -37,10 +35,11 @@ def main():
                        default = '[0.0, 0.0, 0.0]', help = help['centre'] )
     (options, args) = parser.parse_args()
 
+    import numpy as nm
     dims = eval( "nm.array( %s, dtype = nm.float64 )" % options.dims )
     shape = eval( "nm.array( %s, dtype = nm.int32 )" % options.shape )
     centre = eval( "nm.array( %s, dtype = nm.float64 )" % options.centre )
-    
+
     print dims
     print shape
     print centre

@@ -65,10 +65,11 @@ def main():
                        default = False, help = help['non_uniform'] )
     (options, args) = parser.parse_args()
 
+    import numpy as nm
     dims = eval( "nm.array( %s, dtype = nm.float64 )" % options.dims )
     shape = eval( "nm.array( %s, dtype = nm.int32 )" % options.shape )
     centre = eval( "nm.array( %s, dtype = nm.float64 )" % options.centre )
-    
+
     print dims
     print shape
     print centre
