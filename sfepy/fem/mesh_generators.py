@@ -29,6 +29,10 @@ def gen_block_mesh(dims, shape, centre, name='block'):
 
     mesh : Mesh instance
     """
+    dims = nm.asarray(dims)
+    shape = nm.asarray(shape)
+    centre = nm.asarray(centre)
+
     dim = shape.shape[0]
 
     centre = centre[:dim]
@@ -124,6 +128,10 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     mesh : Mesh instance
     """
+    dims = nm.asarray(dims)
+    shape = nm.asarray(shape)
+    centre = nm.asarray(centre)
+
     a1, b1, a2, b2, length = dims
     nr, nfi, nl = shape
     origin = centre - nm.array([0.5 * length, 0.0, 0.0])
