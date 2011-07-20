@@ -264,7 +264,7 @@ class MeshIO( Struct ):
 
     def get_vector_format( self, dim ):
         return ' '.join( [self.float_format] * dim )
-            
+
 class UserMeshIO(MeshIO):
     """
     Special MeshIO subclass that enables reading and writing a mesh using a
@@ -278,14 +278,17 @@ class UserMeshIO(MeshIO):
 
         MeshIO.__init__(self, filename='function:%s' % self.function.__name__,
                         **kwargs )
-        
+
     def get_filename_trunk(self):
         return self.filename
 
     def read(self, mesh, *args, **kwargs):
-        self.function(mesh, mode='read')
+        aux = self.function(mesh, mode='read')
+        if aux is not None:
+            mesh = aux
+
         return mesh
-    
+
     def write(self, filename, mesh, *args, **kwargs):
         self.function(mesh, mode='write')
 
