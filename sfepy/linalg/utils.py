@@ -56,6 +56,16 @@ def normalize_vectors(vecs, eps=1e-8):
     ii = norms > eps
     vecs[ii] = vecs[ii] / norms[ii][:, None]
 
+def print_array_info(ar):
+    """
+    Print array shape and other basic information.
+    """
+    ar = nm.asanyarray(ar)
+
+    print ar.shape, 'c_contiguous:', ar.flags.c_contiguous, \
+          'f_contiguous:', ar.flags.f_contiguous
+    print 'min:', ar.min(), 'mean:', ar.mean(), 'max:', ar.max()
+
 ##
 # 21.11.2005, c
 def split_range( n_item, step ):
