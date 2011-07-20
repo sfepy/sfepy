@@ -364,8 +364,16 @@ class EquationMap(Struct):
                 elif isinstance(val, Function):
                     vv = val(ts, coor, bc=bc, problem=problem)
 
-                else:
+                elif nm.isscalar(val):
                     vv = nm.repeat([val], nods.shape[0] * len(dofs))
+
+                elif isinstance(val, nm.ndarray):
+                    assert_(len(val) == len(dofs))
+                    vv = nm.repeat(val, nods.shape[0])
+
+                else:
+                    raise ValueError('unknown value type for EBC %s!'
+                                     % bc.name)
 
                 eq = expand_nodes_to_equations(nods, dofs, self.dof_names)
                 # Duplicates removed here...
