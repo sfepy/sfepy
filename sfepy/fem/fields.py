@@ -1339,3 +1339,50 @@ class SurfaceField(Field):
             self.dof_conns[key] = dc
 
         dof_conns.update(self.dof_conns)
+
+    def average_qp_to_vertices(self, data_qp, integral):
+        """
+        Average data given in quadrature points in region elements into
+        region vertices.
+
+        .. math::
+           u_n = \sum_e (u_{e,avg} * area_e) / \sum_e area_e
+               = \sum_e \int_{area_e} u / \sum area_e
+        """
+        region = self.region
+
+        n_cells = region.get_n_cells(None, True)
+        if n_cells != data_qp.shape[0]:
+            msg = 'incomatible shape! (%d == %d)' % (n_cells,
+                                                     data_qp.shape[0])
+            raise ValueError(msg)
+
+        n_vertex = len(region.all_vertices)
+        nc = data_qp.shape[2]
+
+        nod_vol = nm.zeros((n_vertex,), dtype=nm.float64)
+        data_vertex = nm.zeros((n_vertex, nc), dtype=nm.float64)
+        offset = 0
+        for ig, ap in self.aps.iteritems():
+            sg = ap.describe_geometry(self, 'surface', ap.region, integral)
+
+            area = nm.squeeze(sg.variable(2))
+            n_cells = region.get_n_cells(ig, True)
+            iels = offset + nm.arange(n_cells, dtype=nm.int32)
+            offset += n_cells
+
+            data_e = nm.zeros((area.shape[0], 1, nc, 1), dtype=nm.float64)
+            sg.integrate(data_e, data_qp[iels])
+
+            ir = nm.arange(nc, dtype=nm.int32)
+
+            sd = self.domain.surface_groups[ig][region.name]
+            conn = sd.get_connectivity(local=True)
+            for ii, cc in enumerate(conn):
+                # Assumes unique nodes in cc!
+                ind2, ind1 = nm.meshgrid(ir, cc)
+                data_vertex[ind1,ind2] += data_e[iels[ii],0,:,0]
+                nod_vol[cc] += area[ii]
+        data_vertex /= nod_vol[:,nm.newaxis]
+
+        return data_vertex
