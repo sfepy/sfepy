@@ -689,16 +689,38 @@ class Region( Struct ):
 
         return mapping
 
-    def get_n_cells(self, ig, is_surface=False):
-        if is_surface:
-            if self.domain.shape.dim == 2:
-                return self.shape[ig].n_edge
+    def get_n_cells(self, ig=None, is_surface=False):
+        """
+        Get number of region cells.
+
+        Parameters
+        ----------
+        ig : int, optional
+            The group index. If None, counts from all groups are added
+            together.
+        is_surface : bool
+            If True, number of edges or faces according to domain
+            dimension is returned instead.
+
+        Returns
+        -------
+        n_cells : int
+            The number of cells.
+        """
+        if ig is not None:
+            if is_surface:
+                if self.domain.shape.dim == 2:
+                    return self.shape[ig].n_edge
+
+                else:
+                    return self.shape[ig].n_face
 
             else:
-                return self.shape[ig].n_face
+                return self.shape[ig].n_cell
 
         else:
-            return self.shape[ig].n_cell
+            return sum(self.get_n_cells(ig, is_surface=is_surface)
+                       for ig in self.igs)
 
     ##
     # 22.02.2007, c
