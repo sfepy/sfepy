@@ -666,7 +666,7 @@ class Field( Struct ):
         smallest value in `dofs` if `fill_value` is None.
         """
         if fill_value is None:
-            if dofs.shape[1]: # Vector.
+            if dofs.shape[1] > 1: # Vector.
                 fill_value = nm.amin(nm.abs(dofs))
             else: # Scalar.
                 fill_value = nm.amin(dofs)
