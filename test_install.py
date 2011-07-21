@@ -71,6 +71,8 @@ def report(out, name, line, item, value, eps=None):
         fd.write(out)
         fd.write('*' * 55)
 
+    return ok
+
 usage = '%prog' + '\n' + __doc__
 
 def main():
@@ -83,52 +85,55 @@ def main():
     fd = open('test_install.log', 'w')
     fd.close()
 
+    eok = 0
+
     t0 = time.time()
 
     out, err = check_output('./simple.py examples/diffusion/poisson.py')
-    report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
+    eok += report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
 
     out, err = check_output('./simple.py examples/navier_stokes/stokes.py')
-    report(out, '...', -2, 5, '1.210678e-13', eps=1e-11)
+    eok += report(out, '...', -2, 5, '1.210678e-13', eps=1e-11)
 
     out, err = check_output('./simple.py examples/diffusion/poisson_parametric_study.py')
-    report(out, '...', -2, 5, '1.606408e-14', eps=1e-13)
+    eok += report(out, '...', -2, 5, '1.606408e-14', eps=1e-13)
 
     out, err = check_output('./findSurf.py meshes/quantum/cube.node -')
-    report(out, '...', -2, 1, '64247')
+    eok += report(out, '...', -2, 1, '64247')
 
     out, err = check_output('./eigen.py examples/phononic/band_gaps.py')
-    report(out, '...', -4, 2, '232.40156299')
-    report(out, '...', -3, 1, '132604.79235405]')
+    eok += report(out, '...', -4, 2, '232.40156299')
+    eok += report(out, '...', -3, 1, '132604.79235405]')
 
     out, err = check_output('./eigen.py examples/phononic/band_gaps.py -d')
-    report(out, '...', -5, 4, '0.209329,')
+    eok += report(out, '...', -5, 4, '0.209329,')
 
     out, err = check_output('./schroedinger.py --2d --mesh')
-    report(out, '...', -2, -1, 'tmp/mesh.vtk')
+    eok += report(out, '...', -2, -1, 'tmp/mesh.vtk')
 
     out, err = check_output('./schroedinger.py --2d --hydrogen')
-    report(out, '...', -4, -2, '-0.01984415', eps=1e-4)
+    eok += report(out, '...', -4, -2, '-0.01984415', eps=1e-4)
 
     out, err = check_output('python examples/standalone/homogenized_elasticity/rs_correctors.py -n')
-    report(out, '...', -2, -1, '1.644e-01]]')
+    eok += report(out, '...', -2, -1, '1.644e-01]]')
 
     out, err = check_output('python examples/standalone/elastic_materials/compare_elastic_materials.py -n')
-    report(out, '...', -2, 5, '1.068759e-14', eps=1e-13)
+    eok += report(out, '...', -2, 5, '1.068759e-14', eps=1e-13)
 
     out, err = check_output('python examples/standalone/interactive/linear_elasticity.py')
-    report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
+    eok += report(out, '...', -8, 0, '1.62128841139e-14', eps=1e-13)
 
     t1 = time.time()
 
     out, err = check_output('./runTests.py')
-    report(out, 'tests', -2, 7, '0')
+    tok = report(out, 'tests', -2, 7, '0')
+    tok = {True : 'ok', False : 'fail'}[tok]
 
     t2 = time.time()
 
     fd = open('test_install_times.log', 'a+')
-    fd.write('%s: examples: %.2f [s], tests: %.2f [s]\n'
-             % (time.ctime(t0), t1 - t0, t2 - t1))
+    fd.write('%s: examples: %.2f [s] (%d), tests: %.2f [s] (%s)\n'
+             % (time.ctime(t0), t1 - t0, eok, t2 - t1, tok))
     fd.close()
 
 if __name__ == '__main__':
