@@ -318,7 +318,7 @@ class Approximation( Struct ):
             ps = self.interp.poly_spaces[esd.face_type]
             bf = self.get_base(esd.face_type, 0, integral)
 
-            conn = sd.get_connectivity(self.is_surface)
+            conn = sd.get_connectivity()
 
             mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
             sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
