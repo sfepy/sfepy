@@ -83,7 +83,7 @@ class ProblemDefinition( Struct ):
         if get_default_attr(conf.options, 'ulf', False):
             domain.mesh.coors_act = domain.mesh.coors.copy()
 
-        obj = ProblemDefinition('prblem_from_conf', conf=conf,
+        obj = ProblemDefinition('problem_from_conf', conf=conf,
                                 functions=functions, domain=domain,
                                 auto_conf=False, auto_solvers=False)
 
