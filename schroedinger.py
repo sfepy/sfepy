@@ -652,6 +652,11 @@ and visualize the result:
 """
 
 help = {
+    'conf' :
+    'override problem description file items, written as python'
+    ' dictionary without surrouding braces',
+    'options' : 'override options item of problem description,'
+    ' written as python dictionary without surrouding braces',
     'filename' :
     'basename of output file(s) [default: <basename of input file mesh>]',
     'well' :
@@ -681,15 +686,21 @@ help = {
 
 def main():
     parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
+    parser.add_option('-c', '--conf', metavar='"key : value, ..."',
+                      action='store', dest='conf', type='string',
+                      default=None, help= help['conf'])
+    parser.add_option('-O', '--options', metavar='"key : value, ..."',
+                      action='store', dest='app_options', type='string',
+                      default=None, help=help['options'])
+    parser.add_option('-o', '', metavar='filename',
+                      action='store', dest='output_filename_trunk',
+                      default=None, help=help['filename'])
     parser.add_option('--mesh',
                       action='store_true', dest='mesh',
                       default=False, help=help['mesh'])
     parser.add_option('--2d',
                       action='store_true', dest='dim2',
                       default=False, help=help['dim'])
-    parser.add_option('-o', '', metavar='filename',
-                      action='store', dest='output_filename_trunk',
-                      default=None, help=help['filename'])
     parser.add_option('--oscillator',
                       action='store_true', dest='oscillator',
                       default=False, help=help['oscillator'])
@@ -783,7 +794,17 @@ def main():
         return
 
     required, other = get_standard_keywords()
-    conf = ProblemConf.from_file(filename_in, required, other)
+
+    override = ProblemConf.dict_from_string(options.conf)
+    if options.app_options:
+        if not 'options' in override:
+            override['options'] = {}
+
+        override_options = ProblemConf.dict_from_string(options.app_options)
+        override['options'].update(override_options)
+
+    conf = ProblemConf.from_file(filename_in, required, other,
+                                 override=override)
 
     if auto_mesh_name and not sfepy.in_source_tree:
         conf.filename_mesh = "tmp/mesh.vtk"
