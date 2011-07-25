@@ -1,9 +1,10 @@
 import re
 import numpy as nm
 
-from base import Struct, IndexedStruct, dict_to_struct, pause, output, copy,\
-     import_file, assert_, get_default
-from reader import Reader
+from sfepy.base.base import (Struct, IndexedStruct, dict_to_struct,
+                             output, copy, update_dict_recursively,
+                             import_file, assert_, get_default)
+from sfepy.base.parse_conf import create_bnf
 
 _required = ['filename_mesh', 'field_[0-9]+|fields',
              'ebc_[0-9]+|ebcs', 'equations',
@@ -240,7 +241,7 @@ class ProblemConf( Struct ):
 
     @staticmethod
     def from_file(filename, required=None, other=None, verbose=True,
-                  define_args=None):
+                  define_args=None, override=None):
         """
         Loads the problem definition from a file.
 
@@ -269,7 +270,6 @@ class ProblemConf( Struct ):
         """
         funmod = import_file( filename )
 
-
         if "define" in funmod.__dict__:
             if define_args is None:
                 define_dict = funmod.__dict__["define"]()
@@ -281,25 +281,51 @@ class ProblemConf( Struct ):
             define_dict = funmod.__dict__
 
         obj = ProblemConf(define_dict, funmod, filename,
-                          required, other, verbose)
+                          required, other, verbose, override)
 
         return obj
 
     @staticmethod
-    def from_module(module, required=None, other=None, verbose=True):
+    def from_module(module, required=None, other=None, verbose=True,
+                    override=None):
         obj = ProblemConf(module.__dict__, module, module.__name__,
-                          required, other, verbose)
+                          required, other, verbose, override)
 
         return obj
 
     @staticmethod
-    def from_dict(dict_, funmod, required=None, other=None, verbose=True ):
-        obj = ProblemConf(dict_, funmod, None, required, other, verbose)
+    def from_dict(dict_, funmod, required=None, other=None, verbose=True,
+                  override=None):
+        obj = ProblemConf(dict_, funmod, None, required, other, verbose,
+                          override)
 
         return obj
+
+    @staticmethod
+    def dict_from_string(string):
+        """
+        Parse `string` and return a dictionary that can be used to
+        construct/override a ProblemConf instance.
+        """
+        if string is None:
+            return {}
+
+        if isinstance(string, dict):
+            return string
+
+        parser = create_bnf()
+
+        out = {}
+        for r in parser.parseString(string):
+          out.update(r)
+
+        return out
 
     def __init__(self, define_dict, funmod=None, filename=None,
-                 required=None, other=None, verbose=True):
+                 required=None, other=None, verbose=True, override=None):
+        if override:
+            define_dict = update_dict_recursively(define_dict, override)
+
         self.__dict__.update(define_dict)
         self.verbose = verbose
 
