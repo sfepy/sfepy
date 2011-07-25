@@ -925,6 +925,20 @@ def load_classes(filenames, classes, package_name=None):
 
     return table
 
+def update_dict_recursively(dst, src):
+    """
+    Update `dst` dictionary recursively using items in `src` dictionary.
+    """
+    for key in src:
+        if (key in dst) and isinstance(src[key], dict) \
+               and isinstance(dst[key], dict):
+            dst[key] = update_dict_recursively(dst[key], src[key])
+
+        else:
+            dst[key] = src[key]
+
+    return dst
+
 ##
 # 09.08.2006, c
 def invert_dict( d, is_val_tuple = False ):
