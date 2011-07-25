@@ -81,10 +81,6 @@ solver_1 = {
     'kind' : 'nls.newton',
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
 

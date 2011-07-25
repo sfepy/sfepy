@@ -347,9 +347,7 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
-        if cache_override is None:
-            cache_override = get_default_attr( self.conf.fe,
-                                               'cache_override', True )
+        cache_override = get_default(cache_override, False)
 
         self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)

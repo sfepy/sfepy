@@ -112,7 +112,3 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
 }
-
-fe = {
-    'chunk_size' : 1000
-}

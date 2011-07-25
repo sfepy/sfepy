@@ -81,12 +81,6 @@ equations = {
        = 0""",
 }
 
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 10000
-}
-
 solver_1 = {
     'name' : 'oseen',
     'kind' : 'nls.oseen',

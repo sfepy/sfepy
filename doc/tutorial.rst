@@ -432,15 +432,6 @@ iteration is needed and the final rezidual is obtained for free.
 The solvers to use are specified in the options block. We can define multiple
 solvers with different convergence parameters if necessary.
 
-::
-
-    fe = {
-        'chunk_size' : 1000
-    }
-
-FE assembling parameters: ``'chunk_size'`` is now unused, deprecated, and
-will be removed.
-
 That's it! Now it is possible to proceed as described in
 :ref:`invoking_command_line`.
 

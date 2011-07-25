@@ -127,10 +127,3 @@ solvers = {
         'n_step': 11, # has precedence over dt!
         }),
     }
-
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size': 1000,
-    'cache_override': False,
-}

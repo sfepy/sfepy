@@ -111,11 +111,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
-
 from sfepy.base.testing import TestCommon
 
 ##

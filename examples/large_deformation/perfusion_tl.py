@@ -138,13 +138,6 @@ solver_2 = {
 }
 
 ##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000,
-    'cache_override' : False,
-}
-
-##
 # Functions.
 def get_traction(ts, coors, mode=None):
     """

@@ -93,14 +93,6 @@ solvers = {
                   'eps_r'      : 1e-10,
                   'problem'   : 'nonlinear'}),
 }
-#! FE assembling parameters
-#! ------------------------
-#! 'chunk_size' determines maximum number of elements to assemble in one C
-#! function call. Higher values mean faster assembling, but also more memory
-#! usage.
-fe = {
-    'chunk_size' : 1000
-}
 #! Options
 #! -------
 #! Various problem-specific options.

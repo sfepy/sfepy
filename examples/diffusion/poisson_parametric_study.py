@@ -119,13 +119,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-# FE assembling parameters: 'chunk_size' determines maximum number of elements
-# to assemble in one C function call. Higher values mean faster assembling, but
-# also more memory usage.
-fe = {
-    'chunk_size' : 10000
-}
-
 functions = {
     'select_circ': (lambda coors, domain=None: 
                     select_circ(coors[:,0], coors[:,1], 0, default_diameter),),

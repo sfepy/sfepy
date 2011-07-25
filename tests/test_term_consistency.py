@@ -47,10 +47,6 @@ material_1 = {
     'function' : 'get_pars',
 }   
 
-fe = {
-    'chunk_size' : 100
-}
-
 def get_pars(ts, coor, mode=None, term=None, **kwargs):
     if mode == 'qp':
         n_nod, dim = coor.shape

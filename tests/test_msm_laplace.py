@@ -80,10 +80,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-fe = {
-    'chunk_size' : 100000
-}
-
 import numpy as nm
 from sfepy.base.testing import TestCommon
 from sfepy.base.base import debug, pause, assert_

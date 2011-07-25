@@ -114,12 +114,6 @@ equations = {
 }
 
 ##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000
-}
-
-##
 # Solvers etc.
 solver_0 = {
     'name' : 'ls',

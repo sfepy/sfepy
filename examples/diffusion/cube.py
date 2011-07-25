@@ -128,9 +128,3 @@ solver_1 = {
     'is_plot'    : False,
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
-
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000
-}

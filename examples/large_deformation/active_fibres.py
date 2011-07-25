@@ -181,10 +181,3 @@ solver_2 = {
     'dt'    : None,
     'n_step' : 21, # has precedence over dt!
 }
-
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100000,
-    'cache_override' : False,
-}

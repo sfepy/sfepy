@@ -93,10 +93,6 @@ options = {
     'ls' : 'ls',
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
 import numpy as nm
 
 amplitude = 2.0

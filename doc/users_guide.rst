@@ -997,15 +997,6 @@ solution (the `hooks`), and for other settings.
     ``examples/diffusion/poisson_parametric_study.py`` for an example.
   * ``output_dir`` redirects output files to specified directory
 
-* **DEPRECATED** Number of elements assembled in one term function call::
-
-    fe = {
-        'chunk_size' : 1000
-    }
-
-  * **Warning** This option is deprecated and will be removed. Do not
-    use it in new problem description files.
-
 Building Equations in SfePy
 ---------------------------
 

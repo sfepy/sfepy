@@ -92,10 +92,6 @@ solvers = {
                   'problem'   : 'nonlinear'}),
 }
 
-fe = {
-    'chunk_size' : 10000
-}
-
 micro_filename = data_dir \
                  + '/examples/homogenization/linear_homogenization_up.py'
 options = {

@@ -162,11 +162,6 @@ def define_input(filename, output_dir):
          = 0""",
     }
 
-    fe = {
-        'chunk_size' : 100000,
-        'cache_override' : True,
-    }
-
     solver_0 = {
         'name' : 'ls',
         'kind' : 'ls.scipy_direct', # Direct solver.

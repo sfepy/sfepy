@@ -507,7 +507,6 @@ class AcousticBandGapsApp( SimpleApp ):
             dconf = ProblemConf.from_dict( dc['input'], dc['module'] )
 
             dconf.materials = self.conf.materials
-            dconf.fe = self.conf.fe
             dconf.regions.update( self.conf.regions )
             dconf.options['output_dir'] = self.problem.output_dir
 

@@ -85,7 +85,3 @@ solvers = {
                                'problem'   : 'nonlinear',
                                } )
 }
-
-fe = {
-    'chunk_size' : 100000
-}

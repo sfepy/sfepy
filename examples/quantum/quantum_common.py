@@ -106,7 +106,4 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
         'strategy' : 1,
     }
 
-    fe = {
-        'chunk_size' : 100000
-    }
     return locals()

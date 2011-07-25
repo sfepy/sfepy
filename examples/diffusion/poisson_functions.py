@@ -58,10 +58,6 @@ solvers = {
                  }),
 }
 
-fe = {
-    'chunk_size' : 100000
-}
-
 def get_pars(ts, coors, mode=None, **kwargs):
     """
     We can define the coefficient `load.val` as a function of space.

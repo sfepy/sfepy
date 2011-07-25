@@ -120,12 +120,6 @@ equations = {
     """dw_stokes.i1.Omega( u, q ) = 0""",
 }
 
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 1000
-}
-
 solver_0 = {
     'name' : 'ls',
     'kind' : 'ls.scipy_direct',

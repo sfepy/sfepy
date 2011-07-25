@@ -159,11 +159,3 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
 }
-
-
-#! FE assembling parameters
-#! ------------------------
-#! 'chunk_size' is now unused, deprecated, and will be removed.
-fe = {
-    'chunk_size' : 1000
-}

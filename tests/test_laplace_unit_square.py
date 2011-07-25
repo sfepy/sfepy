@@ -117,10 +117,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
 lin_min, lin_max = 0.0, 2.0
 
 ##

@@ -117,7 +117,3 @@ options = {
     'ts' : 'ts',
     'save_steps' : -1,
 }
-
-fe = {
-    'chunk_size' : 1000
-}

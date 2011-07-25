@@ -85,10 +85,6 @@ epbc_12 = {
     'match' : 'match_x_line',
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
 from sfepy.fem.periodic import match_x_line, match_y_line
 
 functions = {

@@ -195,13 +195,6 @@ requirements = {
 }
 
 ##
-# FE assembling options.
-fe = {
-    'chunk_size' : 100000,
-    'cache_override' : True,
-}
-
-##
 # Solvers.
 solver_0 = {
     'name' : 'ls',

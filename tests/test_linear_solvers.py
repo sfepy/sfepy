@@ -104,10 +104,6 @@ options = {
     'nls' : 'newton',
 }
 
-fe = {
-    'chunk_size' : 100000
-}
-
 from sfepy.base.testing import TestCommon
 output_name = 'test_linear_solvers_%s.vtk'
 

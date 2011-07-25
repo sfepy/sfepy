@@ -13,7 +13,7 @@ _required = ['filename_mesh', 'field_[0-9]+|fields',
              'solver_[0-9]+|solvers']
 _other = ['epbc_[0-9]+|epbcs', 'lcbc_[0-9]+|lcbcs', 'nbc_[0-9]+|nbcs',
           'ic_[0-9]+|ics', 'function_[0-9]+|functions', 'options',
-          'integral_[0-9]+|integrals', 'fe']
+          'integral_[0-9]+|integrals']
 
 ##
 # c: 19.02.2008, r: 19.02.2008
@@ -212,7 +212,6 @@ transforms = {
     'solvers'   : transform_solvers,
     'integrals' : transform_integrals,
     'opt'       : transform_to_struct_1,
-    'fe'        : transform_to_struct_1,
     'regions'   : transform_regions,
     'shape_opt' : transform_to_struct_10,
     'fields'    : transform_fields,

@@ -94,10 +94,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-fe = {
-    'chunk_size' : 100000
-}
-
 import numpy as nm
 try:
     import sympy_operators as sops

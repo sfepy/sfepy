@@ -156,13 +156,6 @@ functions = {
     'match_y_line' : (match_y_line,),
 }
 
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 100,
-    'cache_override' : True,
-}
-
 solver_0 = {
     'name' : 'ls',
     'kind' : 'ls.scipy_direct',

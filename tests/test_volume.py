@@ -25,10 +25,6 @@ expressions = {
     'surface_u' : 'd_volume_surface.i2.Gamma( u )',
 }
 
-fe = {
-    'chunk_size' : 1000
-}
-
 import numpy as nm
 from sfepy.base.testing import TestCommon
 from sfepy.base.base import debug, pause

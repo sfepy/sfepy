@@ -126,12 +126,6 @@ solver_1 = {
     'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
 }
 
-##
-# FE assembling parameters.
-fe = {
-    'chunk_size' : 1000
-}
-
 from testsBasic import TestLCBC
 output_name = 'test_lcbc_2d.vtk'
 

@@ -83,11 +83,4 @@ def define():
                       'problem'   : 'nonlinear'}),
     }
 
-    ##
-    # FE assembling parameters.
-    fe = {
-        'chunk_size' : 1000,
-        'cache_override' : False,
-    }
-
     return locals()
