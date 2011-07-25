@@ -3,7 +3,7 @@ Create pyparsing grammar for problem configuration and options.
 """
 from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        Forward, Empty, quotedString, oneOf, removeQuotes,
-                       delimitedList, nums, alphas, alphas8bit)
+                       delimitedList, nums, alphas, alphas8bit, alphanums)
 
 def create_bnf():
     cvt_int = lambda toks: int(toks[0])
@@ -28,7 +28,7 @@ def create_bnf():
 
     list_item = (real | integer | Group(list_str) | tuple_str | dict_str
                  | quotedString.setParseAction(removeQuotes)
-                 | Word(alphas8bit + alphas + "_"))
+                 | Word(alphas8bit + alphas, alphas8bit + alphanums + "_"))
     list_item2 = list_item | Empty().setParseAction(lambda: [None])
 
     tuple_str << (Suppress("(") + Optional(delimitedList(list_item)) +
