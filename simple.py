@@ -21,6 +21,11 @@ def print_terms():
 usage = """%prog [options] filename_in"""
 
 help = {
+    'conf' :
+    'override problem description file items, written as python'
+    ' dictionary without surrouding braces',
+    'options' : 'override options item of problem description,'
+    ' written as python dictionary without surrouding braces',
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
@@ -46,6 +51,12 @@ help = {
 
 def main():
     parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
+    parser.add_option('-c', '--conf', metavar='"key : value, ..."',
+                      action='store', dest='conf', type='string',
+                      default=None, help= help['conf'])
+    parser.add_option('-O', '--options', metavar='"key : value, ..."',
+                      action='store', dest='app_options', type='string',
+                      default=None, help=help['options'])
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename_trunk",
                        default = None, help = help['filename'] )
@@ -78,7 +89,6 @@ def main():
                        default = None, help = help['list'] )
 
     options, args = parser.parse_args()
-#    print options; pause()
 
     if (len( args ) == 1):
         filename_in = args[0];
@@ -88,7 +98,7 @@ def main():
         else:
             parser.print_help(),
         return
-    
+
     output.set_output(filename=options.log,
                       quiet=options.quiet,
                       combined=options.log is not None)
@@ -99,7 +109,9 @@ def main():
         required.remove( 'solver_[0-9]+|solvers' )
         other.extend( ['equations'] )
 
-    conf = ProblemConf.from_file( filename_in, required, other )
+    conf = ProblemConf.from_file_and_options(filename_in, options,
+                                             required, other)
+
     opts = conf.options
     output_prefix = get_default_attr( opts, 'output_prefix', 'sfepy:' )
 
