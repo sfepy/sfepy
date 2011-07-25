@@ -794,17 +794,8 @@ def main():
         return
 
     required, other = get_standard_keywords()
-
-    override = ProblemConf.dict_from_string(options.conf)
-    if options.app_options:
-        if not 'options' in override:
-            override['options'] = {}
-
-        override_options = ProblemConf.dict_from_string(options.app_options)
-        override['options'].update(override_options)
-
-    conf = ProblemConf.from_file(filename_in, required, other,
-                                 override=override)
+    conf = ProblemConf.from_file_and_options(filename_in, options,
+                                             required, other)
 
     if auto_mesh_name and not sfepy.in_source_tree:
         conf.filename_mesh = "tmp/mesh.vtk"

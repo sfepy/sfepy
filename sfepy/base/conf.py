@@ -286,6 +286,26 @@ class ProblemConf( Struct ):
         return obj
 
     @staticmethod
+    def from_file_and_options(filename, options, required=None, other=None,
+                          verbose=True, define_args=None):
+        """
+        Utility function, a wrapper around ProblemConf.from_file() with
+        possible override taken from `options`.
+        """
+        override = ProblemConf.dict_from_string(options.conf)
+        if options.app_options:
+            if not 'options' in override:
+                override['options'] = {}
+
+            override_options = ProblemConf.dict_from_string(options.app_options)
+            override['options'].update(override_options)
+
+        obj = ProblemConf.from_file(filename, required=required, other=other,
+                                    verbose=verbose, define_args=define_args,
+                                    override=override)
+        return obj
+
+    @staticmethod
     def from_module(module, required=None, other=None, verbose=True,
                     override=None):
         obj = ProblemConf(module.__dict__, module, module.__name__,
