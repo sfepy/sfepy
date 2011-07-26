@@ -50,7 +50,7 @@ options = {
     'fig_name_angle' : os.path.join( cwd, 'output', 'band_gaps_angle.pdf' ),
     'fig_name_wave' : os.path.join( cwd, 'output', 'band_gaps_wave.pdf' ),
     
-#    'method' : 'eig.sgscipy', # 'eig.sgscipy' (default) or 'eig.symeig'
+#    'method' : 'eig.sgscipy',
 
     'eigenmomentum' : {'var' : 'u',
                        'regions' : ['Y2'],
