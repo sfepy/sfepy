@@ -24,14 +24,12 @@ def eig(mtx_a, mtx_b=None, num=None, eigenvectors=True,
 
     return out
 
-class StandardEigenvalueSolver(EigenvalueSolver):
+def standard_call(call):
     """
-    Standard eigensolver class that does some common things such as argument
-    preparation etc. Subclasses should implement the `call()` method.
+    Decorator handling argument preparation and timing for eigensolvers.
     """
-
-    def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
-                 eigenvectors=None, status=None, conf=None):
+    def _standard_call(self, mtx_a, mtx_b=None, n_eigs=None,
+                       eigenvectors=None, status=None, conf=None):
         tt = time.clock()
 
         conf = get_default(conf, self.conf)
@@ -41,7 +39,7 @@ class StandardEigenvalueSolver(EigenvalueSolver):
         eigenvectors = get_default(eigenvectors, self.eigenvectors)
         status = get_default(status, self.status)
 
-        result = self.call(mtx_a, mtx_b, n_eigs, eigenvectors, status, conf)
+        result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status, conf)
 
         ttt = time.clock() - tt
         if status is not None:
@@ -49,7 +47,9 @@ class StandardEigenvalueSolver(EigenvalueSolver):
 
         return result
 
-class ScipyEigenvalueSolver(StandardEigenvalueSolver):
+    return _standard_call
+
+class ScipyEigenvalueSolver(EigenvalueSolver):
     """
     SciPy-based solver for both dense and sparse problems (if `n_eigs`
     is given).
@@ -57,10 +57,11 @@ class ScipyEigenvalueSolver(StandardEigenvalueSolver):
     name = 'eig.scipy'
 
     def __init__(self, conf, **kwargs):
-        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
+        EigenvalueSolver.__init__(self, conf, **kwargs)
 
-    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
-             status=None, conf=None):
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None):
 
         if n_eigs is None:
             mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
@@ -114,12 +115,13 @@ class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = StandardEigenvalueSolver.process_conf(conf)
+        common = EigenvalueSolver.process_conf(conf)
 
         return Struct(force_n_eigs=get('force_n_eigs', False)) + common
 
-    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
-             status=None, conf=None):
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None):
         """
         Notes
         -----
@@ -161,8 +163,7 @@ class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
                                              eigenvectors, status=status)
         return out
 
-
-class LOBPCGEigenvalueSolver(StandardEigenvalueSolver):
+class LOBPCGEigenvalueSolver(EigenvalueSolver):
     """
     SciPy-based LOBPCG solver for sparse symmetric problems.
     """
@@ -188,7 +189,7 @@ class LOBPCGEigenvalueSolver(StandardEigenvalueSolver):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = StandardEigenvalueSolver.process_conf(conf)
+        common = EigenvalueSolver.process_conf(conf)
 
         return Struct(i_max=get('i_max', 20),
                       n_eigs=get('n_eigs', None),
@@ -198,13 +199,14 @@ class LOBPCGEigenvalueSolver(StandardEigenvalueSolver):
                       verbosity=get('verbosity', 0)) + common
 
     def __init__(self, conf, **kwargs):
-        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
+        EigenvalueSolver.__init__(self, conf, **kwargs)
 
         from scipy.sparse.linalg.eigen import lobpcg
         self.lobpcg = lobpcg
 
-    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
-             status=None, conf=None):
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+                 status=None, conf=None):
 
         if n_eigs is None:
             n_eigs = mtx_a.shape[0]
@@ -225,7 +227,7 @@ class LOBPCGEigenvalueSolver(StandardEigenvalueSolver):
 
         return out
 
-class PysparseEigenvalueSolver(StandardEigenvalueSolver):
+class PysparseEigenvalueSolver(EigenvalueSolver):
     """
     Pysparse-based eigenvalue solver for sparse symmetric problems.
     """
@@ -251,7 +253,7 @@ class PysparseEigenvalueSolver(StandardEigenvalueSolver):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = StandardEigenvalueSolver.process_conf(conf)
+        common = EigenvalueSolver.process_conf(conf)
 
         return Struct(i_max=get('i_max', 100),
                       eps_a=get('eps_a', 1e-5),
@@ -271,10 +273,11 @@ class PysparseEigenvalueSolver(StandardEigenvalueSolver):
     _convert_mat = staticmethod(_convert_mat)
 
     def __init__(self, conf, **kwargs):
-        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
+        EigenvalueSolver.__init__(self, conf, **kwargs)
 
-    def call(self, mtx_a, mtx_b=None, n_eigs=None,
-             eigenvectors=None, status=None, conf=None):
+    @standard_call
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
+                 eigenvectors=None, status=None, conf=None):
         from pysparse import jdsym, itsolvers, precon
 
         output("loading...")
