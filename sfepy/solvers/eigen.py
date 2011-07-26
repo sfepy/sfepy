@@ -6,8 +6,6 @@ import scipy.linalg as sla
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
 
-##
-# c: 25.09.2007, r: 08.04.2008
 def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
          return_time = None, method = 'eig.scipy', **ckwargs ):
 
@@ -17,15 +15,42 @@ def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
     solver = Solver.any_from_conf( conf )
 
     status = {}
-    out = solver( mtx_a, mtx_b, num, eigenvectors, status )
+    out = solver(mtx_a, mtx_b, num, eigenvectors, status, conf)
     if return_time is not None:
         return_time[0] = status['time']
         
     return out
 
+class StandardEigenvalueSolver(EigenvalueSolver):
+    """
+    Standard eigensolver class that does some common things such as argument
+    preparation etc. Subclasses should implement the `call()` method.
+    """
+
+    def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
+                 eigenvectors=None, status=None, conf=None ):
+        tt = time.clock()
+
+        conf = get_default(conf, self.conf)
+        mtx_a = get_default(mtx_a, self.mtx_a)
+        mtx_b = get_default(mtx_b, self.mtx_b)
+        n_eigs = get_default(n_eigs, self.n_eigs)
+        eigenvectors = get_default(eigenvectors, self.eigenvectors)
+        status = get_default(status, self.status)
+        mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
+
+        result = self.call(mtx_a, mtx_b, n_eigs, eigenvectors, status, conf)
+
+        ttt = time.clock() - tt
+        if status is not None:
+            status['time'] = ttt
+        output('...done in %.2f s' % ttt)
+
+        return result
+
 ##
 # c: 03.03.2008, r: 03.03.2008
-class SymeigEigenvalueSolver( EigenvalueSolver ):
+class SymeigEigenvalueSolver( StandardEigenvalueSolver ):
     name = 'eig.symeig'
     
     ##
@@ -42,27 +67,14 @@ class SymeigEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 08.04.2008
-    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+    def call( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
-        conf = get_default( conf, self.conf )
-        mtx_a = get_default( mtx_a, self.mtx_a )
-        mtx_b = get_default( mtx_b, self.mtx_b )
-        n_eigs = get_default( n_eigs, self.n_eigs )
-        eigenvectors = get_default( eigenvectors, self.eigenvectors )
-        status = get_default( status, self.status )
-
         if n_eigs is None:
             rng = None
         else:
             rng = (1, n_eigs)
+        return self.symeig( mtx_a, mtx_b, range = rng, eigenvectors = eigenvectors )
 
-        tt = time.clock()
-        mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
-        out = self.symeig( mtx_a, mtx_b, range = rng, eigenvectors = eigenvectors )
-        if status is not None:
-            status['time'] = time.clock() - tt
-
-        return out
 ##
 # c: 03.03.2008, r: 03.03.2008
 class ScipyEigenvalueSolver( EigenvalueSolver ):
@@ -75,18 +87,9 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 08.04.2008
-    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+    def call( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
-        conf = get_default( conf, self.conf )
-        mtx_a = get_default( mtx_a, self.mtx_a )
-        mtx_b = get_default( mtx_b, self.mtx_b )
-        n_eigs = get_default( n_eigs, self.n_eigs )
-        eigenvectors = get_default( eigenvectors, self.eigenvectors )
-        status = get_default( status, self.status )
-
-        tt = time.clock()
         if n_eigs is None:
-            mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
             out = sla.eig( mtx_a, mtx_b, right = eigenvectors )
             if eigenvectors:
                 eigs = out[0]
@@ -146,18 +149,11 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
 
     ##
     # c: 08.04..2008, r: 08.04..2008
-    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+    def call( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
         """eigenvectors arg ignored, computes them always"""
         import scipy.lib.lapack as ll
-        conf = get_default( conf, self.conf )
-        mtx_a = get_default( mtx_a, self.mtx_a )
-        mtx_b = get_default( mtx_b, self.mtx_b )
-        n_eigs = get_default( n_eigs, self.n_eigs )
-        eigenvectors = get_default( eigenvectors, self.eigenvectors )
-        status = get_default( status, self.status )
 
-        tt = time.clock()
         if (n_eigs is None) or (conf.force_n_eigs):
             mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
             if nm.iscomplexobj( mtx_a ):
@@ -188,12 +184,8 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
                     out = (out[0][:n_eigs], out[1][:,:n_eigs])
                     
         else:
-            out = ScipyEigenvalueSolver.__call__( self, mtx_a, mtx_b, n_eigs,
+            out = ScipyEigenvalueSolver.call( self, mtx_a, mtx_b, n_eigs,
                   eigenvectors, status = None )
-
-        if status is not None:
-            status['time'] = time.clock() - tt
-
         return out
 
 
@@ -235,21 +227,12 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
         from scipy.sparse.linalg.eigen import lobpcg
         self.lobpcg = lobpcg
 
-    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+    def call( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
-        conf = get_default( conf, self.conf )
-        mtx_a = get_default( mtx_a, self.mtx_a )
-        mtx_b = get_default( mtx_b, self.mtx_b )
-        n_eigs = get_default( n_eigs, self.n_eigs )
-        eigenvectors = get_default( eigenvectors, self.eigenvectors )
-        status = get_default( status, self.status )
-
         if n_eigs is None:
             n_eigs = mtx_a.shape[0]
         else:
             n_eigs = min(n_eigs, mtx_a.shape[0])
-
-        tt = time.clock()
 
         x = nm.zeros( (mtx_a.shape[0], n_eigs), dtype = nm.float64 )
         x[:n_eigs] = nm.eye( n_eigs, dtype = nm.float64 )
@@ -258,9 +241,6 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
                            tol = conf.eps_a, maxiter = conf.i_max,
                            largest = conf.largest,
                            verbosityLevel = conf.verbosity )
-
-        if status is not None:
-            status['time'] = time.clock() - tt
 
         if not eigenvectors:
             out = out[0]
@@ -318,15 +298,9 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
 
     ##
     # c: 03.03.2008, r: 03.03.2008
-    def __call__( self, mtx_a, mtx_b = None, n_eigs = None,
+    def call( self, mtx_a, mtx_b = None, n_eigs = None,
                   eigenvectors = None, status = None, conf = None ):
         from pysparse import jdsym, itsolvers, precon
-        conf = get_default( conf, self.conf )
-        mtx_a = get_default( mtx_a, self.mtx_a )
-        mtx_b = get_default( mtx_b, self.mtx_b )
-        n_eigs = get_default( n_eigs, self.n_eigs )
-        eigenvectors = get_default( eigenvectors, self.eigenvectors )
-        status = get_default( status, self.status )
 
         output( "loading..." )
         A = self._convert_mat( mtx_a )
@@ -351,8 +325,6 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
                                                  strategy = conf.strategy )
 
         output( "number of converged eigenvalues:", kconv )
-        ttt = time.clock() - tt
-        output( '...done in %.2f s' % ttt )
 
         if status is not None:
             status['time'] = ttt
