@@ -6,19 +6,22 @@ import scipy.linalg as sla
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
 
-def eig( mtx_a, mtx_b = None, num = None, eigenvectors = True,
-         return_time = None, method = 'eig.scipy', **ckwargs ):
-
+def eig(mtx_a, mtx_b=None, num=None, eigenvectors=True,
+        return_time=None, method='eig.scipy', **ckwargs):
+    """
+    Utility function that constructs an eigenvalue solver given by
+    `method`, calls it and returns solution.
+    """
     kwargs = {'name' : 'aux', 'kind' : method}
-    kwargs.update( ckwargs )
-    conf = Struct( **kwargs )
-    solver = Solver.any_from_conf( conf )
+    kwargs.update(ckwargs)
+    conf = Struct(**kwargs)
+    solver = Solver.any_from_conf(conf)
 
     status = {}
     out = solver(mtx_a, mtx_b, num, eigenvectors, status, conf)
     if return_time is not None:
         return_time[0] = status['time']
-        
+
     return out
 
 class StandardEigenvalueSolver(EigenvalueSolver):
@@ -28,7 +31,7 @@ class StandardEigenvalueSolver(EigenvalueSolver):
     """
 
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
-                 eigenvectors=None, status=None, conf=None ):
+                 eigenvectors=None, status=None, conf=None):
         tt = time.clock()
 
         conf = get_default(conf, self.conf)
@@ -37,65 +40,36 @@ class StandardEigenvalueSolver(EigenvalueSolver):
         n_eigs = get_default(n_eigs, self.n_eigs)
         eigenvectors = get_default(eigenvectors, self.eigenvectors)
         status = get_default(status, self.status)
-        mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
 
         result = self.call(mtx_a, mtx_b, n_eigs, eigenvectors, status, conf)
 
         ttt = time.clock() - tt
         if status is not None:
             status['time'] = ttt
-        output('...done in %.2f s' % ttt)
 
         return result
 
-##
-# c: 03.03.2008, r: 03.03.2008
-class SymeigEigenvalueSolver( StandardEigenvalueSolver ):
-    name = 'eig.symeig'
-    
-    ##
-    # c: 03.03.2008, r: 03.03.2008
-    def __init__( self, conf, **kwargs ):
-        EigenvalueSolver.__init__( self, conf, **kwargs )
-        try:
-            import symeig
-            self.symeig = symeig.symeig
-        except:
-            self.symeig = None
-            output( 'cannot import symeig, required by %s solver' % self.name )
-            raise
-
-    ##
-    # c: 03.03.2008, r: 08.04.2008
-    def call( self, mtx_a, mtx_b = None, n_eigs = None,
-                  eigenvectors = None, status = None, conf = None ):
-        if n_eigs is None:
-            rng = None
-        else:
-            rng = (1, n_eigs)
-        return self.symeig( mtx_a, mtx_b, range = rng, eigenvectors = eigenvectors )
-
-##
-# c: 03.03.2008, r: 03.03.2008
-class ScipyEigenvalueSolver( EigenvalueSolver ):
+class ScipyEigenvalueSolver(StandardEigenvalueSolver):
+    """
+    SciPy-based solver for both dense and sparse problems (if `n_eigs`
+    is given).
+    """
     name = 'eig.scipy'
-    
-    ##
-    # c: 03.03.2008, r: 03.03.2008
-    def __init__( self, conf, **kwargs ):
-        EigenvalueSolver.__init__( self, conf, **kwargs )
 
-    ##
-    # c: 03.03.2008, r: 08.04.2008
-    def call( self, mtx_a, mtx_b = None, n_eigs = None,
-                  eigenvectors = None, status = None, conf = None ):
+    def __init__(self, conf, **kwargs):
+        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
+
+    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+             status=None, conf=None):
+
         if n_eigs is None:
-            out = sla.eig( mtx_a, mtx_b, right = eigenvectors )
+            mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
+            out = sla.eig(mtx_a, mtx_b, right=eigenvectors)
             if eigenvectors:
                 eigs = out[0]
             else:
                 eigs = out
-            ii = nm.argsort( eigs )
+            ii = nm.argsort(eigs)
             if eigenvectors:
                 mtx_ev = out[1][:,ii]
                 out = (eigs[ii], mtx_ev)
@@ -114,18 +88,15 @@ class ScipyEigenvalueSolver( EigenvalueSolver ):
 
             if eigen_symmetric is None:
                 raise ImportError('cannot import eigen_symmetric!')
-                
-            out = eigen_symmetric( mtx_a, k = n_eigs, M = mtx_b )
 
-        if status is not None:
-            status['time'] = time.clock() - tt
+            out = eigen_symmetric(mtx_a, k=n_eigs, M=mtx_b)
 
         return out
 
-##
-# c: 08.04..2008, r: 08.04..2008
-class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
-    """Solver for symmetric problems."""
+class ScipySGEigenvalueSolver(ScipyEigenvalueSolver):
+    """
+    SciPy-based solver for dense symmetric problems.
+    """
     name = 'eig.sgscipy'
 
     @staticmethod
@@ -143,34 +114,36 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
+        common = StandardEigenvalueSolver.process_conf(conf)
 
         return Struct(force_n_eigs=get('force_n_eigs', False)) + common
 
-    ##
-    # c: 08.04..2008, r: 08.04..2008
-    def call( self, mtx_a, mtx_b = None, n_eigs = None,
-                  eigenvectors = None, status = None, conf = None ):
-        """eigenvectors arg ignored, computes them always"""
+    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+             status=None, conf=None):
+        """
+        Notes
+        -----
+        Eigenvectors argument is ignored, as they are computed always.
+        """
         import scipy.lib.lapack as ll
 
         if (n_eigs is None) or (conf.force_n_eigs):
-            mtx_a, mtx_b = self._to_array( mtx_a, mtx_b )
-            if nm.iscomplexobj( mtx_a ):
+            mtx_a, mtx_b = self._to_array(mtx_a, mtx_b)
+            if nm.iscomplexobj(mtx_a):
                 if mtx_b is None:
-                    fun = ll.get_lapack_funcs( ['heev'], arrays = (mtx_a,) )[0]
+                    fun = ll.get_lapack_funcs(['heev'], arrays=(mtx_a,))[0]
                 else:
-                    fun = ll.get_lapack_funcs( ['hegv'], arrays = (mtx_a,) )[0]
+                    fun = ll.get_lapack_funcs(['hegv'], arrays=(mtx_a,))[0]
             else:
                 if mtx_b is None:
-                    fun = ll.get_lapack_funcs( ['syev'], arrays = (mtx_a,) )[0]
+                    fun = ll.get_lapack_funcs(['syev'], arrays=(mtx_a,))[0]
                 else:
-                    fun = ll.get_lapack_funcs( ['sygv'], arrays = (mtx_a,) )[0]
-    ##         print fun
+                    fun = ll.get_lapack_funcs(['sygv'], arrays=(mtx_a,))[0]
+
             if mtx_b is None:
-                out = fun( mtx_a )
+                out = fun(mtx_a)
             else:
-                out = fun( mtx_a, mtx_b )
+                out = fun(mtx_a, mtx_b)
 
             if not eigenvectors:
                 if n_eigs is None:
@@ -181,15 +154,18 @@ class ScipySGEigenvalueSolver( ScipyEigenvalueSolver ):
                 if n_eigs is None:
                     out = out[:-1]
                 else:
-                    out = (out[0][:n_eigs], out[1][:,:n_eigs])
-                    
+                    out = (out[0][:n_eigs], out[1][:, :n_eigs])
+
         else:
-            out = ScipyEigenvalueSolver.call( self, mtx_a, mtx_b, n_eigs,
-                  eigenvectors, status = None )
+            out = ScipyEigenvalueSolver.call(self, mtx_a, mtx_b, n_eigs,
+                                             eigenvectors, status=status)
         return out
 
 
-class LOBPCGEigenvalueSolver( EigenvalueSolver ):
+class LOBPCGEigenvalueSolver(StandardEigenvalueSolver):
+    """
+    SciPy-based LOBPCG solver for sparse symmetric problems.
+    """
     name = 'eig.scipy_lobpcg'
 
     @staticmethod
@@ -212,7 +188,7 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
+        common = StandardEigenvalueSolver.process_conf(conf)
 
         return Struct(i_max=get('i_max', 20),
                       n_eigs=get('n_eigs', None),
@@ -221,35 +197,38 @@ class LOBPCGEigenvalueSolver( EigenvalueSolver ):
                       precond=get('precond', None),
                       verbosity=get('verbosity', 0)) + common
 
-    def __init__( self, conf, **kwargs ):
-        EigenvalueSolver.__init__( self, conf, **kwargs )
+    def __init__(self, conf, **kwargs):
+        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
 
         from scipy.sparse.linalg.eigen import lobpcg
         self.lobpcg = lobpcg
 
-    def call( self, mtx_a, mtx_b = None, n_eigs = None,
-                  eigenvectors = None, status = None, conf = None ):
+    def call(self, mtx_a, mtx_b=None, n_eigs=None, eigenvectors=None,
+             status=None, conf=None):
+
         if n_eigs is None:
             n_eigs = mtx_a.shape[0]
         else:
             n_eigs = min(n_eigs, mtx_a.shape[0])
 
-        x = nm.zeros( (mtx_a.shape[0], n_eigs), dtype = nm.float64 )
-        x[:n_eigs] = nm.eye( n_eigs, dtype = nm.float64 )
-        out = self.lobpcg( mtx_a, x, mtx_b,
-                           M = conf.precond,
-                           tol = conf.eps_a, maxiter = conf.i_max,
-                           largest = conf.largest,
-                           verbosityLevel = conf.verbosity )
+        x = nm.zeros((mtx_a.shape[0], n_eigs), dtype=nm.float64)
+        x[:n_eigs] = nm.eye(n_eigs, dtype=nm.float64)
+
+        out = self.lobpcg(mtx_a, x, mtx_b,
+                          M=conf.precond,
+                          tol=conf.eps_a, maxiter=conf.i_max,
+                          largest=conf.largest,
+                          verbosityLevel=conf.verbosity)
 
         if not eigenvectors:
             out = out[0]
 
         return out
 
-##
-# c: 03.03.2008, r: 03.03.2008
-class PysparseEigenvalueSolver( EigenvalueSolver ):
+class PysparseEigenvalueSolver(StandardEigenvalueSolver):
+    """
+    Pysparse-based eigenvalue solver for sparse symmetric problems.
+    """
     name = 'eig.pysparse'
 
     @staticmethod
@@ -272,7 +251,7 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = EigenvalueSolver.process_conf(conf)
+        common = StandardEigenvalueSolver.process_conf(conf)
 
         return Struct(i_max=get('i_max', 100),
                       eps_a=get('eps_a', 1e-5),
@@ -284,32 +263,27 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
     def _convert_mat(mtx):
         from pysparse import spmatrix
         A = spmatrix.ll_mat(*mtx.shape)
-        for i in xrange( mtx.indptr.shape[0] - 1 ):
-            ii = slice( mtx.indptr[i], mtx.indptr[i+1] )
+        for i in xrange(mtx.indptr.shape[0] - 1):
+            ii = slice(mtx.indptr[i], mtx.indptr[i+1])
             n_in_row = ii.stop - ii.start
-            A.update_add_at( mtx.data[ii], [i] * n_in_row, mtx.indices[ii] )
+            A.update_add_at(mtx.data[ii], [i] * n_in_row, mtx.indices[ii])
         return A
-    _convert_mat = staticmethod( _convert_mat )
+    _convert_mat = staticmethod(_convert_mat)
 
-    ##
-    # c: 03.03.2008, r: 03.03.2008
-    def __init__( self, conf, **kwargs ):
-        EigenvalueSolver.__init__( self, conf, **kwargs )
+    def __init__(self, conf, **kwargs):
+        StandardEigenvalueSolver.__init__(self, conf, **kwargs)
 
-    ##
-    # c: 03.03.2008, r: 03.03.2008
-    def call( self, mtx_a, mtx_b = None, n_eigs = None,
-                  eigenvectors = None, status = None, conf = None ):
+    def call(self, mtx_a, mtx_b=None, n_eigs=None,
+             eigenvectors=None, status=None, conf=None):
         from pysparse import jdsym, itsolvers, precon
 
-        output( "loading..." )
-        A = self._convert_mat( mtx_a )
-        output( "...done" )
+        output("loading...")
+        A = self._convert_mat(mtx_a)
+        output("...done")
         if mtx_b is not None:
-            M = self._convert_mat( mtx_b )
+            M = self._convert_mat(mtx_b)
 
-        output( "solving..." )
-        tt = time.clock()
+        output("solving...")
         Atau=A.copy()
         Atau.shift(-conf.tau,M)
         K=precon.jacobi(Atau)
@@ -317,17 +291,16 @@ class PysparseEigenvalueSolver( EigenvalueSolver ):
         if mtx_b is not None:
             M=M.to_sss();
 
-        method = getattr( itsolvers, conf.method )
-        kconv, lmbd, Q, it, it_in = jdsym.jdsym( A, M, K, n_eigs, conf.tau,
-                                                 conf.eps_a, conf.i_max, 
-                                                 method,
-                                                 clvl = conf.verbosity,
-                                                 strategy = conf.strategy )
+        method = getattr(itsolvers, conf.method)
+        kconv, lmbd, Q, it, it_in = jdsym.jdsym(A, M, K, n_eigs, conf.tau,
+                                                conf.eps_a, conf.i_max,
+                                                method,
+                                                clvl=conf.verbosity,
+                                                strategy=conf.strategy)
 
-        output( "number of converged eigenvalues:", kconv )
+        output("number of converged eigenvalues:", kconv)
 
         if status is not None:
-            status['time'] = ttt
             status['q'] = Q
             status['it'] = it
             status['it_in'] = it_in
