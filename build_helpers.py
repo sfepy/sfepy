@@ -224,8 +224,9 @@ def package_check(pkg_name, version=None,
 
     Parameters
     ----------
-    pkg_name : str
-       name of package as imported into python
+    pkg_name : str or sequence of str
+       name of package as imported into python. Alternative names
+       (e.g. for different versions) may be given in a list.
     version : {None, str}, optional
        minimum version of the package that we require. If None, we don't
        check the version.  Default is None
@@ -260,14 +261,29 @@ def package_check(pkg_name, version=None,
          'version too old': 'You have version %s of package "%s"'
                             ' but we need version >= %s', }
     msgs.update(messages)
-    try:
-        __import__(pkg_name)
-    except ImportError:
+
+    if isinstance(pkg_name, str):
+        names = [pkg_name]
+
+    else:
+        names = pkg_name
+
+    import_ok = False
+    for pkg_name in names:
+        try:
+            __import__(pkg_name)
+        except ImportError:
+            pass
+        else:
+            import_ok = True
+
+    if not import_ok:
         if not optional:
             raise RuntimeError(msgs['missing'] % pkg_name)
         log.warn(msgs['missing opt'] % pkg_name +
                  msgs['opt suffix'])
         return
+
     if not version:
         return
     try:
