@@ -3,14 +3,27 @@ import shutil, tempfile
 
 import numpy as nm
 
-from enthought.traits.api \
-     import HasTraits, Instance, Button, Int, Bool, on_trait_change
-from enthought.traits.ui.api \
-     import View, Item, Group, HGroup, spring
-from  enthought.traits.ui.editors.range_editor import RangeEditor
-from enthought.tvtk.pyface.scene_editor import SceneEditor
-from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
-from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
+try:
+    from enthought.traits.api \
+         import HasTraits, Instance, Button, Int, Bool, on_trait_change
+    from enthought.traits.ui.api \
+         import View, Item, Group, HGroup, spring
+    from  enthought.traits.ui.editors.range_editor import RangeEditor
+    from enthought.tvtk.pyface.scene_editor import SceneEditor
+    from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
+    from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
+
+except:
+    from traits.api \
+         import HasTraits, Instance, Button, Int, Bool, on_trait_change
+    from traitsui.api \
+         import View, Item, Group, HGroup, spring
+    from traitsui.editors.range_editor import RangeEditor
+    from tvtk.pyface.scene_editor import SceneEditor
+    from mayavi.tools.mlab_scene_model import MlabSceneModel
+    from mayavi.core.ui.mayavi_scene import MayaviScene
+
+
 from dataset_manager import DatasetManager
 
 from sfepy.base.base import insert_as_static_method

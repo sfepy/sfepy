@@ -6,10 +6,17 @@ Code to help with managing a TVTK data set in Pythonic ways.
 # Copyright (c) 2008, Enthought, Inc.
 # License: BSD Style.
 
-from enthought.traits.api import (HasTraits, Instance, Array, Str, 
-                        Property, Dict)
-from enthought.tvtk.api import tvtk
-from enthought.tvtk.array_handler import array2vtk
+try:
+    from enthought.traits.api import (HasTraits, Instance, Array, Str, 
+                            Property, Dict)
+    from enthought.tvtk.api import tvtk
+    from enthought.tvtk.array_handler import array2vtk
+
+except:
+    from traits.api import (HasTraits, Instance, Array, Str, 
+                            Property, Dict)
+    from tvtk.api import tvtk
+    from tvtk.array_handler import array2vtk
 
 
 ######################################################################

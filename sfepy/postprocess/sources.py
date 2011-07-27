@@ -2,9 +2,16 @@ import os
 
 import numpy as nm
 
-from enthought.tvtk.api import tvtk
-from enthought.mayavi.sources.vtk_data_source import VTKDataSource
-from enthought.pyface.timer.api import Timer
+try:
+    from enthought.tvtk.api import tvtk
+    from enthought.mayavi.sources.vtk_data_source import VTKDataSource
+    from enthought.pyface.timer.api import Timer
+
+except:
+    from tvtk.api import tvtk
+    from mayavi.sources.vtk_data_source import VTKDataSource
+    from pyface.timer.api import Timer
+
 from dataset_manager import DatasetManager
 
 from sfepy.base.base import get_default, Struct
