@@ -82,7 +82,12 @@ def configuration(parent_package='',top_path=None):
     return config
 
 def _mayavi_version(pkg_name):
-    from enthought.mayavi import version
+    try:
+        from enthought.mayavi import version
+
+    except:
+        from mayavi import version
+
     return version.version
 
 def _cython_version(pkg_name):
@@ -100,7 +105,7 @@ package_check('IPython', INFO.IPYTHON_MIN_VERSION, optional=True,
                         : '%s was not found: '
                         'isfepy will use regular Python shell',
                         'opt suffix' : ''})
-package_check('enthought.mayavi',
+package_check(('enthought.mayavi', 'mayavi'),
               INFO.MAYAVI_MIN_VERSION,
               optional=True,
               version_getter=_mayavi_version)
