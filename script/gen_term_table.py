@@ -140,12 +140,16 @@ def typeset_term_table(fd, table):
             else:
                 dd = ''
 
+            dds = dd.split('\n\n')
+            definition = '\n\n'.join(typeset_to_indent(dd, 7, 11, 65)
+                                     for dd in dds)
+
             fd.write(table_row % (item_class.name,
                                   item_class.__name__,
                                   item_class.__module__,
                                   'sfepy.terms.' + item_class.__module__,
                                   typeset_term_syntax(item_class),
-                                  typeset_to_indent(dd, 7, 11, 65)))
+                                  definition))
 
     fd.write('\n')
 
