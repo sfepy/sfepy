@@ -270,26 +270,28 @@ def process_terms(app, what_, name, obj, options, lines):
         if issubclass(obj, Term) and len(obj.name):
             arg_types = obj.arg_types
             if ((len(arg_types) > 1) and not isinstance(arg_types[0], str)):
-                arg_types = [', '.join(['%s' % arg for arg in arg_type])
+                arg_types = [u', '.join(['%s' % arg for arg in arg_type])
                              for arg_type in arg_types]
-                at_lines = [' ``(%s)``' % arg_type for arg_type in arg_types]
+                at_lines = [u'``(%s)``' % arg_type for arg_type in arg_types]
 
             else:
-                arg_types = ', '.join(['%s' % arg for arg in arg_types])
-                at_lines = [' ``(%s)``' % arg_types]
-            
+                arg_types = u', '.join(['%s' % arg for arg in arg_types])
+                at_lines = [u'``(%s)``' % arg_types]
+
 
             len0 = len(obj.name) + 4
-            lines.insert(0, ':Call signature:')
-            lines.insert(1, ('=' * len0) + ' ===')
-            lines.insert(2, '**%s** %s' % (obj.name, at_lines[0]))
+            lines.insert(0, u':Call signature:')
+            lines.insert(1, u'')
+            lines.insert(2, (u'=' * len0) + u' ===')
+            lines.insert(3, u'**%s** %s' % (obj.name, at_lines[0]))
             for ii, line in enumerate(at_lines[1:]):
-                lines.insert(3+ii, '..' + (' ' * (len0 - 2)) + line)
-            lines.insert(3+len(at_lines), ('=' * len0) + ' ===')
+                lines.insert(4+ii, u'..' + (' ' * (len0 - 1)) + line)
+            lines.insert(3+len(at_lines), (u'=' * len0) + u' ===')
+            lines.insert(4+len(at_lines), u'')
 
     # make sure there is a blank line at the end
     if lines and lines[-1]:
-        lines.append('')
+        lines.append(u'')
 
 
 def setup(app):
