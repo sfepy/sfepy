@@ -319,12 +319,6 @@ class PETScKrylovSolver( LinearSolver ):
         ksp.setType( self.conf.method )
         ksp.getPC().setType( self.conf.precond )
 
-        if hasattr( self, 'mtx' ):
-            if self.mtx is not None:
-                self.pmtx, self.sol, self.rhs = self.set_matrix( self.mtx )
-                ksp.setOperators( self.pmtx ) # set the matrix
-                ksp.setFromOptions()
-
         self.ksp = ksp
 
         self.converged_reasons = {}
@@ -351,21 +345,20 @@ class PETScKrylovSolver( LinearSolver ):
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
-        ksp = self.ksp
-        if (self.pmtx is None) or (mtx is not self.mtx):
-            self.pmtx, self.sol, self.rhs = self.set_matrix(mtx)
-            self.ksp.setOperators(self.pmtx)
-            self.ksp.setFromOptions() # PETSc.Options() not used yet...
-            self.mtx = mtx
+        # There is no use in caching matrix in the solver - always set as new.
+        pmtx, psol, prhs = self.set_matrix(mtx)
 
+        ksp = self.ksp
+        ksp.setOperators(pmtx)
+        ksp.setFromOptions() # PETSc.Options() not used yet...
         ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=i_max)
 
         # Set PETSc rhs, solve, get solution from PETSc solution.
         if x0 is not None:
-            self.sol[...] = x0
-        self.rhs[...] = rhs
-        ksp.solve(self.rhs, self.sol)
-        sol = self.sol[...].copy()
+            psol[...] = x0
+        prhs[...] = rhs
+        ksp.solve(prhs, psol)
+        sol = psol[...].copy()
         output('%s(%s) convergence: %s (%s)'
                % (self.conf.method, self.conf.precond,
                   ksp.reason, self.converged_reasons[ksp.reason]))
