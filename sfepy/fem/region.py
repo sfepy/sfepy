@@ -267,12 +267,13 @@ class Region( Struct ):
         self.is_complete = False
         self.must_update = False
 
-    ##
-    # 15.06.2006, c
-    def set_from_group( self, ig, vertices, n_cell ):
-
+    def set_from_group(self, ig, vertices, n_cell):
+        """
+        Set region to contain the given element group.
+        """
         self.igs = [ig]
         self.cells = {ig : nm.arange( n_cell, dtype = nm.int32 )}
+        self.true_cells[ig] = True
         self.vertices = {ig: vertices.copy()}
         self.all_vertices = vertices.copy()
         self.must_update = False
@@ -338,6 +339,9 @@ class Region( Struct ):
                 rcells = nm.where(aux == conn.shape[1])[0]
                 self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
                 self.true_cells[ig] = True
+
+            else:
+                self.true_cells[ig] = False
 
         self.all_vertices = nm.unique(nm.hstack(all_vertices))
 
@@ -447,6 +451,7 @@ class Region( Struct ):
                 aux = nm.sum(mask[conn], 1, dtype=nm.int32)
                 rcells = nm.where(aux == conn.shape[1])[0]
                 self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
+                self.true_cells[ig] = True
 
                 if self.domain.shape.dim == 3:
                     self.edges[ig] = ed.get_complete_facets(vv, ig, mask)
