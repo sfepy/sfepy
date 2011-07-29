@@ -652,7 +652,8 @@ class Field( Struct ):
                                          self.face_dofs, ig)
             dofs = nm.concatenate((dofs, fdofs))
 
-        if (node_desc.bubble is not None) and region.can_cells:
+        if ((node_desc.bubble is not None)
+            and region.can_cells and region.true_cells[ig]):
             ii = region.get_cells(ig)
             group_els = self.bubble_remaps[ig][ii]
             bdofs = self.bubble_dofs[ig][group_els[group_els >= 0]].ravel()
