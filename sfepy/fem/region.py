@@ -163,22 +163,36 @@ class Region( Struct ):
 
         return obj
 
-    ##
-    # 14.06.2006, c
-    # 15.06.2006
-    # 23.02.2007
-    def __init__( self, name, definition, domain, parse_def ):
-        """conns, vertex_groups are links to domain data"""
+    def __init__(self, name, definition, domain, parse_def):
+        """
+        Create region instance.
+
+        Parameters
+        ----------
+        name : str
+            The region name, either given, or automatic for intermediate
+            regions.
+        definition : str
+            The region selector definition.
+        domain : Domain instance
+            The domain of the region.
+        parse_def : str
+            The parsed definition of the region.
+
+        Notes
+        -----
+        conns, vertex_groups are links to domain data.
+        """
         Struct.__init__(self,
-                        name = name, definition = definition,
-                        n_v_max = domain.shape.n_nod, domain = domain,
-                        parse_def = parse_def, all_vertices = None,
-                        igs = [], vertices = {}, edges = {}, faces = {},
-                        cells = {}, fis = {},
-                        can_cells = True, must_update = True,
-                        is_complete = False,
-                        mirror_region = None, ig_map = None,
-                        ig_map_i = None)
+                        name=name, definition=definition,
+                        n_v_max=domain.shape.n_nod, domain=domain,
+                        parse_def=parse_def, all_vertices=None,
+                        igs=[], vertices={}, edges={}, faces={},
+                        cells={}, fis={},
+                        can_cells=True, true_cells={}, must_update=True,
+                        is_complete=False,
+                        mirror_region=None, ig_map=None,
+                        ig_map_i=None)
 
     ##
     # 15.06.2006, c
@@ -212,6 +226,11 @@ class Region( Struct ):
                     aux = nm.sum( mask[conn], 1, dtype = nm.int32 )
                     rcells = nm.where( aux == conn.shape[1] )[0]
                     self.cells[ig] = nm.asarray( rcells, dtype = nm.int32 )
+                    self.true_cells[ig] = True
+
+                else:
+                    self.true_cells[ig] = False
+
         self.must_update = False
 
     ##
@@ -318,6 +337,7 @@ class Region( Struct ):
                 aux = nm.sum(mask[conn], 1, dtype=nm.int32)
                 rcells = nm.where(aux == conn.shape[1])[0]
                 self.cells[ig] = nm.asarray(rcells, dtype=nm.int32)
+                self.true_cells[ig] = True
 
         self.all_vertices = nm.unique(nm.hstack(all_vertices))
 
@@ -498,7 +518,7 @@ class Region( Struct ):
         if not self.can_cells:
             print 'region %s cannot have cells!' % self.name
             raise ValueError
-        
+
         self.cells = {}
         for ig, group in self.domain.iter_groups( self.igs ):
             vv = self.vertices[ig]
@@ -511,6 +531,7 @@ class Region( Struct ):
             rcells = nm.where( aux >= n_verts[ig] )[0]
 #            print rcells.shape
             self.cells[ig] = rcells
+            self.true_cells[ig] = False
 
     def select_cells_of_surface(self, reset=True):
         """
@@ -525,6 +546,7 @@ class Region( Struct ):
         for ig in self.igs:
             rcells = self.fis[ig][:,0]
             self.cells[ig] = nm.ascontiguousarray(rcells)
+            self.true_cells[ig] = False
 
     ##
     # 02.03.2007, c
