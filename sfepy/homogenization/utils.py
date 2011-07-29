@@ -103,12 +103,13 @@ def integrate_in_time( coef, ts, scheme = 'forward' ):
     
     return icoef
 
-def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
-    """Define sides and corner regions for a box aligned with coordinate
+def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3, can_cells=None):
+    """
+    Define sides and corner regions for a box aligned with coordinate
     axes.
 
-    Parameters:
-
+    Parameters
+    ----------
     dim : int
         Space dimension
     lbn : tuple
@@ -117,15 +118,24 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
     rtf : tuple
         Right top far point coordinates.
     eps : float
-        A parameter, that should be smaller than the smallest mesh node distance.
+        A parameter, that should be smaller than the smallest mesh node
+        distance.
+    can_cells : bool, optional
+       If given, use its value for the 'can_cells' region flag.
 
-    Returns:
-
+    Returns
+    -------
     regions : dict
         The box regions.
     """
     if rtf is None:
         lbn, rtf = -nm.array(lbn), lbn
+
+    if can_cells is None:
+        flags = {}
+
+    else:
+        flags = {'can_cells' : can_cells}
 
     if dim == 3:
         lbnx, lbny, lbnz = lbn
@@ -136,12 +146,12 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
         lbnx, lbny, lbnz = (lbnx+dx*eps, lbny+dy*eps, lbnz+dz*eps)
         rtfx, rtfy, rtfz = (rtfx-dx*eps, rtfy-dy*eps, rtfz-dz*eps)
         regions = {
-            'Near' : ('nodes in (y < %f)' % lbny, {}),
-            'Far' : ('nodes in (y > %f)' % rtfy, {}),
-            'Bottom' : ('nodes in (z < %f)' % lbnz, {}),
-            'Top' : ('nodes in (z > %f)' % rtfz, {}),
-            'Left' : ('nodes in (x < %f)' % lbnx, {}),
-            'Right' : ('nodes in (x > %f)' % rtfx, {}),
+            'Near' : ('nodes in (y < %f)' % lbny, flags),
+            'Far' : ('nodes in (y > %f)' % rtfy, flags),
+            'Bottom' : ('nodes in (z < %f)' % lbnz, flags),
+            'Top' : ('nodes in (z > %f)' % rtfz, flags),
+            'Left' : ('nodes in (x < %f)' % lbnx, flags),
+            'Right' : ('nodes in (x > %f)' % rtfx, flags),
             'Corners' : ("""nodes in
                             ((x < %f) & (y < %f) & (z < %f))
                           | ((x > %f) & (y < %f) & (z < %f))
@@ -158,7 +168,7 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
                                   lbnx, lbny, rtfz,
                                   rtfx, lbny, rtfz,
                                   rtfx, rtfy, rtfz,
-                                  lbnx, rtfy, rtfz ), {} ),
+                                  lbnx, rtfy, rtfz ), flags ),
         }
     else:
         lbnx, lbny, = lbn
@@ -168,10 +178,10 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
         lbnx, lbny = (lbnx+dx*eps, lbny+dy*eps,)
         rtfx, rtfy = (rtfx-dx*eps, rtfy-dy*eps,)
         regions = {
-            'Bottom' : ('nodes in (y < %f)' % lbny, {}),
-            'Top' : ('nodes in (y > %f)' % rtfy, {}),
-            'Left' : ('nodes in (x < %f)' % lbnx, {}),
-            'Right' : ('nodes in (x > %f)' % rtfx, {}),
+            'Bottom' : ('nodes in (y < %f)' % lbny, flags),
+            'Top' : ('nodes in (y > %f)' % rtfy, flags),
+            'Left' : ('nodes in (x < %f)' % lbnx, flags),
+            'Right' : ('nodes in (x > %f)' % rtfx, flags),
             'Corners' : ("""nodes in
                               ((x < %f) & (y < %f))
                             | ((x > %f) & (y < %f))
@@ -180,7 +190,7 @@ def define_box_regions(dim, lbn, rtf=None, eps=1.0e-3):
                             """ % ( lbnx, lbny,
                                     rtfx, lbny,
                                     rtfx, rtfy,
-                                    lbnx, rtfy ), {}),
+                                    lbnx, rtfy ), flags),
         }
 
     return regions
