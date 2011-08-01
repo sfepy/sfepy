@@ -11,13 +11,8 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_electric_source( FMField *out,
-			  FMField *state,
-			  FMField *coef, FMField *bf,
-			  VolumeGeometry *vgc,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 mode );
+int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
+			  FMField *bf, VolumeGeometry *vg );
 
 END_C_DECLS
 

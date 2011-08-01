@@ -380,13 +380,8 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 			FMField *mtxG, VolumeGeometry *vg );
 
-int32 dw_electric_source( FMField *out,
-			  FMField *state,
-			  FMField *coef, FMField *bf,
-			  VolumeGeometry *vgc,
-			  int32 *conn, int32 nEl, int32 nEP,
-			  int32 *elList, int32 elList_nRow,
-			  int32 mode );
+int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
+			  FMField *bf, VolumeGeometry *vg );
 
 int32 d_diffusion_sa( FMField *out,
 		      FMField *stateQ, FMField *stateP, FMField *stateW,
