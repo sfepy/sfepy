@@ -38,7 +38,9 @@ help = {
     'step' :
     'use every ii-th step for dumping [default: %default]',
     'extract' :
-    'extract variables according to extraction list',
+    'extract variables according to extraction list.'
+    " Example: 'u n 10 15, p e 0' means variable 'u' in nodes 10, 15"
+    " and variable 'p' in element 0",
     'average' :
     'average vertex variable into cells ("e" extraction mode)'
 }
