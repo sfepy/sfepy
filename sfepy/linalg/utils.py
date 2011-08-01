@@ -326,9 +326,10 @@ def dot_sequences(mtx, vec, mode='AB'):
     """
     if matrix_multiply is not None:
         if vec.ndim == mtx.ndim:
-            pass
+            squeeze = False
 
         else:
+            squeeze = True
             vec = vec[..., None]
 
         if 'BT' in mode:
@@ -340,6 +341,8 @@ def dot_sequences(mtx, vec, mode='AB'):
             mtx = mtx.transpose((ax[:-2]) + [ax[-1], ax[-2]])
 
         out = matrix_multiply(mtx, vec)
+        if squeeze:
+            out = out[..., 0]
 
     else:
         if (vec.ndim == 2) and (mtx.ndim == 3):
