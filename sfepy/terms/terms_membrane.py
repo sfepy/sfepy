@@ -86,6 +86,82 @@ class TLMembraneTerm(Term):
                  'virtual', 'state')
     integration = 'surface'
 
+    @staticmethod
+    def function(out, fun, *args):
+        """
+        Notes
+        -----
+        `fun` is either `weak_function` or `eval_function` according to
+        evaluation mode.
+        """
+        return fun(out, *args)
+
+    @staticmethod
+    def weak_function(out, a1, a2, h0, mtx_c, c33, mtx_b, mtx_t, bfg, geo,
+                      fmode):
+        crt = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, fmode)
+
+        n_ep = bfg.shape[3]
+
+        if fmode == 0:
+            bts = dot_sequences(mtx_b, crt, 'ATB')
+
+            status = geo.integrate(out, bts * h0)
+
+            # Transform to global coordinate system, one node at
+            # a time.
+            for iep in range(n_ep):
+                ir = slice(iep, None, n_ep)
+                fn = out[:, 0, ir, 0]
+                fn[:] = dot_sequences(mtx_t, fn, 'AB')
+
+
+        else:
+            btd = dot_sequences(mtx_b, crt, 'ATB')
+            btdb = dot_sequences(btd, mtx_b)
+
+            stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
+
+            kts =  membranes.get_tangent_stress_matrix(stress, bfg)
+
+            mtx_k = kts + btdb
+
+            status = geo.integrate(out, mtx_k * h0)
+
+            # Transform to global coordinate system, one node at
+            # a time.
+            dot = dot_sequences
+            for iepr in range(n_ep):
+                ir = slice(iepr, None, n_ep)
+                for iepc in range(n_ep):
+                    ic = slice(iepc, None, n_ep)
+                    fn = out[:, 0, ir, ic]
+                    fn[:] = dot(dot(mtx_t, fn, 'AB'), mtx_t, 'ABT')
+
+        return status
+
+    @staticmethod
+    def eval_function(out, a1, a2, h0, mtx_c, c33, mtx_b, mtx_t, geo,
+                      term_mode, fmode):
+
+        if term_mode == 'strain':
+            out_qp = membranes.get_green_strain_sym3d(mtx_c, c33)
+
+        elif term_mode == 'stress':
+            n_el, n_qp, dm, _ = mtx_c.shape
+            dim = dm + 1
+            sym = dim2sym(dim)
+            out_qp = nm.zeros((n_el, n_qp, sym, 1), dtype=mtx_c.dtype)
+
+            stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
+            out_qp[..., 0:2, 0] = stress[..., 0:2, 0]
+            out_qp[..., 3, 0] = stress[..., 2, 0]
+
+        status = geo.integrate(out, out_qp, fmode)
+        out[:] = transform_data(out, mtx=mtx_t)
+
+        return status
+
     def __init__(self, *args, **kwargs):
         Term.__init__(self, *args, **kwargs)
 
@@ -116,26 +192,10 @@ class TLMembraneTerm(Term):
         # in quadrature points.
         self.bfg[ig] = self.membrane_geo[ig].variable(0)
 
-    def get_shape(self, ap, diff_var, chunk_size):
-        n_el, n_qp, dim, n_ep = ap.get_s_data_shape(self.integral,
-                                                    self.region.name)
-        assert_(dim == 3)
+    def get_fargs(self, a1, a2, h0, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vv, vu = virtual, state
 
-        if diff_var is None:
-            return (chunk_size, 1, dim * n_ep, 1), 0
-
-        elif diff_var == self.get_arg_name( 'state' ):
-            return (chunk_size, 1, dim * n_ep, dim * n_ep), 1
-
-        else:
-            raise StopIteration
-
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        """
-        Membrane term evaluation function.
-        """
-        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        a1, a2, h0, vv, vu = self.get_args(**kwargs)
         ap, sg = self.get_approximation(vv)
         sd = ap.surface_data[self.region.name]
 
@@ -156,78 +216,25 @@ class TLMembraneTerm(Term):
         el_u_loc = dot_sequences(el_u, mtx_t, 'AB')
         ## print el_u_loc
 
-        n_ep = bfg.shape[3]
-
         mtx_c, c33, mtx_b = membranes.describe_deformation(el_u_loc, bfg)
 
-        shape, mode = self.get_shape(ap, diff_var, chunk_size)
+        if mode == 'weak':
+            fmode = diff_var is not None
 
-        if term_mode is None:
+            return (self.weak_function,
+                    a1, a2, h0, mtx_c, c33, mtx_b, mtx_t, bfg, geo, fmode)
 
-            crt = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode)
+        else:
+            fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-            if mode == 0:
-                bts = dot_sequences(mtx_b, crt, 'ATB')
+            assert_(term_mode in ['strain', 'stress'])
 
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    lchunk = self.char_fun.get_local_chunk()
-                    status = geo.integrate_chunk(out, bts * h0, lchunk)
+            return (self.eval_function,
+                    a1, a2, h0, mtx_c, c33, mtx_b, mtx_t, geo, term_mode, fmode)
 
-                    # Transform to global coordinate system, one node at
-                    # a time.
-                    for iep in range(n_ep):
-                        ir = slice(iep, None, n_ep)
-                        fn = out[:, 0, ir, 0]
-                        fn[:] = dot_sequences(mtx_t[lchunk], fn, 'AB')
+    def get_eval_shape(self, a1, a2, h0, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
 
-                    yield out, lchunk, 0
-
-            else:
-                btd = dot_sequences(mtx_b, crt, 'ATB')
-                btdb = dot_sequences(btd, mtx_b)
-
-                stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
-
-                kts =  membranes.get_tangent_stress_matrix(stress, bfg)
-
-                mtx_k = kts + btdb
-
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    lchunk = self.char_fun.get_local_chunk()
-                    status = geo.integrate_chunk(out, mtx_k * h0, lchunk)
-
-                    # Transform to global coordinate system, one node at
-                    # a time.
-                    dot = dot_sequences
-                    tc = mtx_t[lchunk]
-                    for iepr in range(n_ep):
-                        ir = slice(iepr, None, n_ep)
-                        for iepc in range(n_ep):
-                            ic = slice(iepc, None, n_ep)
-                            fn = out[:, 0, ir, ic]
-                            fn[:] = dot(dot(tc, fn, 'AB'), tc, 'ABT')
-
-                    yield out, lchunk, 0
-
-        elif term_mode in ['strain', 'stress']:
-            if term_mode == 'strain':
-                out_qp = membranes.get_green_strain_sym3d(mtx_c, c33)
-
-            elif term_mode == 'stress':
-                n_el, n_qp, dm, _ = mtx_c.shape
-                dim = dm + 1
-                sym = dim2sym(dim)
-                out_qp = nm.zeros((n_el, n_qp, sym, 1), dtype=mtx_c.dtype)
-
-                stress = eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, 0)
-                out_qp[..., 0:2, 0] = stress[..., 0:2, 0]
-                out_qp[..., 3, 0] = stress[..., 2, 0]
-
-            shape = (chunk_size, 1) + out_qp.shape[2:]
-            for out, chunk in self.char_fun(chunk_size, shape):
-                lchunk = self.char_fun.get_local_chunk()
-                status = geo.integrate_chunk(out, out_qp[lchunk], lchunk)
-                out = transform_data(out, mtx=mtx_t)
-                out1 = out / geo.variable(2)[lchunk]
-
-            yield out1, chunk, status
+        return (n_el, 1, sym, 1), state.dtype
