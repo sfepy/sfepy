@@ -871,6 +871,7 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
+   src/sfepy/terms/terms_new
 
 sfepy.terms package - full inheritance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
