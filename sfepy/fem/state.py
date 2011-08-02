@@ -233,7 +233,7 @@ class State(Struct):
         Return the scaled norm of DOF vector `vec`.
 
         Each component of `vec` is scaled by the norm of the
-        corresponding state part.
+        corresponding state part, or 1 if the norm is zero.
 
         Examples
         --------
@@ -244,6 +244,9 @@ class State(Struct):
         norm = 0.0
         for key, part in parts.iteritems():
             indx = self.variables.get_indx(key)
-            norm += nm.linalg.norm(vec[indx]) / nm.linalg.norm(part)
+            pnorm = nm.linalg.norm(part)
+            if pnorm < 10.0 * nm.finfo(nm.float64).eps:
+                pnorm = 1.0
+            norm += nm.linalg.norm(vec[indx]) / 1.0
 
         return norm
