@@ -442,17 +442,15 @@ How to Implement a New Term
 ---------------------------
 *tentative documentation*
 
-**Warning 1** Implementing a new term usually involves C.
-
-**Warning 2** It is also more complicated than it should and could be.
-
-We are slowly working to "fix" both problems.
+**Warning** Implementing a new term usually involves C. As Cython is now
+supported by our build system, it should not be that
+difficult. Python-only terms are possible as well.
 
 Notes on terminology
 ^^^^^^^^^^^^^^^^^^^^
 
-'Volume' refers to the whole domain (in space of dimension :math:`d`), while
-'surface' to a subdomain of dimension :math:`d-1`, for example a part of the
+*Volume* refers to the whole domain (in space of dimension :math:`d`), while
+*surface* to a subdomain of dimension :math:`d-1`, for example a part of the
 domain boundary. So in 3D problems volume = volume, surface = surface, while in
 2D volume = area, surface = curve.
 
@@ -463,144 +461,234 @@ A term in *SfePy* usually corresponds to a single integral term in (weak)
 integral formulation of an equation. Both volume and surface integrals are
 supported. There are three types of arguments a term can have:
 
-  - *variables*, i.e. the unknown, test or parameter variables declared by the
-    `variables` keyword, see :ref:`sec-problem-description-file`.
-  - *materials*, corresponding to material and other parameters (functions)
-     that are known, declared by the `materials` keyword
-  - *user data* - anything, but user is responsible for passing them to the
-     evaluation functions.
+- *variables*, i.e. the unknown, test or parameter variables declared by the
+  `variables` keyword, see :ref:`sec-problem-description-file`,
+- *materials*, corresponding to material and other parameters (functions)
+  that are known, declared by the `materials` keyword,
+- *user data* - anything, but user is responsible for passing them to the
+  evaluation functions.
 
-**The purpose of a term class** is:
+Terms come in two flavors:
 
-  #. to extract the real data from its arguments
-  #. to pass those data to a element matrix/residual evaluation function
-     (usually in C)
+- standard terms are subclasses of :class:`sfepy.terms.terms.Term`
+- *new* terms are subclasses of :class:`sfepy.terms.terms_new.NewTerm`
 
-So a term class basically transforms the arguments to a form suitable for the
-actual computation.
+As new terms are now not much more than a highly experimental proof of
+concept, we will focus on the standard terms here.
+
+The purpose of a standard term class is to implement a (vectorized)
+function that assembles the term contribution to residual/matrix and/or
+evaluates the term integral in a group of elements simultaneously. Most
+such functions are currently implemented in C, but some terms are pure
+Python, vectorized using NumPy. A term with a C function needs to be
+able to extract the real data from its arguments and then pass those
+data to the C function.
+
+Evaluation modes
+^^^^^^^^^^^^^^^^
+
+A term can support several evaluation modes:
+
+- `'eval'` : evaluate the integral over a region, result has dimension
+  like the quantity integrated;
+
+- `'el_avg'` : element average - result is array of the quantity
+  averaged in each element of a region - this is the mode for
+  postprocessing;
+
+- `'qp'` : quantity interpolated into quadrature points of each element
+  in a region;
+
+- `'weak'` : assemble either the vector or matrix depending on
+  `diff_var` argument (the name of variable to differentiate with
+  respect to).
+
+Currently, not all terms support all the modes, one needs to look at the
+sources. There are, however, certain naming conventions:
+
+- `'dw_*'` terms support `'weak'` mode
+- `'dq_*'` term support `'eval'` mode
+- `'de_*'` term support `'el_avg'` mode
+
+Actually most `'dq_*'`, `'de_*'`, `'di_*'`, `'d_'` terms support `'eval'`,
+`'el_avg'` and `'qp'` modes.
+
+Note that the naming prefixes are due to history when the `mode`
+argument to `Term.evaluate()` was not available. Now they are mostly
+redundant, but at least one has a notion what is the evaluation purpose
+of each term. They may disappear after some more term
+unification. easier_terms branch already resulted in a number of terms
+disappearing.
+
+Basic attributes
+^^^^^^^^^^^^^^^^
+
+A term class should inherit from :class:`sfepy.terms.terms.Term` base
+class. The simplest possible term with volume integration and 'weak'
+evaluation mode needs to have the following attributes and methods:
+
+- docstring (not really required per se, but we require it);
+- `name` attribute - the name to be used in `equations`;
+- `arg_types` attribute - the types of arguments the term accepts;
+- `integration` attribute, optional - the kind of integral the term
+  implements, one of `'volume'` (the default, if not given), `'surface'` or
+  `'surface_extra'`;
+- `function()` static method - the assembling function;
+- `get_fargs()` method - the method that takes term arguments and
+  converts them to arguments for `function()`.
+
+Argument types
+""""""""""""""
+
+The argument types can be ("[_*]" denotes an optional suffix):
+
+- `'material[_*]'` for a material parameter, i.e. any function that can
+  be can evaluated in quadrature points and that is not a variable.
+- `'virtual'` for a virtual (test) variable (no value defined), `'weak'`
+  evaluation mode;
+- `'state[_*]'` for state (unknown) variables (have value), `'weak'`
+  evaluation mode;
+- `'parameter[_*]'` for parameter variables (have known value), any
+  evaluation mode.
+
+Only one `'virtual'` variable is allowed in a term.
+
+Integration kinds
+"""""""""""""""""
+
+The integration kinds have the following meaning:
+
+- `'volume'` for volume integral over a region that contains elements;
+  uses volume element connectivity for assembling;
+- `'surface'` for surface integral over a region that contains faces;
+  uses surface face connectivity for assembling;
+- `'surface_extra'` for surface integral over a region that contains
+  faces; uses volume element connectivity for assembling - this is
+  needed if full gradients of a variable are required on the boundary.
+
+`function()`
+""""""""""""
+
+The `function()` static method has always the following arguments::
+
+    out, *args
+
+where `out` is the already preallocated output array (change it in
+place!) and `*args` are any other arguments the function requires. These
+function arguments have to be provided by the `get_fargs()` method. The
+function returns zero `status` on success, nonzero on failure.
+
+The `out` array has shape `(n_el, 1, n_row, n_col)`, where `n_el` is the
+number of elements in a group and `n_row`, `n_col` are matrix dimensions
+of the value on a single element.
+
+`get_fargs()`
+"""""""""""""
+
+The `get_fargs()` method has always the same structure of arguments:
+
+- positional arguments corresponding to `arg_types` attribute:
+
+  - example for a typical weak term:
+
+    - for::
+
+        arg_types = ('material', 'virtual', 'state')
+
+      the positional arguments are::
+
+        material, virtual, state
+
+- keyword arguments common to all terms::
+
+    mode=None, term_mode=None, diff_var=None, **kwargs
+
+  here:
+
+  - `mode` is the actual evaluation mode, default is `'eval'`;
+  - `term_mode` is an optional term sub-mode influencing what the term
+    should return (example: `dw_tl_he_neohook` term has 'strain' and
+    'stress' evaluation sub-modes);
+  - `diff_var` is taken into account in the `'weak'` evaluation mode. It
+    is either `None` (residual mode) or a name of variable with respect
+    to differentiate to (matrix mode);
+  - `**kwargs` are any other arguments that the term supports.
+
+The `get_fargs()` method returns arguments for `function()`.
+
+Example
+^^^^^^^
+
+Let us now discuss the implementation of a simple weak term
+`dw_volume_integrate_w` defined as :math:`\int_\Omega c q`, where
+:math:`c` is a weight (material parameter) and :math:`q` is a virtual
+variable. This term is implemented as follows::
+
+    class IntegrateVolumeOperatorWTerm(Term):
+        r"""
+        :Description:
+        Volume integral of a test function weighted by a scalar function
+        :math:`c`.
 
 
-Technical details
-^^^^^^^^^^^^^^^^^
-A term class should inherit from :class:`sfepy.terms.terms.Term` class, and
-(optionally) also from classes in :mod:`sfepy.terms.terms_base`. Those classes
-provide some common functionality, e.g. the `_call()` methods and data shape
-setting. The simplest possible term class, however, just needs to have the
-following attributes and methods:
+        :Definition:
+        .. math::
+            \int_\Omega c q
 
-- docstring (not really required per se, but we require it)
-- `name` attribute - the name to be used in `equations`
-- `arg_types` attribute - the types of arguments the term accepts
-- `geometry` attribute - the kind of geometrical data the term needs (usually
-  `Volume` or `Surface`)
-- `__call__()` method - subclasses of `Term` either implement `__call__()` or
-  plug in a proper `_call()` method that is called by the default
-  implementation. It takes the following arguments::
+        :Arguments:
+            material : :math:`c`,
+            virtual  : :math:`q`
+        """
+        name = 'dw_volume_integrate_w'
+        arg_types = ('material', 'virtual')
 
-      __call__(self, diff_var=None, chunk_size=None, **kwargs)
+        @staticmethod
+        def function(out, mat, bf, geo):
+            bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+            bf_t = nm.ascontiguousarray(bf_t)
+            status = geo.integrate(out, mat * bf_t)
 
- - `diff_var` is either None (residual mode), or the name of the
-   variable to differentiate with respect to (matrix mode)
- - `chunk_size` is the number of elements that should be processed in one
-   call - `__call__()` is a generator that is called in the assembling loop
-   in :mod:`sfepy.fem.evaluate`
- - `**kwargs` contains the arguments as described by `arg_types` and any
-   other arguments passed by the caller
+            return status
 
-Let us show how a simple volume integral with the usual three arguments can
-look like. Let us assume, that the variables are vector fields and the
-evaluation function needs the FE base function. Then::
+        def get_fargs(self, mat, virtual,
+                      mode=None, term_mode=None, diff_var=None, **kwargs):
+            assert_(virtual.n_components == 1)
+            geo, _ = self.get_mapping(virtual)
 
-  class MyTerm(Term):
-      r"""
-      :Description:
-      Some description.
-      
-      :Definition:
-      .. math::
-          \int_\Omega \dots
-      """
-      name = 'dw_my_term'
-      arg_types = ('material', 'virtual', 'state')
-      geometry = [(Volume, 'virtual')]
+            return mat, geo.bf, geo
 
-      def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-          mat, virtual, state = self.get_args(**kwargs)
-          ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
-          n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+- lines 2-15: the docstring - always write one!
+- line 16: the name of the term, that can be referred to in equations;
+- line 17: the argument types - here the term takes a single material
+  parameter, and a virtual variable;
+- lines 19-25: the term function
 
-          if diff_var is None:
-              shape = (chunk_size, 1, dim * n_ep, 1)
+  - its arguments are:
 
-          elif diff_var == self.get_arg_name( 'state' ):
-              shape = (chunk_size, 1, dim * n_ep, dim * n_ep)
+    - the output array `out`, already having the required shape,
+    - the material coefficient (array) `mat` evaluated in physical
+      quadrature points of all elements of an element group,
+    - a base function (array) `bf` evaluated in the quadrature points of
+      a reference element and
+    - a reference element (geometry) mapping `geo`.
 
-          else:
-              raise StopIteration
+  - line 21: transpose the base function and tile it so that is has
+    the correct shape - it is repeated for each element;
+  - line 22: ensure C contiguous order;
+  - line 23: perform numerical integration in C - `geo.integrate()`
+    requires the C contiguous order;
+  - line 25: return the status.
 
-          bf = ap.get_base('v', 0, self.integral)
-          for out, chunk in self.char_fun(chunk_size, shape):
-              status = self.some_function(out, bf, other_args, chunk)
+- lines 27-32: prepare arguments for the function above:
 
-              yield out, chunk, status
+  - line 29: verify that the variable is scalar, as our implementation
+    does not support vectors;
+  - line 30: get reference element mapping corresponding to the virtual
+    variable;
+  - line 32: return the arguments for the function.
 
-Discussion:
-
-- line 15: extract the three arguments from the argument list
-- line 16: get the 'Volume' Approximation and VolumeGeometry instances
-  corresponding to the term region and current element group given by the
-  `self.get_current_group()` call
-- line 17: get data shape:
-
-  - `n_el` .. number of elements in the group
-  - `n_qp` .. number of quadrature points in each element
-  - `dim`  .. space dimension
-  - `n_ep` .. number of element points (=nodes) of each element
-
-- lines 19-26: determine data shape of the chunk, depending whether in residual
-  or matrix mode.
-- line 28: get volume base function corresponding to the integral used
-- lines 29-32: evaluate for each chunk and yield the results
-
-In practice, such a term would inherit also from
-:class:`sfepy.terms.terms_base.VectorVector` - then it could look, for example,
-like the :class:`sfepy.terms.termsMass.MassTerm`, i.e., just take care of
-providing the correct arguments to the evaluation function (`self.function`
-attribute)::
-
-  class MassTerm( VectorVector, Term ):
-      r"""
-      :Description:
-      Inertial forces term.
-  
-      :Definition:
-      .. math::
-          \int_{\Omega} \rho \ul{v} \cdot \frac{\ul{u} - \ul{u}_0}{\dt}
-  
-      :Arguments:
-      material : :math:`\rho`,
-      ts.dt : :math:`\dt`,
-      parameter : :math:`\ul{u}_0`"""
-      name = 'dw_mass'
-      arg_types = ('ts', 'material', 'virtual', 'state', 'parameter')
-      geometry = [(Volume, 'virtual')]
-  
-      def __init__(self, name, sign, **kwargs):
-          Term.__init__(self, name, sign, function=terms.dw_mass, **kwargs)
-  
-      def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-          ts, mat, virtual, state, state0 = self.get_args(**kwargs)        
-          ap, vg = virtual.get_approximation(self.get_current_group(), 'Volume')
-  
-          self.set_data_shape(ap)
-          shape, mode = self.get_shape(diff_var, chunk_size)
-  
-          dvec = state() - state0()
-          rhodt = mat / ts.dt
-          bf = ap.get_base('v', 0, self.integral)
-  
-          fargs = (rhodt, dvec, 0, bf, vg, ap.econn)
-          return fargs, shape, mode
+Concluding remarks
+^^^^^^^^^^^^^^^^^^
 
 This is just a very basic introduction to the topic of new term
 implementation. Do not hesitate to ask the `sfepy-devel mailing list
