@@ -100,30 +100,6 @@ The following commands should be run in the top-level directory of the *SfePy*
 source tree after compiling the C extension files. See
 :ref:`introduction_installation` for full installation instructions. 
 
-Running *SfePy* through the GUI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The easisest way to run *SfePy* is through the GUI utility. 
-
-* Locate the ``sfepy_gui.py`` script in the top-level directory
-
-* Most environments allow you to double-click on this file to execute the
-  python script. Consult your platform documentation to find out how to
-  associate python scripts with the python interpreter.
-
-* After executing the ``sfepy_gui.py`` script, you should see the following
-  window:
-
-.. image:: images/sfepy_gui.png
-
-* Click the *Browse* button to the right of the *input file name* box and
-  browse for ``examples/diffusion/poisson.py`` as indicated in the figure
-
-* The solution will start automatically and an output box will pop up when the
-  simulation completes
-
-* Viewing the output is described in the :ref:`postprocessing` section below
-
 .. _invoking_command_line:
 
 Invoking *SfePy* from the command line

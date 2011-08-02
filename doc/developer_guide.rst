@@ -93,7 +93,7 @@ directory is `sfepy/`, which has the following contents:
      - small utilities for quantum physics (`schroedinger.py`)
      - *
    * - `postprocess/`
-     - Mayavi-based post-processing modules (`postproc.py`, `sfepy_gui.py`)
+     - Mayavi-based post-processing modules (`postproc.py`)
      -
    * - `solvers/`
      - interface classes to various internal/external solvers (linear,

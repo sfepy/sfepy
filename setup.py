@@ -163,7 +163,6 @@ def setup_package():
         'probe.py',
         'runTests.py',
         'schroedinger.py',
-        'sfepy_gui.py',
         'shaper.py',
         'simple.py',
         'test_install.py',

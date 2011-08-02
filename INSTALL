@@ -13,7 +13,7 @@ Dependencies:
     - schroedinger.py requires pysparse, pexpect, gmsh (2D), tetgen (3D)
     - log.py (live plotting) requires multiprocessing, matplotlib with GTKAgg
     - isfepy requires ipython, mayavi, matplotlib with WXAgg
-    - postproc.py, sfepy_gui.py require mayavi
+    - postproc.py requires mayavi
     - to be able to (re)generate the documentation: sphinx, numpydoc, LaTeX
 
 SfePy is known to work on various flavours of Linux, on Intel Macs and Windows.
