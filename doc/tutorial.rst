@@ -143,6 +143,8 @@ Postprocessing the results
   * The following interactive 3D window should display:
 
 .. image:: images/postproc_simple.png
+   :width: 70 %
+   :align: center
 
 * The left mouse button by itself orbits the 3D view
 
@@ -645,6 +647,8 @@ And view them.
 You should see this:
 
 .. image:: images/linear_elasticity_regions.png
+   :width: 70 %
+   :align: center
 
 Finally, we apply the boundary conditions, solve the problem, save and
 view the results.
@@ -688,6 +692,8 @@ view the results.
 This is the resulting image:
 
 .. image:: images/linear_elasticity_solution1.png
+   :width: 70 %
+   :align: center
 
 The default view is not very fancy. Let us show the displacements by
 shifting the mesh. Close the previous window and do:
@@ -702,6 +708,8 @@ shifting the mesh. Close the previous window and do:
 And the result is:
 
 .. image:: images/linear_elasticity_solution2.png
+   :width: 70 %
+   :align: center
 
 See the docstring of `view()` and play with its options.
 
