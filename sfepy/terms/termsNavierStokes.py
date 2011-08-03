@@ -383,6 +383,40 @@ class DivETerm(Term):
 
         return (n_el, 1, 1, 1), parameter.dtype
 
+class DivOperatorWTerm(Term):
+    r"""
+    :Description:
+    Weighted divergence term of a test function.
+
+    :Definition:
+    .. math::
+         \int_{\Omega} c \nabla \cdot \ul{v}
+
+    :Arguments:
+        material : :math:`c`,
+        virtual : :math:`\ul{v}`
+    """
+    name = 'dw_div_w'
+    arg_types = ('material', 'virtual')
+
+    @staticmethod
+    def function(out, mat, vg):
+        div_bf = vg.variable(0)
+
+        n_el, n_qp, dim, n_ep = div_bf.shape
+        div_bf = div_bf.reshape((n_el, n_qp, dim * n_ep, 1))
+        div_bf = nm.ascontiguousarray(div_bf)
+
+        status = vg.integrate(out, mat * div_bf)
+
+        return status
+
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
+
+        return mat, vg
+
 class GradDivStabilizationTerm(Term):
     r"""
     :Description:
