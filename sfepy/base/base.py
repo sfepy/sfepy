@@ -939,6 +939,22 @@ def update_dict_recursively(dst, src):
 
     return dst
 
+def edit_dict_strings(str_dict, old, new):
+    """
+    Replace substrings `old` with `new` in string values of dictionary
+    `str_dict`.
+
+    Returns
+    -------
+    new_dict : dict
+        The dictionary with edited strings.
+    """
+    new_dict = {}
+    for key, val in str_dict.iteritems():
+        new_dict[key] = val.replace(old, new)
+
+    return new_dict
+
 ##
 # 09.08.2006, c
 def invert_dict( d, is_val_tuple = False ):
