@@ -5,17 +5,16 @@ from sfepy.fem.mappings import VolumeMapping, SurfaceMapping
 from poly_spaces import PolySpace
 from fe_surface import FESurface
 
-def set_mesh_coors(domain, fields, geometries, coors,
-                   update_state = False, actual=False):
+def set_mesh_coors(domain, fields, coors, update_fields=False, actual=False):
     if actual:
         domain.mesh.coors_act = coors.copy()
     else:
         domain.mesh.coors = coors.copy()
 
-    if update_state:
+    if update_fields:
         for field in fields.itervalues():
-            field.setup_coors()
-            field.update_geometry(domain.regions, geometries)
+            field.setup_coors(coors)
+            field.clear_mappings(clear_all=True)
 
 def eval_nodal_coors(coors, mesh_coors, region, poly_space, geom_poly_space,
                      econn, ig, only_extra=True):
