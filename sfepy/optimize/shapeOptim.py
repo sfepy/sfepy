@@ -17,13 +17,13 @@ def update_mesh( shape_opt, pb, design ):
     shape_opt.sp_boxes.set_control_points( shape_opt.dsg_vars )
     coors = shape_opt.sp_boxes.interp_coordinates()
     # Do not update state, so that even warped mesh gets saved...
-    pb.set_mesh_coors( coors, update_state = False )
+    pb.set_mesh_coors( coors, update_fields=False )
 
     pb.domain.mesh.write( op.join( shape_opt.save_dir, 'design.%03d.mesh' )\
                           % shape_opt.cache.i_mesh, io = 'auto' )
     shape_opt.cache.i_mesh += 1
     try:
-        pb.set_mesh_coors( coors, update_state = True )
+        pb.set_mesh_coors( coors, update_fields=True )
     except:
         output( '...failed!' )
         return False
@@ -335,16 +335,16 @@ class ShapeOptimFlowCase( Struct ):
             a_grad.append( aux )
 
             coorsp = coors0 + delta * nu
-            pb.set_mesh_coors( coorsp, update_state = True )
+            pb.set_mesh_coors( coorsp, update_fields=True )
             valp = eval_equations(check0_equations, check0_variables)
 
             coorsm = coors0 - delta * nu
-            pb.set_mesh_coors( coorsm, update_state = True )
+            pb.set_mesh_coors( coorsm, update_fields=True )
             valm = eval_equations(check0_equations, check0_variables)
 
             d_grad.append( 0.5 * (valp - valm) / delta )
 
-        pb.set_mesh_coors( coors0, update_state = True )
+        pb.set_mesh_coors( coors0, update_fields=True )
 
         a_grad = nm.array( a_grad, nm.float64 )
         d_grad = nm.array( d_grad, nm.float64 )
@@ -369,7 +369,7 @@ class ShapeOptimFlowCase( Struct ):
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), idsgs ):
 
             coorsp = coors0 + delta * nu
-            dpb.set_mesh_coors( coorsp, update_state = True )
+            dpb.set_mesh_coors( coorsp, update_fields=True )
 
             dpb.time_update()
             vec_dp = dpb.solve()
@@ -378,7 +378,7 @@ class ShapeOptimFlowCase( Struct ):
             output( 'obj_fun+:', valp )
 
             coorsm = coors0 - delta * nu
-            dpb.set_mesh_coors( coorsm, update_state = True )
+            dpb.set_mesh_coors( coorsm, update_fields=True )
 
             dpb.time_update()
             vec_dp = dpb.solve()
@@ -390,7 +390,7 @@ class ShapeOptimFlowCase( Struct ):
 
         ##
         # Restore original mesh coordinates.
-        dpb.set_mesh_coors( coors0, update_state = True )
+        dpb.set_mesh_coors( coors0, update_fields=True )
 
         d_grad = nm.array( d_grad, nm.float64 )
 

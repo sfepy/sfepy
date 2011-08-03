@@ -43,7 +43,7 @@ class BasicEvaluator( Evaluator ):
         else:
             pb.equations.clear_geometries()
 
-        pb.set_mesh_coors(coors, update_state=True, actual=True)
+        pb.set_mesh_coors(coors, update_fields=True, actual=True)
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:

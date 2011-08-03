@@ -215,7 +215,8 @@ class Test( TestCommon ):
             self.report( '%d: mesh rotation %d degrees' % (ia, angle) )
             problem.domain.mesh.transform_coors( rotation_matrix2d( angle ),
                                                  ref_coors = orig_coors )
-            problem.set_mesh_coors(problem.domain.mesh.coors, update_state=True)
+            problem.set_mesh_coors(problem.domain.mesh.coors,
+                                   update_fields=True)
             problem.domain.mesh.write( name % angle, io = 'auto' )
             for ii, region_name in enumerate( region_names ):
                 flux_term = 'd_surface_flux.i2.%s( m.K, t )' % region_name
@@ -234,6 +235,7 @@ class Test( TestCommon ):
         # Restore original coordinates.
         problem.domain.mesh.transform_coors(rotation_matrix2d(0),
                                             ref_coors=orig_coors)
-        problem.set_mesh_coors(problem.domain.mesh.coors, update_state=True)
+        problem.set_mesh_coors(problem.domain.mesh.coors,
+                               update_fields=True)
 
         return ok
