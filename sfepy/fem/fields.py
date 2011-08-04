@@ -976,15 +976,6 @@ class Field( Struct ):
         geo = ap.describe_geometry(self, geometry_type, region, integral)
         return geo
 
-    def update_geometry(self, regions, geometries):
-        for geom_key, geom in geometries.iteritems():
-            iname, region_name, geometry_type, ap_name = geom_key
-            ap = self.aps_by_name[ap_name]
-            geom = ap.describe_geometry(self, geometry_type,
-                                        regions[region_name], geom.integral)
-            geometries[geom_key] = geom
-
-
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False):
