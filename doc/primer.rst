@@ -103,9 +103,9 @@ If you open the its2D.mesh file using a text editor you'll notice that
 items that should be deleted. Reformatted the mesh file to a 2-D format
 and delete the *Edges* block. Note that when you do this the file cannot
 be reopened by *Gmsh* so it is always a good idea to also save your
-meshes in *Gmsh's* native format as well (Shift-Ctrl-S). Click `here
-<../meshes/2d/its2D.mesh>`_ to download the reformatted mesh file that
-will be used in the tutorial.
+meshes in *Gmsh's* native format as well (Shift-Ctrl-S). Click
+:download:`here <../meshes/2d/its2D.mesh>` to download the reformatted
+mesh file that will be used in the tutorial.
 
 .. image:: images/primer/its2D_4.png
    :width: 40 %
@@ -142,9 +142,8 @@ Problem description
 -------------------
 
 The programming of the problem description file is well documented in
-the `*SfePy* user's guide
-<http://docs.sfepy.org/doc/users_guide.html>`_. The problem description
-file used in the tutorial follows:
+the *SfePy* :doc:`users_guide`. The problem description file used in the
+tutorial follows:
 
 ::
 
@@ -179,21 +178,20 @@ file used in the tutorial follows:
         },),
     }
 
-`Download <../examples/linear_elasticity/its2D_1.py>`_ and open the file
-in your favourite python editor. Note that you will need to change the
-location of the output directory to somewhere on your drive. For the
-analysis we will assume that the material of the test specimen is linear
-elastic and isotropic. We define two material constants i.e. Young's
-modulus and Poisson's ratio. The material is assumed to be asphalt
-concrete having a Young's modulus of 2,000 MPa and a Poisson's ration of
-0.4.
+:download:`Download <../examples/linear_elasticity/its2D_1.py>` and open
+the file in your favourite python editor. Note that you will need to
+change the location of the output directory to somewhere on your
+drive. For the analysis we will assume that the material of the test
+specimen is linear elastic and isotropic. We define two material
+constants i.e. Young's modulus and Poisson's ratio. The material is
+assumed to be asphalt concrete having a Young's modulus of 2,000 MPa and
+a Poisson's ration of 0.4.
 
 **Note:** Be consistent in your choice and use of units. In the tutorial
 we are using Newton (N), millimeters (mm) and megaPascal (MPa). The
-*SfePy*.`mechanics.units
-<http://docs.sfepy.org/doc-devel/src/sfepy/mechanics/units.html>`_
-module might help you in determining which derived units correspond to
-given basic units.
+:doc:`sfepy.mechanics.units <src/sfepy/mechanics/units>` module might
+help you in determining which derived units correspond to given basic
+units.
 
 The following block of code defines regions on your mesh:
 
@@ -243,7 +241,9 @@ import the function into the code, which was done up front:
 
     from sfepy.mechanics.matcoefs import youngpoisson_to_lame
 
-**Hint:** Check out the *SfePy*.`mechanics.matcoefs <http://docs.sfepy.org/doc-devel/src/sfepy/mechanics/matcoefs.html>`_ module for other useful material related functions.
+**Hint:** Check out the :doc:`sfepy.mechanics.matcoefs
+<src/sfepy/mechanics/matcoefs>` module for other useful material related
+functions.
 
 That's it - we are now ready to solve the problem.
 
@@ -297,8 +297,8 @@ Post-processing
 *SfePy* provides functions to calculate stresses and strains. We'll
 include a function to calculate these and update the problem material
 definition and options to call this function as a
-post_process_hook. Save this file as `its2D_2.py
-<../examples/linear_elasticity/its2D_2.py>`_.
+post_process_hook. Save this file as :download:`its2D_2.py
+<../examples/linear_elasticity/its2D_2.py>`.
 
 ::
 
@@ -357,7 +357,7 @@ Running SfePy in interactive mode
 
 In addition to solving problems using the simple.py script you can also
 run SfePy interactively. This requires that `iPython
-<http://ipython.scipy.org/moin/Download>`_ be installed. To run *SfePy*
+<http://ipython.org/download.html>`_ be installed. To run *SfePy*
 interactively, use *isfepy*::
 
     $ ./isfepy
@@ -543,8 +543,8 @@ averaged from those calculated at Gauss quadrature points within the
 elements. It is possible to provide custom integrals to allow the
 calculation of stresses with the Gauss quadrature points at the element
 nodes. This will provide us a more accurate estimate of the stress at
-the centre of the specimen located at node 0. The `code
-<../examples/linear_elasticity/its2D_3.py>`_ below outlines one way to
+the centre of the specimen located at node 0. The :download:`code
+<../examples/linear_elasticity/its2D_3.py>` below outlines one way to
 achieve this.
 
 ::
@@ -617,8 +617,9 @@ The output::
     Vertical compressive stress = 15.646 MPa/mm
     ==================================================================
 
-Not bad for such a coarse mesh! Re-running the problem using a `finer
-mesh <../meshes/big.mesh>`_ provides a more accurate solution::
+Not bad for such a coarse mesh! Re-running the problem using a
+:download:`finer mesh <../meshes/2d/big.mesh>` provides a more accurate
+solution::
 
     ==================================================================
     Load to give 1 mm displacement = 740.779 Newton
@@ -640,9 +641,9 @@ Probing
 -------
 
 As a bonus for sticking to the end of this tutorial see the following
-`problem definition file <../examples/linear_elasticity/its2D_4.py>`_
-that provides *SfePy* functions to quickly and neatly probe the
-solution.
+:download:`problem definition file
+<../examples/linear_elasticity/its2D_4.py>` that provides *SfePy*
+functions to quickly and neatly probe the solution.
 
 ::
 
