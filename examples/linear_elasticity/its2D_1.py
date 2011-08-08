@@ -1,19 +1,18 @@
-# 12/09/2010 
 # Diametrically point loaded 2-D disk.
 
 from sfepy.mechanics.matcoefs import youngpoisson_to_lame
+from sfepy import data_dir
 
-filename = '/home/grassy/sfepy_wiki/msh/its2D.mesh'
-#output_dir = '/home/grassy/sfepy_output' # set this to a valid directory you have write access to
+filename_mesh = data_dir + '/meshes/2d/its2D.mesh'
+
+output_dir = '.' # set this to a valid directory you have write access to
 
 young = 2000.0 # Young's modulus [MPa]
 poisson = 0.4  # Poisson's ratio
 
-filename_mesh = filename
-
-#options = {
-#    'output_dir' : output_dir,
-#}
+options = {
+    'output_dir' : output_dir,
+}
 
 regions = {
     'Omega' : ('all', {}),
