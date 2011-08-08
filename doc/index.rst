@@ -20,6 +20,7 @@ Contents:
 
    introduction
    tutorial
+   primer
    users_guide
    examples
    developer_guide

@@ -20,7 +20,8 @@ research projects. It has evolved, however, to a
 rather full-featured (yet small) finite element code with many weak forms
 to build equations so there is a chance it might serve you as well.
 
-New users should start by going through the :doc:`tutorial`.
+New users should start by going through the :doc:`tutorial` and then the
+more focused :doc:`primer`.
 
 To find more information regarding the code itself, go to http://sfepy.org
 where you can find:

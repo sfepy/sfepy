@@ -12,8 +12,9 @@ Tutorial
   #. a Python package to build custom applications involving solving PDEs by the
      finite element (FE) method.
 
-This tutorial focuses on the first way and introduces the basic concepts and
-nomenclature used in the following parts of the documentation.
+This tutorial focuses on the first way and introduces the basic concepts
+and nomenclature used in the following parts of the documentation. Check
+also the :doc:`primer` which focuses on a particular problem in detail.
 
 Notes on solving PDEs by the Finite Element Method
 --------------------------------------------------
