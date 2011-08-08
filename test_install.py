@@ -101,6 +101,10 @@ def main():
     out, err = check_output('./simple.py examples/diffusion/poisson_parametric_study.py')
     eok += report(out, '...', -2, 5, '1.606408e-14', eps=1e-13)
 
+    out, err = check_output('./simple.py examples/linear_elasticity/its2D_3.py')
+    eok += report(out, '...', -33, 5, '2.366052e-12', eps=1e-11)
+    eok += report(out, '...', -3, 4, '15.646', eps=1e-5)
+
     out, err = check_output('./findSurf.py meshes/quantum/cube.node -')
     eok += report(out, '...', -2, 1, '64247')
 
