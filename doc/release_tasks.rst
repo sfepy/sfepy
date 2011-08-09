@@ -6,63 +6,77 @@ A few notes on what to do during a release.
 Things to check before a release
 --------------------------------
 
-#. create tarball::
+#. create temporary/testing tarball::
 
-   set ``is_release = True`` in site_cfg.py
-
-   $ python setup.py sdist
+     $ python setup.py sdist
 
 #. check in-place build::
 
-   $ # unpack the tarball
-   $ # cd into
+     $ # unpack the tarball
+     $ # cd into
 
-   $ python setup.py build_ext --inplace
-   $ ./test_install.py
+     $ python setup.py build_ext --inplace
+     $ ./test_install.py
 
 #. check that documentation can be built::
 
-   $ # copy site_cfg.py
-   $ python setup.py htmldocs
-   $ firefox doc/_build/html/index.html
+     $ # copy site_cfg.py
+     $ python setup.py htmldocs
+     $ firefox doc/_build/html/index.html
 
-   or use
+   or use::
 
-   $ cd doc/
-   $ make html
-   $ firefox _build/html/index.html
+     $ cd doc/
+     $ make html
+     $ firefox _build/html/index.html
 
-   try also
+   try also::
 
-   $ python setup.py pdfdocs
+     $ python setup.py pdfdocs
 
 #. check installed build::
 
-   $ python setup.py install --root=<some path>
-   $ cd
-   $ runTests.py
+     $ python setup.py install --root=<some path>
+     $ cd
+     $ runTests.py
+     $ rm -r output/
+
+   then remove the installed files so that they do not interfere with
+   the local build
+
+#. create final tarball
+
+   * change version number (sfepy/version.py) so that previous release
+     tarball is not overwritten!
+   * set ``is_release = True`` in site_cfg.py
+   * update pdfdocs::
+
+     $ python setup.py pdfdocs
+
+   * create tarball::
+
+     $ python setup.py sdist
 
 Useful Git commands
 -------------------
 
 * log ::
 
-  git log --pretty=format:"%s%n%b%n" release_2009.1..HEAD
-  git shortlog -s -n release_2010.1..HEAD
+    git log --pretty=format:"%s%n%b%n" release_2009.1..HEAD
+    git shortlog -s -n release_2010.1..HEAD
 
 * who has contributed since <date>::
 
-  git log --after=<date> | grep Author | sort | uniq
-  git log release_2009.1..HEAD | grep Author | sort | uniq
+    git log --after=<date> | grep Author | sort | uniq
+    git log release_2009.1..HEAD | grep Author | sort | uniq
 
-  git rev-list --committer="Robert Cimrman" --since=6.months.ago HEAD | wc
-  git rev-list --author="Robert Cimrman" --since=6.months.ago HEAD | wc
-  # ?no-merges
+    git rev-list --committer="Name Surname" --since=6.months.ago HEAD | wc
+    git rev-list --author="Name Surname" --since=6.months.ago HEAD | wc
+    # ?no-merges
 
 * misc::
 
-  git archive --format=tar HEAD | gzip > name.tar.gz
-
+    git archive --format=tar HEAD | gzip > name.tar.gz
 
 Web update and file uploading
 -----------------------------
