@@ -695,6 +695,14 @@ implementation. Do not hesitate to ask the `sfepy-devel mailing list
 <http://groups.google.com/group/sfepy-devel>`_, and look at the source code of
 the already implemented terms.
 
+How To Make a Release
+---------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   release_tasks.rst
+
 Module Index
 ------------
 
