@@ -1,3 +1,6 @@
+.. highlight:: python
+   :linenothreshold: 3
+
 .. _sec-primer:
 
 Primer
@@ -145,47 +148,16 @@ The programming of the problem description file is well documented in
 the *SfePy* :doc:`users_guide`. The problem description file used in the
 tutorial follows:
 
-::
-
-    # Diametrically point loaded 2-D disk.
-
-    from sfepy.mechanics.matcoefs import youngpoisson_to_lame
-
-    # Fix me
-    filename = '../meshes/2d/its2D.mesh'
-    #output_dir = '/home/grassy/sfepy_output' # set this to a valid directory you have write access to
-
-    young = 2000.0 # Young's modulus [MPa]
-    poisson = 0.4  # Poisson's ratio
-
-    filename_mesh = filename
-
-    options = {
-        'output_dir' : output_dir,
-    }
-
-    regions = {
-        'Omega' : ('all', {}),
-        'Left' : ('nodes in (x < 0.001)', {}),
-        'Bottom' : ('nodes in (y < 0.001)', {}),
-        'Top' : ('node 2', {}),
-    }
-
-    materials = {
-        'Asphalt' : ({
-            'lam' : youngpoisson_to_lame(young, poisson)[0],
-            'mu' : youngpoisson_to_lame(young, poisson)[1],
-        },),
-    }
+.. literalinclude:: ../examples/linear_elasticity/its2D_1.py
 
 :download:`Download <../examples/linear_elasticity/its2D_1.py>` and open
-the file in your favourite python editor. Note that you will need to
+the file in your favourite python editor. Note that you may wish to
 change the location of the output directory to somewhere on your
-drive. For the analysis we will assume that the material of the test
-specimen is linear elastic and isotropic. We define two material
-constants i.e. Young's modulus and Poisson's ratio. The material is
-assumed to be asphalt concrete having a Young's modulus of 2,000 MPa and
-a Poisson's ration of 0.4.
+drive. You may also need to edit the mesh file name. For the analysis we
+will assume that the material of the test specimen is linear elastic and
+isotropic. We define two material constants i.e. Young's modulus and
+Poisson's ratio. The material is assumed to be asphalt concrete having a
+Young's modulus of 2,000 MPa and a Poisson's ration of 0.4.
 
 **Note:** Be consistent in your choice and use of units. In the tutorial
 we are using Newton (N), millimeters (mm) and megaPascal (MPa). The
@@ -300,32 +272,7 @@ definition and options to call this function as a
 post_process_hook. Save this file as :download:`its2D_2.py
 <../examples/linear_elasticity/its2D_2.py>`.
 
-::
-
-    from its2D_1 import *
-
-    from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
-
-    def stress_strain(out, pb, state, extend=False):
-        """
-        Calculate and output strain and stress for given displacements.
-        """
-        from sfepy.base.base import Struct
-
-        ev = pb.evaluate
-        strain = ev('de_cauchy_strain.2.Omega(u)', mode='el_avg')
-        stress = ev('de_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg')
-
-        out['cauchy_strain'] = Struct(name='output_data', mode='cell',
-                                      data=strain, dofs=None)
-        out['cauchy_stress'] = Struct(name='output_data', mode='cell',
-                                      data=stress, dofs=None)
-
-        return out
-
-    asphalt = materials['Asphalt'][0]
-    asphalt.update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
-    options.update({'post_process_hook' : 'stress_strain',})
+.. literalinclude:: ../examples/linear_elasticity/its2D_2.py
 
 The updated file imports all of the previous definitions in
 its2D_1.py. The stress function (de_cauchy_stress) requires as input the
@@ -547,59 +494,7 @@ the centre of the specimen located at node 0. The :download:`code
 <../examples/linear_elasticity/its2D_3.py>` below outlines one way to
 achieve this.
 
-::
-
-    from its2D_1 import *
-
-    from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
-    from sfepy.fem.geometry_element import geometry_data
-    from sfepy.fem import Field,FieldVariable
-    import numpy as nm
-
-    gdata = geometry_data['2_3']
-    nc = len(gdata.coors)
-
-    def nodal_stress(out, pb, state, extend=False):
-        '''
-        Calculate stresses at nodal points.
-        '''
-
-        # Calc point load
-        u = state.vec
-        pb.remove_bcs()
-        f = pb.evaluator.eval_residual(u)
-        f.shape = (pb.domain.mesh.n_nod,2)
-        P = 2. * f[2][1]
-
-        # Calc nodal stress
-        pb.time_update()
-        ev = pb.evaluate
-        stress = ev('dq_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='el_avg')
-        sfield = Field('stress', nm.float64, (3,), pb.domain.regions["Omega"])
-        svar = FieldVariable('sigma', 'parameter', sfield, 3,
-                             primary_var_name='(set-to-None)')
-        svar.data_from_qp(stress, pb.integrals['ivn'])
-
-        print '\n=================================================================='
-        print 'Load to give 1 mm displacement = %s Newton ' % round(-P,3)
-        print '\nAnalytical solution'
-        print '==================='
-        print 'Horizontal tensile stress = %s MPa/mm' % round(-2.*P/(nm.pi*150.),3)
-        print 'Vertical compressive stress = %s MPa/mm' % round(-6.*P/(nm.pi*150.),3)
-        print '\nFEM solution'
-        print '============'
-        print 'Horizontal tensile stress = %s MPa/mm' % round(svar()[0][0],3)
-        print 'Vertical compressive stress = %s MPa/mm' % -round(svar()[0][1],3)
-        print '=================================================================='
-        return out
-
-    asphalt = materials['Asphalt'][0]
-    asphalt.update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
-    options.update({'post_process_hook' : 'nodal_stress',})
-
-    integrals = {
-        'ivn' : ('v', 'custom', gdata.coors, [gdata.volume / nc] * nc),
-    }
+.. literalinclude:: ../examples/linear_elasticity/its2D_3.py
 
 The output::
 
@@ -645,115 +540,7 @@ As a bonus for sticking to the end of this tutorial see the following
 <../examples/linear_elasticity/its2D_4.py>` that provides *SfePy*
 functions to quickly and neatly probe the solution.
 
-::
-
-    from its2D_1 import *
-
-    from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
-
-    def stress_strain(out, pb, state, extend=False):
-        """
-        Calculate and output strain and stress for given displacements.
-        """
-        from sfepy.base.base import Struct
-
-        ev = pb.evaluate
-        strain = ev('de_cauchy_strain.2.Omega(u)', mode='el_avg')
-        stress = ev('de_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg')
-
-        out['cauchy_strain'] = Struct(name='output_data', mode='cell',
-                                      data=strain, dofs=None)
-        out['cauchy_stress'] = Struct(name='output_data', mode='cell',
-                                      data=stress, dofs=None)
-
-        return out
-
-    def gen_lines(problem):
-        from sfepy.fem.probes import LineProbe
-        mesh = problem.domain.mesh
-        ps0 = [[0.0,  0.0], [ 0.0,  0.0]]
-        ps1 = [[75.0, 0.0], [ 0.0, 75.0]]
-
-        # Use adaptive probe with 10 inital points.
-        n_point = -10
-
-        labels = ['%s -> %s' % (p0, p1) for p0, p1 in zip(ps0, ps1)]
-        probes = []
-        for ip in xrange(len(ps0)):
-            p0, p1 = ps0[ip], ps1[ip]
-            probes.append(LineProbe(p0, p1, n_point, mesh))
-
-        return probes, labels
-
-
-    def probe_hook(data, probe, label, problem):
-        import matplotlib.pyplot as plt
-        import matplotlib.font_manager as fm
-
-        def get_it(name, var_name):
-            var = problem.create_variables([var_name])[var_name]
-            var.data_from_any(data[name].data)
-
-            pars, vals = probe(var)
-            vals = vals.squeeze()
-            return pars, vals
-
-        results = {}
-        results['u'] = get_it('u', 'u')
-        results['cauchy_strain'] = get_it('cauchy_strain', 's')
-        results['cauchy_stress'] = get_it('cauchy_stress', 's')
-
-        fig = plt.figure()
-        plt.clf()
-        fig.subplots_adjust(hspace=0.4)
-        plt.subplot(311)
-        pars, vals = results['u']
-        for ic in range(vals.shape[1]):
-            plt.plot(pars, vals[:,ic], label=r'$u_{%d}$' % (ic + 1),
-                     lw=1, ls='-', marker='+', ms=3)
-        plt.ylabel('displacements')
-        plt.xlabel('probe %s' % label, fontsize=8)
-        plt.legend(loc='best', prop=fm.FontProperties(size=10))
-
-        sym_indices = ['11', '22', '12']
-
-        plt.subplot(312)
-        pars, vals = results['cauchy_strain']
-        for ic in range(vals.shape[1]):
-            plt.plot(pars, vals[:,ic], label=r'$e_{%s}$' % sym_indices[ic],
-                     lw=1, ls='-', marker='+', ms=3)
-        plt.ylabel('Cauchy strain')
-        plt.xlabel('probe %s' % label, fontsize=8)
-        plt.legend(loc='best', prop=fm.FontProperties(size=8))
-
-        plt.subplot(313)
-        pars, vals = results['cauchy_stress']
-        for ic in range(vals.shape[1]):
-            plt.plot(pars, vals[:,ic], label=r'$\sigma_{%s}$' % sym_indices[ic],
-                     lw=1, ls='-', marker='+', ms=3)
-        plt.ylabel('Cauchy stress')
-        plt.xlabel('probe %s' % label, fontsize=8)
-        plt.legend(loc='best', prop=fm.FontProperties(size=8))
-
-        return plt.gcf(), results
-
-    materials['Asphalt'][0].update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
-
-    # Update fields and variables to be able to use probes for tensors.
-    fields.update({
-        'sym_tensor': ('real', 3, 'Omega', 0),
-    })
-
-    variables.update({
-        's' : ('parameter field', 'sym_tensor', None),
-    })
-
-    options.update({
-        'output_format'     : 'h5', # VTK reader cannot read cell data yet for probing
-        'post_process_hook' : 'stress_strain',
-        'gen_probes'        : 'gen_lines',
-        'probe_hook'        : 'probe_hook',
-    })
+.. literalinclude:: ../examples/linear_elasticity/its2D_4.py
 
 Probing applies interpolation to output the solution along specified
 paths. For the tutorial, line probing is done along the x- and y-axes of
