@@ -3,6 +3,7 @@
 from sfepy.mechanics.matcoefs import youngpoisson_to_lame
 from sfepy import data_dir
 
+# Fix the mesh file name if you run this file outside the SfePy directory.
 filename_mesh = data_dir + '/meshes/2d/its2D.mesh'
 
 output_dir = '.' # set this to a valid directory you have write access to
