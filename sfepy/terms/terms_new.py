@@ -47,19 +47,7 @@ class NewTerm(Term):
     def get_geometry(self, variable):
         key, ig = self.get_geometry_key(variable)
 
-        if key in self.geometries:
-            geo = self.geometries[key]
-
-        else:
-            geometry_type = key[2]
-            geo = self.describe_geometry(variable, geometry_type, ig)
-            self.geometries[key] = geo
-
-            if geometry_type == 'surface_extra':
-                key2 = list(key)
-                key2[1] = 'surface'
-                key2 = tuple(key2)
-                self.geometries[key2] = geo
+        geo = self.get_mapping(variable)
 
         return geo, key, ig
 

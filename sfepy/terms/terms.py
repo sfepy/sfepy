@@ -1118,75 +1118,16 @@ class Term(Struct):
         return variable( step = self.arg_steps[name],
                          derivative = self.arg_derivatives[name] )
 
-    def describe_geometry(self, variable, geometry_type, ig):
-        """
-        The geometries are cached in `self.geometries` attribute, that
-        is shared among all terms in one `Equations` instance.
-        """
-        if variable.has_field:
-            is_trace = self.arg_traces[variable.name]
-            if not is_trace:
-                assert_(variable.field.region.contains(self.region))
-
-            if is_trace:
-                region = self.region.get_mirror_region()[0]
-
-            else:
-                region = self.region
-
-            geo = variable.describe_geometry(geometry_type, region,
-                                             self.integral, ig,
-                                             term_region=self.region)
-        else:
-            geo = None
-
-        return geo
-
-    def get_approximation(self, variable, geom0=False):
+    def get_approximation(self, variable, get_saved=False):
         """
         Return approximation corresponding to `variable`. Also return
-        the corresponding geometry.
+        the corresponding geometry (actual or saved, according to
+        `get_saved`).
         """
-        is_trace = self.arg_traces[variable.name]
-        geometry_type = self.geometry_types[variable.name]
-
-        iname, region_name, ig = self.get_current_group()
-
-        if is_trace:
-            region, ig_map, ig_map_i = self.region.get_mirror_region()
-            region_name = region.name
-            ig = ig_map_i[ig]
-
+        geo, _, key = self.get_mapping(variable, get_saved=get_saved,
+                                       return_key=True)
+        ig = key[2]
         ap = variable.get_approximation(ig)
-        g_key = (iname, region_name, geometry_type, ap.name)
-
-        ap.dim = variable.field.shape
-        if geometry_type == 'surface_extra':
-            ap.create_bqp(self.region.name, self.integral)
-
-        if is_trace:
-            # Make a mirror-region alias to SurfaceData.
-            sd = ap.surface_data
-            sd[self.region.name] = sd[region.name]
-
-        if geom0 and hasattr(self, 'geometries0'):
-            if g_key in self.geometries0:
-                geo = self.geometries0[g_key]
-
-                return ap, geo
-
-        if g_key in self.geometries:
-            geo = self.geometries[g_key]
-
-        else:
-            geo = self.describe_geometry(variable, geometry_type, ig)
-            self.geometries[g_key] = geo
-
-            if geometry_type == 'surface_extra':
-                key2 = list(g_key)
-                key2[1] = 'surface'
-                key2 = tuple(key2)
-                self.geometries[key2] = geo
 
         return ap, geo
 
@@ -1250,7 +1191,7 @@ class Term(Struct):
 
         return phys_qps
 
-    def get_mapping(self, variable, return_key=False):
+    def get_mapping(self, variable, get_saved=False, return_key=False):
         """
         Get the reference mapping from a variable.
 
@@ -1272,6 +1213,7 @@ class Term(Struct):
 
         out = variable.field.get_mapping(ig, region,
                                          self.integral, integration,
+                                         get_saved=get_saved,
                                          return_key=return_key)
 
         return out
