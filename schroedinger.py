@@ -247,7 +247,7 @@ class SchroedingerApp(SimpleApp):
     def iterate(self, v_hxc_qp, eig_solver,
                 mtx_a_equations, mtx_a_variables, mtx_b, log, file_output,
                 n_electron=None, **kwargs):
-        from sfepy.physics import dft
+        from sfepy.physics.extmods import cdft
 
         self.itercount += 1
 
@@ -337,12 +337,9 @@ class SchroedingerApp(SimpleApp):
 
         ##
         # V_xc in quadrature points.
-        v_xc_qp = nm.zeros((nm.prod(self.qp_shape),), dtype=nm.float64)
-        for ii, val in enumerate(n_qp.flat):
-            ## print ii, val
-            v_xc_qp[ii] = dft.getvxc(val, 0, 0)
+        v_xc_qp = cdft.get_vxc(n_qp, 0, 0)
+        assert_(v_xc_qp.shape == self.qp_shape)
         assert_(nm.isfinite(v_xc_qp).all())
-        v_xc_qp.shape = self.qp_shape
 
         mat_key = mat_v.datas.keys()[0]
         pb.set_equations(pb.conf.equations_vh)
