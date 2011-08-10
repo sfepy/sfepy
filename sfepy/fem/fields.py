@@ -926,7 +926,7 @@ class Field( Struct ):
         return out
 
     def get_mapping(self, ig, region, integral, integration,
-                    return_key=False):
+                    get_saved=False, return_key=False):
         """
         For given region, integral and integration type, get a reference
         mapping, i.e. jacobians, element volumes and base function
@@ -935,8 +935,18 @@ class Field( Struct ):
         corresponding to the field approximation.
 
         The mappings are cached in the field instance in `mappings`
-        attribute.  The mappings can be saved to `mappings0` using
-        `Field.save_mappings`.
+        attribute. The mappings can be saved to `mappings0` using
+        `Field.save_mappings`. The saved mapping can be retrieved by
+        passing `get_saved=True`.
+
+        Returns
+        -------
+        geo : VolumeGeometry or SurfaceGeometry instance
+            The geometry object that describes the mapping.
+        mapping : VolumeMapping or SurfaceMapping instance
+            The mapping.
+        key : tuple
+            The key of the mapping in `mappings` or `mappings0`.
         """
         ap = self.aps[ig]
         # Share full group mappings.
@@ -949,8 +959,13 @@ class Field( Struct ):
         key = (integral.get_key(), region_name, ig, integration)
 
         # out is (geo, mapping) tuple.
-        out = self.mappings.get(key, None)
-        if out is None:
+        if get_saved:
+            out = self.mappings0.get(key, None)
+
+        else:
+            out = self.mappings.get(key, None)
+
+        if (out is None) and not get_saved:
             out = ap.describe_geometry(self, integration, region, integral,
                                        return_mapping=True)
             self.mappings[key] = out
