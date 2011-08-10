@@ -1193,20 +1193,22 @@ class FieldVariable(Variable):
     def get_field(self):
         return self.field
 
-    def describe_geometry(self, geometry_type, region, integral, ig,
-                          term_region=None):
-        field = self.field
+    def get_mapping(self, ig, region, integral, integration,
+                    get_saved=False, return_key=False):
+        """
+        Get the reference element mapping of the underlying field.
 
-        if isinstance(region, str):
-            region = field.region
+        See Also
+        --------
+        sfepy.fem.fields.Field.get_mapping()
+        """
+        if region is None:
+            region = self.field.region
 
-        if term_region is None:
-            term_region = region
-
-        geo = field.describe_geometry(geometry_type, ig, region, term_region,
-                                      integral)
-
-        return geo
+        out = self.field.get_mapping(ig, region, integral, integration,
+                                     get_saved=get_saved,
+                                     return_key=return_key)
+        return out
 
     def setup_adof_conns(self, adof_conns, adi):
         """
