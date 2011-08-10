@@ -1,5 +1,247 @@
 # created: 20.07.2007 (-1)
 
+from 2011.2 to 2011.3
+=====================
+
+- major update of terms - merge easier_terms branch:
+  - aim: easier usage and definition of terms while retaining original C
+    functions
+  - approximations and fields:
+    - new Approximation.get_connectivity()
+    - update Approximation.describe_geometry():
+      - new return_mapping argument
+      - make volume mappings local to given region
+    - include used polynomial space in geometry object:
+      - update Approximation.describe_geometry()
+    - manage mappings in Field:
+      - new Field.clear_mappings(), .save_mappings(), .create_mapping(),
+        .get_mapping()
+  - equations and variables:
+    - evaluate and cache quantities in FieldVariable:
+      - new FieldVariable.evaluate(), .clear_evaluate_cache()
+    - update Variable.__call__() history behaviour for step 0
+    - update Variable.advance() to advance evaluate cache
+    - copy equations variables in ProblemDefinition.create_evaluable()
+    - invalidate evaluate cache in Variable.data_from_any()
+    - factor out variable evaluation to new evaluate_variable.py:
+      - update FieldVariable.evaluate()
+      - new eval_real(), eval_complex()
+    - update Equations.invalidate_term_caches() for evaluate caches:
+      - new FieldVariable.invalidate_evaluate_cache()
+  - move NewTerm.get_shape_kind() to get_shape_kind()
+  - update Term:
+    - new Term.get(), .get_mapping(), .get_data_shape()
+    - refactor Term.evaluate():
+      - new Term.check_shapes(), .eval_real(), Term.eval_complex(),
+      split_complex_args()
+    - new Term.get_assembling_cells()
+    - remove Term.needs_local_chunk()
+    - update Term.assemble_to()
+    - fix Term.iter_groups() for no cells in a group
+  - update many terms for new Term.evaluate():
+    - dw_laplace, dw_diffusion, de_diffusion_velocity, dw_biot,
+      dw_lin_elastic, de_cauchy_strain, de_cauchy_stress:
+      - update both Python and C code, lots of simplifications
+    - dw_mass_scalar, dw_mass_scalar_w
+    - dw_lin_elastic_iso, dq_cauchy_strain, dq_cauchy_stress,
+      dw_mass_vector, dw_piezo_coupling, dw_surface_ltr
+    - remove dw_mass
+    - dw_div_grad, dw_convect, dw_lin_convect, dw_stokes, dw_stokes_w
+    - merge dq_lin_convect with dw_lin_convect
+    - dq_grad, de_grad, dq_div, de_div (was d_div)
+    - dw_point_lspring, dw_volume_lvf
+    - di_volume_integrate (merged with de_average_variable,
+      dq_state_in_volume_qp)
+    - di_surface_integrate (was d_surface_integrate, merged with
+      dq_state_in_surface_qp)
+    - di_surface_integrate_w (was d_surface_integrate_w)
+    - dw_volume_integrate, dw_volume_integrate_w,
+      dw_surface_integrate, dw_surface_integrate_w, d_volume_dot,
+      d_surface_dot, d_surface_dot_w, d_volume, d_surface, d_volume_surface,
+      di_surface_moment, d_sum_vals
+    - dw_volume_dot_w, allow different approximation of the arguments
+    - di_integrate_mat (was de_volume_average_mat +
+      di_volume_integrate_mat)
+    - dw_jump, remove dw_jump()
+    - dw_non_penetration term
+    - dw_st_pspg_c, dw_st_supg_p, dw_st_supg_c, dw_st_grad_div
+    - dw_surface_mass_scalar, dw_surface_mass_scalar_w, dw_bc_newton
+    - remove dw_mass_scalar_fine_coarse
+    - d_surface_flux:
+      - rename d_hdpm_surfdvel -> d_surface_flux
+      - remove termsHDPM.* files, move functions to termsLaplace.*
+    - dw_tl_membrane
+    - dw_electric_source
+    - update basic hyperelastic TL terms for new Term.evaluate()
+      - new HyperElasticBase.get_family_data()
+      - new HyperElasticTLBase.integrate(), .function(), .compute_family_data(),
+        .compute_stress(), .compute_tan_mod(), .get_fargs(), .get_eval_shape()
+      - dw_tl_he_neohook, dw_tl_he_mooney_rivlin, dw_tl_bulk_penalty
+      - dw_tl_fib_a, dw_tl_surface_traction
+    - update TL perfusion terms for new Term.evaluate()
+      - dw_tl_bulk_pressure, dw_tl_volume, dw_tl_diffusion terms
+  - update examples for new Term.evaluate():
+    - examples/biot/biot_npbc.py
+    - examples/navier_stokes/navier_stokes.py
+    - examples/linear_elasticity/material_nonlinearity.py
+    - examples/biot/biot_npbc_lagrange.py
+    - examples/homogenization/linear_elastic_mM.py
+  - update tests:
+    - update test_surface_evaluate()
+    - update test_laplace_unit_*.py for d_surface_flux
+  - update Region.select_cells_of_surface() for passing to C
+  - averaging mode in vg_integrate(), sg_integrate():
+    - use vg.integrate() in de_grad, de_div terms
+    - remove de_integrate()
+  - fix regions, groups for argument traces
+  - remove obsolete term caches:
+    - remove sfepy/terms/cachesBasic.py
+    - remove FiniteStrainTLDataCache, FiniteStrainSurfaceTLDataCache
+    - new eval_real_extra(), dq_grad_extra()
+  - update sfepy/homogenization/recovery.py
+  - update FESurface for mirror connectivities:
+    - start FESurface.setup_mirror_connectivity()
+    - update FESurface.get_connectivity() - add is_trace argument
+  - update field and DOF connectivities for boundary traces:
+    - is_trace is part of field DOF connectivity keys, active DOF
+      connectivity keys and FieldVariable evaluate cache keys
+    - update setup_dof_conns(), Field.setup_extra_data()
+    - update Field.setup_surface_data(), .setup_dof_conns():
+      - add is_trace argument
+    - update Approximation.get_connectivity() - add is_trace argument
+    - update Equations.get_graph_conns()
+    - update FieldVariable.get_dof_conn(), .evaluate()
+    - update Term.assemble_to()
+    - update SurfaceField.setup_dof_conns() for is_trace argument
+- docs:
+  - add Primer tutorial
+  - installation: new Python(x,y) instructions with umfpackpy
+  - dev guide: describe directory structure
+  - add local table of contents at several places
+  - fix term signature table generation in process_terms()
+  - fix typeset_term_table() for multi-equation definitions
+  - dev guide: rewrite section on implementing new terms
+  - new terms_new.rst
+  - make tutorial images smaller
+  - update and link release tasks to developer guide
+- regions:
+  - update define_box_regions() - add can_cells argument
+  - add true_cells attribute to Region:
+    - update Region.__init__(), .update_groups(), .set_faces(), .select_cells(),
+      .select_cells_of_surface()
+    - update Region.set_from_group(), .set_faces(), .complete_description()
+  - update Region.get_n_cells() to return total count optionally
+  - fix Region.set_faces()
+- fields:
+  - check region passed to field constructor:
+    - new Field.check_region(), SurfaceField.check_region()
+  - new SurfaceField.average_qp_to_vertices()
+  - fix Approximation.describe_geometry() for surface fields
+  - fix default fill value in Field.extend_dofs() for scalars
+  - fix Field.get_dofs_in_region_group() for surface regions (no true cells)
+  - remove unused Field.update_geometry()
+  - replace FieldVariable.describe_geometry() by new .get_mapping()
+- problem description:
+  - update ProblemConf constructors - new override argument:
+    - override given configuration items using override dict
+    - new ProblemConf.dict_from_string()
+    - new sfepy/base/parse_conf.py: create_bnf()
+  - schroedinger.py: new --conf, --options options - allow override
+  - simple.py: new --conf, --options options - allow override
+  - new ProblemConf.get_function():
+    - update assign_standard_hooks()
+    - update schroedinger.py
+  - remove obsolete 'fe' keyword
+- input-output:
+  - fix reading mat_id in VTKMeshIO, read node_groups (if it exists)
+  - set TetgenMeshIO.getnodes(), .getele() verbose default to False
+    so that it does not interfere with runTests.py
+  - update UserMeshIO.read() for functions returning new mesh
+  - fix blockgen.py, cylindergen.py scripts
+  - update gen_block_mesh(), gen_cylinder_mesh() for non-array arguments
+  - fix SimpleApp.setup_output_info() for MeshIO instances as filename_mesh
+- implement geometrical surface groups in Domain:
+  - new Domain.create_surface_group(), .clear_surface_groups()
+  - update Approximation.describe_geometry() for surface groups
+  - update Field.setup_extra_data()
+- integrals:
+  - update Integrals.get() to accept int as quadrature name
+  - new Integral.get_key()
+  - remove unused dim attribute from Integral
+- terms:
+  - fix Mooney-Rivlin stress term
+  - remove VolumeDataCache, SurfaceDataCache:
+    - simplify d_volume, d_surface terms
+  - remove Term.describe_geometry(), use .get_mapping() instead
+- solvers:
+  - update processing of solver options
+  - use new make_get_conf()
+  - options in 'conf' can be overridden using kwargs
+  - remove LinearSolver.set_tolerance()
+  - remove SymeigEigenvalueSolver, clean and fix sfepy/solvers/eigen.py
+  - remove symeig reference
+  - merge common code in eigensolvers to a decorator
+  - fix PETScKrylovSolver for nonlinear problems
+  - fix output indentation in PysparseEigenvalueSolver.__call__()
+  - always compute initial residual in time_step_function()
+- schroedinger:
+  - update schroedinger.py to follow style guide
+  - schroedinger.py: new --save-restart, --load-restart options:
+    - basic DFT restarting functionality
+  - schroedinger.py: add save_dft_iterations application option
+  - allow adding/subtracting zero to PotentialBase
+  - make Potential iterable, numerical charge computation:
+    - new Potential.__iter__(), .get_distance(), .get_charge()
+  - update getvxc() to compute also energy
+  - fix schroedinger.py for meshes with several element groups
+  - schroedinger.py: move conf code to new ProblemConf.from_file_and_options()
+- scripts:
+  - extractor.py: improve help message
+  - remove sfepy_gui.py
+  - update test_install.py to report success/failure in log of times
+  - update test_install.py to test --config option
+- base:
+  - new print_array_info(), update_dict_recursively(), edit_dict_strings()
+- misc:
+  - new SimpleApp.save_dict(), .load_dict()
+  - make PolySpace.node_coors C-contiguous
+  - fix ElasticConstants for SymPy 0.7.0
+  - remove unused Domain.get_orientation()
+  - update evaluate_at() to be more robust for tensor product elements
+  - update EquationMap.map_equations() for array values
+  - fix mayavi imports for version 4.0.0
+  - fix output shape in dot_sequences()
+  - fix State.get_scaled_norm() for zero scaling norm
+  - fix set_mesh_coors(), ProblemDefinition.set_mesh_coors()
+  - remove geometries and geometries0 attributes
+- implement updated Lagrangian formulation for finite strain elasticity
+  - example
+  - setup reference state for nonlinear homogenization
+  - fix and add terms, support for nonlinear homogenization
+  - updating reference geometry
+  - new "ulf" options, setup iter_hook
+  - setup actual and initial coordinates
+  - fix computation of the deformation gradient
+  - new example hyperelastic_ul_up.py - ULF, displacement-pressure formulation
+  - new dw_ul_volume and dw_ul_compressible terms
+- new terms:
+  - dw_div_w (weighted divergence term of a test function)
+- examples:
+  - new examples/standalone/thermal_electric/thermal_electric.py:
+    - update test_install.py to test it
+  - new examples/linear_elasticity/its2D_1.py
+  - new examples/linear_elasticity/its2D_2.py
+  - new examples/linear_elasticity/its2D_3.py
+    - update test_install.py to test it
+  - new examples/linear_elasticity/its2D_4.py
+- setup:
+  - fix setup.py files to correctly define DEBUG_FMF flag
+  - allow calling "python setup.py" via Makefile
+  - update site_cfg_template.py
+  - fix matplotlib version for ubuntu 10.04
+  - update package_check() for alternative names
+  - update mayavi version check
+
 from 2011.1 to 2011.2
 =====================
 
