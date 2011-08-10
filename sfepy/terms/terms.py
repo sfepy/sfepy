@@ -1272,14 +1272,8 @@ class Term(Struct):
         from sfepy.fem import setup_dof_conns
 
         conn_info = {'aux' : self.get_conn_info()}
-        variables = self.get_variables()
-
-        ## fields = list(set([var.field for var in variables]))
-        ## print fields
 
         setup_dof_conns(conn_info)
-
-        self.assign_geometries({})
 
         materials = self.get_materials(join=True)
         ## print materials
