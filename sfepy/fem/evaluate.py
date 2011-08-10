@@ -221,7 +221,6 @@ def create_evaluable(expression, fields, materials, variables, integrals,
                                     caches=caches, user=extra_args,
                                     verbose=verbose)
     equations.collect_conn_info()
-    equations.assign_geometries()
 
     # The true variables used in the expression.
     variables = equations.variables

@@ -1118,20 +1118,6 @@ class Term(Struct):
         return variable( step = self.arg_steps[name],
                          derivative = self.arg_derivatives[name] )
 
-    def assign_geometries(self, geometries):
-        """
-        Initialize the shared dict of geometries.
-        """
-        if self.has_geometry:
-            self.geometries = geometries
-
-    def assign_geometries0(self, geometries):
-        """
-        Initialize the shared dict of geometries.
-        """
-        if self.has_geometry:
-            self.geometries0 = geometries
-
     def describe_geometry(self, variable, geometry_type, ig):
         """
         The geometries are cached in `self.geometries` attribute, that

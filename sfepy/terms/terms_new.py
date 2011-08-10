@@ -28,16 +28,6 @@ from sfepy.linalg import dot_sequences as dot
 
 class NewTerm(Term):
 
-    def assign_geometries(self, geometries):
-        """
-        Initialize the shared dict of geometries.
-        """
-        if self.has_geometry:
-            self.geometries = geometries
-
-        for var in self.get_variables():
-            var.assign_geometries(geometries)
-
     def get_geometry_key(self, variable):
         is_trace = self.arg_traces[variable.name]
         geometry_type = self.geometry_types[variable.name]

@@ -1422,12 +1422,6 @@ class FieldVariable(Variable):
     def get_approximation(self, ig):
         return self.field.aps[ig]
 
-    def assign_geometries(self, geometries):
-        """
-        Initialize the shared dict of geometries.
-        """
-        self.geometries = geometries
-
     def get_data_shape(self, ig, integral,
                        integration='volume', region_name=None):
         """
