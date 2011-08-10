@@ -284,7 +284,7 @@ class SchroedingerApp(SimpleApp):
 
         output('computing total charge...')
         tt = time.clock()
-        aux = pb.create_evaluable('dq_state_in_volume_qp.i1.Omega(Psi)',
+        aux = pb.create_evaluable('di_volume_integrate.i1.Omega(Psi)',
                                   mode='qp')
         psi_equations, psi_variables = aux
         var = psi_variables['Psi']
@@ -334,7 +334,7 @@ class SchroedingerApp(SimpleApp):
         vec_v_h = pb.solve()()
 
         var.data_from_any(vec_v_h)
-        v_h_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)', Psi=var,
+        v_h_qp = pb.evaluate('di_volume_integrate.i1.Omega(Psi)', Psi=var,
                              mode='qp')
 
         v_hxc_qp = v_h_qp + v_xc_qp
@@ -417,7 +417,7 @@ class SchroedingerApp(SimpleApp):
         eig_solver = Solver.any_from_conf(eig_conf)
 
         # Just to get the shape. Assumes one element group only!!!
-        v_hxc_qp = pb.evaluate('dq_state_in_volume_qp.i1.Omega(Psi)',
+        v_hxc_qp = pb.evaluate('di_volume_integrate.i1.Omega(Psi)',
                                mode='qp')
         self.qp_shape = v_hxc_qp.shape
 
