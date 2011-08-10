@@ -234,7 +234,7 @@ class Test( TestCommon ):
         var = problem.equations.variables['p']
 
         integral = problem.integrals['i1']
-        vg = var.describe_geometry('volume', 'Omega', integral, 0)
+        vg, _ = var.get_mapping(0, None, integral, 'volume')
 
         vg.integrate(aux2, aux1)
 

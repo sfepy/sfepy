@@ -299,7 +299,7 @@ class SchroedingerApp(SimpleApp):
             n_qp += weights[ii] * (phi_qp ** 2)
         output('...done in %.2f s' % (time.clock() - tt))
 
-        vg = var.describe_geometry('volume', 'Omega', pb.integrals['i1'], 0)
+        vg, _ = var.get_mapping(0, None, pb.integrals['i1'], 'volume')
 
         det = vg.variable(1)
         charge = (det * n_qp).sum()

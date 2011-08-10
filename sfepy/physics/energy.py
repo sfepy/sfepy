@@ -38,7 +38,7 @@ def eval_non_local_interaction(problem, region_name, var_name,
 
     n_el, n_qp = f1.shape[:2]
 
-    vg = var.describe_geometry('volume', region.name, integral, ig)
+    vg, _ = var.get_mapping(ig, region, integral, 'volume')
 
     # Weighted jacobian.
     det = vg.variable(1)
