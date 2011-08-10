@@ -77,17 +77,15 @@ def time_step_function(ts, state0, problem, nls_status=None):
         if not ts.is_quasistatic:
             problem.init_time( ts )
 
-            if problem.equations.caches:
-                # Initialize caches.
-                ev = problem.get_evaluator()
-                try:
-                    vec_r = ev.eval_residual(state(), is_full=True)
-                except ValueError:
-                    output( 'initial residual evaluation failed, giving up...' )
-                    raise
-                else:
-                    err = nla.norm( vec_r )
-                    output( 'initial residual: %e' % err )
+            ev = problem.get_evaluator()
+            try:
+                vec_r = ev.eval_residual(state(), is_full=True)
+            except ValueError:
+                output('initial residual evaluation failed, giving up...')
+                raise
+            else:
+                err = nla.norm(vec_r)
+                output('initial residual: %e' % err)
 
         if problem.is_linear():
             mtx = prepare_matrix(problem, state)
