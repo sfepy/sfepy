@@ -960,22 +960,6 @@ class Field( Struct ):
 
         return out
 
-    def describe_geometry(self, geometry_type, ig, region,
-                          term_region, integral):
-        """
-        For give approximation, compute jacobians, element volumes and
-        base function derivatives for Volume-type geometries, and
-        jacobians, normals and base function derivatives for
-        Surface-type geometries.
-
-        Usually, region is term_region. Only if is_trace is True, then region
-        is the mirror region and term_region is the true term region.
-        """
-        ap = self.aps[ig]
-
-        geo = ap.describe_geometry(self, geometry_type, region, integral)
-        return geo
-
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False):
