@@ -302,6 +302,7 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                                                 strategy=conf.strategy)
 
         output("number of converged eigenvalues:", kconv)
+        output("...done")
 
         if status is not None:
             status['q'] = Q
