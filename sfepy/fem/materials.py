@@ -170,7 +170,7 @@ class Material( Struct ):
         data : dict
             The material data. Changes the shape of data!
         indx : array
-            The indices of elements in the group `ig`.
+            The indices of quadrature points in the group `ig`.
         """
         datas = self.datas[key]
 
@@ -180,11 +180,9 @@ class Material( Struct ):
         group_data = {}
         if qps.is_uniform:
             if data is not None:
-                n_qp = qps.el_indx[ig][1] - qps.el_indx[ig][0]
                 for key, val in data.iteritems():
                     aux = val[indx]
-                    aux.shape = (aux.shape[0] / n_qp, n_qp,
-                                 aux.shape[1], aux.shape[2])
+                    aux.shape = qps.get_shape(aux.shape, ig)
                     group_data[key] = aux
         else:
             raise NotImplementedError
@@ -220,15 +218,15 @@ class Material( Struct ):
         self.datas.setdefault(key, {})
 
         qps = term.get_physical_qps()
-        coors = nm.concatenate(qps.values.values(), axis=0)
+        coors = qps.get_merged_values()
 
         data = self.function(ts, coors, mode='qp',
                              equations=equations, term=term, problem=problem,
-                             group_indx=qps.group_indx,
+                             group_indx=qps.rindx,
                              **self.extra_args)
 
-        for ig, indx in qps.group_indx.iteritems():
-            if (qps.n_qp[ig] == 0):
+        for ig, indx in qps.rindx.iteritems():
+            if (qps.n_per_group[ig] == 0):
                 self.set_data(key, ig, qps, None, None)
 
             else:
