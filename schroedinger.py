@@ -31,6 +31,7 @@ from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
 from sfepy.fem import Materials
 from sfepy.fem.evaluate import eval_equations
+from sfepy.fem.mappings import get_physical_qps, get_jacobian
 from sfepy.solvers import Solver
 
 def guess_n_eigs(n_electron, n_eigs=None):
@@ -244,6 +245,9 @@ class SchroedingerApp(SimpleApp):
         v_hxc_qp.shape = sh
 
         v_ion_qp = mat_v.get_data(('Omega', 'i1'), 0, 'V_ion')
+        for ig in xrange(1, pb.domain.shape.n_gr):
+            _v_ion_qp = mat_v.get_data(('Omega', 'i1'), ig, 'V_ion')
+            v_ion_qp = nm.concatenate((v_ion_qp, _v_ion_qp), axis=0)
 
         output('assembling lhs...')
         tt = time.clock()
@@ -299,14 +303,9 @@ class SchroedingerApp(SimpleApp):
             n_qp += weights[ii] * (phi_qp ** 2)
         output('...done in %.2f s' % (time.clock() - tt))
 
-        vg, _ = var.get_mapping(0, None, pb.integrals['i1'], 'volume')
-
-        det = vg.variable(1)
+        # Integrate charge density to get charge.
+        det = get_jacobian(var.field, pb.integrals['i1'])
         charge = (det * n_qp).sum()
-        ## Same as above.
-        ## out = nm.zeros((n_qp.shape[0], 1, 1, 1), dtype=nm.float64)
-        ## vg.integrate(out, n_qp)
-        ## charge = out.sum()
 
         vec_n = self._interp_to_nodes(n_qp)
 
@@ -327,10 +326,15 @@ class SchroedingerApp(SimpleApp):
         pb.select_bcs(ebc_names=['VHSurface'])
         pb.update_materials()
 
+        qps = get_physical_qps(pb.domain.regions['Omega'], pb.integrals['i1'])
+        mat_n_qp = {}
+        for ig, ii in qps.indx.iteritems():
+            mat_n_qp[ig] = {'N' : n_qp[ii]}
+
         output("solving Ax=b Poisson equation")
         mat_n = pb.get_materials()['mat_n']
         mat_n.reset()
-        mat_n.set_all_data({mat_key : {0: {'N' : n_qp}}})
+        mat_n.set_all_data({mat_key : mat_n_qp})
         vec_v_h = pb.solve()()
 
         var.data_from_any(vec_v_h)
