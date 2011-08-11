@@ -7,16 +7,34 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.fem.poly_spaces import PolySpace
 import extmods.geometry as gm
 
+class PhysicalQPs(Struct):
+    """
+    Physical quadrature points in a region.
+    """
+
+    def get_merged_values(self):
+        qps = nm.concatenate([self.values[ig] for ig in self.igs], axis=0)
+
+        return qps
+
+    def get_shape(self, rshape, ig):
+        """
+        Get shape from raveled shape.
+        """
+        n_qp = self.shape[ig][1]
+        shape = (rshape[0] / n_qp, n_qp, rshape[1], rshape[2])
+
+        return shape
+
 def get_physical_qps(region, integral):
     """
     Get physical quadrature points corresponding to the given region
     and integral.
     """
-    phys_qps = Struct(group_indx = {},
-                      el_indx = {},
-                      n_qp = {},
-                      values = {},
-                      is_uniform = True)
+    phys_qps = PhysicalQPs(igs=region.igs,
+                           indx={}, rindx={}, qp_indx={},
+                           n_per_group={}, shape={}, values={},
+                           is_uniform=True)
 
     ii = 0
     for ig in region.igs:
@@ -27,17 +45,21 @@ def get_physical_qps(region, integral):
 
         qps = gmap.get_physical_qps(qp_coors)
 
-        phys_qps.n_qp[ig] = n_qp = qps.shape[0] * qps.shape[1]
+        n_el, n_qp = qps.shape[0], qps.shape[1]
 
-        phys_qps.group_indx[ig] = slice(ii, ii + n_qp)
+        phys_qps.n_per_group[ig] = n_per_group = n_el * n_qp
+        phys_qps.shape[ig] = qps.shape
 
-        aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_qp + 1)
+        phys_qps.indx[ig] = slice(ii, ii + n_el)
+        phys_qps.rindx[ig] = slice(ii * n_qp, (ii + n_el) * n_qp)
+
+        aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_per_group + 1)
         aux[0] = 0
-        phys_qps.el_indx[ig] = nm.cumsum(aux)
+        phys_qps.qp_indx[ig] = nm.cumsum(aux)
 
-        ii += n_qp
+        ii += qps.shape[0]
 
-        qps.shape = (n_qp, qps.shape[2])
+        qps.shape = (n_per_group, qps.shape[2])
         phys_qps.values[ig] = qps
 
     return phys_qps
