@@ -42,6 +42,32 @@ def get_physical_qps(region, integral):
 
     return phys_qps
 
+def get_jacobian(field, integral, integration='volume'):
+    """
+    Get the jacobian of reference mapping corresponding to `field` in
+    quadrature points of the given `integral`.
+
+    Returns
+    -------
+    jac : array
+       The jacobian merged for all element groups.
+
+    Notes
+    -----
+    Assumes the same element geometry in all element groups of the field!
+    """
+    jac = None
+    for ig in field.igs:
+        geo, _ = field.get_mapping(ig, field.region, integral, integration)
+        _jac = geo.variable(1)
+        if jac is None:
+            jac = _jac
+
+        else:
+            jac = nm.concatenate((jac, _jac), axis=0)
+
+    return jac
+
 class Mapping(Struct):
     """
     Base class for mappings.
