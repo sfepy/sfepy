@@ -397,7 +397,8 @@ class Mesh( Struct ):
     from_surface = staticmethod( from_surface )
 
     @staticmethod
-    def from_file(filename=None, io='auto', prefix_dir=None):
+    def from_file(filename=None, io='auto', prefix_dir=None,
+                  omit_facets=True):
         """
         Read a mesh from a file.
 
@@ -405,12 +406,14 @@ class Mesh( Struct ):
         ----------
         filename : string like
             The filename.
-
         io : *MeshIO instance
             Passing *MeshIO instance has precedence over filename.
-
         prefix_dir : str
             If not None, the filename is relative to that directory.
+        omit_facets : bool
+            If True, do not read cells of lower dimension than the space
+            dimension (faces and/or edges). Only some MeshIO subclasses
+            support this!
         """
         if io == 'auto':
             if filename is None:
@@ -424,7 +427,7 @@ class Mesh( Struct ):
 
         trunk = io.get_filename_trunk()
         mesh = Mesh(trunk)
-        mesh = io.read(mesh)
+        mesh = io.read(mesh, omit_facets=omit_facets)
 
         output('...done in %.2f s' % (time.clock() - tt))
 

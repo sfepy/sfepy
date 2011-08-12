@@ -250,10 +250,10 @@ class MeshIO( Struct ):
         aux = nm.array([], dtype=nm.float64)
         return aux, aux
 
-    def read( self, mesh, *args, **kwargs ):
+    def read(self, mesh, omit_facets=True, **kwargs):
         raise ValueError(MeshIO.call_msg)
 
-    def write( self, filename, mesh, *args, **kwargs ):
+    def write(self, filename, mesh, **kwargs):
         raise ValueError(MeshIO.call_msg)
 
     def read_data( self, step, filename = None ):
