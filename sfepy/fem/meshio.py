@@ -342,11 +342,23 @@ class MeditMeshIO( MeshIO ):
                 fd.close()
                 return bbox
 
-    def read(self, mesh, **kwargs):
+
+    def read(self, mesh, omit_facets=True, **kwargs):
         dim, fd  = self.read_dimension(ret_fd=True)
 
         conns_in = []
         descs = []
+
+        def _read_cells(dimension, size):
+            num = int(read_token(fd))
+            data = read_array(fd, num, size + 1, nm.int32)
+            if (dimension < dim) and omit_facets: return
+
+            data[:, :-1] -= 1
+
+            conns_in.append(data)
+            descs.append('%i_%i' % (dimension, size))
+
         while 1:
             line = skip_read_line(fd).split()
             if not line:
@@ -356,34 +368,29 @@ class MeditMeshIO( MeshIO ):
             if (ls == 'Vertices'):
                 num = int( read_token( fd ) )
                 nod = read_array( fd, num, dim + 1, nm.float64 )
-    ##                 print nod
+
             elif (ls == 'Tetrahedra'):
-                num = int( read_token( fd ) )
-                conns_in.append( read_array( fd, num, 5, nm.int32 ) )
-                conns_in[-1][:,:-1] -= 1
-                descs.append( '3_4' )
+                _read_cells(3, 4)
+
             elif (ls == 'Hexahedra'):
-                num = int( read_token( fd ) )
-                conns_in.append( read_array( fd, num, 9, nm.int32 ) )
-                conns_in[-1][:,:-1] -= 1
-                descs.append( '3_8' )
+                _read_cells(3, 8)
+
             elif (ls == 'Triangles'):
-                num = int( read_token( fd ) )
-                conns_in.append( read_array( fd, num, 4, nm.int32 ) )
-                conns_in[-1][:,:-1] -= 1
-                descs.append( '2_3' )
+                _read_cells(2, 3)
+
             elif (ls == 'Quadrilaterals'):
-                num = int( read_token( fd ) )
-                conns_in.append( read_array( fd, num, 5, nm.int32 ) )
-                conns_in[-1][:,:-1] -= 1
-                descs.append( '2_4' )
+                _read_cells(2, 4)
+
             elif ls == 'End':
                 break
+
             elif line[0] == '#':
                 continue
+
             else:
                 msg = "corrupted file (line '%s')!" % line
                 raise ValueError( msg )
+
         fd.close()
 
         conns_in, mat_ids = sort_by_mat_id( conns_in )
