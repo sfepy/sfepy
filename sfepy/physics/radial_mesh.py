@@ -34,7 +34,7 @@ class RadialMesh(Struct):
     def extrapolate(self, r, potential):
         return nm.interp(r, self.coors, potential, right = 0)
 
-    def extrapolate3D(self, coors, potential):
+    def extrapolate_3d(self, coors, potential):
         r = norm_l2_along_axis(coors, axis=1)
         return self.extrapolate(r, potential)
 
