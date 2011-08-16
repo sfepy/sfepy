@@ -965,7 +965,7 @@ class Field( Struct ):
         else:
             out = self.mappings.get(key, None)
 
-        if (out is None) and not get_saved:
+        if out is None:
             out = ap.describe_geometry(self, integration, region, integral,
                                        return_mapping=True)
             self.mappings[key] = out
