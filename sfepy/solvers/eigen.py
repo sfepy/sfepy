@@ -29,7 +29,7 @@ def standard_call(call):
     Decorator handling argument preparation and timing for eigensolvers.
     """
     def _standard_call(self, mtx_a, mtx_b=None, n_eigs=None,
-                       eigenvectors=None, status=None, conf=None):
+                       eigenvectors=None, status=None, conf=None, **kwargs):
         tt = time.clock()
 
         conf = get_default(conf, self.conf)
@@ -39,7 +39,8 @@ def standard_call(call):
         eigenvectors = get_default(eigenvectors, self.eigenvectors)
         status = get_default(status, self.status)
 
-        result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status, conf)
+        result = call(self, mtx_a, mtx_b, n_eigs, eigenvectors, status, conf,
+                      **kwargs)
 
         ttt = time.clock() - tt
         if status is not None:
