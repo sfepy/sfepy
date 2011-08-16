@@ -571,7 +571,8 @@ class ProblemDefinition( Struct ):
     def get_mesh_coors( self ):
         return self.domain.get_mesh_coors()
 
-    def set_mesh_coors(self, coors, update_fields=False, actual=False):
+    def set_mesh_coors(self, coors, update_fields=False, actual=False,
+                       clear_all=True):
         """
         Set mesh coordinates.
 
@@ -586,7 +587,8 @@ class ProblemDefinition( Struct ):
             otherwise the undeformed configuration ones.
         """
         fea.set_mesh_coors(self.domain, self.fields, coors,
-                           update_fields=update_fields, actual=actual)
+                           update_fields=update_fields, actual=actual,
+                           clear_all=clear_all)
 
     def get_dim( self, get_sym = False ):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
