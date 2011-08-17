@@ -39,11 +39,11 @@ class BasicEvaluator( Evaluator ):
         vs = state()
         coors[nods,:] = coors[nods,:] + vs.reshape(len(nods), state.n_components)
         if pb.ts.step == 1 and it == 0:
-            pb.equations.clear_geometries(save=True)
+            state.field.save_mappings()
         else:
-            pb.equations.clear_geometries()
-
-        pb.set_mesh_coors(coors, update_fields=True, actual=True)
+            state.field.clear_mappings()
+        pb.set_mesh_coors(coors, update_fields=False, actual=True,
+                          clear_all=False)
 
     def eval_residual( self, vec, is_full = False ):
         if not is_full:
