@@ -1,19 +1,58 @@
 import numpy as nm
 
 from sfepy.base.base import Struct
-from sfepy.terms.terms import terms, Term
-from sfepy.terms.terms_hyperelastic_base \
-     import CouplingVectorScalarHE, HyperElasticBase
-from sfepy.terms.terms_base import VectorVector, ScalarScalar, InstantaneousBase
+from sfepy.terms.terms import terms
+from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
 
-class HyperElasticULBase( HyperElasticBase ):
-    """Base class for all hyperelastic terms in UL formulation. This is not a
-    proper Term!
+_msg_missing_data = 'missing family data!'
+
+class HyperElasticULBase(HyperElasticBase):
     """
-    use_caches = {'finite_strain_ul' : [['state']]}
-    mode = 'ul'
+    Base class for all hyperelastic terms in UL formulation family.
 
-class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
+    The subclasses should have the following static method attributes:
+    - `stress_function()` (the stress)
+    - `tan_mod_function()` (the tangent modulus)
+
+    The common (family) data are cached in the evaluate cache of state
+    variable.
+    """
+    family_function = staticmethod(terms.dq_finite_strain_ul)
+    weak_function = staticmethod(terms.dw_he_rtm)
+    fd_cache_name = 'ul_common'
+    hyperelastic_mode = 1
+
+    def compute_family_data(self, state):
+        ap, vg = self.get_approximation(state, get_saved=True)
+
+        vec = self.get_vector(state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
+
+        shapes = {
+            'mtx_f' : (n_el, n_qp, dim, dim),
+            'det_f' : (n_el, n_qp, 1, 1),
+            'sym_b' : (n_el, n_qp, sym, 1),
+            'tr_b' : (n_el, n_qp, 1, 1),
+            'in2_b' : (n_el, n_qp, 1, 1),
+            'green_strain' : (n_el, n_qp, sym, 1),
+        }
+        data = Struct(name='ul_family_data')
+        for key, shape in shapes.iteritems():
+            setattr(data, key, nm.zeros(shape, dtype=nm.float64))
+
+        self.family_function(data.mtx_f,
+                             data.det_f,
+                             data.sym_b,
+                             data.tr_b,
+                             data.in2_b,
+                             data.green_strain,
+                             vec, 0, vg, ap.econn)
+
+        return data
+
+class NeoHookeanULTerm(HyperElasticULBase):
     r"""
     :Description:
     Hyperelastic neo-Hookean term. Effective stress
@@ -29,111 +68,162 @@ class NeoHookeanULTerm( VectorVector, HyperElasticULBase ):
         state    : :math:`\ul{u}`
     """
     name = 'dw_ul_he_neohook'
-    arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f', 'tr_b', 'sym_b']
 
-    family_data_names = ['detF', 'trB', 'B']
-    term_function = {'stress' : terms.dq_ul_he_stress_neohook,
-                     'tangent_modulus' : terms.dq_ul_he_tan_mod_neohook}
+    stress_function = staticmethod(terms.dq_ul_he_stress_neohook)
+    tan_mod_function = staticmethod(terms.dq_ul_he_tan_mod_neohook)
 
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
+# class NeoHookeanULHTerm(NeoHookeanULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic neo-Hookean term.
+#     Geometrical configuration given by parameter :math:`\ul{w}`.
+#     Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
 
-        detF, trB, B = family_data
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
-        if mode == 0:
-            out = nm.empty_like( B )
-            fun = self.term_function['stress']
-        else:
-            shape = list( B.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
+#     :Arguments 1:
+#         material : :math:`\mu`,
+#         virtual  : :math:`\ul{v}`,
+#         state    : :math:`\ul{u}`,
+#         state_u  : :math:`\ul{w}`
+#     """
+#     name = 'dw_ul_he_neohook_h'
+#     arg_types = ('material', 'virtual', 'state', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']]}
 
-        fun( out, mat, detF, trB, B )
+#     def __init__(self, *args, **kwargs):
+#         HyperElasticULBase.__init__(self, *args, **kwargs)
+#         self.call_mode = 1
 
-        return out
+# class NeoHookeanULEHTerm(NeoHookeanULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic neo-Hookean term.
+#     Geometrical configuration given by parameter :math:`\ul{w}`.
+#     Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
 
-class NeoHookeanULHTerm(NeoHookeanULTerm):
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+#     :Arguments:
+#         material    : :math:`\mu`,
+#         parameter_1 : :math:`\ul{v}`,
+#         parameter_2 : :math:`\ul{u}`,
+#         state_u     : :math:`\ul{w}`
+#     """
+#     name = 'd_ul_he_neohook_h'
+#     arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']]}
+
+#     def __init__(self, *args, **kwargs):
+#         HyperElasticULBase.__init__(self, *args, **kwargs)
+#         self.call_mode = 2
+
+# class NeoHookeanULEvalTerm(Term):
+
+#     name = 'de_ul_he_neohook'
+#     arg_types = ('material', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']]}
+#     function = {'stress': terms.dq_ul_he_stress_neohook,
+#                 'element_contribution' : terms.de_he_rtm}
+
+#     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+#         mat, state_u = self.get_args( ['material', 'state_u'], **kwargs )
+#         ap, vg = self.get_approximation(state_u)
+
+#         dim = ap.dim[0]
+#         sym = (dim + 1) * dim / 2
+#         shape = (chunk_size, 1, sym, 1)
+
+#         cache = self.get_cache('finite_strain_ul', 0)
+#         detF, trB, B = cache(['detF', 'trB', 'B'], self, 0, state=state_u)
+
+#         stress = nm.empty_like(B)
+#         fun = self.function['stress']
+#         fun(stress, mat, detF, trB, B)
+
+#         fun = self.function['element_contribution']
+#         for out, chunk in self.char_fun(chunk_size, shape):
+#             status = fun(out, stress, detF, vg, chunk, 1)
+#             out1 = nm.sum(out,0).reshape((sym,))
+
+#             yield out1, chunk, status
+
+# class BulkPenaltyULHTerm(BulkPenaltyULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic bulk penalty term.
+#     Geometrical configuration given by parameter :math:`\ul{w}`.
+#     Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
+
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+#     :Arguments:
+#         material : :math:`K`,
+#         virtual  : :math:`\ul{v}`,
+#         state    : :math:`\ul{u}`,
+#         state_u  : :math:`\ul{w}`
+#     """
+#     name = 'dw_ul_bulk_penalty_h'
+#     arg_types = ('material', 'virtual', 'state', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']]}
+
+#     def __init__(self, *args, **kwargs):
+#         HyperElasticULBase.__init__(self, *args, **kwargs)
+#         self.call_mode = 1
+
+# class BulkPenaltyULEHTerm(BulkPenaltyULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic bulk penalty term.
+#     Geometrical configuration given by parameter :math:`\ul{w}`.
+#     Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
+
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+#     :Arguments:
+#         material    : :math:`K`,
+#         parameter_1 : :math:`\ul{v}`,
+#         parameter_2 : :math:`\ul{u}`,
+#         state_u  : :math:`\ul{w}`
+#     """
+#     name = 'd_ul_bulk_penalty_h'
+#     arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']]}
+
+#     def __init__(self, *args, **kwargs):
+#         HyperElasticULBase.__init__(self, *args, **kwargs)
+#         self.call_mode = 2
+
+class MooneyRivlinULTerm(HyperElasticULBase):
     r"""
     :Description:
-    Hyperelastic neo-Hookean term.
-    Geometrical configuration given by parameter :math:`\ul{w}`.
-    Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
-
-    :Arguments 1:
-        material : :math:`\mu`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`,
-        state_u  : :math:`\ul{w}`
-    """
-    name = 'dw_ul_he_neohook_h'
-    arg_types = ('material', 'virtual', 'state', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']]}
-
-    def __init__(self, *args, **kwargs):
-        HyperElasticULBase.__init__(self, *args, **kwargs)
-        self.call_mode = 1
-
-class NeoHookeanULEHTerm(NeoHookeanULTerm):
-    r"""
-    :Description:
-    Hyperelastic neo-Hookean term.
-    Geometrical configuration given by parameter :math:`\ul{w}`.
-    Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
+    Hyperelastic Mooney-Rivlin term.
 
     :Definition:
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
     :Arguments:
-        material    : :math:`\mu`,
-        parameter_1 : :math:`\ul{v}`,
-        parameter_2 : :math:`\ul{u}`,
-        state_u     : :math:`\ul{w}`
+        material : :math:`\kappa`,
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{u}`
     """
-    name = 'd_ul_he_neohook_h'
-    arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']]}
+    name = 'dw_ul_he_mooney_rivlin'
+    family_data_names = ['det_f', 'tr_b', 'sym_b', 'in2_b']
 
-    def __init__(self, *args, **kwargs):
-        HyperElasticULBase.__init__(self, *args, **kwargs)
-        self.call_mode = 2
+    stress_function = staticmethod(terms.dq_ul_he_stress_mooney_rivlin)
+    tan_mod_function = staticmethod(terms.dq_ul_he_tan_mod_mooney_rivlin)
 
-class NeoHookeanULEvalTerm(Term):
-
-    name = 'de_ul_he_neohook'
-    arg_types = ('material', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']]}
-    function = {'stress': terms.dq_ul_he_stress_neohook,
-                'element_contribution' : terms.de_he_rtm}
-
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, state_u = self.get_args( ['material', 'state_u'], **kwargs )
-        ap, vg = self.get_approximation(state_u)
-
-        dim = ap.dim[0]
-        sym = (dim + 1) * dim / 2
-        shape = (chunk_size, 1, sym, 1)
-
-        cache = self.get_cache('finite_strain_ul', 0)
-        detF, trB, B = cache(['detF', 'trB', 'B'], self, 0, state=state_u)
-
-        stress = nm.empty_like(B)
-        fun = self.function['stress']
-        fun(stress, mat, detF, trB, B)
-
-        fun = self.function['element_contribution']
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = fun(out, stress, detF, vg, chunk, 1)
-            out1 = nm.sum(out,0).reshape((sym,))
-
-            yield out1, chunk, status
-
-class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
+class BulkPenaltyULTerm(HyperElasticULBase):
     r"""
     :Description:
     Hyperelastic bulk penalty term. Stress
@@ -149,120 +239,12 @@ class BulkPenaltyULTerm( VectorVector, HyperElasticULBase ):
         state    : :math:`\ul{u}`
     """
     name = 'dw_ul_bulk_penalty'
-    arg_types = ('material', 'virtual', 'state')
+    family_data_names = ['det_f']
 
-    family_data_names = ['detF', 'B']
-    term_function = {'stress' : terms.dq_ul_he_stress_bulk,
-                     'tangent_modulus' : terms.dq_ul_he_tan_mod_bulk}
+    stress_function = staticmethod(terms.dq_ul_he_stress_bulk)
+    tan_mod_function = staticmethod(terms.dq_ul_he_tan_mod_bulk)
 
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
-
-        detF, B = family_data
-
-        if mode == 0:
-            out = nm.empty_like( B )
-            fun = self.term_function['stress']
-        else:
-            shape = list( B.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
-
-        fun( out, mat, detF )
-
-        return out
-
-class BulkPenaltyULHTerm(BulkPenaltyULTerm):
-    r"""
-    :Description:
-    Hyperelastic bulk penalty term.
-    Geometrical configuration given by parameter :math:`\ul{w}`.
-    Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
-
-    :Arguments:
-        material : :math:`K`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`,
-        state_u  : :math:`\ul{w}`
-    """
-    name = 'dw_ul_bulk_penalty_h'
-    arg_types = ('material', 'virtual', 'state', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']]}
-
-    def __init__(self, *args, **kwargs):
-        HyperElasticULBase.__init__(self, *args, **kwargs)
-        self.call_mode = 1
-
-class BulkPenaltyULEHTerm(BulkPenaltyULTerm):
-    r"""
-    :Description:
-    Hyperelastic bulk penalty term.
-    Geometrical configuration given by parameter :math:`\ul{w}`.
-    Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
-
-    :Arguments:
-        material    : :math:`K`,
-        parameter_1 : :math:`\ul{v}`,
-        parameter_2 : :math:`\ul{u}`,
-        state_u  : :math:`\ul{w}`
-    """
-    name = 'd_ul_bulk_penalty_h'
-    arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']]}
-
-    def __init__(self, *args, **kwargs):
-        HyperElasticULBase.__init__(self, *args, **kwargs)
-        self.call_mode = 2
-
-class MooneyRivlinULTerm( VectorVector, HyperElasticULBase ):
-    r"""
-    :Description:
-    Hyperelastic Mooney-Rivlin term.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
-
-    :Arguments:
-        material : :math:`\kappa`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
-    """
-    name = 'dw_ul_he_mooney_rivlin'
-    arg_types = ('material', 'virtual', 'state')
-
-    family_data_names = ['detF', 'trB', 'B', 'in2B']
-    term_function = {'stress' : terms.dq_ul_he_stress_mooney_rivlin,
-                     'tangent_modulus' : terms.dq_ul_he_tan_mod_mooney_rivlin}
-
-    def compute_crt_data( self, family_data, mode, **kwargs ):
-        mat = self.get_args( ['material'], **kwargs )[0]
-
-        detF, trB, B, in2B = family_data
-
-        if mode == 0:
-            out = nm.empty_like( B )
-            fun = self.term_function['stress']
-        else:
-            shape = list( B.shape )
-            shape[-1] = shape[-2]
-            out = nm.empty( shape, dtype = nm.float64 )
-            fun = self.term_function['tangent_modulus']
-
-        fun( out, mat, detF, trB, B, in2B )
-
-        return out
-
-class BulkPressureULTerm(CouplingVectorScalarHE, HyperElasticULBase):
+class BulkPressureULTerm(HyperElasticULBase):
     r"""
     :Description:
     Hyperelastic bulk pressure term. Stress
@@ -280,290 +262,275 @@ class BulkPressureULTerm(CouplingVectorScalarHE, HyperElasticULBase):
 
     name = 'dw_ul_bulk_pressure'
     arg_types = ('virtual', 'state', 'state_p')
-    use_caches = {'finite_strain_ul' : [['state']],
-                  'state_in_volume_qp' : [['state_p']]}
+    family_data_names = ['det_f', 'sym_b']
 
-    term_function = {'stress' : terms.dq_ul_stress_bulk_pressure,
-                     'tangent_modulus_u' : terms.dq_ul_tan_mod_bulk_pressure_u}
+    family_function = staticmethod(terms.dq_finite_strain_ul)
+    weak_function = staticmethod(terms.dw_he_rtm)
+    weak_dp_function = staticmethod(terms.dw_ul_volume)
 
-    def __init__(self, *args, **kwargs):
-        Term.__init__(self, *args, **kwargs)
+    stress_function = staticmethod(terms.dq_ul_stress_bulk_pressure)
+    tan_mod_u_function = staticmethod(terms.dq_ul_tan_mod_bulk_pressure_u)
 
-        self.function = {
-            'element_contribution' : terms.dw_he_rtm,
-            'element_contribution_dp' : terms.dw_ul_volume,
-        }
-        igs = self.region.igs
-        self.crt_data = Struct(stress={}.fromkeys(igs, None),
-                               tan_mod={}.fromkeys(igs, None))
-
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        virtual, state, state_p = self.get_args(**kwargs)
-        apv, vgv = self.get_approximation(virtual)
-        aps, vgs = self.get_approximation(state_p)
-
-        self.set_data_shape(apv, aps)
-        shape, mode = self.get_shape_grad(diff_var, chunk_size)
-
-        cache = self.get_cache('finite_strain_ul', 0)
-        family_data = cache(['detF', 'B'], self, 0, state=state)
-
-        if term_mode is None:
-
-            if mode < 2:
-                ig = self.char_fun.ig
-
-                crt_data = self.compute_crt_data(family_data, mode, **kwargs)
-                if mode == 0:
-                    self.crt_data.stress[ig] = stress = crt_data
-                    self.crt_data.tan_mod[ig] = nm.array([0], ndmin=4)
-                else:
-                    self.crt_data.tan_mod[ig] = crt_data
-
-                    stress = self.crt_data.stress[ig]
-                    if stress is None:
-                        stress = self.compute_crt_data(family_data, 0, **kwargs)
-
-                fun = self.function['element_contribution']
-
-                mtxF, detF = cache(['F', 'detF'], self, 0, state=state)
-
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, stress, self.crt_data.tan_mod[ig], mtxF, detF,
-                                 vgv, chunk, mode, 1)
-                    yield out, chunk, status
-
-            else:
-                fun = self.function['element_contribution_dp']
-
-                mtxF, B, detF = cache(['F', 'B', 'detF'],
-                                      self, 0, state=state)
-
-                bf = aps.get_base('v', 0, self.integral)
-                for out, chunk in self.char_fun(chunk_size, shape):
-                    status = fun(out, bf, detF, vgv, 1, chunk, 1)
-                    yield -out, chunk, status
-
-        elif term_mode == 'd_eval':
-            raise NotImplementedError
-
-        elif term_mode in ['strain', 'stress']:
-
-            if term_mode == 'strain':
-                out_qp = cache('E', self, 0, state=state)
-
-            elif term_mode == 'stress':
-                out_qp = self.compute_crt_data(family_data, 0, **kwargs)
-
-            shape = (chunk_size, 1) + out_qp.shape[2:]
-            for out, chunk in self.char_fun(chunk_size, shape):
-                status = vgv.integrate_chunk(out, out_qp[chunk], chunk)
-                out1 = out / vgv.variable(2)[chunk]
-
-            yield out1, chunk, status
-
-    def compute_crt_data(self, family_data, mode, **kwargs):
-        detF, B = family_data
-
-        p, = self.get_args(['state_p'], **kwargs)
-
-        cache = self.get_cache('state_in_volume_qp', 0)
-        p_qp = cache('state', self, 0, state=p, get_vector=self.get_vector)
+    def compute_data(self, family_data, mode, **kwargs):
+        det_f, sym_b = family_data.det_f, family_data.sym_b
+        p_qp = family_data.p_qp
 
         if mode == 0:
-            out = nm.empty_like(B)
-            fun = self.term_function['stress']
+            out = nm.empty_like(sym_b)
+            fun = self.stress_function
+
         elif mode == 1:
-            shape = list(B.shape)
+            shape = list(sym_b.shape)
             shape[-1] = shape[-2]
             out = nm.empty(shape, dtype=nm.float64)
-            fun = self.term_function['tangent_modulus_u']
+            fun = self.tan_mod_u_function
+
         else:
             raise ValueError('bad mode! (%d)' % mode)
 
-        fun(out, p_qp, detF)
+        fun(out, p_qp, det_f)
 
         return out
 
-class BulkPressureULHTerm(BulkPressureULTerm):
-    r"""
-    :Description:
-    Hyperelastic bulk pressure term. Stress
-    :math:`S_{ij} = -p J \delta_{ij}`.
+    def get_fargs(self, virtual, state, state_p,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgv, _ = self.get_mapping(state)
 
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+        fd = self.get_family_data(state, 'ul_common', self.family_data_names)
+        fd.p_qp = self.get(state_p, 'val')
 
-    :Arguments:
-        virtual : :math:`\ul{v}`,
-        state   : :math:`\ul{u}`,
-        state_p : :math:`p`,
-        state_u : :math:`w`
-    """
-    name = 'dw_ul_bulk_pressure_h'
-    arg_types = ('virtual', 'state', 'state_p', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']],
-                  'state_in_volume_qp' : [['state_p']]}
+        if mode == 'weak':
+            ig = self.char_fun.ig
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        virtual, state, state_p, state_u = self.get_args(**kwargs)
-        apv, vgv = self.get_approximation(virtual)
-        aps, vgs = self.get_approximation(state_p)
+            if diff_var != state_p.name:
+                if diff_var is None:
+                    stress = self.compute_data(fd, 0, **kwargs)
+                    self.stress_cache[ig] = stress
+                    tan_mod = nm.array([0], ndmin=4)
 
-        self.set_data_shape(apv, aps)
-        shape, mode = self.get_shape_grad(diff_var, chunk_size)
-
-        cache = self.get_cache('finite_strain_ul', 0)
-        family_data = cache(['detF', 'B'], self, 0, state=state_u)
-
-        ig = self.char_fun.ig
-
-        if term_mode is None:
-
-            if mode < 2:
-                stress = self.crt_data.stress[ig]
-                if stress is None:
-                    stress = self.compute_crt_data(family_data, 0, **kwargs)
-                    self.crt_data.stress[ig] = stress
-                tan_mod = self.crt_data.tan_mod[ig]
-                if tan_mod is None:
-                    tan_mod = self.compute_crt_data(family_data, 1, **kwargs)
-                    self.crt_data.tan_mod[ig] = tan_mod
-
-                fun = self.function['element_contribution']
-
-                mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
-
-                if mode == 0:
-                    vec = self.get_vector(state)
-                    for out, chunk in self.char_fun(chunk_size, shape):
-                        out2 = nm.zeros(out.shape[:-1] + (out.shape[-2],),
-                                        dtype=nm.float64)
-                        status1 = fun(out2, stress, tan_mod,
-                                      mtxF, detF, vgv, chunk, 1, 1)
-                        status2 = terms.he_residuum_from_mtx(out, out2, vec, apv.econn, chunk)
-                        yield out, chunk, status1 or status2
+                    fmode = 0
 
                 else:
-                    for out, chunk in self.char_fun(chunk_size, shape):
-                        status = fun(out, stress, tan_mod,
-                                     mtxF, detF, vgv, chunk, 1, 1)
-                        yield out, chunk, status
+                    stress = self.stress_cache[ig]
+                    if stress is None:
+                        stress = self.compute_data(fd, 0, **kwargs)
+
+                    tan_mod = self.compute_data(fd, 1, **kwargs)
+                    fmode = 1
+
+                fargs = (self.weak_function,
+                         stress, tan_mod, fd.mtx_f, fd.det_f, vgv, fmode, 0)
 
             else:
-                from sfepy.base.base import debug
-                debug()
-                # fun = self.function['element_contribution_dp']
+                vgs, _ = self.get_mapping(state_p)
 
-                # mtxF, B, detF = cache(['F', 'B', 'detF'],
-                #                       self, 0, state=state_u)
+                fargs =  (self.weak_dp_function,
+                          -vgs.bf, fd.mtx_f, fd.det_f, vgv, 1, 1)
 
-                # bf = aps.get_base('v', 0, self.integral)
-                # for out, chunk in self.char_fun(chunk_size, shape):
-                #     status = fun(out, bf, mtxF, B, detF, vgv, 1, chunk, 1)
-                #     yield -out, chunk, status
+            return fargs
 
-        elif term_mode == 'd_eval':
-            raise NotImplementedError
+        elif mode == 'el_avg':
+            if term_mode == 'strain':
+                out_qp = fd.green_strain
 
-class BulkPressureULEHTerm(BulkPressureULTerm):
-    r"""
-    :Description:
-    Hyperelastic bulk pressure term. Stress
-    :math:`S_{ij} = -p J \delta_{ij}`.
+            elif term_mode == 'stress':
+                out_qp = self.compute_data(fd, 0, **kwargs)
 
-    :Definition:
-    .. math::
-        \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+            else:
+                raise ValueError('unsupported term mode in %s! (%s)'
+                                 % (self.name, term_mode))
 
-    :Arguments:
-        virtual : :math:`\ul{v}`,
-        state   : :math:`\ul{u}`,
-        state_p : :math:`p`,
-        state_u : :math:`w`
-    """
-    name = 'd_ul_bulk_pressure_h'
-    arg_types = ('virtual', 'state', 'state_p', 'state_u')
-    use_caches = {'finite_strain_ul' : [['state_u']],
-                  'state_in_volume_qp' : [['state_p']]}
+            return self.integrate, out_qp, vgv, 1
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        term_mode, = self.get_kwargs(['term_mode'], **kwargs)
-        par1, par2, state_p, state_u = self.get_args(**kwargs)
-        apv, vgv = self.get_approximation(par1)
-        aps, vgs = self.get_approximation(state_p)
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        self.set_data_shape(apv, aps)
-        n_el, n_qp, dim, n_ep = self.data_shape_v
-        shape0 = (1, dim * n_ep, dim * n_ep)
-        shape = (chunk_size, 1, 1, 1)
+    def get_eval_shape(self, virtual, state, state_p,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
 
-        cache = self.get_cache('finite_strain_ul', 0)
-        family_data = cache(['detF', 'B'], self, 0, state=state_u)
+        return (n_el, 1, sym, 1), state.dtype
 
-        ig = self.char_fun.ig
-        p1 = self.get_vector(par1)
-        p2 = self.get_vector(par2)
+# class BulkPressureULHTerm(BulkPressureULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic bulk pressure term. Stress
+#     :math:`S_{ij} = -p J \delta_{ij}`.
 
-        stress = self.crt_data.stress[ig]
-        if stress is None:
-            stress = self.compute_crt_data(family_data, 0, **kwargs)
-            self.crt_data.stress[ig] = stress
-        tan_mod = self.crt_data.tan_mod[ig]
-        if tan_mod is None:
-            tan_mod = self.compute_crt_data(family_data, 1, **kwargs)
-            self.crt_data.tan_mod[ig] = tan_mod
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
-        fun = self.function['element_contribution']
-        mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
+#     :Arguments:
+#         virtual : :math:`\ul{v}`,
+#         state   : :math:`\ul{u}`,
+#         state_p : :math:`p`,
+#         state_u : :math:`w`
+#     """
+#     name = 'dw_ul_bulk_pressure_h'
+#     arg_types = ('virtual', 'state', 'state_p', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']],
+#                   'state_in_volume_qp' : [['state_p']]}
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            out2 = nm.zeros((out.shape[0],) + shape0, dtype=nm.float64)
-            status1 = fun(out2, stress, tan_mod,
-                          mtxF, detF, vgv, chunk, 1, 1)
-            status2 = terms.he_eval_from_mtx(out, out2, p1, p2, apv.econn, chunk)
-            out0 = nm.sum(out)
+#     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+#         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
+#         virtual, state, state_p, state_u = self.get_args(**kwargs)
+#         apv, vgv = self.get_approximation(virtual)
+#         aps, vgs = self.get_approximation(state_p)
 
-            yield out0, chunk, status1 or status2
+#         self.set_data_shape(apv, aps)
+#         shape, mode = self.get_shape_grad(diff_var, chunk_size)
 
-class BulkPressureULEvalTerm(Term):
+#         cache = self.get_cache('finite_strain_ul', 0)
+#         family_data = cache(['detF', 'B'], self, 0, state=state_u)
 
-    name = 'de_ul_bulk_pressure'
-    arg_types = ('state_u', 'state_p')
-    use_caches = {'finite_strain_ul' : [['state_u']],
-                  'state_in_volume_qp' : [['state_p']]}
+#         ig = self.char_fun.ig
 
-    function = {'stress': terms.dq_ul_stress_bulk_pressure,
-                'element_contribution' : terms.de_he_rtm}
+#         if term_mode is None:
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        state_u, state_p = self.get_args( ['state_u', 'state_p'], **kwargs )
-        ap, vg = self.get_approximation(state_u)
+#             if mode < 2:
+#                 stress = self.crt_data.stress[ig]
+#                 if stress is None:
+#                     stress = self.compute_crt_data(family_data, 0, **kwargs)
+#                     self.crt_data.stress[ig] = stress
+#                 tan_mod = self.crt_data.tan_mod[ig]
+#                 if tan_mod is None:
+#                     tan_mod = self.compute_crt_data(family_data, 1, **kwargs)
+#                     self.crt_data.tan_mod[ig] = tan_mod
 
-        dim = ap.dim[0]
-        sym = (dim + 1) * dim / 2
-        shape = (chunk_size, 1, sym, 1)
+#                 fun = self.function['element_contribution']
 
-        cache = self.get_cache( 'finite_strain_ul', 0 )
-        detF, B = cache(['detF', 'B'], self, 0, state=state_u)
-        cache = self.get_cache('state_in_volume_qp', 0)
-        p_qp = cache('state', self, 0, state=state_p, get_vector=self.get_vector)
+#                 mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
 
-        stress = nm.empty_like(B)
-        fun = self.function['stress']
-        fun(stress, p_qp, detF)
+#                 if mode == 0:
+#                     vec = self.get_vector(state)
+#                     for out, chunk in self.char_fun(chunk_size, shape):
+#                         out2 = nm.zeros(out.shape[:-1] + (out.shape[-2],),
+#                                         dtype=nm.float64)
+#                         status1 = fun(out2, stress, tan_mod,
+#                                       mtxF, detF, vgv, chunk, 1, 1)
+#                         status2 = terms.he_residuum_from_mtx(out, out2, vec, apv.econn, chunk)
+#                         yield out, chunk, status1 or status2
 
-        fun = self.function['element_contribution']
-        for out, chunk in self.char_fun(chunk_size, shape):
-            status = fun(out, stress, detF, vg, chunk, 1)
-            out1 = nm.sum(out,0).reshape((sym,))
+#                 else:
+#                     for out, chunk in self.char_fun(chunk_size, shape):
+#                         status = fun(out, stress, tan_mod,
+#                                      mtxF, detF, vgv, chunk, 1, 1)
+#                         yield out, chunk, status
 
-            yield out1, chunk, status
+#             else:
+#                 from sfepy.base.base import debug
+#                 debug()
+#                 # fun = self.function['element_contribution_dp']
 
-class VolumeULTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
+#                 # mtxF, B, detF = cache(['F', 'B', 'detF'],
+#                 #                       self, 0, state=state_u)
+
+#                 # bf = aps.get_base('v', 0, self.integral)
+#                 # for out, chunk in self.char_fun(chunk_size, shape):
+#                 #     status = fun(out, bf, mtxF, B, detF, vgv, 1, chunk, 1)
+#                 #     yield -out, chunk, status
+
+#         elif term_mode == 'd_eval':
+#             raise NotImplementedError
+
+# class BulkPressureULEHTerm(BulkPressureULTerm):
+#     r"""
+#     :Description:
+#     Hyperelastic bulk pressure term. Stress
+#     :math:`S_{ij} = -p J \delta_{ij}`.
+
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
+
+#     :Arguments:
+#         virtual : :math:`\ul{v}`,
+#         state   : :math:`\ul{u}`,
+#         state_p : :math:`p`,
+#         state_u : :math:`w`
+#     """
+#     name = 'd_ul_bulk_pressure_h'
+#     arg_types = ('virtual', 'state', 'state_p', 'state_u')
+#     use_caches = {'finite_strain_ul' : [['state_u']],
+#                   'state_in_volume_qp' : [['state_p']]}
+
+#     def __call__(self, diff_var=None, chunk_size=None, **kwargs):
+#         term_mode, = self.get_kwargs(['term_mode'], **kwargs)
+#         par1, par2, state_p, state_u = self.get_args(**kwargs)
+#         apv, vgv = self.get_approximation(par1)
+#         aps, vgs = self.get_approximation(state_p)
+
+#         self.set_data_shape(apv, aps)
+#         n_el, n_qp, dim, n_ep = self.data_shape_v
+#         shape0 = (1, dim * n_ep, dim * n_ep)
+#         shape = (chunk_size, 1, 1, 1)
+
+#         cache = self.get_cache('finite_strain_ul', 0)
+#         family_data = cache(['detF', 'B'], self, 0, state=state_u)
+
+#         ig = self.char_fun.ig
+#         p1 = self.get_vector(par1)
+#         p2 = self.get_vector(par2)
+
+#         stress = self.crt_data.stress[ig]
+#         if stress is None:
+#             stress = self.compute_crt_data(family_data, 0, **kwargs)
+#             self.crt_data.stress[ig] = stress
+#         tan_mod = self.crt_data.tan_mod[ig]
+#         if tan_mod is None:
+#             tan_mod = self.compute_crt_data(family_data, 1, **kwargs)
+#             self.crt_data.tan_mod[ig] = tan_mod
+
+#         fun = self.function['element_contribution']
+#         mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
+
+#         for out, chunk in self.char_fun( chunk_size, shape ):
+#             out2 = nm.zeros((out.shape[0],) + shape0, dtype=nm.float64)
+#             status1 = fun(out2, stress, tan_mod,
+#                           mtxF, detF, vgv, chunk, 1, 1)
+#             status2 = terms.he_eval_from_mtx(out, out2, p1, p2, apv.econn, chunk)
+#             out0 = nm.sum(out)
+
+#             yield out0, chunk, status1 or status2
+
+# class BulkPressureULEvalTerm(Term):
+
+#     name = 'de_ul_bulk_pressure'
+#     arg_types = ('state_u', 'state_p')
+#     use_caches = {'finite_strain_ul' : [['state_u']],
+#                   'state_in_volume_qp' : [['state_p']]}
+
+#     function = {'stress': terms.dq_ul_stress_bulk_pressure,
+#                 'element_contribution' : terms.de_he_rtm}
+
+#     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+#         state_u, state_p = self.get_args( ['state_u', 'state_p'], **kwargs )
+#         ap, vg = self.get_approximation(state_u)
+
+#         dim = ap.dim[0]
+#         sym = (dim + 1) * dim / 2
+#         shape = (chunk_size, 1, sym, 1)
+
+#         cache = self.get_cache( 'finite_strain_ul', 0 )
+#         detF, B = cache(['detF', 'B'], self, 0, state=state_u)
+#         cache = self.get_cache('state_in_volume_qp', 0)
+#         p_qp = cache('state', self, 0, state=state_p, get_vector=self.get_vector)
+
+#         stress = nm.empty_like(B)
+#         fun = self.function['stress']
+#         fun(stress, p_qp, detF)
+
+#         fun = self.function['element_contribution']
+#         for out, chunk in self.char_fun(chunk_size, shape):
+#             status = fun(out, stress, detF, vg, chunk, 1)
+#             out1 = nm.sum(out,0).reshape((sym,))
+
+#             yield out1, chunk, status
+
+class VolumeULTerm(HyperElasticULBase):
     r"""
     :Description:
     Volume term (weak form) in the updated Lagrangian formulation.
@@ -584,74 +551,80 @@ class VolumeULTerm(CouplingVectorScalarHE, InstantaneousBase, Term):
     """
     name = 'dw_ul_volume'
     arg_types = ('virtual', 'state')
-    use_caches = {'finite_strain_ul' : [['state',
-                                         {'F' : (2, 2),
-                                          'detF' : (2, 2)}]]}
+    family_data_names = ['mtx_f', 'det_f']
 
     function = staticmethod(terms.dw_ul_volume)
+    def get_fargs(self, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgs, _ = self.get_mapping(virtual)
+        vgv, _ = self.get_mapping(state)
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        virtual, state = self.get_args( **kwargs )
-        term_mode = kwargs.get('term_mode')
+        fd = self.get_family_data(state, 'ul_common', self.family_data_names)
 
-        apv, vgv = self.get_approximation(state)
-        aps, vgs = self.get_approximation(virtual)
+        if mode == 'weak':
+            if diff_var is None:
+                fmode = 0
 
-        self.set_data_shape(apv, aps)
+            else:
+                fmode = 1
 
-        cache = self.get_cache('finite_strain_ul', 0)
-        ih = self.arg_steps[state.name] # issue 104!
-        mtxF, detF = cache(['F', 'detF'], self, ih, state=state)
+        elif mode == 'eval':
+            if term_mode == 'volume':
+                fmode = 2
 
-        if term_mode == 'volume':
-            n_el, _, _, _ = self.data_shape_s
-            shape, mode = (n_el, 1, 1, 1), 2
+            elif term_mode == 'rel_volume':
+                fmode = 3
 
-        elif term_mode == 'rel_volume':
-            n_el, _, _, _ = self.data_shape_s
-            shape, mode = (n_el, 1, 1, 1), 3
+            else:
+                raise ValueError('unsupported term evaluation mode in %s! (%s)'
+                                 % (self.name, term_mode))
 
         else:
-            shape, mode = self.get_shape_div(diff_var, chunk_size)
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        bf = aps.get_base('v', 0, self.integral)
+        return vgs.bf, fd.mtx_f, fd.sym_inv_c, fd.det_f, vgv, 0, fmode
 
-        return (bf, detF, vgv, 0), shape, mode
+    def get_eval_shape(self, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-class CompressibilityULTerm(ScalarScalar, Term):
-    r"""
-    :Description:
-    Compressibility term in the updated Lagrangian formulation
+        return (n_el, 1, 1, 1), state.dtype
 
-    :Definition:
-    .. math::
-        \int_{\Omega} 1\over \gamma p \, q
+# class CompressibilityULTerm(ScalarScalar, Term):
+#     r"""
+#     :Description:
+#     Compressibility term in the updated Lagrangian formulation
 
-    :Arguments:
-        material: :math:`\gamma`,
-        virtual    : :math:`q`,
-        state      : :math:`p`,
-    """
-    name = 'dw_ul_compressible'
-    arg_types = ('material', 'virtual', 'state', 'state_u')
-    use_caches = {'finite_strain_ul': [['state_u']]}
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} 1\over \gamma p \, q
 
-    function = staticmethod(terms.dw_mass_scalar)
+#     :Arguments:
+#         material: :math:`\gamma`,
+#         virtual    : :math:`q`,
+#         state      : :math:`p`,
+#     """
+#     name = 'dw_ul_compressible'
+#     arg_types = ('material', 'virtual', 'state', 'state_u')
+#     use_caches = {'finite_strain_ul': [['state_u']]}
 
-    def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-        bulk, virtual, state, state_u = self.get_args(**kwargs)
+#     function = staticmethod(terms.dw_mass_scalar)
 
-        ap, vg = self.get_approximation(virtual)
+#     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
+#         bulk, virtual, state, state_u = self.get_args(**kwargs)
 
-        self.set_data_shape(ap)
-        shape, mode = self.get_shape( diff_var, chunk_size )
+#         ap, vg = self.get_approximation(virtual)
 
-        cache = self.get_cache('finite_strain_ul', 0)
-        mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
+#         self.set_data_shape(ap)
+#         shape, mode = self.get_shape( diff_var, chunk_size )
 
-        coef = nm.divide(bulk, detF)
-        bf = ap.get_base('v', 0, self.integral)
+#         cache = self.get_cache('finite_strain_ul', 0)
+#         mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
 
-        fargs = coef, state(), bf, vg, ap.econn
+#         coef = nm.divide(bulk, detF)
+#         bf = ap.get_base('v', 0, self.integral)
 
-        return fargs, shape, mode
+#         fargs = coef, state(), bf, vg, ap.econn
+
+#         return fargs, shape, mode

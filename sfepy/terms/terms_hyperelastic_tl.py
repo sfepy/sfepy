@@ -4,8 +4,6 @@ from sfepy.base.base import assert_, Struct
 from sfepy.terms.terms import terms
 from sfepy.terms.terms_hyperelastic_base import HyperElasticBase
 
-_msg_missing_data = 'missing family data!'
-
 class HyperElasticTLBase(HyperElasticBase):
     """
     Base class for all hyperelastic terms in TL formulation family.
@@ -17,22 +15,10 @@ class HyperElasticTLBase(HyperElasticBase):
     The common (family) data are cached in the evaluate cache of state
     variable.
     """
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2'))
-    arg_types = ('material', 'virtual', 'state')
-
     family_function = staticmethod(terms.dq_finite_strain_tl)
     weak_function = staticmethod(terms.dw_he_rtm)
-
-    @staticmethod
-    def integrate(out, val_qp, vg, fmode):
-        status = vg.integrate(out, val_qp, fmode)
-
-        return status
-
-    @staticmethod
-    def function(out, fun, *args):
-        return fun(out, *args)
+    fd_cache_name = 'tl_common'
+    hyperelastic_mode = 0
 
     def compute_family_data(self, state):
         ap, vg = self.get_approximation(state)
@@ -64,81 +50,6 @@ class HyperElasticTLBase(HyperElasticBase):
                              data.green_strain,
                              vec, 0, vg, ap.econn)
         return data
-
-    def compute_stress(self, mat, family_data, **kwargs):
-        out = nm.empty_like(family_data.sym_inv_c)
-
-        get = family_data.get_default_attr
-        fargs = [get(name, msg_if_none=_msg_missing_data)
-                 for name in self.family_data_names]
-
-        self.stress_function(out, mat, *fargs)
-
-        return out
-
-    def compute_tan_mod(self, mat, family_data, **kwargs):
-        shape = list(family_data.sym_inv_c.shape)
-        shape[-1] = shape[-2]
-        out = nm.empty(shape, dtype=nm.float64)
-
-        get = family_data.get_default_attr
-        fargs = [get(name, msg_if_none=_msg_missing_data)
-                 for name in self.family_data_names]
-
-        self.tan_mod_function(out, mat, *fargs)
-
-        return out
-
-    def get_fargs(self, mat, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(state)
-
-        fd = self.get_family_data(state, 'tl_common', self.family_data_names)
-
-        if mode == 'weak':
-            ig = self.char_fun.ig
-
-            if diff_var is None:
-                stress = self.compute_stress(mat, fd, **kwargs)
-                self.stress_cache[ig] = stress
-                tan_mod = nm.array([0], ndmin=4)
-
-                fmode = 0
-
-            else:
-                stress = self.stress_cache[ig]
-                if stress is None:
-                    stress = self.compute_stress(mat, fd, **kwargs)
-
-                tan_mod = self.compute_tan_mod(mat, fd, **kwargs)
-                fmode = 1
-
-            return (self.weak_function,
-                    stress, tan_mod, fd.mtx_f, fd.det_f, vg, fmode, 0)
-
-        elif mode == 'el_avg':
-            if term_mode == 'strain':
-                out_qp = fd.green_strain
-
-            elif term_mode == 'stress':
-                out_qp = self.compute_stress(mat, fd, **kwargs)
-
-            else:
-                raise ValueError('unsupported term mode in %s! (%s)'
-                                 % (self.name, term_mode))
-
-            return self.integrate, out_qp, vg, 1
-
-        else:
-            raise ValueError('unsupported evaluation mode in %s! (%s)'
-                             % (self.name, mode))
-
-    def get_eval_shape(self, mat, virtual, state,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        sym = dim * (dim + 1) / 2
-
-        return (n_el, 1, sym, 1), state.dtype
 
 class NeoHookeanTLTerm(HyperElasticTLBase):
     r"""
