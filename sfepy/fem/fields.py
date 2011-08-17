@@ -937,7 +937,8 @@ class Field( Struct ):
         The mappings are cached in the field instance in `mappings`
         attribute. The mappings can be saved to `mappings0` using
         `Field.save_mappings`. The saved mapping can be retrieved by
-        passing `get_saved=True`.
+        passing `get_saved=True`. If the required (saved) mapping
+        is not in cache, a new one is created.
 
         Returns
         -------
