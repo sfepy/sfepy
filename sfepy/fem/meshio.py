@@ -796,8 +796,12 @@ class VTKMeshIO( MeshIO ):
                 fd.write( '\nSCALARS %s float %d\n' % (key, nc) )
                 fd.write( 'LOOKUP_TABLE default\n' )
                 format = self.float_format + '\n'
-                for row in val.data.squeeze():
-                    fd.write( format % row )
+                aux = val.data.squeeze()
+                if len(aux.shape) == 0:
+                    fd.write(format % aux)
+                else:
+                    for row in aux:
+                        fd.write(format % row)
 
             elif (nr == dim) and (nc == 1):
                 fd.write( '\nVECTORS %s float\n' % key )
