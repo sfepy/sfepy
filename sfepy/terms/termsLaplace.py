@@ -279,30 +279,52 @@ class DiffusionIntegrateTerm( Term ):
         \int_{\Omega} K_{ij} \nabla_j \bar{p}
 
     :Arguments:
-        material: :math:`\ul{K}`,
+        material: :math:`\uv{K}`,
         parameter:  :math:`\bar{p}`,
     """
-    name = 'd_diffusion_integrate'
+    name = 'di_diffusion_integrate'
     arg_types = ('material', 'parameter')
 
-    function = staticmethod(terms.d_diffusion_integrate)
+    @staticmethod
+    def function(out, grad, mat, vg):
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, parameter = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(parameter)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
+        status = vg.integrate(out, nm.ascontiguousarray(aux), 0)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim, 1)
-        else:
-            raise StopIteration
+        return status
 
-        vec = parameter()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function(out, vec, mat, vg, ap.econn, chunk)
-            out1 = nm.sum(out, 0)
-            out1.shape = (dim,)
-            yield out1, chunk, status
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
+        grad = self.get(parameter, 'grad')
+
+        return grad, mat, vg
+
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
+
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, dim, 1), parameter.dtype
+
+    # def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+    #     mat, parameter = self.get_args( **kwargs )
+    #     ap, vg = self.get_approximation(parameter)
+    #     n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+
+    #     if diff_var is None:
+    #         shape = (chunk_size, 1, dim, 1)
+    #     else:
+    #         raise StopIteration
+
+    #     vec = parameter()
+    #     for out, chunk in self.char_fun( chunk_size, shape ):
+    #         status = self.function(out, vec, mat, vg, ap.econn, chunk)
+    #         out1 = nm.sum(out, 0)
+    #         out1.shape = (dim,)
+    #         yield out1, chunk, status
 
 class SurfaceFluxTerm(Term):
     r"""

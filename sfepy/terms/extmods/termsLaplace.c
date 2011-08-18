@@ -615,51 +615,6 @@ int32 de_diffusion_velocity( FMField *out, FMField *grad,
 }
 
 #undef __FUNC__
-#define __FUNC__ "d_diffusion_integrate"
-int32 d_diffusion_integrate( FMField *out, FMField *in,
-			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 *conn, int32 nEl, int32 nEP,
-			     int32 *elList, int32 elList_nRow )
-{
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *nodval = 0, *aux = 0, *aux2 = 0;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-  FMF_SetFirst( out );
-
-  fmf_createAlloc( &aux, 1, nQP, dim, 1 );
-  fmf_createAlloc( &aux2, 1, nQP, dim, 1 );
-  fmf_createAlloc( &nodval, 1, 1, nEP, 1 );
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-    if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, ii );
-    }
-
-    ele_extractNodalValuesNBN( nodval, in, conn + nEP * iel );
-    fmf_mulAB_n1( aux, vg->bfGM, nodval );
-    fmf_mulAB_nn( aux2, mtxD, aux );
-    fmf_sumLevelsMulF( out, aux2, vg->det->val );
-
-    ERR_CheckGo( ret );
-  } /* for (ii) */
-
- end_label:
-  fmf_freeDestroy( &aux );
-  fmf_freeDestroy( &aux2 );
-  fmf_freeDestroy( &nodval );
-
-  return( ret );
-}
-
-#undef __FUNC__
 #define __FUNC__ "d_surface_flux"
 int32 d_surface_flux( FMField *out, FMField *grad,
                       FMField *mtxD, SurfaceGeometry *sg, int32 mode )
