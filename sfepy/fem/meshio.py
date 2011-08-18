@@ -2118,8 +2118,98 @@ class BDFMeshIO( MeshIO ):
 
         return mesh
 
-    def write( self, filename, mesh, out = None, **kwargs ):
-        raise NotImplementedError
+    @staticmethod
+    def format_str(str, idx, n=8):
+        out = ''
+        for ii, istr in enumerate(str):
+            aux = '%d' % istr
+            out += aux + ' ' * (n - len(aux))
+            if ii == 7:
+                out += '+%07d\n+%07d' % (idx, idx)
+
+        return out
+
+    def write(self, filename, mesh, out=None, **kwargs):
+        fd = open(filename, 'w')
+
+        coors = mesh.coors
+        conns, desc = join_conn_groups(mesh.conns, mesh.descs,
+                                       mesh.mat_ids, concat=True)
+
+        n_nod, dim = coors.shape
+
+        fd.write("$NASTRAN Bulk Data File created by SfePy\n")
+        fd.write("$\nBEGIN BULK\n")
+
+        fd.write("$\n$ ELEMENT CONNECTIVITY\n$\n")
+        iel = 0
+        mats = {}
+        for ig, conn in enumerate(conns):
+            for ii in range(conn.shape[0]):
+                iel += 1
+                nn = conn[ii][:-1] + 1
+                mat = conn[ii][-1]
+                if mat in mats:
+                    mats[mat] += 1
+                else:
+                    mats[mat] = 0
+
+                if (desc[ig] == "2_4"):
+                    fd.write("CQUAD4  %s\n" %\
+                             self.format_str([ii + 1, mat,
+                                              nn[0], nn[1], nn[2], nn[3]],
+                                             iel))
+                elif (desc[ig] == "2_3"):
+                    fd.write("CTRIA3  %s\n" %\
+                             self.format_str([ii + 1, mat,
+                                              nn[0], nn[1], nn[2]], iel))
+                elif (desc[ig] == "3_4"):
+                    fd.write("CTETRA  %s\n" %\
+                             self.format_str([ii + 1, mat,
+                                              nn[0], nn[1], nn[2], nn[3]],
+                                             iel))
+                elif (desc[ig] == "3_8"):
+                    fd.write("CHEXA   %s\n" %\
+                             self.format_str([ii + 1, mat, nn[0], nn[1], nn[2],
+                                              nn[3], nn[4], nn[5], nn[6],
+                                              nn[7]], iel))
+                else:
+                    raise ValueError('unknown element type! (%s)' % desc[ig])
+
+        fd.write("$\n$ NODAL COORDINATES\n$\n")
+        format = 'GRID*   %s                           % 08E   % 08E\n'
+        if coors.shape[1] == 3:
+            format += '*          % 08E0               \n'
+        else:
+            format += '*          % 08E0               \n' % 0.0
+        for ii in range(n_nod):
+            sii = str(ii + 1)
+            fd.write(format % ((sii + ' ' * (8 - len(sii)), )
+                               + tuple(coors[ii])))
+
+        fd.write("$\n$ GEOMETRY\n$\n1                                   ")
+        fd.write("0.000000E+00    0.000000E+00\n")
+        fd.write("*           0.000000E+00    0.000000E+00\n*       \n")
+
+        fd.write("$\n$ MATERIALS\n$\n")
+        matkeys = mats.keys()
+        matkeys.sort()
+        for ii, imat in enumerate(matkeys):
+            fd.write("$ material%d : Isotropic\n" % imat)
+            aux = str(imat)
+            fd.write("MAT1*   %s            " % (aux + ' ' * (8 - len(aux))))
+            fd.write("0.000000E+00                    0.000000E+00\n")
+            fd.write("*           0.000000E+00    0.000000E+00\n")
+
+        fd.write("$\n$ GEOMETRY\n$\n")
+        for ii, imat in enumerate(matkeys):
+            fd.write("$ material%d : solid%d\n" % (imat, imat))
+            fd.write("PSOLID* %s\n" % self.format_str([ii + 1, imat], 0, 16))
+            fd.write("*       \n")
+
+        fd.write("ENDDATA\n")
+
+        fd.close()
 
 
 class NEUMeshIO( MeshIO ):
