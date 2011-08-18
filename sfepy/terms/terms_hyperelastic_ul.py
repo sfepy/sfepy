@@ -319,13 +319,13 @@ class BulkPressureULTerm(HyperElasticULBase):
                     fmode = 1
 
                 fargs = (self.weak_function,
-                         stress, tan_mod, fd.mtx_f, fd.det_f, vgv, fmode, 0)
+                         stress, tan_mod, fd.mtx_f, fd.det_f, vgv, fmode, 1)
 
             else:
                 vgs, _ = self.get_mapping(state_p)
 
                 fargs =  (self.weak_dp_function,
-                          -vgs.bf, fd.mtx_f, fd.det_f, vgv, 1, 1)
+                          -vgs.bf, fd.det_f, vgv, 1, 1)
 
             return fargs
 
@@ -556,8 +556,8 @@ class VolumeULTerm(HyperElasticULBase):
     function = staticmethod(terms.dw_ul_volume)
     def get_fargs(self, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vgs, _ = self.get_mapping(virtual)
-        vgv, _ = self.get_mapping(state)
+        vgv, _ = self.get_mapping(virtual)
+        vgs, _ = self.get_mapping(state)
 
         fd = self.get_family_data(state, 'ul_common', self.family_data_names)
 
@@ -583,7 +583,7 @@ class VolumeULTerm(HyperElasticULBase):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-        return vgs.bf, fd.mtx_f, fd.sym_inv_c, fd.det_f, vgv, 0, fmode
+        return vgv.bf, fd.det_f, vgs, 0, fmode
 
     def get_eval_shape(self, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -591,40 +591,47 @@ class VolumeULTerm(HyperElasticULBase):
 
         return (n_el, 1, 1, 1), state.dtype
 
-# class CompressibilityULTerm(ScalarScalar, Term):
-#     r"""
-#     :Description:
-#     Compressibility term in the updated Lagrangian formulation
+class CompressibilityULTerm(HyperElasticULBase):
+    r"""
+    :Description:
+    Compressibility term for the updated Lagrangian formulation
 
-#     :Definition:
-#     .. math::
-#         \int_{\Omega} 1\over \gamma p \, q
+    :Definition:
+    .. math::
+        \int_{\Omega} 1\over \gamma p \, q
 
-#     :Arguments:
-#         material: :math:`\gamma`,
-#         virtual    : :math:`q`,
-#         state      : :math:`p`,
-#     """
-#     name = 'dw_ul_compressible'
-#     arg_types = ('material', 'virtual', 'state', 'state_u')
-#     use_caches = {'finite_strain_ul': [['state_u']]}
+    :Arguments:
+        material : :math:`\gamma`,
+        virtual  : :math:`q`,
+        state    : :math:`p`,
+        parameter_u  : :math:`\ul(u)`,
+    """
+    name = 'dw_ul_compressible'
+    arg_types = ('material', 'virtual', 'state', 'parameter_u')
+    family_data_names = ['mtx_f', 'det_f']
 
-#     function = staticmethod(terms.dw_mass_scalar)
+    function = staticmethod(terms.dw_mass_scalar)
 
-#     def get_fargs(self, diff_var=None, chunk_size=None, **kwargs):
-#         bulk, virtual, state, state_u = self.get_args(**kwargs)
+    def get_fargs(self, bulk, virtual, state, parameter_u,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vgp, _ = self.get_mapping(virtual)
+        vgu, _ = self.get_mapping(parameter_u)
 
-#         ap, vg = self.get_approximation(virtual)
+        fd = self.get_family_data(parameter_u, 'ul_common', self.family_data_names)
 
-#         self.set_data_shape(ap)
-#         shape, mode = self.get_shape( diff_var, chunk_size )
+        coef = nm.divide(bulk, fd.det_f)
 
-#         cache = self.get_cache('finite_strain_ul', 0)
-#         mtxF, detF = cache(['F', 'detF'], self, 0, state=state_u)
+        if mode == 'weak':
+            if diff_var is None:
+                val_qp = self.get(state, 'val')
+                fmode = 0
 
-#         coef = nm.divide(bulk, detF)
-#         bf = ap.get_base('v', 0, self.integral)
+            else:
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
 
-#         fargs = coef, state(), bf, vg, ap.econn
+            return coef, val_qp, vgp.bf, vgu, fmode
 
-#         return fargs, shape, mode
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))

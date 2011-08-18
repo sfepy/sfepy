@@ -1486,36 +1486,33 @@ int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
 
 #undef __FUNC__
 #define __FUNC__ "dw_ul_volume"
-int32 dw_ul_volume( FMField *out, FMField *bf,
-		    FMField *detF, VolumeGeometry *vg, int32 transpose,
-		    int32 *elList, int32 elList_nRow,
+int32 dw_ul_volume( FMField *out, FMField *bf, FMField *detF,
+		    VolumeGeometry *vg, int32 transpose,
 		    int32 mode )
 {
-  int32 ii, iel, iqp, j, nQP, nEP, nRow, sym, dim, ret = RET_OK;
+  int32 ii, iqp, j, nQP, nEP, nRow, sym, dim, ret = RET_OK;
   FMField *aux = 0, aux2[1];
   float64 *paux, *pgc;
 
+  nQP = vg->det->nLev;
+
   if (mode == 0) {
-    nQP = vg->det->nLev;
     fmf_createAlloc( &aux, 1, nQP, 1, 1 );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( detF, ii );
-      FMF_SetCell( vg->det, iel );
+      FMF_SetCell( vg->det, ii );
+      FMF_SetCell( out, ii );
 
       for (iqp = 0; iqp < nQP; iqp++) {
 	aux->val[iqp] = (1.0 - 1.0 / detF->val[iqp]) * vg->det->val[iqp];
       }
       /* \int N^T (1 - 1/J) */
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( out, ii );
       fmf_sumLevelsTMulF( out, bf, aux->val );
       ERR_CheckGo( ret );
     }
 
   } else if (mode == 1) {
-    nQP = vg->bfGM->nLev;
     nEP = vg->bfGM->nCol;
     dim = vg->bfGM->nRow;
     nRow = dim * nEP;
@@ -1524,11 +1521,9 @@ int32 dw_ul_volume( FMField *out, FMField *bf,
     aux2->nAlloc = -1;
     fmf_pretend( aux2, 1, nQP, 1, nRow, NULL );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
       FMF_SetCell( out, ii );
       aux2->val = vg->bfGM->val;
 
@@ -1544,27 +1539,21 @@ int32 dw_ul_volume( FMField *out, FMField *bf,
     }
   } else if (mode == 2){ // de_volume
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->det, iel );
-
-      FMF_SetCell( out, ii );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->det, ii );
       FMF_SetCell( detF, ii );
+      FMF_SetCell( out, ii );
 
       fmf_sumLevelsMulF( out, detF, vg->det->val );
       ERR_CheckGo( ret );
     }
   } else { // mode == 3, de_rel_volume
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( vg->volume, iel );
-
-      FMF_SetCell( out, ii );
+    for (ii = 0; ii < out->nCell; ii++) {
+      FMF_SetCell( vg->det, ii );
+      FMF_SetCell( vg->volume, ii );
       FMF_SetCell( detF, ii );
+      FMF_SetCell( out, ii );
 
       fmf_sumLevelsMulF( out, detF, vg->det->val );
       fmf_mulC( out, 1.0 / vg->volume->val[0] );
