@@ -1490,11 +1490,14 @@ int32 dw_ul_volume( FMField *out, FMField *bf, FMField *detF,
 		    VolumeGeometry *vg, int32 transpose,
 		    int32 mode )
 {
-  int32 ii, iqp, j, nQP, nEP, nRow, sym, dim, ret = RET_OK;
+  int32 ii, iqp, nQP, nEPu, nEPp, dim, ret = RET_OK;
   FMField *aux = 0, aux2[1];
   float64 *paux, *pgc;
 
-  nQP = vg->det->nLev;
+  nQP = vg->bfGM->nLev;
+  nEPu = vg->bfGM->nCol;
+  dim = vg->bfGM->nRow;
+  nEPp = bf->nRow;
 
   if (mode == 0) {
     fmf_createAlloc( &aux, 1, nQP, 1, 1 );
@@ -1513,13 +1516,9 @@ int32 dw_ul_volume( FMField *out, FMField *bf, FMField *detF,
     }
 
   } else if (mode == 1) {
-    nEP = vg->bfGM->nCol;
-    dim = vg->bfGM->nRow;
-    nRow = dim * nEP;
-
-    fmf_createAlloc( &aux, 1, nQP, nEP, nRow );
+    fmf_createAlloc( &aux, 1, nQP, nEPp, dim * nEPu );
     aux2->nAlloc = -1;
-    fmf_pretend( aux2, 1, nQP, 1, nRow, NULL );
+    fmf_pretend( aux2, 1, nQP, 1, dim * nEPu, NULL );
 
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( vg->bfGM, ii );

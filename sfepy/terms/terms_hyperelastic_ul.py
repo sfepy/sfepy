@@ -630,7 +630,7 @@ class CompressibilityULTerm(HyperElasticULBase):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vgp.bf, vgu, fmode
+            return coef, val_qp, vgp.bf, vgp, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
