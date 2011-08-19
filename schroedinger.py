@@ -436,8 +436,6 @@ class SchroedingerApp(SimpleApp):
 
         self.norm_v_hxc0 = nla.norm(v_hxc_qp)
 
-        vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
-
         self.itercount = 0
         aux = wrap_function(self.iterate,
                             (eig_solver,
@@ -461,15 +459,15 @@ class SchroedingerApp(SimpleApp):
 
         fun = pb.functions['fun_v']
         variable = self.problem.create_variables(['scalar'])['scalar']
-        vec_v_ion = fun(None, variable.field.get_coor(),
+        field_coors = variable.field.get_coor()
+        vec_v_ion = fun(None, field_coors,
                         mode='qp')['V_ion'].squeeze()
 
         vec_v_xc = self._interp_to_nodes(v_xc_qp)
         vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
         vec_v_sum = self._interp_to_nodes(v_hxc_qp + v_ion_qp)
 
-        coor = pb.domain.get_mesh_coors()
-        r2 = norm_l2_along_axis(coor, squared=True)
+        r2 = norm_l2_along_axis(field_coors, squared=True)
         vec_nr2 = vec_n * r2
 
         pb.select_bcs(ebc_names=['ZeroSurface'])
