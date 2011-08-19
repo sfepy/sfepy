@@ -29,9 +29,9 @@ def gen_block_mesh(dims, shape, centre, name='block'):
 
     mesh : Mesh instance
     """
-    dims = nm.asarray(dims)
-    shape = nm.asarray(shape)
-    centre = nm.asarray(centre)
+    dims = nm.asarray(dims, dtype=nm.float64)
+    shape = nm.asarray(shape, dtype=nm.int32)
+    centre = nm.asarray(centre, dtype=nm.float64)
 
     dim = shape.shape[0]
 
@@ -128,9 +128,9 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
 
     mesh : Mesh instance
     """
-    dims = nm.asarray(dims)
-    shape = nm.asarray(shape)
-    centre = nm.asarray(centre)
+    dims = nm.asarray(dims, dtype=nm.float64)
+    shape = nm.asarray(shape, dtype=nm.int32)
+    centre = nm.asarray(centre, dtype=nm.float64)
 
     a1, b1, a2, b2, length = dims
     nr, nfi, nl = shape
