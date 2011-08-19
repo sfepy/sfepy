@@ -1332,10 +1332,9 @@ class FieldVariable(Variable):
         """
         data_vertex = self.field.average_qp_to_vertices(data_qp, integral)
 
-        ##
-        # Field nodes values - TODO!.
-        #        data = self.field.interp_v_vals_to_n_vals(data_vertex)
-        data = data_vertex.squeeze()
+        # Field nodes values.
+        data = self.field.interp_v_vals_to_n_vals(data_vertex)
+        data = data.squeeze()
         self.indx = slice(0, len(data))
 
         self.data[step] = data
