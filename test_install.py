@@ -89,36 +89,36 @@ def main():
 
     t0 = time.time()
 
-    out, err = check_output('./simple.py examples/diffusion/poisson.py')
+    out, err = check_output('python ./simple.py examples/diffusion/poisson.py')
     eok += report(out, '...', -2, 5, '1.173819e-16', eps=1e-15)
 
-    out, err = check_output("""./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""")
+    out, err = check_output("""python ./simple.py -c "ebc_2 : {'name' : 't2', 'region' : 'Gamma_Right', 'dofs' : {'t.0' : -5.0}}" examples/diffusion/poisson.py""")
     eok += report(out, '...', -2, 5, '2.308051e-16', eps=1e-15)
 
-    out, err = check_output('./simple.py examples/navier_stokes/stokes.py')
+    out, err = check_output('python ./simple.py examples/navier_stokes/stokes.py')
     eok += report(out, '...', -2, 5, '1.210678e-13', eps=1e-11)
 
-    out, err = check_output('./simple.py examples/diffusion/poisson_parametric_study.py')
+    out, err = check_output('python ./simple.py examples/diffusion/poisson_parametric_study.py')
     eok += report(out, '...', -2, 5, '1.606408e-14', eps=1e-13)
 
-    out, err = check_output('./simple.py examples/linear_elasticity/its2D_3.py')
+    out, err = check_output('python ./simple.py examples/linear_elasticity/its2D_3.py')
     eok += report(out, '...', -33, 5, '2.366052e-12', eps=1e-11)
     eok += report(out, '...', -3, 4, '15.646', eps=1e-5)
 
-    out, err = check_output('./findSurf.py meshes/quantum/cube.node -')
+    out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
     eok += report(out, '...', -2, 1, '64247')
 
-    out, err = check_output('./eigen.py examples/phononic/band_gaps.py')
+    out, err = check_output('python ./eigen.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -4, 2, '232.40156299')
     eok += report(out, '...', -3, 1, '132604.79235405]')
 
-    out, err = check_output('./eigen.py examples/phononic/band_gaps.py -d')
+    out, err = check_output('python ./eigen.py examples/phononic/band_gaps.py -d')
     eok += report(out, '...', -5, 4, '0.209329,')
 
-    out, err = check_output('./schroedinger.py --2d --mesh')
+    out, err = check_output('python ./schroedinger.py --2d --mesh')
     eok += report(out, '...', -2, -1, 'tmp/mesh.vtk')
 
-    out, err = check_output('./schroedinger.py --2d --hydrogen')
+    out, err = check_output('python ./schroedinger.py --2d --hydrogen')
     eok += report(out, '...', -4, -2, '-0.01984415', eps=1e-4)
 
     out, err = check_output('python examples/standalone/homogenized_elasticity/rs_correctors.py -n')
@@ -135,7 +135,7 @@ def main():
 
     t1 = time.time()
 
-    out, err = check_output('./runTests.py')
+    out, err = check_output('python ./runTests.py')
     tok = report(out, 'tests', -2, 7, '0')
     tok = {True : 'ok', False : 'fail'}[tok]
 
