@@ -1,18 +1,19 @@
 import numpy as np
 
 try:
-    from enthought.mayavi import mlab
+    import enthought.mayavi as mayavi
 
 except ImportError:
     try:
-        from mayavi import mlab
+        import mayavi
 
     except ImportError:
-        mlab = None
+        mayavi = None
 
-if mlab:
-    from mayavi.core.source import Source
-    from mayavi.core.filter import Filter
+if mayavi:
+    mlab = mayavi.mlab
+    Source = mayavi.core.source.Source
+    Filter = mayavi.core.filter.Filter
     import dataset_manager
 
 def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
