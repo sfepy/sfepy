@@ -484,7 +484,8 @@ def save_recovery_region(mac_pb, rname, filename=None):
 
 
 def recover_micro_hook( micro_filename, region, macro,
-                        naming_scheme = 'step_iel' ):
+                        naming_scheme = 'step_iel',
+                        recovery_file_tag='' ):
 
     # Create a micro-problem instance.
     required, other = get_standard_keywords()
@@ -515,7 +516,7 @@ def recover_micro_hook( micro_filename, region, macro,
 
         for ig, ii, iel in region.iter_cells():
             print 'ig: %d, ii: %d, iel: %d' % (ig, ii, iel)
-        
+
             local_macro = {}
             for k, v in macro.iteritems():
                 local_macro[k] = v[ii,0]
@@ -524,7 +525,8 @@ def recover_micro_hook( micro_filename, region, macro,
 
             # save data
             suffix = format % (ig, iel)
-            micro_name = pb.get_output_name(extra='recovered_' + suffix)
+            micro_name = pb.get_output_name(extra='recovered_'\
+                                            + recovery_file_tag + suffix)
             filename = op.join(output_dir, op.basename(micro_name))
             fpv = pb.conf.options.get_default_attr('file_per_var', False)
             pb.save_state(filename, out=out,
