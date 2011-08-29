@@ -156,8 +156,8 @@ equation_corrs = {
     'pressure constraint' :
     """- dw_stokes.i1.Ym( u, q )
        - dw_stokes.i1.Yc( u, q )
-       - dw_mass_scalar_w.i1.Ym( matrix.gamma, q, p )
-       - dw_mass_scalar_w.i1.Yc( reinf.gamma, q, p ) = 
+       - dw_mass_scalar.i1.Ym( matrix.gamma, q, p )
+       - dw_mass_scalar.i1.Yc( reinf.gamma, q, p ) = 
          dw_stokes.i1.Ym( Pi, q )
        + dw_stokes.i1.Yc( Pi, q )""",
 }
@@ -165,8 +165,8 @@ equation_corrs = {
 expr_coefs = {
     'Q1' : """  dw_lin_elastic.i1.Ym( matrix.D, Pi1u, Pi2u )
               + dw_lin_elastic.i1.Yc( reinf.D, Pi1u, Pi2u )""",
-    'Q2' : """  dw_mass_scalar_w.i1.Ym( matrix.gamma, Pi1p, Pi2p )
-              + dw_mass_scalar_w.i1.Yc( reinf.gamma, Pi1p, Pi2p )""",
+    'Q2' : """  dw_mass_scalar.i1.Ym( matrix.gamma, Pi1p, Pi2p )
+              + dw_mass_scalar.i1.Yc( reinf.gamma, Pi1p, Pi2p )""",
 }
 #! Coefficients
 #! ------------

@@ -77,7 +77,7 @@ equations = {
        = 0 """,
     'pressure constraint' :
     """- dw_stokes.i1.Omega( u, q )
-       - dw_mass_scalar_w.i1.Omega( solid.gamma, q, p )
+       - dw_mass_scalar.i1.Omega( solid.gamma, q, p )
        = 0""",
 }
 #! Solvers

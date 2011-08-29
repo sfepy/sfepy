@@ -90,7 +90,7 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
 
     equations = {
         'lhs' : """  dw_laplace.i1.Omega( m.val, v, Psi )
-                   + dw_mass_scalar_w.i1.Omega( mat_v.V, v, Psi )""",
+                   + dw_mass_scalar.i1.Omega( mat_v.V, v, Psi )""",
         'rhs' : """dw_mass_scalar.i1.Omega( v, Psi )""",
     }
 
