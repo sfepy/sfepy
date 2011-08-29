@@ -39,37 +39,43 @@ class MassVectorTerm(Term):
 class MassScalarTerm(Term):
     r"""
     :Description:
-    Scalar field mass matrix/rezidual.
+    Scalar field mass matrix/rezidual weighted by a scalar function :math:`c`.
 
     :Definition:
     .. math::
-        \int_{\Omega} q p
+        \int_{\Omega} q p, \int_{\Omega} c q p
 
     :Arguments 1:
+        material : :math:`c` (optional),
         virtual : :math:`q`,
         state   : :math:`p`
 
     :Arguments 2:
+        material : :math:`c` (optional),
         parameter_1 : :math:`r`,
         parameter_2 : :math:`p`
     """
     name = 'dw_mass_scalar'
-    arg_types = (('virtual', 'state'),
-                 ('parameter_1', 'parameter_2'))
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
 
-    def check_shapes(self, virtual, state):
+    def check_shapes(self, material, virtual, state):
         assert_(virtual.n_components == 1)
         assert_(state.n_components == 1)
 
-    def get_fargs(self, virtual, state,
+        if material is not None:
+            n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+            assert_(material.shape[1:] == (n_qp, 1, 1))
+            assert_((material.shape[0] == 1) or (material.shape[0] == n_el))
+
+    def get_fargs(self, material, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         geo, _ = self.get_mapping(state)
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-        coef = kwargs.get('material')
-        if coef is None:
-            coef = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
+        if material is None:
+            material = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
         if mode == 'weak':
             if diff_var is None:
@@ -80,19 +86,19 @@ class MassScalarTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, geo.bf, geo, fmode
+            return material, val_qp, geo.bf, geo, fmode
 
         elif mode == 'eval':
             val_qp1 = self.get(virtual, 'val')
             val_qp2 = self.get(state, 'val')
 
-            return coef, val_qp1, val_qp2, geo.bf, geo
+            return material, val_qp1, val_qp2, geo.bf, geo
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-    def get_eval_shape(self, virtual, state,
+    def get_eval_shape(self, material, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
@@ -105,73 +111,7 @@ class MassScalarTerm(Term):
         else:
             self.function = terms.d_mass_scalar
 
-class MassScalarWTerm(MassScalarTerm):
-    r"""
-    :Description:
-    Scalar field mass matrix/rezidual weighted by a scalar function :math:`c`.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} c q p
-
-    :Arguments 1:
-        material : :math:`c`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
-
-    :Arguments 2:
-        material    : :math:`c`,
-        parameter_1 : :math:`r`,
-        parameter_2 : :math:`p`
-    """
-    name = 'dw_mass_scalar_w'
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2'))
-
-    def check_shapes(self, mat, virtual, state):
-        MassScalarTerm.check_shapes(self, virtual, state)
-
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        assert_(mat.shape[1:] == (n_qp, 1, 1))
-        assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
-
-    def get_fargs(self, material, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = MassScalarTerm.get_fargs(self, virtual, state,
-                                         mode, term_mode, diff_var,
-                                         material=material, **kwargs)
-        return fargs
-
-    def get_eval_shape(self, material, virtual, state,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-
-        return (n_el, 1, 1, 1), state.dtype
-
 class MassScalarSurfaceTerm(MassScalarTerm):
-    r"""
-    :Description:
-    Scalar field mass matrix/rezidual on a surface.
-
-    :Definition:
-    .. math::
-        \int_{\Gamma} q p
-
-    :Arguments:
-        virtual : :math:`q`,
-        state   : :math:`p`
-    """
-    name = 'dw_surface_mass_scalar'
-    arg_types = ('virtual', 'state')
-    integration = 'surface'
-
-    function = staticmethod(terms.dw_surf_mass_scalar)
-
-    def set_arg_types(self):
-        pass
-
-class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
     r"""
     :Description:
     Scalar field mass matrix/rezidual on a surface weighted by a scalar
@@ -179,25 +119,21 @@ class MassScalarSurfaceWTerm(MassScalarSurfaceTerm):
 
     :Definition:
     .. math::
-        \int_{\Gamma} c q p
+        \int_{\Gamma} q p, \int_{\Gamma} c q p
 
     :Arguments:
-        material : :math:`c`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        material : :math:`c` (optional),
+        virtual : :math:`q`,
+        state   : :math:`p`
     """
-    name = 'dw_surface_mass_scalar_w'
-    arg_types = ('material', 'virtual', 'state')
+    name = 'dw_surface_mass_scalar'
+    arg_types = ('opt_material', 'virtual', 'state')
+    integration = 'surface'
 
-    def check_shapes(self, coef, virtual, state):
+    function = staticmethod(terms.dw_surf_mass_scalar)
+
+    def set_arg_types(self):
         pass
-
-    def get_fargs(self, coef, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = MassScalarSurfaceTerm.get_fargs(self, virtual, state,
-                                                mode, term_mode, diff_var,
-                                                material=coef, **kwargs)
-        return fargs
 
 class BCNewtonTerm(MassScalarSurfaceTerm):
     r"""

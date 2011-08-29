@@ -20,6 +20,7 @@ _match_var = re.compile( '^virtual$|^state(_[_a-zA-Z0-9]+)?$'\
 _match_state = re.compile( '^state(_[_a-zA-Z0-9]+)?$' ).match
 _match_parameter = re.compile( '^parameter(_[_a-zA-Z0-9]+)?$' ).match
 _match_material = re.compile( '^material(_[_a-zA-Z0-9]+)?$' ).match
+_match_material_opt = re.compile( '^opt_material(_[_a-zA-Z0-9]+)?$' ).match
 _match_material_root = re.compile( '(.+)\.(.*)' ).match
 
 def get_shape_kind(integration):
@@ -618,14 +619,14 @@ class Term(Struct):
                 else:
                     raise ValueError('material argument %s not found!'
                                      % arg_name)
-                    
+
         self.setup_args(**kwargs)
-    
+
     def classify_args(self):
         """
         Classify types of the term arguments and find matching call
         signature.
-        
+
         A state variable can be in place of a parameter variable and
         vice versa.
         """
@@ -634,6 +635,18 @@ class Term(Struct):
                             state = [], virtual = [], parameter = [])
 
         msg = "variable '%s' requested by term '%s' does not exist!"
+
+        # check for "opt_material"
+        if isinstance(self.arg_types[0], tuple):
+            arg_types = self.arg_types[0]
+        else:
+            arg_types = self.arg_types
+
+        for ii, arg_type in enumerate(arg_types):
+            if _match_material_opt(arg_type):
+                if not(isinstance(self.args[ii], tuple)):
+                    self.args.insert(ii, (None, None))
+                    self.arg_names.insert(ii, (None, None))
 
         if isinstance(self.arg_types[0], tuple):
             assert_(len(self.modes) == len(self.arg_types))
@@ -658,6 +671,7 @@ class Term(Struct):
                         else:
                             failed = True
                             break
+
                 if not failed:
                     matched.append( it )
 
@@ -693,7 +707,8 @@ class Term(Struct):
                          var.is_state_or_parameter():
                     self.names.parameter.append( name )
 
-            elif _match_material( arg_type ):
+            elif _match_material( arg_type ) or \
+                     _match_material_opt( arg_type ):
                 names = self.names.material
 
             else:
@@ -723,7 +738,6 @@ class Term(Struct):
 
         Check compatibility of field and term subdomain lists (igs).
         """
-        igs = self.char_fun.igs
         vns = self.get_variable_names()
         for name in vns:
             field = self._kwargs[name].get_field()
@@ -742,7 +756,11 @@ class Term(Struct):
         return self.names.variable
 
     def get_material_names(self):
-        return [aux[0] for aux in self.names.material]
+        out = []
+        for aux in self.names.material:
+            if aux[0] is not None:
+                out.append(aux[0])
+        return out
 
     def get_user_names(self):
         return self.names.user
@@ -926,8 +944,12 @@ class Term(Struct):
             else:
                 ## print self.names.material
                 mat, par_name = self.args[ii]
-                mat_data = mat.get_data((region_name, self.integral_name),
-                                        ig, par_name)
+                if mat is not None:
+                    mat_data = mat.get_data((region_name, self.integral_name),
+                                            ig, par_name)
+                else:
+                    mat_data = None
+
                 args.append(mat_data)
 
         return args
@@ -1168,6 +1190,10 @@ class Term(Struct):
 
     def get_materials(self, join=False):
         materials = self.get_args_by_name(self.names.material)
+
+        for mat in materials:
+            if mat[0] is None:
+                materials.remove(mat)
 
         if join:
             materials = list(set(mat[0] for mat in materials))
