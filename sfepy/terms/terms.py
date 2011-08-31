@@ -642,11 +642,20 @@ class Term(Struct):
         else:
             arg_types = self.arg_types
 
+        matched = 0
         for ii, arg_type in enumerate(arg_types):
             if _match_material_opt(arg_type):
+                matched += 1
+                if ii > 0:
+                    msg = 'opt_material at % position, must be first!' % (ii + 1, )
+                    raise ValueError(msg)
                 if not(isinstance(self.args[ii], tuple)):
                     self.args.insert(ii, (None, None))
                     self.arg_names.insert(ii, (None, None))
+
+        if matched > 1:
+            msg = 'only one opt_material allowed, %d given!' % matched
+            raise ValueError(msg)
 
         if isinstance(self.arg_types[0], tuple):
             assert_(len(self.modes) == len(self.arg_types))
