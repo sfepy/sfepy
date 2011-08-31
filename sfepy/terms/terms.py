@@ -647,7 +647,7 @@ class Term(Struct):
             if _match_material_opt(arg_type):
                 matched += 1
                 if ii > 0:
-                    msg = 'opt_material at % position, must be first!' % (ii + 1, )
+                    msg = 'opt_material at position %d, must be at 0!' % ii
                     raise ValueError(msg)
                 if not(isinstance(self.args[ii], tuple)):
                     self.args.insert(ii, (None, None))
