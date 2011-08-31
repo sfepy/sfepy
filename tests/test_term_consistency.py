@@ -56,7 +56,7 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
             val = nm.zeros( (sym, 1), dtype = nm.float64 )
             val[:dim] = 0.132
             val[dim:sym] = 0.092
-        elif 'volume_dot_w' in term.name:
+        elif 'volume_dot' in term.name:
             val = 1.0 / nm.array( [3.8], dtype = nm.float64 )
         elif 'diffusion' in term.name:
             val = nm.eye( dim, dtype = nm.float64 )
@@ -80,7 +80,7 @@ test_terms = [
      ('dw', 'pv1', ('pv1', 'ps1'), ('tv', 'ps1', 'uv', 'us', 'ts'))),
     ('%s_diffusion.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
-    ('%s_volume_dot_w.i1.Omega( m.val, %s, %s )',
+    ('%s_volume_dot.i1.Omega( m.val, %s, %s )',
      ('dw', 'ps1', ('ps1', 'ps2'), ('ts', 'ps1', 'us'))),
 ]
 

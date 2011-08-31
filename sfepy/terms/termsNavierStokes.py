@@ -123,25 +123,31 @@ class StokesTerm(Term):
 
     :Definition:
     .. math::
-        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , } \int_{\Omega} q\ \nabla
-        \cdot \ul{u}
+        \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} q\ \nabla \cdot \ul{u}
+        \mbox{ or }
+        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
+        \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
 
     :Arguments 1:
-        virtual : :math:`\ul{v}`,
-        state   : :math:`\ul{p}`
+        material : :math:`c` (optional),
+        virtual  : :math:`\ul{v}`,
+        state    : :math:`\ul{p}`
 
     :Arguments 2:
-        state   : :math:`\ul{u}`,
-        virtual : :math:`\ul{q}`
+        material : :math:`c` (optional),
+        state    : :math:`\ul{u}`,
+        virtual  : :math:`\ul{q}`
 
     :Arguments 3:
+        material    : :math:`c` (optional),
         parameter_v : :math:`\ul{u}`,
         parameter_s : :math:`p`
     """
     name = 'dw_stokes'
-    arg_types = (('virtual', 'state'),
-                 ('state', 'virtual'),
-                 ('parameter_v', 'parameter_s'))
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'state', 'virtual'),
+                 ('opt_material', 'parameter_v', 'parameter_s'))
     modes = ('grad', 'div', 'eval')
 
     @staticmethod
@@ -152,7 +158,7 @@ class StokesTerm(Term):
 
         return status
 
-    def get_fargs(self, vvar, svar,
+    def get_fargs(self, coef, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         if self.mode == 'grad':
             qp_var, qp_name = svar, 'val'
@@ -161,7 +167,6 @@ class StokesTerm(Term):
             qp_var, qp_name = vvar, 'div'
 
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
-        coef = kwargs.get('material')
         if coef is None:
             coef = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
@@ -191,7 +196,7 @@ class StokesTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-    def get_eval_shape(self, vvar, svar,
+    def get_eval_shape(self, coef, vvar, svar,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
 
@@ -203,45 +208,6 @@ class StokesTerm(Term):
             'div' : terms.dw_div,
             'eval' : self.d_eval,
         }[self.mode]
-
-class StokesWTerm(StokesTerm):
-    r"""
-    :Description:
-    Stokes problem coupling term weighted by a scalar function. Corresponds to
-    weighted weak forms of gradient and divergence terms. Can be evaluated.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} c\ p\ \nabla \cdot \ul{v} \mbox{ , }
-        \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
-
-    :Arguments 1:
-        material : :math:`c`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`p`
-
-    :Arguments 2:
-        material : :math:`c`,
-        state    : :math:`\ul{u}`,
-        virtual  : :math:`q`
-
-    :Arguments 3:
-        material    : :math:`c`,
-        parameter_v : :math:`\ul{u}`,
-        parameter_s : :math:`p`
-    """
-    name = 'dw_stokes_w'
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'state', 'virtual'),
-                 ('material', 'parameter_v', 'parameter_s'))
-    modes = ('grad', 'div', 'eval')
-
-    def get_fargs(self, material, virtual, state,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = StokesTerm.get_fargs(self, virtual, state,
-                                     mode, term_mode, diff_var,
-                                     material=material, **kwargs)
-        return fargs
 
 class GradQTerm(Term):
     r"""
@@ -383,21 +349,21 @@ class DivETerm(Term):
 
         return (n_el, 1, 1, 1), parameter.dtype
 
-class DivOperatorWTerm(Term):
+class DivOperatorTerm(Term):
     r"""
     :Description:
     Weighted divergence term of a test function.
 
     :Definition:
     .. math::
-         \int_{\Omega} c \nabla \cdot \ul{v}
+        \int_{\Omega} \nabla \cdot \ul{v} \mbox { or } \int_{\Omega} c \nabla \cdot \ul{v}
 
     :Arguments:
-        material : :math:`c`,
-        virtual : :math:`\ul{v}`
+        material : :math:`c` (optional),
+        virtual  : :math:`\ul{v}`
     """
-    name = 'dw_div_w'
-    arg_types = ('material', 'virtual')
+    name = 'dw_div'
+    arg_types = ('opt_material', 'virtual')
 
     @staticmethod
     def function(out, mat, vg):
@@ -407,7 +373,10 @@ class DivOperatorWTerm(Term):
         div_bf = div_bf.reshape((n_el, n_qp, dim * n_ep, 1))
         div_bf = nm.ascontiguousarray(div_bf)
 
-        status = vg.integrate(out, mat * div_bf)
+        if mat is not None:
+            status = vg.integrate(out, mat * div_bf)
+        else:
+            status = vg.integrate(out, div_bf)
 
         return status
 

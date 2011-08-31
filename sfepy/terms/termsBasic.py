@@ -72,7 +72,9 @@ class IntegrateSurfaceTerm(Term):
     :Definition:
     .. math::
         \int_\Gamma y \mbox{ , } \int_\Gamma \ul{y}
-        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \mbox{ flux }
+        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \mbox{ or }
+        \int_\Gamma c y \mbox{ , } \int_\Gamma c \ul{y}
+        \mbox{ , } \int_\Gamma c \ul{y} \cdot \ul{n} \mbox{ flux }
 
     .. math::
         \mbox{vector for } K \from \Ical_h:
@@ -85,10 +87,11 @@ class IntegrateSurfaceTerm(Term):
         \mbox{ , } (\ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
 
     :Arguments:
+        material : :math:`c` (optional),
         parameter : :math:`y` or :math:`\ul{y}`,
     """
     name = 'di_surface_integrate'
-    arg_types = ('parameter',)
+    arg_types = ('opt_material', 'parameter')
     integration = 'surface'
 
     @staticmethod
@@ -107,14 +110,13 @@ class IntegrateSurfaceTerm(Term):
 
         return status
 
-    def get_fargs(self, parameter,
+    def get_fargs(self, material, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(parameter)
 
         val_qp = self.get(parameter, 'val')
-        mat = kwargs.get('material')
-        if mat is not None:
-            val_qp *= mat
+        if material is not None:
+            val_qp *= material
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
         if term_mode == 'flux':
@@ -124,7 +126,7 @@ class IntegrateSurfaceTerm(Term):
 
         return val_qp, sg, fmode
 
-    def get_eval_shape(self, parameter,
+    def get_eval_shape(self, material, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
 
@@ -136,111 +138,41 @@ class IntegrateSurfaceTerm(Term):
 
         return (n_fa, n_qp, n_c, 1), parameter.dtype
 
-class IntegrateSurfaceWTerm(IntegrateSurfaceTerm):
-    r"""
-    :Description:
-    Integrate a variable over a surface.
-
-    :Definition:
-    .. math::
-        \int_\Gamma c y \mbox{ , for vectors: } \int_\Gamma c \ul{y} \cdot
-        \ul{n}
-
-    :Arguments:
-        material : :math:`c`,
-        parameter : :math:`y` or :math:`\ul{y}`,
-    """
-    name = 'di_surface_integrate_w'
-    arg_types = ('material', 'parameter')
-    integration = 'surface'
-
-    def get_fargs(self, material, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        fargs = IntegrateSurfaceTerm.get_fargs(self, parameter,
-                                               mode, term_mode, diff_var,
-                                               material=material, **kwargs)
-        return fargs
-
 class IntegrateVolumeOperatorTerm(Term):
-    r"""
-    :Description:
-    Volume integral of a test function.
-
-    :Definition:
-    .. math::
-        \int_\Omega q
-
-    :Arguments:
-        virtual : :math:`q`
-    """
-    name = 'dw_volume_integrate'
-    arg_types = ('virtual',)
-
-    @staticmethod
-    def function(out, bf, geo):
-        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
-        bf_t = nm.ascontiguousarray(bf_t)
-        status = geo.integrate(out, bf_t)
-
-        return status
-
-    def get_fargs(self, virtual,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        assert_(virtual.n_components == 1)
-        geo, _ = self.get_mapping(virtual)
-
-        return geo.bf, geo
-
-class IntegrateVolumeOperatorWTerm(Term):
     r"""
     :Description:
     Volume integral of a test function weighted by a scalar function
     :math:`c`.
 
-
     :Definition:
     .. math::
-        \int_\Omega c q
+        \int_\Omega q \mbox{ or } \int_\Omega c q
 
     :Arguments:
-        material : :math:`c`,
+        material : :math:`c` (optional),
         virtual  : :math:`q`
     """
-    name = 'dw_volume_integrate_w'
-    arg_types = ('material', 'virtual',)
+    name = 'dw_volume_integrate'
+    arg_types = ('opt_material', 'virtual')
 
     @staticmethod
-    def function(out, mat, bf, geo):
+    def function(out, material, bf, geo):
         bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
         bf_t = nm.ascontiguousarray(bf_t)
-        status = geo.integrate(out, mat * bf_t)
-
+        if material is not None:
+            status = geo.integrate(out, material * bf_t)
+        else:
+            status = geo.integrate(out, bf_t)
         return status
 
-    def get_fargs(self, mat, virtual,
+    def get_fargs(self, material, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         assert_(virtual.n_components == 1)
         geo, _ = self.get_mapping(virtual)
 
-        return mat, geo.bf, geo
+        return material, geo.bf, geo
 
 class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
-    r"""
-    :Description:
-    Surface integral of a test function.
-
-    :Definition:
-    .. math::
-        \int_{\Gamma} q
-
-    :Arguments:
-        virtual : :math:`q`
-    """
-    name = 'dw_surface_integrate'
-    arg_types = ('virtual',)
-    integration = 'surface'
-
-class IntegrateSurfaceOperatorWTerm(IntegrateVolumeOperatorWTerm):
     r"""
     :Description:
     Surface integral of a test function weighted by a scalar function
@@ -248,14 +180,14 @@ class IntegrateSurfaceOperatorWTerm(IntegrateVolumeOperatorWTerm):
 
     :Definition:
     .. math::
-        \int_\Gamma c q
+        \int_{\Gamma} q \mbox{ or } \int_\Gamma c q
 
     :Arguments:
-        material : :math:`c`,
+        material : :math:`c` (optional),
         virtual  : :math:`q`
     """
-    name = 'dw_surface_integrate_w'
-    arg_types = ('material', 'virtual')
+    name = 'dw_surface_integrate'
+    arg_types = ('opt_material', 'virtual')
     integration = 'surface'
 
 class DotProductVolumeTerm(Term):
@@ -267,36 +199,40 @@ class DotProductVolumeTerm(Term):
     :Definition:
     .. math::
         \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
+        \mbox{ or }\int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w}
 
     :Arguments:
+        material    : :math:`c` (optional),
         parameter_1 : :math:`p` or :math:`\ul{u}`,
         parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'd_volume_dot'
-    arg_types = ('parameter_1', 'parameter_2')
+    arg_types = ('opt_material', 'parameter_1', 'parameter_2')
 
     @staticmethod
-    def function(out, val1, val2, geo):
+    def function(out, mat, val1, val2, geo):
         if val1.shape[-1] > 1:
             out_qp = nm.sum(val1 * val2, axis=-1)
-
         else:
             out_qp = val1 * val2
 
-        status = geo.integrate(out, out_qp)
+        if mat is not None:
+            status = geo.integrate(out, mat * out_qp)
+        else:
+            status = geo.integrate(out, out_qp)
 
         return status
 
-    def get_fargs(self, par1, par2,
+    def get_fargs(self, mat, par1, par2,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         geo, _ = self.get_mapping(par1)
 
         val1 = self.get(par1, 'val')
         val2 = self.get(par2, 'val')
 
-        return val1, val2, geo
+        return mat, val1, val2, geo
 
-    def get_eval_shape(self, par1, par2,
+    def get_eval_shape(self, mat, par1, par2,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(par1)
 
@@ -311,54 +247,16 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
     :Definition:
     .. math::
         \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+        \mbox{ or } \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
 
     :Arguments:
+        material    : :math:`c` (optional),
         parameter_1 : :math:`p` or :math:`\ul{u}`,
         parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'd_surface_dot'
-    arg_types = ('parameter_1', 'parameter_2')
+    arg_types = ('opt_material', 'parameter_1', 'parameter_2')
     integration = 'surface'
-
-class DotProductSurfaceWTerm(DotProductVolumeTerm):
-    r"""
-    :Description:
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        material : :math:`c`,
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_surface_dot_w'
-    arg_types = ('material', 'parameter_1', 'parameter_2')
-    integration = 'surface'
-
-    @staticmethod
-    def function(out, mat, val1, val2, geo):
-        if val1.shape[-1] > 1:
-            out_qp = nm.sum(val1 * val2, axis=-1)
-
-        else:
-            out_qp = val1 * val2
-
-        status = geo.integrate(out, mat * out_qp)
-
-        return status
-
-    def get_fargs(self, mat, par1, par2,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        geo, _ = self.get_mapping(par1)
-
-        val1 = self.get(par1, 'val')
-        val2 = self.get(par2, 'val')
-
-        return mat, val1, val2, geo
 
 class VolumeTerm(Term):
     r"""
@@ -521,7 +419,7 @@ class IntegrateMatTerm(Term):
 
         return (n_el, 1, n_row, n_col), mat.dtype
 
-class DotProductVolumeWTerm(Term):
+class DotProductVolumeTerm(Term):
     r"""
     :Description:
     Volume :math:`L^2(\Omega)` weighted dot product for both scalar
@@ -530,46 +428,60 @@ class DotProductVolumeWTerm(Term):
 
     :Definition:
     .. math::
-        \int_\Omega y q p \mbox{ , } \int_\Omega y \ul{v} \cdot \ul{u} \mbox{ , }
-        \int_\Omega y p r \mbox{ , } \int_\Omega y \ul{u} \cdot \ul{w}
+        \int_\Omega q p \mbox{ , } \int_\Omega \ul{v} \cdot \ul{u} \mbox{ , }
+        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
+        \mbox { or }
+        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u} \mbox{ , }
+        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w}
 
     :Arguments 1:
-        material : weight function :math:`y`,
+        material : optional weight function :math:`c`,
         virtual  : :math:`q` or :math:`\ul{v}`,
         state    : :math:`p` or :math:`\ul{u}`
 
     :Arguments 2:
-        material    : weight function :math:`y`,
+        material    : optional weight function :math:`c`,
         parameter_1 : :math:`p` or :math:`\ul{u}`,
         parameter_2 : :math:`r` or :math:`\ul{w}`
     """
-    name = 'dw_volume_dot_w'
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2'))
+    name = 'dw_volume_dot'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
 
     @staticmethod
-    def dw_volume_dot_w(out, mat, val_qp, vvg, svg, fmode):
+    def dw_volume_dot(out, mat, val_qp, vvg, svg, fmode):
         bf_t = vvg.bf.transpose((0, 2, 1))
-        if fmode == 0:
-            vec = bf_t * mat * val_qp
+        if mat is not None:
+            if fmode == 0:
+                vec = bf_t * mat * val_qp
+
+            else:
+                vec = bf_t * mat * svg.bf
 
         else:
-            vec = bf_t * mat * svg.bf
+            if fmode == 0:
+                vec = bf_t * val_qp
+
+            else:
+                vec = bf_t * svg.bf
 
         status = vvg.integrate(out, vec)
 
         return status
 
     @staticmethod
-    def d_volume_dot_w(out, mat, val1_qp, val2_qp, vg):
+    def d_volume_dot(out, mat, val1_qp, val2_qp, vg):
         if val1_qp.shape[2] > 1:
-            vec = mat * nm.sum(val1_qp * val2_qp, axis=-1)
+            vec = nm.sum(val1_qp * val2_qp, axis=-1)
 
         else:
-            vec = mat * val1_qp * val2_qp
+            vec = val1_qp * val2_qp
 
-        status = vg.integrate(out, vec)
+        if mat is not None:
+            status = vg.integrate(out, mat * vec)
+        else:
+            status = vg.integrate(out, vec)
 
         return status
 
@@ -610,10 +522,10 @@ class DotProductVolumeWTerm(Term):
 
     def set_arg_types(self):
         if self.mode == 'weak':
-            self.function = self.dw_volume_dot_w
+            self.function = self.dw_volume_dot
 
         else:
-            self.function = self.d_volume_dot_w
+            self.function = self.d_volume_dot
 
 ##
 # c: 03.04.2008
