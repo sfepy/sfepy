@@ -279,7 +279,7 @@ class DiffusionIntegrateTerm( Term ):
         \int_{\Omega} K_{ij} \nabla_j \bar{p}
 
     :Arguments:
-        material: :math:`\uv{K}`,
+        material: :math:`K_{ij}`,
         parameter:  :math:`\bar{p}`,
     """
     name = 'di_diffusion_integrate'
