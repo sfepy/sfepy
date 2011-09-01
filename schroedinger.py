@@ -90,7 +90,7 @@ def update_state_to_output(out, pb, vec, name, fill_value=None):
     key = aux.keys()[0]
     out[name] = aux[key]
 
-def wrap_function(function, args):
+def wrap_function(function, args, kwargs):
     ncalls = [0]
     times = []
     results = []
@@ -98,7 +98,7 @@ def wrap_function(function, args):
         ncalls[0] += 1
         tt = time.time()
 
-        results[:] = function(x, *args)
+        results[:] = function(x, *args, **kwargs)
         v_hxc_qp = results[-1]
 
         tt2 = time.time()
@@ -143,11 +143,15 @@ class SchroedingerApp(SimpleApp):
 
         save_dft_iterations : bool
             If True, save intermediate results during DFT iterations.
+        init_hook : function
+            The function called before DFT iterations, useful for
+            defining additional keyword arguments passed to the
+            eigenvalue problem solver.
         iter_hook : function
-            Called after each DFT iteration, can do anything, no return value.
+            The function called after each DFT iteration with no return
+            value.
         iter_hook_final : function
             Like `iter_hook`, but called after the solver finishes.
-
         """
         get = options.get_default_attr
 
@@ -156,6 +160,7 @@ class SchroedingerApp(SimpleApp):
                       log_filename=get('log_filename', 'log.txt'),
                       iter_fig_name=get('iter_fig_name', 'iterations.pdf'),
                       save_dft_iterations=get('save_dft_iterations', False),
+                      init_hook=get('init_hook', None),
                       iter_hook=get('iter_hook', None),
                       iter_hook_final=get('iter_hook_final', None))
 
@@ -169,6 +174,7 @@ class SchroedingerApp(SimpleApp):
         if self.options.dft:
             opts += SchroedingerApp.process_dft_options(self.conf.options)
             get = self.conf.get_function
+            self.init_hook = get(opts.init_hook)
             self.iter_hook = get(opts.iter_hook)
             self.iter_hook_final = get(opts.iter_hook_final)
 
@@ -236,7 +242,7 @@ class SchroedingerApp(SimpleApp):
 
     def iterate(self, v_hxc_qp, eig_solver,
                 mtx_a_equations, mtx_a_variables, mtx_b, log, file_output,
-                n_electron=None):
+                n_electron=None, **kwargs):
         from sfepy.physics import dft
 
         self.itercount += 1
@@ -273,7 +279,7 @@ class SchroedingerApp(SimpleApp):
         output('computing the Ax=Blx Kohn-Sham problem...')
         tt = time.clock()
         eigs, mtx_s_phi = eig_solver(mtx_a, mtx_b,
-                                     opts.n_eigs, eigenvectors=True)
+                                     opts.n_eigs, eigenvectors=True, **kwargs)
         output('...done in %.2f s' % (time.clock() - tt))
         n_eigs_ok = len(eigs)
 
@@ -449,11 +455,13 @@ class SchroedingerApp(SimpleApp):
 
         self.norm_v_hxc0 = nla.norm(v_hxc_qp)
 
+        kwargs = self.init_hook(pb) if self.init_hook is not None else {}
+
         self.itercount = 0
         aux = wrap_function(self.iterate,
                             (eig_solver,
                              mtx_a_equations, mtx_a_variables,
-                             mtx_b, log, file_output))
+                             mtx_b, log, file_output), kwargs)
         ncalls, times, nonlin_v, results = aux
 
         # Create and call the DFT solver.
