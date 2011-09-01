@@ -111,41 +111,53 @@ def wrap_function(function, args):
 
 class SchroedingerApp(SimpleApp):
 
+    @staticmethod
     def process_options(options):
-        """Application options setup. Sets default values for missing
-        non-compulsory options."""
-        get = options.get_default_attr
+        """
+        Application options setup. Sets default values for missing
+        non-compulsory options.
 
-        eigen_solver = get('eigen_solver', None,
-                           'missing "eigensolver" in options!')
+        Options:
+
+        save_eig_vectors : (from_largest, from_smallest) or None
+            If None, save all.
+        """
+        get = options.get_default_attr
 
         n_electron = get('n_electron', 5)
         n_eigs = guess_n_eigs(n_electron, n_eigs=get('n_eigs', None))
-        # None -> save all.
-        save_eig_vectors = get('save_eig_vectors', None)
 
-        log_filename = get('log_filename', 'log.txt')
-        iter_fig_name = get('iter_fig_name', 'iterations.pdf')
-        # Save intermediate results during DFT iterations.
-        save_dft_iterations = get('save_dft_iterations', False)
-        # Called after DFT iteration, can do anything, no return value.
-        iter_hook = get('iter_hook', None)
-        # Like iter_hook, but called after the solver finishes.
-        iter_hook_final = get('iter_hook_final', None)
+        return Struct(eigen_solver=get('eigen_solver', None,
+                                       'missing "eigensolver" in options!'),
+                      n_electron=n_electron,
+                      n_eigs=n_eigs,
+                      save_eig_vectors=get('save_eig_vectors', None))
 
-        return Struct(**locals())
-    process_options = staticmethod(process_options)
-
+    @staticmethod
     def process_dft_options(options):
-        """Application DFT options setup. Sets default values for missing
-        non-compulsory options."""
+        """
+        Application DFT options setup. Sets default values for missing
+        non-compulsory options.
+
+        Options:
+
+        save_dft_iterations : bool
+            If True, save intermediate results during DFT iterations.
+        iter_hook : function
+            Called after each DFT iteration, can do anything, no return value.
+        iter_hook_final : function
+            Like `iter_hook`, but called after the solver finishes.
+
+        """
         get = options.get_default_attr
 
-        dft_solver = get('dft_solver', None,
-                         'missing "dft" in options!')
-
-        return Struct(**locals())
-    process_dft_options = staticmethod(process_dft_options)
+        return Struct(dft_solver=get('dft_solver', None,
+                                     'missing "dft" in options!'),
+                      log_filename=get('log_filename', 'log.txt'),
+                      iter_fig_name=get('iter_fig_name', 'iterations.pdf'),
+                      save_dft_iterations=get('save_dft_iterations', False),
+                      iter_hook=get('iter_hook', None),
+                      iter_hook_final=get('iter_hook_final', None))
 
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
@@ -156,11 +168,11 @@ class SchroedingerApp(SimpleApp):
         opts = SchroedingerApp.process_options(self.conf.options)
         if self.options.dft:
             opts += SchroedingerApp.process_dft_options(self.conf.options)
-        self.app_options += opts
+            get = self.conf.get_function
+            self.iter_hook = get(opts.iter_hook)
+            self.iter_hook_final = get(opts.iter_hook_final)
 
-        get = self.conf.get_function
-        self.iter_hook = get(self.app_options.iter_hook)
-        self.iter_hook_final = get(self.app_options.iter_hook_final)
+        self.app_options += opts
 
     def setup_output(self):
         """
@@ -171,25 +183,26 @@ class SchroedingerApp(SimpleApp):
 
         opts = self.app_options
         opts.output_dir = output_dir
-        opts.log_filename = op.join(output_dir, opts.log_filename)
-        opts.iter_fig_name = op.join(output_dir, opts.iter_fig_name)
         self.mesh_results_name = op.join(opts.output_dir,
                                          self.problem.get_output_name())
         self.eig_results_name = op.join(opts.output_dir,
                                         self.problem.ofn_trunk + '_eigs.txt')
+        if self.options.dft:
+            opts.log_filename = op.join(output_dir, opts.log_filename)
+            opts.iter_fig_name = op.join(output_dir, opts.iter_fig_name)
 
-        # Restart file names for DFT.
-        name = self.options.save_restart_filename
-        if name == 'auto':
-            name = op.join(output_dir,
-                           self.problem.ofn_trunk + '_restart.h5')
-        self.save_restart_filename = name
+            # Restart file names for DFT.
+            name = self.options.save_restart_filename
+            if name == 'auto':
+                name = op.join(output_dir,
+                               self.problem.ofn_trunk + '_restart.h5')
+            self.save_restart_filename = name
 
-        name = self.options.load_restart_filename
-        if name == 'auto':
-            name = op.join(output_dir,
-                           self.problem.ofn_trunk + '_restart.h5')
-        self.load_restart_filename = name
+            name = self.options.load_restart_filename
+            if name == 'auto':
+                name = op.join(output_dir,
+                               self.problem.ofn_trunk + '_restart.h5')
+            self.load_restart_filename = name
 
     def call(self):
         options = self.options
