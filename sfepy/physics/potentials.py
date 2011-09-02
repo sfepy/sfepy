@@ -156,9 +156,10 @@ class Potential(PotentialBase):
     Single spherically symmetric potential.
     """
 
-    def __init__(self, name, function, centre=None, dim=3):
+    def __init__(self, name, function, centre=None, dim=3, args=None):
         self.name = name
         self.function = function
+        self.args = args if args is not None else ()
 
         if centre is None:
             centre = nm.array([0.0] * dim, dtype=nm.float64)
@@ -170,7 +171,7 @@ class Potential(PotentialBase):
     def __call__(self, coors):
         r = self.get_distance(coors)
 
-        pot = self.sign * self.function(r)
+        pot = self.sign * self.function(r, *self.args)
 
         return pot
 
@@ -194,11 +195,13 @@ class Potential(PotentialBase):
         """
         r = self.get_distance(coors)
 
-        f0 = self.function(r)
-        fp1 = self.function(r + eps)
-        fp2 = self.function(r + 2.0 * eps)
-        fm1 = self.function(r - eps)
-        fm2 = self.function(r - 2.0 * eps)
+        args = self.args
+
+        f0 = self.function(r, *args)
+        fp1 = self.function(r + eps, *args)
+        fp2 = self.function(r + 2.0 * eps, *args)
+        fm1 = self.function(r - eps, *args)
+        fm2 = self.function(r - 2.0 * eps, *args)
 
         # Second derivative w.r.t. r.
         d2 = (fp2 - 2.0 * f0 + fm2) / (4.0 * eps * eps)
