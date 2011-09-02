@@ -22,7 +22,7 @@ def pde_solve(conf_filename, options=None, **app_options):
         
     app = SimpleApp(conf, options, output_prefix)
     if hasattr( opts, 'parametric_hook' ): # Parametric study.
-        parametric_hook = getattr(conf, opts.parametric_hook)
+        parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)
 
     return app()

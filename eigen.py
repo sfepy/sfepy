@@ -629,7 +629,7 @@ def main():
     app = AcousticBandGapsApp( conf, options, 'eigen:' )
     opts = conf.options
     if hasattr( opts, 'parametric_hook' ): # Parametric study.
-        parametric_hook = getattr( conf, opts.parametric_hook )
+        parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize( parametric_hook )
     app()
 

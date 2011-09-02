@@ -827,7 +827,7 @@ def main():
     app = SchroedingerApp(conf, options, 'schroedinger:')
     opts = conf.options
     if hasattr(opts, 'parametric_hook'): # Parametric study.
-        parametric_hook = getattr(conf.funmod, opts.parametric_hook)
+        parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)
     app()
 
