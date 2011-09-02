@@ -474,8 +474,8 @@ class ProblemConf( Struct ):
 
         Parameters
         ----------
-        name : str or None
-            The function name.
+        name : str or function or None
+            The function name or directly the function.
 
         Returns
         -------
@@ -484,6 +484,13 @@ class ProblemConf( Struct ):
         """
         if name is None:
             fun = None
+
+        elif callable(name):
+            import inspect
+            if not (inspect.isfunction(name) or inspect.ismethod(name)):
+                msg = '`name` has to have `str` or `function` type! (got %s)'
+                raise ValueError(msg % type(name))
+            fun = name
 
         else:
             try:
