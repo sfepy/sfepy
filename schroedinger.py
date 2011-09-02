@@ -141,6 +141,8 @@ class SchroedingerApp(SimpleApp):
 
         Options:
 
+        v_fun_name : str
+            The name of material function for evaluating the total potential.
         save_dft_iterations : bool
             If True, save intermediate results during DFT iterations.
         init_hook : function
@@ -157,6 +159,8 @@ class SchroedingerApp(SimpleApp):
 
         return Struct(dft_solver=get('dft_solver', None,
                                      'missing "dft" in options!'),
+                      v_fun_name=get('v_fun_name', None,
+                                     'missing "v_fun_name" in options!'),
                       log_filename=get('log_filename', 'log.txt'),
                       iter_fig_name=get('iter_fig_name', 'iterations.pdf'),
                       save_dft_iterations=get('save_dft_iterations', False),
@@ -478,7 +482,7 @@ class SchroedingerApp(SimpleApp):
               n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp = results
         output('DFT iteration time [s]:', dft_status['time_stats'])
 
-        fun = pb.functions['fun_v']
+        fun = pb.functions[opts.v_fun_name]
         variable = self.problem.create_variables(['scalar'])['scalar']
         field_coors = variable.field.get_coor()
         vec_v_ion = fun(None, field_coors,
