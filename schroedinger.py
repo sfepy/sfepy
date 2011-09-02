@@ -128,7 +128,7 @@ class SchroedingerApp(SimpleApp):
         n_eigs = guess_n_eigs(n_electron, n_eigs=get('n_eigs', None))
 
         return Struct(eigen_solver=get('eigen_solver', None,
-                                       'missing "eigensolver" in options!'),
+                                       'missing "eigen_solver" in options!'),
                       n_electron=n_electron,
                       n_eigs=n_eigs,
                       save_eig_vectors=get('save_eig_vectors', None))
