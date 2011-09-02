@@ -29,7 +29,8 @@ class Test(TestCommon):
             input_name = op.join(op.dirname(__file__), pb_filename)
             test_conf = ProblemConf.from_file(input_name, required, other)
 
-            solver_options = Struct(output_filename_trunk = output_name_trunk + hp,
+            name = op.join(self.options.out_dir, output_name_trunk + hp)
+            solver_options = Struct(output_filename_trunk = name,
                                     output_format ='vtk',
                                     save_ebc = False, save_regions = False,
                                     save_regions_as_groups = False,
@@ -55,13 +56,13 @@ class Test(TestCommon):
             solutions[hp] = state.get_parts()['u']
             self.report('%s solved' % input_name)
 
-        rerr = 1.0e-2;
+        rerr = 1.0e-3
         aerr = nm.linalg.norm(solutions['TL'], ord=None) * rerr
 
-        self.report('allowederror: rel = %e, abs = %e' % (rerr, aerr) )
-        ok = ok and self.compare_vectors( solutions['TL'], solutions['UL'],
-                                          label1 = 'TLF',
-                                          label2 = 'ULF',
-                                          allowed_error = rerr)
+        self.report('allowed error: rel = %e, abs = %e' % (rerr, aerr))
+        ok = ok and self.compare_vectors(solutions['TL'], solutions['UL'],
+                                         label1='TLF',
+                                         label2='ULF',
+                                         allowed_error=rerr)
 
         return ok
