@@ -25,6 +25,15 @@ class InDir(Struct):
     def __call__(self, filename):
          return op.join(self.dir, filename)
 
+def ensure_path(filename):
+    """
+    Check if path to `filename` exists and if not, create the necessary
+    intermediate directories.
+    """
+    dirname = os.path.dirname(filename)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
 ##
 # 27.04.2006, c
 def get_trunk( filename ):
