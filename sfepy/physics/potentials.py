@@ -181,6 +181,12 @@ class Potential(PotentialBase):
         """
         yield self
 
+    def __len__(self):
+        """
+        Allow length even of a single potential.
+        """
+        return 1
+
     def get_distance(self, coors):
         """
         Get the distance of points with coordinates `coors` of the
