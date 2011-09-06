@@ -875,6 +875,7 @@ sfepy.terms package
    src/sfepy/terms/termsSurface
    src/sfepy/terms/termsVolume
    src/sfepy/terms/terms_base
+   src/sfepy/terms/terms_constraints
    src/sfepy/terms/terms_fibres
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
