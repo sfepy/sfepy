@@ -9,6 +9,7 @@ else:
     op = os.path
     data_dir = op.normpath(op.join(top_dir, '../../../../share/sfepy/'))
 
+data_dir = os.path.realpath(data_dir)
 base_dir = os.path.dirname(__file__)
 
 def get_paths(pattern):
