@@ -40,9 +40,6 @@ numpydoc_path = sfepy.Config().numpydoc_path()
 if numpydoc_path is not None:
     sys.path.append(os.path.abspath(numpydoc_path))
 
-import gen_term_table
-gen_term_table.typeset('term_table.rst')
-
 # -- General configuration -----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
@@ -50,7 +47,7 @@ gen_term_table.typeset('term_table.rst')
 extensions = ['sphinx.ext.autosummary', 'sphinx.ext.autodoc',
               'sphinx.ext.doctest', 'sphinx.ext.pngmath',
               'sphinx.ext.viewcode', 'numpydoc',
-              'ipython_console_highlighting']
+              'ipython_console_highlighting', 'gen_term_table']
 #extensions = ['sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.

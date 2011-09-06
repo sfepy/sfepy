@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 from optparse import OptionParser
 import pyparsing as pp
@@ -159,6 +160,11 @@ def typeset(filename):
     typeset_term_table(fd, term_table)
     fd.close()
 
+def gen_term_table(app):
+    typeset(os.path.join(app.builder.srcdir, 'term_table.rst'))
+
+def setup(app):
+    app.connect('builder-inited', gen_term_table)
 
 usage = """%prog [options]
 
