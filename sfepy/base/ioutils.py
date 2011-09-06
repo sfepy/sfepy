@@ -1,6 +1,7 @@
 import numpy as nm
 from numpy import array
 import re, sys, os
+import fnmatch
 import os.path as op
 from base import output, Struct, pause, dict_from_keys_init
 try:
@@ -33,6 +34,15 @@ def ensure_path(filename):
     dirname = os.path.dirname(filename)
     if not os.path.exists(dirname):
         os.makedirs(dirname)
+
+def locate_files(pattern, root_dir=os.curdir):
+    """
+    Locate all files matching fiven filename pattern in and below
+    supplied root directory.
+    """
+    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
+        for filename in fnmatch.filter(filenames, pattern):
+            yield os.path.join(dirpath, filename)
 
 ##
 # 27.04.2006, c
