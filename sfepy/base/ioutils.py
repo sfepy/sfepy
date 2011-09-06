@@ -2,6 +2,7 @@ import numpy as nm
 import os
 import os.path as op
 import fnmatch
+import shutil
 from base import output, Struct
 try:
     import tables as pt
@@ -42,6 +43,17 @@ def locate_files(pattern, root_dir=os.curdir):
     for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
         for filename in fnmatch.filter(filenames, pattern):
             yield os.path.join(dirpath, filename)
+
+def remove_files(root_dir):
+    """
+    Remove all files and directories in supplied root directory.
+    """
+    for dirpath, dirnames, filenames in os.walk(os.path.abspath(root_dir)):
+        for filename in filenames:
+            os.remove(os.path.join(root_dir, filename))
+
+        for dirname in dirnames:
+            shutil.rmtree(os.path.join(root_dir, dirname))
 
 ##
 # 27.04.2006, c
