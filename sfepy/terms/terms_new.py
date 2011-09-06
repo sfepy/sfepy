@@ -47,7 +47,7 @@ class NewTerm(Term):
     def get_geometry(self, variable):
         key, ig = self.get_geometry_key(variable)
 
-        geo = self.get_mapping(variable)
+        geo = self.get_mapping(variable)[0]
 
         return geo, key, ig
 
