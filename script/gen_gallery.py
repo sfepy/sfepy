@@ -3,7 +3,10 @@ import sys
 sys.path.append( '.' )
 import os
 import tempfile
+import glob
 from optparse import OptionParser
+
+import matplotlib.image as image
 
 import sfepy
 from sfepy.base.base import output, Struct
@@ -16,12 +19,12 @@ omits = [
     'linear_elastic_mM.py',
 ]
 
-def generate_images(examples_dir, image_dir='gallery/images'):
+def generate_images(images_dir, examples_dir):
     """
     Generate images from results of running examples found in
     `examples_dir` directory.
 
-    The generated images are stored to `image_dir`,
+    The generated images are stored to `images_dir`,
     """
     prefix = output.prefix
 
@@ -35,9 +38,7 @@ def generate_images(examples_dir, image_dir='gallery/images'):
                      save_regions_as_groups=False,
                      solve_not=False)
 
-    cwd = os.path.dirname(os.path.realpath(examples_dir))
-    gallery_dir = os.path.join(cwd, image_dir + os.path.sep)
-    ensure_path(gallery_dir)
+    ensure_path(images_dir + os.path.sep)
 
     view = Viewer('',
                   output_dir=output_dir,
@@ -64,7 +65,7 @@ def generate_images(examples_dir, image_dir='gallery/images'):
 
         if problem is not None:
             fig_base = ebase[:-3].replace(os.path.sep, '#') + '.png'
-            fig_filename = os.path.join(gallery_dir, fig_base)
+            fig_filename = os.path.join(images_dir, fig_base)
 
             if problem.ts_conf is None:
                 filename = trunk + '.vtk'
@@ -88,6 +89,26 @@ def generate_images(examples_dir, image_dir='gallery/images'):
 
         output('...done')
 
+def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
+    """
+    Generate thumbnails into `thumbnails_dir` corresponding to images in
+    `images_dir`.
+    """
+    ensure_path(thumbnails_dir + os.path.sep)
+
+    output('generating thumbnails...')
+    filenames = glob.glob(os.path.join(images_dir, '*.png'))
+    for fig_filename in filenames:
+        ebase = fig_filename.replace(sfepy.data_dir, '')[1:]
+        output('"%s"' % ebase)
+
+        base = os.path.basename(fig_filename)
+        thumb_filename = os.path.join(thumbnails_dir, base)
+
+        image.thumbnail(fig_filename, thumb_filename, scale=scale)
+
+    output('...done')
+
 usage = """%prog [options]
 
 Generate the images for gallery of SfePy examples.
@@ -97,6 +118,8 @@ help = {
     'output file name [default: %default]',
     'examples_dir' :
     'directory containing examples [default: %default]',
+    'images_dir' :
+    'directory where to store gallery images [default: %default]',
 }
 
 def main():
@@ -104,9 +127,18 @@ def main():
     parser.add_option('-e', '--examples-dir', metavar='directory',
                       action='store', dest='examples_dir',
                       default='examples', help=help['examples_dir'])
+    parser.add_option('-i', '--images-dir', metavar='directory',
+                      action='store', dest='images_dir',
+                      default='gallery/images', help=help['images_dir'])
     (options, args) = parser.parse_args()
 
-    generate_images(options.examples_dir)
+    examples_dir = os.path.realpath(options.examples_dir)
+    top_dir = os.path.dirname(examples_dir)
+    images_dir = os.path.join(top_dir, options.images_dir)
+    thumbnails_dir = os.path.join(images_dir, 'thumbnails')
+
+    generate_images(images_dir, examples_dir)
+    generate_thumbnails(thumbnails_dir, images_dir)
 
 if __name__ == '__main__':
     main()
