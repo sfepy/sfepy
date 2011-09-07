@@ -236,7 +236,7 @@ class Viewer(Struct):
         self.filename = filename
         try:
             self.file_source.set_filename(filename, self.scene.children[0])
-        except IndexError: # No sources yet.
+        except (AttributeError, IndexError): # No sources yet.
             pass
 
     def save_image(self, filename):
