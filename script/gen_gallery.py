@@ -11,9 +11,6 @@ import matplotlib.image as image
 import sfepy
 from sfepy.base.base import get_default, ordered_iteritems, output, Struct
 from sfepy.base.ioutils import ensure_path, locate_files, remove_files
-from sfepy.applications import pde_solve
-from sfepy.postprocess import Viewer
-from sfepy.postprocess.utils import mlab
 
 omits = [
     'linear_elastic_mM.py',
@@ -43,6 +40,10 @@ def generate_images(images_dir, examples_dir):
 
     The generated images are stored to `images_dir`,
     """
+    from sfepy.applications import pde_solve
+    from sfepy.postprocess import Viewer
+    from sfepy.postprocess.utils import mlab
+
     prefix = output.prefix
 
     output_dir = tempfile.mkdtemp()
@@ -125,7 +126,7 @@ def generate_thumbnails(thumbnails_dir, images_dir, scale=0.3):
 
     output('...done')
 
-_index = """
+_index = """\
 .. _%s-index:
 
 %s examples
@@ -136,7 +137,7 @@ _index = """
 
 """
 
-_include = """
+_include = """\
 .. _%s:
 
 %s
