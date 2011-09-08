@@ -223,6 +223,8 @@ help = {
     'directory containing examples [default: %default]',
     'images_dir' :
     'directory where to store gallery images [default: gallery/images]',
+    'no_images' :
+    'do not (re)generate images and thumbnails',
 }
 
 def main():
@@ -233,6 +235,9 @@ def main():
     parser.add_option('-i', '--images-dir', metavar='directory',
                       action='store', dest='images_dir',
                       default=None, help=help['images_dir'])
+    parser.add_option('-n', '--no-images',
+                      action='store_true', dest='no_images',
+                      default = False, help = help['no_images'])
     parser.add_option('-o', '--output', metavar='output_filename',
                       action='store', dest='output_filename',
                       default='gallery/gallery.html',
@@ -248,8 +253,10 @@ def main():
     thumbnails_dir = os.path.join(images_dir, 'thumbnails')
     rst_dir = os.path.join(gallery_dir, 'examples')
 
-    generate_images(images_dir, examples_dir)
-    generate_thumbnails(thumbnails_dir, images_dir)
+    if not options.no_images:
+        generate_images(images_dir, examples_dir)
+        generate_thumbnails(thumbnails_dir, images_dir)
+
     generate_rst_files(rst_dir, examples_dir, images_dir)
 
 if __name__ == '__main__':
