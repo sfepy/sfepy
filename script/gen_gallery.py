@@ -155,6 +155,11 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
     """
     Generate Sphinx rst files for examples in `examples_dir` with images
     in `images_dir` and put them into `rst_dir`.
+
+    Returns
+    -------
+    dir_map : dict
+        The directory mapping of examples and corresponding rst files.
     """
     ensure_path(rst_dir + os.path.sep)
 
@@ -213,19 +218,107 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     output('...done')
 
+    return dir_map
+
+_gallery_template = """\
+<html>
+<head>
+  <title>SfePy gallery</title>
+  <link rel="stylesheet" href="%s/_static/default.css" type="text/css" />
+</head>
+
+<body>
+  <div class="related">
+    &nbsp; &nbsp; www.sfepy.org
+  </div>
+
+<div class="body">
+
+<h3>... click on any image to see full size image and example problem definition file</h3>
+<br/>
+
+%s
+
+</div>
+</body>
+</html>
+"""
+
+_link_template = """\
+<a href="%s"><img src="%s" border="0" alt="%s"/></a>
+"""
+
+def generate_gallery_html(output_filename, gallery_dir,
+                          rst_dir, thumbnails_dir, dir_map, link_prefix=''):
+    """
+    Generate the gallery html file with thumbnail images and links to
+    examples.
+
+    Parameters
+    ----------
+    output_filename : str
+        The output html file name.
+    gallery_dir : str
+        The top level directory of gallery files.
+    rst_dir : str
+        The full path to rst files of examples within `gallery_dir`.
+    thumbnails_dir : str
+        The full path to thumbnail images within `gallery_dir`.
+    dir_map : dict
+        The directory mapping returned by `generate_rst_files()`
+    link_prefix : str, optional
+        The prefix to prepend to links to individual pages of examples.
+    """
+    output('generating %s...' % output_filename)
+
+    lines = []
+    for dirname, filenames in ordered_iteritems(dir_map):
+        full_dirname = os.path.join(rst_dir, dirname)
+        thumbnails_dir_base = thumbnails_dir.replace(gallery_dir, '')[1:]
+
+        for ex_filename, rst_filename in filenames:
+            full_rst_filename = os.path.join(full_dirname, rst_filename)
+
+            ebase = full_rst_filename.replace(rst_dir, '')[1:]
+            (thumbnails_base,
+             thumbnail_filename) = _get_fig_filename(ebase, thumbnails_dir)
+            if not os.path.isfile(thumbnail_filename):
+                # Skip examples with no image (= failed examples).
+                continue
+
+            thumbnail_name = os.path.join(thumbnails_dir_base,
+                                          thumbnails_base + '.png')
+
+            link_base = full_rst_filename.replace(gallery_dir, '')[1:]
+            link = os.path.join(link_prefix,
+                                os.path.splitext(link_base)[0] + '.html')
+
+            line = _link_template % (link, thumbnail_name,
+                                     os.path.splitext(ebase)[0])
+            lines.append(line)
+
+    fd = open(output_filename, 'w')
+    fd.write(_gallery_template % (link_prefix, '\n'.join(lines)))
+    fd.close()
+
+    output('...done')
+
 usage = """%prog [options]
 
 Generate the images and rst files for gallery of SfePy examples.
 """
 help = {
-    'output_filename' :
-    'output file name [default: %default]',
     'examples_dir' :
     'directory containing examples [default: %default]',
     'images_dir' :
     'directory where to store gallery images [default: gallery/images]',
     'no_images' :
     'do not (re)generate images and thumbnails',
+    'output_filename' :
+    'output file name [default: %default]',
+    'link_prefix' :
+    'prefix to be prepended to links to examples pages in gallery '
+    '[default: %default]',
 }
 
 def main():
@@ -238,15 +331,20 @@ def main():
                       default=None, help=help['images_dir'])
     parser.add_option('-n', '--no-images',
                       action='store_true', dest='no_images',
-                      default = False, help = help['no_images'])
+                      default=False, help=help['no_images'])
     parser.add_option('-o', '--output', metavar='output_filename',
                       action='store', dest='output_filename',
                       default='gallery/gallery.html',
                       help=help['output_filename'])
+    parser.add_option('-l', '--link-prefix', metavar='prefix',
+                      action='store', dest='link_prefix',
+                      default='', help=help['link_prefix'])
     (options, args) = parser.parse_args()
 
     examples_dir = os.path.realpath(options.examples_dir)
-    gallery_dir = os.path.dirname(os.path.realpath(options.output_filename))
+
+    output_filename = os.path.realpath(options.output_filename)
+    gallery_dir = os.path.dirname(output_filename)
 
     images_dir = get_default(options.images_dir,
                              os.path.join(gallery_dir, 'images'))
@@ -258,7 +356,11 @@ def main():
         generate_images(images_dir, examples_dir)
         generate_thumbnails(thumbnails_dir, images_dir)
 
-    generate_rst_files(rst_dir, examples_dir, images_dir)
+    dir_map = generate_rst_files(rst_dir, examples_dir, images_dir)
+
+    generate_gallery_html(output_filename, gallery_dir,
+                          rst_dir, thumbnails_dir, dir_map,
+                          link_prefix=options.link_prefix)
 
 if __name__ == '__main__':
     main()
