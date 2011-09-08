@@ -27,9 +27,10 @@ class MiniAppBase( Struct ):
         Struct.__init__( self, name = name, problem = problem, **kwargs )
 
         self.problem.clear_equations()
-        self.set_default_attr( 'requires', [] )
-        self.set_default_attr( 'is_linear', False )
-        self.set_default_attr( 'dtype', nm.float64 )
+        self.set_default_attr('requires', [])
+        self.set_default_attr('is_linear', False)
+        self.set_default_attr('dtype', nm.float64)
+        self.set_default_attr('term_mode', None)
 
     def init_solvers(self, problem):
         """For linear problems, assemble the matrix and try to presolve the
@@ -753,7 +754,9 @@ class CoefSymSym( MiniAppBase ):
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym, sym), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
             if isinstance(self.set_variables, list):
@@ -769,7 +772,8 @@ class CoefSymSym( MiniAppBase ):
                 else:
                     self.set_variables(variables, irc, icc, 'col', **data)
 
-                val = eval_equations(equations, variables)
+                val = eval_equations(equations, variables,
+                                     term_mode=term_mode)
 
                 coef[ir,ic] = val
 
@@ -793,7 +797,9 @@ class CoefFMSymSym( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, sym, sym), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         for ir, (irr, icr) in enumerate( iter_sym( dim ) ):
             filename = self.set_variables(None, None, None, irr, icr,
@@ -808,7 +814,8 @@ class CoefFMSymSym( MiniAppBase ):
                     self.set_variables(variables, None, None, irc, icc,
                                        'col', **data)
 
-                    val = eval_equations(equations, variables)
+                    val = eval_equations(equations, variables,
+                                         term_mode=term_mode)
 
                     coef[step,ir,ic] = val
 
@@ -824,7 +831,9 @@ class CoefDimSym( MiniAppBase ):
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (dim, sym), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         for ir in range( dim ):
             self.set_variables(variables, ir, None, 'row', **data)
@@ -832,7 +841,8 @@ class CoefDimSym( MiniAppBase ):
             for ic, (irc, icc) in enumerate( iter_sym( dim ) ):
                 self.set_variables(variables, irc, icc, 'col', **data)
 
-                val = eval_equations(equations, variables)
+                val = eval_equations(equations, variables,
+                                     term_mode=term_mode)
 
                 coef[ir,ic] = val
 
@@ -863,7 +873,10 @@ class CoefNN( MiniAppBase ):
         problem = get_default( problem, self.problem )
 
         coef = nm.zeros((self.dim, self.dim), dtype = self.dtype )
-        equations, variables = problem.create_evaluable(self.expression)
+
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         if isinstance(self.set_variables, list):
             for ir in range(self.dim):
@@ -872,14 +885,16 @@ class CoefNN( MiniAppBase ):
                 for ic in range(self.dim):
                     self.set_variables_default(variables, None, ic, 'col',
                                                self.set_variables, data)
-                    val = eval_equations(equations, variables)
+                    val = eval_equations(equations, variables,
+                                         term_mode=term_mode)
                     coef[ir,ic] = val
         else:
             for ir in range(self.dim):
                 self.set_variables(variables, ir, None, 'row', **data)
                 for ic in range(self.dim):
                     self.set_variables(variables, None, ic, 'col', **data)
-                    val = eval_equations(equations, variables)
+                    val = eval_equations(equations, variables,
+                                         term_mode=term_mode)
                     coef[ir,ic] = val
 
         coef /= volume
@@ -903,7 +918,9 @@ class CoefN( MiniAppBase ):
         problem = get_default( problem, self.problem )
 
         coef = nm.zeros((self.dim,), dtype = self.dtype)
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         for ir in range(self.dim):
             if isinstance(self.set_variables, list):
@@ -912,7 +929,8 @@ class CoefN( MiniAppBase ):
             else:
                 self.set_variables(variables, ir, **data)
 
-            val = eval_equations(equations, variables)
+            val = eval_equations(equations, variables,
+                                 term_mode=term_mode)
             coef[ir] = val
 
         coef /= volume
@@ -933,14 +951,17 @@ class CoefSym( MiniAppBase ):
         dim, sym = problem.get_dim( get_sym = True )
         coef = nm.zeros( (sym,), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         self.set_variables(variables, None, None, 'col', **data)
 
         for ii, (ir, ic) in enumerate( iter_sym( dim ) ):
             self.set_variables(variables, ir, ic, 'row', **data)
 
-            val = eval_equations(equations, variables)
+            val = eval_equations(equations, variables,
+                                 term_mode=term_mode)
             coef[ii] = val
 
         coef /= volume
@@ -962,7 +983,9 @@ class CoefFMSym( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, sym), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         self.set_variables(variables, None, None, 'col', **data)
 
@@ -972,7 +995,8 @@ class CoefFMSym( MiniAppBase ):
             for step, time in ts:
                 self.set_variables(variables, io, step, 'row', **data)
 
-                val = eval_equations(equations, variables)
+                val = eval_equations(equations, variables,
+                                     term_mode=term_mode)
 
                 coef[step,ii] = val
 
@@ -990,14 +1014,18 @@ class CoefOne( MiniAppBase ):
 
     def __call__( self, volume, problem = None, data = None ):
         problem = get_default( problem, self.problem )
-        equations, variables = problem.create_evaluable(self.expression)
+
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         if isinstance(self.set_variables, list):
             self.set_variables_default(variables, self.set_variables,
                                        data)
         else:
             self.set_variables(variables, **data)
-        val = eval_equations(equations, variables)
+        val = eval_equations(equations, variables,
+                             term_mode=term_mode)
 
         coef = val / volume
 
@@ -1017,14 +1045,17 @@ class CoefFMOne( MiniAppBase ):
 
         coef = nm.zeros( (ts.n_step, 1), dtype = self.dtype )
 
-        equations, variables = problem.create_evaluable(self.expression)
+        term_mode = self.term_mode
+        equations, variables = problem.create_evaluable(self.expression,
+                                                        term_mode=term_mode)
 
         self.set_variables(variables, None, None, 'col', **data)
 
         for step, time in ts:
             self.set_variables(variables, io, step, 'row', **data)
 
-            val = eval_equations(equations, variables)
+            val = eval_equations(equations, variables,
+                                 term_mode=term_mode)
 
             coef[step] = val
 
