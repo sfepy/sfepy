@@ -375,7 +375,7 @@ class SurfaceMomentTerm(Term):
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_fa, n_qp, dim, n_fn, n_c = self.get_data_shape(parameter)
 
-        return (n_fa, 1, 1, 1), parameter.dtype
+        return (n_fa, 1, dim, dim), parameter.dtype
 
 class IntegrateMatTerm(Term):
     r"""
