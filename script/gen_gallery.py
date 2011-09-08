@@ -17,7 +17,7 @@ omits = [
 ]
 
 def _get_fig_filename(ebase, images_dir):
-    fig_base = ebase[:-3].replace(os.path.sep, '-')
+    fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
     fig_filename = os.path.join(images_dir, fig_base + '.png')
 
     return fig_base, fig_filename
