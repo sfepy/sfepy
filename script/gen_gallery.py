@@ -9,7 +9,8 @@ from optparse import OptionParser
 import matplotlib.image as image
 
 import sfepy
-from sfepy.base.base import get_default, ordered_iteritems, output, Struct
+from sfepy.base.base import (get_default, ordered_iteritems,
+                             import_file, output, Struct)
 from sfepy.base.ioutils import ensure_path, locate_files, remove_files
 
 omits = [
@@ -143,6 +144,10 @@ _include = """\
 %s
 %s
 
+**Description**
+
+%s
+
 .. image:: %s
 
 :download:`source code <%s>`
@@ -203,9 +208,13 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
             rst_ex_filename = _make_sphinx_path(ex_filename)
             src_ex_filename = _make_sphinx_path(ex_filename, True)
 
+            docstring = get_default(import_file(ex_filename).__doc__,
+                                    'missing description!')
+
             # Example rst file.
             fd = open(full_rst_filename, 'w')
             fd.write(_include % (fig_base, ebase, '=' * len(ebase),
+                                 docstring,
                                  rst_fig_filename,
                                  src_ex_filename, rst_ex_filename))
             fd.close()
