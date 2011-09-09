@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+r"""
+Incompressible Mooney-Rivlin hyperelastic material model.
+
+Large deformation is described using the updated Lagrangian formulation.
+Incompressibility is treated by mixed displacement-pressure formulation.
+Models of this kind can be used to model e.g. rubber or some biological
+materials.
+"""
 import numpy as nm
 from sfepy import data_dir
 

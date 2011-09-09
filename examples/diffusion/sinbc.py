@@ -1,4 +1,13 @@
-# c: 20.03.2008, r: 20.03.2008
+r"""
+Laplace equation with boundary conditions given by sine functions.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} c \nabla s \cdot \nabla t
+    = 0
+    \;, \quad \forall s \;.
+"""
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/various_formats/comsol_tri.txt'

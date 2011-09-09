@@ -1,5 +1,14 @@
-"""
+r"""
+Laplace equation.
+
 The same example as poisson.py, but using the short syntax of keywords.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} c \nabla s \cdot \nabla t
+    = 0
+    \;, \quad \forall s \;.
 """
 from sfepy import data_dir
 

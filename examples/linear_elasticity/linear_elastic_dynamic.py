@@ -1,3 +1,21 @@
+r"""
+Dynamic Linear elasticity.
+
+Find :math:`\ul{u}` such that:
+
+.. math::
+    \int_{\Omega} \rho\ \ul{v} \cdot \pdiff{\ul{u}}{t}
+    + \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+"""
 import numpy as nm
 from linear_elastic import \
      filename_mesh, materials, regions, fields, ebcs, \

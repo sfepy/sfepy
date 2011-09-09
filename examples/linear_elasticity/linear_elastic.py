@@ -1,4 +1,20 @@
-# 30.04.2009
+r"""
+Linear elasticity with comments.
+
+Find :math:`\ul{u}` such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+"""
 #!
 #! Linear Elasticity
 #! =================

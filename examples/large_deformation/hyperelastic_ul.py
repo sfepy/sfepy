@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+r"""
+Nearly incompressible Mooney-Rivlin hyperelastic material model.
+
+Large deformation is described using the updated Lagrangian formulation.
+Models of this kind can be used to model e.g. rubber or some biological
+materials.
+"""
 import numpy as nm
 from sfepy import data_dir
 

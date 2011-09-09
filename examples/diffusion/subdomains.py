@@ -1,11 +1,18 @@
-"""
-(\nabla q_1, \nabla p_1)_\Omega_1 = (q_1, g_1)_\Omega_1
-(\nabla q_2, \nabla p_2)_\Omega_2 = (q_2, g_2)_\Omega_2
+r"""
+Two Laplace equations, one in :math:`\Omega_1`, other in
+:math:`\Omega_2`, connected on the interface region :math:`\Gamma_{12}`
+using traces of variables.
 
-\int_\Gamma_{12} q_1 (p_1 - tr(p_2) - c) = 0
-\int_\Gamma_{12} q_2 (tr(p_1) - p_2 - c) = 0
+Find :math:`p_1`, :math:`p_2` such that:
 
-\forall q_1, q_2
+.. math::
+    \int_{\Omega_1} c_{11} \nabla q_1 \cdot \nabla p_1
+    = \int_{\Gamma_{12}} q_1 (p_1 - \tr(p_2) - c_{12})
+    \;, \quad \forall q_1 \;,
+
+    \int_{\Omega_2} c_{21} \nabla q_2 \cdot \nabla p_2
+    = \int_{\Gamma_{12}} q_2 (\tr(p_1) - p_2 - c_{22})
+    \;, \quad \forall q_2 \;.
 """
 from sfepy import data_dir
 

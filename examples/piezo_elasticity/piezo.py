@@ -1,4 +1,28 @@
-# c: 21.09.2008
+r"""
+Piezo-elasticity problem - linear elastic material with piezoelectric
+effects.
+
+Find :math:`\ul{u}`, :math:`\phi` such that:
+
+.. math::
+    - \omega^2 \int_{Y} \rho\ \ul{v} \cdot \ul{u}
+    + \int_{Y} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    - \int_{Y_2} g_{kij}\ e_{ij}(\ul{v}) \nabla_k \phi
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    \int_{Y} K_{ij} \nabla_i \psi \nabla_j \phi
+    \int_{Y_2} g_{kij}\ e_{ij}(\ul{u}) \nabla_k \psi
+    = 0
+    \;, \quad \forall \psi \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+"""
 import os
 import numpy as nm
 

@@ -1,4 +1,14 @@
-# c: 15.02.2008, r: 28.03.2008
+r"""
+Diffusion (Laplace-like) equation with non-isotropic diffusion
+coefficient :math:`K`.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} K_{ij} \nabla_i s \nabla_j t
+    = 0
+    \;, \quad \forall s \;.
+"""
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/various_formats/octahedron.node'

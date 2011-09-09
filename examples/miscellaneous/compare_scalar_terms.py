@@ -1,5 +1,21 @@
-"""
-Example comparing new and old-style terms with scalar variables.
+r"""
+Example without a physical relevance comparing new and old-style terms
+with scalar variables.
+
+Find :math:`p` (new style terms), :math:`r` (old_style terms) such that:
+
+.. math::
+    \int_{\Omega} c \delta_{ij} \nabla_i q \nabla_j p
+    + \int_{\Omega} q p
+    = 0
+    \;, \quad \forall q \;,
+
+    \int_{\Omega} c \delta_{ij} \nabla_i s \nabla_j r
+    + \int_{\Omega} s r
+    = 0
+    \;, \quad \forall s \;.
+
+The same values of :math:`p`, :math:`r` should be obtained.
 """
 import os
 

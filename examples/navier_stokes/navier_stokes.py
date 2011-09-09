@@ -1,5 +1,19 @@
-# 26.02.2007, c
-# last revision: 25.02.2008
+r"""
+Navier-Stokes equations for incompressible fluid flow.
+
+Find :math:`\ul{u}`, :math:`p` such that:
+
+.. math::
+    \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
+    + \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
+    - \int_{\Omega} p\ \nabla \cdot \ul{v}
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    \int_{\Omega} q\ \nabla \cdot \ul{u}
+    = 0
+    \;, \quad \forall q \;.
+"""
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/elbow2.mesh'

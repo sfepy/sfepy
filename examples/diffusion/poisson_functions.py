@@ -1,6 +1,17 @@
-"""
+r"""
+Poisson equation with source term.
+
 Example demonstrating use of functions for defining material parameters,
 regions, parameter variables or boundary conditions.
+
+Find :math:`u` such that:
+
+.. math::
+    \int_{\Omega} c \nabla v \cdot \nabla u
+    = - \int_{\Omega_L} f v p
+    \;, \quad \forall v \;,
+
+where :math:`p` is a given function and :math:`f` is a load parameter.
 """
 import numpy as nm
 from sfepy import data_dir

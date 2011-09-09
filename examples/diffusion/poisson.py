@@ -1,3 +1,13 @@
+r"""
+Laplace equation with comments.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} c \nabla s \cdot \nabla t
+    = 0
+    \;, \quad \forall s \;.
+"""
 #! Poisson Equation
 #! ================
 #$ \centerline{Example input file, \today}

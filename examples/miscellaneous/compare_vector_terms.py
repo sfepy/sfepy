@@ -1,5 +1,22 @@
-"""
-Example comparing new and old-style terms with vector variables.
+r"""
+Example without a physical relevance comparing new and old-style terms
+with vector variables.
+
+Find :math:`\ul{u}` (new style terms), :math:`\ul{r}` (old_style terms)
+such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    \int_{\Omega}\ul{v} \cdot \ul{u}
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{s}) e_{kl}(\ul{r})
+    \int_{\Omega}\ul{s} \cdot \ul{r}
+    = 0
+    \;, \quad \forall \ul{s} \;.
+
+The same values of :math:`\ul{u}`, :math:`\ul{r}` should be obtained.
 """
 import os
 

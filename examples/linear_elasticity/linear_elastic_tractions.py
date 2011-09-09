@@ -1,6 +1,23 @@
-"""
-Linear elasticity with pressure traction load on a surface and
-constrained to one-dimensional motion.
+r"""
+Linear elasticity with pressure traction load on surface
+:math:`\Gamma_{right}` and constrained to one-dimensional motion.
+
+Find :math:`\ul{u}` such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    = - \int_{\Gamma_{right}} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}
+    \;, \quad \forall \ul{v} \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+
+and :math:`\ull{\sigma} \cdot \ul{n} = \bar{p} \ull{I} \cdot \ul{n}`
+with given traction pressure :math:`\bar{p}`.
 """
 import numpy as nm
 

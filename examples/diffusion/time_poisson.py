@@ -1,5 +1,16 @@
-##
-# c: 05.02.2008
+r"""
+Transient Laplace equation in time interval
+:math:`t \in [0, t_{\rm final}]` with non-constant initial condition
+given by a function.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} s \pdiff{T}{t}
+    + \int_{\Omega} c \nabla s \cdot \nabla T
+    = 0
+    \;, \quad \forall s \;.
+"""
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'

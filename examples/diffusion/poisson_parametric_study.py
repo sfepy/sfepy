@@ -1,23 +1,41 @@
-"""
-Solves Poisson equation. Demonstrates parametric study capabilities of
-Application classes.
+r"""
+Poisson equation.
 
-In particular (in pseudo-LaTeX):
+This example demonstrates parametric study capabilities of Application
+classes. In particular (written in the strong form):
 
-c \nabla t = f in \Omega,
-t = 2 on \Gamma_1,  t = -2 on \Gamma_2,
-f = 1 in \Omega_1, f = 0 otherwise,
+.. math::
+    c \nabla t = f \mbox{ in } \Omega,
 
-\Omega is a square domain, \Omega_1 \in \Omega is a cicular domain.
-Now let's see what happens if \Omega_1 diameter changes.
+    t = 2 \mbox{ on } \Gamma_1 \;,
+    t = -2 \mbox{ on } \Gamma_2 \;,
+    f = 1 \mbox{ in } \Omega_1 \;,
+    f = 0 \mbox{ otherwise,}
 
-Run
-$ ./simple.py <this file>
-and then look in 'output/r_omega1' directory.
+where :math:`\Omega` is a square domain, :math:`\Omega_1 \in \Omega` is
+a circular domain.
 
-Remark: this simple case could be achieved also by defining \Omega_1 by a
-time-dependent function and solve the static problem as a time-dependent
-problem. However, the approach below is much more general.
+Now let's see what happens if :math:`\Omega_1` diameter changes.
+
+Run::
+
+    $ ./simple.py <this file>
+
+and then look in 'output/r_omega1' directory, try for example::
+
+    $ ./postproc.py output/r_omega1/circles_in_square*.vtk
+
+Remark: this simple case could be achieved also by defining
+:math:`\Omega_1` by a time-dependent function and solve the static
+problem as a time-dependent problem. However, the approach below is much
+more general.
+
+Find :math:`t` such that:
+
+.. math::
+    \int_{\Omega} c \nabla s \cdot \nabla t
+    = 0
+    \;, \quad \forall s \;.
 """
 import os
 import numpy as nm

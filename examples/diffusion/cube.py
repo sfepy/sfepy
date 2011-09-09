@@ -1,3 +1,15 @@
+r"""
+Laplace equation (e.g. temperature distribution) on a cube geometry with
+different boundary condition values on the cube sides. This example was
+used to create the SfePy logo.
+
+Find :math:`T` such that:
+
+.. math::
+    \int_{\Omega} c \nabla s \cdot \nabla T
+    = 0
+    \;, \quad \forall s \;.
+"""
 from sfepy import data_dir
 
 #filename_mesh = data_dir + '/meshes/3d/cube_big_tetra.mesh'

@@ -1,3 +1,18 @@
+r"""
+Acoustic pressure distribution.
+
+This example shows how to solve a problem in complex numbers, note the
+'accoustic_pressure' field definition.
+
+Find :math:`p` such that:
+
+.. math::
+    c^2 \int_{\Omega} \nabla q \cdot \nabla p
+    - w^2 \int_{\Omega} q p
+    - i w c \int_{\Gamma_{out}} q p
+    = i w c^2 \rho v_n \int_{\Gamma_{in}} q
+    \;, \quad \forall q \;.
+"""
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/special/two_rectangles.mesh'

@@ -1,9 +1,36 @@
-"""
-Biot problem with the non-penetration BC on the Walls boundary region.
+r"""
+Biot problem - deformable porous medium with the no-penetration boundary
+condition on :math:`\Gamma_{walls}` boundary region.
+
 The non-penetration condition is enforced weakly using the Lagrange
-multiplier approach. There is also a rigid body movement constraint
-imposed on the Outlet region using the linear combination boundary
-conditions.
+multiplier :math:`\lambda`. There is also a rigid body movement
+constraint imposed on the :math:`\Gamma_{outlet}` region using the
+linear combination boundary conditions.
+
+Find :math:`\ul{u}`, :math:`p` and :math:`\lambda` such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    - \int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v})
+    + \int_{\Gamma_{walls}} \lambda \ul{n} \cdot \ul{v}
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    \int_{\Omega} q\ \alpha_{ij} e_{ij}(\ul{u})
+    + \int_{\Omega} K_{ij} \nabla_i q \nabla_j p
+    = 0
+    \;, \quad \forall q \;,
+
+    \int_{\Gamma_{walls}} \hat\lambda \ul{n} \cdot \ul{u}
+    = 0
+    \;, \quad \forall \hat\lambda \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
 """
 from biot_npbc import cinc_simple, define_regions, get_pars
 

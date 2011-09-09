@@ -1,4 +1,20 @@
-# 30.04.2009
+r"""
+Nearly incompressible linear elasticity in mixed displacement-pressure
+formulation with comments.
+
+Find :math:`\ul{u}`, :math:`p` such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    - \int_{\Omega} p\ \nabla \cdot \ul{v}
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    - \int_{\Omega} q\ \nabla \cdot \ul{u}
+    - \int_{\Omega} \gamma q p
+    = 0
+    \;, \quad \forall q \;.
+"""
 #!
 #! Linear Elasticity
 #! =================

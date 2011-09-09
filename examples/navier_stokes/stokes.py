@@ -1,5 +1,21 @@
-# 24.05.2007, c
-# last revision: 25.02.2008
+r"""
+Stokes equations for incompressible fluid flow.
+
+This example demonstrates fields defined on subdomains as well as use of
+periodic boundary conditions.
+
+Find :math:`\ul{u}`, :math:`p` such that:
+
+.. math::
+    \int_{Y_1 \cup Y_2} \nu\ \nabla \ul{v} : \nabla \ul{u}
+    - \int_{Y_1 \cup Y_2} p\ \nabla \cdot \ul{v}
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+    \int_{Y_1 \cup Y_2} q\ \nabla \cdot \ul{u}
+    = 0
+    \;, \quad \forall q \;.
+"""
 from sfepy import data_dir
 from sfepy.fem.periodic import match_y_line
 

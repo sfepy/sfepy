@@ -1,3 +1,22 @@
+r"""
+Diametrically point loaded 2-D disk with postprocessing. See
+:ref:`sec-primer`.
+
+Find :math:`\ul{u}` such that:
+
+.. math::
+    \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+    = 0
+    \;, \quad \forall \ul{v} \;,
+
+where
+
+.. math::
+    D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
+    \lambda \ \delta_{ij} \delta_{kl}
+    \;.
+"""
+
 from its2D_1 import *
 
 from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
