@@ -4,6 +4,7 @@ sys.path.append( '.' )
 import os
 import tempfile
 import glob
+import re
 from optparse import OptionParser
 
 import matplotlib.image as image
@@ -16,6 +17,25 @@ from sfepy.base.ioutils import ensure_path, locate_files, remove_files
 omits = [
     'linear_elastic_mM.py',
 ]
+
+omit_dirs = [
+    re.compile('.*output.*/').match,
+]
+
+def _omit(filename):
+    omit = False
+
+    base = os.path.basename(filename)
+
+    if base in omits:
+        omit = True
+
+    for omit_dir in omit_dirs:
+        if omit_dir(filename) is not None:
+            omit = True
+            break
+
+    return omit
 
 def _get_fig_filename(ebase, images_dir):
     fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
@@ -64,8 +84,7 @@ def generate_images(images_dir, examples_dir):
                   offscreen=False)
 
     for ex_filename in locate_files('*.py', examples_dir):
-        base = os.path.basename(ex_filename)
-        if base in omits: continue
+        if _omit(ex_filename): continue
 
         output.level = 0
         output.prefix = prefix
@@ -172,8 +191,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
     dir_map = {}
     for ex_filename in locate_files('*.py', examples_dir):
-        base = os.path.basename(ex_filename)
-        if base in omits: continue
+        if _omit(ex_filename): continue
 
         ebase = ex_filename.replace(examples_dir, '')[1:]
         base_dir = os.path.dirname(ebase)
