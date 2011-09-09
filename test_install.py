@@ -105,6 +105,9 @@ def main():
     eok += report(out, '...', -33, 5, '2.366052e-12', eps=1e-11)
     eok += report(out, '...', -3, 4, '15.646', eps=1e-5)
 
+    out, err = check_output('python ./simple.py examples/linear_elasticity/linear_elastic_probes.py')
+    eok += report(out, '...', -11, 5, '4.638192e-18', eps=1e-15)
+
     out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
     eok += report(out, '...', -2, 1, '64247')
 
