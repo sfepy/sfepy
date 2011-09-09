@@ -218,6 +218,10 @@ latex_preamble = r"""
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
 \def\tdiff#1#2{\frac{{\rm d} {#1}}{{\rm d} {#2}}}
 \def\difd#1{\ {\rm d}#1}
+\def\intl#1#2{\int \limits_{#1}^{#2}}
+\def\eff{^{\rm eff}}
+\def\sunm{^{(n-1)}}
+\def\suz{^{(0)}}
 \newcommand{\dvg}{\mathop{\rm div}}
 \newcommand{\tr}{\mathop{\rm tr}}
 \newcommand{\ul}[1]{\underline{#1}}
