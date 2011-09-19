@@ -19,7 +19,6 @@
   (FMField *bc),
   (FMField *base1d),
   (FMField *coors),
-  (FMField *e_coors),
   (FMField *dest_coors),
   (FMField *mesh_coors),
   (FMField *source_vals),
@@ -115,10 +114,6 @@ int32 eval_lagrange_tensor_product( FMField *out, FMField *coors,
 				    int32 order, int32 diff,
 				    FMField *mtx_i, FMField *bc, FMField *base1d,
 				    int32 suppress_errors, float64 eps );
-
-int32 inverse_element_mapping( FMField *out,
-			       FMField *coors, FMField *e_coors,
-			       FMField *ref_coors, int32 i_max, float64 eps );
 
 int32 evaluate_at( FMField *out,
 		   int32 *cells, int32 n_cells, int32 n_cells_col,
