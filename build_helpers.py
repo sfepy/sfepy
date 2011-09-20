@@ -152,6 +152,21 @@ class Clean(clean):
             print filename
             os.remove(filename)
 
+        for _filename in recursive_glob('sfepy', ['*.pyx']):
+            filename = _filename.replace('.pyx', '.c')
+            print filename
+            try:
+                os.remove(filename)
+            except OSError:
+                pass
+
+            filename = _filename.replace('.pyx', '.html')
+            print filename
+            try:
+                os.remove(filename)
+            except OSError:
+                pass
+
 # The command classes for distutils, used by setup.py.
 cmdclass = {
     'htmldocs' : SphinxHTMLDocs,
