@@ -135,6 +135,7 @@ cdef _eval_lagrange_simplex(np.ndarray[float64, ndim=3] out,
                     n_i1 = nodes[inod, i1]
                     for i2 in range(0, n_i1):
                         pout[inod] *= (order * bc[ic, i1] - i2) / (i2 + 1.0)
+
     else:
         for ic in range(0, n_coor):
             pout = &out[ic, 0, 0]
@@ -168,9 +169,9 @@ cdef _eval_lagrange_simplex(np.ndarray[float64, ndim=3] out,
                         pout[n_nod*ir+inod] += vv * dval * mtx_i[ii, ir]
 
 @cython.boundscheck(False)
-def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors,
-                          np.ndarray[float64, ndim=2] mtx_i,
-                          np.ndarray[int32, ndim=2] nodes,
+def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors not None,
+                          np.ndarray[float64, ndim=2] mtx_i not None,
+                          np.ndarray[int32, ndim=2] nodes not None,
                           int order, int diff=False,
                           float64 eps=1e-15,
                           int check_errors=True):
@@ -184,7 +185,7 @@ def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors,
     mtx_i : array
         The inverse of simplex coordinates matrix, shape `(dim + 1, dim + 1)`.
     nodes : array
-        The description of finite element nodes, shape (n_nod, dim + 1).
+        The description of finite element nodes, shape `(n_nod, dim + 1)`.
     order : int
         The polynomial order.
     diff : bool
