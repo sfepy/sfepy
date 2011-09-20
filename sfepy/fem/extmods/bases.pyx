@@ -221,3 +221,119 @@ def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors not None,
     _eval_lagrange_simplex(out, bc, mtx_i, nodes, order, diff)
 
     return out
+
+@cython.boundscheck(False)
+cdef _eval_lagrange_tensor_product(np.ndarray[float64, ndim=3] out,
+                                   np.ndarray[float64, ndim=3] bc,
+                                   np.ndarray[float64, ndim=2] mtx_i,
+                                   np.ndarray[float64, ndim=3] base1d,
+                                   np.ndarray[int32, ndim=2] nodes,
+                                   int order, int diff=False):
+    """
+    Evaluate Lagrange base polynomials in given points on tensor product
+    domain.
+    """
+    cdef int ii, idim, im, ic
+    cdef int n_coor = out.shape[0]
+    cdef int nr = out.shape[1]
+    cdef int n_nod = out.shape[2]
+    cdef int dim = bc.shape[0]
+    cdef int out_size = n_coor * nr * n_nod
+    cdef float64 *val, *val1d
+    cdef np.ndarray[int32, ndim=2] pnodes
+    cdef np.ndarray[float64, ndim=2] bc1
+
+    val = &out[0, 0, 0]
+    for im in range(0, out_size):
+        val[im] = 1.0
+
+    val1d = &base1d[0, 0, 0]
+
+    if not diff:
+        for ii in range(0, dim):
+            pnodes = nodes[:, 2 * ii : 2 * ii + 2]
+            bc1 = bc[ii, :, :]
+
+            _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order, diff)
+
+            for im in range(0, n_coor):
+                for ic in range(0, n_nod):
+                    out[im, 0, ic] *= base1d[im, 0, ic]
+
+    else:
+        for ii in range(0, dim):
+            pnodes = nodes[:, 2 * ii : 2 * ii + 2]
+            bc1 = bc[ii, :, :]
+
+            for idim in range(0, dim):
+                if ii == idim:
+                    _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order,
+                                           diff)
+
+                else:
+                    _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order,
+                                           False)
+
+                for im in range(0, n_coor):
+                    for ic in range(0, n_nod):
+                        out[im, idim, ic] *= base1d[im, 0, ic]
+
+@cython.boundscheck(False)
+def eval_lagrange_tensor_product(np.ndarray[float64, ndim=2] coors not None,
+                                 np.ndarray[float64, ndim=2] mtx_i not None,
+                                 np.ndarray[int32, ndim=2] nodes not None,
+                                 int order, int diff=False,
+                                 float64 eps=1e-15,
+                                 int check_errors=True):
+    """
+    Evaluate Lagrange base polynomials in given points on tensor product
+    domain.
+
+    Parameters
+    ----------
+    coors : array
+        The coordinates of the points, shape `(n_coor, dim)`.
+    mtx_i : array
+        The inverse of 1D simplex coordinates matrix, shape `(2, 2)`.
+    nodes : array
+        The description of finite element nodes, shape `(n_nod, 2 * dim)`.
+    order : int
+        The polynomial order.
+    diff : bool
+        If True, return base function derivatives.
+    eps : float
+        The tolerance for snapping out-of-simplex point back to the simplex.
+    check_errors : bool
+        If True, raise ValueError if a barycentric coordinate is outside
+        the snap interval `[-eps, 1 + eps]`.
+
+    Returns
+    -------
+    out : array
+        The evaluated base functions, shape `(n_coor, 1 or dim, n_nod)`.
+    """
+    cdef int ii, idim, im, ic
+    cdef int n_coor = coors.shape[0]
+    cdef int n_nod = nodes.shape[0]
+    cdef int dim = coors.shape[1]
+    cdef np.ndarray[float64, ndim=3] bc = np.zeros((dim, n_coor, 2),
+                                                   dtype=np.float64)
+    cdef np.ndarray[float64, ndim=3] base1d = np.zeros((n_coor, 1, n_nod),
+                                                       dtype=np.float64)
+    if diff:
+        bdim = dim
+
+    else:
+        bdim = 1
+
+    cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
+                                                    dtype=np.float64)
+
+    for ii in range(0, dim):
+        _get_barycentric_coors(bc[ii, :, :], coors[:, ii : ii + 1],
+                               mtx_i, eps, check_errors)
+
+    _eval_lagrange_tensor_product(out, bc, mtx_i, base1d,
+                                  nodes, order, diff)
+
+    return out
