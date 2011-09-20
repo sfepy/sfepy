@@ -38,8 +38,8 @@ cdef _get_barycentric_coors(np.ndarray[float64, ndim=2] bc,
     cdef int error
     cdef int ir, ic, ii
     cdef int n_coor = coors.shape[0]
-    cdef int dim = coors.shape[1]
-    cdef int n_v = dim + 1
+    cdef int n_v = mtx_i.shape[0]
+    cdef int dim = n_v - 1
     cdef float64 val
 
     for ir in range(0, n_coor):
@@ -97,8 +97,8 @@ def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
         reference element coordinates `xi = dot(bc, ref_coors)`.
     """
     cdef int n_coor = coors.shape[0]
-    cdef int dim = coors.shape[1]
-    cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, dim + 1),
+    cdef int n_v = mtx_i.shape[0]
+    cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, n_v),
                                                    dtype=np.float64)
 
     _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
