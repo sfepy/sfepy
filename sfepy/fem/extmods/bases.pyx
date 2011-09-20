@@ -104,3 +104,119 @@ def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
     _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
     return bc
 
+@cython.boundscheck(False)
+@cython.cdivision(True)
+cdef _eval_lagrange_simplex(np.ndarray[float64, ndim=3] out,
+                            np.ndarray[float64, ndim=2] bc,
+                            np.ndarray[float64, ndim=2] mtx_i,
+                            np.ndarray[int32, ndim=2] nodes,
+                            int order, int diff=False):
+    """
+    Evaluate Lagrange base polynomials in given points on simplex domain.
+    """
+    cdef int n_coor = bc.shape[0]
+    cdef int n_v = bc.shape[1]
+    cdef int dim = n_v - 1
+    cdef int n_nod = nodes.shape[0]
+    cdef int ii, ir, ic, i1, i2, inod, n_i1, n_ii
+    cdef float64 dval, dd, vv
+    cdef float64 *pout
+
+    assert n_coor == out.shape[0]
+    assert n_v == nodes.shape[1]
+
+    if not diff:
+        for ic in range(0, n_coor):
+            pout = &out[ic, 0, 0]
+
+            for inod in range(0, n_nod):
+                pout[inod] = 1.0
+                for i1 in range(0, n_v):
+                    n_i1 = nodes[inod, i1]
+                    for i2 in range(0, n_i1):
+                        pout[inod] *= (order * bc[ic, i1] - i2) / (i2 + 1.0)
+    else:
+        for ic in range(0, n_coor):
+            pout = &out[ic, 0, 0]
+
+            for inod in range(0, n_nod):
+                pout[inod] = 0.0
+
+                for ii in range(0, n_v):
+                    vv = 1.0
+
+                    for i1 in range(0, n_v):
+                        if i1 == ii: continue
+                        n_i1 = nodes[inod, i1]
+
+                        for i2 in range(0, n_i1):
+                            vv *= (order * bc[ic, i1] - i2) / (i2 + 1.0)
+
+                    dval = 0.0
+                    n_ii = nodes[inod, ii]
+                    for i1 in range(0, n_ii):
+                        dd = 1.0
+
+                        for i2 in range(0, n_ii):
+                            if i1 == i2: continue
+
+                            dd *= (order * bc[ic, ii] - i2) / (i2 + 1.0)
+
+                        dval += dd * order / (i1 + 1.0)
+
+                    for ir in range(0, dim):
+                        pout[n_nod*ir+inod] += vv * dval * mtx_i[ii, ir]
+
+@cython.boundscheck(False)
+def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors,
+                          np.ndarray[float64, ndim=2] mtx_i,
+                          np.ndarray[int32, ndim=2] nodes,
+                          int order, int diff=False,
+                          float64 eps=1e-15,
+                          int check_errors=True):
+    """
+    Evaluate Lagrange base polynomials in given points on simplex domain.
+
+    Parameters
+    ----------
+    coors : array
+        The coordinates of the points, shape `(n_coor, dim)`.
+    mtx_i : array
+        The inverse of simplex coordinates matrix, shape `(dim + 1, dim + 1)`.
+    nodes : array
+        The description of finite element nodes, shape (n_nod, dim + 1).
+    order : int
+        The polynomial order.
+    diff : bool
+        If True, return base function derivatives.
+    eps : float
+        The tolerance for snapping out-of-simplex point back to the simplex.
+    check_errors : bool
+        If True, raise ValueError if a barycentric coordinate is outside
+        the snap interval `[-eps, 1 + eps]`.
+
+    Returns
+    -------
+    out : array
+        The evaluated base functions, shape `(n_coor, 1 or dim, n_nod)`.
+    """
+    cdef int bdim
+    cdef int n_coor = coors.shape[0]
+    cdef int dim = mtx_i.shape[0] - 1
+    cdef int n_nod = nodes.shape[0]
+    cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, dim + 1),
+                                                   dtype=np.float64)
+
+    if diff:
+        bdim = dim
+
+    else:
+        bdim = 1
+
+    cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
+                                                    dtype=np.float64)
+
+    _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
+    _eval_lagrange_simplex(out, bc, mtx_i, nodes, order, diff)
+
+    return out
