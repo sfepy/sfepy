@@ -30,16 +30,6 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['geomtrans.c', 'meshutils.c', 'meshutils.i', 'common_python.c',
-           'sort.c']
-    config.add_extension('_meshutils',
-                         sources=src,
-                         depends=['array.i', 'common.i'],
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
     src = ['fmfield.c', 'geometry.c', 'geometry.i', 'geommech.c',
            'common_python.c']
     config.add_extension('_geometry',
@@ -60,6 +50,14 @@ def configuration(parent_package='', top_path=None):
 
     src = ['bases.pyx']
     config.add_extension('bases',
+                         sources=src,
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
+    src = ['mesh.pyx', 'geomtrans.c', 'meshutils.c', 'common_python.c']
+    config.add_extension('mesh',
                          sources=src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
