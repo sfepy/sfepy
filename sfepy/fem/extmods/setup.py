@@ -20,7 +20,7 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    src = ['fmfield.c', 'fem.c', 'fem.i', 'geommech.c', 'sort.c',
+    src = ['fmfield.c', 'fem.c', 'fem.i', 'geommech.c',
            'common_python.c']
     config.add_extension('_fem',
                          sources=src,
@@ -56,7 +56,8 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['mesh.pyx', 'geomtrans.c', 'meshutils.c', 'common_python.c']
+    src = ['mesh.pyx', 'geomtrans.c', 'meshutils.c', 'sort.c',
+           'common_python.c']
     config.add_extension('mesh',
                          sources=src,
                          extra_compile_args=site_config.compile_flags(),
