@@ -21,15 +21,13 @@ import scipy.sparse as sp
 
 import sfepy
 from sfepy.fem import Mesh, Domain
-from sfepy.fem.extmods.fem import raw_graph
-from sfepy.fem.extmods.mesh import graph_components
+from sfepy.fem.extmods.mesh import create_mesh_graph, graph_components
 
 ##
 # 29.08.2007, c
 def surface_graph( surf_faces, n_nod ):
-    ret, prow, icol = raw_graph( n_nod, n_nod,
-                                len( surf_faces), surf_faces, surf_faces )
-    nnz = prow[-1]
+    nnz, prow, icol = create_mesh_graph(n_nod, n_nod, len(surf_faces),
+                                        surf_faces, surf_faces)
     data = nm.empty( (nnz,), dtype = nm.int32 )
     data.fill( 2 )
     return sp.csr_matrix( (data, icol, prow), (n_nod, n_nod) )

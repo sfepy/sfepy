@@ -707,9 +707,9 @@ class Mesh( Struct ):
         Returns
         -------
         graph : csr_matrix
-            The mesh connectivity graph as a SciPy CSR matrix.    
+            The mesh connectivity graph as a SciPy CSR matrix.
         """
-        from extmods.fem import raw_graph
+        from extmods.mesh import create_mesh_graph
 
         shape = (self.n_nod, self.n_nod)
         output('graph shape:', shape, verbose=verbose)
@@ -720,13 +720,13 @@ class Mesh( Struct ):
         output('assembling mesh graph...', verbose=verbose)
         tt = time.clock()
 
-        ret, prow, icol = raw_graph(int(shape[0]), int(shape[1]),
-                                    len(self.conns), self.conns, self.conns )
+        nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
+                                            len(self.conns),
+                                            self.conns, self.conns)
         output('...done in %.2f s' % (time.clock() - tt), verbose=verbose)
-        nnz = prow[-1]
         output('graph nonzeros: %d (%.2e%% fill)' \
                % (nnz, float(nnz) / nm.prod(shape)))
-        
+
         data = nm.ones((nnz,), dtype=nm.bool)
         graph = sp.csr_matrix((data, icol, prow), shape)
 

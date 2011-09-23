@@ -8,7 +8,7 @@ from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import debug, OneTypeList, Container, Struct
 from sfepy.fem import Materials, Variables
 from sfepy.fem.fields import setup_dof_conns
-from extmods.fem import raw_graph
+from extmods.mesh import create_mesh_graph
 from sfepy.terms import Terms, Term, DataCaches
 
 """
@@ -409,10 +409,10 @@ class Equations( Container ):
         output( 'assembling matrix graph...' )
         tt = time.clock()
 
-        ret, prow, icol = raw_graph( int( shape[0] ), int( shape[1] ),
-                                    len( rdcs ), rdcs, cdcs )
+        nnz, prow, icol = create_mesh_graph(shape[0], shape[1],
+                                            len(rdcs), rdcs, cdcs)
+
         output( '...done in %.2f s' % (time.clock() - tt) )
-        nnz = prow[-1]
         output( 'matrix structural nonzeros: %d (%.2e%% fill)' \
                 % (nnz, float( nnz ) / nm.prod( shape ) ) )
         ## print ret, prow, icol, nnz
