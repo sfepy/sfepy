@@ -77,6 +77,8 @@ void *mem_alloc_mem( size_t size, int lineNo, char *funName,
 		     char *fileName, char *dirName );
 void mem_free_mem( void *pp, int lineNo, char *funName,
 		   char *fileName, char *dirName );
+void *pyalloc(size_t size);
+void pyfree(void *pp);
 void mem_checkIntegrity( int lineNo, char *funName,
 			 char *fileName, char *dirName );
 void mem_statistics( int lineNo, char *funName,

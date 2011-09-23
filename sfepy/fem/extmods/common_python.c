@@ -197,6 +197,20 @@ void mem_free_mem( void *pp, int lineNo, char *funName,
 }
 
 #undef __FUNC__
+#define __FUNC__ "pyalloc"
+void *pyalloc(size_t size)
+{
+  return mem_alloc_mem(size, __LINE__, __FUNC__, __FILE__, __SDIR__);
+}
+
+#undef __FUNC__
+#define __FUNC__ "pyfree"
+void pyfree(void *pp)
+{
+  return mem_free_mem(pp, __LINE__, __FUNC__, __FILE__, __SDIR__);
+}
+
+#undef __FUNC__
 #define __FUNC__ "mem_checkIntegrity"
 /*!
   @par Revision history:
