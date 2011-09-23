@@ -2,6 +2,7 @@
 
 #include "meshutils.h"
 #include "geomtrans.h"
+#include "sort.h"
 
 int32 *ic;
 int32 n_c;
@@ -99,6 +100,232 @@ int32 orient_elements( int32 *flag, int32 flag_n_row,
 #undef CONN
 #undef SWF
 #undef SWT
+}
+
+int32 compare_i32( const void *a, const void *b )
+{
+  int32 i1, i2;
+
+  i1 = *((int32 *) a);
+  i2 = *((int32 *) b);
+
+  return( i1 - i2 );
+}
+
+#undef __FUNC__
+#define __FUNC__ "mesh_nod_in_el_count"
+/*!
+  @par Revision history:
+  - 21.11.2003, c
+  - 23.11.2003
+*/
+int32 mesh_nod_in_el_count( int32 *p_niec_max, int32 *niec,
+			 int32 n_nod, int32 n_gr, int32 *n_el,
+			 int32 *n_ep, int32 **conn )
+{
+  int32 ig, iel, iep, in, niec_max;
+  int32 *pconn;
+
+  memset( niec, 0, (n_nod + 1) * sizeof( int32 ) );
+  for (ig = 0; ig < n_gr; ig++) {
+    for (iel = 0; iel < n_el[ig]; iel++) {
+      pconn = conn[ig] + n_ep[ig] * iel;
+      for (iep = 0; iep < n_ep[ig]; iep++) {
+	niec[1+pconn[iep]]++;
+/* 	output( "%d %d %d\n", iep, niec[1+pconn[iep]], pconn[iep] ); */
+      }
+    }
+  }
+
+  niec[0] = 0;
+  niec_max = 0;
+  for (in = 0; in <= n_nod; in++) {
+/*     output( "%d %d\n", in, niec[in] ); */
+    niec_max = Max( niec_max, niec[in] );
+  }
+  *p_niec_max = niec_max;
+
+  return( RET_OK );
+}
+
+#undef __FUNC__
+#define __FUNC__ "mesh_graph"
+/*!
+  @par Revision history:
+  - 23.05.2003, c
+  - 26.05.2003
+  - 27.05.2003
+  - 28.05.2003
+  - 21.11.2003 former mesh_mesh_graph()
+  - 23.11.2003
+  - 01.03.2004
+  - 03.03.2005
+  - 07.02.2006
+*/
+int32 mesh_graph( int32 *p_nnz, int32 **p_prow, int32 **p_icol,
+		  int32 n_row, int32 n_col, int32 n_gr, int32 *n_el,
+		  int32 *n_epr, int32 **conn_r, int32 *n_epc, int32 **conn_c )
+{
+  int32 in, ii, ip, ig, iel, iep, ir, ic, nn, np, pr,
+    niec_max_r, n_ep_max_c, n_unique, iir, iic, found;
+  int32 *niec, *pconn_r, *pconn_c, *eonlist, *nir, *nods, *icol;
+
+
+/*   output( "%d %d %d %d %d %d\n", n_row, n_col, n_gr, n_el[0], n_epr[0], n_epc[0] ); */
+
+  /* Get niec (= nodes in elements count) for rows. */
+  niec = alloc_mem( int32, n_row + 1 );
+  mesh_nod_in_el_count( &niec_max_r, niec, n_row, n_gr, n_el, n_epr, conn_r );
+/*   output( "%d\n", niec_max_r ); */
+
+  /* Cummulative sum. */
+  for (in = 0; in < n_row; in++) {
+    niec[in+1] += niec[in];
+  }
+
+/*    output( "00\n" ); */
+
+  /* eon = elements of nodes */
+  nn = 0;
+  n_ep_max_c = 0;
+  for (ig = 0; ig < n_gr; ig++) {
+    nn += n_epr[ig] * n_el[ig];
+    n_ep_max_c = Max( n_ep_max_c, n_epc[ig] );
+  }
+  eonlist = alloc_mem( int32, 2 * nn );
+
+  /* nir is just a buffer here. */
+  nir = alloc_mem( int32, n_row + 1 );
+  memset( nir, 0, (n_row + 1) * sizeof( int32 ) );
+
+/*    output( "1\n" ); */
+
+  /* Get list of elements each row node is in. */
+  for (ig = 0; ig < n_gr; ig++) {
+    for (iel = 0; iel < n_el[ig]; iel++) {
+      pconn_r = conn_r[ig] + n_epr[ig] * iel;
+      for (iep = 0; iep < n_epr[ig]; iep++) {
+	np = pconn_r[iep];
+	if (np >= 0) {
+	  eonlist[2*(niec[np]+nir[np])+0] = iel;
+	  eonlist[2*(niec[np]+nir[np])+1] = ig;
+/*  	output( "  %d %d %d %d\n", np, eonlist[2*(niec[np]+nir[np])+0], */
+/*  		   eonlist[2*(niec[np]+nir[np])+1], nir[np] ); */
+	  nir[np]++;
+	}
+      }
+    }
+  }
+
+/*    output( "2\n" ); */
+
+  /* nir = number in row. */
+  memset( nir, 0, (n_row + 1) * sizeof( int32 ) );
+
+  /* List of column nodes for each row node. */
+/*   output( "%d, %d\n", n_ep_max_c, niec_max_r * n_ep_max_c ); */
+  nods = alloc_mem( int32, niec_max_r * n_ep_max_c );
+
+  nn = 0;
+  for (in = 0; in < n_row; in++) {
+    ii = 0;
+/*      output( "%d\n", in ); */
+    for (ip = niec[in]; ip < niec[in+1]; ip++) {
+      iel = eonlist[2*(ip)+0];
+      ig = eonlist[2*(ip)+1];
+/*        output( " %d %d %d\n", ip, ig, iel ); */
+      for (iep = 0; iep < n_epc[ig]; iep++) {
+	np = conn_c[ig][n_epc[ig]*iel+iep];
+	if (np >= 0) {
+	  nods[ii] = np;
+/*  	output( "  %d %d\n", ii, nods[ii] ); */
+	  ii++;
+	}
+      }
+    }
+/*     output( "%d\n", ii ); */
+
+    if (ii > 0) {
+/*       qsort( nods, ii, sizeof( int32 ), &compareI32 ); */
+      int32_quicksort( nods, ii, 0 );
+      n_unique = 1;
+      for (ir = 0; ir < (ii - 1); ir++) {
+	if (nods[ir] != nods[ir+1]) {
+	  n_unique++;
+	}
+      }
+    } else {
+      n_unique = 0;
+    }
+    nn += n_unique;
+/*      output( " -> %d\n", n_unique ); */
+
+    nir[in] = n_unique;
+  }
+
+/*    output( "3\n" ); */
+
+  *p_nnz = nn;
+  *p_prow = niec;
+  icol = *p_icol = alloc_mem( int32, nn );
+
+  /* Fill in *p_prow. */
+  niec[0] = 0;
+  for (in = 0; in < n_row; in++) {
+    niec[in+1] = niec[in] + nir[in];
+/*      output( " %d\n", niec[in+1] ); */
+  }
+
+/*   output( "4\n" ); */
+  /* Fill in *p_icol (sorted). */
+  memset( nir, 0, (n_row + 1) * sizeof( int32 ) );
+  for (ig = 0; ig < n_gr; ig++) {
+/*     output( "ig %d\n", ig ); */
+    for (iel = 0; iel < n_el[ig]; iel++) {
+      pconn_r = conn_r[ig] + n_epr[ig] * iel;
+      pconn_c = conn_c[ig] + n_epc[ig] * iel;
+      for (ir = 0; ir < n_epr[ig]; ir++) {
+	iir = pconn_r[ir];
+	if (iir < 0) continue;
+	pr = niec[iir];
+/*  	output( " %d %d %d\n", iir, pr, niec[iir+1] - pr ); */
+	for (ic = 0; ic < n_epc[ig]; ic++) {
+	  iic = pconn_c[ic];
+	  if (iic < 0) continue;
+/*  	  output( "   %d %d\n", iic, nir[iir] ); */
+	  /* This is a bottle-neck! */
+	  found = 0;
+	  for (ii = pr; ii < (pr + nir[iir]); ii++) {
+	    if (icol[ii] == iic) {
+	      found = 1;
+	      break;
+	    }
+	  }
+/*  	  output( "  ? %d\n", found ); */
+	  if (!found) {
+	    if (nir[iir] < (niec[iir+1] - pr)) {
+	      icol[pr+nir[iir]] = iic;
+	      nir[iir]++;
+/*  	      output( "  + %d %d\n", nir[iir], niec[iir+1] - pr ); */
+	    } else {
+	      output( "  %d %d\n", nir[iir], niec[iir+1] - pr );
+	      errput( "ERR_VerificationFail\n" );
+	    }
+	  }
+	}
+/* 	qsort( icol + pr, nir[iir], sizeof( int32 ), &compareI32 ); */
+	int32_quicksort( icol + pr, nir[iir], 0 );
+      }
+    }
+  }
+
+/*   output( "5\n" ); */
+
+  free_mem( nods );
+  free_mem( nir );
+  free_mem( eonlist );
+
+  return( RET_OK );
 }
 
 /*!

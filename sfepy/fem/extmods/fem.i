@@ -33,10 +33,6 @@
   (int32 *cells, int32 n_cells, int32 n_cells_col)
 };
 %apply (int32 *array, int32 len) {
-  (int32 *iels, int32 iels_len),
-  (int32 *eq, int32 nEq),
-  (int32 *prows, int32 prows_len),
-  (int32 *cols, int32 cols_len),
   (int32 *status, int32 n_status),
   (int32 *ics, int32 n_ics),
   (int32 *offsets, int32 n_offsets),
@@ -85,23 +81,10 @@
 }
 
 %apply (int32 *nEl, int32 *nEP, int32 **conn) {
-  (int32 *nElR, int32 *nEPR, int32 **connR),
-  (int32 *nElC, int32 *nEPC, int32 **connC),
   (int32 *nEls0, int32 *nEPs0, int32 **conns0),
   (int32 *nEls, int32 *nEPs, int32 **conns),
   (int32 *nNod, int32 *nCol, int32 **nodess)
 };
-
-%apply (int32 *p_len, int32 **p_array) {
-  (int32 *p_nRow, int32 **p_prow),
-  (int32 *p_nnz, int32 **p_icol)
-};
-
-int32 raw_graph( int32 *p_nRow, int32 **p_prow,
-		 int32 *p_nnz, int32 **p_icol,
-		 int32 nRow, int32 nCol, int32 nGr,
-		 int32 *nElR, int32 *nEPR, int32 **connR,
-		 int32 *nElC, int32 *nEPC, int32 **connC );
 
 int32 eval_lagrange_simplex( FMField *out, FMField *coors,
 			     int32 *nodes, int32 nNod, int32 nCol,
