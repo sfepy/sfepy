@@ -4,12 +4,10 @@ Polynomial base functions and related utilities.
 """
 cimport cython
 
-import numpy as np
 cimport numpy as np
+import numpy as np
 
-ctypedef np.complex128_t complex128
-ctypedef np.float64_t float64
-ctypedef np.int32_t int32
+from types cimport int32, float64, complex128
 
 @cython.boundscheck(False)
 cdef _get_barycentric_coors(np.ndarray[float64, ndim=2] bc,

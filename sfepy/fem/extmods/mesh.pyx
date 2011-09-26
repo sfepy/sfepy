@@ -7,9 +7,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-ctypedef np.complex128_t complex128
-ctypedef np.float64_t float64
-ctypedef np.int32_t int32
+from types cimport int32, float64, complex128
 
 cdef extern from 'string.h':
     void *memcpy(void *dest, void *src, size_t n)
