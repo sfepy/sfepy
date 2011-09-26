@@ -40,6 +40,15 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    src = ['_fmfield.pyx', 'fmfield.c', 'geommech.c',
+           'common_python.c']
+    config.add_extension('_fmfield',
+                         sources=src,
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
     src = ['assemble.pyx']
     config.add_extension('assemble',
                          sources=src,
