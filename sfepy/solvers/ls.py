@@ -1,5 +1,4 @@
 import numpy as nm
-import scipy
 import scipy.sparse as sps
 
 from sfepy.base.base import output, get_default, Struct
@@ -148,16 +147,8 @@ class ScipyIterative( LinearSolver ):
                       eps_a=None,
                       eps_r=get('eps_r', 1e-8)) + common
 
-    ##
-    # c: 22.02.2008, r: 23.06.2008
-    def __init__( self, conf, **kwargs ):
-        if scipy.version.version < '0.7.0.dev3861':
-            import scipy.linalg as la
-        else:
-            if scipy.version.version < '0.7.0.dev3998':
-                import scipy.splinalg.isolve as la
-            else:
-                import scipy.sparse.linalg.isolve as la
+    def __init__(self, conf, **kwargs):
+        import scipy.sparse.linalg.isolve as la
 
         LinearSolver.__init__(self, conf, **kwargs)
 
