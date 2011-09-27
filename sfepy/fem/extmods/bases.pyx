@@ -7,6 +7,8 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
+cimport _fmfield as _f
+
 from types cimport int32, float64, complex128
 
 @cython.boundscheck(False)
@@ -335,3 +337,44 @@ def eval_lagrange_tensor_product(np.ndarray[float64, ndim=2] coors not None,
                                   nodes, order, diff)
 
     return out
+
+cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *dest_point,
+                     _f.FMField *ref_coors, _f.FMField *e_coors):
+    """
+    Get reference simplex coordinates of `dest_point` given spatial
+    element coordinates `e_coors` and coordinates of reference simplex
+    vertices `ref_coors`.
+    """
+    cdef int idim, ii
+    cdef int n_v = e_coors.nRow
+    cdef int dim = e_coors.nCol
+    cdef _f.FMField mtx[1], mtx_i[1], rhs[1], bc[1]
+    cdef float64 buf16[16], buf16_2[16], buf4[4], buf4_2[4]
+
+    mtx.nAlloc = -1
+    mtx_i.nAlloc = -1
+    rhs.nAlloc = -1
+    bc.nAlloc = -1
+
+    _f.fmf_pretend(mtx, 1, 1, n_v, n_v, buf16)
+    _f.fmf_pretend(mtx_i, 1, 1, n_v, n_v, buf16_2)
+    _f.fmf_pretend(rhs, 1, 1, n_v, 1, buf4)
+    _f.fmf_pretend(bc, 1, 1, n_v, 1, buf4_2)
+
+    for idim in range(dim):
+        for ii in range(n_v):
+            mtx.val[n_v*idim+ii] = e_coors.val[dim*ii+idim]
+        rhs.val[idim] = dest_point.val[idim]
+
+    for ii in range(n_v):
+        mtx.val[n_v*dim+ii] = 1.0
+    rhs.val[dim] = 1.0
+
+    if dim == 3:
+        _f.geme_invert4x4(mtx_i, mtx)
+
+    else:
+        _f.geme_invert3x3(mtx_i, mtx)
+
+    _f.fmf_mulAB_nn(bc, mtx_i, rhs)
+    _f.fmf_mulATB_nn(xi, bc, ref_coors)
