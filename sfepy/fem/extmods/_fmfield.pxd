@@ -98,6 +98,7 @@ cdef extern from "fmfield.h":
     cdef int32 fmf_gMtx2VecDLU3x3(FMField *objR, FMField *objA)
 
     cdef void FMF_SetCell(FMField *obj, int ii)
+    cdef float64 *FMF_PtrLevel(FMField *obj, int ii)
 
 cdef extern from "geommech.h":
     cdef int32 geme_invert3x3(FMField *mtxI, FMField *mtx)

@@ -106,72 +106,72 @@ def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cdef _eval_lagrange_simplex(np.ndarray[float64, ndim=3] out,
-                            np.ndarray[float64, ndim=2] bc,
-                            np.ndarray[float64, ndim=2] mtx_i,
-                            np.ndarray[int32, ndim=2] nodes,
-                            int order, int diff=False):
+cdef _eval_lagrange_simplex(_f.FMField *out, _f.FMField *bc, _f.FMField *mtx_i,
+                            int32 *nodes, int order, int diff=False):
     """
     Evaluate Lagrange base polynomials in given points on simplex domain.
     """
-    cdef int n_coor = bc.shape[0]
-    cdef int n_v = bc.shape[1]
-    cdef int dim = n_v - 1
-    cdef int n_nod = nodes.shape[0]
-    cdef int ii, ir, ic, i1, i2, inod, n_i1, n_ii
-    cdef float64 dval, dd, vv
+    cdef int32 n_coor = bc.nRow
+    cdef int32 n_v = bc.nCol
+    cdef int32 dim = n_v - 1
+    cdef int32 n_nod = out.nCol
+    cdef int32 ii, ir, ic, i1, i2, inod, n_i1, n_ii
+    cdef float64 dval, dd, vv, bci1, bcii
     cdef float64 *pout
 
-    assert n_coor == out.shape[0]
-    assert n_v == nodes.shape[1]
+    assert n_coor == out.nLev
 
     if not diff:
         for ic in range(0, n_coor):
-            pout = &out[ic, 0, 0]
+            pout = _f.FMF_PtrLevel(out, ic)
 
             for inod in range(0, n_nod):
                 pout[inod] = 1.0
                 for i1 in range(0, n_v):
-                    n_i1 = nodes[inod, i1]
+                    n_i1 = nodes[n_v*inod+i1]
+                    bci1 = bc.val[n_v*ic+i1]
+
                     for i2 in range(0, n_i1):
-                        pout[inod] *= (order * bc[ic, i1] - i2) / (i2 + 1.0)
+                        pout[inod] *= (order * bci1 - i2) / (i2 + 1.0)
 
     else:
         for ic in range(0, n_coor):
-            pout = &out[ic, 0, 0]
+            pout = _f.FMF_PtrLevel(out, ic)
 
             for inod in range(0, n_nod):
                 pout[inod] = 0.0
 
                 for ii in range(0, n_v):
                     vv = 1.0
+                    bcii = bc.val[n_v*ic+ii]
 
                     for i1 in range(0, n_v):
                         if i1 == ii: continue
-                        n_i1 = nodes[inod, i1]
+                        n_i1 = nodes[n_v*inod+i1]
+                        bci1 = bc.val[n_v*ic+i1]
 
                         for i2 in range(0, n_i1):
-                            vv *= (order * bc[ic, i1] - i2) / (i2 + 1.0)
+                            vv *= (order * bci1 - i2) / (i2 + 1.0)
 
                     dval = 0.0
-                    n_ii = nodes[inod, ii]
+                    n_ii = nodes[n_v*inod+ii]
                     for i1 in range(0, n_ii):
                         dd = 1.0
 
                         for i2 in range(0, n_ii):
                             if i1 == i2: continue
 
-                            dd *= (order * bc[ic, ii] - i2) / (i2 + 1.0)
+                            dd *= (order * bcii - i2) / (i2 + 1.0)
 
                         dval += dd * order / (i1 + 1.0)
 
                     for ir in range(0, dim):
-                        pout[n_nod*ir+inod] += vv * dval * mtx_i[ii, ir]
+                        pout[n_nod*ir+inod] += vv * dval * mtx_i.val[n_v*ii+ir]
 
 @cython.boundscheck(False)
-def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors not None,
-                          np.ndarray[float64, ndim=2] mtx_i not None,
-                          np.ndarray[int32, ndim=2] nodes not None,
+def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
+                          np.ndarray[float64, mode='c', ndim=2] mtx_i not None,
+                          np.ndarray[int32, mode='c', ndim=2] nodes not None,
                           int order, int diff=False,
                           float64 eps=1e-15,
                           int check_errors=True):
@@ -205,8 +205,12 @@ def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors not None,
     cdef int n_coor = coors.shape[0]
     cdef int dim = mtx_i.shape[0] - 1
     cdef int n_nod = nodes.shape[0]
+    cdef _f.FMField _out[1], _bc[1], _mtx_i[1]
+    cdef int32 *_nodes = &nodes[0, 0]
     cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, dim + 1),
                                                    dtype=np.float64)
+
+    assert mtx_i.shape[0] == nodes.shape[1]
 
     if diff:
         bdim = dim
@@ -218,7 +222,11 @@ def eval_lagrange_simplex(np.ndarray[float64, ndim=2] coors not None,
                                                     dtype=np.float64)
 
     _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
-    _eval_lagrange_simplex(out, bc, mtx_i, nodes, order, diff)
+
+    _f.array2fmfield3(_out, out)
+    _f.array2fmfield2(_bc, bc)
+    _f.array2fmfield2(_mtx_i, mtx_i)
+    _eval_lagrange_simplex(_out, _bc, _mtx_i, _nodes, order, diff)
 
     return out
 
