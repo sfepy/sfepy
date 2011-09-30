@@ -107,7 +107,8 @@ def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cdef _eval_lagrange_simplex(_f.FMField *out, _f.FMField *bc, _f.FMField *mtx_i,
-                            int32 *nodes, int order, int diff=False):
+                            int32 *nodes, int32 n_col,
+                            int order, int diff=False):
     """
     Evaluate Lagrange base polynomials in given points on simplex domain.
     """
@@ -128,7 +129,7 @@ cdef _eval_lagrange_simplex(_f.FMField *out, _f.FMField *bc, _f.FMField *mtx_i,
             for inod in range(0, n_nod):
                 pout[inod] = 1.0
                 for i1 in range(0, n_v):
-                    n_i1 = nodes[n_v*inod+i1]
+                    n_i1 = nodes[n_col*inod+i1]
                     bci1 = bc.val[n_v*ic+i1]
 
                     for i2 in range(0, n_i1):
@@ -147,14 +148,14 @@ cdef _eval_lagrange_simplex(_f.FMField *out, _f.FMField *bc, _f.FMField *mtx_i,
 
                     for i1 in range(0, n_v):
                         if i1 == ii: continue
-                        n_i1 = nodes[n_v*inod+i1]
+                        n_i1 = nodes[n_col*inod+i1]
                         bci1 = bc.val[n_v*ic+i1]
 
                         for i2 in range(0, n_i1):
                             vv *= (order * bci1 - i2) / (i2 + 1.0)
 
                     dval = 0.0
-                    n_ii = nodes[n_v*inod+ii]
+                    n_ii = nodes[n_col*inod+ii]
                     for i1 in range(0, n_ii):
                         dd = 1.0
 
@@ -226,70 +227,72 @@ def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
     _f.array2fmfield3(_out, out)
     _f.array2fmfield2(_bc, bc)
     _f.array2fmfield2(_mtx_i, mtx_i)
-    _eval_lagrange_simplex(_out, _bc, _mtx_i, _nodes, order, diff)
+    _eval_lagrange_simplex(_out, _bc, _mtx_i, _nodes, nodes.shape[1],
+                           order, diff)
 
     return out
 
 @cython.boundscheck(False)
-cdef _eval_lagrange_tensor_product(np.ndarray[float64, ndim=3] out,
-                                   np.ndarray[float64, ndim=3] bc,
-                                   np.ndarray[float64, ndim=2] mtx_i,
-                                   np.ndarray[float64, ndim=3] base1d,
-                                   np.ndarray[int32, ndim=2] nodes,
+cdef _eval_lagrange_tensor_product(_f.FMField *out, _f.FMField *bc,
+                                   _f.FMField *mtx_i, _f.FMField *base1d,
+                                   int32 *nodes, int32 n_col,
                                    int order, int diff=False):
     """
     Evaluate Lagrange base polynomials in given points on tensor product
     domain.
     """
-    cdef int ii, idim, im, ic
-    cdef int n_coor = out.shape[0]
-    cdef int nr = out.shape[1]
-    cdef int n_nod = out.shape[2]
-    cdef int dim = bc.shape[0]
-    cdef int out_size = n_coor * nr * n_nod
-    cdef float64 *val, *val1d
-    cdef np.ndarray[int32, ndim=2] pnodes
-    cdef np.ndarray[float64, ndim=2] bc1
+    cdef int32 ii, idim, im, ic
+    cdef int32 n_coor = out.nLev
+    cdef int32 nr = out.nRow
+    cdef int32 n_nod = out.nCol
+    cdef int32 dim = bc.nCell
+    cdef int32 out_size = n_coor * nr * n_nod
+    cdef int32 *pnodes
 
-    val = &out[0, 0, 0]
-    for im in range(0, out_size):
-        val[im] = 1.0
-
-    val1d = &base1d[0, 0, 0]
+    _f.fmf_fillC(out, 1.0)
 
     if not diff:
         for ii in range(0, dim):
-            pnodes = nodes[:, 2 * ii : 2 * ii + 2]
-            bc1 = bc[ii, :, :]
+            # slice [:,2*ii:2*ii+2]
+            pnodes = nodes + 2 * ii
+            # slice [:,ii:ii+1]
+            _f.FMF_SetCell(bc, ii)
 
-            _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order, diff)
+            _eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col,
+                                   order, diff)
 
-            for im in range(0, n_coor):
-                for ic in range(0, n_nod):
-                    out[im, 0, ic] *= base1d[im, 0, ic]
+            for im in range(0, out.cellSize):
+                out.val[im] *= base1d.val[im]
 
     else:
         for ii in range(0, dim):
-            pnodes = nodes[:, 2 * ii : 2 * ii + 2]
-            bc1 = bc[ii, :, :]
+            # slice [:,2*ii:2*ii+2]
+            pnodes = nodes + 2 * ii
+            # slice [:,ii:ii+1]
+            _f.FMF_SetCell(bc, ii)
 
             for idim in range(0, dim):
                 if ii == idim:
-                    _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order,
-                                           diff)
+                    _eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col,
+                                           order, diff)
 
                 else:
-                    _eval_lagrange_simplex(base1d, bc1, mtx_i, pnodes, order,
-                                           False)
+                    _eval_lagrange_simplex(base1d, bc, mtx_i, pnodes, n_col,
+                                           order, False)
 
+                # slice [:,idim:idim+1,:]
                 for im in range(0, n_coor):
                     for ic in range(0, n_nod):
-                        out[im, idim, ic] *= base1d[im, 0, ic]
+                        out.val[nr*n_nod*im+n_nod*idim+ic] \
+                             *= base1d.val[n_nod*im+ic]
 
 @cython.boundscheck(False)
-def eval_lagrange_tensor_product(np.ndarray[float64, ndim=2] coors not None,
-                                 np.ndarray[float64, ndim=2] mtx_i not None,
-                                 np.ndarray[int32, ndim=2] nodes not None,
+def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
+                                 coors not None,
+                                 np.ndarray[float64, mode='c', ndim=2]
+                                 mtx_i not None,
+                                 np.ndarray[int32, mode='c', ndim=2]
+                                 nodes not None,
                                  int order, int diff=False,
                                  float64 eps=1e-15,
                                  int check_errors=True):
@@ -324,6 +327,8 @@ def eval_lagrange_tensor_product(np.ndarray[float64, ndim=2] coors not None,
     cdef int n_coor = coors.shape[0]
     cdef int n_nod = nodes.shape[0]
     cdef int dim = coors.shape[1]
+    cdef _f.FMField _out[1], _bc[1], _mtx_i[1], _base1d[1]
+    cdef int32 *_nodes = &nodes[0, 0]
     cdef np.ndarray[float64, ndim=3] bc = np.zeros((dim, n_coor, 2),
                                                    dtype=np.float64)
     cdef np.ndarray[float64, ndim=3] base1d = np.zeros((n_coor, 1, n_nod),
@@ -341,8 +346,14 @@ def eval_lagrange_tensor_product(np.ndarray[float64, ndim=2] coors not None,
         _get_barycentric_coors(bc[ii, :, :], coors[:, ii : ii + 1],
                                mtx_i, eps, check_errors)
 
-    _eval_lagrange_tensor_product(out, bc, mtx_i, base1d,
-                                  nodes, order, diff)
+    _f.array2fmfield3(_out, out)
+    _bc.nAlloc = -1
+    _f.fmf_pretend(_bc, dim, 1, n_coor, 2, &bc[0, 0, 0])
+    _f.array2fmfield2(_mtx_i, mtx_i)
+    _f.array2fmfield3(_base1d, base1d)
+
+    _eval_lagrange_tensor_product(_out, _bc, _mtx_i, _base1d,
+                                  _nodes, nodes.shape[1], order, diff)
 
     return out
 
