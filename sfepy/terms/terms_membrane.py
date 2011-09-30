@@ -186,7 +186,7 @@ class TLMembraneTerm(Term):
 
         qp = self.integral.get_qp(gel.name)
         ps = PolySpace.any_from_args(None, gel, field.approx_order)
-        self.membrane_geo[ig] = vm.get_mapping(*qp, poly_space=ps)
+        self.membrane_geo[ig] = vm.get_mapping(qp[0], qp[1], poly_space=ps)
 
         # Transformed base function gradient w.r.t. material coordinates
         # in quadrature points.
