@@ -12,22 +12,20 @@ cimport _fmfield as _f
 from types cimport int32, float64, complex128
 
 @cython.boundscheck(False)
-cdef _get_barycentric_coors(np.ndarray[float64, ndim=2] bc,
-                            np.ndarray[float64, ndim=2] coors,
-                            np.ndarray[float64, ndim=2] mtx_i,
-                            float64 eps=1e-8,
-                            int check_errors=False):
+cdef _get_barycentric_coors(_f.FMField *bc, _f.FMField *coors,
+                            _f.FMField *mtx_i,
+                            float64 eps=1e-8, int check_errors=False):
     """
     Get barycentric (area in 2D, volume in 3D) coordinates of points.
 
     Parameters
     ----------
-    bc : array
+    bc : FMField
         The barycentric coordinates, shape `(n_coor, dim + 1)`. Then
         reference element coordinates `xi = dot(bc, ref_coors)`.
-    coors : array
+    coors : FMField
         The coordinates of the points, shape `(n_coor, dim)`.
-    mtx_i : array
+    mtx_i : FMField
         The inverse of simplex coordinates matrix, shape `(dim + 1, dim + 1)`.
     eps : float
         The tolerance for snapping out-of-simplex point back to the simplex.
@@ -35,19 +33,20 @@ cdef _get_barycentric_coors(np.ndarray[float64, ndim=2] bc,
         If True, raise ValueError if a barycentric coordinate is outside
         the snap interval `[-eps, 1 + eps]`.
     """
-    cdef int error
-    cdef int ir, ic, ii
-    cdef int n_coor = coors.shape[0]
-    cdef int n_v = mtx_i.shape[0]
-    cdef int dim = n_v - 1
+    cdef int32 error
+    cdef int32 ir, ic, ii
+    cdef int32 n_coor = coors.nRow
+    cdef int32 nc = coors.nCol
+    cdef int32 n_v = mtx_i.nRow
+    cdef int32 dim = n_v - 1
     cdef float64 val
 
     for ir in range(0, n_coor):
         for ic in range(0, n_v):
             val = 0.0;
             for ii in range(0, dim):
-                val += mtx_i[ic, ii] * coors[ir, ii]
-            val += mtx_i[ic, dim]
+                val += mtx_i.val[n_v*ic+ii] * coors.val[nc*ir+ii]
+            val += mtx_i.val[n_v*ic+dim]
 
             error = False
             if val < 0.0:
@@ -65,14 +64,14 @@ cdef _get_barycentric_coors(np.ndarray[float64, ndim=2] bc,
                     error = True
 
             if check_errors and error:
-                msg = 'point %d outside of element! (%s)' % (ic, coors[ic])
+                msg = 'point %d outside of element!' % ir
                 raise ValueError(msg)
 
-            bc[ir, ic] = val
+            bc.val[n_v*ir+ic] = val
 
 @cython.boundscheck(False)
-def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
-                          np.ndarray[float64, ndim=2] mtx_i not None,
+def get_barycentric_coors(np.ndarray[float64, mode='c', ndim=2] coors not None,
+                          np.ndarray[float64, mode='c', ndim=2] mtx_i not None,
                           float64 eps=1e-8,
                           int check_errors=False):
     """
@@ -98,10 +97,14 @@ def get_barycentric_coors(np.ndarray[float64, ndim=2] coors not None,
     """
     cdef int n_coor = coors.shape[0]
     cdef int n_v = mtx_i.shape[0]
+    cdef _f.FMField _bc[1], _coors[1], _mtx_i[1]
     cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, n_v),
                                                    dtype=np.float64)
 
-    _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
+    _f.array2fmfield2(_bc, bc)
+    _f.array2fmfield2(_coors, coors)
+    _f.array2fmfield2(_mtx_i, mtx_i)
+    _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
     return bc
 
 @cython.boundscheck(False)
@@ -206,7 +209,7 @@ def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
     cdef int n_coor = coors.shape[0]
     cdef int dim = mtx_i.shape[0] - 1
     cdef int n_nod = nodes.shape[0]
-    cdef _f.FMField _out[1], _bc[1], _mtx_i[1]
+    cdef _f.FMField _out[1], _bc[1], _coors[1], _mtx_i[1]
     cdef int32 *_nodes = &nodes[0, 0]
     cdef np.ndarray[float64, ndim=2] bc = np.zeros((n_coor, dim + 1),
                                                    dtype=np.float64)
@@ -222,11 +225,12 @@ def eval_lagrange_simplex(np.ndarray[float64, mode='c', ndim=2] coors not None,
     cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
                                                     dtype=np.float64)
 
-    _get_barycentric_coors(bc, coors, mtx_i, eps, check_errors)
-
     _f.array2fmfield3(_out, out)
     _f.array2fmfield2(_bc, bc)
+    _f.array2fmfield2(_coors, coors)
     _f.array2fmfield2(_mtx_i, mtx_i)
+
+    _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
     _eval_lagrange_simplex(_out, _bc, _mtx_i, _nodes, nodes.shape[1],
                            order, diff)
 
@@ -327,7 +331,7 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
     cdef int n_coor = coors.shape[0]
     cdef int n_nod = nodes.shape[0]
     cdef int dim = coors.shape[1]
-    cdef _f.FMField _out[1], _bc[1], _mtx_i[1], _base1d[1]
+    cdef _f.FMField _out[1], _bc[1], _coors[1], _mtx_i[1], _base1d[1]
     cdef int32 *_nodes = &nodes[0, 0]
     cdef np.ndarray[float64, ndim=3] bc = np.zeros((dim, n_coor, 2),
                                                    dtype=np.float64)
@@ -342,15 +346,19 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
     cdef np.ndarray[float64, ndim=3] out = np.zeros((n_coor, bdim, n_nod),
                                                     dtype=np.float64)
 
-    for ii in range(0, dim):
-        _get_barycentric_coors(bc[ii, :, :], coors[:, ii : ii + 1],
-                               mtx_i, eps, check_errors)
-
     _f.array2fmfield3(_out, out)
     _bc.nAlloc = -1
     _f.fmf_pretend(_bc, dim, 1, n_coor, 2, &bc[0, 0, 0])
     _f.array2fmfield2(_mtx_i, mtx_i)
     _f.array2fmfield3(_base1d, base1d)
+    _coors.nAlloc = -1
+
+    for ii in range(0, dim):
+        _f.FMF_SetCell(_bc, ii)
+        # slice [:,ii:ii+1]
+        _f.fmf_pretend(_coors, 1, 1, coors.shape[0], coors.shape[1],
+                       &coors[0, ii])
+        _get_barycentric_coors(_bc, _coors, _mtx_i, eps, check_errors)
 
     _eval_lagrange_tensor_product(_out, _bc, _mtx_i, _base1d,
                                   _nodes, nodes.shape[1], order, diff)
