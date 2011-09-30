@@ -57,7 +57,8 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['bases.pyx']
+    src = ['bases.pyx', 'fmfield.c', 'geommech.c',
+           'common_python.c']
     config.add_extension('bases',
                          sources=src,
                          extra_compile_args=site_config.compile_flags(),
