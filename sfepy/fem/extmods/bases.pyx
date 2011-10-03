@@ -368,18 +368,19 @@ def eval_lagrange_tensor_product(np.ndarray[float64, mode='c', ndim=2]
 
     return out
 
-cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *dest_point,
+cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *bc, _f.FMField *dest_point,
                      _f.FMField *ref_coors, _f.FMField *e_coors):
     """
-    Get reference simplex coordinates of `dest_point` given spatial
+    Get reference simplex coordinates `xi` of `dest_point` given spatial
     element coordinates `e_coors` and coordinates of reference simplex
-    vertices `ref_coors`.
+    vertices `ref_coors`. Output also the corresponding barycentric
+    coordinates `bc`.
     """
-    cdef int idim, ii
-    cdef int n_v = e_coors.nRow
-    cdef int dim = e_coors.nCol
+    cdef int32 idim, ii
+    cdef int32 n_v = e_coors.nRow
+    cdef int32 dim = e_coors.nCol
     cdef _f.FMField mtx[1], mtx_i[1], rhs[1], bc[1]
-    cdef float64 buf16[16], buf16_2[16], buf4[4], buf4_2[4]
+    cdef float64 buf16[16], buf16_2[16], buf4[4]
 
     mtx.nAlloc = -1
     mtx_i.nAlloc = -1
@@ -389,7 +390,6 @@ cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *dest_point,
     _f.fmf_pretend(mtx, 1, 1, n_v, n_v, buf16)
     _f.fmf_pretend(mtx_i, 1, 1, n_v, n_v, buf16_2)
     _f.fmf_pretend(rhs, 1, 1, n_v, 1, buf4)
-    _f.fmf_pretend(bc, 1, 1, n_v, 1, buf4_2)
 
     for idim in range(dim):
         for ii in range(n_v):
