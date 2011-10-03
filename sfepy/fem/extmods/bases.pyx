@@ -46,7 +46,7 @@ cdef _get_barycentric_coors(_f.FMField *bc, _f.FMField *coors,
 
     for ir in range(0, n_coor):
         for ic in range(0, n_v):
-            val = 0.0;
+            val = 0.0
             for ii in range(0, dim):
                 val += mtx_i.val[n_v*ic+ii] * coors.val[nc*ir+ii]
             val += mtx_i.val[n_v*ic+dim]
@@ -414,7 +414,7 @@ cdef int _get_xi_tensor(_f.FMField *xi,
                         _f.FMField *mtx_i,
                         _f.FMField *base1d, int32 *nodes, int32 n_col,
                         float64 vmin, float64 vmax,
-                        float64 qp_eps, int i_max, float64 newton_eps):
+                        int i_max, float64 newton_eps):
     """
     Get reference tensor product element coordinates using Newton method.
 
@@ -452,9 +452,9 @@ cdef int _get_xi_tensor(_f.FMField *xi,
         # Rezidual.
         _f.fmf_subAB_nn(res, dest_point, xint)
 
-        err = 0.0;
+        err = 0.0
         for idim in range(0, dim):
-            err += res.val[idim] * res.val[idim];
+            err += res.val[idim] * res.val[idim]
         err = sqrt(err)
 
         if err < newton_eps:
@@ -462,7 +462,7 @@ cdef int _get_xi_tensor(_f.FMField *xi,
 
         # grad Base(xi).
         _eval_lagrange_tensor_product(bfg, bc, mtx_i, base1d,
-                                      nodes, n_col, 1, 1);
+                                      nodes, n_col, 1, 1)
         # - Matrix.
         _f.fmf_mulAB_n1(mtx, bfg, e_coors)
 
