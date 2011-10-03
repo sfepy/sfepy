@@ -11,6 +11,9 @@ cimport _fmfield as _f
 
 from types cimport int32, float64, complex128
 
+cdef extern from 'math.h':
+    cdef float64 sqrt(float x)
+
 @cython.boundscheck(False)
 cdef _get_barycentric_coors(_f.FMField *bc, _f.FMField *coors,
                             _f.FMField *mtx_i,
@@ -405,3 +408,75 @@ cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *dest_point,
 
     _f.fmf_mulAB_nn(bc, mtx_i, rhs)
     _f.fmf_mulATB_nn(xi, bc, ref_coors)
+
+cdef int _get_xi_tensor(_f.FMField *xi,
+                        _f.FMField *dest_point, _f.FMField *e_coors,
+                        _f.FMField *mtx_i,
+                        _f.FMField *base1d, int32 *nodes, int32 n_col,
+                        float64 vmin, float64 vmax,
+                        float64 qp_eps, int i_max, float64 newton_eps):
+    """
+    Get reference tensor product element coordinates using Newton method.
+
+    Uses linear 1D base functions.
+    """
+    cdef int32 idim, ok = 0
+    cdef int32 dim = e_coors.nCol
+    cdef _f.FMField bc[1], bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1]
+    cdef float64 buf6[6], buf8[8], buf24[24]
+    cdef float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9]
+
+    _f.fmf_pretend(bc, dim, 1, 1, 2, buf6)
+    _f.fmf_pretend(bf, 1, 1, 1, dim**2, buf8)
+    _f.fmf_pretend(bfg, 1, 1, dim, dim**2, buf24)
+    _f.fmf_pretend(res, 1, 1, 1, dim, buf3_1)
+    _f.fmf_pretend(xint, 1, 1, 1, dim, buf3_2)
+    _f.fmf_pretend(mtx, 1, 1, dim, dim, buf9_1)
+    _f.fmf_pretend(imtx, 1, 1, dim, dim, buf9_2)
+
+    ii = 0
+    _f.fmf_fillC(xi, 0.5 * (vmin + vmax))
+    while ii < i_max:
+        # Base(xi).
+        for ii in range(0, dim):
+            _f.FMF_SetCell(bc, ii)
+            # slice [:,ii:ii+1]
+            bc.val[0] = (xi.val[ii] - vmin) / (vmax - vmin)
+            bc.val[1] = 1.0 - bc.val[0]
+
+        _eval_lagrange_tensor_product(bf, bc, mtx_i, base1d,
+                                      nodes, n_col, 1, 0)
+
+        # X(xi).
+        _f.fmf_mulAB_n1(xint, bf, e_coors)
+        # Rezidual.
+        _f.fmf_subAB_nn(res, dest_point, xint)
+
+        err = 0.0;
+        for idim in range(0, dim):
+            err += res.val[idim] * res.val[idim];
+        err = sqrt(err)
+
+        if err < newton_eps:
+            break
+
+        # grad Base(xi).
+        _eval_lagrange_tensor_product(bfg, bc, mtx_i, base1d,
+                                      nodes, n_col, 1, 1);
+        # - Matrix.
+        _f.fmf_mulAB_n1(mtx, bfg, e_coors)
+
+        _f.geme_invert3x3(imtx, mtx)
+
+        _f.fmf_mulAB_nn(xint, res, imtx)
+        _f.fmf_addAB_nn(xi, xi, xint)
+        ii += 1
+
+    if ii == i_max:
+        ok = 2
+        # Newton did not converge.
+        # Use centre if nothing better is available, but do not spoil
+        # possible d_min (see below).
+        _f.fmf_fillC(xi, 0.5 * (vmin + vmax))
+
+    return ok
