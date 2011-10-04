@@ -379,7 +379,7 @@ cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *bc, _f.FMField *dest_point,
     cdef int32 idim, ii
     cdef int32 n_v = e_coors.nRow
     cdef int32 dim = e_coors.nCol
-    cdef _f.FMField mtx[1], mtx_i[1], rhs[1], bc[1]
+    cdef _f.FMField mtx[1], mtx_i[1], rhs[1]
     cdef float64 buf16[16], buf16_2[16], buf4[4]
 
     mtx.nAlloc = -1
@@ -389,7 +389,7 @@ cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *bc, _f.FMField *dest_point,
 
     _f.fmf_pretend(mtx, 1, 1, n_v, n_v, buf16)
     _f.fmf_pretend(mtx_i, 1, 1, n_v, n_v, buf16_2)
-    _f.fmf_pretend(rhs, 1, 1, n_v, 1, buf4)
+    _f.fmf_pretend(rhs, 1, 1, 1, n_v, buf4)
 
     for idim in range(dim):
         for ii in range(n_v):
@@ -406,9 +406,10 @@ cdef _get_xi_simplex(_f.FMField *xi, _f.FMField *bc, _f.FMField *dest_point,
     else:
         _f.geme_invert3x3(mtx_i, mtx)
 
-    _f.fmf_mulAB_nn(bc, mtx_i, rhs)
-    _f.fmf_mulATB_nn(xi, bc, ref_coors)
+    _f.fmf_mulABT_nn(bc, rhs, mtx_i)
+    _f.fmf_mulAB_nn(xi, bc, ref_coors)
 
+@cython.cdivision(True)
 cdef int _get_xi_tensor(_f.FMField *xi,
                         _f.FMField *dest_point, _f.FMField *e_coors,
                         _f.FMField *mtx_i,
@@ -420,15 +421,24 @@ cdef int _get_xi_tensor(_f.FMField *xi,
 
     Uses linear 1D base functions.
     """
-    cdef int32 idim, ok = 0
+    cdef int32 idim, ii, ok = 0
     cdef int32 dim = e_coors.nCol
     cdef _f.FMField bc[1], bf[1], bfg[1], xint[1], res[1], mtx[1], imtx[1]
+    cdef float64 err
     cdef float64 buf6[6], buf8[8], buf24[24]
     cdef float64 buf3_1[3], buf3_2[3], buf9_1[9], buf9_2[9]
 
+    bc.nAlloc = -1
+    bf.nAlloc = -1
+    bfg.nAlloc = -1
+    res.nAlloc = -1
+    xint.nAlloc = -1
+    mtx.nAlloc = -1
+    imtx.nAlloc = -1
+
     _f.fmf_pretend(bc, dim, 1, 1, 2, buf6)
-    _f.fmf_pretend(bf, 1, 1, 1, dim**2, buf8)
-    _f.fmf_pretend(bfg, 1, 1, dim, dim**2, buf24)
+    _f.fmf_pretend(bf, 1, 1, 1, 2**dim, buf8)
+    _f.fmf_pretend(bfg, 1, 1, dim, 2**dim, buf24)
     _f.fmf_pretend(res, 1, 1, 1, dim, buf3_1)
     _f.fmf_pretend(xint, 1, 1, 1, dim, buf3_2)
     _f.fmf_pretend(mtx, 1, 1, dim, dim, buf9_1)
@@ -438,11 +448,11 @@ cdef int _get_xi_tensor(_f.FMField *xi,
     _f.fmf_fillC(xi, 0.5 * (vmin + vmax))
     while ii < i_max:
         # Base(xi).
-        for ii in range(0, dim):
-            _f.FMF_SetCell(bc, ii)
-            # slice [:,ii:ii+1]
-            bc.val[0] = (xi.val[ii] - vmin) / (vmax - vmin)
-            bc.val[1] = 1.0 - bc.val[0]
+        for idim in range(0, dim):
+            _f.FMF_SetCell(bc, idim)
+            # slice [:,idim:idim+1]
+            bc.val[1] = (xi.val[idim] - vmin) / (vmax - vmin)
+            bc.val[0] = 1.0 - bc.val[1]
 
         _eval_lagrange_tensor_product(bf, bc, mtx_i, base1d,
                                       nodes, n_col, 1, 0)
