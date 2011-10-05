@@ -1,1 +1,1 @@
-__all__ = ['assemble', 'bases', 'fem', 'geometry', 'mesh']
+__all__ = ['assemble', 'bases', 'geometry', 'mesh']
