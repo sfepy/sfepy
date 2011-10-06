@@ -1063,6 +1063,7 @@ class Field( Struct ):
                 mtx_is.append(ps.get_mtx_i())
 
                 # Always the true connectivity for extracting source values.
+                orders.append(ps.order)
                 conns.append(ap.econn)
 
             orders = nm.array(orders, dtype=nm.int32)
