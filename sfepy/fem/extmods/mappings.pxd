@@ -36,3 +36,6 @@ cdef extern from 'geometry.h':
                            float64 *coorIn, int32 nNod, int32 dim,
                            int32 *conn, int32 nEl, int32 nEP,
                            FMField *bfGR, FMField *ebfGR, FMField *weight)
+
+    cdef int32 vg_integrate(VolumeGeometry *obj, FMField *out, FMField *in_,
+                            int32 mode)

@@ -14,6 +14,7 @@ cdef class CVolumeMapping:
     cdef public np.ndarray volume
 
     cdef public tuple shape
+    cdef public int n_el, n_qp, dim, n_ep
 
     # Auxiliary attributes to be assigned from Python.
     cdef public object integral
@@ -36,10 +37,10 @@ cdef class CVolumeMapping:
 
         self.shape = (n_el, n_qp, dim, n_ep)
 
-        self.geo.nEl = n_el
-        self.geo.nQP = n_qp
-        self.geo.dim = dim
-        self.geo.nEP = n_ep
+        self.geo.nEl = self.n_el = n_el
+        self.geo.nQP = self.n_qp = n_qp
+        self.geo.dim = self.dim = dim
+        self.geo.nEP = self.n_ep = n_ep
         self.geo.mode = GM_Material
 
     def __str__(self):
@@ -72,6 +73,39 @@ cdef class CVolumeMapping:
 
         ret = vg_describe(self.geo, _coors, n_nod, dim, _conn, n_el, n_ep,
                           _bfgr, _ebfgr, _weights)
+
+        if ret:
+            errclear()
+            raise ValueError('ccore error (see above)')
+
+    def integrate(self,
+                  np.ndarray[float64, mode='c', ndim=4] out not None,
+                  np.ndarray[float64, mode='c', ndim=4] arr not None,
+                  int32 mode=0):
+        """
+        Integrate `arr` over the domain of the mapping into `out`.
+        """
+        cdef int32 ret = 0
+        cdef FMField _out[1], _arr[1]
+
+        if not ((out.shape[0] == arr.shape[0])
+                and (out.shape[1] == 1)
+                and (out.shape[2] == arr.shape[2])
+                and (out.shape[3] == arr.shape[3])
+                and (out.shape[0] == self.n_el)
+                and (arr.shape[1] == self.n_qp)):
+            raise ValueError('incompatible shapes! (%s, out: (%d, %d, %d, %d)'
+                             ', arr: (%d, %d, %d, %d))'
+                             % (self.shape,
+                                out.shape[0], out.shape[1],
+                                out.shape[2], out.shape[3],
+                                arr.shape[0], arr.shape[1],
+                                arr.shape[2], arr.shape[3]))
+
+        array2fmfield4(_out, out)
+        array2fmfield4(_arr, arr)
+
+        ret = vg_integrate(self.geo, _out, _arr, mode)
 
         if ret:
             errclear()
