@@ -2,7 +2,6 @@
 
 def configuration(parent_package='', top_path=None):
     import os.path as op
-    import sys
     from numpy.distutils.misc_util import Configuration
 
     from sfepy import Config
@@ -39,6 +38,18 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    fmf_lib_name = '_fmfield.' + ['so', 'pyd'][os_flag[site_config.system()]]
+    link_args = site_config.link_flags() + [op.join(auto_dir, fmf_lib_name)]
+
+    src = ['mappings.pyx', 'geometry.c']
+    config.add_extension('mappings',
+                         sources=src,
+                         depends=[fmf_lib_name],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=link_args,
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
     src = ['assemble.pyx']
     config.add_extension('assemble',
                          sources=src,
@@ -47,12 +58,12 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['bases.pyx', 'fmfield.c', 'geommech.c',
-           'common_python.c']
+    src = ['bases.pyx']
     config.add_extension('bases',
                          sources=src,
+                         depends=[fmf_lib_name],
                          extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
+                         extra_link_args=link_args,
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
