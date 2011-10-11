@@ -33,7 +33,7 @@ def configuration(parent_package='', top_path=None):
 
     config.add_library('sfepy_common',
                        sources=common_src,
-                       extra_compile_args=site_config.compile_flags(),
+                       extra_compiler_args=site_config.compile_flags(),
                        extra_link_args=site_config.link_flags(),
                        include_dirs=[auto_dir, site_config.python_include()],
                        macros=defines)
