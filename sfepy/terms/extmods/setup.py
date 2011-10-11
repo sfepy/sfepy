@@ -23,19 +23,33 @@ def configuration(parent_package='', top_path=None):
     fem_src = ['common_python.c', 'fmfield.c', 'geommech.c']
     fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
 
-    src = [op.split(ii)[1] for ii in glob.glob('sfepy/terms/extmods/*.c')]
-    src += ['terms.i']
+    csrc = [op.split(ii)[1] for ii in glob.glob('sfepy/terms/extmods/*.c')]
     try:
-        src.remove('terms_wrap.c')
+        csrc.remove('terms_wrap.c')
     except ValueError:
         pass
+
+    common_src = ['fmfield.c', 'geommech.c', 'common_python.c']
+    common_src = [op.join('../../fem/extmods', ii) for ii in common_src]
+
+    src = ['terms.i']
 
     depends=['array.i', 'common.i', 'fmfield.i']
     depends = [op.join('../../fem/extmods', ii) for ii in depends]
 
+    config.add_library('sfepy_terms',
+                       sources=csrc,
+                       depends=common_src,
+                       extra_compiler_args=site_config.compile_flags(),
+                       extra_link_args=site_config.link_flags(),
+                       include_dirs=[auto_dir, '../../fem/extmods',
+                                     site_config.python_include()],
+                       macros=defines)
+
     config.add_extension('_terms',
-                         sources=src + fem_src,
-                         depends=depends,
+                         sources=src,
+                         libraries=['sfepy_terms', 'sfepy_common'],
+                         depends=depends + csrc + common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir, '../../fem/extmods'],
