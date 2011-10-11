@@ -29,24 +29,32 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['_fmfield.pyx', 'fmfield.c', 'geommech.c',
-           'common_python.c']
+    common_src = ['fmfield.c', 'geometry.c', 'geommech.c', 'common_python.c']
+
+    config.add_library('sfepy_common',
+                       sources=common_src,
+                       extra_compile_args=site_config.compile_flags(),
+                       extra_link_args=site_config.link_flags(),
+                       include_dirs=[auto_dir, site_config.python_include()],
+                       macros=defines)
+
+    src = ['_fmfield.pyx']
     config.add_extension('_fmfield',
                          sources=src,
+                         libraries=['sfepy_common'],
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    fmf_lib_name = '_fmfield.' + ['so', 'pyd'][os_flag[site_config.system()]]
-    link_args = site_config.link_flags() + [op.join(auto_dir, fmf_lib_name)]
-
-    src = ['mappings.pyx', 'geometry.c']
+    src = ['mappings.pyx']
     config.add_extension('mappings',
                          sources=src,
-                         depends=[fmf_lib_name],
+                         libraries=['sfepy_common'],
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=link_args,
+                         extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
@@ -61,9 +69,10 @@ def configuration(parent_package='', top_path=None):
     src = ['bases.pyx']
     config.add_extension('bases',
                          sources=src,
-                         depends=[fmf_lib_name],
+                         libraries=['sfepy_common'],
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=link_args,
+                         extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
