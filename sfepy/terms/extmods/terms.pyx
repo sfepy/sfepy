@@ -12,7 +12,7 @@ from sfepy.fem.extmods.mappings cimport (VolumeGeometry, SurfaceGeometry,
 from sfepy.fem.extmods._fmfield cimport (FMField,
                                          array2fmfield4, array2fmfield3,
                                          array2fmfield2, array2fmfield1,
-                                         array2pint2)
+                                         array2pint1, array2pint2)
 
 from sfepy.fem.extmods.types cimport int32, float64, complex128
 
@@ -682,4 +682,531 @@ def di_surface_moment(np.ndarray out not None,
     array2pint2(&_conn, &n_el, &n_ep, conn)
 
     ret = _di_surface_moment(_out, _in_, _bf, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def dq_finite_strain_tl(np.ndarray mtx_f not None,
+                        np.ndarray det_f not None,
+                        np.ndarray vec_cs not None,
+                        np.ndarray tr_c not None,
+                        np.ndarray in_2c not None,
+                        np.ndarray vec_inv_cs not None,
+                        np.ndarray vec_es not None,
+                        np.ndarray state not None,
+                        CVolumeMapping cmap not None,
+                        np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _mtx_f[1], _det_f[1], _vec_cs[1], _tr_c[1], _in_2c[1]
+    cdef FMField _vec_inv_cs[1], _vec_es[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_cs, vec_cs)
+    array2fmfield4(_tr_c, tr_c)
+    array2fmfield4(_in_2c, in_2c)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+    array2fmfield4(_vec_es, vec_es)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_finite_strain_tl(_mtx_f, _det_f, _vec_cs, _tr_c, _in_2c,
+                               _vec_inv_cs, _vec_es, _state, 0, cmap.geo,
+                               _conn, n_el, n_ep)
+    return ret
+
+def dq_finite_strain_ul(np.ndarray mtx_f not None,
+                        np.ndarray det_f not None,
+                        np.ndarray vec_bs not None,
+                        np.ndarray tr_b not None,
+                        np.ndarray in_2b not None,
+                        np.ndarray vec_es not None,
+                        np.ndarray state not None,
+                        CVolumeMapping cmap not None,
+                        np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _mtx_f[1], _det_f[1], _vec_bs[1], _tr_b[1], _in_2b[1]
+    cdef FMField _vec_es[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_bs, vec_bs)
+    array2fmfield4(_tr_b, tr_b)
+    array2fmfield4(_in_2b, in_2b)
+    array2fmfield4(_vec_es, vec_es)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_finite_strain_ul(_mtx_f, _det_f, _vec_bs, _tr_b, _in_2b,
+                               _vec_es, _state, 0, cmap.geo,
+                               _conn, n_el, n_ep)
+    return ret
+
+def dq_tl_finite_strain_surface(np.ndarray mtx_f not None,
+                                np.ndarray det_f not None,
+                                np.ndarray mtx_fi not None,
+                                np.ndarray state not None,
+                                CSurfaceMapping cmap not None,
+                                np.ndarray fis not None,
+                                np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _mtx_f[1], _det_f[1], _mtx_fi[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep, *_fis, n_fa, n_fp
+
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_mtx_fi, mtx_fi)
+    array2fmfield1(_state, state)
+    array2pint2(&_fis, &n_fa, &n_fp, fis)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_tl_finite_strain_surface(_mtx_f, _det_f, _mtx_fi, _state, 0,
+                                       cmap.geo,
+                                       _fis, n_fa, n_fp, _conn, n_el, n_ep)
+    return ret
+
+def dq_tl_he_stress_bulk(np.ndarray out not None,
+                         np.ndarray mat not None,
+                         np.ndarray det_f not None,
+                         np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_stress_bulk(_out, _mat, _det_f, _vec_inv_cs)
+    return ret
+
+def dq_ul_he_stress_bulk(np.ndarray out not None,
+                         np.ndarray mat not None,
+                         np.ndarray det_f not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dq_ul_he_stress_bulk(_out, _mat, _det_f)
+    return ret
+
+def dq_tl_he_stress_neohook(np.ndarray out not None,
+                            np.ndarray mat not None,
+                            np.ndarray det_f not None,
+                            np.ndarray tr_c not None,
+                            np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_c, tr_c)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_stress_neohook(_out, _mat, _det_f, _tr_c, _vec_inv_cs)
+    return ret
+
+def dq_ul_he_stress_neohook(np.ndarray out not None,
+                            np.ndarray mat not None,
+                            np.ndarray det_f not None,
+                            np.ndarray tr_b not None,
+                            np.ndarray vec_bs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_b, tr_b)
+    array2fmfield4(_vec_bs, vec_bs)
+
+    ret = _dq_ul_he_stress_neohook(_out, _mat, _det_f, _tr_b, _vec_bs)
+    return ret
+
+def dq_tl_he_stress_mooney_rivlin(np.ndarray out not None,
+                                  np.ndarray mat not None,
+                                  np.ndarray det_f not None,
+                                  np.ndarray tr_c not None,
+                                  np.ndarray vec_inv_cs not None,
+                                  np.ndarray vec_cs not None,
+                                  np.ndarray in_2c not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+    cdef FMField _vec_cs[1], _in_2c[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_c, tr_c)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+    array2fmfield4(_vec_cs, vec_cs)
+    array2fmfield4(_in_2c, in_2c)
+
+    ret = _dq_tl_he_stress_mooney_rivlin(_out, _mat, _det_f, _tr_c,
+                                         _vec_inv_cs, _vec_cs, _in_2c)
+    return ret
+
+def dq_ul_he_stress_mooney_rivlin(np.ndarray out not None,
+                                  np.ndarray mat not None,
+                                  np.ndarray det_f not None,
+                                  np.ndarray tr_b not None,
+                                  np.ndarray vec_bs not None,
+                                  np.ndarray in_2b not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1], _in_2b[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_b, tr_b)
+    array2fmfield4(_vec_bs, vec_bs)
+    array2fmfield4(_in_2b, in_2b)
+
+    ret = _dq_ul_he_stress_mooney_rivlin(_out, _mat, _det_f, _tr_b,
+                                         _vec_bs, _in_2b)
+    return ret
+
+def dq_tl_he_tan_mod_bulk(np.ndarray out not None,
+                          np.ndarray mat not None,
+                          np.ndarray det_f not None,
+                          np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_tan_mod_bulk(_out, _mat, _det_f, _vec_inv_cs)
+    return ret
+
+def dq_ul_he_tan_mod_bulk(np.ndarray out not None,
+                          np.ndarray mat not None,
+                          np.ndarray det_f not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dq_ul_he_tan_mod_bulk(_out, _mat, _det_f)
+    return ret
+
+def dq_tl_he_tan_mod_neohook(np.ndarray out not None,
+                             np.ndarray mat not None,
+                             np.ndarray det_f not None,
+                             np.ndarray tr_c not None,
+                             np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_c, tr_c)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_he_tan_mod_neohook(_out, _mat, _det_f, _tr_c, _vec_inv_cs)
+    return ret
+
+def dq_ul_he_tan_mod_neohook(np.ndarray out not None,
+                             np.ndarray mat not None,
+                             np.ndarray det_f not None,
+                             np.ndarray tr_b not None,
+                             np.ndarray vec_bs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_b, tr_b)
+    array2fmfield4(_vec_bs, vec_bs)
+
+    ret = _dq_ul_he_tan_mod_neohook(_out, _mat, _det_f, _tr_b, _vec_bs)
+    return ret
+
+def dq_tl_he_tan_mod_mooney_rivlin(np.ndarray out not None,
+                                   np.ndarray mat not None,
+                                   np.ndarray det_f not None,
+                                   np.ndarray tr_c not None,
+                                   np.ndarray vec_inv_cs not None,
+                                   np.ndarray vec_cs not None,
+                                   np.ndarray in_2c not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_c[1], _vec_inv_cs[1]
+    cdef FMField _vec_cs[1], _in_2c[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_c, tr_c)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+    array2fmfield4(_vec_cs, vec_cs)
+    array2fmfield4(_in_2c, in_2c)
+
+    ret = _dq_tl_he_tan_mod_mooney_rivlin(_out, _mat, _det_f, _tr_c,
+                                          _vec_inv_cs, _vec_cs, _in_2c)
+    return ret
+
+def dq_ul_he_tan_mod_mooney_rivlin(np.ndarray out not None,
+                                   np.ndarray mat not None,
+                                   np.ndarray det_f not None,
+                                   np.ndarray tr_b not None,
+                                   np.ndarray vec_bs not None,
+                                   np.ndarray in_2b not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mat[1], _det_f[1], _tr_b[1], _vec_bs[1], _in_2b[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mat, mat)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_tr_b, tr_b)
+    array2fmfield4(_vec_bs, vec_bs)
+    array2fmfield4(_in_2b, in_2b)
+
+    ret = _dq_ul_he_tan_mod_mooney_rivlin(_out, _mat, _det_f, _tr_b,
+                                          _vec_bs, _in_2b)
+    return ret
+
+def dw_he_rtm(np.ndarray out not None,
+              np.ndarray stress not None,
+              np.ndarray tan_mod not None,
+              np.ndarray mtx_f not None,
+              np.ndarray det_f not None,
+              CVolumeMapping cmap not None,
+              int32 is_diff, int32 mode_ul):
+    cdef int32 ret
+    cdef FMField _out[1], _stress[1], _tan_mod[1], _mtx_f[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_stress, stress)
+    array2fmfield4(_tan_mod, tan_mod)
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dw_he_rtm(_out, _stress, _tan_mod, _mtx_f, _det_f,
+                     cmap.geo, is_diff, mode_ul)
+    return ret
+
+def de_he_rtm(np.ndarray out not None,
+              np.ndarray stress not None,
+              np.ndarray det_f not None,
+              CVolumeMapping cmap not None,
+              np.ndarray el_list not None,
+              int32 mode_ul):
+    cdef int32 ret
+    cdef FMField _out[1], _stress[1], _det_f[1]
+    cdef int32 *_el_list, n_el
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_stress, stress)
+    array2fmfield4(_det_f, det_f)
+    array2pint1(&_el_list, &n_el, el_list)
+
+    ret = _de_he_rtm(_out, _stress, _det_f,
+                     cmap.geo, _el_list, n_el, mode_ul)
+    return ret
+
+def dq_tl_stress_bulk_pressure(np.ndarray out not None,
+                               np.ndarray pressure_qp not None,
+                               np.ndarray det_f not None,
+                               np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_qp[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_qp, pressure_qp)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_stress_bulk_pressure(_out, _pressure_qp, _det_f, _vec_inv_cs)
+    return ret
+
+def dq_ul_stress_bulk_pressure(np.ndarray out not None,
+                               np.ndarray pressure_qp not None,
+                               np.ndarray det_f not None):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_qp[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_qp, pressure_qp)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dq_ul_stress_bulk_pressure(_out, _pressure_qp, _det_f)
+    return ret
+
+def dq_tl_tan_mod_bulk_pressure_u(np.ndarray out not None,
+                                  np.ndarray pressure_qp not None,
+                                  np.ndarray det_f not None,
+                                  np.ndarray vec_inv_cs not None):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_qp[1], _det_f[1], _vec_inv_cs[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_qp, pressure_qp)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+
+    ret = _dq_tl_tan_mod_bulk_pressure_u(_out, _pressure_qp, _det_f,
+                                         _vec_inv_cs)
+    return ret
+
+def dq_ul_tan_mod_bulk_pressure_u(np.ndarray out not None,
+                                  np.ndarray pressure_qp not None,
+                                  np.ndarray det_f not None):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_qp[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_qp, pressure_qp)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dq_ul_tan_mod_bulk_pressure_u(_out, _pressure_qp, _det_f)
+    return ret
+
+def dw_tl_volume(np.ndarray out not None,
+                 np.ndarray bf not None,
+                 np.ndarray mtx_f not None,
+                 np.ndarray vec_inv_cs not None,
+                 np.ndarray det_f not None,
+                 CVolumeMapping cmap not None,
+                 int32 transpose, int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _bf[1], _mtx_f[1], _vec_inv_cs[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_vec_inv_cs, vec_inv_cs)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dw_tl_volume(_out, _bf, _mtx_f, _vec_inv_cs, _det_f,
+                        cmap.geo, transpose, mode)
+    return ret
+
+def dw_ul_volume(np.ndarray out not None,
+                 np.ndarray bf not None,
+                 np.ndarray det_f not None,
+                 CVolumeMapping cmap not None,
+                 int32 transpose, int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _bf[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dw_ul_volume(_out, _bf, _det_f, cmap.geo, transpose, mode)
+    return ret
+
+def dw_tl_diffusion(np.ndarray out not None,
+                    np.ndarray pressure_grad not None,
+                    np.ndarray mtx_d not None,
+                    np.ndarray ref_porosity not None,
+                    np.ndarray mtx_f not None,
+                    np.ndarray det_f not None,
+                    CVolumeMapping cmap not None,
+                    int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_grad[1], _mtx_d[1], _ref_porosity[1]
+    cdef FMField _mtx_f[1], _det_f[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_grad, pressure_grad)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield4(_ref_porosity, ref_porosity)
+    array2fmfield4(_mtx_f, mtx_f)
+    array2fmfield4(_det_f, det_f)
+
+    ret = _dw_tl_diffusion(_out, _pressure_grad, _mtx_d, _ref_porosity,
+                           _mtx_f, _det_f, cmap.geo, mode)
+    return ret
+
+def dw_tl_surface_traction(np.ndarray out not None,
+                           np.ndarray traction not None,
+                           np.ndarray det_f not None,
+                           np.ndarray mtx_fi not None,
+                           np.ndarray bf not None,
+                           CSurfaceMapping cmap not None,
+                           np.ndarray fis not None,
+                           int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _traction[1], _det_f[1], _mtx_fi[1], _bf[1]
+    cdef int32 *_fis, n_fa, n_fp
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_traction, traction)
+    array2fmfield4(_det_f, det_f)
+    array2fmfield4(_mtx_fi, mtx_fi)
+    array2fmfield4(_bf, bf)
+    array2pint2(&_fis, &n_fa, &n_fp, fis)
+
+    ret = _dw_tl_surface_traction(_out, _traction, _det_f, _mtx_fi, _bf,
+                                       cmap.geo, _fis, n_fa, n_fp, mode)
+    return ret
+
+def dq_def_grad(np.ndarray out not None,
+                np.ndarray state not None,
+                CVolumeMapping cmap not None,
+                np.ndarray conn not None,
+                np.ndarray el_list not None,
+                int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _dq_def_grad(_out, _state, cmap.geo,
+                       _conn, n_el, n_ep, _el_list, n_el2, mode)
+    return ret
+
+def he_residuum_from_mtx(np.ndarray out not None,
+                         np.ndarray mtx_d not None,
+                         np.ndarray state not None,
+                         np.ndarray conn not None,
+                         np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mtx_d[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _he_residuum_from_mtx(_out, _mtx_d, _state,
+                                _conn, n_el, n_ep, _el_list, n_el2)
+    return ret
+
+def he_eval_from_mtx(np.ndarray out not None,
+                     np.ndarray mtx_d not None,
+                     np.ndarray state_v not None,
+                     np.ndarray state_u not None,
+                     np.ndarray conn not None,
+                     np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mtx_d[1], _state_v[1], _state_u[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield1(_state_v, state_v)
+    array2fmfield1(_state_u, state_u)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _he_eval_from_mtx(_out, _mtx_d, _state_v, _state_u,
+                            _conn, n_el, n_ep, _el_list, n_el2)
     return ret
