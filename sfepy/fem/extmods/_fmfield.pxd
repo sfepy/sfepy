@@ -138,7 +138,11 @@ cdef extern from "geommech.h":
     cdef int32 ele_extractNodalValuesDBD(FMField *out, FMField *_in,
                                          int32 *conn)
 
-cdef array2fmfield4(FMField *out, np.ndarray[float64, mode='c', ndim=4] arr)
-cdef array2fmfield3(FMField *out, np.ndarray[float64, mode='c', ndim=3] arr)
-cdef array2fmfield2(FMField *out, np.ndarray[float64, mode='c', ndim=2] arr)
-cdef array2fmfield1(FMField *out, np.ndarray[float64, mode='c', ndim=1] arr)
+cdef void array2fmfield4(FMField *out,
+                         np.ndarray[float64, mode='c', ndim=4] arr)
+cdef void array2fmfield3(FMField *out,
+                         np.ndarray[float64, mode='c', ndim=3] arr)
+cdef void array2fmfield2(FMField *out,
+                         np.ndarray[float64, mode='c', ndim=2] arr)
+cdef void array2fmfield1(FMField *out,
+                         np.ndarray[float64, mode='c', ndim=1] arr)

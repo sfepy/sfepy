@@ -2,7 +2,8 @@
 cimport cython
 
 @cython.boundscheck(False)
-cdef array2fmfield4(FMField *out, np.ndarray[float64, mode='c', ndim=4] arr):
+cdef inline void array2fmfield4(FMField *out,
+                                np.ndarray[float64, mode='c', ndim=4] arr):
     cdef int32 n_cell, n_lev, n_row, n_col
     cdef int32 ii, stride
 
@@ -14,7 +15,8 @@ cdef array2fmfield4(FMField *out, np.ndarray[float64, mode='c', ndim=4] arr):
     out.stride = 1
 
 @cython.boundscheck(False)
-cdef array2fmfield3(FMField *out, np.ndarray[float64, mode='c', ndim=3] arr):
+cdef inline void array2fmfield3(FMField *out,
+                                np.ndarray[float64, mode='c', ndim=3] arr):
     cdef int32 n_cell = 1, n_lev, n_row, n_col
     cdef int32 ii, stride
 
@@ -26,7 +28,8 @@ cdef array2fmfield3(FMField *out, np.ndarray[float64, mode='c', ndim=3] arr):
     out.stride = 1
 
 @cython.boundscheck(False)
-cdef array2fmfield2(FMField *out, np.ndarray[float64, mode='c', ndim=2] arr):
+cdef inline void array2fmfield2(FMField *out,
+                                np.ndarray[float64, mode='c', ndim=2] arr):
     cdef int32 n_cell = 1, n_lev = 1, n_row, n_col
     cdef int32 ii, stride
 
@@ -38,7 +41,8 @@ cdef array2fmfield2(FMField *out, np.ndarray[float64, mode='c', ndim=2] arr):
     out.stride = 1
 
 @cython.boundscheck(False)
-cdef array2fmfield1(FMField *out, np.ndarray[float64, mode='c', ndim=1] arr):
+cdef inline void array2fmfield1(FMField *out,
+                                np.ndarray[float64, mode='c', ndim=1] arr):
     cdef int32 n_cell = 1, n_lev = 1, n_row = 1, n_col
     cdef int32 ii, stride
 
