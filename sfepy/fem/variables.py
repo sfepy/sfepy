@@ -1519,14 +1519,10 @@ class FieldVariable(Variable):
             self.bfs[geo_key] = bf
 
             if integral.kind == 'v':
-                bfg = geo.variable(0)
+                bfg = geo.bfg
 
             else:
-                try:
-                    bfg = geo.variable(3)
-
-                except:
-                    bfg = None
+                    bfg = geo.bfbg
 
             self.bfgs[geo_key] = bfg
 

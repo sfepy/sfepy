@@ -869,7 +869,7 @@ class Field( Struct ):
         for ig, ap in self.aps.iteritems():
             vg = ap.describe_geometry(self, 'volume', ap.region, integral)
 
-            volume = nm.squeeze(vg.variable(2))
+            volume = nm.squeeze(vg.volume)
             iels = ap.region.cells[ig]
 
             data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
@@ -1349,7 +1349,7 @@ class SurfaceField(Field):
         for ig, ap in self.aps.iteritems():
             sg = ap.describe_geometry(self, 'surface', ap.region, integral)
 
-            area = nm.squeeze(sg.variable(2))
+            area = nm.squeeze(sg.area)
             n_cells = region.get_n_cells(ig, True)
             iels = offset + nm.arange(n_cells, dtype=nm.int32)
             offset += n_cells

@@ -101,7 +101,7 @@ class IntegrateSurfaceTerm(Term):
             status = 0
 
         elif fmode == 5:
-            normal = sg.variable(0)
+            normal = sg.normal
             out[:] = dot_sequences(val_qp, normal)
             status = 0
 
@@ -275,7 +275,7 @@ class VolumeTerm(Term):
 
     @staticmethod
     def function(out, geo):
-        out[:] = geo.variable(2)
+        out[:] = geo.volume
 
         return 0
 

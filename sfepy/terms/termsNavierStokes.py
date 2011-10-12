@@ -367,7 +367,7 @@ class DivOperatorTerm(Term):
 
     @staticmethod
     def function(out, mat, vg):
-        div_bf = vg.variable(0)
+        div_bf = vg.bfg
 
         n_el, n_qp, dim, n_ep = div_bf.shape
         div_bf = div_bf.reshape((n_el, n_qp, dim * n_ep, 1))

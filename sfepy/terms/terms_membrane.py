@@ -190,7 +190,7 @@ class TLMembraneTerm(Term):
 
         # Transformed base function gradient w.r.t. material coordinates
         # in quadrature points.
-        self.bfg[ig] = self.membrane_geo[ig].variable(0)
+        self.bfg[ig] = self.membrane_geo[ig].bfg
 
     def get_fargs(self, a1, a2, h0, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):

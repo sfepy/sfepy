@@ -63,7 +63,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         sg = SurfaceGeometry( n_fa, n_fp, dim, n_fp )
         sg.describe(field.get_coor(), econn, bf_sg, weights)
 
-        e_normals = sg.variable( 0 ).squeeze()
+        e_normals = sg.normals.squeeze()
 
         # normals[imap[econn]] += e_normals
         im = imap[econn]

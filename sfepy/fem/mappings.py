@@ -81,7 +81,7 @@ def get_jacobian(field, integral, integration='volume'):
     jac = None
     for ig in field.igs:
         geo, _ = field.get_mapping(ig, field.region, integral, integration)
-        _jac = geo.variable(1)
+        _jac = geo.det
         if jac is None:
             jac = _jac
 

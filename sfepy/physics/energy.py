@@ -41,7 +41,7 @@ def eval_non_local_interaction(problem, region_name, var_name,
     vg, _ = var.get_mapping(ig, region, integral, 'volume')
 
     # Weighted jacobian.
-    det = vg.variable(1)
+    det = vg.det
 
     shape = (n_el * n_qp, 1, 1)
 

@@ -32,7 +32,7 @@ class NonPenetrationTerm(Term):
         """
         `ebf` belongs to vector variable, `bf` to scalar variable.
         """
-        normals = sg.variable(0)
+        normals = sg.normals
         n_fa = out.shape[0]
 
         if diff_var is None:
