@@ -466,6 +466,9 @@ class DotProductVolumeTerm(Term):
             else:
                 vec = bf_t * svg.bf
 
+            vec = nm.tile(vec, (out.shape[0], 1, 1, 1))
+            vec = nm.ascontiguousarray(vec)
+
         status = vvg.integrate(out, vec)
 
         return status
