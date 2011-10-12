@@ -1210,3 +1210,185 @@ def he_eval_from_mtx(np.ndarray out not None,
     ret = _he_eval_from_mtx(_out, _mtx_d, _state_v, _state_u,
                             _conn, n_el, n_ep, _el_list, n_el2)
     return ret
+
+def dw_volume_wdot_scalar(np.ndarray out not None,
+                          float64 coef,
+                          np.ndarray state_qp not None,
+                          np.ndarray bf not None,
+                          np.ndarray mtx_d not None,
+                          CVolumeMapping cmap not None,
+                          np.ndarray el_list not None,
+                          int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_qp[1], _bf[1], _mtx_d[1]
+    cdef int32 *_el_list, n_el
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_qp, state_qp)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2pint1(&_el_list, &n_el, el_list)
+
+    ret = _dw_volume_wdot_scalar(_out, coef, _state_qp, _bf, _mtx_d,
+                                 cmap.geo, _el_list, n_el, is_diff)
+    return ret
+
+def dw_laplace(np.ndarray out not None,
+               np.ndarray grad not None,
+               np.ndarray coef not None,
+               CVolumeMapping cmap not None,
+               int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_coef, coef)
+
+    ret = _dw_laplace(_out, _grad, _coef, cmap.geo, is_diff)
+    return ret
+
+def d_laplace(np.ndarray out not None,
+              np.ndarray grad_p1 not None,
+              np.ndarray grad_p2 not None,
+              np.ndarray coef not None,
+              CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_p1[1], _grad_p2[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_p1, grad_p1)
+    array2fmfield4(_grad_p2, grad_p2)
+    array2fmfield4(_coef, coef)
+
+    ret = _d_laplace(_out, _grad_p1, _grad_p2, _coef, cmap.geo)
+    return ret
+
+def dw_diffusion(np.ndarray out not None,
+                 np.ndarray grad not None,
+                 np.ndarray mtx_d not None,
+                 CVolumeMapping cmap not None,
+                 int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _dw_diffusion(_out, _grad, _mtx_d, cmap.geo, is_diff)
+    return ret
+
+def d_diffusion(np.ndarray out not None,
+                np.ndarray grad_p1 not None,
+                np.ndarray grad_p2 not None,
+                np.ndarray mtx_d not None,
+                CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_p1[1], _grad_p2[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_p1, grad_p1)
+    array2fmfield4(_grad_p2, grad_p2)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _d_diffusion(_out, _grad_p1, _grad_p2, _mtx_d, cmap.geo)
+    return ret
+
+def dw_permeability_r(np.ndarray out not None,
+                      np.ndarray mtx_d not None,
+                      CVolumeMapping cmap not None,
+                      np.ndarray conn not None,
+                      np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mtx_d[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _dw_permeability_r(_out, _mtx_d, cmap.geo,
+                             _conn, n_el, n_ep, _el_list, n_el2)
+    return ret
+
+def dw_diffusion_coupling(np.ndarray out not None,
+                          np.ndarray state not None,
+                          np.ndarray mtx_d not None,
+                          np.ndarray bf not None,
+                          CVolumeMapping cmap not None,
+                          np.ndarray conn not None,
+                          np.ndarray el_list not None,
+                          int32 is_diff, int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1], _mtx_d[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _dw_diffusion_coupling(_out, _state, 0, _mtx_d, _bf, cmap.geo,
+                                 _conn, n_el, n_ep, _el_list, n_el2,
+                                 is_diff, mode)
+    return ret
+
+def d_diffusion_coupling(np.ndarray out not None,
+                         np.ndarray state_p not None,
+                         np.ndarray state_q not None,
+                         np.ndarray mtx_d not None,
+                         np.ndarray bf not None,
+                         CVolumeMapping cmap not None,
+                         np.ndarray conn not None,
+                         np.ndarray el_list not None,
+                         int32 is_diff, int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_p[1], _state_q[1], _mtx_d[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_p, state_p)
+    array2fmfield1(_state_q, state_q)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _d_diffusion_coupling(_out, _state_p, _state_q, _mtx_d, _bf, cmap.geo,
+                                _conn, n_el, n_ep, _el_list, n_el2,
+                                is_diff, mode)
+    return ret
+
+def de_diffusion_velocity(np.ndarray out not None,
+                          np.ndarray grad not None,
+                          np.ndarray mtx_d not None,
+                          CVolumeMapping cmap not None,
+                          int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _de_diffusion_velocity(_out, _grad, _mtx_d, cmap.geo, mode)
+    return ret
+
+def d_surface_flux(np.ndarray out not None,
+                          np.ndarray grad not None,
+                          np.ndarray mtx_d not None,
+                          CSurfaceMapping cmap not None,
+                          int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _d_surface_flux(_out, _grad, _mtx_d, cmap.geo, mode)
+    return ret
