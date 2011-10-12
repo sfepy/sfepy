@@ -39,3 +39,30 @@ cdef extern from 'geometry.h':
 
     cdef int32 vg_integrate(VolumeGeometry *obj, FMField *out, FMField *in_,
                             int32 mode)
+
+    ctypedef struct SurfaceGeometry:
+        GeometryMode mode
+        int32 nFa
+        int32 nQP
+        int32 dim
+        int32 nFP
+        FMField *normal
+        FMField *det # detJMR.
+        FMField *bfBGM
+
+        FMField *area
+        float64 totalArea
+
+    cdef int32 sg_describe(SurfaceGeometry *obj,
+                           float64 *coorIn, int32 nNod, int32 dim,
+                           int32 *fconn, int32 nFa, int32 nSP,
+                           FMField *bfGR, FMField *weight)
+
+    cdef int32 sg_integrate(SurfaceGeometry *obj, FMField *out, FMField *in_,
+                            int32 mode)
+
+    cdef int32 sg_evaluateBFBGM(SurfaceGeometry *obj, FMField *bfBGR,
+                                FMField *ebfBGR,
+                                float64 *coorIn, int32 nNod, int32 dim,
+                                int32 *fis, int32 nFa, int32 nFP,
+                                int32 *conn, int32 nEl, int32 nEP)
