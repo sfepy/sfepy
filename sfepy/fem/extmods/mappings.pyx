@@ -95,6 +95,8 @@ cdef class CVolumeMapping:
             errclear()
             raise ValueError('ccore error (see above)')
 
+        return ret
+
 cdef class CSurfaceMapping:
 
     def __cinit__(self, n_fa, n_qp, dim, n_fp):
@@ -196,6 +198,8 @@ cdef class CSurfaceMapping:
         if ret:
             errclear()
             raise ValueError('ccore error (see above)')
+
+        return ret
 
     def evaluate_bfbgm(self,
                        np.ndarray[float64, mode='c', ndim=4] bfbgr not None,
