@@ -5,22 +5,6 @@ Low level reference mapping functionality.
 import numpy as np
 
 cdef class CVolumeMapping:
-    cdef VolumeGeometry geo[1]
-
-    cdef FMField _bfg[1], _det[1], _volume[1]
-
-    cdef public np.ndarray bfg
-    cdef public np.ndarray det
-    cdef public np.ndarray volume
-
-    cdef public tuple shape
-    cdef public int n_el, n_qp, dim, n_ep
-
-    # Auxiliary attributes to be assigned from Python.
-    cdef public object integral
-    cdef public object qp
-    cdef public object ps
-    cdef public object bf
 
     def __cinit__(self, n_el, n_qp, dim, n_ep):
         self.bfg = np.empty((n_el, n_qp, dim, n_ep), dtype=np.float64)
@@ -112,23 +96,6 @@ cdef class CVolumeMapping:
             raise ValueError('ccore error (see above)')
 
 cdef class CSurfaceMapping:
-    cdef SurfaceGeometry geo[1]
-
-    cdef FMField _normal[1], _det[1], _area[1], _bfbg[1]
-
-    cdef public np.ndarray normal
-    cdef public np.ndarray det
-    cdef public np.ndarray area
-    cdef public np.ndarray bfbg
-
-    cdef public tuple shape
-    cdef public int n_fa, n_qp, dim, n_fp
-
-    # Auxiliary attributes to be assigned from Python.
-    cdef public object integral
-    cdef public object qp
-    cdef public object ps
-    cdef public object bf
 
     def __cinit__(self, n_fa, n_qp, dim, n_fp):
         self.normal = np.empty((n_fa, n_qp, dim, 1), dtype=np.float64)

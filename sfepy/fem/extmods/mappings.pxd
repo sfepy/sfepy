@@ -66,3 +66,40 @@ cdef extern from 'geometry.h':
                                 float64 *coorIn, int32 nNod, int32 dim,
                                 int32 *fis, int32 nFa, int32 nFP,
                                 int32 *conn, int32 nEl, int32 nEP)
+
+cdef class CVolumeMapping:
+    cdef VolumeGeometry geo[1]
+
+    cdef FMField _bfg[1], _det[1], _volume[1]
+
+    cdef public np.ndarray bfg
+    cdef public np.ndarray det
+    cdef public np.ndarray volume
+
+    cdef public tuple shape
+    cdef public int n_el, n_qp, dim, n_ep
+
+    # Auxiliary attributes to be assigned from Python.
+    cdef public object integral
+    cdef public object qp
+    cdef public object ps
+    cdef public object bf
+
+cdef class CSurfaceMapping:
+    cdef SurfaceGeometry geo[1]
+
+    cdef FMField _normal[1], _det[1], _area[1], _bfbg[1]
+
+    cdef public np.ndarray normal
+    cdef public np.ndarray det
+    cdef public np.ndarray area
+    cdef public np.ndarray bfbg
+
+    cdef public tuple shape
+    cdef public int n_fa, n_qp, dim, n_fp
+
+    # Auxiliary attributes to be assigned from Python.
+    cdef public object integral
+    cdef public object qp
+    cdef public object ps
+    cdef public object bf
