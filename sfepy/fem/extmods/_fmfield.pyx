@@ -52,3 +52,16 @@ cdef inline void array2fmfield1(FMField *out,
     out.nAlloc = -1
     fmf_pretend(out, n_cell, n_lev, n_row, n_col, &arr[0])
     out.stride = 1
+
+@cython.boundscheck(False)
+cdef inline void array2pint2(int32 **out, int32 *n_row, int32 *n_col,
+                             np.ndarray[int32, mode='c', ndim=2] arr):
+    out[0] = &arr[0, 0]
+    n_row[0] = arr.shape[0]
+    n_col[0] = arr.shape[1]
+
+@cython.boundscheck(False)
+cdef inline void array2pint1(int32 **out, int32 *n_row,
+                             np.ndarray[int32, mode='c', ndim=1] arr):
+    out[0] = &arr[0]
+    n_row[0] = arr.shape[0]

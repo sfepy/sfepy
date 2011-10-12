@@ -146,3 +146,7 @@ cdef void array2fmfield2(FMField *out,
                          np.ndarray[float64, mode='c', ndim=2] arr)
 cdef void array2fmfield1(FMField *out,
                          np.ndarray[float64, mode='c', ndim=1] arr)
+cdef void array2pint2(int32 **out, int32 *n_row, int32 *n_col,
+                      np.ndarray[int32, mode='c', ndim=2] arr)
+cdef void array2pint1(int32 **out, int32 *n_row,
+                      np.ndarray[int32, mode='c', ndim=1] arr)
