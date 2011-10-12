@@ -588,3 +588,98 @@ cdef extern from 'terms.h':
                           int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
                           int32 *elList, int32 elList_nRow,
                           int32 mode)
+
+def dq_state_in_qp(np.ndarray out not None,
+                   np.ndarray state not None,
+                   np.ndarray bf not None,
+                   np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_state_in_qp(_out, _state, 0, _bf, _conn, n_el, n_ep)
+    return ret
+
+def dq_grad(np.ndarray out not None,
+            np.ndarray state not None,
+            CVolumeMapping cmap not None,
+            np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_grad(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def dq_grad_extra(np.ndarray out not None,
+                  np.ndarray state not None,
+                  CSurfaceMapping cmap not None,
+                  np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_grad_extra(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def dq_div_vector(np.ndarray out not None,
+                  np.ndarray state not None,
+                  CVolumeMapping cmap not None,
+                  np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_div_vector(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def d_volume_surface(np.ndarray out not None,
+                     np.ndarray in_ not None,
+                     np.ndarray bf not None,
+                     CSurfaceMapping cmap not None,
+                     np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _in_[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield2(_in_, in_)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _d_volume_surface(_out, _in_, _bf, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def di_surface_moment(np.ndarray out not None,
+                      np.ndarray in_ not None,
+                      np.ndarray bf not None,
+                      CSurfaceMapping cmap not None,
+                      np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _in_[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield2(_in_, in_)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _di_surface_moment(_out, _in_, _bf, cmap.geo, _conn, n_el, n_ep)
+    return ret
