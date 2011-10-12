@@ -6,11 +6,10 @@ import numpy as nm
 from sfepy.base.base import as_float_or_complex, get_default, assert_
 from sfepy.base.base import Container, Struct
 from sfepy.base.compat import in1d
-try:
-    from sfepy.terms.extmods import terms
-except (ImportError, AttributeError):
-    msg = 'sfepy extension modules are not compiled!\ntype "make"'
-    raise ImportError( msg )
+
+# Used for imports in term files.
+from sfepy.terms.extmods import terms
+
 from sfepy.linalg import split_range
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
