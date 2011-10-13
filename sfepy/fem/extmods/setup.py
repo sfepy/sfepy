@@ -19,16 +19,6 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    src = ['fmfield.c', 'geometry.c', 'geometry.i', 'geommech.c',
-           'common_python.c']
-    config.add_extension('_geometry',
-                         sources=src,
-                         depends=['array.i', 'common.i', 'fmfield.i'],
-                         extra_compile_args=site_config.compile_flags(),
-                         extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir],
-                         define_macros=defines)
-
     common_src = ['fmfield.c', 'geometry.c', 'geommech.c', 'common_python.c']
 
     config.add_library('sfepy_common',
