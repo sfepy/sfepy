@@ -40,6 +40,14 @@ cdef extern from 'geometry.h':
     cdef int32 vg_integrate(VolumeGeometry *obj, FMField *out, FMField *in_,
                             int32 mode)
 
+    cdef int32 vg_getElementDiameters(VolumeGeometry *obj, FMField *out,
+                                      int32 *edges,
+                                      int32 edges_nRow, int32 edges_nCol,
+                                      float64 *coorIn, int32 nNod, int32 dim,
+                                      int32 *conn, int32 nEl, int32 nEP,
+                                      int32 *elList, int32 elList_nRow,
+                                      int32 mode)
+
     ctypedef struct SurfaceGeometry:
         GeometryMode mode
         int32 nFa

@@ -97,6 +97,48 @@ cdef class CVolumeMapping:
 
         return ret
 
+    def get_element_diameters(self,
+                              np.ndarray[float64, mode='c', ndim=4]
+                              out not None,
+                              np.ndarray[int32, mode='c', ndim=2]
+                              edges not None,
+                              np.ndarray[float64, mode='c', ndim=2]
+                              coors not None,
+                              np.ndarray[int32, mode='c', ndim=2]
+                              conn not None,
+                              np.ndarray[int32, mode='c', ndim=1]
+                              el_list not None,
+                              int32 mode):
+        """
+        Compute diameters of selected elements.
+        """
+        cdef int32 ret = 0
+        cdef FMField _out[1]
+        cdef int32 *_edges = &edges[0, 0]
+        cdef int32 edges_nr = edges.shape[0]
+        cdef int32 edges_nc = edges.shape[1]
+        cdef float64 *_coors = &coors[0, 0]
+        cdef int32 n_nod = coors.shape[0]
+        cdef int32 dim = coors.shape[1]
+        cdef int32 *_conn = &conn[0, 0]
+        cdef int32 n_el = conn.shape[0]
+        cdef int32 n_ep = conn.shape[1]
+        cdef int32 *_el_list = &el_list[0]
+        cdef int32 n_el2 = el_list.shape[0]
+
+        array2fmfield4(_out, out)
+
+        ret = vg_getElementDiameters(self.geo, _out,
+                                     _edges, edges_nr, edges_nc,
+                                     _coors, n_nod, dim,
+                                     _conn, n_el, n_ep, _el_list, n_el2, mode)
+
+        if ret:
+            errclear()
+            raise ValueError('ccore error (see above)')
+
+        return ret
+
 cdef class CSurfaceMapping:
 
     def __cinit__(self, n_fa, n_qp, dim, n_fp):
