@@ -1,7 +1,7 @@
 import numpy as nm
 
 import sfepy.linalg as la
-from extmods.geometry import SurfaceGeometry
+from extmods.mappings import CSurfaceMapping
 
 def prepare_remap(indices, n_full):
     """
@@ -60,10 +60,10 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         coors = ps.node_coors
         bf_sg = ps.eval_base(coors, diff=True)
 
-        sg = SurfaceGeometry( n_fa, n_fp, dim, n_fp )
-        sg.describe(field.get_coor(), econn, bf_sg, weights)
+        cmap = CSurfaceMapping(n_fa, n_fp, dim, n_fp)
+        cmap.describe(field.get_coor(), econn, bf_sg, weights)
 
-        e_normals = sg.normals.squeeze()
+        e_normals = cmap.normals.squeeze()
 
         # normals[imap[econn]] += e_normals
         im = imap[econn]
