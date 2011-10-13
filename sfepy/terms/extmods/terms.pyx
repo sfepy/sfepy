@@ -1379,10 +1379,10 @@ def de_diffusion_velocity(np.ndarray out not None,
     return ret
 
 def d_surface_flux(np.ndarray out not None,
-                          np.ndarray grad not None,
-                          np.ndarray mtx_d not None,
-                          CSurfaceMapping cmap not None,
-                          int32 mode):
+                   np.ndarray grad not None,
+                   np.ndarray mtx_d not None,
+                   CSurfaceMapping cmap not None,
+                   int32 mode):
     cdef int32 ret
     cdef FMField _out[1], _grad[1], _mtx_d[1]
 
@@ -1391,4 +1391,227 @@ def d_surface_flux(np.ndarray out not None,
     array2fmfield4(_mtx_d, mtx_d)
 
     ret = _d_surface_flux(_out, _grad, _mtx_d, cmap.geo, mode)
+    return ret
+
+def dw_lin_elastic_iso(np.ndarray out not None,
+                       np.ndarray strain not None,
+                       np.ndarray lam not None,
+                       np.ndarray mu not None,
+                       CVolumeMapping cmap not None,
+                       int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _lam[1], _mu[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_lam, lam)
+    array2fmfield4(_mu, mu)
+
+    ret = _dw_lin_elastic_iso(_out, _strain, _lam, _mu, cmap.geo, is_diff)
+    return ret
+
+def dw_lin_elastic(np.ndarray out not None,
+                   float64 coef,
+                   np.ndarray strain not None,
+                   np.ndarray mtx_d not None,
+                   CVolumeMapping cmap not None,
+                   int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _dw_lin_elastic(_out, coef, _strain, _mtx_d, cmap.geo, is_diff)
+    return ret
+
+def d_lin_elastic(np.ndarray out not None,
+                  float64 coef,
+                  np.ndarray strain_v not None,
+                  np.ndarray strain_u not None,
+                  np.ndarray mtx_d not None,
+                  CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _strain_u[1], _strain_v[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain_u, strain_u)
+    array2fmfield4(_strain_v, strain_v)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _d_lin_elastic(_out, coef, _strain_u, _strain_v, _mtx_d, cmap.geo)
+    return ret
+
+def dw_lin_prestress(np.ndarray out not None,
+                     np.ndarray stress not None,
+                     CVolumeMapping cmap not None,
+                     np.ndarray el_list not None,
+                     int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _stress[1]
+    cdef int32 *_el_list, n_el
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_stress, stress)
+    array2pint1(&_el_list, &n_el, el_list)
+
+    ret = _dw_lin_prestress(_out, _stress, cmap.geo, _el_list, n_el, is_diff)
+    return ret
+
+def dw_lin_strain_fib(np.ndarray out not None,
+                      np.ndarray mtx_d not None,
+                      np.ndarray mat not None,
+                      CVolumeMapping cmap not None,
+                      np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _mtx_d[1], _mat[1]
+    cdef int32 *_el_list, n_el
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2fmfield4(_mat, mat)
+    array2pint1(&_el_list, &n_el, el_list)
+
+    ret = _dw_lin_strain_fib(_out, _mtx_d, _mat, cmap.geo, _el_list, n_el)
+    return ret
+
+def de_cauchy_strain(np.ndarray out not None,
+                     np.ndarray strain not None,
+                     CVolumeMapping cmap not None,
+                     int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+
+    ret = _de_cauchy_strain(_out, _strain, cmap.geo, mode)
+    return ret
+
+def de_cauchy_stress(np.ndarray out not None,
+                     np.ndarray strain not None,
+                     np.ndarray mtx_d not None,
+                     CVolumeMapping cmap not None,
+                     int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _de_cauchy_stress(_out, _strain, _mtx_d, cmap.geo, mode)
+    return ret
+
+def dq_cauchy_strain(np.ndarray out not None,
+                     np.ndarray state not None,
+                     CVolumeMapping cmap not None,
+                     np.ndarray conn not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dq_cauchy_strain(_out, _state, 0, cmap.geo, _conn, n_el, n_ep)
+    return ret
+
+def dw_surface_ltr(np.ndarray out not None,
+                   np.ndarray bf not None,
+                   np.ndarray traction not None,
+                   CSurfaceMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _bf[1], _traction[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_traction, traction)
+
+    ret = _dw_surface_ltr(_out, _bf, _traction, cmap.geo)
+    return ret
+
+def dw_volume_lvf(np.ndarray out not None,
+                  np.ndarray bf not None,
+                  np.ndarray force_qp not None,
+                  CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _bf[1], _force_qp[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_force_qp, force_qp)
+
+    ret = _dw_volume_lvf(_out, _bf, _force_qp, cmap.geo)
+    return ret
+
+def dw_mass(np.ndarray out not None,
+            np.ndarray coef not None,
+            np.ndarray state not None,
+            np.ndarray bf not None,
+            CVolumeMapping cmap not None,
+            int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_state, state)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_mass(_out,_coef, _state, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_mass_scalar(np.ndarray out not None,
+                   np.ndarray coef not None,
+                   np.ndarray state not None,
+                   np.ndarray bf not None,
+                   CVolumeMapping cmap not None,
+                   int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_state, state)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_mass_scalar(_out, _coef, _state, _bf, cmap.geo, is_diff)
+    return ret
+
+def d_mass_scalar(np.ndarray out not None,
+                  np.ndarray coef not None,
+                  np.ndarray state_p not None,
+                  np.ndarray state_q not None,
+                  np.ndarray bf not None,
+                  CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _state_p[1], _state_q[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_state_p, state_p)
+    array2fmfield4(_state_q, state_q)
+    array2fmfield3(_bf, bf)
+
+    ret = _d_mass_scalar(_out, _coef, _state_p, _state_q, _bf, cmap.geo)
+    return ret
+
+def dw_surf_mass_scalar(np.ndarray out not None,
+                        np.ndarray coef not None,
+                        np.ndarray state not None,
+                        np.ndarray bf not None,
+                        CSurfaceMapping cmap not None,
+                        int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_state, state)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_surf_mass_scalar(_out, _coef, _state, _bf, cmap.geo, is_diff)
     return ret
