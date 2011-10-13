@@ -1615,3 +1615,267 @@ def dw_surf_mass_scalar(np.ndarray out not None,
 
     ret = _dw_surf_mass_scalar(_out, _coef, _state, _bf, cmap.geo, is_diff)
     return ret
+
+def term_ns_asm_div_grad(np.ndarray out not None,
+                         np.ndarray grad not None,
+                         np.ndarray viscosity not None,
+                         CVolumeMapping cmap not None,
+                         int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _viscosity[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_viscosity, viscosity)
+
+    ret = _term_ns_asm_div_grad(_out, _grad, _viscosity, cmap.geo, is_diff)
+    return ret
+
+def term_ns_asm_convect(np.ndarray out not None,
+                        np.ndarray grad not None,
+                        np.ndarray state not None,
+                        np.ndarray bf not None,
+                        CVolumeMapping cmap not None,
+                        int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _state[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_state, state)
+    array2fmfield3(_bf, bf)
+
+    ret = _term_ns_asm_convect(_out, _grad, _state, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_lin_convect(np.ndarray out not None,
+                   np.ndarray grad not None,
+                   np.ndarray state_b not None,
+                   np.ndarray bf not None,
+                   CVolumeMapping cmap not None,
+                   int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _state_b[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_lin_convect(_out, _grad, _state_b, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_div(np.ndarray out not None,
+           np.ndarray coef not None,
+           np.ndarray div not None,
+           np.ndarray bf not None,
+           CVolumeMapping cmap not None,
+           int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _div[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_div, div)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_div(_out, _coef, _div, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_grad(np.ndarray out not None,
+            np.ndarray coef not None,
+            np.ndarray state not None,
+            np.ndarray bf not None,
+            CVolumeMapping cmap not None,
+            int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_state, state)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_grad(_out, _coef, _state, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_st_pspg_c(np.ndarray out not None,
+                 np.ndarray state_b not None,
+                 np.ndarray state_u not None,
+                 np.ndarray coef not None,
+                 CVolumeMapping cmap_p not None,
+                 CVolumeMapping cmap_u not None,
+                 np.ndarray conn not None,
+                 int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_b[1], _state_u[1], _coef[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield1(_state_u, state_u)
+    array2fmfield4(_coef, coef)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dw_st_pspg_c(_out, _state_b, _state_u, _coef,
+                        cmap_p.geo, cmap_u.geo, _conn, n_el, n_ep, is_diff)
+    return ret
+
+def dw_st_supg_p(np.ndarray out not None,
+                 np.ndarray state_b not None,
+                 np.ndarray grad_p not None,
+                 np.ndarray coef not None,
+                 CVolumeMapping cmap_u not None,
+                 CVolumeMapping cmap_p not None,
+                 int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_b[1], _grad_p[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield4(_grad_p, grad_p)
+    array2fmfield4(_coef, coef)
+
+    ret = _dw_st_supg_p(_out, _state_b, _grad_p, _coef,
+                        cmap_u.geo, cmap_p.geo, is_diff)
+    return ret
+
+def dw_st_supg_c(np.ndarray out not None,
+                 np.ndarray state_b not None,
+                 np.ndarray state_u not None,
+                 np.ndarray coef not None,
+                 CVolumeMapping cmap not None,
+                 np.ndarray conn not None,
+                 int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_b[1], _state_u[1], _coef[1]
+    cdef int32 *_conn, n_el, n_ep
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield1(_state_u, state_u)
+    array2fmfield4(_coef, coef)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+
+    ret = _dw_st_supg_c(_out, _state_b, _state_u, _coef,
+                        cmap.geo, _conn, n_el, n_ep, is_diff)
+    return ret
+
+def dw_st_grad_div(np.ndarray out not None,
+                   np.ndarray div not None,
+                   np.ndarray coef not None,
+                   CVolumeMapping cmap not None,
+                   int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _div[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_div, div)
+    array2fmfield4(_coef, coef)
+
+    ret = _dw_st_grad_div(_out, _div, _coef, cmap.geo, is_diff)
+    return ret
+
+def dw_biot_grad(np.ndarray out not None,
+                 float64 coef,
+                 np.ndarray pressure_qp not None,
+                 np.ndarray bf not None,
+                 np.ndarray mtx_d not None,
+                 CVolumeMapping cmap not None,
+                 int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure_qp[1], _bf[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure_qp, pressure_qp)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _dw_biot_grad(_out, coef, _pressure_qp, _bf, _mtx_d,
+                        cmap.geo, is_diff)
+    return ret
+
+def dw_biot_div(np.ndarray out not None,
+                float64 coef,
+                np.ndarray strain not None,
+                np.ndarray bf not None,
+                np.ndarray mtx_d not None,
+                CVolumeMapping cmap not None,
+                int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _bf[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield3(_bf, bf)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _dw_biot_div(_out, coef, _strain, _bf, _mtx_d, cmap.geo, is_diff)
+    return ret
+
+def d_biot_div(np.ndarray out not None,
+               float64 coef,
+               np.ndarray state not None,
+               np.ndarray strain not None,
+               np.ndarray mtx_d not None,
+               CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1], _strain[1], _mtx_d[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state, state)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_mtx_d, mtx_d)
+
+    ret = _d_biot_div(_out, coef, _state, _strain, _mtx_d, cmap.geo)
+    return ret
+
+def dw_piezo_coupling(np.ndarray out not None,
+                      np.ndarray strain not None,
+                      np.ndarray charge_grad not None,
+                      np.ndarray mtx_g not None,
+                      CVolumeMapping cmap not None,
+                      int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _charge_grad[1], _mtx_g[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_charge_grad, charge_grad)
+    array2fmfield4(_mtx_g, mtx_g)
+
+    ret = _dw_piezo_coupling(_out, _strain, _charge_grad, _mtx_g,
+                             cmap.geo, mode)
+    return ret
+
+def d_piezo_coupling(np.ndarray out not None,
+                     np.ndarray strain not None,
+                     np.ndarray charge_grad not None,
+                     np.ndarray mtx_g not None,
+                     CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _strain[1], _charge_grad[1], _mtx_g[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_strain, strain)
+    array2fmfield4(_charge_grad, charge_grad)
+    array2fmfield4(_mtx_g, mtx_g)
+
+    ret = _d_piezo_coupling(_out, _strain, _charge_grad, _mtx_g, cmap.geo)
+    return ret
+
+def dw_electric_source(np.ndarray out not None,
+                       np.ndarray grad not None,
+                       np.ndarray coef not None,
+                       np.ndarray bf not None,
+                       CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _coef[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_electric_source(_out, _grad, _coef, _bf, cmap.geo)
+    return ret
