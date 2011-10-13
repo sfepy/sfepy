@@ -63,7 +63,7 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         cmap = CSurfaceMapping(n_fa, n_fp, dim, n_fp)
         cmap.describe(field.get_coor(), econn, bf_sg, weights)
 
-        e_normals = cmap.normals.squeeze()
+        e_normals = cmap.normal.squeeze()
 
         # normals[imap[econn]] += e_normals
         im = imap[econn]
