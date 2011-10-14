@@ -1879,3 +1879,135 @@ def dw_electric_source(np.ndarray out not None,
 
     ret = _dw_electric_source(_out, _grad, _coef, _bf, cmap.geo)
     return ret
+
+def d_diffusion_sa(np.ndarray out not None,
+                   np.ndarray state_q not None,
+                   np.ndarray state_p not None,
+                   np.ndarray state_w not None,
+                   np.ndarray mtx_d not None,
+                   CVolumeMapping cmap not None,
+                   CVolumeMapping cmap_w not None,
+                   np.ndarray conn not None,
+                   np.ndarray conn_w not None,
+                   np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state_q[1], _state_p[1], _state_w[1], _mtx_d[1]
+    cdef int32 *_conn, n_el, n_ep
+    cdef int32 *_conn_w, n_el_w, n_ep_w
+    cdef int32 *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_q, state_q)
+    array2fmfield1(_state_p, state_p)
+    array2fmfield1(_state_w, state_w)
+    array2fmfield4(_mtx_d, mtx_d)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint2(&_conn_w, &n_el_w, &n_ep_w, conn_w)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _d_diffusion_sa(_out, _state_q, _state_p, _state_w, _mtx_d,
+                          cmap.geo, cmap_w.geo,
+                          _conn, n_el, n_ep, _conn_w, n_el_w, n_ep_w,
+                          _el_list, n_el2)
+    return ret
+
+def dw_surf_laplace(np.ndarray out not None,
+                    np.ndarray state not None,
+                    np.ndarray coef not None,
+                    np.ndarray gbf not None,
+                    CSurfaceMapping cmap not None,
+                    np.ndarray conn not None,
+                    np.ndarray el_list not None,
+                    int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1], _coef[1], _gbf[1]
+    cdef int32 *_conn, n_el, n_ep
+    cdef int32 *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_gbf, gbf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _dw_surf_laplace(_out, _state, _coef, _gbf, cmap.geo,
+                           _conn, n_el, n_ep, _el_list, n_el2, is_diff)
+    return ret
+
+def d_surf_laplace(np.ndarray out not None,
+                   np.ndarray state_p not None,
+                   np.ndarray state_q not None,
+                   np.ndarray coef not None,
+                   np.ndarray gbf not None,
+                   CSurfaceMapping cmap not None,
+                   np.ndarray conn not None,
+                   np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state_p[1], _state_q[1], _coef[1], _gbf[1]
+    cdef int32 *_conn, n_el, n_ep
+    cdef int32 *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_p, state_p)
+    array2fmfield1(_state_q, state_q)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_gbf, gbf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _d_surf_laplace(_out, _state_p, _state_q, _coef, _gbf, cmap.geo,
+                          _conn, n_el, n_ep, _el_list, n_el2)
+    return ret
+
+def dw_surf_lcouple(np.ndarray out not None,
+                    np.ndarray state not None,
+                    np.ndarray coef not None,
+                    np.ndarray bf not None,
+                    np.ndarray gbf not None,
+                    CSurfaceMapping cmap not None,
+                    np.ndarray conn not None,
+                    np.ndarray el_list not None,
+                    int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state[1], _coef[1], _bf[1], _gbf[1]
+    cdef int32 *_conn, n_el, n_ep
+    cdef int32 *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state, state)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_bf, bf)
+    array2fmfield3(_gbf, gbf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _dw_surf_lcouple(_out, _state, _coef, _bf, _gbf, cmap.geo,
+                           _conn, n_el, n_ep, _el_list, n_el2, is_diff)
+    return ret
+
+def d_surf_lcouple(np.ndarray out not None,
+                   np.ndarray state_p not None,
+                   np.ndarray state_q not None,
+                   np.ndarray coef not None,
+                   np.ndarray bf not None,
+                   np.ndarray gbf not None,
+                   CSurfaceMapping cmap not None,
+                   np.ndarray conn not None,
+                   np.ndarray el_list not None):
+    cdef int32 ret
+    cdef FMField _out[1], _state_p[1], _state_q[1], _coef[1], _bf[1], _gbf[1]
+    cdef int32 *_conn, n_el, n_ep
+    cdef int32 *_el_list, n_el2
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_p, state_p)
+    array2fmfield1(_state_q, state_q)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_gbf, gbf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
+    array2pint1(&_el_list, &n_el2, el_list)
+
+    ret = _d_surf_lcouple(_out, _state_p, _state_q, _coef, _bf, _gbf, cmap.geo,
+                          _conn, n_el, n_ep, _el_list, n_el2)
+    return ret
