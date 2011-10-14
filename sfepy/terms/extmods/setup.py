@@ -41,7 +41,7 @@ def configuration(parent_package='', top_path=None):
     config.add_extension('terms',
                          sources=src,
                          libraries=['sfepy_terms', 'sfepy_common'],
-                         depends=[csrc + common_src],
+                         depends=csrc + common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir, '../../fem/extmods'],
