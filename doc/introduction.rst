@@ -7,7 +7,8 @@ Introduction
 
 *SfePy* is a finite element analysis software written almost entirely in
 `Python <http://python.org>`_, with exception of the most time demanding
-routines - those are written in C and wrapped by `SWIG <http://www.swig.org>`_.
+routines - those are written in C and wrapped by `Cython
+<http://cython.org/>`_ or written directly in Cython.
 
 *SfePy* is a free software released under the `New BSD License
 <http://www.opensource.org/licenses/bsd-license.php>`_.  It relies on
@@ -45,7 +46,7 @@ Requirements
 
 Installation prerequisites:
 
-* recent numpy, scipy (with umfpack wrapper, or umfpack scikit), swig 
+* recent numpy, scipy (with umfpack wrapper, or umfpack scikit), cython
 
 Dependencies:
 
