@@ -2011,3 +2011,48 @@ def d_surf_lcouple(np.ndarray out not None,
     ret = _d_surf_lcouple(_out, _state_p, _state_q, _coef, _bf, _gbf, cmap.geo,
                           _conn, n_el, n_ep, _el_list, n_el2)
     return ret
+
+def dw_adj_convect1():
+    pass
+
+def dw_adj_convect2():
+    pass
+
+def dw_st_adj_supg_c():
+    pass
+
+def dw_st_adj1_supg_p():
+    pass
+
+def dw_st_adj2_supg_p():
+    pass
+
+def d_of_nsMinGrad():
+    pass
+
+def d_of_nsSurfMinDPress():
+    pass
+
+def d_sd_div():
+    pass
+
+def d_sd_div_grad():
+    pass
+
+def d_sd_convect():
+    pass
+
+def d_sd_testPQ():
+    pass
+
+def d_sd_st_grad_div():
+    pass
+
+def d_sd_st_supg_c():
+    pass
+
+def d_sd_st_pspg_c():
+    pass
+
+def d_sd_st_pspg_p():
+    pass
