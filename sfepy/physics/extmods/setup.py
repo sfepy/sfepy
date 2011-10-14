@@ -2,7 +2,6 @@
 
 def configuration(parent_package='', top_path=None):
     import os.path as op
-    import sys
     from numpy.distutils.misc_util import Configuration
 
     from sfepy import Config
@@ -17,14 +16,11 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    src = ['dft.c', 'dft.i']
-    config.add_extension('_dft',
-                         sources=src,
-                         depends=[],
+    config.add_extension('cdft',
+                         sources=['dft.c', 'cdft.pyx'],
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
-                         include_dirs=[auto_dir, '../../fem/extmods'],
-                         define_macros=defines)
+                         include_dirs=[auto_dir, '../../fem/extmods'],)
 
     return config
 

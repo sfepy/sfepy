@@ -48,7 +48,7 @@ class HyperElasticULBase(HyperElasticBase):
                              data.tr_b,
                              data.in2_b,
                              data.green_strain,
-                             vec, 0, vg, ap.econn)
+                             vec, vg, ap.econn)
 
         return data
 

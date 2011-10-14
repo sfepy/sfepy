@@ -32,7 +32,7 @@ def insert_sparse_to_csr(mtx1, mtx2, irs, ics):
     rows `irs` and columns `ics`. The submatrix `mtx1[irs,ics]` must
     already be preallocated and have the same structure as `mtx2`.
     """
-    import sfepy.fem.extmods.fem as fem
+    import sfepy.fem.extmods.assemble as asm
 
     if isinstance(irs, slice):
         irs = nm.arange(irs.start, irs.stop, irs.step, dtype=nm.int32)
@@ -51,7 +51,7 @@ def insert_sparse_to_csr(mtx1, mtx2, irs, ics):
     cols = ics[aux.col[:,None]]
 
     iels = nm.arange(rows.shape[0], dtype=nm.int32)
-    fem.assemble_matrix(mtx1.data, mtx1.indptr, mtx1.indices, data,
+    asm.assemble_matrix(mtx1.data, mtx1.indptr, mtx1.indices, data,
                         iels, 1.0, rows, cols)
 
 def _normalize_sizes(sizes):

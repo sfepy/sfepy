@@ -1,24 +1,12 @@
-# c: 19.05.2008, r: 19.05.2008
 from sfepy import data_dir
 
 filename_mesh = data_dir + '/meshes/2d/special/circle_in_square.mesh'
 
 dim = 2
 
-field_1 = {
-    'name' : 'scalar_field',
-    'dtype' : 'real',
-    'shape' : 'scalar',
-    'region' : 'Omega',
-    'approx_order' : 1,
-}
-
-field_2 = {
-    'name' : 'vector_field',
-    'dtype' : 'real',
-    'shape' : 'vector',
-    'region' : 'Omega',
-    'approx_order' : 1,
+fields = {
+    'scalar_field' : ('real', 'scalar', 'Omega', 1),
+    'vector_field' : ('real', 'vector', 'Omega', 1),
 }
 
 variables = {
@@ -34,18 +22,22 @@ variables = {
 
 regions = {
     'Omega' : ('all', {}),
+    'Left' : ('nodes in (x < -0.499)', {}),
 }
 
-integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
-    'quadrature' : 'gauss_o2_d2',
+integrals = {
+    'i1' : ('v', 'gauss_o2_d2'),
+    'isurf' : ('s', 'gauss_o1_d1'),
 }
 
-material_1 = {
-    'name' : 'm',
-    'function' : 'get_pars',
-}   
+materials = {
+    'm' : 'get_pars',
+    'm2' : ({'K' : [[3.0, 0.1], [0.3, 1.0]]},),
+}
+
+equations = {
+    'eq' : """dw_diffusion.i1.Omega( m2.K, ts, us ) = 0"""
+}
 
 def get_pars(ts, coor, mode=None, term=None, **kwargs):
     if mode == 'qp':
@@ -53,13 +45,13 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
         sym = (dim + 1) * dim / 2
 
         if 'biot' in term.name:
-            val = nm.zeros( (sym, 1), dtype = nm.float64 )
+            val = nm.zeros((sym, 1), dtype=nm.float64)
             val[:dim] = 0.132
             val[dim:sym] = 0.092
         elif 'volume_dot' in term.name:
-            val = 1.0 / nm.array( [3.8], dtype = nm.float64 )
+            val = 1.0 / nm.array([3.8], dtype=nm.float64)
         elif 'diffusion' in term.name:
-            val = nm.eye( dim, dtype = nm.float64 )
+            val = nm.eye(dim, dtype=nm.float64)
         else:
             raise ValueError
 
@@ -68,7 +60,6 @@ def get_pars(ts, coor, mode=None, term=None, **kwargs):
 functions = {
     'get_pars' : (get_pars,),
 }
-
 
 # (eval term prefix, parameter corresponding to test variable, 'd' variables,
 # 'dw' variables (test must be paired with unknown, which should be at
@@ -86,27 +77,20 @@ test_terms = [
 
 import numpy as nm
 from sfepy.base.testing import TestCommon
-from sfepy.base.base import debug, pause
 
-##
-# c: 19.05.2008
-class Test( TestCommon ):
+class Test(TestCommon):
 
-    ##
-    # c: 19.05.2008, r: 19.05.2008
-    def from_conf( conf, options ):
+    @staticmethod
+    def from_conf(conf, options):
         from sfepy.fem import ProblemDefinition
 
         problem = ProblemDefinition.from_conf(conf, init_equations=False)
-        test = Test( problem = problem,
-                     conf = conf, options = options )
+        test = Test(problem=problem,
+                    conf=conf, options=options)
         return test
-    from_conf = staticmethod( from_conf )
 
-    ##
-    # c: 19.05.2008, r: 19.05.2008
-    def test_consistency_d_dw( self ):
-        from sfepy.fem import Function, Variables
+    def test_consistency_d_dw(self):
+        from sfepy.fem import Variables
 
         ok = True
         pb = self.problem
@@ -121,7 +105,7 @@ class Test( TestCommon ):
             for var_name in d_vars:
                 var = variables[var_name]
                 n_dof = var.field.n_nod * var.field.shape[0]
-                aux = nm.arange( n_dof, dtype = nm.float64 )
+                aux = nm.arange(n_dof, dtype=nm.float64)
                 var.data_from_data(aux)
 
             if prefix == 'd':
@@ -131,7 +115,7 @@ class Test( TestCommon ):
                 val1 = pb.evaluate(term1, call_mode='d_eval',
                                    var_dict=variables.as_dict())
 
-            self.report( '%s: %s' % (term1, val1) )
+            self.report('%s: %s' % (term1, val1))
 
             term2 = term_template % (('dw',) + dw_vars[:2])
 
@@ -140,13 +124,126 @@ class Test( TestCommon ):
                                   ret_variables=True)
 
             pvec = vv.get_state_part_view(vec, dw_vars[2])
-            val2 = nm.dot( variables[par_name](), pvec )
-            self.report( '%s: %s' % (term2, val2) )
+            val2 = nm.dot(variables[par_name](), pvec)
+            self.report('%s: %s' % (term2, val2))
 
-            err = nm.abs( val1 - val2 ) / nm.abs( val1 )
+            err = nm.abs(val1 - val2) / nm.abs(val1)
             _ok = err < 1e-12
-            self.report( 'relative difference: %e -> %s' % (err, _ok) )
+            self.report('relative difference: %e -> %s' % (err, _ok))
 
             ok = ok and _ok
+
+        return ok
+
+    def test_eval_matrix(self):
+        problem = self.problem
+
+        problem.set_equations()
+        problem.time_update(ebcs={}, epbcs={})
+
+        var = problem.get_variables()['us']
+
+        vec = nm.arange(var.n_dof, dtype=var.dtype)
+
+        var.data_from_any(vec)
+
+        val1 = problem.evaluate('dw_diffusion.i1.Omega( m2.K, us, us )',
+                                mode='eval', us=var)
+
+        mtx = problem.evaluate('dw_diffusion.i1.Omega( m2.K, ts, us )',
+                               mode='weak', dw_mode='matrix')
+
+        val2 = nm.dot(vec, mtx * vec)
+
+        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-15
+
+        self.report('eval: %s, weak: %s, ok: %s' % (val1, val2, ok))
+
+        return ok
+
+    def test_vector_matrix(self):
+        problem = self.problem
+
+        problem.set_equations()
+        problem.time_update()
+
+        state = problem.create_state()
+        state.apply_ebc()
+
+        aux1 = problem.evaluate("dw_diffusion.i1.Omega( m2.K, ts, us )",
+                                mode='weak', dw_mode='vector')
+
+        problem.time_update(ebcs={}, epbcs={})
+
+        mtx = problem.evaluate("dw_diffusion.i1.Omega( m2.K, ts, us )",
+                               mode='weak', dw_mode='matrix')
+        aux2g = mtx * state()
+        problem.time_update(ebcs=self.conf.ebcs,
+                            epbcs=self.conf.epbcs)
+        aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
+
+        ret = self.compare_vectors(aux1, aux2,
+                                   label1='vector mode',
+                                   label2='matrix mode')
+        if not ret:
+            self.report('failed')
+
+        return ret
+
+    def test_surface_evaluate(self):
+        from sfepy.fem import FieldVariable
+        problem = self.problem
+
+        us = problem.get_variables()['us']
+        vec = nm.empty(us.n_dof, dtype=us.dtype)
+        vec[:] = 1.0
+        us.data_from_any(vec)
+
+        expr = 'di_surface_integrate.isurf.Left( us )'
+        val = problem.evaluate(expr, us=us)
+        ok1 = nm.abs(val - 1.0) < 1e-15
+        self.report('with unknown: %s, value: %s, ok: %s'
+                    % (expr, val, ok1))
+
+        ps1 = FieldVariable('ps1', 'parameter', us.get_field(), 1,
+                            primary_var_name='(set-to-None)')
+        ps1.data_from_any(vec)
+
+        expr = 'di_surface_integrate.isurf.Left( ps1 )'
+        val = problem.evaluate(expr, ps1=ps1)
+        ok2 = nm.abs(val - 1.0) < 1e-15
+        self.report('with parameter: %s, value: %s, ok: %s'
+                    % (expr, val, ok2))
+        ok2 = True
+
+        return ok1 and ok2
+
+    def test_dq_de(self):
+        from sfepy.fem import Integrals
+        from sfepy.fem.mappings import get_jacobian
+
+        problem = self.problem
+
+        var = problem.create_variables(['us'])['us']
+        val = nm.arange(var.n_dof, dtype=var.dtype)
+        var.data_from_any(val)
+
+        val1 = problem.evaluate('de_grad.i1.Omega( us )', us=var, mode='el_avg')
+        self.report('de_grad: min, max:', val1.min(), val1.max())
+
+        aux = problem.evaluate('dq_grad.i1.Omega( us )', us=var, mode='qp')
+
+        integral = Integrals().get(2, 'v')
+        det = get_jacobian(var.field, integral)
+        val2 = (aux * det).sum(axis=1) / det.sum(axis=1)
+        val2.shape = val1.shape
+
+        self.report('dq_grad: min, max:', val2.min(), val2.max())
+
+        ok = self.compare_vectors(val1, val2,
+                                  label1='de mode',
+                                  label2='dq mode')
+        if not ok:
+            self.report('failed')
 
         return ok

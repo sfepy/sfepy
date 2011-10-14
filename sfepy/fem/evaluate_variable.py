@@ -15,20 +15,20 @@ def eval_real(vec, conn, geo, mode, shape):
         function = terms.dq_state_in_qp
 
         out = nm.empty((n_el, n_qp, n_comp, 1), dtype=dtype)
-        function(out, vec, 0, geo.bf, conn)
+        function(out, vec, geo.bf, conn)
 
     elif mode == 'grad':
         function = terms.dq_grad
 
         out = nm.empty((n_el, n_qp, dim, n_comp), dtype=dtype)
-        function(out, vec, 0, geo, conn)
+        function(out, vec, geo, conn)
 
     elif mode == 'div':
         assert_(n_comp == dim)
         function = terms.dq_div_vector
 
         out = nm.empty((n_el, n_qp, 1, 1), dtype=dtype)
-        function(out, vec, 0, geo, conn)
+        function(out, vec, geo, conn)
 
     elif mode == 'cauchy_strain':
         assert_(n_comp == dim)
@@ -36,7 +36,7 @@ def eval_real(vec, conn, geo, mode, shape):
 
         sym = (dim + 1) * dim / 2
         out = nm.empty((n_el, n_qp, sym, 1), dtype=dtype)
-        function(out, vec, 0, geo, conn)
+        function(out, vec, geo, conn)
 
     else:
         raise ValueError('unsupported variable evaluation mode! (%s)'
@@ -57,13 +57,13 @@ def eval_real_extra(vec, conn, geo, mode, shape):
         function = terms.dq_state_in_qp
 
         out = nm.empty((n_fa, n_qp, n_comp, 1), dtype=dtype)
-        function(out, vec, 0, geo.bf, conn)
+        function(out, vec, geo.bf, conn)
 
     elif mode == 'grad':
         function = terms.dq_grad_extra
 
         out = nm.empty((n_fa, n_qp, dim, n_comp), dtype=dtype)
-        function(out, vec, 0, geo, conn)
+        function(out, vec, geo, conn)
 
     else:
         raise ValueError('unsupported variable evaluation mode! (%s)'
@@ -83,8 +83,8 @@ def eval_complex(vec, conn, geo, mode, shape):
 
         rout = nm.empty((n_el, n_qp, n_comp, 1), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, n_comp, 1), dtype=nm.float64)
-        function(rout, vec.real.copy(), 0, geo.bf, conn)
-        function(iout, vec.imag.copy(), 0, geo.bf, conn)
+        function(rout, vec.real.copy(), geo.bf, conn)
+        function(iout, vec.imag.copy(), geo.bf, conn)
         out = rout + 1j * iout
 
     elif mode == 'grad':
@@ -92,8 +92,8 @@ def eval_complex(vec, conn, geo, mode, shape):
 
         rout = nm.empty((n_el, n_qp, dim, n_comp), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, dim, n_comp), dtype=nm.float64)
-        function(rout, vec.real.copy(), 0, geo, conn)
-        function(iout, vec.imag.copy(), 0, geo, conn)
+        function(rout, vec.real.copy(), geo, conn)
+        function(iout, vec.imag.copy(), geo, conn)
         out = rout + 1j * iout
 
     elif mode == 'div':
@@ -102,8 +102,8 @@ def eval_complex(vec, conn, geo, mode, shape):
 
         rout = nm.empty((n_el, n_qp, 1, 1), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, 1, 1), dtype=nm.float64)
-        function(rout, vec.real.copy(), 0, geo, conn)
-        function(iout, vec.imag.copy(), 0, geo, conn)
+        function(rout, vec.real.copy(), geo, conn)
+        function(iout, vec.imag.copy(), geo, conn)
         out = rout + 1j * iout
 
     elif mode == 'cauchy_strain':
@@ -113,8 +113,8 @@ def eval_complex(vec, conn, geo, mode, shape):
         sym = (dim + 1) * dim / 2
         rout = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, sym, 1), dtype=nm.float64)
-        function(rout, vec.real.copy(), 0, geo, conn)
-        function(iout, vec.imag.copy(), 0, geo, conn)
+        function(rout, vec.real.copy(), geo, conn)
+        function(iout, vec.imag.copy(), geo, conn)
         out = rout + 1j * iout
 
     else:

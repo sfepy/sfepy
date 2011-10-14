@@ -21,32 +21,29 @@ import scipy.sparse as sp
 
 import sfepy
 from sfepy.fem import Mesh, Domain
-from sfepy.fem.extmods.fem import raw_graph
-from sfepy.fem.extmods.meshutils import graph_components
+from sfepy.fem.extmods.mesh import create_mesh_graph, graph_components
 
 ##
 # 29.08.2007, c
 def surface_graph( surf_faces, n_nod ):
-    ret, prow, icol = raw_graph( n_nod, n_nod,
-                                len( surf_faces), surf_faces, surf_faces )
-    nnz = prow[-1]
+    nnz, prow, icol = create_mesh_graph(n_nod, n_nod, len(surf_faces),
+                                        surf_faces, surf_faces)
     data = nm.empty( (nnz,), dtype = nm.int32 )
     data.fill( 2 )
     return sp.csr_matrix( (data, icol, prow), (n_nod, n_nod) )
 
-##
-# 29.08.2007, c
-def surface_components( gr_s, surf_faces ):
+def surface_components(gr_s, surf_faces):
+    """
+    Determine surface components given surface mesh connectivity graph.
+    """
     n_nod = gr_s.shape[0]
-    flag = nm.empty( (n_nod,), dtype = nm.int32 )
-    pos = nm.empty_like( flag )
-    ret, n_comp = graph_components( flag, gr_s.indptr, gr_s.indices, pos )
+    n_comp, flag = graph_components(n_nod, gr_s.indptr, gr_s.indices)
 
     comps = []
-    for ii, face in enumerate( surf_faces ):
+    for ii, face in enumerate(surf_faces):
         comp = flag[face[:,0]]
-        comps.append( comp )
-    print n_comp
+        comps.append(comp)
+
     return n_comp, comps
 
 usage = """%prog [options] filename_in|- filename_out|-

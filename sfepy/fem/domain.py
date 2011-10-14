@@ -11,7 +11,6 @@ from sfepy.fem.parseReg import create_bnf, visit_stack, ParseException
 from sfepy.fem.refine import refine_3_4
 from sfepy.fem.fe_surface import FESurface
 import fea
-import extmods.meshutils as mu
 
 ##
 # 14.06.2006, c
@@ -306,11 +305,12 @@ class Domain( Struct ):
         Return the element connectivity groups of the underlying mesh.
         """
         return self.mesh.conns
-    
-    ##
-    # 08.06.2006, c
-    # 17.07.2006
-    def fix_element_orientation( self ):
+
+    def fix_element_orientation(self):
+        """
+        Ensure element nodes ordering giving positive element volume.
+        """
+        from extmods.mesh import orient_elements
 
         coors = self.mesh.coors
         for ii, group in self.groups.iteritems():
@@ -319,16 +319,16 @@ class Domain( Struct ):
 
             itry = 0
             while itry < 2:
-                flag = -nm.ones( conn.shape[0], dtype = nm.int32 )
+                flag = -nm.ones(conn.shape[0], dtype=nm.int32)
 
                 # Changes orientation if it is wrong according to swap*!
                 # Changes are indicated by positive flag.
-                mu.orient_elements( flag, conn, coors,
-                                    ori.roots, ori.vecs,
-                                    ori.swap_from, ori.swap_to )
-    #            print flag
+                orient_elements(flag, conn, coors,
+                                ori.roots, ori.vecs,
+                                ori.swap_from, ori.swap_to)
+
                 if nm.alltrue( flag == 0 ):
-                    if itry > 0: output( '...corrected' )
+                    if itry > 0: output('...corrected')
                     itry = -1
                     break
 
@@ -336,10 +336,10 @@ class Domain( Struct ):
                 itry += 1
 
             if itry == 2 and flag[0] != -1:
-                raise RuntimeError, "elements cannot be oriented! (%d, %s)"\
-                      % (ii, self.mesh.descs[ii] )
+                raise RuntimeError('elements cannot be oriented! (%d, %s)'
+                                   % (ii, self.mesh.descs[ii]))
             elif flag[0] == -1:
-                output( 'warning: element orienation not checked' )
+                output('warning: element orienation not checked')
 
     def has_faces( self ):
         return sum( [group.shape.n_face

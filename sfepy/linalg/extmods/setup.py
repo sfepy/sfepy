@@ -2,7 +2,6 @@
 
 def configuration(parent_package='', top_path=None):
     import os.path as op
-    import sys
     from numpy.distutils.misc_util import Configuration
 
     from sfepy import Config
@@ -19,15 +18,12 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    src = ['rcm.c', 'rcm.i']
     fem_src = ['common_python.c']
     fem_src = [op.join('../../fem/extmods', ii) for ii in fem_src]
 
-    depends=['array.i', 'common.i']
-    depends = [op.join('../../fem/extmods', ii) for ii in depends]
-    config.add_extension('_rcm',
+    src = ['crcm.pyx', 'rcm.c']
+    config.add_extension('crcm',
                          sources=src + fem_src,
-                         depends=depends,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir, '../../fem/extmods'],

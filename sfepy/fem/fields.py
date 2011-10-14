@@ -22,7 +22,7 @@ from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
-from sfepy.fem.extmods.fem import evaluate_at
+from sfepy.fem.extmods.bases import evaluate_at
 
 def parse_approx_order(approx_order):
     """
@@ -869,7 +869,7 @@ class Field( Struct ):
         for ig, ap in self.aps.iteritems():
             vg = ap.describe_geometry(self, 'volume', ap.region, integral)
 
-            volume = nm.squeeze(vg.variable(2))
+            volume = nm.squeeze(vg.volume)
             iels = ap.region.cells[ig]
 
             data_e = nm.zeros((volume.shape[0], 1, dim, 1), dtype=nm.float64)
@@ -1051,35 +1051,26 @@ class Field( Struct ):
             ics = nm.asarray(ics, dtype=nm.int32)
 
             vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-            conns, conns0 = [], []
+            conns, geo_conns = [], []
             for ap in self.aps.itervalues():
                 ps = ap.interp.poly_spaces['v']
-                if ps.order == 0:
-                    # Use geometry element space and connectivity to locate an
-                    # element a point is in.
-                    ps = ap.interp.gel.interp.poly_spaces['v']
-                    assert_(ps.order == 1)
 
-                    orders.append(0) # Important!
-                    conn = self.domain.groups[ap.ig].conn
-                    conns.append(conn)
-
-                else:
-                    orders.append(ps.order)
-                    conns.append(ap.econn)
+                conn = self.domain.groups[ap.ig].conn
+                geo_conns.append(conn)
 
                 vertex_coorss.append(ps.geometry.coors)
                 nodess.append(ps.nodes)
                 mtx_is.append(ps.get_mtx_i())
 
                 # Always the true connectivity for extracting source values.
-                conns0.append(ap.econn)
+                orders.append(ps.order)
+                conns.append(ap.econn)
 
             orders = nm.array(orders, dtype=nm.int32)
 
             evaluate_at(vals, cells, status, coors, source_vals,
                         ics, offsets, iconn,
-                        scoors, conns0, conns,
+                        scoors, conns, geo_conns,
                         vertex_coorss, nodess, orders, mtx_is,
                         1, close_limit, 1e-15, 100, 1e-8)
 
@@ -1358,7 +1349,7 @@ class SurfaceField(Field):
         for ig, ap in self.aps.iteritems():
             sg = ap.describe_geometry(self, 'surface', ap.region, integral)
 
-            area = nm.squeeze(sg.variable(2))
+            area = nm.squeeze(sg.area)
             n_cells = region.get_n_cells(ig, True)
             iels = offset + nm.arange(n_cells, dtype=nm.int32)
             offset += n_cells

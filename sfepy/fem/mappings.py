@@ -5,7 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.fem.poly_spaces import PolySpace
-import extmods.geometry as gm
+from sfepy.fem.extmods.mappings import CVolumeMapping, CSurfaceMapping
 
 class PhysicalQPs(Struct):
     """
@@ -81,7 +81,7 @@ def get_jacobian(field, integral, integration='volume'):
     jac = None
     for ig in field.igs:
         geo, _ = field.get_mapping(ig, field.region, integral, integration)
-        _jac = geo.variable(1)
+        _jac = geo.det
         if jac is None:
             jac = _jac
 
@@ -163,30 +163,20 @@ class VolumeMapping(Mapping):
 
         Returns
         -------
-        geo : VolumeGeometry instance
-            The geometry object that describes the mapping.
+        cmap : CVolumeMapping instance
+            The volume mapping.
         """
         poly_space = get_default(poly_space, self.poly_space)
-
-        geo = gm.VolumeGeometry(self.n_el, qp_coors.shape[0], self.dim,
-                                poly_space.n_nod)
-        geo.mode = gm.GM_Material
 
         bf_g = self.get_base(qp_coors, diff=True)
         ebf_g = poly_space.eval_base(qp_coors, diff=True)
 
-        if nm.allclose(bf_g, 0.0):
-            raise ValueError('zero base function gradient!')
 
-        try:
-            geo.describe(self.coors, self.conn, bf_g, ebf_g, weights)
-        except:
-            gm.errclear()
-            raise
+        cmap = CVolumeMapping(self.n_el, qp_coors.shape[0], self.dim,
+                              poly_space.n_nod)
+        cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
 
-        return geo
-
-        return geo
+        return cmap
 
 class SurfaceMapping(Mapping):
     """
@@ -201,24 +191,18 @@ class SurfaceMapping(Mapping):
 
         Returns
         -------
-        geo : SurfaceGeometry instance
-            The geometry object that describes the mapping.
+        cmap : CSurfaceMapping instance
+            The surface mapping.
         """
         poly_space = get_default(poly_space, self.poly_space)
-
-        geo = gm.SurfaceGeometry(self.n_el, qp_coors.shape[0], self.dim,
-                                 poly_space.n_nod)
-        geo.mode = gm.GM_Material
 
         bf_g = self.get_base(qp_coors, diff=True)
 
         if nm.allclose(bf_g, 0.0):
             raise ValueError('zero base function gradient!')
 
-        try:
-            geo.describe(self.coors, self.conn, bf_g, weights)
-        except:
-            gm.errclear()
-            raise
+        cmap = CSurfaceMapping(self.n_el, qp_coors.shape[0], self.dim,
+                               poly_space.n_nod)
+        cmap.describe(self.coors, self.conn, bf_g, weights)
 
-        return geo
+        return cmap

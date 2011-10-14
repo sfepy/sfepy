@@ -914,13 +914,24 @@ def find_subclasses(context, classes, omit_unnamed=False):
             pass
     return table
 
-def load_classes(filenames, classes, package_name=None):
+def load_classes(filenames, classes, package_name=None, ignore_errors=False):
     """
     For each filename in filenames, load all subclasses of classes listed.
     """
     table = {}
     for filename in filenames:
-        mod = import_file(filename, package_name=package_name)
+        if not ignore_errors:
+            mod = import_file(filename, package_name=package_name)
+
+        else:
+            try:
+                mod = import_file(filename, package_name=package_name)
+
+            except:
+                output('WARNING: module %s cannot be imported!' % filename)
+                output('reason:\n', sys.exc_info()[1])
+                continue
+
         table.update(find_subclasses(vars(mod), classes, omit_unnamed=True))
 
     return table

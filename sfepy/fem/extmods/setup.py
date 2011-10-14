@@ -2,7 +2,6 @@
 
 def configuration(parent_package='', top_path=None):
     import os.path as op
-    import sys
     from numpy.distutils.misc_util import Configuration
 
     from sfepy import Config
@@ -20,31 +19,57 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    src = ['fmfield.c', 'fem.c', 'fem.i', 'geommech.c', 'sort.c',
-           'common_python.c']
-    config.add_extension('_fem',
+    common_src = ['fmfield.c', 'geometry.c', 'geommech.c', 'common_python.c']
+
+    config.add_library('sfepy_common',
+                       sources=common_src,
+                       extra_compiler_args=site_config.compile_flags(),
+                       extra_link_args=site_config.link_flags(),
+                       include_dirs=[auto_dir, site_config.python_include()],
+                       macros=defines)
+
+    src = ['_fmfield.pyx']
+    config.add_extension('_fmfield',
                          sources=src,
-                         depends=['array.i', 'common.i', 'fmfield.i'],
+                         libraries=['sfepy_common'],
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['geomtrans.c', 'meshutils.c', 'meshutils.i', 'common_python.c',
-           'sort.c']
-    config.add_extension('_meshutils',
+    src = ['mappings.pyx']
+    config.add_extension('mappings',
                          sources=src,
-                         depends=['array.i', 'common.i'],
+                         libraries=['sfepy_common'],
+                         depends=common_src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
-    src = ['fmfield.c', 'geometry.c', 'geometry.i', 'geommech.c',
-           'common_python.c']
-    config.add_extension('_geometry',
+    src = ['assemble.pyx']
+    config.add_extension('assemble',
                          sources=src,
-                         depends=['array.i', 'common.i', 'fmfield.i'],
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
+    src = ['bases.pyx']
+    config.add_extension('bases',
+                         sources=src,
+                         libraries=['sfepy_common'],
+                         depends=common_src,
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
+    src = ['mesh.pyx', 'geomtrans.c', 'meshutils.c', 'sort.c',
+           'common_python.c']
+    config.add_extension('mesh',
+                         sources=src,
                          extra_compile_args=site_config.compile_flags(),
                          extra_link_args=site_config.link_flags(),
                          include_dirs=[auto_dir],

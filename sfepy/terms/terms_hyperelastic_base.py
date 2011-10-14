@@ -95,7 +95,7 @@ class HyperElasticBase(Term):
             if diff_var is None:
                 stress = self.compute_stress(mat, fd, **kwargs)
                 self.stress_cache[ig] = stress
-                tan_mod = nm.array([0], ndmin=4)
+                tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                 fmode = 0
 

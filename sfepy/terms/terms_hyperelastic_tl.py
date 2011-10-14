@@ -48,7 +48,7 @@ class HyperElasticTLBase(HyperElasticBase):
                              data.in2_c,
                              data.sym_inv_c,
                              data.green_strain,
-                             vec, 0, vg, ap.econn)
+                             vec, vg, ap.econn)
         return data
 
 class NeoHookeanTLTerm(HyperElasticTLBase):
@@ -178,7 +178,7 @@ class BulkPressureTLTerm(HyperElasticTLBase):
                 if diff_var is None:
                     stress = self.compute_data(fd, 0, **kwargs)
                     self.stress_cache[ig] = stress
-                    tan_mod = nm.array([0], ndmin=4)
+                    tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                     fmode = 0
 
@@ -398,7 +398,7 @@ class SurfaceTractionTLTerm(HyperElasticBase):
         self.family_function(data.mtx_f,
                              data.det_f,
                              data.inv_f,
-                             vec, 0, sg, sd.fis, ap.econn)
+                             vec, sg, sd.fis, ap.econn)
 
         return data
 

@@ -34,6 +34,22 @@ class Config(object):
         else:
             return "%d.%d" % tuple(sys.version_info[:2])
 
+    def python_include(self):
+        if (has_attr(site_cfg, 'python_include')
+            and (site_cfg.python_include != 'auto')):
+            return site_cfg.python_include
+
+        else:
+            system = self.system()
+
+            if system == 'posix':
+                version = self.python_version()
+                return os.path.join(sys.prefix, 'include', 'python' + version)
+
+            else:
+                return os.path.join(sys.prefix, 'include')
+
+
     def system(self):
         if has_attr(site_cfg, 'system') and site_cfg.system is not None:
             return site_cfg.system

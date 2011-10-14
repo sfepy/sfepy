@@ -1,258 +1,107 @@
-# c: 14.04.2008, r: 14.04.2008
-import os.path as op
-
 import numpy as nm
-
-from sfepy import data_dir
-from sfepy.fem.periodic import match_y_line
-
-filename_mesh = data_dir + '/meshes/2d/square_unit_tri.mesh'
-
-material_2 = {
-    'name' : 'm',
-    'values' : {'K' : [[3.0, 0.1], [0.3, 1.0]]},
-}
-
-field_1 = {
-    'name' : 'pressure',
-    'dtype' : 'real',
-    'shape' : (1,),
-    'region' : 'Omega',
-    'approx_order' : 2,
-}
-
-variables = {
-    'p' : ('unknown field', 'pressure', 0),
-    'q' : ('test field', 'pressure', 'p'),
-    'r' : ('parameter field', 'pressure', 'p'),
-}
-
-region_1000 = {
-    'name' : 'Omega',
-    'select' : 'all',
-}
-
-region_1 = {
-    'name' : 'Left',
-    'select' : 'nodes in (x < -0.499)',
-}
-region_10 = {
-    'name' : 'LeftStrip',
-    'select' : 'nodes in (x < -0.499) & (y > -0.199) & (y < 0.199)',
-}
-region_11 = {
-    'name' : 'LeftFix',
-    'select' : 'r.Left -n r.LeftStrip',
-}
-region_2 = {
-    'name' : 'Right',
-    'select' : 'nodes in (x > 0.499)',
-}
-region_20 = {
-    'name' : 'RightStrip',
-    'select' : 'nodes in (x > 0.499) & (y > -0.199) & (y < 0.199)',
-}
-region_21 = {
-    'name' : 'RightFix',
-    'select' : 'r.Right -n r.RightStrip',
-}
-
-ebcs = {
-    't_left' : ('LeftFix', {'p.0' : 5.0}),
-    't_right' : ('RightFix', {'p.0' : 0.0}),
-}
-
-epbc_10 = {
-    'name' : 'periodic_x',
-    'region' : ['LeftStrip', 'RightStrip'],
-    'dofs' : {'p.0' : 'p.0'},
-    'match' : 'match_y_line',
-}
-
-functions = {
-    'match_y_line' : (match_y_line,),
-}
-
-integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
-    'quadrature' : 'gauss_o2_d2',
-}
-
-integral_2 = {
-    'name' : 'isurf',
-    'kind' : 's',
-    'quadrature' : 'gauss_o1_d1',
-}
-
-equations = {
-    'eq' : """dw_diffusion.i1.Omega( m.K, q, p ) = 0"""
-}
-
-solver_0 = {
-    'name' : 'ls',
-    'kind' : 'ls.scipy_direct',
-}
-
-solver_1 = {
-    'name' : 'newton',
-    'kind' : 'nls.newton',
-
-    'i_max'      : 1,
-    'eps_a'      : 1e-10,
-    'eps_r'      : 1.0,
-    'macheps'   : 1e-16,
-    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.1,
-    'ls_red_warp' : 0.001,
-    'ls_on'      : 1.1,
-    'ls_min'     : 1e-5,
-    'check'     : 0,
-    'delta'     : 1e-6,
-    'is_plot'    : False,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-}
+import scipy.sparse as sps
 
 from sfepy.base.testing import TestCommon
 
-##
-# c: 14.04.2008
-class Test( TestCommon ):
+class Test(TestCommon):
 
-    ##
-    # c: 14.04.2008, r: 14.04.2008
-    def from_conf( conf, options ):
-        from sfepy.solvers.generic import solve_stationary
+    @staticmethod
+    def from_conf(conf, options):
+        conn = nm.array([[0, 1, 2],
+                         [2, 3, 4]], dtype=nm.int32)
 
-        problem, state = solve_stationary(conf)
-        name = op.join( options.out_dir,
-                        op.splitext( op.basename( __file__ ) )[0] + '.vtk' )
-        problem.save_state( name, state )
+        num = conn.max() + 1
 
-        test = Test(problem=problem, state=state, conf=conf, options=options)
-        return test
-    from_conf = staticmethod( from_conf )
+        iels = nm.array([0, 1], dtype=nm.int32)
 
-    def test_eval_matrix(self):
-        problem = self.problem
+        vec_in_els = nm.array([[1, 1, 1], [2, 2, 2]], dtype=nm.float64)
+        vec_in_els.shape = (2, 1, 1, 3)
 
-        problem.set_equations()
-        problem.time_update(ebcs={}, epbcs={})
+        mtx_in_els = nm.array([nm.ones((3, 3)), 2 * nm.ones((3, 3))],
+                              dtype=nm.float64)
+        mtx_in_els.shape = (2, 1, 3, 3)
 
-        var = problem.get_variables()['p']
+        return Test(conn=conn, num=num, iels=iels,
+                    vec_in_els=vec_in_els, mtx_in_els=mtx_in_els,
+                    conf=conf, options=options)
 
-        vec = nm.arange(var.n_dof, dtype=var.dtype)
+    def test_assemble_vector(self):
+        from sfepy.fem.extmods.assemble import assemble_vector
 
-        var.data_from_any(vec)
+        vec = nm.zeros(self.num, dtype=nm.float64)
 
-        val1 = problem.evaluate('dw_diffusion.i1.Omega( m.K, p, p )',
-                                mode='eval', p=var)
+        assemble_vector(vec, self.vec_in_els, self.iels, 1, self.conn)
 
-        mtx = problem.evaluate('dw_diffusion.i1.Omega( m.K, q, p )',
-                               mode='weak', dw_mode='matrix')
+        aux = nm.array([1, 1, 3, 2, 2], dtype=nm.float64)
 
-        val2 = nm.dot(vec, mtx * vec)
-
-        ok = (nm.abs(val1 - val2) / nm.abs(val1)) < 1e-15
-
-        self.report('eval: %s, weak: %s, ok: %s' \
-                    % (val1, val2, ok))
-
+        self.report('assembled: %s' % vec)
+        self.report('expected: %s' % aux)
+        ok = self.compare_vectors(vec, aux,
+                                  label1='assembled',
+                                  label2='expected')
         return ok
 
-    def test_vector_matrix(self):
-        problem = self.problem
+    def test_assemble_vector_complex(self):
+        from sfepy.fem.extmods.assemble import assemble_vector_complex
 
-        problem.set_equations()
-        problem.time_update()
+        vec = nm.zeros(self.num, dtype=nm.complex128)
+        vec_in_els = self.vec_in_els.astype(nm.complex128) * (2 - 3j)
 
-        state = problem.create_state()
-        state.apply_ebc()
+        assemble_vector_complex(vec, vec_in_els, self.iels, 1, self.conn)
 
-        aux1 = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
-                                mode='weak', dw_mode='vector')
+        aux = nm.array([2-3j, 2-3j, 6-9j, 4-6j, 4-6j],
+                       dtype=nm.complex128)
 
-        problem.time_update(ebcs={}, epbcs={})
-
-        mtx = problem.evaluate("dw_diffusion.i1.Omega( m.K, q, p )",
-                               mode='weak', dw_mode='matrix')
-        aux2g = mtx * state()
-        problem.time_update(ebcs=self.conf.ebcs,
-                            epbcs=self.conf.epbcs)
-        aux2 = problem.equations.strip_state_vector(aux2g, follow_epbc=True)
-
-        ret = self.compare_vectors(aux1, aux2,
-                                   label1='vector mode',
-                                   label2='matrix mode')
-        if not ret:
-            self.report('failed')
-
-        return ret
-
-    def test_surface_evaluate(self):
-        from sfepy.fem import FieldVariable
-        problem = self.problem
-
-        p = problem.get_variables()['p']
-        vec = nm.empty(p.n_dof, dtype=p.dtype)
-        vec[:] = 1.0
-        p.data_from_any(vec)
-
-        expr = 'di_surface_integrate.isurf.Left( p )'
-        val = problem.evaluate(expr, p=p)
-        ok1 = nm.abs(val - 1.0) < 1e-15
-        self.report('with unknown: %s, value: %s, ok: %s' \
-                    % (expr, val, ok1))
-
-        r = FieldVariable('r', 'parameter', p.get_field(), 1,
-                          primary_var_name='(set-to-None)')
-        r.data_from_any(vec)
-
-        expr = 'di_surface_integrate.isurf.Left( r )'
-        val = problem.evaluate(expr, r=r)
-        ok2 = nm.abs(val - 1.0) < 1e-15
-        self.report('with parameter: %s, value: %s, ok: %s' \
-                    % (expr, val, ok2))
-        ok2 = True
-
-        return ok1 and ok2
-
-    def test_dq_de(self):
-        problem = self.problem
-
-        p = problem.get_variables()['p']
-        val = nm.arange(p.n_dof, dtype=p.dtype)
-        p.data_from_any(val)
-
-        val1 = problem.evaluate('de_grad.i1.Omega( p )', mode='el_avg')
-        self.report('de_grad: min, max:', val1.min(), val1.max())
-
-        aux1 = problem.evaluate('dq_grad.i1.Omega( p )', mode='qp')
-        aux2 = nm.zeros((aux1.shape[0], 1) + aux1.shape[2:], dtype=aux1.dtype)
-
-        # Works with one group only, which is the case here.
-        var = problem.equations.variables['p']
-
-        integral = problem.integrals['i1']
-        vg, _ = var.get_mapping(0, None, integral, 'volume')
-
-        vg.integrate(aux2, aux1)
-
-        val2 = aux2 / vg.variable(2)
-        self.report('dq_grad: min, max:', val2.min(), val2.max())
-
-        ok = self.compare_vectors(val1, val2,
-                                  label1='de mode',
-                                  label2='dq mode')
-        if not ok:
-            self.report('failed')
-
+        self.report('assembled: %s' % vec)
+        self.report('expected: %s' % aux)
+        ok = self.compare_vectors(vec, aux,
+                                  label1='assembled',
+                                  label2='expected')
         return ok
 
-    def test_save_ebc(self):
-        name = op.join(self.options.out_dir,
-                       op.splitext(op.basename(__file__))[0])
-        self.problem.save_ebc(name + '_ebc_f.vtk', force=True)
-        self.problem.save_ebc(name + '_ebc.vtk', default=-1, force=False)
+    def test_assemble_matrix(self):
+        from sfepy.fem.extmods.assemble import assemble_matrix
 
-        return True
+        mtx = sps.csr_matrix(nm.ones((self.num, self.num),
+                                     dtype=nm.float64))
+        mtx.data[:] = 0.0
+
+        assemble_matrix(mtx.data, mtx.indptr, mtx.indices, self.mtx_in_els,
+                        self.iels, 1, self.conn, self.conn)
+
+        aux = nm.array([[1, 1, 1, 0, 0],
+                        [1, 1, 1, 0, 0],
+                        [1, 1, 3, 2, 2],
+                        [0, 0, 2, 2, 2],
+                        [0, 0, 2, 2, 2]], dtype=nm.float64)
+
+        self.report('assembled:\n%s' % mtx.toarray())
+        self.report('expected:\n%s' % aux)
+        ok = self.compare_vectors(mtx, aux,
+                                  label1='assembled',
+                                  label2='expected')
+        return ok
+
+    def test_assemble_matrix_complex(self):
+        from sfepy.fem.extmods.assemble import assemble_matrix_complex
+
+        mtx = sps.csr_matrix(nm.ones((self.num, self.num),
+                                     dtype=nm.complex128))
+        mtx.data[:] = 0.0
+        mtx_in_els = self.mtx_in_els.astype(nm.complex128) * (2 - 3j)
+
+        assemble_matrix_complex(mtx.data, mtx.indptr, mtx.indices, mtx_in_els,
+                                self.iels, 1, self.conn, self.conn)
+
+        aux = nm.array([[2-3j, 2-3j, 2-3j, 0+0j, 0+0j],
+                        [2-3j, 2-3j, 2-3j, 0+0j, 0+0j],
+                        [2-3j, 2-3j, 6-9j, 4-6j, 4-6j],
+                        [0+0j, 0+0j, 4-6j, 4-6j, 4-6j],
+                        [0+0j, 0+0j, 4-6j, 4-6j, 4-6j]], dtype=nm.complex128)
+
+        self.report('assembled:\n%s' % mtx.toarray())
+        self.report('expected:\n%s' % aux)
+        ok = self.compare_vectors(mtx, aux,
+                                  label1='assembled',
+                                  label2='expected')
+        return ok

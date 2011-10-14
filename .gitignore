@@ -8,6 +8,7 @@ results/*
 work/*
 auto/*
 dist/
+gallery/
 meshes/
 patches/
 issues/
@@ -26,15 +27,11 @@ issues/
 *.log
 *.png
 *.pdf
+*.h5
 
 # Generated files:
-sfepy/fem/extmods/fem.py
-sfepy/fem/extmods/geometry.py
-sfepy/fem/extmods/meshutils.py
-sfepy/terms/extmods/terms.py
-sfepy/fem/extmods/version.h
-sfepy/physics/extmods/dft.py
-sfepy/linalg/extmods/rcm.py
+*.c
+*.h
 VERSION
 tmp/terms.*
 samples/*

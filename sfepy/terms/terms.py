@@ -6,11 +6,10 @@ import numpy as nm
 from sfepy.base.base import as_float_or_complex, get_default, assert_
 from sfepy.base.base import Container, Struct
 from sfepy.base.compat import in1d
-try:
-    from sfepy.terms.extmods import terms
-except (ImportError, AttributeError):
-    msg = 'sfepy extension modules are not compiled!\ntype "make"'
-    raise ImportError( msg )
+
+# Used for imports in term files.
+from sfepy.terms.extmods import terms
+
 from sfepy.linalg import split_range
 #from sfepy.base.ioutils import read_cache_data, write_cache_data
 
@@ -1506,34 +1505,42 @@ class Term(Struct):
         return out
 
     def assemble_to(self, asm_obj, val, iels, mode='vector', diff_var=None):
-        import sfepy.fem.extmods.fem as fem
+        import sfepy.fem.extmods.assemble as asm
 
         vvar = self.get_virtual_variable()
         dc_type = self.get_dof_conn_type()
 
         if mode == 'vector':
+            if asm_obj.dtype == nm.float64:
+                assemble = asm.assemble_vector
+
+            else:
+                assert_(asm_obj.dtype == nm.complex128)
+                assemble = asm.assemble_vector_complex
+
             for ii, (ig, _iels) in enumerate(iels):
                 vec_in_els = val[ii]
                 dc = vvar.get_dof_conn(dc_type, ig, active=True)
                 assert_(vec_in_els.shape[2] == dc.shape[1])
 
-                if asm_obj.dtype == nm.float64:
-                    fem.assemble_vector(asm_obj, vec_in_els, _iels, 1.0, dc)
-
-                else:
-                    assert_(asm_obj.dtype == nm.complex128)
-                    fem.assemble_vector_complex(asm_obj.real, asm_obj.imag,
-                                                vec_in_els.real.copy(),
-                                                vec_in_els.imag.copy(),
-                                                _iels,
-                                                1.0,
-                                                0.0, dc)
+                assemble(asm_obj, vec_in_els, _iels, 1.0, dc)
 
         elif mode == 'matrix':
+            if asm_obj.dtype == nm.float64:
+                assemble = asm.assemble_matrix
+
+            else:
+                assert_(asm_obj.dtype == nm.complex128)
+                assemble = asm.assemble_matrix_complex
+
             svar = diff_var
             tmd = (asm_obj.data, asm_obj.indptr, asm_obj.indices)
             for ii, (ig, _iels) in enumerate(iels):
                 mtx_in_els = val[ii]
+                if ((asm_obj.dtype == nm.complex128)
+                    and (mtx_in_els.dtype == nm.float64)):
+                    mtx_in_els = mtx_in_els.astype(nm.complex128)
+
                 rdc = vvar.get_dof_conn(dc_type, ig, active=True)
 
                 is_trace = self.arg_traces[svar.name]
@@ -1551,28 +1558,8 @@ class Term(Struct):
                     else:
                         sign = 0.0
 
-                if asm_obj.dtype == nm.float64:
-                    fem.assemble_matrix(tmd[0], tmd[1], tmd[2], mtx_in_els,
-                                        _iels, sign, rdc, cdc)
-
-                else:
-                    assert_(asm_obj.dtype == nm.complex128)
-
-                    if mtx_in_els.dtype == nm.complex128:
-                        rmtx_in_els = mtx_in_els.real.copy()
-                        imtx_in_els = mtx_in_els.imag.copy()
-
-                    else:
-                        rmtx_in_els = mtx_in_els
-                        imtx_in_els = nm.zeros_like(mtx_in_els)
-
-                    fem.assemble_matrix_complex(tmd[0].real, tmd[0].imag,
-                                                tmd[1], tmd[2],
-                                                rmtx_in_els,
-                                                imtx_in_els,
-                                                _iels,
-                                                sign, 0.0,
-                                                rdc, cdc)
+                assemble(tmd[0], tmd[1], tmd[2], mtx_in_els,
+                         _iels, sign, rdc, cdc)
 
         else:
             raise ValueError('unknown assembling mode! (%s)' % mode)

@@ -52,6 +52,7 @@ lib
 $
 """
 import sys
+sys.path.append('.')
 
 from sfepy import Config
 

@@ -2,7 +2,6 @@ import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import find_subclasses, Struct
-import extmods.fem as _fem
 
 class LagrangeNodes(Struct):
     """Helper class for defining nodes of Lagrange elements."""
@@ -309,9 +308,6 @@ class PolySpace(Struct):
 
         return base
 
-    def clear_c_errors(self):
-        _fem.errclear()
-
     def get_mtx_i(self):
         return self.mtx_i
 
@@ -403,20 +399,11 @@ class LagrangeSimplexPolySpace(PolySpace):
     def _eval_base(self, coors, diff=False,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
-        from extmods.fem import eval_lagrange_simplex
+        from extmods.bases import eval_lagrange_simplex
 
-        if diff:
-            bdim = self.geometry.dim
-        else:
-            bdim = 1
-        
-        base = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
-
-        # Work array.
-        bc = nm.zeros((self.geometry.n_vertex, coors.shape[0]), nm.float64)
-
-        eval_lagrange_simplex(base, coors, self.nodes, self.order, diff,
-                              self.mtx_i, bc, suppress_errors, eps)
+        base = eval_lagrange_simplex(coors, self.mtx_i, self.nodes,
+                                     self.order, diff,
+                                     eps, not suppress_errors)
 
         return base
 
@@ -455,26 +442,14 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
     def _eval_base(self, coors, diff=False,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
-        from extmods.fem import eval_lagrange_simplex
+        from extmods.bases import eval_lagrange_simplex
 
-        if diff:
-            bdim = self.geometry.dim
-        else:
-            bdim = 1
-        
-        base = nm.empty((coors.shape[0], bdim, self.n_nod - 1), dtype=nm.float64)
-
-        # Work array.
-        bc = nm.zeros((self.geometry.n_vertex, coors.shape[0]), nm.float64)
-
-        eval_lagrange_simplex(base, coors, self.nodes[:-1],
-                              self.order, diff,
-                              self.mtx_i, bc, suppress_errors, eps)
-
-        bubble = nm.empty((coors.shape[0], bdim, 1), dtype=nm.float64)
-        eval_lagrange_simplex(bubble, coors, self.bnode,
-                              int(self.bnode.sum()), diff,
-                              self.mtx_i, bc, suppress_errors, eps)
+        base = eval_lagrange_simplex(coors, self.mtx_i, self.nodes[:-1],
+                                     self.order, diff,
+                                     eps, not suppress_errors)
+        bubble = eval_lagrange_simplex(coors, self.mtx_i, self.bnode,
+                                       int(self.bnode.sum()), diff,
+                                       eps, not suppress_errors)
 
         base -= bubble / (self.n_nod - 1)
         base = nm.ascontiguousarray(nm.dstack((base, bubble)))
@@ -635,24 +610,12 @@ class LagrangeTensorProductPolySpace(PolySpace):
     def _eval_base(self, coors, diff=False,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
-        from extmods.fem import eval_lagrange_tensor_product as ev
+        from extmods.bases import eval_lagrange_tensor_product as ev
         ps1d = self.ps1d
 
-        dim = self.geometry.dim
-        if diff:
-            bdim = dim
-        else:
-            bdim = 1
+        base = ev(coors, ps1d.mtx_i, self.nodes, self.order, diff,
+                  eps, not suppress_errors)
 
-        base = nm.empty((coors.shape[0], bdim, self.n_nod), dtype=nm.float64)
-
-        # Work arrays.
-        bc = nm.zeros((ps1d.geometry.n_vertex, coors.shape[0]), nm.float64)
-        base1d = nm.ones((coors.shape[0], 1, self.n_nod), dtype=nm.float64)
-
-        ev(base, coors, self.nodes, self.order, diff, ps1d.mtx_i, bc, base1d,
-           suppress_errors, eps)
-                
         return base
 
     def get_mtx_i(self):

@@ -2,7 +2,7 @@ This is not for the faint of heart! But it gets better.
 
 Installation prerequisites:
 ---------------------------
-    recent numpy, scipy (with umfpack wrapper, or umfpack scikit), swig
+    recent numpy, scipy (with umfpack wrapper, or umfpack scikit), cython
 
 Dependencies:
 -------------
