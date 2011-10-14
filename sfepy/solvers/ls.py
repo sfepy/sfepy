@@ -1,5 +1,9 @@
 import numpy as nm
+import warnings
+
 import scipy.sparse as sps
+
+warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import make_get_conf, LinearSolver
