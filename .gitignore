@@ -32,13 +32,6 @@ issues/
 # Generated files:
 *.c
 *.h
-sfepy/fem/extmods/fem.py
-sfepy/fem/extmods/geometry.py
-sfepy/fem/extmods/meshutils.py
-sfepy/terms/extmods/terms.py
-sfepy/fem/extmods/version.h
-sfepy/physics/extmods/dft.py
-sfepy/linalg/extmods/rcm.py
 VERSION
 tmp/terms.*
 samples/*
