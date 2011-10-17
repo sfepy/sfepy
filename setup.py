@@ -115,12 +115,7 @@ package_check('sympy', INFO.SYMPY_MIN_VERSION, optional=True,
 # Cython can be a build dependency
 package_check('cython',
               INFO.CYTHON_MIN_VERSION,
-              optional=True,
-              version_getter=_cython_version,
-              messages={'opt suffix': ' - you will not be able '
-                        'to rebuild Cython source files into C files',
-                        'missing opt': 'Missing optional build-time '
-                        'package "%s"'})
+              version_getter=_cython_version)
 
 def setup_package():
     from numpy.distutils.core import setup
