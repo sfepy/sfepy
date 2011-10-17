@@ -693,7 +693,7 @@ class Variable( Struct ):
 
         self.data = []
         self.data.append(None)
-        self.indx = None
+        self.indx = slice(None)
         self.n_dof = None
         self.step = 0
         self.dt = 1.0
