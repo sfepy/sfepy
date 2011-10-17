@@ -10,7 +10,7 @@ PYTABLES_MIN_VERSION = '2.1.2'
 IPYTHON_MIN_VERSION = '0.10.0'
 MAYAVI_MIN_VERSION = '3.3.0'
 SYMPY_MIN_VERSION = '0.6.7'
-CYTHON_MIN_VERSION = '0.12.1'
+CYTHON_MIN_VERSION = '0.14.1'
 
 def get_basic_info(version=__version__):
     """
