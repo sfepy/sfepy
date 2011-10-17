@@ -27,21 +27,25 @@ supported_formats = {
     '.cdb'  : 'ansys_cdb',
 }
 
-# Map mesh formats to read and write capabilities
+# Map mesh formats to read and write capabilities.
+# 'r' ... read mesh
+# 'w' ... write mesh
+# 'rn' ... read nodes for boundary conditions
+# 'wn' ... write nodes for boundary conditions
 supported_capabilities = {
-    'medit' : 'rw',
-    'vtk' : 'rw',
-    'tetgen' : 'r',
-    'comsol' : 'rw',
-    'hdf5' : 'rw',
-    'abaqus' : 'r', 
-    'avs_ucd' : 'r',
-    'hmascii' : 'r',
-    'mesh3d' : 'r',
-    'nastran' : 'r',
-    'gambit' : 'r',
-    'med' : 'r',
-    'ansys_cdb' : 'r',
+    'medit' : ['r', 'w'],
+    'vtk' : ['r', 'w'],
+    'tetgen' : ['r'],
+    'comsol' : ['r', 'w'],
+    'hdf5' : ['r', 'w'],
+    'abaqus' : ['r'],
+    'avs_ucd' : ['r'],
+    'hmascii' : ['r'],
+    'mesh3d' : ['r'],
+    'nastran' : ['r'],
+    'gambit' : ['r'],
+    'med' : ['r'],
+    'ansys_cdb' : ['r'],
 }
 
 ##
