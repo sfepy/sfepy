@@ -20,8 +20,6 @@ cdef extern from "fmfield.h":
         int32 offset
         int32 nColFull
 
-        int32 stride
-
     cdef int32 fmf_alloc(FMField *obj, int32 nCell, int32 nLev,
                          int32 nRow, int32 nCol)
     cdef int32 fmf_createAlloc(FMField **p_obj, int32 nCell, int32 nLev,
