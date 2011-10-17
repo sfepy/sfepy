@@ -136,15 +136,15 @@ cdef extern from "geommech.h":
     cdef int32 ele_extractNodalValuesDBD(FMField *out, FMField *_in,
                                          int32 *conn)
 
-cdef void array2fmfield4(FMField *out,
-                         np.ndarray[float64, mode='c', ndim=4] arr)
-cdef void array2fmfield3(FMField *out,
-                         np.ndarray[float64, mode='c', ndim=3] arr)
-cdef void array2fmfield2(FMField *out,
-                         np.ndarray[float64, mode='c', ndim=2] arr)
-cdef void array2fmfield1(FMField *out,
-                         np.ndarray[float64, mode='c', ndim=1] arr)
-cdef void array2pint2(int32 **out, int32 *n_row, int32 *n_col,
-                      np.ndarray[int32, mode='c', ndim=2] arr)
-cdef void array2pint1(int32 **out, int32 *n_row,
-                      np.ndarray[int32, mode='c', ndim=1] arr)
+cdef int array2fmfield4(FMField *out,
+                        np.ndarray[float64, mode='c', ndim=4] arr) except -1
+cdef int array2fmfield3(FMField *out,
+                        np.ndarray[float64, mode='c', ndim=3] arr) except -1
+cdef int array2fmfield2(FMField *out,
+                        np.ndarray[float64, mode='c', ndim=2] arr) except -1
+cdef int array2fmfield1(FMField *out,
+                        np.ndarray[float64, mode='c', ndim=1] arr) except -1
+cdef int array2pint2(int32 **out, int32 *n_row, int32 *n_col,
+                     np.ndarray[int32, mode='c', ndim=2] arr) except -1
+cdef int array2pint1(int32 **out, int32 *n_row,
+                     np.ndarray[int32, mode='c', ndim=1] arr) except -1
