@@ -356,6 +356,8 @@ conditions, the domains of terms and materials etc.
     * ``all``
     * ``nodes of surface``
     * ``nodes of group <integer>``
+    * ``nodes of group <str>`` (if mesh format supports reading boundary
+      condition nodes)
     * ``nodes in <expr>``
     * ``nodes by <function>``
     * ``node <id>[, <id>, ...]``
@@ -379,7 +381,7 @@ conditions, the domains of terms and materials etc.
   * Additional specification:
 
     * 'forbid' : 'group <integer>' - forbid elements of listed groups
-    * 'canCells' : <boolean> - determines whether a region can have cells (volume in 3D) 
+    * 'can_cells' : <boolean> - determines whether a region can have cells (volume in 3D) 
 
 * Region definition syntax
 
