@@ -654,6 +654,33 @@ class Mesh( Struct ):
     def get_bounding_box( self ):
         return nm.vstack( (nm.amin( self.coors, 0 ), nm.amax( self.coors, 0 )) )
 
+    def get_element_coors(self, ig=None):
+        """
+        Get the coordinates of vertices elements in group `ig`.
+
+        Parameters
+        ----------
+        ig : int, optional
+            The element group. If None, the coordinates for all groups
+            are returned, filled with zeros at places of missing
+            vertices, i.e. where elements having less then the full number
+            of vertices (`n_ep_max`) are.
+
+        Returns
+        -------
+        coors : array
+            The coordinates in an array of shape `(n_el, n_ep_max, dim)`.
+        """
+        cc = self.coors
+        n_ep_max = self.n_e_ps.max()
+
+        coors = nm.empty((self.n_el, n_ep_max, self.dim), dtype=cc.dtype)
+        for ig, conn in enumerate(self.conns):
+            i1, i2 = self.el_offsets[ig], self.el_offsets[ig + 1]
+            coors[i1:i2, :conn.shape[1], :] = cc[conn]
+
+        return coors
+
     def localize(self, inod):
         """
         Strips nodes not in inod and remaps connectivities.
