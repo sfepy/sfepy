@@ -133,6 +133,8 @@ def create_bnf( stack ):
     variable = Word( 'xyz', max = 1 ) | Literal( 'domain' )
     any_var = Word( alphas + '_', alphanums + '_' ) | fnumber
 
+    ident = Word(alphas, alphanums + "_")
+
     function = Word( alphas, alphanums + '_' )
     function = Group( function ).setParseAction( join_tokens )
 
@@ -160,7 +162,7 @@ def create_bnf( stack ):
         replace( 'E_EBF', keep = True ) )
     eog = Group( elements + _of + group + Word( nums ) ).setParseAction( \
         replace( 'E_EOG', keep = True ) )
-    nog = Group( nodes + _of + group + Word( nums ) ).setParseAction( \
+    nog = Group( nodes + _of + group + (Word(nums) | ident) ).setParseAction( \
         replace( 'E_NOG', keep = True ) )
     onir = Group( node + _in + region ).setParseAction( \
         replace_with_region( 'E_ONIR', 2 ) )

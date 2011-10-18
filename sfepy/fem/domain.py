@@ -112,10 +112,19 @@ def region_leaf(domain, regions, rdef, functions):
 
         elif token == 'E_NOG':
 
-            group = int( details[3] )
+            try:
+                group = int(details[3])
+                group_nodes = nm.where(domain.mesh.ngroups == group)[0]
 
-            group_nodes = nm.where( domain.mesh.ngroups == group )[0]
-            region.set_vertices( group_nodes )
+            except ValueError:
+                try:
+                    group_nodes = domain.mesh.nodal_bcs[details[3]]
+
+                except KeyError:
+                    msg = 'undefined nodal group! (%s)' % details[3]
+                    raise ValueError(msg)
+
+            region.set_vertices(group_nodes)
 
         elif token == 'E_ONIR':
             aux = regions[details[3][2:]]
