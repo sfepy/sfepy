@@ -810,7 +810,7 @@ class ProblemDefinition( Struct ):
                 ev = BasicEvaluator(self, matrix_hook=self.matrix_hook)
 
         self.evaluator = ev
-        
+
         return ev
 
     def init_solvers(self, nls_status=None, ls_conf=None, nls_conf=None,
@@ -821,6 +821,21 @@ class ProblemDefinition( Struct ):
 
         nls_conf = get_default( nls_conf, self.nls_conf,
                               'you must set nonlinear solver!' )
+
+        # schur complement
+        if ls_conf.kind == 'ls.schur_complement':
+            aux_state = State(self.equations.variables)
+            bl = {1: ls_conf.eliminate, 2: ls_conf.keep}
+            ls_conf.idxs = {}
+            for ii in [1, 2]:
+                aux_state.fill(0.0)
+                for jj in bl[ii]:
+                    idx = self.equations.variables.di.indx[jj]
+                    aux_state.vec[idx] = nm.nan
+
+                aux_state.apply_ebc()
+                vec0 = aux_state.get_reduced()
+                ls_conf.idxs[ii] = nm.where(nm.isnan(vec0))[0]
 
         if presolve:
             tt = time.clock()
@@ -897,7 +912,6 @@ class ProblemDefinition( Struct ):
         self.equations.set_data(var_data, ignore_unknown=True)
 
         self.update_materials()
-
         state0.apply_ebc(force_values=force_values)
 
         vec0 = state0.get_reduced()

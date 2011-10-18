@@ -49,7 +49,6 @@ class ScipyDirect(LinearSolver):
 
     def __init__(self, conf, **kwargs):
         LinearSolver.__init__(self, conf, **kwargs)
-
         um = self.sls = None
 
         aux = try_imports(['import scipy.linsolve as sls',
@@ -359,3 +358,90 @@ class PETScKrylovSolver( LinearSolver ):
                   ksp.reason, self.converged_reasons[ksp.reason]))
 
         return sol
+
+class SchurComplement(ScipyDirect):
+    name = 'ls.schur_complement'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Example configuration::
+
+            solvers = {
+                'ls': ('ls.schur_complement', {
+                    'eliminate': ['displacement'],
+                    'keep': ['pressure'],
+            }
+        """
+        get = make_get_conf(conf, kwargs)
+        common = LinearSolver.process_conf(conf)
+
+        return Struct(method=get('method', 'auto'),
+                      presolve=False,
+                      warn=get('warn', True),
+                      i_max=None, eps_a=None, eps_r=None) + common
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        import scipy.sparse as scs
+
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+
+        mtxi= self.orig_conf.idxs
+        mtxslc_s = {}
+        mtxslc_f = {}
+        nn = {}
+
+        for ii in [1, 2]:
+            ptr = 0
+            nn[ii] = len(mtxi[ii])
+            mtxslc_s[ii] = []
+            mtxslc_f[ii] = []
+            while ptr < nn[ii]:
+                idx0 = mtxi[ii][ptr:]
+                idxrange = nm.arange(idx0[0], idx0[0] + len(idx0))
+                aux = nm.where(idx0 == idxrange)[0]
+                mtxslc_s[ii].append(slice(ptr + aux[0], ptr + aux[-1] + 1))
+                mtxslc_f[ii].append(slice(idx0[aux][0], idx0[aux][-1] + 1))
+                ptr += aux[-1] + 1
+
+        mtxs = {}
+        rhss = {}
+        ress = {}
+        for ir in [1, 2]:
+            rhss[str(ir)] = nm.zeros((nn[ir],), dtype=nm.float64)
+            ress[str(ir)] = nm.zeros((nn[ir],), dtype=nm.float64)
+            for jr, idxr in enumerate(mtxslc_f[ir]):
+                rhss[str(ir)][mtxslc_s[ir][jr]] = rhs[idxr]
+
+            for ic in [1, 2]:
+                mtxid = '%d%d' % (ir, ic)
+                mtxs[mtxid] = nm.zeros((nn[ir], nn[ic]), dtype=nm.float64)
+                for jr, idxr in enumerate(mtxslc_f[ir]):
+                    for jc, idxc in enumerate(mtxslc_f[ic]):
+                        mtxs[mtxid][mtxslc_s[ir][jr], mtxslc_s[ic][jc]] = mtx._get_submatrix(idxr, idxc).todense()
+
+        invA = self.sls.splu(scs.csc_matrix(mtxs['11']))
+        spC = scs.csc_matrix(mtxs['21'])
+        invAB = nm.zeros((nn[1], nn[2]), dtype=nm.float64)
+        for ic in xrange(nn[2]):
+            invAB[:,ic] = invA.solve(mtxs['12'][:,ic])
+        invAf = invA.solve(rhss['1'])
+        k_rhs = rhss['2'] - spC * invAf
+        ress['2'] = self.sls.spsolve(scs.csc_matrix(mtxs['22'] - spC * invAB), k_rhs)
+        ress['1'] = invAf - nm.dot(invAB, ress['2'])
+
+        res = nm.zeros_like(rhs)
+        for ir in [1, 2]:
+            for jr, idxr in enumerate(mtxslc_f[ir]):
+                res[idxr] = ress[str(ir)][mtxslc_s[ir][jr]]
+
+        return res
+
+    def _presolve(self):
+        if hasattr(self, 'presolve'):
+            return self.presolve
+        else:
+            return self.conf.presolve
