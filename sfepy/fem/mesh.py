@@ -2,7 +2,7 @@ import time
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import Struct, output, assert_
+from sfepy.base.base import Struct, get_default, output, assert_
 from meshio import MeshIO
 
 ##
@@ -548,10 +548,10 @@ class Mesh( Struct ):
         self.el_offsets = nm.cumsum( nm.r_[0, self.n_els] )
         self.n_el = nm.sum( self.n_els )
 
-    def _set_data(self, coors, ngroups, conns, mat_ids, descs):
+    def _set_data(self, coors, ngroups, conns, mat_ids, descs, nodal_bcs=None):
         """
         Set mesh data.
-        
+
         Parameters
         ----------
         coors : array
@@ -564,6 +564,9 @@ class Mesh( Struct ):
             The array of material ids for each element group.
         descs: list of strings
             The element type for each element group.
+        nodal_bcs : dict of arrays, optional
+            The nodes defining regions for boundary conditions referred
+            to by the dict keys in problem description files.
         """
         self.coors = nm.ascontiguousarray(coors)
 
@@ -574,8 +577,10 @@ class Mesh( Struct ):
             self.ngroups = nm.ascontiguousarray(ngroups)
 
         self.conns = [nm.asarray(conn, dtype=nm.int32) for conn in conns]
-        self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32) for mat_id in mat_ids]
+        self.mat_ids = [nm.asarray(mat_id, dtype=nm.int32)
+                        for mat_id in mat_ids]
         self.descs = descs
+        self.nodal_bcs = get_default(nodal_bcs, {})
 
     def _append_region_faces(self, region, force_faces=False):
         fa = region.domain.get_facets(force_faces=force_faces)[1]
