@@ -43,7 +43,7 @@ supported_capabilities = {
     'hmascii' : ['r'],
     'mesh3d' : ['r'],
     'nastran' : ['r'],
-    'gambit' : ['r'],
+    'gambit' : ['r', 'rn'],
     'med' : ['r'],
     'ansys_cdb' : ['r'],
 }
@@ -2254,6 +2254,7 @@ class NEUMeshIO( MeshIO ):
         group_ids = []
         group_n_els = []
         groups = []
+        nodal_bcs = {}
 
         fd = open( self.filename, 'r' )
 
@@ -2316,6 +2317,17 @@ class NEUMeshIO( MeshIO ):
                         % (n_el, len( els ))
                     raise ValueError
                 groups.append( els )
+
+            elif (row[0] == 'BOUNDARY'):
+                row = fd.readline().split()
+                key = row[0]
+                num = int(row[2])
+                inod = read_array(fd, num, 1, nm.int32) - 1
+                nodal_bcs[key] = inod.squeeze()
+
+                row = fd.readline().split()
+                assert_(row[0] == 'ENDOFSECTION')
+
             else:
                 row = fd.readline().split()                
         
@@ -2344,7 +2356,7 @@ class NEUMeshIO( MeshIO ):
         
         conns_in, mat_ids = sort_by_mat_id( conns_in )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
-        mesh._set_data( nod, None, conns, mat_ids, descs )
+        mesh._set_data(nod, None, conns, mat_ids, descs, nodal_bcs=nodal_bcs)
 
         return mesh
 
