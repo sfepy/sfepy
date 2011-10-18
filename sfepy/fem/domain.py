@@ -8,7 +8,7 @@ from sfepy.fem.facets import Facets
 from geometry_element import GeometryElement
 from region import Region, get_dependency_graph, sort_by_dependency, get_parents
 from sfepy.fem.parseReg import create_bnf, visit_stack, ParseException
-from sfepy.fem.refine import refine_3_4
+from sfepy.fem.refine import refine_3_4, refine_3_8
 from sfepy.fem.fe_surface import FESurface
 import fea
 
@@ -555,13 +555,30 @@ class Domain( Struct ):
 
         Notes
         -----
-        Works for tetrahedra only! Does not preserve node groups!
+        Works only for 3D meshes with single element type! Does not
+        preserve node groups!
         """
-        for group in self.groups.itervalues():
-            if group.gel.name != '3_4':
-                raise NotImplementedError('refine() works only for tetrahedra!')
+        msg = 'refine() works only for 3D meshes with single element type!'
+        if self.mesh.dim != 3:
+            raise NotImplementedError(msg)
 
-        mesh = refine_3_4(self.mesh, self.ed)
+        names = set()
+        for group in self.groups.itervalues():
+            names.add(group.gel.name)
+
+        if len(names) != 1:
+            raise NotImplementedError(msg)
+
+        el_type = names.pop()
+        if el_type == '3_4':
+            mesh = refine_3_4(self.mesh, self.ed)
+
+        elif el_type == '3_8':
+            mesh = refine_3_8(self.mesh, self.ed, self.fa)
+
+        else:
+            raise NotImplementedError(msg)
+
         domain = Domain(self.name + '_r', mesh)
 
         return domain
