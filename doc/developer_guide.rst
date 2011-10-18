@@ -770,9 +770,9 @@ sfepy.geom package
 
    src/sfepy/geom/femlab
    src/sfepy/geom/geometry
-   src/sfepy/geom/gmsh
+   src/sfepy/geom/meshgen
+   src/sfepy/geom/meshgenutils
    src/sfepy/geom/meshutils
-   src/sfepy/geom/tetgen
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -823,7 +823,7 @@ sfepy.physics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/physics/dft
+   src/sfepy/physics/cdft
 
 sfepy.postprocess package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
