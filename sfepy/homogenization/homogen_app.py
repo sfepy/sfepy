@@ -66,22 +66,22 @@ class HomogenizationApp( HomogenizationEngine ):
         opts = self.app_options
 
         volume = {}
-        if opts.options.volumes is not None:
-            for vk, vv in opts.options.volumes.iteritems():
+        if opts.volumes is not None:
+            for vk, vv in opts.volumes.iteritems():
                 if 'value' in vv:
                     volume[vk] = nm.float64(vv['value'])
                 else:
                     volume[vk] = Volume('volume', self.problem, vv)()
         else:
-            if opts.options.volume is not None:
+            if opts.volume is not None:
                 if 'value' in opts.volume:
-                    vol = nm.float64( opts.options.volume['value'] )
+                    vol = nm.float64(opts.volume['value'])
                 else:
-                    vol = Volume( 'volume', self.problem, opts.volume )()
+                    vol = Volume('volume', self.problem, opts.volume)()
                 volume['total'] = vol
 
         for vk, vv in volume.iteritems():
-            output( 'volume: %s = %.2f' % (vk, vv) )
+            output('volume: %s = %.2f' % (vk, vv))
 
         if hasattr(opts.options, 'return_all'):
             ret_all = opts.options.return_all
