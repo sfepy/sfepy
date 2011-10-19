@@ -348,8 +348,8 @@ def compose_periodic_mesh(mesh_in, scale, repeat, eps, check_mvd=False):
 
     return mesh_out
 
-def gen_misc_mesh(mesh_dir, force_create, kind, suffix='.mesh',
-                  verbose=False, *args):
+def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
+                  verbose=False):
     """
     Create sphere or cube mesh according to `kind` in the given
     directory if it does not exist and return path to it.
@@ -369,7 +369,7 @@ def gen_misc_mesh(mesh_dir, force_create, kind, suffix='.mesh',
     if kind == 'sphere':
 	default = [5, 41, args[0]]
 	args = retype(args, [float, int, float], default)
-        mesh_pattern = mesh_dir + 'sphere-%.2f-%.2f-%i'
+        mesh_pattern = os.path.join(mesh_dir, 'sphere-%.2f-%.2f-%i')
 
     else:
         assert_(kind == 'cube')
@@ -377,7 +377,7 @@ def gen_misc_mesh(mesh_dir, force_create, kind, suffix='.mesh',
 	args = retype(args,
                       (int, float, int, float, int, float),
                       (args[0], args[1], args[0], args[1], args[0], args[1]))
-        mesh_pattern = mesh_dir + 'cube-%i_%.2f-%i_%.2f-%i_%.2f'
+        mesh_pattern = os.path.join(mesh_dir, 'cube-%i_%.2f-%i_%.2f-%i_%.2f')
 
     if verbose:
         output(args)
@@ -404,15 +404,15 @@ def gen_misc_mesh(mesh_dir, force_create, kind, suffix='.mesh',
 
     else:
 	import subprocess
-        filename = filename + suffix
+        filename = filename + '.mesh'
         ensure_path(filename)
 
         output('creating new sphere mesh (%i nodes, r=%.2f) and gradation %d'
                % args)
         output('to file %s...' % filename)
 
-        f = open(os.path.join(defdir, 'sphere.geo'))
-        tmpfile = os.path.join(defdir, 'sphere.geo.temp')
+        f = open(os.path.join(defdir, 'quantum', 'sphere.geo'))
+        tmpfile = os.path.join(data_dir, 'tmp', 'sphere.geo.temp')
         ff = open(tmpfile, "w")
         ff.write("""
 R = %i.0;
@@ -431,15 +431,16 @@ dens = %f;
 
 def gen_mesh_from_string(mesh_name, mesh_dir):
     import re
-    result = re.match('^\\s*([a-zA-Z])*[:\\(]([^\\):]*)[:\\)](\\*)?\\s*$',
+    result = re.match('^\\s*([a-zA-Z]+)[:\\(]([^\\):]*)[:\\)](\\*)?\\s*$',
                       mesh_name)
+
     if result is None:
         return mesh_name
 
     else:
         args = re.split(',', result.group(2))
         kind = result.group(1)
-	return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, *args)
+	return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, args)
 
 def main():
     mesh = gen_block_mesh(nm.array((1.0, 2.0, 3.0)),
