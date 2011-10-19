@@ -79,7 +79,7 @@ Applications (look at the Dependencies!):
      ... see examples/phononic/output/
 
 - schroedinger.py (order is important below):
-  './schroedinger.py --2d --mesh'
+  './schroedinger.py --2d --create-mesh'
   './schroedinger.py --2d --hydrogen'
   './postproc.py mesh.vtk'
 

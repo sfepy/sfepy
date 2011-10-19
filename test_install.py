@@ -118,7 +118,7 @@ def main():
     out, err = check_output('python ./eigen.py examples/phononic/band_gaps.py -d')
     eok += report(out, '...', -5, 4, '0.209329,')
 
-    out, err = check_output('python ./schroedinger.py --2d --mesh')
+    out, err = check_output('python ./schroedinger.py --2d --create-mesh')
     eok += report(out, '...', -2, -1, 'tmp/mesh.vtk')
 
     out, err = check_output('python ./schroedinger.py --2d --hydrogen')

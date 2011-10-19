@@ -64,7 +64,7 @@ Applications
 
     1. :: 
 
-        $ ./schroedinger.py --2d --mesh
+        $ ./schroedinger.py --2d --create-mesh
 
     2. :: 
 

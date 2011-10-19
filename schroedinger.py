@@ -648,7 +648,7 @@ Solver for electronic structure problems.
 
 You need to create a mesh (optionally specify a dimension):
 
-    $ ./schroedinger.py --mesh --2d
+    $ ./schroedinger.py --create-mesh --2d
 
 and then pick a problem to solve, some examples below (the dimension is
 determined by the mesh that you created above):
@@ -692,7 +692,7 @@ help = {
     'solve the hydrogen atom',
     'boron' :
     'solve the boron atom with 1 electron',
-    'mesh' :
+    'create_mesh' :
     'creates a mesh',
     'dim' :
     'Create a 2D mesh, instead of the default 3D',
@@ -719,9 +719,9 @@ def main():
     parser.add_option('-o', '', metavar='filename',
                       action='store', dest='output_filename_trunk',
                       default=None, help=help['filename'])
-    parser.add_option('--mesh',
-                      action='store_true', dest='mesh',
-                      default=False, help=help['mesh'])
+    parser.add_option('--create-mesh',
+                      action='store_true', dest='create_mesh',
+                      default=False, help=help['create_mesh'])
     parser.add_option('--2d',
                       action='store_true', dest='dim2',
                       default=False, help=help['dim'])
@@ -771,7 +771,7 @@ def main():
         elif options.boron:
             filename_in = fix_path("examples/quantum/boron.py")
 
-        elif options.mesh:
+        elif options.create_mesh:
             output('generating mesh...')
             try:
                 os.makedirs("tmp")
