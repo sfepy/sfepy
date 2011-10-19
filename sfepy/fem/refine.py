@@ -82,20 +82,22 @@ def refine_3_8(mesh_in, ed, fa):
     coors = nm.r_[mesh_in.coors, e_centres, f_centres, centres]
 
     o1 = mesh_in.n_nod
+    o2 = o1 + e_centres.shape[0]
+    o3 = o2 + f_centres.shape[0]
 
     st = nm.vstack
 
     conns = []
     mat_ids = []
     for ig, conn in enumerate(mesh_in.conns):
-        indx = ed.indx[ig]
+        e_indx = ed.indx[ig]
+        f_indx = fa.indx[ig]
+        off = mesh_in.el_offsets[ig]
         n_el  = conn.shape[0]
 
-        e_nodes = ed.uid_i[indx].reshape((n_el, 12)) + o1
-        o2 = e_nodes.max() + 1
-        f_nodes = fa.uid_i[indx].reshape((n_el, 6)) + o2
-        o3 = f_nodes.max() + 1
-        nodes = nm.arange(n_el) + o3
+        e_nodes = ed.uid_i[e_indx].reshape((n_el, 12)) + o1
+        f_nodes = fa.uid_i[f_indx].reshape((n_el, 6)) + o2
+        nodes = nm.arange(n_el) + off + o3
 
         c = nm.c_[conn, e_nodes, f_nodes, nodes].T
 
