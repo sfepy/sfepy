@@ -590,6 +590,29 @@ class ProblemDefinition( Struct ):
                            update_fields=update_fields, actual=actual,
                            clear_all=clear_all)
 
+    def refine_uniformly(self, level):
+        """
+        Refine the mesh uniformly `level`-times.
+
+        Notes
+        -----
+        This operation resets almost everything (fields, equations, ...)
+        - it is roughly equivalent to creating a new ProblemDefinition
+        instance with the refined mesh.
+        """
+        if level == 0: return
+
+        domain = self.domain
+        for ii in range(level):
+            domain = domain.refine()
+
+        self.domain = domain
+        self.set_regions(self.conf.regions, self.functions)
+        self.clear_equations()
+
+        self.set_fields(self.conf.fields)
+        self.set_equations(self.conf.equations, user={'ts' : self.ts})
+
     def get_dim( self, get_sym = False ):
         """Returns mesh dimension, symmetric tensor dimension (if `get_sym` is
         True).
