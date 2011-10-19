@@ -54,6 +54,13 @@ class MiniAppBase( Struct ):
 
             output( '...done in %.2f s' % (time.clock() - tt) )
 
+    def _get_volume(self, volume):
+        if isinstance(volume, dict):
+            return volume[self.set_volume]
+
+        else:
+            return volume
+
 class CorrSolution(Struct):
     """
     Class for holding solutions of corrector problems.
@@ -734,7 +741,7 @@ class VolumeFractions( MiniAppBase ):
             val = eval_equations(equations, variables)
 
             vf[vkey] = nm.asarray( val, dtype = nm.float64 )
-            vf[key] = vf[vkey] / volume[self.set_volume]
+            vf[key] = vf[vkey] / self._get_volume(volume)
 
         return vf
 
@@ -778,7 +785,7 @@ class CoefSymSym( MiniAppBase ):
 
                 coef[ir,ic] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -820,7 +827,7 @@ class CoefFMSymSym( MiniAppBase ):
 
                     coef[step,ir,ic] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -847,7 +854,7 @@ class CoefDimSym( MiniAppBase ):
 
                 coef[ir,ic] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -898,7 +905,7 @@ class CoefNN( MiniAppBase ):
                                          term_mode=term_mode)
                     coef[ir,ic] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -934,7 +941,7 @@ class CoefN( MiniAppBase ):
                                  term_mode=term_mode)
             coef[ir] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -965,7 +972,7 @@ class CoefSym( MiniAppBase ):
                                  term_mode=term_mode)
             coef[ii] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -1001,7 +1008,7 @@ class CoefFMSym( MiniAppBase ):
 
                 coef[step,ii] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
@@ -1028,7 +1035,7 @@ class CoefOne( MiniAppBase ):
         val = eval_equations(equations, variables,
                              term_mode=term_mode)
 
-        coef = val / volume[self.set_volume]
+        coef = val / self._get_volume(volume)
 
         return coef
 
@@ -1060,7 +1067,7 @@ class CoefFMOne( MiniAppBase ):
 
             coef[step] = val
 
-        coef /= volume[self.set_volume]
+        coef /= self._get_volume(volume)
 
         return coef
 
