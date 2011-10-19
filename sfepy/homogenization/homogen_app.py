@@ -35,7 +35,11 @@ class HomogenizationApp( HomogenizationEngine ):
         coefs = get( 'coefs', None, 'missing "coefs" in options!' )
         requirements = get( 'requirements', None,
                             'missing "requirements" in options!' )
-        volume = get( 'volume', None, 'missing "volume" in options!' )
+
+        volume = get('volume', None)
+        volumes = get('volumes', None)
+        if volume is None and volumes is None:
+            raise ValueError('missing "volume" in options!')
 
         return Struct( **locals() )
     process_options = staticmethod( process_options )
@@ -57,16 +61,28 @@ class HomogenizationApp( HomogenizationEngine ):
         SimpleApp.setup_options( self )
         po = HomogenizationApp.process_options
         self.app_options += po( self.conf.options )
-    
+
     def call( self, ret_all = False ):
         opts = self.app_options
 
-        if 'value' in opts.volume:
-            volume = nm.float64( opts.options.volume['value'] )
+        volume = {}
+        if opts.options.volumes is not None:
+            for vk, vv in opts.options.volumes.iteritems():
+                if 'value' in vv:
+                    volume[vk] = nm.float64(vv['value'])
+                else:
+                    volume[vk] = Volume('volume', self.problem, vv)()
         else:
-            volume = Volume( 'volume', self.problem, opts.volume )()
-        output( 'volume: %.2f' % volume )
-        
+            if opts.options.volume is not None:
+                if 'value' in opts.volume:
+                    vol = nm.float64( opts.options.volume['value'] )
+                else:
+                    vol = Volume( 'volume', self.problem, opts.volume )()
+                volume['total'] = vol
+
+        for vk, vv in volume.iteritems():
+            output( 'volume: %s = %.2f' % (vk, vv) )
+
         if hasattr(opts.options, 'return_all'):
             ret_all = opts.options.return_all
 

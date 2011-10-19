@@ -31,6 +31,7 @@ class MiniAppBase( Struct ):
         self.set_default_attr('is_linear', False)
         self.set_default_attr('dtype', nm.float64)
         self.set_default_attr('term_mode', None)
+        self.set_default_attr('set_volume', 'total')
 
     def init_solvers(self, problem):
         """For linear problems, assemble the matrix and try to presolve the
@@ -733,7 +734,7 @@ class VolumeFractions( MiniAppBase ):
             val = eval_equations(equations, variables)
 
             vf[vkey] = nm.asarray( val, dtype = nm.float64 )
-            vf[key] = vf[vkey] / volume
+            vf[key] = vf[vkey] / volume[self.set_volume]
 
         return vf
 
@@ -777,7 +778,7 @@ class CoefSymSym( MiniAppBase ):
 
                 coef[ir,ic] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -819,7 +820,7 @@ class CoefFMSymSym( MiniAppBase ):
 
                     coef[step,ir,ic] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -846,7 +847,7 @@ class CoefDimSym( MiniAppBase ):
 
                 coef[ir,ic] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -897,7 +898,7 @@ class CoefNN( MiniAppBase ):
                                          term_mode=term_mode)
                     coef[ir,ic] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -933,7 +934,7 @@ class CoefN( MiniAppBase ):
                                  term_mode=term_mode)
             coef[ir] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -964,7 +965,7 @@ class CoefSym( MiniAppBase ):
                                  term_mode=term_mode)
             coef[ii] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -1000,7 +1001,7 @@ class CoefFMSym( MiniAppBase ):
 
                 coef[step,ii] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
@@ -1027,7 +1028,7 @@ class CoefOne( MiniAppBase ):
         val = eval_equations(equations, variables,
                              term_mode=term_mode)
 
-        coef = val / volume
+        coef = val / volume[self.set_volume]
 
         return coef
 
@@ -1059,7 +1060,7 @@ class CoefFMOne( MiniAppBase ):
 
             coef[step] = val
 
-        coef /= volume
+        coef /= volume[self.set_volume]
 
         return coef
 
