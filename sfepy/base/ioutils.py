@@ -32,7 +32,7 @@ def ensure_path(filename):
     intermediate directories.
     """
     dirname = os.path.dirname(filename)
-    if not os.path.exists(dirname):
+    if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
 
 def locate_files(pattern, root_dir=os.curdir):
