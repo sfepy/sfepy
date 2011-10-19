@@ -360,6 +360,32 @@ class PETScKrylovSolver( LinearSolver ):
         return sol
 
 class SchurComplement(ScipyDirect):
+    r"""
+    Schur complement.
+
+    Solution of the linear system
+    ..math::
+       \left[ \begin{array}{cc}
+       A & B \\
+       C & D \end{array} \right]
+       \cdot
+       \left[ \begin{array}{c}
+       u \\
+       v \end{array} \right]
+       =
+       \left[ \begin{array}{c}
+       f \\
+       g \end{array} \right]
+
+    is obtained by solving the following equation:
+    ..math::
+       (D - C A^{-1} B) \cdot v = g - C A^{-1} f
+
+    variable(s) :math:`u` are specified in "eliminate" list,
+    variable(s) :math:`v` are specified in "keep" list,
+
+    See: http://en.wikipedia.org/wiki/Schur_complement
+    """
     name = 'ls.schur_complement'
 
     @staticmethod
@@ -371,6 +397,7 @@ class SchurComplement(ScipyDirect):
                 'ls': ('ls.schur_complement', {
                     'eliminate': ['displacement'],
                     'keep': ['pressure'],
+                    'needs_problem_instance': True,
             }
         """
         get = make_get_conf(conf, kwargs)
@@ -380,6 +407,25 @@ class SchurComplement(ScipyDirect):
                       presolve=False,
                       warn=get('warn', True),
                       i_max=None, eps_a=None, eps_r=None) + common
+
+    def __init__(self, conf, **kwargs):
+        from sfepy.fem.state import State
+
+        ScipyDirect.__init__(self, conf, **kwargs)
+
+        equations = self.problem.equations
+        aux_state = State(equations.variables)
+        bl = {1: conf.eliminate, 2: conf.keep}
+        conf.idxs = {}
+        for ii in [1, 2]:
+            aux_state.fill(0.0)
+            for jj in bl[ii]:
+                idx = equations.variables.di.indx[jj]
+                aux_state.vec[idx] = nm.nan
+
+            aux_state.apply_ebc()
+            vec0 = aux_state.get_reduced()
+            conf.idxs[ii] = nm.where(nm.isnan(vec0))[0]
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
