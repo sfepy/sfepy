@@ -26,6 +26,7 @@ except ImportError:
 import sfepy
 from sfepy.base.base import Struct, Output, output, get_default, assert_, pause
 from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.base.ioutils import ensure_path
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
@@ -766,6 +767,10 @@ def main():
 
     options, args = parser.parse_args()
 
+    if options.create_mesh and options.mesh:
+        output('--create-mesh and --mesh options are mutually exclusive!')
+        return
+
     if len(args) == 1:
         filename_in = args[0];
         auto_mesh_name = False
@@ -774,6 +779,8 @@ def main():
         auto_mesh_name = True
 
         mesh_filename = os.path.join(options.mesh_dir, 'mesh.vtk')
+        ensure_path(mesh_filename)
+
         if options.oscillator:
             filename_in = fix_path("examples/quantum/oscillator.py")
 
