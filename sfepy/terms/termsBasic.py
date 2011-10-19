@@ -307,6 +307,12 @@ class SurfaceTerm(VolumeTerm):
     arg_types = ('parameter',)
     integration = 'surface'
 
+    @staticmethod
+    def function(out, geo):
+        out[:] = geo.area
+
+        return 0
+
 class VolumeSurfaceTerm(Term):
     r"""
     :Description:
