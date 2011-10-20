@@ -1,40 +1,19 @@
 #ifndef _SFEPY_TYPES_H_
 #define _SFEPY_TYPES_H_
 
-#include <string.h>
+#include <Python.h>
+#include <numpy/npy_common.h>
 
-#define CONVF64 (double)
-#define CONVPF64 (double *)
-#define PRINTF64 "%f"
-#define SCANF64 "%lf"
-#define SCANI16 "%hd"
-
-#ifndef Bool
-//typedef enum { False, True } Bool;
-#endif
-
-/*!
-  @par Revision history:
-  21.05.2002, c
-*/
-typedef enum {
-  TYPE_Char,
-  TYPE_UChar,
-  TYPE_Int16,
-  TYPE_UInt16,
-  TYPE_Int32,
-  TYPE_UInt32,
-  TYPE_Float32,
-  TYPE_Float64,
-} BasicType;
+#define FI32 "%"NPY_INT32_FMT
+#define FF64 "%"NPY_FLOAT64_FMT
 
 typedef unsigned char uchar;
-typedef short int16;
-typedef unsigned short uint16;
-typedef int int32;
-typedef unsigned int uint32;
-typedef float float32;
-typedef double float64;
+typedef npy_int16 int16;
+typedef npy_uint16 uint16;
+typedef npy_int32 int32;
+typedef npy_uint32 uint32;
+typedef npy_float32 float32;
+typedef npy_float64 float64;
 
 /*!
   @name Utility macros

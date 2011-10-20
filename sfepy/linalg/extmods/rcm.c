@@ -391,7 +391,7 @@ int32 gr_permuteInPlace(int32 *row, int32 n_row,
   /*
     Order vector for col array.
   */
-  order = alloc_mem( int, nEdge );
+  order = alloc_mem( int32, nEdge );
   /*
     Initialize order. Permute columns (in old row block positions).
   */

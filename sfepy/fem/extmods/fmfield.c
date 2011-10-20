@@ -1444,9 +1444,9 @@ int32 fmf_print( FMField *obj, FILE *file, int32 mode )
   int32 i, j, il;
 
   if (mode == 0) {
-    fprintf( file, "%d %d %d\n", obj->nLev, obj->nRow, obj->nCol );
+    fprintf( file, FI32" "FI32" "FI32"\n", obj->nLev, obj->nRow, obj->nCol );
     for (il = 0; il < obj->nLev; il++) {
-      fprintf( file, "%d\n", il );
+      fprintf( file, FI32"\n", il );
       for (i = 0; i < obj->nRow; i++) {
 	for (j = 0; j < obj->nCol; j++) {
 /* 	  fprintf( file, " %.12e", obj->val[obj->nCol*(obj->nRow*il+i)+j] ); */
@@ -1456,9 +1456,10 @@ int32 fmf_print( FMField *obj, FILE *file, int32 mode )
       }
     }
   } else if (mode == 1) {
-    fprintf( file, "nCell: %d nLev: %d nRow: %d nCol: %d\n",
+    fprintf( file, "nCell: "FI32" nLev: "FI32" nRow: "FI32" nCol: "FI32"\n",
 	     obj->nCell, obj->nLev, obj->nRow, obj->nCol );
-    fprintf( file, "offset: %d nColFull: %d nAlloc: %d cellSize %d\n",
+    fprintf( file, "offset: "FI32" nColFull: "FI32" nAlloc: "FI32
+	     " cellSize "FI32"\n",
 	     obj->offset, obj->nColFull, obj->nAlloc, obj->cellSize );
   } else {
     errput( ErrHead "ERR_Switch!\n" );
@@ -1478,10 +1479,10 @@ int32 fmfr_print( FMField *obj, FILE *file, int32 mode )
   int32 i, j, il;
 
   if (mode == 0) {
-    fprintf( file, "%d %d %d %d %d\n", obj->nLev, obj->nRow, obj->nCol,
-	     obj->offset, obj->nColFull );
+    fprintf( file, FI32" "FI32" "FI32" "FI32" "FI32"\n",
+	     obj->nLev, obj->nRow, obj->nCol, obj->offset, obj->nColFull );
     for (il = 0; il < obj->nLev; il++) {
-      fprintf( file, "%d\n", il );
+      fprintf( file, FI32"\n", il );
       for (i = 0; i < obj->nRow; i++) {
 	for (j = 0; j < obj->nCol; j++) {
 	  fprintf( file, " %.12e",
@@ -1568,9 +1569,9 @@ int32 fmfc_save( FMField *obj, const char *fileName, int32 mode )
       FMF_SetCellNext( obj );
     }
   } else if (mode == 1) {
-    fprintf( file, "%d\n", obj->nAlloc );
+    fprintf( file, FI32"\n", obj->nAlloc );
     for (ii = 0; ii < obj->nAlloc; ii++) {
-      fprintf( file, "%d %.12e\n", ii, obj->val0[ii] );
+      fprintf( file, FI32" %.12e\n", ii, obj->val0[ii] );
     }
   }
 

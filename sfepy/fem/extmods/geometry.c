@@ -67,7 +67,8 @@ int32 vg_print( VolumeGeometry *obj, FILE *file, int32 mode )
 {
   int32 ii;
 
-  fprintf( file, "VolumeGeometry: mode %d, nEl %d, nQP %d, dim: %d, nEP: %d\n",
+  fprintf( file, "VolumeGeometry: mode %d, nEl "FI32", nQP "FI32", dim: "
+	   FI32", nEP: "FI32"\n",
 	   obj->mode, obj->nEl, obj->nQP, obj->dim, obj->nEP );
   fprintf( file, "totalVolume: %.5f\n", obj->totalVolume );
 
@@ -75,14 +76,14 @@ int32 vg_print( VolumeGeometry *obj, FILE *file, int32 mode )
     FMF_SetCell( obj->bfGM, ii );
     FMF_SetCell( obj->det, ii );
     FMF_SetCell( obj->volume, ii );
-    
-    fprintf( file, "%d bfGM:\n", ii );
+
+    fprintf( file, FI32 " bfGM:\n", ii );
     fmf_print( obj->bfGM, file, mode );
-    
-    fprintf( file, "%d det:\n", ii );
+
+    fprintf( file, FI32" det:\n", ii );
     fmf_print( obj->det, file, mode );
-    
-    fprintf( file, "%d volume:\n", ii );
+
+    fprintf( file, FI32" volume:\n", ii );
     fmf_print( obj->volume, file, mode );
   }
 
@@ -113,7 +114,8 @@ int32 vg_describe( VolumeGeometry *obj,
 	(nQP == obj->nQP) &&
 	(nEP == bfGR->nCol) &&
 	(ebfGR->nCol == obj->nEP))) {
-    output( "nNod: %d, dim: %d, nEl: %d, nEP: %d\n",  nNod, dim, nEl, nEP );
+    output( "nNod: "FI32", dim: "FI32", nEl: "FI32", nEP: "FI32"\n",
+	    nNod, dim, nEl, nEP );
     fmf_print( obj->bfGM, stdout, 1 );
     fmf_print( bfGR, stdout, 1 );
     fmf_print( weight, stdout, 1 );
@@ -145,7 +147,7 @@ int32 vg_describe( VolumeGeometry *obj,
     geme_det3x3( obj->det->val, mtxMR );
     for (iqp = 0; iqp < nQP; iqp++) {
       if (obj->det->val[iqp] <= MachEps) {
-	errput( "warp violation %e at (iel: %d, iqp: %d)!\n",
+	errput( "warp violation %e at (iel: "FI32", iqp: "FI32")!\n",
 		obj->det->val[iqp], iel, iqp );
       }
     }
@@ -346,7 +348,8 @@ int32 sg_print( SurfaceGeometry *obj, FILE *file, int32 mode )
 {
   int32 ii;
 
-  fprintf( file, "SurfaceGeometry: mode %d, nFa %d, nQP %d, dim: %d, nFP: %d\n",
+  fprintf( file, "SurfaceGeometry: mode %d, nFa "FI32", nQP "FI32", dim: "
+	   FI32", nFP: "FI32"\n",
 	   obj->mode, obj->nFa, obj->nQP, obj->dim, obj->nFP );
   fprintf( file, "totalArea: %.5f\n", obj->totalArea );
 
@@ -355,18 +358,18 @@ int32 sg_print( SurfaceGeometry *obj, FILE *file, int32 mode )
     FMF_SetCell( obj->det, ii );
     FMF_SetCell( obj->area, ii );
     
-    fprintf( file, "%d normal:\n", ii );
+    fprintf( file, FI32" normal:\n", ii );
     fmf_print( obj->normal, file, mode );
     
-    fprintf( file, "%d det:\n", ii );
+    fprintf( file, FI32" det:\n", ii );
     fmf_print( obj->det, file, mode );
     
-    fprintf( file, "%d area:\n", ii );
+    fprintf( file, FI32" area:\n", ii );
     fmf_print( obj->area, file, mode );
 
     if (obj->bfBGM) {
       FMF_SetCell( obj->bfBGM, ii );
-      fprintf( file, "%d bfBGM:\n", ii );
+      fprintf( file, FI32" bfBGM:\n", ii );
       fmf_print( obj->bfBGM, file, mode );
     }
 
@@ -398,7 +401,8 @@ int32 sg_describe( SurfaceGeometry *obj,
 	(dim == obj->dim) &&
 	(nQP == obj->nQP) &&
 	(nFP == bfGR->nCol))) {
-    output( "nNod: %d, dim: %d, nFa: %d, nFP: %d\n",  nNod, dim, nFa, nFP );
+    output( "nNod: "FI32", dim: "FI32", nFa: "FI32", nFP: "FI32"\n",
+	    nNod, dim, nFa, nFP );
     fmf_print( obj->normal, stdout, 1 );
     fmf_print( bfGR, stdout, 1 );
     fmf_print( weight, stdout, 1 );

@@ -4,7 +4,7 @@
 #include "common.h"
 BEGIN_C_DECLS
 
-typedef unsigned int intp;
+typedef uint32 intp;
 
 int32 int32_sort_rows( int32 *array, int32 n_row, int32 n_col,
 		      int32 *i_sort_col, int32 n_sort_col );

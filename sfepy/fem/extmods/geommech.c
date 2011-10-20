@@ -876,7 +876,7 @@ void debug_printConn( int32 *conn, int32 nEP )
   int32 ii;
 
   for (ii = 0; ii < nEP; ii++) {
-    printf( "%d ", conn[ii] );
+    printf( FI32" ", conn[ii] );
   }
   printf( "\n" );
 }

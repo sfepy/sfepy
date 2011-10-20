@@ -1,7 +1,6 @@
 #include <stdarg.h>                                                             
 
 #include "common.h"
-#include "Python.h"
 
 int32 g_error = 0;
 
@@ -228,7 +227,7 @@ void mem_checkIntegrity( int lineNo, char *funName,
   output( "checking memory integrity in\n" );
   output( "%s, %s, %s(), %d:\n",
 	  dirName, fileName, funName, lineNo, al_maxUsage, al_curUsage );
-  output( "allocated memory: %d records, usage: %d, max: %d\n",
+  output( "allocated memory: "FI32" records, usage: "FI32", max: "FI32"\n",
 	  al_frags, al_curUsage, al_maxUsage );
   if (head == 0) {
     goto end_label_ok;
@@ -318,8 +317,8 @@ int32 mem_print( FILE *file, int32 mode )
   char *p;
 
   mode = 0;
-  fprintf( file, "allocated memory: %d records, usage: %d, max: %d\n",
-	  al_frags, al_curUsage, al_maxUsage );
+  fprintf( file, "allocated memory: "FI32" records, usage: FI32, max: "FI32"\n",
+	   al_frags, al_curUsage, al_maxUsage );
   if (head == 0) {
     goto end_label_ok;
   }
@@ -328,9 +327,9 @@ int32 mem_print( FILE *file, int32 mode )
     p = (char *) head;
 /*      fprintf( file, "%d _> head: %p, end %p\n", hsize, p, */
 /*  	    p + hsize + head->size ); */
-    fprintf( file, "  %s, %s, %s, %d: size: %d, ptr: %p\n",
-	    head->dirName, head->fileName, head->funName, head->lineNo,
-	    head->size, p + hsize );
+    fprintf( file, "  %s, %s, %s, %d: size: "FI32", ptr: %p\n",
+	     head->dirName, head->fileName, head->funName, head->lineNo,
+	     head->size, p + hsize );
     cnt++;
     if (cnt > al_frags) {
       errput( "damaged allocation record (overrun)!\n" );
@@ -371,9 +370,10 @@ int32 mem_printSome( FILE *file, int32 mode, int32 num )
   char *p;
 
   mode = 0;
-  fprintf( file, "allocated memory: %d records, usage: %d, max: %d\n",
-	  al_frags, al_curUsage, al_maxUsage );
-  fprintf( file, "printing max: %d\n", num );
+  fprintf( file,
+	   "allocated memory: "FI32" records, usage: "FI32", max: "FI32"\n",
+	   al_frags, al_curUsage, al_maxUsage );
+  fprintf( file, "printing max: "FI32"\n", num );
   if (head == 0) {
     goto end_label_ok;
   }
@@ -382,9 +382,9 @@ int32 mem_printSome( FILE *file, int32 mode, int32 num )
     p = (char *) head;
 /*      fprintf( file, "%d _> head: %p, end %p\n", hsize, p, */
 /*  	    p + hsize + head->size ); */
-    fprintf( file, "  %s, %s, %s, %d: size: %d, ptr: %p\n",
-	    head->dirName, head->fileName, head->funName, head->lineNo,
-	    head->size, p + hsize );
+    fprintf( file, "  %s, %s, %s, %d: size: "FI32", ptr: %p\n",
+	     head->dirName, head->fileName, head->funName, head->lineNo,
+	     head->size, p + hsize );
     cnt++;
     if (cnt > al_frags) {
       errput( "damaged allocation record (overrun)!\n" );
