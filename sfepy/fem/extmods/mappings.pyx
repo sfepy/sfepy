@@ -31,6 +31,9 @@ cdef class CVolumeMapping:
         return 'CVolumeMapping: n_el %d, n_qp %d, dim: %d, n_ep: %d' \
                % self.shape
 
+    def cprint(self, int32 mode=0):
+        vg_print(self.geo, stdout, mode)
+
     def describe(self,
                  np.ndarray[float64, mode='c', ndim=2] coors not None,
                  np.ndarray[int32, mode='c', ndim=2] conn not None,
@@ -179,6 +182,9 @@ cdef class CSurfaceMapping:
     def __str__(self):
         return 'CSurfaceMapping: n_fa %d, n_qp %d, dim: %d, n_fp: %d' \
                % self.shape
+
+    def cprint(self, int32 mode=0):
+        sg_print(self.geo, stdout, mode)
 
     def describe(self,
                  np.ndarray[float64, mode='c', ndim=2] coors not None,

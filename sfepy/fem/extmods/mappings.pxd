@@ -7,6 +7,8 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
+from libc.stdio cimport FILE, stdout
+
 from _fmfield cimport (FMField, array2fmfield4, array2fmfield3,
                        array2fmfield2, array2fmfield1)
 
@@ -31,6 +33,8 @@ cdef extern from 'geometry.h':
         FMField *det # detJMR or detJSR.
         FMField *volume
         float64 totalVolume
+
+    cdef int32 vg_print(VolumeGeometry *obj, FILE *file, int32 mode)
 
     cdef int32 vg_describe(VolumeGeometry *obj,
                            float64 *coorIn, int32 nNod, int32 dim,
@@ -60,6 +64,8 @@ cdef extern from 'geometry.h':
 
         FMField *area
         float64 totalArea
+
+    cdef int32 sg_print(SurfaceGeometry *obj, FILE *file, int32 mode)
 
     cdef int32 sg_describe(SurfaceGeometry *obj,
                            float64 *coorIn, int32 nNod, int32 dim,
