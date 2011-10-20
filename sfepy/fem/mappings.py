@@ -45,7 +45,7 @@ def get_physical_qps(region, integral):
     Get physical quadrature points corresponding to the given region
     and integral.
     """
-    phys_qps = PhysicalQPs(igs=region.igs,
+    phys_qps = PhysicalQPs(igs=region.igs, n_total=0,
                            indx={}, rindx={}, qp_indx={},
                            n_per_group={}, shape={}, values={},
                            is_uniform=True)
@@ -75,6 +75,7 @@ def get_physical_qps(region, integral):
 
         qps.shape = (n_per_group, qps.shape[2])
         phys_qps.values[ig] = qps
+        phys_qps.n_total += n_el * n_qp
 
     return phys_qps
 
