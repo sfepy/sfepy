@@ -17,12 +17,26 @@ class PhysicalQPs(Struct):
 
         return qps
 
-    def get_shape(self, rshape, ig):
+    def get_shape(self, rshape, ig=None):
         """
         Get shape from raveled shape.
         """
-        n_qp = self.shape[ig][1]
-        shape = (rshape[0] / n_qp, n_qp, rshape[1], rshape[2])
+        if ig is None:
+            if self.is_uniform:
+                n_qp = self.shape[self.igs[0]][1]
+
+            else:
+                msg = 'ig argument must be given for non-uniform QPs!'
+                raise ValueError(msg)
+
+        else:
+            n_qp = self.shape[ig][1]
+
+        if (rshape[0] / n_qp) * n_qp != rshape[0]:
+            raise ValueError('incompatible shapes! (n_qp: %d, %s)'
+                             % (n_qp, rshape))
+
+        shape = (rshape[0] / n_qp, n_qp) + rshape[1:]
 
         return shape
 
