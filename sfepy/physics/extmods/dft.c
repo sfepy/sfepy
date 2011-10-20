@@ -1,4 +1,3 @@
-#include <math.h>
 #include "dft.h"
 
 double max(double a, double b)

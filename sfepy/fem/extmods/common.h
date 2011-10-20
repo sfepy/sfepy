@@ -1,17 +1,6 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_ 1
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <math.h>
-#include <stdio.h>
-#include <sys/types.h>
-
-#include <stdlib.h>
-#include <string.h>
-
 #ifdef __cplusplus
 #  define BEGIN_C_DECLS         extern "C" {
 #  define END_C_DECLS           }

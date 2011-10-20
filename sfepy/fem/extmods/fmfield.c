@@ -1,6 +1,3 @@
-#include <string.h>
-#include <math.h>
-
 #include "fmfield.h"
 
 #undef __FUNC__

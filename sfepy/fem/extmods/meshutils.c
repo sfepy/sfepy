@@ -1,5 +1,3 @@
-#include <stdlib.h>
-
 #include "meshutils.h"
 #include "geomtrans.h"
 #include "sort.h"
