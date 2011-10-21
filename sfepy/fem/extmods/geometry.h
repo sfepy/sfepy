@@ -48,8 +48,6 @@ int32 vg_describe( VolumeGeometry *obj,
 		   FMField *bfGR, FMField *ebfGR, FMField *weight );
 int32 vg_integrate( VolumeGeometry *obj, FMField *out, FMField *in,
                     int32 mode );
-int32 vg_integrateChunk( VolumeGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow );
 int32 vg_getElementDiameters( VolumeGeometry *obj, FMField *out,
 			      int32 *edges, int32 edges_nRow, int32 edges_nCol,
 			      float64 *coorIn, int32 nNod, int32 dim,
@@ -90,8 +88,6 @@ int32 sg_describe( SurfaceGeometry *obj,
 		   FMField *bfGR, FMField *weight );
 int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in,
                     int32 mode );
-int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow, int32 mode );
 int32 sg_evaluateBFBGM( SurfaceGeometry *obj, FMField *bfBGR, FMField *ebfBGR,
 			float64 *coorIn, int32 nNod, int32 dim,
 			int32 *fis, int32 nFa, int32 nFP,

@@ -204,28 +204,6 @@ int32 vg_integrate( VolumeGeometry *obj, FMField *out, FMField *in,
 }
 
 #undef __FUNC__
-#define __FUNC__ "vg_integrateChunk"
-/*!
-  @par Revision history:
-  - 01.11.2007, c
-*/
-int32 vg_integrateChunk( VolumeGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow )
-{
-  int32 ii, iel;
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-    FMF_SetCell( obj->det, iel );
-    FMF_SetCell( out, ii );
-    FMF_SetCell( in, ii );
-    fmf_sumLevelsMulF( out, in, obj->det->val );
-  }
-
-  return( RET_OK );
-}
-
-#undef __FUNC__
 #define __FUNC__ "vg_getElementDiameters"
 /*!
   @par Revision history:
@@ -527,63 +505,6 @@ int32 sg_integrate( SurfaceGeometry *obj, FMField *out, FMField *in,
         FMF_SetCell( obj->area, iel );
         fmf_mulC( out, 1.0 / obj->area->val[0] );
       }
-      ERR_CheckGo( ret );
-    }
-  } else {
-    errput( ErrHead "ERR_Switch\n" );
-  }
-
- end_label:
-  fmf_freeDestroy( &vn );
-
-  return( RET_OK );
-}
-
-#undef __FUNC__
-#define __FUNC__ "sg_integrateChunk"
-/*!
-  For scalar input p: \int_{\Gamma} p dS
-  For vector input v: \int_{\Gamma} v n dS
-
-  @par Revision history:
-  - 01.11.2007, c
-*/
-int32 sg_integrateChunk( SurfaceGeometry *obj, FMField *out, FMField *in,
-			 int32 *elList, int32 elList_nRow, int32 mode )
-{
-  int32 dim, nQP, iel, ii, ret = RET_OK;
-  FMField *vn = 0;
-
-  dim = obj->normal->nRow;
-  nQP = obj->normal->nLev;
-   
-  if (in->nRow == 1 || mode == 1) {
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-      FMF_SetCell( obj->det, iel );
-      FMF_SetCell( in, ii );
-      FMF_SetCell( out, ii );
-
-      fmf_sumLevelsMulF( out, in, obj->det->val );
-      ERR_CheckGo( ret );
-    }
-  } else if (in->nRow == dim) {
-    fmf_createAlloc( &vn, 1, nQP, 1, 1 );
-
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-      FMF_SetCell( obj->normal, iel );
-      FMF_SetCell( obj->det, iel );
-      FMF_SetCell( in, ii );
-      FMF_SetCell( out, ii );
-
-      fmf_mulATB_nn( vn, in, obj->normal );
-/*       fmf_mulC( vn, -1.0 ); */
-
-      fmf_sumLevelsMulF( out, vn, obj->det->val );
-/*       fmf_print( vn, stdout, 0 ); */
-/*       fmf_print( out, stdout, 0 ); */
-/*       sys_pause(); */
       ERR_CheckGo( ret );
     }
   } else {
