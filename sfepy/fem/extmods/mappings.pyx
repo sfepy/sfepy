@@ -226,7 +226,10 @@ cdef class CSurfaceMapping:
 
         if not ((out.shape[0] == arr.shape[0])
                 and (out.shape[1] == 1)
-                and (out.shape[2] == arr.shape[2])
+                and (((mode < 3) and (out.shape[2] == arr.shape[2]))
+                     or
+                     ((mode >= 3) and (out.shape[2] == 1)
+                      and (arr.shape[2] == self.dim)))
                 and (out.shape[3] == arr.shape[3])
                 and (out.shape[0] == self.n_fa)
                 and (arr.shape[1] == self.n_qp)):
