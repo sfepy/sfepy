@@ -21,28 +21,28 @@ class Volume(MiniAppBase):
 
 class HomogenizationApp( HomogenizationEngine ):
 
-    def process_options( options ):
-        """Application options setup. Sets default values for missing
-        non-compulsory options."""
+    @staticmethod
+    def process_options(options):
+        """
+        Application options setup. Sets default values for missing
+        non-compulsory options.
+        """
         get = options.get_default_attr
-        
-        print_digits = get( 'print_digits', 3 )
-
-        float_format = get( 'float_format', '%8.3e' )
-        coefs_filename = get( 'coefs_filename', 'coefs' )
-        tex_names = get( 'tex_names', None )
-        
-        coefs = get( 'coefs', None, 'missing "coefs" in options!' )
-        requirements = get( 'requirements', None,
-                            'missing "requirements" in options!' )
 
         volume = get('volume', None)
         volumes = get('volumes', None)
         if volume is None and volumes is None:
             raise ValueError('missing "volume" in options!')
 
-        return Struct( **locals() )
-    process_options = staticmethod( process_options )
+        return Struct(print_digits=get('print_digits', 3),
+                      float_format=get('float_format', '%8.3e'),
+                      coefs_filename=get('coefs_filename', 'coefs'),
+                      tex_names=get('tex_names', None),
+                      coefs=get('coefs', None, 'missing "coefs" in options!'),
+                      requirements=get('requirements', None,
+                                       'missing "requirements" in options!'),
+                      volume=volume,
+                      volumes=volumes)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
@@ -62,7 +62,7 @@ class HomogenizationApp( HomogenizationEngine ):
         po = HomogenizationApp.process_options
         self.app_options += po( self.conf.options )
 
-    def call( self, ret_all = False ):
+    def call(self, ret_all=False, verbose=False):
         opts = self.app_options
 
         volume = {}
@@ -96,13 +96,13 @@ class HomogenizationApp( HomogenizationEngine ):
 
         coefs = Coefficients( **coefs.to_dict() )
         coefs.volume = volume
-        
-        prec = nm.get_printoptions()[ 'precision']
-        if hasattr( opts, 'print_digits' ):
-            nm.set_printoptions( precision = opts.print_digits )
-        print coefs
-        nm.set_printoptions( precision = prec )
-##        pause()
+
+        if verbose:
+            prec = nm.get_printoptions()[ 'precision']
+            if hasattr(opts, 'print_digits'):
+                nm.set_printoptions(precision=opts.print_digits)
+            print coefs
+            nm.set_printoptions(precision=prec)
 
         coef_save_name = op.join( opts.output_dir, opts.coefs_filename )
         coefs.to_file_hdf5( coef_save_name + '.h5' )
