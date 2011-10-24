@@ -155,7 +155,11 @@ class CorrMiniApp( MiniAppBase ):
                                                      extend=extend)
 
                     for _key, val in aux.iteritems():
-                        new_key = _key + '_' + key
+                        if key:
+                            new_key = _key + '_' + key
+
+                        else:
+                            new_key = _key
                         out[new_key] = val
 
         return out
