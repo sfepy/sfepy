@@ -128,7 +128,7 @@ def get_von_mises_stress(stress, sym_storage=True):
 
     return vms
 
-def prepare_cylindrical_transform(coors, origin):
+def prepare_cylindrical_transform(coors, origin, mode='axes'):
     """
     Prepare matrices for transforming tensors into cylindrical coordinates with
     the axis 'z' in a given origin.
@@ -139,14 +139,23 @@ def prepare_cylindrical_transform(coors, origin):
         The Cartesian coordinates.
     origin : array of length 3
         The origin.
+    mode : 'axes' or 'data'
+        In 'axes' (default) mode the matrix transforms data to different
+        coordinate system, while in 'data' mode the matrix transforms
+        the data in the same coordinate system and is transpose of the
+        matrix in the 'axes' mode.
 
     Returns
     -------
     mtx : array
         The array of transformation matrices for each coordinate in `coors`.
     """
+    assert_(mode in ['axes', 'data'])
+
     x, y = coors[:,0] - origin[0], coors[:,1] - origin[1]
     theta = nm.arctan2(y, x)
+    if mode == 'data':
+        theta = -theta
 
     mtx = nm.zeros((coors.shape[0], 3, 3), dtype=nm.float64)
     for ii, th in enumerate(theta):
