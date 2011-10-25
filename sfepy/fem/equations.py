@@ -9,7 +9,7 @@ from sfepy.base.base import debug, OneTypeList, Container, Struct
 from sfepy.fem import Materials, Variables
 from sfepy.fem.fields import setup_dof_conns
 from extmods.mesh import create_mesh_graph
-from sfepy.terms import Terms, Term, DataCaches
+from sfepy.terms import Terms, Term
 
 """
 Note:
@@ -56,15 +56,12 @@ class Equations( Container ):
 
     @staticmethod
     def from_conf(conf, variables, regions, materials, integrals,
-                  setup=True, caches=None, user=None, cache_override=False,
+                  setup=True, user=None,
                   make_virtual=False, verbose=True):
 
         objs = OneTypeList(Equation)
 
         conf = copy(conf)
-
-        if caches is None:
-            caches = DataCaches()
 
         ii = 0
         for name, desc in conf.iteritems():
@@ -72,52 +69,28 @@ class Equations( Container ):
                 output('equation "%s":' %  name)
                 output(desc)
             eq = Equation.from_desc(name, desc, variables, regions,
-                                    materials, integrals, caches=caches,
-                                    user=user)
+                                    materials, integrals, user=user)
             objs.append(eq)
             ii += 1
 
-        obj = Equations(objs, setup=setup, caches=caches,
-                        cache_override=cache_override,
+        obj = Equations(objs, setup=setup,
                         make_virtual=make_virtual, verbose=verbose)
 
         return obj
 
     def __init__(self, equations, setup=True,
-                 caches=None, cache_override=False,
                  make_virtual=False, verbose=True):
         Container.__init__(self, equations)
 
         self.variables = Variables(self.collect_variables())
         self.materials = Materials(self.collect_materials())
 
-        self.setup_caches(caches=caches)
-
         self.domain = self.get_domain()
 
         self.active_bcs = set()
 
         if setup:
-            self.setup(cache_override=cache_override,
-                       make_virtual=make_virtual, verbose=verbose)
-
-    def setup_caches(self, caches=None):
-        """
-        Ensure that all terms in equations share the same DataCaches
-        instance.
-        """
-        if not len(self):
-            self.caches = get_default(caches, DataCaches())
-
-        else:
-            caches = get_default(caches, self[0].terms[0].caches)
-            for eq in self:
-                for term in eq.terms:
-                    if not term.caches is caches:
-                        msg = 'terms must share a single DataCaches instance!'
-                        raise ValueError(msg)
-
-            self.caches = caches
+            self.setup(make_virtual=make_virtual, verbose=verbose)
 
     def get_domain(self):
         domain = None
@@ -129,15 +102,13 @@ class Equations( Container ):
 
         return domain
 
-    def setup(self, cache_override=False, make_virtual=False, verbose=True):
+    def setup(self, make_virtual=False, verbose=True):
         self.collect_conn_info()
 
         # This uses the conn_info created above.
         self.dof_conns = {}
         setup_dof_conns(self.conn_info, dof_conns=self.dof_conns,
                         make_virtual=make_virtual, verbose=verbose)
-
-        self.set_cache_mode(cache_override)
 
     def collect_materials(self):
         """
@@ -204,21 +175,6 @@ class Equations( Container ):
     def invalidate_term_caches( self ):
         for var in self.variables.iter_state():
             var.invalidate_evaluate_cache()
-
-        for cache in self.caches.itervalues():
-            cache.clear()
-
-    ##
-    # c: 07.05.2008, r: 07.05.2008
-    def reset_term_caches( self ):
-        for cache in self.caches.itervalues():
-            cache.reset()
-
-    ##
-    # 02.03.2007, c
-    def set_cache_mode( self, cache_override ):
-        for cache in self.caches.itervalues():
-            cache.set_mode( cache_override )
 
     def print_terms(self):
         """
@@ -427,15 +383,11 @@ class Equations( Container ):
     ##
     # c: 02.04.2008, r: 02.04.2008
     def init_time( self, ts ):
-        for cache in self.caches.itervalues():
-            cache.init_time( ts )
+        pass
 
     ##
     # 08.06.2007, c
     def advance( self, ts ):
-        for cache in self.caches.itervalues():
-            cache.advance( ts.step + 1 )
-
         for eq in self:
             for term in eq.terms:
                 term.advance(ts)
@@ -676,18 +628,18 @@ class Equation( Struct ):
 
     @staticmethod
     def from_desc(name, desc, variables, regions, materials, integrals,
-                  caches=None, user=None):
+                  user=None):
         term_descs = parse_definition(desc)
         terms = Terms.from_desc(term_descs, regions, integrals)
 
         terms.setup()
         terms.assign_args(variables, materials, user)
 
-        obj = Equation(name, terms, caches=caches)
+        obj = Equation(name, terms)
 
         return obj
 
-    def __init__(self, name, terms, caches=None):
+    def __init__(self, name, terms):
         Struct.__init__(self, name = name)
 
         if isinstance(terms, Term): # single Term
@@ -696,9 +648,6 @@ class Equation( Struct ):
         self.terms = terms
 
         self.terms.setup()
-
-        caches = get_default(caches, DataCaches())
-        self.terms.assign_caches(caches)
 
     def collect_materials(self):
         """

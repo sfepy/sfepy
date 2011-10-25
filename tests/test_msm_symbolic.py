@@ -240,7 +240,6 @@ class Test( TestCommon ):
                 globals()['solution'][0] = sol_expr
                 rhs_mat.function.set_extra_args(expression=rhs_expr)
                 problem.time_update()
-                problem.equations.reset_term_caches()
                 state = problem.solve()
                 coor = variables[var_name].field.get_coor()
                 ana_sol = self.eval_coor_expression( sol_expr, coor )

@@ -2,7 +2,6 @@ from copy import copy
 
 from sfepy.base.base import output, get_default, OneTypeList, Struct,\
      get_default_attr
-from sfepy.terms import DataCaches
 from sfepy.fem import Equations, Variables, Region
 from sfepy.fem.fields import setup_dof_conns, setup_extra_data
 
@@ -203,8 +202,6 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     else:
         regions = fields[fields.keys()[0]].domain.regions
 
-    caches = DataCaches()
-
     # Create temporary variables.
     aux_vars = Variables(variables)
 
@@ -217,8 +214,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
 
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, regions, materials, integrals,
-                                    setup=False,
-                                    caches=caches, user=extra_args,
+                                    setup=False, user=extra_args,
                                     verbose=verbose)
     equations.collect_conn_info()
 

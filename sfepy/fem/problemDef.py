@@ -336,7 +336,6 @@ class ProblemDefinition( Struct ):
         self.lcbcs = None
 
     def set_equations(self, conf_equations=None, user=None,
-                      cache_override=None,
                       keep_solvers=False, make_virtual=False):
         """
         Set equations of the problem using the `equations` problem
@@ -347,7 +346,6 @@ class ProblemDefinition( Struct ):
         conf_equations = get_default(conf_equations,
                                      self.conf.get_default_attr('equations',
                                                                 None))
-        cache_override = get_default(cache_override, False)
 
         self.set_variables()
         variables = Variables.from_conf(self.conf_variables, self.fields)
@@ -360,7 +358,6 @@ class ProblemDefinition( Struct ):
                                         self.domain.regions,
                                         materials, self.integrals,
                                         user=user,
-                                        cache_override=cache_override,
                                         make_virtual=make_virtual)
 
         self.equations = equations
