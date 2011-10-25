@@ -404,8 +404,10 @@ class Mesh( Struct ):
 
         Parameters
         ----------
-        filename : string like
-            The filename.
+        filename : string or function or MeshIO instance or Mesh instance
+            The name of file to read the mesh from. For convenience, a
+            mesh creation function or a MeshIO instance or directly a Mesh
+            instance can be passed in place of the file name.
         io : *MeshIO instance
             Passing *MeshIO instance has precedence over filename.
         prefix_dir : str
@@ -415,6 +417,9 @@ class Mesh( Struct ):
             dimension (faces and/or edges). Only some MeshIO subclasses
             support this!
         """
+        if isinstance(filename, Mesh):
+            return filename
+
         if io == 'auto':
             if filename is None:
                 output( 'filename or io must be specified!' )
