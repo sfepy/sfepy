@@ -175,7 +175,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
     For tensors (assuming orthogonal coordinates):
 
     .. math::
-        \ull{t}' = M^{-T} \cdot \ull{t} \cdot M
+        \ull{t}' = M \cdot \ull{t} \cdot M^T
 
     Parameters
     ----------
