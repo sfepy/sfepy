@@ -264,8 +264,8 @@ class ProblemConf( Struct ):
                 }
                 return locals()
 
-        Optionally, the define() function can accept keyword arguments
-        that should be defined using the `define_args` dictionary.
+        Optionally, the define() function can accept additional arguments
+        that should be defined using the `define_args` tuple or dictionary.
         """
         funmod = import_file( filename )
 
@@ -274,7 +274,11 @@ class ProblemConf( Struct ):
                 define_dict = funmod.__dict__["define"]()
 
             else:
-                define_dict = funmod.__dict__["define"](**define_args)
+                if isinstance(define_args, dict):
+                    define_dict = funmod.__dict__["define"](**define_args)
+
+                else:
+                    define_dict = funmod.__dict__["define"](*define_args)
 
         else:
             define_dict = funmod.__dict__
