@@ -223,6 +223,37 @@ def make_axis_rotation_matrix(direction, angle):
     -------
     mtx : array
         The rotation matrix :math:`\ull{R}`.
+
+    Notes
+    -----
+    The matrix follows the right hand rule: if the right hand thumb
+    points along the axis vector :math:`\ul{d}` the fingers show the
+    positive angle rotation direction.
+
+    Examples
+    --------
+    Make transformation matrix for rotation of coordinate system by 90
+    degrees around 'z' axis.
+
+    >>> mtx = make_axis_rotation_matrix([0., 0., 1.], nm.pi/2)
+    >>> mtx
+    array([[ 0.,  1.,  0.],
+           [-1.,  0.,  0.],
+           [ 0.,  0.,  1.]])
+
+    Coordinates of vector :math:`[1, 0, 0]^T` w.r.t. the original system
+    in the rotated system. (Or rotation of the vector by -90 degrees in
+    the original system.)
+
+    >>> nm.dot(mtx, [1., 0., 0.])
+    >>> array([ 0., -1.,  0.])
+
+    Coordinates of vector :math:`[1, 0, 0]^T` w.r.t. the rotated system
+    in the original system. (Or rotation of the vector by +90 degrees in
+    the original system.)
+
+    >>> nm.dot(mtx.T, [1., 0., 0.])
+    >>> array([ 0.,  1.,  0.])
     """
     d = nm.array(direction, dtype=nm.float64)
     d /= nm.linalg.norm(d)
