@@ -1,5 +1,22 @@
 from sfepy.base.testing import TestCommon
 
+def get_ortho_d(phi1, phi2):
+    import numpy as nm
+    import sfepy.mechanics.tensors as tn
+
+    v1 = nm.array([nm.cos(phi1), nm.sin(phi1), 0])
+    v2 = nm.array([nm.cos(phi2), nm.sin(phi2), 0])
+    om1 = nm.outer(v1, v1)
+    om2 = nm.outer(v2, v2)
+
+    ii = tn.get_sym_indices(3)
+
+    o1 = om1.flat[ii]
+    o2 = om2.flat[ii]
+
+    dr = nm.outer(o1, o1) + nm.outer(o2, o2)
+    return dr, v1, v2, om1, om2
+
 class Test(TestCommon):
 
     @staticmethod
@@ -100,6 +117,60 @@ class Test(TestCommon):
         _ok = nm.allclose(out, expected, rtol=0.0, atol=1e-14)
         self.report('sym. tensors in cylindrical coordinates: %s' % _ok)
         ok = ok and _ok
+
+        return ok
+
+    def test_transform_data4(self):
+        import numpy as nm
+        import sfepy.mechanics.tensors as tn
+
+        ok = True
+
+        expected = nm.zeros((6, 6), dtype=nm.float64)
+        expected[0, 0] = expected[1, 1] = 1.0
+
+        phi = nm.deg2rad(30.)
+        dr, v1, v2, om1, om2 = get_ortho_d(phi, phi + nm.deg2rad(90.))
+
+        # Rotate coordinate system by phi.
+        mtx = tn.make_axis_rotation_matrix([0., 0., 1.], phi)
+        do = tn.transform_data(dr[None, ...], mtx=mtx[None, ...])
+
+        _ok = nm.allclose(do, expected, rtol=0.0, atol=1e-14)
+        self.report('sym. 4th-th order tensor rotation: %s' % _ok)
+        ok = ok and _ok
+
+        dt, vt1, vt2, omt1, omt2 = get_ortho_d(0, nm.deg2rad(90.))
+
+        expected1 = nm.zeros((3, 3), dtype=nm.float64)
+        expected1[0, 0] = 1.0
+
+        expected2 = nm.zeros((3, 3), dtype=nm.float64)
+        expected2[1, 1] = 1.0
+
+        omr1 = nm.einsum('pq,ip,jq->ij', om1, mtx, mtx)
+        omr2 = nm.einsum('pq,ip,jq->ij', om2, mtx, mtx)
+
+        ii = tn.get_sym_indices(3)
+        jj = tn.get_full_indices(3)
+
+        o1 = om1.flat[ii]
+        o2 = om2.flat[ii]
+
+        omr12 = tn.transform_data(o1[None,...], mtx=mtx[None, ...])[0, jj]
+        omr22 = tn.transform_data(o2[None,...], mtx=mtx[None, ...])[0, jj]
+
+        _ok1 = nm.allclose(omr1, expected1, rtol=0.0, atol=1e-14)
+        _ok2 = nm.allclose(omr12, expected1, rtol=0.0, atol=1e-14)
+        self.report('einsum-transform_data compatibility 1: %s %s'
+                    % (_ok1, _ok2))
+        ok = ok and _ok1 and _ok2
+
+        _ok1 = nm.allclose(omr2, expected2, rtol=0.0, atol=1e-14)
+        _ok2 = nm.allclose(omr22, expected2, rtol=0.0, atol=1e-14)
+        self.report('einsum-transform_data compatibility 2: %s %s'
+                    % (_ok1, _ok2))
+        ok = ok and _ok1 and _ok2
 
         return ok
 
