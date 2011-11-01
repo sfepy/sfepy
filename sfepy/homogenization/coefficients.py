@@ -4,12 +4,11 @@ from sfepy.base.base import ordered_iteritems, Struct
 from sfepy.base.ioutils import read_dict_hdf5, write_dict_hdf5
 from sfepy.homogenization.utils import iter_sym
 
-##
-# 09.07.2007, c
-class Coefficients( Struct ):
+class Coefficients(Struct):
+    """
+    Class for storing (homogenized) material coefficients.
+    """
 
-    ##
-    # 09.07.2007, c
     def from_file_hdf5( filename ):
         obj = Coefficients()
         obj.__dict__ = read_dict_hdf5( filename )
@@ -17,12 +16,10 @@ class Coefficients( Struct ):
             if type( val ) == list:
                 for ii, vv in enumerate( val ):
                     val[ii] = nm.array( vv, dtype = nm.float64 )
-                    
+
         return obj
     from_file_hdf5 = staticmethod( from_file_hdf5 )
 
-    ##
-    # 09.07.2007, c
     def to_file_hdf5( self, filename ):
         write_dict_hdf5( filename, self.__dict__ )
 
@@ -59,12 +56,11 @@ class Coefficients( Struct ):
         fd.write( '\n' )
         fd.write( r'  \end{equation}' )
         fd.write( '\n' )
-        
+
     def _save_dict_latex(self, adict, fd, names):
         fd.write( r'\begin{itemize}' )
         fd.write( '\n' )
         for key, val in ordered_iteritems(adict):
-            print key
             try:
                 lname = names[key]
             except:
@@ -89,20 +85,18 @@ class Coefficients( Struct ):
 
         fd.write( r'\end{itemize}' )
         fd.write( '\n\n' )
-        
-        
+
+
     def to_file_latex(self, filename, names, print_digits):
         """
         Save the coefficients to a file in LaTeX format.
         """
         self.format = '%% %d.%df' % (print_digits + 3, print_digits)
-        print self.format
+
         fd = open(filename, 'w')
         self._save_dict_latex(self.__dict__, fd, names)
         fd.close()
 
-    ##
-    # c: 07.03.2008, r: 09.04.2008
     def _save_dict( self, adict, fd, names, format ):
         for key, val in ordered_iteritems(adict):
             try:
@@ -150,8 +144,6 @@ class Coefficients( Struct ):
                 fd.write( '\n' )
             fd.write( '\n' )
 
-    ##
-    # c: 07.03.2008, r: 07.03.2008
     def to_file_txt( self, filename, names, format ):
 
         fd = open( filename, 'w' )
@@ -208,14 +200,13 @@ ijkl & value \\
                 mode = 'vector'
             elif val.shape[0] == sym:
                 mode = 'matrix_t1d'
-                
+
         elif val.ndim == 2:
             if val.shape[0] == dim:
                 mode = 'matrix_2D'
             elif val.shape[0] == sym:
                 mode = 'matrix_t2d'
 
-        print mode
         out = ''
         if mode == 'scalar':
             out = format % val
@@ -246,17 +237,12 @@ ijkl & value \\
             out = self._table_matrix_2 % aux
         return out
 
-    ##
-    # c: 09.07.2008, r: 09.07.2008
     def to_latex( self, attr_name, dim, style = 'table', format = '%f',
                  step = None ):
 
         val = getattr( self, attr_name )
         if step is not None:
             val = val[step]
-
-        print attr_name
-        print val
 
         if isinstance( val, dict ):
             aux = ''
@@ -269,7 +255,4 @@ ijkl & value \\
         else:
             out = self._typeset( val, dim, style, format, step )
 
-            
-        print out
-#        pause()
         return out
