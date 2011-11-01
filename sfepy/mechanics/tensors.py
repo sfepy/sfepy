@@ -164,23 +164,37 @@ def prepare_cylindrical_transform(coors, origin, mode='axes'):
     return mtx
 
 def transform_data(data, coors=None, mode='cylindrical', mtx=None):
-    """
-    Transform vector or tensor data components into another coordinate system.
+    r"""
+    Transform vector or tensor data components between orthogonal
+    coordinate systems in 3D using transformation matrix :math:`M`, that
+    should express rotation of the original coordinate system to the new
+    system denoted by :math:`\bullet'` below.
 
     For vectors:
 
     .. math::
         \ul{v}' = M \cdot \ul{v}
 
-    For tensors (assuming orthogonal coordinates):
+    For second order tensors:
 
     .. math::
         \ull{t}' = M \cdot \ull{t} \cdot M^T
 
+        \mbox{or}
+
+        t_{ij}' = M_{ip} M_{jq} t_{pq}
+
+    For fourth order tensors:
+
+    .. math::
+
+        t_{ijkl}' = M_{ip} M_{jq} M_{kr} M_{ls} t_{pqrs}
+
     Parameters
     ----------
-    data : array
-        The vectors or tensors (symmetric storage) to be transformed.
+    data : array, shape (num, n_r) or (num, n_r, n_c)
+        The vectors (`n_r` is 3) or tensors (symmetric storage, `n_r` is 6,
+        `n_c` is 1 or 6) to be transformed.
     coors : array
         The Cartesian coordinates of the data. Not needed when `mtx` argument
         is given.
@@ -197,7 +211,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
     """
     if (coors is None) and (mtx is None):
         raise ValueError('one of (coors, mtx) arguments must be set!')
-    
+
     if mtx is None:
         if mode == 'cylindrical':
             mtx = prepare_cylindrical_transform(coors, [0.0, 0.0, 0.0])
@@ -215,18 +229,33 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         new_data = dot_sequences(mtx, data)
 
     elif data.shape[1] == 6: # Symmetric tensors.
-        ii = get_full_indices(3)
+        iif = get_full_indices(3)
+        iis = get_sym_indices(3)
 
-        aux = data[:,ii]
-        aux2 = dot_sequences(dot_sequences(mtx, aux, 'AB'), mtx, 'ABT')
-        assert nm.allclose(aux2[0], nm.dot(nm.dot(mtx[0], aux[0]), mtx[0].T))
+        if data.ndim == 2: # Second order.
+            aux = data[:, iif]
+            aux2 = dot_sequences(dot_sequences(mtx, aux, 'AB'), mtx, 'ABT')
+            assert nm.allclose(aux2[0],
+                               nm.dot(nm.dot(mtx[0], aux[0]), mtx[0].T))
 
-        aux3 = aux2.reshape((aux2.shape[0], 9))
+            aux3 = aux2.reshape((aux2.shape[0], 9))
 
-        new_data = aux3[:, get_sym_indices(3)]
+            new_data = aux3[:, iis]
+
+        elif (data.ndim == 3) and (data.shape[2] == 6): # Fourth order.
+            # Note: nm.einsum() is much slower than dot_sequences().
+            df = data[:, iif][..., iif]
+            tdf = nm.einsum('apqrs,aip,ajq,akr,als->aijkl',
+                            df, mtx, mtx, mtx, mtx)
+            tdf2 = tdf.reshape(tdf.shape[0], 9, 9)
+            new_data = tdf2[:, :, iis][:, iis]
+
+        else:
+            raise ValueError('unsupported data shape! (%s)' % str(shape))
+
 
     else:
-        raise ValueError('unsupported data shape! (%s)' % str(data.shape))
+        raise ValueError('unsupported data shape! (%s)' % str(shape))
 
     # Restore the correct shape.
     new_data.shape = shape
