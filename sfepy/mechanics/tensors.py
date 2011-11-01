@@ -221,14 +221,14 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
 
     shape = data.shape
 
-    data = nm.squeeze(data)
-    if data.ndim == 1:
-        data.shape = (1, data.shape[0])
+    if shape[0] != mtx.shape[0]:
+        raise ValueError('incompatible numbers of points! (data: %d, mtx: %d)'
+                         % (shape[0], mtx.shape[0]))
 
-    if data.shape[1] == 3: # Vectors.
+    if shape[1] == 3: # Vectors.
         new_data = dot_sequences(mtx, data)
 
-    elif data.shape[1] == 6: # Symmetric tensors.
+    elif shape[1] == 6: # Symmetric tensors.
         iif = get_full_indices(3)
         iis = get_sym_indices(3)
 
@@ -242,7 +242,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
 
             new_data = aux3[:, iis]
 
-        elif (data.ndim == 3) and (data.shape[2] == 6): # Fourth order.
+        elif (data.ndim == 3) and (shape[2] == 6): # Fourth order.
             # Note: nm.einsum() is much slower than dot_sequences().
             df = data[:, iif][..., iif]
             tdf = nm.einsum('apqrs,aip,ajq,akr,als->aijkl',
@@ -257,8 +257,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
     else:
         raise ValueError('unsupported data shape! (%s)' % str(shape))
 
-    # Restore the correct shape.
-    new_data.shape = shape
+    assert_(new_data.shape == shape)
 
     return new_data
 
