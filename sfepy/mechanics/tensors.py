@@ -194,7 +194,7 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
     ----------
     data : array, shape (num, n_r) or (num, n_r, n_c)
         The vectors (`n_r` is 3) or tensors (symmetric storage, `n_r` is 6,
-        `n_c` is 1 or 6) to be transformed.
+        `n_c`, if available, is 1 or 6) to be transformed.
     coors : array
         The Cartesian coordinates of the data. Not needed when `mtx` argument
         is given.
@@ -232,8 +232,14 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
         iif = get_full_indices(3)
         iis = get_sym_indices(3)
 
-        if data.ndim == 2: # Second order.
-            aux = data[:, iif]
+        if ((data.ndim == 2)
+            or ((data.ndim == 3) and (shape[2] == 1))): # Second order.
+            if data.ndim == 3:
+                aux = data[:, iif, 0]
+
+            else:
+                aux = data[:, iif]
+
             aux2 = dot_sequences(dot_sequences(mtx, aux, 'AB'), mtx, 'ABT')
             assert nm.allclose(aux2[0],
                                nm.dot(nm.dot(mtx[0], aux[0]), mtx[0].T))
@@ -241,6 +247,8 @@ def transform_data(data, coors=None, mode='cylindrical', mtx=None):
             aux3 = aux2.reshape((aux2.shape[0], 9))
 
             new_data = aux3[:, iis]
+            if data.ndim == 3:
+                new_data = new_data[..., None]
 
         elif (data.ndim == 3) and (shape[2] == 6): # Fourth order.
             # Note: nm.einsum() is much slower than dot_sequences().
