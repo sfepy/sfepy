@@ -75,6 +75,14 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    src = ['lobatto.pyx']
+    config.add_extension('lobatto',
+                         sources=src,
+                         extra_compile_args=site_config.compile_flags(),
+                         extra_link_args=site_config.link_flags(),
+                         include_dirs=[auto_dir],
+                         define_macros=defines)
+
     return config
 
 if __name__ == '__main__':
