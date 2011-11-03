@@ -13,5 +13,5 @@ cdef extern from 'math.h':
 ctypedef float64 (*fun)(float64 x)
 
 # Start of generated code.
-%s
+REPLACE_TEXT
 # End of generated code.

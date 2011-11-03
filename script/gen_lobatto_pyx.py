@@ -25,7 +25,7 @@ cdef fun %s[%d]
 %s[:] = [%s]
 """
 
-def gen_lobbato(max_order):
+def gen_lobatto(max_order):
     assert max_order > 2
 
     x = sm.symbols('x')
@@ -117,7 +117,7 @@ def main():
 
     max_order = options.max_order
 
-    legs, clegs, lobs, clobs, kerns, ckerns, denoms = gen_lobbato(max_order)
+    legs, clegs, lobs, clobs, kerns, ckerns, denoms = gen_lobatto(max_order)
 
     if options.plot:
         x, y = sm.symbols('x,y')
@@ -199,6 +199,8 @@ def main():
 
     out.append('\n# Lists of functions.\n')
 
+    out.append('\ncdef int32 max_order = %d\n' % max_order)
+
     args = ', '.join(['&%s' % name for name in names_lobatto])
     list_lobatto = fun_list % ('lobatto', max_order + 1, 'lobatto', args)
     out.append(list_lobatto)
@@ -211,7 +213,7 @@ def main():
     list_legendre = fun_list % ('legendre', max_order + 1, 'legendre', args)
     out.append(list_legendre)
 
-    fd.write(template % ''.join(out))
+    fd.write(template.replace('REPLACE_TEXT', ''.join(out)))
 
     fd.close()
 
