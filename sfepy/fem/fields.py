@@ -287,9 +287,11 @@ class Field( Struct ):
         self.gel = self.domain.groups[self.region.igs[0]].gel
 
     def create_interpolant(self):
-        name = '%s_%d%s' % (self.gel.name, self.approx_order,
-                            'B' * self.force_bubble)
-        self.interp = fea.Interpolant(name, self.gel, self.approx_order,
+        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
+                                  self.poly_space_base, self.approx_order,
+                                  'B' * self.force_bubble)
+        self.interp = fea.Interpolant(name, self.gel, self.space,
+                                      self.poly_space_base, self.approx_order,
                                       self.force_bubble)
 
     def setup_approximations(self):
@@ -1228,9 +1230,12 @@ class SurfaceField(Field):
             raise ValueError('element group has no surface!')
 
     def create_interpolant(self):
-        name = '%s_%d%s' % (self.gel.name, self.approx_order,
-                            'B' * self.force_bubble)
-        self.interp = fea.SurfaceInterpolant(name, self.gel, self.approx_order,
+        name = '%s_%s_%s_%d%s' % (self.gel.name, self.space,
+                                  self.poly_space_base, self.approx_order,
+                                  'B' * self.force_bubble)
+        self.interp = fea.SurfaceInterpolant(name, self.gel, self.space,
+                                             self.poly_space_base,
+                                             self.approx_order,
                                              self.force_bubble)
 
     def setup_approximations(self):

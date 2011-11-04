@@ -64,18 +64,19 @@ def _interp_to_faces( vertex_vals, bfs, faces ):
 class Interpolant( Struct ):
     """A simple wrapper around PolySpace."""
 
-    def __init__(self, name, gel, approx_order=1, force_bubble=False):
+    def __init__(self, name, gel, space='H1', base='lagrange',
+                 approx_order=1, force_bubble=False):
         self.name = name
         self.gel = gel
 
         self.poly_spaces = poly_spaces = {}
         poly_spaces['v'] = PolySpace.any_from_args(name, gel, approx_order,
-                                                   base='lagrange',
+                                                   base=base,
                                                    force_bubble=force_bubble)
         gel = gel.surface_facet
         if gel is not None:
             ps = PolySpace.any_from_args(name, gel, approx_order,
-                                         base='lagrange',
+                                         base=base,
                                          force_bubble=False)
             skey = 's%d' % ps.n_nod
             poly_spaces[skey] = ps
@@ -113,8 +114,10 @@ class SurfaceInterpolant(Interpolant):
     SurfaceApproximation.
     """
 
-    def __init__(self, name, gel, approx_order=1, force_bubble=False):
-        Interpolant.__init__(self, name, gel, approx_order=approx_order,
+    def __init__(self, name, gel, space='H1', base='lagrange',
+                 approx_order=1, force_bubble=False):
+        Interpolant.__init__(self, name, gel, space=space, base=base,
+                             approx_order=approx_order,
                              force_bubble=force_bubble)
 
         # Make alias 'v' <-> 's#'.
