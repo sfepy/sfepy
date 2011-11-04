@@ -126,6 +126,10 @@ class Test(TestCommon):
 
         ok = True
 
+        if not hasattr(nm, 'einsum'):
+            self.report('no numpy.einsum(), skipping!')
+            return ok
+
         expected = nm.zeros((6, 6), dtype=nm.float64)
         expected[0, 0] = expected[1, 1] = 1.0
 
