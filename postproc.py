@@ -4,9 +4,8 @@ import os
 import glob
 
 import sfepy
-from sfepy.base.base import pause, output, nm
+from sfepy.base.base import assert_, output, nm
 from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
-from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 usage = """%prog [options] filename
@@ -56,7 +55,9 @@ help = {
     'is_3d' :
     '3d plot mode',
     'view' :
-    'camera view angles [default: if --3d is True: "45,45", else: "0,0"]',
+    'camera azimuth, elevation angles, and optionally also '
+    'distance and focal point coordinates (without []) as in `mlab.view()` '
+    '[default: if --3d is True: "45,45", else: "0,0"]',
     'roll' :
     'camera roll angle [default: %default]',
     'layout' :
@@ -116,7 +117,11 @@ help = {
 }
 
 def parse_view(option, opt, value, parser):
-    val = tuple(float(ii) for ii in value.split(','))
+    vals = value.split(',')
+    assert_(len(vals) in [2, 3, 6])
+    val = tuple(float(ii) for ii in vals)
+    if len(vals) == 6:
+        val = val[:3] + (list(val[3:]),)
     setattr(parser.values, option.dest, val)
 
 def parse_resolution(option, opt, value, parser):
@@ -223,7 +228,8 @@ def main():
     parser.add_option("--3d",
                       action="store_true", dest="is_3d",
                       default=False, help=help['is_3d'])
-    parser.add_option("--view", type='str', metavar='angle,angle',
+    parser.add_option("--view", type='str',
+                      metavar='angle,angle[,distance[,focal_point]]',
                       action="callback", dest="view",
                       callback=parse_view, help=help['view'])
     parser.add_option("--roll", type='float', metavar='angle',
