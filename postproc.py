@@ -4,7 +4,7 @@ import os
 import glob
 
 import sfepy
-from sfepy.base.base import assert_, output, nm
+from sfepy.base.base import assert_, get_default, output, nm
 from sfepy.postprocess import Viewer, get_data_ranges, create_file_source
 from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
@@ -52,6 +52,8 @@ help = {
     'set the time step [default: %default]',
     'no_show' :
     'do not call mlab.show()',
+    'no_offscreen' :
+    'force no offscreen rendering for --no-show',
     'is_3d' :
     '3d plot mode',
     'view' :
@@ -183,12 +185,17 @@ def parse_domain_specific(option, opt, value, parser):
 
 def view_file(filename, filter_names, options, view=None):
     if view is None:
+        if options.show:
+            offscreen = False
+
+        else:
+            offscreen = get_default(options.offscreen, True)
         view = Viewer(filename, watch=options.watch,
                       animate=options.anim_format is not None,
                       anim_format=options.anim_format,
                       ffmpeg_options=options.ffmpeg_options,
                       output_dir=options.output_dir,
-                      offscreen=not options.show)
+                      offscreen=offscreen)
 
         if options.only_names is not None:
             options.only_names = options.only_names.split(',')
@@ -225,6 +232,9 @@ def main():
     parser.add_option("-n", "--no-show",
                       action="store_false", dest="show",
                       default=True, help=help['no_show'])
+    parser.add_option("", "--no-offscreen",
+                      action="store_false", dest="offscreen",
+                      default=None, help=help['no_offscreen'])
     parser.add_option("--3d",
                       action="store_true", dest="is_3d",
                       default=False, help=help['is_3d'])
@@ -339,7 +349,7 @@ def main():
         filter_names = []
 
     if options.anim_format is not None:
-        # Force the offscreen rendering when saving an animation.
+        # Do not call show when saving an animation.
         options.show = False
 
     if options.list_ranges:
