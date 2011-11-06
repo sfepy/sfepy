@@ -353,7 +353,7 @@ class ProblemDefinition( Struct ):
         self.set_materials()
         materials = Materials.from_conf(self.conf_materials, self.functions)
 
-        self.integrals = Integrals.from_conf(self.conf.integrals)
+        self.integrals = self.get_integrals()
         equations = Equations.from_conf(conf_equations, variables,
                                         self.domain.regions,
                                         materials, self.integrals,
@@ -440,6 +440,16 @@ class ProblemDefinition( Struct ):
         ts = TimeStepper(t0, t1, dt, n_step, step=step)
 
         return ts
+
+    def get_integrals(self):
+        """
+        Get instance of Integrals, initialized from problem
+        configuration if available.
+        """
+        conf_integrals = self.conf.get_default_attr('integrals', {})
+        integrals = Integrals.from_conf(conf_integrals)
+
+        return integrals
 
     def update_time_stepper(self, ts):
         if ts is not None:
@@ -1084,8 +1094,7 @@ class ProblemDefinition( Struct ):
         lcbcs = get_default(lcbcs, self.lcbcs)
         ts = get_default(ts, self.get_timestepper())
         functions = get_default(functions, self.functions)
-        integrals = get_default(integrals,
-                                Integrals.from_conf(self.conf.integrals))
+        integrals = get_default(integrals, self.get_integrals())
 
         out = create_evaluable(expression, self.fields, materials,
                                variables.itervalues(), integrals,
