@@ -137,9 +137,12 @@ solver_2 = {
 ##
 # Functions.
 import os.path as op
+import sys
+
 import numpy as nm
 
-import utils
+sys.path.append(data_dir) # Make installed example work.
+import examples.navier_stokes.utils as utils
 
 cinc_name = 'cinc_' + op.splitext(op.basename(filename_mesh))[0]
 cinc = getattr(utils, cinc_name)
