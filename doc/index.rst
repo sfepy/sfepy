@@ -18,6 +18,7 @@ Contents:
    :maxdepth: 2
 
    introduction
+   installation
    tutorial
    primer
    users_guide
