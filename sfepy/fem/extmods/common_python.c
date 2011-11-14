@@ -62,9 +62,9 @@ void errclear()
   @par Revision history:
   - 17.02.2005, from rcfem2
 */
-static int32 al_curUsage;
-static int32 al_maxUsage;
-static int32 al_frags;
+static size_t al_curUsage;
+static size_t al_maxUsage;
+static size_t al_frags;
 static AllocSpace *al_head = 0;
 
 
@@ -78,8 +78,8 @@ void *mem_alloc_mem( size_t size, int lineNo, char *funName,
                     char *fileName, char *dirName )
 {
   char *p;
-  int32 hsize = sizeof( AllocSpaceAlign );
-  int32 tsize, aux;
+  size_t hsize = sizeof( AllocSpaceAlign );
+  size_t tsize, aux;
   float64 *endptr;
   AllocSpace *head;
   
@@ -144,7 +144,7 @@ void mem_free_mem( void *pp, int lineNo, char *funName,
                   char *fileName, char *dirName )
 {
   char *p = (char *) pp;
-  int32 hsize = sizeof( AllocSpaceAlign );
+  size_t hsize = sizeof( AllocSpaceAlign );
   float64 *endptr;
   AllocSpace *head;
   char *phead;
@@ -219,8 +219,8 @@ void mem_checkIntegrity( int lineNo, char *funName,
 			 char *fileName, char *dirName )
 {
   char *p, *pp;
-  int32 cnt, allocated;
-  int32 hsize = sizeof( AllocSpaceAlign );
+  size_t cnt, allocated;
+  size_t hsize = sizeof( AllocSpaceAlign );
   float64 *endptr;
   AllocSpace *head = al_head;
 
@@ -311,8 +311,8 @@ void mem_statistics( int lineNo, char *funName,
 */
 int32 mem_print( FILE *file, int32 mode )
 {
-  int32 cnt = 0;
-  int32 hsize = sizeof( AllocSpaceAlign );
+  size_t cnt = 0;
+  size_t hsize = sizeof( AllocSpaceAlign );
   AllocSpace *head = al_head;
   char *p;
 
@@ -364,8 +364,8 @@ int32 mem_print( FILE *file, int32 mode )
 */
 int32 mem_printSome( FILE *file, int32 mode, int32 num )
 {
-  int32 cnt = 0;
-  int32 hsize = sizeof( AllocSpaceAlign );
+  size_t cnt = 0;
+  size_t hsize = sizeof( AllocSpaceAlign );
   AllocSpace *head = al_head;
   char *p;
 
@@ -415,8 +415,8 @@ int32 mem_printSome( FILE *file, int32 mode, int32 num )
 */
 int32 mem_freeGarbage()
 {
-  int32 cnt = 0, frags = al_frags;
-  int32 hsize = sizeof( AllocSpaceAlign );
+  size_t cnt = 0, frags = al_frags;
+  size_t hsize = sizeof( AllocSpaceAlign );
   char *p;
 
   output( "freeing garbage.\n" );
