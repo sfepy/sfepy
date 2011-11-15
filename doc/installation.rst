@@ -266,7 +266,7 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
    b) Start a shell (gitbash or msys, depending on the previous step)
       and write the following to go to the extracted folder::
 
-          cd /c/umfpackpy_0.2/
+          cd /c/umfpackpy_<version>/
 
    c) Install the UMFPACK library for python::
 
@@ -288,11 +288,11 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 
    a) In shell, go to the extracted folder::
 
-      cd /c/sfepy_folder_name/
+          cd /c/sfepy_folder_name/
 
    b) Compile SfePy C extensions::
 
-      python setup.py build_ext --inplace --compiler=mingw32
+          python setup.py build_ext --inplace --compiler=mingw32
 
 #. You should now have a working copy of SfePy on Windows, Please help
    aid SfePy development by running the built-in tests. Run the
