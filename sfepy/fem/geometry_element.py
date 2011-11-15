@@ -213,15 +213,3 @@ class GeometryElement(Struct):
         surface facet.
         """
         self.surface_facet = GeometryElement(self.surface_facet_name)
-
-    def orient_edges(self, edges):
-        """
-        Return the edge orientation flag.
-        """
-        return nm.where(edges[:,0] < edges[:,1], 0, 1)
-
-    def orient_faces3(self, faces):
-        pass
-        
-    def orient_faces4(self, faces):
-        pass
