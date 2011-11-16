@@ -287,6 +287,11 @@ class PolySpace(Struct):
         (of bf_b(g)) is then (ifa,iqp,:,n_ep), so that the facet can be set in
         C using FMF_SetCell.
         """
+        coors = nm.asarray(coors)
+        if not coors.ndim in (2, 3):
+            raise ValueError('coordinates must have 2 or 3 dimensions! (%d)'
+                             % coors.ndim)
+
         if (coors.ndim == 2):
             base = self._eval_base(coors, diff=diff,
                                    suppress_errors=suppress_errors,
