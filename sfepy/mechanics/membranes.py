@@ -224,7 +224,7 @@ def get_invariants(mtx_c, c33):
     return i1, i2
 
 def get_green_strain_sym3d(mtx_c, c33):
-    """
+    r"""
     Get the 3D Green strain tensor in symmetric storage.
 
     Parameters
