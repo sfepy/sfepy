@@ -706,6 +706,14 @@ How To Make a Release
 Module Index
 ------------
 
+sfepy package
+^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/config
+   src/sfepy/version
+
 sfepy.applications package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. toctree::
@@ -726,6 +734,7 @@ sfepy.base package
    src/sfepy/base/getch
    src/sfepy/base/ioutils
    src/sfepy/base/log
+   src/sfepy/base/parse_conf
    src/sfepy/base/plotutils
    src/sfepy/base/progressbar
    src/sfepy/base/reader
@@ -736,31 +745,48 @@ sfepy.fem package
 ^^^^^^^^^^^^^^^^^
 
 WARNING: The code in the fem package is undergoing rapid change. It is best to
-refer directly to the code base until the code stabilizes. The modules listed
-below are already more or less updated.
+refer directly to the code base until the code stabilizes.
 
 .. toctree::
    :maxdepth: 2
 
    src/sfepy/fem/conditions
    src/sfepy/fem/dof_info
+   src/sfepy/fem/domain
    src/sfepy/fem/equations
    src/sfepy/fem/evaluate
+   src/sfepy/fem/evaluate_variable
+   src/sfepy/fem/facets
+   src/sfepy/fem/fe_surface
+   src/sfepy/fem/fea
    src/sfepy/fem/fields
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
+   src/sfepy/fem/history
    src/sfepy/fem/integrals
+   src/sfepy/fem/mappings
+   src/sfepy/fem/materials
    src/sfepy/fem/mesh
    src/sfepy/fem/mesh_generators
    src/sfepy/fem/meshio
+   src/sfepy/fem/parseEq
+   src/sfepy/fem/parseReg
    src/sfepy/fem/periodic
    src/sfepy/fem/poly_spaces
    src/sfepy/fem/probes
    src/sfepy/fem/problemDef
    src/sfepy/fem/projections
    src/sfepy/fem/quadratures
+   src/sfepy/fem/refine
+   src/sfepy/fem/region
    src/sfepy/fem/state
+   src/sfepy/fem/utils
    src/sfepy/fem/variables
+   src/sfepy/fem/extmods/assemble
+   src/sfepy/fem/extmods/bases
+   src/sfepy/fem/extmods/lobatto
+   src/sfepy/fem/extmods/mappings
+   src/sfepy/fem/extmods/mesh
 
 sfepy.geom package
 ^^^^^^^^^^^^^^^^^^
@@ -781,10 +807,13 @@ sfepy.homogenization package
    :maxdepth: 2
 
    src/sfepy/homogenization/coefficients
+   src/sfepy/homogenization/coefs_acoustic
    src/sfepy/homogenization/coefs_base
    src/sfepy/homogenization/coefs_elastic
+   src/sfepy/homogenization/coefs_perfusion
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
+   src/sfepy/homogenization/homogen_app
    src/sfepy/homogenization/phono
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
@@ -806,6 +835,7 @@ sfepy.linalg package
    src/sfepy/linalg/geometry
    src/sfepy/linalg/sparse
    src/sfepy/linalg/utils
+   src/sfepy/linalg/extmods/crcm
 
 sfepy.mechanics package
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -813,9 +843,21 @@ sfepy.mechanics package
 .. toctree::
    :maxdepth: 2
 
+   src/sfepy/mechanics/elastic_constants
+   src/sfepy/mechanics/friction
    src/sfepy/mechanics/matcoefs
+   src/sfepy/mechanics/membranes
    src/sfepy/mechanics/tensors
    src/sfepy/mechanics/units
+
+sfepy.optimize package
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/sfepy/optimize/freeFormDef
+   src/sfepy/optimize/shapeOptim
 
 sfepy.physics package
 ^^^^^^^^^^^^^^^^^^^^^
@@ -823,7 +865,10 @@ sfepy.physics package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/physics/cdft
+   src/sfepy/physics/energy
+   src/sfepy/physics/potentials
+   src/sfepy/physics/radial_mesh
+   src/sfepy/physics/extmods/cdft
 
 sfepy.postprocess package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -832,6 +877,7 @@ sfepy.postprocess package
    :maxdepth: 2
 
    src/sfepy/postprocess/dataset_manager
+   src/sfepy/postprocess/domain_specific
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
@@ -880,7 +926,9 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
    src/sfepy/terms/terms_hyperelastic_ul
+   src/sfepy/terms/terms_membrane
    src/sfepy/terms/terms_new
+   src/sfepy/terms/utils
 
 sfepy.terms package - full inheritance
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
