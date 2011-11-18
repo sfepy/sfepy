@@ -23,7 +23,7 @@ geometry_data = {
 
     '2_3' : Struct(coors = [[0.0, 0.0],
                             [1.0, 0.0],
-                             [0.0, 1.0]],
+                            [0.0, 1.0]],
                    faces = None,
                    edges = [[0, 1],
                             [1, 2],
@@ -154,7 +154,7 @@ class GeometryElement(Struct):
                                       swap_from=aux[2], swap_to=aux[3])
         else:
             self.orientation = None
-            
+
         self.surface_facet_name = gd.surface_facet_name
         self.surface_facet = None
 
