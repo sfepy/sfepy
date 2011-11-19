@@ -711,7 +711,11 @@ class Field( Struct ):
 
     def setup_dof_conns(self, dof_conns, dpn, dc_type, region, is_trace=False):
         """Setup dof connectivities of various kinds as needed by terms."""
-        dct = dc_type.type
+        if isinstance(dc_type, Struct):
+            dct = dc_type.type
+
+        else:
+            dct = dc_type
 
         ##
         # Expand nodes into dofs.
