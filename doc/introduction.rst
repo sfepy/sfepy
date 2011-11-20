@@ -24,6 +24,19 @@ to build equations so there is a chance it might serve you as well.
 New users should start by going through the :doc:`tutorial` and then the
 more focused :doc:`primer`.
 
+Features:
+
+* solution of linear, nonlinear problems
+* multi-platform (Linux, Mac OS X, Windows)
+* collection of modules (a library):
+    * FE engine, problem description facilities,
+      interfaces to various solvers, postprocessing utilities
+    * usable to build custom applications
+* "black box" PDE solver:
+    * no real programming involved
+    * just prepare a problem description file (in Python!) and solve it
+    * highly customizable behaviour (with a bit of coding)
+
 To find more information regarding the code itself, go to http://sfepy.org
 where you can find:
 
