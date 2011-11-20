@@ -144,6 +144,12 @@ If it is run without arguments, a help message is printed::
     Options:
       --version             show program's version number and exit
       -h, --help            show this help message and exit
+      -c "key : value, ...", --conf="key : value, ..."
+                            override problem description file items, written as
+                            python dictionary without surrouding braces
+      -O "key : value, ...", --options="key : value, ..."
+                            override options item of problem description, written
+                            as python dictionary without surrouding braces
       -o filename           basename of output file(s) [default: <basename of
                             input file>]
       --format=format       output file format, one of: {vtk, h5, mesh} [default:
@@ -157,9 +163,6 @@ If it is run without arguments, a help message is printed::
                             save problem regions in a single mesh but mark them by
                             using different element/node group numbers
       --save-field-meshes   save meshes of problem fields (with extra DOF nodes)
-      --save-region-field-meshes
-                            save meshes of regions of problem fields (with extra
-                            DOF nodes)
       --solve-not           do not solve (use in connection with --save-*)
       --list=what           list data, what can be one of: {terms}
 
@@ -194,16 +197,16 @@ The ``postproc.py`` script can be used for quick postprocessing and
 visualization of the *SfePy* results. It requires mayavi2 installed on your
 system. Running ``postproc.py`` without arguments produces::
 
-    $ ./postproc.py                        
-    Usage: postproc.py [options] filename                                        
+    $ ./postproc.py
+    Usage: postproc.py [options] filename
 
     This is a script for quick Mayavi-based visualizations of finite element
-    computations results.                                                   
+    computations results.
 
     Examples
     --------
       The examples assume that runTests.py has been run successfully and the
-      resulting data files are present.                                     
+      resulting data files are present.
 
       - view data in output-tests/test_navier_stokes.vtk
 
@@ -211,54 +214,58 @@ system. Running ``postproc.py`` without arguments produces::
         $ python postproc.py output-tests/test_navier_stokes.vtk --3d
 
       - create animation (forces offscreen rendering) from
-        output-tests/test_time_poisson.*.vtk              
+        output-tests/test_time_poisson.*.vtk
 
         $ python postproc.py output-tests/test_time_poisson.*.vtk -a mov
 
       - create animation (forces offscreen rendering) from
-        output-tests/test_hyperelastic.*.vtk              
+        output-tests/test_hyperelastic.*.vtk
 
         The range specification for the displacements 'u' is required, as
-        output-tests/test_hyperelastic.00.vtk contains only zero         
-        displacements which leads to invisible glyph size.               
-                                                                         
+        output-tests/test_hyperelastic.00.vtk contains only zero
+        displacements which leads to invisible glyph size.
+
         $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov 
 
       - same as above, but slower frame rate
 
         $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
 
-
-
     Options:
       --version             show program's version number and exit
-      -h, --help            show this help message and exit       
+      -h, --help            show this help message and exit
       -l, --list-ranges     do not plot, only list names and ranges of all data
-      -n, --no-show         do not call mlab.show()                            
-      --3d                  3d plot mode                                       
-      --view=angle,angle    camera view angles [default: if --3d is True: "45,45",
-                            else: "0,0"]                                          
-      --roll=angle          camera roll angle [default: 0.0]                      
-      --layout=layout       layout for multi-field plots, one of: rowcol, colrow, 
-                            row, col [default: rowcol]                            
-      --scalar-mode=mode    mode for plotting scalars with --3d, one of:          
-                            cut_plane, iso_surface, both [default: iso_surface]   
-      --vector-mode=mode    mode for plotting vectors, one of: arrows, norm,      
-                            arrows_norm, warp_norm [default: arrows_norm]         
-      -s scale, --scale-glyphs=scale                                              
-                            relative scaling of glyphs (vector field              
-                            visualization) [default: 0.05]                        
-      --clamping            glyph clamping mode                                   
-      --ranges=name1,min1,max1:name2,min2,max2:...                                
-                            force data ranges [default: automatic from data]      
-      -b, --scalar-bar      show scalar bar for each data                         
-      --wireframe           show wireframe of mesh surface for each data          
-      --rel-text-width=width                                                      
-                            relative text annotation width [default: 0.02]        
-      -w, --watch           watch the results file for changes (single file mode  
-                            only)                                                 
-      -o filename, --output=filename                                              
-                            view image file name [default: 'view.png']            
+      -n, --no-show         do not call mlab.show()
+      --no-offscreen        force no offscreen rendering for --no-show
+      --3d                  3d plot mode
+      --view=angle,angle[,distance[,focal_point]]
+                            camera azimuth, elevation angles, and optionally also
+                            distance and focal point coordinates (without []) as
+                            in `mlab.view()` [default: if --3d is True: "45,45",
+                            else: "0,0"]
+      --roll=angle          camera roll angle [default: 0.0]
+      --layout=layout       layout for multi-field plots, one of: rowcol, colrow,
+                            row, col [default: rowcol]
+      --scalar-mode=mode    mode for plotting scalars with --3d, one of:
+                            cut_plane, iso_surface, both [default: iso_surface]
+      --vector-mode=mode    mode for plotting vectors, one of: arrows, norm,
+                            arrows_norm, warp_norm [default: arrows_norm]
+      -s scale, --scale-glyphs=scale
+                            relative scaling of glyphs (vector field
+                            visualization) [default: 0.05]
+      --clamping            glyph clamping mode
+      --ranges=name1,min1,max1:name2,min2,max2:...
+                            force data ranges [default: automatic from data]
+      -b, --scalar-bar      show scalar bar for each data
+      --wireframe           show wireframe of mesh surface for each data
+      --opacity=opacity     global surface and wireframe opacity in [0.0, 1.0]
+                            [default: 1.0]
+      --rel-text-width=width
+                            relative text annotation width [default: 0.02]
+      -w, --watch           watch the results file for changes (single file mode
+                            only)
+      -o filename, --output=filename
+                            view image file name [default: 'view.png']
       --output-dir=directory
                             output directory for saving view images; ignored when
                             -o option is given, as the directory part of the
@@ -280,9 +287,14 @@ system. Running ``postproc.py`` without arguments produces::
                             draw only named data
       --group-names=name1,...,nameN:...
                             superimpose plots of data in each group
+      --subdomains=mat_id_name,threshold_limits,single_color
+                            superimpose surfaces of subdomains over each data;
+                            example value: mat_id,0,None,True
       --step=step           set the time step [default: 0]
       --anti-aliasing=value
                             value of anti-aliasing [default: mayavi2 default]
+      -d 'var_name0,function_name0,par0=val0,par1=val1,...:var_name1,...', --domain-specific='var_name0,function_name0,par0=val0,par1=val1,...:var_name1,...'
+                            domain specific drawing functions and configurations
 
 As a simple example, try::
 
