@@ -12,7 +12,7 @@ SfePy can use many terms to build systems of partial differential
 equations (PDEs) to be solved - follow this quick link to the table of
 all available terms to see the full list: :ref:`term_overview`. SfePy
 comes with a number of examples that can get you started, check
-:ref:`examples`.
+:ref:`examples`. Some more advanced features are discussed in :doc:`primer`.
 
 Applications
 ------------
