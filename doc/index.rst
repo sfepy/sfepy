@@ -14,6 +14,17 @@ all available terms to see the full list: :ref:`term_overview`. SfePy
 comes with a number of examples that can get you started, check
 :ref:`examples`.
 
+Applications
+------------
+
+- homogenization of porous media (parallel flows in a deformable porous
+  medium)
+- acoustic band gaps (homogenization of a strongly heterogenous
+  elastic structure: phononic materials)
+- acoustic waves in thin perforated layers
+- shape optimization in incompressible flow problems
+- finite element formulation of Schroedinger equation
+
 Contents:
 
 .. toctree::
