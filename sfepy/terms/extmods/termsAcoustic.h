@@ -12,12 +12,9 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 int32 d_diffusion_sa( FMField *out,
-		      FMField *stateQ, FMField *stateP, FMField *stateW,
-		      FMField *mtxD,
-		      VolumeGeometry *vg, VolumeGeometry *vg_w,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *conn_w, int32 nEl_w, int32 nEP_w,
-		      int32 *elList, int32 elList_nRow );
+		      FMField *grad_q, FMField *grad_p,
+		      FMField *grad_w, FMField *div_w,
+		      FMField *mtxD, VolumeGeometry *vg );
 
 int32 dw_surf_laplace( FMField *out, FMField *state, FMField *coef,
 			FMField *gbf, SurfaceGeometry *sg,

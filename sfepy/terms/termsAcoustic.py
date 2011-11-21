@@ -4,7 +4,7 @@ from sfepy.base.base import use_method_with_name
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_base import ScalarScalar
 
-class DiffusionSATerm(ScalarScalar, Term):
+class DiffusionSATerm(Term):
     r"""
     :Description:
     Diffusion sensitivity analysis term.
@@ -15,26 +15,31 @@ class DiffusionSATerm(ScalarScalar, Term):
 
     :Arguments:
         material : :math:`K_{ij}`,
-        parametr_q: :math:`q`,
-        parametr_p: :math:`p`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
+        parameter_q: :math:`q`,
+        parameter_p: :math:`p`,
+        parameter_v: :math:`\ul{\Vcal}`,
     """
-
     name = 'd_diffusion_sa'
-
-    arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_mesh_velocity')
+    arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
 
     function = staticmethod(terms.d_diffusion_sa)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par_q, par_p, par_v = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(par_p)
-        ap_v, vg_v = self.get_approximation(par_v)
+    def get_fargs(self, mat, parameter_q, parameter_p, parameter_v,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter_p)
 
-        self.set_data_shape( ap )
+        grad_q = self.get(parameter_q, 'grad')
+        grad_p = self.get(parameter_p, 'grad')
+        grad_v = self.get(parameter_v, 'grad')
+        div_v = self.get(parameter_v, 'div')
 
-        fargs = (par_q(), par_p(), par_v(), mat, vg, vg_v, ap.econn, ap_v.econn)
-        return fargs, (chunk_size, 1, 1, 1), 0
+        return grad_q, grad_p, grad_v, div_v, mat, vg
+
+    def get_eval_shape(self, mat, parameter_q, parameter_p, parameter_v,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter_q)
+
+        return (n_el, 1, 1, 1), parameter_q.dtype
 
 class SurfaceLaplaceLayerTerm(ScalarScalar, Term):
     r"""
