@@ -105,45 +105,45 @@ class LaplaceTerm(DiffusionTerm):
         else:
             self.function = terms.d_laplace
 
-class PermeabilityRTerm( Term ):
-    r"""
-    :Description:
-    Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
-    use on the right-hand side).
+# class PermeabilityRTerm( Term ):
+#     r"""
+#     :Description:
+#     Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
+#     use on the right-hand side).
 
-    :Definition:
-    .. math::
-        \int_{\Omega} K_{ij} \nabla_j q
+#     :Definition:
+#     .. math::
+#         \int_{\Omega} K_{ij} \nabla_j q
 
-    :Arguments:
-        material : :math:`K_{ij}`,
-        virtual  : :math:`q`,
-        index    : :math:`i`
-    """
-    name = 'dw_permeability_r'
-    arg_types = ('material', 'virtual', 'index')
+#     :Arguments:
+#         material : :math:`K_{ij}`,
+#         virtual  : :math:`q`,
+#         index    : :math:`i`
+#     """
+#     name = 'dw_permeability_r'
+#     arg_types = ('material', 'virtual', 'index')
 
-    function = staticmethod(terms.dw_permeability_r)
+#     function = staticmethod(terms.dw_permeability_r)
         
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, index = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+#     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
+#         mat, virtual, index = self.get_args( **kwargs )
+#         ap, vg = self.get_approximation(virtual)
+#         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, n_ep, 1)
-        else:
-            raise StopIteration
+#         if diff_var is None:
+#             shape = (chunk_size, 1, n_ep, 1)
+#         else:
+#             raise StopIteration
 
-        if isinstance(index, list):
-            index = index[0]
+#         if isinstance(index, list):
+#             index = index[0]
 
-        mat = nm.ascontiguousarray(mat[...,index:index+1])
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, mat, vg, ap.econn, chunk )
-            yield out, chunk, status
+#         mat = nm.ascontiguousarray(mat[...,index:index+1])
+#         for out, chunk in self.char_fun( chunk_size, shape ):
+#             status = self.function( out, mat, vg, ap.econn, chunk )
+#             yield out, chunk, status
 
-class DiffusionRTerm( PermeabilityRTerm ):
+class DiffusionRTerm(Term):
     r"""
     :Description:
     Diffusion-like term with material parameter :math:`K_{j}` (to
@@ -159,20 +159,13 @@ class DiffusionRTerm( PermeabilityRTerm ):
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
+    function = staticmethod(terms.dw_permeability_r)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
 
-        if diff_var is None:
-            shape = (chunk_size, 1, n_ep, 1)
-        else:
-            raise StopIteration
-
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, mat, vg, ap.econn, chunk )
-            yield out, chunk, status
+        vg, _ = self.get_mapping(virtual)
+        return mat, vg
 
 class DiffusionCoupling(ScalarScalar, Term):
     r"""
@@ -193,46 +186,61 @@ class DiffusionCoupling(ScalarScalar, Term):
                  ('material', 'state', 'virtual'),
                  ('material', 'parameter_1', 'parameter_2'))
     modes = ('weak0', 'weak1', 'eval')
-    functions = {'weak': terms.dw_diffusion_coupling,
-                 'eval': terms.d_diffusion_coupling}
 
-    def get_fargs_weak( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, virtual, state = self.get_args( **kwargs )
+    @staticmethod
+    def d_eval(out, mat, val, grad, vg):
+        out_qp = grad * mat * val
+
+        status = vg.integrate(out, out_qp)
+
+        return status
+
+    def get_fargs( self, mat, virtual, state,
+                   mode=None, term_mode=None, diff_var=None, **kwargs):
         ap, vg = self.get_approximation(virtual)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        if mode == 'weak':
+            term_mode = int(self.mode[-1])
 
-        term_mode = self.mode[-1]
-        vec = self.get_vector( state )
-        bf = ap.get_base('v', 0, self.integral)
+            aps, vgs = self.get_approximation(state)
+            bf = aps.get_base('v', 0, self.integral)
 
-        n_el, n_qp, dim, n_ep = self.data_shape
-        if state.is_real():
-            return (vec, 0, mat, vg, bf, ap.econn), shape, mode, term_mode
+            if diff_var is None:
+                if term_mode > 0:
+                    val = self.get(virtual, 'grad')
+                else:
+                    val = self.get(state, 'val')
+
+                fmode = 0
+
+            else:
+                val = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return val, mat, bf, vg, term_mode, fmode
+
+        elif mode == 'eval':
+
+            grad = self.get(virtual, 'grad')
+            val = self.get(state, 'val')
+
+            return mat, val, grad, vg
+
         else:
-            ac = nm.ascontiguousarray
-            mode += 1j
-            return [(ac(vec.real), 0, mat, bf, vg, ap.econn),
-                    (ac(vec.imag), 0, mat, bf, vg, ap.econn)], shape, mode, term_mode
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par1, par2 = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par1)
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        self.set_data_shape( ap )
-        n_el, n_qp, dim, n_ep = self.data_shape
-        bf = ap.get_base('v', 0, self.integral)
-
-        return (par1(), par2(), mat, bf, vg), (chunk_size, 1, 1, 1), 0
+        return (n_el, 1, 1, 1), state.dtype
 
     def set_arg_types( self ):
         if self.mode[:-1] == 'weak':
-            self.function = self.functions['weak']
-            use_method_with_name( self, self.get_fargs_weak, 'get_fargs' )
+            self.function = terms.dw_diffusion_coupling
         else:
-            self.function = self.functions['eval']
-            use_method_with_name( self, self.get_fargs_eval, 'get_fargs' )
+            self.function = self.d_eval
 
 class DiffusionVelocityTerm( Term ):
     r"""
@@ -241,25 +249,32 @@ class DiffusionVelocityTerm( Term ):
 
     :Definition:
     .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} -K_{ij} \nabla_j r
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} -K_{ij} \nabla_j \bar{p}
         / \int_{T_K} 1
 
     :Arguments:
         material  : :math:`K_{ij}`,
-        parameter : :math:`r`
+        parameter : :math:`\bar{p}`
     """
     name = 'de_diffusion_velocity'
     arg_types = ('material', 'parameter')
+    default_mode = (1, True)
 
-    function = staticmethod(terms.de_diffusion_velocity)
+    @staticmethod
+    def function(out, grad, mat, vg, mode):
+
+        aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
+        status = vg.integrate(out, nm.ascontiguousarray(aux), mode)
+
+        return status
 
     def get_fargs(self, mat, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
-
         grad = self.get(parameter, 'grad')
-
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, self.default_mode[0])
+        if self.default_mode[1]:
+            mat *= -1.0
 
         return grad, mat, vg, fmode
 
@@ -267,9 +282,12 @@ class DiffusionVelocityTerm( Term ):
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-        return (n_el, 1, dim, 1), parameter.dtype
+        if mode != 'qp':
+            n_qp = 1
 
-class DiffusionIntegrateTerm( Term ):
+        return (n_el, n_qp, dim, 1), parameter.dtype
+
+class DiffusionIntegrateTerm(DiffusionVelocityTerm):
     r"""
     :Description:
     Diffusion integrate term.
@@ -284,47 +302,7 @@ class DiffusionIntegrateTerm( Term ):
     """
     name = 'di_diffusion_integrate'
     arg_types = ('material', 'parameter')
-
-    @staticmethod
-    def function(out, grad, mat, vg):
-
-        aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
-        status = vg.integrate(out, nm.ascontiguousarray(aux), 0)
-
-        return status
-
-    def get_fargs(self, mat, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(parameter)
-        grad = self.get(parameter, 'grad')
-
-        return grad, mat, vg
-
-    def get_eval_shape(self, mat, parameter,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        if mode != 'qp':
-            n_qp = 1
-
-        return (n_el, n_qp, dim, 1), parameter.dtype
-
-    # def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-    #     mat, parameter = self.get_args( **kwargs )
-    #     ap, vg = self.get_approximation(parameter)
-    #     n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
-
-    #     if diff_var is None:
-    #         shape = (chunk_size, 1, dim, 1)
-    #     else:
-    #         raise StopIteration
-
-    #     vec = parameter()
-    #     for out, chunk in self.char_fun( chunk_size, shape ):
-    #         status = self.function(out, vec, mat, vg, ap.econn, chunk)
-    #         out1 = nm.sum(out, 0)
-    #         out1.shape = (dim,)
-    #         yield out1, chunk, status
+    default_mode = (0, False)
 
 class SurfaceFluxTerm(Term):
     r"""

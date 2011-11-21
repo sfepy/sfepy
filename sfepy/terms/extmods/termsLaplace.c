@@ -397,23 +397,20 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
   @par Revision history:
   - c: 23.04.2007, r: 23.01.2008
 */
-int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
-			 int32 *conn, int32 nEl, int32 nEP,
-			 int32 *elList, int32 elList_nRow )
+int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg )
 {
-  int32 ii, iel, nQP, ret = RET_OK;
+  int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gtd = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
 
   fmf_createAlloc( &gtd, 1, nQP, nEP, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
     if (mtxD->nCell > 1) {
       FMF_SetCell( mtxD, ii );
     }
@@ -424,7 +421,7 @@ int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg,
   }
 
  end_label:
-  fmf_freeDestroy( &gtd ); 
+  fmf_freeDestroy( &gtd );
 
   return( ret );
 }
@@ -571,48 +568,6 @@ int32 d_diffusion_coupling( FMField *out, FMField *stateP, FMField *stateQ,
   return( ret );
 }
 
-#undef __FUNC__
-#define __FUNC__ "de_diffusion_velocity"
-/*!
-  Diffusion velocity.
-  @par Revision history:
-  - c: 07.09.2006, r: 06.05.2008
-*/
-int32 de_diffusion_velocity( FMField *out, FMField *grad,
-			     FMField *mtxD, VolumeGeometry *vg,
-			     int32 mode )
-{
-  int32 ii, dim, nQP, ret = RET_OK;
-  FMField *dgp = 0;
-
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-  fmf_createAlloc( &dgp, 1, nQP, dim, 1 );
-
-  for (ii = 0; ii < out->nCell; ii++) {
-    FMF_SetCell( out, ii );
-    FMF_SetCell( grad, ii );
-    FMF_SetCell( vg->det, ii );
-    if (mtxD->nCell > 1) {
-      FMF_SetCell( mtxD, ii );
-    }
-
-    fmf_mulAB_nn( dgp, mtxD, grad );
-    fmf_sumLevelsMulF( out, dgp, vg->det->val );
-    if (mode == 1) {
-      FMF_SetCell( vg->volume, ii );
-      fmf_mulC( out, 1.0 / vg->volume->val[0] );
-    }
-    ERR_CheckGo( ret );
-  }
-  fmfc_mulC( out, -1.0 );
-
- end_label:
-  fmf_freeDestroy( &dgp );
-
-  return( ret );
-}
 
 #undef __FUNC__
 #define __FUNC__ "d_surface_flux"
