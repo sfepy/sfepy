@@ -230,10 +230,6 @@ cdef extern from 'terms.h':
                                 int32 *conn, int32 nEl, int32 nEP,
                                 int32 *elList, int32 elList_nRow,
                                 int32 isDiff, int32 mod)
-    cdef int32 _de_diffusion_velocity \
-         'de_diffusion_velocity'(FMField *out, FMField *grad,
-                                 FMField *mtxD, VolumeGeometry *vg,
-                                 int32 mode)
     cdef int32 _d_surface_flux \
          'd_surface_flux'(FMField *out, FMField *grad,
                           FMField *mtxD, SurfaceGeometry *sg, int32 mode)
@@ -383,12 +379,9 @@ cdef extern from 'terms.h':
 
     cdef int32 _d_diffusion_sa \
          'd_diffusion_sa'(FMField *out,
-                          FMField *stateQ, FMField *stateP, FMField *stateW,
-                          FMField *mtxD,
-                          VolumeGeometry *vg, VolumeGeometry *vg_w,
-                          int32 *conn, int32 nEl, int32 nEP,
-                          int32 *conn_w, int32 nEl_w, int32 nEP_w,
-                          int32 *elList, int32 elList_nRow)
+                          FMField *grad_q, FMField *grad_p,
+                          FMField *grad_w, FMField *div_w,
+                          FMField *mtxD, VolumeGeometry *vg)
 
     cdef int32 _dw_surf_laplace \
          'dw_surf_laplace'(FMField *out, FMField *state, FMField *coef,
@@ -1363,21 +1356,6 @@ def d_diffusion_coupling(np.ndarray out not None,
                                 is_diff, mode)
     return ret
 
-def de_diffusion_velocity(np.ndarray out not None,
-                          np.ndarray grad not None,
-                          np.ndarray mtx_d not None,
-                          CVolumeMapping cmap not None,
-                          int32 mode):
-    cdef int32 ret
-    cdef FMField _out[1], _grad[1], _mtx_d[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_grad, grad)
-    array2fmfield4(_mtx_d, mtx_d)
-
-    ret = _de_diffusion_velocity(_out, _grad, _mtx_d, cmap.geo, mode)
-    return ret
-
 def d_surface_flux(np.ndarray out not None,
                    np.ndarray grad not None,
                    np.ndarray mtx_d not None,
@@ -1881,34 +1859,24 @@ def dw_electric_source(np.ndarray out not None,
     return ret
 
 def d_diffusion_sa(np.ndarray out not None,
-                   np.ndarray state_q not None,
-                   np.ndarray state_p not None,
-                   np.ndarray state_w not None,
+                   np.ndarray grad_q not None,
+                   np.ndarray grad_p not None,
+                   np.ndarray grad_w not None,
+                   np.ndarray div_w not None,
                    np.ndarray mtx_d not None,
-                   CVolumeMapping cmap not None,
-                   CVolumeMapping cmap_w not None,
-                   np.ndarray conn not None,
-                   np.ndarray conn_w not None,
-                   np.ndarray el_list not None):
+                   CVolumeMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _state_q[1], _state_p[1], _state_w[1], _mtx_d[1]
-    cdef int32 *_conn, n_el, n_ep
-    cdef int32 *_conn_w, n_el_w, n_ep_w
-    cdef int32 *_el_list, n_el2
+    cdef FMField _out[1], _grad_q[1], _grad_p[1], _grad_w[1], _div_w[1], _mtx_d[1]
 
     array2fmfield4(_out, out)
-    array2fmfield1(_state_q, state_q)
-    array2fmfield1(_state_p, state_p)
-    array2fmfield1(_state_w, state_w)
+    array2fmfield4(_grad_q, grad_q)
+    array2fmfield4(_grad_p, grad_p)
+    array2fmfield4(_grad_w, grad_w)
+    array2fmfield4(_div_w, div_w)
     array2fmfield4(_mtx_d, mtx_d)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint2(&_conn_w, &n_el_w, &n_ep_w, conn_w)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _d_diffusion_sa(_out, _state_q, _state_p, _state_w, _mtx_d,
-                          cmap.geo, cmap_w.geo,
-                          _conn, n_el, n_ep, _conn_w, n_el_w, n_ep_w,
-                          _el_list, n_el2)
+    ret = _d_diffusion_sa(_out, _grad_q, _grad_p, _grad_w, _div_w,
+                          _mtx_d, cmap.geo)
     return ret
 
 def dw_surf_laplace(np.ndarray out not None,
