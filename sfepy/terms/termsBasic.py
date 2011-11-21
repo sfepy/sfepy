@@ -657,7 +657,7 @@ class SumNodalValuesTerm(Term):
 
     @staticmethod
     def function(out, vec):
-        out[:] = vec
+        out[:] = nm.sum(vec, 0)
 
         return 0
 
@@ -665,7 +665,7 @@ class SumNodalValuesTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vec = parameter.get_state_in_region(self.region)
 
-        return vec
+        return vec,
 
     def get_eval_shape(self, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
