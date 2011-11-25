@@ -588,6 +588,8 @@ cpdef evaluate_at(np.ndarray[float64, mode='c', ndim=2] out,
         n_el = offsets[ic+1] - offsets[ic]
         if n_el == 0:
             status[ip] = 3
+            _f.fmf_fillC(_out, 0.0)
+            print 'standalone vertex!', ip, ic
             continue
 
         off = 2 * offsets[ic]
