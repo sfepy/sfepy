@@ -1031,6 +1031,11 @@ class Field( Struct ):
         if cache is None:
             offsets, iconn = make_inverse_connectivity(mesh.conns, mesh.n_nod,
                                                        ret_offsets=True)
+
+            ii = nm.where(offsets[1:] == offsets[:-1])[0]
+            if len(ii):
+                raise ValueError('some vertices not in any element! (%s)' % ii)
+
         else:
             offsets, iconn = cache.offsets, cache.iconn
 
