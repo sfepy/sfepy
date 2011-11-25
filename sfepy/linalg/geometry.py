@@ -293,12 +293,14 @@ def get_coors_in_tube(coors, centre, axis, radius_in, radius_out, length,
     dr = nm.sqrt(nm.sum(drv * drv, 1))
     dl = nm.dot(vec, axis)
 
+    l2 = 0.5 * length
+
     if inside_radii:
-        out = nm.where((dl >= 0.0) & (dl <= length) &
+        out = nm.where((dl >= -l2) & (dl <= l2) &
                        (dr >= radius_in) & (dr <= radius_out))[0]
 
     else:
-        out = nm.where((dl >= 0.0) & (dl <= length) &
+        out = nm.where((dl >= -l2) & (dl <= l2) &
                        (dr <= radius_in) & (dr >= radius_out))[0]
 
     return out
