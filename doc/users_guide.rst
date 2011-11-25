@@ -857,23 +857,61 @@ Examples
 See ``examples/diffusion/poisson_functions.py`` for a complete problem
 description file demonstrating how to use different kinds of functions.
 
-- functions for defining boundary conditions (`get_p_edge()`) and regions
-  (`get_circle()`)::
-
-    def get_p_edge(ts, coors, bc=None):
-        if bc.name == 'p_left':
-            return nm.sin(nm.pi * coors[:,1])
-        else:
-            return nm.cos(nm.pi * coors[:,1])
+- functions for defining regions::
 
     def get_circle(coors, domain=None):
         r = nm.sqrt(coors[:,0]**2.0 + coors[:,1]**2.0)
         return nm.where(r < 0.2)[0]
 
     functions = {
-        'get_p_edge' : (get_p_edge,),
         'get_circle' : (get_circle,),
     }
+
+- functions for defining boundary conditions::
+
+    def get_p_edge(ts, coors, bc=None, problem=None):
+        if bc.name == 'p_left':
+            return nm.sin(nm.pi * coors[:,1])
+        else:
+            return nm.cos(nm.pi * coors[:,1])
+
+    functions = {
+        'get_p_edge' : (get_p_edge,),
+    }
+
+    ebcs = {
+        'p' : ('Gamma', {'p.0' : 'get_p_edge'}),
+    }
+
+  The values can be given by a function of time, coordinates and
+  possibly other data, for example::
+
+    ebcs = {
+        'f1' : ('Gamma1', {'u.0' : 'get_ebc_x'}),
+        'f2' : ('Gamma2', {'u.all' : 'get_ebc_all'}),
+    }
+
+    def get_ebc_x(coors, amplitude):
+        z = coors[:, 2]
+        val = amplitude * nm.sin(z * 2.0 * nm.pi)
+        return val
+
+    def get_ebc_all(ts, coors):
+        x, y, z = coors[:, 0], coors[:, 1], coors[:, 2]
+        val = ts.step * nm.r_[x, y, z]
+        return val
+
+    functions = {
+        'get_ebc_x' : (lambda ts, coors, bc, problem, **kwargs:
+                       get_ebc_x(coors, 5.0),),
+        'get_ebc_all' : (lambda ts, coors, bc, problem, **kwargs:
+                         get_ebc_all(ts, coors),),
+    }
+
+  Note that when setting more than one component as in `get_ebc_all()`
+  above, the function should return a single one-dimensional vector with
+  all values of the first component, then of the second one
+  etc. concatenated together.
 
 - function for defining usual material parameters::
 
