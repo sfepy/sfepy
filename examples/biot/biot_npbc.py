@@ -38,11 +38,11 @@ def define():
 def cinc_simple(coors, mode):
     axis = nm.array([1, 0, 0], nm.float64)
     if mode == 0: # In
-        centre = nm.array([-0.00001, 0.0, 0.0], nm.float64)
+        centre = nm.array([0.0, 0.0, 0.0], nm.float64)
         radius = 0.019
         length = 0.00002
     elif mode == 1: # Out
-        centre = nm.array([0.09999, 0.0, 0.0], nm.float64)
+        centre = nm.array([0.1, 0.0, 0.0], nm.float64)
         radius = 0.019
         length = 0.00002
     elif mode == 2: # Rigid
