@@ -148,6 +148,18 @@ class Clean(clean):
             print filename
             os.remove(filename)
 
+        for filename in recursive_glob('examples', suffixes):
+            print filename
+            os.remove(filename)
+
+        for filename in recursive_glob('script', suffixes):
+            print filename
+            os.remove(filename)
+
+        for filename in recursive_glob('tests', suffixes):
+            print filename
+            os.remove(filename)
+
         for filename in glob.glob('*.pyc'):
             print filename
             os.remove(filename)
