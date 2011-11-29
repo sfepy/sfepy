@@ -83,6 +83,9 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    pxd_files = ['mappings.pxd', 'types.pxd', '_fmfield.pxd']
+    config.add_data_files(('', ['lobatto_template.pyx'] + pxd_files))
+
     return config
 
 if __name__ == '__main__':
