@@ -59,9 +59,12 @@ def configuration(parent_package='',top_path=None):
         'edit_neu.py',
         'evalForms.py',
         'eval_tl_forms.py',
+        'gen_gallery.py',
+        'gen_lobatto_pyx.py',
         'gen_term_table.py',
         'hfm3_mesh.py',
         'mesh_to_vtk.py',
+        'show_authors.py',
         'spymatrix.py'
     ]
     aux_scripts = [os.path.join('script', ii) for ii in aux_scripts]
