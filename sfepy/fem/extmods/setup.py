@@ -12,7 +12,6 @@ def configuration(parent_package='', top_path=None):
     auto_dir = op.dirname(__file__)
     auto_name = op.split(auto_dir)[-1]
     config = Configuration(auto_name, parent_package, top_path)
-    config.add_data_files(('sfepy/fem/extmods', ('version.h.in',)))
 
     defines = [('__SDIR__', "'\"%s\"'" % auto_dir),
                ('SFEPY_PLATFORM', os_flag[site_config.system()])]
@@ -83,8 +82,10 @@ def configuration(parent_package='', top_path=None):
                          include_dirs=[auto_dir],
                          define_macros=defines)
 
+    # Include *.pxd files in distribution tarball and install them along
+    # with the extension modules.
     pxd_files = ['mappings.pxd', 'types.pxd', '_fmfield.pxd']
-    config.add_data_files(('', ['lobatto_template.pyx'] + pxd_files))
+    config.add_data_files(('', pxd_files))
 
     return config
 
