@@ -3,3 +3,6 @@ prune examples/*/*/output
 prune doc/_build
 prune doc/html
 exclude doc/logo/*.vtk
+
+include sfepy/fem/extmods/lobatto_template.pyx
+include sfepy/fem/extmods/version.h.in
