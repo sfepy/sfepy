@@ -1,5 +1,288 @@
 # created: 20.07.2007 (-1)
 
+from 2011.3 to 2011.4
+=====================
+
+- use cython instead of swig - merge cython branch:
+  - wrap vxc() and vectorize it - new get_vxc():
+    - update SchroedingerApp.iterate() to use get_vxc()
+    - remove sfepy/physics/extmods/dft.i, update setup.py, __init__.py
+  - new sfepy/fem/extmods/assemble.pyx:
+    - new assemble_vector(), assemble_vector_complex()
+    - new assemble_matrix(), assemble_matrix_complex()
+    - use new assembling functions in Term.assemble_to()
+    - remove old C assembling functions
+    - update insert_sparse_to_csr() for assemble.pyx
+  - remove unused functions in fem.c:
+    - remove lagrange1*(), baseBiL*(), baseTriL*(),
+      rezidual(), matrix(), inverse_element_mapping()
+  - tests:
+    - split tests/test_assembling.py
+      - move test_eval_matrix(), test_vector_matrix(), test_surface_evaluate(),
+        test_dq_de() into tests/test_term_consistency.py
+      - move test_save_ebc() into new tests/test_ebcs.py
+      - clean up and modernize
+    - add new assembling tests to tests/test_assembling.py
+      - new test_assemble_vector(), test_assemble_vector_complex(),
+        test_assemble_matrix(), test_assemble_matrix_complex()
+  - new sfepy/fem/extmods/bases.pyx:
+    - new get_barycentric_coors(), _get_barycentric_coors()
+    - new _eval_lagrange_simplex(), eval_lagrange_simplex()
+    - new _eval_lagrange_tensor_product(), eval_lagrange_tensor_product()
+    - new _get_xi_simplex(), _get_xi_tensor()
+    - new evaluate_at()
+    - update Field.evaluate_at() for new evaluate_at()
+  - use new base evaluation functions:
+    - update _eval_base() of LagrangeSimplexPolySpace,
+      LagrangeSimplexBPolySpace, LagrangeTensorProductPolySpace
+    - remove PolySpace.clear_c_errors()
+  - new wrappers of orient_elements(), graph_components():
+    - new sfepy/fem/extmods/mesh.pyx
+    - add bases, mesh to __init__.py, remove meshutils
+    - update Domain.fix_element_orientation()
+    - update surface_components()
+    - remove sfepy/fem/extmods/meshutils.i
+  - new pyalloc(), pyfree() helper functions
+  - move mesh_graph() and related functions to meshutils.c
+    - remove raw_graph()
+    - new create_mesh_graph()
+  - define basic types in new types.pxd
+  - new _fmfield.pyx, _fmfield.pxd - FMField-related wrappers:
+    - new array2fmfield*()
+  - remove fem module from setup.py
+  - remove fem.c, fem.h, fem.i
+  - remove geometry.i, update setup.py
+  - new mappings.pyx:
+    - new CVolumeMapping extension class
+    - update setup.py for mappings.pyx, reuse _fmfield library
+    - new mappings.pxd for mappings.pyx
+    - new CSurfaceMapping extension class
+    - use CVolumeMapping, CSurfaceMapping in VolumeMapping, SurfaceMapping
+  - new Config.python_include()
+  - use sfepy_common library for common C code
+  - use sfepy_terms library for term C code
+  - add ignore_errors argument to load_classes()
+  - new array2pint2(), array2pint1() helper functions
+  - simplify import of extmods.terms
+  - new terms.pyx:
+    - wrap dq_state_in_qp(), dq_grad(), dq_grad_extra(), dq_div_vector(),
+      d_volume_surface(), di_surface_moment()
+    - update eval_real(), eval_real_extra(), eval_complex()
+    - wrap dq_finite_strain_tl(), dq_finite_strain_ul(),
+      dq_tl_finite_strain_surface(), dq_tl_he_stress_bulk(),
+      dq_ul_he_stress_bulk(), dq_tl_he_stress_neohook(),
+      dq_ul_he_stress_neohook(), dq_tl_he_stress_mooney_rivlin(),
+      dq_ul_he_stress_mooney_rivlin(), dq_tl_he_tan_mod_bulk(),
+      dq_ul_he_tan_mod_bulk(), dq_tl_he_tan_mod_neohook(),
+      dq_ul_he_tan_mod_neohook(), dq_tl_he_tan_mod_mooney_rivlin(),
+      dq_ul_he_tan_mod_mooney_rivlin(), dw_he_rtm(), de_he_rtm(),
+      dq_tl_stress_bulk_pressure(), dq_ul_stress_bulk_pressure(),
+      dq_tl_tan_mod_bulk_pressure_u(), dq_ul_tan_mod_bulk_pressure_u(),
+      dw_tl_volume(), dw_ul_volume(), dw_tl_diffusion(),
+      dw_tl_surface_traction(), dq_def_grad(), he_residuum_from_mtx(),
+      he_eval_from_mtx()
+    - update hyperelastic term classes for terms.pyx:
+      - update HyperElasticBase, HyperElastic{TL, UL}Base,
+        SurfaceTractionTLTerm
+    - wrap dw_volume_wdot_scalar(), dw_laplace(), d_laplace(),
+      dw_diffusion(), d_diffusion(), dw_permeability_r(),
+      dw_diffusion_coupling(), d_diffusion_coupling(),
+      de_diffusion_velocity(), d_surface_flux()
+    - wrap dw_lin_elastic_iso(), dw_lin_elastic(), d_lin_elastic(),
+      dw_lin_prestress(), dw_lin_strain_fib(), de_cauchy_strain(),
+      de_cauchy_stress(), dq_cauchy_strain(), dw_surface_ltr(),
+      dw_volume_lvf(), dw_mass(), dw_mass_scalar(), d_mass_scalar(),
+      dw_surf_mass_scalar()
+    - wrap term_ns_asm_div_grad(), term_ns_asm_convect(),
+      dw_lin_convect(), dw_div(), dw_grad(), dw_st_pspg_c(),
+      dw_st_supg_p(), dw_st_supg_c(), dw_st_grad_div(), dw_biot_grad(),
+      dw_biot_div(), d_biot_div(), dw_piezo_coupling(),
+      d_piezo_coupling(), dw_electric_source()
+    - wrap d_diffusion_sa(), dw_surf_laplace(), d_surf_laplace(),
+      dw_surf_lcouple(), d_surf_lcouple()
+    - add stubs for remaining functions
+    - remove terms.i
+  - new crcm.pyx:
+    - rcm(), permute_in_place()
+    - update setup.py and init files for crcm.pyx
+    - remove rcm.i, array.i, common.i, fmfield.i
+  - update .gitignore
+  - update docs (swig -> cython)
+  - fix script/gen_term_table.py for circular dependency
+  - build:
+    - update Clean.run() to remove cython-generated files
+    - fix speed regression (numpy.distutils quirk)
+    - make cython compulsory dependence in setup.py
+    - set min. cython version to 0.14.1
+- make proper class for physical quadrature points:
+  - new PhysicalQPs, .get_merged_values(), .get_shape()
+  - update get_physical_qps()
+  - update Material for PhysicalQPs
+  - update PhysicalQPs.get_shape() - make ig optional, check shape
+    compatibility
+    - also allow any raveled shape length >= 1
+  - update get_physical_qps(), add n_total attribute to PhysicalQPs
+- updated Lagrangian formulation:
+  - fix evaluate.new_ulf_iteration()
+  - update hyperelasticity (ULF) terms for new Term.evaluate()
+  - remove cachesFiniteStrain.py:
+    - functions moved to terms_hyperelastic_ul(tl).py
+  - fix hyperelastic ULF terms: CompressibilityULTerm, VolumeULTerm
+  - fix hyperelastic terms in ULF for mixed pressure-displacement formulation
+- terms:
+  - update DiffusionIntegrateTerm, renamed: d_diff... --> di_diff...
+  - new arg_type: 'opt_material' - optional material
+    - remove "_mass_scalar_w" terms, use "_mass_scalar" instead
+    - remove "_w" terms in termsBasic.py and termNavierStokes.py
+  - fix Term.classify_args()
+  - fix SurfaceMomentTerm.get_eval_shape()
+  - fix dw_volume_dot, SurfaceTerm, SumNodalValuesTerm, DiffusionSATerm
+  - update DiffusionIntegrateTerm, DiffusionVelocityTerm,
+    DiffusionRTerm, disable PermeabilityRTerm
+  - update acoustic and diffusion terms
+- problem description:
+  - update ProblemConf.get_function() for passing functions directly
+  - use ProblemConf.get_function() to get parametric hook
+  - update ProblemConf.from_file() to accept define_args as tuple
+- tensors:
+  - update transform_data() for fourth order tensors
+  - check numbers of points in transform_data()
+    - do not meddle with data shape implicitly
+  - fix transform_data() (second order case)
+  - add mode argument to prepare_cylindrical_transform()
+  - fix docstring of transform_data()
+- polynomial spaces:
+  - pass space, poly_space_base to Interpolant, SurfaceInterpolant:
+    - update {SurfaceField, Field}.create_interpolant()
+  - update PolySpace.eval_base() for array-like coors argument
+  - new sfepy/fem/extmods/lobatto_template.pyx
+    - new eval_lobatto()
+    - update setup.py for lobatto.pyx
+    - add generated sfepy/fem/extmods/lobatto.pyx to simplify building
+- mesh refinement:
+  - new Mesh.get_element_coors()
+  - new refine_3_8()
+  - update Domain.refine() for hexahedral meshes
+  - new gen_misc_mesh(), gen_mesh_from_string()
+  - new ProblemDefinition.refine_uniformly()
+  - new refine_2_3(), refine_2_4()
+  - update Domain.refine() for 2D meshes
+- solvers:
+  - simplify imports in ScipyIterative.__init__()
+  - silence sparse efficiency warning
+  - new linear solver - Schur complement
+- input-output:
+  - update MeditMeshIO.read() - add omit_facets argument
+  - update Mesh.from_file(), MeshIO.read() - add omit_facets argument
+  - remove *args from MeshIO.read(), .write()
+  - new BDFMeshIO.write() function (Nastran data format)
+  - fix VTKMeshIO.read()
+  - clean up ioutils.py (imports, whitespace, coding style)
+  - update supported_capabilities dict - prepare for boundary conditions
+  - update Mesh._set_data() - add nodal_bcs argument
+  - update NEUMeshIO.read() to read nodes of boundary conditions
+  - update Mesh.from_file() - allow passing Mesh instance in place of file name
+- fields, variables:
+  - update Field.get_mapping() for initial time step
+  - fix indx initialization in Variable.__init__()
+  - update Field.setup_dof_conns() for string dc_type
+  - report standalone vertices in evaluate_at()
+  - check for standalone vertices in Field.evaluate_at()
+- scripts:
+  - turn script/gen_term_table.py into sphinx extension
+  - new script/gen_gallery.py:
+    - generate documentation and gallery of sfepy examples
+  - new script/gen_lobatto_pyx.py
+  - postproc.py:
+    - update parse_view(), --view help message
+    - new --no-offscreen option
+  - add script/show_authors.py
+- schroedinger:
+  - more fixes for meshes with several element groups
+  - new sfepy/physics/radial_mesh.py - RadialMesh, RadialHyperbolicMesh
+  - fix for higher order approximations, clean up
+  - update split of DFT and general options, update docstrings
+  - add init_hook application option
+  - add v_fun_name application option
+  - update Potential for user arguments to evaluation function
+  - new Potential.__len__()
+  - rename --mesh option to -create-mesh
+  - new --mesh, --mesh-dir options
+  - use ensure_path(), allow only one of --mesh, --create-mesh
+- homogenization:
+  - update recover_micro_hook(), new parameter 'recovery_file_tag'
+  - update homogenized coefficient classes for term_mode argument:
+    - update MiniAppBase.__init__()
+    - update {CoefSymSym, CoefFMSymSym, CoefDimSym, CoefNN, CoefN, CoefSym,
+      CoefFMSym, CoefOne, CoefFMOne}.__call__()
+  - new volume computation and selection
+  - allow passing scalar volume to coefficient classes
+    - new MiniAppBase._get_volume()
+  - fix output key in CorrMiniApp.get_output()
+  - update HomogenizationApp.process_options(), .call() - clean up
+  - clean up Coefficients
+- tests and examples:
+  - new test_hyperelastic_tlul.py - compare TLF and ULF solutions
+  - remove tests/test_input_hyperelastic.py
+    - test duplicated by test_hyperelastic_tlul.py
+  - add basic docstrings with equations to examples in gallery
+  - fix linear_elastic_probes.py example
+  - update test_install.py to test linear_elastic_probes.py example
+  - add test for refine_3_8():
+    - new refine(), test_refine_hexa()
+    - rename test_refine() -> test_refine_tetra()
+  - add test for fourth order tensors support in transform_data():
+    - new test_transform_data4()
+  - test mesh interpolation invariance (FieldVariable.evaluate_at()):
+    - new gen_datas(), test_invariance(), test_invariance_qp()
+  - add __init__.py files to allow package imports in examples/
+  - fix importing utils.py in Navier-Stokes examples:
+    - wrong file (from pytables) got imported in Windows
+  - improve testing of uniform mesh refinement
+- misc:
+  - new get_jacobian() utility function
+  - update set_mesh_coors() - add clear_all argument
+  - fix argument types in gen_block_mesh(), gen_cylinder_mesh()
+  - update FieldVariable.data_from_qp() for higher order approximations
+  - fix test_install.py for windows
+  - new ensure_path(), locate_files(), remove_files()
+  - update Viewer.set_source_filename() - catch also AttributeError
+  - fix syntax for python 2.5
+  - remove FMField.stride (unused in cython wrappers)
+  - update 'nodes of group' region selector for named groups
+  - use NumPy C type definitions, fix pointer type and printf format warnings
+  - remove unnecessary includes (fix _POSIX_C_SOURCE warnings)
+  - remove unused vg_integrateChunk(), sg_integrateChunk()
+  - remove caches attribute from Equations and Equation
+  - improve getting default integrals in ProblemDefinition:
+    - new ProblemDefinition.get_integrals()
+  - fix common_python.c for 64bit systems
+  - add reference element meshes
+  - remove unused methods of GeometryElement:
+    - remove .orient_edges(), .orient_faces3(), .orient_faces4()
+  - remove sfepy/optimize/fluentutils.py
+  - fix docstring of get_green_strain_sym3d() for LaTeX
+  - fix centre argument in get_coors_in_tube()
+- build:
+  - update Clean.run() to clean also examples/, script/, tests/
+  - include *.pxd files and lobatto_template.pyx in distribution
+  - do not install version.h.in
+  - add lobatto_template.pyx, version.h.in to MANIFEST.in
+- documentation:
+  - new examples.rst
+  - update latex_preamble in doc/conf.py
+  - add terms_constraints.rst to table of contents
+  - new sfepy docs html layout
+  - update region selection syntax in users guide
+  - fix developer guide for renamed/deleted/new files
+  - move installation docs into new doc/installation.rst, update
+  - add remaining sfepy modules to developer guide
+  - update script options in users guide
+  - link examples, primer from index
+  - add features to introduction
+  - add applications to index
+  - more on ebcs given by functions
+
 from 2011.2 to 2011.3
 =====================
 
