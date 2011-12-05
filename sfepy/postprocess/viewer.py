@@ -894,30 +894,38 @@ class SetStep(HasTraits):
 
         self.file_changed = False
 
-def make_animation(filename, view, roll, anim_format, options):
+def make_animation(filename, view, roll, anim_format, options,
+                   reuse_viewer=None):
     output_dir = tempfile.mkdtemp()
-    
+
     viewer = Viewer(filename, watch=options.watch,
                     animate=True,
                     output_dir=output_dir,
                     offscreen=True)
 
-    viewer(show=False, is_3d=options.is_3d, view=view,
-           roll=roll, layout=options.layout,
-           scalar_mode=options.scalar_mode,
-           vector_mode=options.vector_mode,
-           rel_scaling=options.rel_scaling,
-           clamping=options.clamping, ranges=options.ranges,
-           is_scalar_bar=options.is_scalar_bar,
-           is_wireframe=options.is_wireframe,
-           opacity=options.opacity,
-           subdomains_args=options.subdomains_args,
-           rel_text_width=options.rel_text_width,
-           fig_filename=options.fig_filename, resolution=options.resolution,
-           filter_names=options.filter_names, only_names=options.only_names,
-           group_names=options.group_names,
-           anti_aliasing=options.anti_aliasing,
-           domain_specific=options.domain_specific)
+    if reuse_viewer is None:
+        viewer(show=False, is_3d=options.is_3d, view=view,
+               roll=roll, layout=options.layout,
+               scalar_mode=options.scalar_mode,
+               vector_mode=options.vector_mode,
+               rel_scaling=options.rel_scaling,
+               clamping=options.clamping, ranges=options.ranges,
+               is_scalar_bar=options.is_scalar_bar,
+               is_wireframe=options.is_wireframe,
+               opacity=options.opacity,
+               subdomains_args=options.subdomains_args,
+               rel_text_width=options.rel_text_width,
+               fig_filename=options.fig_filename, resolution=options.resolution,
+               filter_names=options.filter_names, only_names=options.only_names,
+               group_names=options.group_names,
+               anti_aliasing=options.anti_aliasing,
+               domain_specific=options.domain_specific)
+
+    else:
+        viewer.file_source = reuse_viewer.file_source
+        viewer.scene = reuse_viewer.scene
+        viewer.set_step = reuse_viewer.set_step
+        viewer.save_animation(options.fig_filename)
 
     op = os.path
     if anim_format != 'png':
@@ -931,7 +939,8 @@ def make_animation(filename, view, roll, anim_format, options):
     else:
         shutil.move(output_dir, op.join(options.output_dir, 'snapshots'))
 
-    mlab.close(viewer.scene)
+    if reuse_viewer is None:
+        mlab.close(viewer.scene)
 
 class ViewerGUI(HasTraits):
 
@@ -988,7 +997,8 @@ class ViewerGUI(HasTraits):
                        view,
                        roll,
                        'avi',
-                       Struct(**self.viewer.options))
+                       Struct(**self.viewer.options),
+                       self.viewer)
 
     def _button_make_snapshots_fired(self):
         view = mlab.view()
@@ -998,4 +1008,5 @@ class ViewerGUI(HasTraits):
                        view,
                        roll,
                        'png',
-                       Struct(**self.viewer.options))
+                       Struct(**self.viewer.options),
+                       self.viewer)
