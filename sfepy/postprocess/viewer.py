@@ -589,7 +589,7 @@ class Viewer(Struct):
         scene.scene.disable_render = True
 
         self.build_mlab_pipeline(**options)
-
+        self.source.update() # Force source update to see e.g. streamlines.
         scene.scene.reset_zoom()
 
         view = options['view']
