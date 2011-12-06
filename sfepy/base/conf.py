@@ -347,7 +347,7 @@ class ProblemConf( Struct ):
     def __init__(self, define_dict, funmod=None, filename=None,
                  required=None, other=None, verbose=True, override=None):
         if override:
-            define_dict = update_dict_recursively(define_dict, override)
+            define_dict = update_dict_recursively(define_dict, override, True)
 
         self.__dict__.update(define_dict)
         self.verbose = verbose

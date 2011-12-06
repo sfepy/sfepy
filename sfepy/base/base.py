@@ -936,17 +936,28 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False):
 
     return table
 
-def update_dict_recursively(dst, src):
+def update_dict_recursively(dst, src, tuples_too=False):
     """
     Update `dst` dictionary recursively using items in `src` dictionary.
     """
-    for key in src:
-        if (key in dst) and isinstance(src[key], dict) \
-               and isinstance(dst[key], dict):
-            dst[key] = update_dict_recursively(dst[key], src[key])
+    def tuplezip(a):
+        if isinstance(a[0], dict) and isinstance(a[1], dict):
+           return update_dict_recursively(a[0], a[1], True)
+        return a[1]
 
-        else:
-            dst[key] = src[key]
+    for key in src:
+        if (key in dst):
+           if isinstance(src[key], dict) and isinstance(dst[key], dict):
+             dst[key] = update_dict_recursively(dst[key], src[key],tuples_too)
+             continue
+
+           if tuples_too and isinstance(dst[key], tuple) \
+                  and isinstance(src[key], tuple):
+             dst[key] = tuple(map(tuplezip,
+                                  zip(src[key], dst[key]))[:len(dst[key])])
+             continue
+
+        dst[key] = src[key]
 
     return dst
 

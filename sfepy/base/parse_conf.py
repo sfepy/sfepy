@@ -18,8 +18,10 @@ def create_bnf():
     integer = Combine(Optional(oneOf("+ -")) + Word(nums)).setName("integer")
     integer.setParseAction(cvt_int)
 
-    real = Combine(Optional(oneOf("+ -"))
-                   + Word(nums) + "." + Optional(Word(nums))).setName("real")
+    real = Combine(Optional(oneOf("+ -"))+ Word(nums)
+                   + "." + Optional(Word(nums))
+                   + Optional("e" + Optional(oneOf("+ -"))
+                              + Word(nums))).setName("real")
     real.setParseAction(cvt_real)
 
     tuple_str = Forward()
