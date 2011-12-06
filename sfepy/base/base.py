@@ -939,6 +939,20 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False):
 def update_dict_recursively(dst, src, tuples_too=False):
     """
     Update `dst` dictionary recursively using items in `src` dictionary.
+
+    Parameters
+    ----------
+    dst : dict
+        The destination dictionary.
+    src : dict
+        The source dictionary.
+    tuples_too : bool
+        If True, recurse also into dictionaries that are members of tuples.
+
+    Returns
+    -------
+    dst : dict
+        The destination dictionary.
     """
     def tuplezip(a):
         if isinstance(a[0], dict) and isinstance(a[1], dict):
