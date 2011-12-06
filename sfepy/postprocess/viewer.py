@@ -318,7 +318,7 @@ class Viewer(Struct):
                             rel_text_width=None,
                             filter_names=None, group_names=None,
                             only_names=None,
-                            domain_specific=None):
+                            domain_specific=None, **kwargs):
         """Sets self.source, self.is_3d_data """
         file_source = get_default(file_source, self.file_source,
                                   'file_source not set!')
@@ -582,6 +582,32 @@ class Viewer(Struct):
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
+    def render_scene(self, scene, options):
+        """
+        Render the scene, preferably after it has been activated.
+        """
+        scene.scene.disable_render = True
+
+        self.build_mlab_pipeline(**options)
+
+        scene.scene.reset_zoom()
+
+        view = options['view']
+        if view is None:
+            if options['is_3d'] or self.is_3d_data:
+                self.view = (45, 45)
+            else:
+                self.view = (0, 0)
+        else:
+            self.view = view
+        self.roll = options['roll']
+
+        scene.scene.disable_render = False
+
+        anti_aliasing = options['anti_aliasing']
+        if anti_aliasing is not None:
+            scene.scene.anti_aliasing_frames = anti_aliasing
+
     def show_scalar_bars(self, scalar_bars):
         for ii, (family, name, lm) in enumerate(scalar_bars):
             x0, y0 = 0.03, 1.0 - 0.01 - float(ii) / 15.0 - 0.07
@@ -763,8 +789,6 @@ class Viewer(Struct):
 
         self.gui = gui
 
-        scene.scene.disable_render = True
-
         self.file_source = create_file_source(self.filename, watch=self.watch,
                                               offscreen=self.offscreen)
         has_several_steps = (nm.diff(self.file_source.get_step_range()) > 0)[0]
@@ -782,41 +806,10 @@ class Viewer(Struct):
             if gui is not None:
                 gui.set_step = set_step
 
-        self.build_mlab_pipeline(is_3d=is_3d,
-                                 layout=layout,
-                                 scalar_mode=scalar_mode,
-                                 vector_mode=vector_mode,
-                                 rel_scaling=rel_scaling,
-                                 clamping=clamping,
-                                 ranges=ranges,
-                                 is_scalar_bar=is_scalar_bar,
-                                 is_wireframe=is_wireframe,
-                                 opacity=opacity,
-                                 subdomains_args=subdomains_args,
-                                 rel_text_width=rel_text_width,
-                                 filter_names=filter_names,
-                                 group_names=group_names,
-                                 only_names=only_names,
-                                 domain_specific=domain_specific)
-        
-        scene.scene.reset_zoom()
-
         self.options.update(get_arguments(omit = ['self', 'file_source']))
 
-        if view is None:
-            if is_3d or self.is_3d_data:
-                self.view = (45, 45)
-            else:
-                self.view = (0, 0)
-        else:
-            self.view = view
-        self.roll = roll
-      
-        scene.scene.disable_render = False
-        if anti_aliasing is not None:
-            scene.scene.anti_aliasing_frames = anti_aliasing
-
         if gui is None:
+            self.render_scene(scene, self.options)
             self.reset_view()
             if is_scalar_bar:
                 self.show_scalar_bars(self.scalar_bars)
@@ -958,6 +951,7 @@ class ViewerGUI(HasTraits):
     @on_trait_change('scene.activated')
     def _post_init(self, name, old, new):
         viewer = self.viewer
+        viewer.render_scene(self.scene, viewer.options)
         viewer.reset_view()
         viewer.show_scalar_bars(viewer.scalar_bars)
 
