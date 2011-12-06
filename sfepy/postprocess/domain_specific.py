@@ -110,3 +110,92 @@ def plot_displacements(source, ctp, bbox, position, family, kind, name,
     surf.actor.actor.position = position
 
     return new_kind, new_name, active
+
+def plot_velocity(source, ctp, bbox, position, family, kind, name,
+                  seed='sphere', type='ribbon', integration_direction='both',
+                  seed_scale=1.0, seed_resolution=20,
+                  widget_enabled=True,
+                  color_kind=None, color_name=None, opacity=1.0,
+                  **kwargs):
+    """
+    Show velocity field by displaying streamlines and optionally a
+    surface plot given by quantity `color_name`.
+
+    Parameters
+    ----------
+    seed : one of ('sphere', 'point', 'line', 'plane')
+        The streamline seed name.
+    type : one of ('line', 'ribbon', 'tube')
+        The streamline seed line type.
+    integration_direction : one of ('forward', 'backward', 'both')
+        The stream tracer integration direction.
+    seed_scale : float
+        The seed size scale.
+    seed_resolution : int
+        The number of seed points in a direction (depends on `seed`).
+    widget_enabled : bool
+        It True, the seed widget is visible and can be interacted with.
+    color_kind : str, optional
+        The kind of data determining the colormap.
+    color_name : str, optional
+        The name of data determining the colormap.
+    opacity : float
+        The surface plot opacity.
+    **kwargs : dict
+        Additional keyword arguments for attributes of
+        `streamline.seed.widget`.
+    """
+    assert_(kind == 'vectors')
+
+    active_v = mlab.pipeline.set_active_attribute(source)
+    active_v.point_vectors_name = name
+
+    s = mlab.pipeline.streamline
+    streamline = s(active_v, seedtype=seed,
+                   linetype=type,
+                   seed_visible=True,
+                   seed_scale=seed_scale,
+                   integration_direction=integration_direction,
+                   seed_resolution=seed_resolution)
+    streamline.update_streamlines = True
+    streamline.seed.widget.enabled = widget_enabled
+
+    for key, val in kwargs.iteritems():
+        setattr(streamline.seed.widget, key, val)
+
+    if color_name is None:
+        active = mlab.pipeline.extract_vector_norm(active_v)
+
+    else:
+        if color_kind == 'tensors':
+            new_name = '|%s|' % color_name
+            active = mlab.pipeline.set_active_attribute(source)
+            active.point_tensors_name = color_name
+            active = mlab.pipeline.extract_tensor_components(active)
+
+        elif color_kind == 'vectors':
+            new_name = '|%s|' % color_name
+            active = mlab.pipeline.set_active_attribute(source)
+            active.point_vectors_name = color_name
+            active = mlab.pipeline.extract_tensor_components(active)
+
+        elif color_kind == 'scalars':
+            new_name = '%s' % color_name
+            active = mlab.pipeline.set_active_attribute(source)
+            active.point_scalars_name = color_name
+
+    surf = mlab.pipeline.surface(active, opacity=opacity)
+    surf.actor.actor.position = position
+
+    if color_name is not None:
+        mm = active.children[0]
+        lm = mm.scalar_lut_manager
+        scalar_bars = [['point', new_name, lm]]
+
+        active_v.point_vectors_name = name # This is needed to have
+                                           # colors by velocity!
+        return kind, name, active_v, scalar_bars
+
+    else:
+        return kind, name, active_v
+
