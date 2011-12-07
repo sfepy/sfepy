@@ -335,10 +335,9 @@ class Viewer(Struct):
 
         self.source = source = self.file_source()
 
-        if subdomains_args is not None:
-            # Hack to prevent mayavi switching to point scalar on source
-            # change.
-            source.point_scalars_name = ''
+        # Hack to prevent mayavi switching to point scalar on source
+        # change.
+        source.point_scalars_name = ''
 
         bbox = file_source.get_bounding_box()
         dx = 1.1 * (bbox[1,:] - bbox[0,:])
