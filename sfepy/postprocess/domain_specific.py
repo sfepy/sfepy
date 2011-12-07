@@ -150,8 +150,10 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
     active_v = mlab.pipeline.set_active_attribute(source)
     active_v.point_vectors_name = name
 
+    active_n = mlab.pipeline.extract_vector_norm(active_v)
+
     s = mlab.pipeline.streamline
-    streamline = s(active_v, seedtype=seed,
+    streamline = s(active_n, seedtype=seed,
                    linetype=type,
                    seed_visible=True,
                    seed_scale=seed_scale,
@@ -164,7 +166,7 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
         setattr(streamline.seed.widget, key, val)
 
     if color_name is None:
-        active = mlab.pipeline.extract_vector_norm(active_v)
+        active = active_n
 
     else:
         if color_kind == 'tensors':
@@ -194,8 +196,8 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
 
         active_v.point_vectors_name = name # This is needed to have
                                            # colors by velocity!
-        return kind, name, active_v, scalar_bars
+        return kind, name, active_n, scalar_bars
 
     else:
-        return kind, name, active_v
+        return kind, name, active_n
 
