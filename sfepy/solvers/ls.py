@@ -258,14 +258,18 @@ class PyAMGSolver( LinearSolver ):
         return sol
 
 class PETScKrylovSolver( LinearSolver ):
-    """PETSc Krylov subspace solver.
+    """
+    PETSc Krylov subspace solver.
 
     The solver and preconditioner types are set upon the solver object
-    creation. Tolerances can be overriden when called by passing a conf
+    creation. Tolerances can be overriden when called by passing a `conf`
     object.
 
-    Convergence is reached when 'rnorm < max(eps_r * rnorm_0, eps_a)', where
-    rnorm is the norm of rezidual, i.e. ||Ax - b||.
+    Notes
+    -----
+    Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
+    where, in PETSc, `rnorm` is by default the norm of *preconditioned*
+    residual.
     """
     name = 'ls.petsc'
 
