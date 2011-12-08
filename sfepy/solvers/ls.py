@@ -468,6 +468,9 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
             '-ksp_type %s' % self.conf.method,
             '-pc_type %s' % self.conf.precond,
             '-sub_pc_type %s' % self.conf.sub_precond,
+            '-ksp_atol %.3e' % self.conf.eps_a,
+            '-ksp_rtol %.3e' % self.conf.eps_r,
+            '-ksp_max_it %d' % self.conf.i_max,
             '-ksp_monitor', '-ksp_view',
             '> %s' % log_filename
         ]
@@ -479,14 +482,17 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         psol = petsc.Vec().load(view_sol)
 
         fd = open(status_filename, 'r')
-        reason = int(fd.readline())
+        line = fd.readline().split()
+        reason = int(line[0])
+        elapsed = float(line[1])
         fd.close()
         output('...done')
 
         sol = psol[...].copy()
-        output('%s(%s) convergence: %s (%s, %s per process)'
+        output('%s(%s, %s/proc) convergence: %s (%s)'
                % (self.conf.method, self.conf.precond, self.conf.sub_precond,
                   reason, self.converged_reasons[reason]))
+        output('elapsed: %.2f [s]' % elapsed)
 
         shutil.rmtree(output_dir)
 

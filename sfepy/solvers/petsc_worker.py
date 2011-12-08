@@ -2,6 +2,7 @@
 """
 PETSc solver worker process.
 """
+import time
 import sys, petsc4py
 petsc4py.init(sys.argv)
 
@@ -32,13 +33,16 @@ def solve():
     ksp = PETSc.KSP().create()
     ksp.setOperators(mtx)
     ksp.setFromOptions()
+
+    tt = time.clock()
     ksp.solve(rhs, sol)
+    elapsed = time.clock() - tt
 
     view_sol = PETSc.Viewer().createBinary(sol_filename, mode='w')
     sol.view(view_sol)
 
     fd = open(status_filename, 'w')
-    fd.write('%d' % ksp.reason)
+    fd.write('%d %.2f' % (ksp.reason, elapsed))
     fd.close()
 
 if __name__ == '__main__':
