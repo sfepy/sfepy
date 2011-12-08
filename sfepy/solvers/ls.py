@@ -5,7 +5,7 @@ import scipy.sparse as sps
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, assert_, Struct
 from sfepy.solvers.solvers import make_get_conf, LinearSolver
 
 def try_imports(imports, fail_msg=None):
@@ -360,6 +360,135 @@ class PETScKrylovSolver( LinearSolver ):
         output('%s(%s) convergence: %s (%s)'
                % (self.conf.method, self.conf.precond,
                   ksp.reason, self.converged_reasons[ksp.reason]))
+
+        return sol
+
+class PETScParallelKrylovSolver(PETScKrylovSolver):
+    """
+    PETSc Krylov subspace solver able to run in parallel by storing the
+    system to disk and running a separate script via `mpiexec`.
+
+    The solver and preconditioner types are set upon the solver object
+    creation. Tolerances can be overriden when called by passing a `conf`
+    object.
+
+    Notes
+    -----
+    Convergence is reached when `rnorm < max(eps_r * rnorm_0, eps_a)`,
+    where, in PETSc, `rnorm` is by default the norm of *preconditioned*
+    residual.
+    """
+    name = 'ls.petsc_parallel'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Missing items are set to default values.
+
+        Example configuration, all items::
+
+            solver_1 = {
+                'name' : 'ls',
+                'kind' : 'ls.petsc_parallel',
+
+                'n_proc' : 5, # Number of processes to run.
+
+                'method' : 'cg', # ksp_type
+                'precond' : 'bjacobi', # pc_type
+                'sub_precond' : 'icc', # sub_pc_type
+                'eps_a' : 1e-12, # abstol
+                'eps_r' : 1e-12, # rtol
+                'i_max' : 1000, # maxits
+            }
+        """
+        get = make_get_conf(conf, kwargs)
+        common = PETScKrylovSolver.process_conf(conf, kwargs)
+
+        return Struct(n_proc=get('n_proc', 1),
+                      sub_precond=get('sub_precond', 'icc')) + common
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+        import os, sys, shutil, tempfile
+        from sfepy import base_dir, data_dir
+        from sfepy.base.ioutils import ensure_path
+
+        conf = get_default(conf, self.conf)
+        eps_a = get_default(eps_a, self.eps_a)
+        eps_r = get_default(eps_r, self.eps_r)
+        i_max = get_default(i_max, self.conf.i_max)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+
+        petsc = self.petsc
+
+        # There is no use in caching matrix in the solver - always set as new.
+        pmtx, psol, prhs = self.set_matrix(mtx)
+
+        ksp = self.ksp
+        ksp.setOperators(pmtx)
+        ksp.setFromOptions() # PETSc.Options() not used yet...
+        ksp.setTolerances(atol=eps_a, rtol=eps_r, max_it=i_max)
+
+        output_dir = tempfile.mkdtemp()
+
+        # Set PETSc rhs, solve, get solution from PETSc solution.
+        if x0 is not None:
+            psol[...] = x0
+            sol0_filename = os.path.join(output_dir, 'sol0.dat')
+
+        else:
+            sol0_filename = ''
+
+        prhs[...] = rhs
+
+        script_filename = os.path.join(base_dir, 'solvers/petsc_worker.py')
+
+        mtx_filename = os.path.join(output_dir, 'mtx.dat')
+        rhs_filename = os.path.join(output_dir, 'rhs.dat')
+        sol_filename = os.path.join(output_dir, 'sol.dat')
+        status_filename = os.path.join(output_dir, 'status.txt')
+
+        log_filename = os.path.join(data_dir, 'tmp/sol.log')
+        ensure_path(log_filename)
+
+        output('storing system to %s...' % output_dir)
+        view_mtx = petsc.Viewer().createBinary(mtx_filename, mode='w')
+        view_rhs = petsc.Viewer().createBinary(rhs_filename, mode='w')
+        pmtx.view(view_mtx)
+        prhs.view(view_rhs)
+        output('...done')
+
+        command = [
+            'mpiexec -n %d' % self.conf.n_proc,
+            sys.executable, script_filename,
+            '-mtx %s' % mtx_filename, '-rhs %s' % rhs_filename,
+            '-sol0 %s' % sol0_filename, '-sol %s' % sol_filename,
+            '-status %s' % status_filename,
+            '-ksp_type %s' % self.conf.method,
+            '-pc_type %s' % self.conf.precond,
+            '-sub_pc_type %s' % self.conf.sub_precond,
+            '-ksp_monitor', '-ksp_view',
+            '> %s' % log_filename
+        ]
+        out = os.system(" ".join(command))
+        assert_(out == 0)
+
+        output('reading solution...')
+        view_sol = self.petsc.Viewer().createBinary(sol_filename, mode='r')
+        psol = petsc.Vec().load(view_sol)
+
+        fd = open(status_filename, 'r')
+        reason = int(fd.readline())
+        fd.close()
+        output('...done')
+
+        sol = psol[...].copy()
+        output('%s(%s) convergence: %s (%s, %s per process)'
+               % (self.conf.method, self.conf.precond, self.conf.sub_precond,
+                  reason, self.converged_reasons[reason]))
+
+        shutil.rmtree(output_dir)
 
         return sol
 
