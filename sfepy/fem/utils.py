@@ -113,3 +113,38 @@ def extend_cell_data( data, domain, rname, val = None ):
             ir = offs[ig]
             edata[ii+region.cells[ig]] = data[ir:ir+n_cell]
     return edata
+
+def refine_mesh(filename, level):
+    """
+    Uniformly refine `level`-times a mesh given by `filename`.
+
+    The refined mesh is saved to a file with name constructed from base
+    name of `filename` and `level`-times appended `'_r'` suffix.
+
+    Parameters
+    ----------
+    filename : str
+        The mesh file name.
+    level : int
+        The refinement level.
+    """
+    import os
+    from sfepy.base.base import output
+    from sfepy.fem import Mesh, Domain
+
+    if level > 0:
+        mesh = Mesh.from_file(filename)
+        domain = Domain(mesh.name, mesh)
+        for ii in range(level):
+            output('refine %d...' % ii)
+            domain = domain.refine()
+            output('... %d nodes %d elements'
+                   % (domain.shape.n_nod, domain.shape.n_el))
+
+        suffix = os.path.splitext(filename)[1]
+        filename = domain.name + suffix
+
+        domain.mesh.write(filename, io='auto')
+
+    return filename
+
