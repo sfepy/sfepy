@@ -50,8 +50,8 @@ def nodal_stress(out, pb, state, extend=False):
 
     print '\n=================================================================='
     print 'Load to give 1 mm displacement = %s Newton ' % round(-P,3)
-    print '\nAnalytical solution'
-    print '==================='
+    print '\nAnalytical solution approximation'
+    print '================================='
     print 'Horizontal tensile stress = %s MPa/mm' % round(-2.*P/(nm.pi*150.),3) 
     print 'Vertical compressive stress = %s MPa/mm' % round(-6.*P/(nm.pi*150.),3)
     print '\nFEM solution'

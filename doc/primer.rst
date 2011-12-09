@@ -141,6 +141,8 @@ appropriately named `Python Mesh Viewer
 
 The next step in the process is coding the *SfePy* problem definition file.
 
+.. _primer_example_file:
+
 Problem description
 -------------------
 
@@ -501,8 +503,8 @@ The output::
     ==================================================================
     Load to give 1 mm displacement = 1209.789 Newton
 
-    Analytical solution
-    ===================
+    Analytical solution approximation
+    =================================
     Horizontal tensile stress = 5.135 MPa/mm
     Vertical compressive stress = 15.404 MPa/mm
 
@@ -519,8 +521,8 @@ solution::
     ==================================================================
     Load to give 1 mm displacement = 740.779 Newton
 
-    Analytical solution
-    ===================
+    Analytical solution approximation
+    =================================
     Horizontal tensile stress = 3.144 MPa/mm
     Vertical compressive stress = 9.432 MPa/mm
 
@@ -529,6 +531,16 @@ solution::
     Horizontal tensile stress = 3.148 MPa/mm
     Vertical compressive stress = 9.419 MPa/mm
     ==================================================================
+
+The above analytical solution approximation is computed using the
+relations :eq:`eq_tensile_stress`, :eq:`eq_compressive_stress` with
+the point load :math:`P` approximated by finite element residual in the top
+node. That is why its value depends on the mesh size. To see this
+dependence, try to play with the uniform mesh refinement level in the
+:ref:`primer_example_file` file, namely lines 25, 26::
+
+    refinement_level = 0
+    filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
 To wrap this tutorial up let's explore *SfePy*'s probing functions.
 
