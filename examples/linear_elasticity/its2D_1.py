@@ -16,10 +16,14 @@ where
     \;.
 """
 from sfepy.mechanics.matcoefs import youngpoisson_to_lame
+from sfepy.fem.utils import refine_mesh
 from sfepy import data_dir
 
 # Fix the mesh file name if you run this file outside the SfePy directory.
 filename_mesh = data_dir + '/meshes/2d/its2D.mesh'
+
+refinement_level = 0
+filename_mesh = refine_mesh(filename_mesh, refinement_level)
 
 output_dir = '.' # set this to a valid directory you have write access to
 
