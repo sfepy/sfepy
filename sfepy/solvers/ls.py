@@ -273,6 +273,8 @@ class PETScKrylovSolver( LinearSolver ):
     """
     name = 'ls.petsc'
 
+    _precond_sides = {None : None, 'left' : 0, 'right' : 1, 'symmetric' : 2}
+
     @staticmethod
     def process_conf(conf, kwargs):
         """
@@ -286,6 +288,7 @@ class PETScKrylovSolver( LinearSolver ):
 
                 'method' : 'cg', # ksp_type
                 'precond' : 'icc', # pc_type
+                'precond_side' : 'left', # ksp_pc_side
                 'eps_a' : 1e-12, # abstol
                 'eps_r' : 1e-12, # rtol
                 'i_max' : 1000, # maxits
@@ -296,6 +299,7 @@ class PETScKrylovSolver( LinearSolver ):
 
         return Struct(method=get('method', 'cg'),
                       precond=get('precond', 'icc'),
+                      precond_side=get('precond_side', None),
                       i_max=get('i_max', 100),
                       eps_a=get('eps_a', 1e-8),
                       eps_r=get('eps_r', 1e-8)) + common
@@ -316,7 +320,9 @@ class PETScKrylovSolver( LinearSolver ):
 
         ksp.setType( self.conf.method )
         ksp.getPC().setType( self.conf.precond )
-
+        side = self._precond_sides[self.conf.precond_side]
+        if side is not None:
+            ksp.setPCSide(side)
         self.ksp = ksp
 
         self.converged_reasons = {}
@@ -471,9 +477,12 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
             '-ksp_atol %.3e' % self.conf.eps_a,
             '-ksp_rtol %.3e' % self.conf.eps_r,
             '-ksp_max_it %d' % self.conf.i_max,
-            '-ksp_monitor', '-ksp_view',
-            '> %s' % log_filename
+            '-ksp_monitor %s' % log_filename,
+            '-ksp_view %s' % log_filename,
         ]
+        if self.conf.precond_side is not None:
+            command.append('-ksp_pc_side %s' % self.conf.precond_side)
+
         out = os.system(" ".join(command))
         assert_(out == 0)
 
