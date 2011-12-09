@@ -150,9 +150,9 @@ The programming of the problem description file is well documented in
 the *SfePy* :doc:`users_guide`. The problem description file used in the
 tutorial follows:
 
-.. literalinclude:: ../examples/linear_elasticity/its2D_1.py
+.. literalinclude:: /../examples/linear_elasticity/its2D_1.py
 
-:download:`Download <../examples/linear_elasticity/its2D_1.py>` and open
+:download:`Download </../examples/linear_elasticity/its2D_1.py>` and open
 the file in your favourite python editor. Note that you may wish to
 change the location of the output directory to somewhere on your
 drive. You may also need to edit the mesh file name. For the analysis we
@@ -272,9 +272,9 @@ Post-processing
 include a function to calculate these and update the problem material
 definition and options to call this function as a
 post_process_hook. Save this file as :download:`its2D_2.py
-<../examples/linear_elasticity/its2D_2.py>`.
+</../examples/linear_elasticity/its2D_2.py>`.
 
-.. literalinclude:: ../examples/linear_elasticity/its2D_2.py
+.. literalinclude:: /../examples/linear_elasticity/its2D_2.py
 
 The updated file imports all of the previous definitions in
 its2D_1.py. The stress function (de_cauchy_stress) requires as input the
@@ -493,10 +493,10 @@ elements. It is possible to provide custom integrals to allow the
 calculation of stresses with the Gauss quadrature points at the element
 nodes. This will provide us a more accurate estimate of the stress at
 the centre of the specimen located at node 0. The :download:`code
-<../examples/linear_elasticity/its2D_3.py>` below outlines one way to
+</../examples/linear_elasticity/its2D_3.py>` below outlines one way to
 achieve this.
 
-.. literalinclude:: ../examples/linear_elasticity/its2D_3.py
+.. literalinclude:: /../examples/linear_elasticity/its2D_3.py
 
 The output::
 
@@ -549,10 +549,10 @@ Probing
 
 As a bonus for sticking to the end of this tutorial see the following
 :download:`problem definition file
-<../examples/linear_elasticity/its2D_4.py>` that provides *SfePy*
+</../examples/linear_elasticity/its2D_4.py>` that provides *SfePy*
 functions to quickly and neatly probe the solution.
 
-.. literalinclude:: ../examples/linear_elasticity/its2D_4.py
+.. literalinclude:: /../examples/linear_elasticity/its2D_4.py
 
 Probing applies interpolation to output the solution along specified
 paths. For the tutorial, line probing is done along the x- and y-axes of
