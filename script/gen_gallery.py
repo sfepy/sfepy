@@ -16,6 +16,7 @@ from sfepy.base.ioutils import ensure_path, locate_files, remove_files
 
 omits = [
     'linear_elastic_mM.py',
+    '__init__.py',
 ]
 
 omit_dirs = [
@@ -228,7 +229,6 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
 
             rst_fig_filename = _make_sphinx_path(fig_filename)
             rst_ex_filename = _make_sphinx_path(ex_filename)
-            src_ex_filename = _make_sphinx_path(ex_filename, True)
 
             docstring = get_default(import_file(ex_filename).__doc__,
                                     'missing description!')
@@ -238,7 +238,7 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
             fd.write(_include % (fig_base, ebase, '=' * len(ebase),
                                  docstring,
                                  rst_fig_filename,
-                                 src_ex_filename, rst_ex_filename))
+                                 rst_ex_filename, rst_ex_filename))
             fd.close()
 
         ifd.close()
