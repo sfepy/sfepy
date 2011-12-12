@@ -15,6 +15,7 @@ from sfepy.base.base import assert_, Struct
 geometry_data = {
     '1_2' : Struct(coors = [[0.0],
                             [1.0]],
+                   conn = [0, 1],
                    faces = None,
                    edges = None,
                    volume = 1.0,
@@ -24,6 +25,7 @@ geometry_data = {
     '2_3' : Struct(coors = [[0.0, 0.0],
                             [1.0, 0.0],
                             [0.0, 1.0]],
+                   conn = [0, 1, 2],
                    faces = None,
                    edges = [[0, 1],
                             [1, 2],
@@ -36,6 +38,7 @@ geometry_data = {
                             [1.0, 0.0],
                             [1.0, 1.0],
                             [0.0, 1.0]],
+                   conn = [0, 1, 2, 3],
                    faces = None,
                    edges = [[0, 1],
                             [1, 2],
@@ -50,6 +53,7 @@ geometry_data = {
                             [1.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0],
                             [0.0, 0.0, 1.0]],
+                   conn = [0, 1, 2, 3],
                    faces = [[0, 2, 1],
                             [0, 3, 2],
                             [0, 1, 3],
@@ -72,6 +76,7 @@ geometry_data = {
                             [1.0, 0.0, 1.0],
                             [1.0, 1.0, 1.0],
                             [0.0, 1.0, 1.0]],
+                   conn = [0, 1, 2, 3, 4, 5, 6, 7],
                    faces = [[0, 3, 2, 1],
                             [0, 4, 7, 3],
                             [0, 1, 5, 4],
@@ -127,6 +132,8 @@ class GeometryElement(Struct):
         gd = geometry_data[name]
 
         self.coors = nm.array(gd.coors, dtype=nm.float64)
+
+        self.conn = nm.array(gd.conn, dtype=nm.int32)
 
         self.n_vertex, self.dim = self.coors.shape
         self.is_simplex = self.n_vertex == (self.dim + 1)
