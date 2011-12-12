@@ -415,7 +415,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
 
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        import os, sys, shutil, tempfile
+        import os, sys, shutil, tempfile, time
         from sfepy import base_dir, data_dir
         from sfepy.base.ioutils import ensure_path
 
@@ -459,11 +459,12 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         ensure_path(log_filename)
 
         output('storing system to %s...' % output_dir)
+        tt = time.clock()
         view_mtx = petsc.Viewer().createBinary(mtx_filename, mode='w')
         view_rhs = petsc.Viewer().createBinary(rhs_filename, mode='w')
         pmtx.view(view_mtx)
         prhs.view(view_rhs)
-        output('...done')
+        output('...done in %.2f s' % (time.clock() - tt))
 
         command = [
             'mpiexec -n %d' % self.conf.n_proc,
@@ -487,6 +488,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         assert_(out == 0)
 
         output('reading solution...')
+        tt = time.clock()
         view_sol = self.petsc.Viewer().createBinary(sol_filename, mode='r')
         psol = petsc.Vec().load(view_sol)
 
@@ -495,7 +497,7 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         reason = int(line[0])
         elapsed = float(line[1])
         fd.close()
-        output('...done')
+        output('...done in %.2f s' % (time.clock() - tt))
 
         sol = psol[...].copy()
         output('%s(%s, %s/proc) convergence: %s (%s)'
