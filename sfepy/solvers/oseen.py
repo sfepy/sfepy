@@ -220,7 +220,7 @@ class Oseen( NonlinearSolver ):
                 raise RuntimeError( 'giving up...' )
 
             tt = time.clock() 
-            vec_dx = lin_solver( vec_r, mtx = mtx_a )
+            vec_dx = lin_solver(vec_r, x0=vec_x, mtx=mtx_a)
             time_stats['solve'] = time.clock() - tt
 
             vec_e = mtx_a * vec_dx - vec_r

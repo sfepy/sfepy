@@ -309,7 +309,8 @@ class Newton( NonlinearSolver ):
                 lin_red = max(eps_a, err * eps_r)
 
             tt = time.clock()
-            vec_dx = lin_solver(vec_r, eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
+            vec_dx = lin_solver(vec_r, x0=vec_x,
+                                eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
             time_stats['solve'] = time.clock() - tt
 
             for kv in time_stats.iteritems():
