@@ -360,6 +360,7 @@ class PETScKrylovSolver( LinearSolver ):
         # Set PETSc rhs, solve, get solution from PETSc solution.
         if x0 is not None:
             psol[...] = x0
+            ksp.setInitialGuessNonzero(True)
         prhs[...] = rhs
         ksp.solve(prhs, psol)
         sol = psol[...].copy()
@@ -464,6 +465,9 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         view_rhs = petsc.Viewer().createBinary(rhs_filename, mode='w')
         pmtx.view(view_mtx)
         prhs.view(view_rhs)
+        if sol0_filename:
+            view_sol0 = petsc.Viewer().createBinary(sol0_filename, mode='w')
+            psol.view(view_sol0)
         output('...done in %.2f s' % (time.clock() - tt))
 
         command = [

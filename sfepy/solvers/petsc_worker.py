@@ -23,16 +23,17 @@ def solve():
     mtx = PETSc.Mat().load(view_mtx)
     rhs = PETSc.Vec().load(view_rhs)
 
+    ksp = PETSc.KSP().create()
+    ksp.setOperators(mtx)
+    ksp.setFromOptions()
+
     if not sol0_filename:
         sol = rhs.duplicate()
 
     else:
         view_sol0 = PETSc.Viewer().createBinary(sol0_filename, mode='r')
-        sol = PETSc.Mat().load(view_sol0)
-
-    ksp = PETSc.KSP().create()
-    ksp.setOperators(mtx)
-    ksp.setFromOptions()
+        sol = PETSc.Vec().load(view_sol0)
+        ksp.setInitialGuessNonzero(True)
 
     tt = time.clock()
     ksp.solve(rhs, sol)
