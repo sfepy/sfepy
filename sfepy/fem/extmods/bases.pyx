@@ -560,6 +560,8 @@ cpdef evaluate_at(np.ndarray[float64, mode='c', ndim=2] out,
     for ig in range(0, n_gr):
         conn = conns[ig]
         n_ep_max = Max_i(n_ep_max, conn.shape[1])
+        conn = geo_conns[ig]
+        n_ep_max = Max_i(n_ep_max, conn.shape[1])
 
     buf_ec_max = <float64 *> pyalloc(n_ep_max * (dim + 2 + dpn)
                                      * sizeof(float64))
