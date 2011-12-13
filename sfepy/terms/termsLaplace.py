@@ -36,6 +36,11 @@ class DiffusionTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
 
+        if mat is None:
+            if self.name == 'dw_laplace':
+                n_el, n_qp, _, _, _ = self.get_data_shape(state)
+                mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
+
         if mode == 'weak':
             if diff_var is None:
                 grad = self.get(state, 'grad')
@@ -92,8 +97,8 @@ class LaplaceTerm(DiffusionTerm):
         parameter_2 : :math:`r`
     """
     name = 'dw_laplace'
-    arg_types = (('material', 'virtual', 'state'),
-                 ('material', 'parameter_1', 'parameter_2'))
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
     symbolic = {'expression': 'c * div( grad( u ) )',
                 'map' : {'u' : 'state', 'c' : 'material'}}
