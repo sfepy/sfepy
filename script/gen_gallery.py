@@ -158,6 +158,8 @@ _index = """\
 
 """
 
+_image = '.. image:: %s'
+
 _include = """\
 .. _%s:
 
@@ -168,7 +170,7 @@ _include = """\
 
 %s
 
-.. image:: %s
+%s
 
 :download:`source code <%s>`
 
@@ -233,11 +235,17 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
             docstring = get_default(import_file(ex_filename).__doc__,
                                     'missing description!')
 
+            if os.path.exists(fig_filename):
+                fig_include = _image % rst_fig_filename
+
+            else:
+                fig_include = ''
+
             # Example rst file.
             fd = open(full_rst_filename, 'w')
             fd.write(_include % (fig_base, ebase, '=' * len(ebase),
                                  docstring,
-                                 rst_fig_filename,
+                                 fig_include,
                                  rst_ex_filename, rst_ex_filename))
             fd.close()
 
