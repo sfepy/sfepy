@@ -205,6 +205,28 @@ class ShapeDim( CorrMiniApp ):
                                 components = clist)
         return corr_sol
 
+class CopyData(CorrMiniApp):
+
+    def __call__(self, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        var_name = self.variable
+        clist = ['data']
+        dn = self.data
+
+        if type(dn) is list:
+            data = problem
+            for ii in dn:
+                data = data.get(ii, 'None')
+        else:
+            data = problem.get(dn, 'None')
+
+        ndof, ndim = data.shape
+        state = {var_name: data.reshape((ndof * ndim,))}
+        corr_sol = CorrSolution(name = self.name,
+                                state = state,
+                                components = clist)
+        return corr_sol
+
 class CorrNN( CorrMiniApp ):
     """ __init__() kwargs:
         {
