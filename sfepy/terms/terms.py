@@ -1351,7 +1351,12 @@ class Term(Struct):
         else:
             out, status = rout, rstatus
 
-        return out, status
+        if mode == 'eval':
+            out1 = nm.sum(out, 0).squeeze()
+            return out1, status
+
+        else:
+            return out, status
 
     def evaluate(self, mode='eval', diff_var=None,
                  standalone=True, ret_status=False, **kwargs):
