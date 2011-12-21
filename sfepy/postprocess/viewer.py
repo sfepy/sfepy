@@ -747,7 +747,7 @@ class Viewer(Struct):
             for vm in vector_mode:
                 if not vm in ('arrows', 'norm', 'warp'):
                     raise ValueError('bad value of vector_mode parameter! (%s)'
-                                     % sm)
+                                     % vm)
 
         mlab.options.offscreen = self.offscreen
 
