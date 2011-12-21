@@ -16,6 +16,8 @@ if mayavi:
     Filter = mayavi.core.filter.Filter
     import dataset_manager
 
+from sfepy.base.base import basestr
+
 def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
     """Collect and print information on ranges of data in a dataset.
 
@@ -38,7 +40,7 @@ def get_data_ranges(obj, return_only=False, use_names=None, filter_names=None):
     ranges : dict
         The requested data ranges.
     """
-    if isinstance(obj, str):
+    if isinstance(obj, basestr):
         mlab.options.offscreen = True
         scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(1, 1))
         obj = mlab.pipeline.open(obj)

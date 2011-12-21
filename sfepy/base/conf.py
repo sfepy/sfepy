@@ -3,7 +3,7 @@ import numpy as nm
 
 from sfepy.base.base import (Struct, IndexedStruct, dict_to_struct,
                              output, copy, update_dict_recursively,
-                             import_file, assert_, get_default)
+                             import_file, assert_, get_default, basestr)
 from sfepy.base.parse_conf import create_bnf
 
 _required = ['filename_mesh', 'field_[0-9]+|fields',
@@ -42,7 +42,7 @@ def transform_variables( adict ):
                 elif kind == 'test':
                     c2.dual = conf[2]
                 elif kind == 'parameter':
-                    if isinstance(conf[2], str) or (conf[2] is None):
+                    if isinstance(conf[2], basestr) or (conf[2] is None):
                         c2.like = conf[2]
                     else:
                         c2.like = None
@@ -154,7 +154,7 @@ def transform_fields( adict ):
 def transform_materials(adict):
     d2 = {}
     for ii, (key, conf) in enumerate(adict.iteritems()):
-        if isinstance(conf, str):
+        if isinstance(conf, basestr):
             c2 = Struct(name = key, function = conf)
             d2['material_%s__%d' % (c2.name, ii)] = c2
 

@@ -24,6 +24,12 @@ if sys.version[:5] < '2.4.0':
         tmp.sort()
         return tmp
 
+if sys.version[0] < '3':
+    basestr = basestring
+
+else:
+    basestr = str
+
 def get_debug():
     """
     Utility function providing ``debug()`` function.
@@ -413,7 +419,7 @@ class Container( Struct ):
 
     def __setitem__(self, ii, obj):
         try:
-            if isinstance(ii, str):
+            if isinstance(ii, basestr):
                 if ii in self.names:
                     ii = self.names.index(ii)
                 else:
@@ -435,7 +441,7 @@ class Container( Struct ):
 
     def __getitem__(self, ii):
         try:
-            if isinstance(ii, str):
+            if isinstance(ii, basestr):
                 ii = self.names.index(ii)
             elif not isinstance( ii, int ):
                 raise ValueError('bad index type! (%s)' % type(ii))
@@ -523,7 +529,7 @@ class Container( Struct ):
                 return True
             else:
                 return False
-        elif isinstance( ii, str ):
+        elif isinstance(ii, basestr):
             try:
                 self.names.index( ii )
                 return True
@@ -578,7 +584,7 @@ class OneTypeList( list ):
     def __getitem__( self, ii ):
         if isinstance( ii, int ):
             return list.__getitem__( self, ii )
-        elif isinstance( ii, str ):
+        elif isinstance(ii, basestr):
             ir = self.find( ii, ret_indx = True )
             if ir:
                 return list.__getitem__( self, ir[0] )
@@ -765,7 +771,7 @@ class Output(Struct):
         return self.output_function
 
     def set_output_prefix(self, prefix):
-        assert_(isinstance(prefix, str))
+        assert_(isinstance(prefix, basestr))
         if len(prefix) > 0:
             prefix += ' '
         self._prefix = prefix

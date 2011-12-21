@@ -7,7 +7,8 @@ Helper functions for the equation mapping.
 import numpy as nm
 import scipy.sparse as sp
 
-from sfepy.base.base import output, assert_, get_default_attr, Container, Struct
+from sfepy.base.base import (output, assert_, get_default_attr,
+                             Container, Struct, basestr)
 from sfepy.base.compat import unique
 from sfepy.fem.utils import compute_nodal_normals
 from sfepy.fem.functions import Function
@@ -238,7 +239,7 @@ def is_active_bc(bc, ts=None, functions=None):
             active = False
 
     else:
-        if isinstance(bc.times, str):
+        if isinstance(bc.times, basestr):
             if functions is not None:
                 fun = functions[bc.times]
 

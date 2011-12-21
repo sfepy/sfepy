@@ -15,7 +15,7 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
-from sfepy.base.base import Struct
+from sfepy.base.base import Struct, basestr
 import fea
 from sfepy.fem.mesh import Mesh, make_inverse_connectivity
 from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
@@ -213,7 +213,7 @@ class Field( Struct ):
         -----
         Assumes one cell type for the whole region!
         """
-        if isinstance(shape, str):
+        if isinstance(shape, basestr):
             try:
                 shape = {'scalar' : (1,),
                          'vector' : (region.domain.shape.dim,)}[shape]

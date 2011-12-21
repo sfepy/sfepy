@@ -26,8 +26,8 @@ except:
 
 from dataset_manager import DatasetManager
 
-from sfepy.base.base import insert_as_static_method
-from sfepy.base.base import output, get_arguments, get_default, Struct
+from sfepy.base.base import (insert_as_static_method, output,
+                             get_arguments, get_default, Struct, basestr)
 from sfepy.linalg import cycle
 from sfepy.solvers.ts import get_print_info
 from sfepy.postprocess.utils import mlab
@@ -714,7 +714,7 @@ class Viewer(Struct):
         if rel_text_width is None:
             rel_text_width = 0.02
 
-        if isinstance(scalar_mode, str):
+        if isinstance(scalar_mode, basestr):
             if scalar_mode == 'both':
                 scalar_mode = ('cut_plane', 'iso_surface')
             elif scalar_mode in ('cut_plane', 'iso_surface'):
@@ -728,7 +728,7 @@ class Viewer(Struct):
                     raise ValueError('bad value of scalar_mode parameter! (%s)'
                                      % sm)
 
-        if isinstance(vector_mode, str):
+        if isinstance(vector_mode, basestr):
             if vector_mode == 'arrows_norm':
                 vector_mode = ('arrows', 'norm')
             elif vector_mode == 'warp_norm':

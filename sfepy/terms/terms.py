@@ -3,8 +3,8 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import as_float_or_complex, get_default, assert_
-from sfepy.base.base import Container, Struct
+from sfepy.base.base import (as_float_or_complex, get_default, assert_,
+                             Container, Struct, basestr)
 from sfepy.base.compat import in1d
 
 # Used for imports in term files.
@@ -529,7 +529,7 @@ class Term(Struct):
         
         self.args = []
         for arg_name in self.arg_names:
-            if isinstance(arg_name, str):
+            if isinstance(arg_name, basestr):
                 self.args.append(self._kwargs[arg_name])
 
             else:
@@ -600,7 +600,7 @@ class Term(Struct):
 
         kwargs = {}
         for arg_name in self.arg_names:
-            if isinstance(arg_name, str):
+            if isinstance(arg_name, basestr):
                 if arg_name in variables.names:
                     kwargs[arg_name] = variables[arg_name]
 
@@ -942,7 +942,7 @@ class Term(Struct):
             ii = ats.index(at)
             arg_name = self.arg_names[ii]
             ## print at, ii, arg_name
-            if isinstance(arg_name, str):
+            if isinstance(arg_name, basestr):
                 if arg_name in kwargs:
                     args.append(kwargs[arg_name])
 
@@ -1036,7 +1036,7 @@ class Term(Struct):
         self.has_geometry = True
 
         self.geometry_types = {}
-        if isinstance(self.integration, str):
+        if isinstance(self.integration, basestr):
             for var in self.get_variables():
                 self.geometry_types[var.name] = self.integration
 

@@ -3,7 +3,7 @@ import os
 import os.path as op
 import fnmatch
 import shutil
-from base import output, Struct
+from base import output, Struct, basestr
 try:
     import tables as pt
 except:
@@ -242,11 +242,11 @@ def read_sparse_matrix_hdf5(filename, output_format=None):
     data = fd.root.data
 
     format = info.format.read()
-    if not isinstance(format, str):
+    if not isinstance(format, basestr):
         format = format[0]
 
     dtype = info.dtype.read()
-    if not isinstance(dtype, str):
+    if not isinstance(dtype, basestr):
         dtype = dtype[0]
 
     if output_format is None:

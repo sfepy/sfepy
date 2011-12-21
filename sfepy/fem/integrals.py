@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import output, OneTypeList, Container, Struct
+from sfepy.base.base import output, OneTypeList, Container, Struct, basestr
 from quadratures import QuadraturePoints, quadrature_tables
 
 import re
@@ -49,7 +49,7 @@ class Integrals(Container):
         if name == 'a':
             raise NotImplementedError
 
-        elif isinstance(name, str) and (name[0] == 'i'):
+        elif isinstance(name, basestr) and (name[0] == 'i'):
             try:
                 obj = self[name]
 

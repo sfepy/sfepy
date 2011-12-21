@@ -14,7 +14,7 @@ except:
 
 from dataset_manager import DatasetManager
 
-from sfepy.base.base import get_default, Struct
+from sfepy.base.base import Struct, basestr
 from sfepy.postprocess.utils import mlab
 from sfepy.fem import Mesh
 from sfepy.fem.meshio import MeshIO, vtk_cell_types, supported_formats
@@ -24,7 +24,7 @@ def create_file_source(filename, watch=False, offscreen=True):
     given file format."""
     kwargs = {'watch' : watch, 'offscreen' : offscreen}
 
-    if isinstance(filename, str):
+    if isinstance(filename, basestr):
         fmt = os.path.splitext(filename)[1]
         is_sequence = False
 

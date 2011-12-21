@@ -1,7 +1,7 @@
 from copy import copy
 
 from sfepy.base.base import output, get_default, OneTypeList, Struct,\
-     get_default_attr
+     get_default_attr, basestr
 from sfepy.fem import Equations, Variables, Region
 from sfepy.fem.fields import setup_dof_conns, setup_extra_data
 
@@ -60,7 +60,7 @@ class BasicEvaluator( Evaluator ):
         return vec_r
 
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
-        if isinstance( vec, str ) and vec == 'linear':
+        if isinstance(vec, basestr) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
         if not is_full:
@@ -109,7 +109,7 @@ class LCBCEvaluator( BasicEvaluator ):
     ##
     # 04.10.2007, c
     def eval_tangent_matrix( self, vec, mtx = None, is_full = False ):
-        if isinstance( vec, str ) and vec == 'linear':
+        if isinstance(vec, basestr) and vec == 'linear':
             return get_default(mtx, self.problem.mtx_a)
 
         if not is_full:

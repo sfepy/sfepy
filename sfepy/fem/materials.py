@@ -3,8 +3,8 @@ from copy import copy
 
 import numpy as nm
 
-from sfepy.base.base import Struct, Container, OneTypeList
-from sfepy.base.base import output, get_default_attr, get_default
+from sfepy.base.base import (Struct, Container, OneTypeList,
+                             output, get_default_attr, get_default, basestr)
 from functions import ConstantFunction
 
 
@@ -85,7 +85,7 @@ class Material( Struct ):
         function = get_default_attr(conf, 'function', None)
         values = get_default_attr(conf, 'values', None)
 
-        if isinstance(function, str):
+        if isinstance(function, basestr):
             function = functions[function]
 
         obj =  Material(conf.name, kind, function, values, flags)
@@ -350,7 +350,7 @@ class Material( Struct ):
         attributes named as the dict keys is returned."""
 ##         print 'getting', self.name, name
 
-        if isinstance( name, str ):
+        if isinstance(name, basestr):
             return self._get_data( key, ig, name )
         else:
             out = Struct()

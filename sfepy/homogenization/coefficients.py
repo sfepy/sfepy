@@ -1,6 +1,6 @@
 import numpy as nm
 
-from sfepy.base.base import ordered_iteritems, Struct
+from sfepy.base.base import ordered_iteritems, Struct, basestr
 from sfepy.base.ioutils import read_dict_hdf5, write_dict_hdf5
 from sfepy.homogenization.utils import iter_sym
 
@@ -71,7 +71,7 @@ class Coefficients(Struct):
             if isinstance(val, dict):
                 self._save_dict_latex(val, fd, names)
 
-            elif isinstance(val, str):
+            elif isinstance(val, basestr):
                 fd.write(self._escape_latex(val) + '\n')
 
             elif val.ndim == 0:
@@ -107,7 +107,7 @@ class Coefficients(Struct):
             if isinstance( val, dict ):
                 self._save_dict( val, fd, names, format )
                 fd.write( '\n' )
-            elif isinstance( val, str ):
+            elif isinstance(val, basestr):
                 fd.write( val + '\n' )
             elif isinstance( val, float ):
                 fd.write( '%e\n' % val )

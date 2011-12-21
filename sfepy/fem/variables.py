@@ -2,9 +2,9 @@ import time
 
 import numpy as nm
 
-from sfepy.base.base import real_types, complex_types
-from sfepy.base.base import assert_, get_default, get_default_attr
-from sfepy.base.base import output, OneTypeList, Container, Struct
+from sfepy.base.base import (real_types, complex_types,
+                             assert_, get_default, get_default_attr,
+                             output, OneTypeList, Container, Struct, basestr)
 import sfepy.linalg as la
 from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral
@@ -540,7 +540,7 @@ class Variables( Container ):
     def non_state_data_from_state(self, var_names, state, var_names_state):
         self.check_vector_size(state)
 
-        if isinstance( var_names, str ):
+        if isinstance(var_names, basestr):
             var_names = [var_names]
             var_names_state = [var_names_state]
 
