@@ -189,7 +189,7 @@ class Test( TestCommon ):
                 term.set_current_group(0)
                 env[key] = term.get_args( [val] )[0]
 
-            if val[:8] == 'material':
+            if 'material' in val:
                 # Take the first value - constant in all QPs.
                 aux = env[key][0,0]
                 if nm.prod( aux.shape ) == 1:

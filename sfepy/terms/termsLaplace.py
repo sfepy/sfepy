@@ -101,7 +101,7 @@ class LaplaceTerm(DiffusionTerm):
                  ('opt_material', 'parameter_1', 'parameter_2'))
     modes = ('weak', 'eval')
     symbolic = {'expression': 'c * div( grad( u ) )',
-                'map' : {'u' : 'state', 'c' : 'material'}}
+                'map' : {'u' : 'state', 'c' : 'opt_material'}}
 
     def set_arg_types(self):
         if self.mode == 'weak':
