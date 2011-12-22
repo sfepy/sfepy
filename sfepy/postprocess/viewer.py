@@ -13,7 +13,7 @@ try:
     from enthought.mayavi.tools.mlab_scene_model import MlabSceneModel
     from enthought.mayavi.core.ui.mayavi_scene import MayaviScene
 
-except:
+except ImportError:
     from traits.api \
          import HasTraits, Instance, Button, Int, Bool, on_trait_change
     from traitsui.api \
