@@ -47,30 +47,56 @@ def split_complex_args(args):
 
     Returns
     -------
-    rargs, iargs : lists
-        The two argument lists corresponding to `args` such that each
-        argument of numpy.complex128 data type is split to its real part
-        which is put to the first list and imaginary part going into the
-        second list.
-    same_args : bool
-        True if the lists are the same, i.e. no complex arguments were
-        in `args`.
+    newargs : dictionary
+        Dictionary with lists corresponding to `args` such that each
+        argument of numpy.complex128 data type is split to its real and
+        imaginary part. The output depends on the number of complex
+        arguments in 'args':
+
+          0: list (key 'r') identical to input one
+          1: two lists with keys 'r', 'i' corresponding to real
+             and imaginary parts
+          2: output dictionary contains four lists:
+             'r' - real(arg1), real(arg2)
+             'i' - imag(arg1), imag(arg2)
+             'ri' - real(arg1), imag(arg2)
+             'ir' - imag(arg1), real(arg2)
     """
-    rargs = []
-    iargs = []
-    same_args = True
+    newargs = {}
+    cai = []
 
-    for arg in args:
+    for ii, arg in enumerate(args):
         if isinstance(arg, nm.ndarray) and (arg.dtype == nm.complex128):
-            rargs.append(arg.real.copy())
-            iargs.append(arg.imag.copy())
-            same_args = False
+            cai.append(ii)
 
-        else:
-            rargs.append(arg)
-            iargs.append(arg)
+    if len(cai) > 0:
+        newargs['r'] = list(args[:])
+        newargs['i'] = list(args[:])
 
-    return rargs, iargs, same_args
+        arg1 = cai[0]
+        newargs['r'][arg1] = args[arg1].real.copy()
+        newargs['i'][arg1] = args[arg1].imag.copy()
+
+        if len(cai) == 2:
+            arg2 = cai[1]
+            newargs['r'][arg2] = args[arg2].real.copy()
+            newargs['i'][arg2] = args[arg2].imag.copy()
+
+            newargs['ri'] = list(args[:])
+            newargs['ir'] = list(args[:])
+            newargs['ri'][arg1] = newargs['r'][arg1]
+            newargs['ri'][arg2] = newargs['i'][arg2]
+            newargs['ir'][arg1] = newargs['i'][arg1]
+            newargs['ir'][arg2] = newargs['r'][arg2]
+
+        elif len(cai) > 2:
+            raise NotImplementedError('more than 2 complex arguments! (%d)'
+                                      % len(cai))
+
+    else:
+        newargs['r'] = args[:]
+
+    return newargs
 
 def vector_chunk_generator( total_size, chunk_size, shape_in,
                             zero = False, set_shape = True, dtype = nm.float64 ):
@@ -1336,17 +1362,27 @@ class Term(Struct):
                      diff_var=None, **kwargs):
         rout = nm.empty(shape, dtype=nm.float64)
 
-        rfargs, ifargs, same_args = split_complex_args(fargs)
+        fargsd = split_complex_args(fargs)
 
         # Assuming linear forms. Then the matrix is the
         # same both for real and imaginary part.
-        rstatus = self.function(rout, *rfargs)
-        if (diff_var is None) and not same_args:
+        rstatus = self.function(rout, *fargsd['r'])
+        if (diff_var is None) and len(fargsd) >= 2:
             iout = nm.empty(shape, dtype=nm.float64)
-            istatus = self.function(iout, *ifargs)
+            istatus = self.function(iout, *fargsd['i'])
 
-            out = rout + 1j * iout
-            status = rstatus or istatus
+            if mode == 'eval' and len(fargsd) >= 4:
+                irout = nm.empty(shape, dtype=nm.float64)
+                irstatus = self.function(irout, *fargsd['ir'])
+                riout = nm.empty(shape, dtype=nm.float64)
+                ristatus = self.function(riout, *fargsd['ri'])
+
+                out = (rout - iout) + (riout + irout) * 1j
+                status = rstatus or istatus or ristatus or irstatus
+
+            else:
+                out = rout + 1j * iout
+                status = rstatus or istatus
 
         else:
             out, status = rout, rstatus
@@ -1522,6 +1558,9 @@ class Term(Struct):
             else:
                 assert_(asm_obj.dtype == nm.complex128)
                 assemble = asm.assemble_vector_complex
+                for ii in range(len(val)):
+                    if not(val[ii].dtype == nm.complex128):
+                        val[ii] = nm.complex128(val[ii])
 
             for ii, (ig, _iels) in enumerate(iels):
                 vec_in_els = val[ii]
