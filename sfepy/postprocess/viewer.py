@@ -337,7 +337,8 @@ class Viewer(Struct):
 
         # Hack to prevent mayavi switching to point scalar on source
         # change.
-        source.point_scalars_name = ''
+        if len(source._point_scalars_list):
+            source.point_scalars_name = ''
 
         bbox = file_source.get_bounding_box()
         dx = 1.1 * (bbox[1,:] - bbox[0,:])
