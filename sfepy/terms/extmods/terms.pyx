@@ -214,9 +214,7 @@ cdef extern from 'terms.h':
          'd_diffusion'(FMField *out, FMField *gradP1, FMField *gradP2,
                        FMField *mtxD, VolumeGeometry *vg)
     cdef int32 _dw_permeability_r \
-         'dw_permeability_r'(FMField *out, FMField *mtxD, VolumeGeometry *vg,
-                             int32 *conn, int32 nEl, int32 nEP,
-                             int32 *elList, int32 elList_nRow)
+         'dw_permeability_r'(FMField *out, FMField *mtxD, VolumeGeometry *vg)
     cdef int32 _dw_diffusion_coupling \
          'dw_diffusion_coupling'(FMField *out, FMField *state, int32 offset,
                                  FMField *mtxD, FMField *bf,
@@ -1290,20 +1288,14 @@ def d_diffusion(np.ndarray out not None,
 
 def dw_permeability_r(np.ndarray out not None,
                       np.ndarray mtx_d not None,
-                      CVolumeMapping cmap not None,
-                      np.ndarray conn not None,
-                      np.ndarray el_list not None):
+                      CVolumeMapping cmap not None):
     cdef int32 ret
     cdef FMField _out[1], _mtx_d[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _dw_permeability_r(_out, _mtx_d, cmap.geo,
-                             _conn, n_el, n_ep, _el_list, n_el2)
+    ret = _dw_permeability_r(_out, _mtx_d, cmap.geo)
     return ret
 
 def dw_diffusion_coupling(np.ndarray out not None,
