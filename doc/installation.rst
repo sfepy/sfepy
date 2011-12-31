@@ -129,7 +129,10 @@ Prerequisites
 
 First, you have to install the dependencies packages::
 
-    sudo aptitude install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython
+    sudo aptitude install python-scipy python-matplotlib python-tables python-pyparsing libsuitesparse-dev python-setuptools mayavi2 python-dev ipython python-sympy cython python-sparse
+
+The same packages work also in Kubuntu 11.10. If `aptitude` is not
+installed, install it, or try `apt-get` instead.
 
 Older Versions of Ubuntu
 ''''''''''''''''''''''''
