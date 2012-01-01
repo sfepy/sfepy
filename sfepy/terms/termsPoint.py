@@ -2,7 +2,23 @@ import numpy as nm
 
 from sfepy.terms.terms import Term
 
-class LinearPointSpringTerm(Term):
+class PointTermBase(Term):
+    """
+    Common methods of point terms.
+    """
+
+    def get_integral_info(self):
+        """
+        Get information on the term integral.
+
+        Returns
+        -------
+        kind : 'v' or 's'
+            The integral kind.
+        """
+        return 'v'
+
+class LinearPointSpringTerm(PointTermBase):
     r"""
     :Description:
     Linear springs constraining movement of FE nodes in a region; to use as a
@@ -21,17 +37,6 @@ class LinearPointSpringTerm(Term):
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
     integration = 'point'
-
-    def get_integral_info(self):
-        """
-        Get information on the term integral.
-
-        Returns
-        -------
-        kind : 'v' or 's'
-            The integral kind.
-        """
-        return 'v'
 
     @staticmethod
     def function(out, stiffness, vec, diff_var):
