@@ -102,8 +102,8 @@ def main():
     eok += report(out, '...', -2, 5, '1.606408e-14', eps=1e-13)
 
     out, err = check_output('python ./simple.py examples/linear_elasticity/its2D_3.py')
-    eok += report(out, '...', -33, 5, '2.366052e-12', eps=1e-11)
-    eok += report(out, '...', -3, 4, '15.646', eps=1e-5)
+    eok += report(out, '...', -23, 5, '3.964886e-12', eps=1e-11)
+    eok += report(out, '...', -3, 4, '2.58660e+01', eps=1e-5)
 
     out, err = check_output('python ./simple.py examples/linear_elasticity/linear_elastic_probes.py')
     eok += report(out, '...', -11, 5, '4.638192e-18', eps=1e-15)
