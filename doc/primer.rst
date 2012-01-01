@@ -513,8 +513,8 @@ The output::
     ==================================================================
     Given load = 2000.00 N
 
-    Analytical solution approximation
-    =================================
+    Analytical solution
+    ===================
     Horizontal tensile stress = 8.48826e+00 MPa/mm
     Vertical compressive stress = 2.54648e+01 MPa/mm
 
@@ -531,8 +531,8 @@ solution::
     ==================================================================
     Given load = 2000.00 N
 
-    Analytical solution approximation
-    =================================
+    Analytical solution
+    ===================
     Horizontal tensile stress = 8.48826e+00 MPa/mm
     Vertical compressive stress = 2.54648e+01 MPa/mm
 
