@@ -193,21 +193,33 @@ code. For example, in the definition of the boundary conditions:
     ebcs = {
         'XSym' : ('Bottom', {'u.1' : 0.0}),
         'YSym' : ('Left', {'u.0' : 0.0}),
-        'Load' : ('Top', {'u.0' : 0.0, 'u.1' : -1.0}),
     }
 
 Now the power of the regions entity becomes apparent. To ensure symmetry
 about the x-axis, the vertical or y-displacement of the nodes in the
 Bottom region are prevented or set to zero. Similarly, for symmetry
 about the y-axis, any horizontal or displacement in the x-direction of
-the nodes in the Left region or y-axis is prevented. Finally, to
-indicate the response of the load, the topmost node (number 2) is given
-a displacement of 1 mm downwards in the vertical or y-direction and
-displacement of this node in the x-direction is restricted.
+the nodes in the Left region or y-axis is prevented.
+
+The load is specified in terms of the 'Load' material as
+follows::
+
+    materials = {
+        'Asphalt' : ({
+            'lam' : youngpoisson_to_lame(young, poisson)[0],
+            'mu' : youngpoisson_to_lame(young, poisson)[1],
+        },),
+        'Load' : ({'.val' : [0.0, -1000.0]},),
+    }
+
+Note the dot in '.val' - this denotes a special material value, i.e.,
+a value that is not to be evaluated in quadrature points. The load is
+then applied in equations using the `'dw_point_load.0.Top(Load.val, v)'`
+term in the topmost node (region Top).
 
 We provided the material constants in terms of Young's modulus and
 Poisson's ratio, but the linear elastic isotropic equation used requires
-as input Lamé’s parameters. The youngpoisson_to_lame function is thus
+as input LamÃ©'s parameters. The youngpoisson_to_lame function is thus
 used for conversion. Note that to use this function it was necessary to
 import the function into the code, which was done up front:
 
@@ -286,7 +298,7 @@ Run SfePy to solve the updated problem and view the solution (assuring
 the correct paths)::
 
     $ ./simple.py its2D_2.py
-    $ ./postproc.py its2D.vtk
+    $ ./postproc.py its2D.vtk -b
 
 In addition to the node displacements, the vtk output shown below now
 also includes the stresses and strains averaged in the elements:
@@ -320,27 +332,27 @@ provided in the *pb* and *state* variables, respectively. The solution,
 or in this case, the global displacement vector (u), contains the x- and
 y-displacements at the nodes in the 2D model::
 
-    In [2]: u=state()
+    In [2]: u = state()
 
     In [3]: u
     Out[3]:
-    array([ 0.        ,  0.        ,  0.22608933, ..., -0.12051821,
-            0.05335311, -0.0677574 ])
+    array([ 0.        ,  0.        ,  0.37376671, ..., -0.19923848,
+            0.08820237, -0.11201528])
 
     In [4]: u.shape
     Out[4]: (110,)
 
-    In [5]: u.shape=(55,2)
+    In [5]: u.shape = (55, 2)
 
     In [6]: u
     Out[6]:
     array([[ 0.        ,  0.        ],
-           [ 0.22608933,  0.        ],
-           [ 0.        , -1.        ],
+           [ 0.37376671,  0.        ],
+           [ 0.        , -1.65318152],
            ...,
-           [ 0.05272529, -0.13954334],
-           [ 0.16780587, -0.12051821],
-           [ 0.05335311, -0.0677574 ]])
+           [ 0.08716448, -0.23069047],
+           [ 0.27741356, -0.19923848],
+           [ 0.08820237, -0.11201528]])
 
 **Note:** We have used the fact, that the state vector contains only one
 variable (*u*). In general, the following can be used::
@@ -349,77 +361,85 @@ variable (*u*). In general, the following can be used::
 
     In [8]: u
     Out[8]:
-    array([ 0.        ,  0.        ,  0.22608933, ..., -0.12051821,
-            0.05335311, -0.0677574 ])
+    array([[ 0.        ,  0.        ],
+           [ 0.37376671,  0.        ],
+           [ 0.        , -1.65318152],
+           ...,
+           [ 0.08716448, -0.23069047],
+           [ 0.27741356, -0.19923848],
+           [ 0.08820237, -0.11201528]])
+
+Both `state()` and `state.get_parts()` return a view of the DOF vector,
+that is why in Out[8] the vector is reshaped according to Out[6].
 
 From the above it can be seen that *u* holds the displacements at the 55
 nodes in the model and that the displacement at node 2 (on which the
-load is applied) is indeed (0,-1) as prescribed. The global stiffness
+load is applied) is (0, -1.65318152). The global stiffness
 matrix is saved in pb as a `sparse
 <http://docs.scipy.org/doc/scipy/reference/sparse.html>`_ matrix::
 
-    In [9]: K=pb.mtx_a
+    In [9]: K = pb.mtx_a
 
     In [10]: K
     Out[10]:
-    <93x93 sparse matrix of type '<type 'numpy.float64'>'
-            with 1063 stored elements in Compressed Sparse Row format>
+    <94x94 sparse matrix of type '<type 'numpy.float64'>'
+            with 1070 stored elements in Compressed Sparse Row format>
 
     In [11]: print K
-      (0, 0)	2443.95959851
-      (0, 6)	-2110.99917491
-      (0, 13)	-332.960423597
-      (0, 14)	1428.57142857
-      (1, 1)	4048.78343529
-      (1, 2)	-1354.87004384
-      (1, 51)	-609.367453538
-      (1, 52)	-1869.0018791
-      (1, 91)	-357.41672785
-      (1, 92)	1510.24654193
-      (2, 1)	-1354.87004384
-      (2, 2)	4121.03202907
-      (2, 3)	-1696.54911732
-      (2, 47)	76.2400806561
-      (2, 48)	-1669.59247304
-      (2, 51)	-1145.85294856
-      (2, 52)	2062.13955556
-      (3, 2)	-1696.54911732
-      (3, 3)	4410.17902905
-      (3, 4)	-1872.87344838
-      (3, 41)	-130.515009576
-      (3, 42)	-1737.33263802
-      (3, 47)	-710.241453776
-      (3, 48)	1880.20135513
-      (4, 3)	-1872.87344838
-      :	:
-      (90, 80)	-1610.0550578
-      (90, 85)	-199.343680224
-      (90, 86)	-2330.41406097
-      (90, 89)	-575.80373408
-      (90, 90)	7853.23899229
-      (91, 1)	-357.41672785
-      (91, 7)	1735.59411191
-      (91, 49)	-464.976034459
-      (91, 50)	-1761.31189004
-      (91, 51)	-3300.45367361
-      (91, 52)	1574.59387937
-      (91, 87)	-250.325600254
-      (91, 88)	1334.11823335
-      (91, 91)	9219.18643706
-      (91, 92)	-2607.52659081
-      (92, 1)	1510.24654193
-      (92, 7)	-657.361661955
-      (92, 49)	-1761.31189004
-      (92, 50)	54.1134516246
-      (92, 51)	1574.59387937
-      (92, 52)	-315.793227627
-      (92, 87)	1334.11823335
-      (92, 88)	-4348.13351285
-      (92, 91)	-2607.52659081
-      (92, 92)	9821.16012014
+      (0, 0)        2443.95959851
+      (0, 7)        -2110.99917491
+      (0, 14)       -332.960423597
+      (0, 15)       1428.57142857
+      (1, 1)        2443.95959852
+      (1, 13)       -2110.99917492
+      (1, 32)       1428.57142857
+      (1, 33)       -332.960423596
+      (2, 2)        4048.78343529
+      (2, 3)        -1354.87004384
+      (2, 52)       -609.367453538
+      (2, 53)       -1869.0018791
+      (2, 92)       -357.41672785
+      (2, 93)       1510.24654193
+      (3, 2)        -1354.87004384
+      (3, 3)        4121.03202907
+      (3, 4)        -1696.54911732
+      (3, 48)       76.2400806561
+      (3, 49)       -1669.59247304
+      (3, 52)       -1145.85294856
+      (3, 53)       2062.13955556
+      (4, 3)        -1696.54911732
+      (4, 4)        4410.17902905
+      (4, 5)        -1872.87344838
+      (4, 42)       -130.515009576
+      :     :
+      (91, 81)      -1610.0550578
+      (91, 86)      -199.343680224
+      (91, 87)      -2330.41406097
+      (91, 90)      -575.80373408
+      (91, 91)      7853.23899229
+      (92, 2)       -357.41672785
+      (92, 8)       1735.59411191
+      (92, 50)      -464.976034459
+      (92, 51)      -1761.31189004
+      (92, 52)      -3300.45367361
+      (92, 53)      1574.59387937
+      (92, 88)      -250.325600254
+      (92, 89)      1334.11823335
+      (92, 92)      9219.18643706
+      (92, 93)      -2607.52659081
+      (93, 2)       1510.24654193
+      (93, 8)       -657.361661955
+      (93, 50)      -1761.31189004
+      (93, 51)      54.1134516246
+      (93, 52)      1574.59387937
+      (93, 53)      -315.793227627
+      (93, 88)      1334.11823335
+      (93, 89)      -4348.13351285
+      (93, 92)      -2607.52659081
+      (93, 93)      9821.16012014
 
     In [12]: K.shape
-    Out[12]: (93, 93)
+    Out[12]: (94, 94)
 
 One would expect the shape of the global stiffness matrix (K) to be
 (110,110) i.e. to have the same number of rows and columns as *u*. This
@@ -428,23 +448,18 @@ boundary conditions set at the nodes on symmetry axes. To restore the
 matrix, temporarily remove the imposed boundary conditions::
 
     In [13]: pb.remove_bcs()
-    sfepy: updating variables...
-    sfepy: ...done
-    sfepy: updating materials...
-    sfepy:     Asphalt
-    sfepy: ...done in 0.00 s
 
 Now we can calculate the force vector (f)::
 
-    In [14]: f=pb.evaluator.eval_residual(u)
+    In [14]: f = pb.evaluator.eval_residual(u)
 
     In [15]: f.shape
     Out[15]: (110,)
 
     In [16]: f
     Out[16]:
-    array([ -2.86489070e+01,   8.63500981e+01,  -1.33101431e-13, ...,
-             1.35003120e-13,  -5.32907052e-14,   4.26325641e-14])
+    array([ -4.73618436e+01,   1.42752386e+02,   1.56921124e-13, ...,
+            -2.06057393e-13,   2.13162821e-14,  -2.84217094e-14])
 
 Remember to restore the original boundary conditions previously removed
 in step [13]::
@@ -470,19 +485,14 @@ forces as shown below.
 
 The forces in the x- and y-directions at node 2 are::
 
-    In [22]: f.shape = (55,2)
+    In [22]: f.shape = (55, 2)
 
     In [23]: f[2]
-    Out[23]: array([ 375.26022639, -604.89425239])
+    Out[23]: array([  6.20373272e+02,  -1.13686838e-13])
 
-Great, we have the vertical load or force apparent at node 2
-i.e. 604.894 Newton. Since we modelled the problem using symmetry, the
-actual load applied to achieve the nodal displacement of 1 mm is 2 x
-604.894 = 1209.7885 N. Applying the indirect tensile strength stress
-equation, the horizontal tensile stress at the centre of the specimen
-per unit thickness is 5.1345 MPa/mm and the vertical compressive stress
-per unit thickness is 15.4035 MPa/mm. The per unit thickness results are
-in terms of the plane strain conditions assumed for the 2D model.
+Great, we have an almost zero residual vertical load or force apparent
+at node 2 i.e. -1.13686838e-13 Newton. Let us now check the stress at
+node 0, the centre of the specimen.
 
 Generating output at element nodes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -501,17 +511,17 @@ achieve this.
 The output::
 
     ==================================================================
-    Load to give 1 mm displacement = 1209.789 Newton
+    Given load = 2000.00 N
 
     Analytical solution approximation
     =================================
-    Horizontal tensile stress = 5.135 MPa/mm
-    Vertical compressive stress = 15.404 MPa/mm
+    Horizontal tensile stress = 8.48826e+00 MPa/mm
+    Vertical compressive stress = 2.54648e+01 MPa/mm
 
     FEM solution
     ============
-    Horizontal tensile stress = 4.58 MPa/mm
-    Vertical compressive stress = 15.646 MPa/mm
+    Horizontal tensile stress = 7.57220e+00 MPa/mm
+    Vertical compressive stress = 2.58660e+01 MPa/mm
     ==================================================================
 
 Not bad for such a coarse mesh! Re-running the problem using a
@@ -519,28 +529,57 @@ Not bad for such a coarse mesh! Re-running the problem using a
 solution::
 
     ==================================================================
-    Load to give 1 mm displacement = 740.779 Newton
+    Given load = 2000.00 N
 
     Analytical solution approximation
     =================================
-    Horizontal tensile stress = 3.144 MPa/mm
-    Vertical compressive stress = 9.432 MPa/mm
+    Horizontal tensile stress = 8.48826e+00 MPa/mm
+    Vertical compressive stress = 2.54648e+01 MPa/mm
 
     FEM solution
     ============
-    Horizontal tensile stress = 3.148 MPa/mm
-    Vertical compressive stress = 9.419 MPa/mm
-    ==================================================================
+    Horizontal tensile stress = 8.50042e+00 MPa/mm
+    Vertical compressive stress = 2.54300e+01 MPa/mm
 
-The above analytical solution approximation is computed using the
-relations :eq:`eq_tensile_stress`, :eq:`eq_compressive_stress` with
-the point load :math:`P` approximated by finite element residual in the top
-node. That is why its value depends on the mesh size. To see this
-dependence, try to play with the uniform mesh refinement level in the
-:ref:`primer_example_file` file, namely lines 25, 26::
+To see how the FEM solution approaches the analytical one, try to play
+with the uniform mesh refinement level in the :ref:`primer_example_file`
+file, namely lines 25, 26::
 
     refinement_level = 0
     filename_mesh = refine_mesh(filename_mesh, refinement_level)
+
+The above computation could also be done in *isfepy*::
+
+    In [23]: from sfepy.fem.geometry_element import geometry_data
+
+    In [24]: gdata = geometry_data['2_3']
+    In [25]: nc = len(gdata.coors)
+    In [26]: ivn = Integral('ivn', order=-1,
+       ....:                coors=gdata.coors, weights=[gdata.volume / nc] * nc)
+
+    In [27]: pb, state = pde_solve('examples/linear_elasticity/its2D_2.py')
+
+    In [28]: stress = pb.evaluate('dq_cauchy_stress.ivn.Omega(Asphalt.D,u)',
+       ....:                      mode='qp', integrals=Integrals([ivn]))
+    In [29]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
+    In [30]: svar = FieldVariable('sigma', 'parameter', sfield, 3,
+       ....:                      primary_var_name='(set-to-None)')
+    In [31]: svar.data_from_qp(stress, ivn)
+
+    In [32]: print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
+    Horizontal tensile stress = 7.57220e+00 MPa/mm
+    In [33]: print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
+    Vertical compressive stress = 2.58660e+01 MPa/mm
+
+    In [34]: mat = pb.get_materials()['Load']
+    In [35]: P = 2.0 * mat.get_data('special', None, 'val')[1]
+    In [36]: P
+    Out[36]: -2000.0
+
+    In [37]: print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
+    Horizontal tensile stress = 8.48826e+00 MPa/mm
+    In [38]: print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
+    Vertical compressive stress = 2.54648e+01 MPa/mm
 
 To wrap this tutorial up let's explore *SfePy*'s probing functions.
 
