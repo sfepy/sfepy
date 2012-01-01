@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.base.base import assert_
 from sfepy.terms.terms import Term
 
 class PointTermBase(Term):
@@ -58,3 +59,39 @@ class LinearPointSpringTerm(PointTermBase):
         stiffness = mat['stiffness']
 
         return stiffness, vec, diff_var
+
+class ConcentratedPointLoadTerm(PointTermBase):
+    r"""
+    :Description:
+    Concentrated point load term.
+
+    The load value must be given in form of a special material
+    parameter (name prefixed with '.'), e.g. (in 2D)::
+
+        'load' : ({'.val' : [0.0, 1.0]},)
+
+    :Definition:
+    .. math::
+        \ul{f}^i = \ul{\bar f}^i \quad \forall \mbox{ FE node } i \mbox{ in
+        a region }
+
+    :Arguments:
+        material : :math:`\ul{\bar f}^i`,
+        virtual  : :math:`\ul{v}`,
+    """
+    name = 'dw_point_load'
+    arg_types = ('material', 'virtual')
+    integration = 'point'
+
+    @staticmethod
+    def function(out, mat):
+        out[:, 0, :, 0] = mat
+
+        return 0
+
+    def check_shapes(self, mat, virtual):
+        assert_(len(mat) == virtual.dim)
+
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return nm.asarray(mat),
