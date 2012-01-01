@@ -46,6 +46,7 @@ materials = {
         'lam' : youngpoisson_to_lame(young, poisson)[0],
         'mu' : youngpoisson_to_lame(young, poisson)[1],
     },),
+    'Load' : ({'.val' : [0.0, -1000.0]},),
 }
 
 fields = {
@@ -54,7 +55,8 @@ fields = {
 
 equations = {
    'balance_of_forces' :
-   """dw_lin_elastic_iso.2.Omega(Asphalt.lam, Asphalt.mu, v, u ) = 0""",
+   """dw_lin_elastic_iso.2.Omega(Asphalt.lam, Asphalt.mu, v, u )
+      = dw_point_load.0.Top(Load.val, v)""",
 }
 
 variables = {
@@ -65,7 +67,6 @@ variables = {
 ebcs = {
     'XSym' : ('Bottom', {'u.1' : 0.0}),
     'YSym' : ('Left', {'u.0' : 0.0}),
-    'Load' : ('Top', {'u.0' : 0.0, 'u.1' : -1.0}),
 }
 
 solvers = {
@@ -76,4 +77,3 @@ solvers = {
         'problem' : 'nonlinear'
     }),
 }
-

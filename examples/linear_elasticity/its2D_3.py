@@ -31,33 +31,29 @@ def nodal_stress(out, pb, state, extend=False):
     Calculate stresses at nodal points.
     '''
 
-    # Calc point load
-    u = state.vec
-    pb.remove_bcs()
-    f = pb.evaluator.eval_residual(u)
-    f.shape = (pb.domain.mesh.n_nod,2)
-    P = 2. * f[2][1]
+    # Point load.
+    mat = pb.get_materials()['Load']
+    P = 2.0 * mat.get_data('special', None, 'val')[1]
 
-    # Calc nodal stress
+    # Calculate nodal stress.
     pb.time_update()
-    ev = pb.evaluate
 
-    stress = ev('dq_cauchy_stress.ivn.Omega(Asphalt.D,u)', mode='el_avg')
-    sfield = Field('stress', nm.float64, (3,), pb.domain.regions["Omega"])
+    stress = pb.evaluate('dq_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
+    sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield, 3,
                          primary_var_name='(set-to-None)')
     svar.data_from_qp(stress, pb.integrals['ivn'])
 
     print '\n=================================================================='
-    print 'Load to give 1 mm displacement = %s Newton ' % round(-P,3)
+    print 'Given load = %.2f N' % -P
     print '\nAnalytical solution approximation'
     print '================================='
-    print 'Horizontal tensile stress = %s MPa/mm' % round(-2.*P/(nm.pi*150.),3) 
-    print 'Vertical compressive stress = %s MPa/mm' % round(-6.*P/(nm.pi*150.),3)
+    print 'Horizontal tensile stress = %.5e MPa/mm' % (-2.*P/(nm.pi*150.))
+    print 'Vertical compressive stress = %.5e MPa/mm' % (-6.*P/(nm.pi*150.))
     print '\nFEM solution'
     print '============'
-    print 'Horizontal tensile stress = %s MPa/mm' % round(svar()[0][0],3)
-    print 'Vertical compressive stress = %s MPa/mm' % -round(svar()[0][1],3)
+    print 'Horizontal tensile stress = %.5e MPa/mm' % (svar()[0][0])
+    print 'Vertical compressive stress = %.5e MPa/mm' % (-svar()[0][1])
     print '=================================================================='
     return out
 
