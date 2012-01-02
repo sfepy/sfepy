@@ -31,8 +31,9 @@ class Solver(Struct):
         get = conf.get_default_attr
         name = get('name', None, 'missing "name" in options!')
         kind = get('kind', None, 'missing "kind" in options!')
+        verbose = get('verbose', False)
 
-        return Struct(name=name, kind=kind)
+        return Struct(name=name, kind=kind, verbose=verbose)
 
     def __init__(self, conf=None, **kwargs):
         if conf is None:
