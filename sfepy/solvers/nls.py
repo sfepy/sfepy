@@ -308,10 +308,16 @@ class Newton( NonlinearSolver ):
 
                 lin_red = max(eps_a, err * eps_r)
 
+            if conf.verbose:
+                output('solving linear system...')
+
             tt = time.clock()
             vec_dx = lin_solver(vec_r, x0=vec_x,
                                 eps_a=eps_a, eps_r=eps_r, mtx=mtx_a)
             time_stats['solve'] = time.clock() - tt
+
+            if conf.verbose:
+                output('...done')
 
             for kv in time_stats.iteritems():
                 output( '%10s: %7.2f [s]' % kv )
