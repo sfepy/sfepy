@@ -259,9 +259,6 @@ editor. You'll notice that the output file includes separate sections:
     * CELLS (the model element connectivity)
     * VECTORS (the node displacements in the x-, y- and z- directions.
 
-Notice that the y-displacement of node 2 is -1.0 as we set it as a
-boundary condition.
-
 SfePy includes a script (postproc.py) to quickly view the solution. To
 run this script you need to have `mayavi
 <http://code.enthought.com/projects/mayavi/>`_ installed. From the
@@ -269,10 +266,11 @@ command line issue the following (with the correct paths)::
 
     $ ./postproc.py its2D.vtk
 
-The *postproc.py* script generates the image shown below, which shows
-the average displacements in the model. Cool, but we are more interested
-in the stresses. To get these we need to modify the problem description
-file and do some post-processing.
+The *postproc.py* script generates the image shown below, which shows by
+default the displacements in the model as arrows and their magnitude as
+color scale. Cool, but we are more interested in the stresses. To get
+these we need to modify the problem description file and do some
+post-processing.
 
 .. image:: images/primer/its2D_1.png
    :width: 40 %
