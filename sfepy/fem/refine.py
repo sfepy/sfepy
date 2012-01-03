@@ -202,3 +202,63 @@ def refine_3_8(mesh_in, ed, fa):
                           mat_ids, mesh_in.descs )
 
     return mesh
+
+def refine_reference(geometry, level):
+    """
+    Refine reference element given by `geometry`.
+    """
+    gcoors, gconn = geometry.coors, geometry.conn
+    if level == 0:
+        return gcoors, gconn
+
+    c1d = gcoors[geometry.edges[0], 0]
+    n1d = 2**level + 1
+
+    ip = nm.linspace(c1d[0], c1d[1], n1d)
+
+    n_edge = geometry.n_edge
+
+    if geometry.name == '2_3':
+        coors = nm.zeros((n1d * (n1d + 1) / 2, 2), dtype=nm.float64)
+        ii = 0
+        for ic in range(n1d):
+            for ir in range(0, n1d - ic):
+                coors[ii, 0] = ip[ir]
+                coors[ii, 1] = ip[ic]
+                ii += 1
+
+        conn = []
+        ii = 0
+        for ic in range(n1d - 1):
+            for ir in range(0, n1d - ic - 2):
+                conn.append([ii, ii + 1, ii + n1d - ic])
+                conn.append([ii + 1, ii + n1d + 1 - ic, ii + n1d - ic])
+                ii += 1
+            conn.append([ii, ii + 1, ii + n1d - ic])
+            ii += 2
+
+        error_edges = []
+        ii = 0
+        for ic in range(0, n1d - 1, 2):
+            iic = n1d - ic
+            for ir in range(0, iic - 1, 2):
+                error_edges.append([ii, ii + 1, ii + 2])
+                error_edges.append([ii, ii + iic, ii + 2 * iic - 1])
+                error_edges.append([ii + 2, ii + iic + 1, ii + 2 * iic - 1])
+                ii += 2
+
+                if ir < (iic - 3):
+                    error_edges.append([ii, ii + iic, ii + 2 * iic - 1])
+                    error_edges.append([ii, ii + iic - 1, ii + 2 * iic - 3])
+                    error_edges.append([ii + 2 * iic - 3, ii + 2 * iic - 2,
+                                        ii + 2 * iic - 1])
+
+            ii += iic
+
+    conn = nm.array(conn, dtype=nm.int32)
+    error_edges = nm.array(error_edges, dtype=nm.int32)
+
+    sh = error_edges.shape
+    error_edges.shape = (sh[0] / n_edge, n_edge, sh[1])
+
+    return coors, conn, error_edges
