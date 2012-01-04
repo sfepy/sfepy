@@ -274,6 +274,9 @@ class ProblemConf( Struct ):
                 define_dict = funmod.__dict__["define"]()
 
             else:
+                if isinstance(define_args, str):
+                    define_args = ProblemConf.dict_from_string(define_args)
+
                 if isinstance(define_args, dict):
                     define_dict = funmod.__dict__["define"](**define_args)
 
