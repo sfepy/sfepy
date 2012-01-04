@@ -122,7 +122,10 @@ def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
 
 if __name__ == '__main__':
 
-    mesh = Mesh.from_file('meshes/elements/2_3_1.mesh')
+    geometry = '2_3'
+    approx_order = 3
+
+    mesh = Mesh.from_file('meshes/elements/%s_1.mesh' % geometry)
     domain = Domain('', mesh)
     domain = domain.refine()
     domain = domain.refine()
@@ -132,13 +135,14 @@ if __name__ == '__main__':
     omega = domain.create_region('Omega', 'all')
 
     field = Field('fu', nm.float64, 'scalar', omega,
-                  space='H1', poly_space_base='lagrange', approx_order=3)
+                  space='H1', poly_space_base='lagrange',
+                  approx_order=approx_order)
 
     dof_conns = {}
     field.setup_dof_conns(dof_conns, 1, 'volume', omega)
 
-    gel = GeometryElement('2_3')
-    ps = PolySpace.any_from_args(None, gel, 3)
+    gel = GeometryElement(geometry)
+    ps = PolySpace.any_from_args(None, gel, approx_order)
 
     dofs = nm.arange(field.n_nod, dtype=nm.float64)
     dofs = nm.c_[dofs, dofs[::-1]]
@@ -151,7 +155,7 @@ if __name__ == '__main__':
     aux = create_output(dofs, dof_coors, dof_conn, ps, 5, 1e-1)
     level, all_coors, conn, all_vdofs, mat_ids = aux
 
-    mm = mesh.from_data('mm', all_coors, None, [conn], [mat_ids], ['2_3'])
+    mm = mesh.from_data('mm', all_coors, None, [conn], [mat_ids], [geometry])
 
     out = {
         'aa' : Struct(name='output_data', mode='vertex', data=all_vdofs,
