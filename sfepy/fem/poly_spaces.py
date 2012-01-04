@@ -93,7 +93,7 @@ class LagrangeNodes(Struct):
                     c3 = i2 + 1
                     c2 = ao - c4
                     c1 = ao - c3
-                    nts[iseq] = [2, ii]
+                    nts[iseq] = [nt, ii]
                     aux = [int(round(tmp)) for tmp
                            in delta * (c1 * c2 * n1 + c2 * c3 * n2
                                        + c3 * c4 * n3 + c4 * c1 * n4)]
