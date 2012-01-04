@@ -146,8 +146,12 @@ if __name__ == '__main__':
 
     dofs = nm.arange(field.n_nod, dtype=nm.float64)
     dofs = nm.c_[dofs, dofs[::-1]]
+    if geometry[0] == '3':
+        dofs = nm.c_[dofs, dofs[:, 0]]
+
     ## dofs = nm.arange(field.n_nod, dtype=nm.float64)
     ## dofs = dofs.reshape((field.n_nod, 1))
+
     dof_conn = dof_conns.values()[0]
 
     dof_coors = field.get_coor()
