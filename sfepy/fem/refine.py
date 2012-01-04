@@ -216,9 +216,9 @@ def refine_reference(geometry, level):
 
     ip = nm.linspace(c1d[0], c1d[1], n1d)
 
-    n_edge = geometry.n_edge
-
     if geometry.name == '2_3':
+        n_edge = 3
+
         coors = nm.zeros((n1d * (n1d + 1) / 2, 2), dtype=nm.float64)
         ii = 0
         for ic in range(n1d):
@@ -254,6 +254,39 @@ def refine_reference(geometry, level):
                                         ii + 2 * iic - 1])
 
             ii += iic
+
+    elif geometry.name == '2_4':
+        n1d2 = 2 * n1d
+        n_edge = 6
+
+        coors = nm.zeros((n1d * n1d, 2), dtype=nm.float64)
+        ii = 0
+        for ic in range(n1d):
+            for ir in range(n1d):
+                coors[ii, 0] = ip[ir]
+                coors[ii, 1] = ip[ic]
+                ii += 1
+
+        conn = []
+        ii = 0
+        for ic in range(n1d - 1):
+            for ir in range(0, n1d - 1):
+                conn.append([ii, ii + 1, ii + n1d + 1, ii + n1d])
+                ii += 1
+            ii += 1
+
+        error_edges = []
+        ii = 0
+        for ic in range(0, n1d - 1, 2):
+            for ir in range(0, n1d - 1, 2):
+                error_edges.append([ii, ii + 1, ii + 2])
+                error_edges.append([ii + n1d, ii + n1d + 1, ii + n1d + 2])
+                error_edges.append([ii + n1d2, ii + n1d2 + 1, ii + n1d2 + 2])
+                error_edges.append([ii, ii + n1d, ii + n1d2])
+                error_edges.append([ii + 1, ii + n1d + 1, ii + n1d2 + 1])
+                error_edges.append([ii + 2, ii + n1d + 2, ii + n1d2 + 2])
+                ii += 2
+            ii += n1d + 1
 
     conn = nm.array(conn, dtype=nm.int32)
     error_edges = nm.array(error_edges, dtype=nm.int32)
