@@ -22,6 +22,7 @@ from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
+from sfepy.fem.linearizer import create_output
 from sfepy.fem.extmods.bases import evaluate_at
 
 def parse_approx_order(approx_order):
@@ -699,6 +700,67 @@ class Field( Struct ):
             new_dofs = dofs
 
         return new_dofs
+
+    def linearize(self, dofs, max_level=1, eps=1e-4):
+        """
+        Linearize the solution for post-processing.
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        max_level : int
+            The maximum level of mesh refinement.
+        eps : float
+            The relative tolerance parameter of mesh adaptivity.
+
+        Returns
+        -------
+        mesh : Mesh instance
+            The adapted, nonconforming, mesh.
+        vdofs : array
+            The DOFs defined in vertices of `mesh`.
+        levels : array of ints
+            The refinement level used for each element group.
+        """
+        assert_(dofs.ndim == 2)
+
+        n_nod, dpn = dofs.shape
+
+        assert_(n_nod == self.n_nod)
+        assert_(dpn == self.shape[0])
+
+        dof_coors = self.get_coor()
+
+        coors = []
+        vdofs = []
+        conns = []
+        mat_ids = []
+        levels = []
+        offset = 0
+        for ig, ap in self.aps.iteritems():
+            ps = ap.interp.poly_spaces['v']
+
+            (level, _coors, conn,
+             _vdofs, _mat_ids) = create_output(dofs, dof_coors, ap.econn, ps,
+                                               max_level=max_level, eps=eps)
+            _mat_ids[:] = self.domain.mesh.mat_ids[ig][0]
+
+            coors.append(_coors)
+            vdofs.append(_vdofs)
+            conns.append(conn + offset)
+            mat_ids.append(_mat_ids)
+            levels.append(level)
+
+            offset += _coors.shape[0]
+
+        coors = nm.concatenate(coors, axis=0)
+        vdofs = nm.concatenate(vdofs, axis=0)
+        mesh = Mesh.from_data('linearized_mesh', coors, None, conns, mat_ids,
+                              self.domain.mesh.descs)
+
+        return mesh, vdofs, levels
 
     def get_output_approx_order(self):
         """
