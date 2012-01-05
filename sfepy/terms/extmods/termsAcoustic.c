@@ -64,116 +64,80 @@ int32 d_diffusion_sa( FMField *out,
 
 #undef __FUNC__
 #define __FUNC__ "dw_surf_laplace"
-int32 dw_surf_laplace( FMField *out, FMField *state, FMField *coef,
+int32 dw_surf_laplace( FMField *out, FMField *grad, FMField *coef,
 		       FMField *gbf, SurfaceGeometry *sg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
 		       int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *bb = 0, *bb0 = 0, *aux = 0, *det0 = 0, *gbf0 = 0;
-  FMField *st = 0;
+  int32 ii, nEP, dim, nQP, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
 
   nQP = gbf->nLev;
   dim = gbf->nRow;
+  nEP = gbf->nCol;
 
-  fmf_createAlloc( &bb, 1, nQP, nEP, nEP );
-  fmf_createAlloc( &aux, 1, nQP, dim, nEP );
-  fmf_createAlloc( &gbf0, 1, nQP, dim, nEP );
-  fmf_createAlloc( &det0, 1, nQP, 1, 1 );
+  fmf_createAlloc( &aux1, 1, nQP, nEP, dim );
 
-  fmf_fillC(det0, 1.0 / nQP);
-  for (ii = 0; ii < det0->nLev; ii++)
-    det0->val[ii] /= sg->det->val[ii];
-  fmf_mulAF(gbf0, gbf, det0->val);
+  if (isDiff)
+    fmf_createAlloc( &aux2, 1, nQP, nEP, nEP );
+  else
+    fmf_createAlloc( &aux2, 1, nQP, nEP, 1 );
 
-  if (!isDiff) {
-    state->val = FMF_PtrFirst( state );
-    fmf_createAlloc( &bb0, 1, 1, nEP, nEP );
-    fmf_createAlloc( &st, 1, 1, nEP, 1 );
-  }
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    if (coef->nCell > 1) {
+  for (ii = 0; ii < out->nCell; ii++) {
+    if (coef->nCell > 1)
       FMF_SetCell( coef, ii );
-    }
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->det, ii );
 
-    fmf_mulAB_nn( aux, coef, gbf0 );
-    fmf_mulATB_nn( bb, gbf0, aux );
+    fmf_mulATB_nn(aux1, gbf, coef);
 
     if (isDiff) {
-      fmf_sumLevelsMulF( out, bb, sg->det->val );
+      fmf_mulAB_nn(aux2, aux1, gbf);
     }
     else {
-      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-      fmf_sumLevelsMulF( bb0, bb, sg->det->val );
-      fmf_mulAB_nn( out, bb0, st );
+      FMF_SetCell(grad, ii);
+      fmf_mulAB_nn(aux2, aux1, grad);
     }
+
+    fmf_sumLevelsMulF(out, aux2, sg->det->val);
 
     ERR_CheckGo( ret );
   }
 
  end_label:
-  fmf_freeDestroy( &bb );
-  fmf_freeDestroy( &aux );
-  fmf_freeDestroy(&gbf0);
-  fmf_freeDestroy(&det0);
-  if (!isDiff) {
-    fmf_freeDestroy( &bb0 );
-    fmf_freeDestroy( &st );
-  }
+  fmf_freeDestroy(&aux1);
+  fmf_freeDestroy(&aux2);
 
   return( ret );
 }
 
 #undef __FUNC__
 #define __FUNC__ "d_surf_laplace"
-int32 d_surf_laplace( FMField *out, FMField *stateP, FMField *stateQ, FMField *coef,
-		      FMField *gbf, SurfaceGeometry *sg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow)
+int32 d_surf_laplace( FMField *out, FMField *gradP, FMField *gradQ, FMField *coef,
+		      SurfaceGeometry *sg )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *aux1 = 0, *aux2 = 0, *aux3 = 0, *det0 = 0, *gbf0;
-  FMField *st = 0;
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
 
-  nQP = gbf->nLev;
-  dim = gbf->nRow;
+  nQP = gradP->nLev;
+  dim = coef->nRow;
 
   fmf_createAlloc( &aux1, 1, nQP, dim, 1 );
-  fmf_createAlloc( &aux2, 1, nQP, dim, 1 );
-  fmf_createAlloc( &aux3, 1, nQP, 1, 1 );
-  fmf_createAlloc( &st, 1, 1, nEP, 1 );
-  fmf_createAlloc( &gbf0, 1, nQP, dim, nEP );
-  fmf_createAlloc( &det0, 1, nQP, 1, 1 );
+  fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
 
-  fmf_fillC(det0, 1.0 / nQP);
-  for (ii = 0; ii < det0->nLev; ii++)
-    det0->val[ii] /= sg->det->val[ii];
-  fmf_mulAF(gbf0, gbf, det0->val);
+  for (ii = 0; ii < out->nCell; ii++) {
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    if (coef->nCell > 1) {
+    if (coef->nCell > 1)
       FMF_SetCell( coef, ii );
-    }
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->det, ii );
+    FMF_SetCell( gradP, ii );
+    FMF_SetCell( gradQ, ii );
 
-    ele_extractNodalValuesNBN(st, stateP, conn + nEP * iel);
-    fmf_mulAB_n1(aux1, gbf0, st);
-    fmf_mulAB_nn(aux2, coef, aux1);
-    ele_extractNodalValuesNBN(st, stateQ, conn + nEP * iel);
-    fmf_mulAB_n1(aux1, gbf0, st);
-    fmf_mulATB_nn(aux3, aux1, aux2);
-    fmf_sumLevelsMulF(out, aux3, sg->det->val);
+    fmf_mulAB_nn(aux1, coef, gradP);
+    fmf_mulATB_nn(aux2, gradQ, aux1);
+    fmf_sumLevelsMulF(out, aux2, sg->det->val);
 
     ERR_CheckGo( ret );
   }
@@ -181,10 +145,6 @@ int32 d_surf_laplace( FMField *out, FMField *stateP, FMField *stateQ, FMField *c
  end_label:
   fmf_freeDestroy( &aux1 );
   fmf_freeDestroy( &aux2 );
-  fmf_freeDestroy( &aux3 );
-  fmf_freeDestroy( &st );
-  fmf_freeDestroy(&gbf0);
-  fmf_freeDestroy(&det0);
 
   return( ret );
 }
@@ -193,113 +153,40 @@ int32 d_surf_laplace( FMField *out, FMField *stateP, FMField *stateQ, FMField *c
 #define __FUNC__ "dw_surf_lcouple"
 int32 dw_surf_lcouple( FMField *out, FMField *state, FMField *coef,
 		       FMField *bf, FMField *gbf, SurfaceGeometry *sg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
 		       int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *bb = 0, *bb0 = 0, *aux = 0, *st = 0, *det0 = 0, *gbf0 = 0;
+  int32 ii, nEP, dim, nQP, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
 
   nQP = gbf->nLev;
-  dim = gbf->nRow;
+  nEP = gbf->nCol;
+  dim = coef->nCol;
 
-  fmf_createAlloc( &bb, 1, nQP, nEP, nEP );
-  fmf_createAlloc( &aux, 1, nQP, dim, nEP );
-  fmf_createAlloc( &gbf0, 1, nQP, dim, nEP );
-  fmf_createAlloc( &det0, 1, nQP, 1, 1 );
+  fmf_createAlloc(&aux1, 1, nQP, nEP, dim);
 
-  fmf_fillC(det0, 1.0 / nQP);
-  for (ii = 0; ii < det0->nLev; ii++)
-    det0->val[ii] /= sg->det->val[ii];
-  fmf_mulAF(gbf0, gbf, det0->val);
+  if (isDiff)
+    fmf_createAlloc(&aux2, 1, nQP, nEP, nEP);
+  else
+    fmf_createAlloc(&aux2, 1, nQP, nEP, 1);
 
-  if (!isDiff) {
-    state->val = FMF_PtrFirst( state );
-    fmf_createAlloc( &bb0, 1, 1, nEP, nEP );
-    fmf_createAlloc( &st, 1, 1, nEP, 1 );
-  }
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    if (coef->nCell > 1) {
+  for (ii = 0; ii < out->nCell; ii++) {
+    if (coef->nCell > 1)
       FMF_SetCell( coef, ii );
-    }
 
     FMF_SetCell( out, ii );
-    FMF_SetCell( sg->det, iel );
+    FMF_SetCell( sg->det, ii );
 
-    fmf_mulAB_nn( aux, coef, bf );
-    fmf_mulATB_nn( bb, gbf0, aux );
+    fmf_mulATB_nn(aux1, gbf, coef);
 
     if (isDiff) {
-      fmf_sumLevelsMulF( out, bb, sg->det->val );
+      fmf_mulAB_nn(aux2, aux1, bf);
     }
     else {
-      ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-      fmf_sumLevelsMulF( bb0, bb, sg->det->val );
-      fmf_mulAB_nn( out, bb0, st );
+      FMF_SetCell(state, ii);
+      fmf_mulAB_nn(aux2, aux1, state);
     }
 
-    ERR_CheckGo( ret );
-  }
-
- end_label:
-  fmf_freeDestroy( &bb );
-  fmf_freeDestroy( &aux );
-  fmf_freeDestroy(&gbf0);
-  fmf_freeDestroy(&det0);
-  if (!isDiff) {
-    fmf_freeDestroy( &bb0 );
-    fmf_freeDestroy( &st );
-  }
-
-  return( ret );
-}
-
-#undef __FUNC__
-#define __FUNC__ "d_surf_lcouple"
-int32 d_surf_lcouple( FMField *out, FMField *stateP, FMField *stateQ, FMField *coef,
-		       FMField *bf, FMField *gbf, SurfaceGeometry *sg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow)
-{
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *aux1 = 0, *aux2 = 0, *aux3 = 0, *aux4 = 0, *st = 0, *det0 = 0, *gbf0 = 0;
-
-  nQP = gbf->nLev;
-  dim = gbf->nRow;
-
-  fmf_createAlloc(&aux1, 1, nQP, dim, 1);
-  fmf_createAlloc(&aux2, 1, nQP, 1, 1);
-  fmf_createAlloc(&aux3, 1, nQP, 1, 1);
-  fmf_createAlloc(&aux4, 1, nQP, 1, 1);
-  fmf_createAlloc(&st, 1, 1, nEP, 1);
-  fmf_createAlloc( &gbf0, 1, nQP, dim, nEP );
-  fmf_createAlloc( &det0, 1, nQP, 1, 1 );
-
-  fmf_fillC(det0, 1.0 / nQP);
-  for (ii = 0; ii < det0->nLev; ii++)
-    det0->val[ii] /= sg->det->val[ii];
-  fmf_mulAF(gbf0, gbf, det0->val);
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-    if (coef->nCell > 1) {
-      FMF_SetCell( coef, ii );
-    }
-
-    FMF_SetCell( out, ii );
-    FMF_SetCell( sg->det, iel );
-
-    ele_extractNodalValuesNBN(st, stateP, conn + nEP * iel);
-    fmf_mulAB_n1(aux1, gbf0, st);
-    fmf_mulAB_nn(aux2, coef, aux1);
-    ele_extractNodalValuesNBN(st, stateQ, conn + nEP * iel);
-    fmf_mulAB_n1(aux3, bf, st);
-    fmf_mulATB_nn(aux4, aux3, aux2);
-    fmf_sumLevelsMulF(out, aux4, sg->det->val);
+    fmf_sumLevelsMulF(out, aux2, sg->det->val);
 
     ERR_CheckGo( ret );
   }
@@ -307,11 +194,43 @@ int32 d_surf_lcouple( FMField *out, FMField *stateP, FMField *stateQ, FMField *c
  end_label:
   fmf_freeDestroy(&aux1);
   fmf_freeDestroy(&aux2);
-  fmf_freeDestroy(&aux3);
-  fmf_freeDestroy(&aux4);
-  fmf_freeDestroy(&st);
-  fmf_freeDestroy(&gbf0);
-  fmf_freeDestroy(&det0);
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "d_surf_lcouple"
+int32 d_surf_lcouple( FMField *out, FMField *stateP, FMField *gradQ, FMField *coef,
+		      SurfaceGeometry *sg )
+{
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *aux1 = 0, *aux2 = 0;
+
+  nQP = stateP->nLev;
+  dim = coef->nRow;
+
+  fmf_createAlloc(&aux1, 1, nQP, dim, 1);
+  fmf_createAlloc(&aux2, 1, nQP, 1, 1);
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    if (coef->nCell > 1)
+      FMF_SetCell( coef, ii );
+
+    FMF_SetCell( out, ii );
+    FMF_SetCell( sg->det, ii );
+    FMF_SetCell(stateP, ii);
+    FMF_SetCell(gradQ, ii);
+
+    fmf_mulAB_nn(aux1, coef, stateP);
+    fmf_mulATB_nn(aux2, gradQ, aux1);
+    fmf_sumLevelsMulF(out, aux2, sg->det->val);
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy(&aux1);
+  fmf_freeDestroy(&aux2);
 
   return( ret );
 }

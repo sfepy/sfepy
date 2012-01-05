@@ -382,32 +382,24 @@ cdef extern from 'terms.h':
                           FMField *mtxD, VolumeGeometry *vg)
 
     cdef int32 _dw_surf_laplace \
-         'dw_surf_laplace'(FMField *out, FMField *state, FMField *coef,
+         'dw_surf_laplace'(FMField *out, FMField *grad, FMField *coef,
                            FMField *gbf, SurfaceGeometry *sg,
-                           int32 *conn, int32 nEl, int32 nEP,
-                           int32 *elList, int32 elList_nRow,
                            int32 isDiff)
 
     cdef int32 _d_surf_laplace \
-         'd_surf_laplace'(FMField *out, FMField *stateP,
-                          FMField *stateQ, FMField *coef,
-                          FMField *gbf, SurfaceGeometry *sg,
-                          int32 *conn, int32 nEl, int32 nEP,
-                          int32 *elList, int32 elList_nRo)
+         'd_surf_laplace'(FMField *out, FMField *gradP,
+                          FMField *gradQ, FMField *coef,
+                          SurfaceGeometry *sg)
 
     cdef int32 _dw_surf_lcouple \
          'dw_surf_lcouple'(FMField *out, FMField *state, FMField *coef,
                            FMField *bf, FMField *gbf, SurfaceGeometry *sg,
-                           int32 *conn, int32 nEl, int32 nEP,
-                           int32 *elList, int32 elList_nRow,
                            int32 isDiff)
 
     cdef int32 _d_surf_lcouple \
          'd_surf_lcouple'(FMField *out, FMField *stateP,
-                          FMField *stateQ, FMField *coef,
-                          FMField *bf, FMField *gbf, SurfaceGeometry *sg,
-                          int32 *conn, int32 nEl, int32 nEP,
-                          int32 *elList, int32 elList_nRo)
+                          FMField *gradQ, FMField *coef,
+                          SurfaceGeometry *sg)
 
     cdef int32 _dw_adj_convect1 \
          'dw_adj_convect1'(FMField *out, FMField *state, int32 offset,
@@ -1872,52 +1864,36 @@ def d_diffusion_sa(np.ndarray out not None,
     return ret
 
 def dw_surf_laplace(np.ndarray out not None,
-                    np.ndarray state not None,
+                    np.ndarray grad not None,
                     np.ndarray coef not None,
                     np.ndarray gbf not None,
                     CSurfaceMapping cmap not None,
-                    np.ndarray conn not None,
-                    np.ndarray el_list not None,
                     int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _state[1], _coef[1], _gbf[1]
-    cdef int32 *_conn, n_el, n_ep
-    cdef int32 *_el_list, n_el2
+    cdef FMField _out[1], _grad[1], _coef[1], _gbf[1]
 
     array2fmfield4(_out, out)
-    array2fmfield1(_state, state)
+    array2fmfield4(_grad, grad)
     array2fmfield4(_coef, coef)
     array2fmfield3(_gbf, gbf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _dw_surf_laplace(_out, _state, _coef, _gbf, cmap.geo,
-                           _conn, n_el, n_ep, _el_list, n_el2, is_diff)
+    ret = _dw_surf_laplace(_out, _grad, _coef, _gbf, cmap.geo, is_diff)
     return ret
 
 def d_surf_laplace(np.ndarray out not None,
-                   np.ndarray state_p not None,
-                   np.ndarray state_q not None,
+                   np.ndarray grad_p not None,
+                   np.ndarray grad_q not None,
                    np.ndarray coef not None,
-                   np.ndarray gbf not None,
-                   CSurfaceMapping cmap not None,
-                   np.ndarray conn not None,
-                   np.ndarray el_list not None):
+                   CSurfaceMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _state_q[1], _coef[1], _gbf[1]
-    cdef int32 *_conn, n_el, n_ep
-    cdef int32 *_el_list, n_el2
+    cdef FMField _out[1], _grad_p[1], _grad_q[1], _coef[1]
 
     array2fmfield4(_out, out)
-    array2fmfield1(_state_p, state_p)
-    array2fmfield1(_state_q, state_q)
+    array2fmfield4(_grad_p, grad_p)
+    array2fmfield4(_grad_q, grad_q)
     array2fmfield4(_coef, coef)
-    array2fmfield3(_gbf, gbf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _d_surf_laplace(_out, _state_p, _state_q, _coef, _gbf, cmap.geo,
-                          _conn, n_el, n_ep, _el_list, n_el2)
+    ret = _d_surf_laplace(_out, _grad_p, _grad_q, _coef, cmap.geo)
     return ret
 
 def dw_surf_lcouple(np.ndarray out not None,
@@ -1926,50 +1902,33 @@ def dw_surf_lcouple(np.ndarray out not None,
                     np.ndarray bf not None,
                     np.ndarray gbf not None,
                     CSurfaceMapping cmap not None,
-                    np.ndarray conn not None,
-                    np.ndarray el_list not None,
                     int32 is_diff):
     cdef int32 ret
     cdef FMField _out[1], _state[1], _coef[1], _bf[1], _gbf[1]
-    cdef int32 *_conn, n_el, n_ep
-    cdef int32 *_el_list, n_el2
 
     array2fmfield4(_out, out)
-    array2fmfield1(_state, state)
+    array2fmfield4(_state, state)
     array2fmfield4(_coef, coef)
     array2fmfield3(_bf, bf)
     array2fmfield3(_gbf, gbf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _dw_surf_lcouple(_out, _state, _coef, _bf, _gbf, cmap.geo,
-                           _conn, n_el, n_ep, _el_list, n_el2, is_diff)
+    ret = _dw_surf_lcouple(_out, _state, _coef, _bf, _gbf, cmap.geo, is_diff)
     return ret
 
 def d_surf_lcouple(np.ndarray out not None,
                    np.ndarray state_p not None,
-                   np.ndarray state_q not None,
+                   np.ndarray grad_q not None,
                    np.ndarray coef not None,
-                   np.ndarray bf not None,
-                   np.ndarray gbf not None,
-                   CSurfaceMapping cmap not None,
-                   np.ndarray conn not None,
-                   np.ndarray el_list not None):
+                   CSurfaceMapping cmap not None):
     cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _state_q[1], _coef[1], _bf[1], _gbf[1]
-    cdef int32 *_conn, n_el, n_ep
-    cdef int32 *_el_list, n_el2
+    cdef FMField _out[1], _state_p[1], _grad_q[1], _coef[1]
 
     array2fmfield4(_out, out)
-    array2fmfield1(_state_p, state_p)
-    array2fmfield1(_state_q, state_q)
+    array2fmfield4(_state_p, state_p)
+    array2fmfield4(_grad_q, grad_q)
     array2fmfield4(_coef, coef)
-    array2fmfield3(_gbf, gbf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
 
-    ret = _d_surf_lcouple(_out, _state_p, _state_q, _coef, _bf, _gbf, cmap.geo,
-                          _conn, n_el, n_ep, _el_list, n_el2)
+    ret = _d_surf_lcouple(_out, _state_p, _grad_q, _coef, cmap.geo)
     return ret
 
 def dw_adj_convect1():
