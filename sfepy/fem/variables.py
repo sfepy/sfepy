@@ -1704,7 +1704,7 @@ class FieldVariable(Variable):
     def evaluate(self, ig, mode='val',
                  region=None, integral=None, integration=None,
                  step=0, time_derivative=None, is_trace=False,
-                 dt=None):
+                 dt=None, bf=None):
         """
         Evaluate various quantities related to the variable according to
         `mode` in quadrature points defined by `integral`.
@@ -1739,6 +1739,8 @@ class FieldVariable(Variable):
         dt : float, optional
             The time step to be used if `derivative` is `'dt'`. If None,
             the `dt` attribute of the variable is used.
+        bf : Base function, optional
+            The base function to be used in 'val' mode.
 
         Returns
         -------
@@ -1786,13 +1788,13 @@ class FieldVariable(Variable):
 
             if self.dtype == nm.float64:
                 if integration != 'surface_extra':
-                    out = eval_real(vec, conn, geo, mode, shape)
+                    out = eval_real(vec, conn, geo, mode, shape, bf)
 
                 else:
-                    out = eval_real_extra(vec, conn, geo, mode, shape)
+                    out = eval_real_extra(vec, conn, geo, mode, shape, bf)
 
             else:
-                out = eval_complex(vec, conn, geo, mode, shape)
+                out = eval_complex(vec, conn, geo, mode, shape, bf)
 
             cache[key] = out
 

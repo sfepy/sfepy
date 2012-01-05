@@ -1302,7 +1302,7 @@ class Term(Struct):
                                       integration, region.name)
         return out
 
-    def get(self, variable, quantity_name):
+    def get(self, variable, quantity_name, bf=None):
         """
         Get the named quantity related to the variable.
 
@@ -1318,7 +1318,7 @@ class Term(Struct):
                                  integration=self.geometry_types[name],
                                  step=self.arg_steps[name],
                                  time_derivative=self.arg_derivatives[name],
-                                 is_trace=self.arg_traces[name])
+                                 is_trace=self.arg_traces[name], bf=bf)
         return data
 
     def check_shapes(self, *args, **kwargs):

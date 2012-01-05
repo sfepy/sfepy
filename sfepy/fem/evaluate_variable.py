@@ -3,7 +3,7 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.terms.extmods import terms
 
-def eval_real(vec, conn, geo, mode, shape):
+def eval_real(vec, conn, geo, mode, shape, bf=None):
     """
     Evaluate basic derived quantities of a real variable given its DOF
     vector, connectivity and reference mapping.
@@ -15,7 +15,10 @@ def eval_real(vec, conn, geo, mode, shape):
         function = terms.dq_state_in_qp
 
         out = nm.empty((n_el, n_qp, n_comp, 1), dtype=dtype)
-        function(out, vec, geo.bf, conn)
+        if bf is not None:
+            function(out, vec, bf, conn)
+        else:
+            function(out, vec, geo.bf, conn)
 
     elif mode == 'grad':
         function = terms.dq_grad
@@ -44,7 +47,7 @@ def eval_real(vec, conn, geo, mode, shape):
 
     return out
 
-def eval_real_extra(vec, conn, geo, mode, shape):
+def eval_real_extra(vec, conn, geo, mode, shape, bf=None):
     """
     Evaluate basic derived quantities of a real variable given its DOF
     vector, connectivity and reference mapping. This function works for
@@ -57,7 +60,10 @@ def eval_real_extra(vec, conn, geo, mode, shape):
         function = terms.dq_state_in_qp
 
         out = nm.empty((n_fa, n_qp, n_comp, 1), dtype=dtype)
-        function(out, vec, geo.bf, conn)
+        if bf is not None:
+            function(out, vec, bf, conn)
+        else:
+            function(out, vec, geo.bf, conn)
 
     elif mode == 'grad':
         function = terms.dq_grad_extra
@@ -71,7 +77,7 @@ def eval_real_extra(vec, conn, geo, mode, shape):
 
     return out
 
-def eval_complex(vec, conn, geo, mode, shape):
+def eval_complex(vec, conn, geo, mode, shape, bf=None):
     """
     Evaluate basic derived quantities of a complex variable given its DOF
     vector, connectivity and reference mapping.
@@ -83,8 +89,12 @@ def eval_complex(vec, conn, geo, mode, shape):
 
         rout = nm.empty((n_el, n_qp, n_comp, 1), dtype=nm.float64)
         iout = nm.empty((n_el, n_qp, n_comp, 1), dtype=nm.float64)
-        function(rout, vec.real.copy(), geo.bf, conn)
-        function(iout, vec.imag.copy(), geo.bf, conn)
+        if bf is not None:
+            function(rout, vec.real.copy(), bf, conn)
+            function(iout, vec.imag.copy(), bf, conn)
+        else:
+            function(rout, vec.real.copy(), geo.bf, conn)
+            function(iout, vec.imag.copy(), geo.bf, conn)
         out = rout + 1j * iout
 
     elif mode == 'grad':
