@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-Incompressible Mooney-Rivlin hyperelastic material model.
+Compressible Mooney-Rivlin hyperelastic material model.
 
 Large deformation is described using the updated Lagrangian formulation.
 Incompressibility is treated by mixed displacement-pressure formulation.
