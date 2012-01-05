@@ -741,6 +741,14 @@ class Field( Struct ):
                 conn = sd.get_connectivity(is_trace=is_trace)
                 dc = create_dof_conn(conn, dpn)
                 self.dof_conns[key] = dc
+                if is_trace:
+                    trkey = key[:-1] + (False,)
+                    if trkey in dof_conns:
+                        self.dof_conns[trkey] = dof_conns[trkey]
+                        continue
+                    conn = sd.get_connectivity(is_trace=False)
+                    dc = create_dof_conn(conn, dpn)
+                    self.dof_conns[trkey] = dc
 
             elif dct == 'edge':
                 raise NotImplementedError('dof connectivity type %s' % dct)
@@ -1274,6 +1282,11 @@ class SurfaceField(Field):
                 msg = 'no surface data of surface field! (%s)' % reg.name
                 raise ValueError(msg)
 
+        for ig, ap in self.aps.iteritems():
+            if reg.name in ap.surface_data and is_trace:
+                sd = ap.surface_data[reg.name]
+                sd.setup_mirror_connectivity(reg)
+
     def init_econn(self):
         """
         Initialize the extended DOF connectivity.
@@ -1332,7 +1345,8 @@ class SurfaceField(Field):
                 continue
 
             sd = ap.surface_data[region_name]
-            dc = create_dof_conn(sd.leconn, dpn)
+            conn = sd.get_connectivity(local=True, is_trace=is_trace)
+            dc = create_dof_conn(conn, dpn)
             self.dof_conns[key] = dc
 
         dof_conns.update(self.dof_conns)
