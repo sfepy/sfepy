@@ -306,7 +306,7 @@ class BulkPressureULTerm(HyperElasticULBase):
                 if diff_var is None:
                     stress = self.compute_data(fd, 0, **kwargs)
                     self.stress_cache[ig] = stress
-                    tan_mod = nm.array([0], ndmin=4)
+                    tan_mod = nm.array([0], ndmin=4, dtype=nm.float64)
 
                     fmode = 0
 
