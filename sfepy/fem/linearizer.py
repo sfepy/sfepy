@@ -1,9 +1,5 @@
 import numpy as nm
 
-from sfepy.base.base import Struct
-from sfepy.fem.geometry_element import GeometryElement
-from sfepy.fem.poly_spaces import PolySpace
-from sfepy.fem import Mesh, Domain, Field
 from sfepy.fem.refine import refine_reference
 
 def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
@@ -121,9 +117,14 @@ def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
     return level, all_coors, conn, all_vdofs, mat_ids
 
 if __name__ == '__main__':
+    from sfepy.base.base import Struct
+    from sfepy.fem.geometry_element import GeometryElement
+    from sfepy.fem.poly_spaces import PolySpace
+    from sfepy.fem import Mesh, Domain, Field
 
     geometry = '2_3'
     approx_order = 3
+    dpn = 1
 
     mesh = Mesh.from_file('meshes/elements/%s_1.mesh' % geometry)
     domain = Domain('', mesh)
@@ -134,7 +135,7 @@ if __name__ == '__main__':
 
     omega = domain.create_region('Omega', 'all')
 
-    field = Field('fu', nm.float64, 'scalar', omega,
+    field = Field('fu', nm.float64, dpn, omega,
                   space='H1', poly_space_base='lagrange',
                   approx_order=approx_order)
 
@@ -144,29 +145,25 @@ if __name__ == '__main__':
     gel = GeometryElement(geometry)
     ps = PolySpace.any_from_args(None, gel, approx_order)
 
-    dofs = nm.arange(field.n_nod, dtype=nm.float64)
-    dofs = nm.c_[dofs, dofs[::-1]]
-    if geometry[0] == '3':
-        dofs = nm.c_[dofs, dofs[:, 0]]
+    if dpn > 1:
+        dofs = nm.arange(field.n_nod, dtype=nm.float64)
+        dofs = nm.c_[dofs, dofs[::-1]]
+        if geometry[0] == '3':
+            dofs = nm.c_[dofs, dofs[:, 0]]
 
-    ## dofs = nm.arange(field.n_nod, dtype=nm.float64)
-    ## dofs = dofs.reshape((field.n_nod, 1))
+    else:
+        dofs = nm.arange(field.n_nod, dtype=nm.float64)
+        dofs = dofs.reshape((field.n_nod, 1))
 
-    dof_conn = dof_conns.values()[0]
-
-    dof_coors = field.get_coor()
-
-    aux = create_output(dofs, dof_coors, dof_conn, ps, 5, 1e-1)
-    level, all_coors, conn, all_vdofs, mat_ids = aux
-
-    mm = mesh.from_data('mm', all_coors, None, [conn], [mat_ids], [geometry])
+    mm, vdofs, levels = field.linearize(dofs, max_level=5, eps=1e-1)
 
     out = {
-        'aa' : Struct(name='output_data', mode='vertex', data=all_vdofs,
+        'aa' : Struct(name='output_data', mode='vertex', data=vdofs,
                       var_name='aa', dofs=None)
     }
 
     mm.write('linearizer.mesh')
     mm.write('linearizer.vtk', out=out)
 
-    print level
+    print levels
+
