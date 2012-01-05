@@ -807,7 +807,6 @@ sfepy.homogenization package
    :maxdepth: 2
 
    src/sfepy/homogenization/coefficients
-   src/sfepy/homogenization/coefs_acoustic
    src/sfepy/homogenization/coefs_base
    src/sfepy/homogenization/coefs_elastic
    src/sfepy/homogenization/coefs_perfusion
