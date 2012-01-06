@@ -1,6 +1,6 @@
 import os
 
-from sfepy.base.base import Struct
+from sfepy.base.base import dict_to_struct, Struct
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
@@ -34,6 +34,8 @@ class SimpleApp( Application ):
         return Struct(save_results=get('save_results', True),
                       # Save each variable into a separate file, using
                       # the region of its definition only.
+                      linearization=dict_to_struct(get('linearization',
+                                                       {'kind' : 'strip'})),
                       file_per_var=get('file_per_var', False),
                       output_format=get('output_format', 'vtk'),
                       output_dir=output_dir,
@@ -103,7 +105,8 @@ class SimpleApp( Application ):
         problem.setup_output(output_filename_trunk=ofn_trunk,
                              output_dir=self.app_options.output_dir,
                              output_format=output_format,
-                             file_per_var=self.app_options.file_per_var)
+                             file_per_var=self.app_options.file_per_var,
+                             linearization=self.app_options.linearization)
 
     def call( self ):
         out = solve_direct( self.conf, self.options,

@@ -242,16 +242,18 @@ class ProblemDefinition( Struct ):
                                                 'file_per_var', None)
         default_float_format = get_default_attr(conf.options,
                                                 'float_format', None)
+        default_linearization = Struct(kind='strip')
 
         self.setup_output(output_filename_trunk=default_trunk,
                           output_dir=default_output_dir,
                           file_per_var=default_file_per_var,
                           output_format=default_output_format,
-                          float_format=default_float_format)
+                          float_format=default_float_format,
+                          linearization=default_linearization)
 
     def setup_output(self, output_filename_trunk=None, output_dir=None,
                      output_format=None, float_format=None,
-                     file_per_var=None):
+                     file_per_var=None, linearization=None):
         """
         Sets output options to given values, or uses the defaults for
         each argument that is None.
@@ -264,10 +266,9 @@ class ProblemDefinition( Struct ):
         self.set_output_dir(output_dir)
 
         self.output_format = get_default(output_format, 'vtk')
-
         self.float_format = get_default(float_format, None)
-
         self.file_per_var = get_default(file_per_var, False)
+        self.linearization = get_default(linearization, Struct(kind='strip'))
 
     def set_output_dir(self, output_dir=None):
         """
@@ -643,24 +644,45 @@ class ProblemDefinition( Struct ):
 
     def save_state(self, filename, state=None, out=None,
                    fill_value=None, post_process_hook=None,
-                   file_per_var=False, **kwargs):
+                   linearization=None, file_per_var=False, **kwargs):
         """
         Parameters
         ----------
         file_per_var : bool or None
             If True, data of each variable are stored in a separate
             file. If None, it is set to the application option value.
+        linearization : Struct or None
+            The linearization configuration for higher order
+            approximations. If its kind is 'adaptive', `file_per_var` is
+            assumed True.
         """
-        file_per_var = get_default(file_per_var, self.file_per_var)
+        linearization = get_default(linearization, self.linearization)
+        if linearization.kind == 'strip':
+            file_per_var = get_default(file_per_var, self.file_per_var)
+
+        else:
+            file_per_var = True
 
         extend = not file_per_var
         if (out is None) and (state is not None):
             out = state.create_output_dict(fill_value=fill_value,
-                                           extend=extend)
-            if post_process_hook is not None:
-                out = post_process_hook( out, self, state, extend = extend )
+                                           extend=extend,
+                                           linearization=linearization)
 
-        if file_per_var:
+            if post_process_hook is not None:
+                out = post_process_hook(out, self, state, extend=extend)
+
+        if linearization.kind == 'adaptive':
+            base, suffix = op.splitext(filename)
+            for key, val in out.iteritems():
+                mesh = val.get('mesh', self.domain.mesh)
+                mesh.write(base + '_' + val.var_name + suffix,
+                           io='auto', out={key : val},
+                           float_format=self.float_format, **kwargs)
+                if hasattr(val, 'levels'):
+                    output('max. refinement per group:', val.levels)
+
+        elif file_per_var:
             meshes = {}
 
             if self.equations is None:
