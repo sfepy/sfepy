@@ -701,7 +701,7 @@ class Field( Struct ):
 
         return new_dofs
 
-    def linearize(self, dofs, max_level=1, eps=1e-4):
+    def linearize(self, dofs, min_level=0, max_level=1, eps=1e-4):
         """
         Linearize the solution for post-processing.
 
@@ -710,6 +710,8 @@ class Field( Struct ):
         dofs : array, shape (n_nod, n_component)
             The array of DOFs reshaped so that each column corresponds
             to one component.
+        min_level : int
+            The minimum required level of mesh refinement.
         max_level : int
             The maximum level of mesh refinement.
         eps : float
@@ -744,7 +746,9 @@ class Field( Struct ):
 
             (level, _coors, conn,
              _vdofs, _mat_ids) = create_output(dofs, dof_coors, ap.econn, ps,
+                                               min_level=min_level,
                                                max_level=max_level, eps=eps)
+
             _mat_ids[:] = self.domain.mesh.mat_ids[ig][0]
 
             coors.append(_coors)

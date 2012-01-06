@@ -2,7 +2,8 @@ import numpy as nm
 
 from sfepy.fem.refine import refine_reference
 
-def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
+def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
+                  eps=1e-4):
     """
     Create mesh with linear elements that approximates `dofs`
     corresponding to a higher order approximation with a relative
@@ -48,8 +49,11 @@ def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
 
     inod = 0
 
-    for level in range(max_level):
-        if level == (max_level - 1):
+    for level in range(max_level + 1):
+        if level < min_level:
+            flag.fill(True) # Force refinement everywhere.
+
+        elif level == max_level:
             # Last level - take everything.
             flag.fill(False)
 
@@ -96,7 +100,7 @@ def create_output(dofs, dof_coors, dof_conn, ps, max_level=3, eps=1e-4):
             break
 
         # Deal with elements to refine.
-        if level < (max_level - 1):
+        if level < max_level:
             eflag = flag.sum(axis=1, dtype=nm.bool)
             iels = iels[eflag]
 
@@ -155,7 +159,9 @@ if __name__ == '__main__':
         dofs = nm.arange(field.n_nod, dtype=nm.float64)
         dofs = dofs.reshape((field.n_nod, 1))
 
-    mm, vdofs, levels = field.linearize(dofs, max_level=5, eps=1e-1)
+    mm, vdofs, levels = field.linearize(dofs, min_level=0, max_level=5,
+                                        eps=1e-1)
+    print levels
 
     out = {
         'aa' : Struct(name='output_data', mode='vertex', data=vdofs,
@@ -164,6 +170,4 @@ if __name__ == '__main__':
 
     mm.write('linearizer.mesh')
     mm.write('linearizer.vtk', out=out)
-
-    print levels
 
