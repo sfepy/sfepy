@@ -22,6 +22,18 @@ options = {
     'nls' : 'newton',
     'ls' : 'ls',
     'post_process_hook' : 'verify_incompressibility',
+
+    # Options for saving higher-order variables.
+    # Possible kinds:
+    #    'strip' ... just remove extra DOFs (ignores other linearization
+    #                options)
+    #    'adaptive' ... adaptively refine linear element mesh.
+    'linearization' : {
+        'kind' : 'strip',
+        'min_level' : 1, # Min. refinement level to achieve everywhere.
+        'max_level' : 2, # Max. refinement level.
+        'eps' : 1e-1, # Relative error tolerance.
+    },
 }
 
 field_1 = {
