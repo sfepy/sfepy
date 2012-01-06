@@ -325,6 +325,12 @@ class Field( Struct ):
 
         return order
 
+    def is_higher_order(self):
+        """
+        Return True, if the field's approximation order is greater than one.
+        """
+        return self.force_bubble or (self.approx_order > 1)
+
     def setup_global_base(self):
         """
         Setup global DOF/base function indices and connectivity of the field.
