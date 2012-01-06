@@ -319,6 +319,10 @@ class Field( Struct ):
         else:
             order = gel.dim * self.approx_order
 
+        if self.force_bubble:
+            bubble_order = gel.dim + 1
+            order = max(order, bubble_order)
+
         return order
 
     def setup_global_base(self):
