@@ -19,34 +19,36 @@ def assign_standard_hooks(obj, get, conf):
 
 class SimpleApp( Application ):
 
-    def process_options( options ):
-        """Application options setup. Sets default values for missing
-        non-compulsory options."""
+    @staticmethod
+    def process_options(options):
+        """
+        Application options setup. Sets default values for missing
+        non-compulsory options.
+        """
         get = options.get_default_attr
 
-        save_results = get( 'save_results', True )
-        # Save each variable into a separate file, using the region of its
-        # definition only.
-        file_per_var = get( 'file_per_var', False )
-        output_format = get( 'output_format', 'vtk' )
+        output_dir = get('output_dir', '.')
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-        output_dir = get( 'output_dir', '.' )
-        if not os.path.exists( output_dir ):
-            os.makedirs( output_dir )
-
-        # Called after each time step, can do anything, no return value.
-        step_hook = get( 'step_hook', None )
-        # Called after each time step.
-        post_process_hook = get( 'post_process_hook', None )
-        # Called after all time steps, or in the stationary case.
-        post_process_hook_final = get( 'post_process_hook_final', None )
-        # Called in init process.
-        pre_process_hook = get( 'pre_process_hook', None )
-
-        use_equations = get('use_equations', 'equations')
-
-        return Struct( **locals() )
-    process_options = staticmethod( process_options )
+        return Struct(save_results=get('save_results', True),
+                      # Save each variable into a separate file, using
+                      # the region of its definition only.
+                      file_per_var=get('file_per_var', False),
+                      output_format=get('output_format', 'vtk'),
+                      output_dir=output_dir,
+                      # Called after each time step, can do anything, no
+                      # return value.
+                      step_hook=get('step_hook', None),
+                      # Called after each time step.
+                      post_process_hook=get('post_process_hook', None),
+                      # Called after all time steps, or in the
+                      # stationary case.
+                      post_process_hook_final=get('post_process_hook_final',
+                                                  None),
+                      # Called in init process.
+                      pre_process_hook=get('pre_process_hook', None),
+                      use_equations=get('use_equations', 'equations'))
 
     def __init__(self, conf, options, output_prefix,
                  init_equations=True, **kwargs):
