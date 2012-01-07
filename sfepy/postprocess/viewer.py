@@ -207,11 +207,12 @@ class Viewer(Struct):
             insert_as_static_method(self.__class__, '__call__', self.call_empty)
         else:
             insert_as_static_method(self.__class__, '__call__', self.call_mlab)
-            
+
     def get_data_names(self, source=None, detailed=False):
         if source is None:
             mlab.options.offscreen = self.offscreen
-            scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0), size=(1, 1))
+            mlab.figure(fgcolor=self.fgcolor, bgcolor=self.bgcolor,
+                        size=(1, 1))
             source = mlab.pipeline.open(self.filename)
         point_scalar_names = sorted( source._point_scalars_list[:-1] )
         point_vector_names = sorted( source._point_vectors_list[:-1] )
@@ -566,7 +567,7 @@ class Viewer(Struct):
                     name = '|%s|' % name
                 text = add_text(active, position, name,
                                 float(rel_text_width * len(name))
-                                / float(max_label_width))
+                                / float(max_label_width), color=self.fgcolor)
 
         if not names:
             # No data, so just show the mesh.
@@ -634,8 +635,10 @@ class Viewer(Struct):
             
     def call_empty(self, *args, **kwargs):
         pass
-    
-    def call_mlab(self, scene=None, show=True, is_3d=False, view=None, roll=None,
+
+    def call_mlab(self, scene=None, show=True, is_3d=False,
+                  view=None, roll=None,
+                  fgcolor=(1.0, 1.0, 1.0), bgcolor=(0.0, 0.0, 0.0),
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
@@ -660,6 +663,12 @@ class Viewer(Struct):
             `mlab.view()`.
         roll : float
             Roll angle tuple as in mlab.roll().
+        fgcolor : tuple of floats (R, G, B)
+            The foreground color, that is the color of all text
+            annotation labels (axes, orientation axes, scalar bar
+            labels).
+        bgcolor : tuple of floats (R, G, B)
+            The background color.
         layout : str
             Grid layout for placing the datasets. Possible values are:
             'row', 'col', 'rowcol', 'colrow'.
@@ -709,6 +718,9 @@ class Viewer(Struct):
         domain_specific : dict
             Domain-specific drawing functions and configurations.
         """
+        self.fgcolor = fgcolor
+        self.bgcolor = bgcolor
+
         if filter_names is None:
             filter_names = ['node_groups', 'mat_id']
 
@@ -769,11 +781,12 @@ class Viewer(Struct):
             if self.scene is None:
                 if self.offscreen:
                     gui = None
-                    scene = mlab.figure(bgcolor=(1,1,1), fgcolor=(0, 0, 0),
+                    scene = mlab.figure(fgcolor=fgcolor, bgcolor=bgcolor,
                                         size=self.size_hint)
 
                 else:
-                    gui = ViewerGUI(viewer=self)
+                    gui = ViewerGUI(viewer=self,
+                                    fgcolor=fgcolor, bgcolor=bgcolor)
                     scene = gui.scene.mayavi_scene
 
                 if scene is not self.scene:
@@ -955,7 +968,7 @@ class ViewerGUI(HasTraits):
         viewer.reset_view()
         viewer.show_scalar_bars(viewer.scalar_bars)
 
-    def __init__(self, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0),
+    def __init__(self, fgcolor=(0.0, 0.0, 0.0), bgcolor=(1.0, 1.0, 1.0),
                  **traits):
         HasTraits.__init__(self, **traits)
         scene = self.scene.scene

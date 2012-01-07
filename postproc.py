@@ -62,6 +62,11 @@ help = {
     '[default: if --3d is True: "45,45", else: "0,0"]',
     'roll' :
     'camera roll angle [default: %default]',
+    'fgcolor' :
+    'foreground color, that is the color of all text annotation labels'
+    ' (axes, orientation axes, scalar bar labels) [default: %default]',
+    'bgcolor' :
+    'background color [default: %default]',
     'layout' :
     'layout for multi-field plots, one of: rowcol, colrow, row, col' \
     ' [default: %default]',
@@ -201,7 +206,9 @@ def view_file(filename, filter_names, options, view=None):
             options.only_names = options.only_names.split(',')
 
         view(show=options.show, is_3d=options.is_3d, view=options.view,
-             roll=options.roll, layout=options.layout,
+             roll=options.roll,
+             fgcolor=options.fgcolor, bgcolor=options.bgcolor,
+             layout=options.layout,
              scalar_mode=options.scalar_mode,
              vector_mode=options.vector_mode,
              rel_scaling=options.rel_scaling,
@@ -245,6 +252,12 @@ def main():
     parser.add_option("--roll", type='float', metavar='angle',
                       action="store", dest="roll",
                       default=0.0, help=help['roll'])
+    parser.add_option("--fgcolor", metavar='R,G,B',
+                      action="store", dest="fgcolor",
+                      default='0.0,0.0,0.0', help=help['fgcolor'])
+    parser.add_option("--bgcolor", metavar='R,G,B',
+                      action="store", dest="bgcolor",
+                      default='1.0,1.0,1.0', help=help['bgcolor'])
     parser.add_option("--layout", metavar='layout',
                       action="store", dest="layout",
                       default='rowcol', help=help['layout'])
@@ -332,6 +345,14 @@ def main():
     else:
         parser.print_help(),
         return
+
+    options.fgcolor = tuple([float(ii) for ii in
+                             options.fgcolor.split(',')])
+    assert_(len(options.fgcolor) == 3)
+
+    options.bgcolor = tuple([float(ii) for ii in
+                             options.bgcolor.split(',')])
+    assert_(len(options.bgcolor) == 3)
 
     # Output dir / file names.
     if options.filename is None:
