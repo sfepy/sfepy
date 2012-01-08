@@ -1,7 +1,12 @@
 User's Guide
 ============
 
-This manual provides reference documentation to *SfePy* from a user's perspective.
+.. contents:: Table of Contents
+   :local:
+   :backlinks: top
+
+This manual provides reference documentation to *SfePy* from a user's
+perspective.
 
 Running a simulation
 --------------------
@@ -36,7 +41,7 @@ Basic usage
 
     $ ./isfepy
 
-  * Follow the help information printed on startup 
+  * Follow the help information printed on startup
 
 Surface extraction
 ^^^^^^^^^^^^^^^^^^
@@ -53,35 +58,35 @@ Applications
 * Phononic Materials
 
   * ::
-  
+
       $ ./eigen.py -p examples/phononic/band_gaps.py
-      
+
     * see ``examples/phononic/output/``
 
-* ``schroedinger.py`` 
+* ``schroedinger.py``
 
   * (order is important below):
 
-    1. :: 
+    1. ::
 
         $ ./schroedinger.py --2d --create-mesh
 
-    2. :: 
+    2. ::
 
         $ ./schroedinger.py --2d --hydrogen
 
     3. ::
-    
+
         $ ./postproc.py mesh.vtk
 
 Stand-Alone Examples
 ^^^^^^^^^^^^^^^^^^^^
 
-* :: 
+* ::
 
     $ python examples/rs_correctors.py
 
-* :: 
+* ::
 
     $ python examples/compare_elastic_materials.py
 
@@ -399,7 +404,7 @@ conditions, the domains of terms and materials etc.
   * Additional specification:
 
     * 'forbid' : 'group <integer>' - forbid elements of listed groups
-    * 'can_cells' : <boolean> - determines whether a region can have cells (volume in 3D) 
+    * 'can_cells' : <boolean> - determines whether a region can have cells (volume in 3D)
 
 * Region definition syntax
 
@@ -436,9 +441,9 @@ conditions, the domains of terms and materials etc.
 
   * Short syntax::
 
-    	  regions = {
-	      <name> : ( <selection>, {[<additional spec.>]} )
-	  }
+          regions = {
+              <name> : ( <selection>, {[<additional spec.>]} )
+          }
 
     * Example definitions::
 
@@ -460,13 +465,13 @@ Fields correspond to FE spaces
 
 * Long syntax::
 
-	field_<number> = {
-       	    'name' : <name>,
-	    'dtype' : <data_type>,
+        field_<number> = {
+            'name' : <name>,
+            'dtype' : <data_type>,
             'shape' : <shape>,
             'region' : <region_name>,
             'approx_order' : <approx_order>
-    	}
+        }
 
   where
     * <data_type> is a numpy type (float64 or complex128) or
@@ -482,7 +487,7 @@ Fields correspond to FE spaces
 
         field_1 = {
             'name' : 'temperature',
-	    'dtype' : 'real',
+            'dtype' : 'real',
             'shape' : 'scalar',
             'region' : 'Omega',
             'approx_order' : 1
@@ -490,9 +495,9 @@ Fields correspond to FE spaces
 
 * Short syntax::
 
-     	  fields = {
-	      <name> : (<data_type>, <shape>, <region_name>, <approx_order>)
-	  }
+          fields = {
+              <name> : (<data_type>, <shape>, <region_name>, <approx_order>)
+          }
 
   * Example: scalar P1 elements in 2D on a region Omega::
 
@@ -514,13 +519,13 @@ Variables use the FE approximation given by the specified field:
 
 * Long syntax::
 
-     	variables_<number> = {
+        variables_<number> = {
             'name' : <name>,
-	    'kind' : <kind>,
-	    'field' : <field_name>,
-	    ['order' : <order>,]
-	    ['dual' : <variable_name>,]
-    	}
+            'kind' : <kind>,
+            'field' : <field_name>,
+            ['order' : <order>,]
+            ['dual' : <variable_name>,]
+        }
 
   where
     * <kind> - 'unknown field', 'test field' or 'parameter field'
@@ -544,7 +549,7 @@ Variables use the FE approximation given by the specified field:
 
 * Short syntax::
 
-    	variables = {
+        variables = {
             <name> : (<kind>, <field_name>, <spec.>)
         }
 
@@ -568,12 +573,12 @@ Integrals
 Define the integral type and quadrature rule. This keyword is optional.
 
 * Long syntax::
-    
+
         integral_<number> = {
             'name' : <name>,
-	    'kind' : <kind>,
+            'kind' : <kind>,
             'quadrature' : <rule>
-    	}
+        }
 
   where
 
@@ -583,39 +588,39 @@ Define the integral type and quadrature rule. This keyword is optional.
 
   * Example, long syntax::
 
-    	integral_1 = {
+        integral_1 = {
             'name' : 'i1',
             'kind' : 'v',
             'quadrature' : 'gauss_o2_d2', # <quadrature name>
-    	}
+        }
 
-    	import numpy as nm
-    	N = 2
-    	integral_2 = {
+        import numpy as nm
+        N = 2
+        integral_2 = {
             'name' : 'i2',
-       	    'kind' : 'v',
-       	    'quadrature' : 'custom', # <quadrature name>
-       	    'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
-            	            nm.linspace( 1e-10, 0.5, N )),
-  	    'weights' : [1./N] * N,
-    	}
+            'kind' : 'v',
+            'quadrature' : 'custom', # <quadrature name>
+            'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
+                            nm.linspace( 1e-10, 0.5, N )),
+            'weights' : [1./N] * N,
+        }
 
 * Short syntax::
-  
+
         integrals = {
             <name> : (<kind>, <rule>)
         }
 
   * Example, short syntax::
-   
-    	import numpy as nm
-    	N = 2
+
+        import numpy as nm
+        N = 2
         integrals = {
             'i1' : ('v', 'gauss_o2_d3'),
             'i2' : ('v', 'custom', zip(nm.linspace( 1e-10, 0.5, N ),
-            	                       nm.linspace( 1e-10, 0.5, N )),
+                                       nm.linspace( 1e-10, 0.5, N )),
                     [1./N] * N),
-    	}
+        }
 
 Boundary conditions
 ^^^^^^^^^^^^^^^^^^^
@@ -818,7 +823,7 @@ nonlinear solver.
 
     solvers = {
         'ls' : ('ls.scipy_direct', {}),
-    	'newton' : ('nls.newton',
+        'newton' : ('nls.newton',
                     {'i_max'   : 1,
                      'problem' : 'nonlinear'}),
     }
@@ -924,9 +929,9 @@ description file demonstrating how to use different kinds of functions.
     def get_pars(ts, coors, mode=None, region=None, ig=None):
         if mode == 'qp':
             val = coors[:,0]
-	    val.shape = (coors.shape[0], 1, 1)
+            val.shape = (coors.shape[0], 1, 1)
 
-	    return {'x_coor' : val}
+            return {'x_coor' : val}
 
     functions = {
         'get_pars' : (get_pars,),
@@ -955,7 +960,7 @@ description file demonstrating how to use different kinds of functions.
         'function' : lambda ts, coors,mode=None,  region=None, ig=None:
             get_pars_special(ts, coors, mode, region, ig, extra_arg='hi!'),
     }
-    
+
 - function combining both kinds of material parameters::
 
     def get_pars_both(ts, coors, mode=None, region=None, ig=None):
@@ -963,16 +968,16 @@ description file demonstrating how to use different kinds of functions.
 
         if mode == 'special':
 
-	    out['flag'] = coors.max() > 1.0
+            out['flag'] = coors.max() > 1.0
 
         elif mode == 'qp':
-	    
+
             val = coors[:,1]
-	    val.shape = (coors.shape[0], 1, 1)
+            val.shape = (coors.shape[0], 1, 1)
 
-	    out['y_coor'] = val
+            out['y_coor'] = val
 
-	return out
+        return out
 
     functions = {
         'get_pars_both' : (get_pars_both,),
@@ -1014,37 +1019,37 @@ solution (the `hooks`), and for other settings.
         # 'vtk' or 'h5', output file (results) format
         'output_format'     : 'h5',
 
-	# string, nonlinear solver name
+        # string, nonlinear solver name
         'nls' : 'newton',
 
-	# string, linear solver name
+        # string, linear solver name
         'ls' : 'ls',
 
-	# string, time stepping solver name
+        # string, time stepping solver name
         'ts' : 'ts',
 
-	# int, number of time steps when results should be saved (spaced
+        # int, number of time steps when results should be saved (spaced
         # regularly from 0 to n_step), or -1 for all time steps
         'save_steps' : -1,
 
-	# string, a function to be called after each time step
+        # string, a function to be called after each time step
         'step_hook'  : '<step_hook_function>',
 
-	# string, a function to be called after each time step, used to
+        # string, a function to be called after each time step, used to
         # update the results to be saved
         'post_process_hook' : '<post_process_hook_function>',
 
-	# string, as above, at the end of simulation
+        # string, as above, at the end of simulation
         'post_process_hook_final' : '<post_process_hook_final_function>',
 
-	# string, a function to generate probe instances
+        # string, a function to generate probe instances
         'gen_probes'        : '<gen_probes_function>',
 
-	# string, a function to probe data
+        # string, a function to probe data
         'probe_hook'        : '<probe_hook_function>',
 
-	# string, a function to modify problem definition parameters
-	'parametric_hook' : '<parametric_hook_function>',
+        # string, a function to modify problem definition parameters
+        'parametric_hook' : '<parametric_hook_function>',
     }
 
   * ``post_process_hook`` enables computing derived quantities, like
@@ -1061,7 +1066,7 @@ Building Equations in SfePy
 Equations in *SfePy* are built using terms, which correspond directly to the
 integral forms of weak formulation of a problem to be solved. As an example, let
 us consider the Laplace equation in time interval :math:`t \in [0, t_{\rm
-final}]`: 
+final}]`:
 
 .. math::
    :label: eq_laplace
@@ -1069,9 +1074,9 @@ final}]`:
     \pdiff{T}{t} + c \Delta T = 0 \mbox{ in }\Omega,\quad T(t) = \bar{T}(t)
     \mbox{ on } \Gamma \;.
 
-The weak formulation of :eq:`eq_laplace` is: Find :math:`T \in V`, such that 
+The weak formulation of :eq:`eq_laplace` is: Find :math:`T \in V`, such that
 
-.. math:: 
+.. math::
    :label: eq_wlaplace
 
     \int_{\Omega} s \pdiff{T}{t} + \int_{\Omega} c\ \nabla T : \nabla s = 0,
@@ -1083,7 +1088,7 @@ syntax used in *SfePy* input files, this can be written as::
     dw_mass_scalar.i1.Omega( s, dT/dt ) + dw_laplace.i1.Omega( coef, s, T) = 0
 
 which directly corresponds to the discrete version of :eq:`eq_wlaplace`: Find
-:math:`\bm{T} \in V_h`, such that 
+:math:`\bm{T} \in V_h`, such that
 
 .. math::
 
@@ -1107,4 +1112,3 @@ where ``<i>`` denotes an integral name (i.e. a name of numerical quadrature to
 use) and ``<r>`` marks a region (domain of the integral). In the following,
 ``<virtual>`` corresponds to a test function, ``<state>`` to a unknown function
 and ``<parameter>`` to a known function arguments.
-
