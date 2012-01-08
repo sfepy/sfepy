@@ -1112,3 +1112,50 @@ where ``<i>`` denotes an integral name (i.e. a name of numerical quadrature to
 use) and ``<r>`` marks a region (domain of the integral). In the following,
 ``<virtual>`` corresponds to a test function, ``<state>`` to a unknown function
 and ``<parameter>`` to a known function arguments.
+
+Available Solvers
+-----------------
+
+This Section describes solvers available in SfePy from user's
+perspective. There internal/external solvers include linear, nonlinear,
+eigenvalue, optimization and time stepping solvers.
+
+Nonlinear Solvers
+^^^^^^^^^^^^^^^^^
+
+Almost every problem, even linear, is solved in SfePy using a nonlinear
+solver that calls a linear solver in each iteration. This approach
+unifies treatment of linear and non-linear problems, and simplifies
+application of Dirichlet (essential) boundary conditions, as the linear
+system computes not a solution, but a solution increment, i.e., it
+always has zero boundary conditions.
+
+The following solvers are available:
+
+- 'nls.newton': Newton solver with backtracking line-search - this is
+  the default solver, that is used for almost all examples.
+- 'nls.oseen': Oseen problem solver tailored for stabilized
+  Navier-Stokes equations (see :ref:`navier_stokes-stabilized_navier_stokes`).
+- 'nls.scipy_broyden_like': interface to Broyden and Anderson solvers
+  from scipy.optimize.
+- 'nls.semismooth_newton': Semismooth Newton method for contact/friction
+  problems.
+
+Linear solvers
+^^^^^^^^^^^^^^
+
+A good linear solver is key to solving efficiently stationary as well as
+transient PDEs with implicit time-stepping. The following solvers are
+available:
+
+- 'ls.scipy_direct': direct solver from SciPy - this is the default
+  solver for all examples. It is strongly recommended to install umfpack
+  and its SciPy wrappers to get good performance.
+- 'ls.umfpack': alias to 'ls.scipy_direct'.
+- 'ls.scipy_iterative': Interface to SciPy iterative solvers.
+- 'ls.pyamg': Interface to PyAMG solvers.
+- 'ls.petsc': Interface to Krylov subspace solvers of PETSc.
+- 'ls.petsc_parallel': Interface to Krylov subspace solvers of PETSc
+  able to run in parallel by storing the system to disk and running a
+  separate script via `mpiexec`.
+- 'ls.schur_complement': Schur complement problem solver.
