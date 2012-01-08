@@ -225,11 +225,13 @@ system. Running ``postproc.py`` without arguments produces::
         output-tests/test_hyperelastic.00.vtk contains only zero
         displacements which leads to invisible glyph size.
 
-        $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov 
+        $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov
 
       - same as above, but slower frame rate
 
         $ python postproc.py output-tests/test_hyperelastic.*.vtk                          --ranges=u,0,0.02 -a mov --ffmpeg-options="-r 2 -sameq"
+
+
 
     Options:
       --version             show program's version number and exit
@@ -244,6 +246,10 @@ system. Running ``postproc.py`` without arguments produces::
                             in `mlab.view()` [default: if --3d is True: "45,45",
                             else: "0,0"]
       --roll=angle          camera roll angle [default: 0.0]
+      --fgcolor=R,G,B       foreground color, that is the color of all text
+                            annotation labels (axes, orientation axes, scalar bar
+                            labels) [default: 0.0,0.0,0.0]
+      --bgcolor=R,G,B       background color [default: 1.0,1.0,1.0]
       --layout=layout       layout for multi-field plots, one of: rowcol, colrow,
                             row, col [default: rowcol]
       --scalar-mode=mode    mode for plotting scalars with --3d, one of:
