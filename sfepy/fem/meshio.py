@@ -704,6 +704,35 @@ class VTKMeshIO( MeshIO ):
         return mesh
 
     def write(self, filename, mesh, out=None, ts=None, **kwargs):
+        def _reshape_tensors(data, dim, sym, nc):
+            if dim == 3:
+                if nc == sym:
+                    aux = data[:, [0,3,4,3,1,5,4,5,2]]
+                elif nc == (dim * dim):
+                    aux = data[:, [0,3,4,6,1,5,7,8,2]]
+                else:
+                    aux = data.reshape((data.shape[0], dim*dim))
+
+            else:
+                zz = nm.zeros((data.shape[0], 1), dtype=nm.float64)
+                if nc == sym:
+                    aux = nm.c_[data[:,[0,2]], zz, data[:,[2,1]],
+                                zz, zz, zz, zz]
+                elif nc == (dim * dim):
+                    aux = nm.c_[data[:,[0,2]], zz, data[:,[3,1]],
+                                zz, zz, zz, zz]
+                else:
+                    aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
+                                zz, zz, zz, zz]
+
+            return aux
+
+        def _write_tensors(data):
+            format = self.get_vector_format(3)
+            format = '\n'.join([format] * 3) + '\n\n'
+            for row in aux:
+                fd.write(format % tuple(row))
+
         if ts is None:
             step, time, nt  = 0, 0.0, 0.0
         else:
@@ -777,6 +806,11 @@ class VTKMeshIO( MeshIO ):
                 for row in aux:
                     fd.write( format % tuple( row ) )
 
+            elif (nc == sym) or (nc == (dim * dim)):
+                fd.write('\nTENSORS %s float\n' % key)
+                aux = _reshape_tensors(val.data, dim, sym, nc)
+                _write_tensors(aux)
+
             else:
                 raise NotImplementedError, nc
 
@@ -822,33 +856,10 @@ class VTKMeshIO( MeshIO ):
 
             elif (((nr == sym) or (nr == (dim * dim))) and (nc == 1)) \
                      or ((nr == dim) and (nc == dim)):
-                # Below not tested!!!
-                fd.write( '\nTENSORS %s float\n' % key );
+                fd.write('\nTENSORS %s float\n' % key)
                 data = val.data.squeeze()
-
-                if dim == 3:
-                    if nr == sym:
-                        aux = data[:,[0,3,4,3,1,5,4,5,2]]
-                    elif nr == (dim * dim):
-                        aux = data[:,[0,3,4,6,1,5,7,8,2]]
-                    else:
-                        aux = data.reshape((data.shape[0], dim*dim))
-                else:
-                    zz = nm.zeros( (data.shape[0], 1), dtype = nm.float64 );
-                    if nr == sym:
-                        aux = nm.c_[data[:,[0,2]], zz, data[:,[2,1]],
-                                    zz, zz, zz, zz]
-                    elif nr == (dim * dim):
-                        aux = nm.c_[data[:,[0,2]], zz, data[:,[3,1]],
-                                    zz, zz, zz, zz]
-                    else:
-                        aux = nm.c_[data[:,0,[0,1]], zz, data[:,1,[0,1]],
-                                    zz, zz, zz, zz]
-
-                format = self.get_vector_format( 3 )
-                format = '\n'.join( [format] * 3 ) + '\n\n';
-                for row in aux:
-                    fd.write( format % tuple( row ) )
+                aux = _reshape_tensors(data, dim, sym, nr)
+                _write_tensors(aux)
 
             else:
                 raise NotImplementedError, (nr, nc)
