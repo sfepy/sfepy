@@ -39,9 +39,13 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
     rc0 = ps.geometry.conn[None, :]
     rx, rc, ree = refine_reference(ps.geometry, 1)
 
+    factor = rc.shape[0] / rc0.shape[0]
+
     iels = nm.arange(n_el)
     bf, msd = _get_msd(iels, rx, ree)
     flag = msd > eps_r
+
+    iels0 = flag0 = None
 
     coors = []
     conns = []
@@ -58,7 +62,12 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
             flag.fill(False)
 
         # Deal with finished elements.
-        ie, ir = nm.where(flag == False)
+        if flag0 is not None:
+            ii = nm.searchsorted(iels0, iels)
+            expand_flag0 = flag0[ii].repeat(factor, axis=1)
+        else:
+            expand_flag0 = nm.ones_like(flag)
+        ie, ir = nm.where((flag == False) & (expand_flag0 == True))
         if len(ie):
             uie, iies = nm.unique(ie, return_inverse=True)
 
@@ -98,6 +107,9 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
 
         if not flag.any():
             break
+
+        iels0 = iels
+        flag0 = flag
 
         # Deal with elements to refine.
         if level < max_level:
