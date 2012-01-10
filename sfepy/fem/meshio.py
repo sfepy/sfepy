@@ -43,7 +43,7 @@ supported_capabilities = {
     'avs_ucd' : ['r'],
     'hmascii' : ['r'],
     'mesh3d' : ['r'],
-    'nastran' : ['r'],
+    'nastran' : ['r', 'w'],
     'gambit' : ['r', 'rn'],
     'med' : ['r'],
     'ansys_cdb' : ['r'],
