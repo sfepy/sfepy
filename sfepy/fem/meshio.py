@@ -2334,7 +2334,7 @@ class NEUMeshIO( MeshIO ):
                 row = fd.readline().split()
                 key = row[0]
                 num = int(row[2])
-                inod = read_array(fd, num, 1, nm.int32) - 1
+                inod = read_array(fd, num, None, nm.int32) - 1
                 nodal_bcs[key] = inod.squeeze()
 
                 row = fd.readline().split()
