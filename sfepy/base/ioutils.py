@@ -144,7 +144,14 @@ def read_array(fd, n_row, n_col, dtype):
     """
     Read a NumPy array of shape `(n_row, n_col)` from the given file
     object and cast it to type `dtype`.
+    If `n_col` is None, determine the number of columns automatically.
     """
+    if n_col is None:
+        idx = fd.tell()
+        row = fd.readline().split()
+        fd.seek(idx)
+        n_col = len(row)
+
     count = n_row * n_col
     val = nm.fromfile(fd, sep=' ', count=count)
 
