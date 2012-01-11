@@ -105,26 +105,40 @@ def get_von_mises_stress(stress, sym_storage=True):
     if sym_storage:
         dim = sym2dim(dim)
 
-    assert_(dim == 3)
+    if dim == 2:
 
-    if sym_storage:
-        s11 = stress[:,0]
-        s22 = stress[:,1]
-        s33 = stress[:,2]
-        s12 = stress[:,3]
-        s13 = stress[:,4]
-        s23 = stress[:,5]
+        if sym_storage:
+            s11 = stress[:,0]
+            s22 = stress[:,1]
+            s12 = stress[:,2]
+
+        else:
+            s11 = stress[:,0,0]
+            s22 = stress[:,1,1]
+            s12 = stress[:,0,1]
+
+        vms = nm.sqrt(s11**2 - s11*s22 + s22**2 + 3*s12**2)[:,None]
 
     else:
-        s11 = stress[:,0,0]
-        s22 = stress[:,1,1]
-        s33 = stress[:,2,2]
-        s12 = stress[:,0,1]
-        s13 = stress[:,0,2]
-        s23 = stress[:,1,2]
 
-    vms = nm.sqrt(0.5 * ((s11 - s22)**2 + (s22 - s33)**2 + (s11 - s33)**2
-                         + 6.0 * (s12**2 + s13**2 + s23**2)))[:,None]
+        if sym_storage:
+            s11 = stress[:,0]
+            s22 = stress[:,1]
+            s33 = stress[:,2]
+            s12 = stress[:,3]
+            s13 = stress[:,4]
+            s23 = stress[:,5]
+
+        else:
+            s11 = stress[:,0,0]
+            s22 = stress[:,1,1]
+            s33 = stress[:,2,2]
+            s12 = stress[:,0,1]
+            s13 = stress[:,0,2]
+            s23 = stress[:,1,2]
+
+        vms = nm.sqrt(0.5 * ((s11 - s22)**2 + (s22 - s33)**2 + (s11 - s33)**2
+                             + 6.0 * (s12**2 + s13**2 + s23**2)))[:,None]
 
     return vms
 
