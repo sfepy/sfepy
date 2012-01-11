@@ -369,15 +369,19 @@ def refine_reference(geometry, level):
         shape = (n1d, n1d)
         coors = nm.zeros((nm.prod(shape), 2), dtype=nm.float64)
         g = nm.zeros(shape, dtype=nm.int32)
-        for ii, ic in enumerate(cycle(shape)):
-            g[tuple(ic)] = ii
-            coors[ii] = ip[ic]
+        for ii, (y, x) in enumerate(cycle(shape)):
+            g[x, y] = ii
+            coors[ii] = ip[[x, y]]
 
         conn = []
-        for (x, y) in cycle(nm.array(shape) - 1):
+        gc = nm.zeros(nm.array(shape) - 1, dtype=nm.int32)
+        for ii, (y, x) in enumerate(cycle(nm.array(shape) - 1)):
+            gc[x, y] = ii
             conn.append([g[x  , y  ], g[x+1, y  ],
                          g[x+1, y+1], g[x  , y+1]])
 
+        nesting = []
+        apn = nesting.append
         error_edges = []
         ap = error_edges.append
         for y0 in range(0, n1d - 1, 2):
@@ -392,6 +396,8 @@ def refine_reference(geometry, level):
                 ap([g[x0, y0], g[x0, y1], g[x0, y2]])
                 ap([g[x1, y0], g[x1, y1], g[x1, y2]])
                 ap([g[x2, y0], g[x2, y1], g[x2, y2]])
+
+                apn([gc[x0, y0], gc[x1, y0], gc[x0, y1], gc[x1, y1]])
 
     elif geometry.name == '3_8':
         n_edge = 27
@@ -458,9 +464,10 @@ def refine_reference(geometry, level):
         raise ValueError('unsupported geometry! (%s)' % geometry.name)
 
     conn = nm.array(conn, dtype=nm.int32)
+    nesting = nm.array(nesting, dtype=nm.int32)
     error_edges = nm.array(error_edges, dtype=nm.int32)
 
     sh = error_edges.shape
     error_edges.shape = (sh[0] / n_edge, n_edge, sh[1])
 
-    return coors, conn, error_edges
+    return coors, conn, nesting, error_edges
