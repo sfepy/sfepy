@@ -405,17 +405,21 @@ def refine_reference(geometry, level):
         shape = (n1d, n1d, n1d)
         coors = nm.zeros((nm.prod(shape), 3), dtype=nm.float64)
         g = nm.zeros(shape, dtype=nm.int32)
-        for ii, ic in enumerate(cycle(shape)):
-            g[tuple(ic)] = ii
-            coors[ii] = ip[ic]
+        for ii, (z, y, x) in enumerate(cycle(shape)):
+            g[x, y, z] = ii
+            coors[ii] = ip[[x, y, z]]
 
         conn = []
-        for (x, y, z) in cycle(nm.array(shape) - 1):
+        gc = nm.zeros(nm.array(shape) - 1, dtype=nm.int32)
+        for ii, (z, y, x) in enumerate(cycle(nm.array(shape) - 1)):
+            gc[x, y, z] = ii
             conn.append([g[x  , y  , z  ], g[x+1, y  , z  ],
                          g[x+1, y+1, z  ], g[x  , y+1, z  ],
                          g[x  , y  , z+1], g[x+1, y  , z+1],
                          g[x+1, y+1, z+1], g[x  , y+1, z+1]])
 
+        nesting = []
+        apn = nesting.append
         error_edges = []
         ap = error_edges.append
         for z0 in range(0, n1d - 1, 2):
@@ -459,6 +463,11 @@ def refine_reference(geometry, level):
                     ap([g[x0, y2, z0], g[x0, y2, z1], g[x0, y2, z2]])
                     ap([g[x1, y2, z0], g[x1, y2, z1], g[x1, y2, z2]])
                     ap([g[x2, y2, z0], g[x2, y2, z1], g[x2, y2, z2]])
+
+                    apn([gc[x0, y0, z0], gc[x1, y0, z0],
+                         gc[x0, y1, z0], gc[x1, y1, z0],
+                         gc[x0, y0, z1], gc[x1, y0, z1],
+                         gc[x0, y1, z1], gc[x1, y1, z1]])
 
     else:
         raise ValueError('unsupported geometry! (%s)' % geometry.name)
