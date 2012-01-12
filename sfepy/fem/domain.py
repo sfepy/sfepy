@@ -179,7 +179,7 @@ class Domain( Struct ):
     Domain is divided into groups, whose purpose is to have homogeneous
     data shapes."""
 
-    def __init__(self, name, mesh):
+    def __init__(self, name, mesh, verbose=False):
         """Create a Domain.
 
         Parameters
@@ -220,7 +220,7 @@ class Domain( Struct ):
 
         self.setup_groups()
         self.fix_element_orientation()
-        self.setup_facets()
+        self.setup_facets(verbose=verbose)
         self.reset_regions()
         self.clear_surface_groups()
 
@@ -353,8 +353,9 @@ class Domain( Struct ):
     def has_faces( self ):
         return sum( [group.shape.n_face
                      for group in self.iter_groups()] ) > 0
-        
-    def setup_facets(self, create_edges=True, create_faces=True):
+
+    def setup_facets(self, create_edges=True, create_faces=True,
+                     verbose=False):
         """
         Setup the edges and faces (in 3D) of domain elements.
         """
@@ -365,7 +366,8 @@ class Domain( Struct ):
 
         for ii, kind in enumerate(kinds):
             if create[ii]:
-                output('setting up domain %s...' % kind)
+                if verbose:
+                    output('setting up domain %s...' % kind)
 
                 tt = time.clock()
                 obj = Facets.from_domain(self, kind)
@@ -376,7 +378,8 @@ class Domain( Struct ):
                 # 'ed' or 'fa'
                 setattr(self, kind[:2], obj)
 
-                output('...done in %.2f s' % (time.clock() - tt))
+                if verbose:
+                    output('...done in %.2f s' % (time.clock() - tt))
 
         if not is_face:
             self.fa = None
