@@ -220,204 +220,61 @@ def refine_reference(geometry, level):
     if level == 0:
         return gcoors, gconn
 
-    c1d = gcoors[geometry.edges[0], 0]
-    n1d = 2**level + 1
+    gd = geometry_data[geometry.name]
+    conn = nm.array([gd.conn], dtype=nm.int32)
+    mat_id = conn[:, 0].copy()
+    mat_id[:] = 0
 
-    ip = nm.linspace(c1d[0], c1d[1], n1d)
+    mesh = Mesh.from_data('aux', gd.coors, None, [conn],
+                          [mat_id], [geometry.name])
+    domain = Domain('aux', mesh)
+
+    for ii in range(level):
+        domain = domain.refine()
+
+    coors = domain.mesh.coors
+    conn = domain.mesh.conns[0]
+
+    n_el = conn.shape[0]
 
     if geometry.name == '2_3':
-        n_edge = 3
+        aux_conn = conn.reshape((n_el / 4, 4, 3))
 
-        coors = nm.zeros((n1d * (n1d + 1) / 2, 2), dtype=nm.float64)
-        g = nm.zeros((n1d, n1d), dtype=nm.int32)
-        ii = 0
-        for y in range(n1d):
-            for x in range(n1d - y):
-                g[x, y] = ii
-                coors[ii] = ip[[x, y]]
-                ii += 1
+        ir = [[0, 1, 2], [2, 2, 3], [3, 3, 0]]
+        ic = [[0, 0, 0], [0, 1, 0], [0, 1, 0]]
 
-        conn = []
-        gc = nm.zeros((2 * n1d - 1, n1d - 1), dtype=nm.int32)
-        ii = 0
-        for y in range(n1d - 1):
-            for x in range(n1d - y - 1):
-                conn.append([g[x, y], g[x+1, y], g[x, y+1]])
-                gc[x, y] = ii
-                ii += 1
-            for x in range(n1d - y - 2):
-                conn.append([g[x+1, y], g[x+1, y+1], g[x, y+1]])
-                gc[n1d+x, y] = ii
-                ii += 1
+    elif geometry.name == '2_4':
+        aux_conn = conn.reshape((n_el / 4, 4, 4))
 
-        nesting = []
-        apn = nesting.append
-        error_edges = []
-        ap = error_edges.append
-        for y0 in range(0, n1d - 1, 2):
-            y1 = y0 + 1
-            y2 = y0 + 2
-            for x0 in range(0, n1d - y0 - 1, 2):
-                x1 = x0 + 1
-                x2 = x0 + 2
-                ap([g[x0, y0], g[x1, y0], g[x2, y0]])
-                ap([g[x0, y0], g[x0, y1], g[x0, y2]])
-                ap([g[x2, y0], g[x1, y1], g[x0, y2]])
-
-                apn([gc[x0, y0], gc[x1, y0], gc[x0, y1], gc[x0+n1d, y0]])
-
-            for x0 in range(0, n1d - y0 - 3, 2):
-                x1 = x0 + 1
-                x2 = x0 + 2
-                ap([g[x2, y0], g[x2, y1], g[x2, y2]])
-                ap([g[x2, y0], g[x1, y1], g[x0, y2]])
-                ap([g[x0, y2], g[x1, y2], g[x2, y2]])
-
-                apn([gc[x1, y1], gc[x0+n1d, y1],
-                     gc[x1+n1d, y0], gc[x1+n1d, y1]])
-
+        ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 3, 0], [0, 0, 2], [3, 3, 1]]
+        ic = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [1, 2, 1], [1, 2, 1]]
 
     elif geometry.name == '3_4':
-        gd = geometry_data[geometry.name]
-        conn = nm.array([gd.conn], dtype=nm.int32)
-        mat_id = conn[:, 0].copy()
-        mat_id[:] = 0
-
-        mesh = Mesh.from_data('aux', gd.coors, None, [conn],
-                              [mat_id], [geometry.name])
-        domain = Domain('aux', mesh)
-
-        for ii in range(level):
-            domain = domain.refine()
-
-        coors = domain.mesh.coors
-        conn = domain.mesh.conns[0]
-
-        n_el = conn.shape[0]
-
-        aux = conn.reshape((n_el/8, 8, 4))
+        aux_conn = conn.reshape((n_el / 8, 8, 4))
 
         ir = [[0, 0, 1], [1, 1, 2], [2, 0, 0], [3, 1, 1], [3, 2, 2], [3, 0, 0]]
         ic = [[0, 1, 1], [1, 2, 2], [2, 2, 0], [3, 3, 1], [3, 3, 2], [3, 3, 0]]
-        error_edges = aux[:, ir, ic]
-
-        nesting = nm.arange(n_el, dtype=nm.float64).reshape((n_el/8, 8))
-
-    elif geometry.name == '2_4':
-        n_edge = 6
-
-        shape = (n1d, n1d)
-        coors = nm.zeros((nm.prod(shape), 2), dtype=nm.float64)
-        g = nm.zeros(shape, dtype=nm.int32)
-        for ii, (y, x) in enumerate(cycle(shape)):
-            g[x, y] = ii
-            coors[ii] = ip[[x, y]]
-
-        conn = []
-        gc = nm.zeros(nm.array(shape) - 1, dtype=nm.int32)
-        for ii, (y, x) in enumerate(cycle(nm.array(shape) - 1)):
-            gc[x, y] = ii
-            conn.append([g[x  , y  ], g[x+1, y  ],
-                         g[x+1, y+1], g[x  , y+1]])
-
-        nesting = []
-        apn = nesting.append
-        error_edges = []
-        ap = error_edges.append
-        for y0 in range(0, n1d - 1, 2):
-            y1 = y0 + 1
-            y2 = y0 + 2
-            for x0 in range(0, n1d - 1, 2):
-                x1 = x0 + 1
-                x2 = x0 + 2
-                ap([g[x0, y0], g[x1, y0], g[x2, y0]])
-                ap([g[x0, y1], g[x1, y1], g[x2, y1]])
-                ap([g[x0, y2], g[x1, y2], g[x2, y2]])
-                ap([g[x0, y0], g[x0, y1], g[x0, y2]])
-                ap([g[x1, y0], g[x1, y1], g[x1, y2]])
-                ap([g[x2, y0], g[x2, y1], g[x2, y2]])
-
-                apn([gc[x0, y0], gc[x1, y0], gc[x0, y1], gc[x1, y1]])
 
     elif geometry.name == '3_8':
-        n_edge = 27
+        aux_conn = conn.reshape((n_el / 8, 8, 8))
 
-        shape = (n1d, n1d, n1d)
-        coors = nm.zeros((nm.prod(shape), 3), dtype=nm.float64)
-        g = nm.zeros(shape, dtype=nm.int32)
-        for ii, (z, y, x) in enumerate(cycle(shape)):
-            g[x, y, z] = ii
-            coors[ii] = ip[[x, y, z]]
-
-        conn = []
-        gc = nm.zeros(nm.array(shape) - 1, dtype=nm.int32)
-        for ii, (z, y, x) in enumerate(cycle(nm.array(shape) - 1)):
-            gc[x, y, z] = ii
-            conn.append([g[x  , y  , z  ], g[x+1, y  , z  ],
-                         g[x+1, y+1, z  ], g[x  , y+1, z  ],
-                         g[x  , y  , z+1], g[x+1, y  , z+1],
-                         g[x+1, y+1, z+1], g[x  , y+1, z+1]])
-
-        nesting = []
-        apn = nesting.append
-        error_edges = []
-        ap = error_edges.append
-        for z0 in range(0, n1d - 1, 2):
-            z1 = z0 + 1
-            z2 = z0 + 2
-            for y0 in range(0, n1d - 1, 2):
-                y1 = y0 + 1
-                y2 = y0 + 2
-                for x0 in range(0, n1d - 1, 2):
-                    x1 = x0 + 1
-                    x2 = x0 + 2
-                    ap([g[x0, y0, z0], g[x1, y0, z0], g[x2, y0, z0]])
-                    ap([g[x0, y1, z0], g[x1, y1, z0], g[x2, y1, z0]])
-                    ap([g[x0, y2, z0], g[x1, y2, z0], g[x2, y2, z0]])
-                    ap([g[x0, y0, z0], g[x0, y1, z0], g[x0, y2, z0]])
-                    ap([g[x1, y0, z0], g[x1, y1, z0], g[x1, y2, z0]])
-                    ap([g[x2, y0, z0], g[x2, y1, z0], g[x2, y2, z0]])
-
-                    ap([g[x0, y0, z1], g[x1, y0, z1], g[x2, y0, z1]])
-                    ap([g[x0, y1, z1], g[x1, y1, z1], g[x2, y1, z1]])
-                    ap([g[x0, y2, z1], g[x1, y2, z1], g[x2, y2, z1]])
-                    ap([g[x0, y0, z1], g[x0, y1, z1], g[x0, y2, z1]])
-                    ap([g[x1, y0, z1], g[x1, y1, z1], g[x1, y2, z1]])
-                    ap([g[x2, y0, z1], g[x2, y1, z1], g[x2, y2, z1]])
-
-                    ap([g[x0, y0, z2], g[x1, y0, z2], g[x2, y0, z2]])
-                    ap([g[x0, y1, z2], g[x1, y1, z2], g[x2, y1, z2]])
-                    ap([g[x0, y2, z2], g[x1, y2, z2], g[x2, y2, z2]])
-                    ap([g[x0, y0, z2], g[x0, y1, z2], g[x0, y2, z2]])
-                    ap([g[x1, y0, z2], g[x1, y1, z2], g[x1, y2, z2]])
-                    ap([g[x2, y0, z2], g[x2, y1, z2], g[x2, y2, z2]])
-
-                    ap([g[x0, y0, z0], g[x0, y0, z1], g[x0, y0, z2]])
-                    ap([g[x1, y0, z0], g[x1, y0, z1], g[x1, y0, z2]])
-                    ap([g[x2, y0, z0], g[x2, y0, z1], g[x2, y0, z2]])
-
-                    ap([g[x0, y1, z0], g[x0, y1, z1], g[x0, y1, z2]])
-                    ap([g[x1, y1, z0], g[x1, y1, z1], g[x1, y1, z2]])
-                    ap([g[x2, y1, z0], g[x2, y1, z1], g[x2, y1, z2]])
-
-                    ap([g[x0, y2, z0], g[x0, y2, z1], g[x0, y2, z2]])
-                    ap([g[x1, y2, z0], g[x1, y2, z1], g[x1, y2, z2]])
-                    ap([g[x2, y2, z0], g[x2, y2, z1], g[x2, y2, z2]])
-
-                    apn([gc[x0, y0, z0], gc[x1, y0, z0],
-                         gc[x0, y1, z0], gc[x1, y1, z0],
-                         gc[x0, y0, z1], gc[x1, y0, z1],
-                         gc[x0, y1, z1], gc[x1, y1, z1]])
+        ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],
+              [0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],
+              [4, 4, 5], [5, 5, 6], [6, 6, 7], [7, 4, 4], [4, 4, 6], [4, 4, 5],
+              [0, 0, 4], [1, 1, 5], [2, 2, 6], [3, 3, 7],
+              [0, 0, 4], [1, 1, 5], [2, 2, 6], [0, 0, 4],
+              [0, 0, 4]]
+        ic = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 3, 0], [1, 2, 1], [3, 2, 1],
+              [4, 5, 4], [4, 5, 4], [4, 5, 4], [4, 7, 4], [5, 6, 5], [7, 6, 5],
+              [0, 3, 0], [0, 3, 0], [0, 3, 0], [0, 1, 0], [3, 2, 3], [1, 2, 3],
+              [0, 4, 0], [0, 4, 0], [0, 4, 0], [0, 4, 0],
+              [1, 5, 3], [1, 5, 3], [1, 5, 3], [3, 7, 1],
+              [2, 6, 2]]
 
     else:
         raise ValueError('unsupported geometry! (%s)' % geometry.name)
 
     conn = nm.array(conn, dtype=nm.int32)
-    nesting = nm.array(nesting, dtype=nm.int32)
-    error_edges = nm.array(error_edges, dtype=nm.int32)
+    error_edges = aux_conn[:, ir, ic]
 
-    sh = error_edges.shape
-    if len(sh) == 2:
-        error_edges.shape = (sh[0] / n_edge, n_edge, sh[1])
-
-    return coors, conn, nesting, error_edges
+    return coors, conn, error_edges
