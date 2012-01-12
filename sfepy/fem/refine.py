@@ -235,12 +235,20 @@ def refine_reference(geometry, level):
                 ii += 1
 
         conn = []
+        gc = nm.zeros((2 * n1d - 1, n1d - 1), dtype=nm.int32)
+        ii = 0
         for y in range(n1d - 1):
             for x in range(n1d - y - 1):
                 conn.append([g[x, y], g[x+1, y], g[x, y+1]])
+                gc[x, y] = ii
+                ii += 1
             for x in range(n1d - y - 2):
                 conn.append([g[x+1, y], g[x+1, y+1], g[x, y+1]])
+                gc[n1d+x, y] = ii
+                ii += 1
 
+        nesting = []
+        apn = nesting.append
         error_edges = []
         ap = error_edges.append
         for y0 in range(0, n1d - 1, 2):
@@ -253,12 +261,18 @@ def refine_reference(geometry, level):
                 ap([g[x0, y0], g[x0, y1], g[x0, y2]])
                 ap([g[x2, y0], g[x1, y1], g[x0, y2]])
 
+                apn([gc[x0, y0], gc[x1, y0], gc[x0, y1], gc[x0+n1d, y0]])
+
             for x0 in range(0, n1d - y0 - 3, 2):
                 x1 = x0 + 1
                 x2 = x0 + 2
                 ap([g[x2, y0], g[x2, y1], g[x2, y2]])
                 ap([g[x2, y0], g[x1, y1], g[x0, y2]])
                 ap([g[x0, y2], g[x1, y2], g[x2, y2]])
+
+                apn([gc[x1, y1], gc[x0+n1d, y1],
+                     gc[x1+n1d, y0], gc[x1+n1d, y1]])
+
 
     elif geometry.name == '3_4':
         n_edge = 6
