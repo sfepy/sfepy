@@ -1393,6 +1393,10 @@ class HDF5MeshIO( MeshIO ):
                 fd.createArray( data_group, 'var_name',
                                 var_name, 'object parent name' )
                 fd.createArray( data_group, 'dname', key, 'data name' )
+                if val.mode == 'full':
+                    fd.createArray(data_group, 'field_name', val.field_name,
+                                   'field name')
+
                 name_dict[key] = group_name
 
             step_group._v_attrs.name_dict = name_dict
