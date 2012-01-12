@@ -270,6 +270,9 @@ class ProblemDefinition( Struct ):
         self.file_per_var = get_default(file_per_var, False)
         self.linearization = get_default(linearization, Struct(kind='strip'))
 
+        if self.output_format == 'h5':
+            self.linearization.kind = None
+
     def set_output_dir(self, output_dir=None):
         """
         Set the directory for output files.
@@ -657,7 +660,7 @@ class ProblemDefinition( Struct ):
             assumed True.
         """
         linearization = get_default(linearization, self.linearization)
-        if linearization.kind == 'strip':
+        if linearization.kind != 'adaptive':
             file_per_var = get_default(file_per_var, self.file_per_var)
 
         else:

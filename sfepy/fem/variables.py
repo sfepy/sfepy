@@ -1985,7 +1985,13 @@ class FieldVariable(Variable):
 
         out = {}
 
-        if ((not self.field.is_higher_order())
+        if linearization.kind is None:
+            out[key] = Struct(name='output_data', mode='full',
+                              data=aux, var_name=self.name,
+                              dofs=self.dofs,
+                              field_name=self.field.name)
+
+        elif ((not self.field.is_higher_order())
             or (linearization.kind == 'strip')):
             if extend:
                 ext = self.extend_dofs(aux, fill_value)
