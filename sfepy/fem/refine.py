@@ -213,6 +213,9 @@ def refine_reference(geometry, level):
     The error edges must be generated in the order of the connectivity
     of the previous (lower) level.
     """
+    from sfepy.fem import Domain
+    from sfepy.fem.geometry_element import geometry_data
+
     gcoors, gconn = geometry.coors, geometry.conn
     if level == 0:
         return gcoors, gconn
@@ -275,107 +278,30 @@ def refine_reference(geometry, level):
 
 
     elif geometry.name == '3_4':
-        n_edge = 6
+        gd = geometry_data[geometry.name]
+        conn = nm.array([gd.conn], dtype=nm.int32)
+        mat_id = conn[:, 0].copy()
+        mat_id[:] = 0
 
-        coors = nm.zeros(((n1d * (n1d + 1) * (n1d + 2)) / 6, 3),
-                         dtype=nm.float64)
-        g = nm.zeros((n1d, n1d, n1d), dtype=nm.int32)
-        ii = 0
-        for z in range(n1d):
-            for y in range(n1d - z):
-                for x in range(n1d - y - z):
-                    g[x, y, z] = ii
-                    coors[ii] = ip[[x, y, z]]
-                    ii += 1
+        mesh = Mesh.from_data('aux', gd.coors, None, [conn],
+                              [mat_id], [geometry.name])
+        domain = Domain('aux', mesh)
 
-        conn = []
-        ap = conn.append
-        for z in range(n1d - 1):
-            for y in range(n1d - z - 1):
-                for x in range(n1d - y - z - 1):
-                    # 'abde'
-                    ap([g[x, y, z], g[x+1, y, z],
-                        g[x, y+1, z], g[x, y, z+1]])
+        for ii in range(level):
+            domain = domain.refine()
 
-                for x in range(n1d - y - z - 2):
-                    # 'bfde'
-                    ap([g[x+1, y, z], g[x+1, y, z+1],
-                        g[x, y+1, z], g[x, y, z+1]])
-                    # 'dfhe'
-                    ap([g[x, y+1, z], g[x+1, y, z+1],
-                        g[x, y+1, z+1], g[x, y, z+1]])
-                    # 'bcdf'
-                    ap([g[x+1, y, z], g[x+1, y+1, z],
-                        g[x, y+1, z], g[x+1, y, z+1]])
-                    # 'dchf'
-                    ap([g[x, y+1, z], g[x+1, y+1, z],
-                        g[x, y+1, z+1], g[x+1, y, z+1]])
+        coors = domain.mesh.coors
+        conn = domain.mesh.conns[0]
 
-                for x in range(n1d - y - z - 3):
-                    # 'fgch'
-                    ap([g[x+1, y, z+1], g[x+1, y+1, z+1],
-                        g[x+1, y+1, z], g[x, y+1, z+1]])
+        n_el = conn.shape[0]
 
-        error_edges = []
-        ap = error_edges.append
-        for z0 in range(0, n1d - 1, 2):
-            z1 = z0 + 1
-            z2 = z0 + 2
-            for y0 in range(0, n1d - z0 - 1, 2):
-                y1 = y0 + 1
-                y2 = y0 + 2
-                for x0 in range(0, n1d - y0 - z0 - 1, 2):
-                    x1 = x0 + 1
-                    x2 = x0 + 2
-                    # 'abde'
-                    ap([g[x0, y0, z0], g[x1, y0, z0], g[x2, y0, z0]])
-                    ap([g[x0, y0, z0], g[x0, y1, z0], g[x0, y2, z0]])
-                    ap([g[x2, y0, z0], g[x1, y1, z0], g[x0, y2, z0]])
-                    ap([g[x0, y0, z0], g[x0, y0, z1], g[x0, y0, z2]])
-                    ap([g[x2, y0, z0], g[x1, y0, z1], g[x0, y0, z2]])
-                    ap([g[x0, y2, z0], g[x0, y1, z1], g[x0, y0, z2]])
-                for x0 in range(0, n1d - y0 - z0 - 3, 2):
-                    x1 = x0 + 1
-                    x2 = x0 + 2
-                    # 'bfde'
-                    ap([g[x2, y0, z0], g[x2, y0, z1], g[x2, y0, z2]])
-                    ap([g[x2, y0, z0], g[x1, y1, z0], g[x0, y2, z0]])
-                    ap([g[x2, y0, z0], g[x1, y0, z1], g[x0, y0, z2]])
-                    ap([g[x0, y2, z0], g[x1, y1, z1], g[x2, y0, z2]])
-                    ap([g[x0, y2, z0], g[x0, y1, z1], g[x0, y0, z2]])
-                    ap([g[x0, y0, z2], g[x1, y0, z2], g[x2, y0, z2]])
-                    # 'dfhe'
-                    ap([g[x0, y2, z0], g[x1, y1, z1], g[x2, y0, z2]])
-                    ap([g[x0, y2, z0], g[x0, y1, z1], g[x0, y0, z2]])
-                    ap([g[x0, y2, z0], g[x0, y2, z1], g[x0, y2, z2]])
-                    ap([g[x0, y0, z2], g[x1, y0, z2], g[x2, y0, z2]])
-                    ap([g[x0, y0, z2], g[x0, y1, z2], g[x0, y2, z2]])
-                    ap([g[x0, y2, z2], g[x1, y1, z2], g[x2, y0, z2]])
-                    # 'bcdf'
-                    ap([g[x2, y0, z0], g[x2, y1, z0], g[x2, y2, z0]])
-                    ap([g[x2, y0, z0], g[x2, y0, z1], g[x2, y0, z2]])
-                    ap([g[x2, y0, z0], g[x1, y1, z0], g[x0, y2, z0]])
-                    ap([g[x0, y2, z0], g[x1, y2, z0], g[x2, y2, z0]])
-                    ap([g[x0, y2, z0], g[x1, y1, z1], g[x2, y0, z2]])
-                    ap([g[x2, y0, z2], g[x2, y1, z1], g[x2, y2, z0]])
-                    # 'dchf'
-                    ap([g[x0, y2, z0], g[x1, y2, z0], g[x2, y2, z0]])
-                    ap([g[x0, y2, z0], g[x1, y1, z1], g[x2, y0, z2]])
-                    ap([g[x0, y2, z0], g[x0, y2, z1], g[x0, y2, z2]])
-                    ap([g[x0, y2, z2], g[x1, y1, z2], g[x2, y0, z2]])
-                    ap([g[x0, y2, z2], g[x1, y2, z1], g[x2, y2, z0]])
-                    ap([g[x2, y2, z0], g[x2, y1, z1], g[x2, y0, z2]])
+        aux = conn.reshape((n_el/8, 8, 4))
 
-                for x0 in range(0, n1d - y0 - z0 - 5, 2):
-                    x1 = x0 + 1
-                    x2 = x0 + 2
-                    # 'fgch'
-                    ap([g[x2, y2, z2], g[x1, y2, z2], g[x0, y2, z2]])
-                    ap([g[x2, y2, z2], g[x2, y1, z2], g[x2, y0, z2]])
-                    ap([g[x2, y2, z2], g[x2, y2, z1], g[x2, y2, z0]])
-                    ap([g[x2, y0, z2], g[x2, y1, z1], g[x2, y2, z0]])
-                    ap([g[x2, y0, z2], g[x1, y1, z2], g[x0, y2, z2]])
-                    ap([g[x0, y2, z2], g[x1, y2, z1], g[x2, y2, z0]])
+        ir = [[0, 0, 1], [1, 1, 2], [2, 0, 0], [3, 1, 1], [3, 2, 2], [3, 0, 0]]
+        ic = [[0, 1, 1], [1, 2, 2], [2, 2, 0], [3, 3, 1], [3, 3, 2], [3, 3, 0]]
+        error_edges = aux[:, ir, ic]
+
+        nesting = nm.arange(n_el, dtype=nm.float64).reshape((n_el/8, 8))
 
     elif geometry.name == '2_4':
         n_edge = 6
@@ -491,6 +417,7 @@ def refine_reference(geometry, level):
     error_edges = nm.array(error_edges, dtype=nm.int32)
 
     sh = error_edges.shape
-    error_edges.shape = (sh[0] / n_edge, n_edge, sh[1])
+    if len(sh) == 2:
+        error_edges.shape = (sh[0] / n_edge, n_edge, sh[1])
 
     return coors, conn, nesting, error_edges
