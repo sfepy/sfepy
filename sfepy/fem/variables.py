@@ -1911,47 +1911,6 @@ class FieldVariable(Variable):
 
         return vec
 
-    def extend_dofs(self, data, fill_value=None):
-        """
-        Extend DOFs to the whole domain using the `fill_value`, or the
-        smallest value in `dofs` if `fill_value` is None.
-        """
-        return self.field.extend_dofs(data, fill_value=fill_value)
-
-    def remove_extra_dofs(self, dofs):
-        """
-        Remove DOFs defined in higher order nodes (order > 1).
-        """
-        return self.field.remove_extra_dofs(dofs)
-
-    def linearize(self, dofs, min_level=0, max_level=1, eps=1e-4):
-        """
-        Linearize the solution for post-processing.
-
-        Parameters
-        ----------
-        dofs : array, shape (n_nod, n_component)
-            The array of DOFs reshaped so that each column corresponds
-            to one component.
-        min_level : int
-            The minimum required level of mesh refinement.
-        max_level : int
-            The maximum level of mesh refinement.
-        eps : float
-            The relative tolerance parameter of mesh adaptivity.
-
-        Returns
-        -------
-        mesh : Mesh instance
-            The adapted, nonconforming, mesh.
-        vdofs : array
-            The DOFs defined in vertices of `mesh`.
-        levels : array of ints
-            The refinement level used for each element group.
-        """
-        return self.field.linearize(dofs, min_level=min_level,
-                                    max_level=max_level, eps=eps)
-
     def create_output(self, vec=None, key=None, extend=True, fill_value=None,
                       linearization=None):
         """
@@ -1983,47 +1942,10 @@ class FieldVariable(Variable):
         aux = nm.reshape(vec,
                          (self.n_dof / self.n_components, self.n_components))
 
-        out = {}
-
-        if linearization.kind is None:
-            out[key] = Struct(name='output_data', mode='full',
-                              data=aux, var_name=self.name,
-                              dofs=self.dofs,
-                              field_name=self.field.name)
-
-        elif ((not self.field.is_higher_order())
-            or (linearization.kind == 'strip')):
-            if extend:
-                ext = self.extend_dofs(aux, fill_value)
-
-            else:
-                ext = self.remove_extra_dofs(aux)
-
-            if ext is not None:
-                approx_order = self.field.get_output_approx_order()
-
-                if approx_order != 0:
-                    # Has vertex data.
-                    out[key] = Struct(name='output_data', mode='vertex',
-                                      data=ext, var_name=self.name,
-                                      dofs=self.dofs)
-
-                else:
-                    ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
-                    out[key] = Struct(name='output_data', mode='cell',
-                                      data=ext, var_name=self.name,
-                                      dofs=self.dofs)
-
-        else:
-            mesh, vdofs, levels = self.linearize(aux,
-                                                 linearization.min_level,
-                                                 linearization.max_level,
-                                                 linearization.eps)
-            out[key] = Struct(name='output_data', mode='vertex',
-                              data=vdofs, var_name=self.name, dofs=self.dofs,
-                              mesh=mesh, levels=levels)
-
-        out = convert_complex_output(out)
+        out = self.field.create_output(aux, self.name, dof_names=self.dofs,
+                                       key=key, extend=extend,
+                                       fill_value=fill_value,
+                                       linearization=linearization)
 
         return out
 
@@ -2059,7 +1981,7 @@ class FieldVariable(Variable):
         n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof / dpn, dpn))
 
-        ext = self.extend_dofs(aux, 0.0)
+        ext = self.field.extend_dofs(aux, 0.0)
 
         out = {}
         if self.field.approx_order != 0:

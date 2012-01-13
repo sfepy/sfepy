@@ -18,6 +18,7 @@ from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
 from sfepy.base.base import Struct, basestr
 import fea
 from sfepy.fem.mesh import Mesh, make_inverse_connectivity
+from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
@@ -781,6 +782,81 @@ class Field( Struct ):
         Get the approximation order used in the output file.
         """
         return min(self.approx_order, 1)
+
+    def create_output(self, dofs, var_name, dof_names=None,
+                      key=None, extend=True, fill_value=None,
+                      linearization=None):
+        """
+        Convert the DOFs corresponding to the field to a dictionary of
+        output data usable by Mesh.write().
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        var_name : str
+            The variable name corresponding to `dofs`.
+        dof_names : tuple of str
+            The names of DOF components.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+        extend : bool
+            Extend the DOF values to cover the whole domain.
+        fill_value : float or complex
+           The value used to fill the missing DOF values if `extend` is True.
+        linearization : Struct or None
+            The linearization configuration for higher order approximations.
+
+        Returns
+        -------
+        out : dict
+            The output dictionary.
+        """
+        linearization = get_default(linearization, Struct(kind='strip'))
+
+        out = {}
+        if linearization.kind is None:
+            out[key] = Struct(name='output_data', mode='full',
+                              data=dofs, var_name=var_name,
+                              dofs=dof_names, field_name=self.name)
+
+        elif ((not self.is_higher_order())
+            or (linearization.kind == 'strip')):
+            if extend:
+                ext = self.extend_dofs(dofs, fill_value)
+
+            else:
+                ext = self.remove_extra_dofs(dofs)
+
+            if ext is not None:
+                approx_order = self.get_output_approx_order()
+
+                if approx_order != 0:
+                    # Has vertex data.
+                    out[key] = Struct(name='output_data', mode='vertex',
+                                      data=ext, var_name=var_name,
+                                      dofs=dof_names)
+
+                else:
+                    ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
+                    out[key] = Struct(name='output_data', mode='cell',
+                                      data=ext, var_name=var_name,
+                                      dofs=dof_names)
+
+        else:
+            mesh, vdofs, levels = self.linearize(dofs,
+                                                 linearization.min_level,
+                                                 linearization.max_level,
+                                                 linearization.eps)
+            out[key] = Struct(name='output_data', mode='vertex',
+                              data=vdofs, var_name=var_name, dofs=dof_names,
+                              mesh=mesh, levels=levels)
+
+        out = convert_complex_output(out)
+
+        return out
 
     def clear_dof_conns(self):
         self.dof_conns = {}
