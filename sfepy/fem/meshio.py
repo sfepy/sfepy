@@ -1488,8 +1488,14 @@ class HDF5MeshIO( MeshIO ):
             except pt.exceptions.NoSuchNodeError:
                 shape = data.shape
 
+            if mode == 'full':
+                field_name = data_group.field_name.read()
+
+            else:
+                field_name = None
+
             out[key] = Struct(name=name, mode=mode, data=data,
-                              dofs=dofs, shape=shape)
+                              dofs=dofs, shape=shape, field_name=field_name)
 
             if out[key].dofs == (-1,):
                 out[key].dofs = None
