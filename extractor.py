@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# 26.09.2006, c 
 """
 Examples
 --------
@@ -45,44 +44,38 @@ help = {
     'average vertex variable into cells ("e" extraction mode)'
 }
 
-##
-# c: 26.09.2006, r: 23.06.2008
 def main():
-    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
-    parser.add_option( "-o", "", metavar = 'filename',
-                       action = "store", dest = "output_filename_trunk",
-                       default = None, help = help['filename'] )
-    parser.add_option( "-d", "--dump",
-                       action = "store_true", dest = "dump",
-                       default = False, help = help['dump'] )
-    parser.add_option( "", "--same-dir",
-                       action = "store_true", dest = "same_dir",
-                       default = False, help = help['same_dir'] )
-    parser.add_option("", "--times",
-                      action="store_true", dest="times",
+    parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
+    parser.add_option('-o', '', metavar='filename',
+                      action='store', dest='output_filename_trunk',
+                      default=None, help=help['filename'])
+    parser.add_option('-d', '--dump', action='store_true', dest='dump',
+                       default=False, help=help['dump'])
+    parser.add_option('', '--same-dir', action='store_true', dest='same_dir',
+                      default=False, help=help['same_dir'])
+    parser.add_option('', '--times', action='store_true', dest='times',
                       default=False, help=help['times'])
-    parser.add_option( "-f", "--from", type = int, metavar = 'ii',
-                       action = "store", dest = "step_from",
-                       default = 0, help = help['from'] )
-    parser.add_option( "-t", "--to", type = int, metavar = 'ii',
-                       action = "store", dest = "step_to",
-                       default = None, help = help['to'] )
-    parser.add_option( "-s", "--step", type = int, metavar = 'ii',
-                       action = "store", dest = "step_by",
-                       default = 1, help = help['step'] )
-    parser.add_option( "-e", "--extract", metavar = 'list',
-                       action = "store", dest = "extract",
-                       default = None, help = help['extract'] )
-    parser.add_option( "-a", "--average",
-                       action = "store_true", dest = "average",
-                       default = False, help = help['average'] )
+    parser.add_option('-f', '--from', type=int, metavar='ii',
+                      action='store', dest='step_from',
+                      default=0, help=help['from'])
+    parser.add_option('-t', '--to', type=int, metavar='ii',
+                      action='store', dest='step_to',
+                      default=None, help=help['to'])
+    parser.add_option('-s', '--step', type=int, metavar='ii',
+                      action='store', dest='step_by',
+                      default=1, help=help['step'])
+    parser.add_option('-e', '--extract', metavar='list',
+                      action='store', dest='extract',
+                      default=None, help=help['extract'])
+    parser.add_option('-a', '--average', action='store_true', dest='average',
+                      default=False, help=help['average'])
 
     (options, args) = parser.parse_args()
 
-    if (len( args ) == 1):
-        filename_in = args[0];
+    if (len(args) == 1):
+        filename_in = args[0]
     else:
-        parser.print_help(),
+        parser.print_help()
         return
 
     if options.times:
@@ -96,7 +89,7 @@ def main():
         if options.same_dir:
             trunk = os.path.join(os.path.dirname(filename_in),
                                  os.path.basename(trunk))
-        
+
         if options.step_to is None:
             th.dump_to_vtk(filename_in,
                            output_filename_trunk=trunk,
@@ -111,11 +104,9 @@ def main():
 
     if options.extract:
         ths, ts = th.extract_time_history(filename_in, options.extract)
-##         print ths
 
         if options.average:
-            ths = th.average_vertex_var_in_cells( ths )
-##             print ths
+            ths = th.average_vertex_var_in_cells(ths)
 
         if options.output_filename_trunk:
             th.save_time_history(ths, ts, options.output_filename_trunk + '.h5')
