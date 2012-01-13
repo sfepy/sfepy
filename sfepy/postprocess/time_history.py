@@ -6,10 +6,37 @@ from sfepy.fem.meshio import MeshIO
 from sfepy.solvers.ts import TimeStepper
 from sfepy.base.ioutils import get_trunk, write_dict_hdf5
 
-def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
+def _linearize(out, fields, linearization):
+    new = {}
+    for key, val in out.iteritems():
+        field = fields[val.field_name]
+        new.update(field.create_output(val.data, var_name=key,
+                                       dof_names=val.dofs, key=key,
+                                       linearization=linearization))
+
+    return new
+
+
+def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None,
+                fields=None, linearization=None):
     """Dump a multi-time-step results file into a sequence of VTK files."""
+    def _save_step(suffix, out, mesh):
+        if linearization is not None:
+            output('linearizing...')
+            out = _linearize(out, fields, linearization)
+            output('...done')
+            for key, val in out.iteritems():
+                lmesh = val.get('mesh', mesh)
+                lmesh.write(output_filename_trunk + '_' + key + suffix,
+                            io='auto', out={key : val})
+                if hasattr(val, 'levels'):
+                    output('max. refinement per group:', val.levels)
+
+        else:
+            mesh.write(output_filename_trunk + suffix, io='auto', out=out)
+
     output('dumping to VTK...')
-    
+
     io = MeshIO.any_from_filename(filename)
     mesh = Mesh.from_file(filename, io=io)
 
@@ -25,7 +52,7 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
 
         out = io.read_data(0)
         if out is not None:
-            mesh.write(output_filename_trunk + '.vtk', io='auto', out=out)
+            _save_step('.vtk', out, mesh)
 
         ret = None
 
@@ -43,9 +70,8 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None):
             output(ts.format % (step, ts.n_step - 1))
             out = io.read_data(step)
             if out is None: break
-            mesh.write('.'.join((output_filename_trunk,
-                                 ts.suffix % step, 'vtk')),
-                       io='auto', out=out)
+
+            _save_step('.' + ts.suffix % step + '.vtk', out, mesh)
 
         ret = ts.suffix
 
