@@ -270,7 +270,8 @@ class ProblemDefinition( Struct ):
         self.file_per_var = get_default(file_per_var, False)
         self.linearization = get_default(linearization, Struct(kind='strip'))
 
-        if self.output_format == 'h5':
+        if ((self.output_format == 'h5') and
+            (self.linearization.kind == 'adaptive')):
             self.linearization.kind = None
 
     def set_output_dir(self, output_dir=None):
