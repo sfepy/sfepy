@@ -1418,10 +1418,17 @@ class HDF5MeshIO( MeshIO ):
         filename = get_default( filename, self.filename )
         fd = pt.openFile( filename, mode = "r" )
 
-        ts_group = fd.root.ts
-        out =  (ts_group.t0.read(), ts_group.t1.read(),
-                ts_group.dt.read(), ts_group.n_step.read())
-        fd.close()
+        try:
+            ts_group = fd.root.ts
+            out =  (ts_group.t0.read(), ts_group.t1.read(),
+                    ts_group.dt.read(), ts_group.n_step.read())
+
+        except:
+            raise ValueError('no time stepper found!')
+
+        finally:
+            fd.close()
+
         return out
 
     def read_times(self, filename=None):
