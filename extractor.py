@@ -60,9 +60,9 @@ help = {
     'same_dir' :
     'store the dumped VTK files in the directory of filename_in',
     'linearization' :
-    'linearization options.'
-    " Example: 'kind:adaptive,min_level:0,max_level:2,eps:1e-2'"
-    ' [default: %default]',
+    'linearization options. Default values apply if neither command'
+    ' line nor input file options are set.'
+    " [default: 'kind:adaptive,min_level:0,max_level:2,eps:1e-2']",
     'times' :
     'extract and print times of individual time steps',
     'from' :
@@ -140,17 +140,14 @@ def main():
         if linearize:
             problem = create_problem(filename_in)
 
+            linearization = Struct(kind='adaptive', min_level=0,
+                                   max_level=2, eps=1e-2)
+            aux = problem.conf.options.get('linearization', None)
+            linearization.update(aux)
+
             if options.linearization is not None:
-                linearization = parse_linearization(options.linearization)
-
-            else:
-                linearization = problem.conf.options.get('linearization', None)
-                if linearization is not None:
-                    linearization = dict_to_struct(linearization)
-
-                else:
-                    linearization = Struct(kind='adaptive', min_level=0,
-                                           max_level=2, eps=1e-2)
+                aux = parse_linearization(options.linearization)
+                linearization.update(aux)
 
             args.update({'fields' : problem.fields,
                          'linearization' : linearization})
