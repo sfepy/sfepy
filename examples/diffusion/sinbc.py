@@ -100,6 +100,19 @@ solver_1 = {
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
+
+    # Options for saving higher-order variables.
+    # Possible kinds:
+    #    'strip' ... just remove extra DOFs (ignores other linearization
+    #                options)
+    #    'adaptive' ... adaptively refine linear element mesh.
+    'linearization' : {
+        'kind' : 'strip',
+        'min_level' : 0, # Min. refinement level to achieve everywhere.
+        'max_level' : 3, # Max. refinement level.
+        'eps' : 1e-2, # Relative error tolerance.
+    },
+    'output_format' : 'vtk',
 }
 
 import numpy as nm
