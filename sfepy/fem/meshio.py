@@ -1404,6 +1404,10 @@ class HDF5MeshIO( MeshIO ):
                 fd.createArray( data_group, 'var_name',
                                 var_name, 'object parent name' )
                 fd.createArray( data_group, 'dname', key, 'data name' )
+                if val.mode == 'full':
+                    fd.createArray(data_group, 'field_name', val.field_name,
+                                   'field name')
+
                 name_dict[key] = group_name
 
             step_group._v_attrs.name_dict = name_dict
@@ -1425,10 +1429,17 @@ class HDF5MeshIO( MeshIO ):
         filename = get_default( filename, self.filename )
         fd = pt.openFile( filename, mode = "r" )
 
-        ts_group = fd.root.ts
-        out =  (ts_group.t0.read(), ts_group.t1.read(),
-                ts_group.dt.read(), ts_group.n_step.read())
-        fd.close()
+        try:
+            ts_group = fd.root.ts
+            out =  (ts_group.t0.read(), ts_group.t1.read(),
+                    ts_group.dt.read(), ts_group.n_step.read())
+
+        except:
+            raise ValueError('no time stepper found!')
+
+        finally:
+            fd.close()
+
         return out
 
     def read_times(self, filename=None):
@@ -1495,8 +1506,14 @@ class HDF5MeshIO( MeshIO ):
             except pt.exceptions.NoSuchNodeError:
                 shape = data.shape
 
+            if mode == 'full':
+                field_name = data_group.field_name.read()
+
+            else:
+                field_name = None
+
             out[key] = Struct(name=name, mode=mode, data=data,
-                              dofs=dofs, shape=shape)
+                              dofs=dofs, shape=shape, field_name=field_name)
 
             if out[key].dofs == (-1,):
                 out[key].dofs = None

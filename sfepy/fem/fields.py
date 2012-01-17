@@ -18,10 +18,12 @@ from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
 from sfepy.base.base import Struct, basestr
 import fea
 from sfepy.fem.mesh import Mesh, make_inverse_connectivity
+from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
+from sfepy.fem.linearizer import create_output
 from sfepy.fem.extmods.bases import evaluate_at
 
 def parse_approx_order(approx_order):
@@ -318,7 +320,17 @@ class Field( Struct ):
         else:
             order = gel.dim * self.approx_order
 
+        if self.force_bubble:
+            bubble_order = gel.dim + 1
+            order = max(order, bubble_order)
+
         return order
+
+    def is_higher_order(self):
+        """
+        Return True, if the field's approximation order is greater than one.
+        """
+        return self.force_bubble or (self.approx_order > 1)
 
     def setup_global_base(self):
         """
@@ -700,11 +712,151 @@ class Field( Struct ):
 
         return new_dofs
 
+    def linearize(self, dofs, min_level=0, max_level=1, eps=1e-4):
+        """
+        Linearize the solution for post-processing.
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        min_level : int
+            The minimum required level of mesh refinement.
+        max_level : int
+            The maximum level of mesh refinement.
+        eps : float
+            The relative tolerance parameter of mesh adaptivity.
+
+        Returns
+        -------
+        mesh : Mesh instance
+            The adapted, nonconforming, mesh.
+        vdofs : array
+            The DOFs defined in vertices of `mesh`.
+        levels : array of ints
+            The refinement level used for each element group.
+        """
+        assert_(dofs.ndim == 2)
+
+        n_nod, dpn = dofs.shape
+
+        assert_(n_nod == self.n_nod)
+        assert_(dpn == self.shape[0])
+
+        dof_coors = self.get_coor()
+
+        coors = []
+        vdofs = []
+        conns = []
+        mat_ids = []
+        levels = []
+        offset = 0
+        for ig, ap in self.aps.iteritems():
+            ps = ap.interp.poly_spaces['v']
+
+            (level, _coors, conn,
+             _vdofs, _mat_ids) = create_output(dofs, dof_coors, ap.econn, ps,
+                                               min_level=min_level,
+                                               max_level=max_level, eps=eps)
+
+            _mat_ids[:] = self.domain.mesh.mat_ids[ig][0]
+
+            coors.append(_coors)
+            vdofs.append(_vdofs)
+            conns.append(conn + offset)
+            mat_ids.append(_mat_ids)
+            levels.append(level)
+
+            offset += _coors.shape[0]
+
+        coors = nm.concatenate(coors, axis=0)
+        vdofs = nm.concatenate(vdofs, axis=0)
+        mesh = Mesh.from_data('linearized_mesh', coors, None, conns, mat_ids,
+                              self.domain.mesh.descs)
+
+        return mesh, vdofs, levels
+
     def get_output_approx_order(self):
         """
         Get the approximation order used in the output file.
         """
         return min(self.approx_order, 1)
+
+    def create_output(self, dofs, var_name, dof_names=None,
+                      key=None, extend=True, fill_value=None,
+                      linearization=None):
+        """
+        Convert the DOFs corresponding to the field to a dictionary of
+        output data usable by Mesh.write().
+
+        Parameters
+        ----------
+        dofs : array, shape (n_nod, n_component)
+            The array of DOFs reshaped so that each column corresponds
+            to one component.
+        var_name : str
+            The variable name corresponding to `dofs`.
+        dof_names : tuple of str
+            The names of DOF components.
+        key : str, optional
+            The key to be used in the output dictionary instead of the
+            variable name.
+        extend : bool
+            Extend the DOF values to cover the whole domain.
+        fill_value : float or complex
+           The value used to fill the missing DOF values if `extend` is True.
+        linearization : Struct or None
+            The linearization configuration for higher order approximations.
+
+        Returns
+        -------
+        out : dict
+            The output dictionary.
+        """
+        linearization = get_default(linearization, Struct(kind='strip'))
+
+        out = {}
+        if linearization.kind is None:
+            out[key] = Struct(name='output_data', mode='full',
+                              data=dofs, var_name=var_name,
+                              dofs=dof_names, field_name=self.name)
+
+        elif ((not self.is_higher_order())
+            or (linearization.kind == 'strip')):
+            if extend:
+                ext = self.extend_dofs(dofs, fill_value)
+
+            else:
+                ext = self.remove_extra_dofs(dofs)
+
+            if ext is not None:
+                approx_order = self.get_output_approx_order()
+
+                if approx_order != 0:
+                    # Has vertex data.
+                    out[key] = Struct(name='output_data', mode='vertex',
+                                      data=ext, var_name=var_name,
+                                      dofs=dof_names)
+
+                else:
+                    ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
+                    out[key] = Struct(name='output_data', mode='cell',
+                                      data=ext, var_name=var_name,
+                                      dofs=dof_names)
+
+        else:
+            mesh, vdofs, levels = self.linearize(dofs,
+                                                 linearization.min_level,
+                                                 linearization.max_level,
+                                                 linearization.eps)
+            out[key] = Struct(name='output_data', mode='vertex',
+                              data=vdofs, var_name=var_name, dofs=dof_names,
+                              mesh=mesh, levels=levels)
+
+        out = convert_complex_output(out)
+
+        return out
 
     def clear_dof_conns(self):
         self.dof_conns = {}

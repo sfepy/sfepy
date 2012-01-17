@@ -356,6 +356,16 @@ class Struct( object ):
         """A dict-like get for Struct attributes."""
         return self.__dict__.get(key, default)
 
+    def update(self, other, **kwargs):
+        """
+        A dict-like update for Struct attributes.
+        """
+        if other is None: return
+
+        if not isinstance(other, dict):
+            other = other.to_dict()
+        self.__dict__.update(other, **kwargs)
+
     def get_default_attr( self, key, default = None, msg_if_none = None ):
         """Behaves like dict.get() if msg_if_none is None."""
         return get_default_attr( self, key, default, msg_if_none )

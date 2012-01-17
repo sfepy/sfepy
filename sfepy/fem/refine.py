@@ -3,6 +3,7 @@ Basic uniform mesh refinement functions.
 """
 import numpy as nm
 
+from sfepy.linalg import cycle
 from sfepy.fem import Mesh
 
 def refine_2_3(mesh_in, ed):
@@ -202,3 +203,78 @@ def refine_3_8(mesh_in, ed, fa):
                           mat_ids, mesh_in.descs )
 
     return mesh
+
+def refine_reference(geometry, level):
+    """
+    Refine reference element given by `geometry`.
+
+    Notes
+    -----
+    The error edges must be generated in the order of the connectivity
+    of the previous (lower) level.
+    """
+    from sfepy.fem import Domain
+    from sfepy.fem.geometry_element import geometry_data
+
+    gcoors, gconn = geometry.coors, geometry.conn
+    if level == 0:
+        return gcoors, gconn
+
+    gd = geometry_data[geometry.name]
+    conn = nm.array([gd.conn], dtype=nm.int32)
+    mat_id = conn[:, 0].copy()
+    mat_id[:] = 0
+
+    mesh = Mesh.from_data('aux', gd.coors, None, [conn],
+                          [mat_id], [geometry.name])
+    domain = Domain('aux', mesh)
+
+    for ii in range(level):
+        domain = domain.refine()
+
+    coors = domain.mesh.coors
+    conn = domain.mesh.conns[0]
+
+    n_el = conn.shape[0]
+
+    if geometry.name == '2_3':
+        aux_conn = conn.reshape((n_el / 4, 4, 3))
+
+        ir = [[0, 1, 2], [2, 2, 3], [3, 3, 0]]
+        ic = [[0, 0, 0], [0, 1, 0], [0, 1, 0]]
+
+    elif geometry.name == '2_4':
+        aux_conn = conn.reshape((n_el / 4, 4, 4))
+
+        ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 3, 0], [0, 0, 2], [3, 3, 1]]
+        ic = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [1, 2, 1], [1, 2, 1]]
+
+    elif geometry.name == '3_4':
+        aux_conn = conn.reshape((n_el / 8, 8, 4))
+
+        ir = [[0, 0, 1], [1, 1, 2], [2, 0, 0], [3, 1, 1], [3, 2, 2], [3, 0, 0]]
+        ic = [[0, 1, 1], [1, 2, 2], [2, 2, 0], [3, 3, 1], [3, 3, 2], [3, 3, 0]]
+
+    elif geometry.name == '3_8':
+        aux_conn = conn.reshape((n_el / 8, 8, 8))
+
+        ir = [[0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],
+              [0, 0, 1], [1, 1, 2], [2, 2, 3], [3, 0, 0], [0, 0, 2], [0, 0, 1],
+              [4, 4, 5], [5, 5, 6], [6, 6, 7], [7, 4, 4], [4, 4, 6], [4, 4, 5],
+              [0, 0, 4], [1, 1, 5], [2, 2, 6], [3, 3, 7],
+              [0, 0, 4], [1, 1, 5], [2, 2, 6], [0, 0, 4],
+              [0, 0, 4]]
+        ic = [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 3, 0], [1, 2, 1], [3, 2, 1],
+              [4, 5, 4], [4, 5, 4], [4, 5, 4], [4, 7, 4], [5, 6, 5], [7, 6, 5],
+              [0, 3, 0], [0, 3, 0], [0, 3, 0], [0, 1, 0], [3, 2, 3], [1, 2, 3],
+              [0, 4, 0], [0, 4, 0], [0, 4, 0], [0, 4, 0],
+              [1, 5, 3], [1, 5, 3], [1, 5, 3], [3, 7, 1],
+              [2, 6, 2]]
+
+    else:
+        raise ValueError('unsupported geometry! (%s)' % geometry.name)
+
+    conn = nm.array(conn, dtype=nm.int32)
+    error_edges = aux_conn[:, ir, ic]
+
+    return coors, conn, error_edges

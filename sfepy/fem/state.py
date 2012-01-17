@@ -210,15 +210,14 @@ class State(Struct):
         return self.variables.get_state_parts(self.vec)
 
     def create_output_dict(self, fill_value=None, var_info=None,
-                           extend=True):
+                           extend=True, linearization=None):
         """
         Transforms state to an output dictionary, that can be
         passed as 'out' kwarg to Mesh.write().
 
         Then the dictionary entries are formed by components of the
-        state vector corresponding to the unknown variables, each
-        transformed to shape (n_mesh_nod, n_dof per node) - all values
-        in extra (higher order) nodes are removed.
+        state vector corresponding to unknown variables according to
+        kind of linearization given by `linearization`.
 
         Examples
         --------
@@ -226,7 +225,8 @@ class State(Struct):
         >>> problem.save_state('file.vtk', out=out)
         """
         return self.variables.state_to_output(self.vec, fill_value,
-                                              var_info, extend)
+                                              var_info, extend,
+                                              linearization=linearization)
 
     def get_scaled_norm(self, vec):
         """

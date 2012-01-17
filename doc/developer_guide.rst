@@ -763,6 +763,7 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
    src/sfepy/fem/history
+   src/sfepy/fem/linearizer
    src/sfepy/fem/integrals
    src/sfepy/fem/mappings
    src/sfepy/fem/materials

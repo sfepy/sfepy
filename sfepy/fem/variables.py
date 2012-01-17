@@ -555,7 +555,7 @@ class Variables( Container ):
 
 
     def state_to_output(self, vec, fill_value=None, var_info=None,
-                        extend=True):
+                        extend=True, linearization=None):
         """Convert a state vector to a dictionary of output data usable by
         Mesh.write()."""
         di = self.di
@@ -581,7 +581,8 @@ class Variables( Container ):
                 aux = vec[indx]
 
             out.update(var.create_output(aux, extend=extend,
-                                         fill_value=fill_value))
+                                         fill_value=fill_value,
+                                         linearization=linearization))
 
         return out
 
@@ -1912,21 +1913,8 @@ class FieldVariable(Variable):
 
         return vec
 
-    def extend_dofs(self, data, fill_value=None):
-        """
-        Extend DOFs to the whole domain using the `fill_value`, or the
-        smallest value in `dofs` if `fill_value` is None.
-        """
-        return self.field.extend_dofs(data, fill_value=fill_value)
-
-    def remove_extra_dofs(self, dofs):
-        """
-        Remove DOFs defined in higher order nodes (order > 1).
-        """
-        return self.field.remove_extra_dofs(dofs)
-
-
-    def create_output(self, vec=None, key=None, extend=True, fill_value=None):
+    def create_output(self, vec=None, key=None, extend=True, fill_value=None,
+                      linearization=None):
         """
         Convert the DOF vector to a dictionary of output data usable by
         Mesh.write().
@@ -1943,7 +1931,11 @@ class FieldVariable(Variable):
             Extend the DOF values to cover the whole domain.
         fill_value : float or complex
            The value used to fill the missing DOF values if `extend` is True.
+        linearization : Struct or None
+            The linearization configuration for higher order approximations.
         """
+        linearization = get_default(linearization, Struct(kind='strip'))
+
         if vec is None:
             vec = self()
 
@@ -1952,28 +1944,10 @@ class FieldVariable(Variable):
         aux = nm.reshape(vec,
                          (self.n_dof / self.n_components, self.n_components))
 
-        if extend:
-            ext = self.extend_dofs(aux, fill_value)
-
-        else:
-            ext = self.remove_extra_dofs(aux)
-
-        out = {}
-
-        if ext is not None:
-            approx_order = self.field.get_output_approx_order()
-
-            if approx_order != 0:
-                # Has vertex data.
-                out[key] = Struct(name='output_data', mode='vertex', data=ext,
-                                  var_name=self.name, dofs=self.dofs)
-
-            else:
-                ext.shape = (ext.shape[0], 1, ext.shape[1], 1)
-                out[key] = Struct(name='output_data', mode='cell', data=ext,
-                                  var_name=self.name, dofs=self.dofs)
-
-        out = convert_complex_output(out)
+        out = self.field.create_output(aux, self.name, dof_names=self.dofs,
+                                       key=key, extend=extend,
+                                       fill_value=fill_value,
+                                       linearization=linearization)
 
         return out
 
@@ -2009,7 +1983,7 @@ class FieldVariable(Variable):
         n_nod, n_dof, dpn = mesh.n_nod, self.n_dof, self.n_components
         aux = nm.reshape(vec, (n_dof / dpn, dpn))
 
-        ext = self.extend_dofs(aux, 0.0)
+        ext = self.field.extend_dofs(aux, 0.0)
 
         out = {}
         if self.field.approx_order != 0:
