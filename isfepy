@@ -1,5 +1,6 @@
 #!/usr/bin/python
-"""Python shell for SfePy.
+"""
+Python shell for SfePy.
 
    This is just a normal Python shell (IPython shell if you have the
    IPython package installed),  that executes the following commands
@@ -44,60 +45,10 @@
      SfePy without startup banner and colors, for example, issue:
 
         isfepy -q -- -colors NoColor
-
 """
-import os, sys
 from optparse import OptionParser
 
 import sfepy
-from sfepy.interactive import init_session
-
-startup_message = """\
-These commands were executed:
->>> from sfepy.base.base import *
->>> from sfepy.fem import *
->>> from sfepy.applications import pde_solve
->>> from sfepy.postprocess import Viewer
-
-Basic Usage
------------
-
-The function `pde_solve` can be used to run examples in problem
-description files.
-
-When in SfePy source directory, try:
->>> pb, state = pde_solve('examples/diffusion/poisson.py')
->>> print state.get_parts()
->>> view = Viewer(pb.get_output_name())
->>> view()
-
-When in another directory (and SfePy is installed), try:
->>> from sfepy import data_dir
->>> pb, state = pde_solve(data_dir + '/examples/diffusion/poisson.py')
->>> print state.get_parts()
->>> view = Viewer(pb.get_output_name())
->>> view()
-
-Note: try IPython's doctest mode when pasting the above code - type
-%doctest_mode in the shell.
-
-Advanced Usage
---------------
-
-For more advanced use refer to "Interactive Example: Linear Elasticity"
-section of the tutorial, see [1].
-
-Check also the SfePy web site [2].
-
-[1] http://docs.sfepy.org/doc/
-[2] http://sfepy.org
-"""
-
-no_ipython = """\
-Couldn't locate IPython. Having IPython installed is greatly recommended. See
-http://ipython.scipy.org for more details. You can try to install the 'ipython'
-package and start isfepy again.
-"""
 
 usage = 'usage: isfepy [options] -- [ipython options]'
 help = {
@@ -113,13 +64,11 @@ help = {
     'do not try using the threaded Wx ipython shell',
 }
 
-
 def main():
-    py_version = "%d.%d.%d" % sys.version_info[:3]
-
     parser = OptionParser(usage=usage, version="%prog " + sfepy.__version__)
     parser.add_option('-c', '--console', dest='console', action='store',
-                      default='ipython', help=help['console'])
+                      default='ipython', choices=['ipython', 'python'],
+                      help=help['console'])
     parser.add_option('-q', '--quiet', dest='quiet', action='store_true',
                       default=False, help=help['quiet'])
     parser.add_option('-s', '--silent', dest='silent', action='store_true',
@@ -130,25 +79,19 @@ def main():
                       default=True, help=help['no_wx'])
     options, ipy_args = parser.parse_args()
 
-    session = options.console.lower()
+    session = options.console
+    ipython = session == 'ipython'
 
     args = {
         'argv'   : ipy_args,
+        'quiet' : options.quiet,
         'silent' : options.silent,
         'is_viewer' : options.is_viewer,
         'is_wx' : options.is_wx,
     }
-    if not options.quiet:
-        args['message'] = startup_message
 
-    try:
-        init_session(session, **args)
-    except ValueError:
-        try:
-            init_session('ipython', **args)
-        except ImportError:
-            print no_ipython
-            init_session('python', **args)
+    from sfepy.interactive import init_session
+    init_session(ipython, **args)
 
 if __name__ == "__main__":
     main()
