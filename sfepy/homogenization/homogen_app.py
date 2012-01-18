@@ -83,8 +83,8 @@ class HomogenizationApp( HomogenizationEngine ):
         for vk, vv in volume.iteritems():
             output('volume: %s = %.2f' % (vk, vv))
 
-        if hasattr(opts.options, 'return_all'):
-            ret_all = opts.options.return_all
+        if hasattr(opts, 'return_all'):
+            ret_all = opts.return_all
 
         he = HomogenizationEngine( self.problem, self.options, volume = volume )
 
