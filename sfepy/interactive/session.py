@@ -106,17 +106,19 @@ def _init_ipython_session(is_wx, is_viewer, argv=[]):
     """
     import IPython
     if IPython.__version__ >= '0.11':
-        if is_wx:
-            raise NotImplementedError
+        from IPython.frontend.terminal import ipapp
+        # use an app to parse the command line, and init config
+        app = ipapp.TerminalIPythonApp()
+        # don't draw IPython banner during initialization:
+        app.display_banner = False
+        app.initialize(argv)
+        ip = app.shell
 
-        else:
-            from IPython.frontend.terminal import ipapp
-            # use an app to parse the command line, and init config
-            app = ipapp.TerminalIPythonApp()
-            # don't draw IPython banner during initialization:
-            app.display_banner = False
-            app.initialize(argv)
-            ip = app.shell
+        if is_wx:
+            import wx
+            from IPython.lib.inputhook import enable_wx
+            wxapp = wx.GetApp()
+            enable_wx(wxapp)
 
     else:
         if is_wx:
