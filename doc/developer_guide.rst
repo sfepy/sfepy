@@ -824,7 +824,7 @@ sfepy.interactive package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/interactive
+   src/sfepy/interactive/session
 
 sfepy.linalg package
 ^^^^^^^^^^^^^^^^^^^^
