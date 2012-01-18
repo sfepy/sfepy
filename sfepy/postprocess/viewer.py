@@ -638,7 +638,7 @@ class Viewer(Struct):
 
     def call_mlab(self, scene=None, show=True, is_3d=False,
                   view=None, roll=None,
-                  fgcolor=(1.0, 1.0, 1.0), bgcolor=(0.0, 0.0, 0.0),
+                  fgcolor=(0.0, 0.0, 0.0), bgcolor=(1.0, 1.0, 1.0),
                   layout='rowcol', scalar_mode='iso_surface',
                   vector_mode='arrows_norm', rel_scaling=None, clamping=False,
                   ranges=None, is_scalar_bar=False, is_wireframe=False,
