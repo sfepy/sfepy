@@ -100,16 +100,16 @@ def _make_message(ipython=True, quiet=False, source=None):
 
     return message
 
-def _init_ipython_session(is_wx, is_viewer, argv=[]):
+def _init_ipython_session(is_wx, source=None, argv=[]):
     """
     Construct new IPython session.
     """
     import IPython
     if IPython.__version__ >= '0.11':
         from IPython.frontend.terminal import ipapp
-        # use an app to parse the command line, and init config
+        # Use an app to parse the command line, and init config.
         app = ipapp.TerminalIPythonApp()
-        # don't draw IPython banner during initialization:
+        # Don't draw IPython banner during initialization.
         app.display_banner = False
         app.initialize(argv)
         ip = app.shell
@@ -123,7 +123,13 @@ def _init_ipython_session(is_wx, is_viewer, argv=[]):
     else:
         if is_wx:
             from IPython.Shell import IPShellWX
-            ip = IPShellWX(argv)
+
+            if source is None:
+                source = preexec_source
+
+            aux = {}
+            exec source in aux
+            ip = IPShellWX(argv, user_ns=aux)
 
         else:
             ip = IPython.Shell.make_IPython(argv)
@@ -176,6 +182,11 @@ def init_session(ipython=None, message=None, quiet=False, silent=False,
     import os, sys, atexit
 
     in_ipython = False
+    is_runsource = True
+
+    _preexec_source = preexec_source
+    if is_viewer:
+        _preexec_source += preexec_source_viewer
 
     if ipython is False:
         ip = _init_python_session()
@@ -211,7 +222,7 @@ def init_session(ipython=None, message=None, quiet=False, silent=False,
                 in_ipython = True
 
             else:
-                ip = _init_ipython_session(is_wx, is_viewer, argv)
+                ip = _init_ipython_session(is_wx, _preexec_source, argv)
 
             if IPython.__version__ >= '0.11':
                 # runsource is gone, use run_cell instead, which doesn't
@@ -222,13 +233,15 @@ def init_session(ipython=None, message=None, quiet=False, silent=False,
                 mainloop = ip.mainloop
 
             else:
-                mainloop = ip.interact
+                if is_wx:
+                    mainloop = ip.mainloop
+                    is_runsource = False
 
-    _preexec_source = preexec_source
-    if is_viewer:
-        _preexec_source += preexec_source_viewer
+                else:
+                    mainloop = ip.interact
 
-    ip.runsource(_preexec_source, symbol='exec')
+    if is_runsource:
+        ip.runsource(_preexec_source, symbol='exec')
 
     message = _make_message(ipython, quiet, _preexec_source)
 
@@ -238,7 +251,12 @@ def init_session(ipython=None, message=None, quiet=False, silent=False,
     atexit.register(output, 'isfepy finished\n' + '*' * 55)
 
     if not in_ipython:
-        mainloop(message)
+        if is_runsource:
+            mainloop(message)
+
+        else:
+            mainloop(banner=message)
+
         sys.exit('Exiting ...')
 
     else:
