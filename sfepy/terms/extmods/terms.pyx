@@ -215,19 +215,6 @@ cdef extern from 'terms.h':
                        FMField *mtxD, VolumeGeometry *vg)
     cdef int32 _dw_permeability_r \
          'dw_permeability_r'(FMField *out, FMField *mtxD, VolumeGeometry *vg)
-    cdef int32 _dw_diffusion_coupling \
-         'dw_diffusion_coupling'(FMField *out, FMField *state, int32 offset,
-                                 FMField *mtxD, FMField *bf,
-                                 VolumeGeometry *vg,
-                                 int32 *conn, int32 nEl, int32 nEP,
-                                 int32 *elList, int32 elList_nRow,
-                                 int32 isDiff, int32 mod)
-    cdef int32 _d_diffusion_coupling \
-         'd_diffusion_coupling'(FMField *out, FMField *stateP, FMField *stateQ,
-                                FMField *mtxD, FMField *bf, VolumeGeometry *vg,
-                                int32 *conn, int32 nEl, int32 nEP,
-                                int32 *elList, int32 elList_nRow,
-                                int32 isDiff, int32 mod)
     cdef int32 _d_surface_flux \
          'd_surface_flux'(FMField *out, FMField *grad,
                           FMField *mtxD, SurfaceGeometry *sg, int32 mode)
@@ -571,6 +558,11 @@ cdef extern from 'terms.h':
                           int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
                           int32 *elList, int32 elList_nRow,
                           int32 mode)
+
+    cdef int32 _mulATB_integrate \
+         'mulATB_integrate'(FMField *out,
+                            FMField *A, FMField *B,
+                            VolumeGeometry *vg)
 
 def dq_state_in_qp(np.ndarray out not None,
                    np.ndarray state not None,
@@ -1290,56 +1282,6 @@ def dw_permeability_r(np.ndarray out not None,
     ret = _dw_permeability_r(_out, _mtx_d, cmap.geo)
     return ret
 
-def dw_diffusion_coupling(np.ndarray out not None,
-                          np.ndarray state not None,
-                          np.ndarray mtx_d not None,
-                          np.ndarray bf not None,
-                          CVolumeMapping cmap not None,
-                          np.ndarray conn not None,
-                          np.ndarray el_list not None,
-                          int32 is_diff, int32 mode):
-    cdef int32 ret
-    cdef FMField _out[1], _state[1], _mtx_d[1], _bf[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
-
-    array2fmfield4(_out, out)
-    array2fmfield1(_state, state)
-    array2fmfield4(_mtx_d, mtx_d)
-    array2fmfield3(_bf, bf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
-
-    ret = _dw_diffusion_coupling(_out, _state, 0, _mtx_d, _bf, cmap.geo,
-                                 _conn, n_el, n_ep, _el_list, n_el2,
-                                 is_diff, mode)
-    return ret
-
-def d_diffusion_coupling(np.ndarray out not None,
-                         np.ndarray state_p not None,
-                         np.ndarray state_q not None,
-                         np.ndarray mtx_d not None,
-                         np.ndarray bf not None,
-                         CVolumeMapping cmap not None,
-                         np.ndarray conn not None,
-                         np.ndarray el_list not None,
-                         int32 is_diff, int32 mode):
-    cdef int32 ret
-    cdef FMField _out[1], _state_p[1], _state_q[1], _mtx_d[1], _bf[1]
-    cdef int32 *_conn, n_el, n_ep, *_el_list, n_el2
-
-    array2fmfield4(_out, out)
-    array2fmfield1(_state_p, state_p)
-    array2fmfield1(_state_q, state_q)
-    array2fmfield4(_mtx_d, mtx_d)
-    array2fmfield3(_bf, bf)
-    array2pint2(&_conn, &n_el, &n_ep, conn)
-    array2pint1(&_el_list, &n_el2, el_list)
-
-    ret = _d_diffusion_coupling(_out, _state_p, _state_q, _mtx_d, _bf, cmap.geo,
-                                _conn, n_el, n_ep, _el_list, n_el2,
-                                is_diff, mode)
-    return ret
-
 def d_surface_flux(np.ndarray out not None,
                    np.ndarray grad not None,
                    np.ndarray mtx_d not None,
@@ -1929,6 +1871,20 @@ def d_surf_lcouple(np.ndarray out not None,
     array2fmfield4(_coef, coef)
 
     ret = _d_surf_lcouple(_out, _state_p, _grad_q, _coef, cmap.geo)
+    return ret
+
+def mulATB_integrate(np.ndarray out not None,
+                     np.ndarray A not None,
+                     np.ndarray B not None,
+                     CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _A[1], _B[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_A, A)
+    array2fmfield4(_B, B)
+
+    ret = _mulATB_integrate(_out, _A, _B, cmap.geo)
     return ret
 
 def dw_adj_convect1():

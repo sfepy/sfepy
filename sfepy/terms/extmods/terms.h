@@ -24,6 +24,7 @@ BEGIN_C_DECLS
 #include "termsPiezo.h"
 #include "termsSurface.h"
 #include "termsVolume.h"
+#include "terms_op.h"
 
 END_C_DECLS
 

@@ -172,7 +172,7 @@ class DiffusionRTerm(Term):
         vg, _ = self.get_mapping(virtual)
         return mat, vg
 
-class DiffusionCoupling(ScalarScalar, Term):
+class DiffusionCoupling(Term):
     r"""
     :Description:
     Diffusion copupling term with material parameter :math:`K_{j}`.
@@ -193,10 +193,27 @@ class DiffusionCoupling(ScalarScalar, Term):
     modes = ('weak0', 'weak1', 'eval')
 
     @staticmethod
-    def d_eval(out, mat, val, grad, vg):
+    def d_fun(out, mat, val, grad, vg):
         out_qp = grad * mat * val
 
         status = vg.integrate(out, out_qp)
+
+        return status
+
+    @staticmethod
+    def dw_fun(out, val, mat, bf, vg, fmode):
+
+        if fmode == 0:
+            status = terms.mulATB_integrate(out, vg.bfg, mat * val, vg)
+
+        elif fmode == 1:
+            status = terms.mulATB_integrate(out, bf * mat, val, vg)
+
+        elif fmode == 2:
+            status = terms.mulATB_integrate(out, vg.bfg, mat * bf, vg)
+
+        elif fmode == 3:
+            status = terms.mulATB_integrate(out, mat * bf, vg.bfg, vg)
 
         return status
 
@@ -205,24 +222,28 @@ class DiffusionCoupling(ScalarScalar, Term):
         ap, vg = self.get_approximation(virtual)
 
         if mode == 'weak':
-            term_mode = int(self.mode[-1])
 
             aps, vgs = self.get_approximation(state)
             bf = aps.get_base('v', 0, self.integral)
 
             if diff_var is None:
-                if term_mode > 0:
-                    val = self.get(virtual, 'grad')
-                else:
+                if self.mode == 'weak0':
                     val = self.get(state, 'val')
+                    fmode = 0
 
-                fmode = 0
+                else:
+                    val = self.get(virtual, 'grad')
+                    fmode = 1
 
             else:
                 val = nm.array([0], ndmin=4, dtype=nm.float64)
-                fmode = 1
+                if self.mode == 'weak0':
+                    fmode = 2
 
-            return val, mat, bf, vg, term_mode, fmode
+                else:
+                    fmode = 3
+
+            return val, mat, bf, vg, fmode
 
         elif mode == 'eval':
 
@@ -243,9 +264,10 @@ class DiffusionCoupling(ScalarScalar, Term):
 
     def set_arg_types( self ):
         if self.mode[:-1] == 'weak':
-            self.function = terms.dw_diffusion_coupling
+            self.function = self.dw_fun
+
         else:
-            self.function = self.d_eval
+            self.function = self.d_fun
 
 class DiffusionVelocityTerm( Term ):
     r"""
