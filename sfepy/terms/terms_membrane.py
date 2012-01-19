@@ -172,7 +172,7 @@ class TLMembraneTerm(Term):
 
     def describe_membrane_geometry(self, ig, field, sg, sd):
         # Coordinates of element vertices.
-        coors = field.coors[sd.econn[:, :sg.nFP]]
+        coors = field.coors[sd.econn[:, :sg.n_fp]]
 
         # Coordinate transformation matrix (transposed!).
         self.mtx_t[ig] = membranes.create_transformation_matrix(coors)
