@@ -524,26 +524,30 @@ class SchurGeneralized(ScipyDirect):
     @staticmethod
     def process_conf(conf, kwargs):
         """
+        Setup solver configuration options.
+
         Example configuration::
 
             solvers = {
-                'ls': ('ls.schur_generalized', {
-                    'blocks': {
-                        'u': ['displacement1', 'displacement2'],
-                        'v': ['velocity1', 'velocity2'],
-                        'w': ['pressure1', 'pressure2'],
-                        }
-                    'function': my_schur,
-                    'needs_problem_instance': True,
+                'ls': ('ls.schur_generalized',
+                       {'blocks':
+                        {'u': ['displacement1', 'displacement2'],
+                         'v': ['velocity1', 'velocity2'],
+                         'w': ['pressure1', 'pressure2'],
+                         },
+                        'function': my_schur,
+                        'needs_problem_instance': True,
+                        })
             }
         """
         get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
+        common = ScipyDirect.process_conf(conf, kwargs)
 
-        return Struct(method=get('method', 'auto'),
-                      presolve=False,
-                      warn=get('warn', True),
-                      i_max=None, eps_a=None, eps_r=None) + common
+        return Struct(blocks=get('blocks', None,
+                                 'missing "blocks" in options!'),
+                      function=get('function', None,
+                                   'missing "function" in options!'),
+                      needs_problem_instance=True) + common
 
     def __init__(self, conf, **kwargs):
         from sfepy.fem.state import State
@@ -627,7 +631,8 @@ class SchurComplement(SchurGeneralized):
     Schur complement.
 
     Solution of the linear system
-    ..math::
+
+    .. math::
        \left[ \begin{array}{cc}
        A & B \\
        C & D \end{array} \right]
@@ -641,7 +646,8 @@ class SchurComplement(SchurGeneralized):
        g \end{array} \right]
 
     is obtained by solving the following equation:
-    ..math::
+
+    .. math::
        (D - C A^{-1} B) \cdot v = g - C A^{-1} f
 
     variable(s) :math:`u` are specified in "eliminate" list,
@@ -650,6 +656,31 @@ class SchurComplement(SchurGeneralized):
     See: http://en.wikipedia.org/wiki/Schur_complement
     """
     name = 'ls.schur_complement'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Setup solver configuration options.
+
+        Example configuration::
+
+            solvers = {
+                'ls': ('ls.schur_complement',
+                       {'eliminate': ['displacement'],
+                        'keep': ['pressure'],
+                        'needs_problem_instance': True,
+                        })
+            }
+        """
+        get = make_get_conf(conf, kwargs)
+        conf.blocks = {'1': get('eliminate', None,
+                                'missing "eliminate" in options!'),
+                       '2': get('keep', None,
+                                'missing "keep" in options!'),}
+        conf.function = SchurComplement.schur_fun
+        common = SchurGeneralized.process_conf(conf, kwargs)
+
+        return common
 
     @staticmethod
     def schur_fun(res, mtx, rhs, nn):
@@ -667,10 +698,3 @@ class SchurComplement(SchurGeneralized):
         k_rhs = rhs['2'] - spC * invAf
         res['2'] = sls.spsolve(scs.csc_matrix(mtx['22'] - spC * invAB), k_rhs)
         res['1'] = invAf - nm.dot(invAB, res['2'])
-
-    def __init__(self, conf, **kwargs):
-
-        conf.set_default_attr('blocks', {'1': conf.eliminate, '2': conf.keep})
-        conf.set_default_attr('function', self.schur_fun)
-
-        SchurGeneralized.__init__(self, conf, **kwargs)
