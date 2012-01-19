@@ -513,7 +513,116 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
 
         return sol
 
-class SchurComplement(ScipyDirect):
+class SchurGeneralized(ScipyDirect):
+    r"""
+    Generalized Schur complement.
+
+    Defines the matrix blocks and calls user defined function.
+    """
+    name = 'ls.schur_generalized'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Example configuration::
+
+            solvers = {
+                'ls': ('ls.schur_generalized', {
+                    'blocks': {
+                        'u': ['displacement1', 'displacement2'],
+                        'v': ['velocity1', 'velocity2'],
+                        'w': ['pressure1', 'pressure2'],
+                        }
+                    'function': my_schur,
+                    'needs_problem_instance': True,
+            }
+        """
+        get = make_get_conf(conf, kwargs)
+        common = LinearSolver.process_conf(conf)
+
+        return Struct(method=get('method', 'auto'),
+                      presolve=False,
+                      warn=get('warn', True),
+                      i_max=None, eps_a=None, eps_r=None) + common
+
+    def __init__(self, conf, **kwargs):
+        from sfepy.fem.state import State
+
+        ScipyDirect.__init__(self, conf, **kwargs)
+
+        equations = self.problem.equations
+        aux_state = State(equations.variables)
+
+        conf.idxs = {}
+        for bk, bv in conf.blocks.iteritems():
+            aux_state.fill(0.0)
+            for jj in bv:
+                idx = equations.variables.di.indx[jj]
+                aux_state.vec[idx] = nm.nan
+
+            aux_state.apply_ebc()
+            vec0 = aux_state.get_reduced()
+            conf.idxs[bk] = nm.where(nm.isnan(vec0))[0]
+
+    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                 i_max=None, mtx=None, status=None, **kwargs):
+
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+
+        mtxi= self.orig_conf.idxs
+        mtxslc_s = {}
+        mtxslc_f = {}
+        nn = {}
+
+        for ik, iv in mtxi.iteritems():
+            ptr = 0
+            nn[ik] = len(iv)
+            mtxslc_s[ik] = []
+            mtxslc_f[ik] = []
+            while ptr < nn[ik]:
+                idx0 = iv[ptr:]
+                idxrange = nm.arange(idx0[0], idx0[0] + len(idx0))
+                aux = nm.where(idx0 == idxrange)[0]
+                mtxslc_s[ik].append(slice(ptr + aux[0], ptr + aux[-1] + 1))
+                mtxslc_f[ik].append(slice(idx0[aux][0], idx0[aux][-1] + 1))
+                ptr += aux[-1] + 1
+
+        mtxs = {}
+        rhss = {}
+        ress = {}
+        for ir in mtxi.iterkeys():
+            rhss[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
+            ress[ir] = nm.zeros((nn[ir],), dtype=nm.float64)
+            for jr, idxr in enumerate(mtxslc_f[ir]):
+                rhss[ir][mtxslc_s[ir][jr]] = rhs[idxr]
+
+            for ic in mtxi.iterkeys():
+                mtxid = '%s%s' % (ir, ic)
+                mtxs[mtxid] = nm.zeros((nn[ir], nn[ic]), dtype=nm.float64)
+                for jr, idxr in enumerate(mtxslc_f[ir]):
+                    for jc, idxc in enumerate(mtxslc_f[ic]):
+                        iir = mtxslc_s[ir][jr]
+                        iic = mtxslc_s[ic][jc]
+                        mtxs[mtxid][iir, iic] = mtx._get_submatrix(idxr, idxc).todense()
+
+        self.orig_conf.function(ress, mtxs, rhss, nn)
+
+        res = nm.zeros_like(rhs)
+        for ir in mtxi.iterkeys():
+            for jr, idxr in enumerate(mtxslc_f[ir]):
+                res[idxr] = ress[ir][mtxslc_s[ir][jr]]
+
+        return res
+
+    def _presolve(self):
+        if hasattr(self, 'presolve'):
+            return self.presolve
+        else:
+            return self.conf.presolve
+
+class SchurComplement(SchurGeneralized):
     r"""
     Schur complement.
 
@@ -543,105 +652,25 @@ class SchurComplement(ScipyDirect):
     name = 'ls.schur_complement'
 
     @staticmethod
-    def process_conf(conf, kwargs):
-        """
-        Example configuration::
+    def schur_fun(res, mtx, rhs, nn):
+        import scipy.sparse as scs
+        import scipy.sparse.linalg as sls
+        import numpy as nm
 
-            solvers = {
-                'ls': ('ls.schur_complement', {
-                    'eliminate': ['displacement'],
-                    'keep': ['pressure'],
-                    'needs_problem_instance': True,
-            }
-        """
-        get = make_get_conf(conf, kwargs)
-        common = LinearSolver.process_conf(conf)
+        invA = sls.splu(scs.csc_matrix(mtx['11']))
+        spC = scs.csc_matrix(mtx['21'])
+        invAB = nm.zeros((nn['1'], nn['2']), dtype=nm.float64)
+        for ic in xrange(nn['2']):
+            invAB[:,ic] = invA.solve(mtx['12'][:,ic])
 
-        return Struct(method=get('method', 'auto'),
-                      presolve=False,
-                      warn=get('warn', True),
-                      i_max=None, eps_a=None, eps_r=None) + common
+        invAf = invA.solve(rhs['1'])
+        k_rhs = rhs['2'] - spC * invAf
+        res['2'] = sls.spsolve(scs.csc_matrix(mtx['22'] - spC * invAB), k_rhs)
+        res['1'] = invAf - nm.dot(invAB, res['2'])
 
     def __init__(self, conf, **kwargs):
-        from sfepy.fem.state import State
 
-        ScipyDirect.__init__(self, conf, **kwargs)
+        conf.set_default_attr('blocks', {'1': conf.eliminate, '2': conf.keep})
+        conf.set_default_attr('function', self.schur_fun)
 
-        equations = self.problem.equations
-        aux_state = State(equations.variables)
-        bl = {1: conf.eliminate, 2: conf.keep}
-        conf.idxs = {}
-        for ii in [1, 2]:
-            aux_state.fill(0.0)
-            for jj in bl[ii]:
-                idx = equations.variables.di.indx[jj]
-                aux_state.vec[idx] = nm.nan
-
-            aux_state.apply_ebc()
-            vec0 = aux_state.get_reduced()
-            conf.idxs[ii] = nm.where(nm.isnan(vec0))[0]
-
-    def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
-                 i_max=None, mtx=None, status=None, **kwargs):
-        import scipy.sparse as scs
-
-        conf = get_default(conf, self.conf)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
-
-        mtxi= self.orig_conf.idxs
-        mtxslc_s = {}
-        mtxslc_f = {}
-        nn = {}
-
-        for ii in [1, 2]:
-            ptr = 0
-            nn[ii] = len(mtxi[ii])
-            mtxslc_s[ii] = []
-            mtxslc_f[ii] = []
-            while ptr < nn[ii]:
-                idx0 = mtxi[ii][ptr:]
-                idxrange = nm.arange(idx0[0], idx0[0] + len(idx0))
-                aux = nm.where(idx0 == idxrange)[0]
-                mtxslc_s[ii].append(slice(ptr + aux[0], ptr + aux[-1] + 1))
-                mtxslc_f[ii].append(slice(idx0[aux][0], idx0[aux][-1] + 1))
-                ptr += aux[-1] + 1
-
-        mtxs = {}
-        rhss = {}
-        ress = {}
-        for ir in [1, 2]:
-            rhss[str(ir)] = nm.zeros((nn[ir],), dtype=nm.float64)
-            ress[str(ir)] = nm.zeros((nn[ir],), dtype=nm.float64)
-            for jr, idxr in enumerate(mtxslc_f[ir]):
-                rhss[str(ir)][mtxslc_s[ir][jr]] = rhs[idxr]
-
-            for ic in [1, 2]:
-                mtxid = '%d%d' % (ir, ic)
-                mtxs[mtxid] = nm.zeros((nn[ir], nn[ic]), dtype=nm.float64)
-                for jr, idxr in enumerate(mtxslc_f[ir]):
-                    for jc, idxc in enumerate(mtxslc_f[ic]):
-                        mtxs[mtxid][mtxslc_s[ir][jr], mtxslc_s[ic][jc]] = mtx._get_submatrix(idxr, idxc).todense()
-
-        invA = self.sls.splu(scs.csc_matrix(mtxs['11']))
-        spC = scs.csc_matrix(mtxs['21'])
-        invAB = nm.zeros((nn[1], nn[2]), dtype=nm.float64)
-        for ic in xrange(nn[2]):
-            invAB[:,ic] = invA.solve(mtxs['12'][:,ic])
-        invAf = invA.solve(rhss['1'])
-        k_rhs = rhss['2'] - spC * invAf
-        ress['2'] = self.sls.spsolve(scs.csc_matrix(mtxs['22'] - spC * invAB), k_rhs)
-        ress['1'] = invAf - nm.dot(invAB, ress['2'])
-
-        res = nm.zeros_like(rhs)
-        for ir in [1, 2]:
-            for jr, idxr in enumerate(mtxslc_f[ir]):
-                res[idxr] = ress[str(ir)][mtxslc_s[ir][jr]]
-
-        return res
-
-    def _presolve(self):
-        if hasattr(self, 'presolve'):
-            return self.presolve
-        else:
-            return self.conf.presolve
+        SchurGeneralized.__init__(self, conf, **kwargs)
