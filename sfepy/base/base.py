@@ -34,23 +34,47 @@ def get_debug():
     """
     Utility function providing ``debug()`` function.
     """
-    old_excepthook = sys.excepthook
-
     try:
-        from IPython.Debugger import Pdb
-        from IPython.Shell import IPShell
-        from IPython import ipapi
+        import IPython
 
     except ImportError:
         debug = None
 
     else:
-        def debug():
-            shell = IPShell(argv=[''])
-            sys.excepthook = old_excepthook
+        old_excepthook = sys.excepthook
+
+        if IPython.__version__ >= '0.11':
+            from IPython.core.debugger import Pdb
+
+            try:
+                ip = get_ipython()
+
+            except NameError:
+                from IPython.frontend.terminal.embed \
+                     import InteractiveShellEmbed
+                ip = InteractiveShellEmbed()
+
+            colors = ip.colors
+
+        else:
+            from IPython.Debugger import Pdb
+            from IPython.Shell import IPShell
+            from IPython import ipapi
+
             ip = ipapi.get()
-            def_colors = ip.options.colors
-            Pdb(def_colors).set_trace(sys._getframe().f_back)
+            if ip is None:
+                IPShell(argv=[''])
+                ip = ipapi.get()
+
+            colors = ip.options.colors
+
+        def debug(frame=None):
+            sys.excepthook = old_excepthook
+
+            if frame is None:
+                frame = sys._getframe().f_back
+
+            Pdb(colors).set_trace(frame)
 
     if debug is None:
         import pdb
