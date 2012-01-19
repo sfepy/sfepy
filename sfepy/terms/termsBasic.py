@@ -190,74 +190,6 @@ class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
     arg_types = ('opt_material', 'virtual')
     integration = 'surface'
 
-class DotProductVolumeTerm(Term):
-    r"""
-    :Description:
-    Volume :math:`L^2(\Omega)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
-        \mbox{ or }\int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        material    : :math:`c` (optional),
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_volume_dot'
-    arg_types = ('opt_material', 'parameter_1', 'parameter_2')
-
-    @staticmethod
-    def function(out, mat, val1, val2, geo):
-        if val1.shape[-1] > 1:
-            out_qp = nm.sum(val1 * val2, axis=-1)
-        else:
-            out_qp = val1 * val2
-
-        if mat is not None:
-            status = geo.integrate(out, mat * out_qp)
-        else:
-            status = geo.integrate(out, out_qp)
-
-        return status
-
-    def get_fargs(self, mat, par1, par2,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        geo, _ = self.get_mapping(par1)
-
-        val1 = self.get(par1, 'val')
-        val2 = self.get(par2, 'val')
-
-        return mat, val1, val2, geo
-
-    def get_eval_shape(self, mat, par1, par2,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(par1)
-
-        return (n_cell, 1, 1, 1), par1.dtype
-
-class DotProductSurfaceTerm(DotProductVolumeTerm):
-    r"""
-    :Description:
-    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
-    fields.
-
-    :Definition:
-    .. math::
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
-        \mbox{ or } \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
-
-    :Arguments:
-        material    : :math:`c` (optional),
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
-    """
-    name = 'd_surface_dot'
-    arg_types = ('opt_material', 'parameter_1', 'parameter_2')
-    integration = 'surface'
-
 class VolumeTerm(Term):
     r"""
     :Description:
@@ -456,30 +388,30 @@ class DotProductVolumeTerm(Term):
     modes = ('weak', 'eval')
 
     @staticmethod
-    def dw_volume_dot(out, mat, val_qp, vvg, svg, fmode):
-        bf_t = vvg.bf.transpose((0, 2, 1))
+    def dw_dot(out, mat, val_qp, vgeo, sgeo, fmode):
+        bf_t = vgeo.bf.transpose((0, 2, 1))
         if mat is not None:
             if fmode == 0:
                 vec = bf_t * mat * val_qp
 
             else:
-                vec = bf_t * mat * svg.bf
+                vec = bf_t * mat * sgeo.bf
 
         else:
             if fmode == 0:
                 vec = bf_t * val_qp
 
             else:
-                vec = bf_t * svg.bf
+                vec = bf_t * sgeo.bf
                 vec = nm.tile(vec, (out.shape[0], 1, 1, 1))
                 vec = nm.ascontiguousarray(vec)
 
-        status = vvg.integrate(out, vec)
+        status = vgeo.integrate(out, vec)
 
         return status
 
     @staticmethod
-    def d_volume_dot(out, mat, val1_qp, val2_qp, vg):
+    def d_dot(out, mat, val1_qp, val2_qp, geo):
         if val1_qp.shape[2] > 1:
             vec = nm.sum(val1_qp * val2_qp, axis=-1)
 
@@ -487,20 +419,21 @@ class DotProductVolumeTerm(Term):
             vec = val1_qp * val2_qp
 
         if mat is not None:
-            status = vg.integrate(out, mat * vec)
+            status = geo.integrate(out, mat * vec)
         else:
-            status = vg.integrate(out, vec)
+            status = geo.integrate(out, vec)
 
         return status
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vvg, _ = self.get_mapping(virtual)
-        svg, _ = self.get_mapping(state)
+        vgeo, _ = self.get_mapping(virtual)
 
         if mode == 'weak':
             if state.n_components > 1:
                 raise NotImplementedError
+
+            sgeo, _ = self.get_mapping(state)
 
             if diff_var is None:
                 val_qp = self.get(state, 'val')
@@ -510,13 +443,13 @@ class DotProductVolumeTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return mat, val_qp, vvg, svg, fmode
+            return mat, val_qp, vgeo, sgeo, fmode
 
         elif mode == 'eval':
             val1_qp = self.get(virtual, 'val')
             val2_qp = self.get(state, 'val')
 
-            return mat, val1_qp, val2_qp, vvg
+            return mat, val1_qp, val2_qp, vgeo
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
@@ -524,16 +457,36 @@ class DotProductVolumeTerm(Term):
 
     def get_eval_shape(self, mat, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        n_cell, n_qp, dim, n_n, n_c = self.get_data_shape(state)
 
-        return (n_el, 1, 1, 1), state.dtype
+        return (n_cell, 1, 1, 1), state.dtype
 
     def set_arg_types(self):
         if self.mode == 'weak':
-            self.function = self.dw_volume_dot
+            self.function = self.dw_dot
 
         else:
-            self.function = self.d_volume_dot
+            self.function = self.d_dot
+
+class DotProductSurfaceTerm(DotProductVolumeTerm):
+    r"""
+    :Description:
+    Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
+    fields.
+
+    :Definition:
+    .. math::
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+        \mbox{ or } \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
+
+    :Arguments:
+        material    : :math:`c` (optional),
+        parameter_1 : :math:`p` or :math:`\ul{u}`,
+        parameter_2 : :math:`r` or :math:`\ul{w}`
+    """
+    name = 'd_surface_dot'
+    arg_types = ('opt_material', 'parameter_1', 'parameter_2')
+    integration = 'surface'
 
 ##
 # c: 03.04.2008
