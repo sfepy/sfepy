@@ -45,6 +45,11 @@ Python shell for SfePy.
      SfePy without startup banner and colors, for example, issue:
 
         isfepy -q -- -colors NoColor
+        isfepy -q -- --colors NoColor (for ipython >= 0.11)
+
+     For non-blocking matplotlib plots in ipython >= 0.11 use:
+
+        isfepy -- --pylab=wx
 """
 from optparse import OptionParser
 
