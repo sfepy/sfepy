@@ -16,23 +16,12 @@ from optparse import OptionParser
 from math import pi
 
 import numpy as nm
-import numpy.linalg as nla
-
-try:
-    from scipy.optimize import bisect
-except ImportError:
-    from scipy.optimize import bisection as bisect
 
 import sfepy
-from sfepy.base.base import Struct, Output, output, get_default, assert_, pause
+from sfepy.base.base import Struct, output, get_default
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.base.ioutils import ensure_path
-from sfepy.linalg import norm_l2_along_axis
-from sfepy.base.log import Log
 from sfepy.applications import SimpleApp
-from sfepy.fem import Materials
-from sfepy.fem.evaluate import eval_equations
-from sfepy.fem.mappings import get_physical_qps, get_jacobian
 from sfepy.solvers import Solver
 
 def guess_n_eigs(n_electron, n_eigs=None):
@@ -47,68 +36,6 @@ def guess_n_eigs(n_electron, n_eigs=None):
     else:
         n_eigs = n_electron
     return n_eigs
-
-def smear(energies, e_f, width, exponent):
-    energies = nm.atleast_1d(energies)
-
-    e1, e2 = e_f - width, e_f + width
-
-    val = nm.zeros_like(energies)
-
-    ii = nm.where(energies <= e1)[0]
-    val[ii] = 2.0
-
-    ii = nm.where((energies > e1) & (energies <= e_f))[0]
-    val[ii] = 2.0 - nm.power((energies[ii] - e1) / width, exponent)
-
-    ii = nm.where((energies > e_f) & (energies < e2))[0]
-    val[ii] = 0.0 + nm.power((e2 - energies[ii]) / width, exponent)
-
-    return val
-
-def setup_smearing(eigs, n_electron, width=0.1, exponent=2.0):
-
-    def objective(e_f):
-        r = nm.sum(smear(eigs, e_f, width, exponent)) - n_electron
-
-        return r
-
-    try:
-        e_f = bisect(objective, eigs[0], eigs[-1], xtol=1e-12)
-    except AssertionError:
-        e_f = None
-
-    def smear_tuned(energies):
-        return smear(energies, e_f, width, exponent)
-
-    return e_f, smear_tuned
-
-def update_state_to_output(out, pb, vec, name, fill_value=None):
-    """Convert 'vec' to output for saving and insert it into 'out'. """
-    state = pb.create_state()
-    state.set_full(vec)
-    aux = state.create_output_dict(fill_value=fill_value)
-    key = aux.keys()[0]
-    out[name] = aux[key]
-
-def wrap_function(function, args, kwargs):
-    ncalls = [0]
-    times = []
-    results = []
-    def function_wrapper(x):
-        ncalls[0] += 1
-        tt = time.time()
-
-        results[:] = function(x, *args, **kwargs)
-        v_hxc_qp = results[-1]
-
-        tt2 = time.time()
-        if tt2 < tt:
-            raise RuntimeError, '%f >= %f' % (tt, tt2)
-        times.append(tt2 - tt)
-
-        return v_hxc_qp.ravel() - x
-    return ncalls, times, function_wrapper, results
 
 class SchroedingerApp(SimpleApp):
 
@@ -134,41 +61,6 @@ class SchroedingerApp(SimpleApp):
                       n_eigs=n_eigs,
                       save_eig_vectors=get('save_eig_vectors', None))
 
-    @staticmethod
-    def process_dft_options(options):
-        """
-        Application DFT options setup. Sets default values for missing
-        non-compulsory options.
-
-        Options:
-
-        v_fun_name : str
-            The name of material function for evaluating the total potential.
-        save_dft_iterations : bool
-            If True, save intermediate results during DFT iterations.
-        init_hook : function
-            The function called before DFT iterations, useful for
-            defining additional keyword arguments passed to the
-            eigenvalue problem solver.
-        iter_hook : function
-            The function called after each DFT iteration with no return
-            value.
-        iter_hook_final : function
-            Like `iter_hook`, but called after the solver finishes.
-        """
-        get = options.get_default_attr
-
-        return Struct(dft_solver=get('dft_solver', None,
-                                     'missing "dft" in options!'),
-                      v_fun_name=get('v_fun_name', None,
-                                     'missing "v_fun_name" in options!'),
-                      log_filename=get('log_filename', 'log.txt'),
-                      iter_fig_name=get('iter_fig_name', 'iterations.pdf'),
-                      save_dft_iterations=get('save_dft_iterations', False),
-                      init_hook=get('init_hook', None),
-                      iter_hook=get('iter_hook', None),
-                      iter_hook_final=get('iter_hook_final', None))
-
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
                            init_equations=False)
@@ -176,12 +68,6 @@ class SchroedingerApp(SimpleApp):
     def setup_options(self):
         SimpleApp.setup_options(self)
         opts = SchroedingerApp.process_options(self.conf.options)
-        if self.options.dft:
-            opts += SchroedingerApp.process_dft_options(self.conf.options)
-            get = self.conf.get_function
-            self.init_hook = get(opts.init_hook)
-            self.iter_hook = get(opts.iter_hook)
-            self.iter_hook_final = get(opts.iter_hook_final)
 
         self.app_options += opts
 
@@ -198,38 +84,13 @@ class SchroedingerApp(SimpleApp):
                                          self.problem.get_output_name())
         self.eig_results_name = op.join(opts.output_dir,
                                         self.problem.ofn_trunk + '_eigs.txt')
-        if self.options.dft:
-            opts.log_filename = op.join(output_dir, opts.log_filename)
-            opts.iter_fig_name = op.join(output_dir, opts.iter_fig_name)
-
-            # Restart file names for DFT.
-            name = self.options.save_restart_filename
-            if name == 'auto':
-                name = op.join(output_dir,
-                               self.problem.ofn_trunk + '_restart.h5')
-            self.save_restart_filename = name
-
-            name = self.options.load_restart_filename
-            if name == 'auto':
-                name = op.join(output_dir,
-                               self.problem.ofn_trunk + '_restart.h5')
-            self.load_restart_filename = name
 
     def call(self):
-        options = self.options
-
         # This cannot be in __init__(), as parametric calls may change
         # the output directory.
         self.setup_output()
 
-        if options.dft:
-            if options.plot:
-                from sfepy.base.plotutils import plt
-                options.plot = plt is not None
-
-            evp = self.solve_eigen_problem_n()
-        else:
-            evp = self.solve_eigen_problem_1()
+        evp = self.solve_eigen_problem_1()
 
         output("solution saved to %s" % self.problem.get_output_name())
         output("in %s" % self.app_options.output_dir)
@@ -238,296 +99,6 @@ class SchroedingerApp(SimpleApp):
             self.post_process_hook_final(self.problem, evp=evp)
 
         return evp
-
-    def _interp_to_nodes(self, v_qp):
-        variable = self.problem.create_variables(['scalar'])['scalar']
-        variable.data_from_qp(v_qp, self.problem.integrals['i1'])
-
-        return variable()
-
-    def iterate(self, v_hxc_qp, eig_solver,
-                mtx_a_equations, mtx_a_variables, mtx_b, log, file_output,
-                n_electron=None, **kwargs):
-        from sfepy.physics.extmods import cdft
-
-        self.itercount += 1
-
-        pb = self.problem
-        opts = self.app_options
-
-        n_electron = get_default(n_electron, opts.n_electron)
-
-        sh = self.qp_shape
-
-        v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
-        v_hxc_qp.shape = (sh[0] * sh[1],) + sh[2:]
-
-        mat_v = Materials(mtx_a_equations.collect_materials())['mat_v']
-        mat_v.set_extra_args(vhxc=v_hxc_qp)
-        mat_v.time_update(None, mtx_a_equations, pb)
-
-        v_hxc_qp.shape = sh
-
-        v_ion_qp = mat_v.get_data(('Omega', 'i1'), 0, 'V_ion')
-        for ig in xrange(1, pb.domain.shape.n_gr):
-            _v_ion_qp = mat_v.get_data(('Omega', 'i1'), ig, 'V_ion')
-            v_ion_qp = nm.concatenate((v_ion_qp, _v_ion_qp), axis=0)
-
-        output('assembling lhs...')
-        tt = time.clock()
-        mtx_a = eval_equations(mtx_a_equations, mtx_a_variables,
-                               mode='weak', dw_mode='matrix')
-        output('...done in %.2f s' % (time.clock() - tt))
-
-        assert_(nm.alltrue(nm.isfinite(mtx_a.data)))
-
-        output('computing the Ax=Blx Kohn-Sham problem...')
-        tt = time.clock()
-        eigs, mtx_s_phi = eig_solver(mtx_a, mtx_b,
-                                     opts.n_eigs, eigenvectors=True, **kwargs)
-        output('...done in %.2f s' % (time.clock() - tt))
-        n_eigs_ok = len(eigs)
-
-        output('setting-up smearing...')
-        e_f, smear_tuned = setup_smearing(eigs, n_electron)
-        output('Fermi energy:', e_f)
-        if e_f is None:
-            raise Exception("cannot find Fermi energy - exiting.")
-        weights = smear_tuned(eigs)
-        output('...done')
-
-        if (weights[-1] > 1e-12):
-            output("last smearing weight is nonzero (%s eigs ok)!" % n_eigs_ok)
-
-        if opts.save_dft_iterations:
-            output("saving solutions, iter=%d..." % self.itercount)
-            out = {}
-            var_name = mtx_a_variables.get_names(kind='state')[0]
-            for ii in xrange(n_eigs_ok):
-                vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
-                update_state_to_output(out, pb, vec_phi, var_name+'%03d' % ii)
-            name = op.join(opts.output_dir, "iter%d" % self.itercount)
-            pb.save_state('.'.join((name, opts.output_format)), out=out)
-            output("...solutions saved")
-
-        output('computing total charge...')
-        tt = time.clock()
-        aux = pb.create_evaluable('di_volume_integrate.i1.Omega(Psi)',
-                                  mode='qp')
-        psi_equations, psi_variables = aux
-        var = psi_variables['Psi']
-
-        n_qp = nm.zeros_like(v_hxc_qp)
-        for ii in xrange(n_eigs_ok):
-            vec_phi = mtx_a_variables.make_full_vec(mtx_s_phi[:,ii])
-            var.data_from_any(vec_phi)
-
-            phi_qp = eval_equations(psi_equations, psi_variables,
-                                    mode='qp')
-            n_qp += weights[ii] * (phi_qp ** 2)
-        output('...done in %.2f s' % (time.clock() - tt))
-
-        # Integrate charge density to get charge.
-        det = get_jacobian(var.field, pb.integrals['i1'])
-        charge = (det * n_qp).sum()
-
-        vec_n = self._interp_to_nodes(n_qp)
-
-        var.data_from_any(vec_n)
-        charge_n = pb.evaluate('di_volume_integrate.i1.Omega(Psi)', Psi=var)
-
-        ##
-        # V_xc in quadrature points.
-        v_xc_qp = cdft.get_vxc(n_qp, 0, 0)
-        assert_(v_xc_qp.shape == self.qp_shape)
-        assert_(nm.isfinite(v_xc_qp).all())
-
-        mat_key = mat_v.datas.keys()[0]
-        pb.set_equations(pb.conf.equations_vh)
-        pb.select_bcs(ebc_names=['VHSurface'])
-        pb.update_materials()
-
-        qps = get_physical_qps(pb.domain.regions['Omega'], pb.integrals['i1'])
-        mat_n_qp = {}
-        for ig, ii in qps.indx.iteritems():
-            mat_n_qp[ig] = {'N' : n_qp[ii]}
-
-        output("solving Ax=b Poisson equation")
-        mat_n = pb.get_materials()['mat_n']
-        mat_n.reset()
-        mat_n.set_all_data({mat_key : mat_n_qp})
-        vec_v_h = pb.solve()()
-
-        var.data_from_any(vec_v_h)
-        v_h_qp = pb.evaluate('di_volume_integrate.i1.Omega(Psi)', Psi=var,
-                             mode='qp')
-
-        v_hxc_qp = v_h_qp + v_xc_qp
-        norm = nla.norm(v_hxc_qp.ravel())
-        dnorm = abs(norm - self.norm_v_hxc0)
-        log(norm, max(dnorm,1e-20)) # logplot of pure 0 fails.
-        file_output('%d: F(x) = |VH + VXC|: %f, abs(F(x) - F(x_prev)): %e'\
-                    % (self.itercount, norm, dnorm))
-
-        file_output("-"*70)
-        file_output('Fermi energy:', e_f)
-        file_output("----------------------------------------")
-        file_output(" #  |  eigs           | smearing")
-        file_output("----|-----------------|-----------------")
-        for ii in xrange(n_eigs_ok):
-            file_output("% 3d | %-15s | %-15s" % (ii+1, eigs[ii], weights[ii]))
-        file_output("----------------------------------------")
-        file_output("charge_qp: ", charge)
-        file_output("charge_n:  ", charge_n)
-        file_output("----------------------------------------")
-        file_output("|N|:       ", nla.norm(n_qp.ravel()))
-        file_output("|V_H|:     ", nla.norm(v_h_qp.ravel()))
-        file_output("|V_XC|:    ", nla.norm(v_xc_qp.ravel()))
-        file_output("|V_HXC|:   ", norm)
-
-        if self.iter_hook is not None: # User postprocessing.
-            pb.select_bcs(ebc_names=['ZeroSurface'])
-            mtx_phi = self.make_full(mtx_s_phi)
-
-            data = Struct(iteration=self.itercount,
-                          eigs=eigs, weights=weights,
-                          mtx_s_phi=mtx_s_phi, mtx_phi=mtx_phi,
-                          vec_n=vec_n, vec_v_h=vec_v_h,
-                          n_qp=n_qp, v_ion_qp=v_ion_qp, v_h_qp=v_h_qp,
-                          v_xc_qp=v_xc_qp, file_output=file_output)
-            self.iter_hook(self.problem, data=data)
-
-        file_output("-"*70)
-
-        self.norm_v_hxc0 = norm
-
-        return eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
-               n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp
-
-    def solve_eigen_problem_n(self):
-        opts = self.app_options
-        pb = self.problem
-
-        pb.set_equations(pb.conf.equations)
-        pb.select_bcs(ebc_names=['ZeroSurface'])
-
-        output('assembling rhs...')
-        tt = time.clock()
-        mtx_b = pb.evaluate(pb.conf.equations['rhs'], mode='weak',
-                            auto_init=True, dw_mode='matrix')
-        output('...done in %.2f s' % (time.clock() - tt))
-        assert_(nm.alltrue(nm.isfinite(mtx_b.data)))
-
-        ## mtx_b.save('b.txt', format='%d %d %.12f\n')
-
-        aux = pb.create_evaluable(pb.conf.equations['lhs'], mode='weak',
-                                  dw_mode='matrix')
-        mtx_a_equations, mtx_a_variables = aux
-
-        if self.options.plot:
-            log_conf = {
-                'is_plot' : True,
-                'aggregate' : 1,
-                'yscales' : ['linear', 'log'],
-            }
-        else:
-            log_conf = {
-                'is_plot' : False,
-            }
-        log =  Log.from_conf(log_conf, ([r'$|F(x)|$'], [r'$|F(x)-x|$']))
-
-        file_output = Output('', opts.log_filename, combined=True)
-
-        eig_conf = pb.get_solver_conf(opts.eigen_solver)
-        eig_solver = Solver.any_from_conf(eig_conf)
-
-        # Just to get the shape. Assumes one element group only!!!
-        v_hxc_qp = pb.evaluate('di_volume_integrate.i1.Omega(Psi)',
-                               mode='qp')
-        self.qp_shape = v_hxc_qp.shape
-
-        if self.load_restart_filename is not None:
-            # Load a restart file.
-            aux = self.load_dict(self.load_restart_filename)['V_hxc_qp']
-            assert_(aux.shape == self.qp_shape)
-            v_hxc_qp[:] = aux
-
-        else:
-            v_hxc_qp.fill(0.0)
-
-        self.norm_v_hxc0 = nla.norm(v_hxc_qp)
-
-        kwargs = self.init_hook(pb) if self.init_hook is not None else {}
-
-        self.itercount = 0
-        aux = wrap_function(self.iterate,
-                            (eig_solver,
-                             mtx_a_equations, mtx_a_variables,
-                             mtx_b, log, file_output), kwargs)
-        ncalls, times, nonlin_v, results = aux
-
-        # Create and call the DFT solver.
-        dft_conf = pb.get_solver_conf(opts.dft_solver)
-        dft_status = {}
-        dft_solver = Solver.any_from_conf(dft_conf,
-                                          fun=nonlin_v,
-                                          status=dft_status)
-        v_hxc_qp = dft_solver(v_hxc_qp.ravel())
-
-        v_hxc_qp = nm.array(v_hxc_qp, dtype=nm.float64)
-        v_hxc_qp.shape = self.qp_shape
-        eigs, weights, mtx_s_phi, vec_n, vec_v_h, \
-              n_qp, v_ion_qp, v_h_qp, v_xc_qp, v_hxc_qp = results
-        output('DFT iteration time [s]:', dft_status['time_stats'])
-
-        fun = pb.functions[opts.v_fun_name]
-        variable = self.problem.create_variables(['scalar'])['scalar']
-        field_coors = variable.field.get_coor()
-        vec_v_ion = fun(None, field_coors,
-                        mode='qp')['V_ion'].squeeze()
-
-        vec_v_xc = self._interp_to_nodes(v_xc_qp)
-        vec_v_hxc = self._interp_to_nodes(v_hxc_qp)
-        vec_v_sum = self._interp_to_nodes(v_hxc_qp + v_ion_qp)
-
-        r2 = norm_l2_along_axis(field_coors, squared=True)
-        vec_nr2 = vec_n * r2
-
-        pb.select_bcs(ebc_names=['ZeroSurface'])
-        mtx_phi = self.make_full(mtx_s_phi)
-
-        if self.save_restart_filename is not None:
-            # Save a restart file.
-            self.save_dict(self.save_restart_filename,
-                           {'V_hxc_qp' : v_hxc_qp})
-
-        if self.iter_hook_final is not None: # User postprocessing.
-            data = Struct(iteration=self.itercount,
-                          eigs=eigs, weights=weights,
-                          mtx_s_phi=mtx_s_phi, mtx_phi=mtx_phi,
-                          vec_n=vec_n, vec_v_h=vec_v_h,
-                          n_qp=n_qp, v_ion_qp=v_ion_qp, v_h_qp=v_h_qp,
-                          v_xc_qp=v_xc_qp, file_output=file_output)
-            self.iter_hook_final(self.problem, data=data)
-
-        out = {}
-        update_state_to_output(out, pb, vec_n, 'n')
-        update_state_to_output(out, pb, vec_nr2, 'nr2')
-        update_state_to_output(out, pb, vec_v_h, 'V_h')
-        update_state_to_output(out, pb, vec_v_xc, 'V_xc')
-        update_state_to_output(out, pb, vec_v_ion, 'V_ion')
-        update_state_to_output(out, pb, vec_v_hxc, 'V_hxc')
-        update_state_to_output(out, pb, vec_v_sum, 'V_sum')
-        self.save_results(eigs, mtx_phi, out=out)
-
-        if self.options.plot:
-            log(save_figure=opts.iter_fig_name)
-            pause()
-            log(finished=True)
-
-        return Struct(pb=pb, eigs=eigs, mtx_phi=mtx_phi,
-                      vec_n=vec_n, vec_nr2=vec_nr2,
-                      vec_v_h=vec_v_h, vec_v_xc=vec_v_xc)
 
     def solve_eigen_problem_1(self):
         options = self.options
@@ -705,16 +276,6 @@ help = {
     'mesh_dir' :
     'directory, where the mesh is generated by --mesh or --create-mesh'
     ' [default: %default]',
-    'dft' :
-    'Do a DFT calculation (input file required)',
-    'plot' :
-    'plot convergence of DFT iterations (with --dft)',
-    'save_restart' :
-    'create restart file after DFT (with --dft)'
-    ' special value "auto" is replaced by <output_dir>/<mesh_name>_restart.h5]',
-    'load_restart' :
-    'load restart file to initialize DFT (with --dft)'
-    ' special value "auto" is replaced by <output_dir>/<mesh_name>_restart.h5]',
 }
 
 def main():
@@ -752,18 +313,6 @@ def main():
     parser.add_option('--boron',
                       action='store_true', dest='boron',
                       default=False, help=help['boron'])
-    parser.add_option('--dft',
-                      action='store_true', dest='dft',
-                      default=False, help=help['dft'])
-    parser.add_option('-p', '--plot',
-                      action='store_true', dest='plot',
-                      default=False, help=help['plot'])
-    parser.add_option('-r', '--save-restart', metavar='filename',
-                      action='store', dest='save_restart_filename',
-                      default=None, help=help['save_restart'])
-    parser.add_option('-l', '--load-restart', metavar='filename',
-                      action='store', dest='load_restart_filename',
-                      default=None, help=help['load_restart'])
 
     options, args = parser.parse_args()
 
@@ -825,10 +374,6 @@ def main():
                 m = Mesh.from_file("tmp/t.1.node")
                 m.write(mesh_filename, io="auto")
             output("...mesh written to %s" % mesh_filename)
-            return
-
-        elif options.dft:
-            output('the --dft option requires input file') 
             return
 
         else:
