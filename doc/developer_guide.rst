@@ -868,6 +868,7 @@ sfepy.physics package
    src/sfepy/physics/energy
    src/sfepy/physics/potentials
    src/sfepy/physics/radial_mesh
+   src/sfepy/physics/schroedinger_app
 
 sfepy.postprocess package
 ^^^^^^^^^^^^^^^^^^^^^^^^^
