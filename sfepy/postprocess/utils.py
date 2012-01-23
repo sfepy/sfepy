@@ -11,9 +11,9 @@ except ImportError:
         mayavi = None
 
 if mayavi:
-    mlab = mayavi.mlab
-    Source = mayavi.core.source.Source
-    Filter = mayavi.core.filter.Filter
+    from mayavi import mlab
+    from mayavi.core.source import Source
+    from mayavi.core.filter import Filter
     import dataset_manager
 
 from sfepy.base.base import basestr
