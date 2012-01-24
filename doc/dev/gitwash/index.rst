@@ -1,8 +1,5 @@
 .. _using-git:
 
-Using git with *SfePy* source code
-======================================
-
 Contents:
 
 .. toctree::
@@ -14,5 +11,3 @@ Contents:
    patching
    git_development
    git_resources
-
-

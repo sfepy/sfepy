@@ -703,6 +703,28 @@ How To Make a Release
 
    release_tasks.rst
 
+.. _using-git:
+
+Working with *SfePy* source code
+--------------------------------
+
+This section was adapted from Matthew Brett's excellent `git tutorial
+<http://github.com/matthew-brett/gitwash>`_. It complements the above
+sections and details several aspects of working with Git and Github.
+
+It can be updated by running::
+
+   $ curl -O https://raw.github.com/matthew-brett/gitwash/master/gitwash_dumper.py
+   $ python gitwash_dumper.py doc/dev SfePy --repo-name=sfepy --github-user=sfepy --project-url=http://sfepy.org --project-ml-url=http://groups.google.com/group/sfepy-devel
+
+in the SfePy source directory. Do not forget to delete the section title
+in `doc/dev/gitwash/index.rst`, as it is already here.
+
+.. toctree::
+   :maxdepth: 2
+
+   dev/gitwash/index
+
 Module Index
 ------------
 

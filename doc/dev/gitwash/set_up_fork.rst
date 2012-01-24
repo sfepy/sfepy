@@ -4,7 +4,7 @@
  Set up your fork
 ==================
 
-First you follow the instructions for :ref:`forking`. 
+First you follow the instructions for :ref:`forking`.
 
 Overview
 ========
@@ -33,7 +33,7 @@ Clone your fork
    This tells you that you are currently on the ``master`` branch, and
    that you also have a ``remote`` connection to ``origin/master``.
    What remote repository is ``remote/origin``? Try ``git remote -v`` to
-   see the URLs for the remote.  They will point to your github_ fork.
+   see the URLs for the remote.  They will point to your github fork.
 
    Now you want to connect to the upstream `SfePy github`_ repository, so
    you can merge in changes from trunk.
@@ -49,7 +49,7 @@ Linking your repository to the upstream repo
    git remote add upstream git://github.com/sfepy/sfepy.git
 
 ``upstream`` here is just the arbitrary name we're using to refer to the
-main SfePy_ repository at `SfePy github`_.
+main `SfePy`_ repository at `SfePy github`_.
 
 Note that we've used ``git://`` for the URL rather than ``git@``.  The
 ``git://`` URL is read only.  This means we that we can't accidentally
@@ -64,5 +64,5 @@ Just for your own satisfaction, show yourself that you now have a new
    origin	git@github.com:your-user-name/sfepy.git (fetch)
    origin	git@github.com:your-user-name/sfepy.git (push)
 
-.. include:: git_links.inc
+.. include:: links.inc
 
