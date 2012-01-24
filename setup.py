@@ -73,11 +73,11 @@ def configuration(parent_package='',top_path=None):
                                      'RELEASE_NOTES.txt', 'AUTHORS',
                                      'build_helpers.py',
                                      'site_cfg_template.py', 'Makefile')))
-    config.add_data_files(('../../../share/sfepy/script', aux_scripts))
-    config.add_data_dir(('../../../share/sfepy/meshes', 'meshes'))
-    config.add_data_dir(('../../../share/sfepy/examples', 'examples'))
-    config.add_data_dir(('../../../share/sfepy/doc', 'doc'))
-    config.add_data_dir(('../../../share/sfepy/tests', 'tests'))
+    config.add_data_files(('script', aux_scripts))
+    config.add_data_dir(('meshes', 'meshes'))
+    config.add_data_dir(('examples', 'examples'))
+    config.add_data_dir(('doc', 'doc'))
+    config.add_data_dir(('tests', 'tests'))
 
     config.get_version('sfepy/version.py') # sets config.version
     ## print config
