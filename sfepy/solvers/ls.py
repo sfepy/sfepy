@@ -686,15 +686,15 @@ class SchurComplement(SchurGeneralized):
     def schur_fun(res, mtx, rhs, nn):
         import scipy.sparse as scs
         import scipy.sparse.linalg as sls
-        import numpy as nm
 
         invA = sls.splu(scs.csc_matrix(mtx['11']))
-        spC = scs.csc_matrix(mtx['21'])
-        invAB = nm.zeros((nn['1'], nn['2']), dtype=nm.float64)
-        for ic in xrange(nn['2']):
-            invAB[:,ic] = invA.solve(mtx['12'][:,ic])
+        invAB = nm.zeros_like(mtx['12'])
+        for j, b in enumerate(mtx['12'].T):
+            invAB[:,j] = invA.solve(b)
 
         invAf = invA.solve(rhs['1'])
+
+        spC = scs.csc_matrix(mtx['21'])
         k_rhs = rhs['2'] - spC * invAf
         res['2'] = sls.spsolve(scs.csc_matrix(mtx['22'] - spC * invAB), k_rhs)
         res['1'] = invAf - nm.dot(invAB, res['2'])
