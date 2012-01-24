@@ -14,6 +14,7 @@ class Test(TestCommon):
     def test_linearization(self):
         from sfepy.base.base import Struct
         from sfepy.fem import Mesh, Domain, Field
+        from sfepy import data_dir
 
         geometries = ['2_3', '2_4', '3_4', '3_8']
         approx_orders = [1, 2]
@@ -21,7 +22,9 @@ class Test(TestCommon):
 
         ok = True
         for geometry in geometries:
-            mesh = Mesh.from_file('meshes/elements/%s_1.mesh' % geometry)
+            name = os.path.join(data_dir,
+                                'meshes/elements/%s_1.mesh' % geometry)
+            mesh = Mesh.from_file(name)
 
             domain = Domain('', mesh)
             domain = domain.refine()
