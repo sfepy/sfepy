@@ -3,13 +3,7 @@ import os, glob
 from config import Config
 from version import __version__, in_source_tree, top_dir
 
-if in_source_tree:
-    data_dir = top_dir
-else:
-    op = os.path
-    data_dir = op.normpath(op.join(top_dir, '../../../../share/sfepy/'))
-
-data_dir = os.path.realpath(data_dir)
+data_dir = os.path.realpath(top_dir)
 base_dir = os.path.dirname(__file__)
 
 def get_paths(pattern):
