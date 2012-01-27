@@ -43,32 +43,32 @@ def get_debug():
     else:
         old_excepthook = sys.excepthook
 
-        if IPython.__version__ >= '0.11':
-            from IPython.core.debugger import Pdb
-
-            try:
-                ip = get_ipython()
-
-            except NameError:
-                from IPython.frontend.terminal.embed \
-                     import InteractiveShellEmbed
-                ip = InteractiveShellEmbed()
-
-            colors = ip.colors
-
-        else:
-            from IPython.Debugger import Pdb
-            from IPython.Shell import IPShell
-            from IPython import ipapi
-
-            ip = ipapi.get()
-            if ip is None:
-                IPShell(argv=[''])
-                ip = ipapi.get()
-
-            colors = ip.options.colors
-
         def debug(frame=None):
+            if IPython.__version__ >= '0.11':
+                from IPython.core.debugger import Pdb
+
+                try:
+                    ip = get_ipython()
+
+                except NameError:
+                    from IPython.frontend.terminal.embed \
+                         import InteractiveShellEmbed
+                    ip = InteractiveShellEmbed()
+
+                colors = ip.colors
+
+            else:
+                from IPython.Debugger import Pdb
+                from IPython.Shell import IPShell
+                from IPython import ipapi
+
+                ip = ipapi.get()
+                if ip is None:
+                    IPShell(argv=[''])
+                    ip = ipapi.get()
+
+                colors = ip.options.colors
+
             sys.excepthook = old_excepthook
 
             if frame is None:
