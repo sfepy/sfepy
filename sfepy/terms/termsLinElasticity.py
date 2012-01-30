@@ -91,7 +91,7 @@ class LinearElasticTerm(Term):
         else:
             self.function = terms.d_lin_elastic
 
-class LinearElasticIsotropicTerm( VectorVector, Term ):
+class LinearElasticIsotropicTerm(Term):
     r"""
     :Description:
     Isotropic linear elasticity term.
