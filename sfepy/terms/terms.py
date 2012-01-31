@@ -1516,11 +1516,11 @@ class Term(Struct):
 
                 if varr.dtype == nm.float64:
                     val, stat = self.eval_real(shape, fargs, mode, term_mode,
-                                               **kwargs)
+                                               diff_var, **kwargs)
 
                 elif varr.dtype == nm.complex128:
                     val, stat = self.eval_complex(shape, fargs, mode, term_mode,
-                                                  **kwargs)
+                                                  diff_var, **kwargs)
 
                 else:
                     raise ValueError('unsupported term dtype! (%s)'
