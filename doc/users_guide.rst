@@ -525,11 +525,13 @@ Variables use the FE approximation given by the specified field:
             'field' : <field_name>,
             ['order' : <order>,]
             ['dual' : <variable_name>,]
+            ['history' : <history_size>,]
         }
 
   where
     * <kind> - 'unknown field', 'test field' or 'parameter field'
     * <order> -  primary variable - order in the global vector of unknowns
+    * <history_size> - number of time steps to remember prior to current step
 
   * Example, long syntax::
 
@@ -538,6 +540,7 @@ Variables use the FE approximation given by the specified field:
             'kind' : 'unknown field',
             'field' : 'temperature',
             'order' : 0, # order in the global vector of unknowns
+            'history' : 1,
         }
 
         variable_2 = {
@@ -550,7 +553,7 @@ Variables use the FE approximation given by the specified field:
 * Short syntax::
 
         variables = {
-            <name> : (<kind>, <field_name>, <spec.>)
+            <name> : (<kind>, <field_name>, <spec.>, [<history>])
         }
 
   where
@@ -561,7 +564,7 @@ Variables use the FE approximation given by the specified field:
   * Example, short syntax::
 
         variables = {
-            't' : ('unknown field', 'temperature', 0),
+            't' : ('unknown field', 'temperature', 0, 1),
             's' : ('test field', 'temperature', 't'),
         }
 
