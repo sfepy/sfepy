@@ -965,8 +965,8 @@ class ProblemDefinition( Struct ):
 
         vec = solvers.nls(vec0)
 
-        state = state0.copy()
-        state.set_reduced(vec)
+        state = state0.copy(preserve_caches=True)
+        state.set_reduced(vec, preserve_caches=True)
 
         return state
 
