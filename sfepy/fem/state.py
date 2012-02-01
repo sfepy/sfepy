@@ -42,7 +42,7 @@ class State(Struct):
 
         return State(variables, vec)
 
-    def __init__(self, variables, vec=None):
+    def __init__(self, variables, vec=None, preserve_caches=False):
         """
         Create a State instance for the given variables.
 
@@ -52,27 +52,36 @@ class State(Struct):
             The variables.
         vec : array, optional
             The (initial) DOF vector corresponding to the variables.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         """
         Struct.__init__(self, variables=variables, vec=vec, r_vec=None)
 
         if self.vec is None:
             self.vec = variables.create_state_vector()
 
-        self.variables.set_data(self.vec)
+        self.variables.set_data(self.vec, preserve_caches=preserve_caches)
 
-    def copy(self, deep=False):
+    def copy(self, deep=False, preserve_caches=False):
         """
         Copy the state. By default, the new state contains the same
         variables, and creates new DOF vectors. If `deep` is True, also
         the DOF vectors are copied.
+
+        Parameters
+        ----------
+        deep : bool
+            If True, make a copy of the DOF vectors.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         """
         if deep:
-            other = State(self.variables, self.vec.copy())
+            other = State(self.variables, self.vec.copy(), preserve_caches=True)
             if self.r_vec is not None:
                 other.r_vec = self.r_vec.copy()
 
         else:
-            other = State(self.variables)
+            other = State(self.variables, preserve_caches=True)
 
         return other
 
@@ -131,16 +140,23 @@ class State(Struct):
 
         return r_vec
 
-    def set_reduced(self, r_vec):
+    def set_reduced(self, r_vec, preserve_caches=False):
         """
         Set the reduced DOF vector, with EBC and PBC DOFs removed.
+
+        Parameters
+        ----------
+        r_vec : array
+            The reduced DOF vector corresponding to the variables.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         """
         self.vec = self.variables.make_full_vec(r_vec)
 
         if self.variables.has_lcbc:
             self.r_vec = r_vec
 
-        self.variables.set_data(self.vec)
+        self.variables.set_data(self.vec, preserve_caches=preserve_caches)
 
     def set_full(self, vec, var_name=None, force=False):
         """

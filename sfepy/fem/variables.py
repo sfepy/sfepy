@@ -493,7 +493,8 @@ class Variables( Container ):
 
         return out
 
-    def set_data(self, data, step=0, ignore_unknown=False):
+    def set_data(self, data, step=0, ignore_unknown=False,
+                 preserve_caches=False):
         """
         Set data (vectors of DOF values) of variables.
 
@@ -505,6 +506,8 @@ class Variables( Container ):
             The time history step, 0 (default) = current.
         ignore_unknown : bool, optional
             Ignore unknown variable names if `data` is a dict.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         """
         if data is None: return
 
@@ -522,20 +525,22 @@ class Variables( Container ):
                         raise KeyError('unknown variable! (%s)' % key)
 
                 else:
-                    var.data_from_any(val, step=step)
+                    var.data_from_any(val, step=step,
+                                      preserve_caches=preserve_caches)
 
         elif isinstance(data, nm.ndarray):
-            self.data_from_state(data)
+            self.data_from_state(data, preserve_caches=preserve_caches)
 
         else:
             raise ValueError('unknown data class! (%s)' % data.__class__)
 
-    def data_from_state(self, state=None):
+    def data_from_state(self, state=None, preserve_caches=False):
         self.check_vector_size(state)
 
         for ii in self.state:
             var = self[ii]
-            var.data_from_state( state, self.di.indx[var.name] )
+            var.data_from_state(state, self.di.indx[var.name],
+                                preserve_caches=preserve_caches)
 
     def non_state_data_from_state(self, var_names, state, var_names_state):
         self.check_vector_size(state)
@@ -907,18 +912,20 @@ class Variable( Struct ):
         else:
             self.data.append(None)
 
-    def data_from_state( self, state = None, indx = None, step = 0 ):
+    def data_from_state(self, state=None, indx=None, step=0,
+                        preserve_caches=False):
         """step: 0 = current,  """
         if (not self.is_state()) or (state is None): return
 
-        self.data_from_any(state, indx, step)
+        self.data_from_any(state, indx, step, preserve_caches)
 
     def data_from_data( self, data = None, indx = None, step = 0 ):
         if (not self.is_non_state_field()) or (data is None): return
 
         self.data_from_any(data, indx, step)
 
-    def data_from_any(self, data=None, indx=None, step=0):
+    def data_from_any(self, data=None, indx=None, step=0,
+                      preserve_caches=False):
         data = data.ravel()
 
         if indx is None:
@@ -936,7 +943,8 @@ class Variable( Struct ):
             self.data[step] = data
             self.indx = indx
 
-        self.invalidate_evaluate_cache(step=step)
+        if not preserve_caches:
+            self.invalidate_evaluate_cache(step=step)
 
     def __call__(self, step=0, derivative=None, dt=None):
         """
