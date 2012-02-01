@@ -38,7 +38,7 @@ variable_1 = {
     'kind' : 'unknown field',
     'field' : 'temperature',
     'order' : 0,
-    'history' : 'previous', # 'previous' or 'full'
+    'history' : 1,
 }
 variable_2 = {
     'name' : 's',

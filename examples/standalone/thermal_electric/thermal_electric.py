@@ -56,7 +56,7 @@ fields = {
 }
 
 variables = {
-    'T' : ('unknown field', 'temperature', 0, 'previous'),
+    'T' : ('unknown field', 'temperature', 0, 1),
     's' : ('test field', 'temperature', 'T'),
     'phi' : ('unknown field', 'potential', 1),
     'psi' : ('test field', 'potential', 'phi'),

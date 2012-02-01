@@ -99,7 +99,7 @@ materials = {
 }
 
 variables = {
-    'u' : ('unknown field', 'displacement', 0, 'previous'),
+    'u' : ('unknown field', 'displacement', 0, 1),
     'v' : ('test field', 'displacement', 'u'),
     'p' : ('unknown field', 'pressure', 1),
     'q' : ('test field', 'pressure', 'p'),

@@ -27,7 +27,7 @@ options = {
 }
 
 variables = {
-    'u' : ('unknown field', 'displacement', 0, 'previous'),
+    'u' : ('unknown field', 'displacement', 0, 1),
     'v' : ('test field', 'displacement', 'u'),
 }
 
