@@ -2,7 +2,8 @@ import numpy as nm
 
 from sfepy.base.base import use_method_with_name, assert_
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import VectorVector, VectorVectorTH
+from sfepy.terms.terms_th import THTerm, ETHTerm
+from sfepy.terms.terms_base import VectorVector
 
 ## expr = """
 ## e = 1/2 * (grad( vec( u ) ) + grad( vec( u ) ).T)
@@ -137,7 +138,7 @@ class LinearElasticIsotropicTerm(Term):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-class LinearElasticTHTerm( VectorVectorTH, Term ):
+class LinearElasticTHTerm(THTerm):
     r"""
     :Description:
     Fading memory linear elastic (viscous) term. Can use derivatives.
@@ -156,39 +157,37 @@ class LinearElasticTHTerm( VectorVectorTH, Term ):
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
-    use_caches = {'cauchy_strain' : [['state', {'strain' : (-1,-1)}]]}
 
     function = staticmethod(terms.dw_lin_elastic)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mats, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, ts, mats, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        if (ts.step == 0) and (mode == 0):
-            raise StopIteration
+        if mode == 'weak':
+            if diff_var is None:
+                def iter_kernel():
+                    for ii, mat in enumerate(mats):
+                        strain = self.get(state, 'cauchy_strain',
+                                          step=-ii)
+                        mat = nm.tile(mat, (n_el, n_qp, 1, 1))
+                        yield ii, (ts.dt, strain, mat, vg, 0)
+                fargs = iter_kernel
 
-        n_el, n_qp = self.data_shape[:2]
+            else:
+                strain = nm.array([0], ndmin=4, dtype=nm.float64)
+                mat = nm.tile(mats[0], (n_el, n_qp, 1, 1))
+                fargs = ts.dt, strain, mat, vg, 1
 
-        if mode == 1:
-            aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat = mats[0]
-            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-            return (ts.dt, aux, mat, vg), shape, mode
+            return fargs
 
         else:
-            cache = self.get_cache( 'cauchy_strain', 0 )
-            def iter_kernel():
-                for ii, mat in enumerate( mats ):
-                    strain = cache('strain', self, ii,
-                                   state=state, get_vector=self.get_vector)
-                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-                    yield ii, (ts.dt, strain, mat, vg)
-            return iter_kernel, shape, mode
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-class LinearElasticETHTerm(VectorVector, Term):
+class LinearElasticETHTerm(ETHTerm):
     r"""
     :Description:
     This term has the same definition as dw_lin_elastic_th, but assumes an
@@ -210,39 +209,26 @@ class LinearElasticETHTerm(VectorVector, Term):
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
-    use_caches = {'cauchy_strain' : [['state']],
-                  'exp_history' : [['material_0', 'material_1', 'state']]}
 
     function = staticmethod(terms.dw_lin_elastic)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mat0, mat1, virtual, state = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(virtual)
-
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+    def get_fargs(self, ts, mat0, mat1, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _, key = self.get_mapping(state, return_key=True)
 
         if diff_var is None:
-            cache = self.get_cache('cauchy_strain', 0)
-            strain = cache('strain', self, 0,
-                           state=state, get_vector=self.get_vector)
+            strain = self.get(state, 'cauchy_strain')
 
-            cache = self.get_cache('exp_history', 0)
-            increment = cache('increment', self, 0,
-                              decay=mat1, values=strain)
-            history = cache('history', self, 0)
+            key += tuple(self.arg_names[ii] for ii in [1, 2, 4])
+            data = self.get_eth_data(key, state, mat1, strain)
 
-            fargs = (ts.dt, history + increment, mat0, vg)
-            if ts.step == 0: # Just init the history in step 0.
-                raise StopIteration
+            fargs = (ts.dt, data.history + data.values, mat0, vg, 0)
 
         else:
             aux = nm.array([0], ndmin=4, dtype=nm.float64)
-            fargs = (ts.dt, aux, mat0, vg)
+            fargs = (ts.dt, aux, mat0, vg, 1)
 
-##        self.check_mat_shape( mat )
-
-        return fargs, shape, mode
+        return fargs
 
 class LinearPrestressTerm(VectorVector, Term):
     r"""
