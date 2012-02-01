@@ -42,7 +42,7 @@ fields = {
 }
 
 variables = {
-    'p'   : ('unknown field', 'accoustic_pressure', 0, 'previous'),
+    'p'   : ('unknown field', 'accoustic_pressure', 0),
     'q'   : ('test field',    'accoustic_pressure', 'p'),
 }
 
