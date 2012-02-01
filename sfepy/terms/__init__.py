@@ -2,6 +2,7 @@ import sfepy
 import terms
 import extmods
 from terms import Terms, Term, CharacteristicFunction, vector_chunk_generator
+from terms_th import THTerm, ETHTerm
 from cache import DataCache, DataCaches
 from sfepy.base.base import load_classes
 

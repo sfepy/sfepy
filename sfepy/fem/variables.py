@@ -908,10 +908,17 @@ class Variable( Struct ):
             for step_cache in self.evaluate_cache.itervalues():
                 steps = sorted(step_cache.keys())
                 for step in steps:
-                    if -step < self.history:
+                    if step is None:
+                        # Special caches with possible custom advance()
+                        # function.
+                        for key, val in step_cache[step].iteritems():
+                            if hasattr(val, '__advance__'):
+                                val.__advance__(ts, val)
+
+                    elif -step < self.history:
                         step_cache[step-1] = step_cache[step]
 
-                if len(steps):
+                if len(steps) and (steps[0] is not None):
                     step_cache.pop(steps[-1])
 
     def data_from_state(self, state=None, indx=None, step=0,
