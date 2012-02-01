@@ -42,12 +42,14 @@ class HyperElasticBase(Term):
         ----
         `data_names` argument is ignored for now.
         """
-        cache = state.evaluate_cache.setdefault(cache_name, {})
+        name = state.name
+
+        step_cache = state.evaluate_cache.setdefault(cache_name, {})
+        cache = step_cache.setdefault(self.arg_steps[name], {})
 
         vg, _, key = self.get_mapping(state, return_key=True)
 
-        name = state.name
-        data_key = key + (self.arg_steps[name], self.arg_derivatives[name])
+        data_key = key + (self.arg_derivatives[name],)
 
         if data_key in cache:
             out = cache[data_key]
