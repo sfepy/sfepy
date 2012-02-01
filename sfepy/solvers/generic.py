@@ -97,14 +97,11 @@ def time_step_function(ts, state0, problem, nls_status=None):
         presolve = mtx is not None
         problem.init_solvers(nls_status=nls_status, mtx=mtx, presolve=presolve)
 
+        # Initialize variables with history.
+        state0.init_history()
         if ts.is_quasistatic:
             # Ordinary solve.
             state = problem.solve(state0=state0)
-            state.init_history()
-
-        else:
-            # Initialize variables with history.
-            state0.init_history()
 
     else:
         if (ts.step == 1) and ts.is_quasistatic and problem.is_linear():

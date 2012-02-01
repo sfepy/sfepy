@@ -1,4 +1,5 @@
 import time
+from collections import deque
 
 import numpy as nm
 
@@ -642,8 +643,15 @@ class Variable( Struct ):
         else:
             raise ValueError('variable kind is 2 or 3 words! (%s)' % conf.kind)
 
-        history = get_default_attr( conf, 'history', None )
-        assert_( (history is None) or (history in ['previous', 'full']) )
+        history = get_default_attr(conf, 'history', None)
+        if history is not None:
+            try:
+                history = int(history)
+                assert_(history >= 0)
+
+            except (ValueError, TypeError):
+                raise ValueError('history must be integer >= 0! (got "%s")'
+                                 % history)
 
         n_components = conf.get_default_attr('n_components', None)
 
@@ -697,8 +705,6 @@ class Variable( Struct ):
             for flag in flags:
                 self.flags.add(flag)
 
-        self.data = []
-        self.data.append(None)
         self.indx = slice(None)
         self.n_dof = None
         self.step = 0
@@ -708,6 +714,10 @@ class Variable( Struct ):
 
         if self.is_virtual():
             self.data = None
+
+        else:
+            self.data = deque()
+            self.data.append(None)
 
         self._set_kind(kind, order, primary_var_name, special=special)
         Variable._all_var_names.add(name)
@@ -876,7 +886,7 @@ class Variable( Struct ):
         """Initialize data of variables with history."""
         if self.history is None: return
 
-        self.data.append( None )
+        self.data = deque((self.history + 1) * [None])
         self.step = 0
 
     def time_update(self, ts, functions):
@@ -891,26 +901,18 @@ class Variable( Struct ):
         if self.history is None: return
 
         self.step = ts.step + 1
-        if self.history == 'previous':
-            self.data[:] = [None, self.data[0].copy()]
+        self.data.rotate()
 
+        if self.history > 0:
             # Advance evaluate cache.
-            for cache in self.evaluate_cache.itervalues():
-                for key in cache.keys():
-                    if key[4] == -1: # Previous time step.
-                        key0 = list(key)
-                        key0[4] = 0
-                        key0 = tuple(key0)
+            for step_cache in self.evaluate_cache.itervalues():
+                steps = sorted(step_cache.keys())
+                for step in steps:
+                    if -step < self.history:
+                        step_cache[step-1] = step_cache[step]
 
-                        if key0 in cache:
-                            cache[key] = cache[key0]
-                            cache.pop(key0)
-
-                        else:
-                            cache.pop(key)
-
-        else:
-            self.data.append(None)
+                if len(steps):
+                    step_cache.pop(steps[-1])
 
     def data_from_state(self, state=None, indx=None, step=0,
                         preserve_caches=False):
@@ -971,10 +973,11 @@ class Variable( Struct ):
         DOF vector is returned instead.
         """
         if derivative is None:
-            data = self.data[step]
-            if data is None:
-                if (self.step == 0) and (step == -1):
-                    data = self.data[0]
+            if (self.step == 0) and (step == -1):
+                data = self.data[0]
+
+            else:
+                data = self.data[-step]
 
             if data is None:
                 raise ValueError('data of variable are not set! (%s, step %d)' \
@@ -1705,10 +1708,10 @@ class FieldVariable(Variable):
         This should be done, for example, prior to every nonlinear
         solver iteration.
         """
-        for cache in self.evaluate_cache.itervalues():
-            for key in cache.keys():
-                if key[4] == step: # Given time step to clear.
-                    cache.pop(key)
+        for step_cache in self.evaluate_cache.itervalues():
+            for key in step_cache.keys():
+                if key == step: # Given time step to clear.
+                    step_cache.pop(key)
 
     def evaluate(self, ig, mode='val',
                  region=None, integral=None, integration=None,
@@ -1758,7 +1761,8 @@ class FieldVariable(Variable):
             `(n_el, n_qp, n_row, n_col)` with the requested data,
             where `n_row`, `n_col` depend on `mode`.
         """
-        cache = self.evaluate_cache.setdefault(mode, {})
+        step_cache = self.evaluate_cache.setdefault(mode, {})
+        cache = step_cache.setdefault(step, {})
 
         field = self.field
         if region is None:
@@ -1783,7 +1787,7 @@ class FieldVariable(Variable):
 
         geo, _, key = field.get_mapping(ig, region, integral, integration,
                                         return_key=True)
-        key += (step, time_derivative, is_trace)
+        key += (time_derivative, is_trace)
 
         if key in cache:
             out = cache[key]
