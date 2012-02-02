@@ -194,9 +194,7 @@ cdef extern from 'terms.h':
     cdef int32 _dw_volume_wdot_scalar \
          'dw_volume_wdot_scalar'(FMField *out, float64 coef, FMField *state_qp,
                                  FMField *bf, FMField *mtxD,
-                                 VolumeGeometry *vg,
-                                 int32 *elList, int32 elList_nRow,
-                                 int32 isDiff)
+                                 VolumeGeometry *vg, int32 isDiff)
 
     cdef int32 _dw_laplace \
          'dw_laplace'(FMField *out, FMField *grad,
@@ -1192,20 +1190,17 @@ def dw_volume_wdot_scalar(np.ndarray out not None,
                           np.ndarray bf not None,
                           np.ndarray mtx_d not None,
                           CVolumeMapping cmap not None,
-                          np.ndarray el_list not None,
                           int32 is_diff):
     cdef int32 ret
     cdef FMField _out[1], _state_qp[1], _bf[1], _mtx_d[1]
-    cdef int32 *_el_list, n_el
 
     array2fmfield4(_out, out)
     array2fmfield4(_state_qp, state_qp)
     array2fmfield3(_bf, bf)
     array2fmfield4(_mtx_d, mtx_d)
-    array2pint1(&_el_list, &n_el, el_list)
 
     ret = _dw_volume_wdot_scalar(_out, coef, _state_qp, _bf, _mtx_d,
-                                 cmap.geo, _el_list, n_el, is_diff)
+                                 cmap.geo, is_diff)
     return ret
 
 def dw_laplace(np.ndarray out not None,

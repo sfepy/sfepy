@@ -3,7 +3,7 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import ScalarScalar, ScalarScalarTH
+from sfepy.terms.terms_th import THTerm, ETHTerm
 
 class IntegrateVolumeTerm(Term):
     r"""
@@ -488,9 +488,7 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
     arg_types = ('opt_material', 'parameter_1', 'parameter_2')
     integration = 'surface'
 
-##
-# c: 03.04.2008
-class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
+class DotSProductVolumeOperatorWTHTerm(THTerm):
     r"""
     :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
@@ -508,40 +506,31 @@ class DotSProductVolumeOperatorWTHTerm( ScalarScalarTH, Term ):
     """
     name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
-    use_caches = {'state_in_volume_qp' : [['state', {'state' : (-1,-1)}]]}
 
     function = staticmethod(terms.dw_volume_wdot_scalar)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mats, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, ts, mats, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
 
-        if (ts.step == 0) and (mode == 0):
-            raise StopIteration
-
-        n_el, n_qp = self.data_shape[:2]
-        bf = ap.get_base('v', 0, self.integral)
-
-        if mode == 1:
-            aux = nm.array( [0], ndmin = 4, dtype = nm.float64 )
-            mat = mats[0]
-            mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-            return (ts.dt, aux, bf, mat, vg), shape, mode
+        if diff_var is None:
+            def iter_kernel():
+                for ii, mat in enumerate(mats):
+                    val_qp = self.get(state, 'val', step=-ii)
+                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
+                    yield ii, (ts.dt, val_qp, vg.bf, mat, vg, 0)
+            fargs = iter_kernel
 
         else:
-            cache = self.get_cache( 'state_in_volume_qp', 0 )
-            def iter_kernel():
-                for ii, mat in enumerate( mats ):
-                    vec_qp = cache('state', self, ii,
-                                   state=state, get_vector=self.get_vector)
-                    mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-                    yield ii, (ts.dt, vec_qp, bf, mat, vg)
-            return iter_kernel, shape, mode
+            val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+            mat = nm.tile(mats[0], (n_el, n_qp, 1, 1))
+            fargs = ts.dt, val_qp, vg.bf, mat, vg, 1
 
-class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
+        return fargs
+
+class DotSProductVolumeOperatorWETHTerm(ETHTerm):
     r"""
     :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
@@ -563,38 +552,26 @@ class DotSProductVolumeOperatorWETHTerm( ScalarScalar, Term ):
     """
     name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
-    use_caches = {'state_in_volume_qp' : [['state']],
-                  'exp_history' : [['material_0', 'material_1', 'state']]}
 
     function = staticmethod(terms.dw_volume_wdot_scalar)
 
-    def get_fargs( self, diff_var = None, chunk_size = None, **kwargs ):
-        ts, mat0, mat1, virtual, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, ts, mat0, mat1, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _, key = self.get_mapping(state, return_key=True)
 
-        self.set_data_shape( ap )
-        shape, mode = self.get_shape( diff_var, chunk_size )
-
-        bf = ap.get_base('v', 0, self.integral)
         if diff_var is None:
-            cache = self.get_cache( 'state_in_volume_qp', 0 )
-            vec_qp = cache('state', self, 0,
-                           state=state, get_vector=self.get_vector)
+            val_qp = self.get(state, 'val')
 
-            cache = self.get_cache('exp_history', 0)
-            increment = cache('increment', self, 0,
-                              decay=mat1, values=vec_qp)
-            history = cache('history', self, 0)
+            key += tuple(self.arg_names[ii] for ii in [1, 2, 4])
+            data = self.get_eth_data(key, state, mat1, val_qp)
 
-            fargs = (ts.dt, history + increment, bf, mat0, vg)
-            if ts.step == 0: # Just init the history in step 0.
-                raise StopIteration
+            fargs = (ts.dt, data.history + data.values, vg.bf, mat0, vg, 0)
 
         else:
             aux = nm.array([0], ndmin=4, dtype=nm.float64)
-            fargs = (ts.dt, aux, bf, mat0, vg)
+            fargs = (ts.dt, aux, vg.bf, mat0, vg, 1)
 
-        return fargs, shape, mode
+        return fargs
 
 class SumNodalValuesTerm(Term):
     r"""

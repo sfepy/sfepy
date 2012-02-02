@@ -26,7 +26,6 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff );
 
 int32 d_volume_surface( FMField *out, FMField *in,

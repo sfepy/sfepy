@@ -150,10 +150,9 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 */
 int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 			     FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-			     int32 *elList, int32 elList_nRow,
 			     int32 isDiff )
 {
-  int32 ii, iel, nQP, nEP, ret = RET_OK;
+  int32 ii, nQP, nEP, ret = RET_OK;
   FMField *ftd = 0, *ftdf = 0, *dfp = 0, *ftdfp = 0;
 
   nQP = vg->bfGM->nLev;
@@ -167,19 +166,17 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
     fmf_createAlloc( &ftdfp, 1, nQP, nEP, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( vg->det, ii );
 
     if (isDiff) {
       fmf_mulATB_nn( ftd, bf, mtxD );
       fmf_mulAB_nn( ftdf, ftd, bf );
       fmf_sumLevelsMulF( out, ftdf, vg->det->val );
     } else {
-      FMF_SetCell( state_qp, iel );
+      FMF_SetCell( state_qp, ii );
       fmf_mulAB_nn( dfp, mtxD, state_qp );
       fmf_mulATB_nn( ftdfp, bf, dfp );
       fmf_sumLevelsMulF( out, ftdfp, vg->det->val );
@@ -195,11 +192,11 @@ int32 dw_volume_wdot_scalar( FMField *out, float64 coef, FMField *state_qp,
 
  end_label:
   if (isDiff) {
-    fmf_freeDestroy( &ftd ); 
-    fmf_freeDestroy( &ftdf ); 
+    fmf_freeDestroy( &ftd );
+    fmf_freeDestroy( &ftdf );
   } else {
-    fmf_freeDestroy( &dfp ); 
-    fmf_freeDestroy( &ftdfp ); 
+    fmf_freeDestroy( &dfp );
+    fmf_freeDestroy( &ftdfp );
   }
 
   return( ret );
