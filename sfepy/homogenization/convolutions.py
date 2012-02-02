@@ -9,17 +9,17 @@ def compute_mean_decay(coef):
     coefficient.
     """
     n_step = coef.shape[0]
-    weights = nm.abs(coef[nm.fix(n_step / 2)])
+    weights = nm.abs(coef[int(nm.fix(n_step / 2))])
     weights /= weights.sum()
 
-    coef_flat = nm.reshape(coef, (n_step, nm.prod(coef.shape[1:])))
-    maxs = nm.abs(coef_flat).max(axis=-1)
+    ## coef_flat = nm.reshape(coef, (n_step, nm.prod(coef.shape[1:])))
+    ## maxs = nm.abs(coef_flat).max(axis=-1)
+    ## decay = avgs + maxs
 
     aux = weights[None,...] * coef
     aux_flat = nm.reshape(aux, (n_step, nm.prod(coef.shape[1:])))
     avgs = aux_flat.sum(axis=-1)
 
-#    decay = avgs + maxs
     decay = avgs # Gives better results than the above.
     decay /= decay[0]
 
