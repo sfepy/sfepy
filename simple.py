@@ -12,11 +12,8 @@ from sfepy.applications import SimpleApp
 def print_terms():
     import sfepy.terms as t
     tt = t.term_table
-    ct = t.cache_table
     print 'Terms: %d available:' % len( tt )
     print sorted( tt.keys() )
-    print 'Term caches: %d available:' % len( ct )
-    print sorted( ct.keys() )
 
 usage = """%prog [options] filename_in"""
 

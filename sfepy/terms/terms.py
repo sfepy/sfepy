@@ -345,14 +345,6 @@ class Terms(Container):
         for term in self:
             term.assign_args(variables, materials, user)
 
-    def assign_caches(self, caches):
-        """
-        History sizes for a particular cache instance are taken as maximum
-        of history_sizes requirements of all terms using the instance.
-        """
-        for term in self:
-            term.assign_caches(caches)
-
     ##
     # 24.07.2006, c
     # 02.08.2006
@@ -571,49 +563,6 @@ class Term(Struct):
     def _call( self, diff_var = None, chunk_size = None, **kwargs ):
         msg = 'base class method "_call" called for %s' % self.__class__.__name__
         raise RuntimeError( msg )
-
-    def assign_caches(self, caches=None):
-        from sfepy.terms import cache_table, DataCaches
-
-        self.caches = caches = get_default(caches, DataCaches())
-
-        if not hasattr(self, 'use_caches'):
-            return
-
-        ## print self.name
-        for name, arg_lists in self.use_caches.iteritems():
-            ## print self.arg_names
-            ## print name, arg_lists
-            for args in arg_lists:
-                ## Order should be handled in terms...
-                args = copy(args)
-
-                if len(args) and (type( args[-1] ) == dict):
-                    history_sizes = args.pop()
-
-                else:
-                    history_sizes = None
-
-                ans = [self.get_arg_name(arg, full=True, join='_')
-                       for arg in args]
-                cname = '_'.join([name] + ans)
-
-                ## print self.name, name, arg_lists, args, cname
-                ## print history_sizes
-
-                if caches.has_key(cname):
-                    caches[cname].merge_history_sizes(history_sizes)
-
-                else:
-                    ## print 'new'
-                    try:
-                        constructor = cache_table[name]
-                    except:
-                        raise RuntimeError, 'cache not found! %s in %s'\
-                              % (name, sorted(cache_table.keys()))
-                    cache = constructor(cname, ans, history_sizes)
-                    caches.insert_cache(cache)
-            caches.insert_term(cname, self.name, ans)
 
     def assign_args(self, variables, materials, user=None):
         """
@@ -1109,17 +1058,6 @@ class Term(Struct):
         self.char_fun.set_current_group( ig )
 
     ##
-    # c: 27.02.2007, r: 15.04.2008
-    def get_cache( self, base_name, ii ):
-        args = self.use_caches[base_name][ii]
-        ans = [self.get_arg_name(arg, full=True, join='_') for arg in args
-               if not type(arg) == dict]
-##         print args, ans
-##         pause()
-        cname = '_'.join( [base_name] + ans )
-        return self.caches[cname]
-
-    ##
     # 02.03.2007, c
     def igs( self ):
         return self.char_fun.igs
@@ -1341,8 +1279,6 @@ class Term(Struct):
 
         materials = self.get_materials(join=True)
         ## print materials
-
-        self.assign_caches()
 
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
