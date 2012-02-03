@@ -23,6 +23,9 @@ help = {
     ' dictionary without surrounding braces',
     'options' : 'override options item of problem description,'
     ' written as python dictionary without surrounding braces',
+    'define' : 'pass given arguments written as python dictionary'
+    ' without surrounding braces to define() function of problem description'
+    ' file',
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
@@ -54,6 +57,9 @@ def main():
     parser.add_option('-O', '--options', metavar='"key : value, ..."',
                       action='store', dest='app_options', type='string',
                       default=None, help=help['options'])
+    parser.add_option('-d', '--define', metavar='"key : value, ..."',
+                      action='store', dest='define_args', type='string',
+                      default=None, help=help['define'])
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename_trunk",
                        default = None, help = help['filename'] )
@@ -107,7 +113,8 @@ def main():
         other.extend( ['equations'] )
 
     conf = ProblemConf.from_file_and_options(filename_in, options,
-                                             required, other)
+                                             required, other,
+                                             define_args=options.define_args)
 
     opts = conf.options
     output_prefix = get_default_attr( opts, 'output_prefix', 'sfepy:' )
