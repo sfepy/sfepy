@@ -56,9 +56,9 @@ and visualize the result:
 help = {
     'conf' :
     'override problem description file items, written as python'
-    ' dictionary without surrouding braces',
+    ' dictionary without surrounding braces',
     'options' : 'override options item of problem description,'
-    ' written as python dictionary without surrouding braces',
+    ' written as python dictionary without surrounding braces',
     'filename' :
     'basename of output file(s) [default: <basename of input file mesh>]',
     'well' :
