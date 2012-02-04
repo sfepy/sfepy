@@ -2,7 +2,7 @@ import numpy as nm
 
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
-from sfepy.terms.termsLinElasticity import CauchyStrainTerm
+from sfepy.terms.termsLinElasticity import CauchyStressTerm
 
 class BiotTerm(Term):
     r"""
@@ -87,11 +87,11 @@ class BiotTerm(Term):
             'eval' : terms.d_biot_div,
         }[self.mode]
 
-class BiotStressTerm(CauchyStrainTerm):
+class BiotStressTerm(CauchyStressTerm):
     r"""
     :Description:
     Biot stress tensor averaged in elements.
-    
+
     :Definition:
     .. math::
         \mbox{vector for } K \from \Ical_h:
@@ -103,17 +103,16 @@ class BiotStressTerm(CauchyStrainTerm):
     """
     name = 'de_biot_stress'
     arg_types = ('material', 'parameter')
-    use_caches = {'state_in_volume_qp' : [['parameter']]}
 
-    function = staticmethod(terms.de_cauchy_stress)
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-    def build_c_fun_args(self, state, ap, vg, **kwargs):
-        mat, = self.get_args(['material'], **kwargs)
-        cache = self.get_cache('state_in_volume_qp', 0)
-        state_qp = cache('state', self, 0,
-                         state=state, get_vector=self.get_vector)
+        val_qp = self.get(parameter, 'val')
 
-        return state_qp, mat, vg
+        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+
+        return val_qp, mat, vg, fmode
 
 class BiotStressQTerm(Term):
     r"""
@@ -122,7 +121,7 @@ class BiotStressQTerm(Term):
     exploiting symmetry: in 3D it has 6 components with the indices ordered as
     :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
     indices ordered as :math:`[11, 22, 12]`.
-    
+
     :Definition:
     .. math::
         \alpha_{ij} \bar{p}|_{qp}
@@ -133,26 +132,27 @@ class BiotStressQTerm(Term):
     """
     name = 'dq_biot_stress'
     arg_types = ('material', 'parameter')
-    use_caches = {'state_in_volume_qp' : [['parameter']]}
 
-    def __call__(self, diff_var=None, chunk_size=None, **kwargs):
-        if diff_var is not None:
-            raise StopIteration
+    @staticmethod
+    def function(out, mat, val_qp):
+        mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
+        vc = val_qp.reshape((val_qp.shape[0] * val_qp.shape[1],)
+                            + val_qp.shape[2:])
 
-        mat, par = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+        stress = mc * vc
+        out[:] = stress.reshape(mat.shape)
 
-        shape = (chunk_size, n_qp, dim * (dim + 1) / 2, 1)
+        return 0
 
-        cache = self.get_cache('state_in_volume_qp', 0)
-        state_qp = cache('state', self, 0,
-                         state=par, get_vector=self.get_vector)
+    def get_fargs(self, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        return mat, self.get(parameter, 'val_qp')
 
-        for out, chunk in self.char_fun(chunk_size, shape):
-            stress = mat[chunk] * state_qp[chunk]
+    def get_eval_shape(self, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-            yield stress, chunk, 0
+        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
 
 class BiotTHTerm(BiotTerm, THTerm):
     r"""
