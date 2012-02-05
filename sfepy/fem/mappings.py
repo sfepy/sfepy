@@ -155,6 +155,36 @@ def get_jacobian(field, integral, region=None, integration='volume'):
                            integration=integration)
     return jac
 
+def get_normals(field, integral, region):
+    """
+    Get the normals of element faces in `region`.
+
+    Parameters
+    ----------
+    field : Field instance
+        The field defining the reference mapping.
+    integral : Integral instance
+        The integral defining quadrature points.
+    region : Region instance
+        The given of the element faces.
+
+    Returns
+    -------
+    normals : array
+        The normals merged for all element groups.
+
+    See Also
+    --------
+    get_mapping_data()
+
+    Notes
+    -----
+    Assumes the same element geometry in all element groups of the field!
+    """
+    normals = get_mapping_data('normal', field, integral, region=region,
+                               integration='surface')
+    return normals
+
 class Mapping(Struct):
     """
     Base class for mappings.
