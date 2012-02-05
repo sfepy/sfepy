@@ -70,6 +70,12 @@ class ConcentratedPointLoadTerm(PointTermBase):
 
         'load' : ({'.val' : [0.0, 1.0]},)
 
+    This term should be used with special care, as it bypasses the usual
+    evaluation in quadrature points. It should only be used with nodal
+    FE basis. The number of rows of the load must be equal to the number
+    of nodes in the region and the number of columns equal to the field
+    dimension.
+
     :Definition:
     .. math::
         \ul{f}^i = \ul{\bar f}^i \quad \forall \mbox{ FE node } i \mbox{ in
@@ -90,7 +96,8 @@ class ConcentratedPointLoadTerm(PointTermBase):
         return 0
 
     def check_shapes(self, mat, virtual):
-        assert_(len(mat) == virtual.dim)
+        mat = nm.asarray(mat)
+        assert_(mat.shape[-1] == virtual.dim)
 
     def get_fargs(self, mat, virtual,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
