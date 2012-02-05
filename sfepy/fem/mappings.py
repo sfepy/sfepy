@@ -79,30 +79,80 @@ def get_physical_qps(region, integral):
 
     return phys_qps
 
-def get_jacobian(field, integral, integration='volume'):
+def get_mapping_data(name, field, integral, region=None, integration='volume'):
     """
-    Get the jacobian of reference mapping corresponding to `field` in
-    quadrature points of the given `integral`.
+    General helper function for accessing reference mapping data.
+
+    Get data attribute `name` from reference mapping corresponding to
+    `field` in `region` in quadrature points of the given `integral` and
+    `integration` type.
+
+    Parameters
+    ----------
+    name : str
+        The reference mapping attribute name.
+    field : Field instance
+        The field defining the reference mapping.
+    integral : Integral instance
+        The integral defining quadrature points.
+    region : Region instance, optional
+        If given, use the given region instead of `field` region.
+    integration : one of ('volume', 'surface', 'surface_extra')
+        The integration type.
 
     Returns
     -------
-    jac : array
-       The jacobian merged for all element groups.
+    data : array
+        The required data merged for all element groups.
 
     Notes
     -----
     Assumes the same element geometry in all element groups of the field!
     """
-    jac = None
-    for ig in field.igs:
-        geo, _ = field.get_mapping(ig, field.region, integral, integration)
-        _jac = geo.det
-        if jac is None:
-            jac = _jac
+    data = None
+    if region is None:
+        region = field.region
+    for ig in region.igs:
+        geo, _ = field.get_mapping(ig, region, integral, integration)
+        _data = getattr(geo, name)
+        if data is None:
+            data = _data
 
         else:
-            jac = nm.concatenate((jac, _jac), axis=0)
+            data = nm.concatenate((data, _data), axis=0)
 
+    return data
+
+def get_jacobian(field, integral, region=None, integration='volume'):
+    """
+    Get the jacobian of reference mapping corresponding to `field`.
+
+    Parameters
+    ----------
+    field : Field instance
+        The field defining the reference mapping.
+    integral : Integral instance
+        The integral defining quadrature points.
+    region : Region instance, optional
+        If given, use the given region instead of `field` region.
+    integration : one of ('volume', 'surface', 'surface_extra')
+        The integration type.
+
+    Returns
+    -------
+    jac : array
+        The jacobian merged for all element groups.
+
+    See Also
+    --------
+    get_mapping_data()
+
+    Notes
+    -----
+    Assumes the same element geometry in all element groups of the field!
+    """
+    jac = get_mapping_data('det', field, integral, region=region,
+                           integration=integration)
     return jac
 
 class Mapping(Struct):
