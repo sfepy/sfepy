@@ -332,3 +332,110 @@ class FMinSteepestDescent( OptimizationSolver ):
             status['time_stats'] = time_stats
 
         return xit
+
+class ScipyFMinSolver(OptimizationSolver):
+    """
+    Interface to SciPy optimization solvers scipy.optimize.fmin_*.
+    """
+    name = 'nls.scipy_fmin_like'
+
+    _i_max_name  = {
+        'fmin' : 'maxiter',
+        'fmin_bfgs' : 'maxiter',
+        'fmin_cg' : 'maxiter',
+        'fmin_cobyla' : 'maxfun',
+        'fmin_l_bfgs_b' : 'maxfun',
+        'fmin_ncg' : 'maxiter',
+        'fmin_powell' : 'maxiter',
+        'fmin_slsqp' : 'iter',
+        'fmin_tnc' : 'maxfun',
+    }
+    _omit = ('name', 'kind', 'method', 'i_max', 'verbose')
+    _has_grad = ('fmin_bfgs', 'fmin_cg', 'fmin_l_bfgs_b', 'fmin_ncg',
+                 'fmin_slsqp', 'fmin_tnc')
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Missing items are left to SciPy defaults. Unused options are ignored.
+
+        Besides 'i_max', use option names according to scipy.optimize
+        function arguments. The 'i_max' translates either to 'maxiter'
+        or 'maxfun' as available.
+
+        Example configuration::
+
+            solver_1 = {
+                'name' : 'fmin',
+                'kind' : 'nls.scipy_fmin_like',
+
+                'method'  : 'bfgs',
+                'i_max'   : 10,
+                'verbose' : True,
+
+                'gtol' : 1e-7
+            }
+        """
+        get = make_get_conf(conf, kwargs)
+        common = OptimizationSolver.process_conf(conf)
+
+        opts = Struct(method=get('method', 'fmin'),
+                      i_max=get('i_max', 10),
+                      verbose=get('verbose', False)) + common
+
+        other = {}
+        keys = opts.to_dict().keys()
+
+        for key, val in conf.to_dict().iteritems():
+            if key not in keys:
+                other[key] = val
+
+        return opts + Struct(**other)
+
+    def __init__(self, conf, **kwargs):
+        OptimizationSolver.__init__(self, conf, **kwargs)
+        self.set_method(self.conf)
+
+    def set_method(self, conf):
+        import scipy.optimize as so
+
+        try:
+            solver = getattr(so, conf.method)
+        except AttributeError:
+            raise ValueError('scipy solver %s does not exist!' % conf.method)
+
+        self.solver = solver
+
+    def __call__(self, x0, conf=None, obj_fun=None, obj_fun_grad=None,
+                 status=None, obj_args=None):
+
+        if conf is not None:
+            self.set_method(conf)
+
+        else:
+            conf = self.conf
+
+        obj_fun = get_default(obj_fun, self.obj_fun)
+        obj_fun_grad = get_default(obj_fun_grad, self.obj_fun_grad)
+        status = get_default(status, self.status)
+        obj_args = get_default(obj_args, self.obj_args)
+
+        tt = time.clock()
+
+        kwargs = {self._i_max_name[conf.method] : conf.i_max,
+                  'disp' : conf.verbose,
+                  'args' : obj_args}
+
+        if conf.method in self._has_grad:
+            kwargs['fprime'] = obj_fun_grad
+
+        for key, val in conf.to_dict().iteritems():
+            if key not in self._omit:
+                kwargs[key] = val
+
+        out = self.solver(obj_fun, x0, **kwargs)
+
+        if status is not None:
+            status['time_stats'] = time.clock() - tt
+
+        return out
