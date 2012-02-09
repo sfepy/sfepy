@@ -259,6 +259,12 @@ class Log( Struct ):
         if log_filename is not None:
             self.output = Output('', filename=log_filename)
             self.output('# started: %s' % time.asctime())
+            self.output('# groups: %d' % n_gr)
+            for ig, names in enumerate(data_names):
+                self.output('#   %d' % ig)
+                self.output('#     xlabel: "%s", ylabel: "%s", yscales: "%s"'
+                            % (xlabels[ig], ylabels[ig], yscales[ig]))
+                self.output('#     names: "%s"' % ', '.join(names))
 
         if self.is_plot and (not self.can_plot):
             output(_msg_no_live)
@@ -435,11 +441,11 @@ class Log( Struct ):
     def plot_vlines(self, igs=None, **kwargs):
         """Plot vertical lines in axes given by igs at current x locations
         to mark some events."""
+        if igs is None:
+            igs = range(self.n_gr)
+
         if self.plot_pipe is not None:
             send = self.plot_pipe.send
-
-            if igs is None:
-                igs = range(self.n_gr)
 
             for ig in igs:
                 x = self.x_values[ig]
@@ -450,4 +456,6 @@ class Log( Struct ):
             send(['continue'])
 
         if self.output:
-            self.output('-----')
+            for ig in igs:
+                for name in self.data_names[ig]:
+                    self.output(name + ': -----')
