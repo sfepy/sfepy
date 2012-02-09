@@ -453,3 +453,6 @@ class Log( Struct ):
                     send(['vline', x[-1], kwargs])
 
             send(['continue'])
+
+        if self.output:
+            self.output('-----')
