@@ -183,7 +183,12 @@ class SchroedingerApp(SimpleApp):
 
         return mtx_phi
 
-    def save_results(self, eigs, mtx_phi, out=None):
+    def save_results(self, eigs, mtx_phi, out=None,
+                     mesh_results_name=None, eig_results_name=None):
+        mesh_results_name = get_default(mesh_results_name,
+                                        self.mesh_results_name)
+        eig_results_name = get_default(eig_results_name,
+                                       self.eig_results_name)
         pb = self.problem
 
         save = self.app_options.save_eig_vectors
@@ -198,8 +203,8 @@ class SchroedingerApp(SimpleApp):
             key = aux.keys()[0]
             out[key+'%03d' % ii] = aux[key]
 
-        pb.save_state(self.mesh_results_name, out=out)
+        pb.save_state(mesh_results_name, out=out)
 
-        fd = open(self.eig_results_name, 'w')
+        fd = open(eig_results_name, 'w')
         eigs.tofile(fd, ' ')
         fd.close()
