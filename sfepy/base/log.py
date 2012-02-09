@@ -9,25 +9,8 @@ from sfepy.base.base import output, get_default, set_defaults, Output, Struct
 from sfepy.base.tasks import Process, Pipe
 from sfepy.linalg import cycle
 
-try:
-    import gobject
-except ImportError:
-    pass
-
-try:
-    import matplotlib as mpl
-    from matplotlib.ticker import LogLocator, AutoLocator
-except:
-    mpl = None
-
-if (mpl is not None) and mpl.rcParams['backend'] == 'GTKAgg':
-    can_live_plot = True
-else:
-    can_live_plot = False
-
 _msg_no_live = """warning: log plot is disabled, install matplotlib
          (use GTKAgg backend) and multiprocessing"""
-
 
 def get_logging_conf(conf):
     """
@@ -53,8 +36,7 @@ def get_logging_conf(conf):
         set_defaults(log, default_log)
 
     return log
-    
-    
+
 class ProcessPlotter( Struct ):
     output = Output('plotter:')
     output = staticmethod( output )
@@ -63,6 +45,8 @@ class ProcessPlotter( Struct ):
         Struct.__init__( self, aggregate = aggregate )
 
     def process_command( self, command ):
+        from matplotlib.ticker import LogLocator, AutoLocator
+
         self.output( command[0] )
 
         if command[0] == 'ig':
@@ -185,6 +169,7 @@ class ProcessPlotter( Struct ):
         the import occurs _after_ the plotting process is started in that
         process.
         """
+        import gobject
         import matplotlib.pyplot as plt
         self.plt = plt
 
@@ -232,6 +217,16 @@ class Log( Struct ):
         """`data_names` ... tuple of names grouped by subplots:
                             ([name1, name2, ...], [name3, name4, ...], ...)
         where name<n> are strings to display in (sub)plot legends."""
+        try:
+            import matplotlib as mpl
+        except:
+            mpl = None
+
+        if (mpl is not None) and mpl.rcParams['backend'] == 'GTKAgg':
+            can_live_plot = True
+        else:
+            can_live_plot = False
+
         Struct.__init__(self, data_names = {},
                         n_arg = 0, n_gr = 0,
                         data = {}, x_values = {}, n_calls = 0,
