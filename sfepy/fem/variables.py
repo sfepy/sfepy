@@ -2076,7 +2076,7 @@ class FieldVariable(Variable):
 
     def evaluate_at(self, coors, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
-                    ret_status=False):
+                    ret_status=False, ret_ref_coors=False):
         """
         Evaluate self in the given physical coordinates. Convenience
         wrapper around :func:`Field.evaluate_at()`, see its docstring
@@ -2085,7 +2085,9 @@ class FieldVariable(Variable):
         source_vals = self().reshape((self.n_nod, self.n_components))
         out = self.field.evaluate_at(coors, source_vals, strategy=strategy,
                                      close_limit=close_limit, cache=cache,
-                                     ret_cells=ret_cells, ret_status=ret_status)
+                                     ret_cells=ret_cells,
+                                     ret_status=ret_status,
+                                     ret_ref_coors=ret_ref_coors)
 
         return out
 
