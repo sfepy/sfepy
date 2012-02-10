@@ -16,11 +16,9 @@ class Probe(Struct):
     """
     Base class for all point probes. Enforces two points minimum.
     """
-    cache = Struct(name = 'probe_shared_cache',
-                   offsets = None,
-                   iconn = None,
-                   ctree = None)
-    is_cyclic = False 
+    cache = Struct(name='probe_shared_cache',
+                   offsets=None, iconn=None, kdtree=None)
+    is_cyclic = False
 
     def __init__(self, name, mesh, share_mesh=True, n_point=None, **kwargs):
         """
@@ -78,10 +76,8 @@ class Probe(Struct):
             offsets, iconn = make_inverse_connectivity(mesh.conns,
                                                        mesh.n_nod,
                                                        ret_offsets=True)
-            self.cache = Struct(name = 'probe_cache',
-                                offsets = offsets,
-                                iconn = iconn,
-                                ctree = None)
+            self.cache = Struct(name='probe_cache',
+                                offsets=offsets, iconn=iconn, kdtree=None)
         output('iconn: %f s' % (time.clock()-tt))
 
         i_bad = nm.where(nm.diff(self.cache.offsets) == 0)[0]
@@ -93,13 +89,13 @@ class Probe(Struct):
 
         tt = time.clock()
         if share_mesh:
-            if Probe.cache.ctree is None:
-                self.cache.ctree = KDTree(mesh.coors)
+            if Probe.cache.kdtree is None:
+                self.cache.kdtree = KDTree(mesh.coors)
 
         else:
-            self.cache.ctree = KDTree(mesh.coors)
+            self.cache.kdtree = KDTree(mesh.coors)
 
-        output('ctree: %f s' % (time.clock()-tt))
+        output('kdtree: %f s' % (time.clock()-tt))
 
     def report(self):
         """Report the probe parameters."""
@@ -138,7 +134,8 @@ class Probe(Struct):
         while True:
             pars, points = self.get_points(refine_flag)
 
-            vals, cells, status = variable.evaluate_at(points, strategy='kdtree',
+            vals, cells, status = variable.evaluate_at(points,
+                                                       strategy='kdtree',
                                                        cache=self.cache,
                                                        ret_status=True)
             ii = nm.where(status > 0)[0]
