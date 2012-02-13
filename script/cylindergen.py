@@ -3,6 +3,7 @@ import sys
 sys.path.append( '.' )
 from optparse import OptionParser
 from sfepy.fem import gen_cylinder_mesh
+from sfepy.fem.meshio import MeshIO
 
 usage = """%prog [options]
 
@@ -11,6 +12,7 @@ Cylinder mesh generator.
 help = {
     'filename' :
     'output file name [default: %default]',
+    'format' : 'output mesh format (overrides output file name extension)',
     'axis' :
     'axis of the cylinder, one of x, y, z [default: %default]',
     'dims' :
@@ -38,6 +40,9 @@ def main():
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename",
                        default = 'out.vtk', help = help['filename'] )
+    parser.add_option('-f', '--format', metavar='format',
+                      action='store', type='string', dest='format',
+                      default=None, help=help['format'])
     parser.add_option( "-a", "--axis", metavar = 'axis',
                        action = "store", dest = "axis",
                        default = 'x', help = help['axis'] )
@@ -81,7 +86,11 @@ def main():
                              open_angle=options.open_angle,
                              non_uniform=options.non_uniform,
                              name=options.output_filename)
-    mesh.write( options.output_filename, io = 'auto' )
+
+    io = MeshIO.for_format(options.output_filename, format=options.format,
+                           writable=True)
+
+    mesh.write(options.output_filename, io=io)
 
 if __name__ == '__main__':
     main()

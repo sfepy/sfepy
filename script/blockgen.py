@@ -3,6 +3,7 @@ import sys
 sys.path.append( '.' )
 from optparse import OptionParser
 from sfepy.fem import gen_block_mesh
+from sfepy.fem.meshio import MeshIO
 
 usage = """%prog [options]
 
@@ -11,6 +12,7 @@ Block mesh generator.
 help = {
     'filename' :
     'output file name [default: %default]',
+    'format' : 'output mesh format (overrides output file name extension)',
     'dims' :
     'dimensions  of the block [default: %default]',
     'shape' :
@@ -24,6 +26,9 @@ def main():
     parser.add_option( "-o", "", metavar = 'filename',
                        action = "store", dest = "output_filename",
                        default = 'out.vtk', help = help['filename'] )
+    parser.add_option('-f', '--format', metavar='format',
+                      action='store', type='string', dest='format',
+                      default=None, help=help['format'])
     parser.add_option( "-d", "--dims", metavar = 'dims',
                        action = "store", dest = "dims",
                        default = '[1.0, 1.0, 1.0]', help = help['dims'] )
@@ -45,7 +50,11 @@ def main():
     print centre
 
     mesh = gen_block_mesh(dims, shape, centre, name=options.output_filename)
-    mesh.write( options.output_filename, io = 'auto' )
+
+    io = MeshIO.for_format(options.output_filename, format=options.format,
+                           writable=True)
+
+    mesh.write(options.output_filename, io=io)
 
 if __name__ == '__main__':
     main()
