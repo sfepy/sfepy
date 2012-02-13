@@ -49,6 +49,12 @@ supported_capabilities = {
     'ansys_cdb' : ['r'],
 }
 
+def output_writable_meshes():
+    output('Supported writable mesh formats are:')
+    for key, val in supported_capabilities.iteritems():
+        if 'w' in val:
+            output(key)
+
 ##
 # c: 15.02.2008, r: 15.02.2008
 def sort_by_mat_id( conns_in ):
@@ -2546,20 +2552,75 @@ def any_from_filename(filename, prefix_dir=None):
         else:
             return UserMeshIO(filename)
 
+    ext = op.splitext(filename)[1].lower()
+    try:
+        format = supported_formats[ext]
+    except KeyError:
+        raise ValueError('unsupported mesh file suffix! (%s)' % ext)
+
+    if isinstance(format, tuple):
+        format = guess_format(filename, ext, format, io_table)
+
     if prefix_dir is not None:
         filename = op.normpath(op.join(prefix_dir, filename))
 
-    aux, ext = op.splitext( filename )
-    ext = ext.lower()
+    return io_table[format](filename)
 
-    format = supported_formats[ext]
-    if isinstance(format, tuple):
-        format = guess_format( filename, ext, format, io_table )
-    try:
-        return io_table[format]( filename )
-    except KeyError:
-        output( 'unsupported mesh file suffix: %s' % ext )
-        raise
-
-insert_static_method( MeshIO, any_from_filename )
+insert_static_method(MeshIO, any_from_filename)
 del any_from_filename
+
+def for_format(filename, format=None, writable=False, prefix_dir=None):
+    """
+    Create a MeshIO instance for file `filename` with forced `format`.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the mesh file.
+    format : str
+        One of supported formats. If None,
+        :func:`MeshIO.any_from_filename()` is called instead.
+    writable : bool
+        If True, verify that the mesh format is writable.
+    prefix_dir : str
+        The directory name to prepend to `filename`.
+
+    Returns
+    -------
+    io : MeshIO subclass instance
+        The MeshIO subclass instance corresponding to the `format`.
+    """
+    ext = op.splitext(filename)[1].lower()
+    try:
+        _format = supported_formats[ext]
+    except KeyError:
+        _format = None
+
+    format = get_default(format, _format)
+
+    if format is None:
+        io = MeshIO.any_from_filename(filename, prefix_dir=prefix_dir)
+
+    else:
+        if not isinstance(format, basestr):
+            raise ValueError('ambigous suffix! (%s -> %s)' % (ext, format))
+
+        if format not in io_table:
+            raise ValueError('unknown output mesh format! (%s)' % format)
+
+        if writable and ('w' not in supported_capabilities[format]):
+            output_writable_meshes()
+            msg = 'write support not implemented for output mesh format "%s",' \
+                  ' see above!' \
+                  % format
+            raise ValueError(msg)
+
+        if prefix_dir is not None:
+            filename = op.normpath(op.join(prefix_dir, filename))
+
+        io = io_table[format](filename)
+
+    return io
+
+insert_static_method(MeshIO, for_format)
+del for_format

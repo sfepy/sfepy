@@ -5,7 +5,7 @@ sys.path.append('.')
 from optparse import OptionParser
 from sfepy.base.base import nm, output
 from sfepy.fem import Mesh
-from sfepy.fem.meshio import io_table, supported_capabilities
+from sfepy.fem.meshio import output_writable_meshes, MeshIO
 
 usage = """%prog [options] filename_in filename_out
 
@@ -23,12 +23,6 @@ help = {
     'format' : 'output mesh format (overrides filename_out extension)',
     'list' : 'list supported writable output mesh formats',
 }
-
-def output_writable_meshes():
-    output('Supported writable mesh formats are:')
-    for key, val in supported_capabilities.iteritems():
-        if 'w' in val:
-            output(key)
 
 def main():
     parser = OptionParser(usage=usage)
@@ -76,20 +70,8 @@ def main():
             raise ValueError('bad scale! (%s)' % scale)
         mesh.transform_coors(tr)
 
-    io = 'auto'
-    if options.format:
-        try:
-            io = io_table[options.format](filename_out)
-        except KeyError:
-            output('unknown output mesh format! (%s)' % options.format)
-            output_writable_meshes()
-            sys.exit(1)
-            
-        if 'w' not in supported_capabilities[options.format]:
-            output('write support not implemented for output mesh format! (%s)'
-                    % options.format)
-            output_writable_meshes()
-            sys.exit(1)
+    io = MeshIO.for_format(filename_out, format=options.format,
+                           writable=True)
 
     output('writing %s...' % filename_out)
     mesh.write(filename_out, io=io)
