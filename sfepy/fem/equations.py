@@ -189,7 +189,7 @@ class Equations( Container ):
                           term.region.name, term.arg_str))
 
     def time_update(self, ts, ebcs=None, epbcs=None, lcbcs=None,
-                    functions=None, problem=None):
+                    functions=None, problem=None, verbose=True):
         """
         Update the equations for current time step.
 
@@ -212,6 +212,8 @@ class Equations( Container ):
             The user functions for boundary conditions, materials, etc.
         problem : ProblemDefinition instance, optional
             The problem that can be passed to user functions as a context.
+        verbose : bool
+            If False, reduce verbosity.
 
         Returns
         -------
@@ -220,7 +222,7 @@ class Equations( Container ):
             boundary conditions differs from the set of the previous
             time step.
         """
-        self.variables.time_update(ts, functions)
+        self.variables.time_update(ts, functions, verbose=verbose)
 
         active_bcs = self.variables.equation_mapping(ebcs, epbcs, ts, functions,
                                                      problem=problem)

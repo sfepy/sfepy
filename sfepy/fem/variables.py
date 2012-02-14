@@ -608,11 +608,15 @@ class Variables( Container ):
         for var in self.iter_state():
             var.init_history()
 
-    def time_update(self, ts, functions):
-        output('updating variables...')
+    def time_update(self, ts, functions, verbose=True):
+        if verbose:
+            output('updating variables...')
+
         for var in self:
             var.time_update(ts, functions)
-        output('...done')
+
+        if verbose:
+            output('...done')
 
     def advance( self, ts ):
         for var in self.iter_state():

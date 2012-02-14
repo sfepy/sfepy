@@ -225,8 +225,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
             var.init_data(step=0)
 
     if mode == 'weak':
-        setup_dof_conns(equations.conn_info)
-        equations.time_update(ts, ebcs, epbcs, lcbcs, functions)
+        setup_dof_conns(equations.conn_info, verbose=verbose)
+        equations.time_update(ts, ebcs, epbcs, lcbcs, functions,
+                              verbose=verbose)
 
     else:
         setup_extra_data(equations.conn_info)
