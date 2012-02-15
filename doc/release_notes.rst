@@ -1,5 +1,7 @@
 # created: 20.07.2007 (-1)
 
+.. _2011.3-2011.4:
+
 from 2011.3 to 2011.4
 =====================
 
@@ -283,6 +285,8 @@ from 2011.3 to 2011.4
   - add applications to index
   - more on ebcs given by functions
 
+.. _2011.2-2011.3:
+
 from 2011.2 to 2011.3
 =====================
 
@@ -525,6 +529,8 @@ from 2011.2 to 2011.3
   - update package_check() for alternative names
   - update mayavi version check
 
+.. _2011.1-2011.2:
+
 from 2011.1 to 2011.2
 =====================
 
@@ -627,6 +633,8 @@ from 2011.1 to 2011.2
   - rearrange examples/diffusion/poisson.py
 - many bug fixes =:)
 
+.. _2010.4-2011.1:
+
 from 2010.4 to 2011.1
 =====================
 
@@ -634,7 +642,7 @@ from 2010.4 to 2011.1
   - use mesh connectivity to construct reference maps
     - independently from approximations of variables (fields)
     - always P1 or Q1, based on element geometry
-    - update Approximation.describe_geometry() and related functions 
+    - update Approximation.describe_geometry() and related functions
   - new DiscontinuousField, DiscontinuousApproximation classes
   - use DiscontinuousField for P0, Q0 approximations
   - new eval_nodal_coors()
@@ -816,6 +824,8 @@ from 2010.4 to 2011.1
   - new tests/test_domain.py - very basic tests of facets and refinement
 - many bug fixes
 
+.. _2010.3-2010.4:
+
 from 2010.3 to 2010.4
 =====================
 
@@ -948,6 +958,8 @@ from 2010.3 to 2010.4
   - new tests/test_projections.py
 - many bug fixes
 
+.. _2010.2-2010.3:
+
 from 2010.2 to 2010.3
 =====================
 
@@ -1054,6 +1066,8 @@ from 2010.2 to 2010.3
   - update Container class to be more dict-like
 - new AUTHORS file
 
+.. _2010.1-2010.2:
+
 from 2010.1 to 2010.2
 =====================
 
@@ -1117,6 +1131,7 @@ from 2010.1 to 2010.2
   - de_biot_stress (averaged Biot stress term)
   - di_surface_moment (surface moment term)
 
+.. _2009.4-2010.1:
 
 from 2009.4 to 2010.1
 =====================
@@ -1188,6 +1203,8 @@ from 2009.4 to 2010.1
       - d_sa_acoustic_alpha, d_sa_acoustic_alpha2, d_sa_acoustic_z,
         d_sa_acoustic_z2
 
+.. _2009.3-2009.4:
+
 from 2009.3 to 2009.4
 =====================
 
@@ -1229,7 +1246,7 @@ from 2009.3 to 2009.4
   - read a previously probed data from the probe text file, re-plot them, and
     integrate them along the probe
 - graphical logging:
-  - dynamic adding of data groups (new axes) to Log and ProcessPlotter  
+  - dynamic adding of data groups (new axes) to Log and ProcessPlotter
 - many bug fixes, namely:
   - fix import_file() for multiple imports
   - fix saving results with piece-wise constant (Q0) approximation
@@ -1248,6 +1265,8 @@ from 2009.3 to 2009.4
   - dw_lin_elastic_eth (exponential decay elastic convolution term)
   - updated Lagrangian (UL) formulation terms:
     - dw_ul_bulk_penalty, dw_ul_he_neohook, dw_ul_he_mooney_rivlin
+
+.. _2009.2-2009.3:
 
 from 2009.2 to 2009.3
 =====================
@@ -1282,6 +1301,8 @@ from 2009.2 to 2009.3
     into quadrature points)
   - dw_surface_integrate_variable (weak surface term with variable coefficient)
 
+.. _2009.1-2009.2:
+
 from 2009.1 to 2009.2:
 ======================
 - scripts:
@@ -1306,7 +1327,7 @@ from 2009.1 to 2009.2:
 - solvers:
   - changed API of nonlinear solvers so that scipy solvers can be used
   - added Broyden and Anderson nonlinear solvers (SciPy implementation)
-  - updated Oseen solver 
+  - updated Oseen solver
 - major rewrite of handling of dof connectivities, matrix graph and term
   geometries:
   - lots of dof connectivity related code was simplified/removed
@@ -1347,6 +1368,8 @@ from 2009.1 to 2009.2:
     - dw_jump (scalar interface jump term)
     - dw_surface_mass_scalar (scalar mass on a surface boundary)
 
+.. _2008.4-2009.1:
+
 from 2008.4 to 2009.1:
 ======================
 - new solvers:
@@ -1357,7 +1380,7 @@ from 2008.4 to 2009.1:
    - mesh3d (hermes3d)
    - AVS UCD ascii mesh
    - Hypermesh ascii mesh
-- homogenization: 
+- homogenization:
   - MiniAppBase base class for "mini-applications": micro-problem correctors,
     homogenized coefficients
   - unified approach to resolve data dependencies: HomogenizationEngine class
@@ -1384,6 +1407,8 @@ from 2008.4 to 2009.1:
   - allow empty output prefix, combined output to file and terminal
 - new terms:
     - dw_electric_source (electric source term)
+
+.. _00.50.00-2008.4:
 
 from 00.50.00 to 2008.4:
 ========================
@@ -1422,6 +1447,8 @@ from 00.50.00 to 2008.4:
   - dw_lin_elastic_th (linear elasticity fading memory, former dw_lin_viscous_th)
   - dw_biot_th (Biot fading memory terms unified)
 
+.. _00.46.02-00.50.00:
+
 from 00.46.02 to 00.50.00:
 ==========================
 - finite strain elasticity: neo-Hookean, Mooney-Rivlin materials
@@ -1429,7 +1456,7 @@ from 00.46.02 to 00.50.00:
   - geometric data via finite_strain_tl DataCache
 - solving problems in complex numbers
 - generalized equations to allow linear combination of terms
-  - example: """2 * aterm.i1.Omega( v, u ) = - 3.0 * bterm.i1.Omega2( v, u )""" 
+  - example: """2 * aterm.i1.Omega( v, u ) = - 3.0 * bterm.i1.Omega2( v, u )"""
 - run-time type of state term arguments
   - removed all *_r terms, now useless
 - 'elements by function( domain )' region selector
@@ -1444,6 +1471,8 @@ from 00.46.02 to 00.50.00:
   - dw_tl_bulk_penalty (bulk penalty in TL formulation)
   - dw_tl_he_neohook (neo-Hooekan term in TL formulation)
   - dw_tl_he_mooney_rivlin (Mooney-Rivlin term in TL formulation)
+
+.. _00.41.03-00.46.02:
 
 from 00.41.03 to 00.46.02:
 ==========================
@@ -1463,6 +1492,8 @@ from 00.41.03 to 00.46.02:
 - new terms and lots of reorganization:
     - Biot terms
     - some fading memory terms
+
+.. _00.35.01-00.41.03:
 
 from 00.35.01 to 00.41.03:
 ==========================
