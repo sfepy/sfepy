@@ -435,7 +435,8 @@ class ScipyBroyden( NonlinearSolver ):
             kwargs.update( {'M' : conf.M, 'w0' : conf.w0} )
 
         vec_x = self.solver( fun, vec_x0, **kwargs )
-        
+        vec_x = nm.asarray(vec_x)
+
         if status is not None:
             status['time_stats'] = time.clock() - tt
 
