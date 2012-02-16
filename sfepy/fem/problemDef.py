@@ -213,6 +213,12 @@ class ProblemDefinition( Struct ):
 
         obj.set_solvers(self.conf.solvers, self.conf.options)
 
+        obj.setup_output(output_filename_trunk=self.ofn_trunk,
+                         output_dir=self.output_dir,
+                         output_format=self.output_format,
+                         file_per_var=self.file_per_var,
+                         linearization=self.linearization)
+
         return obj
 
     def setup_default_output(self, conf=None, options=None):
