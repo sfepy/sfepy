@@ -46,6 +46,8 @@ Things to check before a release
 
 #. create final tarball
 
+   * update doc/release_notes.rst
+   * update doc/news.rst, doc/archived_news.rst
    * change version number (sfepy/version.py) so that previous release
      tarball is not overwritten!
    * set ``is_release = True`` in site_cfg.py
@@ -81,24 +83,12 @@ Useful Git commands
 Web update and file uploading
 -----------------------------
 
-* publish development docs as new release docs:
-
-* add RELEASE_NOTES.txt as <version>_RELEASE_NOTES.txt via SVN to the
-  Google site
+* publish development docs also as new release docs
 
 * upload the tarball to http://code.google.com/p/sfepy/downloads/list
 
   * make it featured, un-feature the previous release
   * update download link at http://code.google.com/p/sfepy/wiki/Downloads
-
-* update news at http://code.google.com/p/sfepy/
-
-  * update wiki page http://code.google.com/p/sfepy/wiki/FrontPage
-
-    * archive last news entry to
-      http://code.google.com/p/sfepy/wiki/ArchivedNews
-
-  * administer...
 
 * send announcement to
 
