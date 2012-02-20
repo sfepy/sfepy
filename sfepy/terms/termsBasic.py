@@ -75,16 +75,20 @@ class IntegrateVolumeTerm(Term):
 class IntegrateSurfaceTerm(Term):
     r"""
     :Description:
-    Depending on evaluation mode, integrate a variable over a surface
-    region ('eval'), average it in element faces or interpolate it into
-    surface quadrature points ('qp'). For vector variables, setting
-    `term_mode` to `'flux'` leads to computing corresponding fluxes for
-    the three modes instead.
+    Evaluate (weighted) variable in a surface region.
+
+    Depending on evaluation mode, integrate a variable over a surface region
+    ('eval'), average it in element faces ('el_avg') or interpolate it into
+    surface quadrature points ('qp'). For vector variables, setting `term_mode`
+    to `'flux'` leads to computing corresponding fluxes for the three modes
+    instead.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
         \int_\Gamma y \mbox{ , } \int_\Gamma \ul{y}
-        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \mbox{ or }
+        \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \\
         \int_\Gamma c y \mbox{ , } \int_\Gamma c \ul{y}
         \mbox{ , } \int_\Gamma c \ul{y} \cdot \ul{n} \mbox{ flux }
 
@@ -92,17 +96,23 @@ class IntegrateSurfaceTerm(Term):
         \mbox{vector for } K \from \Ical_h:
         \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
         \int_{T_K} \ul{y} / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} (\ul{y} \cdot \ul{n}) / \int_{T_K} 1
+        \int_{T_K} (\ul{y} \cdot \ul{n}) / \int_{T_K} 1 \\
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} c y / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} c \ul{y} / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} (c \ul{y} \cdot \ul{n}) / \int_{T_K} 1
 
     .. math::
-         y|_{qp} \mbox{ , } \ul{y}|_{qp}
-        \mbox{ , } (\ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
+        y|_{qp} \mbox{ , } \ul{y}|_{qp}
+        \mbox{ , } (\ul{y} \cdot \ul{n})|_{qp} \mbox{ flux } \\
+        c y|_{qp} \mbox{ , } c \ul{y}|_{qp}
+        \mbox{ , } (c \ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
 
     :Arguments:
         material : :math:`c` (optional),
         parameter : :math:`y` or :math:`\ul{y}`,
     """
-    name = 'di_surface_integrate'
+    name = 'ev_surface_integrate'
     arg_types = ('opt_material', 'parameter')
     integration = 'surface'
 
