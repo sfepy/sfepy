@@ -90,19 +90,49 @@ class BiotTerm(Term):
 class BiotStressTerm(CauchyStressTerm):
     r"""
     :Description:
-    Biot stress tensor averaged in elements.
+    Evaluate Biot stress tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
+        - \int_{\Omega} \alpha_{ij} \bar{p}
+
+    .. math::
         \mbox{vector for } K \from \Ical_h:
-        \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
+        - \int_{T_K} \alpha_{ij} \bar{p} / \int_{T_K} 1
+
+    .. math::
+        - \alpha_{ij} \bar{p}|_{qp}
 
     :Arguments:
         material  : :math:`\alpha_{ij}`,
         parameter : :math:`\bar{p}`
     """
-    name = 'de_biot_stress'
+    name = 'ev_biot_stress'
     arg_types = ('material', 'parameter')
+
+    @staticmethod
+    def function(out, val_qp, mat, vg, fmode):
+        if fmode == 2:
+            mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
+            vc = val_qp.reshape((val_qp.shape[0] * val_qp.shape[1],)
+                                + val_qp.shape[2:])
+
+            stress = mc * vc
+            out[:] = stress.reshape(mat.shape)
+            status = 0
+
+        else:
+            status = terms.de_cauchy_stress(out, val_qp, mat, vg, fmode)
+
+        out *= -1.0
+
+        return status
 
     def get_fargs(self, mat, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -110,49 +140,9 @@ class BiotStressTerm(CauchyStressTerm):
 
         val_qp = self.get(parameter, 'val')
 
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
         return val_qp, mat, vg, fmode
-
-class BiotStressQTerm(Term):
-    r"""
-    :Description:
-    Biot stress tensor in quadrature points, given in the usual vector form
-    exploiting symmetry: in 3D it has 6 components with the indices ordered as
-    :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has 3 components with the
-    indices ordered as :math:`[11, 22, 12]`.
-
-    :Definition:
-    .. math::
-        \alpha_{ij} \bar{p}|_{qp}
-
-    :Arguments:
-        material  : :math:`\alpha_{ij}`,
-        parameter : :math:`\bar{p}`
-    """
-    name = 'dq_biot_stress'
-    arg_types = ('material', 'parameter')
-
-    @staticmethod
-    def function(out, mat, val_qp):
-        mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
-        vc = val_qp.reshape((val_qp.shape[0] * val_qp.shape[1],)
-                            + val_qp.shape[2:])
-
-        stress = mc * vc
-        out[:] = stress.reshape(mat.shape)
-
-        return 0
-
-    def get_fargs(self, mat, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        return mat, self.get(parameter, 'val_qp')
-
-    def get_eval_shape(self, mat, parameter,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
 
 class BiotTHTerm(BiotTerm, THTerm):
     r"""
