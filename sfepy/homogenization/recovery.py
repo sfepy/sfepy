@@ -251,7 +251,7 @@ def add_stress_p( out, pb, integral, region, vp, data ):
     var = pb.create_variables([vp])[vp]
     var.data_from_any(data)
 
-    press0 = pb.evaluate('di_volume_integrate.%s.%s( %s )' \
+    press0 = pb.evaluate('ev_volume_integrate.%s.%s( %s )' \
                          % (integral, region, vp), verbose=False,
                          mode='el_avg', **{vp : var})
     press = extend_cell_data( press0, pb.domain, region )
@@ -264,7 +264,7 @@ def add_stress_p( out, pb, integral, region, vp, data ):
 
 def compute_mac_stress_part( pb, integral, region, material, vu, mac_strain ):
 
-    avgmat = pb.evaluate('di_integrate_mat.%s.%s( %s, %s )' \
+    avgmat = pb.evaluate('ev_integrate_mat.%s.%s( %s, %s )' \
                          % (integral, region, material, vu), verbose=False,
                          mode='el_avg')
 

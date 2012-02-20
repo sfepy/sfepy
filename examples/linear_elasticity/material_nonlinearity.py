@@ -25,7 +25,7 @@ filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    mu = pb.evaluate('di_integrate_mat.2.Omega(nonlinear.mu, u)',
+    mu = pb.evaluate('ev_integrate_mat.2.Omega(nonlinear.mu, u)',
                      mode='el_avg', copy_materials=False, verbose=False)
     out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
 

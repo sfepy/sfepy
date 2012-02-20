@@ -71,7 +71,7 @@ options = {
 
     'eigenmomentum' : {'var' : 'u',
                        'regions' : ['Y2', 'Y3'],
-                       'term' : '%.12e * di_volume_integrate.2.%s( u )'},
+                       'term' : '%.12e * ev_volume_integrate.2.%s( u )'},
     # Used to compute average density.
     'region_to_material' : {'Y1' : 'matrix',
                             'Y2' : 'inclusion',

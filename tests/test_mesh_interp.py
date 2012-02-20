@@ -225,7 +225,7 @@ class Test(TestCommon):
         u.set_from_mesh_vertices(data)
 
         integral = Integral('i', order=2)
-        term = Term.new('di_volume_integrate(u)', integral, omega, u=u)
+        term = Term.new('ev_volume_integrate(u)', integral, omega, u=u)
         term.setup()
         val1, _ = term.evaluate(mode='qp')
         val1 = val1.ravel()
