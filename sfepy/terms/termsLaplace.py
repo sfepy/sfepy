@@ -1,8 +1,7 @@
 import numpy as nm
 
-from sfepy.base.base import use_method_with_name
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.terms_base import ScalarScalar
 
 class DiffusionTerm(Term):
     r"""
@@ -272,26 +271,39 @@ class DiffusionCoupling(Term):
 class DiffusionVelocityTerm( Term ):
     r"""
     :Description:
-    Diffusion velocity averaged in elements.
+    Evaluate diffusion velocity.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
-        \mbox{vector for } K \from \Ical_h: \int_{T_K} -K_{ij} \nabla_j \bar{p}
+        - \int_{\Omega} K_{ij} \nabla_j \bar{p}
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: - \int_{T_K} K_{ij} \nabla_j \bar{p}
         / \int_{T_K} 1
+
+    .. math::
+        - K_{ij} \nabla_j \bar{p}
 
     :Arguments:
         material  : :math:`K_{ij}`,
         parameter : :math:`\bar{p}`
     """
-    name = 'de_diffusion_velocity'
+    name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
-    default_mode = (1, True)
 
     @staticmethod
-    def function(out, grad, mat, vg, mode):
+    def function(out, grad, mat, vg, fmode):
+        if fmode == 2:
+            out[:] = dot_sequences(mat, grad)
+            status = 0
 
-        aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
-        status = vg.integrate(out, nm.ascontiguousarray(aux), mode)
+        else:
+            aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
+            status = vg.integrate(out, nm.ascontiguousarray(aux), fmode)
+
+        out *= -1.0
 
         return status
 
@@ -299,9 +311,7 @@ class DiffusionVelocityTerm( Term ):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
         grad = self.get(parameter, 'grad')
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, self.default_mode[0])
-        if self.default_mode[1]:
-            mat *= -1.0
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
         return grad, mat, vg, fmode
 
@@ -313,23 +323,6 @@ class DiffusionVelocityTerm( Term ):
             n_qp = 1
 
         return (n_el, n_qp, dim, 1), parameter.dtype
-
-class DiffusionIntegrateTerm(DiffusionVelocityTerm):
-    r"""
-    :Description:
-    Diffusion integrate term.
-
-    :Definition:
-    .. math::
-        \int_{\Omega} K_{ij} \nabla_j \bar{p}
-
-    :Arguments:
-        material: :math:`K_{ij}`,
-        parameter:  :math:`\bar{p}`,
-    """
-    name = 'di_diffusion_integrate'
-    arg_types = ('material', 'parameter')
-    default_mode = (0, False)
 
 class SurfaceFluxTerm(Term):
     r"""
