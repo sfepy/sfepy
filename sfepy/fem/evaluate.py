@@ -212,6 +212,9 @@ def create_evaluable(expression, fields, materials, variables, integrals,
         extra_args = copy(extra_args)
         extra_args.update(kwargs)
 
+    if ts is not None:
+        extra_args.update({'ts' : ts})
+
     equations = Equations.from_conf({'tmp' : expression},
                                     aux_vars, regions, materials, integrals,
                                     setup=False, user=extra_args,
