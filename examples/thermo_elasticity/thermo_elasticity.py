@@ -62,13 +62,13 @@ def post_process(out, pb, state, extend=False):
                                    mode='cell', data=e_stress,
                                    dofs=None)
 
-    t_stress = ev('de_biot_stress.2.Omega( solid.alpha, T )', mode='el_avg')
+    t_stress = ev('ev_biot_stress.2.Omega( solid.alpha, T )', mode='el_avg')
     out['thermal_stress'] = Struct(name='output_data',
                                    mode='cell', data=t_stress,
                                    dofs=None)
 
     out['total_stress'] = Struct(name='output_data',
-                                 mode='cell', data=e_stress - t_stress,
+                                 mode='cell', data=e_stress + t_stress,
                                  dofs=None)
 
     out['von_mises_stress'] = aux = out['total_stress'].copy()
