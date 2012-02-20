@@ -29,7 +29,7 @@ def post_process(out, pb, state, extend=False):
                      mode='el_avg', copy_materials=False, verbose=False)
     out['mu'] = Struct(name='mu', mode='cell', data=mu, dofs=None)
 
-    strain = pb.evaluate('de_cauchy_strain.2.Omega(u)', mode='el_avg')
+    strain = pb.evaluate('ev_cauchy_strain.2.Omega(u)', mode='el_avg')
     out['strain'] = Struct(name='strain', mode='cell', data=strain, dofs=None)
 
     return out
@@ -50,7 +50,7 @@ def get_pars(ts, coors, mode='qp',
     order = term.integral.order
     uvar = equations.variables['u']
 
-    strain = problem.evaluate('dq_cauchy_strain.%d.Omega(u)' % order,
+    strain = problem.evaluate('ev_cauchy_strain.%d.Omega(u)' % order,
                               u=uvar, mode='qp')
     if ts.step > 0:
         strain0 = strains[-1]

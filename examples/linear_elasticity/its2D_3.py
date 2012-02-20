@@ -38,7 +38,7 @@ def nodal_stress(out, pb, state, extend=False):
     # Calculate nodal stress.
     pb.time_update()
 
-    stress = pb.evaluate('dq_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
+    stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D, u)', mode='qp')
     sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
     svar = FieldVariable('sigma', 'parameter', sfield, 3,
                          primary_var_name='(set-to-None)')

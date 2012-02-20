@@ -52,12 +52,12 @@ def post_process(out, pb, state, extend=False):
     """
     ev = pb.evaluate
 
-    strain = ev('de_cauchy_strain.2.Omega( u )', mode='el_avg')
+    strain = ev('ev_cauchy_strain.2.Omega( u )', mode='el_avg')
     out['cauchy_strain'] = Struct(name='output_data',
                                   mode='cell', data=strain,
                                   dofs=None)
 
-    e_stress = ev('de_cauchy_stress.2.Omega( solid.D, u )', mode='el_avg')
+    e_stress = ev('ev_cauchy_stress.2.Omega( solid.D, u )', mode='el_avg')
     out['elastic_stress'] = Struct(name='output_data',
                                    mode='cell', data=e_stress,
                                    dofs=None)

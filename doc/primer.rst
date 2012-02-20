@@ -557,7 +557,7 @@ The above computation could also be done in *isfepy*::
 
     In [27]: pb, state = pde_solve('examples/linear_elasticity/its2D_2.py')
 
-    In [28]: stress = pb.evaluate('dq_cauchy_stress.ivn.Omega(Asphalt.D,u)',
+    In [28]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))
     In [29]: sfield = Field('stress', nm.float64, (3,), pb.domain.regions['Omega'])
     In [30]: svar = FieldVariable('sigma', 'parameter', sfield, 3,

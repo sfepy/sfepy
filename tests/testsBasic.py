@@ -117,7 +117,7 @@ class TestLCBC( TestCommon ):
         self.report( 'converged: %s' % ok )
         out = state.create_output_dict()
 
-        strain = problem.evaluate('de_cauchy_strain.i1.Y( u )', mode='el_avg')
+        strain = problem.evaluate('ev_cauchy_strain.i1.Y( u )', mode='el_avg')
         out['strain'] = Struct(name='output_data',
                                mode='cell', data=strain, dofs=None)
 

@@ -236,10 +236,10 @@ def compute_stress_strain_u( pb, integral, region, material, vu, data ):
     var = pb.create_variables([vu])[vu]
     var.data_from_any(data)
 
-    stress = pb.evaluate('de_cauchy_stress.%s.%s( %s, %s )'
+    stress = pb.evaluate('ev_cauchy_stress.%s.%s( %s, %s )'
                          % (integral, region, material, vu), verbose=False,
                          mode='el_avg', **{vu : var})
-    strain = pb.evaluate('de_cauchy_strain.%s.%s( %s )'
+    strain = pb.evaluate('ev_cauchy_strain.%s.%s( %s )'
                          % (integral, region, vu), verbose=False,
                          mode='el_avg', **{vu : var})
 

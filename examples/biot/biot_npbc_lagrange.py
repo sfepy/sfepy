@@ -49,7 +49,7 @@ def post_process(out, pb, state, extend=False):
     out['dvel'] = Struct(name='output_data', var_name='p',
                          mode='cell', data=dvel, dofs=None)
 
-    stress = pb.evaluate('de_cauchy_stress.2.Omega( m.D, u )',
+    stress = pb.evaluate('ev_cauchy_stress.2.Omega( m.D, u )',
                          mode='el_avg')
     out['cauchy_stress'] = Struct(name='output_data', var_name='u',
                                   mode='cell', data=stress, dofs=None)

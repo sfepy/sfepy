@@ -27,8 +27,8 @@ def stress_strain(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
     ev = pb.evaluate
-    strain = ev('de_cauchy_strain.2.Omega(u)', mode='el_avg')
-    stress = ev('de_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg')
+    strain = ev('ev_cauchy_strain.2.Omega(u)', mode='el_avg')
+    stress = ev('ev_cauchy_stress.2.Omega(Asphalt.D, u)', mode='el_avg')
 
     out['cauchy_strain'] = Struct(name='output_data', mode='cell',
                                   data=strain, dofs=None)

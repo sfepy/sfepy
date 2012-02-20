@@ -48,7 +48,7 @@ options = {
     'probe_hook' : 'probe_hook',
 }
 
-# Update materials, as de_cauchy_stress below needs the elastic constants in
+# Update materials, as ev_cauchy_stress below needs the elastic constants in
 # the tensor form.
 from sfepy.mechanics.matcoefs import stiffness_tensor_lame
 
@@ -95,13 +95,13 @@ def post_process(out, problem, state, extend=False):
     from sfepy.base.base import Struct
 
     # Cauchy strain averaged in elements.
-    strain = problem.evaluate('de_cauchy_strain.i1.Omega( u )',
+    strain = problem.evaluate('ev_cauchy_strain.i1.Omega( u )',
                               mode='el_avg')
     out['cauchy_strain'] = Struct(name='output_data',
                                   mode='cell', data=strain,
                                   dofs=None)
     # Cauchy stress averaged in elements.
-    stress = problem.evaluate('de_cauchy_stress.i1.Omega( solid.D, u )',
+    stress = problem.evaluate('ev_cauchy_stress.i1.Omega( solid.D, u )',
                               mode='el_avg')
     out['cauchy_stress'] = Struct(name='output_data',
                                   mode='cell', data=stress,

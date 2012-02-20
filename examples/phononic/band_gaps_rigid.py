@@ -280,7 +280,7 @@ def post_process( out, problem, mtx_phi ):
         vec = mtx_phi[:,ii].copy()
         var.data_from_any(vec)
 
-        strain = problem.evaluate('de_cauchy_strain.2.Y23( u )', u=var,
+        strain = problem.evaluate('ev_cauchy_strain.2.Y23( u )', u=var,
                                   verbose=False)
         strain = extend_cell_data( strain, problem, 'Y23' )
         out['strain%03d' % ii] = Struct(name='output_data',
