@@ -354,12 +354,12 @@ def recover_bones( problem, micro_problem, region, eps0,
 
         var_p = variables[vppp1]
         var_p.data_from_any(p_aux)
-        dvel_m1 = meval('de_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
+        dvel_m1 = meval('ev_diffusion_velocity.i1.Yc( m.K, %s )' % vppp1,
                         verbose=False, mode='el_avg', **{vppp1 : var_p})
 
         var_p = variables[vpp1]
         var_p.data_from_any(p_hat)
-        dvel_m2 = meval('de_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
+        dvel_m2 = meval('ev_diffusion_velocity.i1.Ym( m.K, %s )' % vpp1,
                         verbose=False, mode='el_avg',
                         **{vpp1 : var_p}) * eps0
         

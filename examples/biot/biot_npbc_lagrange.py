@@ -44,7 +44,7 @@ def define():
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    dvel = pb.evaluate('de_diffusion_velocity.2.Omega( m.K, p )',
+    dvel = pb.evaluate('ev_diffusion_velocity.2.Omega( m.K, p )',
                        mode='el_avg')
     out['dvel'] = Struct(name='output_data', var_name='p',
                          mode='cell', data=dvel, dofs=None)

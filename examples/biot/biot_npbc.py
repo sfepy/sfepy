@@ -94,7 +94,7 @@ def get_pars(ts, coor, mode, output_dir='.', **kwargs):
 def post_process(out, pb, state, extend=False):
     from sfepy.base.base import Struct
 
-    dvel = pb.evaluate('de_diffusion_velocity.i1.Omega( m.K, p )',
+    dvel = pb.evaluate('ev_diffusion_velocity.i1.Omega( m.K, p )',
                        mode='el_avg')
     out['dvel'] = Struct(name='output_data',
                          mode='cell', data=dvel, dofs=None)
