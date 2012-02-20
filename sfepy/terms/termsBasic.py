@@ -318,9 +318,15 @@ class SurfaceMomentTerm(Term):
 class IntegrateMatTerm(Term):
     r"""
     :Description:
-    Material parameter :math:`m` integrated over a volume/surface region
-    or averaged in its elements/faces. Uses approximation of :math:`y`
-    variable.
+    Evaluate material parameter :math:`m` in a volume/surface region.
+
+    Depending on evaluation mode, integrate a material parameter over a
+    volume/surface region ('eval'), average it in elements/faces ('el_avg') or
+    interpolate it into volume/surface quadrature points ('qp').
+
+    Uses reference mapping of :math:`y` variable.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
@@ -329,16 +335,24 @@ class IntegrateMatTerm(Term):
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} m / \int_{T_K} 1
 
+    .. math::
+        m|_{qp}
+
     :Arguments:
         material  : :math:`m` (can have up to two dimensions),
         parameter : :math:`y`
     """
-    name = 'di_integrate_mat'
+    name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
 
     @staticmethod
     def function(out, mat, geo, fmode):
-        status = geo.integrate(out, mat, fmode)
+        if fmode == 2:
+            out[:] = mat
+            status = 0
+
+        else:
+            status = geo.integrate(out, mat, fmode)
 
         return status
 
@@ -346,7 +360,7 @@ class IntegrateMatTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         geo, _ = self.get_mapping(parameter)
 
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
         return mat, geo, fmode
 
@@ -355,7 +369,10 @@ class IntegrateMatTerm(Term):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
         n_row, n_col = mat.shape[-2:]
 
-        return (n_el, 1, n_row, n_col), mat.dtype
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, n_row, n_col), mat.dtype
 
 class DotProductVolumeTerm(Term):
     r"""
