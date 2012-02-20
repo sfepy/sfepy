@@ -78,6 +78,16 @@ test_terms = [
 import numpy as nm
 from sfepy.base.testing import TestCommon
 
+def _integrate(var, val_qp):
+    from sfepy.fem import Integrals
+    from sfepy.fem.mappings import get_jacobian
+
+    integral = Integrals().get(2, 'v')
+    det = get_jacobian(var.field, integral)
+    val = (val_qp * det).sum(axis=1) / det.sum(axis=1)
+
+    return val
+
 class Test(TestCommon):
 
     @staticmethod
@@ -218,27 +228,43 @@ class Test(TestCommon):
 
         return ok1 and ok2
 
-    def test_dq_de(self):
-        from sfepy.fem import Integrals
-        from sfepy.fem.mappings import get_jacobian
-
+    def test_ev_grad(self):
         problem = self.problem
 
         var = problem.create_variables(['us'])['us']
         val = nm.arange(var.n_dof, dtype=var.dtype)
         var.data_from_any(val)
 
-        val1 = problem.evaluate('de_grad.i1.Omega( us )', us=var, mode='el_avg')
-        self.report('de_grad: min, max:', val1.min(), val1.max())
+        val1 = problem.evaluate('ev_grad.i1.Omega( us )', us=var, mode='el_avg')
+        self.report('ev_grad(el_avg): min, max:', val1.min(), val1.max())
 
-        aux = problem.evaluate('dq_grad.i1.Omega( us )', us=var, mode='qp')
-
-        integral = Integrals().get(2, 'v')
-        det = get_jacobian(var.field, integral)
-        val2 = (aux * det).sum(axis=1) / det.sum(axis=1)
+        aux = problem.evaluate('ev_grad.i1.Omega( us )', us=var, mode='qp')
+        val2 = _integrate(var, aux)
         val2.shape = val1.shape
+        self.report('ev_grad(qp): min, max:', val2.min(), val2.max())
 
-        self.report('dq_grad: min, max:', val2.min(), val2.max())
+        ok = self.compare_vectors(val1, val2,
+                                  label1='de mode',
+                                  label2='dq mode')
+        if not ok:
+            self.report('failed')
+
+        return ok
+
+    def test_ev_div(self):
+        problem = self.problem
+
+        var = problem.create_variables(['uv'])['uv']
+        val = nm.arange(var.n_dof, dtype=var.dtype)
+        var.data_from_any(val)
+
+        val1 = problem.evaluate('ev_div.i1.Omega( uv )', uv=var, mode='el_avg')
+        self.report('ev_div(el_avg): min, max:', val1.min(), val1.max())
+
+        aux = problem.evaluate('ev_div.i1.Omega( uv )', uv=var, mode='qp')
+        val2 = _integrate(var, aux)
+        val2.shape = val1.shape
+        self.report('ev_div(qp): min, max:', val2.min(), val2.max())
 
         ok = self.compare_vectors(val1, val2,
                                   label1='de mode',
