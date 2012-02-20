@@ -8,27 +8,37 @@ from sfepy.terms.terms_th import THTerm, ETHTerm
 class IntegrateVolumeTerm(Term):
     r"""
     :Description:
-    Depending on evaluation mode, integrate a variable over a volume
-    region ('eval'), average it in elements or interpolate it into
-    volume quadrature points ('qp').
+    Evaluate (weighted) variable in a volume region.
+
+    Depending on evaluation mode, integrate a variable over a volume region
+    ('eval'), average it in elements ('el_avg') or interpolate it into volume
+    quadrature points ('qp').
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
-        \int_\Omega y \mbox{ , } \int_\Omega \ul{y}
+        \int_\Omega y \mbox{ , } \int_\Omega \ul{y} \\
+        \int_\Omega c y \mbox{ , } \int_\Omega c \ul{y}
 
     .. math::
         \mbox{vector for } K \from \Ical_h:
         \int_{T_K} y / \int_{T_K} 1 \mbox{ , }
-        \int_{T_K} \ul{y} / \int_{T_K} 1
+        \int_{T_K} \ul{y} / \int_{T_K} 1 \\
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} c y / \int_{T_K} 1 \mbox{ , }
+        \int_{T_K} c \ul{y} / \int_{T_K} 1
 
     .. math::
-         y|_{qp} \mbox{ , } \ul{y}|_{qp}
+        y|_{qp} \mbox{ , } \ul{y}|_{qp} \\
+        c y|_{qp} \mbox{ , } c \ul{y}|_{qp}
 
     :Arguments:
+        material : :math:`c` (optional),
         parameter : :math:`y` or :math:`\ul{y}`
     """
-    name = 'di_volume_integrate'
-    arg_types = ('parameter',)
+    name = 'ev_volume_integrate'
+    arg_types = ('opt_material', 'parameter')
 
     @staticmethod
     def function(out, val_qp, vg, fmode):
@@ -41,17 +51,19 @@ class IntegrateVolumeTerm(Term):
 
         return status
 
-    def get_fargs(self, parameter,
+    def get_fargs(self, material, parameter,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        val = self.get(parameter, 'val')
+        val_qp = self.get(parameter, 'val')
+        if material is not None:
+            val_qp *= material
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-        return val, vg, fmode
+        return val_qp, vg, fmode
 
-    def get_eval_shape(self, parameter,
+    def get_eval_shape(self, material, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
