@@ -948,14 +948,3 @@ sfepy.terms package
    src/sfepy/terms/terms_membrane
    src/sfepy/terms/terms_new
    src/sfepy/terms/utils
-
-sfepy.terms package - full inheritance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This section is the same as the previous, but shows the full inheritance for
-some of the terms classes.
-
-.. toctree::
-   :maxdepth: 2
-   
-   src/sfepy/terms/termsLinElasticity_full
