@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
 from sfepy.terms.termsLinElasticity import CauchyStressTerm
@@ -119,12 +120,7 @@ class BiotStressTerm(CauchyStressTerm):
     @staticmethod
     def function(out, val_qp, mat, vg, fmode):
         if fmode == 2:
-            mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
-            vc = val_qp.reshape((val_qp.shape[0] * val_qp.shape[1],)
-                                + val_qp.shape[2:])
-
-            stress = mc * vc
-            out[:] = stress.reshape(mat.shape)
+            out[:] = dot_sequences(mat, val_qp)
             status = 0
 
         else:

@@ -1,6 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import use_method_with_name, assert_
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
 from sfepy.terms.terms_base import VectorVector
@@ -432,12 +433,7 @@ class CauchyStressTerm(Term):
     @staticmethod
     def function(out, strain, mat, vg, fmode):
         if fmode == 2:
-            mc = mat.reshape((mat.shape[0] * mat.shape[1],) + mat.shape[2:])
-            sc = strain.reshape((strain.shape[0] * strain.shape[1],)
-                                + strain.shape[2:])
-
-            stress = nm.sum(mc * sc, axis=1)
-            out[:] = stress.reshape(strain.shape)
+            out[:] = dot_sequences(mat, strain)
             status = 0
 
         else:
