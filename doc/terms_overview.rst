@@ -90,31 +90,37 @@ The suffix ":math:`_0`" denotes a quantity related to a previous time step.
 Term names are (usually) prefixed according to the following conventions:
 
 .. list-table:: Term name prefixes.
-   :widths: 5 25 70
+   :widths: 5 20 25 50
    :header-rows: 1
 
    * - prefix
-     - 
+     - meaning
+     - evaluation modes
      - meaning
    * - dw
      - discrete weak
+     - `'weak'`
      - terms having a virtual (test) argument and zero or more unknown
        arguments, used for FE assembling
    * - d
      - discrete
+     - `'eval'`
      - terms having all arguments known, the result is the scalar value of
        the integral
    * - di
      - discrete integrated
+     - `'eval'`
      - like 'd' but the result is not a scalar (e.g. a vector)
    * - dq
      - discrete quadrature
+     - `'qp'`
      - terms having all arguments known, the result are the values in
        quadrature points of elements
-   * - de
-     - discrete element
-     - terms having all arguments known, the result is a vector of
-       integral averages over elements (element average of 'dq')
+   * - ev
+     - evaluate
+     - `'eval'`, `'el_avg'`, `'qp'`
+     - terms having all arguments known and supporting all evaluation modes
+       except `'weak'` (no virtual variables in arguments, no FE assembling)
 
 .. _term_table:
 

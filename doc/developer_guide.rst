@@ -503,22 +503,19 @@ A term can support several evaluation modes:
   `diff_var` argument (the name of variable to differentiate with
   respect to).
 
-Currently, not all terms support all the modes, one needs to look at the
+Not all terms support all the modes, one usually needs to look at the
 sources. There are, however, certain naming conventions:
 
 - `'dw_*'` terms support `'weak'` mode
-- `'dq_*'` term support `'eval'` mode
-- `'de_*'` term support `'el_avg'` mode
+- `'dq_*'` terms support `'qp'` mode
+- `'d_*'`, `'di_*'` terms support `'eval'` mode
+- `'ev_*'` terms support `'eval'`, `'el_avg'` and `'qp'` modes
 
-Actually most `'dq_*'`, `'de_*'`, `'di_*'`, `'d_'` terms support `'eval'`,
-`'el_avg'` and `'qp'` modes.
-
-Note that the naming prefixes are due to history when the `mode`
-argument to `Term.evaluate()` was not available. Now they are mostly
-redundant, but at least one has a notion what is the evaluation purpose
-of each term. They may disappear after some more term
-unification. easier_terms branch already resulted in a number of terms
-disappearing.
+Note that the naming prefixes are due to history when the `mode` argument to
+`Term.evaluate()` was not available. Now they are often redundant, but at least
+one has a notion what is the evaluation purpose of each term. They may
+disappear after some more term unification - "easier_terms" branch already
+resulted in a number of terms disappearing.
 
 Basic attributes
 ^^^^^^^^^^^^^^^^
