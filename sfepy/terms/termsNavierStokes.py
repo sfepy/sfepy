@@ -209,57 +209,39 @@ class StokesTerm(Term):
             'eval' : self.d_eval,
         }[self.mode]
 
-class GradQTerm(Term):
+class GradTerm(Term):
     r"""
     :Description:
-    Gradient term (weak form) in quadrature points.
+    Evaluate gradient of a scalar or vector field.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
     .. math::
-        (\nabla p)|_{qp}
+        \int_{\Omega} \nabla p \mbox{ or } \int_{\Omega} \nabla \ul{w}
 
-    :Arguments:
-        state : :math:`p`
-    """
-    name = 'dq_grad'
-    arg_types = ('parameter',)
-
-    @staticmethod
-    def function(out, grad):
-        out[:] = grad
-
-        return 0
-
-    def get_fargs(self, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        return (self.get(parameter, 'grad'),)
-
-    def get_eval_shape(self, parameter,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        return (n_el, n_qp, dim, 1), parameter.dtype
-
-class GradETerm(Term):
-    r"""
-    :Description:
-    Gradient term (weak form) in averaged in elements.
-
-    :Definition:
     .. math::
         \mbox{vector for } K \from \Ical_h: \int_{T_K} \nabla p /
         \int_{T_K} 1 \mbox{ or } \int_{T_K} \nabla \ul{w} /
         \int_{T_K} 1
 
+    .. math::
+        (\nabla p)|_{qp} \mbox{ or } \nabla \ul{w}|_{qp}
+
     :Arguments:
         state : :math:`p` or :math:`\ul{w}`
     """
-    name = 'de_grad'
+    name = 'ev_grad'
     arg_types = ('parameter',)
 
     @staticmethod
     def function(out, grad, vg, fmode):
-        status = vg.integrate(out, grad, fmode)
+        if fmode == 2:
+            out[:] = grad
+            status = 0
+
+        else:
+            status = vg.integrate(out, grad, fmode)
 
         return status
 
@@ -269,7 +251,7 @@ class GradETerm(Term):
 
         grad = self.get(parameter, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
         return grad, vg, fmode
 
@@ -277,59 +259,43 @@ class GradETerm(Term):
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-        return (n_el, 1, dim, 1), parameter.dtype
+        if mode != 'qp':
+            n_qp = 1
 
-class DivQTerm(Term):
+        return (n_el, n_qp, dim, n_c), parameter.dtype
+
+class DivTerm(Term):
     r"""
     :Description:
-    Divergence term (weak form) in quadrature points.
+    Evaluate divergence of a vector field.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+    .. math::
+         \int_{\Omega} \nabla \cdot \ul{u}
+
+    .. math::
+         \mbox{vector for } K \from \Ical_h:
+         \int_{T_K} \nabla \cdot \ul{u} / \int_{T_K} 1
+
     .. math::
         (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
         state : :math:`\ul{u}`
     """
-    name = 'dq_div'
-    arg_types = ('parameter',)
-
-    function = staticmethod(terms.dq_div_vector)
-
-    @staticmethod
-    def function(out, div):
-        out[:] = div
-
-        return 0
-
-    def get_fargs(self, parameter,
-                  mode=None, term_mode=None, diff_var=None, **kwargs):
-        return (self.get(parameter, 'div'),)
-
-    def get_eval_shape(self, parameter,
-                       mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
-
-        return (n_el, n_qp, 1, 1), parameter.dtype
-
-class DivETerm(Term):
-    r"""
-    :Description:
-    Evaluate divergence term.
-
-    :Definition:
-    .. math::
-         \int_{\Omega} \nabla \cdot \ul{u}
-
-    :Arguments:
-        parameter : :math:`\ul{u}`
-    """
-    name = 'de_div'
+    name = 'ev_div'
     arg_types = ('parameter',)
 
     @staticmethod
     def function(out, div, vg, fmode):
-        status = vg.integrate(out, div, fmode)
+        if fmode == 2:
+            out[:] = div
+            status = 0
+
+        else:
+            status = vg.integrate(out, div, fmode)
 
         return status
 
@@ -339,7 +305,7 @@ class DivETerm(Term):
 
         div = self.get(parameter, 'div')
 
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
         return div, vg, fmode
 
@@ -347,7 +313,10 @@ class DivETerm(Term):
                        mode=None, term_mode=None, diff_var=None, **kwargs):
         n_el, n_qp, dim, n_en, n_c = self.get_data_shape(parameter)
 
-        return (n_el, 1, 1, 1), parameter.dtype
+        if mode != 'qp':
+            n_qp = 1
+
+        return (n_el, n_qp, 1, 1), parameter.dtype
 
 class DivOperatorTerm(Term):
     r"""
