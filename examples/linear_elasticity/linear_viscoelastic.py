@@ -43,26 +43,33 @@ steps. Try changing that.
 Visualization
 -------------
 
+The output file is assumed to be 'block.h5' in the working directory. Change it
+appropriately for your situation.
+
 Deforming mesh
 ^^^^^^^^^^^^^^
 
-Try to play with the following (change the path/name to output files as
-needed)::
+Try to play with the following::
 
-    $ ./postproc.py block.*.vtk -b --only-names=u -d 'u,plot_displacements,rel_scaling=1e0,opacity=1.0,color_name="viscous_stress",color_kind="tensors"' --wireframe
+    $ ./postproc.py block.h5 -b --only-names=u -d 'u,plot_displacements,rel_scaling=1e0,opacity=1.0,color_name="viscous_stress",color_kind="tensors"' --wireframe
+
+Use::
+
+    $ ./postproc.py -l block.h5
+
+to see names and kinds of variables.
 
 Time history plots
 ^^^^^^^^^^^^^^^^^^
 
-First, change the output format to 'h5', and rerun the example.
-Then run the following (change the paths as needed)::
+Run the following::
 
     $ python examples/linear_elasticity/linear_viscoelastic.py -h
     $ python examples/linear_elasticity/linear_viscoelastic.py block.h5
 
 Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
 51. There is a visible notch on viscous stress curves in the 'th' mode, as the
-fading memory kernel is cut off before it fades close enough to zero.
+fading memory kernel is cut off before it goes close enough to zero.
 """
 import numpy as nm
 
