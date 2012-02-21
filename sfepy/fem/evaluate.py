@@ -238,7 +238,7 @@ def create_evaluable(expression, fields, materials, variables, integrals,
     return equations, variables
 
 
-def eval_equations(equations, variables, clear_caches=True,
+def eval_equations(equations, variables, preserve_caches=False,
                    mode='eval', dw_mode='vector', term_mode=None):
     """
     Evaluate the equations.
@@ -249,8 +249,8 @@ def eval_equations(equations, variables, clear_caches=True,
         The equations returned by :func:`create_evaluable()`.
     variables : Variables instance
         The variables returned by :func:`create_evaluable()`.
-    clear_caches : bool
-        If True, clear term caches.
+    preserve_caches : bool
+        If True, do not invalidate evaluate caches of variables.
     mode : one of 'eval', 'el_avg', 'qp', 'weak'
         The evaluation mode - 'weak' means the finite element
         assembling, 'qp' requests the values in quadrature points,
@@ -277,7 +277,7 @@ def eval_equations(equations, variables, clear_caches=True,
         else:
             asm_obj = equations.create_matrix_graph()
 
-    if clear_caches:
+    if not preserve_caches:
         equations.invalidate_term_caches()
 
     out = equations.evaluate(mode=mode, dw_mode=dw_mode, term_mode=term_mode,

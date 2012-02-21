@@ -977,7 +977,8 @@ class ProblemDefinition( Struct ):
         return state
 
     def create_evaluable(self, expression, try_equations=True, auto_init=False,
-                         copy_materials=True, integrals=None,
+                         preserve_caches=False, copy_materials=True,
+                         integrals=None,
                          ebcs=None, epbcs=None, lcbcs=None,
                          ts=None, functions=None,
                          mode='eval', var_dict=None, extra_args=None,
@@ -1004,6 +1005,8 @@ class ProblemDefinition( Struct ):
             expression.
         auto_init : bool
             Set values of all variables to all zeros.
+        preserve_caches : bool
+            If True, do not invalidate evaluate caches of variables.
         copy_materials : bool
             Work with a copy of `self.equations.materials` instead of
             reusing them. Safe but can be slow.
@@ -1077,7 +1080,8 @@ class ProblemDefinition( Struct ):
             variables = {}
             for key, var in self.equations.variables.as_dict().iteritems():
                 var = var.copy(name=key)
-                var.clear_evaluate_cache()
+                if not preserve_caches:
+                    var.clear_evaluate_cache()
                 variables[key] = var
 
         else:
@@ -1143,7 +1147,7 @@ class ProblemDefinition( Struct ):
         return out
 
     def evaluate(self, expression, try_equations=True, auto_init=False,
-                 copy_materials=True, integrals=None,
+                 preserve_caches=False, copy_materials=True, integrals=None,
                  ebcs=None, epbcs=None, lcbcs=None,
                  ts=None, functions=None,
                  mode='eval', dw_mode='vector', term_mode=None,
@@ -1179,6 +1183,7 @@ class ProblemDefinition( Struct ):
         aux = self.create_evaluable(expression,
                                     try_equations=try_equations,
                                     auto_init=auto_init,
+                                    preserve_caches=preserve_caches,
                                     copy_materials=copy_materials,
                                     integrals=integrals,
                                     ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs,
@@ -1189,6 +1194,7 @@ class ProblemDefinition( Struct ):
         equations, variables = aux
 
         out = eval_equations(equations, variables,
+                             preserve_caches=preserve_caches,
                              mode=mode, dw_mode=dw_mode, term_mode=term_mode)
 
         if ret_variables:
