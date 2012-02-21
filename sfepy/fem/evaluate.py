@@ -295,37 +295,6 @@ def eval_equations(equations, variables, clear_caches=True,
 
     return out
 
-def evaluate(expression, fields, materials, variables, integrals,
-             update_materials=True,
-             ebcs=None, epbcs=None, lcbcs=None, ts=None, functions=None,
-             auto_init=False, mode='eval', dw_mode='vector', term_mode=None,
-             ret_variables=False, extra_args=None, verbose=True, kwargs=None):
-    """
-    Convenience function calling :func:`create_evaluable()` and
-    :func:`eval_equations()`.
-
-    Parameters
-    ----------
-    ... : arguments
-        See docstrings of :func:`create_evaluable()` and
-        :func:`eval_equations()`.
-    """
-    aux = create_evaluable(expression, fields, materials, variables, integrals,
-                           update_materials=update_materials,
-                           ebcs=ebcs, epbcs=epbcs, lcbcs=lcbcs, ts=ts,
-                           functions=functions, auto_init=auto_init,
-                           mode=mode, extra_args=extra_args,
-                           verbose=verbose, kwargs=kwargs)
-    equations, variables = aux
-
-    out = eval_equations(equations, variables,
-                         mode=mode, dw_mode=dw_mode, term_mode=term_mode)
-
-    if ret_variables:
-        out = (out, variables)
-
-    return out
-
 def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
                        dw_mode='matrix'):
     """Instead of a global matrix, return its building blocks as defined in
