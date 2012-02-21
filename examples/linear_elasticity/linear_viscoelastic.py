@@ -2,8 +2,9 @@ r"""
 Linear viscoelasticity with pressure traction load on surface
 :math:`\Gamma_{right}` and constrained to one-dimensional motion.
 
-The fading memory terms require an unloaded initial configuration, so
-the load starts in the second time step.
+The fading memory terms require an unloaded initial configuration, so the load
+starts in the second time step. The load is then held for the first half of the
+total time interval, and released afterwards.
 
 This example uses exponential fading memory kernel
 :math:`\Hcal_{ijkl}(t) = \Hcal_{ijkl}(0) e^{-d t}` with decay
@@ -32,6 +33,36 @@ where
 :math:`\Hcal_{ijkl}(0)` has the same structure as :math:`D_{ijkl}` and
 :math:`\ull{\sigma} \cdot \ul{n} = \bar{p} \ull{I} \cdot \ul{n}` with
 given traction pressure :math:`\bar{p}`.
+
+Notes
+-----
+
+Because this example is run also as a test, it uses by default very few time
+steps. Try changing that.
+
+Visualization
+-------------
+
+Deforming mesh
+^^^^^^^^^^^^^^
+
+Try to play with the following (change the path/name to output files as
+needed)::
+
+    $ ./postproc.py block.*.vtk -b --only-names=u -d 'u,plot_displacements,rel_scaling=1e0,opacity=1.0,color_name="viscous_stress",color_kind="tensors"' --wireframe
+
+Time history plots
+^^^^^^^^^^^^^^^^^^
+
+First, change the output format to 'h5', and rerun the example.
+Then run the following (change the paths as needed)::
+
+    $ python examples/linear_elasticity/linear_viscoelastic.py -h
+    $ python examples/linear_elasticity/linear_viscoelastic.py block.h5
+
+Try comparing 'th' and 'eth' versions, e.g., for n_step = 201, and f_n_step =
+51. There is a visible notch on viscous stress curves in the 'th' mode, as the
+fading memory kernel is cut off before it fades close enough to zero.
 """
 import numpy as nm
 
@@ -40,10 +71,13 @@ from sfepy.mechanics.matcoefs import stiffness_tensor_lame
 from sfepy.homogenization.utils import interp_conv_mat
 from sfepy import data_dir
 
-def linear_tension(ts, coors, mode=None, **kwargs):
+def linear_tension(ts, coors, mode=None, verbose=True, **kwargs):
     if mode == 'qp':
-        val = 1.0 * (ts.step > 0)
-        output('load:', val)
+        val = 1.0 * ((ts.step > 0) and (ts.nt <= 0.5))
+
+        if verbose:
+            output('load:', val)
+
         val = nm.tile(val, (coors.shape[0], 1, 1))
 
         return {'val' : val}
@@ -69,6 +103,8 @@ def get_th_pars(ts, coors, mode=None, times=None, kernel=None, **kwargs):
 
 filename_mesh = data_dir + '/meshes/3d/block.mesh'
 
+## Configure below. ##
+
 # Time stepping times.
 t0 = 0.0
 t1 = 20.0
@@ -76,25 +112,64 @@ n_step = 21
 
 # Fading memory times.
 f_t0 = 0.0
-f_t1 = 10.0
-f_n_step = 11
+f_t1 = 5.0
+f_n_step = 6
 
-decay = 0.5
+decay = 0.8
 mode = 'eth'
+
+## Configure above. ##
 
 times = nm.linspace(f_t0, f_t1, f_n_step)
 kernel = get_exp_fading_kernel(stiffness_tensor_lame(3, lam=1.0, mu=1.0),
                                decay, times)
 
 dt = (t1 - t0) / (n_step - 1)
-fading_memory_length = min(int((f_t1 - f_t0) / dt), n_step)
-
+fading_memory_length = min(int((f_t1 - f_t0) / dt) + 1, n_step)
 output('fading memory length:', fading_memory_length)
+
+def post_process(out, pb, state, extend=False):
+    """
+    Calculate and output strain and stress for given displacements.
+    """
+    from sfepy.base.base import Struct
+
+    ev = pb.evaluate
+    strain = ev('ev_cauchy_strain.2.Omega(u)', mode='el_avg')
+    out['cauchy_strain'] = Struct(name='output_data', mode='cell',
+                                  data=strain, dofs=None)
+
+    estress = ev('ev_cauchy_stress.2.Omega(solid.D, u)', mode='el_avg')
+    out['cauchy_stress'] = Struct(name='output_data', mode='cell',
+                                  data=estress, dofs=None)
+
+    ts = pb.get_timestepper()
+    if mode == 'th':
+        vstress = ev('ev_cauchy_stress_th.2.Omega(ts, th.H, du/dt)',
+                     ts=ts, mode='el_avg')
+        out['viscous_stress'] = Struct(name='output_data', mode='cell',
+                                       data=vstress, dofs=None)
+
+    else:
+        # The eth terms require 'preserve_caches=True' in order to have correct
+        # fading memory history.
+        vstress = ev('ev_cauchy_stress_eth.2.Omega(ts, th.H0, th.Hd, du/dt)',
+                     ts=ts, mode='el_avg', preserve_caches=True)
+        out['viscous_stress'] = Struct(name='output_data', mode='cell',
+                                       data=vstress, dofs=None)
+
+    out['total_stress'] = Struct(name='output_data', mode='cell',
+                                 data=estress + vstress, dofs=None)
+
+    return out
 
 options = {
     'ts' : 'ts',
     'nls' : 'newton',
     'ls' : 'ls',
+
+    'output_format'     : 'h5',
+    'post_process_hook' : 'post_process',
 }
 
 functions = {
@@ -110,8 +185,7 @@ fields = {
 
 materials = {
     'solid' : ({
-        'lam' : 5.769,
-        'mu' : 3.846,
+        'D' : stiffness_tensor_lame(3, lam=5.769, mu=3.846),
     },),
     'th' : 'get_pars',
     'load' : 'linear_tension',
@@ -137,7 +211,7 @@ if mode == 'th':
     # General form with tabulated kernel.
     equations = {
         'elasticity' :
-        """dw_lin_elastic_iso.2.Omega( solid.lam, solid.mu, v, u )
+        """dw_lin_elastic.2.Omega( solid.D, v, u )
          + dw_lin_elastic_th.2.Omega( ts, th.H, v, du/dt )
          = - dw_surface_ltr.2.Right( load.val, v )""",
     }
@@ -146,7 +220,7 @@ else:
     # Fast form that is exact for exponential kernels.
     equations = {
         'elasticity' :
-        """dw_lin_elastic_iso.2.Omega( solid.lam, solid.mu, v, u )
+        """dw_lin_elastic.2.Omega( solid.D, v, u )
          + dw_lin_elastic_eth.2.Omega( ts, th.H0, th.Hd, v, du/dt )
          = - dw_surface_ltr.2.Right( load.val, v )""",
     }
@@ -165,3 +239,85 @@ solvers = {
         'quasistatic' : True,
     }),
 }
+
+def main():
+    """
+    Plot the load, displacement, strain and stresses w.r.t. time.
+    """
+    from optparse import OptionParser
+    import matplotlib.pyplot as plt
+
+    import sfepy.postprocess.time_history as th
+
+    usage = """%prog <output file in HDF5 format>"""
+
+    msgs = {'node' : 'plot displacements in given node [default: %default]',
+            'element' : 'plot tensors in given element [default: %default]',}
+
+    parser = OptionParser(usage=usage)
+    parser.add_option('-n', '--node', type=int, metavar='ii',
+                      action='store', dest='node',
+                      default=512, help=msgs['node'])
+    parser.add_option('-e', '--element', type=int, metavar='ii',
+                      action='store', dest='element',
+                      default=299, help=msgs['element'])
+    options, args = parser.parse_args()
+
+    if len(args) == 1:
+        filename = args[0]
+
+    else:
+        parser.print_help()
+        return
+
+    tensor_names = ['cauchy_strain',
+                    'cauchy_stress', 'viscous_stress', 'total_stress']
+    extract = ('u n %d, ' % options.node) \
+              + ', '.join('%s e %d' % (name, options.element)
+                          for name in tensor_names)
+    ths, ts = th.extract_time_history(filename, extract)
+
+    load = [linear_tension(ts, nm.array([0]),
+                           mode='qp', verbose=False)['val'].squeeze()
+            for ii in ts]
+    load = nm.array(load)
+
+    normalized_kernel = kernel[:, 0, 0] / kernel[0, 0, 0]
+
+    plt.figure(1, figsize=(8, 10))
+    plt.subplots_adjust(hspace=0.3,
+                        top=0.95, bottom=0.05, left=0.07, right=0.95)
+
+    plt.subplot(311)
+    plt.plot(times, normalized_kernel, lw=3)
+    plt.title('fading memory decay')
+    plt.xlabel('time')
+
+    plt.subplot(312)
+    plt.plot(ts.times, load, lw=3)
+    plt.title('load')
+    plt.xlabel('time')
+
+    displacements = ths['u'][options.node]
+
+    plt.subplot(313)
+    plt.plot(ts.times, displacements, lw=3)
+    plt.title('displacement components, node %d' % options.node)
+    plt.xlabel('time')
+
+    plt.figure(2, figsize=(8, 10))
+    plt.subplots_adjust(hspace=0.35,
+                        top=0.95, bottom=0.05, left=0.07, right=0.95)
+
+    for ii, tensor_name in enumerate(tensor_names):
+        tensor = ths[tensor_name][options.element]
+
+        plt.subplot(411 + ii)
+        plt.plot(ts.times, tensor, lw=3)
+        plt.title('%s components, element %d' % (tensor_name, options.element))
+        plt.xlabel('time')
+
+    plt.show()
+
+if __name__ == '__main__':
+    main()
