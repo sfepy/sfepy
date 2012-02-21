@@ -462,3 +462,112 @@ class CauchyStressTerm(Term):
             n_qp = 1
 
         return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
+
+class CauchyStressTHTerm(CauchyStressTerm, THTerm):
+    r"""
+    :Description:
+    Evaluate fading memory Cauchy stress tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
+        \difd{\tau}
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
+        \difd{\tau} / \int_{T_K} 1
+
+    .. math::
+        \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
+
+    :Arguments:
+        ts        : :class:`TimeStepper` instance,
+        material  : :math:`\Hcal_{ijkl}(\tau)`,
+        parameter : :math:`\ul{w}`
+    """
+    name = 'ev_cauchy_stress_th'
+    arg_types = ('ts', 'material', 'parameter')
+
+    def get_fargs(self, ts, mats, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+        def iter_kernel():
+            for ii, mat in enumerate(mats):
+                strain = self.get(state, 'cauchy_strain',
+                                  step=-ii)
+                mat = nm.tile(mat, (n_el, n_qp, 1, 1))
+                yield ii, (ts.dt, strain, mat, vg, fmode)
+
+        return iter_kernel
+
+    def get_eval_shape(self, ts, mats, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        out = CauchyStressTerm.get_eval_shape(self, mats, parameter, mode,
+                                              term_mode, diff_var, **kwargs)
+        return out
+
+class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
+    r"""
+    :Description:
+    Evaluate fading memory Cauchy stress tensor.
+
+    It is given in the usual vector form exploiting symmetry: in 3D it has 6
+    components with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in
+    2D it has 3 components with the indices ordered as :math:`[11, 22, 12]`.
+
+    Assumes an exponential approximation of the convolution kernel resulting in
+    much higher efficiency.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+    .. math::
+        \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
+        \difd{\tau}
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h:
+        \int_{T_K} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
+        \difd{\tau} / \int_{T_K} 1
+
+    .. math::
+        \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
+
+    :Arguments:
+        ts         : :class:`TimeStepper` instance,
+        material_0 : :math:`\Hcal_{ijkl}(0)`,
+        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
+        parameter  : :math:`\ul{w}`
+    """
+    name = 'ev_cauchy_stress_eth'
+    arg_types = ('ts', 'material_0', 'material_1', 'parameter')
+
+    def get_fargs(self, ts, mat0, mat1, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _, key = self.get_mapping(state, return_key=True)
+
+        strain = self.get(state, 'cauchy_strain')
+
+        key += tuple(self.arg_names[1:])
+        data = self.get_eth_data(key, state, mat1, strain)
+
+        fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+
+        return ts.dt, data.history + data.values, mat0, vg, fmode
+
+    def get_eval_shape(self, ts, mat0, mat1, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        out = CauchyStressTerm.get_eval_shape(self, mat0, parameter, mode,
+                                              term_mode, diff_var, **kwargs)
+        return out
