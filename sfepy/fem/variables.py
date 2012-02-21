@@ -867,7 +867,8 @@ class Variable( Struct ):
         Initialize the dof vector data of time step `step` to zeros.
         """
         if self.is_state_or_parameter():
-            self.data[step] = nm.zeros((self.n_dof,), dtype=self.dtype)
+            data = nm.zeros((self.n_dof,), dtype=self.dtype)
+            self.data_from_any(data, step=step)
 
     def set_constant(self, val):
         """
