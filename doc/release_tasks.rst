@@ -44,6 +44,10 @@ Things to check before a release
    then remove the installed files so that they do not interfere with
    the local build
 
+#. regenerate gallery page::
+
+    $ script/gen_gallery.py -l ../doc-devel
+
 #. create final tarball
 
    * update doc/release_notes.rst
