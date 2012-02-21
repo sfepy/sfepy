@@ -431,13 +431,16 @@ class CauchyStressTerm(Term):
     arg_types = ('material', 'parameter')
 
     @staticmethod
-    def function(out, strain, mat, vg, fmode):
+    def function(out, coef, strain, mat, vg, fmode):
         if fmode == 2:
             out[:] = dot_sequences(mat, strain)
             status = 0
 
         else:
             status = terms.de_cauchy_stress(out, strain, mat, vg, fmode)
+
+        if coef is not None:
+            out *= coef
 
         return status
 
@@ -449,7 +452,7 @@ class CauchyStressTerm(Term):
 
         fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
 
-        return strain, mat, vg, fmode
+        return None, strain, mat, vg, fmode
 
     def get_eval_shape(self, mat, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
