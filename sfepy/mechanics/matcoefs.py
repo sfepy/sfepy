@@ -112,10 +112,10 @@ def bulk_modulus_lame( lam, mu ):
     Bulk modulus - using Lame coefficients
 
     .. math::
-        \gamma = {1\over 3}(\lambda + 2\mu)
+        \gamma = \lambda + {2 \over 3} \mu
     """
+    return lam + 2.0 * mu / 3.0
 
-    return 1.0/3.0 * (2*mu + lam)
 
 ##
 # c: 10.08.2009
