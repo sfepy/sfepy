@@ -206,8 +206,8 @@ follows::
 
     materials = {
         'Asphalt' : ({
-            'lam' : youngpoisson_to_lame(young, poisson)[0],
-            'mu' : youngpoisson_to_lame(young, poisson)[1],
+            'lam' : lame_from_youngpoisson(young, poisson)[0],
+            'mu' : lame_from_youngpoisson(young, poisson)[1],
         },),
         'Load' : ({'.val' : [0.0, -1000.0]},),
     }
@@ -219,13 +219,13 @@ term in the topmost node (region Top).
 
 We provided the material constants in terms of Young's modulus and
 Poisson's ratio, but the linear elastic isotropic equation used requires
-as input Lamé's parameters. The youngpoisson_to_lame function is thus
+as input Lamé's parameters. The lame_from_youngpoisson() function is thus
 used for conversion. Note that to use this function it was necessary to
 import the function into the code, which was done up front:
 
 ::
 
-    from sfepy.mechanics.matcoefs import youngpoisson_to_lame
+    from sfepy.mechanics.matcoefs import lame_from_youngpoisson
 
 **Hint:** Check out the :doc:`sfepy.mechanics.matcoefs
 <src/sfepy/mechanics/matcoefs>` module for other useful material related

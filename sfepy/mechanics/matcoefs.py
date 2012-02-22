@@ -8,7 +8,7 @@ import numpy as nm
 
 from sfepy.base.base import Struct
 
-def youngpoisson_to_lame(young, poisson, plane='strain'):
+def lame_from_youngpoisson(young, poisson, plane='strain'):
     r"""
     Compute Lamé parameters from Young's modulus and Poisson's ratio.
 
@@ -36,7 +36,7 @@ def youngpoisson_to_lame(young, poisson, plane='strain'):
 
     return lam, mu
 
-def stiffness_tensor_lame(dim, lam, mu):
+def stiffness_from_lame(dim, lam, mu):
     r"""
     Compute stiffness tensor corresponding to Lamé parameters.
 
@@ -60,16 +60,16 @@ def stiffness_tensor_lame(dim, lam, mu):
 
     return (lam * oot + mu * do1).squeeze()
 
-def stiffness_tensor_youngpoisson(dim, young, poisson, plane='strain'):
+def stiffness_from_youngpoisson(dim, young, poisson, plane='strain'):
     """
     Compute stiffness tensor corresponding to Young's modulus and Poisson's
     ratio.
     """
-    lam, mu = youngpoisson_to_lame(young, poisson, plane)
+    lam, mu = lame_from_youngpoisson(young, poisson, plane)
 
-    return stiffness_tensor_lame(dim, lam, mu)
+    return stiffness_from_lame(dim, lam, mu)
 
-def stiffness_tensor_lame_mixed(dim, lam, mu):
+def stiffness_from_lame_mixed(dim, lam, mu):
     r"""
     Compute stiffness tensor corresponding to Lamé parameters for mixed
     formulation.
@@ -102,16 +102,16 @@ def stiffness_tensor_lame_mixed(dim, lam, mu):
 
     return (2.0/3.0*(lam-mu) * oot + mu * do1).squeeze()
 
-def stiffness_tensor_youngpoisson_mixed(dim, young, poisson, plane='strain'):
+def stiffness_from_youngpoisson_mixed(dim, young, poisson, plane='strain'):
     """
     Compute stiffness tensor corresponding to Young's modulus and Poisson's
     ratio for mixed formulation.
     """
-    lam, mu = youngpoisson_to_lame(young, poisson, plane)
+    lam, mu = lame_from_youngpoisson(young, poisson, plane)
 
-    return stiffness_tensor_lame_mixed(dim, lam, mu)
+    return stiffness_from_lame_mixed(dim, lam, mu)
 
-def bulk_modulus_lame(lam, mu):
+def bulk_from_lame(lam, mu):
     r"""
     Compute bulk modulus from Lamé parameters.
 
@@ -120,13 +120,13 @@ def bulk_modulus_lame(lam, mu):
     """
     return lam + 2.0 * mu / 3.0
 
-def bulk_modulus_youngpoisson(young, poisson, plane='strain'):
+def bulk_from_youngpoisson(young, poisson, plane='strain'):
     """
     Compute bulk modulus corresponding to Young's modulus and Poisson's ratio.
     """
-    lam, mu = youngpoisson_to_lame(young, poisson, plane)
+    lam, mu = lame_from_youngpoisson(young, poisson, plane)
 
-    return bulk_modulus_lame(lam, mu)
+    return bulk_from_lame(lam, mu)
 
 elastic_constants_relations = {
 }

@@ -26,7 +26,7 @@ and :math:`\alpha` is the thermal expansion coefficient.
 import numpy as np
 
 from sfepy.base.base import Struct
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy.mechanics.tensors import get_von_mises_stress
 from sfepy import data_dir
 
@@ -118,7 +118,7 @@ ebcs = {
 eye_sym = np.array([[1], [1], [1], [0], [0], [0]], dtype=np.float64)
 materials = {
     'solid' : ({
-        'D' : stiffness_tensor_lame(3, lam=lam, mu=mu),
+        'D' : stiffness_from_lame(3, lam=lam, mu=mu),
         'alpha' : (3.0 * lam + 2.0 * mu) * thermal_expandability * eye_sym
     },),
 }

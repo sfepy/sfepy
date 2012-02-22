@@ -62,26 +62,26 @@ class Test(TestCommon):
         young = nm.array([young] * 3)
         poisson = nm.array([poisson] * 3)
 
-        _lam, _mu = mc.youngpoisson_to_lame(young, poisson)
+        _lam, _mu = mc.lame_from_youngpoisson(young, poisson)
         _ok = (nm.allclose(lam, _lam, rtol=0.0, atol=1e-14) and
                nm.allclose(mu, _mu, rtol=0.0, atol=1e-14))
-        self.report('youngpoisson_to_lame():', _ok)
+        self.report('lame_from_youngpoisson():', _ok)
         if not _ok:
             self.report('correct:', lam, mu)
             self.report('    got:', _lam, _mu)
         ok = ok and _ok
 
-        _bulk = mc.bulk_modulus_youngpoisson(young, poisson)
+        _bulk = mc.bulk_from_youngpoisson(young, poisson)
         _ok = nm.allclose(bulk, _bulk, rtol=0.0, atol=1e-14)
-        self.report('bulk_modulus_youngpoisson():', _ok)
+        self.report('bulk_from_youngpoisson():', _ok)
         if not _ok:
             self.report('correct:', bulk)
             self.report('    got:', _bulk)
         ok = ok and _ok
 
-        _bulk = mc.bulk_modulus_lame(lam, mu)
+        _bulk = mc.bulk_from_lame(lam, mu)
         _ok = nm.allclose(bulk, _bulk, rtol=0.0, atol=1e-14)
-        self.report('bulk_modulus_lame():', _ok)
+        self.report('bulk_from_lame():', _ok)
         if not _ok:
             self.report('correct:', bulk)
             self.report('    got:', _bulk)
@@ -110,14 +110,14 @@ class Test(TestCommon):
                       [ 0.,  0.,  0.,  0.,  4.,  0.],
                       [ 0.,  0.,  0.,  0.,  0.,  4.]])
 
-        _ds = mc.stiffness_tensor_lame(3, lam, mu)
+        _ds = mc.stiffness_from_lame(3, lam, mu)
         assert_(_ds.shape == (3, 6, 6))
 
         _ok = True
         for _d in _ds:
             __ok = nm.allclose(_d, d, rtol=0.0, atol=1e-14)
             _ok = _ok and __ok
-        self.report('stiffness_tensor_lame():', _ok)
+        self.report('stiffness_from_lame():', _ok)
         ok = ok and _ok
 
         d = nm.array([[ 6., -2., -2.,  0.,  0.,  0.],
@@ -127,7 +127,7 @@ class Test(TestCommon):
                       [ 0.,  0.,  0.,  0.,  4.,  0.],
                       [ 0.,  0.,  0.,  0.,  0.,  4.]])
 
-        _ds = mc.stiffness_tensor_lame_mixed(3, lam, mu)
+        _ds = mc.stiffness_from_lame_mixed(3, lam, mu)
         assert_(_ds.shape == (3, 6, 6))
 
         _ok = True

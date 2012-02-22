@@ -18,7 +18,7 @@ where
 """
 from its2D_1 import *
 
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 
 def stress_strain(out, pb, state, extend=False):
     """
@@ -106,7 +106,7 @@ def probe_hook(data, probe, label, problem):
 
     return plt.gcf(), results
 
-materials['Asphalt'][0].update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
+materials['Asphalt'][0].update({'D' : stiffness_from_youngpoisson(2, young, poisson)})
 
 # Update fields and variables to be able to use probes for tensors.
 fields.update({

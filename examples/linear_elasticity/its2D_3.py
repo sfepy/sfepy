@@ -18,7 +18,7 @@ where
 """
 from its2D_1 import *
 
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.fem.geometry_element import geometry_data
 from sfepy.fem import Field,FieldVariable
 import numpy as nm
@@ -58,7 +58,7 @@ def nodal_stress(out, pb, state, extend=False):
     return out
 
 asphalt = materials['Asphalt'][0]
-asphalt.update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
+asphalt.update({'D' : stiffness_from_youngpoisson(2, young, poisson)})
 options.update({'post_process_hook' : 'nodal_stress',})
 
 integrals = {

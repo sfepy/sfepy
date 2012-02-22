@@ -50,12 +50,12 @@ options = {
 
 # Update materials, as ev_cauchy_stress below needs the elastic constants in
 # the tensor form.
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 solid = materials['solid'][0]
 lam, mu = solid['lam'], solid['mu']
 solid.update({
-    'D' : stiffness_tensor_lame(3, lam=lam, mu=mu),
+    'D' : stiffness_from_lame(3, lam=lam, mu=mu),
 })
 
 # Update fields and variables to be able to use probes for tensors.

@@ -26,7 +26,7 @@ import os
 import numpy as nm
 
 from sfepy.linalg import get_coors_in_tube
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 def define():
     from sfepy import data_dir
@@ -78,7 +78,7 @@ def get_pars(ts, coor, mode, output_dir='.', **kwargs):
         sym = (dim + 1) * dim / 2
 
         out = {}
-        out['D'] = nm.tile(stiffness_tensor_lame(dim, lam=1.7, mu=0.3),
+        out['D'] = nm.tile(stiffness_from_lame(dim, lam=1.7, mu=0.3),
                            (coor.shape[0], 1, 1))
 
         aa = nm.zeros((sym, 1), dtype=nm.float64)

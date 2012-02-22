@@ -19,7 +19,7 @@ where
 
 from its2D_1 import *
 
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 
 def stress_strain(out, pb, state, extend=False):
     """
@@ -39,5 +39,5 @@ def stress_strain(out, pb, state, extend=False):
     return out
 
 asphalt = materials['Asphalt'][0]
-asphalt.update({'D' : stiffness_tensor_youngpoisson(2, young, poisson)})
+asphalt.update({'D' : stiffness_from_youngpoisson(2, young, poisson)})
 options.update({'post_process_hook' : 'stress_strain',})

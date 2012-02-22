@@ -7,7 +7,7 @@
 #! Homogenization of heterogeneous linear elastic material
 
 import sfepy.fem.periodic as per
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
 from sfepy.homogenization.utils import define_box_regions
 import sfepy.homogenization.coefs_base as cb
 from sfepy import data_dir
@@ -58,8 +58,8 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials
 #! ---------
 materials = {
-    'matrix' : ({'D' : stiffness_tensor_youngpoisson( dim, 0.7e9, 0.4 ) },),
-    'reinf' : ({'D' : stiffness_tensor_youngpoisson( dim, 70.0e9, 0.2 ) },),
+    'matrix' : ({'D' : stiffness_from_youngpoisson(dim, 0.7e9, 0.4)},),
+    'reinf' : ({'D' : stiffness_from_youngpoisson(dim, 70.0e9, 0.2)},),
 }
 #! Fields
 #! ------

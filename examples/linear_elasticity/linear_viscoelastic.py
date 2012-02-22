@@ -74,7 +74,7 @@ fading memory kernel is cut off before it goes close enough to zero.
 import numpy as nm
 
 from sfepy.base.base import output
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 from sfepy.homogenization.utils import interp_conv_mat
 from sfepy import data_dir
 
@@ -128,7 +128,7 @@ mode = 'eth'
 ## Configure above. ##
 
 times = nm.linspace(f_t0, f_t1, f_n_step)
-kernel = get_exp_fading_kernel(stiffness_tensor_lame(3, lam=1.0, mu=1.0),
+kernel = get_exp_fading_kernel(stiffness_from_lame(3, lam=1.0, mu=1.0),
                                decay, times)
 
 dt = (t1 - t0) / (n_step - 1)
@@ -192,7 +192,7 @@ fields = {
 
 materials = {
     'solid' : ({
-        'D' : stiffness_tensor_lame(3, lam=5.769, mu=3.846),
+        'D' : stiffness_from_lame(3, lam=5.769, mu=3.846),
     },),
     'th' : 'get_pars',
     'load' : 'linear_tension',

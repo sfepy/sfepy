@@ -102,10 +102,10 @@ regions = {
 }
 
 def get_pars( lam, mu, dim, full = False ):
-    from sfepy.mechanics.matcoefs import stiffness_tensor_lame, TransformToPlane
+    from sfepy.mechanics.matcoefs import stiffness_from_lame, TransformToPlane
     
     if full:
-        c = stiffness_tensor_lame( 3, lam, mu )
+        c = stiffness_from_lame(3, lam, mu)
         if dim == 2:
             tr = TransformToPlane()
             try:

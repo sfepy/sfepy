@@ -22,7 +22,7 @@ import os
 
 from sfepy import data_dir
 from sfepy.fem import MeshIO
-from sfepy.mechanics.matcoefs import stiffness_tensor_lame
+from sfepy.mechanics.matcoefs import stiffness_from_lame
 
 filename_mesh = data_dir + '/meshes/3d/cylinder.mesh'
 #filename_mesh = data_dir + '/meshes/3d/cube_medium_hexa.mesh'
@@ -64,7 +64,7 @@ options = {
 }
 
 materials = {
-    'm' : ({'D' : stiffness_tensor_lame(3, lam=0.0007, mu=0.0003),
+    'm' : ({'D' : stiffness_from_lame(3, lam=0.0007, mu=0.0003),
             'one' : 1.0},),
 }
 

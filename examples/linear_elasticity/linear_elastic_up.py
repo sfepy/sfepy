@@ -27,7 +27,7 @@ Find :math:`\ul{u}`, :math:`p` such that:
 #! simple_out.vtk. The material is linear elastic.
 from sfepy import data_dir
 
-from sfepy.mechanics.matcoefs import stiffness_tensor_youngpoisson_mixed, bulk_modulus_youngpoisson
+from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson_mixed, bulk_from_youngpoisson
 
 #! Mesh
 #! ----
@@ -49,8 +49,8 @@ regions = {
 #! ---------
 #! The linear elastic material model is used.
 materials = {
-    'solid' : ({'D' : stiffness_tensor_youngpoisson_mixed( dim, 0.7e9, 0.4 ),
-                'gamma' : 1.0/bulk_modulus_youngpoisson( 0.7e9, 0.4 )},),
+    'solid' : ({'D' : stiffness_from_youngpoisson_mixed(dim, 0.7e9, 0.4),
+                'gamma' : 1.0/bulk_from_youngpoisson(0.7e9, 0.4)},),
 }
 #! Fields
 #! ------

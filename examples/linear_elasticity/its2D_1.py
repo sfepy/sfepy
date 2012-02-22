@@ -15,7 +15,7 @@ where
     \lambda \ \delta_{ij} \delta_{kl}
     \;.
 """
-from sfepy.mechanics.matcoefs import youngpoisson_to_lame
+from sfepy.mechanics.matcoefs import lame_from_youngpoisson
 from sfepy.fem.utils import refine_mesh
 from sfepy import data_dir
 
@@ -43,8 +43,8 @@ regions = {
 
 materials = {
     'Asphalt' : ({
-        'lam' : youngpoisson_to_lame(young, poisson)[0],
-        'mu' : youngpoisson_to_lame(young, poisson)[1],
+        'lam' : lame_from_youngpoisson(young, poisson)[0],
+        'mu' : lame_from_youngpoisson(young, poisson)[1],
     },),
     'Load' : ({'.val' : [0.0, -1000.0]},),
 }
