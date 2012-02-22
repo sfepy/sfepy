@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
+"""
+Conversion of material parameters and other utilities.
+"""
 import os
 
 import numpy as nm
 
 from sfepy.base.base import Struct
 
-##
-# c: 22.07.2008
-def youngpoisson_to_lame( young, poisson, plane = 'strain' ):
+def youngpoisson_to_lame(young, poisson, plane='strain'):
     r"""
-    The relationship between Lame parameters and Young's modulus, Poisson's
+    Compute Lamé parameters from Young's modulus and Poisson's ratio.
+
+    The relationship between Lamé parameters and Young's modulus, Poisson's
     ratio (see [1],[2]):
 
     .. math::
@@ -20,13 +23,11 @@ def youngpoisson_to_lame( young, poisson, plane = 'strain' ):
     .. math::
        \bar\lambda = {2\lambda\mu \over \lambda + 2\mu}
 
-
     [1] I.S. Sokolnikoff: Mathematical Theory of Elasticity. New York, 1956.
 
     [2] T.J.R. Hughes: The Finite Element Method, Linear Static and Dynamic
     Finite Element Analysis. New Jersey, 1987.
     """
-
     mu = young/(2.0*(1.0 + poisson))
     lam = young*poisson/((1.0 + poisson)*(1.0 - 2.0*poisson))
 
@@ -35,11 +36,9 @@ def youngpoisson_to_lame( young, poisson, plane = 'strain' ):
 
     return lam, mu
 
-##
-# c: 22.07.2008
-def stiffness_tensor_lame( dim, lam, mu ):
+def stiffness_tensor_lame(dim, lam, mu):
     r"""
-    Stiffness tensor - using Lame coefficients
+    Compute stiffness tensor corresponding to Lamé parameters.
 
     .. math::
         {\bm D}_{(2D)} = \begin{bmatrix} \lambda + 2\mu & \lambda & 0\\
@@ -51,26 +50,29 @@ def stiffness_tensor_lame( dim, lam, mu ):
         \lambda & \lambda & \lambda + 2\mu & 0 & 0 & 0 \\ 0 & 0 & 0 & \mu & 0 &
         0 \\ 0 & 0 & 0 & 0 & \mu & 0 \\ 0 & 0 & 0 & 0 & 0 & \mu\\ \end{bmatrix}
     """
-
     sym = (dim + 1) * dim / 2
-    o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
-    oot = nm.outer( o, o )
+    o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
+    oot = nm.outer(o, o)[None, ...]
+    do1 = nm.diag(o + 1.0)[None, ...]
 
-    return lam * oot + mu * nm.diag( o + 1.0 )
-    
-##
-# c: 22.07.2008
-def stiffness_tensor_youngpoisson( dim, young, poisson, plane = 'strain' ):
+    lam = nm.array(lam, ndmin=1)[:, None, None]
+    mu = nm.array(mu, ndmin=1)[:, None, None]
 
-    lam, mu = youngpoisson_to_lame( young, poisson, plane )
+    return (lam * oot + mu * do1).squeeze()
 
-    return stiffness_tensor_lame( dim, lam, mu )
- 
-##
-# c: 10.08.2009
-def stiffness_tensor_lame_mixed( dim, lam, mu ):
+def stiffness_tensor_youngpoisson(dim, young, poisson, plane='strain'):
+    """
+    Compute stiffness tensor corresponding to Young's modulus and Poisson's
+    ratio.
+    """
+    lam, mu = youngpoisson_to_lame(young, poisson, plane)
+
+    return stiffness_tensor_lame(dim, lam, mu)
+
+def stiffness_tensor_lame_mixed(dim, lam, mu):
     r"""
-    Stiffness tensor - using Lame coefficients
+    Compute stiffness tensor corresponding to Lamé parameters for mixed
+    formulation.
 
     .. math::
         {\bm D}_{(2D)} = \begin{bmatrix} \widetilde\lambda + 2\mu &
@@ -90,40 +92,41 @@ def stiffness_tensor_lame_mixed( dim, lam, mu ):
     .. math::
        \widetilde\lambda = {2\over 3} (\lambda - \mu)
     """
-
     sym = (dim + 1) * dim / 2
-    o = nm.array( [1.] * dim + [0.] * (sym - dim), dtype = nm.float64 )
-    oot = nm.outer( o, o )
+    o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
+    oot = nm.outer(o, o)[None, ...]
+    do1 = nm.diag(o + 1.0)[None, ...]
 
-    return 2.0/3.0*(lam-mu) * oot + mu * nm.diag( o + 1.0 )
+    lam = nm.array(lam, ndmin=1)[:, None, None]
+    mu = nm.array(mu, ndmin=1)[:, None, None]
 
-##
-# c: 10.08.2009
-def stiffness_tensor_youngpoisson_mixed( dim, young, poisson, plane = 'strain' ):
+    return (2.0/3.0*(lam-mu) * oot + mu * do1).squeeze()
 
-    lam, mu = youngpoisson_to_lame( young, poisson, plane )
+def stiffness_tensor_youngpoisson_mixed(dim, young, poisson, plane='strain'):
+    """
+    Compute stiffness tensor corresponding to Young's modulus and Poisson's
+    ratio for mixed formulation.
+    """
+    lam, mu = youngpoisson_to_lame(young, poisson, plane)
 
-    return stiffness_tensor_lame_mixed( dim, lam, mu )
+    return stiffness_tensor_lame_mixed(dim, lam, mu)
 
-##
-# c: 10.08.2009
-def bulk_modulus_lame( lam, mu ):
+def bulk_modulus_lame(lam, mu):
     r"""
-    Bulk modulus - using Lame coefficients
+    Compute bulk modulus from Lamé parameters.
 
     .. math::
         \gamma = \lambda + {2 \over 3} \mu
     """
     return lam + 2.0 * mu / 3.0
 
+def bulk_modulus_youngpoisson(young, poisson, plane='strain'):
+    """
+    Compute bulk modulus corresponding to Young's modulus and Poisson's ratio.
+    """
+    lam, mu = youngpoisson_to_lame(young, poisson, plane)
 
-##
-# c: 10.08.2009
-def bulk_modulus_youngpoisson( young, poisson, plane = 'strain' ):
-
-    lam, mu = youngpoisson_to_lame( young, poisson, plane )
-
-    return bulk_modulus_lame( lam, mu )
+    return bulk_modulus_lame(lam, mu)
 
 elastic_constants_relations = {
 }
@@ -150,7 +153,7 @@ class ElasticConstants(Struct):
 
      - basic usage::
 
-        >>> from sfepy.mechanics.matcoefs import ElasticConstants             
+        >>> from sfepy.mechanics.matcoefs import ElasticConstants
         >>> ec = ElasticConstants(lam=1.0, mu=1.5)
         >>> ec.young
         3.6000000000000001
@@ -313,39 +316,51 @@ relations = {
         """
         out = [getattr(self, name) for name in names]
         return out
-    
-class TransformToPlane( Struct ):
-    """Transformmations of constitutive law coefficients of 3D problems to 2D."""
 
-    def __init__( self, iplane = None ):
-        """`iplane` ... vector of indices denoting the plane, e.g.: [0, 1]"""
+class TransformToPlane(Struct):
+    """
+    Transformations of constitutive law coefficients of 3D problems to 2D.
+    """
+
+    def __init__(self, iplane=None):
+        """
+        Parameters
+        ----------
+        iplane : list
+            The vector of indices denoting the plane, e.g.: [0, 1]
+        """
         if iplane is None:
             iplane = [0, 1]
 
         # Choose the "master" variables and the "slave" ones
         # ... for vectors
-        i_m = nm.sort( iplane )
-        i_s = nm.setdiff1d( nm.arange( 3 ), i_m )
+        i_m = nm.sort(iplane)
+        i_s = nm.setdiff1d(nm.arange(3), i_m)
 
         # ... for second order tensors (symmetric storage)
         i_ms = {(0, 1) : [0, 1, 3],
-               (0, 2) : [0, 2, 4],
-               (1, 2) : [1, 2, 5]}[tuple( i_m )]
-        i_ss = nm.setdiff1d( nm.arange( 6 ), i_ms )
-        
-        Struct.__init__( self, iplane = iplane,
-                         i_m = i_m, i_s = i_s,
-                         i_ms = i_ms, i_ss = i_ss )
+                (0, 2) : [0, 2, 4],
+                (1, 2) : [1, 2, 5]}[tuple(i_m)]
+        i_ss = nm.setdiff1d(nm.arange(6), i_ms)
 
-    def tensor_plane_stress( self, c3 = None, d3 = None, b3 = None ):
-       """Transforms all coefficients of the piezoelectric constitutive law
-       from 3D to plane stress problem in 2D: strain/stress ordering/ 11 22
+        Struct.__init__(self, iplane=iplane,
+                        i_m=i_m, i_s=i_s, i_ms=i_ms, i_ss=i_ss)
+
+    def tensor_plane_stress(self, c3=None, d3=None, b3=None):
+       """
+       Transforms all coefficients of the piezoelectric constitutive law
+       from 3D to plane stress problem in 2D: strain/stress ordering: 11 22
        33 12 13 23. If `d3` is None, uses only the stiffness tensor `c3`.
 
-       `c3` ... stiffness tensor
-       `d3` ... dielectric tensor
-       `b3` ... piezoelectric coupling tensor"""
-
+       Parameters
+       ----------
+       c3 : array
+           The stiffness tensor.
+       d3 : array
+           The dielectric tensor.
+       b3 : array
+           The piezoelectric coupling tensor.
+       """
        mg = nm.meshgrid
 
        cs = c3[mg(self.i_ss,self.i_ss)]
@@ -354,16 +369,17 @@ class TransformToPlane( Struct ):
            A = cs
            Feps = cm
 
-           Ainv = nm.linalg.inv( A )
+           Ainv = nm.linalg.inv(A)
            c2 = c3[mg(self.i_ms,self.i_ms)] \
-                - nm.dot( Feps.T, nm.dot( Ainv, Feps ) )
+                - nm.dot(Feps.T, nm.dot(Ainv, Feps))
+
            return c2
 
        else:
            dm = d3[mg(self.i_s,self.i_m)].T
            ds = d3[mg(self.i_s,self.i_s)]
 
-           ii = mg( self.i_s, self.i_ss )
+           ii = mg(self.i_s, self.i_ss)
            A = nm.r_[nm.c_[cs, b3[ii]],
                      nm.c_[b3[ii].T, -ds]] #=> sym !!!
            F = nm.r_[nm.c_[cm, b3[mg(self.i_m,self.i_ss)]],
@@ -371,11 +387,12 @@ class TransformToPlane( Struct ):
 
            Feps = F[:,:3]
            FE = F[:,3:]
-           Ainv = nm.linalg.inv( A )
+           Ainv = nm.linalg.inv(A)
            c2 = c3[mg(self.i_ms,self.i_ms)] \
-                - nm.dot( Feps.T, nm.dot( Ainv, Feps ) )
+                - nm.dot(Feps.T, nm.dot(Ainv, Feps))
            d2 = d3[mg(self.i_m,self.i_m)] \
-                - nm.dot( FE.T, nm.dot( Ainv, FE ) )
+                - nm.dot(FE.T, nm.dot(Ainv, FE))
            b2 = b3[mg(self.i_m,self.i_ms)].T \
-                - nm.dot( FE.T, nm.dot( Ainv, Feps ) )
+                - nm.dot(FE.T, nm.dot(Ainv, Feps))
+
            return c2, d2, b2
