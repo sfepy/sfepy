@@ -92,15 +92,9 @@ def stiffness_from_lame_mixed(dim, lam, mu):
     .. math::
        \widetilde\lambda = {2\over 3} (\lambda - \mu)
     """
-    sym = (dim + 1) * dim / 2
-    o = nm.array([1.] * dim + [0.] * (sym - dim), dtype=nm.float64)
-    oot = nm.outer(o, o)[None, ...]
-    do1 = nm.diag(o + 1.0)[None, ...]
+    lam = 2.0 / 3.0 * (lam - mu)
 
-    lam = nm.array(lam, ndmin=1)[:, None, None]
-    mu = nm.array(mu, ndmin=1)[:, None, None]
-
-    return (2.0/3.0*(lam-mu) * oot + mu * do1).squeeze()
+    return stiffness_from_lame(dim, lam, mu)
 
 def stiffness_from_youngpoisson_mixed(dim, young, poisson, plane='strain'):
     """
