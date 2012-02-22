@@ -134,7 +134,18 @@ class Test(TestCommon):
         for _d in _ds:
             __ok = nm.allclose(_d, d, rtol=0.0, atol=1e-14)
             _ok = _ok and __ok
-        self.report('stiffness_tensor_lame_mixed():', _ok)
+        self.report('stiffness_from_lame_mixed():', _ok)
+        ok = ok and _ok
+
+        blam = 2.0 / 3.0 * (lam - mu)
+        _ds = mc.stiffness_from_lame(3, blam, mu)
+        assert_(_ds.shape == (3, 6, 6))
+
+        _ok = True
+        for _d in _ds:
+            __ok = nm.allclose(_d, d, rtol=0.0, atol=1e-14)
+            _ok = _ok and __ok
+        self.report('stiffness_from_lame() with modified lambda:', _ok)
         ok = ok and _ok
 
         return ok
