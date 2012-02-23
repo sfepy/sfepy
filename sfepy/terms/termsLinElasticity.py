@@ -304,16 +304,16 @@ class LinearPrestressTerm(Term):
 
 class LinearStrainFiberTerm(Term):
     r"""
-    :Description:
-    Linear (pre)strain fiber term. Given fiber orientation :math:`\nu_{i}`.
+    :Description: Linear (pre)strain fiber term with the unit direction vector
+    :math:`\ul{d}`.
 
     :Definition:
     .. math::
-        \int_{\Omega} D_{ijkl} e_{ij}(\ul{v}) \left(\nu_i \nu_j\right)
+        \int_{\Omega} D_{ijkl} e_{ij}(\ul{v}) \left(d_k d_l\right)
 
     :Arguments:
         material_1 : :math:`D_{ijkl}`,
-        material_2 : :math:`\nu_i`,
+        material_2 : :math:`\ul{d}`,
         virtual  : :math:`\ul{v}`
 
     """

@@ -7,7 +7,7 @@ Find :math:`\ul{u}` such that:
 .. math::
     \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
     + \int_{\Omega_1} \sigma_{ij} e_{ij}(\ul{v})
-    + \int_{\Omega} D^f_{ijkl} e_{ij}(\ul{v}) \left(\nu_i \nu_j\right)
+    + \int_{\Omega_2} D^f_{ijkl} e_{ij}(\ul{v}) \left(d_k d_l\right)
     = 0
     \;, \quad \forall \ul{v} \;,
 
@@ -16,11 +16,11 @@ where
 .. math::
     D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
     \lambda \ \delta_{ij} \delta_{kl}
-    \;,
+    \;.
 
-analogously is defined the stiffness of fibres :math:`D^f_{ijkl}`,
-:math:`\ul{\nu}` is the unit fibre direction vector and :math:`\sigma_{ij}` the
-prestress.
+The stiffness of fibres :math:`D^f_{ijkl}` is defined analogously,
+:math:`\ul{d}` is the unit fibre direction vector and :math:`\sigma_{ij}` is
+the prestress.
 
 Visualization
 -------------
