@@ -452,7 +452,7 @@ class DotProductVolumeTerm(Term):
     @staticmethod
     def d_dot(out, mat, val1_qp, val2_qp, geo):
         if val1_qp.shape[2] > 1:
-            vec = nm.sum(val1_qp * val2_qp, axis=-1)
+            vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
 
         else:
             vec = val1_qp * val2_qp
