@@ -69,7 +69,7 @@ directory is `sfepy/`, which has the following contents:
        conditions, degrees of freedom, approximations, variables,
        equations, meshes, regions, quadratures, etc.
      -
-   * - `geom/`
+   * - `mesh/`
      - some utilities to interface with tetgen and triangle mesh generators
      -
    * - `homogenization/`
@@ -814,11 +814,10 @@ sfepy.geom package
 .. toctree::
    :maxdepth: 2
 
-   src/sfepy/geom/femlab
-   src/sfepy/geom/geometry
-   src/sfepy/geom/meshgen
-   src/sfepy/geom/meshgenutils
-   src/sfepy/geom/meshutils
+   src/sfepy/mesh/femlab
+   src/sfepy/mesh/geom_tools
+   src/sfepy/mesh/mesh_tools
+   src/sfepy/mesh/meshutils
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

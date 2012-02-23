@@ -1,6 +1,6 @@
 sfepy.geom.geometry module
 ==========================
 
-.. automodule:: sfepy.geom.geometry
+.. automodule:: sfepy.mesh.geom_tools
    :members:
    :undoc-members:

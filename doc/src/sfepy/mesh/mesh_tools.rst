@@ -1,6 +1,6 @@
 sfepy.geom.meshgen module
 =========================
 
-.. automodule:: sfepy.geom.meshgen
+.. automodule:: sfepy.mesh.mesh_tools
    :members:
    :undoc-members:
