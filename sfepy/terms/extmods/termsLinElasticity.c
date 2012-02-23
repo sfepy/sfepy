@@ -389,10 +389,9 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 
 #undef __FUNC__
 #define __FUNC__ "dw_lin_prestress"
-int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
-			int32 *elList, int32 elList_nRow, int32 isDiff )
+int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg )
 {
-  int32 ii, iel, dim, nQP, nEP, ret = RET_OK;
+  int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *res = 0;
 
   nQP = vg->bfGM->nLev;
@@ -401,13 +400,11 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
 
   fmf_createAlloc( &res, 1, nQP, dim * nEP, 1 );
 
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( vg->bfGM, iel );
-      FMF_SetCell( vg->det, iel );
-      FMF_SetCell( stress, iel );
+      FMF_SetCell( vg->bfGM, ii );
+      FMF_SetCell( vg->det, ii );
+      FMF_SetCell( stress, ii );
 
       form_sdcc_actOpGT_VS3( res, vg->bfGM, stress );
       fmf_sumLevelsMulF( out, res, vg->det->val );
@@ -415,7 +412,7 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
     }
 
  end_label:
-    fmf_freeDestroy( &res ); 
+    fmf_freeDestroy( &res );
 
   return( ret );
 }
@@ -423,10 +420,9 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg,
 #undef __FUNC__
 #define __FUNC__ "dw_lin_strain_fib"
 int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
-			 VolumeGeometry *vg,
-			 int32 *elList, int32 elList_nRow )
+			 VolumeGeometry *vg )
 {
-  int32 ii, iel, dim, sym, nQP, nEP, ret = RET_OK;
+  int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;
 
   nQP = vg->bfGM->nLev;
@@ -437,14 +433,12 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
   fmf_createAlloc( &aux1, 1, nQP, nEP * dim, sym );
   fmf_createAlloc( &aux2, 1, nQP, nEP * dim, 1 );
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
     FMF_SetCell( mat, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
 
     form_sdcc_actOpGT_M3( aux1, vg->bfGM, mtxD );
     fmf_mulAB_nn( aux2, aux1, mat );

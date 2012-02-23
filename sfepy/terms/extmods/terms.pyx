@@ -230,13 +230,11 @@ cdef extern from 'terms.h':
                          FMField *strainU, FMField *mtxD, VolumeGeometry *vg)
 
     cdef int32 _dw_lin_prestress \
-         'dw_lin_prestress'(FMField *out, FMField *stress, VolumeGeometry *vg,
-                            int32 *elList, int32 elList_nRow, int32 isDiff)
+         'dw_lin_prestress'(FMField *out, FMField *stress, VolumeGeometry *vg)
 
     cdef int32 _dw_lin_strain_fib \
          'dw_lin_strain_fib'(FMField *out, FMField *mtxD, FMField *mat,
-                             VolumeGeometry *vg,
-                             int32 *elList, int32 elList_nRow)
+                             VolumeGeometry *vg)
 
     cdef int32 _de_cauchy_strain \
          'de_cauchy_strain'(FMField *out, FMField *strain,
@@ -1344,35 +1342,28 @@ def d_lin_elastic(np.ndarray out not None,
 
 def dw_lin_prestress(np.ndarray out not None,
                      np.ndarray stress not None,
-                     CVolumeMapping cmap not None,
-                     np.ndarray el_list not None,
-                     int32 is_diff):
+                     CVolumeMapping cmap not None):
     cdef int32 ret
     cdef FMField _out[1], _stress[1]
-    cdef int32 *_el_list, n_el
 
     array2fmfield4(_out, out)
     array2fmfield4(_stress, stress)
-    array2pint1(&_el_list, &n_el, el_list)
 
-    ret = _dw_lin_prestress(_out, _stress, cmap.geo, _el_list, n_el, is_diff)
+    ret = _dw_lin_prestress(_out, _stress, cmap.geo)
     return ret
 
 def dw_lin_strain_fib(np.ndarray out not None,
                       np.ndarray mtx_d not None,
                       np.ndarray mat not None,
-                      CVolumeMapping cmap not None,
-                      np.ndarray el_list not None):
+                      CVolumeMapping cmap not None):
     cdef int32 ret
     cdef FMField _out[1], _mtx_d[1], _mat[1]
-    cdef int32 *_el_list, n_el
 
     array2fmfield4(_out, out)
     array2fmfield4(_mtx_d, mtx_d)
     array2fmfield4(_mat, mat)
-    array2pint1(&_el_list, &n_el, el_list)
 
-    ret = _dw_lin_strain_fib(_out, _mtx_d, _mat, cmap.geo, _el_list, n_el)
+    ret = _dw_lin_strain_fib(_out, _mtx_d, _mat, cmap.geo)
     return ret
 
 def de_cauchy_strain(np.ndarray out not None,

@@ -2,9 +2,9 @@ import numpy as nm
 
 from sfepy.base.base import use_method_with_name, assert_
 from sfepy.linalg import dot_sequences
+from sfepy.homogenization.utils import iter_sym
 from sfepy.terms.terms import Term, terms
 from sfepy.terms.terms_th import THTerm, ETHTerm
-from sfepy.terms.terms_base import VectorVector
 
 ## expr = """
 ## e = 1/2 * (grad( vec( u ) ) + grad( vec( u ) ).T)
@@ -231,7 +231,7 @@ class LinearElasticETHTerm(ETHTerm):
 
         return fargs
 
-class LinearPrestressTerm(VectorVector, Term):
+class LinearPrestressTerm(Term):
     r"""
     :Description:
     Linear prestress term, with the prestress :math:`\sigma_{ij}` given in
@@ -257,57 +257,52 @@ class LinearPrestressTerm(VectorVector, Term):
                  ('material', 'parameter'))
     modes = ('weak', 'eval')
 
-    def check_mat_shape(self, mat):
-        dim = self.data_shape[2]
+    def check_shapes(self, mat, virtual):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
         sym = (dim + 1) * dim / 2
-        assert_(mat.shape == (self.data_shape[0], self.data_shape[1], sym, 1))
+        assert_(mat.shape == (n_el, n_qp, sym, 1))
 
-    def get_fargs_weak(self, diff_var=None, chunk_size=None, **kwargs):
-        mat, virtual = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(virtual)
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
 
-        self.set_data_shape(ap)
-        shape, mode = self.get_shape(diff_var, chunk_size)
+        if mode == 'weak':
+            return mat, vg
 
-        if diff_var is not None:
-            raise StopIteration
+        else:
+            strain = self.get(virtual, 'cauchy_strain')
 
-        self.check_mat_shape(mat)
+            fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+            return strain, mat, vg, fmode
 
-        return (mat, vg), shape, mode
+    def get_eval_shape(self, mat, virtual,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
 
-    def get_fargs_eval( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat, par = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(par)
+        if mode != 'qp':
+            n_qp = 1
 
-        self.set_data_shape(ap)
+        return (n_el, n_qp, 1, 1), virtual.dtype
 
-        self.check_mat_shape(mat)
+    def d_lin_prestress(self, out, strain, mat, vg, fmode):
+        aux = dot_sequences(mat, strain, mode='ATB')
+        if fmode == 2:
+            out[:] = aux
+            status = 0
 
-        cache = self.get_cache('cauchy_strain', 0)
-        strain = cache('strain', self, 0,
-                       state=par, get_vector=self.get_vector)
+        else:
+            status = vg.integrate(out, aux, fmode)
 
-        return (strain, mat, vg), (chunk_size, 1, 1, 1), 0
-
-    def d_lin_prestress(self, out, strain, mat, vg, chunk):
-        aux = (mat[chunk] * strain[chunk]).sum(axis=2)
-        aux.shape = aux.shape + (1,)
-
-        status = vg.integrate_chunk(out, aux, chunk)
         return status
 
     def set_arg_types(self):
         if self.mode == 'weak':
             self.function = terms.dw_lin_prestress
-            use_method_with_name(self, self.get_fargs_weak, 'get_fargs')
 
         else:
             self.function = self.d_lin_prestress
-            use_method_with_name(self, self.get_fargs_eval, 'get_fargs')
-            self.use_caches = {'cauchy_strain' : [['parameter']]}
 
-class LinearStrainFiberTerm(VectorVector, Term):
+class LinearStrainFiberTerm(Term):
     r"""
     :Description:
     Linear (pre)strain fiber term. Given fiber orientation :math:`\nu_{i}`.
@@ -327,19 +322,21 @@ class LinearStrainFiberTerm(VectorVector, Term):
 
     function = staticmethod(terms.dw_lin_strain_fib)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        mat1, mat2, virtual = self.get_args(**kwargs)
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    def check_shapes(self, mat1, mat2, virtual):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+        sym = (dim + 1) * dim / 2
+        assert_(mat1.shape == (n_el, n_qp, sym, sym))
+        assert_(mat2.shape == (n_el, n_qp, dim, 1))
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1)
-        else:
-            raise StopIteration
+    def get_fargs(self, mat1, mat2, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, mat1, mat2, vg, chunk )
-            yield out, chunk, status
+        omega = nm.empty(mat1.shape[:3] + (1,), dtype=nm.float64)
+        for ii, (ir, ic) in enumerate(iter_sym(mat2.shape[2])):
+            omega[..., ii, 0] = mat2[..., ir, 0] * mat2[..., ic, 0]
+
+        return mat1, omega, vg
 
 class CauchyStrainTerm(Term):
     r"""
