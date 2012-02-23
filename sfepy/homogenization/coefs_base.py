@@ -205,6 +205,31 @@ class ShapeDim( CorrMiniApp ):
                                 components = clist)
         return corr_sol
 
+class OnesDim( CorrMiniApp ):
+
+    def __call__( self, problem = None, data = None ):
+        problem = get_default( problem, self.problem )
+        var_name = self.variables[0]
+        var = problem.get_variables(auto_create=True)[var_name]
+
+        dim = problem.domain.mesh.dim
+        nnod = var.n_nod
+        e00 = nm.zeros((nnod, dim), dtype=nm.float64)
+        e1 = nm.ones((nnod, ), dtype=nm.float64)
+
+        ones = nm.zeros( (dim,), dtype = nm.object )
+        clist = []
+        for ir in range( dim ):
+            aux = e00.copy()
+            aux[:,ir] = e1
+            ones[ir] = {var_name : nm.ascontiguousarray(aux)}
+            clist.append('pi_%d' % (ir,))
+
+        corr_sol = CorrSolution(name = self.name,
+                                states = ones,
+                                components = clist)
+        return corr_sol
+
 class CopyData(CorrMiniApp):
 
     def __call__(self, problem=None, data=None):
