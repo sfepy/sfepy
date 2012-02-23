@@ -939,7 +939,6 @@ sfepy.terms package
    src/sfepy/terms/termsPoint
    src/sfepy/terms/termsSurface
    src/sfepy/terms/termsVolume
-   src/sfepy/terms/terms_base
    src/sfepy/terms/terms_constraints
    src/sfepy/terms/terms_fibres
    src/sfepy/terms/terms_hyperelastic_base
