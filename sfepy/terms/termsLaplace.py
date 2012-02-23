@@ -295,13 +295,14 @@ class DiffusionVelocityTerm( Term ):
 
     @staticmethod
     def function(out, grad, mat, vg, fmode):
+        dvel = dot_sequences(mat, grad)
+
         if fmode == 2:
-            out[:] = dot_sequences(mat, grad)
+            out[:] = dvel
             status = 0
 
         else:
-            aux = nm.sum(mat * grad, axis=3)[:,:,:,nm.newaxis]
-            status = vg.integrate(out, nm.ascontiguousarray(aux), fmode)
+            status = vg.integrate(out, dvel, fmode)
 
         out *= -1.0
 
