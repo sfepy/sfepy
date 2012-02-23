@@ -1075,23 +1075,21 @@ class ProblemDefinition( Struct ):
         """
         from sfepy.fem.equations import get_expression_arg_names
 
+        variables = get_default(var_dict, {})
+
         if try_equations and self.equations is not None:
             # Make a copy, so that possible variable caches are preserved.
-            variables = {}
             for key, var in self.equations.variables.as_dict().iteritems():
+                if key in variables:
+                    continue
                 var = var.copy(name=key)
                 if not preserve_caches:
                     var.clear_evaluate_cache()
                 variables[key] = var
 
-        else:
-            if var_dict is None:
-                possible_var_names = get_expression_arg_names(expression)
-
-                variables = self.create_variables(possible_var_names)
-
-            else:
-                variables = var_dict
+        elif var_dict is None:
+            possible_var_names = get_expression_arg_names(expression)
+            variables = self.create_variables(possible_var_names)
 
         materials = self.get_materials()
         if materials is not None:
