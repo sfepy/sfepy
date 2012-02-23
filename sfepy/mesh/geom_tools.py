@@ -178,6 +178,258 @@ class geometry(object):
             repl[l.n] = lines
             self.d1.pop(l.n)
 
+    def to_poly_file(self, filename):
+        """
+        Export geometry to poly format (tetgen and triangle geometry format).
+
+        Parameters
+        ----------
+        geo : geometry
+            geometry description
+        filename : string
+            file name
+        """
+
+        def getinsidepoint(pts):
+            direct = (pts[0] + pts[1] + pts[2]) / 3 - pts[0]
+            return pts[0] + 0.001 * direct
+
+        if self.dim == 2:
+            self.leaveonlyphysicalsurfaces()
+        if self.dim == 3:
+            self.leaveonlyphysicalvolumes()
+
+        # write nodes
+        nodes = []
+        map = {}
+        for x in self.d0.values():
+            assert isinstance(x, point)
+            nodes.append(x.getxyz())
+            map[x.getn()] = len(nodes)
+
+
+        s = "# nodes\n%d %d 0 0\n" % (len(nodes), self.dim)
+        if self.dim == 2:
+            ptstr = " %d %f %f\n"
+        else:
+            ptstr = " %d %f %f %f\n"
+
+        for n, x in enumerate(nodes):
+            s += ptstr % tuple([n + 1] + list(x))
+
+        # facets
+        # first write external polygon, then hole polygons and then point in each
+        # hole polygon
+        facets = []
+        if self.dim == 2:
+
+            hole_pts = []
+            regions=[]
+            for x2 in self.d2.values():
+                assert isinstance(x2, surface)
+                for x1 in x2.getlines():
+                    assert isinstance(x1, line)
+                    p = [map[y.getn()] for y in x1.getpoints()]
+                    bc = self.getBCnum(x1.getn())
+                    facets.append((p, bc))
+
+                for hole in x2.getholepoints():
+                    hole_pts.append(hole.getxyz())
+
+        # regions
+        for x in self.phys2.values():
+            assert isinstance(x, physicalsurface)
+            for x2 in x.getsurfaces():
+                if not x2.is_hole:
+                    regions.append(x2.getinsidepoint().getxyz() + [x.getn()])
+
+            # number of facets, boundary markers=yes
+            s += "# segments\n%d 1\n" % len(facets)
+            for ii, (p, bc) in enumerate(facets):
+                # number of corners, corner 1, corner 2, ...
+                s += " %d %s %d\n" % (ii + 1, ' '.join([str(ii) for ii in p]), bc)
+            # holes
+            s += "# holes\n%d\n" % len(hole_pts)
+            for ii, x0 in enumerate(hole_pts):
+                # number of corners, corner 1, corner 2, ...
+                s += " %d %s\n" % (ii + 1, ' '.join([str(ii) for ii in x0]))
+            # regions
+            s += "# regions\n%d\n" % len(regions)
+            for ii, x0 in enumerate(regions):
+                s += " %d %f %f %d\n" % tuple([ii + 1] + x0)
+
+        if self.dim == 3:
+
+            for x in self.d2.values():
+                assert isinstance(x, surface)
+                p = [map[y.getn()] for y in x.getpoints()]
+                h = []
+                pts = []
+                for hole in x.getholepoints():
+                    h.append([map[y.getn()] for y in hole])
+                    pts.append(getinsidepoint(hole).getxyz())
+                bc = self.getBCnum(x.getn())
+                facets.append((p, bc, h, pts))
+            # number of facets, boundary markers=yes
+            s += "# segments\n%d 1\n" % len(facets)
+            for p, bc, h, holes in facets:
+                # number of polygons, # of holes, boundary marker
+                s += " %d %d %d\n" % (1 + len(h), len(h), bc)
+                # number of corners, corner 1, corner 2, ...
+                s += " %d %s\n" % (len(p), ' '.join([str(ii) for ii in p]))
+                for x in h:
+                    # number of corners, corner 1, corner 2, ...
+                    s += " %d %s\n" % (len(x), ' '.join([str(ii) for ii in p]))
+                for i, pt in enumerate(holes):
+                    # hole #, x, y, z
+                    s += ptstr % tuple([i + 1] + list(pt))
+
+            # volume holes
+            s += "# holes\n0\n"
+            # regions
+            regions=[]
+            for x in self.phys3.values():
+                assert isinstance(x, physicalvolume)
+                for v in x.getvolumes():
+                    regions.append(v.getinsidepoint().getxyz()+[x.getn()])
+            s += "# regions\n%d\n" % len(regions)
+            for i, x in enumerate(regions):
+                s += ptstr % tuple([i + 1], list(x))
+
+        open(filename, "w").write(s)
+
+    @staticmethod
+    def from_gmsh_file(filename):
+        """
+        Import geometry - Gmsh geometry format.
+
+        Parameters
+        ----------
+        filename : string
+            file name
+
+        Returns
+        -------
+        geo : geometry
+            geometry description
+
+        """
+
+        from pyparsing import Word, Optional, nums, Combine, Literal, \
+             CaselessLiteral, Group, OneOrMore, StringEnd, restOfLine, \
+             ParseException, alphanums, Keyword, ZeroOrMore
+
+        e = CaselessLiteral("E")
+        inum = Word("+-"+nums)
+        fnum = Combine(
+            Word( "+-"+nums, nums ) + Optional("."+Optional(Word(nums))) +
+            Optional(e+Word("+-"+nums,nums))
+            )
+
+        semi  = Literal(";").suppress()
+        colon  = Literal(",").suppress()
+        lpar  = Literal("(").suppress()
+        rpar  = Literal(")").suppress()
+        lbrace  = Literal("{").suppress()
+        rbrace  = Literal("}").suppress()
+        eq  = Literal("=").suppress()
+
+        point = Group(
+                Keyword("Point")+lpar+inum+rpar+eq+
+                Group(lbrace+fnum+colon+fnum+colon+fnum+colon+fnum+rbrace)+semi
+                )
+        line = Group(
+                Keyword("Line")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+colon+inum+rbrace)+semi
+                )
+        lineloop = Group(
+                Keyword("Line Loop")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+OneOrMore(colon+inum)+rbrace)+semi
+                )
+        circle = Group(
+                Keyword("Circle")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+colon+inum+colon+inum+rbrace)+semi
+                )
+        planesurface = Group(
+                Keyword("Plane Surface")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+rbrace)+semi
+                )
+        ruledsurface = Group(
+                Keyword("Ruled Surface")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+rbrace)+semi
+                )
+        surfaceloop = Group(
+                Keyword("Surface Loop")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+OneOrMore(colon+inum)+rbrace)+semi
+                )
+        volume = Group(
+                Keyword("Volume")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+rbrace)+semi
+                )
+        physicalsurface = Group(
+                Keyword("Physical Surface")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+ZeroOrMore(colon+inum)+rbrace)+semi
+                )
+        physicalvolume = Group(
+                Keyword("Physical Volume")+lpar+inum+rpar+eq+
+                Group(lbrace+inum+ZeroOrMore(colon+inum)+rbrace)+semi
+                )
+        skip1 = Group(
+                Word(alphanums)+eq+fnum+semi
+                )
+
+        comment = Group( Literal("//")+restOfLine).suppress()
+
+        command = point | line | lineloop | circle | planesurface | ruledsurface | \
+                surfaceloop | volume | physicalsurface | physicalvolume | comment \
+                | skip1
+
+        grammar= OneOrMore(command)+StringEnd()
+
+        try:
+            tokens= grammar.parseFile(filename)
+        except ParseException, err:
+            print err.line
+            print " "*(err.column-1) + "^"
+            print err
+            raise err
+
+        lineloops={}
+        surfaceloops={}
+        geo=geometry()
+        for x in tokens:
+            if x[0]=="Point":
+                geo.addpoint(int(x[1]),[float(x[2][0]),float(x[2][1]),float(x[2][2])])
+            elif x[0]=="Line":
+                assert len(x[2])==2
+                geo.addline(int(x[1]),[int(x[2][0]),int(x[2][1])])
+            elif x[0]=="Circle":
+                assert len(x[2])==3
+                geo.addline(int(x[1]),[int(x[2][0]),int(x[2][2])])
+                #geo.add1(geom.circle(int(x[1]),int(x[2][0]),int(x[2][1]),
+                #    int(x[2][2])))
+            elif x[0]=="Line Loop":
+                lineloops[int(x[1])]=[int(y) for y in x[2]]
+            elif x[0]=="Plane Surface":
+                assert len(x[2])==1
+                geo.addsurface(int(x[1]),lineloops[int(x[2][0])])
+            elif x[0]=="Ruled Surface":
+                assert len(x[2])==1
+                geo.addsurface(int(x[1]),lineloops[int(x[2][0])])
+            elif x[0]=="Surface Loop":
+                surfaceloops[int(x[1])]=[int(y) for y in x[2]]
+            elif x[0]=="Volume":
+                assert len(x[2])==1
+                geo.addvolume(int(x[1]),surfaceloops[int(x[2][0])])
+            elif x[0]=="Physical Surface":
+                geo.addphysicalsurface(int(x[1]),[int(y) for y in x[2]])
+            elif x[0]=="Physical Volume":
+                geo.addphysicalvolume(int(x[1]),[int(y) for y in x[2]])
+            else:
+                raise "Unsupported entity: "+x[0]
+
+        return geo
+
 class geomobject(object):
     def getn(self):
         return self.n
