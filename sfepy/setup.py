@@ -12,7 +12,7 @@ def configuration(parent_package='',top_path=None):
         'applications',
         'base',
         'fem',
-        'geom',
+        'mesh',
         'homogenization',
         'interactive',
         'linalg',

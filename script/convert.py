@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os, sys
 
-import sfepy.geom as geom
+import sfepy.mesh as geom
 from sfepy.fem import Mesh
 try:
     from site_cfg import tetgen_path

@@ -164,7 +164,7 @@ def main():
                 os.system("%s tmp/mesh.mesh %s" % (mtv, mesh_filename))
             else:
                 output("dimension: 3")
-                import sfepy.geom as geom
+                import sfepy.mesh as geom
                 from sfepy.fem.mesh import Mesh
                 try:
                     from site_cfg import tetgen_path
