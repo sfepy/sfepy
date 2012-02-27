@@ -171,8 +171,8 @@ def meshgen_from_voxels(voxels, dims, etype='q'):
     """
     Generate FE mesh from voxels (volumetric data).
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     voxels : array
         Voxel matrix, 1=material.
     dims : array
@@ -428,8 +428,8 @@ def smooth_mesh(mesh, n_iter=4, lam=0.6307, mu=-0.6347,
     ISSN 0021-9290, 10.1016/j.jbiomech.2005.03.006.
     (http://www.sciencedirect.com/science/article/pii/S0021929005001442)
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     mesh : mesh
         FE mesh.
     n_iter : integer, optional
