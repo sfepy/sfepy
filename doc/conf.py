@@ -279,16 +279,24 @@ def process_terms(app, what_, name, obj, options, lines):
                 arg_types = u', '.join(['%s' % arg for arg in arg_types])
                 at_lines = [u'``(%s)``' % arg_types]
 
+            for ii, line in enumerate(lines):
+                if line.startswith(':Arguments'):
+                    i0 = ii - 1
+                    break
+
+            else:
+                i0 = 0
 
             len0 = len(obj.name) + 4
-            lines.insert(0, u':Call signature:')
-            lines.insert(1, u'')
-            lines.insert(2, (u'=' * len0) + u' ===')
-            lines.insert(3, u'**%s** %s' % (obj.name, at_lines[0]))
+            lines.insert(i0+0, u'')
+            lines.insert(i0+1, u':Call signature:')
+            lines.insert(i0+2, u'')
+            lines.insert(i0+3, (u'=' * len0) + u' ===')
+            lines.insert(i0+4, u'**%s** %s' % (obj.name, at_lines[0]))
             for ii, line in enumerate(at_lines[1:]):
-                lines.insert(4+ii, u'..' + (' ' * (len0 - 1)) + line)
-            lines.insert(3+len(at_lines), (u'=' * len0) + u' ===')
-            lines.insert(4+len(at_lines), u'')
+                lines.insert(i0+5+ii, u'..' + (' ' * (len0 - 1)) + line)
+            lines.insert(i0+4+len(at_lines), (u'=' * len0) + u' ===')
+            lines.insert(i0+5+len(at_lines), u'')
 
     # make sure there is a blank line at the end
     if lines and lines[-1]:
