@@ -1,6 +1,6 @@
-sfepy.geom.meshutils module
+sfepy.mesh.meshutils module
 ===========================
 
-.. automodule:: sfepy.geom.meshutils
+.. automodule:: sfepy.mesh.meshutils
    :members:
    :undoc-members:

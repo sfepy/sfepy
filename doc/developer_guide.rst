@@ -808,7 +808,7 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/extmods/mappings
    src/sfepy/fem/extmods/mesh
 
-sfepy.geom package
+sfepy.mesh package
 ^^^^^^^^^^^^^^^^^^
 
 .. toctree::

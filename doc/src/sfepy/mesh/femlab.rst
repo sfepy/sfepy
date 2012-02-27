@@ -1,6 +1,6 @@
-sfepy.geom.femlab module
+sfepy.mesh.femlab module
 ========================
 
-.. automodule:: sfepy.geom.femlab
+.. automodule:: sfepy.mesh.femlab
    :members:
    :undoc-members:

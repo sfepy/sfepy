@@ -1,5 +1,5 @@
-sfepy.geom.geometry module
-==========================
+sfepy.mesh.geom_tools module
+============================
 
 .. automodule:: sfepy.mesh.geom_tools
    :members:
