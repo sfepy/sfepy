@@ -32,6 +32,7 @@ Things to check before a release
 
    try also::
 
+     $ # copy gallery/images
      $ python setup.py pdfdocs
 
 #. check installed build::
@@ -74,7 +75,7 @@ Useful Git commands
 * who has contributed since <date>::
 
     git log --after=<date> | grep Author | sort | uniq
-    git log release_2009.1..HEAD | grep Author | sort | uniq
+    git log release_2012.1..HEAD | grep Author | sort -k3 | uniq
 
     git rev-list --committer="Name Surname" --since=6.months.ago HEAD | wc
     git rev-list --author="Name Surname" --since=6.months.ago HEAD | wc
@@ -87,16 +88,14 @@ Useful Git commands
 Web update and file uploading
 -----------------------------
 
-* publish development docs also as new release docs
-
 * upload the tarball to http://code.google.com/p/sfepy/downloads/list
 
   * make it featured, un-feature the previous release
   * update download link at http://code.google.com/p/sfepy/wiki/Downloads
 
+* publish development docs also as new release docs
+
 * send announcement to
 
   * sfepy-devel@googlegroups.com, scipy-dev@scipy.org,
     scipy-user@scipy.org, python-announce-list@python.org
-
-  * ntc@list.zcu.cz, kme@list.zcu.cz
