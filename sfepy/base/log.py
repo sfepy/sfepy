@@ -200,9 +200,14 @@ class Log( Struct ):
     count = -1
 
     def from_conf( conf, data_names ):
-        """`data_names` ... tuple of names grouped by subplots:
-                            ([name1, name2, ...], [name3, name4, ...], ...)
-        where name<n> are strings to display in (sub)plot legends."""
+        """
+        Parameters
+        ----------
+        data_names : tuple of str
+            The data names grouped by subplots: ([name1, name2, ...], [name3,
+            name4, ...], ...), where name<n> are strings to display in
+            (sub)plot legends.
+        """
         if not isinstance( data_names, tuple ):
             data_names = (data_names,)
 

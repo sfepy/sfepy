@@ -299,11 +299,11 @@ def assemble_by_blocks(conf_equations, problem, ebcs=None, epbcs=None,
                        dw_mode='matrix'):
     """Instead of a global matrix, return its building blocks as defined in
     `conf_equations`. The name and row/column variables of each block have to
-    be encoded in the equation's name, as in:
+    be encoded in the equation's name, as in::
 
-    conf_equations = {
-      'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
-    }
+        conf_equations = {
+          'A,v,u' : "dw_lin_elastic_iso.i1.Y2( inclusion.lame, v, u )",
+        }
 
     Notes
     -----

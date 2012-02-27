@@ -64,12 +64,12 @@ class Material( Struct ):
     """
     A class holding constitutive and other material parameters.
 
-    Example input:
+    Example input::
 
-    material_2 = {
-       'name' : 'm',
-       'values' : {'E' : 1.0},
-    }
+        material_2 = {
+           'name' : 'm',
+           'values' : {'E' : 1.0},
+        }
 
     Material parameters are passed to terms using the dot notation,
     i.e. 'm.E' in our example case.

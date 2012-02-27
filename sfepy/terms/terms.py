@@ -53,14 +53,17 @@ def split_complex_args(args):
         imaginary part. The output depends on the number of complex
         arguments in 'args':
 
-          0: list (key 'r') identical to input one
-          1: two lists with keys 'r', 'i' corresponding to real
-             and imaginary parts
-          2: output dictionary contains four lists:
-             'r' - real(arg1), real(arg2)
-             'i' - imag(arg1), imag(arg2)
-             'ri' - real(arg1), imag(arg2)
-             'ir' - imag(arg1), real(arg2)
+          - 0: list (key 'r') identical to input one
+
+          - 1: two lists with keys 'r', 'i' corresponding to real
+            and imaginary parts
+
+          - 2: output dictionary contains four lists:
+
+            - 'r' - real(arg1), real(arg2)
+            - 'i' - imag(arg1), imag(arg2)
+            - 'ri' - real(arg1), imag(arg2)
+            - 'ir' - imag(arg1), real(arg2)
     """
     newargs = {}
     cai = []

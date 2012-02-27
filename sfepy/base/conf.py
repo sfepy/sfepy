@@ -251,7 +251,7 @@ class ProblemConf( Struct ):
         The job of the define() function is to return a dictionary of
         parameters. How the dictionary is constructed is not our business, but
         the usual way is to simply have a function define() along these lines
-        in the input file:
+        in the input file::
 
             def define():
                 options = {

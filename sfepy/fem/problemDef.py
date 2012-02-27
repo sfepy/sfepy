@@ -171,10 +171,14 @@ class ProblemDefinition( Struct ):
         Setup various hooks (user-defined functions), as given in `options`.
 
         Supported hooks:
+
           - `matrix_hook`
+
             - check/modify tangent matrix in each nonlinear solver
               iteration
+
           - `nls_iter_hook`
+
             - called prior to every iteration of nonlinear solver, if the
               solver supports that
             - takes the ProblemDefinition instance (`self`) as the first
