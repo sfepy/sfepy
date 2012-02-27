@@ -5,21 +5,21 @@ from sfepy.linalg import dot_sequences
 
 class NonPenetrationTerm(Term):
     r"""
-    :Description:
     Non-penetration condition in the weak sense.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} \lambda \ul{n} \cdot \ul{v} \mbox{ , }
         \int_{\Gamma} \hat\lambda \ul{n} \cdot \ul{u}
 
     :Arguments 1:
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\lambda`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\lambda`
 
     :Arguments 2:
-        state    : :math:`\ul{u}`,
-        virtual  : :math:`\hat\lambda`
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`\hat\lambda`
     """
     name = 'dw_non_penetration'
     arg_types = (('virtual', 'state'),

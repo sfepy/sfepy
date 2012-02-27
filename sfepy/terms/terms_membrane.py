@@ -78,8 +78,8 @@ class TLMembraneTerm(Term):
     Mooney-Rivlin membrane with plain stress assumption.
 
     :Arguments:
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_tl_membrane'
     arg_types = ('material_a1', 'material_a2', 'material_h0',

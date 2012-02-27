@@ -6,19 +6,19 @@ from sfepy.terms.terms import Term, terms
 # 22.08.2006, c
 class LinearTractionTerm( Term ):
     r"""
-    :Description:
     Linear traction forces (weak form), where, depending on dimension of
     'material' argument, :math:`\ull{\sigma} \cdot \ul{n}` is
     :math:`\bar{p} \ull{I} \cdot \ul{n}` for a given scalar pressure,
     :math:`\ul{f}` for a traction vector, and itself for a stress tensor.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} \ul{v} \cdot \ull{\sigma} \cdot \ul{n}
 
     :Arguments:
-        material : :math:`\ull{\sigma}`,
-        virtual  : :math:`\ul{v}`
+        - material : :math:`\ull{\sigma}`
+        - virtual  : :math:`\ul{v}`
     """
     name = 'dw_surface_ltr'
     arg_types = ('material', 'virtual')
@@ -34,18 +34,18 @@ class LinearTractionTerm( Term ):
 
 class SurfaceJumpTerm(Term):
     r"""
-    :Description:
     Interface jump condition.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} q (p_1 - p_2 - c)
 
     :Arguments:
-        material : :math:`c`,
-        virtual  : :math:`q`,
-        state_1  : :math:`p_1`,
-        state_2  : :math:`p_2`
+        - material : :math:`c`
+        - virtual  : :math:`q`
+        - state_1  : :math:`p_1`
+        - state_2  : :math:`p_2`
     """
     name = 'dw_jump'
     arg_types = ('material', 'virtual', 'state_1', 'state_2')

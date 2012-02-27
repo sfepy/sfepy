@@ -5,24 +5,24 @@ from sfepy.terms.terms import Term, terms
 
 class DiffusionTerm(Term):
     r"""
-    :Description:
     General diffusion term with permeability :math:`K_{ij}`. Can be
     evaluated. Can use derivatives.
 
     :Definition:
+
     .. math::
         \int_{\Omega} K_{ij} \nabla_i q \nabla_j p \mbox{ , } \int_{\Omega}
         K_{ij} \nabla_i \bar{p} \nabla_j r
 
     :Arguments 1:
-        material : :math:`K_{ij}`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        - material : :math:`K_{ij}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
 
     :Arguments 2:
-        material    : :math:`K_{ij}`,
-        parameter_1 : :math:`\bar{p}`,
-        parameter_2 : :math:`r`
+        - material    : :math:`K_{ij}`
+        - parameter_1 : :math:`\bar{p}`
+        - parameter_2 : :math:`r`
     """
     name = 'dw_diffusion'
     arg_types = (('material', 'virtual', 'state'),
@@ -76,24 +76,24 @@ class DiffusionTerm(Term):
 
 class LaplaceTerm(DiffusionTerm):
     r"""
-    :Description:
     Laplace term with :math:`c` coefficient. Can be
     evaluated. Can use derivatives.
 
     :Definition:
+
     .. math::
         \int_{\Omega} c \nabla q \cdot \nabla p \mbox{ , } \int_{\Omega}
         c \nabla \bar{p} \cdot \nabla r
 
     :Arguments 1:
-        material : :math:`c`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        - material : :math:`c`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
 
     :Arguments 2:
-        material    : :math:`c`,
-        parameter_1 : :math:`\bar{p}`,
-        parameter_2 : :math:`r`
+        - material    : :math:`c`
+        - parameter_1 : :math:`\bar{p}`
+        - parameter_2 : :math:`r`
     """
     name = 'dw_laplace'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -111,18 +111,18 @@ class LaplaceTerm(DiffusionTerm):
 
 # class PermeabilityRTerm( Term ):
 #     r"""
-#     :Description:
 #     Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
 #     use on the right-hand side).
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} K_{ij} \nabla_j q
 
 #     :Arguments:
-#         material : :math:`K_{ij}`,
-#         virtual  : :math:`q`,
-#         index    : :math:`i`
+#         - material : :math:`K_{ij}`
+#         - virtual  : :math:`q`
+#         - index    : :math:`i`
 #     """
 #     name = 'dw_permeability_r'
 #     arg_types = ('material', 'virtual', 'index')
@@ -149,17 +149,17 @@ class LaplaceTerm(DiffusionTerm):
 
 class DiffusionRTerm(Term):
     r"""
-    :Description:
     Diffusion-like term with material parameter :math:`K_{j}` (to
     use on the right-hand side).
 
     :Definition:
+
     .. math::
         \int_{\Omega} K_{j} \nabla_j q
 
     :Arguments:
-        material : :math:`K_j`,
-        virtual  : :math:`q`
+        - material : :math:`K_j`
+        - virtual  : :math:`q`
     """
     name = 'dw_diffusion_r'
     arg_types = ('material', 'virtual')
@@ -173,17 +173,17 @@ class DiffusionRTerm(Term):
 
 class DiffusionCoupling(Term):
     r"""
-    :Description:
     Diffusion copupling term with material parameter :math:`K_{j}`.
 
     :Definition:
+
     .. math::
         \int_{\Omega}  p K_{j} \nabla_j q
 
     :Arguments:
-        material : :math:`K_{j}`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        - material : :math:`K_{j}`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
     """
     name = 'dw_diffusion_coupling'
     arg_types = (('material', 'virtual', 'state'),
@@ -270,12 +270,12 @@ class DiffusionCoupling(Term):
 
 class DiffusionVelocityTerm( Term ):
     r"""
-    :Description:
     Evaluate diffusion velocity.
 
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         - \int_{\Omega} K_{ij} \nabla_j \bar{p}
 
@@ -287,8 +287,8 @@ class DiffusionVelocityTerm( Term ):
         - K_{ij} \nabla_j \bar{p}
 
     :Arguments:
-        material  : :math:`K_{ij}`,
-        parameter : :math:`\bar{p}`
+        - material  : :math:`K_{ij}`
+        - parameter : :math:`\bar{p}`
     """
     name = 'ev_diffusion_velocity'
     arg_types = ('material', 'parameter')
@@ -327,16 +327,16 @@ class DiffusionVelocityTerm( Term ):
 
 class SurfaceFluxTerm(Term):
     r"""
-    :Description:
     Surface flux term.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
 
     :Arguments:
-        material: :math:`\ul{K}`,
-        parameter:  :math:`\bar{p}`,
+        - material: :math:`\ul{K}`
+        - parameter:  :math:`\bar{p}`,
     """
     name = 'd_surface_flux'
     arg_types = ('material', 'parameter')

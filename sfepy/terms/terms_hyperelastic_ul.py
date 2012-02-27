@@ -54,18 +54,18 @@ class HyperElasticULBase(HyperElasticBase):
 
 class NeoHookeanULTerm(HyperElasticULBase):
     r"""
-    :Description:
-    Hyperelastic neo-Hookean term. Effective stress
-    :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
+    Hyperelastic neo-Hookean term. Effective stress :math:`\tau_{ij} = \mu
+    J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
     :Arguments:
-        material : :math:`\mu`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`\mu`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_ul_he_neohook'
     family_data_names = ['det_f', 'tr_b', 'sym_b']
@@ -75,20 +75,20 @@ class NeoHookeanULTerm(HyperElasticULBase):
 
 # class NeoHookeanULHTerm(NeoHookeanULTerm):
 #     r"""
-#     :Description:
-#     Hyperelastic neo-Hookean term.
-#     Geometrical configuration given by parameter :math:`\ul{w}`.
-#     Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
+#     Hyperelastic neo-Hookean term.  Geometrical configuration given by
+#     parameter :math:`\ul{w}`.  Effective stress :math:`\tau_{ij} = \mu
+#     J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments 1:
-#         material : :math:`\mu`,
-#         virtual  : :math:`\ul{v}`,
-#         state    : :math:`\ul{u}`,
-#         state_u  : :math:`\ul{w}`
+#         - material : :math:`\mu`
+#         - virtual  : :math:`\ul{v}`
+#         - state    : :math:`\ul{u}`
+#         - state_u  : :math:`\ul{w}`
 #     """
 #     name = 'dw_ul_he_neohook_h'
 #     arg_types = ('material', 'virtual', 'state', 'state_u')
@@ -100,20 +100,20 @@ class NeoHookeanULTerm(HyperElasticULBase):
 
 # class NeoHookeanULEHTerm(NeoHookeanULTerm):
 #     r"""
-#     :Description:
 #     Hyperelastic neo-Hookean term.
 #     Geometrical configuration given by parameter :math:`\ul{w}`.
 #     Effective stress :math:`\tau_{ij} = \mu J^{-\frac{2}{3}}(b_{ij} - \frac{1}{3}b_{kk}\delta_{ij})`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments:
-#         material    : :math:`\mu`,
-#         parameter_1 : :math:`\ul{v}`,
-#         parameter_2 : :math:`\ul{u}`,
-#         state_u     : :math:`\ul{w}`
+#         - material    : :math:`\mu`
+#         - parameter_1 : :math:`\ul{v}`
+#         - parameter_2 : :math:`\ul{u}`
+#         - state_u     : :math:`\ul{w}`
 #     """
 #     name = 'd_ul_he_neohook_h'
 #     arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
@@ -155,20 +155,20 @@ class NeoHookeanULTerm(HyperElasticULBase):
 
 # class BulkPenaltyULHTerm(BulkPenaltyULTerm):
 #     r"""
-#     :Description:
 #     Hyperelastic bulk penalty term.
 #     Geometrical configuration given by parameter :math:`\ul{w}`.
 #     Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments:
-#         material : :math:`K`,
-#         virtual  : :math:`\ul{v}`,
-#         state    : :math:`\ul{u}`,
-#         state_u  : :math:`\ul{w}`
+#         - material : :math:`K`
+#         - virtual  : :math:`\ul{v}`
+#         - state    : :math:`\ul{u}`
+#         - state_u  : :math:`\ul{w}`
 #     """
 #     name = 'dw_ul_bulk_penalty_h'
 #     arg_types = ('material', 'virtual', 'state', 'state_u')
@@ -180,20 +180,20 @@ class NeoHookeanULTerm(HyperElasticULBase):
 
 # class BulkPenaltyULEHTerm(BulkPenaltyULTerm):
 #     r"""
-#     :Description:
 #     Hyperelastic bulk penalty term.
 #     Geometrical configuration given by parameter :math:`\ul{w}`.
 #     Stress :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments:
-#         material    : :math:`K`,
-#         parameter_1 : :math:`\ul{v}`,
-#         parameter_2 : :math:`\ul{u}`,
-#         state_u  : :math:`\ul{w}`
+#         - material    : :math:`K`
+#         - parameter_1 : :math:`\ul{v}`
+#         - parameter_2 : :math:`\ul{u}`
+#         - state_u  : :math:`\ul{w}`
 #     """
 #     name = 'd_ul_bulk_penalty_h'
 #     arg_types = ('material', 'parameter_1', 'parameter_2', 'state_u')
@@ -205,17 +205,17 @@ class NeoHookeanULTerm(HyperElasticULBase):
 
 class MooneyRivlinULTerm(HyperElasticULBase):
     r"""
-    :Description:
     Hyperelastic Mooney-Rivlin term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
     :Arguments:
-        material : :math:`\kappa`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`\kappa`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_ul_he_mooney_rivlin'
     family_data_names = ['det_f', 'tr_b', 'sym_b', 'in2_b']
@@ -225,18 +225,18 @@ class MooneyRivlinULTerm(HyperElasticULBase):
 
 class BulkPenaltyULTerm(HyperElasticULBase):
     r"""
-    :Description:
-    Hyperelastic bulk penalty term. Stress
-    :math:`\tau_{ij} = K(J-1)\; J \delta_{ij}`.
+    Hyperelastic bulk penalty term. Stress :math:`\tau_{ij} = K(J-1)\; J
+    \delta_{ij}`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
     :Arguments:
-        material : :math:`K`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`K`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_ul_bulk_penalty'
     family_data_names = ['det_f']
@@ -246,18 +246,17 @@ class BulkPenaltyULTerm(HyperElasticULBase):
 
 class BulkPressureULTerm(HyperElasticULBase):
     r"""
-    :Description:
-    Hyperelastic bulk pressure term. Stress
-    :math:`S_{ij} = -p J \delta_{ij}`.
+    Hyperelastic bulk pressure term. Stress :math:`S_{ij} = -p J \delta_{ij}`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
     :Arguments:
-        virtual : :math:`\ul{v}`,
-        state   : :math:`\ul{u}`,
-        state_p : :math:`p`
+        - virtual : :math:`\ul{v}`
+        - state   : :math:`\ul{u}`
+        - state_p : :math:`p`
     """
 
     name = 'dw_ul_bulk_pressure'
@@ -355,19 +354,19 @@ class BulkPressureULTerm(HyperElasticULBase):
 
 # class BulkPressureULHTerm(BulkPressureULTerm):
 #     r"""
-#     :Description:
 #     Hyperelastic bulk pressure term. Stress
 #     :math:`S_{ij} = -p J \delta_{ij}`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments:
-#         virtual : :math:`\ul{v}`,
-#         state   : :math:`\ul{u}`,
-#         state_p : :math:`p`,
-#         state_u : :math:`w`
+#         - virtual : :math:`\ul{v}`
+#         - state   : :math:`\ul{u}`
+#         - state_p : :math:`p`
+#         - state_u : :math:`w`
 #     """
 #     name = 'dw_ul_bulk_pressure_h'
 #     arg_types = ('virtual', 'state', 'state_p', 'state_u')
@@ -438,19 +437,19 @@ class BulkPressureULTerm(HyperElasticULBase):
 
 # class BulkPressureULEHTerm(BulkPressureULTerm):
 #     r"""
-#     :Description:
 #     Hyperelastic bulk pressure term. Stress
 #     :math:`S_{ij} = -p J \delta_{ij}`.
 
 #     :Definition:
+
 #     .. math::
 #         \int_{\Omega} \mathcal{L}\tau_{ij}(\ul{u}) e_{ij}(\delta\ul{v})/J
 
 #     :Arguments:
-#         virtual : :math:`\ul{v}`,
-#         state   : :math:`\ul{u}`,
-#         state_p : :math:`p`,
-#         state_u : :math:`w`
+#         - virtual : :math:`\ul{v}`
+#         - state   : :math:`\ul{u}`
+#         - state_p : :math:`p`
+#         - state_u : :math:`w`
 #     """
 #     name = 'd_ul_bulk_pressure_h'
 #     arg_types = ('virtual', 'state', 'state_p', 'state_u')
@@ -532,10 +531,10 @@ class BulkPressureULTerm(HyperElasticULBase):
 
 class VolumeULTerm(HyperElasticULBase):
     r"""
-    :Description:
     Volume term (weak form) in the updated Lagrangian formulation.
 
     :Definition:
+
     .. math::
          \begin{array}{l}
          \int_{\Omega} q J(\ul{u}) \\
@@ -546,8 +545,8 @@ class VolumeULTerm(HyperElasticULBase):
          \end{array}
 
     :Arguments:
-        virtual : :math:`q`,
-        state   : :math:`\ul{u}`
+        - virtual : :math:`q`
+        - state   : :math:`\ul{u}`
     """
     name = 'dw_ul_volume'
     arg_types = ('virtual', 'state')
@@ -593,18 +592,18 @@ class VolumeULTerm(HyperElasticULBase):
 
 class CompressibilityULTerm(HyperElasticULBase):
     r"""
-    :Description:
     Compressibility term for the updated Lagrangian formulation
 
     :Definition:
+
     .. math::
         \int_{\Omega} 1\over \gamma p \, q
 
     :Arguments:
-        material : :math:`\gamma`,
-        virtual  : :math:`q`,
-        state    : :math:`p`,
-        parameter_u  : :math:`\ul(u)`,
+        - material : :math:`\gamma`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+        - parameter_u  : :math:`\ul(u)`
     """
     name = 'dw_ul_compressible'
     arg_types = ('material', 'virtual', 'state', 'parameter_u')

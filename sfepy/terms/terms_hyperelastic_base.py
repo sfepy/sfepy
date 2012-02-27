@@ -7,16 +7,20 @@ class HyperElasticBase(Term):
     """
     Base class for all hyperelastic terms in TL/UL formulation.
 
-    Note
-    ----
-    This is not a proper Term!
-
     `HyperElasticBase.__call__()` computes element contributions given either
     stress (-> rezidual) or tangent modulus (-> tangent sitffnes matrix),
     i.e. constitutive relation type (CRT) related data. The CRT data are
     computed in subclasses implementing particular CRT (e.g. neo-Hookean
     material), in self.compute_crt_data().
-    Mode: 0 - total formulation, 1 - updated formulation
+
+    Modes:
+
+      - 0: total formulation
+      - 1: updated formulation
+
+    Notes
+    -----
+    This is not a proper Term!
     """
     arg_types = ('material', 'virtual', 'state')
 
@@ -38,8 +42,8 @@ class HyperElasticBase(Term):
 
     def get_family_data(self, state, cache_name, data_names):
         """
-        Note
-        ----
+        Notes
+        -----
         `data_names` argument is ignored for now.
         """
         name = state.name
@@ -230,19 +234,19 @@ class HyperElasticBase(Term):
 
 class DeformationGradientTerm(Term):
     r"""
-    :Description:
     Deformation gradient :math:`F` in quadrature points for
     `term_mode='def_grad'` (default) or the jacobian :math:`J` if
     `term_mode='jacobian'`.
 
     :Definition:
+
     .. math::
         \ull{F} = \pdiff{\ul{x}}{\ul{X}}|_{qp}
         = \ull{I} + \pdiff{\ul{u}}{\ul{X}}|_{qp} \;, \\
         \ul{x} = \ul{X} + \ul{u} \;, J = \det{(\ull{F})}
 
     :Arguments:
-        state : :math:`\ul{u}`
+        - state : :math:`\ul{u}`
     """
     name = 'dq_def_grad'
     arg_types = ('state',)

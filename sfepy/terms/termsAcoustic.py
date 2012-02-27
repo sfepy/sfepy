@@ -4,18 +4,20 @@ from sfepy.terms.terms import Term, terms
 
 class DiffusionSATerm(Term):
     r"""
-    :Description:
     Diffusion sensitivity analysis term.
 
     :Definition:
+
     .. math::
-        \int_{\Omega} \left[ (\dvg \ul{\Vcal}) K_{ij} \nabla_i q\, \nabla_j p - K_{ij} (\nabla_j \ul{\Vcal} \nabla q) \nabla_i p - K_{ij} \nabla_j q (\nabla_i \ul{\Vcal} \nabla p)\right]
+        \int_{\Omega} \left[ (\dvg \ul{\Vcal}) K_{ij} \nabla_i q\, \nabla_j p -
+        K_{ij} (\nabla_j \ul{\Vcal} \nabla q) \nabla_i p - K_{ij} \nabla_j q
+        (\nabla_i \ul{\Vcal} \nabla p)\right]
 
     :Arguments:
-        material : :math:`K_{ij}`,
-        parameter_q: :math:`q`,
-        parameter_p: :math:`p`,
-        parameter_v: :math:`\ul{\Vcal}`,
+        - material:    :math:`K_{ij}`
+        - parameter_q: :math:`q`
+        - parameter_p: :math:`p`
+        - parameter_v: :math:`\ul{\Vcal}`
     """
     name = 'd_diffusion_sa'
     arg_types = ('material', 'parameter_q', 'parameter_p', 'parameter_v')
@@ -41,22 +43,23 @@ class DiffusionSATerm(Term):
 
 class SurfaceLaplaceLayerTerm(Term):
     r"""
-    :Description:
     Acoustic 'layer' term - derivatives in surface directions.
 
     :Definition:
+
     .. math::
-        \int_{\Gamma} c \partial_\alpha \ul{q}\,\partial_\alpha \ul{p}, \alpha = 1,\dots,N-1
+        \int_{\Gamma} c \partial_\alpha \ul{q}\,\partial_\alpha \ul{p}, \alpha
+        = 1,\dots,N-1
 
     :Arguments 1:
-        material: :math:`c`,
-        virtual:  :math:`q`,
-        state:    :math:`p`
+        - material: :math:`c`
+        - virtual:  :math:`q`
+        - state:    :math:`p`
 
     :Arguments 2:
-        material: :math:`c`,
-        parameter_1 : :math:`q`,
-        parameter_2 : :math:`p`
+        - material:    :math:`c`
+        - parameter_1: :math:`q`
+        - parameter_2: :math:`p`
     """
     name = 'dw_surface_laplace'
     arg_types = [('material', 'virtual', 'state'),
@@ -107,30 +110,29 @@ class SurfaceLaplaceLayerTerm(Term):
 
 class SurfaceCoupleLayerTerm(Term):
     r"""
-    :Description:
     Acoustic 'layer' term - derivatives in surface directions.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} c q\,\partial_\alpha p,
         \int_{\Gamma} c \partial_\alpha p\, q,
         \int_{\Gamma} c \partial_\alpha r\, s,\alpha = 1,\dots,N-1
 
     :Arguments 1:
-        material: :math:`c`,
-        virtual:  :math:`q`,
-        state:    :math:`p`
+        - material: :math:`c`
+        - virtual:  :math:`q`
+        - state:    :math:`p`
 
     :Arguments 2:
-        material: :math:`c`,
-        virtual:  :math:`q`,
-        state:    :math:`p`
+        - material: :math:`c`
+        - virtual:  :math:`q`
+        - state:    :math:`p`
 
     :Arguments 3:
-        material: :math:`c`,
-        parameter_1 : :math:`s`,
-        parameter_2 : :math:`r`
-
+        - material:    :math:`c`
+        - parameter_1: :math:`s`
+        - parameter_2: :math:`r`
     """
     name = 'dw_surface_lcouple'
     arg_types = (('material', 'virtual', 'state'),

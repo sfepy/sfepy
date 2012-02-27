@@ -31,7 +31,6 @@ def fibre_function(out, pars, green_strain, fmode):
 
 class FibresActiveTLTerm(HyperElasticTLBase):
     r"""
-    :Description:
     Hyperelastic active fibres term. Effective stress
     :math:`S_{ij} = A f_{\rm max} \exp{\left\{-(\frac{\epsilon -
     \varepsilon_{\rm opt}}{s})^2\right\}} d_i d_j`,
@@ -39,18 +38,18 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     :math:`\ull{E}` projected to the fibre direction :math:`\ul{d}`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} S_{ij}(\ul{u}) \delta E_{ij}(\ul{u};\ul{v})
 
     :Arguments:
-        material_1 : :math:`f_{\rm max}`,
-        material_2 : :math:`\varepsilon_{\rm opt}`,
-        material_3 : :math:`s`,
-        material_4 : :math:`\ul{d}`,
-        material_5 : :math:`A`,
-        virtual    : :math:`\ul{v}`,
-        state      : :math:`\ul{u}`
-
+        - material_1 : :math:`f_{\rm max}`
+        - material_2 : :math:`\varepsilon_{\rm opt}`
+        - material_3 : :math:`s`
+        - material_4 : :math:`\ul{d}`
+        - material_5 : :math:`A`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
     """
     name = 'dw_tl_fib_a'
     arg_types = ('material_1', 'material_2', 'material_3',

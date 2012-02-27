@@ -7,7 +7,6 @@ from sfepy.terms.termsLinElasticity import CauchyStressTerm
 
 class BiotTerm(Term):
     r"""
-    :Description:
     Biot coupling term with :math:`\alpha_{ij}`
     given in vector form exploiting symmetry: in 3D it has the
     indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
@@ -16,24 +15,25 @@ class BiotTerm(Term):
     use derivatives.
 
     :Definition:
+
     .. math::
         \int_{\Omega}  p\ \alpha_{ij} e_{ij}(\ul{v}) \mbox{ , } \int_{\Omega}
         q\ \alpha_{ij} e_{ij}(\ul{u})
 
     :Arguments 1:
-        material : :math:`\alpha_{ij}`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`p`
+        - material : :math:`\alpha_{ij}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`p`
 
     :Arguments 2:
-        material : :math:`\alpha_{ij}`,
-        state    : :math:`\ul{u}`,
-        virtual  : :math:`q`
+        - material : :math:`\alpha_{ij}`
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
 
     :Arguments 3:
-        material    : :math:`\alpha_{ij}`,
-        parameter_v : :math:`\ul{u}`,
-        parameter_s : :math:`p`
+        - material    : :math:`\alpha_{ij}`
+        - parameter_v : :math:`\ul{u}`
+        - parameter_s : :math:`p`
     """
     name = 'dw_biot'
     arg_types = (('material', 'virtual', 'state'),
@@ -90,7 +90,6 @@ class BiotTerm(Term):
 
 class BiotStressTerm(CauchyStressTerm):
     r"""
-    :Description:
     Evaluate Biot stress tensor.
 
     It is given in the usual vector form exploiting symmetry: in 3D it has 6
@@ -100,6 +99,7 @@ class BiotStressTerm(CauchyStressTerm):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         - \int_{\Omega} \alpha_{ij} \bar{p}
 
@@ -111,8 +111,8 @@ class BiotStressTerm(CauchyStressTerm):
         - \alpha_{ij} \bar{p}|_{qp}
 
     :Arguments:
-        material  : :math:`\alpha_{ij}`,
-        parameter : :math:`\bar{p}`
+        - material  : :math:`\alpha_{ij}`
+        - parameter : :math:`\bar{p}`
     """
     name = 'ev_biot_stress'
     arg_types = ('material', 'parameter')
@@ -142,10 +142,10 @@ class BiotStressTerm(CauchyStressTerm):
 
 class BiotTHTerm(BiotTerm, THTerm):
     r"""
-    :Description:
     Fading memory Biot term. Can use derivatives.
 
     :Definition:
+
     .. math::
         \begin{array}{l}
         \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
@@ -155,16 +155,16 @@ class BiotTHTerm(BiotTerm, THTerm):
         \end{array}
 
     :Arguments 1:
-        ts       : :class:`TimeStepper` instance,
-        material : :math:`\alpha_{ij}(\tau)`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`p`
+        - ts       : :class:`TimeStepper` instance
+        - material : :math:`\alpha_{ij}(\tau)`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`p`
 
     :Arguments 2:
-        ts       : :class:`TimeStepper` instance,
-        material : :math:`\alpha_{ij}(\tau)`,
-        state    : :math:`\ul{u}`,
-        virtual  : :math:`q`
+        - ts       : :class:`TimeStepper` instance
+        - material : :math:`\alpha_{ij}(\tau)`
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`q`
     """
     name = 'dw_biot_th'
     arg_types = (('ts', 'material', 'virtual', 'state'),
@@ -206,12 +206,12 @@ class BiotTHTerm(BiotTerm, THTerm):
 
 class BiotETHTerm(BiotTerm, ETHTerm):
     r"""
-    :Description:
     This term has the same definition as dw_biot_th, but assumes an
     exponential approximation of the convolution kernel resulting in much
     higher efficiency. Can use derivatives.
 
     :Definition:
+
     .. math::
         \begin{array}{l}
         \int_{\Omega} \left [\int_0^t \alpha_{ij}(t-\tau)\,p(\tau)) \difd{\tau}
@@ -221,18 +221,18 @@ class BiotETHTerm(BiotTerm, ETHTerm):
         \end{array}
 
     :Arguments 1:
-        ts         : :class:`TimeStepper` instance,
-        material_0 : :math:`\alpha_{ij}(0)`,
-        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
-        virtual    : :math:`\ul{v}`,
-        state      : :math:`p`
+        - ts         : :class:`TimeStepper` instance
+        - material_0 : :math:`\alpha_{ij}(0)`
+        - material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`p`
 
     :Arguments 2:
-        ts         : :class:`TimeStepper` instance,
-        material_0 : :math:`\alpha_{ij}(0)`,
-        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
-        state      : :math:`\ul{u}`,
-        virtual    : :math:`q`
+        - ts         : :class:`TimeStepper` instance
+        - material_0 : :math:`\alpha_{ij}(0)`
+        - material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        - state      : :math:`\ul{u}`
+        - virtual    : :math:`q`
     """
     name = 'dw_biot_eth'
     arg_types = (('ts', 'material_0', 'material_1', 'virtual', 'state'),

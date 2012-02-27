@@ -4,17 +4,17 @@ from sfepy.terms.terms import Term, terms
 
 class DivGradTerm(Term):
     r"""
-    :Description:
     Diffusion term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
 
     :Arguments:
-        material : :math:`\nu` (viscosity),
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`\nu` (viscosity)
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_div_grad'
     arg_types = ('material', 'virtual', 'state')
@@ -39,16 +39,16 @@ class DivGradTerm(Term):
 
 class ConvectTerm(Term):
     r"""
-    :Description:
     Nonlinear convective term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
     :Arguments:
-        virtual : :math:`\ul{v}`,
-        state   : :math:`\ul{u}`
+        - virtual : :math:`\ul{v}`
+        - state   : :math:`\ul{u}`
     """
     name = 'dw_convect'
     arg_types = ('virtual', 'state')
@@ -68,10 +68,10 @@ class ConvectTerm(Term):
 
 class LinearConvectTerm(Term):
     r"""
-    :Description:
     Linearized convective term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} ((\ul{b} \cdot \nabla) \ul{u}) \cdot \ul{v}
 
@@ -79,9 +79,9 @@ class LinearConvectTerm(Term):
         ((\ul{b} \cdot \nabla) \ul{u})|_{qp}
 
     :Arguments:
-        virtual   : :math:`\ul{v}`,
-        parameter : :math:`\ul{b}`,
-        state     : :math:`\ul{u}`
+        - virtual   : :math:`\ul{v}`
+        - parameter : :math:`\ul{b}`
+        - state     : :math:`\ul{u}`
     """
     name = 'dw_lin_convect'
     arg_types = ('virtual', 'parameter', 'state')
@@ -117,11 +117,11 @@ class LinearConvectTerm(Term):
 
 class StokesTerm(Term):
     r"""
-    :Description:
     Stokes problem coupling term. Corresponds to weak forms of gradient and
     divergence terms. Can be evaluated.
 
     :Definition:
+
     .. math::
         \int_{\Omega} p\ \nabla \cdot \ul{v} \mbox{ , }
         \int_{\Omega} q\ \nabla \cdot \ul{u}
@@ -130,19 +130,19 @@ class StokesTerm(Term):
         \int_{\Omega} c\ q\ \nabla \cdot \ul{u}
 
     :Arguments 1:
-        material : :math:`c` (optional),
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{p}`
+        - material : :math:`c` (optional)
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{p}`
 
     :Arguments 2:
-        material : :math:`c` (optional),
-        state    : :math:`\ul{u}`,
-        virtual  : :math:`\ul{q}`
+        - material : :math:`c` (optional)
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`\ul{q}`
 
     :Arguments 3:
-        material    : :math:`c` (optional),
-        parameter_v : :math:`\ul{u}`,
-        parameter_s : :math:`p`
+        - material    : :math:`c` (optional)
+        - parameter_v : :math:`\ul{u}`
+        - parameter_s : :math:`p`
     """
     name = 'dw_stokes'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -211,12 +211,12 @@ class StokesTerm(Term):
 
 class GradTerm(Term):
     r"""
-    :Description:
     Evaluate gradient of a scalar or vector field.
 
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \nabla p \mbox{ or } \int_{\Omega} \nabla \ul{w}
 
@@ -229,7 +229,7 @@ class GradTerm(Term):
         (\nabla p)|_{qp} \mbox{ or } \nabla \ul{w}|_{qp}
 
     :Arguments:
-        state : :math:`p` or :math:`\ul{w}`
+        - state : :math:`p` or :math:`\ul{w}`
     """
     name = 'ev_grad'
     arg_types = ('parameter',)
@@ -266,12 +266,12 @@ class GradTerm(Term):
 
 class DivTerm(Term):
     r"""
-    :Description:
     Evaluate divergence of a vector field.
 
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
          \int_{\Omega} \nabla \cdot \ul{u}
 
@@ -283,7 +283,7 @@ class DivTerm(Term):
         (\nabla \cdot \ul{u})|_{qp}
 
     :Arguments:
-        state : :math:`\ul{u}`
+        - state : :math:`\ul{u}`
     """
     name = 'ev_div'
     arg_types = ('parameter',)
@@ -320,16 +320,17 @@ class DivTerm(Term):
 
 class DivOperatorTerm(Term):
     r"""
-    :Description:
     Weighted divergence term of a test function.
 
     :Definition:
+
     .. math::
-        \int_{\Omega} \nabla \cdot \ul{v} \mbox { or } \int_{\Omega} c \nabla \cdot \ul{v}
+        \int_{\Omega} \nabla \cdot \ul{v} \mbox { or } \int_{\Omega} c \nabla
+        \cdot \ul{v}
 
     :Arguments:
-        material : :math:`c` (optional),
-        virtual  : :math:`\ul{v}`
+        - material : :math:`c` (optional)
+        - virtual  : :math:`\ul{v}`
     """
     name = 'dw_div'
     arg_types = ('opt_material', 'virtual')
@@ -357,18 +358,18 @@ class DivOperatorTerm(Term):
 
 class GradDivStabilizationTerm(Term):
     r"""
-    :Description:
     Grad-div stabilization term ( :math:`\gamma` is a global stabilization
     parameter).
 
     :Definition:
+
     .. math::
         \gamma \int_{\Omega} (\nabla\cdot\ul{u}) \cdot (\nabla\cdot\ul{v})
 
     :Arguments:
-        material : :math:`\gamma`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`\gamma`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_st_grad_div'
     arg_types = ('material', 'virtual', 'state')
@@ -392,37 +393,37 @@ class GradDivStabilizationTerm(Term):
 from sfepy.terms.termsLaplace import LaplaceTerm
 class PSPGPStabilizationTerm(LaplaceTerm):
     r"""
-    :Description:
     PSPG stabilization term, pressure part ( :math:`\tau` is a local
     stabilization parameter), alias to Laplace term dw_laplace.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ \nabla p \cdot \nabla q
 
     :Arguments:
-        material : :math:`\tau_K`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        - material : :math:`\tau_K`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
     """
     name = 'dw_st_pspg_p'
 
 class PSPGCStabilizationTerm(Term):
     r"""
-    :Description:
     PSPG stabilization term, convective part ( :math:`\tau` is a local
     stabilization parameter).
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ ((\ul{b} \cdot \nabla) \ul{u})
         \cdot \nabla q
 
     :Arguments:
-        material  : :math:`\tau_K`,
-        virtual   : :math:`q`,
-        parameter : :math:`\ul{b}`,
-        state     : :math:`\ul{u}`
+        - material  : :math:`\tau_K`
+        - virtual   : :math:`q`
+        - parameter : :math:`\ul{b}`
+        - state     : :math:`\ul{u}`
     """
     name = 'dw_st_pspg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -447,20 +448,20 @@ class PSPGCStabilizationTerm(Term):
 
 class SUPGPStabilizationTerm(Term):
     r"""
-    :Description:
     SUPG stabilization term, pressure part ( :math:`\delta` is a local
     stabilization parameter).
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ \nabla p\cdot ((\ul{b} \cdot
         \nabla) \ul{v})
 
     :Arguments:
-        material  : :math:`\delta_K`,
-        virtual   : :math:`\ul{v}`,
-        parameter : :math:`\ul{b}`,
-        state     : :math:`p`
+        - material  : :math:`\delta_K`
+        - virtual   : :math:`\ul{v}`
+        - parameter : :math:`\ul{b}`
+        - state     : :math:`p`
     """
     name = 'dw_st_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -486,20 +487,20 @@ class SUPGPStabilizationTerm(Term):
 
 class SUPGCStabilizationTerm(Term):
     r"""
-    :Description:
     SUPG stabilization term, convective part ( :math:`\delta` is a local
     stabilization parameter).
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ ((\ul{b} \cdot \nabla)
         \ul{u})\cdot ((\ul{b} \cdot \nabla) \ul{v})
 
     :Arguments:
-        material  : :math:`\delta_K`,
-        virtual   : :math:`\ul{v}`,
-        parameter : :math:`\ul{b}`,
-        state     : :math:`\ul{u}`
+        - material  : :math:`\delta_K`
+        - virtual   : :math:`\ul{v}`
+        - parameter : :math:`\ul{b}`
+        - state     : :math:`\ul{u}`
     """
     name = 'dw_st_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')

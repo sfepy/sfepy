@@ -5,20 +5,20 @@ from sfepy.terms.termsNavierStokes import DivGradTerm
 
 class AdjDivGradTerm(DivGradTerm):
     r"""
-    :Description:
     Gateaux differential of :math:`\Psi(\ul{u}) = \int_{\Omega} \nu\
     \nabla \ul{v} : \nabla \ul{u}` w.r.t. :math:`\ul{u}` in the direction
     :math:`\ul{v}` or adjoint term to `dw_div_grad`.
 
     :Definition:
+
     .. math::
         w \delta_{u} \Psi(\ul{u}) \circ \ul{v}
 
     :Arguments:
-        material_1 : :math:`w` (weight),
-        material_2 : :math:`\nu` (viscosity),
-        virtual    : :math:`\ul{v}`,
-        state      : :math:`\ul{u}`
+        - material_1 : :math:`w` (weight)
+        - material_2 : :math:`\nu` (viscosity)
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
     """
     name = 'dw_adj_div_grad'
     arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
@@ -42,17 +42,17 @@ class AdjDivGradTerm(DivGradTerm):
 
 class AdjConvect1Term(Term):
     r"""
-    :Description:
     The first adjoint term to nonlinear convective term `dw_convect`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} ((\ul{v} \cdot \nabla) \ul{u}) \cdot \ul{w}
 
     :Arguments:
-        virtual   : :math:`\ul{v}`,
-        state     : :math:`\ul{w}`,
-        parameter : :math:`\ul{u}`
+        - virtual   : :math:`\ul{v}`
+        - state     : :math:`\ul{w}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'dw_adj_convect1'
     arg_types = ('virtual', 'state', 'parameter' )
@@ -83,17 +83,17 @@ class AdjConvect1Term(Term):
 
 class AdjConvect2Term(AdjConvect1Term):
     r"""
-    :Description:
     The second adjoint term to nonlinear convective term `dw_convect`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} ((\ul{u} \cdot \nabla) \ul{v}) \cdot \ul{w}
 
     :Arguments:
-        virtual   : :math:`\ul{v}`,
-        state     : :math:`\ul{w}`,
-        parameter : :math:`\ul{u}`
+        - virtual   : :math:`\ul{v}`
+        - state     : :math:`\ul{w}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'dw_adj_convect2'
     arg_types = ('virtual', 'state', 'parameter' )
@@ -102,20 +102,20 @@ class AdjConvect2Term(AdjConvect1Term):
 
 class AdjSUPGCtabilizationTerm(Term):
     r"""
-    :Description:
     Adjoint term to SUPG stabilization term `dw_st_supg_c`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ ((\ul{v} \cdot \nabla)
         \ul{u}) ((\ul{u} \cdot \nabla) \ul{w}) + ((\ul{u} \cdot \nabla)
         \ul{u}) ((\ul{v} \cdot \nabla) \ul{w}) ]
 
     :Arguments:
-        material  : :math:`\delta_K`,
-        virtual   : :math:`\ul{v}`,
-        state     : :math:`\ul{w}`,
-        parameter : :math:`\ul{u}`
+        - material  : :math:`\delta_K`
+        - virtual   : :math:`\ul{v}`
+        - state     : :math:`\ul{w}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'dw_st_adj_supg_c'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -147,19 +147,19 @@ class AdjSUPGCtabilizationTerm(Term):
 
 class SUPGPAdj1StabilizationTerm(Term):
     r"""
-    :Description:
     The first adjoint term to SUPG stabilization term `dw_st_supg_p`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ \nabla p (\ul{v} \cdot
         \nabla \ul{w})
 
     :Arguments:
-        material  : :math:`\delta_K`,
-        virtual   : :math:`\ul{v}`,
-        state     : :math:`\ul{w}`,
-        parameter : :math:`p`
+        - material  : :math:`\delta_K`
+        - virtual   : :math:`\ul{v}`
+        - state     : :math:`\ul{w}`
+        - parameter : :math:`p`
     """
     name = 'dw_st_adj1_supg_p'
     arg_types = ('material', 'virtual', 'state', 'parameter')
@@ -192,20 +192,20 @@ class SUPGPAdj1StabilizationTerm(Term):
 
 class SUPGPAdj2StabilizationTerm(Term):
     r"""
-    :Description:
     The second adjoint term to SUPG stabilization term `dw_st_supg_p`
     as well as adjoint term to PSPG stabilization term `dw_st_pspg_c`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ \nabla r (\ul{v} \cdot \nabla
         \ul{u})
 
     :Arguments:
-        material  : :math:`\tau_K`,
-        virtual   : :math:`\ul{v}`,
-        parameter : :math:`\ul{u}`,
-        state     : :math:`r`
+        - material  : :math:`\tau_K`
+        - virtual   : :math:`\ul{v}`
+        - parameter : :math:`\ul{u}`
+        - state     : :math:`r`
     """
     name = 'dw_st_adj2_supg_p'
     arg_types = ('material', 'virtual', 'parameter', 'state')
@@ -267,19 +267,19 @@ class TestPQTerm(Term):
 
 class SDDivTerm(Term):
     r"""
-    :Description:
     Sensitivity of Stokes term `dw_stokes` in 'div' mode.
 
     :Definition:
+
     .. math::
         \int_{\Omega_D} p [ (\nabla \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
         - \pdiff{\Vcal_k}{x_i} \pdiff{w_i}{x_k} ]
 
     :Arguments:
-        parameter_u : :math:`\ul{u}`,
-        parameter_p : :math:`p`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - parameter_u : :math:`\ul{u}`
+        - parameter_p : :math:`p`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_div'
     arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity',
@@ -313,10 +313,10 @@ class SDDivTerm(Term):
 
 class SDDivGradTerm(Term):
     r"""
-    :Description:
     Sensitivity of diffusion term `dw_div_grad`.
 
     :Definition:
+
     .. math::
         w \nu \int_{\Omega_D} [ \pdiff{u_i}{x_k} \pdiff{w_i}{x_k}
         (\nabla \cdot \ul{\Vcal})
@@ -324,12 +324,12 @@ class SDDivGradTerm(Term):
         - \pdiff{u_i}{x_k} \pdiff{\Vcal_l}{x_k} \pdiff{w_i}{x_k} ]
 
     :Arguments:
-        material_1  : :math:`w` (weight),
-        material_2  : :math:`\nu` (viscosity),
-        parameter_u : :math:`\ul{u}`,
-        parameter_w : :math:`\ul{w}`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - material_1  : :math:`w` (weight)
+        - material_2  : :math:`\nu` (viscosity)
+        - parameter_u : :math:`\ul{u}`
+        - parameter_w : :math:`\ul{w}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
@@ -364,19 +364,19 @@ class SDDivGradTerm(Term):
 
 class SDConvectTerm(Term):
     r"""
-    :Description:
     Sensitivity of convective term `dw_convect`.
 
     :Definition:
+
     .. math::
         \int_{\Omega_D} [ u_k \pdiff{u_i}{x_k} w_i (\nabla \cdot \Vcal)
         - u_k \pdiff{\Vcal_j}{x_k} \pdiff{u_i}{x_j} w_i ]
 
     :Arguments:
-        parameter_u : :math:`\ul{u}`,
-        parameter_w : :math:`\ul{w}`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - parameter_u : :math:`\ul{u}`
+        - parameter_w : :math:`\ul{w}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_convect'
     arg_types = ('parameter_u', 'parameter_w',
@@ -451,18 +451,18 @@ class NSOFMinGrad2Term(NSOFMinGrad1Term):
 
 class NSOFSurfMinDPressTerm(Term):
     r"""
-    :Description:
     Sensitivity of :math:`\Psi(p)`.
 
     :Definition:
+
     .. math::
         \delta \Psi(p) = \delta \left( \int_{\Gamma_{in}}p -
         \int_{\Gamma_{out}}bpress \right)
 
     :Arguments:
-        material_1 : :math:`w` (weight),
-        material_2 : :math:`bpress` (given pressure),
-        parameter  : :math:`p`,
+        - material_1 : :math:`w` (weight)
+        - material_2 : :math:`bpress` (given pressure)
+        - parameter  : :math:`p`
     """
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
@@ -497,17 +497,17 @@ class NSOFSurfMinDPressTerm(Term):
 
 class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
     r"""
-    :Description:
     Gateaux differential of :math:`\Psi(p)` w.r.t. :math:`p` in the
     direction :math:`q`.
 
     :Definition:
+
     .. math::
         w \delta_{p} \Psi(p) \circ q
 
     :Arguments:
-        material : :math:`w` (weight),
-        virtual  : :math:`q`,
+        - material : :math:`w` (weight)
+        - virtual  : :math:`q`
     """
     name = 'dw_of_ns_surf_min_d_press_diff'
     arg_types = ('material', 'virtual')
@@ -541,10 +541,10 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
 
 class SDGradDivStabilizationTerm(Term):
     r"""
-    :Description:
     Sensitivity of stabilization term `dw_st_grad_div`.
 
     :Definition:
+
     .. math::
         \gamma \int_{\Omega_D} [ (\nabla \cdot \ul{u}) (\nabla \cdot \ul{w})
         (\nabla \cdot \ul{\Vcal})
@@ -552,11 +552,11 @@ class SDGradDivStabilizationTerm(Term):
         - (\nabla \cdot \ul{u}) \pdiff{w_i}{x_k} \pdiff{\Vcal_k}{x_i} ]
 
     :Arguments:
-        material    : :math:`\gamma`,
-        parameter_w : :math:`\ul{w}`,
-        parameter_u : :math:`\ul{u}`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - material    : :math:`\gamma`
+        - parameter_w : :math:`\ul{w}`
+        - parameter_u : :math:`\ul{u}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_grad_div'
     arg_types = ('material', 'parameter_w', 'parameter_u',
@@ -592,10 +592,10 @@ class SDGradDivStabilizationTerm(Term):
 
 class SDSUPGCStabilizationTerm(Term):
     r"""
-    :Description:
     Sensitivity of stabilization term `dw_st_supg_c`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ (\ul{u} \cdot \nabla)u_k
         (\ul{u} \cdot \nabla)w_k (\nabla \cdot \Vcal) -
@@ -604,12 +604,12 @@ class SDSUPGCStabilizationTerm(Term):
         (\ul{u} \cdot \nabla)\Vcal_i \pdiff{w_k}{x_i} ]
 
     :Arguments:
-        material    : :math:`\delta_K`,
-        parameter_w : :math:`\ul{w}`,
-        parameter_b : :math:`\ul{b}`,
-        parameter_u : :math:`\ul{u}`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - material    : :math:`\delta_K`
+        - parameter_w : :math:`\ul{w}`
+        - parameter_b : :math:`\ul{b}`
+        - parameter_u : :math:`\ul{u}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_supg_c'
     arg_types = ('material', 'parameter_w', 'parameter_b', 'parameter_u',
@@ -643,10 +643,10 @@ class SDSUPGCStabilizationTerm(Term):
 
 class SDPSPGCStabilizationTerm(Term):
     r"""
-    :Description:
     Sensitivity of stabilization terms `dw_st_supg_p` or `dw_st_pspg_c`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\
         [ \pdiff{p}{x_i} (\ul{u} \cdot \nabla)w_i (\nabla \cdot \Vcal) -
@@ -654,12 +654,12 @@ class SDPSPGCStabilizationTerm(Term):
         - \pdiff{p}{x_k} (\ul{u} \cdot \nabla)\Vcal_k  \pdiff{w_i}{x_k} ]
 
     :Arguments:
-        material    : :math:`\delta_K`,
-        parameter_r : :math:`r`,
-        parameter_b : :math:`\ul{b}`,
-        parameter_u : :math:`\ul{u}`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - material    : :math:`\delta_K`
+        - parameter_r : :math:`r`
+        - parameter_b : :math:`\ul{b}`
+        - parameter_u : :math:`\ul{u}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_pspg_c'
     arg_types = ('material', 'parameter_r', 'parameter_b', 'parameter_u',
@@ -695,10 +695,10 @@ class SDPSPGCStabilizationTerm(Term):
 
 class SDPSPGPStabilizationTerm(Term):
     r"""
-    :Description:
     Sensitivity of stabilization term `dw_st_pspg_p`.
 
     :Definition:
+
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ [ (\nabla p \cdot \nabla q)
         (\nabla \cdot \Vcal)
@@ -706,11 +706,11 @@ class SDPSPGPStabilizationTerm(Term):
         - (\nabla p \cdot \nabla \Vcal_k) \pdiff{q}{x_k} ]
 
     :Arguments:
-        material    : :math:`\tau_K`,
-        parameter_r : :math:`r`,
-        parameter_p : :math:`p`,
-        parameter_mesh_velocity : :math:`\ul{\Vcal}`,
-        mode        : 1 (sensitivity) or 0 (original term value)
+        - material    : :math:`\tau_K`
+        - parameter_r : :math:`r`
+        - parameter_p : :math:`p`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',

@@ -21,19 +21,19 @@ class PointTermBase(Term):
 
 class LinearPointSpringTerm(PointTermBase):
     r"""
-    :Description:
     Linear springs constraining movement of FE nodes in a region; to use as a
     relaxed Dirichlet boundary conditions.
 
     :Definition:
+
     .. math::
         \ul{f}^i = -k \ul{u}^i \quad \forall \mbox{ FE node } i \mbox{ in
         a region }
 
     :Arguments:
-        material : :math:`k`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`k`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_point_lspring'
     arg_types = ('material', 'virtual', 'state')
@@ -62,7 +62,6 @@ class LinearPointSpringTerm(PointTermBase):
 
 class ConcentratedPointLoadTerm(PointTermBase):
     r"""
-    :Description:
     Concentrated point load term.
 
     The load value must be given in form of a special material
@@ -77,13 +76,14 @@ class ConcentratedPointLoadTerm(PointTermBase):
     dimension.
 
     :Definition:
+
     .. math::
         \ul{f}^i = \ul{\bar f}^i \quad \forall \mbox{ FE node } i \mbox{ in
         a region }
 
     :Arguments:
-        material : :math:`\ul{\bar f}^i`,
-        virtual  : :math:`\ul{v}`,
+        - material : :math:`\ul{\bar f}^i`
+        - virtual  : :math:`\ul{v}`,
     """
     name = 'dw_point_load'
     arg_types = ('material', 'virtual')

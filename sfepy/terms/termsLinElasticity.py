@@ -22,26 +22,26 @@ from sfepy.terms.terms_th import THTerm, ETHTerm
 
 class LinearElasticTerm(Term):
     r"""
-    :Description:
     General linear elasticity term, with :math:`D_{ijkl}` given in
     the usual matrix form exploiting symmetry: in 3D it is :math:`6\times6`
     with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it is
     :math:`3\times3` with the indices ordered as :math:`[11, 22, 12]`. Can be
     evaluated. Can use derivatives.
 
-    :definition:
+    :Definition:
+
     .. math::
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
 
     :Arguments 1:
-        material : :math:`D_{ijkl}`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`D_{ijkl}`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
 
     :Arguments 2:
-        material    : :math:`D_{ijkl}`,
-        parameter_1 : :math:`\ul{w}`,
-        parameter_2 : :math:`\ul{u}`
+        - material    : :math:`D_{ijkl}`
+        - parameter_1 : :math:`\ul{w}`
+        - parameter_2 : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic'
     arg_types = (('material', 'virtual', 'state'),
@@ -95,20 +95,20 @@ class LinearElasticTerm(Term):
 
 class LinearElasticIsotropicTerm(Term):
     r"""
-    :Description:
     Isotropic linear elasticity term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u}) \mbox{ with }
         D_{ijkl} = \mu (\delta_{ik} \delta_{jl}+\delta_{il} \delta_{jk}) +
         \lambda \ \delta_{ij} \delta_{kl}
 
     :Arguments:
-        material_1 : :math:`\lambda`,
-        material_2 : :math:`\mu`,
-        virtual    : :math:`\ul{v}`,
-        state      : :math:`\ul{u}`
+        - material_1 : :math:`\lambda`
+        - material_2 : :math:`\mu`
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_iso'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')
@@ -141,20 +141,20 @@ class LinearElasticIsotropicTerm(Term):
 
 class LinearElasticTHTerm(THTerm):
     r"""
-    :Description:
     Fading memory linear elastic (viscous) term. Can use derivatives.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \left [\int_0^t
         \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau)) \difd{\tau}
         \right]\,e_{ij}(\ul{v})
 
     :Arguments:
-        ts       : :class:`TimeStepper` instance,
-        material : :math:`\Hcal_{ijkl}(\tau)`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - ts       : :class:`TimeStepper` instance
+        - material : :math:`\Hcal_{ijkl}(\tau)`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
@@ -190,23 +190,23 @@ class LinearElasticTHTerm(THTerm):
 
 class LinearElasticETHTerm(ETHTerm):
     r"""
-    :Description:
     This term has the same definition as dw_lin_elastic_th, but assumes an
     exponential approximation of the convolution kernel resulting in much
     higher efficiency. Can use derivatives.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \left [\int_0^t
         \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{u}(\tau)) \difd{\tau}
         \right]\,e_{ij}(\ul{v})
 
     :Arguments:
-        ts         : :class:`TimeStepper` instance,
-        material_0 : :math:`\Hcal_{ijkl}(0)`,
-        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
-        virtual    : :math:`\ul{v}`,
-        state      : :math:`\ul{u}`
+        - ts         : :class:`TimeStepper` instance
+        - material_0 : :math:`\Hcal_{ijkl}(0)`
+        - material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        - virtual    : :math:`\ul{v}`
+        - state      : :math:`\ul{u}`
     """
     name = 'dw_lin_elastic_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -233,7 +233,6 @@ class LinearElasticETHTerm(ETHTerm):
 
 class LinearPrestressTerm(Term):
     r"""
-    :Description:
     Linear prestress term, with the prestress :math:`\sigma_{ij}` given in
     the usual vector form exploiting symmetry: in 3D it has 6 components
     with the indices ordered as :math:`[11, 22, 33, 12, 13, 23]`, in 2D it has
@@ -241,16 +240,17 @@ class LinearPrestressTerm(Term):
     evaluated.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \sigma_{ij} e_{ij}(\ul{v})
 
     :Arguments 1:
-        material : :math:`\sigma_{ij}`,
-        virtual  : :math:`\ul{v}`
+        - material : :math:`\sigma_{ij}`
+        - virtual  : :math:`\ul{v}`
 
     :Arguments 2:
-        material : :math:`\sigma_{ij}`,
-        parameter : :math:`\ul{u}`
+        - material : :math:`\sigma_{ij}`
+        - parameter : :math:`\ul{u}`
     """
     name = 'dw_lin_prestress'
     arg_types = (('material', 'virtual'),
@@ -304,18 +304,18 @@ class LinearPrestressTerm(Term):
 
 class LinearStrainFiberTerm(Term):
     r"""
-    :Description: Linear (pre)strain fiber term with the unit direction vector
+    Linear (pre)strain fiber term with the unit direction vector
     :math:`\ul{d}`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} D_{ijkl} e_{ij}(\ul{v}) \left(d_k d_l\right)
 
     :Arguments:
-        material_1 : :math:`D_{ijkl}`,
-        material_2 : :math:`\ul{d}`,
-        virtual  : :math:`\ul{v}`
-
+        - material_1 : :math:`D_{ijkl}`
+        - material_2 : :math:`\ul{d}`
+        - virtual  : :math:`\ul{v}`
     """
     name = 'dw_lin_strain_fib'
     arg_types = ('material_1', 'material_2', 'virtual')
@@ -340,7 +340,6 @@ class LinearStrainFiberTerm(Term):
 
 class CauchyStrainTerm(Term):
     r"""
-    :Description:
     Evaluate Cauchy strain tensor.
 
     It is given in the usual vector form exploiting symmetry: in 3D it has 6
@@ -352,6 +351,7 @@ class CauchyStrainTerm(Term):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \ull{e}(\ul{w})
 
@@ -363,7 +363,7 @@ class CauchyStrainTerm(Term):
         \ull{e}(\ul{w})|_{qp}
 
     :Arguments:
-        parameter : :math:`\ul{w}`
+        - parameter : :math:`\ul{w}`
     """
     name = 'ev_cauchy_strain'
     arg_types = ('parameter',)
@@ -400,7 +400,6 @@ class CauchyStrainTerm(Term):
 
 class CauchyStressTerm(Term):
     r"""
-    :Description:
     Evaluate Cauchy stress tensor.
 
     It is given in the usual vector form exploiting symmetry: in 3D it has 6
@@ -410,6 +409,7 @@ class CauchyStressTerm(Term):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_{\Omega} D_{ijkl} e_{kl}(\ul{w})
 
@@ -421,8 +421,8 @@ class CauchyStressTerm(Term):
         D_{ijkl} e_{kl}(\ul{w})|_{qp}
 
     :Arguments:
-        material  : :math:`D_{ijkl}`,
-        parameter : :math:`\ul{w}`
+        - material  : :math:`D_{ijkl}`
+        - parameter : :math:`\ul{w}`
     """
     name = 'ev_cauchy_stress'
     arg_types = ('material', 'parameter')
@@ -462,7 +462,6 @@ class CauchyStressTerm(Term):
 
 class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     r"""
-    :Description:
     Evaluate fading memory Cauchy stress tensor.
 
     It is given in the usual vector form exploiting symmetry: in 3D it has 6
@@ -472,6 +471,7 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
         \difd{\tau}
@@ -485,9 +485,9 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
         \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
 
     :Arguments:
-        ts        : :class:`TimeStepper` instance,
-        material  : :math:`\Hcal_{ijkl}(\tau)`,
-        parameter : :math:`\ul{w}`
+        - ts        : :class:`TimeStepper` instance
+        - material  : :math:`\Hcal_{ijkl}(\tau)`
+        - parameter : :math:`\ul{w}`
     """
     name = 'ev_cauchy_stress_th'
     arg_types = ('ts', 'material', 'parameter')
@@ -516,7 +516,6 @@ class CauchyStressTHTerm(CauchyStressTerm, THTerm):
 
 class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     r"""
-    :Description:
     Evaluate fading memory Cauchy stress tensor.
 
     It is given in the usual vector form exploiting symmetry: in 3D it has 6
@@ -529,6 +528,7 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau))
         \difd{\tau}
@@ -542,10 +542,10 @@ class CauchyStressETHTerm(CauchyStressTerm, ETHTerm):
         \int_0^t \Hcal_{ijkl}(t-\tau)\,e_{kl}(\ul{w}(\tau)) \difd{\tau}|_{qp}
 
     :Arguments:
-        ts         : :class:`TimeStepper` instance,
-        material_0 : :math:`\Hcal_{ijkl}(0)`,
-        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
-        parameter  : :math:`\ul{w}`
+        - ts         : :class:`TimeStepper` instance
+        - material_0 : :math:`\Hcal_{ijkl}(0)`
+        - material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        - parameter  : :math:`\ul{w}`
     """
     name = 'ev_cauchy_stress_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'parameter')

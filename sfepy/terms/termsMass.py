@@ -5,17 +5,17 @@ from sfepy.terms.terms import Term, terms
 
 class MassVectorTerm(Term):
     r"""
-    :Description:
     Vector field mass matrix/rezidual.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \rho\ \ul{v} \cdot \ul{u}
 
     :Arguments:
-        material : :math:`\rho`,
-        virtual  : :math:`\ul{v}`,
-        state    : :math:`\ul{u}`
+        - material : :math:`\rho`
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{u}`
     """
     name = 'dw_mass_vector'
     arg_types = ('material', 'virtual', 'state')
@@ -38,22 +38,22 @@ class MassVectorTerm(Term):
 
 class MassScalarTerm(Term):
     r"""
-    :Description:
     Scalar field mass matrix/rezidual weighted by a scalar function :math:`c`.
 
     :Definition:
+
     .. math::
         \int_{\Omega} q p, \int_{\Omega} c q p
 
     :Arguments 1:
-        material : :math:`c` (optional),
-        virtual : :math:`q`,
-        state   : :math:`p`
+        - material : :math:`c` (optional)
+        - virtual : :math:`q`
+        - state   : :math:`p`
 
     :Arguments 2:
-        material : :math:`c` (optional),
-        parameter_1 : :math:`r`,
-        parameter_2 : :math:`p`
+        - material : :math:`c` (optional)
+        - parameter_1 : :math:`r`
+        - parameter_2 : :math:`p`
     """
     name = 'dw_mass_scalar'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -113,18 +113,18 @@ class MassScalarTerm(Term):
 
 class MassScalarSurfaceTerm(MassScalarTerm):
     r"""
-    :Description:
     Scalar field mass matrix/rezidual on a surface weighted by a scalar
     function.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} q p, \int_{\Gamma} c q p
 
     :Arguments:
-        material : :math:`c` (optional),
-        virtual : :math:`q`,
-        state   : :math:`p`
+        - material : :math:`c` (optional)
+        - virtual : :math:`q`
+        - state   : :math:`p`
     """
     name = 'dw_surface_mass_scalar'
     arg_types = ('opt_material', 'virtual', 'state')
@@ -137,18 +137,18 @@ class MassScalarSurfaceTerm(MassScalarTerm):
 
 class BCNewtonTerm(MassScalarSurfaceTerm):
     r"""
-    :Description:
     Newton boundary condition term.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} \alpha q (p - p_{\rm outer})
 
     :Arguments:
-        material_1 : :math:`\alpha`,
-        material_2 : :math:`p_{\rm outer}`,
-        virtual    : :math:`q`,
-        state      : :math:`p`
+        - material_1 : :math:`\alpha`
+        - material_2 : :math:`p_{\rm outer}`
+        - virtual    : :math:`q`
+        - state      : :math:`p`
     """
     name = 'dw_bc_newton'
     arg_types = ('material_1', 'material_2', 'virtual', 'state')

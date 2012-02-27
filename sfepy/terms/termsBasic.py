@@ -7,7 +7,6 @@ from sfepy.terms.terms_th import THTerm, ETHTerm
 
 class IntegrateVolumeTerm(Term):
     r"""
-    :Description:
     Evaluate (weighted) variable in a volume region.
 
     Depending on evaluation mode, integrate a variable over a volume region
@@ -17,6 +16,7 @@ class IntegrateVolumeTerm(Term):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_\Omega y \mbox{ , } \int_\Omega \ul{y} \\
         \int_\Omega c y \mbox{ , } \int_\Omega c \ul{y}
@@ -34,8 +34,8 @@ class IntegrateVolumeTerm(Term):
         c y|_{qp} \mbox{ , } c \ul{y}|_{qp}
 
     :Arguments:
-        material : :math:`c` (optional),
-        parameter : :math:`y` or :math:`\ul{y}`
+        - material : :math:`c` (optional)
+        - parameter : :math:`y` or :math:`\ul{y}`
     """
     name = 'ev_volume_integrate'
     arg_types = ('opt_material', 'parameter')
@@ -74,7 +74,6 @@ class IntegrateVolumeTerm(Term):
 
 class IntegrateSurfaceTerm(Term):
     r"""
-    :Description:
     Evaluate (weighted) variable in a surface region.
 
     Depending on evaluation mode, integrate a variable over a surface region
@@ -86,6 +85,7 @@ class IntegrateSurfaceTerm(Term):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_\Gamma y \mbox{ , } \int_\Gamma \ul{y}
         \mbox{ , } \int_\Gamma \ul{y} \cdot \ul{n} \\
@@ -109,8 +109,8 @@ class IntegrateSurfaceTerm(Term):
         \mbox{ , } (c \ul{y} \cdot \ul{n})|_{qp} \mbox{ flux }
 
     :Arguments:
-        material : :math:`c` (optional),
-        parameter : :math:`y` or :math:`\ul{y}`,
+        - material : :math:`c` (optional)
+        - parameter : :math:`y` or :math:`\ul{y}`
     """
     name = 'ev_surface_integrate'
     arg_types = ('opt_material', 'parameter')
@@ -162,17 +162,17 @@ class IntegrateSurfaceTerm(Term):
 
 class IntegrateVolumeOperatorTerm(Term):
     r"""
-    :Description:
     Volume integral of a test function weighted by a scalar function
     :math:`c`.
 
     :Definition:
+
     .. math::
         \int_\Omega q \mbox{ or } \int_\Omega c q
 
     :Arguments:
-        material : :math:`c` (optional),
-        virtual  : :math:`q`
+        - material : :math:`c` (optional)
+        - virtual  : :math:`q`
     """
     name = 'dw_volume_integrate'
     arg_types = ('opt_material', 'virtual')
@@ -196,17 +196,17 @@ class IntegrateVolumeOperatorTerm(Term):
 
 class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
     r"""
-    :Description:
     Surface integral of a test function weighted by a scalar function
     :math:`c`.
 
     :Definition:
+
     .. math::
         \int_{\Gamma} q \mbox{ or } \int_\Gamma c q
 
     :Arguments:
-        material : :math:`c` (optional),
-        virtual  : :math:`q`
+        - material : :math:`c` (optional)
+        - virtual  : :math:`q`
     """
     name = 'dw_surface_integrate'
     arg_types = ('opt_material', 'virtual')
@@ -214,15 +214,15 @@ class IntegrateSurfaceOperatorTerm(IntegrateVolumeOperatorTerm):
 
 class VolumeTerm(Term):
     r"""
-    :Description:
     Volume of a domain. Uses approximation of the parameter variable.
 
     :Definition:
+
     .. math::
         \int_\Omega 1
 
     :Arguments:
-        parameter : any variable
+        - parameter : any variable
     """
     name = 'd_volume'
     arg_types = ('parameter',)
@@ -247,15 +247,15 @@ class VolumeTerm(Term):
 
 class SurfaceTerm(VolumeTerm):
     r"""
-    :Description:
     Surface of a domain. Uses approximation of the parameter variable.
 
     :Definition:
+
     .. math::
         \int_\Gamma 1
 
     :Arguments:
-        parameter : any variable
+        - parameter : any variable
     """
     name = 'd_surface'
     arg_types = ('parameter',)
@@ -269,16 +269,16 @@ class SurfaceTerm(VolumeTerm):
 
 class VolumeSurfaceTerm(Term):
     r"""
-    :Description:
     Volume of a domain, using a surface integral. Uses approximation of the
     parameter variable.
 
     :Definition:
+
     .. math::
         \int_\Gamma \ul{x} \cdot \ul{n}
 
     :Arguments:
-        parameter : any variable
+        - parameter : any variable
     """
     name = 'd_volume_surface'
     arg_types = ('parameter',)
@@ -303,17 +303,17 @@ class VolumeSurfaceTerm(Term):
 
 class SurfaceMomentTerm(Term):
     r"""
-    :Description:
     Surface integral of the outer product of the unit outward normal
     :math:`\ul{n}` and the coordinate :math:`\ul{x}` shifted by :math:`\ul{x}_0`
 
     :Definition:
+
     .. math::
         \int_{\Gamma} \ul{n} (\ul{x} - \ul{x}_0)
 
     :Arguments:
-        parameter : any variable,
-        shift     : :math:`\ul{x}_0`
+        - parameter : any variable
+        - shift     : :math:`\ul{x}_0`
     """
     name = 'di_surface_moment'
     arg_types = ('parameter', 'shift')
@@ -339,7 +339,6 @@ class SurfaceMomentTerm(Term):
 
 class IntegrateMatTerm(Term):
     r"""
-    :Description:
     Evaluate material parameter :math:`m` in a volume/surface region.
 
     Depending on evaluation mode, integrate a material parameter over a
@@ -351,6 +350,7 @@ class IntegrateMatTerm(Term):
     Supports 'eval', 'el_avg' and 'qp' evaluation modes.
 
     :Definition:
+
     .. math::
         \int_\Omega m
 
@@ -361,8 +361,8 @@ class IntegrateMatTerm(Term):
         m|_{qp}
 
     :Arguments:
-        material  : :math:`m` (can have up to two dimensions),
-        parameter : :math:`y`
+        - material  : :math:`m` (can have up to two dimensions)
+        - parameter : :math:`y`
     """
     name = 'ev_integrate_mat'
     arg_types = ('material', 'parameter')
@@ -398,28 +398,29 @@ class IntegrateMatTerm(Term):
 
 class DotProductVolumeTerm(Term):
     r"""
-    :Description:
     Volume :math:`L^2(\Omega)` weighted dot product for both scalar
     and vector (not implemented in weak form!) fields. Can be evaluated. Can
     use derivatives.
 
     :Definition:
+
     .. math::
         \int_\Omega q p \mbox{ , } \int_\Omega \ul{v} \cdot \ul{u} \mbox{ , }
         \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w}
         \mbox { or }
-        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u} \mbox{ , }
+        \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
+        \mbox{ , }
         \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w}
 
     :Arguments 1:
-        material : optional weight function :math:`c`,
-        virtual  : :math:`q` or :math:`\ul{v}`,
-        state    : :math:`p` or :math:`\ul{u}`
+        - material : optional weight function :math:`c`
+        - virtual  : :math:`q` or :math:`\ul{v}`
+        - state    : :math:`p` or :math:`\ul{u}`
 
     :Arguments 2:
-        material    : optional weight function :math:`c`,
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
+        - material    : optional weight function :math:`c`
+        - parameter_1 : :math:`p` or :math:`\ul{u}`
+        - parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'dw_volume_dot'
     arg_types = (('opt_material', 'virtual', 'state'),
@@ -509,19 +510,19 @@ class DotProductVolumeTerm(Term):
 
 class DotProductSurfaceTerm(DotProductVolumeTerm):
     r"""
-    :Description:
     Surface :math:`L^2(\Gamma)` dot product for both scalar and vector
     fields.
 
     :Definition:
+
     .. math::
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
-        \mbox{ or } \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \mbox{ or }
+        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
 
     :Arguments:
-        material    : :math:`c` (optional),
-        parameter_1 : :math:`p` or :math:`\ul{u}`,
-        parameter_2 : :math:`r` or :math:`\ul{w}`
+        - material    : :math:`c` (optional)
+        - parameter_1 : :math:`p` or :math:`\ul{u}`
+        - parameter_2 : :math:`r` or :math:`\ul{w}`
     """
     name = 'd_surface_dot'
     arg_types = ('opt_material', 'parameter_1', 'parameter_2')
@@ -529,19 +530,19 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
 
 class DotSProductVolumeOperatorWTHTerm(THTerm):
     r"""
-    :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
     scalar fields. Can use derivatives.
 
     :Definition:
+
     .. math::
         \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
 
     :Arguments:
-        ts       : :class:`TimeStepper` instance,
-        material : :math:`\Gcal(\tau)`,
-        virtual  : :math:`q`,
-        state    : :math:`p`
+        - ts       : :class:`TimeStepper` instance
+        - material : :math:`\Gcal(\tau)`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
     """
     name = 'dw_volume_dot_w_scalar_th'
     arg_types = ('ts', 'material', 'virtual', 'state')
@@ -571,7 +572,6 @@ class DotSProductVolumeOperatorWTHTerm(THTerm):
 
 class DotSProductVolumeOperatorWETHTerm(ETHTerm):
     r"""
-    :Description:
     Fading memory volume :math:`L^2(\Omega)` weighted dot product for
     scalar fields. This term has the same definition as
     dw_volume_dot_w_scalar_th, but assumes an exponential approximation of
@@ -579,15 +579,16 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
     derivatives.
 
     :Definition:
+
     .. math::
         \int_\Omega \left [\int_0^t \Gcal(t-\tau) p(\tau) \difd{\tau} \right] q
 
     :Arguments:
-        ts         : :class:`TimeStepper` instance,
-        material_0 : :math:`\Gcal(0)`,
-        material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`),
-        virtual    : :math:`q`,
-        state      : :math:`p`
+        - ts         : :class:`TimeStepper` instance
+        - material_0 : :math:`\Gcal(0)`
+        - material_1 : :math:`\exp(-\lambda \Delta t)` (decay at :math:`t_1`)
+        - virtual    : :math:`q`
+        - state      : :math:`p`
     """
     name = 'dw_volume_dot_w_scalar_eth'
     arg_types = ('ts', 'material_0', 'material_1', 'virtual', 'state')
@@ -614,11 +615,10 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
 
 class SumNodalValuesTerm(Term):
     r"""
-    :Description:
     Sum nodal values.
 
     :Arguments:
-        parameter : :math:`p` or :math:`\ul{u}`,
+        - parameter : :math:`p` or :math:`\ul{u}`
     """
     name = 'd_sum_vals'
     arg_types = ('parameter',)

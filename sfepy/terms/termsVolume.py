@@ -2,17 +2,17 @@ from sfepy.terms.terms import Term, terms
 
 class LinearVolumeForceTerm(Term):
     r"""
-    :Description:
     Vector or scalar linear volume forces (weak form) --- a right-hand side
     source term.
 
     :Definition:
+
     .. math::
         \int_{\Omega} \ul{f} \cdot \ul{v} \mbox{ or } \int_{\Omega} f q
 
     :Arguments:
-        material : :math:`\ul{f}` or :math:`f`,
-        virtual  : :math:`\ul{v}` or :math:`q`
+        - material : :math:`\ul{f}` or :math:`f`
+        - virtual  : :math:`\ul{v}` or :math:`q`
     """
     name = 'dw_volume_lvf'
     arg_types = ('material', 'virtual')
