@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **06.12.2010** Version 2010.4 released (higher order elements,
+  refactoring of geometries (reference mappings), transparent DOF vector
+  synchronization with variables, interface variables defined on a
+  surface region, many bugfixes and many more updates), see
+  :ref:`release notes <2010.3-2010.4>`.
+
 * **06.08.2010** Version 2010.3 released (significantly rewritten code for
   better interactive use, cleaner and simpler high level interface, new
   examples, tests, simplified but more powerful homogenization engine,

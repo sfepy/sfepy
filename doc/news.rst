@@ -1,6 +1,11 @@
 News
 ====
 
+* **27.02.2012** Version 2012.1 released (initial version of linearizer of
+  higher order solutions, rewrite variable and evaluate cache history handling,
+  lots of term updates/fixes/simplifications, move web front page to sphinx
+  docs, etc.), see :ref:`release notes <2011.4-2012.1>`.
+
 * **05.12.2011** Version 2011.4 released (cython used instead of swig to
   interface C code, many terms unified thanks to new optional material
   term argument type, updated Lagrangian formulation for large
@@ -26,11 +31,5 @@ News
   speed-up mesh reading, extensive clean-up - less code, many bugfixes
   and many more updates), see
   :ref:`release notes <2010.4-2011.1>`.
-
-* **06.12.2010** Version 2010.4 released (higher order elements,
-  refactoring of geometries (reference mappings), transparent DOF vector
-  synchronization with variables, interface variables defined on a
-  surface region, many bugfixes and many more updates), see
-  :ref:`release notes <2010.3-2010.4>`.
 
 For historians: see :ref:`archived_news`.
