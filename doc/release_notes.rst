@@ -1,5 +1,291 @@
 # created: 20.07.2007 (-1)
 
+.. _2011.4-2012.1:
+
+from 2011.4 to 2012.1
+=====================
+
+- initial version of linearizer of higher order solutions:
+
+  - merge linearizer branch
+  - new Field.linearize()
+  - clean up SimpleApp.process_options()
+  - update output creation functions/methods
+  - fix Field.get_true_order() for forced bubble DOFs
+  - new Field.is_higher_order()
+  - new application option 'linearization'
+  - new FieldVariable.linearize()
+  - silence Domain.setup_facets()
+  - HDF5:
+
+    - do not linearize when saving to 'h5' format
+    - update HDF5MeshIO.write() to save field name in 'full' mode
+    - update HDF5MeshIO.read_data()
+    - allow 'strip' mode for 'h5' in ProblemDefinition.setup_output()
+    - fix HDF5MeshIO.read_time_stepper() to close file on exception
+
+  - move output creation to Field, new Field.create_output()
+
+    - remove FieldVariable.extend_dofs(), .remove_extra_dofs(), .linearize()
+
+  - update recover_bones(), recover_paraflow()
+  - extractor.py: new --linearization option
+
+    - support linearization when dumping to VTK
+    - new create_problem(), parse_linearization()
+    - catch ValueError in dump_to_vtk()
+
+  - new Struct.update()
+  - add linearization options to examples/navier_stokes/navier_stokes.py,
+    examples/diffusion/sinbc.py
+  - new tests/test_linearization.py
+  - docs: update developer guide, new linearizer.rst
+
+- solvers:
+
+  - new PETScParallelKrylovSolver solver class, petsc_worker.py
+  - add precond_side option to PETSc Krylov solvers
+  - prevent unwanted importing of PETSc
+  - allow changing properties of solvers via command line
+  - fix PETSc Krylov solvers to obey nonzero initial guess
+  - fix Newton, Oseen to pass current solution as initial guess to linear solver
+  - add verbose option to Solver (base of all solvers)
+  - use verbose option in Newton solver
+  - new SchurGeneralized solver, update SchurComplement
+  - new ScipyFMinSolver optimization solver
+  - fix ScipyBroyden for non-array return value
+
+- postprocessing and visualization:
+
+  - allow reusing viewer scene in make_animation()
+  - build mlab.pipeline after scene is activated
+
+    - reason: some VTK objects or properties require a scene with a camera
+      and interaction to be open to work properly
+
+  - new plot_velocity() domain specific plot function
+  - force source update in Viewer.render_scene()
+  - always use Viewer source change hack
+  - fix error reporting in Viewer.call_mlab()
+  - catch only ImportError in mayavi imports
+  - fix Viewer.build_mlab_pipeline() for no point scalars
+  - postproc.py: new --fgcolor, --bgcolor options
+  - fix default colors in Viewer.call_mlab()
+  - fix mayavi imports in postprocess.utils
+
+- homogenization:
+
+  - new CopyData corrector
+  - remove unused homog. coefficient functions
+  - fix HomogenizationApp.call()
+
+- input-output:
+
+  - support tensors in vertices in VTKMeshIO.write()
+  - fix supported_capabilities (nastran supports write())
+  - update read_array() for unknown number of columns
+  - fix NEUMeshIO.read() - problem with boundary conditions
+  - new MeshIO.for_format(), update MeshIO.any_from_filename()
+    - update script/convert_mesh.py
+    - move output_writable_meshes() to sfepy/fem/meshio.py
+  - blockgen.py, cylindergen.py: new --format option
+
+- problem description:
+
+  - allow extra arguments to define() in ProblemConf.from_file()
+  - simple.py: new --define option
+
+- schroedinger:
+
+  - remove specialized DFT code (move to a separate project)
+  - move code to new sfepy/physics/schroedinger_app.py
+  - add result names arguments to SchroedingerApp.save_results()
+
+- tests and examples:
+
+  - update its2D_1.py example - use refine_mesh()
+  - update Primer examples to use dw_point_load term
+  - new examples/linear_elasticity/linear_viscoelastic.py + test
+  - new examples/thermo_elasticity/thermo_elasticity.py + test
+  - update examples/linear_elasticity/linear_viscoelastic.py
+
+    - save in HDF5 format
+    - new post_process() - compute strain, stresses
+    - update linear_tension()
+    - new main() - plot time histories
+
+  - new examples/linear_elasticity/prestress_fibres.py + test
+
+- material coefficients:
+
+  - fix bulk_modulus_lame()
+  - clean up sfepy/mechanics/matcoefs.py, add/update docstrings
+  - improve testing of material parameter conversion functions
+  - rename test_tensors() -> test_elastic_constants()
+  - new test_conversion_functions(), test_stiffness_tensors()
+  - use better names for material parameter conversion functions
+
+    - youngpoisson_to_lame() -> lame_from_youngpoisson()
+    - stiffness_tensor_*() -> stiffness_from_*()
+    - bulk_modulus_lame() -> bulk_from_lame()
+    - bulk_modulus_youngpoisson() -> bulk_from_youngpoisson()
+
+- variable evaluation:
+
+  - new find_ref_coors(), evaluate_in_rc() instead of evaluate_at()
+  - update Field.evaluate_at() to use find_ref_coors(), evaluate_in_rc()
+  - allow caching reference coordinates, add ret_ref_coors argument
+  - change cache attribute ctree -> kdtree
+  - print more detailed timings
+  - update FieldVariable.evaluate_at()
+
+- term evaluation:
+
+  - fix Term.evaluate() to pass diff_var argument to .eval_*()
+  - add step, time_derivative arguments to Term.get()
+  - support preserving evaluate caches in State and Variable
+  - fix ProblemDefinition.solve() to preserve evaluate caches
+  - rewrite variable and evaluate cache history handling
+
+    - Variable.data attribute is now a deque with length given by history
+    - history is given by integer >= 0, not string
+    - evaluate cache is split by time steps
+      (evaluate_cache(mode) -> step_cache(step) -> cache(key))
+
+  - update examples for new history syntax
+  - remove sfepy/terms/cache.py, sfepy/terms/cachesHistory.py
+  - remove code related to term caches
+  - allow preserving evaluate caches in ProblemDefinition.evaluate()
+
+- terms:
+
+  - optional material parameter in LaplaceTerm
+  - fix LaplaceTerm for test_msm_symbolic.py
+  - fix arguments of dw_permeability_r()
+  - new PointTermBase, update LinearPointSpringTerm
+  - new concentrated point load term (dw_point_load)
+  - fix acoustic terms
+  - fix BulkPressureULTerm, DotProductVolumeTerm
+  - new term assembling function mulATB_integrate()
+  - update DiffusionCoupling term - simplify assembling
+  - remove d_volume_dot term (subset of dw_volume_dot, same class name)
+  - update DotProductVolumeTerm (dw_volume_dot)
+  - fix TLMembraneTerm.describe_membrane_geometry()
+  - fix parents of LinearElasticIsotropicTerm
+  - update HyperElasticBase.get_family_data() for new evaluate cache handling
+  - new THTerm, ETHTerm classes, support custom advance in Variable.advance()
+  - update LinearElasticTHTerm, LinearElasticETHTerm for new term evaluation
+  - fix and clean up compute_mean_decay()
+  - update BiotTHTerm, BiotETHTerm for new term evaluation
+  - update DotSProductVolumeOperatorWTHTerm, DotSProductVolumeOperatorWETHTerm
+    for new term evaluation
+  - update dw_volume_wdot_scalar()
+  - update BiotStressTerm, BiotStressQTerm for new term evaluation
+  - fix ConcentratedPointLoadTerm.check_shapes() for functions, update docstring
+  - unify Cauchy strain, stress evaluation terms
+
+    - dq_cauchy_strain, de_cauchy_strain -> ev_cauchy_strain
+    - dq_cauchy_stress, de_cauchy_stress -> ev_cauchy_stress
+
+  - unify Biot stress evaluation terms
+
+    - de_biot_stress, dq_biot_stress -> ev_biot_stress
+
+  - simplify Cauchy and Biot stress term evaluation in qp mode
+  - unify diffusion velocity evaluation terms
+
+    - de_diffusion_velocity, di_diffusion_integrate -> ev_diffusion_velocity
+
+  - unify gradient and divergence evaluation terms
+
+    - de_grad, dq_grad -> ev_grad
+    - de_div, dq_div -> ev_div
+
+  - rename di_surface_integrate -> ev_surface_integrate, update docstring
+  - rename di_volume_integrate -> ev_volume_integrate, allow optional material
+  - rename di_integrate_mat -> ev_integrate_mat, allow 'qp' mode
+  - update CauchyStressTerm.function() for optional coefficient
+  - new fading memory stress terms (ev_cauchy_stress_th, ev_cauchy_stress_eth)
+  - simplify code of DiffusionVelocityTerm.function()
+  - fix dw_volume_dot evaluation
+  - update LinearPrestressTerm, LinearStrainFiberTerm for new term evaluation
+  - remove obsolete sfepy/terms/terms_base.py, update docs
+
+- logging:
+
+  - update Log.plot_vlines() to add line also to text log file
+  - move plotting-related imports in log.py into ProcessPlotter and Log
+  - update Log.__init__(), .plot_vlines() to allow better plot reconstruction
+
+- interactive:
+
+  - move code from __init__.py to session.py in sfepy/interactive/
+  - update isfepy for ipython 0.12 (adapted code from current isympy)
+  - update isfepy docstring
+
+- setup:
+  - install scripts, examples and tests along sources, do not install docs
+  - update setup.py
+
+- misc:
+
+  - new refine_mesh()
+  - add conn attribute to GeometryElement
+  - fix evaluate_at() for piecewise-constant approximations
+  - speed-up assemble.pyx by using more pointer arithmetics
+  - fix complex term evaluation
+  - fix testing for string instances for Python 3
+  - fix implicit function declaration warnings in generated terms.c
+  - update test_install.py for updated its2D_3.py example
+  - fix LagrangeNodes.append_tp_faces()
+  - fix problem with connectivity in mirror surface
+  - allow user defined base function in variable evaluation
+  - add 2d von Mises stress calculation
+  - update get_debug() for ipython 0.12
+  - new get_mapping_data(), update get_jacobian(), new get_normals()
+  - new mesh smoothing function smooth_mesh()
+  - update Probe for ctree -> kdtree
+  - update create_evaluable() to obey verbose argument in weak mode
+  - add verbose argument to Variables.time_update(), Equations.time_update()
+  - update ProblemDefinition.copy() to setup output of new problem
+  - fix create_evaluable() to pass time stepper to terms
+  - update Variable.init_data() to use .data_from_any()
+  - remove unused evaluate()
+  - cleanup in sfepy/geom, mesh and geometry tools moved to sfepy/mesh/
+  - update term evaluation to use var_dict also with try_equations
+  - update ProblemDefinition.create_evaluable()
+  - fix section titles in docstrings
+  - update formatting of term docstrings to remove sphinx warnings
+  - many small docstring fixes to remove sphinx warnings
+
+- docs:
+
+  - update script/gen_gallery.py:
+
+    - omit __init__.py files, unify link names
+    - skip missing images
+
+  - update many docstrings (especially all docstrings of terms to remove sphinx
+    warnings)
+  - update nodal stress description in Primer, mention refinement
+  - update ubuntu installation section
+  - update Primer for dw_point_load term
+  - update for missing/removed/renamed modules
+  - update users guide for new postproc.py options
+  - cleanup whitespace, add table of contents to users guide
+  - add basic info about solvers to users guide
+  - fix and update Primer
+  - update gitwash, include it to developer guide table of contents
+  - update variables section in users guide
+  - move release notes to doc/, add sphinx section labels
+  - add news and archived news
+  - update main html page, add links
+  - add google analytics support
+  - update release tasks
+  - update developer guide for ev_* terms
+  - remove termsLinElasticity_full.rst from developer guide
+  - process_terms(): insert term call signature before arguments lists
+
 .. _2011.3-2011.4:
 
 from 2011.3 to 2011.4
