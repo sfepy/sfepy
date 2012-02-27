@@ -197,7 +197,7 @@ entry in numpy site.cfg::
 
 Comment by david.huard, Mar 26, 2008::
 
-> Of course, suitesparse and suitesparse-devel must be installed.
+  Of course, suitesparse and suitesparse-devel must be installed.
 
 Intel Mac
 ^^^^^^^^^
@@ -287,7 +287,7 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
           cd /c/
           git clone git://github.com/sfepy/sfepy.git
 
-   Then follow the instructions below::
+   Then follow the instructions below:
 
    a) In shell, go to the extracted folder::
 
