@@ -25,27 +25,24 @@
    Links
    -----
 
-   - news and release information: :doc:`news`
+      .. list-table::
 
-   - documentation:
-
-     - development (git) version: :ref:`documentation`
-     - latest release version: http://sfepy.org/doc
-
-   - automatically generated gallery of SfePy examples:
-     http://docs.sfepy.org/gallery/gallery
-
-   - downloads, wiki pages and other information:
-     http://code.google.com/p/sfepy
-
-   - mailing list (both user and developer questions and discussions):
-     http://groups.google.com/group/sfepy-devel
-
-   - source code:
-
-     - github organization: http://github.com/sfepy
-     - main git repository: https://github.com/sfepy/sfepy
-     - bug/issue tracking: https://github.com/sfepy/sfepy/issues
+         * - Development version documentation
+           - :ref:`here <documentation>`
+         * - Latest release version documentation
+           - http://sfepy.org/doc
+         * - Automatically generated gallery
+           - http://docs.sfepy.org/gallery/gallery
+         * - Downloads, wiki pages, etc.
+           - http://code.google.com/p/sfepy
+         * - Mailing list (both user and developer)
+           - http://groups.google.com/group/sfepy-devel
+         * - Github organization
+           - http://github.com/sfepy
+         * - Source code (main git repository)
+           - https://github.com/sfepy/sfepy
+         * - Bug/issue tracking
+           - https://github.com/sfepy/sfepy/issues
 
    Applications
    ------------
