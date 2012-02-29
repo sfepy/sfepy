@@ -4,6 +4,7 @@ import numpy as nm
 
 from sfepy.base.base import output, assert_, remap_dict, pause, Struct
 from sfepy.base.progressbar import MyBar
+from sfepy.fem.equations import get_expression_arg_names
 from sfepy.fem.evaluate import eval_equations
 import freeFormDef as ffd
 
@@ -208,15 +209,23 @@ class ShapeOptimFlowCase( Struct ):
     def create_evaluables(self):
         variables = self.dpb.create_variables().as_dict()
 
+        possible_mat_names = get_expression_arg_names(self.obj_fun_term)
+        materials = self.dpb.create_materials(possible_mat_names).as_dict()
+
         aux = self.dpb.create_evaluable(self.obj_fun_term,
                                         try_equations=False,
-                                        var_dict=variables)
+                                        var_dict=variables,
+                                        **materials)
         self.of_equations, self.of_variables = aux
+
+        possible_mat_names = get_expression_arg_names(self.sens_terms)
+        materials = self.dpb.create_materials(possible_mat_names).as_dict()
 
         aux = self.apb.create_evaluable(self.sens_terms,
                                         try_equations=False,
                                         var_dict=variables,
-                                        extra_args={'mode' : 1})
+                                        extra_args={'mode' : 1},
+                                        **materials)
         self.ofg_equations, self.ofg_variables = aux
 
     ##
