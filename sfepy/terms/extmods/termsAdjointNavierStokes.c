@@ -39,71 +39,38 @@ int32 sub_mul_gradddgrad_scalar( FMField *out,
   - 22.03.2006
   - 27.07.2006
 */
-int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
-		       FMField *velocity, int32 voffset, FMField *bf,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff )
+int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
+                       FMField *bf, VolumeGeometry *vg, int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *vel = 0, *gvel = 0, *gf = 0, *ftgf = 0, *ftgfu = 0;
-  FMField *fu = 0, *gfu = 0;
-  FMField velv[1], gvelm[1];
+  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  FMField *gf = 0, *ftgf = 0, *ftgfu = 0;
+  FMField *gfu = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-
-  state->val = FMF_PtrFirst( state ) + offset;
-  velocity->val = FMF_PtrFirst( velocity ) + voffset;
-
-  fmf_createAlloc( &vel, 1, 1, dim, nEP );
-  fmf_createAlloc( &gvel, 1, nQP, dim * dim, 1 );
-
-  velv->nAlloc = -1;
-  fmf_pretend( velv, 1, 1, nEP * dim, 1, vel->val );
-  gvelm->nAlloc = -1;
-  fmf_pretend( gvelm, 1, nQP, dim, dim, gvel->val );
-  
   if (isDiff) {
     fmf_createAlloc( &gf, 1, nQP, dim, dim * nEP );
     fmf_createAlloc( &ftgf, 1, nQP, dim * nEP, dim * nEP );
   } else {
-    fmf_createAlloc( &st, 1, 1, dim, nEP );
-    fmf_createAlloc( &fu, 1, nQP, dim, 1 );
     fmf_createAlloc( &gfu, 1, nQP, dim, 1 );
     fmf_createAlloc( &ftgfu, 1, nQP, dim * nEP, 1 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-/*     output( "%d\n", iel ); */
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-
-    ele_extractNodalValuesDBD( vel, velocity, conn + nEP * iel );
-    divgrad_act_bg_m( gvel, vg->bfGM, velv );
-
-/*     fmf_print( vel, stdout, 0 ); */
-/*     fmf_print( gvel, stdout, 0 ); */
-/*     sys_pause(); */
+    FMF_SetCell( gradU, ii );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
 
     if (isDiff) {
-      bf_ract( gf, bf, gvelm );
+      bf_ract( gf, bf, gradU );
       bf_actt( ftgf, bf, gf );
       fmf_sumLevelsMulF( out, ftgf, vg->det->val );
-/*       fmf_print( out, stdout, 0 ); */
-/*       sys_pause(); */
     } else {
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-
-      bf_act( fu, bf, st );
-      fmf_mulAB_nn( gfu, gvelm, fu );
+      FMF_SetCell( stateW, ii );
+      fmf_mulAB_nn( gfu, gradU, stateW );
       bf_actt( ftgfu, bf, gfu );
       fmf_sumLevelsMulF( out, ftgfu, vg->det->val );
     }
@@ -112,17 +79,12 @@ int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
 
 
  end_label:
-  fmf_freeDestroy( &vel ); 
-  fmf_freeDestroy( &gvel ); 
-
   if (isDiff) {
-    fmf_freeDestroy( &gf ); 
-    fmf_freeDestroy( &ftgf ); 
+    fmf_freeDestroy( &gf );
+    fmf_freeDestroy( &ftgf );
   } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &fu ); 
-    fmf_freeDestroy( &gfu ); 
-    fmf_freeDestroy( &ftgfu ); 
+    fmf_freeDestroy( &gfu );
+    fmf_freeDestroy( &ftgfu );
   }
 
   return( ret );
@@ -136,61 +98,38 @@ int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
   - 22.03.2006
   - 27.07.2006
 */
-int32 dw_adj_convect2( FMField *out, FMField *state, int32 offset,
-		       FMField *velocity, int32 voffset, FMField *bf,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff )
+int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
+                       FMField *bf, VolumeGeometry *vg, int32 isDiff )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *vel = 0, *vtg = 0, *fv = 0, *ftvtg = 0;
-  FMField *fu = 0, *futvtg = 0;
+  int32 ii, dim, nQP, nEP, ret = RET_OK;
+  FMField *vtg = 0, *ftvtg = 0;
+  FMField *futvtg = 0;
 
   nQP = vg->bfGM->nLev;
+  nEP = vg->bfGM->nCol;
   dim = vg->bfGM->nRow;
 
-/*   output( "%d %d %d %d %d %d\n", offset, nEl, nEP, nQP, dim, elList_nRow ); */
-
-  state->val = FMF_PtrFirst( state ) + offset;
-  velocity->val = FMF_PtrFirst( velocity ) + voffset;
-
-  fmf_createAlloc( &vel, 1, 1, dim, nEP );
-  fmf_createAlloc( &fv, 1, nQP, dim, 1 );
   fmf_createAlloc( &vtg, 1, nQP, dim, nEP * dim );
   if (isDiff) {
     fmf_createAlloc( &ftvtg, 1, nQP, dim * nEP, dim * nEP );
   } else {
-    fmf_createAlloc( &st, 1, 1, dim, nEP );
-    fmf_createAlloc( &fu, 1, nQP, dim, 1 );
     fmf_createAlloc( &futvtg, 1, nQP, 1, dim * nEP );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
-/*     output( "%d\n", iel ); */
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( stateU, ii );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
 
-    ele_extractNodalValuesDBD( vel, velocity, conn + nEP * iel );
-    bf_act( fv, bf, vel );
-    convect_build_vtg( vtg, vg->bfGM, fv );
+    convect_build_vtg( vtg, vg->bfGM, stateU );
 
     if (isDiff) {
       bf_actt( ftvtg, bf, vtg );
       fmf_sumLevelsTMulF( out, ftvtg, vg->det->val );
-/*       fmf_print( out, stdout, 0 ); */
-/*       sys_pause(); */
     } else {
-      ele_extractNodalValuesDBD( st, state, conn + nEP * iel );
-
-      bf_act( fu, bf, st );
-      fmf_mulATB_nn( futvtg, fu, vtg );
-/*       fmf_print( futvtg, stdout, 0 ); */
-/*       sys_pause(); */
+      FMF_SetCell( stateW, ii );
+      fmf_mulATB_nn( futvtg, stateW, vtg );
 
       fmf_sumLevelsTMulF( out, futvtg, vg->det->val );
     }
@@ -199,16 +138,12 @@ int32 dw_adj_convect2( FMField *out, FMField *state, int32 offset,
 
 
  end_label:
-  fmf_freeDestroy( &vel ); 
-  fmf_freeDestroy( &fv ); 
-  fmf_freeDestroy( &vtg ); 
+  fmf_freeDestroy( &vtg );
 
   if (isDiff) {
-    fmf_freeDestroy( &ftvtg ); 
+    fmf_freeDestroy( &ftvtg );
   } else {
-    fmf_freeDestroy( &st ); 
-    fmf_freeDestroy( &fu ); 
-    fmf_freeDestroy( &futvtg ); 
+    fmf_freeDestroy( &futvtg );
   }
 
   return( ret );

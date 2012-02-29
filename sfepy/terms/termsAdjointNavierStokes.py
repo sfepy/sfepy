@@ -1,9 +1,8 @@
 import numpy as nm
 
 from sfepy.terms.terms import Term, terms
-from sfepy.terms.termsNavierStokes import DivGradTerm
 
-class AdjDivGradTerm(DivGradTerm):
+class AdjDivGradTerm(Term):
     r"""
     Gateaux differential of :math:`\Psi(\ul{u}) = \int_{\Omega} \nu\
     \nabla \ul{v} : \nabla \ul{u}` w.r.t. :math:`\ul{u}` in the direction
@@ -23,22 +22,23 @@ class AdjDivGradTerm(DivGradTerm):
     name = 'dw_adj_div_grad'
     arg_types = ('material_1', 'material_2', 'virtual', 'parameter')
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        weight, viscosity, virtual, parameter = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    function = staticmethod(terms.term_ns_asm_div_grad)
+
+    def get_fargs(self, mat1, mat2, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
         if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        else:
-            raise StopIteration
+            grad = self.get(state, 'grad').transpose((0, 1, 3, 2))
+            sh = grad.shape
+            grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+            fmode = 0
 
-        vec = parameter()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec, 0, weight * viscosity,
-                                    vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        else:
+            grad = nm.array([0], ndmin=4, dtype=nm.float64)
+            fmode = 1
+
+        return grad, mat1 * mat2, vg, fmode
 
 class AdjConvect1Term(Term):
     r"""
@@ -58,30 +58,19 @@ class AdjConvect1Term(Term):
     arg_types = ('virtual', 'state', 'parameter' )
 
     function = staticmethod(terms.dw_adj_convect1)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        virtual, state, parameter = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, virtual, state, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
 
-        vec_w = state()
-        vec_u = parameter()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_w, 0, vec_u, 0,
-                                    bf, vg, ap.econn, chunk, mode )
-            yield out, chunk, status
+        val_w = self.get(state, 'val')
+        grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
 
-class AdjConvect2Term(AdjConvect1Term):
+        fmode = diff_var is not None
+
+        return val_w, grad_u, vg.bf, vg, fmode
+
+class AdjConvect2Term(Term):
     r"""
     The second adjoint term to nonlinear convective term `dw_convect`.
 
@@ -99,6 +88,17 @@ class AdjConvect2Term(AdjConvect1Term):
     arg_types = ('virtual', 'state', 'parameter' )
 
     function = staticmethod(terms.dw_adj_convect2)
+
+    def get_fargs(self, virtual, state, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(state)
+
+        val_w = self.get(state, 'val')
+        val_u = self.get(parameter, 'val')
+
+        fmode = diff_var is not None
+
+        return val_w, val_u, vg.bf, vg, fmode
 
 class AdjSUPGCtabilizationTerm(Term):
     r"""

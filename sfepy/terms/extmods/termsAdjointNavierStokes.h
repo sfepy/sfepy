@@ -12,19 +12,11 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 
-int32 dw_adj_convect1( FMField *out, FMField *state, int32 offset,
-		       FMField *velocity, int32 voffset, FMField *bf,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff );
+int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
+                       FMField *bf, VolumeGeometry *vg, int32 isDiff );
 
-int32 dw_adj_convect2( FMField *out, FMField *state, int32 offset,
-		       FMField *velocity, int32 voffset, FMField *bf,
-		       VolumeGeometry *vg,
-		       int32 *conn, int32 nEl, int32 nEP,
-		       int32 *elList, int32 elList_nRow,
-		       int32 isDiff );
+int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
+                       FMField *bf, VolumeGeometry *vg, int32 isDiff );
 
 int32 dw_st_adj_supg_c( FMField *out,
 			FMField *stateU, int32 offsetU,

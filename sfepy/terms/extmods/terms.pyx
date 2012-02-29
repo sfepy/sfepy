@@ -385,20 +385,12 @@ cdef extern from 'terms.h':
                           SurfaceGeometry *sg)
 
     cdef int32 _dw_adj_convect1 \
-         'dw_adj_convect1'(FMField *out, FMField *state, int32 offset,
-                           FMField *velocity, int32 voffset, FMField *bf,
-                           VolumeGeometry *vg,
-                           int32 *conn, int32 nEl, int32 nEP,
-                           int32 *elList, int32 elList_nRow,
-                           int32 isDiff)
+         'dw_adj_convect1'(FMField *out, FMField *stateW, FMField *gradU,
+                           FMField *bf, VolumeGeometry *vg, int32 isDiff)
 
     cdef int32 _dw_adj_convect2 \
-         'dw_adj_convect2'(FMField *out, FMField *state, int32 offset,
-                           FMField *velocity, int32 voffset, FMField *bf,
-                           VolumeGeometry *vg,
-                           int32 *conn, int32 nEl, int32 nEP,
-                           int32 *elList, int32 elList_nRow,
-                           int32 isDiff)
+         'dw_adj_convect2'(FMField *out, FMField *stateW, FMField *stateU,
+                           FMField *bf, VolumeGeometry *vg, int32 isDiff)
 
     cdef int32 _dw_st_adj_supg_c \
          'dw_st_adj_supg_c'(FMField *out,
@@ -1873,11 +1865,39 @@ def mulATB_integrate(np.ndarray out not None,
     ret = _mulATB_integrate(_out, _A, _B, cmap.geo)
     return ret
 
-def dw_adj_convect1():
-    pass
+def dw_adj_convect1(np.ndarray out not None,
+                    np.ndarray state_w not None,
+                    np.ndarray grad_u not None,
+                    np.ndarray bf not None,
+                    CVolumeMapping cmap not None,
+                    int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_w[1], _grad_u[1], _bf[1]
 
-def dw_adj_convect2():
-    pass
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_w, state_w)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_adj_convect1(_out, _state_w, _grad_u, _bf, cmap.geo, is_diff)
+    return ret
+
+def dw_adj_convect2(np.ndarray out not None,
+                    np.ndarray state_w not None,
+                    np.ndarray state_u not None,
+                    np.ndarray bf not None,
+                    CVolumeMapping cmap not None,
+                    int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_w[1], _state_u[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_w, state_w)
+    array2fmfield4(_state_u, state_u)
+    array2fmfield3(_bf, bf)
+
+    ret = _dw_adj_convect2(_out, _state_w, _state_u, _bf, cmap.geo, is_diff)
+    return ret
 
 def dw_st_adj_supg_c():
     pass
