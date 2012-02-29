@@ -7,7 +7,7 @@ import numpy as nm
 
 import sfepy
 from sfepy.base.base import output, remap_dict, Struct, IndexedStruct
-from sfepy.base.conf import ProblemConf
+from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem.evaluate import BasicEvaluator
 import sfepy.base.ioutils as io
 import sfepy.optimize.shapeOptim as so
@@ -332,8 +332,7 @@ def main():
                        default = False, help = help['optimize'] )
 
     options, args = parser.parse_args()
-#    print options; pause()
-    
+
     if options.test is not None:
         options.adjoint = options.direct = True
 
@@ -347,10 +346,8 @@ def main():
         parser.print_help(),
         return
 
-    required = ['filename_mesh', 'field_[0-9]+', 'ebc|nbc', 'fe',
-                'region_[0-9]+', 'variables', 'material_[0-9]+',
-                'solver_[0-9]+', 'integral_[0-9]+']
-    other = ['functions', 'modules', 'epbc', 'lcbc', 'problem', 'options']
+    required, other = get_standard_keywords()
+    required.remove('equations')
     if options.adjoint:
         required += ['equations_adjoint_.*', 'filename_vp']
         if options.direct:
@@ -361,16 +358,14 @@ def main():
         required += ['equations_direct_.*', 'equations_adjoint_.*',
                      'equations_sensitivity_.*',
                      'filename_vp']
-        
+
     conf = ProblemConf.from_file( filename_in, required, other )
-##     print conf
-##     pause()
 
     if options.direct:
         dpb, vec_dp, data = solve_direct( conf, options )
     else:
         dpb, vec_dp, data = None, None, None
-        
+
     if options.adjoint:
         solve_adjoint( conf, options, dpb, vec_dp, data )
 
@@ -379,32 +374,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-##     import profile
-##     import pstats
-
-##     profile.run( 'main()', 'prof.dat' )
-##     p = pstats.Stats( 'prof.dat' ).strip_dirs()
-
-##     p.print_callers()
-
-##     import trace, coverage
-
-##     trace = trace.Trace(ignoredirs=[sys.prefix, sys.exec_prefix,], trace = 1,
-##                         count = 1 )
-##     # run the new command using the given trace
-##     trace.run( coverage.globaltrace, 'main()' )
-##     # make a report, telling it where you want output
-##     r = trace.results()
-##     r.write_results( show_missing = True )
-
-##     import sfepy.ib.ccore.sort_rows as sort_rows
-##     aux = nm.arange( 12, dtype = nm.int32 )
-##     aux.shape = (4,3)
-##     aux[0,2] = 9
-##     aux[2,1] = 1
-##     aux[1,2] = 20
-##     print aux
-##     sort_rows.sort_rows( aux, nm.array( [1,2], nm.int32 ) )
-##     print aux
-    
