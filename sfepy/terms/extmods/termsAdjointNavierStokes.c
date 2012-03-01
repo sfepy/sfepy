@@ -465,54 +465,38 @@ int32 dw_st_adj2_supg_p( FMField *out,
   - 02.03.2006
   - 27.07.2006
 */
-int32 d_of_nsMinGrad( FMField *out, FMField *velocity, int32 offset,
-		      float64 viscosity, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow )
+int32 d_of_nsMinGrad( FMField *out, FMField *grad,
+		      FMField *viscosity, VolumeGeometry *vg )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
+  int32 ii, nQP, ret = RET_OK;
   float64 aux;
-  FMField *out1 = 0, *vel = 0, *gvel = 0, *gvel2 = 0;
-  FMField velv[1];
+  FMField *out1 = 0, *gvel2 = 0;
 
   nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-
-  velocity->val = FMF_PtrFirst( velocity ) + offset;
-
-  fmf_createAlloc( &vel, 1, 1, dim, nEP );
-  velv->nAlloc = -1;
-  fmf_pretend( velv, 1, 1, nEP * dim, 1, vel->val );
 
   fmf_createAlloc( &out1, 1, 1, 1, 1 );
-  fmf_createAlloc( &gvel, 1, nQP, dim * dim, 1 );
   fmf_createAlloc( &gvel2, 1, nQP, 1, 1 );
 
   FMF_SetFirst( out );
   aux = 0.0;
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
+  for (ii = 0; ii < grad->nCell; ii++) {
+    FMF_SetCell( grad, ii );
+    FMF_SetCell( viscosity, ii );
+    FMF_SetCell( vg->bfGM, ii );
+    FMF_SetCell( vg->det, ii );
 
-    FMF_SetCell( vg->bfGM, iel );
-    FMF_SetCell( vg->det, iel );
-
-    // u.
-    ele_extractNodalValuesDBD( vel, velocity, conn + nEP * iel );
-
-    divgrad_act_g_m( gvel, vg->bfGM, velv );
-    fmf_mulATB_nn( gvel2, gvel, gvel );
+    fmf_mulATB_nn( gvel2, grad, grad );
+    fmf_mul( gvel2, viscosity->val );
     fmf_sumLevelsMulF( out1, gvel2, vg->det->val );
     aux += out1->val[0];
 
     ERR_CheckGo( ret );
   }
 
-  out->val[0] = aux * 0.5 * viscosity;
+  out->val[0] = aux * 0.5;
 
  end_label:
-  fmf_freeDestroy( &vel );
   fmf_freeDestroy( &out1 );
-  fmf_freeDestroy( &gvel );
   fmf_freeDestroy( &gvel2 );
 
   return( ret );
@@ -524,35 +508,28 @@ int32 d_of_nsMinGrad( FMField *out, FMField *velocity, int32 offset,
   @par Revision history:
   - 23.03.2007, c
 */
-int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure, int32 offset,
-			    float64 weight, float64 bpress,
-			    FMField *bf, SurfaceGeometry *sg,
-			    int32 *conn, int32 nEl, int32 nEP,
-			    int32 *elList, int32 elList_nRow, int32 isDiff )
+int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
+                            float64 weight, float64 bpress,
+			    FMField *bf, SurfaceGeometry *sg, int32 isDiff )
 {
-  int32 ii, iel, iqp, nQP, ret = RET_OK;
+  int32 ii, iqp, nQP, ret = RET_OK;
   float64 aux;
-  FMField *out1 = 0, *press = 0, *pressQP = 0;
+  FMField *out1 = 0, *pressQP = 0;
 
   nQP = sg->det->nLev;
 
   if (isDiff == 0) {
-    pressure->val = FMF_PtrFirst( pressure ) + offset;
-  
-    fmf_createAlloc( &press, 1, 1, 1, nEP );
-    fmf_createAlloc( &pressQP, 1, nQP, 1, 1 );
     fmf_createAlloc( &out1, 1, 1, 1, 1 );
 
+    fmf_createAlloc( &pressQP, 1, nQP, 1, 1 );
+
     aux = 0.0;
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
+    for (ii = 0; ii < pressure->nCell; ii++) {
+      FMF_SetCell( pressure, ii );
+      FMF_SetCell( sg->det, ii );
 
-      FMF_SetCell( sg->det, iel );
-
-      ele_extractNodalValuesDBD( press, pressure, conn + nEP * iel );
-      bf_act( pressQP, bf, press );
       for (iqp = 0; iqp < nQP; iqp++) {
-	pressQP->val[iqp] -= bpress;
+	pressQP->val[iqp] -= pressure->val[iqp] - bpress;
       }
       fmf_sumLevelsMulF( out1, pressQP, sg->det->val );
       aux += out1->val[0];
@@ -561,11 +538,9 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure, int32 offset,
     }
     out->val[0] = aux * weight;
   } else {
-    for (ii = 0; ii < elList_nRow; ii++) {
-      iel = elList[ii];
-
+    for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
-      FMF_SetCell( sg->det, iel );
+      FMF_SetCell( sg->det, ii );
       fmf_sumLevelsTMulF( out, bf, sg->det->val );
 
       ERR_CheckGo( ret );
@@ -576,7 +551,6 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure, int32 offset,
  end_label:
   if (isDiff == 0) {
     fmf_freeDestroy( &out1 );
-    fmf_freeDestroy( &press );
     fmf_freeDestroy( &pressQP );
   }
 

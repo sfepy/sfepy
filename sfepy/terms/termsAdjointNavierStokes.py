@@ -409,45 +409,25 @@ class SDConvectTerm(Term):
             out1 = nm.sum( nm.squeeze( out ) )
             yield out1, chunk, status
 
-class NSOFMinGrad1Term(Term):
-    name = 'd_of_ns_min_grad1'
+class NSOFMinGradTerm(Term):
+    name = 'd_of_ns_min_grad'
     arg_types = ('material_1', 'material_2', 'parameter')
 
     function = staticmethod(terms.d_of_nsMinGrad)
-    
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        parameter: fluid velocity
-        """
-        weight, viscosity, par = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        shape = (1,)
 
-        vec = par()
-        for out, chunk in self.char_fun( chunk_size, shape,
-                                        zero = True, set_shape = False ):
-            status = self.function( out, vec, 0, viscosity * weight,
-                                    vg, ap.econn, chunk )
-            yield out, chunk, status
+    def get_fargs(self, weight, mat, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(parameter)
 
-class NSOFMinGrad2Term(NSOFMinGrad1Term):
-    name = 'd_of_ns_min_grad2'
-    arg_types = ('material_1', 'material_2', 'parameter')
+        grad = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
+        sh = grad.shape
+        grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        parameter: fluid velocity
-        uses 1.0 instead of material.viscosity
-        """
-        weight, material, par = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par)
-        shape = (1,)
+        return grad, weight * mat, vg
 
-        vec = par()
-        for out, chunk in self.char_fun( chunk_size, shape,
-                                        zero = True, set_shape = False ):
-            status = self.function( out, vec, 0, weight, vg, ap.econn, chunk )
-            yield out, chunk, status
+    def get_eval_shape(self, weight, mat, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (1, 1, 1, 1), parameter.dtype
 
 class NSOFSurfMinDPressTerm(Term):
     r"""
@@ -466,34 +446,21 @@ class NSOFSurfMinDPressTerm(Term):
     """
     name = 'd_of_ns_surf_min_d_press'
     arg_types = ('material_1', 'material_2', 'parameter')
+    integration = 'surface'
 
     function = staticmethod(terms.d_of_nsSurfMinDPress)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        Integrates over surface.
-        
-        material_1: weight
-        material_2: given constant pressure on outlet
-        parameter: fluid pressure
-        """
-        weight, press, par = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(par)
-        shape = (1,)
+    def get_fargs(self, weight, bpress, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(parameter)
 
-        sd = ap.surface_data[self.region.name]
+        val_p = self.get(parameter, 'val')
 
-        vec = par()
-##         sg.str( sys.stdout, 0 )
-##         print self.char_fun.region
-##         pause()
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-        for out, chunk in self.char_fun( chunk_size, shape,
-                                        zero = True, set_shape = False ):
-            lchunk = self.char_fun.get_local_chunk()
-            status = self.function( out, vec, 0, weight, press,
-                                    bf, sg, sd.econn, lchunk, 0 )
-            yield out, lchunk, status
+        return val_p, weight, bpress, sg.bf, sg, 0
+
+    def get_eval_shape(self, weight, bpress, parameter,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        return (1, 1, 1, 1), parameter.dtype
 
 class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
     r"""
@@ -512,32 +479,13 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
     name = 'dw_of_ns_surf_min_d_press_diff'
     arg_types = ('material', 'virtual')
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        Integrates over surface.
-        
-        material_1: weight
-        virtual: fluid pressure-like
-        """
-        weight, virtual = self.get_args( **kwargs )
-        ap, sg = self.get_approximation(virtual)
-        n_fa, n_qp, dim, n_fp = ap.get_s_data_shape( self.integral,
-                                                     self.region.name )
-        shape = (chunk_size, 1, n_fp, 1 )
+    def get_fargs(self, weight, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
 
-        sd = ap.surface_data[self.region.name]
+        aux = nm.array([0], ndmin=4, dtype=nm.float64)
 
-        aux = nm.array( [], dtype = nm.float64 )
-##         print sd.econn, sd.econn.shape
-        bf = ap.get_base( sd.face_type, 0, self.integral )
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            lchunk = self.char_fun.get_local_chunk()
-##             print chunk, chunk.shape
-##             print lchunk, lchunk.shape
-##             pause()
-            status = self.function( out, aux, 0, weight, 0.0,
-                                    bf, sg, sd.econn, lchunk, 1 )
-            yield out, lchunk, status
+        return aux, weight, 0.0, sg.bf, sg, 1
 
 class SDGradDivStabilizationTerm(Term):
     r"""

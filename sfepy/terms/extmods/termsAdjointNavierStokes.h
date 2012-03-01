@@ -46,16 +46,12 @@ int32 dw_st_adj2_supg_p( FMField *out,
 			 int32 *elList, int32 elList_nRow,
 			 int32 isDiff );
 
-int32 d_of_nsMinGrad( FMField *out, FMField *velocity, int32 offset,
-		      float64 viscosity, VolumeGeometry *vg,
-		      int32 *conn, int32 nEl, int32 nEP,
-		      int32 *elList, int32 elList_nRow );
+int32 d_of_nsMinGrad( FMField *out, FMField *grad,
+		      FMField *viscosity, VolumeGeometry *vg );
 
-int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure, int32 offset,
-			    float64 weight, float64 bpress,
-			    FMField *bf, SurfaceGeometry *sg,
-			    int32 *conn, int32 nEl, int32 nEP,
-			    int32 *elList, int32 elList_nRow, int32 isDiff );
+int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
+                            float64 weight, float64 bpress,
+			    FMField *bf, SurfaceGeometry *sg, int32 isDiff );
 
 int32 d_sd_div( FMField *out,
 		FMField *stateU, int32 offsetU,

@@ -424,17 +424,13 @@ cdef extern from 'terms.h':
                              int32 isDiff)
 
     cdef int32 _d_of_nsMinGrad \
-         'd_of_nsMinGrad'(FMField *out, FMField *velocity, int32 offset,
-                          float64 viscosity, VolumeGeometry *vg,
-                          int32 *conn, int32 nEl, int32 nEP,
-                          int32 *elList, int32 elList_nRow)
+         'd_of_nsMinGrad'(FMField *out, FMField *grad,
+                          FMField *viscosity, VolumeGeometry *vg)
 
     cdef int32 _d_of_nsSurfMinDPress \
-         'd_of_nsSurfMinDPress'(FMField *out, FMField *pressure, int32 offset,
+         'd_of_nsSurfMinDPress'(FMField *out, FMField *pressure,
                                 float64 weight, float64 bpress,
-                                FMField *bf, SurfaceGeometry *sg,
-                                int32 *conn, int32 nEl, int32 nEP,
-                                int32 *elList, int32 elList_nRow, int32 isDiff)
+                                FMField *bf, SurfaceGeometry *sg, int32 isDiff)
 
     cdef int32 _d_sd_div \
          'd_sd_div'(FMField *out,
@@ -1908,11 +1904,37 @@ def dw_st_adj1_supg_p():
 def dw_st_adj2_supg_p():
     pass
 
-def d_of_nsMinGrad():
-    pass
+def d_of_nsMinGrad(np.ndarray out not None,
+                   np.ndarray grad not None,
+                   np.ndarray viscosity not None,
+                   CVolumeMapping cmap not None):
+    cdef int32 ret
+    cdef FMField _out[1], _grad[1], _viscosity[1]
 
-def d_of_nsSurfMinDPress():
-    pass
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad, grad)
+    array2fmfield4(_viscosity, viscosity)
+
+    ret = _d_of_nsMinGrad(_out, _grad, _viscosity, cmap.geo)
+    return ret
+
+def d_of_nsSurfMinDPress(np.ndarray out not None,
+                         np.ndarray pressure not None,
+                         float64 weight,
+                         float64 bpress,
+                         np.ndarray bf not None,
+                         CSurfaceMapping cmap not None,
+                         int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _pressure[1], _bf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_pressure, pressure)
+    array2fmfield3(_bf, bf)
+
+    ret = _d_of_nsSurfMinDPress(_out, _pressure, weight, bpress, _bf,
+                                cmap.geo, is_diff)
+    return ret
 
 def d_sd_div():
     pass
