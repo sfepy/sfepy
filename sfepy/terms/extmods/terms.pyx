@@ -393,34 +393,23 @@ cdef extern from 'terms.h':
                            FMField *bf, VolumeGeometry *vg, int32 isDiff)
 
     cdef int32 _dw_st_adj_supg_c \
-         'dw_st_adj_supg_c'(FMField *out,
-                            FMField *stateU, int32 offsetU,
-                            FMField *stateW, int32 offsetW,
+         'dw_st_adj_supg_c'(FMField *out, FMField *stateW,
+                            FMField *stateU, FMField *gradU,
                             FMField *coef, FMField *bf, VolumeGeometry *vg,
                             int32 *conn, int32 nEl, int32 nEP,
-                            int32 *elList, int32 elList_nRow,
                             int32 isDiff)
 
     cdef int32 _dw_st_adj1_supg_p \
-         'dw_st_adj1_supg_p'(FMField *out,
-                             FMField *stateP, int32 offsetP,
-                             FMField *stateW, int32 offsetW,
-                             FMField *coef, FMField *bf_w,
-                             VolumeGeometry *vg_w, VolumeGeometry *vg_p,
+         'dw_st_adj1_supg_p'(FMField *out, FMField *stateW, FMField *gradP,
+                             FMField *coef, FMField *bf_w, VolumeGeometry *vg_w,
                              int32 *conn_w, int32 nEl_w, int32 nEP_w,
-                             int32 *conn_p, int32 nEl_p, int32 nEP_p,
-                             int32 *elList, int32 elList_nRow,
                              int32 isDiff)
 
     cdef int32 _dw_st_adj2_supg_p \
-         'dw_st_adj2_supg_p'(FMField *out,
-                             FMField *stateU, int32 offsetU,
-                             FMField *stateR, int32 offsetR,
+         'dw_st_adj2_supg_p'(FMField *out, FMField *gradU, FMField *stateR,
                              FMField *coef, FMField *bf_u,
                              VolumeGeometry *vg_u, VolumeGeometry *vg_r,
-                             int32 *conn_u, int32 nEl_u, int32 nEP_u,
                              int32 *conn_r, int32 nEl_r, int32 nEP_r,
-                             int32 *elList, int32 elList_nRow,
                              int32 isDiff)
 
     cdef int32 _d_of_nsMinGrad \
@@ -1895,14 +1884,78 @@ def dw_adj_convect2(np.ndarray out not None,
     ret = _dw_adj_convect2(_out, _state_w, _state_u, _bf, cmap.geo, is_diff)
     return ret
 
-def dw_st_adj_supg_c():
-    pass
+def dw_st_adj_supg_c(np.ndarray out not None,
+                     np.ndarray state_w not None,
+                     np.ndarray state_u not None,
+                     np.ndarray grad_u not None,
+                     np.ndarray coef not None,
+                     np.ndarray bf not None,
+                     CVolumeMapping cmap not None,
+                     np.ndarray conn not None,
+                     int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_w[1], _state_u[1], _grad_u[1], _coef[1], _bf[1]
+    cdef int32 *_conn, n_el, n_ep
 
-def dw_st_adj1_supg_p():
-    pass
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_w, state_w)
+    array2fmfield4(_state_u, state_u)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_bf, bf)
+    array2pint2(&_conn, &n_el, &n_ep, conn)
 
-def dw_st_adj2_supg_p():
-    pass
+    ret = _dw_st_adj_supg_c(_out, _state_w, _state_u, _grad_u, _coef, _bf,
+                            cmap.geo, _conn, n_el, n_ep, is_diff)
+    return ret
+
+def dw_st_adj1_supg_p(np.ndarray out not None,
+                      np.ndarray state_w not None,
+                      np.ndarray grad_p not None,
+                      np.ndarray coef not None,
+                      np.ndarray bf_w not None,
+                      CVolumeMapping cmap_w not None,
+                      np.ndarray conn_w not None,
+                      int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _state_w[1], _grad_p[1], _coef[1], _bf_w[1]
+    cdef int32 *_conn_w, n_el_w, n_ep_w
+
+    array2fmfield4(_out, out)
+    array2fmfield1(_state_w, state_w)
+    array2fmfield4(_grad_p, grad_p)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_bf_w, bf_w)
+    array2pint2(&_conn_w, &n_el_w, &n_ep_w, conn_w)
+
+    ret = _dw_st_adj1_supg_p(_out, _state_w, _grad_p, _coef, _bf_w,
+                             cmap_w.geo, _conn_w, n_el_w, n_ep_w, is_diff)
+    return ret
+
+def dw_st_adj2_supg_p(np.ndarray out not None,
+                      np.ndarray grad_u not None,
+                      np.ndarray state_r not None,
+                      np.ndarray coef not None,
+                      np.ndarray bf_u not None,
+                      CVolumeMapping cmap_u not None,
+                      CVolumeMapping cmap_r not None,
+                      np.ndarray conn_r not None,
+                      int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_u[1], _state_r[1], _coef[1], _bf_u[1]
+    cdef int32 *_conn_r, n_el_r, n_ep_r
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield1(_state_r, state_r)
+    array2fmfield4(_coef, coef)
+    array2fmfield3(_bf_u, bf_u)
+    array2pint2(&_conn_r, &n_el_r, &n_ep_r, conn_r)
+
+    ret = _dw_st_adj2_supg_p(_out, _grad_u, _state_r, _coef, _bf_u,
+                             cmap_u.geo, cmap_r.geo, _conn_r, n_el_r, n_ep_r,
+                             is_diff)
+    return ret
 
 def d_of_nsMinGrad(np.ndarray out not None,
                    np.ndarray grad not None,

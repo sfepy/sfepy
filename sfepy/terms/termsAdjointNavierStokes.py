@@ -100,7 +100,7 @@ class AdjConvect2Term(Term):
 
         return val_w, val_u, vg.bf, vg, fmode
 
-class AdjSUPGCtabilizationTerm(Term):
+class SUPGCAdjStabilizationTerm(Term):
     r"""
     Adjoint term to SUPG stabilization term `dw_st_supg_c`.
 
@@ -121,29 +121,18 @@ class AdjSUPGCtabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_adj_supg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, virtual, par, state = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(virtual)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, mat, virtual, state, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap, vg = self.get_approximation(state)
 
-        vec_w = state()
-        vec_u = par()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_w, 0,
-                                    coef, bf, vg, ap.econn,
-                                    chunk, mode )
-            yield out, chunk, status
+        val_u = self.get(parameter, 'val')
+        grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
+        conn = ap.get_connectivity(self.region, self.integration)
+
+        fmode = diff_var is not None
+
+        return state(), val_u, grad_u, mat, vg.bf, vg, conn, fmode
 
 class SUPGPAdj1StabilizationTerm(Term):
     r"""
@@ -165,30 +154,17 @@ class SUPGPAdj1StabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'state', 'parameter')
 
     function = staticmethod(terms.dw_st_adj1_supg_p)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, virtual, state, par = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        app, vgp = self.get_approximation(par)
-        n_el, n_qp, dim, n_ep = apr.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_ep, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            shape = (chunk_size, 1, dim * n_ep, dim * n_ep )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, mat, virtual, state, parameter,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap_w, vg_w = self.get_approximation(state)
 
-        vec_w = state()
-        vec_p = par()
-        bf = apr.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_p, 0, vec_w, 0,
-                                    coef, bf, vgr, vgp,
-                                    apr.econn, app.econn, chunk, mode )
-            yield out, chunk, status
+        grad_p = self.get(parameter, 'grad')
+        conn_w = ap_w.get_connectivity(self.region, self.integration)
+
+        fmode = diff_var is not None
+
+        return state(), grad_p, mat, vg_w.bf, vg_w, conn_w, fmode
 
 class SUPGPAdj2StabilizationTerm(Term):
     r"""
@@ -211,31 +187,18 @@ class SUPGPAdj2StabilizationTerm(Term):
     arg_types = ('material', 'virtual', 'parameter', 'state')
 
     function = staticmethod(terms.dw_st_adj2_supg_p)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, virtual, par, state = self.get_args( **kwargs )
-        apr, vgr = self.get_approximation(virtual)
-        apc, vgc = self.get_approximation(state)
-        n_el, n_qp, dim, n_epr = apr.get_v_data_shape(self.integral)
 
-        if diff_var is None:
-            shape = (chunk_size, 1, dim * n_epr, 1 )
-            mode = 0
-        elif diff_var == self.get_arg_name( 'state' ):
-            n_epc = apc.get_v_data_shape(self.integral)[3]
-            shape = (chunk_size, 1, dim * n_epr, n_epc )
-            mode = 1
-        else:
-            raise StopIteration
+    def get_fargs(self, mat, virtual, parameter, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        ap_r, vg_r = self.get_approximation(state)
+        vg_u, _ = self.get_mapping(parameter)
 
-        vec_u = par()
-        vec_r = state()
-        bf = apr.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_r, 0,
-                                    coef, bf, vgr, vgc,
-                                    apr.econn, apc.econn, chunk, mode )
-            yield out, chunk, status
+        grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
+        conn_r = ap_r.get_connectivity(self.region, self.integration)
+
+        fmode = diff_var is not None
+
+        return grad_u, state(), mat, vg_u.bf, vg_u, vg_r, conn_r, fmode
 
 class TestPQTerm(Term):
     name = 'd_sd_test_pq'
