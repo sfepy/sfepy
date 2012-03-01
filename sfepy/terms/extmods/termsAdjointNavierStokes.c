@@ -61,7 +61,6 @@ int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( gradU, ii );
-    FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
     if (isDiff) {
@@ -361,7 +360,6 @@ int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( gradU, ii );
-    FMF_SetCell( vg_u->bfGM, ii );
     FMF_SetCell( vg_r->bfGM, ii );
     FMF_SetCell( vg_u->det, ii );
     FMF_SetCell( coef, ii );
@@ -422,7 +420,6 @@ int32 d_of_nsMinGrad( FMField *out, FMField *grad,
   for (ii = 0; ii < grad->nCell; ii++) {
     FMF_SetCell( grad, ii );
     FMF_SetCell( viscosity, ii );
-    FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
     fmf_mulATB_nn( gvel2, grad, grad );
