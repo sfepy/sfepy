@@ -170,10 +170,11 @@ class Equations( Container ):
                 vns.update( term.get_variable_names() )
         return list( vns )
 
-    ##
-    # 27.02.2007, c
-    def invalidate_term_caches( self ):
-        for var in self.variables.iter_state():
+    def invalidate_term_caches(self):
+        """
+        Invalidate evaluate caches of variables present in equations.
+        """
+        for var in self.variables:
             var.invalidate_evaluate_cache()
 
     def print_terms(self):
