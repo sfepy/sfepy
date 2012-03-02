@@ -422,47 +422,19 @@ cdef extern from 'terms.h':
                                 FMField *bf, SurfaceGeometry *sg, int32 isDiff)
 
     cdef int32 _d_sd_div \
-         'd_sd_div'(FMField *out,
-                    FMField *stateU, int32 offsetU,
-                    FMField *stateP, int32 offsetP,
-                    FMField *vecMV, int32 offsetMV,
-                    FMField *bf_p,
-                    VolumeGeometry *vg_u,
-                    VolumeGeometry *vg_p,
-                    VolumeGeometry *vg_mv,
-                    int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                    int32 *conn_p, int32 nEl_p, int32 nEP_p,
-                    int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                    int32 *elList, int32 elList_nRow,
-                    int32 mode)
+         'd_sd_div'(FMField *out, FMField *divU, FMField *gradU,
+                    FMField *stateP, FMField *divMV, FMField *gradMV,
+                    VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_div_grad \
-         'd_sd_div_grad'(FMField *out,
-                         FMField *stateU, int32 offsetU,
-                         FMField *stateW, int32 offsetW,
-                         FMField *vecMV, int32 offsetMV,
-                         float64 viscosity,
-                         VolumeGeometry *vg_u,
-                         VolumeGeometry *vg_mv,
-                         int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                         int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                         int32 *elList, int32 elList_nRow,
-                         int32 mode)
+         'd_sd_div_grad'(FMField *out, FMField *gradU, FMField *gradW,
+                         FMField *divMV, FMField *gradMV, FMField *viscosity,
+                         VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_convect \
-         'd_sd_convect'(FMField *out,
-                        FMField *stateU, int32 offsetU,
-                        FMField *stateW, int32 offsetW,
-                        FMField *vecMV, int32 offsetMV,
-                        FMField *bf_u, FMField *bf_w,
-                        VolumeGeometry *vg_u,
-                        VolumeGeometry *vg_w,
-                        VolumeGeometry *vg_mv,
-                        int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                        int32 *conn_w, int32 nEl_w, int32 nEP_w,
-                        int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                        int32 *elList, int32 elList_nRow,
-                        int32 mode)
+         'd_sd_convect'(FMField *out, FMField *stateU, FMField *gradU,
+                        FMField *stateW, FMField *divMV, FMField *gradMV,
+                        VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_testPQ \
          'd_sd_testPQ'(FMField *out,
@@ -1989,14 +1961,74 @@ def d_of_nsSurfMinDPress(np.ndarray out not None,
                                 cmap.geo, is_diff)
     return ret
 
-def d_sd_div():
-    pass
+def d_sd_div(np.ndarray out not None,
+             np.ndarray div_u not None,
+             np.ndarray grad_u not None,
+             np.ndarray state_p not None,
+             np.ndarray div_mv not None,
+             np.ndarray grad_mv not None,
+             CVolumeMapping cmap_u not None,
+             int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_p[1], _div_u[1], _grad_u[1]
+    cdef FMField _div_mv[1], _grad_mv[1]
 
-def d_sd_div_grad():
-    pass
+    array2fmfield4(_out, out)
+    array2fmfield4(_div_u, div_u)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_state_p, state_p)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
 
-def d_sd_convect():
-    pass
+    ret = _d_sd_div(_out, _div_u, _grad_u, _state_p, _div_mv, _grad_mv,
+                    cmap_u.geo, mode)
+    return ret
+
+def d_sd_div_grad(np.ndarray out not None,
+                  np.ndarray grad_u not None,
+                  np.ndarray grad_w not None,
+                  np.ndarray div_mv not None,
+                  np.ndarray grad_mv not None,
+                  np.ndarray viscosity not None,
+                  CVolumeMapping cmap_u not None,
+                  int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_u[1], _grad_w[1], _div_mv[1], _grad_mv[1]
+    cdef FMField _viscosity[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_grad_w, grad_w)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+    array2fmfield4(_viscosity, viscosity)
+
+    ret = _d_sd_div_grad(_out, _grad_u, _grad_w, _div_mv, _grad_mv, _viscosity,
+                         cmap_u.geo, mode)
+    return ret
+
+def d_sd_convect(np.ndarray out not None,
+                 np.ndarray state_u not None,
+                 np.ndarray grad_u not None,
+                 np.ndarray state_w not None,
+                 np.ndarray div_mv not None,
+                 np.ndarray grad_mv not None,
+                 CVolumeMapping cmap_u not None,
+                 int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_u[1], _grad_u[1], _state_w[1]
+    cdef FMField _div_mv[1], _grad_mv[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_u, state_u)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_state_w, state_w)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+
+    ret = _d_sd_convect(_out, _state_u, _grad_u, _state_w, _div_mv, _grad_mv,
+                        cmap_u.geo, mode)
+    return ret
 
 def d_sd_testPQ():
     pass

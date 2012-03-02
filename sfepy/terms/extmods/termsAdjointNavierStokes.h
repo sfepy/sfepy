@@ -42,45 +42,17 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
                             float64 weight, float64 bpress,
 			    FMField *bf, SurfaceGeometry *sg, int32 isDiff );
 
-int32 d_sd_div( FMField *out,
-		FMField *stateU, int32 offsetU,
-		FMField *stateP, int32 offsetP,
-		FMField *vecMV, int32 offsetMV,
-		FMField *bf_p,
-		VolumeGeometry *vg_u,
-		VolumeGeometry *vg_p,
-		VolumeGeometry *vg_mv,
-		int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		int32 *conn_p, int32 nEl_p, int32 nEP_p,
-		int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		int32 *elList, int32 elList_nRow,
-		int32 mode );
+int32 d_sd_div( FMField *out, FMField *divU, FMField *gradU,
+                FMField *stateP, FMField *divMV, FMField *gradMV,
+                VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_div_grad( FMField *out,
-		     FMField *stateU, int32 offsetU,
-		     FMField *stateW, int32 offsetW,
-		     FMField *vecMV, int32 offsetMV,
-		     float64 viscosity,
-		     VolumeGeometry *vg_u,
-		     VolumeGeometry *vg_mv,
-		     int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		     int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		     int32 *elList, int32 elList_nRow,
-		     int32 mode );
+int32 d_sd_div_grad( FMField *out, FMField *gradU, FMField *gradW,
+                     FMField *divMV, FMField *gradMV, FMField *viscosity,
+		     VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_convect( FMField *out,
-		    FMField *stateU, int32 offsetU,
-		    FMField *stateW, int32 offsetW,
-		    FMField *vecMV, int32 offsetMV,
-		    FMField *bf_u, FMField *bf_w,
-		    VolumeGeometry *vg_u,
-		    VolumeGeometry *vg_w,
-		    VolumeGeometry *vg_mv,
-		    int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		    int32 *conn_w, int32 nEl_w, int32 nEP_w,
-		    int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		    int32 *elList, int32 elList_nRow,
-		    int32 mode );
+int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
+		    FMField *stateW, FMField *divMV, FMField *gradMV,
+		    VolumeGeometry *vg_u, int32 mode );
 
 int32 d_sd_testPQ( FMField *out,
 		   FMField *stateP, int32 offsetP,

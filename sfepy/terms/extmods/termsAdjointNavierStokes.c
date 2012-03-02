@@ -501,88 +501,32 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
   - 06.03.2006, c
   - 24.10.2007
 */
-int32 d_sd_div( FMField *out,
-		FMField *stateU, int32 offsetU,
-		FMField *stateP, int32 offsetP,
-		FMField *vecMV, int32 offsetMV,
-		FMField *bf_p,
-		VolumeGeometry *vg_u,
-		VolumeGeometry *vg_p,
-		VolumeGeometry *vg_mv,
-		int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		int32 *conn_p, int32 nEl_p, int32 nEP_p,
-		int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		int32 *elList, int32 elList_nRow,
-		int32 mode )
+int32 d_sd_div( FMField *out, FMField *divU, FMField *gradU,
+                FMField *stateP, FMField *divMV, FMField *gradMV,
+                VolumeGeometry *vg_u, int32 mode )
 {
-  int32 ii, iel, dim, nQP, d2, ret = RET_OK;
-  FMField *stp = 0, *stu = 0, *fp = 0, *aux11 = 0, *divU = 0;
-  FMField *mv = 0, *divMV = 0, *gu = 0, *gmv = 0;
-  FMField stpv[1], stuv[1], mvv[1], gclu[1], gclmv[1];
+  int32 ii, nQP, ret = RET_OK;
+  FMField *aux11 = 0;
 
   nQP = vg_u->bfGM->nLev;
-  dim = vg_u->bfGM->nRow;
-  d2 = dim * dim;
 
-  stateU->val = FMF_PtrFirst( stateU ) + offsetU;
-  stateP->val = FMF_PtrFirst( stateP ) + offsetP;
-
-  fmf_createAlloc( &stp, 1, 1, 1, nEP_p );
-  stpv->nAlloc = -1;
-  fmf_pretend( stpv, 1, 1, nEP_p, 1, stp->val );
-
-  fmf_createAlloc( &stu, 1, 1, dim, nEP_u );
-  stuv->nAlloc = -1;
-  fmf_pretend( stuv, 1, 1, nEP_u * dim, 1, stu->val );
-
-  gclu->nAlloc = -1;
-  fmf_pretend( gclu, 1, nQP, 1, nEP_u * dim, vg_u->bfGM->val0 );
-
-  fmf_createAlloc( &fp, 1, nQP, 1, 1 );
-  fmf_createAlloc( &divU, 1, nQP, 1, 1 );
   fmf_createAlloc( &aux11, 1, nQP, 1, 1 );
 
-  if (mode == 1) { 
-    vecMV->val = FMF_PtrFirst( vecMV ) + offsetMV;
-
-    gclmv->nAlloc = -1;
-    fmf_pretend( gclmv, 1, nQP, 1, nEP_mv * dim, vg_mv->bfGM->val0 );
-
-    fmf_createAlloc( &mv, 1, 1, dim, nEP_mv );
-    mvv->nAlloc = -1;
-    fmf_pretend( mvv, 1, 1, nEP_mv * dim, 1, mv->val );
-
-    fmf_createAlloc( &divMV, 1, nQP, 1, 1 );
-    fmf_createAlloc( &gu, 1, nQP, d2, 1 );
-    fmf_createAlloc( &gmv, 1, nQP, d2, 1 );
-  }
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( gclu, iel );
+    FMF_SetCell( stateP, ii );
+    FMF_SetCell( divU, ii );
+    FMF_SetCell( vg_u->det, ii );
 
-    ele_extractNodalValuesDBD( stp, stateP, conn_p + nEP_p * iel );
-    ele_extractNodalValuesDBD( stu, stateU, conn_u + nEP_u * iel );
+    fmf_mulAB_nn( aux11, stateP, divU );
 
-    fmf_mulAB_n1( fp, bf_p, stpv );
-    fmf_mulAB_n1( divU, gclu, stuv );
-    fmf_mulAB_nn( aux11, fp, divU );
-      
-    if (mode == 1) { 
-      FMF_SetCell( gclmv, iel );
-      FMF_SetCell( vg_u->bfGM, iel );
-      FMF_SetCell( vg_mv->bfGM, iel );
+    if (mode == 1) {
+      FMF_SetCell( gradU, ii );
+      FMF_SetCell( divMV, ii );
+      FMF_SetCell( gradMV, ii );
 
-      ele_extractNodalValuesDBD( mv, vecMV, conn_mv + nEP_mv * iel );
-      fmf_mulAB_n1( divMV, gclmv, mvv );
       fmf_mul( aux11, divMV->val );
-
-      divgrad_act_g_m( gu, vg_u->bfGM, stuv );
-      divgrad_act_g_m( gmv, vg_mv->bfGM, mvv );
-      sub_mul_gradddgrad_scalar( aux11, gu, gmv, fp );
+      sub_mul_gradddgrad_scalar( aux11, gradU, gradMV, stateP );
     }
     fmf_sumLevelsMulF( out, aux11, vg_u->det->val );
 
@@ -590,17 +534,7 @@ int32 d_sd_div( FMField *out,
   }
 
  end_label:
-  fmf_freeDestroy( &stp );
-  fmf_freeDestroy( &stu );
-  fmf_freeDestroy( &fp );
   fmf_freeDestroy( &aux11 );
-  fmf_freeDestroy( &divU );
-  if (mode == 1) {
-    fmf_freeDestroy( &mv );
-    fmf_freeDestroy( &divMV );
-    fmf_freeDestroy( &gu );
-    fmf_freeDestroy( &gmv );
-  }
 
   return( ret );
 }
@@ -615,137 +549,81 @@ int32 d_sd_div( FMField *out,
   - 06.03.2006
   - 07.03.2006
 */
-int32 d_sd_div_grad( FMField *out,
-		     FMField *stateU, int32 offsetU,
-		     FMField *stateW, int32 offsetW,
-		     FMField *vecMV, int32 offsetMV,
-		     float64 viscosity,
-		     VolumeGeometry *vg_u,
-		     VolumeGeometry *vg_mv,
-		     int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		     int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		     int32 *elList, int32 elList_nRow,
-		     int32 mode )
+int32 d_sd_div_grad( FMField *out, FMField *gradU, FMField *gradW,
+                     FMField *divMV, FMField *gradMV, FMField *viscosity,
+		     VolumeGeometry *vg_u, int32 mode )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *st = 0, *vel = 0, *mv = 0, *gw = 0, *gvel = 0, *gmv = 0;
-  FMField *divMV = 0, *uvel = 0, *aux = 0, *aux1 = 0, *aux2 = 0, *aux3 = 0;
-  FMField gcl[1], stv[1], velv[1], mvv[1], gwm[1], gvelm[1], gmvm[1], aux3m[1];
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *uvel = 0, *aux = 0, *aux1 = 0, *aux2 = 0, *aux3 = 0;
+  FMField gum[1], gwm[1], gmvm[1], aux3m[1];
 
   nQP = vg_u->bfGM->nLev;
   dim = vg_u->bfGM->nRow;
 
-  stateU->val = FMF_PtrFirst( stateU ) + offsetU;
-  stateW->val = FMF_PtrFirst( stateW ) + offsetW;
-
   fmf_createAlloc( &uvel, 1, nQP, 1, 1 );
 
-  fmf_createAlloc( &st, 1, 1, dim, nEP_u );
-  stv->nAlloc = -1;
-  fmf_pretend( stv, 1, 1, nEP_u * dim, 1, st->val );
-
-  fmf_createAlloc( &vel, 1, 1, dim, nEP_u );
-  velv->nAlloc = -1;
-  fmf_pretend( velv, 1, 1, nEP_u * dim, 1, vel->val );
-
-  fmf_createAlloc( &gw, 1, nQP, dim * dim, 1 );
-  gwm->nAlloc = -1;
-  fmf_pretend( gwm, 1, nQP, dim, dim, gw->val );
-
-  fmf_createAlloc( &gvel, 1, nQP, dim * dim, 1 );
-  gvelm->nAlloc = -1;
-  fmf_pretend( gvelm, 1, nQP, dim, dim, gvel->val );
-
   if (mode == 1) {
-    vecMV->val = FMF_PtrFirst( vecMV ) + offsetMV;
-
-    gcl->nAlloc = -1;
-    fmf_pretend( gcl, 1, nQP, 1, nEP_mv * dim, vg_mv->bfGM->val0 );
-
-    fmf_createAlloc( &divMV, 1, nQP, 1, 1 );
-
-    fmf_createAlloc( &mv, 1, 1, dim, nEP_mv );
-    mvv->nAlloc = -1;
-    fmf_pretend( mvv, 1, 1, nEP_mv * dim, 1, mv->val );
-
-    fmf_createAlloc( &gmv, 1, nQP, dim * dim, 1 );
-    gmvm->nAlloc = -1;
-    fmf_pretend( gmvm, 1, nQP, dim, dim, gmv->val );
-
     fmf_createAlloc( &aux, 1, 1, 1, 1 );
     fmf_createAlloc( &aux1, 1, nQP, 1, 1 );
     fmf_createAlloc( &aux2, 1, nQP, 1, 1 );
     fmf_createAlloc( &aux3, 1, nQP, dim * dim, 1 );
     aux3m->nAlloc = -1;
     fmf_pretend( aux3m, 1, nQP, dim, dim, aux3->val );
+
+    gum->nAlloc = -1;
+    fmf_pretend( gum, gradU->nCell, nQP, dim, dim, gradU->val0 );
+
+    gwm->nAlloc = -1;
+    fmf_pretend( gwm, gradW->nCell, nQP, dim, dim, gradW->val0 );
+
+    gmvm->nAlloc = -1;
+    fmf_pretend( gmvm, gradMV->nCell, nQP, dim, dim, gradMV->val0 );
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg_u->bfGM, iel );
-    FMF_SetCell( vg_u->det, iel );
+    FMF_SetCell( gradU, ii );
+    FMF_SetCell( gradW, ii );
+    FMF_SetCell( viscosity, ii );
+    FMF_SetCell( vg_u->det, ii );
 
-    // w.      
-    ele_extractNodalValuesDBD( st, stateW, conn_u + nEP_u * iel );
-    // u.
-    ele_extractNodalValuesDBD( vel, stateU, conn_u + nEP_u * iel );
-
-    divgrad_act_g_m( gw, vg_u->bfGM, stv );
-    divgrad_act_g_m( gvel, vg_u->bfGM, velv );
+    // (gu:gw)
+    fmf_mulATB_nn( uvel, gradW, gradU );
 
     if (mode == 0) {
-      // (gu:gw)
-      fmf_mulATB_nn( uvel, gw, gvel );
+      fmf_mul( uvel, viscosity->val );
       fmf_sumLevelsMulF( out, uvel, vg_u->det->val );
-      fmf_mulC( out, viscosity );
 
     } else if (mode == 1) {
-      FMF_SetCell( vg_mv->bfGM, iel );
-      FMF_SetCell( gcl, iel );
-      // nu.
-      ele_extractNodalValuesDBD( mv, vecMV, conn_mv + nEP_mv * iel );
-      
-      divgrad_act_g_m( gmv, vg_mv->bfGM, mvv );
+      FMF_SetCell( divMV, ii );
+      FMF_SetCell( gum, ii );
+      FMF_SetCell( gwm, ii );
+      FMF_SetCell( gmvm, ii );
 
       // (gu:gw) div nu
-      fmf_mulAB_n1( divMV, gcl, mvv );
-      fmf_mulATB_nn( uvel, gw, gvel );
       fmf_mulAB_nn( aux1, uvel, divMV );
+      fmf_mul( aux1, viscosity->val );
       fmf_sumLevelsMulF( out, aux1, vg_u->det->val );
 
       // (gu * gnu) : gw
-      fmf_mulAB_nn( aux3m, gvelm, gmvm );
-      fmf_mulATB_nn( aux1, aux3, gw );
+      fmf_mulAB_nn( aux3m, gum, gmvm );
+      fmf_mulATB_nn( aux1, aux3, gradW );
 
       // (gw * gnu) : gu
       fmf_mulAB_nn( aux3m, gwm, gmvm );
-      fmf_mulATB_nn( aux2, aux3, gvel );
+      fmf_mulATB_nn( aux2, aux3, gradU );
 
       fmf_addAB_nn( aux1, aux1, aux2 );
+      fmf_mul( aux1, viscosity->val );
       fmf_sumLevelsMulF( aux, aux1, vg_u->det->val );
       fmf_subAB_nn( out, out, aux );
-
-      fmf_mulC( out, viscosity );
     }
-/*     fmfc_save( out, "000", 0 ); */
-/*     sys_pause(); */
 
     ERR_CheckGo( ret );
   }
 
  end_label:
-  fmf_freeDestroy( &uvel );
-  fmf_freeDestroy( &st );
-  fmf_freeDestroy( &vel );
-  fmf_freeDestroy( &gw );
-  fmf_freeDestroy( &gvel );
   if (mode == 1) {
-    fmf_freeDestroy( &divMV );
-    fmf_freeDestroy( &mv );
-    fmf_freeDestroy( &gmv );
-
     fmf_freeDestroy( &aux );
     fmf_freeDestroy( &aux1 );
     fmf_freeDestroy( &aux2 );
@@ -761,100 +639,49 @@ int32 d_sd_div_grad( FMField *out,
   @par Revision history:
   - 22.03.2006, c
 */
-int32 d_sd_convect( FMField *out,
-		    FMField *stateU, int32 offsetU,
-		    FMField *stateW, int32 offsetW,
-		    FMField *vecMV, int32 offsetMV,
-		    FMField *bf_u, FMField *bf_w,
-		    VolumeGeometry *vg_u,
-		    VolumeGeometry *vg_w,
-		    VolumeGeometry *vg_mv,
-		    int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		    int32 *conn_w, int32 nEl_w, int32 nEP_w,
-		    int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		    int32 *elList, int32 elList_nRow,
-		    int32 mode )
+int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
+		    FMField *stateW, FMField *divMV, FMField *gradMV,
+		    VolumeGeometry *vg_u, int32 mode )
 {
-  int32 ii, iel, dim, nQP, d2, ret = RET_OK;
-  FMField *stw = 0, *stu = 0, *fw = 0, *fu = 0, *aux11 = 0, *aux = 0;
-  FMField *mv = 0, *divMV = 0, *gu = 0, *gmv = 0;
-  FMField *fwgu = 0, *fwgugmv = 0;
-  FMField gum[1], stuv[1], mvv[1], gmvm[1], gclmv[1];
+  int32 ii, dim, nQP, ret = RET_OK;
+  FMField *aux11 = 0, *aux = 0, *fwgu = 0, *fwgugmv = 0;
+  FMField gum[1], gmvm[1];
 
   nQP = vg_u->bfGM->nLev;
   dim = vg_u->bfGM->nRow;
-  d2 = dim * dim;
 
-  stateU->val = FMF_PtrFirst( stateU ) + offsetU;
-  stateW->val = FMF_PtrFirst( stateW ) + offsetW;
-
-  fmf_createAlloc( &stw, 1, 1, dim, nEP_w );
-
-  fmf_createAlloc( &stu, 1, 1, dim, nEP_u );
-  stuv->nAlloc = -1;
-  fmf_pretend( stuv, 1, 1, nEP_u * dim, 1, stu->val );
-
-  fmf_createAlloc( &fu, 1, nQP, dim, 1 );
-  fmf_createAlloc( &fw, 1, nQP, dim, 1 );
-
-  fmf_createAlloc( &gu, 1, nQP, d2, 1 );
   gum->nAlloc = -1;
-  fmf_pretend( gum, 1, nQP, dim, dim, gu->val );
+  fmf_pretend( gum, gradU->nCell, nQP, dim, dim, gradU->val0 );
 
   fmf_createAlloc( &fwgu, 1, nQP, 1, dim );
-
   fmf_createAlloc( &aux11, 1, nQP, 1, 1 );
 
-  if (mode == 1) { 
-    vecMV->val = FMF_PtrFirst( vecMV ) + offsetMV;
-
-    gclmv->nAlloc = -1;
-    fmf_pretend( gclmv, 1, nQP, 1, nEP_mv * dim, vg_mv->bfGM->val0 );
-
-    fmf_createAlloc( &mv, 1, 1, dim, nEP_mv );
-    mvv->nAlloc = -1;
-    fmf_pretend( mvv, 1, 1, nEP_mv * dim, 1, mv->val );
-
-    fmf_createAlloc( &divMV, 1, nQP, 1, 1 );
-
-    fmf_createAlloc( &gmv, 1, nQP, d2, 1 );
+  if (mode == 1) {
     gmvm->nAlloc = -1;
-    fmf_pretend( gmvm, 1, nQP, dim, dim, gmv->val );
+    fmf_pretend( gmvm, gradMV->nCell, nQP, dim, dim, gradMV->val0 );
 
     fmf_createAlloc( &fwgugmv, 1, nQP, 1, dim );
-
     fmf_createAlloc( &aux, 1, nQP, 1, 1 );
-
   }
 
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg_u->det, iel );
-    FMF_SetCell( vg_u->bfGM, iel );
+    FMF_SetCell( stateU, ii );
+    FMF_SetCell( stateW, ii );
+    FMF_SetCell( gum, ii );
+    FMF_SetCell( vg_u->det, ii );
 
-    ele_extractNodalValuesDBD( stw, stateW, conn_w + nEP_w * iel );
-    ele_extractNodalValuesDBD( stu, stateU, conn_u + nEP_u * iel );
+    fmf_mulATB_nn( fwgu, stateW, gum );
+    fmf_mulAB_nn( aux11, fwgu, stateU );
 
-    divgrad_act_g_m( gu, vg_u->bfGM, stuv );
-    bf_act( fu, bf_u, stu );
-    bf_act( fw, bf_w, stw );
+    if (mode == 1) {
+      FMF_SetCell( divMV, ii );
+      FMF_SetCell( gmvm, ii );
 
-    fmf_mulATB_nn( fwgu, fw, gum );
-    fmf_mulAB_nn( aux11, fwgu, fu );
-    
-    if (mode == 1) { 
-      FMF_SetCell( gclmv, iel );
-      FMF_SetCell( vg_mv->bfGM, iel );
-
-      ele_extractNodalValuesDBD( mv, vecMV, conn_mv + nEP_mv * iel );
-      fmf_mulAB_n1( divMV, gclmv, mvv );
       fmf_mul( aux11, divMV->val );
 
-      divgrad_act_g_m( gmv, vg_mv->bfGM, mvv );
       fmf_mulAB_nn( fwgugmv, fwgu, gmvm );
-      fmf_mulAB_nn( aux, fwgugmv, fu );
+      fmf_mulAB_nn( aux, fwgugmv, stateU );
       fmf_subAB_nn( aux11, aux11, aux );
     }
     fmf_sumLevelsMulF( out, aux11, vg_u->det->val );
@@ -863,17 +690,9 @@ int32 d_sd_convect( FMField *out,
   }
 
  end_label:
-  fmf_freeDestroy( &stw );
-  fmf_freeDestroy( &stu );
-  fmf_freeDestroy( &fu );
-  fmf_freeDestroy( &fw );
   fmf_freeDestroy( &aux11 );
-  fmf_freeDestroy( &gu );
   fmf_freeDestroy( &fwgu );
   if (mode == 1) {
-    fmf_freeDestroy( &mv );
-    fmf_freeDestroy( &divMV );
-    fmf_freeDestroy( &gmv );
     fmf_freeDestroy( &fwgugmv );
     fmf_freeDestroy( &aux );
   }

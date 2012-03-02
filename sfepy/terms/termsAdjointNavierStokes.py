@@ -233,7 +233,10 @@ class TestPQTerm(Term):
 
 class SDDivTerm(Term):
     r"""
-    Sensitivity of Stokes term `dw_stokes` in 'div' mode.
+    Sensitivity (shape derivative) of Stokes term `dw_stokes` in 'div' mode.
+
+    Supports the following term modes: 1 (sensitivity) or 0 (original term
+    value).
 
     :Definition:
 
@@ -245,41 +248,35 @@ class SDDivTerm(Term):
         - parameter_u : :math:`\ul{u}`
         - parameter_p : :math:`p`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
-        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_div'
-    arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity',
-                'mode')
+    arg_types = ('parameter_u', 'parameter_p', 'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_div)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_u, par_p, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_p, vg_p = self.get_approximation(par_p)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape(self.integral)
+    def get_fargs(self, par_u, par_p, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+        div_u = self.get(par_u, 'div')
+        grad_u = grad_as_vector(self.get(par_u, 'grad'))
+        val_p = self.get(par_p, 'val')
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        vec_mv = par_mv()
-        vec_p = par_p()
-        vec_u = par_u()
+        return div_u, grad_u, val_p, div_mv, grad_mv, vg, term_mode
 
-        bf = ap_p.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_p, 0, vec_mv, 0,
-                                    bf, vg_u, vg_p, vg_mv,
-                                    ap_u.econn, ap_p.econn, ap_mv.econn,
-                                    chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+    def get_eval_shape(self, par_u, par_p, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class SDDivGradTerm(Term):
     r"""
-    Sensitivity of diffusion term `dw_div_grad`.
+    Sensitivity (shape derivative) of diffusion term `dw_div_grad`.
+
+    Supports the following term modes: 1 (sensitivity) or 0 (original term
+    value).
 
     :Definition:
 
@@ -295,42 +292,35 @@ class SDDivGradTerm(Term):
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
-        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_div_grad'
     arg_types = ('material_1', 'material_2', 'parameter_u', 'parameter_w',
-                'parameter_mesh_velocity', 'mode')
+                 'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_div_grad)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        """
-        u_field: u_name ... fluid velocity
-        w_field: w_name ... adjoint velocity
-        mesh_v_field: mv_name ... mesh velsocity
-        """
-        weight, viscosity, par_u, par_w, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
+    def get_fargs(self, mat1, mat2, par_u, par_w, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+        grad_u = grad_as_vector(self.get(par_u, 'grad'))
+        grad_w = grad_as_vector(self.get(par_w, 'grad'))
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        vec_mv = par_mv()
-        vec_w = par_w()
-        vec_u = par_u()
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_w, 0, vec_mv, 0,
-                                    weight * viscosity[0,0,0,0], vg_u, vg_mv,
-                                    ap_u.econn, ap_mv.econn, chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+        return grad_u, grad_w, div_mv, grad_mv, mat1 * mat2, vg, term_mode
+
+    def get_eval_shape(self, mat1, mat2, par_u, par_w, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class SDConvectTerm(Term):
     r"""
-    Sensitivity of convective term `dw_convect`.
+    Sensitivity (shape derivative) of convective term `dw_convect`.
+
+    Supports the following term modes: 1 (sensitivity) or 0 (original term
+    value).
 
     :Definition:
 
@@ -342,38 +332,28 @@ class SDConvectTerm(Term):
         - parameter_u : :math:`\ul{u}`
         - parameter_w : :math:`\ul{w}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
-        - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_convect'
-    arg_types = ('parameter_u', 'parameter_w',
-                'parameter_mesh_velocity', 'mode')
+    arg_types = ('parameter_u', 'parameter_w', 'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_convect)
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_u, par_w, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_w, vg_w = self.get_approximation(par_w)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
+    def get_fargs(self, par_u, par_w, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+        val_u = self.get(par_u, 'val')
+        grad_u = grad_as_vector(self.get(par_u, 'grad'))
+        val_w = self.get(par_w, 'val')
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        vec_mv = par_mv()
-        vec_w = par_w()
-        vec_u = par_u()
+        return val_u, grad_u, val_w, div_mv, grad_mv, vg, term_mode
 
-        bf_u = ap_u.get_base('v', 0, self.integral)
-        bf_w = ap_w.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_w, 0, vec_mv, 0,
-                                    bf_u, bf_w, vg_u, vg_w, vg_mv,
-                                    ap_u.econn, ap_w.econn, ap_mv.econn,
-                                    chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+    def get_eval_shape(self, par_u, par_w, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class NSOFMinGradTerm(Term):
     name = 'd_of_ns_min_grad'
