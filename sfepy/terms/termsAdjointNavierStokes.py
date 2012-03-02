@@ -385,9 +385,7 @@ class NSOFMinGradTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(parameter)
 
-        grad = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
-        sh = grad.shape
-        grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+        grad = grad_as_vector(self.get(parameter, 'grad'))
 
         return grad, weight * mat, vg
 
