@@ -99,48 +99,47 @@ def obj_fun_grad(design, shape_opt, opts):
 
     return vec_sa
 
-##
-# 13.04.2006, c
-# 26.07.2006
-# 20.03.2007
-# 22.10.2007
-# 24.10.2007
-# 25.10.2007
-def test_terms(idsgs, delta, shape_opt, dp_var_data, vec_ap):
+def test_terms(idsgs, delta, shape_opt, dp_var_data, state_ap):
+    """
+    Test individual shape derivative terms.
+    """
 
-    dd = {}
-    ccs = shape_opt.check_custom_sensitivity
+    def ccs(*args):
+        try:
+            shape_opt.check_custom_sensitivity(*args)
 
-    ccs('d_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+        except:
+            output('running test failed!')
 
-    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
-    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, r, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
-    ccs('d_sd_st_pspg_p.i1.Omega( stabil.tau, p, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_test_pq.i1.Omega_D( p, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, r, p, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
+    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, r, r, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
+    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, p, p, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_div.i1.Omega_D( u, r, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_test_pq.i1.Omega_D( p, r, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_div.i1.Omega_D( w, p, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_div.i1.Omega_D( u, r, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
+    ccs('d_sd_div.i1.Omega_D( w, p, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_div_grad.i2.Omega_D( one.val, fluid.viscosity, u, w, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_convect.i2.Omega_D( u, w, Nu, mode )',
-        idsgs, delta, dp_var_data, vec_ap)
+    ccs('d_sd_convect.i2.Omega_D( u, w, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
 
 ##
 # 25.01.2006, c
