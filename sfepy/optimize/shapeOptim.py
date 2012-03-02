@@ -41,22 +41,22 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
     if use_cache and nm.allclose( design, shape_opt.cache.design,
                                  rtol = opts.eps_r, atol = opts.eps_a ):
         output( 'cache!' )
-        vec = shape_opt.cache.vec
+        state = shape_opt.cache.state
     else:
         if is_mesh_update:
             ok = update_mesh( shape_opt, pb, design )
             if not ok: return None
 
         # Solve direct/adjoint problem.
-        vec = problem.solve(var_data=var_data)
+        state = problem.solve(var_data=var_data)
 
         if use_cache:
-            shape_opt.cache.vec = vec.copy()
+            shape_opt.cache.state = state.copy()
             shape_opt.cache.design = design.copy()
 
             if shape_opt.save_iter_sols:
                 pb.save_state( op.join( shape_opt.save_dir, 'direct.%03d.vtk' )\
-                              % (shape_opt.cache.i_mesh - 1), vec )
+                              % (shape_opt.cache.i_mesh - 1), state )
 
             if shape_opt.save_control_points:
                 aux = shape_opt.sp_boxes.create_mesh_from_control_points()
@@ -67,19 +67,18 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
                 filename = op.join( shape_opt.save_dir, 'dsg.%03d.txt' )\
                            % (shape_opt.cache.i_mesh - 1)
                 shape_opt.dsg_vars.val.tofile( filename, ' ' )
-##     print use_cache, is_mesh_update
-##     print vec
-    return vec
+
+    return state
 
 def obj_fun(design, shape_opt, opts):
     """
     The objective function evaluation.
     """
-    vec_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
-    if vec_dp is None:
+    state_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
+    if state_dp is None:
         return None
 
-    val = shape_opt.obj_fun(vec_dp)
+    val = shape_opt.obj_fun(state_dp)
 
     return val
 
@@ -87,16 +86,16 @@ def obj_fun_grad(design, shape_opt, opts):
     """
     The objective function gradient evaluation.
     """
-    vec_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
+    state_dp = solve_problem_for_design(shape_opt.dpb, design, shape_opt, opts)
 
-    var_data = shape_opt.dpb.equations.get_state_parts(vec_dp)
+    var_data = state_dp.get_parts()
     var_data = remap_dict(var_data, shape_opt.var_map)
 
-    vec_ap = solve_problem_for_design(shape_opt.apb, design, shape_opt, opts,
-                                      var_data=var_data,
-                                      use_cache=False, is_mesh_update=False)
+    state_ap = solve_problem_for_design(shape_opt.apb, design, shape_opt, opts,
+                                        var_data=var_data,
+                                        use_cache=False, is_mesh_update=False)
 
-    vec_sa = shape_opt.sensitivity(var_data, vec_ap)
+    vec_sa = shape_opt.sensitivity(var_data, state_ap)
 
     return vec_sa
 
@@ -242,11 +241,11 @@ class ShapeOptimFlowCase( Struct ):
                 yield self.sp_boxes.interp_mesh_velocity( shape, self.dsg_vars,
                                                        idsg )
 
-    def obj_fun(self, vec_dp):
+    def obj_fun(self, state_dp):
         """
         Objective function evaluation for given direct problem state.
         """
-        var_data = self.dpb.equations.get_state_parts(vec_dp)
+        var_data = state_dp.get_parts()
         var_data = remap_dict(var_data, self.var_map)
 
         self.of_equations.set_data(var_data, ignore_unknown=True)
@@ -255,14 +254,14 @@ class ShapeOptimFlowCase( Struct ):
 
         return nm.squeeze( val )
 
-    def sensitivity(self, dp_var_data, vec_ap, select=None):
+    def sensitivity(self, dp_var_data, state_ap, select=None):
         """
         Sensitivity of objective function evaluation for given direct
         and adjoint problem states.
         """
         apb = self.apb
 
-        var_data = apb.equations.get_state_parts(vec_ap)
+        var_data = state_ap.get_parts()
         var_data.update(dp_var_data)
 
         self.ofg_equations.set_data(var_data, ignore_unknown=True)
@@ -303,12 +302,10 @@ class ShapeOptimFlowCase( Struct ):
         return vec_sa
 
     def check_custom_sensitivity(self, term_desc, idsg, delta,
-                                 dp_var_data, vec_ap):
+                                 dp_var_data, state_ap):
         pb = self.apb
 
         domain = pb.domain
-        regions = domain.regions
-        materials = pb.materials
 
         variables = self.ofg_equations.variables
         aux = self.dpb.create_evaluable(term_desc,
@@ -323,7 +320,7 @@ class ShapeOptimFlowCase( Struct ):
                                         extra_args={'mode' : 1})
         check1_equations, check1_variables = aux
 
-        var_data = pb.equations.get_state_parts(vec_ap)
+        var_data = state_ap.get_parts()
         var_data.update(dp_var_data)
 
         check0_equations.set_data(var_data, ignore_unknown=True)
@@ -364,8 +361,8 @@ class ShapeOptimFlowCase( Struct ):
         output( '-> ratio:', a_grad / d_grad )
         pause()
 
-    def check_sensitivity(self, idsgs, delta, dp_var_data, vec_ap):
-        a_grad = self.sensitivity(dp_var_data, vec_ap, select=idsgs)
+    def check_sensitivity(self, idsgs, delta, dp_var_data, state_ap):
+        a_grad = self.sensitivity(dp_var_data, state_ap, select=idsgs)
         output( a_grad )
 
         d_grad = []
@@ -381,18 +378,18 @@ class ShapeOptimFlowCase( Struct ):
             dpb.set_mesh_coors( coorsp, update_fields=True )
 
             dpb.time_update()
-            vec_dp = dpb.solve()
+            state_dp = dpb.solve()
 
-            valp = self.obj_fun(vec_dp)
+            valp = self.obj_fun(state_dp)
             output( 'obj_fun+:', valp )
 
             coorsm = coors0 - delta * nu
             dpb.set_mesh_coors( coorsm, update_fields=True )
 
             dpb.time_update()
-            vec_dp = dpb.solve()
+            state_dp = dpb.solve()
 
-            valm = self.obj_fun(vec_dp)
+            valm = self.obj_fun(state_dp)
             output( 'obj_fun-:', valm )
 
             d_grad.append( 0.5 * (valp - valm) / delta )

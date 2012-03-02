@@ -206,12 +206,12 @@ def solve_adjoint(conf, options, dpb, state_dp, data):
                                     var_data, state_ap)
     ##
     # Compute objective function.
-    val = shape_opt.obj_fun(state_dp())
+    val = shape_opt.obj_fun(state_dp)
     print 'actual obj_fun:', val
 
     ##
     # Compute shape sensitivity.
-    vec_sa = shape_opt.sensitivity(var_data, state_ap())
+    vec_sa = shape_opt.sensitivity(var_data, state_ap)
     print 'actual sensitivity:', vec_sa
 
 ##
