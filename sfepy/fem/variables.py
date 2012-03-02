@@ -7,7 +7,6 @@ from sfepy.base.base import (real_types, complex_types,
                              assert_, get_default, get_default_attr,
                              output, OneTypeList, Container, Struct, basestr)
 import sfepy.linalg as la
-from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.integrals import Integral
 from sfepy.fem.dof_info \
      import DofInfo, EquationMap, LCBCOperators, \
