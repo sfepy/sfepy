@@ -222,7 +222,6 @@ class ShapeOptimFlowCase( Struct ):
         aux = self.apb.create_evaluable(self.sens_terms,
                                         try_equations=False,
                                         var_dict=variables,
-                                        extra_args={'mode' : 1},
                                         **materials)
         self.ofg_equations, self.ofg_variables = aux
 
@@ -293,7 +292,8 @@ class ShapeOptimFlowCase( Struct ):
             ## fd.close()
             ## print ii
 
-            val = eval_equations(self.ofg_equations, self.ofg_variables)
+            val = eval_equations(self.ofg_equations, self.ofg_variables,
+                                 term_mode=1)
 
             sa.append( val )
 
@@ -306,17 +306,20 @@ class ShapeOptimFlowCase( Struct ):
 
         domain = pb.domain
 
+        possible_mat_names = get_expression_arg_names(term_desc)
+        materials = self.dpb.create_materials(possible_mat_names).as_dict()
+
         variables = self.ofg_equations.variables
         aux = self.dpb.create_evaluable(term_desc,
                                         try_equations=False,
                                         var_dict=variables,
-                                        extra_args={'mode' : 0})
+                                        **materials)
         check0_equations, check0_variables = aux
 
         aux = self.dpb.create_evaluable(term_desc,
                                         try_equations=False,
                                         var_dict=variables,
-                                        extra_args={'mode' : 1})
+                                        **materials)
         check1_equations, check1_variables = aux
 
         var_data = state_ap.get_parts()
@@ -336,16 +339,19 @@ class ShapeOptimFlowCase( Struct ):
         for nu in self.generate_mesh_velocity( (n_mesh_nod, dim), [idsg] ):
             check1_variables['Nu'].data_from_any(nu.ravel())
 
-            aux = eval_equations(check1_equations, check1_variables)
+            aux = eval_equations(check1_equations, check1_variables,
+                                 term_mode=1)
             a_grad.append( aux )
 
             coorsp = coors0 + delta * nu
             pb.set_mesh_coors( coorsp, update_fields=True )
-            valp = eval_equations(check0_equations, check0_variables)
+            valp = eval_equations(check0_equations, check0_variables,
+                                  term_mode=0)
 
             coorsm = coors0 - delta * nu
             pb.set_mesh_coors( coorsm, update_fields=True )
-            valm = eval_equations(check0_equations, check0_variables)
+            valm = eval_equations(check0_equations, check0_variables,
+                                  term_mode=0)
 
             d_grad.append( 0.5 * (valp - valm) / delta )
 
