@@ -64,7 +64,7 @@ class AdjConvect1Term(Term):
         vg, _ = self.get_mapping(state)
 
         val_w = self.get(state, 'val')
-        grad_u = self.get(parameter, 'grad').transpose((0, 1, 3, 2)).copy()
+        grad_u = self.get(parameter, 'grad') # No transposition here!
 
         fmode = diff_var is not None
 
