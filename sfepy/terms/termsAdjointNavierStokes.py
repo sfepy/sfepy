@@ -2,6 +2,11 @@ import numpy as nm
 
 from sfepy.terms.terms import Term, terms
 
+def grad_as_vector(grad):
+    grad = grad.transpose((0, 1, 3, 2))
+    sh = grad.shape
+    return grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+
 class AdjDivGradTerm(Term):
     r"""
     Gateaux differential of :math:`\Psi(\ul{u}) = \int_{\Omega} \nu\
@@ -29,9 +34,7 @@ class AdjDivGradTerm(Term):
         vg, _ = self.get_mapping(state)
 
         if diff_var is None:
-            grad = self.get(state, 'grad').transpose((0, 1, 3, 2))
-            sh = grad.shape
-            grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+            grad = grad_as_vector(self.get(state, 'grad'))
             fmode = 0
 
         else:
