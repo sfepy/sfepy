@@ -110,6 +110,20 @@ Gentoo
 
     emerge -va pytables pyparsing numpy scipy matplotlib ipython mayavi
 
+Archlinux
+^^^^^^^^^
+
+::
+
+    pacman -S python2-numpy python2-scipy python2-matplotlib ipython2 python2-sympy
+    yaourt -S python-pytables python2-mayavi
+
+Instructions
+""""""""""""
+
+Edit Makefile and change all references from python to python2.
+Edit scripts and change shebangs to point to python2.
+
 Debian
 ^^^^^^
 
