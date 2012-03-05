@@ -54,14 +54,8 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 		    FMField *stateW, FMField *divMV, FMField *gradMV,
 		    VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_testPQ( FMField *out,
-		   FMField *stateP, int32 offsetP,
-		   FMField *stateQ, int32 offsetQ,
-		   FMField *vecMV, int32 offsetMV,
-		   FMField *bf, VolumeGeometry *vg,
-		   int32 *conn, int32 nEl, int32 nEP,
-		   int32 *elList, int32 elList_nRow,
-		   int32 mode );
+int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
+                       FMField *divMV, VolumeGeometry *vg, int32 mode );
 
 int32 d_sd_st_grad_div( FMField *out,
 			FMField *stateU, int32 offsetU,

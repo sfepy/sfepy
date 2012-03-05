@@ -436,15 +436,9 @@ cdef extern from 'terms.h':
                         FMField *stateW, FMField *divMV, FMField *gradMV,
                         VolumeGeometry *vg_u, int32 mode)
 
-    cdef int32 _d_sd_testPQ \
-         'd_sd_testPQ'(FMField *out,
-                       FMField *stateP, int32 offsetP,
-                       FMField *stateQ, int32 offsetQ,
-                       FMField *vecMV, int32 offsetMV,
-                       FMField *bf, VolumeGeometry *vg,
-                       int32 *conn, int32 nEl, int32 nEP,
-                       int32 *elList, int32 elList_nRow,
-                       int32 mode)
+    cdef int32 _d_sd_dot_scalar \
+         'd_sd_dot_scalar'(FMField *out, FMField *stateP, FMField *stateQ,
+                           FMField *divMV, VolumeGeometry *vg, int32 mode)
 
     cdef int32 _d_sd_st_grad_div \
          'd_sd_st_grad_div'(FMField *out,
@@ -2030,8 +2024,22 @@ def d_sd_convect(np.ndarray out not None,
                         cmap_u.geo, mode)
     return ret
 
-def d_sd_testPQ():
-    pass
+def d_sd_dot_scalar(np.ndarray out not None,
+                    np.ndarray state_p not None,
+                    np.ndarray state_q not None,
+                    np.ndarray div_mv not None,
+                    CVolumeMapping cmap not None,
+                    int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_p[1], _state_q[1], _div_mv[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_p, state_p)
+    array2fmfield4(_state_q, state_q)
+    array2fmfield4(_div_mv, div_mv)
+
+    ret = _d_sd_dot_scalar(_out, _state_p, _state_q, _div_mv, cmap.geo, mode)
+    return ret
 
 def d_sd_st_grad_div():
     pass

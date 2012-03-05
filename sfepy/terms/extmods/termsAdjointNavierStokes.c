@@ -701,7 +701,7 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 }
 
 #undef __FUNC__
-#define __FUNC__ "d_sd_testPQ"
+#define __FUNC__ "d_sd_dot_scalar"
 /*!
   mode == 0: \int pq
   mode == 1: \int pq div V
@@ -712,76 +712,28 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
   - 24.02.2006, c
   - 27.02.2006
 */
-int32 d_sd_testPQ( FMField *out,
-		   FMField *stateP, int32 offsetP,
-		   FMField *stateQ, int32 offsetQ,
-		   FMField *vecMV, int32 offsetMV,
-		   FMField *bf, VolumeGeometry *vg,
-		   int32 *conn, int32 nEl, int32 nEP,
-		   int32 *elList, int32 elList_nRow,
-		   int32 mode )
+int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
+                       FMField *divMV, VolumeGeometry *vg, int32 mode )
 {
-  int32 ii, iel, dim, nQP, ret = RET_OK;
-  FMField *stp = 0, *stq = 0, *fp = 0, *fq = 0, *pq = 0, *mv = 0, *divMV = 0;
-  FMField stpv[1], stqv[1], mvv[1], gcl[1];
+  int32 ii, nQP, ret = RET_OK;
+  FMField *pq = 0;
 
   nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
 
-  stateP->val = FMF_PtrFirst( stateP ) + offsetP;
-  stateQ->val = FMF_PtrFirst( stateQ ) + offsetQ;
-
-  fmf_createAlloc( &stp, 1, 1, 1, nEP );
-  stpv->nAlloc = -1;
-  fmf_pretend( stpv, 1, 1, nEP, 1, stp->val );
-
-  fmf_createAlloc( &stq, 1, 1, 1, nEP );
-  stqv->nAlloc = -1;
-  fmf_pretend( stqv, 1, 1, nEP, 1, stq->val );
-
-  fmf_createAlloc( &fp, 1, nQP, 1, 1 );
-  fmf_createAlloc( &fq, 1, nQP, 1, 1 );
   fmf_createAlloc( &pq, 1, nQP, 1, 1 );
 
-  if (mode == 1) { 
-    vecMV->val = FMF_PtrFirst( vecMV ) + offsetMV;
-
-    gcl->nAlloc = -1;
-    fmf_pretend( gcl, 1, nQP, 1, nEP * dim, vg->bfGM->val0 );
-
-    fmf_createAlloc( &mv, 1, 1, dim, nEP );
-    mvv->nAlloc = -1;
-    fmf_pretend( mvv, 1, 1, nEP * dim, 1, mv->val );
-
-    fmf_createAlloc( &divMV, 1, nQP, 1, 1 );
-  }
-
-  for (ii = 0; ii < elList_nRow; ii++) {
-    iel = elList[ii];
-
+  for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( vg->det, iel );
+    FMF_SetCell( stateP, ii );
+    FMF_SetCell( stateQ, ii );
+    FMF_SetCell( vg->det, ii );
 
-    ele_extractNodalValuesDBD( stp, stateP, conn + nEP * iel );
-    ele_extractNodalValuesDBD( stq, stateQ, conn + nEP * iel );
+    fmf_mulAB_nn( pq, stateP, stateQ );
 
-    fmf_mulAB_n1( fp, bf, stpv );
-    fmf_mulAB_n1( fq, bf, stqv );
-    fmf_mulAB_nn( pq, fp, fq );
-      
-    if (mode == 1) { 
-      FMF_SetCell( gcl, iel );
+    if (mode == 1) {
+      FMF_SetCell( divMV, ii );
 
-      ele_extractNodalValuesDBD( mv, vecMV, conn + nEP * iel );
-      fmf_mulAB_n1( divMV, gcl, mvv );
       fmf_mul( pq, divMV->val );
-
-/*       fmf_print( stp, stdout, 0 ); */
-/*       fmf_print( stq, stdout, 0 ); */
-/*       fmf_print( mv, stdout, 0 ); */
-/*       fmf_print( divMV, stdout, 0 ); */
-/*       fmf_print( vecMV, stdout, 0 ); */
-/*       sys_pause(); */
     }
     fmf_sumLevelsMulF( out, pq, vg->det->val );
 
@@ -789,15 +741,7 @@ int32 d_sd_testPQ( FMField *out,
   }
 
  end_label:
-  fmf_freeDestroy( &stp );
-  fmf_freeDestroy( &stq );
-  fmf_freeDestroy( &fp );
-  fmf_freeDestroy( &fq );
   fmf_freeDestroy( &pq );
-  if (mode == 1) {
-    fmf_freeDestroy( &mv );
-    fmf_freeDestroy( &divMV );
-  }
 
   return( ret );
 }

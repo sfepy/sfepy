@@ -203,33 +203,39 @@ class SUPGPAdj2StabilizationTerm(Term):
 
         return grad_u, state(), mat, vg_u.bf, vg_u, vg_r, conn_r, fmode
 
-class TestPQTerm(Term):
-    name = 'd_sd_test_pq'
-    arg_types = ('parameter_p', 'parameter_q', 'parameter_mesh_velocity',
-                'mode')
+class SDDotScalarTerm(Term):
+    r"""
+    Sensitivity (shape derivative) of dot product of scalars.
 
-    function = staticmethod(terms.d_sd_testPQ)
+    :Definition:
 
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        par_p, par_q, par_mv, mode = self.get_args( **kwargs )
-        ap, vg = self.get_approximation(par_p)
-        n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    .. math::
+        \int_{\Omega_D} p q (\nabla \cdot \ul{\Vcal})
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+    :Arguments:
+        - parameter_p : :math:`p`
+        - parameter_q : :math:`q`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+    """
+    name = 'd_sd_dot_scalar'
+    arg_types = ('parameter_p', 'parameter_q', 'parameter_mesh_velocity')
 
-        vec_mv = par_mv()
-        vec_p = par_p()
-        vec_q = par_q()
-##         print par_p, par_q, par_mv, char_fun, mode
-##         pause()
-        bf = ap.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_p, 0, vec_q, 0, vec_mv, 0,
-                                    bf, vg, ap.econn, chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+    function = staticmethod(terms.d_sd_dot_scalar)
+
+    def get_fargs(self, par_p, par_q, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_p)
+
+        val_p = self.get(par_p, 'val')
+        val_q = self.get(par_q, 'val')
+        div_mv = self.get(par_mv, 'div')
+
+        return val_p, val_q, div_mv, vg, term_mode
+
+    def get_eval_shape(self, par_p, par_q, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_p)
+        return (n_el, 1, 1, 1), par_p.dtype
 
 class SDDivTerm(Term):
     r"""
