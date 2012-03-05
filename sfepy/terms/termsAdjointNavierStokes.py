@@ -439,7 +439,7 @@ class NSOFSurfMinDPressDiffTerm(NSOFSurfMinDPressTerm):
 
 class SDGradDivStabilizationTerm(Term):
     r"""
-    Sensitivity of stabilization term `dw_st_grad_div`.
+    Sensitivity (shape derivative) of stabilization term `dw_st_grad_div`.
 
     :Definition:
 
@@ -451,157 +451,133 @@ class SDGradDivStabilizationTerm(Term):
 
     :Arguments:
         - material    : :math:`\gamma`
-        - parameter_w : :math:`\ul{w}`
         - parameter_u : :math:`\ul{u}`
+        - parameter_w : :math:`\ul{w}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_grad_div'
-    arg_types = ('material', 'parameter_w', 'parameter_u',
-                'parameter_mesh_velocity', 'mode')
+    arg_types = ('material', 'parameter_u', 'parameter_w',
+                 'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_st_grad_div)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, par_w, par_u, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+    def get_fargs(self, mat, par_u, par_w, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        vec_mv = par_mv()
-        vec_w = par_w()
-        vec_u = par_u()
+        div_u = self.get(par_u, 'div')
+        grad_u = grad_as_vector(self.get(par_u, 'grad'))
+        div_w = self.get(par_w, 'div')
+        grad_w = grad_as_vector(self.get(par_w, 'grad'))
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        try:
-            coef = float( coef )
-        except TypeError:
-            coef = 1.0
+        return div_u, grad_u, div_w, grad_w, div_mv, grad_mv, mat, vg, term_mode
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_w, 0,
-                                    vec_mv, 0, coef, vg_u, vg_mv,
-                                    ap_u.econn, ap_mv.econn, chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+    def get_eval_shape(self, mat, par_u, par_w, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class SDSUPGCStabilizationTerm(Term):
     r"""
-    Sensitivity of stabilization term `dw_st_supg_c`.
+    Sensitivity (shape derivative) of stabilization term `dw_st_supg_c`.
 
     :Definition:
 
     .. math::
-        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ (\ul{u} \cdot \nabla)u_k
-        (\ul{u} \cdot \nabla)w_k (\nabla \cdot \Vcal) -
-        (\ul{u} \cdot \nabla)\Vcal_i \pdiff{u_k}{x_i}
-        (\ul{u} \cdot \nabla)w_k - (\ul{u} \cdot \nabla)u_k
-        (\ul{u} \cdot \nabla)\Vcal_i \pdiff{w_k}{x_i} ]
+        \sum_{K \in \Ical_h}\int_{T_K} \delta_K\ [ (\ul{b} \cdot \nabla u_k)
+        (\ul{b} \cdot \nabla w_k) (\nabla \cdot \Vcal) -
+        (\ul{b} \cdot \nabla \Vcal_i) \pdiff{u_k}{x_i}
+        (\ul{b} \cdot \nabla w_k) - (\ul{u} \cdot \nabla u_k)
+        (\ul{b} \cdot \nabla \Vcal_i) \pdiff{w_k}{x_i} ]
 
     :Arguments:
         - material    : :math:`\delta_K`
-        - parameter_w : :math:`\ul{w}`
         - parameter_b : :math:`\ul{b}`
         - parameter_u : :math:`\ul{u}`
+        - parameter_w : :math:`\ul{w}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_supg_c'
-    arg_types = ('material', 'parameter_w', 'parameter_b', 'parameter_u',
-                'parameter_mesh_velocity', 'mode')
+    arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_w',
+                'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_st_supg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, par_w, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+    def get_fargs(self, mat, par_b, par_u, par_w, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        vec_mv = par_mv()
-        vec_w = par_w()
-        vec_b = par_b()
-        vec_u = par_u()
+        val_b = self.get(par_b, 'val')
+        grad_u = self.get(par_u, 'grad').transpose((0, 1, 3, 2)).copy()
+        grad_w = self.get(par_w, 'grad').transpose((0, 1, 3, 2)).copy()
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
 
-        bf = ap_u.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_b, 0,
-                                    vec_w, 0, vec_mv, 0,
-                                    bf, coef, vg_u, vg_mv,
-                                    ap_u.econn, ap_mv.econn, chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+        return val_b, grad_u, grad_w, div_mv, grad_mv, mat, vg, term_mode
+
+    def get_eval_shape(self, mat, par_b, par_u, par_w, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class SDPSPGCStabilizationTerm(Term):
     r"""
-    Sensitivity of stabilization terms `dw_st_supg_p` or `dw_st_pspg_c`.
+    Sensitivity (shape derivative) of stabilization terms `dw_st_supg_p` or
+    `dw_st_pspg_c`.
 
     :Definition:
 
     .. math::
         \sum_{K \in \Ical_h}\int_{T_K} \delta_K\
-        [ \pdiff{p}{x_i} (\ul{u} \cdot \nabla)w_i (\nabla \cdot \Vcal) -
-        \pdiff{p}{x_k} \pdiff{\Vcal_k}{x_i} (\ul{u} \cdot \nabla)w_i
-        - \pdiff{p}{x_k} (\ul{u} \cdot \nabla)\Vcal_k  \pdiff{w_i}{x_k} ]
+        [ \pdiff{r}{x_i} (\ul{b} \cdot \nabla u_i) (\nabla \cdot \Vcal) -
+        \pdiff{r}{x_k} \pdiff{\Vcal_k}{x_i} (\ul{b} \cdot \nabla u_i)
+        - \pdiff{r}{x_k} (\ul{b} \cdot \nabla \Vcal_k) \pdiff{u_i}{x_k} ]
 
     :Arguments:
         - material    : :math:`\delta_K`
-        - parameter_r : :math:`r`
         - parameter_b : :math:`\ul{b}`
         - parameter_u : :math:`\ul{u}`
+        - parameter_r : :math:`r`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
         - mode        : 1 (sensitivity) or 0 (original term value)
     """
     name = 'd_sd_st_pspg_c'
-    arg_types = ('material', 'parameter_r', 'parameter_b', 'parameter_u',
-                'parameter_mesh_velocity', 'mode')
+    arg_types = ('material', 'parameter_b', 'parameter_u', 'parameter_r',
+                'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_st_pspg_c)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, par_r, par_b, par_u, par_mv, mode = self.get_args( **kwargs )
-        ap_u, vg_u = self.get_approximation(par_u)
-        ap_r, vg_r = self.get_approximation(par_r)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_u.get_v_data_shape(self.integral)
 
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
+    def get_fargs(self, mat, par_b, par_u, par_r, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
 
-        vec_mv = par_mv()
-        vec_r = par_r()
-        vec_b = par_b()
-        vec_u = par_u()
+        val_b = self.get(par_b, 'val')
+        grad_u = self.get(par_u, 'grad').transpose((0, 1, 3, 2)).copy()
+        grad_r = self.get(par_r, 'grad')
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
 
-        bf = ap_u.get_base('v', 0, self.integral)
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_u, 0, vec_b, 0,
-                                    vec_r, 0, vec_mv, 0,
-                                    bf, coef, vg_u, vg_r, vg_mv,
-                                    ap_u.econn, ap_r.econn, ap_mv.econn,
-                                    chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+        return val_b, grad_u, grad_r, div_mv, grad_mv, mat, vg, term_mode
+
+    def get_eval_shape(self, mat, par_b, par_u, par_r, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+        return (n_el, 1, 1, 1), par_u.dtype
 
 class SDPSPGPStabilizationTerm(Term):
     r"""
-    Sensitivity of stabilization term `dw_st_pspg_p`.
+    Sensitivity (shape derivative) of stabilization term `dw_st_pspg_p`.
 
     :Definition:
 
     .. math::
-        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ [ (\nabla p \cdot \nabla q)
-        (\nabla \cdot \Vcal)
-        - \pdiff{p}{x_k} (\nabla \Vcal_k \cdot \nabla q)
-        - (\nabla p \cdot \nabla \Vcal_k) \pdiff{q}{x_k} ]
+        \sum_{K \in \Ical_h}\int_{T_K} \tau_K\ [ (\nabla r \cdot \nabla p)
+        (\nabla \cdot \Vcal) - \pdiff{r}{x_k} (\nabla \Vcal_k \cdot \nabla p) -
+        (\nabla r \cdot \nabla \Vcal_k) \pdiff{p}{x_k} ]
 
     :Arguments:
         - material    : :math:`\tau_K`
@@ -612,26 +588,22 @@ class SDPSPGPStabilizationTerm(Term):
     """
     name = 'd_sd_st_pspg_p'
     arg_types = ('material', 'parameter_r', 'parameter_p',
-                'parameter_mesh_velocity', 'mode')
+                'parameter_mesh_velocity')
 
     function = staticmethod(terms.d_sd_st_pspg_p)
-        
-    def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-        coef, par_r, par_p, par_mv, mode = self.get_args( **kwargs )
-        ap_p, vg_p = self.get_approximation(par_p)
-        ap_mv, vg_mv = self.get_approximation(par_mv)
-        n_el, n_qp, dim, n_ep = ap_p.get_v_data_shape(self.integral)
-        if not chunk_size:
-            chunk_size = n_el
-        shape = (chunk_size, 1, 1, 1)
 
-        vec_mv = par_mv()
-        vec_r = par_r()
-        vec_p = par_p()
+    def get_fargs(self, mat, par_r, par_p, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_p)
 
-        for out, chunk in self.char_fun( chunk_size, shape ):
-            status = self.function( out, vec_p, 0, vec_r, 0,
-                                    vec_mv, 0, coef, vg_p, vg_mv,
-                                    ap_p.econn, ap_mv.econn, chunk, mode )
-            out1 = nm.sum( nm.squeeze( out ) )
-            yield out1, chunk, status
+        grad_r = self.get(par_r, 'grad')
+        grad_p = self.get(par_p, 'grad')
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
+
+        return grad_r, grad_p, div_mv, grad_mv, mat, vg, term_mode
+
+    def get_eval_shape(self, mat, par_r, par_p, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_p)
+        return (n_el, 1, 1, 1), par_p.dtype

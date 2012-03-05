@@ -57,59 +57,22 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
                        FMField *divMV, VolumeGeometry *vg, int32 mode );
 
-int32 d_sd_st_grad_div( FMField *out,
-			FMField *stateU, int32 offsetU,
-			FMField *stateW, int32 offsetW,
-			FMField *vecMV, int32 offsetMV,
-			float64 gamma,
-			VolumeGeometry *vg_u,
-			VolumeGeometry *vg_mv,
-			int32 *conn_u, int32 nEl_u, int32 nEP_u,
-			int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-			int32 *elList, int32 elList_nRow,
-			int32 mode );
+int32 d_sd_st_grad_div( FMField *out, FMField *divU, FMField *gradU,
+			FMField *divW, FMField *gradW, FMField *divMV,
+			FMField *gradMV, FMField *coef,
+			VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_st_supg_c( FMField *out,
-		      FMField *stateU, int32 offsetU,
-		      FMField *stateB, int32 offsetB,
-		      FMField *stateW, int32 offsetW,
-		      FMField *vecMV, int32 offsetMV,
-		      FMField *bf_u,
-		      FMField *coef,
-		      VolumeGeometry *vg_u,
-		      VolumeGeometry *vg_mv,
-		      int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		      int32 *elList, int32 elList_nRow,
-		      int32 mode );
+int32 d_sd_st_supg_c( FMField *out, FMField *stateB, FMField *gradU,
+                      FMField *gradW, FMField *divMV, FMField *gradMV,
+		      FMField *coef, VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_st_pspg_c( FMField *out,
-		      FMField *stateU, int32 offsetU,
-		      FMField *stateB, int32 offsetB,
-		      FMField *stateR, int32 offsetR,
-		      FMField *vecMV, int32 offsetMV,
-		      FMField *bf_u,
-		      FMField *coef,
-		      VolumeGeometry *vg_u,
-		      VolumeGeometry *vg_r,
-		      VolumeGeometry *vg_mv,
-		      int32 *conn_u, int32 nEl_u, int32 nEP_u,
-		      int32 *conn_r, int32 nEl_r, int32 nEP_r,
-		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		      int32 *elList, int32 elList_nRow,
-		      int32 mode );
+int32 d_sd_st_pspg_c( FMField *out, FMField *stateB, FMField *gradU,
+		      FMField *gradR, FMField *divMV, FMField *gradMV,
+		      FMField *coef, VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_st_pspg_p( FMField *out,
-		      FMField *stateP, int32 offsetP,
-		      FMField *stateR, int32 offsetR,
-		      FMField *vecMV, int32 offsetMV,
-		      FMField *coef,
-		      VolumeGeometry *vg_p,
-		      VolumeGeometry *vg_mv,
-		      int32 *conn_p, int32 nEl_p, int32 nEP_p,
-		      int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-		      int32 *elList, int32 elList_nRow,
-		      int32 mode );
+int32 d_sd_st_pspg_p( FMField *out, FMField *gradR, FMField *gradP,
+		      FMField *divMV, FMField *gradMV, FMField *coef,
+		      VolumeGeometry *vg_p, int32 mode );
 
 END_C_DECLS
 

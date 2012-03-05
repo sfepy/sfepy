@@ -441,62 +441,25 @@ cdef extern from 'terms.h':
                            FMField *divMV, VolumeGeometry *vg, int32 mode)
 
     cdef int32 _d_sd_st_grad_div \
-         'd_sd_st_grad_div'(FMField *out,
-                            FMField *stateU, int32 offsetU,
-                            FMField *stateW, int32 offsetW,
-                            FMField *vecMV, int32 offsetMV,
-                            float64 gamma,
-                            VolumeGeometry *vg_u,
-                            VolumeGeometry *vg_mv,
-                            int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                            int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                            int32 *elList, int32 elList_nRow,
-                            int32 mode)
+         'd_sd_st_grad_div'(FMField *out, FMField *divU, FMField *gradU,
+                            FMField *divW, FMField *gradW, FMField *divMV,
+                            FMField *gradMV, FMField *coef,
+                            VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_st_supg_c \
-         'd_sd_st_supg_c'(FMField *out,
-                          FMField *stateU, int32 offsetU,
-                          FMField *stateB, int32 offsetB,
-                          FMField *stateW, int32 offsetW,
-                          FMField *vecMV, int32 offsetMV,
-                          FMField *bf_u,
-                          FMField *coef,
-                          VolumeGeometry *vg_u,
-                          VolumeGeometry *vg_mv,
-                          int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                          int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                          int32 *elList, int32 elList_nRow,
-                          int32 mode)
+         'd_sd_st_supg_c'(FMField *out, FMField *stateB, FMField *gradU,
+                          FMField *gradW, FMField *divMV, FMField *gradMV,
+                          FMField *coef, VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_st_pspg_c \
-         'd_sd_st_pspg_c'(FMField *out,
-                          FMField *stateU, int32 offsetU,
-                          FMField *stateB, int32 offsetB,
-                          FMField *stateR, int32 offsetR,
-                          FMField *vecMV, int32 offsetMV,
-                          FMField *bf_u,
-                          FMField *coef,
-                          VolumeGeometry *vg_u,
-                          VolumeGeometry *vg_r,
-                          VolumeGeometry *vg_mv,
-                          int32 *conn_u, int32 nEl_u, int32 nEP_u,
-                          int32 *conn_r, int32 nEl_r, int32 nEP_r,
-                          int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                          int32 *elList, int32 elList_nRow,
-                          int32 mode)
+         'd_sd_st_pspg_c'(FMField *out, FMField *stateB, FMField *gradU,
+                          FMField *gradR, FMField *divMV, FMField *gradMV,
+                          FMField *coef, VolumeGeometry *vg_u, int32 mode)
 
     cdef int32 _d_sd_st_pspg_p \
-         'd_sd_st_pspg_p'(FMField *out,
-                          FMField *stateP, int32 offsetP,
-                          FMField *stateR, int32 offsetR,
-                          FMField *vecMV, int32 offsetMV,
-                          FMField *coef,
-                          VolumeGeometry *vg_p,
-                          VolumeGeometry *vg_mv,
-                          int32 *conn_p, int32 nEl_p, int32 nEP_p,
-                          int32 *conn_mv, int32 nEl_mv, int32 nEP_mv,
-                          int32 *elList, int32 elList_nRow,
-                          int32 mode)
+         'd_sd_st_pspg_p'(FMField *out, FMField *gradR, FMField *gradP,
+                          FMField *divMV, FMField *gradMV, FMField *coef,
+                          VolumeGeometry *vg_p, int32 mode)
 
     cdef int32 _mulATB_integrate \
          'mulATB_integrate'(FMField *out,
@@ -2041,14 +2004,102 @@ def d_sd_dot_scalar(np.ndarray out not None,
     ret = _d_sd_dot_scalar(_out, _state_p, _state_q, _div_mv, cmap.geo, mode)
     return ret
 
-def d_sd_st_grad_div():
-    pass
+def d_sd_st_grad_div(np.ndarray out not None,
+                     np.ndarray div_u not None,
+                     np.ndarray grad_u not None,
+                     np.ndarray div_w not None,
+                     np.ndarray grad_w not None,
+                     np.ndarray div_mv not None,
+                     np.ndarray grad_mv not None,
+                     np.ndarray coef not None,
+                     CVolumeMapping cmap_u not None,
+                     int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _div_u[1], _grad_u[1], _div_w[1], _grad_w[1]
+    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
 
-def d_sd_st_supg_c():
-    pass
+    array2fmfield4(_out, out)
+    array2fmfield4(_div_u, div_u)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_div_w, div_w)
+    array2fmfield4(_grad_w, grad_w)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+    array2fmfield4(_coef, coef)
 
-def d_sd_st_pspg_c():
-    pass
+    ret = _d_sd_st_grad_div(_out, _div_u, _grad_u, _div_w, _grad_w,
+                            _div_mv, _grad_mv, _coef, cmap_u.geo, mode)
+    return ret
 
-def d_sd_st_pspg_p():
-    pass
+def d_sd_st_supg_c(np.ndarray out not None,
+                   np.ndarray state_b not None,
+                   np.ndarray grad_u not None,
+                   np.ndarray grad_w not None,
+                   np.ndarray div_mv not None,
+                   np.ndarray grad_mv not None,
+                   np.ndarray coef not None,
+                   CVolumeMapping cmap_u not None,
+                   int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_b[1], _grad_u[1], _grad_w[1]
+    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_grad_w, grad_w)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+    array2fmfield4(_coef, coef)
+
+    ret = _d_sd_st_supg_c(_out, _state_b, _grad_u, _grad_w, _div_mv, _grad_mv,
+                          _coef, cmap_u.geo, mode)
+    return ret
+
+def d_sd_st_pspg_c(np.ndarray out not None,
+                   np.ndarray state_b not None,
+                   np.ndarray grad_u not None,
+                   np.ndarray grad_r not None,
+                   np.ndarray div_mv not None,
+                   np.ndarray grad_mv not None,
+                   np.ndarray coef not None,
+                   CVolumeMapping cmap_u not None,
+                   int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _state_b[1], _grad_u[1], _grad_r[1]
+    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_state_b, state_b)
+    array2fmfield4(_grad_u, grad_u)
+    array2fmfield4(_grad_r, grad_r)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+    array2fmfield4(_coef, coef)
+
+    ret = _d_sd_st_pspg_c(_out, _state_b, _grad_u, _grad_r, _div_mv, _grad_mv,
+                          _coef, cmap_u.geo, mode)
+    return ret
+
+def d_sd_st_pspg_p(np.ndarray out not None,
+                   np.ndarray grad_r not None,
+                   np.ndarray grad_p not None,
+                   np.ndarray div_mv not None,
+                   np.ndarray grad_mv not None,
+                   np.ndarray coef not None,
+                   CVolumeMapping cmap_p not None,
+                   int32 mode):
+    cdef int32 ret
+    cdef FMField _out[1], _grad_r[1], _grad_p[1]
+    cdef FMField _div_mv[1], _grad_mv[1], _coef[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_grad_r, grad_r)
+    array2fmfield4(_grad_p, grad_p)
+    array2fmfield4(_div_mv, div_mv)
+    array2fmfield4(_grad_mv, grad_mv)
+    array2fmfield4(_coef, coef)
+
+    ret = _d_sd_st_pspg_p(_out, _grad_r, _grad_p, _div_mv, _grad_mv, _coef,
+                          cmap_p.geo, mode)
+    return ret
