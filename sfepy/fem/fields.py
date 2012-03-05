@@ -397,7 +397,8 @@ class Field( Struct ):
             group = self.domain.groups[ig]
             offset = group.shape.n_ep
             cells = region.get_cells(ig)
-            ap.econn[:,:offset] = remap[group.conn[cells]]
+            ap.econn[:,:offset] = nm.take(remap,
+                                          nm.take(group.conn, cells, axis=0))
 
         return n_dof, remap
 
@@ -551,7 +552,7 @@ class Field( Struct ):
         # Mesh vertex nodes.
         if self.n_vertex_dof:
             indx = self.region.all_vertices
-            self.coors[:self.n_vertex_dof] = coors[indx]
+            self.coors[:self.n_vertex_dof] = nm.take(coors, indx, axis=0)
 
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, coors)

@@ -22,9 +22,8 @@ is_field = 10
 def create_adof_conn(eq, dc, indx):
     """Given a dof connectivity and equation mapping, create the active dof
     connectivity."""
-    aux = eq[dc]
-    adc = aux + nm.asarray( nm.where( aux >= 0, indx.start, 0 ),
-                            dtype = nm.int32 )
+    aux = nm.take(eq, dc)
+    adc = aux + nm.asarray(indx.start * (aux >= 0), dtype=nm.int32)
     return adc
 
 ##

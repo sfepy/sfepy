@@ -195,7 +195,7 @@ class Mapping(Struct):
         self.conn = conn
 
         try:
-            self.coors[self.conn]
+            nm.take(self.coors, self.conn)
 
         except IndexError:
             output('coordinates shape: %s' % list(coors.shape))

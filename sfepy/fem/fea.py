@@ -222,7 +222,11 @@ class Approximation( Struct ):
             conn = sd.get_connectivity(self.is_surface, is_trace=is_trace)
 
         elif integration in ('volume', 'surface_extra'):
-            conn = self.econn[region.cells[self.ig]]
+            if region.name == self.region.name:
+                conn = self.econn
+
+            else:
+                conn = nm.take(self.econn, region.cells[self.ig], axis=0)
 
         return conn
 
@@ -303,7 +307,7 @@ class Approximation( Struct ):
             ps = self.interp.poly_spaces['v']
             bf = self.get_base('v', 0, integral)
 
-            conn = group.conn[region.cells[self.ig]]
+            conn = nm.take(group.conn, region.cells[self.ig], axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
 
