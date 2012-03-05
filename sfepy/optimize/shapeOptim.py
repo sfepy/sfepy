@@ -114,17 +114,17 @@ def test_terms(idsgs, delta, shape_opt, dp_var_data, state_ap):
     ccs('d_sd_st_grad_div.i2.Omega_D( stabil.gamma, w, u, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, w, u, Nu )',
+    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, w, u, w, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
+    ccs('d_sd_st_supg_c.i1.Omega_D( stabil.delta, u, w, w, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, r, w, u, Nu )',
+    ccs('d_sd_st_pspg_c.i1.Omega_D( stabil.tau, w, u, r, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, r, p, Nu )',
+    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, p, r, Nu )',
         idsgs, delta, dp_var_data, state_ap)
     ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, r, r, Nu )',
-        idsgs, delta, dp_var_data, state_ap)
-    ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, p, p, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
     ccs('d_sd_dot_scalar.i1.Omega_D( p, r, Nu )',
