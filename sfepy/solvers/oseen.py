@@ -8,6 +8,127 @@ from sfepy.base.log import Log, get_logging_conf
 from sfepy.solvers.solvers import make_get_conf, NonlinearSolver
 from nls import conv_test
 
+class StabilizationFunction(Struct):
+    """
+    Definition of stabilization material function for the Oseen solver.
+
+    Notes
+    -----
+    - tau_red <= 1.0; if tau is None: tau = tau_red * delta
+    - diameter mode: 'edge': longest edge 'volume': volume-based, 'max': max. of
+      previous
+    """
+
+    def __init__(self, name_map, gamma=None, delta=None, tau=None, tau_red=1.0,
+                 tau_mul=1.0, delta_mul=1.0, gamma_mul=1.0,
+                 diameter_mode='max'):
+        Struct.__init__(self, name_map=name_map,
+                        gamma=gamma, delta=delta, tau=tau,
+                        tau_red=tau_red, tau_mul=tau_mul, delta_mul=delta_mul,
+                        gamma_mul=gamma_mul, diameter_mode=diameter_mode)
+
+    def setup(self, problem):
+        """
+        Setup common problem-dependent data.
+        """
+        variables = problem.get_variables()
+
+        ns = self.name_map
+
+        # Indices to the state vector.
+        ii = {}
+        ii['u'] = variables.get_indx(ns['u'])
+        ii['us'] = variables.get_indx(ns['u'], stripped=True)
+        ii['ps'] = variables.get_indx(ns['p'], stripped=True)
+        self.indices = ii
+
+        materials = problem.get_materials()
+
+        # The viscosity.
+        fluid_mat = materials[ns['fluid']]
+        self.viscosity = fluid_mat.function()[ns['viscosity']]
+
+        # The Friedrich's constant.
+        self.c_friedrichs = problem.domain.get_diameter()
+        self.sigma = 1e-12 # 1 / dt.
+
+        self.b_norm = 1.0
+
+    def get_maps(self):
+        """
+        Get the maps of names and indices of variables in state vector.
+        """
+        return self.name_map, self.indices
+
+    def __call__(self, ts, coor, mode=None, term=None, problem=None,
+                 b_norm=None, **kwargs):
+        """
+        The actual material function.
+        """
+        if mode != 'qp': return
+
+        if not hasattr(self, 'viscosity'):
+            self.setup(problem)
+
+        ns = self.name_map
+
+        # Update stored b_norm.
+        self.b_norm = get_default(b_norm, self.b_norm)
+
+        output('|b|_max (mat_fun):', self.b_norm)
+        gamma = self.viscosity + self.b_norm * self.c_friedrichs
+
+        data = {}
+        if self.gamma is None:
+            _gamma = self.gamma_mul * gamma
+
+        else:
+            _gamma = nm.asarray(self.gamma_mul * self.gamma, dtype=nm.float64)
+        _gamma = nm.tile(_gamma, (coor.shape[0], 1, 1))
+
+        if self.delta is None:
+            # Element diameter modes.
+            dm = {'edge': 0, 'volume': 1, 'max': 2}[self.diameter_mode]
+
+            field = problem.fields[ns['velocity']]
+            region = term.region
+            diameters2 = []
+            for ig in term.iter_groups():
+                vg, _ = field.get_mapping(ig, region, term.integral, 'volume')
+                cells = region.get_cells(ig)
+                d2 = problem.domain.get_element_diameters(ig, cells, vg, dm)
+                diameters2.append(d2)
+            self.diameters2 = nm.concatenate(diameters2)
+
+            val1 = min(1.0, 1.0 / self.sigma)
+            val2 = self.sigma * self.c_friedrichs**2
+            val3 = (self.b_norm**2) \
+                   * min((self.c_friedrichs**2) / self.viscosity,
+                         1.0 / self.sigma)
+
+            n_qp = coor.shape[0] / self.diameters2.shape[0]
+            diameters2 = nm.repeat(self.diameters2, n_qp)
+            diameters2.shape = diameters2.shape + (1, 1)
+
+            _delta = self.delta_mul * val1 * diameters2 / (_gamma + val2 + val3)
+
+        else:
+            val = nm.asarray(self.delta_mul * self.delta, dtype=nm.float64)
+            _delta = nm.tile(val, (coor.shape[0], 1, 1))
+
+        if self.tau is None:
+            _tau = self.tau_red * _delta
+
+        else:
+            _tau = nm.asarray(self.tau_mul * self.tau, dtype=nm.float64)
+            _tau = nm.tile(_tau, (coor.shape[0], 1, 1))
+
+        data[ns['gamma']] = _gamma
+        data[ns['delta']] = _delta
+        data[ns['tau']] = _tau
+
+        return data
+
 ##
 # 26.07.2007, c
 def are_close( a, b, rtol = 0.2, atol = 1e-8 ):
@@ -163,13 +284,9 @@ class Oseen( NonlinearSolver ):
             stabil.time_update(None, problem.equations, problem)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
             print 'stabilization parameters:'
-            print '                   gamma: %.12e' % max_pars['gamma']
-            print '            max( delta ): %.12e' % max_pars['delta']
-            print '              max( tau ): %.12e' % max_pars['tau']
-            try:
-                print '              max( h^2 ): %.12e' % max_pars['diameters2']
-            except:
-                pass
+            print '                   gamma: %.12e' % max_pars[ns['gamma']]
+            print '            max( delta ): %.12e' % max_pars[ns['delta']]
+            print '              max( tau ): %.12e' % max_pars[ns['tau']]
 
             if (not are_close( b_norm, 1.0 )) and conf.adimensionalize:
                 adimensionalize = True
@@ -196,7 +313,8 @@ class Oseen( NonlinearSolver ):
 
             if self.log is not None:
                 self.log(err, it,
-                         max_pars['gamma'], max_pars['delta'], max_pars['tau'])
+                         max_pars[ns['gamma']], max_pars[ns['delta']],
+                         max_pars[ns['tau']])
 
             condition = conv_test( conf, it, err, err0 )
             if condition >= 0:
