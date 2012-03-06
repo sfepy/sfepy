@@ -253,7 +253,7 @@ int32 vg_getElementDiameters( VolumeGeometry *obj, FMField *out,
       }
     }
     if ((mode == 1) || (mode == 2)) {
-      FMF_SetCell( obj->volume, iel );
+      FMF_SetCell( obj->volume, ii );
       val1 = pow( 0.16 * obj->volume->val[0], exponent );
       out->val[0] = val1;
     }
