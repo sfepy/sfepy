@@ -38,7 +38,7 @@ class Oseen( NonlinearSolver ):
                 'kind' : 'nls.oseen',
 
                 'needs_problem_instance' : True,
-                'stabilization_hook' : 'create_stabil_mat',
+                'stabil_mat' : 'stabil',
 
                 'adimensionalize' : False,
                 'check_navier_stokes_rezidual' : False,
@@ -62,8 +62,7 @@ class Oseen( NonlinearSolver ):
             msg = 'set solver option "needs_problem_instance" to True!'
             raise ValueError(msg)
 
-        stabilization_hook = get('stabilization_hook', None,
-                                 'missing "stabilization_hook" in options!')
+        stabil_mat = get('stabil_mat', None, 'missing "stabil_mat" in options!')
 
         # With defaults.
         adimensionalize = get('adimensionalize', False)
@@ -77,7 +76,7 @@ class Oseen( NonlinearSolver ):
         is_any_log = (log.text is not None) or (log.plot is not None)
 
         return Struct(needs_problem_instance=needs_problem_instance,
-                      stabilization_hook=stabilization_hook,
+                      stabil_mat=stabil_mat,
                       adimensionalize=adimensionalize,
                       check_navier_stokes_rezidual=check,
                       i_max=get('i_max', 1),
@@ -127,8 +126,8 @@ class Oseen( NonlinearSolver ):
 
         time_stats = {}
 
-        hook = problem.functions[conf.stabilization_hook]
-        stabil, ns, ii = hook(problem)
+        stabil = problem.get_materials()[conf.stabil_mat]
+        ns, ii = stabil.function.function.get_maps()
 
         variables = problem.get_variables()
         update_var = variables.non_state_data_from_state
@@ -160,7 +159,7 @@ class Oseen( NonlinearSolver ):
             u_norm = nla.norm( vec_u, nm.inf )
             print '|u|_max: %.2e' % u_norm
 
-            stabil.function.set_extra_args(b_norm = b_norm)
+            stabil.function.set_extra_args(b_norm=b_norm)
             stabil.time_update(None, problem.equations, problem)
             max_pars = stabil.reduce_on_datas( lambda a, b: max( a, b.max() ) )
             print 'stabilization parameters:'
