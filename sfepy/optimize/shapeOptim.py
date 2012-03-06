@@ -215,7 +215,7 @@ class ShapeOptimFlowCase( Struct ):
         self.of_equations, self.of_variables = aux
 
         possible_mat_names = get_expression_arg_names(self.sens_terms)
-        materials = self.dpb.create_materials(possible_mat_names).as_dict()
+        materials = self.apb.create_materials(possible_mat_names).as_dict()
 
         aux = self.apb.create_evaluable(self.sens_terms,
                                         try_equations=False,
@@ -291,7 +291,7 @@ class ShapeOptimFlowCase( Struct ):
             ## print ii
 
             val = eval_equations(self.ofg_equations, self.ofg_variables,
-                                 term_mode=1)
+                                 term_mode=1, preserve_caches=True)
 
             sa.append( val )
 
@@ -311,12 +311,14 @@ class ShapeOptimFlowCase( Struct ):
         aux = self.dpb.create_evaluable(term_desc,
                                         try_equations=False,
                                         var_dict=variables,
+                                        verbose=False,
                                         **materials)
         check0_equations, check0_variables = aux
 
         aux = self.dpb.create_evaluable(term_desc,
                                         try_equations=False,
                                         var_dict=variables,
+                                        verbose=False,
                                         **materials)
         check1_equations, check1_variables = aux
 
