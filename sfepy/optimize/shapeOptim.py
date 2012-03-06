@@ -17,18 +17,12 @@ def update_mesh( shape_opt, pb, design ):
     shape_opt.dsg_vars.val = design
     shape_opt.sp_boxes.set_control_points( shape_opt.dsg_vars )
     coors = shape_opt.sp_boxes.interp_coordinates()
-    # Do not update state, so that even warped mesh gets saved...
-    pb.set_mesh_coors( coors, update_fields=False )
+
+    pb.set_mesh_coors(coors, update_fields=True)
 
     pb.domain.mesh.write( op.join( shape_opt.save_dir, 'design.%03d.mesh' )\
                           % shape_opt.cache.i_mesh, io = 'auto' )
     shape_opt.cache.i_mesh += 1
-    try:
-        pb.set_mesh_coors( coors, update_fields=True )
-    except:
-        output( '...failed!' )
-        return False
-    return True
 
 ##
 # c: 19.04.2006, r: 15.04.2008
@@ -44,14 +38,18 @@ def solve_problem_for_design(problem, design, shape_opt, opts,
         state = shape_opt.cache.state
     else:
         if is_mesh_update:
-            ok = update_mesh( shape_opt, pb, design )
-            if not ok: return None
+            update_mesh( shape_opt, pb, design )
 
         # Solve direct/adjoint problem.
-        state = problem.solve(var_data=var_data)
+        try:
+            state = problem.solve(var_data=var_data)
+
+        except ValueError:
+            output('failed!')
+            return None
 
         if use_cache:
-            shape_opt.cache.state = state.copy()
+            shape_opt.cache.state = state.copy(deep=True)
             shape_opt.cache.design = design.copy()
 
             if shape_opt.save_iter_sols:
