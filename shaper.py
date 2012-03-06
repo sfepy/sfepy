@@ -250,9 +250,9 @@ def solve_optimize( conf, options ):
 
     shape_opt = so.ShapeOptimFlowCase.from_conf(conf, dpb, apb)
     design0 = shape_opt.dsg_vars.val
-    shape_opt.cache = Struct( design = design0 + 100,
-                             vec_dp = None,
-                             i_mesh = -1 )
+    shape_opt.cache = Struct(design=design0 + 100,
+                             state=None,
+                             i_mesh=-1)
 
     opt_status = IndexedStruct()
     optimizer = Solver.any_from_conf(opt_conf,
@@ -275,7 +275,7 @@ def solve_optimize( conf, options ):
     ##
     # Save final state (for "optimal" design).
     dpb.domain.mesh.write( trunk + '_opt.mesh', io = 'auto' )
-    dpb.save_state( trunk + '_direct_current.vtk', shape_opt.cache.vec )
+    dpb.save_state(trunk + '_direct_current.vtk', shape_opt.cache.state)
 
     print des
 
