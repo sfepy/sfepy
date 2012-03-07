@@ -194,13 +194,50 @@ or (without git):
 
 - click this link: http://github.com/sfepy/sfepy/tarball/master
 
-Then make the changes as you wish, following our `style guide
-<http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
+Then make the changes as you wish, following our :ref:`coding_style`.
 
 **Note** Do not be afraid to experiment - git works with your *local* copy of
 the repository, so it is not possible to damage the master repository. It is
 always possible to re-clone a fresh copy, in case you do something that is
 really bad.
+
+.. _coding_style:
+
+Coding style
+^^^^^^^^^^^^
+
+All the code in SfePy should try to adhere to python style guidelines, see
+`PEP-0008 <http://www.python.org/dev/peps/pep-0008/>`_.
+
+There are some additional recommendations:
+
+- Prefer whole words to abbreviations in public APIs - there is completion
+  after all. If some abbreviation is needed (*really* too long name), try to
+  make it as comprehensible as possible. Also check the code for similar
+  names - try to name things consistently with the existing code. Examples:
+
+  - yes: ``equation``, ``transform_variables()``, ``filename``
+  - rather not: ``eq``, ``transvar()``, ``fname``
+
+- Functions have usually form ``<action>_<subject>()`` e.g.: ``save_data()``,
+  ``transform_variables()``, do not use ``data_save()``,
+  ``variable_transform()`` etc.
+- Variables like ``V``, ``c``, ``A``, ``b``, ``x`` should be tolerated only
+  locally when expressing mathematical ideas.
+
+Really minor recommendations:
+
+- Avoid single letter names, if you can:
+
+  - not even for loop variables - use e.g. ir, ic, ... instead of i, j for rows
+    and columns
+  - not even in generators, as they "leak" (this is fixed in Python 3.x)
+
+These are recommendations only, we will not refuse code just on the ground that
+it uses slightly different formatting, as long as it follows the PEP.
+
+Note: some old parts of the code might not follow the PEP, yet. We fix them
+progressively as we update the code.
 
 Contributing changes
 ^^^^^^^^^^^^^^^^^^^^
@@ -314,7 +351,7 @@ pushing them to the main repository.
 
 Notes on commits and patches
 """"""""""""""""""""""""""""
-- Follow our `style guide <http://code.google.com/p/sfepy/wiki/CodingStyle>`_.
+- Follow our :ref:`coding_style`.
 - Do not use lines longer than 79 characters (exception: tables of
   values, e.g., quadratures).
 - Write descriptive docstrings in correct style, see :ref:`docstrings`.
