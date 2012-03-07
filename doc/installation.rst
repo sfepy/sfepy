@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 .. _introduction_installation:
 
 Installation
@@ -32,32 +34,27 @@ On Linux, consult the package manager of your favourite distribution,
 see `Platform-specific notes`_.
 
 On Windows, all the required packages are part of the `Enthought Python
-Distribution (EPD) <http://www.enthought.com/products/epd.php>`_, which
-is free for academic purposes. A completely free `Python(x,y)
-<http://www.pythonxy.com>`_ can be used too, but pyparsing has to be
-installed manually. Instructions for installing Python(x,y) can be found
-in `Windows using Python(x,y)`_.
+Distribution`_ (EPD), which is free for academic purposes. A completely free
+`Python(x,y)`_ can be used too, but pyparsing has to be installed
+manually. Instructions for installing Python(x,y) can be found in `Windows
+using Python(x,y)`_.
 
 *SfePy* can be used without any installation by running the scripts from
 the top-level directory of the distribution (TOPDIR), or can be
 installed locally or system-wide.
 
-*SfePy* should work both with bleeding edge (Git) and last released
-versions of NumPy and SciPy. Submit an `issue
-<http://code.google.com/p/sfepy/issues/entry>`_ in case this does not
-hold.
+*SfePy* should work both with bleeding edge (Git) and last released versions of
+NumPy and SciPy. Submit an issue at `Issues`_ page in case this does not hold.
 
 Generic Installation Instructions
 ---------------------------------
 
-Download the latest source release or the development version from our git
-repository http://github.com/sfepy/sfepy::
+Download the latest source release or the development version from `SfePy git
+repository`_::
 
     git clone git://github.com/sfepy/sfepy.git
 
-See the *Downloads* tab at
-http://code.google.com/p/sfepy/wiki/Downloads?tm=2 for additional
-download options.
+See the `download`_ page for additional download options.
 
 In-place compilation of C extension modules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -230,8 +227,7 @@ Windows using Python(x,y)
 (tested on Windows 7)
 
 Here we provide instructions for using *SfePy* on Windows through
-`Python(x,y)`_. We will also use
-`msysgit <http://code.google.com/p/msysgit>`_ to install the umfpack scikit to
+`Python(x,y)`_. We will also use `msysgit`_ to install the umfpack scikit to
 speed performance.
 
 This procedure was tested on a Windows 7 machine. It should work in
@@ -240,7 +236,7 @@ milage may vary.
 
 There several steps, but hopefully it is straightforward to follow this
 procedure. If you have any questions or difficulties please feel free to ask on
-the sfepy-devel mailing list (see http://sfepy.org). Also, if you have any
+the sfepy-devel mailing list (see `SfePy web site`_). Also, if you have any
 suggestions for improving or streamlining this process, it would be very
 beneficial as well!
 
@@ -253,17 +249,14 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 #. Minimum 4 Gigabytes of free disk space is required, Due to the
    installed size of python(x,y) and msysgit.
 
-#. Download the latest python(x,y) (http://www.pythonxy.com/) windows
-   installer (version 2.7.X.X), and make a *Full installation* in the
-   default installation directory.
+#. Download the latest `Python(x,y)`_ windows installer (version 2.7.X.X), and
+   make a *Full installation* in the default installation directory.
 
-#. Download the latest pyparsing
-   (http://sourceforge.net/projects/pyparsing) windows installer (Python
-   version 2.7) and install it in the default installation directory.
+#. Download the latest `pyparsing`_ windows installer (Python version 2.7) and
+   install it in the default installation directory.
 
-#. Download the latest msysgit (http://code.google.com/p/msysgit/)
-   windows installer and install it in the default installation
-   directory:
+#. Download the latest `msysgit`_ windows installer and install it in the
+   default installation directory:
 
    -  either get the file that begins with "Git-", which gives you
       gitbash - a bash shell in Windows,
@@ -272,8 +265,8 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 
    Below we refer to either gitbash or msys as "shell".
 
-#. Download the latest umfpackpy (http://code.google.com/p/umfpackpy/)
-   zip archive and follow the instructions below:
+#. Download the latest `umfpackpy`_ zip archive and follow the instructions
+   below:
 
    a) Extract the *umfpackpy_<version>.zip* to your convenient location in
       Hard disk, Lets assume it's extracted in C:/. Now there will be
@@ -289,9 +282,8 @@ Steps to get a working *SfePy* on Windows using Python(x,y)
 
           ez_setup.py scikits.umfpack-5.1.0-py2.7-win32.egg
 
-#. Either download the latest sfepy (http://code.google.com/p/sfepy/)
-   tarball and extract it to your convenient location in Hard disk,
-   Lets assume it's extracted in C:/.
+#. Either `download`_ the latest sfepy tarball and extract it to your
+   convenient location in Hard disk, Lets assume it's extracted in C:/.
 
    Or, If you want to use the latest features and contribute to the
    development of *SfePy*, clone the git development repository

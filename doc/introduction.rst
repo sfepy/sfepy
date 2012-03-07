@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 Introduction
 ============
 
@@ -6,14 +8,12 @@ Introduction
    :backlinks: top
 
 *SfePy* is a finite element analysis software written almost entirely in
-`Python <http://python.org>`_, with exception of the most time demanding
-routines - those are written in C and wrapped by `Cython
-<http://cython.org/>`_ or written directly in Cython.
+`Python`_, with exception of the most time demanding routines - those are
+written in C and wrapped by `Cython`_ or written directly in Cython.
 
-*SfePy* is a free software released under the `New BSD License
-<http://www.opensource.org/licenses/bsd-license.php>`_.  It relies on
-`NumPy/SciPy <http://scipy.org>`_ (an excellent collection of tools for
-scientific computations in Python).
+*SfePy* is a free software released under the `New BSD License`_. It relies on
+`NumPy/SciPy`_ (an excellent collection of tools for scientific computations in
+Python).
 
 *SfePy* was originally developed as a flexible framework to quickly implement
 and test the mathematical models developed during our various
@@ -37,7 +37,7 @@ Features:
     * just prepare a problem description file (in Python!) and solve it
     * highly customizable behaviour (with a bit of coding)
 
-To find more information regarding the code itself, go to http://sfepy.org
+To find more information regarding the code itself, go to `SfePy web site`_
 where you can find:
 
 * releases

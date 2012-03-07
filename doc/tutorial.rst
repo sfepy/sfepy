@@ -1,3 +1,5 @@
+.. include:: links.inc
+
 .. _sec-tutorial:
 
 Tutorial
@@ -24,9 +26,8 @@ Topics which should eventually be discussed here
   * Discussion of discretization and meshing
 
 It is planned to have an example based on the Poisson's equation here. For now,
-please refer to the wikipedia page at
-http://en.wikipedia.org/wiki/Finite_element_method for a basic description of
-the Finite Element Method.
+please refer to the wikipedia page `Finite Element Method`_ for a basic
+description of this method.
 
 Basic notions
 -------------

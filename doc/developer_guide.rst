@@ -1,6 +1,8 @@
 .. highlight:: python
    :linenothreshold: 3
 
+.. include:: links.inc
+
 Developer Guide
 ===============
 
@@ -132,21 +134,17 @@ Reporting problems
 *Reporting a bug is the first way in which to contribute to an open source
 project*
 
-We use the site http://sfepy.org to provide a hub for the developers to post
-problems, ask questions, create wiki pages, etc. The address is currently just
-an alias to the Google code site http://code.google.com/p/sfepy.
+Short version: go to the main `SfePy`_ and follow the links given there.
 
 When you encounter a problem, try searching that site first - an answer may
-already be posted in the `sfepy-devel
-<http://groups.google.com/group/sfepy-devel>`_ mailing list (to which we
-suggest you subscribe...), or the problem might have been added to the `Issues
-<http://code.google.com/p/sfepy/issues/list>`_ web page. As is true in any open
-source project, doing your homework by searching for existing known problems
-greatly reduces the burden on the developers by eliminating duplicate issues.
-If you find your problem already exists in the issue tracker, feel free to
-gather more information and append it to the issue. In case the problem is not
-there, create a new issue with proper labels for the issue type and priority,
-and/or ask us using the mailing list.
+already be posted in the `SfePy mailing list`_ (to which we suggest you
+subscribe...), or the problem might have been added to the `SfePy issues`_ web
+page. As is true in any open source project, doing your homework by searching
+for existing known problems greatly reduces the burden on the developers by
+eliminating duplicate issues. If you find your problem already exists in the
+issue tracker, feel free to gather more information and append it to the
+issue. In case the problem is not there, create a new issue with proper labels
+for the issue type and priority, and/or ask us using the mailing list.
 
 **Note** A google account (e.g., gmail account) is needed to join the mailing
 list and post comments to issues. It is, however, not needed to create a new
@@ -172,12 +170,10 @@ Making changes
 ^^^^^^^^^^^^^^
 
 This step is simple, just keep in mind to use the latest development version of
-the code from the `downloads tab
-<http://code.google.com/p/sfepy/wiki/Downloads?tm=2>`_ at the developers'
-site - the git repository (*not* the latest released sources).
+the code from the `SfePy git repository`_ page.
 
-We use `git <http://git-scm.com/>`_ to track source code, documentation,
-examples, and other files related to the project.
+We use `git`_ to track source code, documentation, examples, and other files
+related to the project.
 
 It is not necessary to learn git in order to contribute to *SfePy* but we
 strongly suggest you do so as soon as possible - it is an extremely useful tool
@@ -192,7 +188,7 @@ Having said that, to download the latest snapshot, do either (with git):
 
 or (without git):
 
-- click this link: http://github.com/sfepy/sfepy/tarball/master
+- use the `SfePy tarball`_ link
 
 Then make the changes as you wish, following our :ref:`coding_style`.
 
@@ -207,7 +203,7 @@ Coding style
 ^^^^^^^^^^^^
 
 All the code in SfePy should try to adhere to python style guidelines, see
-`PEP-0008 <http://www.python.org/dev/peps/pep-0008/>`_.
+`PEP-0008`_.
 
 There are some additional recommendations:
 
@@ -247,11 +243,9 @@ Even if you do not use git, try to follow the spirit of :ref:`notes_patches`
 Without git
 """""""""""
 
-Without using git, send the modified files to the `sfepy-devel
-<http://groups.google.com/group/sfepy-devel>`_ mailing list or attach them to
-the corresponding issue at the `Issues
-<http://code.google.com/p/sfepy/issues/list>`_ web page. Do not forget to
-describe the changes properly.
+Without using git, send the modified files to the `SfePy mailing list`_ or
+attach them using gist to the corresponding issue at the `Issues`_ web page. Do
+not forget to describe the changes properly.
 
 With git
 """"""""
@@ -264,8 +258,7 @@ With git
 **Note**: This section will get quickly get you started using git and github.
 For more in-depth reading about how these tools work with the *SfePy* source
 code and the general git development, read :ref:`using-git`, which was adapted
-from Matthew Brett's excellent `git tutorial
-<http://github.com/matthew-brett/gitwash>`_.
+from Matthew Brett's excellent `gitwash`_ git tutorial.
 
 With git there are some additional options for how to send changes to *SfePy*.
 Before listing them, let us describe a typical development session and the
@@ -327,10 +320,8 @@ related git commands:
     # create patches for, e.g., the last two commits
     git format-patch HEAD~2
 
-#. Send the patch(es) to the `sfepy-devel
-   <http://groups.google.com/group/sfepy-devel>`_ mailing list or attach them
-   to the corresponding issue at the `Issues
-   <http://code.google.com/p/sfepy/issues/list>`_ web page.
+#. Send the patch(es) to the `SfePy mailing list`_ or attach them
+   to the corresponding issue at the `Issues`_ web page.
 
 #. If the patches are fine, they will appear in the master
    repository. Then synchronize your repository with the master:
@@ -342,10 +333,8 @@ related git commands:
 
 There is another option than submitting patches, however, useful when you wish
 to get feedback on a larger set of changes. This option is to publish your
-repository at a free git hosting web site like `Github <http://github.com/>`_
-and let the other developers know about it. For example, Robert usually
-publishes fixes to issues at http://github.com/rc/sfepy for review, before
-pushing them to the main repository.
+repository using `Github`_ and let the other developers know about it - follow
+the instructions in :ref:`git-development` of :ref:`using-git`.
 
 .. _notes_patches:
 
@@ -361,29 +350,23 @@ Notes on commits and patches
   the docstring, the other adding the new function.
 - The commit message and description should clearly state what the patch
   does. Try to follow the style of other commit messages. Some interesting
-  notes can be found `here
-  <http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>`_,
-  namely that the commit message is better to be written in the present tense:
-  "fix bug" and not "fixed bug".
+  notes can be found at `tbaggery.com`_, namely that the commit message is
+  better to be written in the present tense: "fix bug" and not "fixed bug".
 
 .. _docstrings:
 
 Docstring standard
 """"""""""""""""""
 
-We use `sphinx <http://sphinx.pocoo.org>`_ with the `numpydoc
-<http://pypi.python.org/pypi/numpydoc/0.3.1>`_ extension to generate
-this documentation. Refer to the sphinx site for the possible markup
-constructs.
+We use `sphinx`_ with the `numpydoc`_ extension to generate this
+documentation. Refer to the sphinx site for the possible markup constructs.
 
 Basically (with a little tweak), we try to follow the NumPy/SciPy docstring
-standard as described in this `guide
-<https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_. See
-also the complete `example.py
-<https://github.com/numpy/numpy/blob/master/doc/example.py>`_. It is
-exaggerated a bit to show all the possibilities. Use your common sense here -
-the docstring should be sufficient for a new user to use the documented
-object. A good way to remember the format is to type::
+standard as described in `NumPy documentation guide`_. See also the complete
+`docstring example`_. It is exaggerated a bit to show all the
+possibilities. Use your common sense here - the docstring should be sufficient
+for a new user to use the documented object. A good way to remember the format
+is to type::
 
     In [1]: import numpy as nm
     In [2]: nm.sin?
@@ -443,17 +426,16 @@ How to Regenerate Documentation
 
 The following steps summarize how to regenerate this documentation.
 
-#. Install `sphinx <http://sphinx.pocoo.org>`_ and `numpydoc
-   <http://pypi.python.org/pypi/numpydoc/0.3.1>`_. Do not forget to set the
-   path to numpydoc in site_cfg.py if it is not installed in a standard
-   location for Python packages on your platform. A recent
-   :math:`\mbox{\LaTeX}` distribution is required, too, for example `TeX Live
-   <http://www.tug.org/texlive/>`_. Depending on your OS/platform, it can be in
-   the form of one or several packages.
+#. Install `sphinx`_ and `numpydoc`_. Do not forget to set the path to numpydoc
+   in site_cfg.py if it is not installed in a standard location for Python
+   packages on your platform. A recent :math:`\mbox{\LaTeX}` distribution is
+   required, too, for example `TeX Live`_. Depending on your OS/platform, it
+   can be in the form of one or several packages.
 
 #. Edit the rst files in `doc/` directory using your favorite text editor - the
    ReST format is really simple, so nothing fancy is needed. Follow the
-   existing files in `doc/`; for reference also check [1]_, [2]_ and [3]_.
+   existing files in `doc/`; for reference also check `reStructuredText
+   Primer`_, `Sphinx Markup Constructs`_ and `docutils reStructuredText`_.
 
    - When adding a new Python module, add a corresponding documentation file
      into `doc/src/sfepy/<path>`, where `<path>` should reflect the location of
@@ -469,10 +451,6 @@ The following steps summarize how to regenerate this documentation.
 #. View it (substitute your favorite browser)::
 
     firefox _build/html/index.html
-
-.. [1] http://sphinx.pocoo.org/rest.html
-.. [2] http://sphinx.pocoo.org/markup/index.html
-.. [3] http://docutils.sourceforge.net/rst.html
 
 How to Implement a New Term
 ---------------------------
@@ -724,9 +702,8 @@ Concluding remarks
 ^^^^^^^^^^^^^^^^^^
 
 This is just a very basic introduction to the topic of new term
-implementation. Do not hesitate to ask the `sfepy-devel mailing list
-<http://groups.google.com/group/sfepy-devel>`_, and look at the source code of
-the already implemented terms.
+implementation. Do not hesitate to ask the `SfePy mailing list`_, and look at
+the source code of the already implemented terms.
 
 How To Make a Release
 ---------------------
@@ -741,9 +718,9 @@ How To Make a Release
 Working with *SfePy* source code
 --------------------------------
 
-This section was adapted from Matthew Brett's excellent `git tutorial
-<http://github.com/matthew-brett/gitwash>`_. It complements the above
-sections and details several aspects of working with Git and Github.
+This section was adapted from Matthew Brett's excellent `gitwash`_ git
+tutorial. It complements the above sections and details several aspects of
+working with Git and Github.
 
 It can be updated by running::
 

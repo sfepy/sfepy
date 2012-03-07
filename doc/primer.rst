@@ -1,6 +1,8 @@
 .. highlight:: python
    :linenothreshold: 3
 
+.. include:: links.inc
+
 .. _sec-primer:
 
 Primer
@@ -65,13 +67,12 @@ model.
 Meshing
 -------
 
-Assuming plane strain conditions, the indirect tensile test may be
-modelled using a 2-D finite element mesh. Furthermore, the geometry of
-the model is symmetrical about the x- and y-axes passing through the
-centre of the circle. To take advantage of this symmetry only one
-quarter of the 2-D model will be meshed and boundary conditions will be
-established to indicate this symmetry. The meshing program `gmsh
-<http://geuz.org/gmsh/>`_ is used here to very quickly mesh the
+Assuming plane strain conditions, the indirect tensile test may be modelled
+using a 2-D finite element mesh. Furthermore, the geometry of the model is
+symmetrical about the x- and y-axes passing through the centre of the
+circle. To take advantage of this symmetry only one quarter of the 2-D model
+will be meshed and boundary conditions will be established to indicate this
+symmetry. The meshing program `Gmsh`_ is used here to very quickly mesh the
 model. Follow these steps to model the ITS:
 
 #. The ITS specimen has a diameter of 150 mm. Using *Gmsh* add three new
@@ -120,8 +121,7 @@ element connectivity. It is important to note that node and element
 numbering in *SfePy* start at 0 and not 1 as is the case in *Gmsh* and
 some other meshing programs.
 
-To view *.mesh* files you can use a demo of `medit
-<http://www.ann.jussieu.fr/~frey/software.html>`_. After loading your
+To view *.mesh* files you can use a demo of `medit`_. After loading your
 mesh file with medit you can see the node and element numbering by
 pressing **P** and **F** respectively. The numbering in medit starts at
 1 as shown. Thus the node at the center of the model in *SfePy*
@@ -136,8 +136,7 @@ which elements are connected to which nodes. Nodes and elements can also
 be identified by defining regions, which is addressed later.
 
 Another open source python option to view *.mesh* files is the
-appropriately named `Python Mesh Viewer
-<http://labs.freehackers.org/projects/pythonmeshviewer>`_.
+appropriately named `Python Mesh Viewer`_.
 
 The next step in the process is coding the *SfePy* problem definition file.
 
@@ -259,10 +258,9 @@ editor. You'll notice that the output file includes separate sections:
     * CELLS (the model element connectivity)
     * VECTORS (the node displacements in the x-, y- and z- directions.
 
-SfePy includes a script (postproc.py) to quickly view the solution. To
-run this script you need to have `mayavi
-<http://code.enthought.com/projects/mayavi/>`_ installed. From the
-command line issue the following (with the correct paths)::
+SfePy includes a script (postproc.py) to quickly view the solution. To run this
+script you need to have `Mayavi`_ installed. From the command line issue the
+following (with the correct paths)::
 
     $ ./postproc.py its2D.vtk
 
@@ -314,10 +312,9 @@ determine the force vector interactively.
 Running SfePy in interactive mode
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In addition to solving problems using the simple.py script you can also
-run SfePy interactively. This requires that `iPython
-<http://ipython.org/download.html>`_ be installed. To run *SfePy*
-interactively, use *isfepy*::
+In addition to solving problems using the simple.py script you can also run
+SfePy interactively. This requires that `IPython`_ be installed. To run
+*SfePy* interactively, use *isfepy*::
 
     $ ./isfepy
 
@@ -373,8 +370,7 @@ that is why in Out[8] the vector is reshaped according to Out[6].
 From the above it can be seen that *u* holds the displacements at the 55
 nodes in the model and that the displacement at node 2 (on which the
 load is applied) is (0, -1.65318152). The global stiffness
-matrix is saved in pb as a `sparse
-<http://docs.scipy.org/doc/scipy/reference/sparse.html>`_ matrix::
+matrix is saved in pb as a `sparse matrix`_::
 
     In [9]: K = pb.mtx_a
 
@@ -605,11 +601,10 @@ the *SfePy* probe.py script on the solution::
 
     $ ./probe.py its2D_4.py <sfepy output path>/its2D.h5
 
-The results of the probing will be written to text files and the
-following figures will be generated. These figures show the
-displacements, normal stresses and strains as well as shear stresses and
-strains along the probe paths. Note that you need `matplotlib
-<http://matplotlib.sourceforge.net/>`_ installed to run this script.
+The results of the probing will be written to text files and the following
+figures will be generated. These figures show the displacements, normal
+stresses and strains as well as shear stresses and strains along the probe
+paths. Note that you need `matplotlib`_ installed to run this script.
 
 .. image:: images/primer/its2D_0.png
    :width: 40 %
