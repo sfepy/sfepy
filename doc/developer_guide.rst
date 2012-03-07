@@ -339,15 +339,14 @@ We use `sphinx <http://sphinx.pocoo.org>`_ with the `numpydoc
 this documentation. Refer to the sphinx site for the possible markup
 constructs.
 
-Basically (with a little tweak), we try to follow the NumPy/SciPy
-docstring standard as described in this `guide
-<http://projects.scipy.org/numpy/wiki/CodingStyleGuidelines>`_. See also
-the complete `example.py
-<http://svn.scipy.org/svn/numpy/trunk/doc/example.py>`_. It is exaggerated
-a bit to show all the possibilities. Use your common sense here - the
-docstring should be sufficient for a new user to use the documented
-object. A good way to remember the format
-is to type::
+Basically (with a little tweak), we try to follow the NumPy/SciPy docstring
+standard as described in this `guide
+<https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_. See
+also the complete `example.py
+<https://github.com/numpy/numpy/blob/master/doc/example.py>`_. It is
+exaggerated a bit to show all the possibilities. Use your common sense here -
+the docstring should be sufficient for a new user to use the documented
+object. A good way to remember the format is to type::
 
     In [1]: import numpy as nm
     In [2]: nm.sin?
