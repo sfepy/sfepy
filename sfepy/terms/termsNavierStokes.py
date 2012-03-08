@@ -1,5 +1,6 @@
 import numpy as nm
 
+from sfepy.linalg import dot_sequences
 from sfepy.terms.terms import Term, terms
 
 class DivGradTerm(Term):
@@ -9,17 +10,42 @@ class DivGradTerm(Term):
     :Definition:
 
     .. math::
-        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
+        \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nu\ \nabla \ul{u} : \nabla \ul{w} \\
+        \int_{\Omega} \nabla \ul{v} : \nabla \ul{u} \mbox{ , }
+        \int_{\Omega} \nabla \ul{u} : \nabla \ul{w}
 
-    :Arguments:
+    :Arguments 1:
         - material : :math:`\nu` (viscosity, optional)
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{u}`
+
+    :Arguments 2:
+        - material    : :math:`\nu` (viscosity, optional)
+        - parameter_1 : :math:`\ul{u}`
+        - parameter_2 : :math:`\ul{w}`
     """
     name = 'dw_div_grad'
-    arg_types = ('opt_material', 'virtual', 'state')
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'parameter_1', 'parameter_2'))
+    modes = ('weak', 'eval')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
+
+    def d_div_grad(self, out, grad1, grad2, mat, vg, fmode):
+        sh = grad1.shape
+        g1 = grad1.reshape((sh[0], sh[1], sh[2] * sh[3]))
+        g2 = grad2.reshape((sh[0], sh[1], sh[2] * sh[3]))
+        aux = mat * dot_sequences(g1[..., None], g2, 'ATB')[..., None]
+
+        if fmode == 2:
+            out[:] = aux
+            status = 0
+
+        else:
+            status = vg.integrate(out, aux, fmode)
+
+        return status
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -29,17 +55,42 @@ class DivGradTerm(Term):
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
             mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
-        if diff_var is None:
-            grad = self.get(state, 'grad').transpose((0, 1, 3, 2))
-            sh = grad.shape
-            grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
-            fmode = 0
+        if mode == 'weak':
+            if diff_var is None:
+                grad = self.get(state, 'grad').transpose((0, 1, 3, 2))
+                sh = grad.shape
+                grad = grad.reshape((sh[0], sh[1], sh[2] * sh[3], 1))
+                fmode = 0
+
+            else:
+                grad = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return grad, mat, vg, fmode
+
+        elif mode == 'eval':
+            grad1 = self.get(virtual, 'grad')
+            grad2 = self.get(state, 'grad')
+            fmode = {'eval' : 0, 'el_avg' : 1, 'qp' : 2}.get(mode, 1)
+
+            return grad1, grad2, mat, vg, fmode
 
         else:
-            grad = nm.array([0], ndmin=4, dtype=nm.float64)
-            fmode = 1
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
 
-        return grad, mat, vg, fmode
+    def get_eval_shape(self, mat, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+
+        return (n_el, 1, 1, 1), state.dtype
+
+    def set_arg_types(self):
+        if self.mode == 'weak':
+            self.function = terms.term_ns_asm_div_grad
+
+        else:
+            self.function = self.d_div_grad
 
 class ConvectTerm(Term):
     r"""
