@@ -12,18 +12,22 @@ class DivGradTerm(Term):
         \int_{\Omega} \nu\ \nabla \ul{v} : \nabla \ul{u}
 
     :Arguments:
-        - material : :math:`\nu` (viscosity)
+        - material : :math:`\nu` (viscosity, optional)
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{u}`
     """
     name = 'dw_div_grad'
-    arg_types = ('material', 'virtual', 'state')
+    arg_types = ('opt_material', 'virtual', 'state')
 
     function = staticmethod(terms.term_ns_asm_div_grad)
 
     def get_fargs(self, mat, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(state)
+
+        if mat is None:
+            n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+            mat = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
 
         if diff_var is None:
             grad = self.get(state, 'grad').transpose((0, 1, 3, 2))

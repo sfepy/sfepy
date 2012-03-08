@@ -471,7 +471,9 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
 
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
-    FMF_SetCell( viscosity, ii );
+    if (viscosity->nCell > 1) {
+      FMF_SetCell( viscosity, ii );
+    }
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
 
