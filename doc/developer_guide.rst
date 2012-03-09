@@ -945,13 +945,13 @@ sfepy.terms package
    src/sfepy/terms/termsElectric
    src/sfepy/terms/termsLaplace
    src/sfepy/terms/termsLinElasticity
-   src/sfepy/terms/termsMass
    src/sfepy/terms/termsNavierStokes
    src/sfepy/terms/termsPiezo
    src/sfepy/terms/termsPoint
    src/sfepy/terms/termsSurface
    src/sfepy/terms/termsVolume
    src/sfepy/terms/terms_constraints
+   src/sfepy/terms/terms_dot
    src/sfepy/terms/terms_fibres
    src/sfepy/terms/terms_hyperelastic_base
    src/sfepy/terms/terms_hyperelastic_tl
