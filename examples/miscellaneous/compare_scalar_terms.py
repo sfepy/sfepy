@@ -56,9 +56,9 @@ def post_process(out, pb, state, extend=False):
                                % (vn, vn), verbose=False)
             print 'dw_new_mass_scalar', vn, mass
 
-            mass = pb.evaluate('dw_mass_scalar.2.Omega(%s, %s)'
+            mass = pb.evaluate('dw_volume_dot.2.Omega(%s, %s)'
                                % (vn, vn), verbose=False)
-            print 'dw_mass_scalar', vn, mass
+            print 'dw_volume_dot', vn, mass
 
         except:
             pass
@@ -106,7 +106,7 @@ equations = {
      = 0""",
     'equation' :
     """dw_diffusion.2.Omega(m.c, s, r)
-     + dw_mass_scalar.2.Omega(s, r)
+     + dw_volume_dot.2.Omega(s, r)
      = 0""",
 }
 

@@ -47,7 +47,7 @@ functions = {
 
 equations = {
     'balance_of_forces in time' :
-    """dw_mass_vector.i1.Omega( solid.rho, v, du/dt )
+    """dw_volume_dot.i1.Omega( solid.rho, v, du/dt )
      + dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 

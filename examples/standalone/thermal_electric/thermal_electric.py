@@ -85,7 +85,7 @@ functions = {
 }
 
 equations = {
-    '2' : """%.12e * dw_mass_scalar.2.Omega( s, dT/dt )
+    '2' : """%.12e * dw_volume_dot.2.Omega( s, dT/dt )
              + dw_laplace.2.Omega( m.thermal_conductivity, s, T )
              = dw_electric_source.2.Omega( m.electric_conductivity,
                                            s, phi_known ) """ % specific_heat,

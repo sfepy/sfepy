@@ -175,7 +175,7 @@ ebc_1 = {
 
 equations = {
     'lhs' : """dw_lin_elastic_iso.2.Y2( inclusion.lam, inclusion.mu, v, u )""",
-    'rhs' : """dw_mass_vector.2.Y2( inclusion.density, v, u )""",
+    'rhs' : """dw_volume_dot.2.Y2( inclusion.density, v, u )""",
 }
 
 def clip( data, plot_range ):

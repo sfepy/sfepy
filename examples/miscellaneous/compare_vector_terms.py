@@ -101,7 +101,7 @@ equations = {
      = 0""",
     'equation' :
     """dw_lin_elastic.2.Omega(m.D, s, r)
-     + dw_mass_vector.2.Omega(m.one, s, r)
+     + dw_volume_dot.2.Omega(m.one, s, r)
      = 0""",
 }
 

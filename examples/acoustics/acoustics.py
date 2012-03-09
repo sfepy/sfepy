@@ -57,8 +57,8 @@ integrals = {
 equations = {
     'Acoustic pressure' :
     """%s * dw_laplace.ivol.Omega( one.one, q, p )
-    - %s * dw_mass_scalar.ivol.Omega( q, p )
-    - %s * dw_surface_mass_scalar.isurf.Gamma_out( q, p )
+    - %s * dw_volume_dot.ivol.Omega( q, p )
+    - %s * dw_surface_dot.isurf.Gamma_out( q, p )
     = %s * dw_surface_integrate.isurf.Gamma_in( q )"""
     % (c*c, w*w, 1j*w*c, 1j*w*c*c*rho*v_n)
 }

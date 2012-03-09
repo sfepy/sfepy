@@ -128,7 +128,7 @@ integral_1 = {
 }
 
 equations = {
-    '1' : """- %f * dw_mass_vector.i1.Y( inclusion.density, v, u )
+    '1' : """- %f * dw_volume_dot.i1.Y( inclusion.density, v, u )
              + dw_lin_elastic_iso.i1.Y( inclusion.lam, inclusion.mu, v, u )
              - dw_piezo_coupling.i1.Y2( inclusion.coupling, v, phi )
            = 0""" % omega_squared,

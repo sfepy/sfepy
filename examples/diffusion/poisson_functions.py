@@ -58,7 +58,7 @@ integrals = {
 equations = {
     'Laplace equation' :
     """dw_laplace.i1.Omega( m.c, v, u )
-     = - dw_mass_scalar.i1.Omega_L( load.val, v, p )"""
+     = - dw_volume_dot.i1.Omega_L( load.val, v, p )"""
 }
 
 solvers = {
