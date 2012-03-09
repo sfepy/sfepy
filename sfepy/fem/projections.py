@@ -21,7 +21,7 @@ def create_mass_matrix(field):
     v = FieldVariable('v', 'test', field, 1, primary_var_name='u')
 
     integral = Integral('i', order=field.get_true_order()**2)
-    term = Term.new('dw_mass_scalar(v, u)', integral, field.region, v=v, u=u)
+    term = Term.new('dw_volume_dot(v, u)', integral, field.region, v=v, u=u)
     eq = Equation('aux', term)
     eqs = Equations([eq])
     eqs.time_update(None)
@@ -43,7 +43,7 @@ def make_l2_projection(target, source):
 
     un = target.name
     v = FieldVariable('v', 'test', target.field, 1, primary_var_name=un)
-    lhs = Term.new('dw_mass_scalar(v, %s)' % un, integral,
+    lhs = Term.new('dw_volume_dot(v, %s)' % un, integral,
                    target.field.region, v=v, **{un : target})
 
     def eval_variable(ts, coors, mode, **kwargs):
