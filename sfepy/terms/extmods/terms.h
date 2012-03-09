@@ -19,11 +19,11 @@ BEGIN_C_DECLS
 #include "termsHyperElasticity.h"
 #include "termsLaplace.h"
 #include "termsLinElasticity.h"
-#include "termsMass.h"
 #include "termsNavierStokes.h"
 #include "termsPiezo.h"
 #include "termsSurface.h"
 #include "termsVolume.h"
+#include "terms_dot.h"
 #include "terms_op.h"
 
 END_C_DECLS

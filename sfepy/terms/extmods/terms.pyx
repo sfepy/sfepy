@@ -191,11 +191,6 @@ cdef extern from 'terms.h':
                             int32 *conn, int32 nEl, int32 nEP,
                             int32 *elList, int32 elList_nRo)
 
-    cdef int32 _dw_volume_wdot_scalar \
-         'dw_volume_wdot_scalar'(FMField *out, float64 coef, FMField *state_qp,
-                                 FMField *bf, FMField *mtxD,
-                                 VolumeGeometry *vg, int32 isDiff)
-
     cdef int32 _dw_laplace \
          'dw_laplace'(FMField *out, FMField *grad,
                       FMField *coef, VolumeGeometry *vg,
@@ -256,26 +251,25 @@ cdef extern from 'terms.h':
          'dw_volume_lvf'(FMField *out, FMField *bf, FMField *forceQP,
                          VolumeGeometry *vg)
 
-    cdef int32 _dw_mass \
-         'dw_mass'(FMField *out, FMField *coef, FMField *state,
-                   FMField *bf, VolumeGeometry *vg,
-                   int32 isDiff)
+    cdef int32 _dw_volume_dot_vector \
+         'dw_volume_dot_vector'(FMField *out, FMField *coef, FMField *val_qp,
+                                FMField *rbf, FMField *cbf,
+                                VolumeGeometry *vg, int32 isDiff)
 
-    cdef int32 _dw_mass_scalar \
-         'dw_mass_scalar'(FMField *out, FMField *coef,
-                          FMField *state, FMField *bf, VolumeGeometry *vg,
-                          int32 isDiff)
+    cdef int32 _dw_surface_dot_vector \
+         'dw_surface_dot_vector'(FMField *out, FMField *coef, FMField *val_qp,
+                                 FMField *rbf, FMField *cbf,
+                                 SurfaceGeometry *vg, int32 isDiff)
 
-    cdef int32 _d_mass_scalar \
-         'd_mass_scalar'(FMField *out, FMField *coef,
-                         FMField *stateP, FMField *stateQ,
-                         FMField *bf, VolumeGeometry *vg)
+    cdef int32 _dw_volume_dot_scalar \
+         'dw_volume_dot_scalar'(FMField *out, FMField *coef, FMField *val_qp,
+                                FMField *rbf, FMField *cbf,
+                                VolumeGeometry *vg, int32 isDiff)
 
-    cdef int32 _dw_surf_mass_scalar \
-         'dw_surf_mass_scalar'(FMField *out, FMField *coef,
-                               FMField *state, FMField *bf,
-                               SurfaceGeometry *sg,
-                               int32 isDiff)
+    cdef int32 _dw_surface_dot_scalar \
+        'dw_surface_dot_scalar'(FMField *out, FMField *coef, FMField *val_qp,
+                                 FMField *rbf, FMField *cbf,
+                                 SurfaceGeometry *vg, int32 isDiff)
 
     cdef int32 _term_ns_asm_div_grad \
          'term_ns_asm_div_grad'(FMField *out, FMField *grad,
@@ -1088,25 +1082,6 @@ def he_eval_from_mtx(np.ndarray out not None,
                             _conn, n_el, n_ep, _el_list, n_el2)
     return ret
 
-def dw_volume_wdot_scalar(np.ndarray out not None,
-                          float64 coef,
-                          np.ndarray state_qp not None,
-                          np.ndarray bf not None,
-                          np.ndarray mtx_d not None,
-                          CVolumeMapping cmap not None,
-                          int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _state_qp[1], _bf[1], _mtx_d[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_state_qp, state_qp)
-    array2fmfield3(_bf, bf)
-    array2fmfield4(_mtx_d, mtx_d)
-
-    ret = _dw_volume_wdot_scalar(_out, coef, _state_qp, _bf, _mtx_d,
-                                 cmap.geo, is_diff)
-    return ret
-
 def dw_laplace(np.ndarray out not None,
                np.ndarray grad not None,
                np.ndarray coef not None,
@@ -1343,73 +1318,84 @@ def dw_volume_lvf(np.ndarray out not None,
     ret = _dw_volume_lvf(_out, _bf, _force_qp, cmap.geo)
     return ret
 
-def dw_mass(np.ndarray out not None,
-            np.ndarray coef not None,
-            np.ndarray state not None,
-            np.ndarray bf not None,
-            CVolumeMapping cmap not None,
-            int32 is_diff):
+def dw_volume_dot_vector(np.ndarray out not None,
+                         np.ndarray coef not None,
+                         np.ndarray val_qp not None,
+                         np.ndarray rbf not None,
+                         np.ndarray cbf not None,
+                         CVolumeMapping cmap not None,
+                         int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+    cdef FMField _out[1], _coef[1], _val_qp[1], _rbf[1], _cbf[1]
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
-    array2fmfield4(_state, state)
-    array2fmfield3(_bf, bf)
+    array2fmfield4(_val_qp, val_qp)
+    array2fmfield3(_rbf, rbf)
+    array2fmfield3(_cbf, cbf)
 
-    ret = _dw_mass(_out,_coef, _state, _bf, cmap.geo, is_diff)
+    ret = _dw_volume_dot_vector(_out, _coef, _val_qp, _rbf, _cbf,
+                                cmap.geo, is_diff)
     return ret
 
-def dw_mass_scalar(np.ndarray out not None,
-                   np.ndarray coef not None,
-                   np.ndarray state not None,
-                   np.ndarray bf not None,
-                   CVolumeMapping cmap not None,
-                   int32 is_diff):
+def dw_surface_dot_vector(np.ndarray out not None,
+                          np.ndarray coef not None,
+                          np.ndarray val_qp not None,
+                          np.ndarray rbf not None,
+                          np.ndarray cbf not None,
+                          CSurfaceMapping cmap not None,
+                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+    cdef FMField _out[1], _coef[1], _val_qp[1], _rbf[1], _cbf[1]
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
-    array2fmfield4(_state, state)
-    array2fmfield3(_bf, bf)
+    array2fmfield4(_val_qp, val_qp)
+    array2fmfield3(_rbf, rbf)
+    array2fmfield3(_cbf, cbf)
 
-    ret = _dw_mass_scalar(_out, _coef, _state, _bf, cmap.geo, is_diff)
+    ret = _dw_surface_dot_vector(_out, _coef, _val_qp, _rbf, _cbf,
+                                 cmap.geo, is_diff)
     return ret
 
-def d_mass_scalar(np.ndarray out not None,
-                  np.ndarray coef not None,
-                  np.ndarray state_p not None,
-                  np.ndarray state_q not None,
-                  np.ndarray bf not None,
-                  CVolumeMapping cmap not None):
+def dw_volume_dot_scalar(np.ndarray out not None,
+                         np.ndarray coef not None,
+                         np.ndarray val_qp not None,
+                         np.ndarray rbf not None,
+                         np.ndarray cbf not None,
+                         CVolumeMapping cmap not None,
+                         int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _state_p[1], _state_q[1], _bf[1]
+    cdef FMField _out[1], _coef[1], _val_qp[1], _rbf[1], _cbf[1]
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
-    array2fmfield4(_state_p, state_p)
-    array2fmfield4(_state_q, state_q)
-    array2fmfield3(_bf, bf)
+    array2fmfield4(_val_qp, val_qp)
+    array2fmfield3(_rbf, rbf)
+    array2fmfield3(_cbf, cbf)
 
-    ret = _d_mass_scalar(_out, _coef, _state_p, _state_q, _bf, cmap.geo)
+    ret = _dw_volume_dot_scalar(_out, _coef, _val_qp, _rbf, _cbf,
+                                cmap.geo, is_diff)
     return ret
 
-def dw_surf_mass_scalar(np.ndarray out not None,
-                        np.ndarray coef not None,
-                        np.ndarray state not None,
-                        np.ndarray bf not None,
-                        CSurfaceMapping cmap not None,
-                        int32 is_diff):
+def dw_surface_dot_scalar(np.ndarray out not None,
+                          np.ndarray coef not None,
+                          np.ndarray val_qp not None,
+                          np.ndarray rbf not None,
+                          np.ndarray cbf not None,
+                          CSurfaceMapping cmap not None,
+                          int32 is_diff):
     cdef int32 ret
-    cdef FMField _out[1], _coef[1], _state[1], _bf[1]
+    cdef FMField _out[1], _coef[1], _val_qp[1], _rbf[1], _cbf[1]
 
     array2fmfield4(_out, out)
     array2fmfield4(_coef, coef)
-    array2fmfield4(_state, state)
-    array2fmfield3(_bf, bf)
+    array2fmfield4(_val_qp, val_qp)
+    array2fmfield3(_rbf, rbf)
+    array2fmfield3(_cbf, cbf)
 
-    ret = _dw_surf_mass_scalar(_out, _coef, _state, _bf, cmap.geo, is_diff)
+    ret = _dw_surface_dot_scalar(_out, _coef, _val_qp, _rbf, _cbf,
+                                 cmap.geo, is_diff)
     return ret
 
 def term_ns_asm_div_grad(np.ndarray out not None,

@@ -836,28 +836,29 @@ int32 bf_actt_c1( FMField *out, FMField *bf, FMField *in )
 */
 int32 bf_buildFTF( FMField *ftf, FMField *ftf1 )
 {
-  int32 iqp, ir, ic, nEP, nQP, dim;
+  int32 iqp, ir, ic, nEPR, nEPC, nQP, dim;
   float64 *pftf, *pftf1;
   float64 val;
 
   fmf_fillC( ftf, 0.0 );
 
-  nEP = ftf1->nCol;
+  nEPR = ftf1->nRow;
+  nEPC = ftf1->nCol;
   nQP = ftf1->nLev;
-  dim = ftf->nRow / nEP;
+  dim = ftf->nRow / nEPR;
 
   for (iqp = 0; iqp < nQP; iqp++) {
     pftf1 = FMF_PtrLevel( ftf1, iqp );
     pftf = FMF_PtrLevel( ftf, iqp );
-    for (ir = 0; ir < nEP; ir++) {
-      for (ic = 0; ic < nEP; ic++) {
-	val = pftf1[nEP*ir+ic];
+    for (ir = 0; ir < nEPR; ir++) {
+      for (ic = 0; ic < nEPC; ic++) {
+	val = pftf1[nEPC*ir+ic];
 
-	pftf[dim*nEP*ir+ic] = val;
+	pftf[dim*nEPC*ir+ic] = val;
 	if (dim == 1) continue;
-	pftf[dim*nEP*(nEP+ir)+ic+nEP] = val;
+	pftf[dim*nEPC*(nEPR+ir)+ic+nEPC] = val;
 	if (dim == 2) continue;
-	pftf[dim*nEP*(2*nEP+ir)+ic+2*nEP] = val;
+	pftf[dim*nEPC*(2*nEPR+ir)+ic+2*nEPC] = val;
       }
     }
   }
