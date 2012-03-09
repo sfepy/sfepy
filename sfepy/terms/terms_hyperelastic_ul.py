@@ -609,7 +609,7 @@ class CompressibilityULTerm(HyperElasticULBase):
     arg_types = ('material', 'virtual', 'state', 'parameter_u')
     family_data_names = ['mtx_f', 'det_f']
 
-    function = staticmethod(terms.dw_mass_scalar)
+    function = staticmethod(terms.dw_volume_dot_scalar)
 
     def get_fargs(self, bulk, virtual, state, parameter_u,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -629,7 +629,7 @@ class CompressibilityULTerm(HyperElasticULBase):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vgp.bf, vgp, fmode
+            return coef, val_qp, vgp.bf, vgp.bf, vgp, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
