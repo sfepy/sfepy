@@ -246,9 +246,11 @@ class Domain( Struct ):
             else:
                 n_face = n_face_total = 0
 
-            shape = Struct( n_vertex = n_vertex, n_el = n_el, n_ep = n_ep,
-                            n_edge = n_edge, n_edge_total = n_edge_total,
-                            n_face = n_face, n_face_total = n_face_total )
+            shape = Struct(n_vertex=n_vertex, n_el=n_el, n_ep=n_ep,
+                           n_edge=n_edge, n_edge_total=n_edge_total,
+                           n_face=n_face, n_face_total=n_face_total,
+                           dim=self.mesh.dims[ii])
+
             self.groups[ii] = Struct( ig = ii,
                                       vertices = vertices,
                                       conn = conn,
@@ -318,11 +320,15 @@ class Domain( Struct ):
     def fix_element_orientation(self):
         """
         Ensure element nodes ordering giving positive element volume.
+
+        The groups with elements of lower dimension than the space dimension
+        are skipped.
         """
         from extmods.mesh import orient_elements
 
         coors = self.mesh.coors
         for ii, group in self.groups.iteritems():
+            if group.shape.dim < self.shape.dim: continue
 
             ori, conn = group.gel.orientation, group.conn
 
