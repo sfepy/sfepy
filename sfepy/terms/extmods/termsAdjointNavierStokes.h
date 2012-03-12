@@ -54,7 +54,7 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 		    FMField *stateW, FMField *divMV, FMField *gradMV,
 		    VolumeGeometry *vg_u, int32 mode );
 
-int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
+int32 d_sd_volume_dot( FMField *out, FMField *stateP, FMField *stateQ,
                        FMField *divMV, VolumeGeometry *vg, int32 mode );
 
 int32 d_sd_st_grad_div( FMField *out, FMField *divU, FMField *gradU,

@@ -430,8 +430,8 @@ cdef extern from 'terms.h':
                         FMField *stateW, FMField *divMV, FMField *gradMV,
                         VolumeGeometry *vg_u, int32 mode)
 
-    cdef int32 _d_sd_dot_scalar \
-         'd_sd_dot_scalar'(FMField *out, FMField *stateP, FMField *stateQ,
+    cdef int32 _d_sd_volume_dot \
+         'd_sd_volume_dot'(FMField *out, FMField *stateP, FMField *stateQ,
                            FMField *divMV, VolumeGeometry *vg, int32 mode)
 
     cdef int32 _d_sd_st_grad_div \
@@ -1973,7 +1973,7 @@ def d_sd_convect(np.ndarray out not None,
                         cmap_u.geo, mode)
     return ret
 
-def d_sd_dot_scalar(np.ndarray out not None,
+def d_sd_volume_dot(np.ndarray out not None,
                     np.ndarray state_p not None,
                     np.ndarray state_q not None,
                     np.ndarray div_mv not None,
@@ -1987,7 +1987,7 @@ def d_sd_dot_scalar(np.ndarray out not None,
     array2fmfield4(_state_q, state_q)
     array2fmfield4(_div_mv, div_mv)
 
-    ret = _d_sd_dot_scalar(_out, _state_p, _state_q, _div_mv, cmap.geo, mode)
+    ret = _d_sd_volume_dot(_out, _state_p, _state_q, _div_mv, cmap.geo, mode)
     return ret
 
 def d_sd_st_grad_div(np.ndarray out not None,

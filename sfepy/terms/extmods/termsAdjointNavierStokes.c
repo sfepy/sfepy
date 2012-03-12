@@ -701,18 +701,18 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 }
 
 #undef __FUNC__
-#define __FUNC__ "d_sd_dot_scalar"
+#define __FUNC__ "d_sd_volume_dot"
 /*!
   mode == 0: \int pq
   mode == 1: \int pq div V
 
-  vg, conn .. pressure-like, assuming the same nodes for p, q, mv
+  Works for both scalars and vectors.
 
   @par Revision history:
   - 24.02.2006, c
   - 27.02.2006
 */
-int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
+int32 d_sd_volume_dot( FMField *out, FMField *stateP, FMField *stateQ,
                        FMField *divMV, VolumeGeometry *vg, int32 mode )
 {
   int32 ii, nQP, ret = RET_OK;
@@ -728,7 +728,7 @@ int32 d_sd_dot_scalar( FMField *out, FMField *stateP, FMField *stateQ,
     FMF_SetCell( stateQ, ii );
     FMF_SetCell( vg->det, ii );
 
-    fmf_mulAB_nn( pq, stateP, stateQ );
+    fmf_mulATB_nn( pq, stateP, stateQ );
 
     if (mode == 1) {
       FMF_SetCell( divMV, ii );

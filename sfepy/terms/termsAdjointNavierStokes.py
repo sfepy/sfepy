@@ -203,39 +203,40 @@ class SUPGPAdj2StabilizationTerm(Term):
 
         return grad_u, state(), mat, vg_u.bf, vg_u, vg_r, conn_r, fmode
 
-class SDDotScalarTerm(Term):
+class SDDotVolumeTerm(Term):
     r"""
-    Sensitivity (shape derivative) of dot product of scalars.
+    Sensitivity (shape derivative) of dot product of scalars or vectors.
 
     :Definition:
 
     .. math::
-        \int_{\Omega_D} p q (\nabla \cdot \ul{\Vcal})
+        \int_{\Omega_D} p q (\nabla \cdot \ul{\Vcal}) \mbox{ , }
+        \int_{\Omega_D} (\ul{u} \cdot \ul{w}) (\nabla \cdot \ul{\Vcal})
 
     :Arguments:
-        - parameter_p : :math:`p`
-        - parameter_q : :math:`q`
+        - parameter_1 : :math:`p` or :math:`\ul{u}`
+        - parameter_2 : :math:`q` or :math:`\ul{w}`
         - parameter_mesh_velocity : :math:`\ul{\Vcal}`
     """
-    name = 'd_sd_dot_scalar'
-    arg_types = ('parameter_p', 'parameter_q', 'parameter_mesh_velocity')
+    name = 'd_sd_volume_dot'
+    arg_types = ('parameter_1', 'parameter_2', 'parameter_mesh_velocity')
 
-    function = staticmethod(terms.d_sd_dot_scalar)
+    function = staticmethod(terms.d_sd_volume_dot)
 
-    def get_fargs(self, par_p, par_q, par_mv,
+    def get_fargs(self, par1, par2, par_mv,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vg, _ = self.get_mapping(par_p)
+        vg, _ = self.get_mapping(par1)
 
-        val_p = self.get(par_p, 'val')
-        val_q = self.get(par_q, 'val')
+        val1 = self.get(par1, 'val')
+        val2 = self.get(par2, 'val')
         div_mv = self.get(par_mv, 'div')
 
-        return val_p, val_q, div_mv, vg, term_mode
+        return val1, val2, div_mv, vg, term_mode
 
-    def get_eval_shape(self, par_p, par_q, par_mv,
+    def get_eval_shape(self, par1, par2, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
-        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_p)
-        return (n_el, 1, 1, 1), par_p.dtype
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par1)
+        return (n_el, 1, 1, 1), par1.dtype
 
 class SDDivTerm(Term):
     r"""
