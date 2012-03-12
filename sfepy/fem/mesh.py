@@ -552,6 +552,7 @@ class Mesh( Struct ):
         self.n_e_ps = nm.array( [conn.shape[1] for conn in self.conns] )
         self.el_offsets = nm.cumsum( nm.r_[0, self.n_els] )
         self.n_el = nm.sum( self.n_els )
+        self.dims = [int(ii[0]) for ii in self.descs]
 
     def _set_data(self, coors, ngroups, conns, mat_ids, descs, nodal_bcs=None):
         """
