@@ -398,7 +398,7 @@ class Mesh( Struct ):
 
     @staticmethod
     def from_file(filename=None, io='auto', prefix_dir=None,
-                  omit_facets=True):
+                  omit_facets=False):
         """
         Read a mesh from a file.
 

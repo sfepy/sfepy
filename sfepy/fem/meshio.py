@@ -261,7 +261,7 @@ class MeshIO( Struct ):
         aux = nm.array([], dtype=nm.float64)
         return aux, aux
 
-    def read(self, mesh, omit_facets=True, **kwargs):
+    def read(self, mesh, omit_facets=False, **kwargs):
         raise ValueError(MeshIO.call_msg)
 
     def write(self, filename, mesh, **kwargs):
@@ -354,7 +354,7 @@ class MeditMeshIO( MeshIO ):
                 return bbox
 
 
-    def read(self, mesh, omit_facets=True, **kwargs):
+    def read(self, mesh, omit_facets=False, **kwargs):
         dim, fd  = self.read_dimension(ret_fd=True)
 
         conns_in = []
@@ -363,7 +363,7 @@ class MeditMeshIO( MeshIO ):
         def _read_cells(dimension, size):
             num = int(read_token(fd))
             data = read_array(fd, num, size + 1, nm.int32)
-            if (dimension < dim) and omit_facets: return
+            if omit_facets and (dimension < dim): return
 
             data[:, :-1] -= 1
 
