@@ -1,5 +1,7 @@
 import numpy as nm
 
+from sfepy.fem.mesh import find_map
+
 ##
 # c: 05.05.2008, r: 05.05.2008
 eps = 1e-12
@@ -47,8 +49,6 @@ def match_grid_plane( coor1, coor2, which ):
     Match coordinates `coor1` with `coor2` along the plane with normal axis
     `which`.
     """
-    from sfepy.fem.mesh import find_map
-    
     if coor1.shape != coor2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
               % ( coor1.shape, coor2.shape)
@@ -78,3 +78,24 @@ def match_y_plane( coor1, coor2 ):
     return match_grid_plane( coor1, coor2, 1 )
 def match_z_plane( coor1, coor2 ):
     return match_grid_plane( coor1, coor2, 2 )
+
+def match_coors(coors1, coors2):
+    """
+    Match coordinates `coors1` with `coors2`.
+    """
+    if coors1.shape != coors2.shape:
+        raise ValueError('incompatible shapes: %s == %s'
+                         % (coors1.shape, coors2.shape))
+
+    i1, i2 = find_map(coors1, coors2, join=False)
+
+    if i1.shape[0] != coors1.shape[0]:
+        print coors1[i1]
+        print coors2[i2]
+        print nm.abs(coors1[i1] - coors2[i2]).max(0)
+        ii = nm.setdiff1d(nm.arange(coors1.shape[0]), i1)
+        print coors1[ii]
+        print coors2[ii]
+        raise ValueError('cannot match nodes!')
+
+    return i1, i2
