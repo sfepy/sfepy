@@ -125,7 +125,9 @@ def test_terms(idsgs, delta, shape_opt, dp_var_data, state_ap):
     ccs('d_sd_st_pspg_p.i1.Omega_D( stabil.tau, r, r, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
-    ccs('d_sd_dot_scalar.i1.Omega_D( p, r, Nu )',
+    ccs('d_sd_volume_dot.i1.Omega_D( p, r, Nu )',
+        idsgs, delta, dp_var_data, state_ap)
+    ccs('d_sd_volume_dot.i1.Omega_D( u, w, Nu )',
         idsgs, delta, dp_var_data, state_ap)
 
     ccs('d_sd_div.i1.Omega_D( u, r, Nu )',
