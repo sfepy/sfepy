@@ -154,6 +154,10 @@ class Facets(Struct):
 
         ii = 0
         for ig, group in groups.iteritems():
+            if n_obj[ig] == 0:
+                single_facets[ig] = nm.array([[]], dtype=nm.int32)
+                continue
+
             conn, gel = group.conn, group.gel
             n_el = group.shape.n_el
             n_all_item = n_obj[ig]
@@ -230,6 +234,7 @@ class Facets(Struct):
         ori_maps = {}
 
         for ig in range(self.n_gr):
+            if self.n_obj[ig] == 0: continue
             io = self.indx[ig]
             facets = self.facets[io]
 
