@@ -736,7 +736,7 @@ class Region( Struct ):
         """
         if ig is not None:
             if is_surface:
-                if self.domain.shape.dim == 2:
+                if self.domain.groups[ig].shape.dim == 2:
                     return self.shape[ig].n_edge
 
                 else:
