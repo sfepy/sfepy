@@ -691,8 +691,6 @@ class VTKMeshIO( MeshIO ):
             key = (ct, dim)
             if key not in vtk_inverse_cell_types:
                 continue
-            if (ct == 3) or (vtk_dims[ct] != dim): # No bar elements yet.
-                continue
             ct = vtk_inverse_cell_types[key]
             dconns.setdefault( ct, [] ).append( row[1:] + mat_id[iel] )
 
@@ -1129,38 +1127,31 @@ class ComsolMeshIO( MeshIO ):
                     t_name = skip_read_line( fd ).split()[1]
                     n_ep = self._read_commented_int()
                     n_el = self._read_commented_int()
-                    if dim == 2:
-                        self._skip_comment()
-                        aux = read_array( fd, n_el, n_ep, nm.int32 )
-                        if t_name == 'tri':
-                            conns.append( aux )
-                            descs.append( '2_3' )
-                            is_conn = True
-                        elif t_name == 'quad':
-                            # Rearrange elelment node order to match SfePy
-                            aux = aux[:,(0,1,3,2)]
-                            conns.append( aux )
-                            descs.append( '2_4' )
-                            is_conn = True
-                        else:
-                            is_conn = False
-                    elif dim == 3:
-                        self._skip_comment()
-                        aux = read_array( fd, n_el, n_ep, nm.int32 )
-                        if t_name == 'hex':
-                            # Rearrange elelment node order to match SfePy
-                            aux = aux[:,(0,1,3,2,4,5,7,6)]
-                            conns.append( aux )
-                            descs.append( '3_8' )
-                            is_conn = True
-                        elif t_name == 'tet':
-                            conns.append( aux )
-                            descs.append( '3_4' )
-                            is_conn = True
-                        else:
-                            is_conn = False
+
+                    self._skip_comment()
+                    aux = read_array(fd, n_el, n_ep, nm.int32)
+                    if t_name == 'tri':
+                        conns.append(aux)
+                        descs.append('2_3')
+                        is_conn = True
+                    elif t_name == 'quad':
+                        # Rearrange element node order to match SfePy.
+                        aux = aux[:,(0,1,3,2)]
+                        conns.append(aux)
+                        descs.append('2_4')
+                        is_conn = True
+                    elif t_name == 'hex':
+                        # Rearrange element node order to match SfePy.
+                        aux = aux[:,(0,1,3,2,4,5,7,6)]
+                        conns.append(aux)
+                        descs.append('3_8')
+                        is_conn = True
+                    elif t_name == 'tet':
+                        conns.append(aux)
+                        descs.append('3_4')
+                        is_conn = True
                     else:
-                        raise NotImplementedError
+                        is_conn = False
 
                     # Skip parameters.
                     n_pv = self._read_commented_int()
@@ -1751,52 +1742,30 @@ class Mesh3DMeshIO( MeshIO ):
             rows.append(row)
         return nm.array(rows)
 
-def mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
-                          tetras, mat_tetras,
-                          hexas, mat_hexas ):
-    ids = nm.asarray( ids, dtype = nm.int32 )
-    coors = nm.asarray( coors, dtype = nm.float64 )
+def mesh_from_groups(mesh, ids, coors, ngroups,
+                     tris, mat_tris, quads, mat_quads,
+                     tetras, mat_tetras, hexas, mat_hexas):
+    ids = nm.asarray(ids, dtype=nm.int32)
+    coors = nm.asarray(coors, dtype=nm.float64)
 
     n_nod = coors.shape[0]
-    
-    remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
-    remap[ids] = nm.arange( n_nod, dtype = nm.int32 )
 
-    tetras = remap[nm.array( tetras, dtype = nm.int32 )]
-    hexas = remap[nm.array( hexas, dtype = nm.int32 )]
+    remap = nm.zeros((ids.max()+1,), dtype=nm.int32)
+    remap[ids] = nm.arange(n_nod, dtype=nm.int32)
 
-    conns = [tetras, hexas]
-    mat_ids = [nm.array( ar, dtype = nm.int32 )
-               for ar in [mat_tetras, mat_hexas]]
-    descs = ['3_4', '3_8']
+    tris = remap[nm.array(tris, dtype=nm.int32)]
+    quads = remap[nm.array(quads, dtype=nm.int32)]
+    tetras = remap[nm.array(tetras, dtype=nm.int32)]
+    hexas = remap[nm.array(hexas, dtype=nm.int32)]
 
-    conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
-    conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
-    mesh._set_data( coors, ngroups, conns, mat_ids, descs )
-    return mesh
+    conns = [tris, quads, tetras, hexas]
+    mat_ids = [nm.array(ar, dtype=nm.int32)
+               for ar in [mat_tris, mat_quads, mat_tetras, mat_hexas]]
+    descs = ['2_3', '2_4', '3_4', '3_8']
 
-def mesh_from_tri_quad( mesh, ids, coors, ngroups,
-                          tris, mat_tris,
-                          quads, mat_quads ):
-    ids = nm.asarray( ids, dtype = nm.int32 )
-    coors = nm.asarray( coors, dtype = nm.float64 )
-
-    n_nod = coors.shape[0]
-    
-    remap = nm.zeros( (ids.max()+1,), dtype = nm.int32 )
-    remap[ids] = nm.arange( n_nod, dtype=nm.int32 )
-
-    tris = remap[nm.array( tris, dtype = nm.int32 )]
-    quads = remap[nm.array( quads, dtype = nm.int32 )]
-
-    conns = [tris, quads]
-    mat_ids = [nm.array( ar, dtype = nm.int32 )
-               for ar in [mat_tris, mat_quads]]
-    descs = ['2_3', '2_4']
-
-    conns, mat_ids = sort_by_mat_id2( conns, mat_ids )
-    conns, mat_ids, descs = split_by_mat_id( conns, mat_ids, descs )
-    mesh._set_data( coors, ngroups, conns, mat_ids, descs )
+    conns, mat_ids = sort_by_mat_id2(conns, mat_ids)
+    conns, mat_ids, descs = split_by_mat_id(conns, mat_ids, descs)
+    mesh._set_data(coors, ngroups, conns, mat_ids, descs)
     return mesh
 
 class AVSUCDMeshIO( MeshIO ):
@@ -1841,9 +1810,9 @@ class AVSUCDMeshIO( MeshIO ):
                 hexas.append( [int( ic ) for ic in line[3:]] )
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
-                                     tetras, mat_tetras,
-                                     hexas, mat_hexas )
+        mesh = mesh_from_groups(mesh, ids, coors, None,
+                                [], [], [], [],
+                                tetras, mat_tetras, hexas, mat_hexas)
         return mesh
 
     def read_dimension(self):
@@ -1883,9 +1852,9 @@ class HypermeshAsciiMeshIO( MeshIO ):
                     hexas.append( [int( ic ) for ic in line[2:10]] )
         fd.close()
 
-        mesh = mesh_from_tetra_hexa( mesh, ids, coors, None,
-                                     tetras, mat_tetras,
-                                     hexas, mat_hexas )
+        mesh = mesh_from_groups(mesh, ids, coors, None,
+                                [], [], [], [],
+                                tetras, mat_tetras, hexas, mat_hexas)
 
         return mesh
 
@@ -2006,15 +1975,10 @@ class AbaqusMeshIO( MeshIO ):
         for ing, ii in nsets.iteritems():
             ngroups[nm.array(ii)-1] = ing
 
-        if dim == 3:
-            mesh = mesh_from_tetra_hexa( mesh, ids, coors, ngroups,
-                                         tetras, mat_tetras,
-                                         hexas, mat_hexas )
-        else:
-            mesh = mesh_from_tri_quad( mesh, ids, coors, ngroups,
-                                       tris, mat_tris,
-                                       quads, mat_quads )
-            
+        mesh = mesh_from_groups(mesh, ids, coors, ngroups,
+                                tris, mat_tris, quads, mat_quads,
+                                tetras, mat_tetras, hexas, mat_hexas)
+
         return mesh
 
     def read_dimension(self):
@@ -2309,31 +2273,22 @@ class NEUMeshIO( MeshIO ):
                     row = fd.readline().split()
 
             elif (row[0] == 'ELEMENTS/CELLS'):
-                if dim == 3:
+                row = fd.readline().split()
+                while not(row[0] == 'ENDOFSECTION'):
+                    elid = [row[0]]
+                    gtype = int(row[1])
+                    if gtype == 6:
+                        el['3_4'].append(row[3:]+elid)
+                    elif gtype == 4:
+                        rr = row[3:]
+                        if (len(rr) < 8):
+                            rr.extend(fd.readline().split())
+                        el['3_8'].append(rr+elid)
+                    elif gtype == 3:
+                        el['2_3'].append(row[3:]+elid)
+                    elif gtype == 2:
+                        el['2_4'].append(row[3:]+elid)
                     row = fd.readline().split()
-                    while not( row[0] == 'ENDOFSECTION' ):
-                        elid = [row[0]]
-                        if (int( row[2] ) == 4):
-                            el['3_4'].append( row[3:]+elid )
-#                        if (int( row[2] ) == 5):
-#                            el['pyram5'].append( row )
-#                        if (int( row[2] ) == 6):
-#                            el['wedge6'].append( row )
-                        elif (int( row[2] ) == 8):
-                            rr = row[3:]
-                            if (len( rr ) < 8):
-                                rr.extend( fd.readline().split() )
-                            el['3_8'].append( rr+elid )
-                        row = fd.readline().split()
-                else:
-                    row = fd.readline().split()
-                    while not( row[0] == 'ENDOFSECTION' ):
-                        elid = [row[0]]
-                        if (int( row[2] ) == 3):
-                            el['2_3'].append( row[3:]+elid )
-                        if (int( row[2] ) == 4):
-                            el['2_4'].append( row[3:]+elid )
-                        row = fd.readline().split()
 
             elif (row[0] == 'GROUP:'):
                 group_ids.append( row[1] )
@@ -2487,11 +2442,10 @@ class ANSYSCDBMeshIO( MeshIO ):
             el_hexas = []
 
         ngroups = nm.zeros((len(coors),), dtype = nm.int32)
-        mesh = mesh_from_tetra_hexa(mesh, ids, coors, ngroups,
-                                    el_tetras,
-                                    elems[tetras_idx,0],
-                                    el_hexas,
-                                    elems[hexas_idx,0])
+        mesh = mesh_from_groups(mesh, ids, coors, ngroups,
+                                [], [], [], [],
+                                el_tetras, elems[tetras_idx,0],
+                                el_hexas, elems[hexas_idx,0])
 
         return mesh
 
