@@ -109,43 +109,36 @@ class LaplaceTerm(DiffusionTerm):
         else:
             self.function = terms.d_laplace
 
-# class PermeabilityRTerm( Term ):
-#     r"""
-#     Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
-#     use on the right-hand side).
+class PermeabilityRTerm(Term):
+    r"""
+    Special-purpose diffusion-like term with permeability :math:`K_{ij}` (to
+    use on the right-hand side).
 
-#     :Definition:
+    :Definition:
 
-#     .. math::
-#         \int_{\Omega} K_{ij} \nabla_j q
+    .. math::
+        \int_{\Omega} K_{ij} \nabla_j q
 
-#     :Arguments:
-#         - material : :math:`K_{ij}`
-#         - virtual  : :math:`q`
-#         - index    : :math:`i`
-#     """
-#     name = 'dw_permeability_r'
-#     arg_types = ('material', 'virtual', 'index')
+    :Arguments:
+        - material : :math:`K_{ij}`
+        - virtual  : :math:`q`
+        - index    : :math:`i`
+    """
+    name = 'dw_permeability_r'
+    arg_types = ('material', 'virtual', 'index')
 
-#     function = staticmethod(terms.dw_permeability_r)
-        
-#     def __call__( self, diff_var = None, chunk_size = None, **kwargs ):
-#         mat, virtual, index = self.get_args( **kwargs )
-#         ap, vg = self.get_approximation(virtual)
-#         n_el, n_qp, dim, n_ep = ap.get_v_data_shape(self.integral)
+    function = staticmethod(terms.dw_permeability_r)
 
-#         if diff_var is None:
-#             shape = (chunk_size, 1, n_ep, 1)
-#         else:
-#             raise StopIteration
+    def get_fargs(self, mat, virtual, index,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(virtual)
 
-#         if isinstance(index, list):
-#             index = index[0]
+        if isinstance(index, list):
+            index = index[0]
 
-#         mat = nm.ascontiguousarray(mat[...,index:index+1])
-#         for out, chunk in self.char_fun( chunk_size, shape ):
-#             status = self.function( out, mat, vg, ap.econn, chunk )
-#             yield out, chunk, status
+        mat = nm.ascontiguousarray(mat[...,index:index+1])
+
+        return mat, vg
 
 class DiffusionRTerm(Term):
     r"""
