@@ -47,9 +47,16 @@ def spy_and_show(mtx, **kwargs):
 ##
 # 13.12.2005, c
 def print_matrix_diff( title, legend, mtx1, mtx2, mtx_da, mtx_dr, iis ):
+    import copy
+
     print '%s: ir, ic, %s, %s, adiff, rdiff' % ((title,) + tuple( legend ))
+
+    aux = copy.copy(mtx_da)
+    aux.data = nm.ones(mtx_da.data.shape[0])
+    irs, ics = aux.nonzero()
+
     for ii in iis:
-        [ir, ic] = mtx_da.rowcol( ii )
+        ir, ic = irs[ii], ics[ii]
         print '%5d %5d %11.4e %11.4e %9.2e %9.2e'\
               % (ir, ic, mtx1[ir,ic], mtx2[ir,ic], mtx_da[ir,ic], mtx_dr[ir,ic] )
 
