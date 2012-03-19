@@ -26,12 +26,24 @@ class Coefficients(Struct):
     def _escape_latex(self, txt):
         return txt.replace('_', '\_').replace('%', '\%')
 
+    def _format(self, val):
+        out = self._a_format % val
+        if self._a_cdot:
+            a1, a2 = out.split('e')
+            if (self._a_filter is not None) and (int(a2) < self._a_filter):
+                out = '0'
+
+            else:
+                out = '%s \cdot 10^{%s}' % (a1, int(a2))
+
+        return out
+
     def _write1d(self, fd, val):
         fd.write( r'  \begin{equation}' )
         fd.write( '\n' )
         fd.write( r'    \left[' )
         fd.write( '\n' )
-        fd.write( ', '.join([self.format % vv for vv in val]) )
+        fd.write(', '.join([self._format(vv) for vv in val]))
         fd.write( '\n' )
         fd.write( r'    \right]' )
         fd.write( '\n' )
@@ -45,7 +57,7 @@ class Coefficients(Struct):
         fd.write( '\n' )
         for ir in xrange( val.shape[1] ):
             for ic in xrange( val.shape[0] ):
-                fd.write( '    ' + self.format % val[ir,ic] )
+                fd.write('    ' + self._format(val[ir,ic]))
                 if ic < (val.shape[0] - 1):
                     fd.write( r' & ' )
                 elif ir < (val.shape[1] - 1):
@@ -61,6 +73,8 @@ class Coefficients(Struct):
         fd.write( r'\begin{itemize}' )
         fd.write( '\n' )
         for key, val in ordered_iteritems(adict):
+            if key.startswith('_a_'): continue
+
             try:
                 lname = names[key]
             except:
@@ -75,7 +89,7 @@ class Coefficients(Struct):
                 fd.write(self._escape_latex(val) + '\n')
 
             elif val.ndim == 0:
-                fd.write((self.format % val) + '\n')
+                fd.write('$' + self._format(val) + '$\n')
 
             elif val.ndim == 1:
                 self._write1d(fd, val)
@@ -87,11 +101,29 @@ class Coefficients(Struct):
         fd.write( '\n\n' )
 
 
-    def to_file_latex(self, filename, names, print_digits):
-        """
+    def to_file_latex(self, filename, names, format='%.2e',
+                      cdot=False, filter=None):
+        r"""
         Save the coefficients to a file in LaTeX format.
+
+        Parameters
+        ----------
+        filename : str
+            The name of the output file.
+        names : dict
+            Mapping of attribute names to LaTeX names.
+        format : str
+            Format string for numbers.
+        cdot : bool
+            For '%.e' formats only. If True, replace 'e'  by LaTeX '\cdot
+            10^{exponent}' format.
+        filter : int
+            For '%.e' formats only. Typeset as 0, if exponent is less than
+            `filter`.
         """
-        self.format = '%% %d.%df' % (print_digits + 3, print_digits)
+        self._a_format = format
+        self._a_cdot = cdot
+        self._a_filter = filter
 
         fd = open(filename, 'w')
         self._save_dict_latex(self.__dict__, fd, names)
