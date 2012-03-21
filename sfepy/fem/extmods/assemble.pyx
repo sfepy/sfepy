@@ -86,7 +86,7 @@ def assemble_matrix(np.ndarray[float64, mode='c', ndim=1] mtx not None,
                     float64 sign,
                     np.ndarray[int32, mode='c', ndim=2] row_conn not None,
                     np.ndarray[int32, mode='c', ndim=2] col_conn not None):
-    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc, found
+    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
     cdef int32 n_epc = col_conn.shape[1]
@@ -121,7 +121,6 @@ def assemble_matrix(np.ndarray[float64, mode='c', ndim=1] mtx not None,
 
                 iloc = n_epc * ir + ic
 
-                found = 0
                 for ik in range(_prows[irg], _prows[irg + 1]):
                     if _cols[ik] == icg:
                         val[ik] += sign * mtx_in_el[iloc]
@@ -144,7 +143,7 @@ def assemble_matrix_complex(np.ndarray[complex128, mode='c', ndim=1]
                             row_conn not None,
                             np.ndarray[int32, mode='c', ndim=2]
                             col_conn not None):
-    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc, found
+    cdef int32 ii, iel, ir, ic, irg, icg, ik, iloc
     cdef int32 num = iels.shape[0]
     cdef int32 n_epr = row_conn.shape[1]
     cdef int32 n_epc = col_conn.shape[1]
@@ -179,7 +178,6 @@ def assemble_matrix_complex(np.ndarray[complex128, mode='c', ndim=1]
 
                 iloc = n_epc * ir + ic
 
-                found = 0
                 for ik in range(_prows[irg], _prows[irg + 1]):
                     if _cols[ik] == icg:
                         val[ik] += sign * mtx_in_el[iloc]
