@@ -820,7 +820,7 @@ int32 bf_actt_c1( FMField *out, FMField *bf, FMField *in )
 
     for (ic = 0; ic < dim; ic++ ) {
       for (ir = 0; ir < nEP; ir++) {
-	pout[nEP*ic+ir] = pbf[ir] * in->val[ic];
+	pout[nEP*ic+ir] = pbf[ir] * pin[ic];
       }
     }
   }
