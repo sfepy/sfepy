@@ -267,3 +267,89 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
             fargs = ts.dt * mat0, aux, vg.bf, vg.bf, vg, 1
 
         return fargs
+
+class VectorDotGradScalarTerm(Term):
+    r"""
+    Volume dot product of a vector and a gradient of scalar.
+    Can be evaluated.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \ul{v} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} \ul{u} \cdot \nabla q
+        \mbox{ or }
+        \int_{\Omega} c \ul{v} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} c \ul{u} \cdot \nabla q
+
+    :Arguments 1:
+        - material : :math:`c` (optional)
+        - virtual  : :math:`\ul{v}`
+        - state    : :math:`\ul{p}`
+
+    :Arguments 2:
+        - material : :math:`c` (optional)
+        - state    : :math:`\ul{u}`
+        - virtual  : :math:`\ul{q}`
+
+    :Arguments 3:
+        - material    : :math:`c` (optional)
+        - parameter_v : :math:`\ul{u}`
+        - parameter_s : :math:`p`
+    """
+    name = 'dw_v_dot_grad_s'
+    arg_types = (('opt_material', 'virtual', 'state'),
+                 ('opt_material', 'state', 'virtual'),
+                 ('opt_material', 'parameter_v', 'parameter_s'))
+    modes = ('v_weak', 's_weak', 'eval')
+
+    def get_fargs(self, coef, vvar, svar,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+        if coef is None:
+            coef = nm.ones((1, n_qp, 1, 1), dtype=nm.float64)
+
+        if mode == 'weak':
+            if self.mode == 'v_weak':
+                qp_var, qp_name = svar, 'grad'
+
+            else:
+                qp_var, qp_name = vvar, 'val'
+
+            vvg, _ = self.get_mapping(vvar)
+            svg, _ = self.get_mapping(svar)
+
+            if diff_var is None:
+                val_qp = self.get(qp_var, qp_name)
+                fmode = 0
+
+            else:
+                val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
+                fmode = 1
+
+            return coef, val_qp, vvg.bf, vvg, svg, fmode
+
+        elif mode == 'eval':
+            vvg, _ = self.get_mapping(vvar)
+
+            grad = self.get(svar, 'grad')
+            val = self.get(vvar, 'val')
+
+            return coef, grad, val, vvg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, coef, vvar, svar,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+
+        return (n_el, 1, 1, 1), vvar.dtype
+
+    def set_arg_types(self):
+        self.function = {
+            'v_weak' : terms.dw_v_dot_grad_s_vw,
+            's_weak' : terms.dw_v_dot_grad_s_sw,
+            'eval' : DotProductVolumeTerm.d_dot,
+        }[self.mode]

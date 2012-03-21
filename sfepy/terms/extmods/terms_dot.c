@@ -228,3 +228,104 @@ int32 dw_surface_dot_scalar( FMField *out, FMField *coef, FMField *val_qp,
 
   return( ret );
 }
+
+#undef __FUNC__
+#define __FUNC__ "dw_v_dot_grad_s_vw"
+int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
+                          FMField *vbf, VolumeGeometry *vvg,
+                          VolumeGeometry *svg, int32 isDiff )
+{
+  int32 ii, nEPV, nEPS, dim, nQP, ret = RET_OK;
+  FMField *ftg = 0;
+
+  nQP = vvg->bfGM->nLev;
+  dim = vvg->bfGM->nRow;
+  nEPS = svg->bfGM->nCol;
+  nEPV = vbf->nCol;
+
+  if (isDiff == 1) {
+    fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, nEPS );
+  } else {
+    fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, 1 );
+  }
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    if (coef->nCell > 1) {
+      FMF_SetCell( coef, ii );
+    }
+    FMF_SetCell( vvg->det, ii );
+
+    if (isDiff == 1) {
+      FMF_SetCell( svg->bfGM, ii );
+
+      bf_actt( ftg, vbf, svg->bfGM );
+    } else {
+      FMF_SetCell( grad, ii );
+
+      bf_actt_c1( ftg, vbf, grad );
+    }
+    fmf_mul( ftg, coef->val );
+    fmf_sumLevelsMulF( out, ftg, vvg->det->val );
+
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  fmf_freeDestroy( &ftg );
+
+  return( ret );
+}
+
+#undef __FUNC__
+#define __FUNC__ "dw_v_dot_grad_s_sw"
+int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
+                          FMField *vbf, VolumeGeometry *vvg,
+                          VolumeGeometry *svg, int32 isDiff )
+{
+  int32 ii, nEPV, nEPS, dim, nQP, ret = RET_OK;
+  FMField *ftg = 0, *gtf = 0;
+
+  nQP = vvg->bfGM->nLev;
+  dim = vvg->bfGM->nRow;
+  nEPS = svg->bfGM->nCol;
+  nEPV = vbf->nCol;
+
+  if (isDiff == 1) {
+    fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, nEPS );
+  } else {
+    fmf_createAlloc( &gtf, 1, nQP, nEPS, 1 );
+  }
+
+  for (ii = 0; ii < out->nCell; ii++) {
+    FMF_SetCell( out, ii );
+    if (coef->nCell > 1) {
+      FMF_SetCell( coef, ii );
+    }
+    FMF_SetCell( svg->bfGM, ii );
+    FMF_SetCell( vvg->det, ii );
+
+    if (isDiff == 1) {
+      bf_actt( ftg, vbf, svg->bfGM );
+      fmf_mul( ftg, coef->val );
+
+      fmf_sumLevelsTMulF( out, ftg, vvg->det->val );
+    } else {
+      FMF_SetCell( val_qp, ii );
+
+      fmf_mulATB_nn( gtf, svg->bfGM, val_qp );
+      fmf_mul( gtf, coef->val );
+      fmf_sumLevelsMulF( out, gtf, vvg->det->val );
+    }
+    ERR_CheckGo( ret );
+  }
+
+ end_label:
+  if (isDiff) {
+    fmf_freeDestroy( &ftg );
+  } else {
+    fmf_freeDestroy( &gtf );
+  }
+
+  return( ret );
+}

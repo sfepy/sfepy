@@ -271,6 +271,16 @@ cdef extern from 'terms.h':
                                 FMField *rbf, FMField *cbf,
                                 SurfaceGeometry *vg, int32 isDiff)
 
+    cdef int32 _dw_v_dot_grad_s_vw \
+         'dw_v_dot_grad_s_vw'(FMField *out, FMField *coef, FMField *grad,
+                              FMField *vbf, VolumeGeometry *vvg,
+                              VolumeGeometry *svg, int32 isDiff)
+
+    cdef int32 _dw_v_dot_grad_s_sw \
+         'dw_v_dot_grad_s_sw'(FMField *out, FMField *coef, FMField *val_qp,
+                              FMField *vbf, VolumeGeometry *vvg,
+                              VolumeGeometry *svg, int32 isDiff)
+
     cdef int32 _term_ns_asm_div_grad \
          'term_ns_asm_div_grad'(FMField *out, FMField *grad,
                                 FMField *viscosity, VolumeGeometry *vg,
@@ -1396,6 +1406,44 @@ def dw_surface_dot_scalar(np.ndarray out not None,
 
     ret = _dw_surface_dot_scalar(_out, _coef, _val_qp, _rbf, _cbf,
                                  cmap.geo, is_diff)
+    return ret
+
+def dw_v_dot_grad_s_vw(np.ndarray out not None,
+                       np.ndarray coef not None,
+                       np.ndarray grad not None,
+                       np.ndarray vbf not None,
+                       CVolumeMapping cmap_v not None,
+                       CVolumeMapping cmap_s not None,
+                       int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _grad[1], _vbf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_grad, grad)
+    array2fmfield3(_vbf, vbf)
+
+    ret = _dw_v_dot_grad_s_vw(_out, _coef, _grad, _vbf,
+                              cmap_v.geo, cmap_s.geo, is_diff)
+    return ret
+
+def dw_v_dot_grad_s_sw(np.ndarray out not None,
+                       np.ndarray coef not None,
+                       np.ndarray val_qp not None,
+                       np.ndarray vbf not None,
+                       CVolumeMapping cmap_v not None,
+                       CVolumeMapping cmap_s not None,
+                       int32 is_diff):
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _val_qp[1], _vbf[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_val_qp, val_qp)
+    array2fmfield3(_vbf, vbf)
+
+    ret = _dw_v_dot_grad_s_sw(_out, _coef, _val_qp, _vbf,
+                              cmap_v.geo, cmap_s.geo, is_diff)
     return ret
 
 def term_ns_asm_div_grad(np.ndarray out not None,
