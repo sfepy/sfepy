@@ -268,8 +268,8 @@ cdef extern from 'terms.h':
 
     cdef int32 _dw_surface_dot_scalar \
         'dw_surface_dot_scalar'(FMField *out, FMField *coef, FMField *val_qp,
-                                 FMField *rbf, FMField *cbf,
-                                 SurfaceGeometry *vg, int32 isDiff)
+                                FMField *rbf, FMField *cbf,
+                                SurfaceGeometry *vg, int32 isDiff)
 
     cdef int32 _term_ns_asm_div_grad \
          'term_ns_asm_div_grad'(FMField *out, FMField *grad,
