@@ -18,15 +18,18 @@ class DotProductVolumeTerm(Term):
         \int_\Omega p r \mbox{ , } \int_\Omega \ul{u} \cdot \ul{w} \\
         \int_\Omega c q p \mbox{ , } \int_\Omega c \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w}
+        \int_\Omega c p r \mbox{ , } \int_\Omega c \ul{u} \cdot \ul{w} \\
+        \int_\Omega \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Omega \ul{u} \cdot \ull{M} \cdot \ul{w}
 
     :Arguments 1:
-        - material : :math:`c` (optional)
+        - material : :math:`c` or :math:`\ull{M}` (optional)
         - virtual  : :math:`q` or :math:`\ul{v}`
         - state    : :math:`p` or :math:`\ul{u}`
 
     :Arguments 2:
-        - material    : :math:`c` (optional)
+        - material    : :math:`c` or :math:`\ull{M}` (optional)
         - parameter_1 : :math:`p` or :math:`\ul{u}`
         - parameter_2 : :math:`r` or :math:`\ul{w}`
     """
@@ -42,16 +45,25 @@ class DotProductVolumeTerm(Term):
 
     @staticmethod
     def d_dot(out, mat, val1_qp, val2_qp, geo):
-        if val1_qp.shape[2] > 1:
-            vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
+        if mat is None:
+            if val1_qp.shape[2] > 1:
+                vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
+
+            else:
+                vec = val1_qp * val2_qp
+
+        elif mat.shape[-1] == 1:
+            if val1_qp.shape[2] > 1:
+                vec = mat * dot_sequences(val1_qp, val2_qp, mode='ATB')
+
+            else:
+                vec = mat * val1_qp * val2_qp
 
         else:
-            vec = val1_qp * val2_qp
+            aux = dot_sequences(mat, val2_qp, mode='AB')
+            vec = dot_sequences(val1_qp, aux, mode='ATB')
 
-        if mat is not None:
-            status = geo.integrate(out, mat * vec)
-        else:
-            status = geo.integrate(out, vec)
+        status = geo.integrate(out, vec)
 
         return status
 
@@ -60,7 +72,8 @@ class DotProductVolumeTerm(Term):
 
         if mat is not None:
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
-            assert_(mat.shape[1:] == (n_qp, 1, 1))
+            assert_((mat.shape[1:] == (n_qp, 1, 1))
+                    or ((mat.shape[1:] == (n_qp, dim, dim)) and (n_c == dim)))
             assert_((mat.shape[0] == 1) or (mat.shape[0] == n_el))
 
     def get_fargs(self, mat, virtual, state,

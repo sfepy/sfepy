@@ -11,21 +11,29 @@ int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
                             FMField *rbf, FMField *cbf, VolumeGeometry *vg,
                             int32 isDiff )
 {
-  int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
-  FMField *ftfu = 0, *ftf1 = 0, *ftf = 0;
+  int32 ii, dim, nc, nQP, nEPR, nEPC, ret = RET_OK;
+  FMField *ftfu = 0, *ftf1 = 0, *ftf = 0,*cf = 0, *cfu = 0;
 
   nQP = vg->bfGM->nLev;
   dim = vg->bfGM->nRow;
   nEPR = rbf->nCol;
   nEPC = cbf->nCol;
+  nc = coef->nCol;
 
   if (isDiff) {
     fmf_createAlloc( &ftf, 1, nQP, nEPR * dim, nEPC * dim );
-    fmf_createAlloc( &ftf1, 1, nQP, nEPR, nEPC );
 
-    fmf_mulATB_nn( ftf1, rbf, cbf );
+    if (nc == 1) {
+      fmf_createAlloc( &ftf1, 1, nQP, nEPR, nEPC );
+      fmf_mulATB_nn( ftf1, rbf, cbf );
+    } else {
+      fmf_createAlloc( &cf, 1, nQP, dim, dim * nEPC );
+    }
   } else {
     fmf_createAlloc( &ftfu, 1, nQP, dim * nEPR, 1 );
+    if (nc > 1) {
+      fmf_createAlloc( &cfu, 1, nQP, dim, 1 );
+    }
   }
 
   for (ii = 0; ii < out->nCell; ii++) {
@@ -36,14 +44,24 @@ int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
     FMF_SetCell( vg->det, ii );
 
     if (isDiff) {
-      bf_buildFTF( ftf, ftf1 );
-      fmf_mul( ftf, coef->val );
+      if (nc == 1) {
+        bf_buildFTF( ftf, ftf1 );
+        fmf_mul( ftf, coef->val );
+      } else {
+        bf_ract( cf, cbf, coef );
+        bf_actt( ftf, rbf, cf );
+      }
       fmf_sumLevelsMulF( out, ftf, vg->det->val );
     } else {
       FMF_SetCell( val_qp, ii );
 
-      bf_actt( ftfu, rbf, val_qp );
-      fmf_mul( ftfu, coef->val );
+      if (nc == 1) {
+        bf_actt( ftfu, rbf, val_qp );
+        fmf_mul( ftfu, coef->val );
+      } else {
+        fmf_mulAB_nn( cfu, coef, val_qp );
+        bf_actt( ftfu, rbf, cfu );
+      }
       fmf_sumLevelsMulF( out, ftfu, vg->det->val );
     }
     ERR_CheckGo( ret );
@@ -51,10 +69,17 @@ int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
 
  end_label:
   if (isDiff) {
-    fmf_freeDestroy( &ftf1 );
     fmf_freeDestroy( &ftf );
+    if (nc == 1) {
+      fmf_freeDestroy( &ftf1 );
+    } else {
+      fmf_freeDestroy( &cf );
+    }
   } else {
     fmf_freeDestroy( &ftfu );
+    if (nc > 1) {
+      fmf_freeDestroy( &cfu );
+    }
   }
 
   return( ret );
