@@ -235,18 +235,25 @@ int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
                           FMField *vbf, VolumeGeometry *vvg,
                           VolumeGeometry *svg, int32 isDiff )
 {
-  int32 ii, nEPV, nEPS, dim, nQP, ret = RET_OK;
-  FMField *ftg = 0;
+  int32 ii, nc, nEPV, nEPS, dim, nQP, ret = RET_OK;
+  FMField *ftg = 0, *cg = 0;
 
   nQP = vvg->bfGM->nLev;
   dim = vvg->bfGM->nRow;
   nEPS = svg->bfGM->nCol;
   nEPV = vbf->nCol;
+  nc = coef->nCol;
 
   if (isDiff == 1) {
     fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, nEPS );
+    if (nc > 1) {
+      fmf_createAlloc( &cg, 1, nQP, dim, nEPS );
+    }
   } else {
     fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, 1 );
+    if (nc > 1) {
+      fmf_createAlloc( &cg, 1, nQP, dim, 1 );
+    }
   }
 
   for (ii = 0; ii < out->nCell; ii++) {
@@ -259,13 +266,26 @@ int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
     if (isDiff == 1) {
       FMF_SetCell( svg->bfGM, ii );
 
-      bf_actt( ftg, vbf, svg->bfGM );
+      if (nc == 1) {
+        bf_actt( ftg, vbf, svg->bfGM );
+        fmf_mul( ftg, coef->val );
+      } else {
+        // Phi^T C Gc
+        fmf_mulAB_nn( cg, coef, svg->bfGM );
+        bf_actt( ftg, vbf, cg );
+      }
     } else {
       FMF_SetCell( grad, ii );
 
-      bf_actt_c1( ftg, vbf, grad );
+      if (nc == 1) {
+        bf_actt_c1( ftg, vbf, grad );
+        fmf_mul( ftg, coef->val );
+      } else {
+        // Phi^T C Gc s
+        fmf_mulAB_nn( cg, coef, grad );
+        bf_actt( ftg, vbf, cg );
+      }
     }
-    fmf_mul( ftg, coef->val );
     fmf_sumLevelsMulF( out, ftg, vvg->det->val );
 
     ERR_CheckGo( ret );
@@ -273,6 +293,7 @@ int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
 
  end_label:
   fmf_freeDestroy( &ftg );
+  fmf_freeDestroy( &cg );
 
   return( ret );
 }
@@ -283,18 +304,25 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
                           FMField *vbf, VolumeGeometry *vvg,
                           VolumeGeometry *svg, int32 isDiff )
 {
-  int32 ii, nEPV, nEPS, dim, nQP, ret = RET_OK;
-  FMField *ftg = 0, *gtf = 0;
+  int32 ii, nc, nEPV, nEPS, dim, nQP, ret = RET_OK;
+  FMField *gtf = 0, *ctf = 0;
 
   nQP = vvg->bfGM->nLev;
   dim = vvg->bfGM->nRow;
   nEPS = svg->bfGM->nCol;
   nEPV = vbf->nCol;
+  nc = coef->nCol;
 
   if (isDiff == 1) {
-    fmf_createAlloc( &ftg, 1, nQP, dim * nEPV, nEPS );
+    fmf_createAlloc( &gtf, 1, nQP, nEPS, dim * nEPV );
+    if (nc > 1) {
+      fmf_createAlloc( &ctf, 1, nQP, dim, dim * nEPV );
+    }
   } else {
     fmf_createAlloc( &gtf, 1, nQP, nEPS, 1 );
+    if (nc > 1) {
+      fmf_createAlloc( &ctf, 1, nQP, dim, 1 );
+    }
   }
 
   for (ii = 0; ii < out->nCell; ii++) {
@@ -306,26 +334,33 @@ int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
     FMF_SetCell( vvg->det, ii );
 
     if (isDiff == 1) {
-      bf_actt( ftg, vbf, svg->bfGM );
-      fmf_mul( ftg, coef->val );
-
-      fmf_sumLevelsTMulF( out, ftg, vvg->det->val );
+      if (nc == 1) {
+        bf_ract( gtf, vbf, svg->bfGM );
+        fmf_mul( gtf, coef->val );
+      } else {
+        // Gc^T C^T Phi.
+        bf_ract( ctf, vbf, coef );
+        fmf_mulATB_nn( gtf, svg->bfGM, ctf );
+      }
     } else {
       FMF_SetCell( val_qp, ii );
 
-      fmf_mulATB_nn( gtf, svg->bfGM, val_qp );
-      fmf_mul( gtf, coef->val );
-      fmf_sumLevelsMulF( out, gtf, vvg->det->val );
+      if (nc == 1) {
+        fmf_mulATB_nn( gtf, svg->bfGM, val_qp );
+        fmf_mul( gtf, coef->val );
+      } else {
+        // Gc^T C^T Phi v.
+        fmf_mulATB_nn( ctf, coef, val_qp );
+        fmf_mulATB_nn( gtf, svg->bfGM, ctf );
+      }
     }
+    fmf_sumLevelsMulF( out, gtf, vvg->det->val );
     ERR_CheckGo( ret );
   }
 
  end_label:
-  if (isDiff) {
-    fmf_freeDestroy( &ftg );
-  } else {
-    fmf_freeDestroy( &gtf );
-  }
+  fmf_freeDestroy( &gtf );
+  fmf_freeDestroy( &ctf );
 
   return( ret );
 }

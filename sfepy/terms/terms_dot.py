@@ -277,23 +277,24 @@ class VectorDotGradScalarTerm(Term):
 
     .. math::
         \int_{\Omega} \ul{v} \cdot \nabla p \mbox{ , }
-        \int_{\Omega} \ul{u} \cdot \nabla q
-        \mbox{ or }
+        \int_{\Omega} \ul{u} \cdot \nabla q \\
         \int_{\Omega} c \ul{v} \cdot \nabla p \mbox{ , }
-        \int_{\Omega} c \ul{u} \cdot \nabla q
+        \int_{\Omega} c \ul{u} \cdot \nabla q \\
+        \int_{\Omega} \ul{v} \cdot \ull{M} \cdot \nabla p \mbox{ , }
+        \int_{\Omega} \ul{u} \cdot \ull{M} \cdot \nabla q
 
     :Arguments 1:
-        - material : :math:`c` (optional)
+        - material : :math:`c` or :math:`\ull{M}` (optional)
         - virtual  : :math:`\ul{v}`
         - state    : :math:`\ul{p}`
 
     :Arguments 2:
-        - material : :math:`c` (optional)
+        - material : :math:`c` or :math:`\ull{M}` (optional)
         - state    : :math:`\ul{u}`
         - virtual  : :math:`\ul{q}`
 
     :Arguments 3:
-        - material    : :math:`c` (optional)
+        - material    : :math:`c` or :math:`\ull{M}` (optional)
         - parameter_v : :math:`\ul{u}`
         - parameter_s : :math:`p`
     """
@@ -302,6 +303,16 @@ class VectorDotGradScalarTerm(Term):
                  ('opt_material', 'state', 'virtual'),
                  ('opt_material', 'parameter_v', 'parameter_s'))
     modes = ('v_weak', 's_weak', 'eval')
+
+    def check_shapes(self, coef, vvar, svar):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(vvar)
+        assert_(n_c == dim)
+        assert_(svar.n_components == 1)
+
+        if coef is not None:
+            assert_((coef.shape[1:] == (n_qp, 1, 1))
+                    or (coef.shape[1:] == (n_qp, dim, dim)))
+            assert_((coef.shape[0] == 1) or (coef.shape[0] == n_el))
 
     def get_fargs(self, coef, vvar, svar,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
