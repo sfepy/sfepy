@@ -346,13 +346,16 @@ class Variables( Container ):
         for var in self.iter_state():
             var.apply_ic(vec, self.di.indx[var.name].start, force_values)
 
-    def strip_state_vector(self, vec, follow_epbc=True):
+    def strip_state_vector(self, vec, follow_epbc=False):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
-        If 'follow_epbc' is True, values of EPBC master dofs are not
-        simply thrown away, but added to the corresponding slave dofs,
-        just like when assembling.
+        Notes
+        -----
+        If 'follow_epbc' is True, values of EPBC master dofs are not simply
+        thrown away, but added to the corresponding slave dofs, just like when
+        assembling. For vectors with state (unknown) variables it should be set
+        to False, for assembled vectors it should be set to True.
         """
         svec = nm.empty((self.adi.ptr[-1],), dtype=self.dtype)
         for var in self.iter_state():
@@ -1878,16 +1881,17 @@ class FieldVariable(Variable):
             else:
                 vec[ii] = force_values
 
-    def get_reduced(self, vec, offset=0, follow_epbc=True):
+    def get_reduced(self, vec, offset=0, follow_epbc=False):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
 
         Notes
         -----
-        The full vector starts in `vec` at `offset`. If 'follow_epbc' is
-        True, values of EPBC master DOFs are not simply thrown away, but
-        added to the corresponding slave DOFs, just like when
-        assembling.
+        The full vector starts in `vec` at `offset`. If 'follow_epbc' is True,
+        values of EPBC master DOFs are not simply thrown away, but added to the
+        corresponding slave DOFs, just like when assembling. For vectors with
+        state (unknown) variables it should be set to False, for assembled
+        vectors it should be set to True.
         """
         eq_map = self.eq_map
         ii = offset + eq_map.eqi

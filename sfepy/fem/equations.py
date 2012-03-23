@@ -405,11 +405,16 @@ class Equations( Container ):
     def create_stripped_state_vector(self):
         return self.variables.create_stripped_state_vector()
 
-    def strip_state_vector(self, vec, follow_epbc=True):
+    def strip_state_vector(self, vec, follow_epbc=False):
         """
-        Strip a full vector by removing EBC dofs. If 'follow_epbc' is True,
-        values of EPBC master dofs are not simply thrown away, but added to the
-        corresponding slave dofs, just like when assembling.
+        Strip a full vector by removing EBC dofs.
+
+        Notes
+        -----
+        If 'follow_epbc' is True, values of EPBC master dofs are not simply
+        thrown away, but added to the corresponding slave dofs, just like when
+        assembling. For vectors with state (unknown) variables it should be set
+        to False, for assembled vectors it should be set to True.
         """
         return self.variables.strip_state_vector(vec, follow_epbc=follow_epbc)
 

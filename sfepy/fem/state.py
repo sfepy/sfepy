@@ -122,21 +122,22 @@ class State(Struct):
 
         self.variables.apply_ic(self.vec, force_values=force_values)
 
-    def get_reduced(self, follow_epbc=True):
+    def get_reduced(self, follow_epbc=False):
         """
         Get the reduced DOF vector, with EBC and PBC DOFs removed.
         """
+        strip = self.variables.strip_state_vector
+
         if self.variables.has_lcbc:
             if self.r_vec is None:
-                r_vec = self.variables.strip_state_vector(self.vec)
-                r_vec = self.variables.op_lcbc.T *  r_vec
+                r_vec = strip(self.vec, follow_epbc=follow_epbc)
+                r_vec = self.variables.op_lcbc.T * r_vec
 
             else:
                 r_vec = self.r_vec
 
         else:
-            r_vec = self.variables.strip_state_vector(self.vec,
-                                                      follow_epbc=follow_epbc)
+            r_vec = strip(self.vec, follow_epbc=follow_epbc)
 
         return r_vec
 
