@@ -75,7 +75,7 @@ Surface extraction:
 
 Applications (look at the Dependencies!):
 - phononic materials:
-  './eigen.py -p examples/phononic/band_gaps.py'
+  './phonon.py -p examples/phononic/band_gaps.py'
      ... see examples/phononic/output/
 
 - schroedinger.py (order is important below):

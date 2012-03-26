@@ -147,7 +147,7 @@ def setup_package():
     fdo.close()
 
     main_scripts = [
-        'eigen.py',
+        'phonon.py',
         'extractor.py',
         'findSurf.py',
         'friction_slip.py',

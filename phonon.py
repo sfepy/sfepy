@@ -626,7 +626,7 @@ def main():
         required.remove( 'equations' )
     conf = ProblemConf.from_file( filename_in, required, other )
 
-    app = AcousticBandGapsApp( conf, options, 'eigen:' )
+    app = AcousticBandGapsApp(conf, options, 'phonon:')
     opts = conf.options
     if hasattr( opts, 'parametric_hook' ): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)

@@ -59,7 +59,7 @@ Applications
 
   * ::
 
-      $ ./eigen.py -p examples/phononic/band_gaps.py
+      $ ./phonon.py -p examples/phononic/band_gaps.py
 
     * see ``examples/phononic/output/``
 

@@ -111,11 +111,11 @@ def main():
     out, err = check_output('python ./findSurf.py meshes/quantum/cube.node -')
     eok += report(out, '...', -2, 1, '64247')
 
-    out, err = check_output('python ./eigen.py examples/phononic/band_gaps.py')
+    out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
     eok += report(out, '...', -4, 2, '232.40156299')
     eok += report(out, '...', -3, 1, '132604.79235405]')
 
-    out, err = check_output('python ./eigen.py examples/phononic/band_gaps.py -d')
+    out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py -d')
     eok += report(out, '...', -5, 4, '0.209329,')
 
     out, err = check_output('python ./schroedinger.py --2d --create-mesh')
