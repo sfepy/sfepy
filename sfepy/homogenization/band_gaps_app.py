@@ -43,6 +43,7 @@ class AcousticBandGapsApp(SimpleApp):
     Application for computing acoustic band gaps.
     """
 
+    @staticmethod
     def process_options(options):
         """
         Application options setup. Sets default values for missing
@@ -50,46 +51,16 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        clear_cache = get('clear_cache', {})
-        eigensolver = get('eigensolver', 'eig.sgscipy')
         eig_problem = get('eig_problem', 'simple')
-        schur = get('schur', None)
-
-        elasticity_contrast = get('elasticity_contrast', 1.0)
-        scale_epsilon = get('scale_epsilon', 1.0)
-
-        incident_wave_dir = get('incident_wave_dir', None)
-        dispersion = get('dispersion', 'simple')
-        dispersion_conf = get('dispersion_conf', None)
-        homogeneous = get('homogeneous', False)
-
-        save = get('save_eig_vectors', (0, 0))
-        eig_range = get('eig_range', None)
 
         freq_margins = get('freq_margins', (5, 5))
         # Given in per cent.
         freq_margins = 0.01 * nm.array(freq_margins, dtype=nm.float64)
 
-        fixed_eig_range = get('fixed_eig_range', None)
-
         # Given in per cent.
         freq_step = 0.01 * get('freq_step', 5)
 
-        feps = get('feps', 1e-8)
-        zeps = get('zeps', 1e-8)
-        teps = get('teps', 1e-4)
-        teps_rel = get('teps_rel', True)
-
-        eig_vector_transform = get('eig_vector_transform', None)
-        plot_transform = get('plot_transform', None)
-        plot_transform_wave = get('plot_transform_wave', None)
-        plot_transform_angle = get('plot_transform_angle', None)
-
-        plot_options = get('plot_options', {'show' : True,'legend' : False,})
-
-        fig_name = get('fig_name', None)
-        fig_name_wave = get('fig_name_wave', None)
-        fig_name_angle = get('fig_name_angle', None)
+        default_plot_options = {'show' : True,'legend' : False,}
 
         aux = {
             'resonance' : 'eigenfrequencies',
@@ -157,22 +128,59 @@ class AcousticBandGapsApp(SimpleApp):
         else:
             liquid_region = None
 
-        return Struct(**locals())
-    process_options = staticmethod(process_options)
+        return Struct(clear_cache=get('clear_cache', {}),
+                      eigensolver=get('eigensolver', 'eig.sgscipy'),
+                      eig_problem=eig_problem,
+                      schur=get('schur', None),
 
+                      elasticity_contrast=get('elasticity_contrast', 1.0),
+                      scale_epsilon=get('scale_epsilon', 1.0),
+
+                      incident_wave_dir=get('incident_wave_dir', None),
+                      dispersion=get('dispersion', 'simple'),
+                      dispersion_conf=get('dispersion_conf', None),
+                      homogeneous=get('homogeneous', False),
+
+                      save=get('save_eig_vectors', (0, 0)),
+                      eig_range=get('eig_range', None),
+                      freq_margins=freq_margins,
+                      fixed_eig_range=get('fixed_eig_range', None),
+                      freq_step=freq_step,
+
+                      feps=get('feps', 1e-8),
+                      zeps=get('zeps', 1e-8),
+                      teps=get('teps', 1e-4),
+                      teps_rel=get('teps_rel', True),
+
+                      eigenmomentum=eigenmomentum,
+                      region_to_material=region_to_material,
+                      tensor_names=tensor_names,
+                      volume=volume,
+                      liquid_region=liquid_region,
+
+                      eig_vector_transform=get('eig_vector_transform', None),
+                      plot_transform=get('plot_transform', None),
+                      plot_transform_wave=get('plot_transform_wave', None),
+                      plot_transform_angle=get('plot_transform_angle', None),
+
+                      plot_options=get('plot_options', default_plot_options),
+
+                      fig_name=get('fig_name', None),
+                      fig_name_wave=get('fig_name_wave', None),
+                      fig_name_angle=get('fig_name_angle', None),
+
+                      plot_labels=plot_labels,
+                      plot_labels_angle=plot_labels_angle,
+                      plot_labels_wave=plot_labels_wave,
+                      plot_rsc=plot_rsc)
+
+    @staticmethod
     def process_options_pv(options):
-        """Application options setup for phase velocity computation. Sets
-        default values for missing non-compulsory options."""
+        """
+        Application options setup for phase velocity computation. Sets default
+        values for missing non-compulsory options.
+        """
         get = options.get_default_attr
-
-        clear_cache = get('clear_cache', {})
-        eigensolver = get('eigensolver', 'eig.sgscipy')
-
-        incident_wave_dir = get('incident_wave_dir', None)
-        dispersion = get('dispersion', 'simple')
-        dispersion_conf = get('dispersion_conf', None)
-        homogeneous = get('homogeneous', False)
-        fig_suffix = get('fig_suffix', '.pdf')
 
         region_to_material = get('region_to_material', None,
                                  'missing "region_to_material" in options!')
@@ -182,8 +190,18 @@ class AcousticBandGapsApp(SimpleApp):
 
         volume = get('volume', None, 'missing "volume" in options!')
 
-        return Struct(**locals())
-    process_options_pv = staticmethod(process_options_pv)
+        return Struct(clear_cache=get('clear_cache', {}),
+                      eigensolver=get('eigensolver', 'eig.sgscipy'),
+
+                      incident_wave_dir=get('incident_wave_dir', None),
+                      dispersion=get('dispersion', 'simple'),
+                      dispersion_conf=get('dispersion_conf', None),
+                      homogeneous=get('homogeneous', False),
+                      fig_suffix=get('fig_suffix', '.pdf'),
+
+                      region_to_material=region_to_material,
+                      tensor_names=tensor_names,
+                      volume=volume)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
