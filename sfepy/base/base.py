@@ -1072,6 +1072,12 @@ def dict_extend( d1, d2 ):
     for key, val in d1.iteritems():
         val.extend( d2[key] )
 
+def get_subdict(adict, keys):
+    """
+    Get a sub-dictionary of `adict` with given `keys`.
+    """
+    return dict((key, adict[key]) for key in keys if key in adict)
+
 def set_defaults( dict_, defaults ):
     for key, val in defaults.iteritems():
         dict_.setdefault( key, val )
