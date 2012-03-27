@@ -2,14 +2,116 @@ import time
 
 import numpy as nm
 import numpy.linalg as nla
+import scipy as sc
 
 from sfepy.base.base import output, get_default, assert_, Struct
 from sfepy.base.plotutils import plt
 from sfepy.solvers import eig
 from sfepy.base.progressbar import MyBar
 from sfepy.fem.evaluate import eval_equations
-from sfepy.homogenization.coefs_base import MiniAppBase
+from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
+
+class SimpleEVP(CorrMiniApp):
+    """
+    Simple eigenvalue problem.
+    """
+
+    def process_options(self):
+        get = self.options.get
+
+        return Struct(eigensolver=get('eigensolver', 'eig.sgscipy'),
+                      elasticity_contrast=get('elasticity_contrast', 1.0),
+                      scale_epsilon=get('scale_epsilon', 1.0),
+                      save_eig_vectors=get('save_eig_vectors', (0, 0)))
+
+    def __call__(self, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
+
+        problem.set_equations(self.equations)
+
+        problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
+                           lcbc_names=self.get_default_attr('lcbcs', []))
+
+        problem.update_materials(problem.ts)
+
+        self.init_solvers(problem)
+
+        #variables = problem.get_variables()
+
+        mtx_a = problem.evaluate(self.equations['lhs'], mode='weak',
+                                 auto_init=True, dw_mode='matrix')
+
+        mtx_m = problem.evaluate(self.equations['rhs'], mode='weak',
+                                 dw_mode='matrix')
+
+        output('computing resonance frequencies...')
+        tt = [0]
+
+        if isinstance(mtx_a, sc.sparse.spmatrix):
+            mtx_a = mtx_a.toarray()
+        if isinstance(mtx_m, sc.sparse.spmatrix):
+            mtx_m = mtx_m.toarray()
+
+        eigs, mtx_s_phi = eig(mtx_a, mtx_m, return_time=tt,
+                              method=opts.eigensolver)
+        eigs[eigs<0.0] = 0.0
+        output('...done in %.2f s' % tt[0])
+        output('original eigenfrequencies:')
+        output(eigs)
+        opts = self.app_options
+        epsilon2 = opts.scale_epsilon * opts.scale_epsilon
+        eigs_rescaled = (opts.elasticity_contrast / epsilon2)  * eigs
+        output('rescaled eigenfrequencies:')
+        output(eigs_rescaled)
+        output('number of eigenfrequencies: %d' % eigs.shape[0])
+
+        try:
+            assert_(nm.isfinite(eigs).all())
+        except ValueError:
+            from sfepy.base.base import debug; debug()
+
+        n_eigs = eigs.shape[0]
+
+        variables = problem.get_variables()
+
+        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
+                           dtype=nm.float64)
+
+        make_full = variables.make_full_vec
+        for ii in xrange(n_eigs):
+            mtx_phi[:,ii] = make_full(mtx_s_phi[:,ii])
+
+        self.save(eigs, mtx_phi, problem)
+
+        evp = Struct(name='evp', eigs=eigs, eigs_rescaled=eigs_rescaled,
+                     eig_vectors=mtx_phi)
+
+        return evp
+
+    def save(self, eigs, mtx_phi, problem):
+        save = self.app_options.save_eig_vectors
+
+        n_eigs = eigs.shape[0]
+
+        out = {}
+        state = problem.create_state()
+        for ii in xrange(n_eigs):
+            if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
+            state.set_full(mtx_phi[:,ii], force=True)
+            aux = state.create_output_dict()
+            for name, val in aux.iteritems():
+                out[name+'%03d' % ii] = val
+
+        if self.post_process_hook is not None:
+            out = self.post_process_hook(out, problem, mtx_phi)
+
+        problem.domain.mesh.write(self.save_name + '.vtk', io='auto', out=out)
+
+        fd = open(self.save_name + '_eigs.txt', 'w')
+        eigs.tofile(fd, ' ')
+        fd.close()
 
 class DensityVolumeInfo(MiniAppBase):
     """
