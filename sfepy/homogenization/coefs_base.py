@@ -33,6 +33,21 @@ class MiniAppBase(Struct):
         self.set_default_attr('term_mode', None)
         self.set_default_attr('set_volume', 'total')
 
+        # Application-specific options.
+        self.app_options = self.process_options()
+
+    def process_options(self):
+        """
+        Setup application-specific options.
+
+        Subclasses should implement this method as needed.
+
+        Returns
+        -------
+        app_options : Struct instance
+            The application options.
+        """
+
     def init_solvers(self, problem):
         """For linear problems, assemble the matrix and try to presolve the
         linear system."""
@@ -89,6 +104,7 @@ class CorrMiniApp(MiniAppBase):
                                                          self.save_name))
         self.dump_name = os.path.normpath(os.path.join(self.output_dir,
                                                          self.dump_name))
+
     def setup_output(self, save_format=None, dump_format=None,
                       post_process_hook=None, file_per_var=None):
         """Instance attributes have precedence!"""
