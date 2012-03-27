@@ -19,6 +19,25 @@ class Volume(MiniAppBase):
 
         return volume
 
+def get_volume_from_options(options, problem):
+    volume = {}
+
+    if hasattr(options, 'volumes') and (options.volumes is not None):
+        for vk, vv in options.volumes.iteritems():
+            if 'value' in vv:
+                volume[vk] = nm.float64(vv['value'])
+            else:
+                volume[vk] = Volume('volume', problem, vv)()
+
+    elif hasattr(options, 'volume') and (options.volume is not None):
+            if 'value' in options.volume:
+                vol = nm.float64(options.volume['value'])
+            else:
+                vol = Volume('volume', problem, options.volume)()
+            volume['total'] = vol
+
+    return volume
+
 class HomogenizationApp( HomogenizationEngine ):
 
     @staticmethod
@@ -65,20 +84,7 @@ class HomogenizationApp( HomogenizationEngine ):
     def call(self, ret_all=False, verbose=False):
         opts = self.app_options
 
-        volume = {}
-        if opts.volumes is not None:
-            for vk, vv in opts.volumes.iteritems():
-                if 'value' in vv:
-                    volume[vk] = nm.float64(vv['value'])
-                else:
-                    volume[vk] = Volume('volume', self.problem, vv)()
-        else:
-            if opts.volume is not None:
-                if 'value' in opts.volume:
-                    vol = nm.float64(opts.volume['value'])
-                else:
-                    vol = Volume('volume', self.problem, opts.volume)()
-                volume['total'] = vol
+        volume = get_volume_from_options(opts, self.problem)
 
         for vk, vv in volume.iteritems():
             output('volume: %s = %.2f' % (vk, vv))
