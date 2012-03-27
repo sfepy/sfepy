@@ -1,6 +1,6 @@
 from copy import copy, deepcopy
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import SimpleApp, Application
 from sfepy.fem.region import sort_by_dependency
 from coefs_base import MiniAppBase
@@ -48,13 +48,13 @@ class HomogenizationEngine( SimpleApp ):
                       save_format=get('save_format', 'vtk'),
                       dump_format=get('dump_format', 'h5'))
 
-    def __init__( self, problem, options,
-                  volume = None, output_prefix = 'he:', **kwargs ):
+    def __init__(self, problem, options, app_options=None,
+                 volume=None, output_prefix='he:', **kwargs):
         """Bypasses SimpleApp.__init__()!"""
         Application.__init__( self, problem.conf, options, output_prefix,
                               **kwargs )
         self.problem = problem
-        self.setup_options()
+        self.setup_options(app_options=app_options)
         self.setup_output_info( self.problem, self.options )
 
         if volume is None:
@@ -63,10 +63,12 @@ class HomogenizationEngine( SimpleApp ):
         else:
             self.volume = volume
 
-    def setup_options( self ):
-        SimpleApp.setup_options( self )
+    def setup_options(self, app_options=None):
+        SimpleApp.setup_options(self)
+        app_options = get_default(app_options, self.conf.options)
+
         po = HomogenizationEngine.process_options
-        self.app_options += po( self.conf.options )
+        self.app_options += po(app_options)
 
     def compute_requirements( self, requirements, dependencies, store ):
         problem = self.problem
