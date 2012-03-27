@@ -37,18 +37,16 @@ def insert_sub_reqs( reqs, levels, req_info ):
 
 class HomogenizationEngine( SimpleApp ):
 
-    def process_options( options ):
+    @staticmethod
+    def process_options(options):
         get = options.get_default_attr
-        
-        coefs = get( 'coefs', None, 'missing "coefs" in options!' )
-        requirements = get( 'requirements', None,
-                            'missing "requirements" in options!' )
 
-        save_format = get( 'save_format', 'vtk' )
-        dump_format = get( 'dump_format', 'h5' )
-
-        return Struct( **locals() )
-    process_options = staticmethod( process_options )
+        return Struct(coefs=get('coefs', None,
+                                'missing "coefs" in options!'),
+                      requirements=get('requirements', None,
+                                       'missing "requirements" in options!'),
+                      save_format=get('save_format', 'vtk'),
+                      dump_format=get('dump_format', 'h5'))
 
     def __init__( self, problem, options,
                   volume = None, output_prefix = 'he:', **kwargs ):
