@@ -141,6 +141,10 @@ class HomogenizationEngine( SimpleApp ):
                 graph[coef_name] = [0]
 
             requires = cargs.get('requires', [])
+            if requires:
+                # Store original list to preserve its ordering.
+                cargs['_requires'] = copy(requires)
+
             for parent in _get_parents(requires):
                 graph[coef_name].append(parent)
                 requires.remove('c.' + parent)
@@ -157,12 +161,14 @@ class HomogenizationEngine( SimpleApp ):
 
             self.compute_requirements( requires, dependencies, store_filenames )
 
-            mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
             if len(graph[coef_name]) > 1:
+                requires[:] = cargs['_requires']
                 for name in graph[coef_name][1:]:
                     key = 'c.' + name
-                    requires.append(key)
                     dependencies[key] = getattr(coefs, name)
+            cargs.pop('_requires', None)
+
+            mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
 
             problem.clear_equations()
 
