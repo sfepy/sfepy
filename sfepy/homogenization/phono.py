@@ -3,12 +3,57 @@ import time
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import output, assert_, Struct
+from sfepy.base.base import output, get_default, assert_, Struct
 from sfepy.base.plotutils import plt
 from sfepy.solvers import eig
 from sfepy.base.progressbar import MyBar
 from sfepy.fem.evaluate import eval_equations
+from sfepy.homogenization.coefs_base import MiniAppBase
 from sfepy.homogenization.utils import coor_to_sym
+
+class DensityVolumeInfo(MiniAppBase):
+    """
+    Determine densities of regions specified in `region_to_material`, and
+    compute average density based on region volumes.
+    """
+
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+
+        vf = data[self.requires[0]]
+
+        average_density = 0.0
+        total_volume = 0.0
+        volumes = {}
+        densities = {}
+        for region_name, aux in self.region_to_material.iteritems():
+            vol = vf['volume_' + region_name]
+
+            mat_name, item_name = aux
+            conf = problem.conf.get_item_by_name('materials', mat_name)
+            density = conf.values[item_name]
+
+            output('region %s: volume %f, density %f' % (region_name,
+                                                         vol, density))
+
+            volumes[region_name] = vol
+            densities[region_name] = density
+
+            average_density += vol * density
+            total_volume += vol
+
+        true_volume = self._get_volume(volume)
+        assert_(abs(total_volume - true_volume) / true_volume < 1e-14)
+
+        output('total volume:', true_volume)
+
+        average_density /= true_volume
+
+        return Struct(name='density_volume_info',
+                      average_density=average_density,
+                      total_volume=total_volume,
+                      volumes=volumes,
+                      densities=densities)
 
 class AcousticMassTensor( Struct ):
 
@@ -135,37 +180,6 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
         mode += '_full'
 
     return eval( mode + '_callback' )
-
-def compute_density_volume_info( pb, get_volume, region_to_material ):
-    """Computes volumes, densities of regions specified in
-    `region_to_material`, average density and total volume."""
-    average_density = 0.0
-    total_volume = 0.0
-    volumes = {}
-    densities = {}
-    for region_name, mat_name in region_to_material.iteritems():
-        vol = get_volume(pb, region_name)
-
-        conf = pb.conf.get_item_by_name('materials', mat_name)
-        density = conf.values['density']
-
-        output( 'region %s: volume %f, density %f' % (region_name,
-                                                      vol, density ) )
-
-        volumes[region_name] = vol
-        densities[region_name] = density
-
-        average_density += vol * density
-        total_volume += vol
-    output( 'total volume:', total_volume )
-
-    average_density /= total_volume
-
-    return Struct( name = 'density_volume_info',
-                   average_density = average_density,
-                   total_volume = total_volume,
-                   volumes = volumes,
-                   densities = densities )
 
 def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
                           transform = None, pbar = None ):
