@@ -4,13 +4,57 @@ import numpy as nm
 import numpy.linalg as nla
 import scipy as sc
 
-from sfepy.base.base import output, get_default, assert_, Struct
+from sfepy.base.base import output, get_default, dict_to_struct, assert_, Struct
 from sfepy.base.plotutils import plt
 from sfepy.solvers import eig
 from sfepy.base.progressbar import MyBar
+from sfepy.linalg import norm_l2_along_axis
 from sfepy.fem.evaluate import eval_equations
 from sfepy.homogenization.coefs_base import MiniAppBase, CorrMiniApp
 from sfepy.homogenization.utils import coor_to_sym
+
+def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
+                         transform=None, progress_bar=None):
+    """
+    Compute the eigenmomenta corresponding to given eigenvectors.
+    """
+    n_dof, n_eigs = eig_vectors.shape
+
+    equations, variables = problem.create_evaluable(em_equation)
+    var = variables[var_name]
+
+    n_c = var.n_components
+    eigenmomenta = nm.empty((n_eigs, n_c), dtype=nm.float64)
+
+    if progress_bar is not None:
+        progress_bar.init(n_eigs - 1)
+
+    for ii in xrange(n_eigs):
+        if progress_bar is not None:
+            progress_bar.update(ii)
+
+        else:
+            if (ii % 100) == 0:
+                output('%d of %d (%f%%)' % (ii, n_eigs,
+                                            100. * ii / (n_eigs - 1)))
+
+        if transform is None:
+            vec_phi, is_zero = eig_vectors[:,ii], False
+
+        else:
+            vec_phi, is_zero = transform(eig_vectors[:,ii], (n_dof / n_c, n_c))
+
+        if is_zero:
+            eigenmomenta[ii, :] = 0.0
+
+        else:
+            var.data_from_any(vec_phi.copy())
+
+            val = eval_equations(equations, variables)
+
+            eigenmomenta[ii, :] = val
+
+    return eigenmomenta
 
 class SimpleEVP(CorrMiniApp):
     """
@@ -157,6 +201,82 @@ class DensityVolumeInfo(MiniAppBase):
                       volumes=volumes,
                       densities=densities)
 
+class Eigenmomenta(MiniAppBase):
+    """
+    Eigenmomenta corresponding to eigenvectors.
+
+    Parameters
+    ----------
+    var_name : str
+        The name of the variable used in the integral.
+    threshold : float
+        The threshold under which an eigenmomentum is considered zero.
+    threshold_is_relative : bool
+        If True, the `threshold` is relative w.r.t. max. norm of eigenmomenta.
+    transform : callable, optional
+        Optional function for transforming the eigenvectors before computing
+        the eigenmomenta.
+    progress_bar : bool
+        If True, use a progress bar to show computation progress.
+
+    Returns
+    -------
+    eigenmomenta : Struct
+        The resulting eigenmomenta. An eigenmomentum above threshold is marked
+        by the attribute 'valid' set to True.
+    """
+
+    def process_options(self):
+        options = dict_to_struct(self.options)
+        get = options.get_default_attr
+
+        return Struct(var_name=get('var_name', None,
+                                   'missing "var_name" in options!'),
+                      threshold=get('threshold', 1e-4),
+                      threshold_is_relative=get('threshold_is_relative', True),
+                      transform=get('transform', None),
+                      progress_bar=get('progress_bar', True))
+
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
+
+        evp, dv_info = [data[ii] for ii in self.requires]
+
+        output('computing eigenmomenta...')
+        if opts.progress_bar:
+            progress_bar = MyBar('progress:')
+
+        else:
+            progress_bar = None
+
+        tt = time.clock()
+        eigenmomenta = compute_eigenmomenta(self.expression, opts.var_name,
+                                            problem, evp.eig_vectors,
+                                            opts.transform, progress_bar)
+        output('...done in %.2f s' % (time.clock() - tt))
+
+        n_eigs = evp.eigs.shape[0]
+
+        mag = norm_l2_along_axis(eigenmomenta)
+
+        if opts.threshold_is_relative:
+            tol = opts.threshold * mag.max()
+        else:
+            tol = opts.threshold
+
+        valid = nm.where(mag < tol, False, True)
+        mask = nm.where(valid == False)[0]
+        eigenmomenta[mask, :] = 0.0
+        n_zeroed = mask.shape[0]
+
+        output('%d of %d eigenmomenta zeroed (under %.2e)'\
+                % (n_zeroed, n_eigs, tol))
+
+        out = Struct(name='eigenmomenta', n_zeroed=n_zeroed,
+                     eigenmomenta=eigenmomenta, valid=valid)
+        return out
+
 class AcousticMassTensor( Struct ):
 
     def __init__( self, eigenmomenta, eigs, dv_info ):
@@ -282,110 +402,6 @@ def get_callback( mass, method, christoffel = None, mode = 'trace' ):
         mode += '_full'
 
     return eval( mode + '_callback' )
-
-def compute_eigenmomenta( em_equation, u_name, pb, eig_vectors,
-                          transform = None, pbar = None ):
-    dim = pb.domain.mesh.dim
-    n_dof, n_eigs = eig_vectors.shape
-
-    eigenmomenta = nm.empty( (n_eigs, dim), dtype = nm.float64 )
-
-    equations, variables = pb.create_evaluable(em_equation)
-
-    var = variables[u_name]
-
-    if pbar is not None:
-        pbar.init( n_eigs - 1 )
-
-    for ii in xrange( n_eigs ):
-        if pbar is not None:
-            pbar.update( ii )
-        else:
-            if (ii % 100) == 0:
-                output( '%d of %d (%f%%)' % (ii, n_eigs,
-                                             100. * ii / (n_eigs - 1)) )
-            
-        if transform is None:
-            vec_phi, is_zero = eig_vectors[:,ii], False
-        else:
-            vec_phi, is_zero = transform(eig_vectors[:,ii], (n_dof / dim, dim))
-
-        if is_zero:
-            eigenmomenta[ii,:] = 0.0
-
-        else:
-            var.data_from_any(vec_phi.copy())
-
-            val = eval_equations(equations, variables)
-
-            eigenmomenta[ii,:] = val
-
-    return eigenmomenta
-
-def prepare_eigenmomenta( pb, conf_eigenmomentum, region_to_material,
-                          eig_vectors, threshold, threshold_is_relative,
-                          unweighted = False, transform = None, pbar = None ):
-    """Eigenmomenta.
-
-    unweighted = True: compute also unweighted eigenmomenta needed for applied
-    load tensor
-    
-    Valid == True means an eigenmomentum above threshold."""
-    dim = pb.domain.mesh.dim
-    n_dof, n_eigs = eig_vectors.shape
-    n_nod = n_dof / dim
-
-    u_name = conf_eigenmomentum['var']
-    rnames = conf_eigenmomentum['regions']
-    term = conf_eigenmomentum['term']
-    tt = []
-    materials = pb.get_materials()
-    for rname in rnames:
-        mat = materials[region_to_material[rname]]
-        density = mat.get_constant_data('density')
-        tt.append( term % (density, rname) )
-    em_eq = ' + '.join( tt )
-    output( 'equation:', em_eq )
-
-    eigenmomenta = compute_eigenmomenta( em_eq, u_name, pb, eig_vectors,
-                                         transform, pbar )
-
-    mag = nm.zeros( (n_eigs,), dtype = nm.float64 )
-    for ir in range( dim ):
-        mag += eigenmomenta[:,ir] ** 2
-    mag = nm.sqrt( mag )
-
-    if threshold_is_relative:
-        tol = threshold * mag.max()
-    else:
-        tol = threshold
-        
-    valid = nm.where( mag < tol, False, True )
-    mask = nm.where( valid == False )[0]
-    eigenmomenta[mask,:] = 0.0
-    n_zeroed = mask.shape[0]
-
-    output( '%d of %d eigenmomenta zeroed (under %.2e)'\
-            % (n_zeroed, n_eigs, tol) )
-##     print valid
-##     import plt
-##     plt.plot( eigenmomenta )
-##     plt.show()
-
-    if unweighted:
-        tt = []
-        for rname in rnames:
-            tt.append( term % (1.0, rname, u_name) )
-        uem_eq = ' + '.join( tt )
-        output( 'unweighted:', uem_eq )
-
-        ueigenmomenta = compute_eigenmomenta( uem_eq, u_name, pb, eig_vectors,
-                                     transform, pbar )
-        ueigenmomenta[mask,:] = 0.0
-        return n_zeroed, valid, eigenmomenta, ueigenmomenta
-
-    else:
-        return n_zeroed, valid, eigenmomenta
 
 def compute_cat( coefs, iw_dir, mode = 'simple' ):
     r"""Compute Christoffel acoustic tensor (cat) given the incident wave
