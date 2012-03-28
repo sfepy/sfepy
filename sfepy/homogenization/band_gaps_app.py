@@ -1,18 +1,21 @@
 import os.path as op
 import shutil
+from copy import copy
 
 import numpy as nm
 import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, set_defaults, get_default, assert_
-from sfepy.base.base import debug, Struct
+from sfepy.base.base import Struct
 from sfepy.base.conf import ProblemConf
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.phono import transform_plot_data, plot_logs, \
      plot_gaps, detect_band_gaps, compute_cat, compute_polarization_angles
 from sfepy.homogenization.engine import HomogenizationEngine
+from sfepy.homogenization.homogen_app import get_volume_from_options
+from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import SimpleApp
 from sfepy.solvers import Solver, eig
 from sfepy.base.plotutils import plt
@@ -51,14 +54,13 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        eig_problem = get('eig_problem', 'simple')
+        coefs_basic = get('coefs_basic', None,
+                          'missing "coefs_basic" in options!')
+        coefs_dispersion = get('coefs_dispersion', None,
+                               'missing "coefs_dispersion" in options!')
 
-        freq_margins = get('freq_margins', (5, 5))
-        # Given in per cent.
-        freq_margins = 0.01 * nm.array(freq_margins, dtype=nm.float64)
-
-        # Given in per cent.
-        freq_step = 0.01 * get('freq_step', 5)
+        requirements = get('requirements', None,
+                           'missing "requirements" in options!')
 
         default_plot_options = {'show' : True,'legend' : False,}
 
@@ -111,52 +113,24 @@ class AcousticBandGapsApp(SimpleApp):
         }
         plot_rsc = try_set_defaults(options, 'plot_rsc', plot_rsc)
 
-        eigenmomentum = get('eigenmomentum', None,
-                            'missing "eigenmomentum" in options!')
-
-        region_to_material = get('region_to_material', None,
-                                 'missing "region_to_material" in options!')
-
         tensor_names = get('tensor_names', None,
                             'missing "tensor_names" in options!')
 
         volume = get('volume', None, 'missing "volume" in options!')
 
-        if eig_problem == 'simple_liquid':
-            liquid_region = get('liquid_region', None,
-                                'missing "liquid_region" in options!')
-        else:
-            liquid_region = None
-
         return Struct(clear_cache=get('clear_cache', {}),
-                      eigensolver=get('eigensolver', 'eig.sgscipy'),
-                      eig_problem=eig_problem,
-                      schur=get('schur', None),
-
-                      elasticity_contrast=get('elasticity_contrast', 1.0),
-                      scale_epsilon=get('scale_epsilon', 1.0),
+                      coefs_basic=coefs_basic,
+                      coefs_dispersion=coefs_dispersion,
+                      requirements=requirements,
 
                       incident_wave_dir=get('incident_wave_dir', None),
                       dispersion=get('dispersion', 'simple'),
                       dispersion_conf=get('dispersion_conf', None),
                       homogeneous=get('homogeneous', False),
 
-                      save=get('save_eig_vectors', (0, 0)),
                       eig_range=get('eig_range', None),
-                      freq_margins=freq_margins,
-                      fixed_eig_range=get('fixed_eig_range', None),
-                      freq_step=freq_step,
-
-                      feps=get('feps', 1e-8),
-                      zeps=get('zeps', 1e-8),
-                      teps=get('teps', 1e-4),
-                      teps_rel=get('teps_rel', True),
-
-                      eigenmomentum=eigenmomentum,
-                      region_to_material=region_to_material,
                       tensor_names=tensor_names,
                       volume=volume,
-                      liquid_region=liquid_region,
 
                       eig_vector_transform=get('eig_vector_transform', None),
                       plot_transform=get('plot_transform', None),
@@ -182,16 +156,12 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        region_to_material = get('region_to_material', None,
-                                 'missing "region_to_material" in options!')
-
         tensor_names = get('tensor_names', None,
                            'missing "tensor_names" in options!')
 
         volume = get('volume', None, 'missing "volume" in options!')
 
         return Struct(clear_cache=get('clear_cache', {}),
-                      eigensolver=get('eigensolver', 'eig.sgscipy'),
 
                       incident_wave_dir=get('incident_wave_dir', None),
                       dispersion=get('dispersion', 'simple'),
@@ -199,7 +169,6 @@ class AcousticBandGapsApp(SimpleApp):
                       homogeneous=get('homogeneous', False),
                       fig_suffix=get('fig_suffix', '.pdf'),
 
-                      region_to_material=region_to_material,
                       tensor_names=tensor_names,
                       volume=volume)
 
@@ -246,9 +215,43 @@ class AcousticBandGapsApp(SimpleApp):
             # No band gaps in this case.
             return self.compute_phase_velocity()
 
-        evp = self.solve_eigen_problem()
+        opts = self.app_options
 
-        self.fix_eig_range(evp.eigs.shape[0])
+        if options.detect_band_gaps:
+            # Compute basic coefficients and data.
+            coefs_name = opts.coefs_basic
+
+        elif options.analyze_dispersion:
+            # Compute basic + dispersion coefficients and data.
+            conf = self.problem.conf
+
+            coefs = copy(conf.get(opts.coefs_basic, {}))
+            coefs.update(conf.get(opts.coefs_dispersion, {}))
+
+            conf.coefs_all = coefs
+            coefs_name = 'coefs_all'
+
+        else:
+            # Compute only the eigenvalue problems.
+            conf = self.problem.conf
+
+            names = [req for req in conf.get(opts.requirements, [''])
+                     if req.startswith('evp')]
+            coefs = {'dummy' : {'requires' : names,
+                                'class' : CoefDummy,}}
+
+            conf.coefs_dummy = coefs
+            coefs_name = 'coefs_dummy'
+
+        he_options = Struct(coefs=coefs_name, requirements=opts.requirements,
+                            post_process_hook=self.post_process_hook)
+        volume = get_volume_from_options(opts, self.problem)
+
+        he = HomogenizationEngine(self.problem, options,
+                                  app_options=he_options,
+                                  volume=volume)
+        coefs = he()
+
 
         if options.detect_band_gaps:
             bg = detect_band_gaps(self.problem, evp.kind,
