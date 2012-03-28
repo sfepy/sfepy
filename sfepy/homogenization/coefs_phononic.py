@@ -277,53 +277,67 @@ class Eigenmomenta(MiniAppBase):
                      eigenmomenta=eigenmomenta, valid=valid)
         return out
 
-class AcousticMassTensor( Struct ):
+class AcousticMassTensor(MiniAppBase):
+    """
+    The acoustic mass tensor for a given frequency.
 
-    def __init__( self, eigenmomenta, eigs, dv_info ):
-        Struct.__init__( self, eigenmomenta = eigenmomenta,
-                         eigs = eigs, dv_info = dv_info )
+    Returns
+    -------
+    self : AcousticMassTensor instance
+        This class instance whose `evaluate()` method computes for a given
+        frequency the required tensor.
 
-    def __call__( self, freq ):
-        """`eigenmomenta`, `eigs` should contain only valid resonances."""
+    Notes
+    -----
+    `eigenmomenta`, `eigs` should contain only valid resonances.
+    """
+
+    def __call__(self, volume=None, problem=None, data=None):
+        evp, self.dv_info, ema = [data[ii] for ii in self.requires]
+
+        self.eigs = evp.eigs[ema.valid]
+        self.eigenmomenta = ema.eigenmomenta[ema.valid, :]
+
+        return self
+
+    def evaluate(self, freq):
         ema = self.eigenmomenta
-        eigs = self.eigs
 
-        dim = ema.shape[1]
-        fmass = nm.zeros( (dim, dim), dtype = nm.float64 )
+        n_c = ema.shape[1]
+        fmass = nm.zeros((n_c, n_c), dtype=nm.float64)
 
         num, denom = self.get_coefs(freq)
         if not nm.isfinite(denom).all():
             raise ValueError('frequency %e too close to resonance!' % freq)
 
-        for ir in range( dim ):
-            for ic in range( dim ):
+        for ir in range(n_c):
+            for ic in range(n_c):
                 if ir <= ic:
-                    val = nm.sum((num / denom) * (ema[:,ir] * ema[:,ic]))
-                    fmass[ir,ic] += val
+                    val = nm.sum((num / denom) * (ema[:, ir] * ema[:, ic]))
+                    fmass[ir, ic] += val
                 else:
-                    fmass[ir,ic] = fmass[ic,ir]
+                    fmass[ir, ic] = fmass[ic, ir]
 
-        eye = nm.eye( dim, dim, dtype = nm.float64 )
+        eye = nm.eye(n_c, n_c, dtype=nm.float64)
         mtx_mass = (eye * self.dv_info.average_density) \
                    - (fmass / self.dv_info.total_volume)
 
         return mtx_mass
 
     def get_coefs(self, freq):
-        """Get frequency-dependent coefficients."""
+        """
+        Get frequency-dependent coefficients.
+        """
         f2 = freq*freq
         de = f2 - self.eigs
         return f2, de
-        
+
 class AcousticMassLiquidTensor(AcousticMassTensor):
 
-    def __init__(self, eigenmomenta, eigs, dv_info, gamma, eta):
-        Struct.__init__(self, eigenmomenta = eigenmomenta,
-                        eigs = eigs, dv_info = dv_info,
-                        gamma = gamma, eta = eta)
-
     def get_coefs(self, freq):
-        """Get frequency-dependent coefficients."""
+        """
+        Get frequency-dependent coefficients.
+        """
         eigs = self.eigs
 
         f2 = freq*freq
@@ -331,32 +345,48 @@ class AcousticMassLiquidTensor(AcousticMassTensor):
         num = f2 * aux
         denom = aux*aux + f2*(self.eta*self.eta)*nm.power(eigs, 2.0)
         return num, denom
-    
-class AppliedLoadTensor( Struct ):
 
-    def __init__( self, eigenmomenta, ueigenmomenta, eigs, dv_info ):
-        Struct.__init__( self, eigenmomenta = eigenmomenta,
-                         eigs = eigs, dv_info = dv_info )
+class AppliedLoadTensor(MiniAppBase):
+    """
+    The applied load tensor for a given frequency.
 
+    Returns
+    -------
+    self : AppliedLoadTensor instance
+        This class instance whose `evaluate()` method computes for a given
+        frequency the required tensor.
 
-    def __call__( self, freq ):
-        """`eigenmomenta`, `ueigenmomenta`, `eigs` should contain only valid
-        resonances."""
+    Notes
+    -----
+    `eigenmomenta`, `ueigenmomenta`, `eigs` should contain only valid
+    resonances.
+    """
+
+    def __call__(self, volume=None, problem=None, data=None):
+        evp, self.dv_info, ema, uema = [data[ii] for ii in self.requires]
+
+        self.eigs = evp.eigs[ema.valid]
+        self.eigenmomenta = ema.eigenmomenta[ema.valid, :]
+        self.ueigenmomenta = uema.eigenmomenta[uema.valid, :]
+
+        return self
+
+    def evaluate(self, freq):
         ema, uema = self.eigenmomenta, self.ueigenmomenta
 
-        dim = ema.shape[1]
-        fload = nm.zeros( (dim, dim), dtype = nm.float64 )
+        n_c = ema.shape[1]
+        fload = nm.zeros((n_c, n_c), dtype=nm.float64)
 
         de = (freq**2) - (self.eigs)
-        if not nm.isfinite( de ).all():
-            raise ValueError( 'frequency %e too close to resonance!' % freq )
+        if not nm.isfinite(de).all():
+            raise ValueError('frequency %e too close to resonance!' % freq)
 
-        for ir in range( dim ):
-            for ic in range( dim ):
-                val = nm.sum( ema[:,ir] * uema[:,ic] / de )
-                fload[ir,ic] += (freq**2) * val
+        for ir in range(n_c):
+            for ic in range(n_c):
+                val = nm.sum(ema[:, ir] * uema[:, ic] / de)
+                fload[ir, ic] += (freq**2) * val
 
-        eye = nm.eye( (dim, dim), dtype = nm.float64 )
+        eye = nm.eye((n_c, n_c), dtype=nm.float64)
 
         mtx_load = eye - (fload / self.dv_info.total_volume)
 
