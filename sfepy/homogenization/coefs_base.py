@@ -787,6 +787,14 @@ class TCorrectorsViaPressureEVP(CorrMiniApp):
 
         return ok
 
+class CoefDummy(MiniAppBase):
+    """
+    Dummy class serving for computing and returning its requirements.
+    """
+
+    def __call__(self, volume=None, problem=None, data=None):
+        return data
+
 class TSTimes(MiniAppBase):
     """Coefficient-like class, returns times of the time stepper."""
     def __call__(self, volume=None, problem=None, data=None):
