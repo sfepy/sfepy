@@ -5,7 +5,7 @@ import numpy.linalg as nla
 import scipy as sc
 
 from sfepy.base.base import output, get_default, dict_to_struct, assert_, Struct
-from sfepy.solvers import eig
+from sfepy.solvers import eig, Solver
 from sfepy.base.progressbar import MyBar
 from sfepy.linalg import norm_l2_along_axis
 from sfepy.fem.evaluate import eval_equations
@@ -514,6 +514,60 @@ class SimpleEVP(CorrMiniApp):
         fd = open(self.save_name + '_eigs.txt', 'w')
         eigs.tofile(fd, ' ')
         fd.close()
+
+class SchurEVP(SimpleEVP):
+    """
+    Schur complement eigenvalue problem.
+    """
+
+    def prepare_matrices(self, problem):
+        """
+        A = K + B^T D^{-1} B
+        """
+        equations = problem.equations
+        mtx = equations.eval_tangent_matrices(None, problem.mtx_a,
+                                              by_blocks=True)
+
+        ls = Solver.any_from_conf(problem.ls_conf,
+                                  presolve=True, mtx=mtx['D'])
+
+        mtx_b, mtx_m = mtx['B'], mtx['M']
+        mtx_dib = nm.empty(mtx_b.shape, dtype=mtx_b.dtype)
+        for ic in xrange(mtx_b.shape[1]):
+            mtx_dib[:,ic] = ls(mtx_b[:,ic].toarray().squeeze())
+        mtx_a = mtx['K'] + mtx_b.T * mtx_dib
+
+        return mtx_a, mtx_m, mtx_dib
+
+    def post_process(self, eigs, mtx_s_phi, mtx_dib, problem):
+        n_eigs = eigs.shape[0]
+
+        variables = problem.get_variables()
+
+        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
+                           dtype=nm.float64)
+
+        make_full = variables.make_full_vec
+
+        # Update also eliminated variables.
+        schur = self.app_options.schur
+        primary_var = schur['primary_var']
+        eliminated_var = schur['eliminated_var']
+
+        mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
+        aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
+        set = variables.set_state_part
+        for ii in xrange(n_eigs):
+            set(aux, mtx_s_phi[:,ii], primary_var, stripped=True)
+            set(aux, mtx_s_phi_schur[:,ii], eliminated_var,
+                stripped=True)
+
+            mtx_phi[:,ii] = make_full(aux)
+
+        indx = variables.get_indx(primary_var)
+        eig_vectors = mtx_phi[indx,:]
+
+        return mtx_phi, eig_vectors
 
 class DensityVolumeInfo(MiniAppBase):
     """
