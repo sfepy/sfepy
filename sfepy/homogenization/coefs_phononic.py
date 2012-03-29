@@ -56,6 +56,358 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
 
     return eigenmomenta
 
+def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
+                   fixed_eig_range, feps):
+    """
+    Cut off masked resonance frequencies. Margins are preserved, like no
+    resonances were cut.
+
+    Returns
+    -------
+    freq_range : array
+        The new range of frequencies.
+    freq_range_margins : array
+        The range of frequencies with prepended/appended margins equal to
+        `fixed_eig_range` if it is not None.
+    """
+    n_eigs = eigs.shape[0]
+
+    output('masked resonance frequencies in range:')
+    valid_slice = slice(*eig_range)
+    output(nm.where(valid[valid_slice] == False)[0])
+
+    if fixed_eig_range is None:
+        min_freq, max_freq = freq_range[0], freq_range[-1]
+        margins = freq_margins * (max_freq - min_freq)
+        prev_eig = min_freq - margins[0]
+        next_eig = max_freq + margins[1]
+
+        if eig_range[0] > 0:
+            prev_eig = max(nm.sqrt(eigs[eig_range[0] - 1]) + feps, prev_eig)
+
+        if eig_range[1] < n_eigs:
+            next_eig = min(nm.sqrt(eigs[eig_range[1]]) - feps, next_eig)
+
+        prev_eig = max(feps, prev_eig)
+        next_eig = max(feps, next_eig, prev_eig + feps)
+
+    else:
+        prev_eig, next_eig = fixed_eig_range
+
+    freq_range = freq_range[valid[valid_slice]]
+    freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
+
+    return freq_range, freq_range_margins
+
+def split_chunks(indx):
+    """Split index vector to chunks of consecutive numbers."""
+    if not len(indx): return []
+
+    delta = nm.ediff1d(indx, to_end=2)
+    ir = nm.where(delta > 1)[0]
+
+    chunks = []
+    ic0 = 0
+    for ic in ir:
+        chunk = indx[ic0:ic+1]
+        ic0 = ic + 1
+        chunks.append(chunk)
+    return chunks
+
+def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
+    """
+    Detect band gaps given solution to eigenproblem (eigs,
+    eig_vectors). Only valid resonance frequencies (e.i. those for which
+    corresponding eigenmomenta are above a given threshold) are taken into
+    account.
+
+    Notes
+    -----
+    - make feps relative to ]f0, f1[ size?
+    """
+    output('eigensolver:', opts.eigensolver)
+
+    fm = freq_info.freq_range_margins
+    min_freq, max_freq = fm[0], fm[-1]
+    output('freq. range with margins: [%8.3f, %8.3f]'
+           % (min_freq, max_freq))
+
+    df = opts.freq_step * (max_freq - min_freq)
+
+    fz_callback = get_callback(mass.evaluate, opts.eigensolver,
+                               mtx_b=mtx_b, mode='find_zero')
+    trace_callback = get_callback(mass.evaluate, opts.eigensolver,
+                                  mtx_b=mtx_b, mode='trace')
+
+    n_col = 1 + (mtx_b is not None)
+    logs = [[] for ii in range(n_col + 1)]
+    gaps = []
+
+    for ii in xrange(freq_info.freq_range.shape[0] + 1):
+
+        f0, f1 = fm[[ii, ii+1]]
+        output('interval: ]%.8f, %.8f[...' % (f0, f1))
+
+        f_delta = f1 - f0
+        f_mid = 0.5 * (f0 + f1)
+        if (f1 - f0) > (2.0 * opts.feps):
+            num = min(1000, max(100, (f1 - f0) / df))
+            a = nm.linspace(0., 1., num)
+            log_freqs = f0 + opts.feps \
+                        + 0.5 * (nm.sin((a - 0.5) * nm.pi) + 1.0) \
+                        * (f1 - f0 - 2.0 * opts.feps)
+            ## log_freqs = nm.linspace(f0 + opts.feps, f1 - opts.feps, num)
+        else:
+            log_freqs = nm.array([f_mid - 1e-8 * f_delta,
+                                   f_mid + 1e-8 * f_delta])
+
+        output('n_logged: %d' % log_freqs.shape[0])
+
+        log_mevp = [[] for ii in range(n_col)]
+        for f in log_freqs:
+            for ii, data in enumerate(trace_callback(f)):
+                log_mevp[ii].append(data)
+
+        # Get log for the first and last f in log_freqs.
+        lf0 = log_freqs[0]
+        lf1 = log_freqs[-1]
+
+        log0, log1 = log_mevp[0][0], log_mevp[0][-1]
+        min_eig0 = log0[0]
+        max_eig1 = log1[-1]
+        if gap_kind == 'liquid':
+            mevp = nm.array(log_mevp, dtype=nm.float64).squeeze()
+            si = nm.where(mevp[:,0] < 0.0)[0]
+            li = nm.where(mevp[:,-1] < 0.0)[0]
+            wi = nm.setdiff1d(si, li)
+
+            if si.shape[0] == 0: # No gaps.
+                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
+                gaps.append(gap)
+
+            elif li.shape[0] == mevp.shape[0]: # Full interval strong gap.
+                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
+                gaps.append(gap)
+
+            else:
+                subgaps = []
+                for chunk in split_chunks(li): # Strong gaps.
+                    i0, i1 = chunk[0], chunk[-1]
+                    fmin, fmax = log_freqs[i0], log_freqs[i1]
+                    gap = ([1, fmin, mevp[i0,-1]], [1, fmax, mevp[i1,-1]])
+                    subgaps.append(gap)
+
+                for chunk in split_chunks(wi): # Weak gaps.
+                    i0, i1 = chunk[0], chunk[-1]
+                    fmin, fmax = log_freqs[i0], log_freqs[i1]
+                    gap = ([0, fmin, mevp[i0,-1]], [2, fmax, mevp[i1,-1]])
+                    subgaps.append(gap)
+                gaps.append(subgaps)
+
+        else:
+            if min_eig0 > 0.0: # No gaps.
+                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
+
+            elif max_eig1 < 0.0: # Full interval strong gap.
+                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
+
+            else:
+                llog_freqs = list(log_freqs)
+
+                # Insert fmin, fmax into log.
+                output('finding zero of the largest eig...')
+                smax, fmax, vmax = find_zero(lf0, lf1, fz_callback,
+                                              opts.feps, opts.zeps, 1)
+                im = nm.searchsorted(log_freqs, fmax)
+                llog_freqs.insert(im, fmax)
+                for ii, data in enumerate(trace_callback(fmax)):
+                    log_mevp[ii].insert(im, data)
+
+                output('...done')
+                if smax in [0, 2]:
+                    output('finding zero of the smallest eig...')
+                    # having fmax instead of f0 does not work if feps is large.
+                    smin, fmin, vmin = find_zero(lf0, lf1, fz_callback,
+                                                  opts.feps, opts.zeps, 0)
+                    im = nm.searchsorted(log_freqs, fmin)
+                    # +1 due to fmax already inserted before.
+                    llog_freqs.insert(im+1, fmin)
+                    for ii, data in enumerate(trace_callback(fmin)):
+                        log_mevp[ii].insert(im+1, data)
+
+                    output('...done')
+
+                elif smax == 1:
+                    smin = 1 # both are negative everywhere.
+                    fmin, vmin = fmax, vmax
+
+                gap = ([smin, fmin, vmin], [smax, fmax, vmax])
+
+                log_freqs = nm.array(llog_freqs)
+
+            output(gap[0])
+            output(gap[1])
+
+            gaps.append(gap)
+
+        logs[0].append(log_freqs)
+        for ii, data in enumerate(log_mevp):
+            logs[ii+1].append(nm.array(data, dtype = nm.float64))
+
+        output('...done')
+
+    kinds = describe_gaps(gaps)
+
+    slogs = Struct(freqs=logs[0], eigs=logs[1])
+    if n_col == 2:
+        slogs.eig_vectors = logs[2]
+
+    return slogs, gaps, kinds
+
+def get_callback(mass, method, mtx_b=None, mode='trace'):
+    """
+    Return callback to solve band gaps or dispersion eigenproblem P.
+
+    Notes
+    -----
+    Find zero callbacks return:
+      eigenvalues
+
+    Trace callbacks return:
+      (eigenvalues,)
+    or
+      (eigenvalues, eigenvectors) (in full (dispoersion) mode)
+
+    If `mtx_b` is None, the problem P is
+      M w = \lambda w,
+    otherwise it is
+      omega^2 M w = \eta B w"""
+
+    def find_zero_callback(f):
+        meigs = eig(mass(f), eigenvectors=False, method=method)
+        return meigs
+
+    def find_zero_full_callback(f):
+        meigs = eig((f**2) * mass(f), mtx_b=mtx_b,
+                    eigenvectors=False, method=method)
+        return meigs
+
+    def trace_callback(f):
+        meigs = eig(mass(f), eigenvectors=False, method=method)
+        return meigs,
+
+    def trace_full_callback(f):
+        meigs, mvecs = eig((f**2) * mass(f), mtx_b=mtx_b,
+                           eigenvectors=True, method=method)
+
+        return meigs, mvecs
+
+    if mtx_b is not None:
+        mode += '_full'
+
+    return eval(mode + '_callback')
+
+def find_zero(f0, f1, callback, feps, zeps, mode):
+    """
+    For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
+    0) or the largest (`mode` = 1) eigenvalue of problem P given by `callback`
+    is zero.
+
+    Returns
+    -------
+    flag : 0, 1, or 2
+        The flag, see Notes below.
+    frequency : float
+        The found frequency.
+    eigenvalue : float
+        The eigenvalue corresponding to the found frequency.
+
+    Notes
+    -----
+    Meaning of the return value combinations:
+
+    =====  ======  ========
+    mode    flag    meaning
+    =====  ======  ========
+    0, 1    0       eigenvalue -> 0 for f \in ]f0, f1[
+    0       1       f -> f1, smallest eigenvalue < 0
+    0       2       f -> f0, smallest eigenvalue > 0 and -> -\infty
+    1       1       f -> f1, largest eigenvalue < 0 and  -> +\infty
+    1       2       f -> f0, largest eigenvalue > 0
+    =====  ======  ========
+    """
+    fm, fp = f0, f1
+    ieig = {0 : 0, 1 : -1}[mode]
+    while 1:
+        f = 0.5 * (fm + fp)
+        meigs = callback(f)
+
+        val = meigs[ieig]
+        ## print f, f0, f1, fm, fp, val
+        ## print '%.16e' % f, '%.16e' % fm, '%.16e' % fp, '%.16e' % val
+
+        if (abs(val) < zeps) or ((fp - fm) < (abs(fm) * nm.finfo(float).eps)):
+            return 0, f, val
+
+        if mode == 0:
+            if (f - f0) < feps:
+                return 2, f0, val
+
+            elif (f1 - f) < feps:
+                return 1, f1, val
+
+        elif mode == 1:
+            if (f1 - f) < feps:
+                return 1, f1, val
+
+            elif (f - f0) < feps:
+                return 2, f0, val
+
+        if val > 0.0:
+            fp = f
+
+        else:
+            fm = f
+
+def describe_gaps(gaps):
+    kinds = []
+    for ii, gap in enumerate(gaps):
+        if isinstance(gap, list):
+            subkinds = []
+            for gmin, gmax in gap:
+                if (gmin[0] == 2) and (gmax[0] == 2):
+                    kind = ('p', 'propagation zone')
+                elif (gmin[0] == 1) and (gmax[0] == 1):
+                    kind = ('is', 'inner strong band gap')
+                elif (gmin[0] == 0) and (gmax[0] == 2):
+                    kind = ('iw', 'inner weak band gap')
+                subkinds.append(kind)
+            kinds.append(subkinds)
+
+        else:
+            gmin, gmax = gap
+
+            if (gmin[0] == 2) and (gmax[0] == 2):
+                kind = ('p', 'propagation zone')
+            elif (gmin[0] == 1) and (gmax[0] == 2):
+                kind = ('w', 'full weak band gap')
+            elif (gmin[0] == 0) and (gmax[0] == 2):
+                kind = ('wp', 'weak band gap + propagation zone')
+            elif (gmin[0] == 1) and (gmax[0] == 1):
+                kind = ('s', 'full strong band gap (due to end of freq.'
+                        ' range or too large thresholds)')
+            elif (gmin[0] == 1) and (gmax[0] == 0):
+                kind = ('sw', 'strong band gap + weak band gap')
+            elif (gmin[0] == 0) and (gmax[0] == 0):
+                kind = ('swp', 'strong band gap + weak band gap +'
+                        ' propagation zone')
+            else:
+                msg = 'impossible band gap combination: %d, %d' % (gmin, gmax)
+                raise ValueError(msg)
+            kinds.append(kind)
+
+    return kinds
+
 class SimpleEVP(CorrMiniApp):
     """
     Simple eigenvalue problem.
@@ -400,46 +752,87 @@ class AppliedLoadTensor(MiniAppBase):
 
         return mtx_load
 
-def get_callback( mass, method, christoffel = None, mode = 'trace' ):
-    """
-    Return callback to solve band gaps or dispersion eigenproblem P.
+class BandGaps(MiniAppBase):
 
-    Find zero callbacks return:
-      eigenvalues
+    def process_options(self):
+        get = self.options.get
 
-    Trace callbacks return:
-      (eigenvalues, )
-    or 
-      (eigenvalues, eigenvectors) (in full (dispoersion) mode)
+        freq_margins = get('freq_margins', (5, 5))
+        # Given per cent.
+        freq_margins = 0.01 * nm.array(freq_margins, dtype=nm.float64)
 
-    If christoffel is None, P is
-      M w = \lambda w,
-    otherwise it is
-      omega^2 M w = \eta \Gamma w"""
+        # Given in per cent.
+        freq_step = 0.01 * get('freq_step', 5)
 
-    def find_zero_callback( f ):
-        meigs = eig( mass( f ), eigenvectors = False, method = method )
-        return meigs
+        return Struct(eigensolver=get('eigensolver', 'eig.sgscipy'),
+                      eig_range=get('eig_range', None),
+                      freq_margins=freq_margins,
+                      fixed_eig_range=get('fixed_eig_range', None),
+                      freq_step=freq_step,
 
-    def find_zero_full_callback( f ):
-        meigs = eig( (f**2) * mass( f ), mtx_b = christoffel,
-                     eigenvectors = False, method = method )
-        return meigs
+                      feps=get('feps', 1e-8),
+                      zeps=get('zeps', 1e-8))
 
-    def trace_callback( f ):
-        meigs = eig( mass( f ), eigenvectors = False, method = method )
-        return meigs,
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
 
-    def trace_full_callback( f ):
-        meigs, mvecs = eig( (f**2) * mass( f ), mtx_b = christoffel,
-                            eigenvectors = True, method = method )
-        
-        return meigs, mvecs
+        evp, ema, mass = [data[ii] for ii in self.requires]
 
-    if christoffel is not None:
-        mode += '_full'
+        eigs = evp.eigs
 
-    return eval( mode + '_callback' )
+        self.fix_eig_range(eigs.shape[0])
+
+        if opts.fixed_eig_range is not None:
+            mine, maxe = opts.fixed_eig_range
+            ii = nm.where((eigs > (mine**2.)) & (eigs < (maxe**2.)))[0]
+            freq_range_initial = nm.sqrt(eigs[ii])
+            opts.eig_range = (ii[0], ii[-1] + 1) # +1 as it is a slice.
+
+        else:
+            freq_range_initial = nm.sqrt(eigs[slice(*opts.eig_range)])
+
+        output('initial freq. range     : [%8.3f, %8.3f]'
+               % tuple(freq_range_initial[[0, -1]]))
+
+        aux = cut_freq_range(freq_range_initial, eigs, ema.valid,
+                             opts.freq_margins, opts.eig_range,
+                             opts.fixed_eig_range,
+                             opts.feps)
+        freq_range, freq_range_margins = aux
+        if len(freq_range):
+            output('freq. range             : [%8.3f, %8.3f]'
+                   % tuple(freq_range[[0, -1]]))
+
+        else:
+            # All masked.
+            output('freq. range             : all masked!')
+
+        freq_info = Struct(name='freq_info',
+                           freq_range_initial=freq_range_initial,
+                           freq_range=freq_range,
+                           freq_range_margins=freq_range_margins)
+
+        logs, gaps, kinds = detect_band_gaps(mass, freq_info, opts)
+
+        bg = Struct(logs=logs, gaps=gaps, kinds=kinds,
+                    valid=ema.valid, eig_range=slice(*opts.eig_range),
+                    n_eigs=eigs.shape[0], n_zeroed=ema.n_zeroed,
+                    freq_range_initial=freq_info.freq_range_initial,
+                    freq_range=freq_info.freq_range,
+                    freq_range_margins=freq_info.freq_range_margins,
+                    opts=opts)
+
+        return bg
+
+    def fix_eig_range(self, n_eigs):
+        eig_range = get_default(self.app_options.eig_range, (0, n_eigs))
+        if eig_range[-1] < 0:
+            eig_range[-1] += n_eigs + 1
+
+        assert_(eig_range[0] < (eig_range[1] - 1))
+        assert_(eig_range[1] <= n_eigs)
+        self.app_options.eig_range = eig_range
 
 def compute_cat( coefs, iw_dir, mode = 'simple' ):
     r"""Compute Christoffel acoustic tensor (cat) given the incident wave
@@ -505,90 +898,6 @@ def compute_polarization_angles( iw_dir, wave_vectors ):
         pas.append( pa )
 
     return pas
-
-def find_zero( f0, f1, callback, feps, zeps, mode ):
-    """
-    For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
-    0) or the largest (`mode` = 1) eigenvalue of problem P given by `callback`
-    is zero.
-
-    Return:
-
-    (flag, frequency, eigenvalue)
-
-    mode | flag | meaning
-    0, 1 | 0    | eigenvalue -> 0 for f \in ]f0, f1[
-    0    | 1    | f -> f1, smallest eigenvalue < 0
-    0    | 2    | f -> f0, smallest eigenvalue > 0 and -> -\infty
-    1    | 1    | f -> f1, largest eigenvalue < 0 and  -> +\infty
-    1    | 2    | f -> f0, largest eigenvalue > 0
-    """
-    fm, fp = f0, f1
-    ieig = {0 : 0, 1 : -1}[mode]
-    while 1:
-        f = 0.5 * (fm + fp)
-        meigs = callback( f )
-##         print meigs
-
-        val = meigs[ieig]
-##         print f, f0, f1, fm, fp, val
-##         print '%.16e' % f, '%.16e' % fm, '%.16e' % fp, '%.16e' % val
-
-        if (abs( val ) < zeps)\
-               or ((fp - fm) < (abs( fm ) * nm.finfo( float ).eps)):
-            return 0, f, val
-
-        if mode == 0:
-            if (f - f0) < feps:
-                return 2, f0, val
-            elif (f1 - f) < feps:
-                return 1, f1, val
-        elif mode == 1:
-            if (f1 - f) < feps:
-                return 1, f1, val
-            elif (f - f0) < feps:
-                return 2, f0, val
-            
-        if val > 0.0:
-            fp = f
-        else:
-            fm = f
-
-def describe_gaps( gaps ):
-    kinds = []
-    for ii, gap in enumerate(gaps):
-        if isinstance(gap, list):
-            subkinds = []
-            for gmin, gmax in gap:
-                if (gmin[0] == 2) and (gmax[0] == 2):
-                    kind = ('p', 'propagation zone')
-                elif (gmin[0] == 1) and (gmax[0] == 1):
-                    kind = ('is', 'inner strong band gap')
-                elif (gmin[0] == 0) and (gmax[0] == 2):
-                    kind = ('iw', 'inner weak band gap')
-                subkinds.append(kind)
-            kinds.append(subkinds)
-        else:
-            gmin, gmax = gap
-
-            if (gmin[0] == 2) and (gmax[0] == 2):
-                kind = ('p', 'propagation zone')
-            elif (gmin[0] == 1) and (gmax[0] == 2):
-                kind = ('w', 'full weak band gap')
-            elif (gmin[0] == 0) and (gmax[0] == 2):
-                kind = ('wp', 'weak band gap + propagation zone')
-            elif (gmin[0] == 1) and (gmax[0] == 1):
-                kind = ('s', 'full strong band gap (due to end of freq. range or'
-                        ' too large thresholds)')
-            elif (gmin[0] == 1) and (gmax[0] == 0):
-                kind = ('sw', 'strong band gap + weak band gap')
-            elif (gmin[0] == 0) and (gmax[0] == 0):
-                kind = ('swp', 'strong band gap + weak band gap + propagation zone')
-            else:
-                msg = 'impossible band gap combination: %d, %d' % (gmin, gmax)
-                raise ValueError( msg )
-            kinds.append( kind )
-    return kinds
 
 def transform_plot_data( datas, plot_transform, funmod ):
     if plot_transform is not None:
@@ -784,275 +1093,3 @@ def plot_gaps( fig_num, plot_rsc, gaps, kinds, freq_range,
     if show:
         plt.show()
     return fig
-
-def cut_freq_range( freq_range, eigs, valid, freq_margins, eig_range,
-                    fixed_eig_range, feps ):
-    """Cut off masked resonance frequencies. Margins are preserved, like no
-    resonances were cut.
-
-    Return:
-
-      freq_range - new resonance frequencies
-      freq_range_margins - freq_range with prepended/appended margins
-                           equal to fixed_eig_range if it is not None
-    """
-    n_freq = freq_range.shape[0]
-    n_eigs = eigs.shape[0]
-
-    output( 'masked resonance frequencies in range:' )
-    valid_slice = slice( *eig_range )
-    output( nm.where( valid[valid_slice] == False )[0] )
-
-    if fixed_eig_range is None:
-        min_freq, max_freq = freq_range[0], freq_range[-1]
-        margins = freq_margins * (max_freq - min_freq)
-        prev_eig = min_freq - margins[0]
-        next_eig = max_freq + margins[1]
-        if eig_range[0] > 0:
-            prev_eig = max( nm.sqrt( eigs[eig_range[0]-1] ) + feps, prev_eig )
-        if eig_range[1] < n_eigs:
-            next_eig = min( nm.sqrt( eigs[eig_range[1]] ) - feps, next_eig )
-        prev_eig = max( feps, prev_eig )
-        next_eig = max( feps, next_eig, prev_eig + feps )
-    else:
-        prev_eig, next_eig = fixed_eig_range
-
-    freq_range = freq_range[valid[valid_slice]]
-    freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
-
-    return freq_range, freq_range_margins
-
-def setup_band_gaps( pb, eigs, eig_vectors, opts, funmod ):
-    """Setup density, volume info and eigenmomenta. Adjust frequency ranges."""
-    dv_info = compute_density_volume_info( pb, opts.volume,
-                                           opts.region_to_material )
-    output( 'average density:', dv_info.average_density )
-
-    if opts.fixed_eig_range is not None:
-        mine, maxe = opts.fixed_eig_range
-        ii = nm.where( (eigs > (mine**2.)) & (eigs < (maxe**2.)) )[0]
-        freq_range_initial = nm.sqrt( eigs[ii] )
-        opts.eig_range = (ii[0], ii[-1]+1) # +1 as it is a slice.
-    else:
-        freq_range_initial = nm.sqrt( eigs[slice( *opts.eig_range )] )
-
-    output( 'initial freq. range     : [%8.3f, %8.3f]'\
-            % tuple( freq_range_initial[[0,-1]] ) )
-
-    if opts.eig_vector_transform is not None:
-        fun = getattr( funmod, opts.eig_vector_transform[0] )
-        def wrap_transform( vec, shape ):
-            return fun( vec, shape, *opts.eig_vector_transform[1:] )
-    else:
-        wrap_transform = None
-    output( 'mass matrix eigenmomenta...')
-    pbar = MyBar( 'computing:' )
-    tt = time.clock()
-    aux = prepare_eigenmomenta( pb, opts.eigenmomentum,
-                                opts.region_to_material,
-                                eig_vectors, opts.teps, opts.teps_rel,
-                                transform = wrap_transform, pbar = pbar )
-    n_zeroed, valid, eigenmomenta = aux
-    output( '...done in %.2f s' % (time.clock() - tt) )
-    aux = cut_freq_range( freq_range_initial, eigs, valid,
-                          opts.freq_margins, opts.eig_range,
-                          opts.fixed_eig_range,
-                          opts.feps )
-    freq_range, freq_range_margins = aux
-    if len( freq_range ):
-        output( 'freq. range             : [%8.3f, %8.3f]'\
-                % tuple( freq_range[[0,-1]] ) )
-    else:
-        # All masked.
-        output( 'freq. range             : all masked!' )
-
-    freq_info = Struct( name = 'freq_info',
-                        freq_range_initial = freq_range_initial,
-                        freq_range = freq_range,
-                        freq_range_margins = freq_range_margins )
-
-    return dv_info, eigenmomenta, n_zeroed, valid, freq_info
-
-def split_chunks(indx):
-    """Split index vector to chunks of consecutive numbers."""
-    if not len(indx): return []
-    
-    delta = nm.ediff1d(indx, to_end=2)
-    ir = nm.where(delta > 1)[0]
-
-    chunks = []
-    ic0 = 0
-    for ic in ir:
-        chunk = indx[ic0:ic+1]
-        ic0 = ic + 1
-        chunks.append(chunk)
-    return chunks
-    
-def detect_band_gaps( pb, evp_kind, eigs, eig_vectors, opts, funmod,
-                      christoffel = None ):
-    """Detect band gaps given solution to eigenproblem (eigs,
-    eig_vectors). Only valid resonance frequencies (e.i. those for which
-    corresponding eigenmomenta are above a given threshold) are taken into
-    account.
-
-    ??? make feps relative to ]f0, f1[ size ???
-    """
-    output( 'eigensolver:', opts.eigensolver )
-
-    aux = setup_band_gaps( pb, eigs, eig_vectors, opts, funmod )
-    dv_info, eigenmomenta, n_zeroed, valid, freq_info = aux
-
-    fm = freq_info.freq_range_margins
-    min_freq, max_freq = fm[0], fm[-1]
-    output( 'freq. range with margins: [%8.3f, %8.3f]'\
-            % (min_freq, max_freq) )
-
-    df = opts.freq_step * (max_freq - min_freq)
-    valid_eigenmomenta = eigenmomenta[valid,:]
-    valid_eigs = eigs[valid]
-
-    if evp_kind != 'simple_liquid':
-        mass = AcousticMassTensor( valid_eigenmomenta, valid_eigs, dv_info )
-    else:
-        mat_name = opts.region_to_material[opts.liquid_region]
-        materials = pb.get_materials()
-        mat = materials[mat_name]
-        gamma = mat.get_constant_data('gamma')
-        eta = mat.get_constant_data('eta')
-
-        mass = AcousticMassLiquidTensor(valid_eigenmomenta, valid_eigs,
-                                        dv_info, gamma, eta)
-        
-    fz_callback = get_callback( mass, opts.eigensolver,
-                                christoffel = christoffel, mode = 'find_zero' )
-    trace_callback = get_callback( mass, opts.eigensolver,
-                                   christoffel = christoffel, mode = 'trace' )
-
-    n_col = 1 + (christoffel is not None)
-    logs = [[] for ii in range( n_col + 1 )]
-    gaps = []
-
-    for ii in xrange( freq_info.freq_range.shape[0] + 1 ):
-
-        f0, f1 = fm[[ii, ii+1]]
-        output( 'interval: ]%.8f, %.8f[...' % (f0, f1) )
-
-        f_delta = f1 - f0
-        f_mid = 0.5 * (f0 + f1)
-        if (f1 - f0) > (2.0 * opts.feps):
-            num = min( 1000, max( 100, (f1 - f0) / df ) )
-            a = nm.linspace( 0., 1., num )
-            log_freqs = f0 + opts.feps \
-                        + 0.5 * (nm.sin( (a - 0.5) * nm.pi ) + 1.0) \
-                        * (f1 - f0 - 2.0 * opts.feps)
-#            log_freqs = nm.linspace( f0 + opts.feps, f1 - opts.feps, num )
-        else:
-            log_freqs = nm.array( [f_mid - 1e-8 * f_delta,
-                                   f_mid + 1e-8 * f_delta] )
-
-        output( 'n_logged: %d' % log_freqs.shape[0] )
-
-        log_mevp = [[] for ii in range( n_col )]
-        for f in log_freqs:
-            for ii, data in enumerate( trace_callback( f ) ):
-                log_mevp[ii].append( data )
-
-        # Get log for the first and last f in log_freqs.
-        lf0 = log_freqs[0]
-        lf1 = log_freqs[-1]
-
-        log0, log1 = log_mevp[0][0], log_mevp[0][-1]
-        min_eig0 = log0[0]
-        max_eig1 = log1[-1]
-        if evp_kind == 'simple_liquid':
-            mevp = nm.array(log_mevp, dtype=nm.float64).squeeze()
-            si = nm.where(mevp[:,0] < 0.0)[0]
-            li = nm.where(mevp[:,-1] < 0.0)[0]
-            wi = nm.setdiff1d(si, li)
-
-            if si.shape[0] == 0: # No gaps.
-                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
-                gaps.append(gap)
-
-            elif li.shape[0] == mevp.shape[0]: # Full interval strong gap.
-                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
-                gaps.append(gap)
-
-            else:
-                subgaps = []
-                for chunk in split_chunks(li): # Strong gaps.
-                    i0, i1 = chunk[0], chunk[-1]
-                    fmin, fmax = log_freqs[i0], log_freqs[i1]
-                    gap = ([1, fmin, mevp[i0,-1]], [1, fmax, mevp[i1,-1]])
-                    subgaps.append(gap)
-                    
-                for chunk in split_chunks(wi): # Weak gaps.
-                    i0, i1 = chunk[0], chunk[-1]
-                    fmin, fmax = log_freqs[i0], log_freqs[i1]
-                    gap = ([0, fmin, mevp[i0,-1]], [2, fmax, mevp[i1,-1]])
-                    subgaps.append(gap)
-                gaps.append(subgaps)
-                
-        else:
-            if min_eig0 > 0.0: # No gaps.
-                gap = ([2, lf0, log0[0]], [2, lf0, log0[-1]])
-            elif max_eig1 < 0.0: # Full interval strong gap.
-                gap = ([1, lf1, log1[0]], [1, lf1, log1[-1]])
-            else:
-                llog_freqs = list( log_freqs )
-
-                # Insert fmin, fmax into log.
-                output( 'finding zero of the largest eig...' )
-                smax, fmax, vmax = find_zero( lf0, lf1, fz_callback,
-                                              opts.feps, opts.zeps, 1 )
-                im = nm.searchsorted( log_freqs, fmax )
-                llog_freqs.insert( im, fmax )
-                for ii, data in enumerate( trace_callback( fmax ) ):
-                    log_mevp[ii].insert( im, data )
-
-                output( '...done' )
-                if smax in [0, 2]:
-                    output( 'finding zero of the smallest eig...' )
-                    # having fmax instead of f0 does not work if feps is large.
-                    smin, fmin, vmin = find_zero( lf0, lf1, fz_callback,
-                                                  opts.feps, opts.zeps, 0 )
-                    im = nm.searchsorted( log_freqs, fmin )
-                    # +1 due to fmax already inserted before.
-                    llog_freqs.insert( im+1, fmin )
-                    for ii, data in enumerate( trace_callback( fmin ) ):
-                        log_mevp[ii].insert( im+1, data )
-
-                    output( '...done' )
-                elif smax == 1:
-                    smin = 1 # both are negative everywhere.
-                    fmin, vmin = fmax, vmax
-
-                gap = ([smin, fmin, vmin], [smax, fmax, vmax])
-
-                log_freqs = nm.array( llog_freqs )
-
-            output( gap[0] )
-            output( gap[1] )
-            #        pause()
-            gaps.append( gap )
-
-        logs[0].append( log_freqs )
-        for ii, data in enumerate( log_mevp ):
-            logs[ii+1].append( nm.array( data, dtype = nm.float64 ) )
-
-        output( '...done' )
-
-    kinds = describe_gaps( gaps )
-
-    slogs = Struct(freqs = logs[0],
-                   eigs = logs[1])
-    if n_col == 2:
-        slogs.eig_vectors = logs[2]
-
-    return Struct( logs = slogs, gaps = gaps, kinds = kinds,
-                   valid = valid, eig_range = slice( *opts.eig_range ),
-                   n_eigs = eigs.shape[0], n_zeroed = n_zeroed,
-                   freq_range_initial = freq_info.freq_range_initial,
-                   freq_range = freq_info.freq_range,
-                   freq_range_margins = freq_info.freq_range_margins,
-                   opts = opts )
