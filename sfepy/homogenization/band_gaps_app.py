@@ -280,10 +280,10 @@ class AcousticBandGapsApp(SimpleApp):
         aux = {
             'resonance' : 'eigenfrequencies',
             'masked' : 'masked eigenfrequencies',
-            'eig_min' : 'min eig($M^*$)',
-            'eig_mid' : 'mid eig($M^*$)',
-            'eig_max' : 'max eig($M^*$)',
-            'y_axis' : 'eigenvalues of mass matrix $M^*$',
+            'eig_min' : r'min eig($M^*$)',
+            'eig_mid' : r'mid eig($M^*$)',
+            'eig_max' : r'max eig($M^*$)',
+            'y_axis' : r'eigenvalues of mass matrix $M^*$',
         }
         plot_labels = try_set_defaults(options, 'plot_labels', aux, recur=True)
 
