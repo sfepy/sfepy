@@ -56,7 +56,7 @@ def compute_eigenmomenta(em_equation, var_name, problem, eig_vectors,
     return eigenmomenta
 
 def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
-                   fixed_eig_range, feps):
+                   fixed_freq_range, freq_eps):
     """
     Cut off masked resonance frequencies. Margins are preserved, like no
     resonances were cut.
@@ -67,7 +67,7 @@ def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
         The new range of frequencies.
     freq_range_margins : array
         The range of frequencies with prepended/appended margins equal to
-        `fixed_eig_range` if it is not None.
+        `fixed_freq_range` if it is not None.
     """
     n_eigs = eigs.shape[0]
 
@@ -75,26 +75,28 @@ def cut_freq_range(freq_range, eigs, valid, freq_margins, eig_range,
     valid_slice = slice(*eig_range)
     output(nm.where(valid[valid_slice] == False)[0])
 
-    if fixed_eig_range is None:
+    if fixed_freq_range is None:
         min_freq, max_freq = freq_range[0], freq_range[-1]
         margins = freq_margins * (max_freq - min_freq)
-        prev_eig = min_freq - margins[0]
-        next_eig = max_freq + margins[1]
+        prev_freq = min_freq - margins[0]
+        next_freq = max_freq + margins[1]
 
         if eig_range[0] > 0:
-            prev_eig = max(nm.sqrt(eigs[eig_range[0] - 1]) + feps, prev_eig)
+            prev_freq = max(nm.sqrt(eigs[eig_range[0] - 1]) + freq_eps,
+                            prev_freq)
 
         if eig_range[1] < n_eigs:
-            next_eig = min(nm.sqrt(eigs[eig_range[1]]) - feps, next_eig)
+            next_freq = min(nm.sqrt(eigs[eig_range[1]]) - freq_eps,
+                            next_freq)
 
-        prev_eig = max(feps, prev_eig)
-        next_eig = max(feps, next_eig, prev_eig + feps)
+        prev_freq = max(freq_eps, prev_freq)
+        next_freq = max(freq_eps, next_freq, prev_freq + freq_eps)
 
     else:
-        prev_eig, next_eig = fixed_eig_range
+        prev_freq, next_freq = fixed_freq_range
 
     freq_range = freq_range[valid[valid_slice]]
-    freq_range_margins = nm.r_[prev_eig, freq_range, next_eig]
+    freq_range_margins = nm.r_[prev_freq, freq_range, next_freq]
 
     return freq_range, freq_range_margins
 
@@ -122,7 +124,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
 
     Notes
     -----
-    - make feps relative to ]f0, f1[ size?
+    - make freq_eps relative to ]f0, f1[ size?
     """
     output('eigensolver:', opts.eigensolver)
 
@@ -149,16 +151,16 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
 
         f_delta = f1 - f0
         f_mid = 0.5 * (f0 + f1)
-        if (f1 - f0) > (2.0 * opts.feps):
+        if (f1 - f0) > (2.0 * opts.freq_eps):
             num = min(1000, max(100, (f1 - f0) / df))
             a = nm.linspace(0., 1., num)
-            log_freqs = f0 + opts.feps \
+            log_freqs = f0 + opts.freq_eps \
                         + 0.5 * (nm.sin((a - 0.5) * nm.pi) + 1.0) \
-                        * (f1 - f0 - 2.0 * opts.feps)
-            ## log_freqs = nm.linspace(f0 + opts.feps, f1 - opts.feps, num)
+                        * (f1 - f0 - 2.0 * opts.freq_eps)
+
         else:
             log_freqs = nm.array([f_mid - 1e-8 * f_delta,
-                                   f_mid + 1e-8 * f_delta])
+                                  f_mid + 1e-8 * f_delta])
 
         output('n_logged: %d' % log_freqs.shape[0])
 
@@ -216,7 +218,7 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
                 # Insert fmin, fmax into log.
                 output('finding zero of the largest eig...')
                 smax, fmax, vmax = find_zero(lf0, lf1, fz_callback,
-                                              opts.feps, opts.zeps, 1)
+                                             opts.freq_eps, opts.zero_eps, 1)
                 im = nm.searchsorted(log_freqs, fmax)
                 llog_freqs.insert(im, fmax)
                 for ii, data in enumerate(trace_callback(fmax)):
@@ -225,9 +227,10 @@ def detect_band_gaps(mass, freq_info, opts, gap_kind='normal', mtx_b=None):
                 output('...done')
                 if smax in [0, 2]:
                     output('finding zero of the smallest eig...')
-                    # having fmax instead of f0 does not work if feps is large.
+                    # having fmax instead of f0 does not work if freq_eps is
+                    # large.
                     smin, fmin, vmin = find_zero(lf0, lf1, fz_callback,
-                                                  opts.feps, opts.zeps, 0)
+                                                 opts.freq_eps, opts.zero_eps, 0)
                     im = nm.searchsorted(log_freqs, fmin)
                     # +1 due to fmax already inserted before.
                     llog_freqs.insert(im+1, fmin)
@@ -306,7 +309,7 @@ def get_callback(mass, method, mtx_b=None, mode='trace'):
 
     return eval(mode + '_callback')
 
-def find_zero(f0, f1, callback, feps, zeps, mode):
+def find_zero(f0, f1, callback, freq_eps, zero_eps, mode):
     """
     For f \in ]f0, f1[ find frequency f for which either the smallest (`mode` =
     0) or the largest (`mode` = 1) eigenvalue of problem P given by `callback`
@@ -345,21 +348,22 @@ def find_zero(f0, f1, callback, feps, zeps, mode):
         ## print f, f0, f1, fm, fp, val
         ## print '%.16e' % f, '%.16e' % fm, '%.16e' % fp, '%.16e' % val
 
-        if (abs(val) < zeps) or ((fp - fm) < (abs(fm) * nm.finfo(float).eps)):
+        if ((abs(val) < zero_eps)
+            or ((fp - fm) < (abs(fm) * nm.finfo(float).eps))):
             return 0, f, val
 
         if mode == 0:
-            if (f - f0) < feps:
+            if (f - f0) < freq_eps:
                 return 2, f0, val
 
-            elif (f1 - f) < feps:
+            elif (f1 - f) < freq_eps:
                 return 1, f1, val
 
         elif mode == 1:
-            if (f1 - f) < feps:
+            if (f1 - f) < freq_eps:
                 return 1, f1, val
 
-            elif (f - f0) < feps:
+            elif (f - f0) < freq_eps:
                 return 2, f0, val
 
         if val > 0.0:
@@ -813,6 +817,28 @@ class AppliedLoadTensor(MiniAppBase):
         return mtx_load
 
 class BandGaps(MiniAppBase):
+    """
+    Band gaps detection.
+
+    Parameters
+    ----------
+    eigensolver : str
+        The name of the eigensolver for mass matrix eigenvalues.
+    eig_range : (int, int)
+        The eigenvalues range (squared frequency) to consider.
+    freq_margins : (float, float)
+        Margins in percents of initial frequency range given by
+        `eig_range` by which the range is increased.
+    fixed_freq_range : (float, float)
+        The frequency range to consider. Has precedence over `eig_range`
+        and `freq_margins`.
+    freq_step : float
+        The frequency step for tracing, in percent of the frequency range.
+    freq_eps : float
+        The frequency difference smaller than `freq_eps` is considered zero.
+    zero_eps : float
+        The tolerance for finding zeros of mass matrix eigenvalues.
+    """
 
     def process_options(self):
         get = self.options.get
@@ -827,11 +853,11 @@ class BandGaps(MiniAppBase):
         return Struct(eigensolver=get('eigensolver', 'eig.sgscipy'),
                       eig_range=get('eig_range', None),
                       freq_margins=freq_margins,
-                      fixed_eig_range=get('fixed_eig_range', None),
+                      fixed_freq_range=get('fixed_freq_range', None),
                       freq_step=freq_step,
 
-                      feps=get('feps', 1e-8),
-                      zeps=get('zeps', 1e-8))
+                      freq_eps=get('freq_eps', 1e-8),
+                      zero_eps=get('zero_eps', 1e-8))
 
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
@@ -843,8 +869,8 @@ class BandGaps(MiniAppBase):
 
         self.fix_eig_range(eigs.shape[0])
 
-        if opts.fixed_eig_range is not None:
-            mine, maxe = opts.fixed_eig_range
+        if opts.fixed_freq_range is not None:
+            mine, maxe = opts.fixed_freq_range
             ii = nm.where((eigs > (mine**2.)) & (eigs < (maxe**2.)))[0]
             freq_range_initial = nm.sqrt(eigs[ii])
             opts.eig_range = (ii[0], ii[-1] + 1) # +1 as it is a slice.
@@ -857,8 +883,8 @@ class BandGaps(MiniAppBase):
 
         aux = cut_freq_range(freq_range_initial, eigs, ema.valid,
                              opts.freq_margins, opts.eig_range,
-                             opts.fixed_eig_range,
-                             opts.feps)
+                             opts.fixed_freq_range,
+                             opts.freq_eps)
         freq_range, freq_range_margins = aux
         if len(freq_range):
             output('freq. range             : [%8.3f, %8.3f]'
