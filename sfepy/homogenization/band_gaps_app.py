@@ -88,7 +88,7 @@ def plot_eigs(fig_num, plot_rsc, plot_labels, valid, freq_range, plot_range,
     return fig
 
 def plot_logs(fig_num, plot_rsc, plot_labels,
-              freqs, logs, valid, freq_range, plot_range, squared,
+              freqs, logs, valid, freq_range, plot_range,
               draw_eigs=True, show_legend=True, show=False,
               clear=False, new_axes=False):
     """
@@ -130,11 +130,7 @@ def plot_logs(fig_num, plot_rsc, plot_labels,
     fmin, fmax = freqs[0][0], freqs[-1][-1]
     ax.plot([fmin, fmax], [0, 0], **plot_rsc['x_axis'])
 
-    if squared:
-        ax.set_xlabel(r'$\lambda$, $\omega^2$')
-    else:
-        ax.set_xlabel(r'$\sqrt{\lambda}$, $\omega$')
-
+    ax.set_xlabel(plot_labels['x_axis'])
     ax.set_ylabel(plot_labels['y_axis'])
 
     if new_axes:
@@ -271,6 +267,7 @@ class AcousticBandGapsApp(SimpleApp):
             'eig_min' : r'min eig($M^*$)',
             'eig_mid' : r'mid eig($M^*$)',
             'eig_max' : r'max eig($M^*$)',
+            'x_axis' : r'$\sqrt{\lambda}$, $\omega$',
             'y_axis' : r'eigenvalues of mass matrix $M^*$',
         }
         plot_labels = try_set_defaults(options, 'plot_labels', aux, recur=True)
@@ -281,6 +278,7 @@ class AcousticBandGapsApp(SimpleApp):
             'eig_min' : r'$\kappa$(min)',
             'eig_mid' : r'$\kappa$(mid)',
             'eig_max' : r'$\kappa$(max)',
+            'x_axis' : r'$\sqrt{\lambda}$, $\omega$',
             'y_axis' : 'polarization angles',
         }
         plot_labels_angle = try_set_defaults(options, 'plot_labels_angle', aux)
@@ -291,6 +289,7 @@ class AcousticBandGapsApp(SimpleApp):
             'eig_min' : r'wave number (min)',
             'eig_mid' : r'wave number (mid)',
             'eig_max' : r'wave number (max)',
+            'x_axis' : r'$\sqrt{\lambda}$, $\omega$',
             'y_axis' : 'wave numbers',
         }
         plot_labels_wave = try_set_defaults(options, 'plot_labels_wave', aux)
@@ -488,7 +487,7 @@ class AcousticBandGapsApp(SimpleApp):
             fig = plot_logs(ii, plot_rsc, plot_labels, bg.logs.freqs, teigs,
                             bg.valid[bg.eig_range],
                             bg.freq_range_initial,
-                            plot_range, False,
+                            plot_range,
                             show_legend=plot_opts['legend'],
                             new_axes=True)
 
