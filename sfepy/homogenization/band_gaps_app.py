@@ -4,26 +4,14 @@ from copy import copy
 
 import numpy as nm
 import numpy.linalg as nla
-import scipy as sc
 
-from sfepy.base.base import output, set_defaults, get_default, assert_
+from sfepy.base.base import output, set_defaults, assert_
 from sfepy.base.base import Struct
-from sfepy.base.conf import ProblemConf
-from sfepy.fem import ProblemDefinition
-from sfepy.fem.evaluate import assemble_by_blocks
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.homogen_app import get_volume_from_options
 from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import SimpleApp
-from sfepy.solvers import Solver, eig
 from sfepy.base.plotutils import plt
-
-def make_save_hook(base_name, post_process_hook=None, file_per_var=None):
-    def save_phono_correctors(state, problem, ir, ic):
-        problem.save_state((base_name % (ir, ic)) + '.vtk', state,
-                           post_process_hook=post_process_hook,
-                           file_per_var=file_per_var)
-    return save_phono_correctors
 
 def try_set_defaults(obj, attr, defaults, recur=False):
     try:
@@ -475,15 +463,6 @@ class AcousticBandGapsApp(SimpleApp):
 
         return coefs
 
-    def fix_eig_range(self, n_eigs):
-        eig_range = get_default(self.app_options.eig_range, (0, n_eigs))
-        if eig_range[-1] < 0:
-            eig_range[-1] += n_eigs + 1
-
-        assert_(eig_range[0] < (eig_range[1] - 1))
-        assert_(eig_range[1] <= n_eigs)
-        self.app_options.eig_range = eig_range
-
     def plot_band_gaps(self, coefs):
         opts = self.app_options
 
@@ -524,184 +503,6 @@ class AcousticBandGapsApp(SimpleApp):
 
         if plot_opts['show']:
             plt.show()
-
-    def solve_eigen_problem(self, ofn_trunk=None, post_process_hook=None):
-
-        if self.cached_evp is not None:
-            return self.cached_evp
-
-        problem = self.problem
-        ofn_trunk = get_default(ofn_trunk, problem.ofn_trunk,
-                                'output file name trunk missing!')
-        post_process_hook = get_default(post_process_hook,
-                                        self.post_process_hook)
-
-        conf = self.conf
-
-        eig_problem = self.app_options.eig_problem
-        if eig_problem in ['simple', 'simple_liquid']:
-            problem.set_equations(conf.equations)
-            problem.time_update()
-            problem.update_materials()
-
-            mtx_a = problem.evaluate(conf.equations['lhs'], mode='weak',
-                                     auto_init=True, dw_mode='matrix')
-
-            mtx_m = problem.evaluate(conf.equations['rhs'], mode='weak',
-                                     dw_mode='matrix')
-
-        elif eig_problem == 'schur':
-            # A = K + B^T D^{-1} B.
-            mtx = assemble_by_blocks(conf.equations, self.problem,
-                                     ebcs=conf.ebcs, epbcs=conf.epbcs)
-            problem.set_equations(conf.equations)
-            problem.time_update()
-            problem.update_materials()
-
-            ls = Solver.any_from_conf(problem.ls_conf,
-                                      presolve=True, mtx=mtx['D'])
-
-            mtx_b, mtx_m = mtx['B'], mtx['M']
-            mtx_dib = nm.empty(mtx_b.shape, dtype=mtx_b.dtype)
-            for ic in xrange(mtx_b.shape[1]):
-                mtx_dib[:,ic] = ls(mtx_b[:,ic].toarray().squeeze())
-            mtx_a = mtx['K'] + mtx_b.T * mtx_dib
-
-        else:
-            raise NotImplementedError
-
-##     from sfepy.base.plotutils import spy, plt
-##     spy(mtx_b, eps = 1e-12)
-##     plt.show()
-##     mtx_a.save('a.txt', format='%d %d %.12f\n')
-##     mtx_b.save('b.txt', format='%d %d %.12f\n')
-##     pause()
-
-        output('computing resonance frequencies...')
-        tt = [0]
-
-        if isinstance(mtx_a, sc.sparse.spmatrix):
-            mtx_a = mtx_a.toarray()
-        if isinstance(mtx_m, sc.sparse.spmatrix):
-            mtx_m = mtx_m.toarray()
-
-        eigs, mtx_s_phi = eig(mtx_a, mtx_m, return_time=tt,
-                              method=self.app_options.eigensolver)
-        eigs[eigs<0.0] = 0.0
-        output('...done in %.2f s' % tt[0])
-        output('original eigenfrequencies:')
-        output(eigs)
-        opts = self.app_options
-        epsilon2 = opts.scale_epsilon * opts.scale_epsilon
-        eigs_rescaled = (opts.elasticity_contrast / epsilon2)  * eigs
-        output('rescaled eigenfrequencies:')
-        output(eigs_rescaled)
-        output('number of eigenfrequencies: %d' % eigs.shape[0])
-
-        try:
-            assert_(nm.isfinite(eigs).all())
-        except ValueError:
-            debug()
-
-        # B-orthogonality check.
-##         print nm.dot(mtx_s_phi[:,5], nm.dot(mtx_m, mtx_s_phi[:,5]))
-##         print nm.dot(mtx_s_phi[:,5], nm.dot(mtx_m, mtx_s_phi[:,0]))
-##         debug()
-
-        n_eigs = eigs.shape[0]
-
-        variables = problem.get_variables()
-
-        mtx_phi = nm.empty((variables.di.ptr[-1], mtx_s_phi.shape[1]),
-                           dtype=nm.float64)
-
-        make_full = variables.make_full_vec
-        if eig_problem in ['simple', 'simple_liquid']:
-            for ii in xrange(n_eigs):
-                mtx_phi[:,ii] = make_full(mtx_s_phi[:,ii])
-            eig_vectors = mtx_phi
-
-        elif eig_problem == 'schur':
-            # Update also eliminated variables.
-            schur = self.app_options.schur
-            primary_var = schur['primary_var']
-            eliminated_var = schur['eliminated_var']
-
-            mtx_s_phi_schur = - sc.dot(mtx_dib, mtx_s_phi)
-            aux = nm.empty((variables.adi.ptr[-1],), dtype=nm.float64)
-            set = variables.set_state_part
-            for ii in xrange(n_eigs):
-                set(aux, mtx_s_phi[:,ii], primary_var, stripped=True)
-                set(aux, mtx_s_phi_schur[:,ii], eliminated_var,
-                    stripped=True)
-
-                mtx_phi[:,ii] = make_full(aux)
-
-            indx = variables.get_indx(primary_var)
-            eig_vectors = mtx_phi[indx,:]
-
-        save = self.app_options.save
-        out = {}
-        state = problem.create_state()
-        for ii in xrange(n_eigs):
-            if (ii >= save[0]) and (ii < (n_eigs - save[1])): continue
-            state.set_full(mtx_phi[:,ii], force=True)
-            aux = state.create_output_dict()
-            for name, val in aux.iteritems():
-                out[name+'%03d' % ii] = val
-
-        if post_process_hook is not None:
-            out = post_process_hook(out, problem, mtx_phi)
-
-        problem.domain.mesh.write(ofn_trunk + '.vtk', io='auto', out=out)
-
-        fd = open(ofn_trunk + '_eigs.txt', 'w')
-        eigs.tofile(fd, ' ')
-        fd.close()
-
-        evp = Struct(kind=eig_problem,
-                     eigs=eigs, eigs_rescaled=eigs_rescaled,
-                     eig_vectors=eig_vectors)
-        self.cached_evp = evp
-
-        return evp
-
-    def eval_homogenized_coefs(self):
-        if self.cached_coefs is not None:
-            return self.cached_coefs
-
-        opts = self.app_options
-
-        if opts.homogeneous:
-            rtm = opts.region_to_material
-            mat_region = rtm.keys()[0]
-            mat_name = rtm[mat_region]
-
-            self.problem.update_materials()
-
-            mat = self.problem.materials[mat_name]
-            coefs = mat.get_data(mat_region, 0, opts.tensor_names)
-
-        else:
-            dc = opts.dispersion_conf
-            dconf = ProblemConf.from_dict(dc['input'], dc['module'])
-
-            dconf.materials = self.conf.materials
-            dconf.regions.update(self.conf.regions)
-            dconf.options['output_dir'] = self.problem.output_dir
-
-            volume = opts.volume(self.problem, 'Y')
-            problem = ProblemDefinition.from_conf(dconf, init_equations=False)
-            he = HomogenizationEngine(problem, self.options, volume=volume)
-            coefs = he()
-
-##         print coefs
-##         pause()
-        output.prefix = self.output_prefix
-
-        self.cached_coefs = coefs
-
-        return coefs
 
     def compute_cat(self, ret_iw_dir=False):
         """Compute the Christoffel acoustic tensor, given the incident wave
