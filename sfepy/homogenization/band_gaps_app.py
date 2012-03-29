@@ -355,6 +355,7 @@ class AcousticBandGapsApp(SimpleApp):
                       fig_name=get('fig_name', None),
                       fig_name_wave=get('fig_name_wave', None),
                       fig_name_angle=get('fig_name_angle', None),
+                      fig_suffix=get('fig_suffix', '.pdf'),
 
                       plot_labels=plot_labels,
                       plot_labels_angle=plot_labels_angle,
@@ -465,110 +466,14 @@ class AcousticBandGapsApp(SimpleApp):
                                   volume=volume)
         coefs = he()
 
+        if options.plot:
+            if options.detect_band_gaps:
+                self.plot_band_gaps(coefs)
 
-        if options.detect_band_gaps:
-            bg = detect_band_gaps(self.problem, evp.kind,
-                                  evp.eigs_rescaled, evp.eig_vectors,
-                                  self.app_options, self.conf.funmod)
+            elif options.analyze_dispersion:
+                self.plot_dispersion(coefs)
 
-            if options.plot:
-                plot_range, teigs = transform_plot_data(bg.logs.eigs,
-                                                        bg.opts.plot_transform,
-                                                        self.conf.funmod)
-
-                plot_rsc = bg.opts.plot_rsc
-                plot_opts =  bg.opts.plot_options
-                plot_labels =  bg.opts.plot_labels
-
-                plt.rcParams.update(plot_rsc['params'])
-
-                fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds,
-                                bg.freq_range_margins, plot_range,
-                                clear=True)
-                fig = plot_logs(1, plot_rsc, plot_labels, bg.logs.freqs, teigs,
-                                bg.valid[bg.eig_range],
-                                bg.freq_range_initial,
-                                plot_range, False,
-                                show_legend=plot_opts['legend'],
-                                new_axes=True)
-
-                fig_name = bg.opts.fig_name
-                if fig_name is not None:
-                    fig.savefig(fig_name)
-                if plot_opts['show']:
-                    plt.show()
-
-        elif options.analyze_dispersion:
-            christoffel, iw_dir = self.compute_cat(ret_iw_dir=True)
-
-            bg = detect_band_gaps(self.problem, evp.kind,
-                                  evp.eigs_rescaled, evp.eig_vectors,
-                                  self.app_options, self.conf.funmod,
-                                  christoffel=christoffel)
-
-            output('computing polarization angles...')
-            pas = compute_polarization_angles(iw_dir, bg.logs.eig_vectors)
-            output('...done')
-
-            bg.polarization_angles = pas
-
-            output('computing phase velocity...')
-            bg.phase_velocity = self.compute_phase_velocity()
-            output('...done')
-
-            if options.plot:
-                plot_rsc = bg.opts.plot_rsc
-                plot_opts =  bg.opts.plot_options
-                plt.rcParams.update(plot_rsc['params'])
-
-                aux = transform_plot_data(pas,
-                                          bg.opts.plot_transform_angle,
-                                          self.conf.funmod)
-                plot_range, pas = aux
-
-                plot_labels =  bg.opts.plot_labels_angle
-
-                fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds,
-                                bg.freq_range_margins, plot_range,
-                                clear=True)
-                fig = plot_logs(1, plot_rsc, plot_labels, bg.logs.freqs, pas,
-                                bg.valid[bg.eig_range],
-                                bg.freq_range_initial,
-                                plot_range, False,
-                                show_legend=plot_opts['legend'],
-                                new_axes=True)
-
-                fig_name = bg.opts.fig_name_angle
-                if fig_name is not None:
-                    fig.savefig(fig_name)
-
-                aux = transform_plot_data(bg.logs.eigs,
-                                          bg.opts.plot_transform_wave,
-                                          self.conf.funmod)
-                plot_range, teigs = aux
-
-                plot_labels =  bg.opts.plot_labels_wave
-
-                fig = plot_gaps(2, plot_rsc, bg.gaps, bg.kinds,
-                                bg.freq_range_margins, plot_range,
-                                clear=True)
-                fig = plot_logs(2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
-                                bg.valid[bg.eig_range],
-                                bg.freq_range_initial,
-                                plot_range, False,
-                                show_legend=plot_opts['legend'],
-                                new_axes=True)
-
-                fig_name = bg.opts.fig_name_wave
-                if fig_name is not None:
-                    fig.savefig(fig_name)
-                if plot_opts['show']:
-                    plt.show()
-
-        else:
-            bg = None
-
-        return evp, bg
+        return coefs
 
     def fix_eig_range(self, n_eigs):
         eig_range = get_default(self.app_options.eig_range, (0, n_eigs))
@@ -578,6 +483,47 @@ class AcousticBandGapsApp(SimpleApp):
         assert_(eig_range[0] < (eig_range[1] - 1))
         assert_(eig_range[1] <= n_eigs)
         self.app_options.eig_range = eig_range
+
+    def plot_band_gaps(self, coefs):
+        opts = self.app_options
+
+        bg_keys = [key for key in coefs.to_dict().keys()
+                   if key.startswith('band_gaps')]
+
+        plot_opts =  opts.plot_options
+        plot_rsc = opts.plot_rsc
+
+        plt.rcParams.update(plot_rsc['params'])
+
+        for ii, key in enumerate(bg_keys):
+            bg = coefs.get_default_attr(key)
+
+            plot_labels =  opts.plot_labels.get(key, opts.plot_labels)
+
+            plot_range, teigs = transform_plot_data(bg.logs.eigs,
+                                                    opts.plot_transform,
+                                                    self.conf.funmod)
+            fig = plot_gaps(ii, plot_rsc, bg.gaps, bg.kinds,
+                            bg.freq_range_margins, plot_range,
+                            clear=True)
+            fig = plot_logs(ii, plot_rsc, plot_labels, bg.logs.freqs, teigs,
+                            bg.valid[bg.eig_range],
+                            bg.freq_range_initial,
+                            plot_range, False,
+                            show_legend=plot_opts['legend'],
+                            new_axes=True)
+
+            if opts.fig_name is not None:
+                bg_name = key.replace('band_gaps', '')
+                if not bg_name.startswith('_'):
+                    bg_name = '_' + bg_name
+
+                fig_name = opts.fig_name + bg_name + opts.fig_suffix
+
+                fig.savefig(op.join(self.problem.output_dir, fig_name))
+
+        if plot_opts['show']:
+            plt.show()
 
     def solve_eigen_problem(self, ofn_trunk=None, post_process_hook=None):
 
