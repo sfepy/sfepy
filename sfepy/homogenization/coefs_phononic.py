@@ -425,21 +425,13 @@ class SimpleEVP(CorrMiniApp):
         opts = self.app_options
 
         problem.set_equations(self.equations)
-
         problem.select_bcs(ebc_names=self.ebcs, epbc_names=self.epbcs,
                            lcbc_names=self.get_default_attr('lcbcs', []))
-
         problem.update_materials(problem.ts)
 
         self.init_solvers(problem)
 
-        #variables = problem.get_variables()
-
-        mtx_a = problem.evaluate(self.equations['lhs'], mode='weak',
-                                 auto_init=True, dw_mode='matrix')
-
-        mtx_m = problem.evaluate(self.equations['rhs'], mode='weak',
-                                 dw_mode='matrix')
+        mtx_a, mtx_m, data = self.prepare_matrices(problem)
 
         output('computing resonance frequencies...')
         tt = [0]
@@ -467,6 +459,26 @@ class SimpleEVP(CorrMiniApp):
         except ValueError:
             from sfepy.base.base import debug; debug()
 
+        mtx_phi, eig_vectors = self.post_process(eigs, mtx_s_phi, data,
+                                                 problem)
+
+        self.save(eigs, mtx_phi, problem)
+
+        evp = Struct(name='evp', eigs=eigs, eigs_rescaled=eigs_rescaled,
+                     eig_vectors=eig_vectors)
+
+        return evp
+
+    def prepare_matrices(self, problem):
+        mtx_a = problem.evaluate(self.equations['lhs'], mode='weak',
+                                 auto_init=True, dw_mode='matrix')
+
+        mtx_m = problem.evaluate(self.equations['rhs'], mode='weak',
+                                 dw_mode='matrix')
+
+        return mtx_a, mtx_m, None
+
+    def post_process(self, eigs, mtx_s_phi, data, problem):
         n_eigs = eigs.shape[0]
 
         variables = problem.get_variables()
@@ -478,12 +490,7 @@ class SimpleEVP(CorrMiniApp):
         for ii in xrange(n_eigs):
             mtx_phi[:,ii] = make_full(mtx_s_phi[:,ii])
 
-        self.save(eigs, mtx_phi, problem)
-
-        evp = Struct(name='evp', eigs=eigs, eigs_rescaled=eigs_rescaled,
-                     eig_vectors=mtx_phi)
-
-        return evp
+        return mtx_phi, mtx_phi
 
     def save(self, eigs, mtx_phi, problem):
         save = self.app_options.save_eig_vectors
