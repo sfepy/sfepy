@@ -815,7 +815,7 @@ class BandGaps(MiniAppBase):
 
         logs, gaps, kinds = detect_band_gaps(mass, freq_info, opts)
 
-        bg = Struct(logs=logs, gaps=gaps, kinds=kinds,
+        bg = Struct(name='band_gaps', logs=logs, gaps=gaps, kinds=kinds,
                     valid=ema.valid, eig_range=slice(*opts.eig_range),
                     n_eigs=eigs.shape[0], n_zeroed=ema.n_zeroed,
                     freq_range_initial=freq_info.freq_range_initial,
