@@ -250,10 +250,18 @@ class Eigenmomenta(MiniAppBase):
         else:
             progress_bar = None
 
+        if opts.transform is not None:
+            fun = getattr(problem.conf.funmod, opts.transform[0])
+            def wrap_transform(vec, shape):
+                return fun(vec, shape, *opts.eig_vector_transform[1:])
+
+        else:
+            wrap_transform = None
+
         tt = time.clock()
         eigenmomenta = compute_eigenmomenta(self.expression, opts.var_name,
                                             problem, evp.eig_vectors,
-                                            opts.transform, progress_bar)
+                                            wrap_transform, progress_bar)
         output('...done in %.2f s' % (time.clock() - tt))
 
         n_eigs = evp.eigs.shape[0]
