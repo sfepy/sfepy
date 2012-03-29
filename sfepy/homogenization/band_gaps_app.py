@@ -27,12 +27,21 @@ def make_save_hook(base_name, post_process_hook=None, file_per_var=None):
                            file_per_var=file_per_var)
     return save_phono_correctors
 
-def try_set_defaults(obj, attr, defaults):
+def try_set_defaults(obj, attr, defaults, recur=False):
     try:
         values = getattr(obj, attr)
-        set_defaults(values, defaults)
+
     except:
         values = defaults
+
+    else:
+        if recur and isinstance(values, dict):
+            for key, val in values.iteritems():
+                set_defaults(val, defaults)
+
+        else:
+            set_defaults(values, defaults)
+
     return values
 
 def report_iw_cat(iw_dir, christoffel):
@@ -72,7 +81,7 @@ class AcousticBandGapsApp(SimpleApp):
             'eig_max' : 'max eig($M^*$)',
             'y_axis' : 'eigenvalues of mass matrix $M^*$',
         }
-        plot_labels = try_set_defaults(options, 'plot_labels', aux)
+        plot_labels = try_set_defaults(options, 'plot_labels', aux, recur=True)
 
         aux = {
             'resonance' : 'eigenfrequencies',
