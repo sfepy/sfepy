@@ -838,6 +838,9 @@ class BandGaps(MiniAppBase):
         The frequency difference smaller than `freq_eps` is considered zero.
     zero_eps : float
         The tolerance for finding zeros of mass matrix eigenvalues.
+    detect_fun : callable
+        The function for detecting the band gaps. Default is
+        :func:`detect_band_gaps()`.
     """
 
     def process_options(self):
@@ -857,13 +860,19 @@ class BandGaps(MiniAppBase):
                       freq_step=freq_step,
 
                       freq_eps=get('freq_eps', 1e-8),
-                      zero_eps=get('zero_eps', 1e-8))
+                      zero_eps=get('zero_eps', 1e-8),
+                      detect_fun=get('detect_fun', detect_band_gaps))
 
     def __call__(self, volume=None, problem=None, data=None):
         problem = get_default(problem, self.problem)
         opts = self.app_options
 
-        evp, ema, mass = [data[ii] for ii in self.requires]
+        evp, ema, mass = [data[ii] for ii in self.requires[:3]]
+        if len(self.requires) == 4:
+            mtx_b = data[self.requires[3]]
+
+        else:
+            mtx_b = None
 
         eigs = evp.eigs
 
@@ -899,7 +908,7 @@ class BandGaps(MiniAppBase):
                            freq_range=freq_range,
                            freq_range_margins=freq_range_margins)
 
-        logs, gaps, kinds = detect_band_gaps(mass, freq_info, opts)
+        logs, gaps, kinds = opts.detect_fun(mass, freq_info, opts, mtx_b=mtx_b)
 
         bg = Struct(name='band_gaps', logs=logs, gaps=gaps, kinds=kinds,
                     valid=ema.valid, eig_range=slice(*opts.eig_range),
