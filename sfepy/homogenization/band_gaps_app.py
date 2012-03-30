@@ -432,6 +432,11 @@ class AcousticBandGapsApp(SimpleApp):
             conf.coefs_all = coefs
             coefs_name = 'coefs_all'
 
+            # Insert incident wave direction to coefficients that need it.
+            for key, val in coefs.iteritems():
+                if 'incident_wave_dir' in val:
+                    val['incident_wave_dir'] = opts.incident_wave_dir
+
         else:
             # Compute only the eigenvalue problems.
             conf = self.problem.conf
