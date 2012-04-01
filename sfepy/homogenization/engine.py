@@ -1,8 +1,7 @@
-from copy import copy, deepcopy
+from copy import copy
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.applications import SimpleApp, Application
-from sfepy.fem.region import sort_by_dependency
 from coefs_base import MiniAppBase
 
 def insert_sub_reqs( reqs, levels, req_info ):
@@ -10,10 +9,15 @@ def insert_sub_reqs( reqs, levels, req_info ):
     all_reqs = []
 ##     print '>', levels, reqs
     for ii, req in enumerate( reqs ):
+        # Coefficients are referenced as 'c.<name>'...
+        areq = req
+        if req.startswith('c.'):
+            areq = req[2:]
+
         try:
-            rargs = req_info[req]
+            rargs = req_info[areq]
         except KeyError:
-            raise ValueError('requirement "%s" is not defined!' % req)    
+            raise ValueError('requirement "%s" is not defined!' % req)
 
         sub_reqs = rargs.get( 'requires', [] )
 ##         print '*', ii, req, sub_reqs
@@ -45,6 +49,7 @@ class HomogenizationEngine( SimpleApp ):
                                 'missing "coefs" in options!'),
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
+                      compute_only=get('compute_only', None),
                       save_format=get('save_format', 'vtk'),
                       dump_format=get('dump_format', 'h5'))
 
@@ -114,7 +119,14 @@ class HomogenizationEngine( SimpleApp ):
         opts = self.app_options
         coef_info = getattr( self.conf, opts.coefs )
 
+        compute_names = set(get_default(opts.compute_only, coef_info.keys()))
+        compute_names = ['c.' + key for key in compute_names]
+
         is_store_filenames = coef_info.pop('filenames', None) is not None
+        try:
+            compute_names.remove('c.filenames')
+        except:
+            pass
 
         dependencies = {}
         save_names = {}
@@ -125,48 +137,41 @@ class HomogenizationEngine( SimpleApp ):
             if not '(not_set)' in app.get_dump_name_base():
                 dump_names[app.name] = app.get_dump_name_base()
 
-        def _get_parents(req_list):
-            out = []
-            for req_name in req_list:
-                aux = req_name.split('.')
-                if len(aux) == 2:
-                    out.append(aux[1])
-            return out
-
-        # Some coefficients can require other coefficients - resolve theirorder
-        # here.
-        graph = {}
-        for coef_name, cargs in coef_info.iteritems():
-            if not coef_name in graph:
-                graph[coef_name] = [0]
-
+        # Some coefficients can require other coefficients - resolve their
+        # order here.
+        req_info = self.conf.get(opts.requirements, {})
+        info = copy(coef_info)
+        info.update(req_info)
+        all_deps = set(compute_names)
+        sorted_names = []
+        for coef_name in compute_names:
+            cargs = coef_info[coef_name[2:]]
             requires = cargs.get('requires', [])
-            if requires:
-                # Store original list to preserve its ordering.
-                cargs['_requires'] = copy(requires)
+            deps = insert_sub_reqs(copy(requires), [], info)
+            all_deps.update(deps)
 
-            for parent in _get_parents(requires):
-                graph[coef_name].append(parent)
-                requires.remove('c.' + parent)
-            
-        sorted_coef_names = sort_by_dependency(deepcopy(graph))
-        ## print graph
-        ## print sorted_coef_names
-        
+            aux = [key for key in deps if key.startswith('c.')] + [coef_name]
+            sorted_names.extend(aux)
+
+        sorted_coef_names = []
+        for name in sorted_names:
+            if name not in sorted_coef_names:
+                sorted_coef_names.append(name[2:])
+
         coefs = Struct()
         for coef_name in sorted_coef_names:
             cargs = coef_info[coef_name]
-            output( 'computing %s...' % coef_name )
-            requires = cargs.get( 'requires', [] )
+            output('computing %s...' % coef_name)
+            requires = cargs.get('requires', [])
+            requirements = [name for name in requires if not
+                            name.startswith('c.')]
 
-            self.compute_requirements( requires, dependencies, store_filenames )
+            self.compute_requirements(requirements, dependencies,
+                                      store_filenames)
 
-            if len(graph[coef_name]) > 1:
-                requires[:] = cargs['_requires']
-                for name in graph[coef_name][1:]:
-                    key = 'c.' + name
-                    dependencies[key] = getattr(coefs, name)
-            cargs.pop('_requires', None)
+            for name in requires:
+                if name.startswith('c.'):
+                    dependencies[name] = getattr(coefs, name[2:])
 
             mini_app = MiniAppBase.any_from_conf( coef_name, problem, cargs )
 
@@ -178,7 +183,7 @@ class HomogenizationEngine( SimpleApp ):
                 data[key] = dependencies[key]
 
             val = mini_app(self.volume, data=data)
-            setattr( coefs, coef_name, val )
+            setattr(coefs, coef_name, val)
             output( '...done' )
 
         # remove "auxiliary" coefs
