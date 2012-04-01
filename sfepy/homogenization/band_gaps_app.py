@@ -3,7 +3,6 @@ import shutil
 from copy import copy
 
 import numpy as nm
-import numpy.linalg as nla
 
 from sfepy.base.base import output, set_defaults, assert_
 from sfepy.base.base import Struct
@@ -232,12 +231,6 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
         plt.show()
     return fig
 
-def report_iw_cat(iw_dir, christoffel):
-    output('incident wave direction:')
-    output(iw_dir)
-    output('Christoffel acoustic tensor:')
-    output(christoffel)
-
 class AcousticBandGapsApp(SimpleApp):
     """
     Application for computing acoustic band gaps.
@@ -313,9 +306,6 @@ class AcousticBandGapsApp(SimpleApp):
         }
         plot_rsc = try_set_defaults(options, 'plot_rsc', plot_rsc)
 
-        tensor_names = get('tensor_names', None,
-                            'missing "tensor_names" in options!')
-
         volume = get('volume', None, 'missing "volume" in options!')
 
         return Struct(clear_cache=get('clear_cache', {}),
@@ -329,7 +319,6 @@ class AcousticBandGapsApp(SimpleApp):
                       homogeneous=get('homogeneous', False),
 
                       eig_range=get('eig_range', None),
-                      tensor_names=tensor_names,
                       volume=volume,
 
                       eig_vector_transform=get('eig_vector_transform', None),
@@ -434,8 +423,12 @@ class AcousticBandGapsApp(SimpleApp):
 
             # Insert incident wave direction to coefficients that need it.
             for key, val in coefs.iteritems():
-                if 'incident_wave_dir' in val:
-                    val['incident_wave_dir'] = opts.incident_wave_dir
+                coef_opts = val.get('options', None)
+                if coef_opts is None: continue
+
+                if (('incident_wave_dir' in coef_opts)
+                    and (coef_opts['incident_wave_dir'] is None)):
+                    coef_opts['incident_wave_dir'] = opts.incident_wave_dir
 
         else:
             # Compute only the eigenvalue problems.
@@ -508,51 +501,64 @@ class AcousticBandGapsApp(SimpleApp):
         if plot_opts['show']:
             plt.show()
 
-    def compute_cat(self, ret_iw_dir=False):
-        """Compute the Christoffel acoustic tensor, given the incident wave
-        direction."""
+    def plot_dispersion(self, coefs):
         opts = self.app_options
-        iw_dir = nm.array(opts.incident_wave_dir, dtype=nm.float64)
 
-        dim = self.problem.get_dim()
-        assert_(dim == iw_dir.shape[0])
+        bg_keys = [key for key in coefs.to_dict().keys()
+                   if key.startswith('dispersion')]
 
-        iw_dir = iw_dir / nla.norm(iw_dir)
+        plot_rsc = opts.plot_rsc
+        plot_opts =  opts.plot_options
+        plt.rcParams.update(plot_rsc['params'])
 
-        if self.cached_christoffel is not None:
-            christoffel = self.cached_christoffel
+        plot_labels =  opts.plot_labels_angle
 
-        else:
-            coefs = self.eval_homogenized_coefs()
-            christoffel = compute_cat(coefs, iw_dir,
-                                      self.app_options.dispersion)
-            report_iw_cat(iw_dir, christoffel)
+        for ii, key in enumerate(bg_keys):
+            pas_key = key.replace('dispersion', 'polarization_angles')
+            pas = coefs.get_default_attr(pas_key)
 
-            self.cached_christoffel = christoffel
+            aux = transform_plot_data(pas,
+                                      opts.plot_transform_angle,
+                                      self.conf.funmod)
+            plot_range, pas = aux
 
-        if ret_iw_dir:
-            return christoffel, iw_dir
 
-        else:
-            return christoffel
+            bg = coefs.get_default_attr(key)
 
-    def compute_phase_velocity(self):
-        from sfepy.homogenization.phono import compute_density_volume_info
-        opts = self.app_options
-        dim = self.problem.domain.mesh.dim
+            fig = plot_gaps(1, plot_rsc, bg.gaps, bg.kinds,
+                            bg.freq_range_margins, plot_range,
+                            clear=True)
+            fig = plot_logs(1, plot_rsc, plot_labels, bg.logs.freqs, pas,
+                            bg.valid[bg.eig_range],
+                            bg.freq_range_initial,
+                            plot_range,
+                            show_legend=plot_opts['legend'],
+                            new_axes=True)
 
-        christoffel = self.compute_cat()
+            fig_name = opts.fig_name_angle
+            if fig_name is not None:
+                fig.savefig(fig_name)
 
-        self.problem.update_materials()
-        dv_info = compute_density_volume_info(self.problem, opts.volume,
-                                              opts.region_to_material)
-        output('average density:', dv_info.average_density)
+            aux = transform_plot_data(bg.logs.eigs,
+                                      opts.plot_transform_wave,
+                                      self.conf.funmod)
+            plot_range, teigs = aux
 
-        eye = nm.eye(dim, dim, dtype = nm.float64)
-        mtx_mass = eye * dv_info.average_density
+            plot_labels =  opts.plot_labels_wave
 
-        meigs, mvecs = eig(mtx_mass, mtx_b=christoffel,
-                           eigenvectors=True, method=opts.eigensolver)
-        phase_velocity = 1.0 / nm.sqrt(meigs)
+            fig = plot_gaps(2, plot_rsc, bg.gaps, bg.kinds,
+                            bg.freq_range_margins, plot_range,
+                            clear=True)
+            fig = plot_logs(2, plot_rsc, plot_labels, bg.logs.freqs, teigs,
+                            bg.valid[bg.eig_range],
+                            bg.freq_range_initial,
+                            plot_range,
+                            show_legend=plot_opts['legend'],
+                            new_axes=True)
 
-        return phase_velocity
+            fig_name = opts.fig_name_wave
+            if fig_name is not None:
+                fig.savefig(fig_name)
+
+        if plot_opts['show']:
+            plt.show()
