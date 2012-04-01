@@ -411,6 +411,46 @@ def describe_gaps(gaps):
 
     return kinds
 
+def compute_cat_sym_sym(coef, iw_dir):
+    """
+    Christoffel acoustic tensor (part) of elasticity tensor dimension.
+    """
+    dim = iw_dir.shape[0]
+
+    cat = nm.zeros((dim, dim), dtype=nm.float64)
+    for ii in range(dim):
+        for ij in range(dim):
+            ir = coor_to_sym(ii, ij, dim)
+            for ik in range(dim):
+                for il in range(dim):
+                    ic = coor_to_sym(ik, il, dim)
+                    cat[ii,ik] += coef[ir,ic] * iw_dir[ij] * iw_dir[il]
+
+    return cat
+
+def compute_cat_dim_sym(coef, iw_dir):
+    """
+    Christoffel acoustic tensor part of piezo-coupling tensor dimension.
+    """
+    dim = iw_dir.shape[0]
+
+    cat = nm.zeros((dim,), dtype=nm.float64)
+    for ii in range(dim):
+        for ij in range(dim):
+            ir = coor_to_sym(ii, ij, dim)
+            for ik in range(dim):
+                cat[ii] += coef[ik,ir] * iw_dir[ij] * iw_dir[ik]
+
+    return cat
+
+def compute_cat_dim_dim(coef, iw_dir):
+    """
+    Christoffel acoustic tensor part of dielectric tensor dimension.
+    """
+    cat = nm.dot(nm.dot(coef, iw_dir), iw_dir)
+
+    return cat
+
 class SimpleEVP(CorrMiniApp):
     """
     Simple eigenvalue problem.
@@ -929,67 +969,131 @@ class BandGaps(MiniAppBase):
         assert_(eig_range[1] <= n_eigs)
         self.app_options.eig_range = eig_range
 
-def compute_cat( coefs, iw_dir, mode = 'simple' ):
-    r"""Compute Christoffel acoustic tensor (cat) given the incident wave
+class ChristoffelAcousticTensor(MiniAppBase):
+
+    def process_options(self):
+        get = self.options.get
+        return Struct(mode=get('mode', 'simple'),
+                      incident_wave_dir=get('incident_wave_dir', None))
+
+    r"""
+    Compute Christoffel acoustic tensor (cat) given the incident wave
     direction (unit vector).
 
-    - if mode == 'simple', coefs.elastic is the elasticity tensor C and
-    cat := \Gamma_{ik} = C_{ijkl} n_j n_l
+    Parameters
+    ----------
+    mode : 'simple' or 'piezo'
+        The call mode.
+    incident_wave_dir : array
+        The incident wave direction vector.
 
-    - if mode == 'piezo', coefs.elastic, .coupling, .dielectric are the
-    elasticity, piezo-coupling and dielectric tensors C, G, D and
-    cat := H_{ik} = \Gamma_{ik} + \frac{1}{\xi} \gamma_i \gamma_j, where
-    \gamma_i = G_{kij} n_j n_k,
-    \xi = D_{kl} n_k n_l
+    Returns
+    -------
+    cat : array
+        The Christoffel acoustic tensor.
+
+    Notes
+    -----
+    - If mode == 'simple', only the elasticity tensor :math:`C_{ijkl}` is used
+      and cat := :math:`\Gamma_{ik} = C_{ijkl} n_j n_l`.
+
+    - If mode == 'piezo', also the piezo-coupling :math:`G_{ijk}` and
+      dielectric :math:`D_{ij}` tensors are used and cat := :math:`H_{ik} =
+      \Gamma_{ik} + \frac{1}{\xi} \gamma_i \gamma_j`, where :math:`\gamma_i =
+      G_{kij} n_j n_k`, :math:`\xi = D_{kl} n_k n_l`.
     """
-    dim = iw_dir.shape[0]
 
-    cat = nm.zeros( (dim, dim), dtype = nm.float64 )
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
 
-    mtx_c = coefs.elastic
-    for ii in range( dim ):
-        for ij in range( dim ):
-            ir = coor_to_sym( ii, ij, dim )
-            for ik in range( dim ):
-                for il in range( dim ):
-                    ic = coor_to_sym( ik, il, dim )
-                    cat[ii,ik] += mtx_c[ir,ic] * iw_dir[ij] * iw_dir[il]
-#    print cat
-    
-    if mode =='piezo':
-        xi = nm.dot( nm.dot( coefs.dielectric, iw_dir ), iw_dir )
-#        print xi
-        gamma = nm.zeros( (dim,), dtype = nm.float64 )
-        mtx_g = coefs.coupling
-        for ii in range( dim ):
-            for ij in range( dim ):
-                ir = coor_to_sym( ii, ij, dim )
-                for ik in range( dim ):
-                    gamma[ii] += mtx_g[ik,ir] * iw_dir[ij] * iw_dir[ik]
-#        print gamma
-        cat += nm.outer( gamma, gamma ) / xi
-        
-    return cat
+        iw_dir = nm.array(opts.incident_wave_dir, dtype=nm.float64)
+        dim = problem.get_dim()
+        assert_(dim == iw_dir.shape[0])
 
-def compute_polarization_angles( iw_dir, wave_vectors ):
-    """Computes angle between incident wave direction `iw_dir` and wave
-    vectors. Vector length does not matter (can use eigenvectors directly)."""
-    pas = []
+        iw_dir = iw_dir / nla.norm(iw_dir)
 
-    iw_dir = iw_dir / nla.norm( iw_dir )
-    idims = range( iw_dir.shape[0] )
-    pi2 = 0.5 * nm.pi
-    for vecs in wave_vectors:
-        pa = nm.empty( vecs.shape[:-1], dtype = nm.float64 )
-        for ir, vec in enumerate( vecs ):
-            for ic in idims:
-                vv = vec[:,ic]
-                # Ensure the angle is in [0, pi/2].
-                val = nm.arccos( nm.dot( iw_dir, vv ) / nla.norm( vv ) )
-                if val > pi2:
-                    val = nm.pi - val
-                pa[ir,ic] = val
+        elastic = data[self.requires[0]]
 
-        pas.append( pa )
+        cat = compute_cat_sym_sym(elastic, iw_dir)
 
-    return pas
+        if opts.mode =='piezo':
+            dielectric, coupling = [data[ii] for ii in self.requires[1:]]
+            xi = compute_cat_dim_dim(dielectric, iw_dir)
+            gamma = compute_cat_dim_sym(coupling, iw_dir)
+            cat += nm.outer(gamma, gamma) / xi
+
+        return cat
+
+class PolarizationAngles(MiniAppBase):
+    """
+    Compute polarization angles, i.e., angles between incident wave direction
+    and wave vectors. Vector length does not matter - eigenvectors are used
+    directly.
+    """
+
+    def process_options(self):
+        get = self.options.get
+        return Struct(incident_wave_dir=get('incident_wave_dir', None))
+
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
+
+        iw_dir = nm.array(opts.incident_wave_dir, dtype=nm.float64)
+        dim = problem.get_dim()
+        assert_(dim == iw_dir.shape[0])
+
+        iw_dir = iw_dir / nla.norm(iw_dir)
+
+        dispersion = data[self.requires[0]]
+
+        wave_vectors = dispersion.logs.eig_vectors
+
+        pas = []
+
+        iw_dir = iw_dir / nla.norm(iw_dir)
+        idims = range(iw_dir.shape[0])
+        pi2 = 0.5 * nm.pi
+        for vecs in wave_vectors:
+            pa = nm.empty(vecs.shape[:-1], dtype=nm.float64)
+            for ir, vec in enumerate(vecs):
+                for ic in idims:
+                    vv = vec[:,ic]
+                    # Ensure the angle is in [0, pi/2].
+                    val = nm.arccos(nm.dot(iw_dir, vv) / nla.norm(vv))
+                    if val > pi2:
+                        val = nm.pi - val
+                    pa[ir,ic] = val
+
+            pas.append(pa)
+
+        return pas
+
+class PhaseVelocity(MiniAppBase):
+    """
+    Compute phase velocity.
+    """
+
+    def process_options(self):
+        get = self.options.get
+
+        return Struct(eigensolver=get('eigensolver', 'eig.sgscipy'))
+
+    def __call__(self, volume=None, problem=None, data=None):
+        problem = get_default(problem, self.problem)
+        opts = self.app_options
+
+        dv_info, cat = [data[ii] for ii in self.requires]
+
+        output('average density:', dv_info.average_density)
+
+        dim = problem.get_dim()
+        eye = nm.eye(dim, dim, dtype=nm.float64)
+        mtx_mass = eye * dv_info.average_density
+
+        meigs, mvecs = eig(mtx_mass, mtx_b=cat,
+                           eigenvectors=True, method=opts.eigensolver)
+        phase_velocity = 1.0 / nm.sqrt(meigs)
+
+        return phase_velocity
