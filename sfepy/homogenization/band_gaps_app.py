@@ -1,6 +1,5 @@
 import os.path as op
 import shutil
-from copy import copy
 
 import numpy as nm
 
@@ -244,13 +243,10 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        coefs_basic = get('coefs_basic', None,
-                          'missing "coefs_basic" in options!')
-        coefs_dispersion = get('coefs_dispersion', None,
-                               'missing "coefs_dispersion" in options!')
-
+        coefs = get('coefs', None, 'missing "coefs" in options!')
         requirements = get('requirements', None,
                            'missing "requirements" in options!')
+        volume = get('volume', None, 'missing "volume" in options!')
 
         default_plot_options = {'show' : True,'legend' : False,}
 
@@ -306,22 +302,14 @@ class AcousticBandGapsApp(SimpleApp):
         }
         plot_rsc = try_set_defaults(options, 'plot_rsc', plot_rsc)
 
-        volume = get('volume', None, 'missing "volume" in options!')
-
         return Struct(clear_cache=get('clear_cache', {}),
-                      coefs_basic=coefs_basic,
-                      coefs_dispersion=coefs_dispersion,
+
+                      coefs=coefs,
                       requirements=requirements,
 
                       incident_wave_dir=get('incident_wave_dir', None),
-                      dispersion=get('dispersion', 'simple'),
-                      dispersion_conf=get('dispersion_conf', None),
-                      homogeneous=get('homogeneous', False),
-
-                      eig_range=get('eig_range', None),
                       volume=volume,
 
-                      eig_vector_transform=get('eig_vector_transform', None),
                       plot_transform=get('plot_transform', None),
                       plot_transform_wave=get('plot_transform_wave', None),
                       plot_transform_angle=get('plot_transform_angle', None),
@@ -346,20 +334,18 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        tensor_names = get('tensor_names', None,
-                           'missing "tensor_names" in options!')
-
+        coefs = get('coefs', None, 'missing "coefs" in options!')
+        requirements = get('requirements', None,
+                           'missing "requirements" in options!')
+        incident_wave_dir=get('incident_wave_dir', None,
+                              'missing "incident_wave_dir" in options!')
         volume = get('volume', None, 'missing "volume" in options!')
 
         return Struct(clear_cache=get('clear_cache', {}),
 
-                      incident_wave_dir=get('incident_wave_dir', None),
-                      dispersion=get('dispersion', 'simple'),
-                      dispersion_conf=get('dispersion_conf', None),
-                      homogeneous=get('homogeneous', False),
-                      fig_suffix=get('fig_suffix', '.pdf'),
-
-                      tensor_names=tensor_names,
+                      coefs=coefs,
+                      requirements=requirements,
+                      incident_wave_dir=incident_wave_dir,
                       volume=volume)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
@@ -401,28 +387,21 @@ class AcousticBandGapsApp(SimpleApp):
             if val and key.startswith('cached_'):
                 setattr(self, key, None)
 
-        if options.phase_velocity:
-            # No band gaps in this case.
-            return self.compute_phase_velocity()
-
         opts = self.app_options
+        conf = self.problem.conf
+        coefs_name = opts.coefs
+        coef_info = conf.get_default_attr(opts.coefs, None,
+                                          'missing "%s" in problem description!'
+                                          % opts.coefs)
 
         if options.detect_band_gaps:
-            # Compute basic coefficients and data.
-            coefs_name = opts.coefs_basic
+            # Compute band gaps coefficients and data.
+            keys = [key for key in coef_info if key.startswith('band_gaps')]
 
-        elif options.analyze_dispersion:
-            # Compute basic + dispersion coefficients and data.
-            conf = self.problem.conf
-
-            coefs = copy(conf.get(opts.coefs_basic, {}))
-            coefs.update(conf.get(opts.coefs_dispersion, {}))
-
-            conf.coefs_all = coefs
-            coefs_name = 'coefs_all'
+        elif options.analyze_dispersion or options.phase_velocity:
 
             # Insert incident wave direction to coefficients that need it.
-            for key, val in coefs.iteritems():
+            for key, val in coef_info.iteritems():
                 coef_opts = val.get('options', None)
                 if coef_opts is None: continue
 
@@ -430,19 +409,29 @@ class AcousticBandGapsApp(SimpleApp):
                     and (coef_opts['incident_wave_dir'] is None)):
                     coef_opts['incident_wave_dir'] = opts.incident_wave_dir
 
+            if options.analyze_dispersion:
+                # Compute dispersion coefficients and data.
+                keys = [key for key in coef_info
+                        if key.startswith('dispersion')
+                        or key.startswith('polarization_angles')]
+
+            else:
+                # Compute phase velocity and its requirements.
+                keys = [key for key in coef_info
+                        if key.startswith('phase_velocity')]
+
         else:
             # Compute only the eigenvalue problems.
-            conf = self.problem.conf
-
             names = [req for req in conf.get(opts.requirements, [''])
                      if req.startswith('evp')]
             coefs = {'dummy' : {'requires' : names,
                                 'class' : CoefDummy,}}
-
             conf.coefs_dummy = coefs
             coefs_name = 'coefs_dummy'
+            keys = ['dummy']
 
         he_options = Struct(coefs=coefs_name, requirements=opts.requirements,
+                            compute_only=keys,
                             post_process_hook=self.post_process_hook)
         volume = get_volume_from_options(opts, self.problem)
 
