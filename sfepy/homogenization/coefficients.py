@@ -129,52 +129,71 @@ class Coefficients(Struct):
         self._save_dict_latex(self.__dict__, fd, names)
         fd.close()
 
-    def _save_dict( self, adict, fd, names, format ):
+    def _save_dict(self, adict, fd, names, format):
         for key, val in ordered_iteritems(adict):
             try:
                 lname = names[key]
             except:
                 lname = key
-            fd.write( '%s:\n' % lname )
-            if isinstance( val, dict ):
-                self._save_dict( val, fd, names, format )
-                fd.write( '\n' )
+            fd.write('%s:\n' % lname)
+
+            if hasattr(val, 'to_file_txt'):
+                if val.to_file_txt is not None:
+                    val.to_file_txt(fd, format, val)
+
+                else:
+                    fd.write('--\n')
+
+            elif isinstance(val, dict):
+                self._save_dict(val, fd, names, format)
+                fd.write('\n')
+
             elif isinstance(val, basestr):
-                fd.write( val + '\n' )
-            elif isinstance( val, float ):
-                fd.write( '%e\n' % val )
-            elif val.ndim == 0:
-                fd.write( format % val )
-                fd.write( '\n' )
-            elif val.ndim == 1:
-                for ic in xrange( val.shape[0] ):
-                    fd.write( format % val[ic] )
-                    if ic < (val.shape[0] - 1):
-                        fd.write( ', ' )
-                    else:
-                        fd.write( '\n' )
-            elif val.ndim == 2:
-                for ir in xrange( val.shape[0] ):
-                    for ic in xrange( val.shape[1] ):
-                        fd.write( format % val[ir,ic] )
-                        if ic < (val.shape[1] - 1):
-                            fd.write( ', ' )
-                        elif ir < (val.shape[0] - 1):
-                            fd.write( ';\n' )
-                fd.write( '\n' )
-            elif val.ndim == 3:
-                for ii in xrange( val.shape[0] ):
-                    fd.write( '  step %d:\n' % ii )
-                    for ir in xrange( val.shape[1] ):
-                        for ic in xrange( val.shape[2] ):
-                            fd.write( '  ' + format % val[ii,ir,ic] )
-                            if ic < (val.shape[2] - 1):
-                                fd.write( ', ' )
-                            elif ir < (val.shape[1] - 1):
-                                fd.write( ';\n' )
-                    fd.write( '\n' )
-                fd.write( '\n' )
-            fd.write( '\n' )
+                fd.write(val + '\n')
+
+            elif isinstance(val, float):
+                fd.write('%e\n' % val)
+
+            elif isinstance(val, nm.ndarray):
+                if val.ndim == 0:
+                    fd.write(format % val)
+                    fd.write('\n')
+
+                elif val.ndim == 1:
+                    for ic in xrange(val.shape[0]):
+                        fd.write(format % val[ic])
+                        if ic < (val.shape[0] - 1):
+                            fd.write(', ')
+                        else:
+                            fd.write('\n')
+
+                elif val.ndim == 2:
+                    for ir in xrange(val.shape[0]):
+                        for ic in xrange(val.shape[1]):
+                            fd.write(format % val[ir,ic])
+                            if ic < (val.shape[1] - 1):
+                                fd.write(', ')
+                            elif ir < (val.shape[0] - 1):
+                                fd.write(';\n')
+                    fd.write('\n')
+
+                elif val.ndim == 3:
+                    for ii in xrange(val.shape[0]):
+                        fd.write('  step %d:\n' % ii)
+                        for ir in xrange(val.shape[1]):
+                            for ic in xrange(val.shape[2]):
+                                fd.write('  ' + format % val[ii,ir,ic])
+                                if ic < (val.shape[2] - 1):
+                                    fd.write(', ')
+                                elif ir < (val.shape[1] - 1):
+                                    fd.write(';\n')
+                        fd.write('\n')
+                    fd.write('\n')
+
+            else:
+                fd.write('--\n')
+
+            fd.write('\n')
 
     def to_file_txt( self, filename, names, format ):
 
