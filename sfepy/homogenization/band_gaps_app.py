@@ -7,6 +7,7 @@ from sfepy.base.base import output, set_defaults, assert_
 from sfepy.base.base import Struct
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.homogen_app import get_volume_from_options
+from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import SimpleApp
 from sfepy.base.plotutils import plt
@@ -230,7 +231,7 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
         plt.show()
     return fig
 
-class AcousticBandGapsApp(SimpleApp):
+class AcousticBandGapsApp(HomogenizationApp):
     """
     Application for computing acoustic band gaps.
     """
@@ -242,11 +243,6 @@ class AcousticBandGapsApp(SimpleApp):
         non-compulsory options.
         """
         get = options.get_default_attr
-
-        coefs = get('coefs', None, 'missing "coefs" in options!')
-        requirements = get('requirements', None,
-                           'missing "requirements" in options!')
-        volume = get('volume', None, 'missing "volume" in options!')
 
         default_plot_options = {'show' : True,'legend' : False,}
 
@@ -304,11 +300,7 @@ class AcousticBandGapsApp(SimpleApp):
 
         return Struct(clear_cache=get('clear_cache', {}),
 
-                      coefs=coefs,
-                      requirements=requirements,
-
                       incident_wave_dir=get('incident_wave_dir', None),
-                      volume=volume,
 
                       plot_transform=get('plot_transform', None),
                       plot_transform_wave=get('plot_transform_wave', None),
@@ -334,19 +326,12 @@ class AcousticBandGapsApp(SimpleApp):
         """
         get = options.get_default_attr
 
-        coefs = get('coefs', None, 'missing "coefs" in options!')
-        requirements = get('requirements', None,
-                           'missing "requirements" in options!')
         incident_wave_dir=get('incident_wave_dir', None,
                               'missing "incident_wave_dir" in options!')
-        volume = get('volume', None, 'missing "volume" in options!')
 
         return Struct(clear_cache=get('clear_cache', {}),
 
-                      coefs=coefs,
-                      requirements=requirements,
-                      incident_wave_dir=incident_wave_dir,
-                      volume=volume)
+                      incident_wave_dir=incident_wave_dir)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
@@ -363,7 +348,7 @@ class AcousticBandGapsApp(SimpleApp):
                         op.join(output_dir, op.basename(conf._filename)))
 
     def setup_options(self):
-        SimpleApp.setup_options(self)
+        HomogenizationApp.setup_options(self)
 
         if self.options.phase_velocity:
             process_options = AcousticBandGapsApp.process_options_pv
