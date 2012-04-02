@@ -155,7 +155,7 @@ class HomogenizationEngine( SimpleApp ):
 
         sorted_coef_names = []
         for name in sorted_names:
-            if name not in sorted_coef_names:
+            if name[2:] not in sorted_coef_names:
                 sorted_coef_names.append(name[2:])
 
         coefs = Struct()
