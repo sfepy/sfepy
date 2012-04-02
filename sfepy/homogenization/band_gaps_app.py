@@ -463,7 +463,7 @@ class AcousticBandGapsApp(SimpleApp):
     def plot_band_gaps(self, coefs):
         opts = self.app_options
 
-        bg_keys = [key for key in coefs.to_dict().keys()
+        bg_keys = [key for key in coefs.to_dict()
                    if key.startswith('band_gaps')]
 
         plot_opts =  opts.plot_options
@@ -504,7 +504,7 @@ class AcousticBandGapsApp(SimpleApp):
     def plot_dispersion(self, coefs):
         opts = self.app_options
 
-        bg_keys = [key for key in coefs.to_dict().keys()
+        bg_keys = [key for key in coefs.to_dict()
                    if key.startswith('dispersion')]
 
         plot_rsc = opts.plot_rsc
