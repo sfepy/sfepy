@@ -56,10 +56,11 @@ def main():
         return
 
     required, other = get_standard_keywords()
-    required.remove('solver_[0-9]+|solvers')
+    required.remove('equations')
+    if not options.analyze_dispersion:
+        required.remove('solver_[0-9]+|solvers')
     if options.phase_velocity:
         required.remove('ebc_[0-9]+|ebcs')
-        required.remove('equations')
     conf = ProblemConf.from_file(filename_in, required, other)
 
     app = AcousticBandGapsApp(conf, options, 'phonon:')
