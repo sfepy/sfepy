@@ -655,7 +655,23 @@ class DensityVolumeInfo(MiniAppBase):
                       average_density=average_density,
                       total_volume=total_volume,
                       volumes=volumes,
-                      densities=densities)
+                      densities=densities,
+                      to_file_txt=self.to_file_txt)
+
+    @staticmethod
+    def to_file_txt(fd, float_format, dv_info):
+        ff = float_format + '\n'
+
+        fd.write('total volume:\n')
+        fd.write(ff % dv_info.total_volume)
+        fd.write('average density:\n')
+        fd.write(ff % dv_info.average_density)
+
+        for key, val in dv_info.volumes.iteritems():
+            fd.write('%s volume:\n' % key)
+            fd.write(ff % val)
+            fd.write('%s density:\n' % key)
+            fd.write(ff % dv_info.densities[key])
 
 class Eigenmomenta(MiniAppBase):
     """
@@ -738,7 +754,8 @@ class Eigenmomenta(MiniAppBase):
                 % (n_zeroed, n_eigs, tol))
 
         out = Struct(name='eigenmomenta', n_zeroed=n_zeroed,
-                     eigenmomenta=eigenmomenta, valid=valid)
+                     eigenmomenta=eigenmomenta, valid=valid,
+                     to_file_txt=None)
         return out
 
 class AcousticMassTensor(MiniAppBase):
@@ -755,6 +772,7 @@ class AcousticMassTensor(MiniAppBase):
     -----
     `eigenmomenta`, `eigs` should contain only valid resonances.
     """
+    to_file_txt = None
 
     def __call__(self, volume=None, problem=None, data=None):
         evp, self.dv_info, ema = [data[ii] for ii in self.requires]
@@ -825,6 +843,7 @@ class AppliedLoadTensor(MiniAppBase):
     `eigenmomenta`, `ueigenmomenta`, `eigs` should contain only valid
     resonances.
     """
+    to_file_txt = None
 
     def __call__(self, volume=None, problem=None, data=None):
         evp, self.dv_info, ema, uema = [data[ii] for ii in self.requires]
@@ -956,7 +975,7 @@ class BandGaps(MiniAppBase):
                     freq_range_initial=freq_info.freq_range_initial,
                     freq_range=freq_info.freq_range,
                     freq_range_margins=freq_info.freq_range_margins,
-                    opts=opts)
+                    opts=opts, to_file_txt=None)
 
         return bg
 

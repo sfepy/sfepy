@@ -8,6 +8,7 @@ from sfepy.base.base import Struct
 from sfepy.homogenization.engine import HomogenizationEngine
 from sfepy.homogenization.homogen_app import get_volume_from_options
 from sfepy.homogenization.homogen_app import HomogenizationApp
+from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import CoefDummy
 from sfepy.applications import SimpleApp
 from sfepy.base.plotutils import plt
@@ -424,6 +425,14 @@ class AcousticBandGapsApp(HomogenizationApp):
                                   app_options=he_options,
                                   volume=volume)
         coefs = he()
+
+        coefs = Coefficients(**coefs.to_dict())
+        coefs.volume = volume
+
+        coefs_filename = op.join(opts.output_dir, opts.coefs_filename)
+        coefs.to_file_txt(coefs_filename + '.txt',
+                          opts.tex_names,
+                          opts.float_format)
 
         if options.plot:
             if options.detect_band_gaps:
