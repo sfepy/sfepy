@@ -445,6 +445,16 @@ class AcousticBandGapsApp(HomogenizationApp):
                           opts.tex_names,
                           opts.float_format)
 
+        bg_keys = [key for key in coefs.to_dict()
+                   if key.startswith('band_gaps')
+                   or key.startswith('dispersion')]
+        for ii, key in enumerate(bg_keys):
+            bg = coefs.get_default_attr(key)
+            log_save_name = bg.get_default_attr('log_save_name', None)
+            if log_save_name is not None:
+                filename = op.join(self.problem.output_dir, log_save_name)
+                bg.save_log(filename, opts.float_format, bg)
+
         if options.plot:
             if options.detect_band_gaps:
                 self.plot_band_gaps(coefs)
