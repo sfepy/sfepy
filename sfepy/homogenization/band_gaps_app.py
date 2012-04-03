@@ -232,6 +232,17 @@ def plot_gaps(fig_num, plot_rsc, gaps, kinds, freq_range,
         plt.show()
     return fig
 
+def _get_fig_name(output_dir, fig_name, key, common, fig_suffix):
+    """
+    Construct the complete name of figure file.
+    """
+    name = key.replace(common, '')
+    if name and (not name.startswith('_')):
+        name = '_' + name
+
+    fig_name = fig_name + name + fig_suffix
+    return op.join(output_dir, fig_name)
+
 class AcousticBandGapsApp(HomogenizationApp):
     """
     Application for computing acoustic band gaps.
@@ -473,13 +484,9 @@ class AcousticBandGapsApp(HomogenizationApp):
                             new_axes=True)
 
             if opts.fig_name is not None:
-                bg_name = key.replace('band_gaps', '')
-                if not bg_name.startswith('_'):
-                    bg_name = '_' + bg_name
-
-                fig_name = opts.fig_name + bg_name + opts.fig_suffix
-
-                fig.savefig(op.join(self.problem.output_dir, fig_name))
+                fig_name = _get_fig_name(self.problem.output_dir, opts.fig_name,
+                                         key, 'band_gaps', opts.fig_suffix)
+                fig.savefig(fig_name)
 
         if plot_opts['show']:
             plt.show()
@@ -520,6 +527,8 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             fig_name = opts.fig_name_angle
             if fig_name is not None:
+                fig_name = _get_fig_name(self.problem.output_dir, fig_name,
+                                         key, 'dispersion', opts.fig_suffix)
                 fig.savefig(fig_name)
 
             aux = transform_plot_data(bg.logs.eigs,
@@ -541,6 +550,8 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             fig_name = opts.fig_name_wave
             if fig_name is not None:
+                fig_name = _get_fig_name(self.problem.output_dir, fig_name,
+                                         key, 'dispersion', opts.fig_suffix)
                 fig.savefig(fig_name)
 
         if plot_opts['show']:
