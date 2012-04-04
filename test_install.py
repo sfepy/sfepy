@@ -112,11 +112,19 @@ def main():
     eok += report(out, '...', -2, 1, '64247')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py')
-    eok += report(out, '...', -4, 2, '232.40156299')
-    eok += report(out, '...', -3, 1, '132604.79235405]')
+    eok += report(out, '...', -6, 2, '208.54511594')
+    eok += report(out, '...', -5, 1, '116309.22337295]')
+
+    out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py --phase-velocity')
+    eok += report(out, '...', -2, 3, '4.1894123')
+    eok += report(out, '...', -2, 4, '2.62055608]')
 
     out, err = check_output('python ./phonon.py examples/phononic/band_gaps.py -d')
-    eok += report(out, '...', -5, 4, '0.209329,')
+    eok += report(out, '...', -6, 1, '[0,')
+
+    out, err = check_output('python ./phonon.py examples/phononic/band_gaps_rigid.py')
+    eok += report(out, '...', -6, 2, '4.58709531e+01')
+    eok += report(out, '...', -5, 1, '1.13929200e+05]')
 
     out, err = check_output('python ./schroedinger.py --2d --create-mesh')
     eok += report(out, '...', -2, -1, 'tmp/mesh.vtk')
