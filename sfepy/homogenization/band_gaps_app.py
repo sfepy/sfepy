@@ -292,21 +292,25 @@ class AcousticBandGapsApp(HomogenizationApp):
         plot_labels_wave = try_set_defaults(options, 'plot_labels_wave', aux)
 
         plot_rsc =  {
-            'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-' },
-            'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':' },
-            'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--' },
-            'eig_min' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '--' },
-            'eig_mid' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-.' },
-            'eig_max' : {'linewidth' : 0.5, 'color' : 'b', 'linestyle' : '-' },
-            'strong_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 0.5) },
-            'weak_gap' : {'linewidth' : 0, 'facecolor' : (1, 1, 1) },
-            'propagation' : {'linewidth' : 0, 'facecolor' : (0.5, 1, 0.5) },
-            'params' : {'axes.labelsize': 'large',
+            'resonance' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : '-'},
+            'masked' : {'linewidth' : 0.5, 'color' : 'r', 'linestyle' : ':'},
+            'x_axis' : {'linewidth' : 0.5, 'color' : 'k', 'linestyle' : '--'},
+            'eig_min' : {'linewidth' : 2.0, 'color' : (0.0, 0.0, 1.0),
+                         'linestyle' : ':' },
+            'eig_mid' : {'linewidth' : 2.0, 'color' : (0.0, 0.0, 0.8),
+                         'linestyle' : '--' },
+            'eig_max' : {'linewidth' : 2.0, 'color' : (0.0, 0.0, 0.6),
+                         'linestyle' : '-' },
+            'strong_gap' : {'linewidth' : 0, 'facecolor' : (0.2, 0.4, 0.2)},
+            'weak_gap' : {'linewidth' : 0, 'facecolor' : (0.6, 0.8, 0.6)},
+            'propagation' : {'linewidth' : 0, 'facecolor' : (1, 1, 1)},
+            'params' : {'axes.labelsize': 'x-large',
                         'text.fontsize': 'large',
                         'legend.fontsize': 'large',
+                        'legend.loc': 0,
                         'xtick.labelsize': 'large',
                         'ytick.labelsize': 'large',
-                        'text.usetex': False},
+                        'text.usetex': True},
         }
         plot_rsc = try_set_defaults(options, 'plot_rsc', plot_rsc)
 
