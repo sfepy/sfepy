@@ -448,6 +448,12 @@ class AcousticBandGapsApp(HomogenizationApp):
             elif options.analyze_dispersion:
                 self.plot_dispersion(coefs)
 
+        elif options.phase_velocity:
+            keys = [key for key in coefs.to_dict()
+                    if key.startswith('phase_velocity')]
+            for key in keys:
+                output('%s:' % key, coefs.get_default_attr(key))
+
         return coefs
 
     def plot_band_gaps(self, coefs):
