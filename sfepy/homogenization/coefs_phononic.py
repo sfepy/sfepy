@@ -994,7 +994,11 @@ class BandGaps(MiniAppBase):
 
     @staticmethod
     def to_file_txt(fd, float_format, bg):
-        fd.write(bg.log_save_name + '\n')
+        if bg.log_save_name is not None:
+            fd.write(bg.log_save_name + '\n')
+
+        else:
+            fd.write('--\n')
 
     @staticmethod
     def save_log(filename, float_format, bg):
