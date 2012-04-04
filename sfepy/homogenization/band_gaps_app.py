@@ -314,9 +314,7 @@ class AcousticBandGapsApp(HomogenizationApp):
         }
         plot_rsc = try_set_defaults(options, 'plot_rsc', plot_rsc)
 
-        return Struct(clear_cache=get('clear_cache', {}),
-
-                      incident_wave_dir=get('incident_wave_dir', None),
+        return Struct(incident_wave_dir=get('incident_wave_dir', None),
 
                       plot_transform=get('plot_transform', None),
                       plot_transform_wave=get('plot_transform_wave', None),
@@ -345,19 +343,13 @@ class AcousticBandGapsApp(HomogenizationApp):
         incident_wave_dir=get('incident_wave_dir', None,
                               'missing "incident_wave_dir" in options!')
 
-        return Struct(clear_cache=get('clear_cache', {}),
-
-                      incident_wave_dir=incident_wave_dir)
+        return Struct(incident_wave_dir=incident_wave_dir)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
         SimpleApp.__init__(self, conf, options, output_prefix,
                            init_equations=False)
 
         self.setup_options()
-        self.cached_coefs = None
-        self.cached_iw_dir = None
-        self.cached_christoffel = None
-        self.cached_evp = None
 
         output_dir = self.problem.output_dir
         shutil.copyfile(conf._filename,
@@ -374,19 +366,9 @@ class AcousticBandGapsApp(HomogenizationApp):
 
     def call(self):
         """
-        In parametric runs, cached data (homogenized coefficients,
-        Christoffel acoustic tensor and eigenvalue problem solution) are
-        cleared according to 'clear_cache' aplication options.
-
-        Example:
-
-        clear_cache = {'cached_christoffel' : True, 'cached_evp' : True}
+        Construct and call the homogenization engine accoring to options.
         """
         options = self.options
-
-        for key, val in self.app_options.clear_cache.iteritems():
-            if val and key.startswith('cached_'):
-                setattr(self, key, None)
 
         opts = self.app_options
         conf = self.problem.conf
