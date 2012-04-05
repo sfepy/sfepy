@@ -1118,7 +1118,9 @@ class Field( Struct ):
         """
         ap = self.aps[ig]
         # Share full group mappings.
-        if region.shape[ig].n_vertex == self.domain.groups[ig].shape.n_vertex:
+        shape = self.domain.groups[ig].shape
+        if ((region.shape[ig].n_vertex == shape.n_vertex)
+            and (region.shape[ig].n_cell == shape.n_el)):
             region_name = ig
 
         else:
