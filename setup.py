@@ -64,6 +64,7 @@ def configuration(parent_package='',top_path=None):
         'gen_term_table.py',
         'hfm3_mesh.py',
         'mesh_to_vtk.py',
+        'plot_condition_numbers.py',
         'show_authors.py',
         'spymatrix.py'
     ]
