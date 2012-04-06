@@ -37,6 +37,7 @@ tmp/terms.*
 samples/*
 doc/tex/*.pdf
 doc/doxygenrc
+doc/examples/
 doc/html/
 doc/_build/
 tmp/*
