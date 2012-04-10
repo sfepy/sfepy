@@ -115,9 +115,9 @@ class Test(TestCommon):
                         vals[ir] = float(poly.subs(subs))
 
                     return vals
-                    
+
                 val = quad.integrate(fun, order=order, geometry=geometry)
-                _ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-15)
+                _ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-14)
 
                 self.report('  sym. == num.: %f == %f -> %s' %
                             (float(integral), val, _ok))
