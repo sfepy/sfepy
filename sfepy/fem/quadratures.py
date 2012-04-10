@@ -18,7 +18,7 @@
 **Note** The order for quadratures on tensor product domains (`'2_4'`,
 `'3_8'` geometries) in case of composite Gauss quadratures (products of
 1D quadratures) holds for each component separately, so the actual
-polynomial order may be much higher (up to `order**dimension`).
+polynomial order may be much higher (up to `order * dimension`).
 
 Naming conventions in problem description files::
 
@@ -26,9 +26,13 @@ Naming conventions in problem description files::
 
 Integral 'family' is just an arbitrary name given by user.
 
-Quadrature coordinates and weights copied from "The Finite Element
-Method Displayed" by Gouri Dhatt and Gilbert Touzat,
-Wiley-Interscience Production, 1984. 
+Quadrature coordinates and weights copied from The Finite Element Method
+Displayed by Gouri Dhatt and Gilbert Touzat, Wiley-Interscience Production,
+1984.
+
+The line integral (geometry '1_2') coordinates and weights are taken from
+Abramowitz, M. and Stegun, I.A., Handbook of Mathematical Functions, Dover
+Publications, New York, 1972.
 
 Examples
 --------
@@ -62,9 +66,14 @@ class QuadraturePoints(Struct):
     tp_fix : float, optional
         The value that is used to multiply the tensor product element
         volume (= 1.0) to get the correct volume.
+    symmetric : bool
+        If True, the integral is 1D and the given coordinates and weights are
+        symmetric w.r.t. the centre of bounds; only the non-negative
+        coordinates are given.
     """
 
-    def __init__(self, data, coors=None, weights=None, bounds=None, tp_fix=1.0):
+    def __init__(self, data, coors=None, weights=None, bounds=None, tp_fix=1.0,
+                 symmetric=False):
         if coors is None:
             data = nm.array(data, dtype=nm.float64, ndmin=2)
             self.coors = data[:,:-1].copy()
@@ -83,6 +92,9 @@ class QuadraturePoints(Struct):
         bbox = nm.array([self.bounds] * self.dim, dtype=nm.float64)
         self.volume = nm.prod(bbox.sum(axis=1)) * tp_fix
 
+        if symmetric:
+            isym = 0 if data[0, 0] == 0 else None
+
         if bounds is not None:
             # Transform from given bounds to self.bounds.
             bbox = nm.array([bounds] * self.dim, dtype=nm.float64)
@@ -97,30 +109,111 @@ class QuadraturePoints(Struct):
             self.coors = c1 * self.coors + c2
             self.weights *= self.volume / volume
 
+        if symmetric:
+            if self.coors.shape[1] != 1:
+                raise ValueError()
+            origin = 0.5 * (self.bounds[0] + self.bounds[1])
+
+            self.coors = nm.r_[2 * origin - self.coors[:isym:-1], self.coors]
+            self.weights = nm.r_[self.weights[:isym:-1], self.weights]
+
 _QP = QuadraturePoints
 quadrature_tables = {
     '1_2' : {
 
-        1 : _QP( [ 0.5, 1.0]),
+        1 : _QP([[0.000000000000000e+00, 2.0]],
+                bounds=(-1.0, 1.0), symmetric=True),
 
-        3 : _QP([[-1.0/nm.sqrt(3), 1.0],
-                 [ 1.0/nm.sqrt(3), 1.0]], bounds=(-1.0, 1.0)),
+        3 : _QP([[0.577350269189626e+00, 1.0]],
+                bounds=(-1.0, 1.0), symmetric=True),
 
-        5 : _QP([[-nm.sqrt(3.0/5.0), 5.0/9.0],
-                 [ 0.0             , 8.0/9.0],
-                 [ nm.sqrt(3.0/5.0), 5.0/9.0]], bounds=(-1.0, 1.0)),
+        5 : _QP([[0.000000000000000e+00, 0.888888888888889e+00],
+                 [0.774596669241483e+00, 0.555555555555556e+00]],
+                bounds=(-1.0, 1.0), symmetric=True),
 
-        7 : _QP([[-nm.sqrt((3+2*nm.sqrt(6.0/5.0))/7), 0.5-1/(6*nm.sqrt(6.0/5.0))],
-                 [-nm.sqrt((3-2*nm.sqrt(6.0/5.0))/7), 0.5+1/(6*nm.sqrt(6.0/5.0))],
-                 [ nm.sqrt((3-2*nm.sqrt(6.0/5.0))/7), 0.5+1/(6*nm.sqrt(6.0/5.0))],
-                 [ nm.sqrt((3+2*nm.sqrt(6.0/5.0))/7), 0.5-1/(6*nm.sqrt(6.0/5.0))]], bounds=(-1.0, 1.0)),
+        7 : _QP([[0.339981043584856e+00, 0.652145154862546e+00],
+                 [0.861136311594053e+00, 0.347854845137454e+00]],
+                bounds=(-1.0, 1.0), symmetric=True),
 
-        9 : _QP([[-nm.sqrt(5+4*nm.sqrt(5.0/14.0))/3, 161.0/450.0-13/(180*nm.sqrt(5.0/14.0))],
-                 [-nm.sqrt(5-4*nm.sqrt(5.0/14.0))/3, 161.0/450.0+13/(180*nm.sqrt(5.0/14.0))],
-                 [ 0.0                             , 128.0/225.0                           ],
-                 [ nm.sqrt(5-4*nm.sqrt(5.0/14.0))/3, 161.0/450.0+13/(180*nm.sqrt(5.0/14.0))],
-                 [ nm.sqrt(5+4*nm.sqrt(5.0/14.0))/3, 161.0/450.0-13/(180*nm.sqrt(5.0/14.0))]], bounds=(-1.0, 1.0)),
+        9 : _QP([[0.000000000000000e+00, 0.568888888888889e+00],
+                 [0.538469310105683e+00, 0.478628670499366e+00],
+                 [0.906179845938664e+00, 0.236926885056189e+00]],
+                bounds=(-1.0, 1.0), symmetric=True),
 
+        11 : _QP([[0.238619186083197e+00, 0.467913934572691e+00],
+                  [0.661209386466265e+00, 0.360761573048139e+00],
+                  [0.932469514203152e+00, 0.171324492379170e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        13 : _QP([[0.000000000000000e+00, 0.417959183673469e+00],
+                  [0.405845151377397e+00, 0.381830050505119e+00],
+                  [0.741531185599394e+00, 0.279705391489277e+00],
+                  [0.949107912342759e+00, 0.129484966168870e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        15 : _QP([[0.183434642495650e+00, 0.362683783378362e+00],
+                  [0.525532409916329e+00, 0.313706645877887e+00],
+                  [0.796666477413627e+00, 0.222381034453374e+00],
+                  [0.960289856497536e+00, 0.101228536290376e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        17 : _QP([[0.000000000000000e+00, 0.330239355001260e+00],
+                  [0.324253423403809e+00, 0.312347077040003e+00],
+                  [0.613371432700590e+00, 0.260610696402935e+00],
+                  [0.836031107326636e+00, 0.180648160694857e+00],
+                  [0.968160239507626e+00, 0.081274388361574e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        19 : _QP([[0.148874338981631e+00, 0.295524224714753e+00],
+                  [0.433395394129247e+00, 0.269266719309996e+00],
+                  [0.679409568299024e+00, 0.219086362515982e+00],
+                  [0.865063366688985e+00, 0.149451349150581e+00],
+                  [0.973906528517172e+00, 0.066671344308688e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        23 : _QP([[0.125233408511469e+00, 0.249147045813403e+00],
+                  [0.367831498998180e+00, 0.233492536538355e+00],
+                  [0.587317954286617e+00, 0.203167426723066e+00],
+                  [0.769902674194305e+00, 0.160078328543346e+00],
+                  [0.904117256370475e+00, 0.106939325995318e+00],
+                  [0.981560634246719e+00, 0.047175336386512e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        31 : _QP([[0.095012509837637440185e+00, 0.189450610455068496285e+00],
+                  [0.281603550779258913230e+00, 0.182603415044923588867e+00],
+                  [0.458016777657227386342e+00, 0.169156519395002538189e+00],
+                  [0.617876244402643748447e+00, 0.149595988816576732081e+00],
+                  [0.755404408355003033895e+00, 0.124628971255533872052e+00],
+                  [0.865631202387831743880e+00, 0.095158511682492784810e+00],
+                  [0.944575023073232576078e+00, 0.062253523938647892863e+00],
+                  [0.989400934991649932596e+00, 0.027152459411754094852e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        39 : _QP([[0.076526521133497333755e+00, 0.152753387130725850698e+00],
+                  [0.227785851141645078080e+00, 0.149172986472603746788e+00],
+                  [0.373706088715419560673e+00, 0.142096109318382051329e+00],
+                  [0.510867001950827098004e+00, 0.131688638449176626898e+00],
+                  [0.636053680726515025453e+00, 0.118194531961518417312e+00],
+                  [0.746331906460150792614e+00, 0.101930119817240435037e+00],
+                  [0.839116971822218823395e+00, 0.083276741576704748725e+00],
+                  [0.912234428251325905868e+00, 0.062672048334109063570e+00],
+                  [0.963971927277913791268e+00, 0.040601429800386941331e+00],
+                  [0.993128599185094924786e+00, 0.017614007139152118312e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
+
+        47 : _QP([[0.064056892862605626085e+00, 0.127938195346752156974e+00],
+                  [0.191118867473616309159e+00, 0.125837456346828296121e+00],
+                  [0.315042679696163374387e+00, 0.121670472927803391204e+00],
+                  [0.433793507626045138487e+00, 0.115505668053725601353e+00],
+                  [0.545421471388839535658e+00, 0.107444270115965634783e+00],
+                  [0.648093651936975569252e+00, 0.097618652104113888270e+00],
+                  [0.740124191578554364244e+00, 0.086190161531953275917e+00],
+                  [0.820001985973902921954e+00, 0.073346481411080305734e+00],
+                  [0.886415527004401034213e+00, 0.059298584915436780746e+00],
+                  [0.938274552002732758524e+00, 0.044277438817419806169e+00],
+                  [0.974728555971309498198e+00, 0.028531388628933663181e+00],
+                  [0.995187219997021360180e+00, 0.012341229799987199547e+00]],
+                 bounds=(-1.0, 1.0), symmetric=True),
     },
 
     '2_3' : {
