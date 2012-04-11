@@ -6,7 +6,7 @@ import scipy.linalg as sla
 from sfepy.base.base import output, get_default, Struct
 from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
 
-def eig(mtx_a, mtx_b=None, num=None, eigenvectors=True,
+def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
         return_time=None, method='eig.scipy', **ckwargs):
     """
     Utility function that constructs an eigenvalue solver given by
@@ -18,7 +18,7 @@ def eig(mtx_a, mtx_b=None, num=None, eigenvectors=True,
     solver = Solver.any_from_conf(conf)
 
     status = {}
-    out = solver(mtx_a, mtx_b, num, eigenvectors, status, conf)
+    out = solver(mtx_a, mtx_b, n_eigs, eigenvectors, status)
     if return_time is not None:
         return_time[0] = status['time']
 
