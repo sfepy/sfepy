@@ -257,12 +257,14 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
         common = EigenvalueSolver.process_conf(conf)
 
         return Struct(i_max=get('i_max', 100),
+                      n_eigs=get('n_eigs', 5),
                       eps_a=get('eps_a', 1e-5),
                       tau=get('tau', 0.0),
                       method=get('method', 'qmrs'),
                       verbosity=get('verbosity', 0),
                       strategy=get('strategy', 1)) + common
 
+    @staticmethod
     def _convert_mat(mtx):
         from pysparse import spmatrix
         A = spmatrix.ll_mat(*mtx.shape)
@@ -271,7 +273,6 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
             n_in_row = ii.stop - ii.start
             A.update_add_at(mtx.data[ii], [i] * n_in_row, mtx.indices[ii])
         return A
-    _convert_mat = staticmethod(_convert_mat)
 
     def __init__(self, conf, **kwargs):
         EigenvalueSolver.__init__(self, conf, **kwargs)
@@ -281,19 +282,23 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                  eigenvectors=None, status=None, conf=None):
         from pysparse import jdsym, itsolvers, precon
 
-        output("loading...")
+        output("solving...")
+
         A = self._convert_mat(mtx_a)
-        output("...done")
+        Atau = A.copy()
+
         if mtx_b is not None:
             M = self._convert_mat(mtx_b)
+            Atau.shift(-conf.tau, M)
 
-        output("solving...")
-        Atau=A.copy()
-        Atau.shift(-conf.tau,M)
-        K=precon.jacobi(Atau)
-        A=A.to_sss();
+        K = precon.jacobi(Atau)
+        A = A.to_sss()
+
         if mtx_b is not None:
-            M=M.to_sss();
+            M = M.to_sss()
+
+        else:
+            M = None
 
         method = getattr(itsolvers, conf.method)
         kconv, lmbd, Q, it, it_in = jdsym.jdsym(A, M, K, n_eigs, conf.tau,
@@ -303,6 +308,7 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
                                                 strategy=conf.strategy)
 
         output("number of converged eigenvalues:", kconv)
+
         output("...done")
 
         if status is not None:
