@@ -4,6 +4,7 @@ Plot conditions numbers w.r.t. polynomial approximation order of reference
 element matrices for various FE polynomial spaces (bases).
 """
 from optparse import OptionParser
+import time
 import numpy as nm
 import matplotlib.pyplot as plt
 
@@ -34,13 +35,13 @@ def main():
                       default='lagrange', help=help['basis'])
     parser.add_option('-n', '--max-order', metavar='order', type=int,
                       action='store', dest='max_order',
-                      default=5, help=help['max_order'])
+                      default=10, help=help['max_order'])
     parser.add_option('-m', '--matrix', metavar='type',
                       action='store', dest='matrix_type',
                       default='laplace', help=help['matrix_type'])
     parser.add_option('-g', '--geometry', metavar='name',
                       action='store', dest='geometry',
-                      default='2_3', help=help['geometry'])
+                      default='2_4', help=help['geometry'])
     options, args = parser.parse_args()
 
     dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
@@ -61,11 +62,10 @@ def main():
     domain = Domain('domain', mesh)
     omega = domain.create_region('Omega', 'all')
 
-    eps = nm.finfo(nm.float64).eps
-    eps100 = 100.0 * eps
-
     orders = nm.arange(1, options.max_order + 1, dtype=nm.int)
     conds = []
+
+    order_fix = 0 if  options.geometry in ['2_4', '3_8'] else 1
 
     for order in orders:
         output('order:', order, '...')
@@ -74,10 +74,9 @@ def main():
                       space='H1', poly_space_base=options.basis,
                       approx_order=order)
 
-        to = field.get_true_order()
-        quad_order = 2 * (max(to - 1, 0))
+        to = field.approx_order
+        quad_order = 2 * (max(to - order_fix, 0))
         output('quadrature order:', quad_order)
-
 
         u = FieldVariable('u', 'unknown', field, n_c)
         v = FieldVariable('v', 'test', field, n_c, primary_var_name='u')
@@ -89,19 +88,24 @@ def main():
         if options.matrix_type == 'laplace':
             term = Term.new('dw_laplace(m.mu, v, u)',
                             integral, omega, m=m, v=v, u=u)
+            n_zero = 1
 
         else:
             assert_(options.matrix_type == 'elasticity')
             term = Term.new('dw_lin_elastic_iso(m.lam, m.mu, v, u)',
                             integral, omega, m=m, v=v, u=u)
+            n_zero = (dim + 1) * dim / 2
 
         term.setup()
 
+        output('assembling...')
+        tt = time.clock()
         mtx, iels = term.evaluate(mode='weak', diff_var='u')
+        output('...done in %.2f s' % (time.clock() - tt))
         mtx = mtx[0][0, 0]
 
         try:
-            assert_(nm.max(nm.abs(mtx - mtx.T)) < 1e-12)
+            assert_(nm.max(nm.abs(mtx - mtx.T)) < 1e-10)
 
         except:
             from sfepy.base.base import debug; debug()
@@ -112,13 +116,17 @@ def main():
         eigs.sort()
 
         # Zero 'true' zeros.
-        eigs[nm.abs(eigs) < eps100] = 0.0
+        eigs[:n_zero] = 0.0
 
         ii = nm.where(eigs < 0.0)[0]
         if len(ii):
             output('matrix is not positive semi-definite!')
 
-        output('eigs:\n', eigs)
+        ii = nm.where(eigs[n_zero:] < 1e-12)[0]
+        if len(ii):
+            output('matrix has more than %d zero eigenvalues!' % n_zero)
+
+        output('smallest eigs:\n', eigs[:10])
 
         ii = nm.where(eigs > 0.0)[0]
         emin, emax = eigs[ii[[0, -1]]]
@@ -134,14 +142,14 @@ def main():
 
     plt.figure(1)
     plt.semilogy(orders, conds)
-    plt.xticks(orders)
+    plt.xticks(orders, orders)
     plt.xlabel('polynomial order')
     plt.ylabel('condition number')
     plt.grid()
 
     plt.figure(2)
     plt.loglog(orders, conds)
-    plt.xticks(orders)
+    plt.xticks(orders, orders)
     plt.xlabel('polynomial order')
     plt.ylabel('condition number')
     plt.grid()
