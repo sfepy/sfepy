@@ -76,6 +76,6 @@ class Test(TestCommon):
         vec1 = source.evaluate_at(test_coors)
         vec2 = target.evaluate_at(test_coors)
 
-        ok = (nm.abs(vec1 - vec2) < 0.14).all()
+        ok = (nm.abs(vec1 - vec2) < 0.01).all()
 
         return ok

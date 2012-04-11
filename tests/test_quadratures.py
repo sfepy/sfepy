@@ -77,7 +77,7 @@ class Test(TestCommon):
         Test if the quadratures have orders they claim to have, using
         symbolic integration by sympy.
         """
-        from sfepy.fem.quadratures import quadrature_tables
+        from sfepy.fem.quadratures import quadrature_tables, tp_geometries
         from sfepy.fem.integrals import Integral
 
         if sm is None:
@@ -91,36 +91,17 @@ class Test(TestCommon):
         for geometry, qps in ordered_iteritems(quadrature_tables):
             self.report('geometry:', geometry)
 
-            for order, qp in ordered_iteritems(qps):
+            if geometry in tp_geometries:
+                iter_qp = xrange(1, 11)
+
+            else:
+                iter_qp = sorted(qps.keys())
+
+            for order in iter_qp:
                 self.report('order:', order)
 
-                dim = int(geometry[0])
-                n_v = int(geometry[2])
-                is_simplex = n_v == (dim + 1)
-
-                xs, poly, limits, integral = get_poly(order, dim,
-                                                      is_simplex=is_simplex)
-
-                self.report('  polynomial:', poly)
-                self.report('  limits:', limits)
-                self.report('  integral:', integral)
-
-                def fun(coors):
-                    vals = nm.empty(coors.shape[0], dtype=nm.float64)
-
-                    subs = {}
-                    for ir, cc in enumerate(coors):
-                        for ic, x in enumerate(xs):
-                            subs[x] = coors[ir,ic]
-                        vals[ir] = float(poly.subs(subs))
-
-                    return vals
-
-                val = quad.integrate(fun, order=order, geometry=geometry)
-                _ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-14)
-
-                self.report('  sym. == num.: %f == %f -> %s' %
-                            (float(integral), val, _ok))
+                aux = self._test_quadratures(quad, geometry, order)
+                _ok, integral, val = aux
 
                 if not _ok:
                     failed.append((geometry, order, float(integral), val))
@@ -133,3 +114,36 @@ class Test(TestCommon):
                 self.report(aux)
 
         return ok
+
+    def _test_quadratures(self, quad, geometry, order):
+        dim = int(geometry[0])
+        n_v = int(geometry[2])
+        is_simplex = n_v == (dim + 1)
+
+        porder = order if is_simplex else dim * order
+
+        xs, poly, limits, integral = get_poly(porder, dim,
+                                              is_simplex=is_simplex)
+
+        self.report('  polynomial:', poly)
+        self.report('  limits:', limits)
+        self.report('  integral:', integral)
+
+        def fun(coors):
+            vals = nm.empty(coors.shape[0], dtype=nm.float64)
+
+            subs = {}
+            for ir, cc in enumerate(coors):
+                for ic, x in enumerate(xs):
+                    subs[x] = coors[ir,ic]
+                vals[ir] = float(poly.subs(subs))
+
+            return vals
+
+        val = quad.integrate(fun, order=order, geometry=geometry)
+        ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-14)
+
+        self.report('  sym. == num.: %f == %f -> %s' %
+                    (float(integral), val, ok))
+
+        return ok, integral, val

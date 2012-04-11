@@ -996,7 +996,7 @@ class Field( Struct ):
         integral : Integral
             The corresponding integral defining the quadrature points.
         """
-        integral = Integral('i', order=self.get_true_order())
+        integral = Integral('i', order=self.approx_order)
 
         data_qp = []
         for ig, ap in self.aps.iteritems():
