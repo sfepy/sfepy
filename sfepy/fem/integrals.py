@@ -1,7 +1,7 @@
 import numpy as nm
 
-from sfepy.base.base import output, OneTypeList, Container, Struct, basestr
-from quadratures import QuadraturePoints, quadrature_tables
+from sfepy.base.base import OneTypeList, Container, Struct, basestr
+from quadratures import QuadraturePoints
 
 import re
 
@@ -80,9 +80,7 @@ class Integral(Struct):
     """
     Wrapper class around quadratures.
     """
-    _msg1 = 'WARNING: quadrature order %s is not available for geometry %s!'
-    _msg2 = 'WARNING: using %d instead!'
-    
+
     def __init__(self, name, kind='v', order=None, quad_name=None,
                  coors=None, weights=None):
         self.name = name
@@ -118,46 +116,11 @@ class Integral(Struct):
         """
         return '__%s_o%d' % (self.kind, self.order)
 
-    def get_actual_order(self, geometry):
-        """
-        Return the actual integration order for given geometry.
-
-        Parameters
-        ----------
-        geometry : str
-            The geometry key describing the integration domain,
-            see the keys of `sfepy.fem.quadratures.quadrature_tables`.
-
-        Returns
-        -------
-        order : int
-            If `self.order` is in quadrature tables it is this
-            value. Otherwise it is the closest higher order. If no
-            higher order is available, a warning is printed and the
-            highest available order is used.
-        """
-        table = quadrature_tables[geometry]
-        if self.order in table:
-            order = self.order
-
-        else:
-            orders = table.keys()
-            ii = nm.searchsorted(orders, self.order)
-            if ii >= len(orders):
-                order = max(orders)
-                output(self._msg1 % (self.order, geometry))
-                output(self._msg2 % order)
-
-            else:
-                order = orders[ii]
-
-        return order
-
     def get_qp(self, geometry):
         """
         Get quadrature point coordinates and corresponding weights for given
-        geometry.  For built-in quadratures, the integration order is
-        given by `self.get_actual_order()`.
+        geometry. For built-in quadratures, the integration order is given by
+        `self.order`.
 
         Parameters
         ----------
@@ -178,8 +141,7 @@ class Integral(Struct):
 
         else:
             if self.mode == 'builtin':
-                order = self.get_actual_order(geometry)
-                qp = quadrature_tables[geometry][order]
+                qp = QuadraturePoints.from_table(geometry, self.order)
 
             else:
                 qp = QuadraturePoints(None,
@@ -189,7 +151,7 @@ class Integral(Struct):
 
         return qp.coors, qp.weights
 
-    def integrate(self, function, order=None, geometry=None):
+    def integrate(self, function, order=1, geometry='1_2'):
         """
         Integrate numerically a given scalar function.
 
@@ -198,8 +160,8 @@ class Integral(Struct):
         function : callable(coors)
             The function of space coordinates to integrate.
         order : int, optional
-            The integration order. Default is given by
-            `self.get_actual_order()`.
+            The integration order. For tensor product geometries, this is the
+            1D (line) order.
         geometry : str
             The geometry key describing the integration domain. Default
             is `'1_2'`, i.e. a line integral in [0, 1]. For other values
@@ -210,16 +172,8 @@ class Integral(Struct):
         val : float
             The value of the integral.
         """
-        if geometry is None:
-            geometry = '1_2'
+        qp = QuadraturePoints.from_table(geometry, order)
 
-        table = quadrature_tables[geometry]
-
-        if order is None:
-            order = sorted(table.keys())[0]
-
-        qp = table[order]
-        
         fvals = function(qp.coors)
         val = nm.sum(fvals * qp.weights)
 

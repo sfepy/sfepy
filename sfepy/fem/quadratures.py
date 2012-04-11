@@ -42,7 +42,46 @@ Examples
 """
 import numpy as nm
 
-from sfepy.base.base import Struct
+from sfepy.base.base import output, Struct
+
+simplex_geometries = ['1_2', '2_3', '3_4']
+tp_geometries = ['2_4', '3_8']
+
+_msg1 = 'WARNING: quadrature order %s is not available for geometry %s!'
+_msg2 = 'WARNING: using %d instead!'
+
+def get_actual_order(geometry, order):
+    """
+    Return the actual integration order for given geometry.
+
+    Parameters
+    ----------
+    geometry : str
+        The geometry key describing the integration domain,
+        see the keys of `quadrature_tables`.
+
+    Returns
+    -------
+    order : int
+        If `order` is in quadrature tables it is this
+        value. Otherwise it is the closest higher order. If no
+        higher order is available, a warning is printed and the
+        highest available order is used.
+    """
+    table = quadrature_tables[geometry]
+    if order not in table:
+        orders = table.keys()
+        ii = nm.searchsorted(orders, order)
+        if ii >= len(orders):
+            omax = max(orders)
+            output(_msg1 % (order, geometry))
+            output(_msg2 % omax)
+            order = omax
+
+        else:
+            order = orders[ii]
+
+    return order
 
 class QuadraturePoints(Struct):
     """
@@ -71,6 +110,54 @@ class QuadraturePoints(Struct):
         symmetric w.r.t. the centre of bounds; only the non-negative
         coordinates are given.
     """
+
+    @staticmethod
+    def from_table(geometry, order):
+        """
+        Create a new :class:`QuadraturePoints` instance, given reference
+        element geometry name and polynomial order.
+        """
+        table = quadrature_tables[geometry]
+
+        if geometry in simplex_geometries:
+            order = get_actual_order(geometry, order)
+
+            qp = table[order]
+
+        else:
+            order1d = order
+            dim = int(geometry[0])
+
+            order = dim * order1d
+            if order <= max_orders[geometry]:
+                order = get_actual_order(geometry, order)
+                qp = table[order]
+
+            else:
+                oo = get_actual_order('1_2', order1d)
+                qp1d = quadrature_tables['1_2'][oo]
+
+                weights = nm.outer(qp1d.weights, qp1d.weights)
+
+                nc = qp1d.coors.shape[0]
+                if dim == 3:
+                    weights = nm.outer(qp1d.weights, weights)
+
+                    iz, iy, ix = nm.mgrid[0:nc, 0:nc, 0:nc]
+                    coors = nm.c_[qp1d.coors[ix.ravel()],
+                                  qp1d.coors[iy.ravel()],
+                                  qp1d.coors[iz.ravel()]].copy()
+
+                else:
+                    iy, ix = nm.mgrid[0:nc, 0:nc]
+                    coors = nm.c_[qp1d.coors[ix.ravel()],
+                                  qp1d.coors[iy.ravel()]].copy()
+
+                weights = weights.ravel()
+
+                qp = QuadraturePoints(None, coors=coors, weights=weights)
+
+        return qp
 
     def __init__(self, data, coors=None, weights=None, bounds=None, tp_fix=1.0,
                  symmetric=False):
@@ -111,7 +198,8 @@ class QuadraturePoints(Struct):
 
         if symmetric:
             if self.coors.shape[1] != 1:
-                raise ValueError()
+                msg = 'symmetric mode is allowed for 1D integrals only!'
+                raise ValueError(msg)
             origin = 0.5 * (self.bounds[0] + self.bounds[1])
 
             self.coors = nm.r_[2 * origin - self.coors[:isym:-1], self.coors]
@@ -120,7 +208,6 @@ class QuadraturePoints(Struct):
 _QP = QuadraturePoints
 quadrature_tables = {
     '1_2' : {
-
         1 : _QP([[0.000000000000000e+00, 2.0]],
                 bounds=(-1.0, 1.0), symmetric=True),
 
@@ -340,3 +427,13 @@ quadrature_tables = {
     },
 }
 del _QP
+
+def _get_max_orders():
+    max_orders = {}
+    for key, table in quadrature_tables.iteritems():
+        orders = table.keys()
+        max_orders[key] = max(orders)
+
+    return max_orders
+
+max_orders = _get_max_orders()
