@@ -30,9 +30,11 @@ Quadrature coordinates and weights copied from The Finite Element Method
 Displayed by Gouri Dhatt and Gilbert Touzat, Wiley-Interscience Production,
 1984.
 
-The line integral (geometry '1_2') coordinates and weights are taken from
-Abramowitz, M. and Stegun, I.A., Handbook of Mathematical Functions, Dover
-Publications, New York, 1972.
+The line integral (geometry '1_2') coordinates and weights are from Abramowitz,
+M. and Stegun, I.A., Handbook of Mathematical Functions, Dover Publications,
+New York, 1972. The actual values were copied from PHAML
+(http://math.nist.gov/phaml/), see also Mitchell, W.F., PHAML User's Guide,
+NISTIR 7374, 2006.
 
 Examples
 --------
