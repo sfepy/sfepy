@@ -66,9 +66,9 @@ class Test(TestCommon):
         for geometry, qps in ordered_iteritems(quadrature_tables):
             self.report('geometry:', geometry)
             for order, qp in ordered_iteritems(qps):
-                _ok = nm.allclose(qp.weights.sum(), qp.volume,
-                                  rtol=0.0, atol=1e-15)
-                self.report('order %d: %s' % (order, _ok))
+                diff = nm.abs(qp.weights.sum() - qp.volume)
+                _ok = diff < 1e-14
+                self.report('order %d: %s (%.2e)' % (order, _ok, diff))
 
                 ok = ok and _ok
 
@@ -113,7 +113,7 @@ class Test(TestCommon):
         if not ok:
             self.report('failed:')
             for aux in failed:
-                self.report(aux)
+                self.report(aux, '%.1e' % abs(aux[2] - aux[3]))
 
         return ok
 
