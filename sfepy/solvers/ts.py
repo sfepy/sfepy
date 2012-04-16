@@ -1,7 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import output, get_default, Struct
-from sfepy.solvers.solvers import TimeSteppingSolver
+from sfepy.solvers.solvers import make_get_conf, TimeSteppingSolver
 
 
 def get_print_info( n_step ):
@@ -21,9 +21,10 @@ class TimeStepper( Struct ):
     Time stepper class.
     """
 
+    @staticmethod
     def from_conf( conf ):
-        return TimeStepper( conf.t0, conf.t1, conf.dt, conf.n_step )
-    from_conf = staticmethod( from_conf )
+        return TimeStepper(conf.t0, conf.t1, conf.dt, conf.n_step,
+                           conf.quasistatic)
 
     def __init__(self, t0, t1, dt=None, n_step=None, step=None,
                  is_quasistatic=False):
@@ -168,11 +169,24 @@ class VariableTimeStepper(TimeStepper):
 class SimpleTimeSteppingSolver( TimeSteppingSolver ):
     name = 'ts.simple'
 
-    def __init__(self, conf, ts=None, **kwargs):
-        TimeSteppingSolver.__init__( self, conf, **kwargs )
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Process configuration options.
+        """
+        get = make_get_conf(conf, kwargs)
+        common = TimeSteppingSolver.process_conf(conf)
 
-        self.ts = get_default(ts, TimeStepper.from_conf(conf))
-        self.ts.is_quasistatic = conf.get_default_attr('quasistatic', False)
+        return Struct(t0=get('t0', 0.0),
+                      t1=get('t1', 1.0),
+                      dt=get('dt', None),
+                      n_step=get('n_step', 10),
+                      quasistatic=get('quasistatic', False)) + common
+
+    def __init__(self, conf, **kwargs):
+        TimeSteppingSolver.__init__(self, conf, **kwargs)
+
+        self.ts = TimeStepper.from_conf(self.conf)
 
         nd = self.ts.n_digit
         format = '====== time %%e (step %%%dd of %%%dd) =====' % (nd, nd)

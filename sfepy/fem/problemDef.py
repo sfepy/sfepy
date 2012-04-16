@@ -1204,13 +1204,20 @@ class ProblemDefinition( Struct ):
 
         return out
 
-    def get_time_solver(self, ts_conf = None, **kwargs):
+    def get_time_solver(self, ts_conf=None, **kwargs):
+        """
+        Create and return a TimeSteppingSolver instance.
+
+        Notes
+        -----
+        Also sets `self.ts` attribute.
+        """
         ts_conf = get_default(ts_conf, self.ts_conf,
                               'you must set time-stepping solver!')
-        self.ts.set_from_data(ts_conf.t0, ts_conf.t1, ts_conf.dt,
-                              ts_conf.n_step)
+        ts_solver = Solver.any_from_conf(ts_conf, **kwargs)
+        self.ts = ts_solver.ts
 
-        return Solver.any_from_conf(ts_conf, ts=self.ts, **kwargs)
+        return ts_solver
 
     def get_materials(self):
         if self.equations is not None:
