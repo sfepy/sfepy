@@ -6,7 +6,7 @@ except ImportError:
     sm = None
 
 from sfepy.base.testing import TestCommon
-from sfepy.base.base import ordered_iteritems
+from sfepy.base.base import assert_, ordered_iteritems
 
 def symarray(prefix, shape):
     """
@@ -29,12 +29,14 @@ def get_poly(order, dim, is_simplex=False):
 
     poly = 1.0
     oo = 0
-    for x in xs:
-        if (oo + opd) > order:
-            opd = order - oo
-            
+    for ii, x in enumerate(xs):
+        if ((oo + opd) > order) or (ii == (len(xs) - 1)):
+            opd = max(order - oo, 0)
+
         poly *= (x**opd + 1)
         oo += opd
+
+    assert_(oo == order)
 
     limits = [[xs[ii], 0, 1] for ii in range(dim)]
     if is_simplex:
