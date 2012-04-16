@@ -96,6 +96,12 @@ class Test(TestCommon):
             if geometry in tp_geometries:
                 iter_qp = xrange(1, 11)
 
+            elif geometry == '2_3':
+                iter_qp = xrange(1, 25)
+
+            elif geometry == '3_4':
+                iter_qp = xrange(1, 12)
+
             else:
                 iter_qp = sorted(qps.keys())
 
@@ -143,7 +149,7 @@ class Test(TestCommon):
             return vals
 
         val = quad.integrate(fun, order=order, geometry=geometry)
-        ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-14)
+        ok = nm.allclose(val, float(integral), rtol=0.0, atol=1e-11)
 
         self.report('  sym. == num.: %f == %f -> %s' %
                     (float(integral), val, ok))
