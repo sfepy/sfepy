@@ -286,7 +286,9 @@ def package_check(pkg_name, version=None,
          'missing opt': 'Missing optional package "%s"',
          'opt suffix' : '; you may get run-time errors',
          'version too old': 'You have version %s of package "%s"'
-                            ' but we need version >= %s', }
+                            ' but we need version >= %s',
+        'no version' : 'cannot determine version of %s!',
+    }
     msgs.update(messages)
 
     if isinstance(pkg_name, str):
@@ -317,7 +319,15 @@ def package_check(pkg_name, version=None,
         have_version = version_getter(pkg_name)
     except AttributeError:
         raise RuntimeError('Cannot find version for %s' % pkg_name)
-    if checker(have_version) < checker(version):
+
+    if not have_version:
+        if optional:
+            log.warn(msgs['no version'] % pkg_name)
+
+        else:
+            raise RuntimeError(msgs['no version'] % pkg_name)
+
+    elif checker(have_version) < checker(version):
         if optional:
             log.warn(msgs['version too old'] % (have_version,
                                                 pkg_name,
