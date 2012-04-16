@@ -812,6 +812,7 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/quadratures
    src/sfepy/fem/refine
    src/sfepy/fem/region
+   src/sfepy/fem/simplex_cubature
    src/sfepy/fem/state
    src/sfepy/fem/utils
    src/sfepy/fem/variables
