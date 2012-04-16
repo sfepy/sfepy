@@ -26,25 +26,34 @@ Naming conventions in problem description files::
 
 Integral 'family' is just an arbitrary name given by user.
 
-Quadrature coordinates and weights copied from The Finite Element Method
-Displayed by Gouri Dhatt and Gilbert Touzat, Wiley-Interscience Production,
-1984.
+Low order quadrature coordinates and weights copied from The Finite Element
+Method Displayed by Gouri Dhatt and Gilbert Touzat, Wiley-Interscience
+Production, 1984.
 
 The line integral (geometry '1_2') coordinates and weights are from Abramowitz,
 M. and Stegun, I.A., Handbook of Mathematical Functions, Dover Publications,
-New York, 1972. The actual values were copied from PHAML
-(http://math.nist.gov/phaml/), see also Mitchell, W.F., PHAML User's Guide,
-NISTIR 7374, 2006.
+New York, 1972. The triangle (geometry '2_3') coordinates and weights are from
+Dunavant, D.A., High Degree Efficient Symmetrical Gaussian Quadrature Rules for
+the Triangle, Int. J. Num. Meth. Eng., 21 (1985) pp 1129-1148 - only rules with
+points inside the reference triangle are used. The actual values were copied
+from PHAML (http://math.nist.gov/phaml/), see also Mitchell, W.F., PHAML User's
+Guide, NISTIR 7374, 2006.
 
-Examples
---------
-* gauss_o2_d2 # second order, 2D
-* gauss_o1_d3 # first order, 3D
-* my_int_o1_d3 # same as above
+Quadrature rules for the quadrilateral (geometry '2_4') and hexahedron
+(geometry '3_8') of order higher than 5 are computed as the tensor product of
+the line (geometry '1_2') rules.
+
+Quadrature rules for the triangle (geometry '2_3') and tetrahedron (geometry
+'3_4') of order higher than 19 and 6, respectively follow A. Grundmann and
+H.M. Moeller, Invariant integration formulas for the n-simplex by combinatorial
+methods, SIAM J. Numer. Anal.  15 (1978), 282--290. The generating function was
+adapted from pytools/hegde codes (http://mathema.tician.de/software/hedge) by
+Andreas Kloeckner.
 """
 import numpy as nm
 
-from sfepy.base.base import output, Struct
+from sfepy.base.base import output, assert_, Struct
+from sfepy.fem.simplex_cubature import get_simplex_cubature
 
 simplex_geometries = ['1_2', '2_3', '3_4']
 tp_geometries = ['2_4', '3_8']
@@ -122,9 +131,19 @@ class QuadraturePoints(Struct):
         table = quadrature_tables[geometry]
 
         if geometry in simplex_geometries:
-            order = get_actual_order(geometry, order)
+            if order > max_orders[geometry]:
+                oo = order / 2
+                dim = int(geometry[0])
+                tp_fix = 0.5 if dim == 2 else 1.0 / 6.0
 
-            qp = table[order]
+                coors, weights, exact = get_simplex_cubature(oo, dim)
+                qp = QuadraturePoints(None, coors=coors, weights=weights,
+                                      bounds=(-1.0, 1.0), tp_fix=tp_fix)
+                assert_(exact >= order)
+
+            else:
+                order = get_actual_order(geometry, order)
+                qp = table[order]
 
         else:
             order1d = order
