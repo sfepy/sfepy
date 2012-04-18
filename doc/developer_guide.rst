@@ -752,8 +752,7 @@ sfepy.applications package
    :maxdepth: 2
 
    src/sfepy/applications/application
-   src/sfepy/applications/simple_app
-   src/sfepy/applications/top_level
+   src/sfepy/applications/pde_solver_app
 
 sfepy.base package
 ^^^^^^^^^^^^^^^^^^
@@ -923,7 +922,6 @@ sfepy.solvers package
    :maxdepth: 2
 
    src/sfepy/solvers/eigen
-   src/sfepy/solvers/generic
    src/sfepy/solvers/ls
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
