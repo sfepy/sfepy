@@ -5,7 +5,7 @@ from optparse import OptionParser
 import sfepy
 from sfepy.base.base import output, get_default_attr
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.applications import SimpleApp
+from sfepy.applications import PDESolverApp
 
 ##
 # 26.03.2007, c
@@ -119,7 +119,7 @@ def main():
     opts = conf.options
     output_prefix = get_default_attr( opts, 'output_prefix', 'sfepy:' )
 
-    app = SimpleApp( conf, options, output_prefix )
+    app = PDESolverApp(conf, options, output_prefix)
     if hasattr( opts, 'parametric_hook' ): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize( parametric_hook )

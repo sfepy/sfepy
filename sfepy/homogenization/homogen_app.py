@@ -7,7 +7,7 @@ from sfepy.base.base import output, get_default, Struct
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import MiniAppBase
 from sfepy.homogenization.engine import HomogenizationEngine
-from sfepy.applications import SimpleApp
+from sfepy.applications import PDESolverApp
 
 class Volume(MiniAppBase):
 
@@ -64,8 +64,8 @@ class HomogenizationApp( HomogenizationEngine ):
                       volumes=volumes)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
-        SimpleApp.__init__(self, conf, options, output_prefix,
-                           init_equations=False)
+        PDESolverApp.__init__(self, conf, options, output_prefix,
+                              init_equations=False)
 
         self.setup_options()
         self.cached_coefs = None
@@ -77,7 +77,7 @@ class HomogenizationApp( HomogenizationEngine ):
                             op.join(output_dir, op.basename(conf._filename)))
 
     def setup_options( self ):
-        SimpleApp.setup_options( self )
+        PDESolverApp.setup_options(self)
         po = HomogenizationApp.process_options
         self.app_options += po( self.conf.options )
 

@@ -1,3 +1,3 @@
 from application import Application
-from simple_app import SimpleApp
+from pde_solver_app import PDESolverApp
 from top_level import pde_solve

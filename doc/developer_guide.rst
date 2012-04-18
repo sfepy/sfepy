@@ -60,7 +60,7 @@ directory is `sfepy/`, which has the following contents:
      - description
      - field-specific
    * - `applications/`
-     - top level application classes (e.g. :class:`SimpleApp` that
+     - top level application classes (e.g. :class:`PDESolverApp` that
        implements all that `simple.py` script does)
      -
    * - `base/`

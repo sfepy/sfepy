@@ -10,7 +10,7 @@ from sfepy.homogenization.homogen_app import get_volume_from_options
 from sfepy.homogenization.homogen_app import HomogenizationApp
 from sfepy.homogenization.coefficients import Coefficients
 from sfepy.homogenization.coefs_base import CoefDummy
-from sfepy.applications import SimpleApp
+from sfepy.applications import PDESolverApp
 from sfepy.base.plotutils import plt
 
 def try_set_defaults(obj, attr, defaults, recur=False):
@@ -346,8 +346,8 @@ class AcousticBandGapsApp(HomogenizationApp):
         return Struct(incident_wave_dir=incident_wave_dir)
 
     def __init__(self, conf, options, output_prefix, **kwargs):
-        SimpleApp.__init__(self, conf, options, output_prefix,
-                           init_equations=False)
+        PDESolverApp.__init__(self, conf, options, output_prefix,
+                              init_equations=False)
 
         self.setup_options()
 

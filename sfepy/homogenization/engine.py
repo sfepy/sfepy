@@ -1,7 +1,7 @@
 from copy import copy
 
 from sfepy.base.base import output, get_default, Struct
-from sfepy.applications import SimpleApp, Application
+from sfepy.applications import PDESolverApp, Application
 from coefs_base import MiniAppBase
 
 def insert_sub_reqs( reqs, levels, req_info ):
@@ -39,7 +39,7 @@ def insert_sub_reqs( reqs, levels, req_info ):
 ##     pause()
     return all_reqs
 
-class HomogenizationEngine( SimpleApp ):
+class HomogenizationEngine(PDESolverApp):
 
     @staticmethod
     def process_options(options):
@@ -55,7 +55,7 @@ class HomogenizationEngine( SimpleApp ):
 
     def __init__(self, problem, options, app_options=None,
                  volume=None, output_prefix='he:', **kwargs):
-        """Bypasses SimpleApp.__init__()!"""
+        """Bypasses PDESolverApp.__init__()!"""
         Application.__init__( self, problem.conf, options, output_prefix,
                               **kwargs )
         self.problem = problem
@@ -69,7 +69,7 @@ class HomogenizationEngine( SimpleApp ):
             self.volume = volume
 
     def setup_options(self, app_options=None):
-        SimpleApp.setup_options(self)
+        PDESolverApp.setup_options(self)
         app_options = get_default(app_options, self.conf.options)
 
         po = HomogenizationEngine.process_options

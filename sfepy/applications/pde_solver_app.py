@@ -17,7 +17,7 @@ def assign_standard_hooks(obj, get, conf):
     for hook_name in hook_names:
         setattr(obj, hook_name, conf.get_function(get(hook_name, None)))
 
-class SimpleApp( Application ):
+class PDESolverApp(Application):
 
     @staticmethod
     def process_options(options):
@@ -70,7 +70,7 @@ class SimpleApp( Application ):
         self.setup_output_info( self.problem, self.options )
 
     def setup_options( self ):
-        self.app_options = SimpleApp.process_options( self.conf.options )
+        self.app_options = PDESolverApp.process_options(self.conf.options)
 
         assign_standard_hooks(self, self.app_options.get_default_attr,
                               self.conf)

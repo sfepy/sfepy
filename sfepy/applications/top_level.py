@@ -1,6 +1,6 @@
 from sfepy.base.base import output, dict_to_struct, Struct
 from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.applications import SimpleApp
+from sfepy.applications import PDESolverApp
 
 def pde_solve(conf_filename, options=None, **app_options):
     required, other = get_standard_keywords()
@@ -20,7 +20,7 @@ def pde_solve(conf_filename, options=None, **app_options):
                          save_regions_as_groups = False,
                          solve_not = False)
         
-    app = SimpleApp(conf, options, output_prefix)
+    app = PDESolverApp(conf, options, output_prefix)
     if hasattr( opts, 'parametric_hook' ): # Parametric study.
         parametric_hook = conf.get_function(opts.parametric_hook)
         app.parametrize(parametric_hook)

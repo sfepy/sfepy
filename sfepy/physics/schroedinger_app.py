@@ -5,7 +5,7 @@ from math import pi
 import numpy as nm
 
 from sfepy.base.base import Struct, output, get_default
-from sfepy.applications import SimpleApp
+from sfepy.applications import PDESolverApp
 from sfepy.solvers import Solver
 
 def guess_n_eigs(n_electron, n_eigs=None):
@@ -21,7 +21,7 @@ def guess_n_eigs(n_electron, n_eigs=None):
         n_eigs = n_electron
     return n_eigs
 
-class SchroedingerApp(SimpleApp):
+class SchroedingerApp(PDESolverApp):
     """
     Base application for electronic structure calculations.
 
@@ -54,11 +54,11 @@ class SchroedingerApp(SimpleApp):
                       save_eig_vectors=get('save_eig_vectors', None))
 
     def __init__(self, conf, options, output_prefix, **kwargs):
-        SimpleApp.__init__(self, conf, options, output_prefix,
-                           init_equations=False)
+        PDESolverApp.__init__(self, conf, options, output_prefix,
+                              init_equations=False)
 
     def setup_options(self):
-        SimpleApp.setup_options(self)
+        PDESolverApp.setup_options(self)
         opts = SchroedingerApp.process_options(self.conf.options)
 
         self.app_options += opts
