@@ -1,11 +1,52 @@
 import os
 
-from sfepy.base.base import dict_to_struct, Struct
+from sfepy.base.base import output, dict_to_struct, Struct
+from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
 from sfepy.solvers.generic import solve_direct
 from application import Application
+
+def solve_pde(conf_filename, options=None, **app_options):
+    """
+    Solve a system of partial differential equations (PDEs).
+
+    This function is a convenience wrapper that creates and runs an instance of
+    :class:`PDESolverApp`.
+
+    Parameters
+    ----------
+    conf_filename : str
+        The name of the problem description file defining the PDEs.
+    options : options
+        The command-line options.
+    app_options : kwargs
+        The keyword arguments that can override application-specific options.
+    """
+    required, other = get_standard_keywords()
+    conf = ProblemConf.from_file(conf_filename, required, other)
+
+    opts = conf.options = dict_to_struct(app_options, flag=(1,)) + conf.options
+
+    output_prefix = opts.get_default_attr('output_prefix', None)
+    if output_prefix is None:
+        output_prefix = output.prefix
+
+    if options is None:
+        options = Struct(output_filename_trunk=None,
+                         save_ebc=False,
+                         save_regions=False,
+                         save_field_meshes=False,
+                         save_regions_as_groups=False,
+                         solve_not=False)
+
+    app = PDESolverApp(conf, options, output_prefix)
+    if hasattr(opts, 'parametric_hook'): # Parametric study.
+        parametric_hook = conf.get_function(opts.parametric_hook)
+        app.parametrize(parametric_hook)
+
+    return app()
 
 def assign_standard_hooks(obj, get, conf):
     """
