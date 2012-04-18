@@ -159,7 +159,7 @@ def store_top_u( displacements ):
     return _store
 
 def solve_branch(problem, branch_function):
-    from sfepy.solvers.generic import solve_evolutionary_op
+    from sfepy.applications import solve_evolutionary
 
     displacements = {}
     for key, eq in problem.conf.equations.iteritems():
@@ -169,8 +169,8 @@ def solve_branch(problem, branch_function):
         load.set_function(branch_function)
 
         out = []
-        solve_evolutionary_op(problem, save_results=False,
-                              step_hook=store_top_u(out))
+        solve_evolutionary(problem, save_results=False,
+                           step_hook=store_top_u(out))
         displacements[key] = nm.array( out, dtype = nm.float64 )
     return displacements
 

@@ -23,7 +23,7 @@ class TestInput(TestCommon):
     def from_conf(conf, options, cls=None):
         from sfepy.base.base import Struct
         from sfepy.base.conf import ProblemConf, get_standard_keywords
-        from sfepy.applications.simple_app import assign_standard_hooks
+        from sfepy.applications import assign_standard_hooks
 
         required, other = get_standard_keywords()
         input_name = op.join(op.dirname(__file__), conf.input_name)
@@ -36,13 +36,13 @@ class TestInput(TestCommon):
         assign_standard_hooks(test, test_conf.options.get_default_attr,
                               test_conf)
 
-        name = op.join(test.options.out_dir, test.get_output_name_trunk())
-        test.solver_options = Struct(output_filename_trunk = name,
+        name = test.get_output_name_trunk()
+        test.solver_options = Struct(output_filename_trunk=name,
                                      output_format ='vtk',
-                                     save_ebc = False, save_regions = False,
-                                     save_regions_as_groups = False,
-                                     save_field_meshes = False,
-                                     solve_not = False)
+                                     save_ebc=False, save_regions=False,
+                                     save_regions_as_groups=False,
+                                     save_field_meshes=False,
+                                     solve_not=False)
 
         return test
 
@@ -58,18 +58,19 @@ class TestInput(TestCommon):
 
     def test_input(self):
         import numpy as nm
-        from sfepy.solvers.generic import solve_direct
+        from sfepy.applications import solve_pde
 
         self.report('solving %s...' % self.conf.input_name)
 
         status = NLSStatus(conditions=[])
 
-        out = solve_direct(self.test_conf,
-                           self.solver_options,
-                           step_hook=self.step_hook,
-                           post_process_hook=self.post_process_hook,
-                           post_process_hook_final=self.post_process_hook_final,
-                           nls_status=status)
+        solve_pde(self.test_conf,
+                  self.solver_options,
+                  nls_status=status,
+                  output_dir=self.options.out_dir,
+                  step_hook=self.step_hook,
+                  post_process_hook=self.post_process_hook,
+                  post_process_hook_final=self.post_process_hook_final)
         self.report('%s solved' % self.conf.input_name)
 
         ok = self.check_conditions(nm.array(status.conditions))
@@ -108,11 +109,11 @@ class TestLCBC( TestCommon ):
             # missing in scipy 0.6.0
             return True
         from sfepy.base.base import Struct
-        from sfepy.solvers.generic import solve_stationary
+        from sfepy.applications import solve_pde
         from sfepy.base.base import IndexedStruct
 
         status = IndexedStruct()
-        problem, state = solve_stationary(self.conf, nls_status=status)
+        problem, state = solve_pde(self.conf, nls_status=status)
         ok = status.condition == 0
         self.report( 'converged: %s' % ok )
         out = state.create_output_dict()

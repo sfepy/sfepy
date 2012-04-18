@@ -15,8 +15,7 @@ class Test(TestCommon):
 
         from sfepy.base.base import Struct
         from sfepy.base.conf import ProblemConf, get_standard_keywords
-        from sfepy.applications.simple_app import assign_standard_hooks
-        from sfepy.solvers.generic import solve_direct
+        from sfepy.applications import solve_pde, assign_standard_hooks
         import numpy as nm
         import os.path as op
 
@@ -29,13 +28,13 @@ class Test(TestCommon):
             input_name = op.join(op.dirname(__file__), pb_filename)
             test_conf = ProblemConf.from_file(input_name, required, other)
 
-            name = op.join(self.options.out_dir, output_name_trunk + hp)
-            solver_options = Struct(output_filename_trunk = name,
-                                    output_format ='vtk',
-                                    save_ebc = False, save_regions = False,
-                                    save_regions_as_groups = False,
-                                    save_field_meshes = False,
-                                    solve_not = False)
+            name = output_name_trunk + hp
+            solver_options = Struct(output_filename_trunk=name,
+                                    output_format='vtk',
+                                    save_ebc=False, save_regions=False,
+                                    save_regions_as_groups=False,
+                                    save_field_meshes=False,
+                                    solve_not=False)
             assign_standard_hooks(self, test_conf.options.get_default_attr,
                                   test_conf)
 
@@ -43,12 +42,13 @@ class Test(TestCommon):
 
             status = NLSStatus(conditions=[])
 
-            pb, state = solve_direct(test_conf,
-                                     solver_options,
-                                     step_hook=self.step_hook,
-                                     post_process_hook=self.post_process_hook,
-                                     post_process_hook_final=self.post_process_hook_final,
-                                     nls_status=status)
+            pb, state = solve_pde(test_conf,
+                                  solver_options,
+                                  nls_status=status,
+                                  output_dir=self.options.out_dir,
+                                  step_hook=self.step_hook,
+                                  post_process_hook=self.post_process_hook,
+                                  post_process_hook_final=self.post_process_hook_final)
 
             converged = status.condition == 0
             ok = ok and converged

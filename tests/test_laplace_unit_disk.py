@@ -120,9 +120,9 @@ class Test( TestCommon ):
     ##
     # 30.05.2007, c
     def from_conf( conf, options ):
-        from sfepy.solvers.generic import solve_stationary
+        from sfepy.applications import solve_pde
 
-        problem, state = solve_stationary(conf)
+        problem, state = solve_pde(conf)
 
         test = Test(problem=problem, state=state, conf=conf, options=options)
         return test

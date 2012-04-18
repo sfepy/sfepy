@@ -61,9 +61,9 @@ class Test(TestCommon):
 
     @staticmethod
     def from_conf(conf, options):
-        from sfepy.solvers.generic import solve_stationary
+        from sfepy.applications import solve_pde
 
-        problem, state = solve_stationary(conf)
+        problem, state = solve_pde(conf)
         name = op.join(options.out_dir,
                        op.splitext(op.basename(__file__))[0] + '.vtk')
         problem.save_state(name, state)
