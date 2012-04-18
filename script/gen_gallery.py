@@ -62,7 +62,7 @@ def generate_images(images_dir, examples_dir):
 
     The generated images are stored to `images_dir`,
     """
-    from sfepy.applications import pde_solve
+    from sfepy.applications import solve_pde
     from sfepy.postprocess import Viewer
     from sfepy.postprocess.utils import mlab
 
@@ -93,7 +93,7 @@ def generate_images(images_dir, examples_dir):
         output('trying "%s"...' % ebase)
 
         try:
-            problem, state = pde_solve(ex_filename, options=options)
+            problem, state = solve_pde(ex_filename, options=options)
 
         except KeyboardInterrupt:
             raise

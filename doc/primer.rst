@@ -320,7 +320,7 @@ SfePy interactively. This requires that `IPython`_ be installed. To run
 
 Once isfepy loads up, issue the following command::
 
-    In [1]: pb, state = pde_solve('its2D_2.py')
+    In [1]: pb, state = solve_pde('its2D_2.py')
 
 The problem is solved and the problem definition and solution are
 provided in the *pb* and *state* variables, respectively. The solution,
@@ -551,7 +551,7 @@ The above computation could also be done in *isfepy*::
     In [26]: ivn = Integral('ivn', order=-1,
        ....:                coors=gdata.coors, weights=[gdata.volume / nc] * nc)
 
-    In [27]: pb, state = pde_solve('examples/linear_elasticity/its2D_2.py')
+    In [27]: pb, state = solve_pde('examples/linear_elasticity/its2D_2.py')
 
     In [28]: stress = pb.evaluate('ev_cauchy_stress.ivn.Omega(Asphalt.D,u)',
        ....:                      mode='qp', integrals=Integrals([ivn]))

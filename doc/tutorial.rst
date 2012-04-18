@@ -485,17 +485,17 @@ The output should look like this:
     These commands were executed:
     >>> from sfepy.base.base import *
     >>> from sfepy.fem import *
-    >>> from sfepy.applications import pde_solve
+    >>> from sfepy.applications import solve_pde
     >>> from sfepy.postprocess import Viewer
 
     When in SfePy source directory, try:
-    >>> pb, vec, data = pde_solve('examples/diffusion/poisson.py')
+    >>> pb, vec, data = solve_pde('examples/diffusion/poisson.py')
     >>> view = Viewer(pb.get_output_name())
     >>> view()
 
     When in another directory (and SfePy is installed), try:
     >>> from sfepy import data_dir
-    >>> pb, vec, data = pde_solve(data_dir + '/examples/diffusion/poisson.py')
+    >>> pb, vec, data = solve_pde(data_dir + '/examples/diffusion/poisson.py')
     >>> view = Viewer(pb.get_output_name())
     >>> view()
 

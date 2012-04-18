@@ -8,7 +8,7 @@ Python shell for SfePy.
 
        >>> from sfepy.base.base import *
        >>> from sfepy.fem import *
-       >>> from sfepy.applications import pde_solve
+       >>> from sfepy.applications import solve_pde
        >>> from sfepy.postprocess import Viewer
 
    So starting 'isfepy' is roughly (*) equivalent to starting Python (or

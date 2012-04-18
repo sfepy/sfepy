@@ -6,7 +6,7 @@ from sfepy.base.base import output, sfepy_config_dir
 preexec_source = """\
 from sfepy.base.base import *
 from sfepy.fem import *
-from sfepy.applications import pde_solve
+from sfepy.applications import solve_pde
 try:
     import matplotlib as mpl
     mpl.use('WXAgg')
@@ -32,18 +32,18 @@ These commands were executed:
 Basic Usage
 -----------
 
-The function `pde_solve` can be used to run examples in problem
+The function `solve_pde` can be used to run examples in problem
 description files.
 
 When in SfePy source directory, try:
->>> pb, state = pde_solve('examples/diffusion/poisson.py')
+>>> pb, state = solve_pde('examples/diffusion/poisson.py')
 >>> print state.get_parts()
 >>> view = Viewer(pb.get_output_name())
 >>> view()
 
 When in another directory (and SfePy is installed), try:
 >>> from sfepy import data_dir
->>> pb, state = pde_solve(data_dir + '/examples/diffusion/poisson.py')
+>>> pb, state = solve_pde(data_dir + '/examples/diffusion/poisson.py')
 >>> print state.get_parts()
 >>> view = Viewer(pb.get_output_name())
 >>> view()
