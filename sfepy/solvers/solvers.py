@@ -1,7 +1,7 @@
 """
 Base (abstract) solver classes.
 """
-from sfepy.base.base import assert_, Struct
+from sfepy.base.base import get_default, Struct
 
 def make_get_conf(conf, kwargs):
     def _get_conf_item(name, default=None, msg_if_none=None):
@@ -103,6 +103,13 @@ class TimeSteppingSolver(Solver):
 
     def __call__(self, state0=None, conf=None, step_fun=None, step_args=None ):
         raise ValueError('called an abstract TimeSteppingSolver instance!')
+
+    def set_step_fun(self, step_fun, step_args=None):
+        """
+        Set time step function and its optional arguments.
+        """
+        self.step_fun = step_fun
+        self.step_args = get_default(step_args, ())
 
 class OptimizationSolver(Solver):
     """
