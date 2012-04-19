@@ -205,3 +205,18 @@ class SimpleTimeSteppingSolver( TimeSteppingSolver ):
             state = step_fun( self.ts, state0, *step_args )
             state0 = state.copy(deep=True)
             yield self.ts, state
+
+class ExplicitTimeSteppingSolver(SimpleTimeSteppingSolver):
+    name = 'ts.explicit'
+
+    @staticmethod
+    def process_conf(conf, kwargs):
+        """
+        Process configuration options.
+        """
+        get = make_get_conf(conf, kwargs)
+        common = SimpleTimeSteppingSolver.process_conf(conf, kwargs)
+
+        return Struct(mass=get('mass', None,
+                               'missing "mass" in options!'),
+                      lumped=get('lumped', False)) + common
