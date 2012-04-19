@@ -6,6 +6,7 @@ from sfepy.base.conf import ProblemConf, get_standard_keywords
 import sfepy.base.ioutils as io
 from sfepy.fem import ProblemDefinition
 from sfepy.fem.meshio import MeshIO
+from sfepy.fem.mass_operator import MassOperator
 from application import Application
 
 def solve_pde(conf, options=None, nls_status=None, **app_options):
@@ -166,6 +167,42 @@ def make_implicit_step(ts, state0, problem, nls_status=None):
             problem.init_solvers(nls_status=nls_status, mtx=mtx)
 
         state = problem.solve(state0=state0)
+
+    return state
+
+def make_explicit_step(ts, state0, problem, mass, nls_status=None):
+    problem.time_update(ts)
+
+    if ts.step == 0:
+        state0.apply_ebc()
+        state = state0.copy(deep=True)
+
+        problem.init_time(ts)
+
+        # Initialize variables with history.
+        state0.init_history()
+
+    ev = problem.get_evaluator()
+    try:
+        vec_r = ev.eval_residual(state0(), is_full=True)
+    except ValueError:
+        output('residual evaluation failed, giving up...')
+        raise
+    else:
+        err = nm.linalg.norm(vec_r)
+        output('residual: %e' % err)
+
+    if ts.step > 0:
+        variables = problem.get_variables()
+        vec_rf = variables.make_full_vec(vec_r, force_value=0.0)
+
+        rhs = -ts.dt * vec_rf + mass.action(state0())
+
+        vec = mass.inverse_action(rhs)
+
+        state = state0.copy(preserve_caches=True)
+        state.set_full(vec)
+        state.apply_ebc()
 
     return state
 
@@ -341,7 +378,10 @@ class PDESolverApp(Application):
                                          (problem, nls_status))
 
             else: # Explicit time stepping.
-                pass
+                mass = MassOperator(problem, time_solver.conf)
+
+                time_solver.set_step_fun(make_explicit_step,
+                                         (problem, mass, nls_status))
 
             state = solve_evolutionary(problem, time_solver,
                                        save_results=opts.save_results,
