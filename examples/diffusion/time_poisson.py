@@ -3,7 +3,7 @@ Transient Laplace equation in time interval
 :math:`t \in [0, t_{\rm final}]` with non-constant initial condition
 given by a function.
 
-Find :math:`t` such that:
+Find :math:`T(t)` for :math:`t \in [0, t_{\rm final}]` such that:
 
 .. math::
     \int_{\Omega} s \pdiff{T}{t}
