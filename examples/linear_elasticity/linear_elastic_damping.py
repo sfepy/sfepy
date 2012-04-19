@@ -1,10 +1,10 @@
 r"""
-Dynamic Linear elasticity.
+Time-dependent linear elasticity with a simple damping.
 
 Find :math:`\ul{u}` such that:
 
 .. math::
-    \int_{\Omega} \rho\ \ul{v} \cdot \pdiff{\ul{u}}{t}
+    \int_{\Omega} c\ \ul{v} \cdot \pdiff{\ul{u}}{t}
     + \int_{\Omega} D_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
     = 0
     \;, \quad \forall \ul{v} \;,
@@ -32,7 +32,7 @@ variables = {
 }
 
 # Put density to 'solid'.
-materials['solid'][0].update({'rho' : 1000.0})
+materials['solid'][0].update({'c' : 1000.0})
 
 # Moving the PerturbedSurface region.
 ebcs['PerturbedSurface'][1].update({'u.0' : 'ebc_sin'})
@@ -47,7 +47,7 @@ functions = {
 
 equations = {
     'balance_of_forces in time' :
-    """dw_volume_dot.i1.Omega( solid.rho, v, du/dt )
+    """dw_volume_dot.i1.Omega( solid.c, v, du/dt )
      + dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu, v, u ) = 0""",
 }
 
