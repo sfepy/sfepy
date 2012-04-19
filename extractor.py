@@ -125,9 +125,10 @@ def main():
         return
 
     if options.times:
-        times, nts, dts = th.extract_times(filename_results)
-        for step, time in enumerate(times):
-            print '%d %e %e %e' % (step, time, nts[step], dts[step])
+        steps, times, nts, dts = th.extract_times(filename_results)
+        for ii, time in enumerate(times):
+            step = steps[ii]
+            print '%d %e %e %e' % (step, time, nts[ii], dts[ii])
 
     if options.dump:
         trunk = get_default(options.output_filename_trunk,

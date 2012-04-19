@@ -45,7 +45,7 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None,
 
     try:
         ts = TimeStepper(*io.read_time_stepper())
-        times, nts, dts = extract_times(filename)
+        all_steps, times, nts, dts = extract_times(filename)
 
     except ValueError:
         output('no time stepping info found, assuming single step')
@@ -61,13 +61,16 @@ def dump_to_vtk(filename, output_filename_trunk=None, step0=0, steps=None,
         ts.n_step = times.shape[0]
 
         if steps is None:
-            iterator = ts.iter_from(step0)
+            ii0 = nm.searchsorted(all_steps, step0)
+            iterator = ((all_steps[ii], times[ii])
+                        for ii in xrange(ii0, len(times)))
 
         else:
             iterator = [(step, ts.times[step]) for step in steps]
 
+        max_step = all_steps.max()
         for step, time in iterator:
-            output(ts.format % (step, ts.n_step - 1))
+            output(ts.format % (step, max_step))
             out = io.read_data(step)
             if out is None: break
 
@@ -84,6 +87,8 @@ def extract_times(filename):
 
     Returns
     -------
+    steps : array
+        The time steps.
     times : array
         The times of the time steps.
     nts : array
@@ -92,11 +97,11 @@ def extract_times(filename):
         The true time deltas.
     """
     io = MeshIO.any_from_filename(filename)
-    times, nts = io.read_times()
+    steps, times, nts = io.read_times()
 
     dts = nm.ediff1d(times, to_end=0)
 
-    return times, nts, dts
+    return steps, times, nts, dts
 
 def extract_time_history(filename, extract, verbose=True):
     """Extract time history of a variable from a multi-time-step results file.
