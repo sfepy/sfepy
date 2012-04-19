@@ -171,14 +171,16 @@ class Test( TestCommon ):
 
             self.report( 'isotropic' )
             self.conf.equations = self.conf.equations_iso
-            problem, state1 = solve_pde(self.conf, nls_status=status)
+            problem, state1 = solve_pde(self.conf, nls_status=status,
+                                        save_results=False)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )
 
             self.report( 'general' )
             self.conf.equations = self.conf.equations_general
-            problem, state2 = solve_pde(self.conf, nls_status=status)
+            problem, state2 = solve_pde(self.conf, nls_status=status,
+                                        save_results=False)
             converged = status.condition == 0
             ok = ok and converged
             self.report( 'converged: %s' % converged )

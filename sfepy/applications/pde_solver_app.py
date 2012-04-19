@@ -310,6 +310,7 @@ class PDESolverApp(Application):
     def call(self, nls_status=None):
         problem = self.problem
         options = self.options
+        opts = self.app_options
 
         if self.pre_process_hook is not None: # User pre_processing.
             self.pre_process_hook(problem)
@@ -342,10 +343,14 @@ class PDESolverApp(Application):
             else: # Explicit time stepping.
                 pass
 
-            state = solve_evolutionary(problem, time_solver)
+            state = solve_evolutionary(problem, time_solver,
+                                       save_results=opts.save_results,
+                                       step_hook=self.step_hook,
+                                       post_process_hook=self.post_process_hook)
 
         else: # Stationary problem.
             state = solve_stationary(problem,
+                                     save_results=opts.save_results,
                                      post_process_hook=self.post_process_hook,
                                      nls_status=nls_status)
 

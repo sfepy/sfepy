@@ -63,10 +63,7 @@ class Test(TestCommon):
     def from_conf(conf, options):
         from sfepy.applications import solve_pde
 
-        problem, state = solve_pde(conf)
-        name = op.join(options.out_dir,
-                       op.splitext(op.basename(__file__))[0] + '.vtk')
-        problem.save_state(name, state)
+        problem, state = solve_pde(conf, output_dir=options.out_dir)
 
         test = Test(problem=problem, state=state, conf=conf, options=options)
         return test

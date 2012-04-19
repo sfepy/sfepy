@@ -147,7 +147,7 @@ class Test( TestCommon ):
     def from_conf( conf, options ):
         from sfepy.applications import solve_pde
 
-        problem, state = solve_pde(conf)
+        problem, state = solve_pde(conf, save_results=False)
 
         test = Test(problem=problem, state=state, conf=conf, options=options)
         return test

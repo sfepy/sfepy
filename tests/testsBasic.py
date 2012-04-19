@@ -113,7 +113,8 @@ class TestLCBC( TestCommon ):
         from sfepy.base.base import IndexedStruct
 
         status = IndexedStruct()
-        problem, state = solve_pde(self.conf, nls_status=status)
+        problem, state = solve_pde(self.conf, nls_status=status,
+                                   save_results=False)
         ok = status.condition == 0
         self.report( 'converged: %s' % ok )
         out = state.create_output_dict()
