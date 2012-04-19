@@ -249,6 +249,8 @@ class MeshIO( Struct ):
 
         Returns
         -------
+        steps : array
+            The time steps.
         times : array
             The times of the time steps.
         nts : array
@@ -259,7 +261,7 @@ class MeshIO( Struct ):
         The default implementation returns empty arrays.
         """
         aux = nm.array([], dtype=nm.float64)
-        return aux, aux
+        return aux.astype(nm.int32), aux, aux
 
     def read(self, mesh, omit_facets=False, **kwargs):
         raise ValueError(MeshIO.call_msg)
@@ -1445,6 +1447,8 @@ class HDF5MeshIO( MeshIO ):
 
         Returns
         -------
+        steps : array
+            The time steps.
         times : array
             The times of the time steps.
         nts : array
@@ -1453,19 +1457,22 @@ class HDF5MeshIO( MeshIO ):
         filename = get_default(filename, self.filename)
         fd = pt.openFile(filename, mode='r')
 
+        steps = sorted(int(name[4:]) for name in fd.root._v_groups.keys()
+                       if name.startswith('step'))
         times = []
         nts = []
-        for step in xrange(fd.root.last_step[0] + 1):
-            gr_name = 'step%d/ts' % step
-            ts_group = fd.getNode(fd.root, gr_name)
+        for step in steps:
+            ts_group = fd.getNode(fd.root, 'step%d/ts' % step)
 
             times.append(ts_group.t.read())
             nts.append(ts_group.nt.read())
         fd.close()
 
+        steps = nm.asarray(steps, dtype=nm.int32)
         times = nm.asarray(times, dtype=nm.float64)
         nts = nm.asarray(nts, dtype=nm.float64)
-        return times, nts
+
+        return steps, times, nts
 
     def _get_step_group( self, step, filename = None ):
         filename = get_default( filename, self.filename )
