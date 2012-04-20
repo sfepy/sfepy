@@ -34,15 +34,17 @@ def gen_lobatto(max_order):
     lobs[0] = (1 - x) / 2
     lobs[1] = (1 + x) / 2
 
+    dlobs = [lob.diff('x') for lob in lobs]
+
     legs = [sm.legendre(0, 'y')]
     clegs = [sm.ccode(legs[0])]
-    clobs = []
+    dlegs = [sm.legendre(0, 'y').diff('y')]
+    cdlegs = [sm.ccode(dlegs[0])]
+
+    clobs = [sm.ccode(lob) for lob in lobs]
+    cdlobs = [sm.ccode(dlob) for dlob in dlobs]
+
     denoms = [] # for lobs.
-
-    for ii, lob in enumerate(lobs):
-        clob = sm.ccode(lob)
-
-        clobs.append(clob)
 
     for ii in range(2, max_order + 1):
         coef = sm.sympify('sqrt(2 * (2 * %s - 1)) / 2' % ii)
@@ -54,6 +56,9 @@ def gen_lobatto(max_order):
 
         cleg = sm.ccode(sm.horner(leg*denom)/denom)
 
+        dleg = leg.diff('y')
+        cdleg = sm.ccode(sm.horner(dleg*denom)/denom)
+
         lob = sm.simplify(coef * sm.integrate(leg, ('y', -1, x)))
         lobnc = sm.simplify(sm.integrate(leg, ('y', -1, x)))
 
@@ -63,10 +68,17 @@ def gen_lobatto(max_order):
 
         clob = sm.ccode(sm.horner(lob*denom)/denom)
 
+        dlob = lob.diff('x')
+        cdlob = sm.ccode(sm.horner(dlob*denom)/denom)
+
         legs.append(leg)
         clegs.append(cleg)
+        dlegs.append(dleg)
+        cdlegs.append(cdleg)
         lobs.append(lob)
         clobs.append(clob)
+        dlobs.append(dlob)
+        cdlobs.append(cdlob)
         denoms.append(denom)
 
     coef = sm.sympify('sqrt(2 * (2 * %s - 1)) / 2' % (max_order + 1))
@@ -82,17 +94,57 @@ def gen_lobatto(max_order):
 
     kerns = []
     ckerns = []
-
+    dkerns = []
+    cdkerns = []
     for ii, lob in enumerate(lobs[2:]):
         kern = sm.simplify(lob / (lobs[0] * lobs[1]))
+        dkern = kern.diff('x')
 
         denom = denoms[ii] / 4
         ckern = sm.ccode(sm.horner(kern*denom)/denom)
+        cdkern = sm.ccode(sm.horner(dkern*denom)/denom)
 
         kerns.append(kern)
         ckerns.append(ckern)
+        dkerns.append(dkern)
+        cdkerns.append(cdkern)
 
-    return legs, clegs, lobs, clobs, kerns, ckerns, denoms
+    return (legs, clegs, dlegs, cdlegs,
+            lobs, clobs, dlobs, cdlobs,
+            kerns, ckerns, dkerns, cdkerns,
+            denoms)
+
+def plot_polys(fig, polys, var_name='x'):
+    plt.figure(fig)
+    plt.clf()
+
+    x = sm.symbols(var_name)
+    vx = nm.linspace(-1, 1, 100)
+
+    for ii, poly in enumerate(polys):
+        print ii
+        print poly
+        print poly.as_poly(x).all_coeffs()
+
+        vy = [float(poly.subs(x, xx)) for xx in vx]
+        plt.plot(vx, vy)
+
+def append_polys(out, cpolys, comment, cvar_name, var_name='x', shift=0):
+    names = []
+    out.append('\n# %s functions.\n' % comment)
+    for ii, cpoly in enumerate(cpolys):
+        name = '%s_%03d' % (cvar_name, ii + shift)
+        function = cdef % (name, cpoly.replace(var_name, 'x'))
+        out.append(function)
+        names.append(name)
+
+    return names
+
+def append_lists(out, names, length):
+    args = ', '.join(['&%s' % name for name in names])
+    name = names[0][:-4]
+    _list = fun_list % (name, length, name, args)
+    out.append(_list)
 
 usage = """%prog [options]
 
@@ -117,48 +169,20 @@ def main():
 
     max_order = options.max_order
 
-    legs, clegs, lobs, clobs, kerns, ckerns, denoms = gen_lobatto(max_order)
+    (legs, clegs, dlegs, cdlegs,
+     lobs, clobs, dlobs, cdlobs,
+     kerns, ckerns, dkerns, cdkerns,
+     denoms) = gen_lobatto(max_order)
 
     if options.plot:
-        x, y = sm.symbols('x,y')
+        plot_polys(1, lobs)
+        plot_polys(11, dlobs)
 
-        plt.figure(1)
-        plt.clf()
+        plot_polys(2, kerns)
+        plot_polys(21, dkerns)
 
-        vx = nm.linspace(-1, 1, 100)
-
-        for ii, lob in enumerate(lobs):
-            print ii
-            print lob
-            # print sm.integrate(lob, (x, -1, 1))
-            print lob.as_poly(x).all_coeffs()
-
-            vy = [float(lob.subs(x, xx)) for xx in vx]
-            plt.plot(vx, vy)
-
-        plt.figure(2)
-        plt.clf()
-
-        for ii, kern in enumerate(kerns):
-            print ii + 2
-            print kern
-            print kern.as_poly(x).all_coeffs()
-
-            vy = [float(kern.subs(x, xx)) for xx in vx]
-            plt.plot(vx, vy)
-
-
-        plt.figure(3)
-        plt.clf()
-
-        for ii, leg in enumerate(legs):
-            print ii
-            print sm.simplify(leg)
-            print leg.as_poly(y).all_coeffs()
-            # print sm.integrate(leg, ('y', -1, 1))
-
-            vy = [float(leg.subs(y, xx)) for xx in vx]
-            plt.plot(vx, vy)
+        plot_polys(3, legs, var_name='y')
+        plot_polys(31, dlegs, var_name='y')
 
         plt.show()
 
@@ -173,45 +197,37 @@ def main():
 
     out = []
 
-    names_lobatto = []
-    out.append('\n# Lobatto functions.\n')
-    for ii, clob in enumerate(clobs):
-        name = 'lobatto_%03d' % ii
-        function = cdef % (name, clob)
-        out.append(function)
-        names_lobatto.append(name)
+    names_lobatto = append_polys(out, clobs,
+                                 'Lobatto', 'lobatto')
+    names_d_lobatto = append_polys(out, cdlobs,
+                                   'Derivatives of Lobatto', 'd_lobatto')
 
-    names_kernel = []
-    out.append('\n# Kernel functions.\n')
-    for ii, ckern in enumerate(ckerns):
-        name = 'kernel_%03d' % (ii + 2)
-        function = cdef % (name, ckern)
-        out.append(function)
-        names_kernel.append(name)
+    names_kernel = append_polys(out, ckerns,
+                                'Kernel', 'kernel',
+                                shift=2)
+    names_d_kernel = append_polys(out, cdkerns,
+                                  'Derivatives of kernel', 'd_kernel',
+                                  shift=2)
 
-    names_legendre = []
-    out.append('\n# Legendre functions.\n')
-    for ii, cleg in enumerate(clegs):
-        name = 'legendre_%03d' % ii
-        function = cdef % (name, cleg.replace('y', 'x'))
-        out.append(function)
-        names_legendre.append(name)
+    names_legendre = append_polys(out, clegs,
+                                  'Legendre', 'legendre',
+                                  var_name='y')
+    names_d_legendre = append_polys(out, cdlegs,
+                                    'Derivatives of Legendre', 'd_legendre',
+                                    var_name='y')
 
     out.append('\n# Lists of functions.\n')
 
     out.append('\ncdef int32 max_order = %d\n' % max_order)
 
-    args = ', '.join(['&%s' % name for name in names_lobatto])
-    list_lobatto = fun_list % ('lobatto', max_order + 1, 'lobatto', args)
-    out.append(list_lobatto)
+    append_lists(out, names_lobatto, max_order + 1)
+    append_lists(out, names_d_lobatto, max_order + 1)
 
-    args = ', '.join(['&%s' % name for name in names_kernel])
-    list_kernel = fun_list % ('kernel', max_order - 1, 'kernel', args)
-    out.append(list_kernel)
+    append_lists(out, names_kernel, max_order - 1)
+    append_lists(out, names_d_kernel, max_order - 1)
 
-    args = ', '.join(['&%s' % name for name in names_legendre])
-    list_legendre = fun_list % ('legendre', max_order + 1, 'legendre', args)
-    out.append(list_legendre)
+    append_lists(out, names_legendre, max_order + 1)
+    append_lists(out, names_d_legendre, max_order + 1)
 
     fd.write(template.replace('REPLACE_TEXT', ''.join(out)))
 
