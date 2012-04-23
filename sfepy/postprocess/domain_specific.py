@@ -50,6 +50,29 @@ class DomainSpecificPlot(Struct):
 
         return self.fun(*args, **_kwargs)
 
+def _get_scalars(color_name, color_kind, active):
+    """
+    Get scalars out of active data.
+    """
+    if color_kind == 'tensors':
+        new_name = '|%s|' % color_name
+        active = mlab.pipeline.set_active_attribute(active)
+        active.point_tensors_name = color_name
+        active = mlab.pipeline.extract_tensor_components(active)
+
+    elif color_kind == 'vectors':
+        new_name = '|%s|' % color_name
+        active = mlab.pipeline.set_active_attribute(active)
+        active.point_vectors_name = color_name
+        active = mlab.pipeline.extract_tensor_components(active)
+
+    elif color_kind == 'scalars':
+        new_name = '%s' % color_name
+        active = mlab.pipeline.set_active_attribute(active)
+        active.point_scalars_name = color_name
+
+    return new_name, active
+
 def plot_displacements(source, ctp, bbox, position, family, kind, name,
                        rel_scaling=1.0,
                        color_kind=None, color_name=None, opacity=1.0):
@@ -88,23 +111,7 @@ def plot_displacements(source, ctp, bbox, position, family, kind, name,
 
     else:
         new_kind = 'scalars'
-
-        if color_kind == 'tensors':
-            new_name = '|%s|' % color_name
-            active = mlab.pipeline.set_active_attribute(active)
-            active.point_tensors_name = color_name
-            active = mlab.pipeline.extract_tensor_components(active)
-
-        elif color_kind == 'vectors':
-            new_name = '|%s|' % color_name
-            active = mlab.pipeline.set_active_attribute(active)
-            active.point_vectors_name = color_name
-            active = mlab.pipeline.extract_tensor_components(active)
-
-        elif color_kind == 'scalars':
-            new_name = '%s' % color_name
-            active = mlab.pipeline.set_active_attribute(active)
-            active.point_scalars_name = color_name
+        new_name, active = _get_scalars(color_name, color_kind, active)
 
     surf = mlab.pipeline.surface(active, opacity=opacity)
     surf.actor.actor.position = position
@@ -169,22 +176,7 @@ def plot_velocity(source, ctp, bbox, position, family, kind, name,
         active = active_n
 
     else:
-        if color_kind == 'tensors':
-            new_name = '|%s|' % color_name
-            active = mlab.pipeline.set_active_attribute(source)
-            active.point_tensors_name = color_name
-            active = mlab.pipeline.extract_tensor_components(active)
-
-        elif color_kind == 'vectors':
-            new_name = '|%s|' % color_name
-            active = mlab.pipeline.set_active_attribute(source)
-            active.point_vectors_name = color_name
-            active = mlab.pipeline.extract_tensor_components(active)
-
-        elif color_kind == 'scalars':
-            new_name = '%s' % color_name
-            active = mlab.pipeline.set_active_attribute(source)
-            active.point_scalars_name = color_name
+        new_name, active = _get_scalars(color_name, color_kind, source)
 
     surf = mlab.pipeline.surface(active, opacity=opacity)
     surf.actor.actor.position = position
