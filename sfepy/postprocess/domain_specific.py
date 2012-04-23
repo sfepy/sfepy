@@ -118,6 +118,50 @@ def plot_displacements(source, ctp, bbox, position, family, kind, name,
 
     return new_kind, new_name, active
 
+def plot_warp_scalar(source, ctp, bbox, position, family, kind, name,
+                     rel_scaling=1.0,
+                     color_kind=None, color_name=None, opacity=1.0):
+    """
+    Show a 2D scalar field by displaying a colormap given by quantity
+    `color_name` on the deformed mesh deformed by the scalar in the third
+    dimension.
+
+    Parameters
+    ----------
+    rel_scaling : float
+        The relative scaling of scalar warp.
+    color_kind : str, optional
+        The kind of data determining the colormap.
+    color_name : str, optional
+        The name of data determining the colormap.
+    opacity : float
+        The surface plot opacity.
+    """
+    assert_(kind == 'scalars')
+
+    if color_name is None:
+        active = mlab.pipeline.set_active_attribute(source)
+
+    else:
+        active = mlab.pipeline.set_active_attribute(ctp)
+
+    active.point_scalars_name = name
+    active = mlab.pipeline.warp_scalar(active)
+    active.filter.scale_factor = rel_scaling
+
+    if color_name is None:
+        new_kind = kind
+        new_name = name
+
+    else:
+        new_kind = 'scalars'
+        new_name, active = _get_scalars(color_name, color_kind, active)
+
+    surf = mlab.pipeline.surface(active, opacity=opacity)
+    surf.actor.actor.position = position
+
+    return new_kind, new_name, active
+
 def plot_velocity(source, ctp, bbox, position, family, kind, name,
                   seed='sphere', type='ribbon', integration_direction='both',
                   seed_scale=1.0, seed_resolution=20,
