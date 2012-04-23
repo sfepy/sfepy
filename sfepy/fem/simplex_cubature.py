@@ -106,7 +106,7 @@ def get_simplex_cubature(order, dimension):
 
     .. math::
 
-        T_n := \{(x_1, \dots, x_n): x_i \ge -1, \sum_i x_i \le 1\}
+        T_n := \{(x_1, \dots, x_n): x_i \ge -1, \sum_i x_i \le -1\}
     """
     s = order
     n = dimension
