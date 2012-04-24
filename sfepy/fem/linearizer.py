@@ -5,47 +5,76 @@ import numpy as nm
 
 from sfepy.fem.refine import refine_reference
 
-def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
-                  eps=1e-4):
+def get_eval_dofs(dofs, dof_conn):
     """
-    Create mesh with linear elements that approximates `dofs`
-    corresponding to a higher order approximation with a relative
-    precision given by `eps`.
+    Get default function for evaluating field DOFs given a list of elements and
+    base functions.
     """
-
-    def _get_msd(iels, rx, ree):
+    def _eval(iels, bf, ic=None):
         edofs = dofs[dof_conn[iels]]
-        n_components = edofs.shape[-1]
+
+        aux = edofs.transpose((0, 2, 1))
+        rvals = nm.dot(aux, bf.T).transpose((0, 2, 1))
+
+        return rvals
+
+    return _eval
+
+def get_eval_coors(coors, conn, ps):
+    """
+    Get default function for evaluating physical coordinates given a list of
+    elements and reference element coordinates.
+    """
+    def _eval(iels, rx):
+        ecoors = coors[conn[iels]]
+        aux = ecoors.transpose((0, 2, 1))
 
         bf = ps.eval_base(rx).squeeze()
+        phys_coors = nm.dot(aux, bf.T).transpose((0, 2, 1))
+        return phys_coors
+
+    return _eval
+
+def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
+                  eps=1e-4):
+    """
+    Create mesh with linear elements that approximates DOFs returned by
+    `eval_dofs()` corresponding to a higher order approximation with a relative
+    precision given by `eps`. The DOFs are evaluated in physical coordinates
+    returned by `eval_coors()`.
+    """
+
+    def _get_msd(iels, bf, ree):
+        rvals = eval_dofs(iels, bf)
+        rng = rvals.max() - rvals.min()
+        n_components = rvals.shape[-1]
 
         msd = 0.0
         for ic in range(n_components):
-            edof = edofs[..., ic]
-            rvals = nm.dot(edof, bf.T)
+            rval = rvals[..., ic]
 
-            sd = rvals[:, ree]
+            sd = rval[:, ree]
             # ~ max. second derivative.
             msd += nm.abs(sd[..., 0] + sd[..., 2]
                           - 2.0 * sd[..., 1]).max(axis=-1)
 
         msd /= n_components
 
-        return bf, msd
+        return msd, rng
 
-    eps_r = (dofs.max() - dofs.min()) * eps
-
-    n_el = dof_conn.shape[0]
-
-    bf0 = ps.eval_base(ps.geometry.coors).squeeze()
+    rx0 = ps.geometry.coors
+    bf0 = ps.eval_base(rx0).squeeze()
 
     rc0 = ps.geometry.conn[None, :]
     rx, rc, ree = refine_reference(ps.geometry, 1)
 
     factor = rc.shape[0] / rc0.shape[0]
 
+    bf = ps.eval_base(rx).squeeze()
+
     iels = nm.arange(n_el)
-    bf, msd = _get_msd(iels, rx, ree)
+    msd, rng = _get_msd(iels, bf, ree)
+    eps_r = rng * eps
     flag = msd > eps_r
 
     iels0 = flag0 = None
@@ -55,7 +84,6 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
     vdofs = []
 
     inod = 0
-
     for level in range(max_level + 1):
         if level < min_level:
             flag.fill(True) # Force refinement everywhere.
@@ -77,13 +105,8 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
             uie, iies = nm.unique(ie, return_inverse=True)
 
             # Each (sub-)element has own coordinates - no shared vertices.
-            ecoors = dof_coors[dof_conn[iels[uie]]]
-            aux = ecoors.transpose((0, 2, 1))
-            xes = nm.dot(aux, bf0.T).transpose((0, 2, 1))
-
-            edofs = dofs[dof_conn[iels[uie]]]
-            aux = edofs.transpose((0, 2, 1))
-            des = nm.dot(aux, bf0.T).transpose((0, 2, 1))
+            xes = eval_coors(iels[uie], rx0)
+            des = eval_dofs(iels[uie], bf0)
 
             # Vectorize (how??) or use cython?
             cc = []
@@ -122,11 +145,14 @@ def create_output(dofs, dof_coors, dof_conn, ps, min_level=0, max_level=2,
             iels = iels[eflag]
 
             rc0 = rc
+            rx0 = rx
             rx, rc, ree = refine_reference(ps.geometry, level + 2)
 
             bf0 = bf
-            bf, msd = _get_msd(iels, rx, ree)
+            bf = ps.eval_base(rx).squeeze()
 
+            msd, rng = _get_msd(iels, bf, ree)
+            eps_r = rng * eps
             flag = msd > eps_r
 
     all_coors = nm.concatenate(coors, axis=0)
