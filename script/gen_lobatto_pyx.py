@@ -89,8 +89,14 @@ def gen_lobatto(max_order):
     denom = max(sm.denom(val) for val in coefs)
 
     cleg = sm.ccode(sm.horner(leg*denom)/denom)
+
+    dleg = leg.diff('y')
+    cdleg = sm.ccode(sm.horner(dleg*denom)/denom)
+
     legs.append(leg)
     clegs.append(cleg)
+    dlegs.append(dleg)
+    cdlegs.append(cdleg)
 
     kerns = []
     ckerns = []
