@@ -23,7 +23,7 @@ from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
-from sfepy.fem.linearizer import create_output
+from sfepy.fem.linearizer import get_eval_dofs, get_eval_coors, create_output
 from sfepy.fem.extmods.bases import find_ref_coors, evaluate_in_rc
 
 def parse_approx_order(approx_order):
@@ -745,7 +745,7 @@ class Field( Struct ):
         assert_(n_nod == self.n_nod)
         assert_(dpn == self.shape[0])
 
-        dof_coors = self.get_coor()
+        vertex_coors = self.coors[:self.n_vertex_dof, :]
 
         coors = []
         vdofs = []
@@ -755,9 +755,16 @@ class Field( Struct ):
         offset = 0
         for ig, ap in self.aps.iteritems():
             ps = ap.interp.poly_spaces['v']
+            gps = ap.interp.gel.interp.poly_spaces['v']
+            group = self.domain.groups[ig]
+            vertex_conn = ap.econn[:, :group.shape.n_ep]
+
+            eval_dofs = get_eval_dofs(dofs, ap.econn)
+            eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
 
             (level, _coors, conn,
-             _vdofs, _mat_ids) = create_output(dofs, dof_coors, ap.econn, ps,
+             _vdofs, _mat_ids) = create_output(eval_dofs, eval_coors,
+                                               group.shape.n_el, ps,
                                                min_level=min_level,
                                                max_level=max_level, eps=eps)
 
