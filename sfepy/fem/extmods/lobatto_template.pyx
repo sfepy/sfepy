@@ -41,3 +41,57 @@ def eval_lobatto(np.ndarray[float64, mode='c', ndim=1] coors not None,
         _out[ii] = eval_fun(_coors[ii])
 
     return out
+
+@cython.boundscheck(False)
+def eval_lobatto_tensor_product(np.ndarray[float64, mode='c', ndim=2]
+                                coors not None,
+                                np.ndarray[int32, mode='c', ndim=2]
+                                nodes not None,
+                                float64 cmin, float64 cmax, int32 order,
+                                int32 diff=False):
+    cdef np.ndarray[float64, ndim=3] out
+    cdef np.ndarray[float64, ndim=2] lambdas
+    cdef np.ndarray[float64, ndim=2] xis
+    cdef float64 dx = cmax - cmin
+    cdef int32 ii, ifun, ic, ir, io, nr
+    cdef int32 n_coor = coors.shape[0]
+    cdef int32 dim = coors.shape[1]
+    cdef int32 n_fun = nodes.shape[0]
+    cdef float64 *_xis, *_out
+    cdef int32 *_nodes = &nodes[0, 0]
+    cdef fun eval_fun
+
+    if (order < 1) or (order > max_order):
+        raise ValueError('order must be in [1, %d]! (was %d)'
+                         % (max_order, order))
+
+    nr = 1 if not diff else dim
+    out = np.ones((n_coor, nr, n_fun), dtype=np.float64)
+
+    # Transform coordinates via affine coordinates lambda to be in [-1, 1].
+    lambdas = (coors - cmin) / dx
+    xis = 2.0 * lambdas - 1.0
+    _xis = &xis[0, 0]
+    _out = &out[0, 0, 0]
+    if not diff:
+        for ii in range(0, dim):
+            for ifun in range(0, n_fun):
+                eval_fun = lobatto[_nodes[dim * ifun + ii]]
+                for ic in range(0, n_coor):
+                    _out[n_fun * ic + ifun] *= eval_fun(_xis[dim * ic + ii])
+
+    else:
+        for ii in range(0, dim):
+            for ifun in range(0, n_fun):
+                for ir in range(0, dim):
+                    if ir == ii:
+                        eval_fun = d_lobatto[_nodes[dim * ifun + ii]]
+
+                    else:
+                        eval_fun = lobatto[_nodes[dim * ifun + ii]]
+
+                    for ic in range(0, n_coor):
+                        io = n_fun * (nr * ic + ir) + ifun
+                        _out[io] *= eval_fun(_xis[dim * ic + ii])
+
+    return out
