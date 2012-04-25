@@ -7,10 +7,10 @@ from sfepy.fem.refine import refine_reference
 
 def get_eval_dofs(dofs, dof_conn):
     """
-    Get default function for evaluating field DOFs given a list of elements and
-    base functions.
+    Get default function for evaluating field DOFs given a list of elements,
+    reference element coordinates and base functions.
     """
-    def _eval(iels, bf, ic=None):
+    def _eval(iels, rx, bf):
         edofs = dofs[dof_conn[iels]]
 
         aux = edofs.transpose((0, 2, 1))
@@ -44,8 +44,8 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
     returned by `eval_coors()`.
     """
 
-    def _get_msd(iels, bf, ree):
-        rvals = eval_dofs(iels, bf)
+    def _get_msd(iels, bf, rx, ree):
+        rvals = eval_dofs(iels, rx, bf)
         rng = rvals.max() - rvals.min()
         n_components = rvals.shape[-1]
 
@@ -73,7 +73,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
     bf = ps.eval_base(rx).squeeze()
 
     iels = nm.arange(n_el)
-    msd, rng = _get_msd(iels, bf, ree)
+    msd, rng = _get_msd(iels, bf, rx, ree)
     eps_r = rng * eps
     flag = msd > eps_r
 
@@ -106,7 +106,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
 
             # Each (sub-)element has own coordinates - no shared vertices.
             xes = eval_coors(iels[uie], rx0)
-            des = eval_dofs(iels[uie], bf0)
+            des = eval_dofs(iels[uie], rx0, bf0)
 
             # Vectorize (how??) or use cython?
             cc = []
@@ -151,7 +151,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
             bf0 = bf
             bf = ps.eval_base(rx).squeeze()
 
-            msd, rng = _get_msd(iels, bf, ree)
+            msd, rng = _get_msd(iels, bf, rx, ree)
             eps_r = rng * eps
             flag = msd > eps_r
 
