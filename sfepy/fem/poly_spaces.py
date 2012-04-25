@@ -3,6 +3,22 @@ import numpy.linalg as nla
 
 from sfepy.base.base import find_subclasses, Struct
 
+# Requires fixed vertex numbering!
+vertex_maps = {3 : [[0, 0, 0],
+                    [1, 0, 0],
+                    [1, 1, 0],
+                    [0, 1, 0],
+                    [0, 0, 1],
+                    [1, 0, 1],
+                    [1, 1, 1],
+                    [0, 1, 1]],
+               2 : [[0, 0],
+                    [1, 0],
+                    [1, 1],
+                    [0, 1]],
+               1 : [[0],
+                    [1]]}
+
 class LagrangeNodes(Struct):
     """Helper class for defining nodes of Lagrange elements."""
 
@@ -226,8 +242,7 @@ class PolySpace(Struct):
             name = PolySpace.suggest_name(geometry, order, base, force_bubble)
 
         if PolySpace._all is None:
-            PolySpace._all = find_subclasses(globals(),
-                                                 [PolySpace])
+            PolySpace._all = find_subclasses(globals(), [PolySpace])
         table = PolySpace._all
 
         key = '%s_%s' % (base, PolySpace.keys[(geometry.dim,
@@ -356,7 +371,6 @@ class LagrangeSimplexPolySpace(PolySpace):
 
         else:
             iseq = 0
-            delta = 1.0 / float(order)
 
             # Vertex nodes.
             nts[0:n_v,0] = 0
@@ -483,21 +497,6 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
         n_v, dim = geometry.n_vertex, geometry.dim
 
-        # Requires fixed vertex numbering!
-        vertex_maps = {3 : [[0, 0, 0],
-                            [1, 0, 0],
-                            [1, 1, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [1, 0, 1],
-                            [1, 1, 1],
-                            [0, 1, 1]],
-                       2 : [[0, 0],
-                            [1, 0],
-                            [1, 1],
-                            [0, 1]],
-                       1 : [[0,
-                             1]]}
         vertex_map = order * nm.array(vertex_maps[dim], dtype=nm.int32)
 
         n_nod = (order + 1) ** dim
@@ -514,7 +513,7 @@ class LagrangeTensorProductPolySpace(PolySpace):
             # Vertex nodes.
             nts[0:n_v,0] = 0
             nts[0:n_v,1] = nm.arange( n_v, dtype = nm.int32 )
-            aux = order * nm.identity( n_v, dtype = nm.int32 )
+            order * nm.identity( n_v, dtype = nm.int32 )
             if dim == 3:
                 for ii in range(n_v):
                     i1, i2, i3 = vertex_map[ii]
@@ -529,7 +528,7 @@ class LagrangeTensorProductPolySpace(PolySpace):
                     iseq += 1
             else:
                 for ii in range(n_v):
-                    i1 = vertex_map[ii]
+                    i1 = vertex_map[ii][0]
                     nodes[iseq,:] = [order - i1, i1]
                     iseq += 1
 
