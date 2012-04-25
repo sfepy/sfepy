@@ -1,7 +1,8 @@
 import numpy as nm
 import numpy.linalg as nla
 
-from sfepy.base.base import find_subclasses, Struct
+from sfepy.base.base import find_subclasses, assert_, Struct
+from sfepy.linalg import combine
 
 # Requires fixed vertex numbering!
 vertex_maps = {3 : [[0, 0, 0],
@@ -624,3 +625,131 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
     def get_mtx_i(self):
         return self.ps1d.mtx_i
+
+class LobattoTensorProductPolySpace(PolySpace):
+    """
+    Hierarchical polynomial space using Lobatto functions.
+
+    Each row of the `nodes` attribute defines indices of Lobatto functions that
+    need to be multiplied together to evaluate the corresponding shape
+    function. This defines the ordering of basis functions on the reference
+    element.
+    """
+    name = 'lobatto_tensor_product'
+
+    def __init__(self, name, geometry, order):
+        PolySpace.__init__(self, name, geometry, order)
+
+        self.nodes, self.nts, node_coors = self._define_nodes()
+        self.node_coors = nm.ascontiguousarray(node_coors)
+        self.n_nod = self.nodes.shape[0]
+
+    def _define_nodes(self):
+        geometry = self.geometry
+        order = self.order
+
+        n_v, dim = geometry.n_vertex, geometry.dim
+
+        n_nod = (order + 1) ** dim
+        nodes = nm.zeros((n_nod, dim), nm.int32)
+        nts = nm.zeros((n_nod, 2), nm.int32)
+
+        n_per_edge = (order - 1)
+        n_per_face = (order - 1) ** (dim - 1)
+        n_bubble = (order - 1) ** dim
+
+        # Vertex nodes.
+        nts[0:n_v, 0] = 0
+        nts[0:n_v, 1] = nm.arange(n_v, dtype=nm.int32)
+        nodes[0:n_v] = nm.array(vertex_maps[dim], dtype=nm.int32)
+        ii = n_v
+
+        # Edge nodes.
+        if (dim > 1) and (n_per_edge > 0):
+            ik = nm.arange(2, order + 1, dtype=nm.int32)
+            zo = nm.zeros((n_per_edge, 2), dtype=nm.int32)
+            zo[:, 1] = 1
+            for ie, edge in enumerate(geometry.edges):
+                n1, n2 = nodes[edge]
+                ifix = nm.where(n1 == n2)[0]
+                irun = nm.where(n1 != n2)[0][0]
+                ic = n1[ifix]
+
+                nodes[ii:ii + n_per_edge, ifix] = zo[:, ic]
+                nodes[ii:ii + n_per_edge, irun] = ik
+                nts[ii:ii + n_per_edge] = [[1, ie]]
+                ii += n_per_edge
+
+        # 3D face nodes.
+        if (dim == 3) and (n_per_face > 0):
+            ik = nm.arange(2, order + 1, dtype=nm.int32)
+            zo = nm.zeros((n_per_face, 2), dtype=nm.int32)
+            zo[:, 1] = 1
+
+            for ifa, face in enumerate(geometry.faces):
+                ns = nodes[face]
+
+                diff = nm.diff(ns, axis=0)
+                asum = nm.abs(diff).sum(axis=0)
+                ifix = nm.where(asum == 0)[0][0]
+                ic = ns[0, ifix]
+                irun1 = nm.where(asum == 2)[0][0]
+                irun2 = nm.where(asum == 1)[0][0]
+
+                iy, ix = nm.meshgrid(ik, ik)
+
+                nodes[ii:ii + n_per_face, ifix] = zo[:, ic]
+                nodes[ii:ii + n_per_face, irun1] = ix.ravel()
+                nodes[ii:ii + n_per_face, irun2] = iy.ravel()
+                nts[ii:ii + n_per_face] = [[2, ifa]]
+
+                print '**', ie, face
+                print ns
+
+                print ifix, irun1, irun2
+                ii += n_per_face
+
+        # Bubble nodes.
+        if n_bubble > 0:
+            ik = nm.arange(2, order + 1, dtype=nm.int32)
+            nodes[ii:] = nm.array([aux for aux in combine([ik] * dim)])
+            nts[ii:ii + n_bubble] = [[3, 0]]
+            ii += n_bubble
+
+        assert_(ii == n_nod)
+
+        nm.set_printoptions(threshold=10000)
+
+        # Coordinates of the "nodes". All nodes on a facet have the same
+        # coordinates - the centre of the facet.
+        c_min, c_max = self.bbox[:, 0]
+
+        node_coors = nm.zeros(nodes.shape, dtype=nm.float64)
+        node_coors[:n_v] = nodes[:n_v]
+
+        if (dim > 1) and (n_per_edge > 0):
+            ie = nm.where(nts[:, 0] == 1)[0]
+            node_coors[ie] = node_coors[geometry.edges[nts[ie, 1]]].mean(1)
+
+        if (dim == 3) and (n_per_face > 0):
+            ifa = nm.where(nts[:, 0] == 2)[0]
+            node_coors[ifa] = node_coors[geometry.faces[nts[ifa, 1]]].mean(1)
+
+        if n_bubble > 0:
+            ib = nm.where(nts[:, 0] == 3)[0]
+            node_coors[ib] = node_coors[geometry.conn].mean(0)
+
+        ## print nm.concatenate((nts, nodes, node_coors), 1)
+
+        return nodes, nts, node_coors
+
+    def _eval_base(self, coors, diff=False,
+                   suppress_errors=False, eps=1e-15):
+        """
+        See PolySpace.eval_base().
+        """
+        from extmods.lobatto import eval_lobatto_tensor_product as ev
+        c_min, c_max = self.bbox[:, 0]
+
+        base = ev(coors, self.nodes, c_min, c_max, self.order, diff)
+        return base
