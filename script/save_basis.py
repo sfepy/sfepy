@@ -17,6 +17,8 @@ usage = '%prog [options]\n' + __doc__.rstrip()
 help = {
     'basis' :
     'name of the FE basis [default: %default]',
+    'derivative' :
+    'save d-th derivative of FE basis, can be 0 or 1 [default: %default]',
     'max_order' :
     'maximum order of polynomials [default: %default]',
     'geometry' :
@@ -29,6 +31,9 @@ def main():
     parser.add_option('-b', '--basis', metavar='name',
                       action='store', dest='basis',
                       default='lagrange', help=help['basis'])
+    parser.add_option('-d', '--derivative', metavar='d', type=int,
+                      action='store', dest='derivative',
+                      default=0, help=help['derivative'])
     parser.add_option('-n', '--max-order', metavar='order', type=int,
                       action='store', dest='max_order',
                       default=2, help=help['max_order'])
@@ -56,8 +61,13 @@ def main():
     for ip in range(ps.n_nod):
         output('shape function %d...' % ip)
 
-        def eval_dofs(iels, bf, ic=None):
-            rvals = bf[None, :, ip:ip+1]
+        def eval_dofs(iels, rx, bf):
+            if options.derivative == 0:
+                rvals = bf[None, :, ip:ip+1]
+
+            else:
+                bfg = ps.eval_base(rx, diff=True)
+                rvals = bfg[None, ..., ip]
 
             return rvals
 
