@@ -456,13 +456,32 @@ class ProblemDefinition( Struct ):
 
         return ts
 
-    def get_integrals(self):
+    def get_integrals(self, names=None, kind=None):
         """
-        Get instance of Integrals, initialized from problem
-        configuration if available.
+        Get integrals, initialized from problem configuration if available.
+
+        Parameters
+        ----------
+        names : list, optional
+            If given, only the named integrals are returned.
+        kind : 'v' or 's', optional
+            If given, only integrals of the given kind are returned.
+
+        Returns
+        -------
+        integrals : Integrals instance
+            The requested integrals.
         """
         conf_integrals = self.conf.get_default_attr('integrals', {})
         integrals = Integrals.from_conf(conf_integrals)
+
+        if names is not None:
+            integrals.update([integrals[ii] for ii in names
+                              if ii in integrals.names])
+
+        if kind is not None:
+            integrals.update([ii for ii in integrals
+                              if ii.kind.startswith(kind)])
 
         return integrals
 
