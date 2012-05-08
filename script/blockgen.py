@@ -6,7 +6,7 @@ import sys
 sys.path.append('.')
 from optparse import OptionParser
 
-import numpy as nm; nm
+import numpy as nm
 
 from sfepy.base.base import output
 from sfepy.fem import gen_block_mesh
@@ -24,6 +24,9 @@ help = {
     'shape (counts of nodes in x, y, z) of the block [default: %default]',
     'centre' :
     'centre of the block [default: %default]',
+    '2d' :
+    'generate a 2D rectangular mesh, the third components of the above'
+    ' options are ignored',
 }
 
 def main():
@@ -43,11 +46,16 @@ def main():
     parser.add_option('-c', '--centre', metavar='centre',
                       action='store', dest='centre',
                       default='[0.0, 0.0, 0.0]', help=help['centre'])
+    parser.add_option('-2', '--2d',
+                      action='store_true', dest='is_2d',
+                      default=False, help=help['2d'])
     (options, args) = parser.parse_args()
 
-    dims = eval('nm.array(%s, dtype=nm.float64)' % options.dims)
-    shape = eval('nm.array(%s, dtype=nm.int32)' % options.shape)
-    centre = eval('nm.array(%s, dtype=nm.float64)' % options.centre)
+    dim = 2 if options.is_2d else 3
+
+    dims = nm.array(eval(options.dims), dtype=nm.float64)[:dim]
+    shape = nm.array(eval(options.shape), dtype=nm.int32)[:dim]
+    centre = nm.array(eval(options.centre), dtype=nm.float64)[:dim]
 
     output.prefix = 'blockgen:'
     output('dimensions:', dims)
