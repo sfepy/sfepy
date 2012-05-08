@@ -1,14 +1,5 @@
 #!/usr/bin/env python
-import sys
-sys.path.append('.')
-
-from optparse import OptionParser
-from sfepy.base.base import nm, output
-from sfepy.fem import Mesh
-from sfepy.fem.meshio import output_writable_meshes, MeshIO
-
-usage = """%prog [options] filename_in filename_out
-
+"""
 Convert a mesh file from one SfePy-supported format to another.
 
 Examples:
@@ -17,6 +8,15 @@ $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk
 $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s2.5
 $ ./script/convert_mesh.py meshes/3d/cylinder.mesh new.vtk -s0.5,2,1
 """
+import sys
+sys.path.append('.')
+
+from optparse import OptionParser
+from sfepy.base.base import nm, output
+from sfepy.fem import Mesh
+from sfepy.fem.meshio import output_writable_meshes, MeshIO
+
+usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
 
 help = {
     'scale' : 'scale factor [default: %default]',
@@ -26,14 +26,14 @@ help = {
 
 def main():
     parser = OptionParser(usage=usage)
-    parser.add_option("-s", "--scale", metavar='scale',
-                      action="store", dest="scale",
+    parser.add_option('-s', '--scale', metavar='scale',
+                      action='store', dest='scale',
                       default=None, help=help['scale'])
-    parser.add_option("-f", "--format", metavar='format',
-                      action="store", type='string', dest="format",
+    parser.add_option('-f', '--format', metavar='format',
+                      action='store', type='string', dest='format',
                       default=None, help=help['format'])
-    parser.add_option("-l", "--list", action="store_true", 
-                      dest="list", help=help['list'])
+    parser.add_option('-l', '--list', action='store_true',
+                      dest='list', help=help['list'])
     (options, args) = parser.parse_args()
 
     if options.list:
@@ -43,7 +43,7 @@ def main():
     if len(args) != 2:
         parser.print_help()
         sys.exit(1)
-    
+
     scale = options.scale
     if scale is not None:
         try:
@@ -56,9 +56,9 @@ def main():
             output('bad scale! (%s)' % scale)
             parser.print_help()
             sys.exit(1)
-        
+
     filename_in, filename_out = args
-    
+
     mesh = Mesh.from_file(filename_in)
 
     if scale is not None:
