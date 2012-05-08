@@ -13,13 +13,14 @@ sys.path.append('.')
 
 from optparse import OptionParser
 from sfepy.base.base import nm, output
-from sfepy.fem import Mesh
+from sfepy.fem import Mesh, Domain
 from sfepy.fem.meshio import output_writable_meshes, MeshIO
 
 usage = '%prog [options] filename_in filename_out\n' + __doc__.rstrip()
 
 help = {
     'scale' : 'scale factor [default: %default]',
+    'refine' : 'uniform refinement level [default: %default]',
     'format' : 'output mesh format (overrides filename_out extension)',
     'list' : 'list supported writable output mesh formats',
 }
@@ -29,6 +30,9 @@ def main():
     parser.add_option('-s', '--scale', metavar='scale',
                       action='store', dest='scale',
                       default=None, help=help['scale'])
+    parser.add_option('-r', '--refine', metavar='level',
+                      action='store', type=int, dest='refine',
+                      default=0, help=help['refine'])
     parser.add_option('-f', '--format', metavar='format',
                       action='store', type='string', dest='format',
                       default=None, help=help['format'])
@@ -69,6 +73,19 @@ def main():
         else:
             raise ValueError('bad scale! (%s)' % scale)
         mesh.transform_coors(tr)
+
+    if options.refine > 0:
+        domain = Domain(mesh.name, mesh)
+        output('initial mesh: %d nodes %d elements'
+               % (domain.shape.n_nod, domain.shape.n_el))
+
+        for ii in range(options.refine):
+            output('refine %d...' % ii)
+            domain = domain.refine()
+            output('... %d nodes %d elements'
+                   % (domain.shape.n_nod, domain.shape.n_el))
+
+        mesh = domain.mesh
 
     io = MeshIO.for_format(filename_out, format=options.format,
                            writable=True)
