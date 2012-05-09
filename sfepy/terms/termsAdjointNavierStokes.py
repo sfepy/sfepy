@@ -1,6 +1,7 @@
 import numpy as nm
 
 from sfepy.terms.terms import Term, terms
+from sfepy.base.base import get_default
 
 def grad_as_vector(grad):
     grad = grad.transpose((0, 1, 3, 2))
@@ -231,7 +232,7 @@ class SDDotVolumeTerm(Term):
         val2 = self.get(par2, 'val')
         div_mv = self.get(par_mv, 'div')
 
-        return val1, val2, div_mv, vg, term_mode
+        return val1, val2, div_mv, vg, get_default(term_mode, 1)
 
     def get_eval_shape(self, par1, par2, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -271,7 +272,8 @@ class SDDivTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        return div_u, grad_u, val_p, div_mv, grad_mv, vg, term_mode
+        return (div_u, grad_u, val_p, div_mv, grad_mv, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, par_u, par_p, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -315,7 +317,8 @@ class SDDivGradTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        return grad_u, grad_w, div_mv, grad_mv, mat1 * mat2, vg, term_mode
+        return (grad_u, grad_w, div_mv, grad_mv, mat1 * mat2, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, mat1, mat2, par_u, par_w, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -355,7 +358,8 @@ class SDConvectTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        return val_u, grad_u, val_w, div_mv, grad_mv, vg, term_mode
+        return (val_u, grad_u, val_w, div_mv, grad_mv, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, par_u, par_w, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -474,7 +478,8 @@ class SDGradDivStabilizationTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = grad_as_vector(self.get(par_mv, 'grad'))
 
-        return div_u, grad_u, div_w, grad_w, div_mv, grad_mv, mat, vg, term_mode
+        return (div_u, grad_u, div_w, grad_w, div_mv, grad_mv, mat, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, mat, par_u, par_w, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -518,7 +523,8 @@ class SDSUPGCStabilizationTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
 
-        return val_b, grad_u, grad_w, div_mv, grad_mv, mat, vg, term_mode
+        return (val_b, grad_u, grad_w, div_mv, grad_mv, mat, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, mat, par_b, par_u, par_w, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -562,7 +568,8 @@ class SDPSPGCStabilizationTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
 
-        return val_b, grad_u, grad_r, div_mv, grad_mv, mat, vg, term_mode
+        return (val_b, grad_u, grad_r, div_mv, grad_mv, mat, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, mat, par_b, par_u, par_r, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -602,7 +609,8 @@ class SDPSPGPStabilizationTerm(Term):
         div_mv = self.get(par_mv, 'div')
         grad_mv = self.get(par_mv, 'grad').transpose((0, 1, 3, 2)).copy()
 
-        return grad_r, grad_p, div_mv, grad_mv, mat, vg, term_mode
+        return (grad_r, grad_p, div_mv, grad_mv, mat, vg,
+                get_default(term_mode, 1))
 
     def get_eval_shape(self, mat, par_r, par_p, par_mv,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
