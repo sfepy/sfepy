@@ -29,7 +29,7 @@ help = {
     'filename' :
     'basename of output file(s) [default: <basename of input file>]',
     'output_format' :
-    'output file format, one of: {vtk, h5, mesh} [default: vtk]',
+    'output file format, one of: {vtk, h5} [default: vtk]',
     'log' :
     "log all messages to specified file (existing file will be overwritten!)",
     'quiet' :
