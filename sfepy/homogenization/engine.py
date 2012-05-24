@@ -51,7 +51,9 @@ class HomogenizationEngine(PDESolverApp):
                                        'missing "requirements" in options!'),
                       compute_only=get('compute_only', None),
                       save_format=get('save_format', 'vtk'),
-                      dump_format=get('dump_format', 'h5'))
+                      dump_format=get('dump_format', 'h5'),
+                      coefs_info=get('coefs_info', None)
+                      )
 
     def __init__(self, problem, options, app_options=None,
                  volume=None, output_prefix='he:', **kwargs):
@@ -196,7 +198,10 @@ class HomogenizationEngine(PDESolverApp):
         if is_store_filenames:
             coefs.save_names = save_names
             coefs.dump_names = dump_names
-            
+
+        if opts.coefs_info is not None:
+            coefs.info = opts.coefs_info
+
         if ret_all:
             return coefs, dependencies
         else:
