@@ -1,4 +1,4 @@
-graft doc/
+graft doc
 prune examples/*/output
 prune examples/*/*/output
 prune doc/_build
