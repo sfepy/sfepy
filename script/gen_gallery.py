@@ -16,6 +16,7 @@ from sfepy.base.ioutils import ensure_path, locate_files, remove_files
 
 omits = [
     'linear_elastic_mM.py',
+    'time_poisson_explicit.py',
     '__init__.py',
 ]
 
