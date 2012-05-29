@@ -1,5 +1,328 @@
 # created: 20.07.2007 (-1)
 
+.. _2012.1-2012.2:
+
+from 2012.1 to 2012.2
+=====================
+
+- reimplement acoustic band gaps code using the homogenization engine:
+
+  - merge band_gaps_he branch
+  - rename eigen.py -> phonon.py
+  - move AcousticBandGapsApp to new sfepy/homogenization/band_gaps_app.py
+  - fix coding style in sfepy/homogenization/band_gaps_app.py
+  - replace compute_density_volume_info() by DensityVolumeInfo
+  - new MiniAppBase.process_options()
+  - preserve order of requirements in HomogenizationEngine.call()
+  - new SimpleEVP mini-application:
+
+    - reimplement part of AcousticBandGapsApp.solve_eigen_problem() for
+      'simple' problems
+
+  - rename sfepy/homogenization/phono.py -> .../coefs_phononic.py
+  - new Eigenmomenta mini-application:
+
+    - update compute_eigenmomenta()
+    - remove prepare_eigenmomenta()
+
+  - new CoefDummy
+  - update AcousticBandGapsApp.process_options(), .process_options_pv() -
+    options moved to corrector/coefficient classes
+  - update AcousticBandGapsApp.call() - compute ingredients for band gap
+    detection via HomogenizationEngine
+  - update frequency-dependent tensors:
+
+    - update AcousticMassTensor, AcousticMassLiquidTensor, AppliedLoadTensor
+
+  - update Eigenmomenta
+  - update band gaps functions, new BandGaps mini-application:
+
+    - update cut_freq_range(), split_chunks(), detect_band_gaps(),
+      get_callback(), find_zero(), describe_gaps()
+    - remove setup_band_gaps()
+
+  - update try_set_defaults() for one-level recurrence
+  - move plotting functions: coefs_phononic.py -> band_gaps_app.py
+  - split SimpleEVP.__call__():
+
+    - new SimpleEVP.prepare_matrices(), .post_process()
+
+  - new SchurEVP mini-application
+  - remove obsolete code in AcousticBandGapsApp:
+
+    - remove make_save_hook()
+    - remove AcousticBandGapsApp.fix_eig_range(), .solve_eigen_problem(),
+      .eval_homogenized_coefs()
+
+  - update BandGaps for custom detection function and rhs matrix
+  - set incident wave dir. in AcousticBandGapsApp.call()
+  - new dispersion mini-applications:
+
+    - new ChristoffelAcousticTensor, PolarizationAngles, PhaseVelocity
+      mini-applications
+    - new compute_cat_sym_sym(), compute_cat_dim_sym(), compute_cat_dim_dim(),
+    - remove compute_cat(), compute_polarization_angles()
+    - new AcousticBandGapsApp.plot_dispersion()
+    - remove AcousticBandGapsApp.compute_cat(), .compute_phase_velocity()
+    - remove report_iw_cat()
+
+  - new HomogenizationEngine option 'compute_only':
+
+    - unify handling of dependencies (requirements and coefficients)
+    - remove _get_parents()
+
+  - fix de-duplication of names in HomogenizationEngine.call()
+  - inherit AcousticBandGapsApp from HomogenizationApp (common options)
+  - update Coefficients._save_dict():
+
+    - support custom 'to_file_txt' callable attribute of coefficients
+    - ignore unknown types
+
+  - update saving of figures in AcousticBandGapsApp
+  - allow saving band gaps logs:
+
+    - new BandGaps.to_file_txt(), .save_log()
+    - new application option 'log_save_name'
+
+  - improve default plot resources
+  - remove broken caching from AcousticBandGapsApp
+  - update phononic examples for AcousticBandGapsApp:
+
+    - new examples/phononic/band_gaps_conf.py
+    - update examples/phononic/band_gaps.py,
+      examples/phononic/band_gaps_rigid.py
+    - remove coef_conf_elastic.py, gen_mesh.py, parametric.py, plot_gaps.py
+
+  - update test_install.py
+
+- homogenization:
+
+  - new homogenization corrector function OnesDim - unit vector in the
+    directions
+  - proper coding style in coefs_base.py
+  - update float formatting capabilities of Coefficients.to_file_latex()
+  - allow passing custom application options to HomogenizationEngine
+  - new get_volume_from_options(), update HomogenizationApp.call()
+  - allow to add some additional information to coefficients files
+
+- quadratures:
+
+  - update table of 1_2 quadrature points
+
+    - fix and update module docstring
+    - update QuadraturePoints.__init__() - add symmetric argument
+    - up to polynomial order 47
+
+  - increase tolerance in test_quadratures()
+  - create missing tensor product quadratures using 1_2 (line) quadratures:
+    - order for tensor product geometries is given in terms of the 1D order
+    - new QuadraturePoints.from_table(), _get_max_orders()
+    - update QuadraturePoints.__init__()
+    - update Integral.get_qp(), .integrate()
+    - move & update Integral.get_actual_order() -> get_actual_order()
+
+  - fix order in create_mass_matrix(), make_l2_projection()
+  - test generated tensor product quadratures
+  - cite PHAML in module docstring
+  - update table of 2_3 quadrature points
+  - fix polynomial order in get_poly()
+  - report differences in test_weight_consistency(), test_quadratures()
+  - create missing simplex (2_3, 3_4) quadratures
+
+    - update QuadraturePoints.from_table()
+    - new sfepy/fem/simplex_cubature.py
+
+  - update test_quadratures()
+
+- solvers:
+
+  - rewrite stabilization material handling
+
+    - create_stabil_mat() -> StabilizationFunction
+    - stabilization material uses now a "regular" material function
+
+  - update Oseen solver for new stabilization material handling
+  - fix eig() to obey options from keyword arguments
+
+    - change num -> n_eigs
+
+  - fix PysparseEigenvalueSolver.__call__() for no r.h.s. matrix
+
+    - set default n_eigs, clean up
+
+  - new SimpleTimeSteppingSolver.process_conf()
+  - new TimeSteppingSolver.set_step_fun()
+  - new ExplicitTimeSteppingSolver
+  - new MassOperator
+
+- applications:
+
+  - rename simple_app.py -> pde_solver_app.py
+  - rename SimpleApp -> PDESolverApp
+  - rename pde_solve() -> solve_pde(), add docstring
+
+    - move it into sfepy/applications/pde_solver_app.py
+    - remove sfepy/applications/top_level.py
+
+  - clean up sfepy/applications/application.py
+  - merge sfepy/solvers/generic.py with sfepy/applications/pde_solver_app.py
+
+    - remove sfepy/solvers/generic.py
+    - update solve_pde(), PDESolverApp.call()
+    - rename solve_stationary_op() -> solve_stationary(),
+      time_step_function() -> make_implicit_step(),
+      solve_evolutionary_op() -> solve_evolutionary()
+
+  - update PDESolverApp.call() for basic explicit time stepping
+
+    - new make_explicit_step()
+
+- input-output:
+
+  - update Mesh._set_shape_info() - add element group dimensions
+  - update MeshIO classes to read elements of lower dimension
+
+    - update VTKMeshIO, ComsolMeshIO, AVSUCDMeshIO, HypermeshAsciiMeshIO,
+      AbaqusMeshIO, NEUMeshIO, ANSYSCDBMeshIO
+    - merge mesh_from_tetra_hexa(), mesh_from_tri_quad() -> mesh_from_groups()
+
+  - change default value of omit_facets to False (Mesh.from_file() etc.)
+  - update HDF5MeshIO.read_times() to return also time steps
+  - update extract_times(), dump_to_vtk(), extractor.py for missing time steps
+
+    - extraction now works with files where not all the time steps are saved
+
+  - update VTKMeshIO.read() for pixels and voxels
+
+- domain:
+
+  - update Domain: store group dimension
+
+    - update Domain.fix_element_orientation() to skip facet groups
+
+  - update Facets for empty facet groups
+  - update Region.get_n_cells() for facet groups
+
+- scripts:
+
+  - new script/plot_condition_numbers.py
+  - update script/gen_lobatto_pyx.py to generate also derivatives
+  - fix gen_lobatto() in script/gen_lobatto_pyx.py
+  - new script/save_basis.py
+  - clean up script/blockgen.py, new --2d option
+  - clean up script/convert_mesh.py, new --refine option
+
+- visualization:
+
+  - use new _get_scalars() in domain specific plot functions
+  - new plot_warp_scalar() domain specific plot function
+  - linearizer:  update create_output() for custom evaluation functions
+
+    - new get_eval_dofs(), get_eval_coors()
+    - add coordinates argument to DOFs evaluation function in get_eval_dofs()
+    - update create_output()
+
+- new LobattoTensorProductPolySpace - initial implementation of hierarchic basis
+
+- unify dot product and mass terms:
+
+  - dw_mass, dw_mass_scalar, dw_surf_mass_scalar, dw_volume_wdot_scalar ->
+    dw_volume_dot_vector, dw_surface_dot_vector, dw_volume_dot_scalar,
+    dw_surface_dot_scalar
+  - remove sfepy/terms/termsMass.py, sfepy/terms/extmods/termsMass.[ch]
+  - remove MassVectorTerm, MassScalarTerm, MassScalarSurfaceTerm,
+  - new sfepy/terms/terms_dot.py, sfepy/terms/extmods/terms_dot.[ch]
+  - update examples
+
+- terms:
+
+  - update AdjDivGradTerm, AdjConvect1Term, AdjConvect2Term for new term
+    evaluation
+  - update objective function terms for new term evaluation
+
+    - update SUPGCAdjStabilizationTerm (fix name from AdjSUPGCtabilizationTerm)
+    - update SUPGPAdj1StabilizationTerm, SUPGPAdj2StabilizationTerm
+
+  - update adjoint Navier-Stokes stabilization terms for new term evaluation
+
+    - merge NSOFMinGrad1Term, NSOFMinGrad2Term -> NSOFMinGradTerm
+    - update NSOFSurfMinDPressTerm, NSOFSurfMinDPressDiffTerm
+
+  - update Navier-Stokes shape derivative terms for new term evaluation
+
+    - update SDDivTerm, SDDivGradTerm, SDConvectTerm
+
+  - update SDDotScalarTerm for new term evaluation (was TestPQTerm)
+
+  - update stabilized Navier-Stokes shape derivative terms for new term
+    evaluation
+
+    - update SDGradDivStabilizationTerm, SDSUPGCStabilizationTerm,
+      SDPSPGCStabilizationTerm, SDPSPGPStabilizationTerm
+    - fix their docstrings
+
+  - make material argument of DivGradTerm optional, implement evaluation mode
+  - update PermeabilityRTerm for new term evaluation
+  - update SDDotVolumeTerm to support also vectors (was SDDotScalarTerm)
+  - new VectorDotGradScalarTerm (dw_v_dot_grad_s)
+  - update DotProductVolumeTerm for matrix coefficient
+  - add optional material argument to NonPenetrationTerm
+  - fix term_mode in d_sd_... terms - set default value to 1
+
+- examples:
+
+  - update examples/navier_stokes/stabilized_navier_stokes.py
+  - new examples/diffusion/time_poisson_explicit.py
+
+- shaper.py:
+
+  - fix --direct, --adjoint options
+  - update solve_stokes(), solve_navier_stokes(), solve_generic_direct(),
+    solve_direct(), solve_adjoint() for State
+  - fix main()
+  - update and clean up
+  - update vec -> state in shape optimization functions and ShapeOptimFlowCase
+  - update ShapeOptimFlowCase: handling of materials, term evaluation mode
+  - update update_mesh(), solve_problem_for_design() for current code
+
+- misc:
+
+  - fix Equations.invalidate_term_caches() to invalidate all variables
+  - further speed-up assemble.pyx by using pointer to iels, change int -> int32
+  - major speed-up of some key functions
+
+    - profiling using line_profiler -> use numpy.take() instead of fancy
+      indexing
+    - update Approximation.get_connectivity(), .describe_geometry()
+      Field.setup_vertex_dofs(), .setup_coors(), Mapping.__init__(),
+      create_adof_conn()
+
+  - fix vg_getElementDiameters()
+  - fix bf_actt_c1()
+  - fix print_matrix_diff() for scipy with removed rowcol()
+  - change default value of follow_epbc to False
+
+    - update Equations.strip_state_vector(), State.get_reduced(),
+      Variables.strip_state_vector(), FieldVariable.get_reduced()
+  - new get_subdict()
+  - new match_coors()
+  - fix region comparison in Field.get_mapping()
+  - fix package_check() for bogus versions
+  - update Field.linearize()
+  - new eval_lobatto_tensor_product()
+  - make vertex_maps common, fix LagrangeTensorProductPolySpace._define_nodes()
+  - update ProblemDefinition.get_integrals() - add names, kind arguments
+  - remove unused MultiplierVariable, ConstantVariable
+
+- docs:
+
+  - add archlinux installation requirements
+  - fix numpy docstring standard links
+  - add coding style section to developer guide
+  - refer to web pages using new doc/links.inc
+  - add NTC logo to main page
+  - update developer guide to reflect the above updates
+
 .. _2011.4-2012.1:
 
 from 2011.4 to 2012.1
