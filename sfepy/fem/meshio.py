@@ -2018,7 +2018,7 @@ class AbaqusMeshIO( MeshIO ):
 
     def write( self, filename, mesh, out = None, **kwargs ):
         raise NotImplementedError
-    
+
 class BDFMeshIO( MeshIO ):
     format = 'nastran'
 
@@ -2034,7 +2034,7 @@ class BDFMeshIO( MeshIO ):
             if len( line ) == 1: continue
             if line[0] == '$': continue
             aux = line.split()
-            
+
             if aux[0] == 'CHEXA':
                 el3d += 1
             elif aux[0] == 'CTETRA':
@@ -2056,9 +2056,9 @@ class BDFMeshIO( MeshIO ):
             if len( s ) > 3:
                 if s[-3] == '-':
                     return float( s[:-3]+'e'+s[-3:] )
-        
+
             return float( s )
-            
+
         import string
         fd = open( self.filename, 'r' )
 
@@ -2069,6 +2069,7 @@ class BDFMeshIO( MeshIO ):
 
         conns_in = []
         descs = []
+        node_grp = None
         while 1:
             try:
                 line = fd.readline()
@@ -2125,7 +2126,13 @@ class BDFMeshIO( MeshIO ):
                 aux.append( aux2 )
                 el['3_8'].append( aux )
                 dim = 3
-                
+
+            elif row[0] == 'SPC' or row[0] == 'SPC*':
+                if node_grp is None:
+                    node_grp = [0] * len(nod)
+
+                node_grp[int(row[2]) - 1] = int(row[1])
+
         for elem in el.keys():
             if len(el[elem]) > 0:
                 conns_in.append( el[elem] )
@@ -2137,10 +2144,10 @@ class BDFMeshIO( MeshIO ):
         if dim == 2:
             nod = nod[:,:2].copy()
         conns_in = nm.array( conns_in, nm.int32 )
-        
+
         conns_in, mat_ids = sort_by_mat_id( conns_in )
         conns, mat_ids, descs = split_by_mat_id( conns_in, mat_ids, descs )
-        mesh._set_data( nod, None, conns, mat_ids, descs )
+        mesh._set_data( nod, node_grp, conns, mat_ids, descs )
 
         return mesh
 
