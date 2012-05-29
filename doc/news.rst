@@ -1,6 +1,11 @@
 News
 ====
 
+* **29.05.2012** Version 2012.2 released (reimplement acoustic band gaps code
+  using the homogenization engine, high order quadrature rules, unify dot
+  product and mass terms, lots of other term updates/fixes, update the PDE
+  solver application, etc.), see :ref:`release notes <2012.1-2012.2>`.
+
 * **27.02.2012** Version 2012.1 released (initial version of linearizer of
   higher order solutions, rewrite variable and evaluate cache history handling,
   lots of term updates/fixes/simplifications, move web front page to sphinx
@@ -25,11 +30,5 @@ News
   setup.py, allow switching boundary conditions on/off depending on
   time, support for variable time step solvers, etc.), see
   :ref:`release notes <2011.1-2011.2>`.
-
-* **24.03.2011** Version 2011.1 released (discontinuous approximations,
-  user-defined material nonlinearities, improved surface approximations,
-  speed-up mesh reading, extensive clean-up - less code, many bugfixes
-  and many more updates), see
-  :ref:`release notes <2010.4-2011.1>`.
 
 For historians: see :ref:`archived_news`.

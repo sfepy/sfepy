@@ -3,6 +3,12 @@
 Archived News
 =============
 
+* **24.03.2011** Version 2011.1 released (discontinuous approximations,
+  user-defined material nonlinearities, improved surface approximations,
+  speed-up mesh reading, extensive clean-up - less code, many bugfixes
+  and many more updates), see
+  :ref:`release notes <2010.4-2011.1>`.
+
 * **06.12.2010** Version 2010.4 released (higher order elements,
   refactoring of geometries (reference mappings), transparent DOF vector
   synchronization with variables, interface variables defined on a
