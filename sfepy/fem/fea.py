@@ -355,8 +355,8 @@ class Approximation( Struct ):
             out.integral = integral
             out.qp = qp
             out.ps = ps
-            # Store base.
-            out.bf = bf
+            # Update base.
+            out.bf[:] = bf
 
         if return_mapping:
             out = (out, mapping)
