@@ -655,7 +655,7 @@ variable. This term is implemented as follows::
 
         @staticmethod
         def function(out, mat, bf, geo):
-            bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+            bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
             bf_t = nm.ascontiguousarray(bf_t)
             status = geo.integrate(out, mat * bf_t)
 
