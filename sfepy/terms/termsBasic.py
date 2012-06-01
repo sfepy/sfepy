@@ -178,7 +178,7 @@ class IntegrateVolumeOperatorTerm(Term):
 
     @staticmethod
     def function(out, material, bf, geo):
-        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
         bf_t = nm.ascontiguousarray(bf_t)
         if material is not None:
             status = geo.integrate(out, material * bf_t)
@@ -292,7 +292,7 @@ class VolumeSurfaceTerm(Term):
         sd = ap.surface_data[self.region.name]
         coor = parameter.field.get_coor()
 
-        return coor, sg.bf, sg, sd.econn.copy()
+        return coor, sg, sd.econn.copy()
 
     def get_eval_shape(self, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -328,7 +328,7 @@ class SurfaceMomentTerm(Term):
         coor = parameter.field.get_coor() \
                - nm.asarray(shift, dtype=nm.float64)[None,:]
 
-        return coor, sg.bf, sg, sd.econn.copy()
+        return coor, sg, sd.econn.copy()
 
     def get_eval_shape(self, parameter, shift,
                        mode=None, term_mode=None, diff_var=None, **kwargs):

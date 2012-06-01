@@ -9,13 +9,12 @@
   - 06.09.2006, c
   - 11.10.2006
 */
-int32 dw_surface_ltr( FMField *out, FMField *bf,
-		      FMField *traction, SurfaceGeometry *sg )
+int32 dw_surface_ltr( FMField *out, FMField *traction, SurfaceGeometry *sg )
 {
   int32 ii, dim, sym, nQP, nFP, ret = RET_OK;
   FMField *outQP = 0, *pn = 0, *stn = 0;
 
-  nFP = bf->nCol;
+  nFP = sg->bf->nCol;
   nQP = sg->det->nLev;
   dim = sg->normal->nRow;
   sym = (dim + 1) * dim / 2;
@@ -30,9 +29,10 @@ int32 dw_surface_ltr( FMField *out, FMField *bf,
       FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
+      FMF_SetCellX1( sg->bf, ii );
 
       fmf_mulAB_nn( pn, sg->normal, traction );
-      bf_actt( outQP, bf, pn );
+      bf_actt( outQP, sg->bf, pn );
 
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );
@@ -45,8 +45,9 @@ int32 dw_surface_ltr( FMField *out, FMField *bf,
       FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
+      FMF_SetCellX1( sg->bf, ii );
 
-      bf_actt( outQP, bf, traction );
+      bf_actt( outQP, sg->bf, traction );
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );
     }
@@ -59,9 +60,10 @@ int32 dw_surface_ltr( FMField *out, FMField *bf,
       FMF_SetCell( traction, ii );
       FMF_SetCell( sg->normal, ii );
       FMF_SetCell( sg->det, ii );
+      FMF_SetCellX1( sg->bf, ii );
 
       geme_mulAVSB3( stn, traction, sg->normal );
-      bf_actt( outQP, bf, stn );
+      bf_actt( outQP, sg->bf, stn );
 
       fmf_sumLevelsMulF( out, outQP, sg->det->val );
       ERR_CheckGo( ret );

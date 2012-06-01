@@ -41,14 +41,14 @@ class NonPenetrationTerm(Term):
 
         if diff_var is None:
             if mode == 'grad':
-                ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
+                ebf_t = nm.tile(ebf.transpose((0, 1, 3, 2)), (n_fa, 1, 1, 1))
 
                 nl = normals * val_qp
                 eftnl = mat * dot_sequences(ebf_t, nl)
                 status = sg.integrate(out, eftnl, 0)
 
             else:
-                bf_t = nm.tile(bf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
+                bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (n_fa, 1, 1, 1))
 
                 ntu = (normals * val_qp).sum(axis=-2)[...,None]
                 ftntu = mat * (bf_t * ntu)
@@ -56,7 +56,7 @@ class NonPenetrationTerm(Term):
                 status = sg.integrate(out, ftntu, 0)
 
         else:
-            ebf_t = nm.tile(ebf.transpose((0, 2, 1)), (n_fa, 1, 1, 1))
+            ebf_t = nm.tile(ebf.transpose((0, 1, 3, 2)), (n_fa, 1, 1, 1))
             bf_ = nm.tile(bf, (n_fa, 1, 1, 1))
 
             eftn = mat * dot_sequences(ebf_t, normals)
@@ -90,8 +90,8 @@ class NonPenetrationTerm(Term):
 
         # Expand base corresponding to \ul{u} for all dofs.
         bf = vsg.bf
-        ebf = nm.zeros((bf.shape[0], dim, n_fn * dim), dtype=nm.float64)
+        ebf = nm.zeros(bf.shape[:2] + (dim, n_fn * dim), dtype=nm.float64)
         for ir in xrange(dim):
-            ebf[:, ir, ir*n_fn:(ir+1)*n_fn] = bf[:, 0, :]
+            ebf[..., ir, ir*n_fn:(ir+1)*n_fn] = bf[..., 0, :]
 
         return val_qp, ebf, ssg.bf, mat, vsg, diff_var, self.mode

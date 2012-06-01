@@ -12,7 +12,7 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
-			  FMField *bf, VolumeGeometry *vg );
+			  VolumeGeometry *vg );
 
 END_C_DECLS
 

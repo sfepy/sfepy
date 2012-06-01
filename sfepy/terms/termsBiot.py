@@ -61,7 +61,7 @@ class BiotTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return 1.0, val_qp, svg.bf, mat, vvg, fmode
+            return 1.0, val_qp, mat, svg, vvg, fmode
 
         elif mode == 'eval':
             vvg, _ = self.get_mapping(vvar)
@@ -190,13 +190,13 @@ class BiotTHTerm(BiotTerm, THTerm):
                     for ii, mat in enumerate(mats):
                         val_qp = self.get(qp_var, qp_name, step=-ii)
                         mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-                        yield ii, (ts.dt, val_qp, svg.bf, mat, vvg, 0)
+                        yield ii, (ts.dt, val_qp, mat, svg, vvg, 0)
                 fargs = iter_kernel
 
             else:
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 mat = nm.tile(mats[0], (n_el, n_qp, 1, 1))
-                fargs = ts.dt, val_qp, svg.bf, mat, vvg, 1
+                fargs = ts.dt, val_qp, mat, svg, vvg, 1
 
             return fargs
 
@@ -258,11 +258,11 @@ class BiotETHTerm(BiotTerm, ETHTerm):
                 data = self.get_eth_data(key, qp_var, mat1, val_qp)
 
                 val = data.history + data.values
-                fargs = (ts.dt, val, svg.bf, mat0, vvg, 0)
+                fargs = (ts.dt, val, mat0, svg, vvg, 0)
 
             else:
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
-                fargs = (ts.dt, val_qp, svg.bf, mat0, vvg, 1)
+                fargs = (ts.dt, val_qp, mat0, svg, vvg, 1)
 
             return fargs
 

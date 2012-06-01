@@ -72,7 +72,7 @@ class AdjConvect1Term(Term):
 
         fmode = diff_var is not None
 
-        return val_w, grad_u, vg.bf, vg, fmode
+        return val_w, grad_u, vg, fmode
 
 class AdjConvect2Term(Term):
     r"""
@@ -102,7 +102,7 @@ class AdjConvect2Term(Term):
 
         fmode = diff_var is not None
 
-        return val_w, val_u, vg.bf, vg, fmode
+        return val_w, val_u, vg, fmode
 
 class SUPGCAdjStabilizationTerm(Term):
     r"""
@@ -136,7 +136,7 @@ class SUPGCAdjStabilizationTerm(Term):
 
         fmode = diff_var is not None
 
-        return state(), val_u, grad_u, mat, vg.bf, vg, conn, fmode
+        return state(), val_u, grad_u, mat, vg, conn, fmode
 
 class SUPGPAdj1StabilizationTerm(Term):
     r"""
@@ -168,7 +168,7 @@ class SUPGPAdj1StabilizationTerm(Term):
 
         fmode = diff_var is not None
 
-        return state(), grad_p, mat, vg_w.bf, vg_w, conn_w, fmode
+        return state(), grad_p, mat, vg_w, conn_w, fmode
 
 class SUPGPAdj2StabilizationTerm(Term):
     r"""
@@ -202,7 +202,7 @@ class SUPGPAdj2StabilizationTerm(Term):
 
         fmode = diff_var is not None
 
-        return grad_u, state(), mat, vg_u.bf, vg_u, vg_r, conn_r, fmode
+        return grad_u, state(), mat, vg_u, vg_r, conn_r, fmode
 
 class SDDotVolumeTerm(Term):
     r"""
@@ -411,7 +411,7 @@ class NSOFSurfMinDPressTerm(Term):
 
         val_p = self.get(parameter, 'val')
 
-        return val_p, weight, bpress, sg.bf, sg, 0
+        return val_p, weight, bpress, sg, 0
 
     def get_eval_shape(self, weight, bpress, parameter,
                        mode=None, term_mode=None, diff_var=None, **kwargs):

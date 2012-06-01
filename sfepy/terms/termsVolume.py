@@ -23,4 +23,4 @@ class LinearVolumeForceTerm(Term):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vg, _ = self.get_mapping(virtual)
 
-        return vg.bf, mat, vg
+        return mat, vg

@@ -31,7 +31,7 @@ class LinearTractionTerm( Term ):
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         sg, _ = self.get_mapping(virtual)
 
-        return sg.bf, traction, sg
+        return traction, sg
 
 class SufaceNormalDotTerm(Term):
     r"""
@@ -54,7 +54,7 @@ class SufaceNormalDotTerm(Term):
 
     @staticmethod
     def dw_fun(out, material, bf, sg):
-        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
         bf_t = nm.ascontiguousarray(bf_t)
         aux = dot_sequences(material, sg.normal)
         status = sg.integrate(out, bf_t * aux)
@@ -115,7 +115,7 @@ class SurfaceJumpTerm(Term):
 
     @staticmethod
     def function(out, jump, bf1, bf2, sg, fmode):
-        bf_t = nm.tile(sg.bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.tile(sg.bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
 
         if fmode == 0:
             vec = bf_t * jump

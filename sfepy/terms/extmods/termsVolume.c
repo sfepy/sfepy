@@ -10,13 +10,12 @@
   @par Revision history:
   - c: 18.09.2006, r: 12.05.2008
 */
-int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
-		     VolumeGeometry *vg )
+int32 dw_volume_lvf( FMField *out, FMField *forceQP, VolumeGeometry *vg )
 {
   int32 ii, dim, nQP, nFEP, ret = RET_OK;
   FMField *outQP = 0;
 
-  nFEP = bf->nCol;
+  nFEP = vg->bf->nCol;
   nQP = vg->det->nLev;
   dim = forceQP->nRow;
 
@@ -26,8 +25,9 @@ int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
     FMF_SetCell( out, ii );
     FMF_SetCell( forceQP, ii );
     FMF_SetCell( vg->det, ii );
+    FMF_SetCellX1( vg->bf, ii );
 
-    bf_actt_c1( outQP, bf, forceQP );
+    bf_actt_c1( outQP, vg->bf, forceQP );
     fmf_sumLevelsMulF( out, outQP, vg->det->val );
     ERR_CheckGo( ret );
   }

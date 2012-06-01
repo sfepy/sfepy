@@ -11,8 +11,7 @@ BEGIN_C_DECLS
 #include "fmfield.h"
 #include "geometry.h"
 
-int32 dw_volume_lvf( FMField *out, FMField *bf, FMField *forceQP,
-		     VolumeGeometry *vg );
+int32 dw_volume_lvf( FMField *out, FMField *forceQP, VolumeGeometry *vg );
 
 END_C_DECLS
 

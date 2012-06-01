@@ -40,7 +40,7 @@ class DotProductVolumeTerm(Term):
 
     @staticmethod
     def dw_dot(out, mat, val_qp, vgeo, sgeo, fun, fmode):
-        status = fun(out, mat, val_qp, vgeo.bf, sgeo.bf, vgeo, fmode)
+        status = fun(out, mat, val_qp, vgeo, sgeo, fmode)
         return status
 
     @staticmethod
@@ -227,13 +227,13 @@ class DotSProductVolumeOperatorWTHTerm(THTerm):
                 for ii, mat in enumerate(mats):
                     val_qp = self.get(state, 'val', step=-ii)
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-                    yield ii, (ts.dt * mat, val_qp, vg.bf, vg.bf, vg, 0)
+                    yield ii, (ts.dt * mat, val_qp, vg, vg, 0)
             fargs = iter_kernel
 
         else:
             val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
             mat = nm.tile(mats[0], (n_el, n_qp, 1, 1))
-            fargs = ts.dt * mat, val_qp, vg.bf, vg.bf, vg, 1
+            fargs = ts.dt * mat, val_qp, vg, vg, 1
 
         return fargs
 
@@ -272,12 +272,11 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
             key += tuple(self.arg_names[ii] for ii in [1, 2, 4])
             data = self.get_eth_data(key, state, mat1, val_qp)
 
-            fargs = (ts.dt * mat0, data.history + data.values,
-                     vg.bf, vg.bf, vg, 0)
+            fargs = (ts.dt * mat0, data.history + data.values, vg, vg, 0)
 
         else:
             aux = nm.array([0], ndmin=4, dtype=nm.float64)
-            fargs = ts.dt * mat0, aux, vg.bf, vg.bf, vg, 1
+            fargs = ts.dt * mat0, aux, vg, vg, 1
 
         return fargs
 
@@ -351,7 +350,7 @@ class VectorDotGradScalarTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vvg.bf, vvg, svg, fmode
+            return coef, val_qp, vvg, svg, fmode
 
         elif mode == 'eval':
             vvg, _ = self.get_mapping(vvar)
