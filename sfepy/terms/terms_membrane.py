@@ -158,7 +158,7 @@ class TLMembraneTerm(Term):
             out_qp[..., 3, 0] = stress[..., 2, 0]
 
         status = geo.integrate(out, out_qp, fmode)
-        out[:] = transform_data(out, mtx=mtx_t)
+        out[:, 0, :, 0] = transform_data(out.squeeze(), mtx=mtx_t)
 
         return status
 
