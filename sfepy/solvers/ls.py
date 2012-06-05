@@ -5,20 +5,8 @@ import scipy.sparse as sps
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
-from sfepy.base.base import output, get_default, assert_, Struct
+from sfepy.base.base import output, get_default, assert_, try_imports, Struct
 from sfepy.solvers.solvers import make_get_conf, LinearSolver
-
-def try_imports(imports, fail_msg=None):
-    for imp in imports:
-        try:
-            exec imp
-            break
-        except:
-            pass
-        else:
-            if fail_msg is not None:
-                raise ValueError(fail_msg)
-    return locals()
 
 class ScipyDirect(LinearSolver):
     name = 'ls.scipy_direct'

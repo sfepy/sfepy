@@ -157,6 +157,39 @@ def import_file(filename, package_name=None):
 
     return mod
 
+def try_imports(imports, fail_msg=None):
+    """
+    Try import statements until one succeeds.
+
+    Parameters
+    ----------
+    imports : list
+        The list of import statements.
+    fail_msg : str
+        If not None and no statement succeeds, a `ValueError` is raised with
+        the given message, appended to all failed messages.
+
+    Returns
+    -------
+    locals : dict
+        The dictionary of imported modules.
+    """
+    msgs = []
+    for imp in imports:
+        try:
+            exec imp
+            break
+
+        except Exception as inst:
+            msgs.append(str(inst))
+
+    else:
+        if fail_msg is not None:
+            msgs.append(fail_msg)
+            raise ValueError('\n'.join(msgs))
+
+    return locals()
+
 def assert_( condition ):
     if not condition:
         raise ValueError( 'assertion failed!' )
