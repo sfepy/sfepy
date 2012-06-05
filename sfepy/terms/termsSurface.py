@@ -94,6 +94,68 @@ class SufaceNormalDotTerm(Term):
         else:
             self.function = self.d_fun
 
+class SufaceNormalDotTerm(Term):
+    r"""
+    "Scalar traction" term, (weak form).
+    
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} q \ul{c} \cdot \ul{n}
+
+    :Arguments:
+        - material : :math:`\ul{c}`
+        - virtual  : :math:`q`
+    """
+    name = 'dw_surface_ndot'
+    arg_types = (('material', 'virtual'),
+                 ('material', 'parameter'))
+    modes = ('weak', 'eval')
+    integration = 'surface'
+
+    @staticmethod
+    def dw_fun(out, material, bf, sg):
+        bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+        bf_t = nm.ascontiguousarray(bf_t)
+        aux = dot_sequences(material, sg.normal)
+        status = sg.integrate(out, bf_t * aux)
+        return status
+
+    @staticmethod
+    def d_fun(out, material, val, sg):
+        aux = dot_sequences(material, sg.normal)
+        status = sg.integrate(out, val * aux)
+        return status
+
+    def get_fargs(self, mat, virtual,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(virtual)
+
+        if mode == 'weak':
+            return mat, sg.bf, sg
+
+        elif mode == 'eval':
+            val = self.get(virtual, 'val')
+            return mat, val, sg
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def get_eval_shape(self, mat, virtual,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+
+        return (n_el, 1, 1, 1), virtual.dtype
+
+    def set_arg_types( self ):
+        if self.mode == 'weak':
+            self.function = self.dw_fun
+
+        else:
+            self.function = self.d_fun
+
+
 class SurfaceJumpTerm(Term):
     r"""
     Interface jump condition.
