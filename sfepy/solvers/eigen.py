@@ -3,7 +3,7 @@ import time
 import numpy as nm
 import scipy.linalg as sla
 
-from sfepy.base.base import output, get_default, Struct
+from sfepy.base.base import output, get_default, try_imports, Struct
 from sfepy.solvers.solvers import make_get_conf, Solver, EigenvalueSolver
 
 def eig(mtx_a, mtx_b=None, n_eigs=None, eigenvectors=True,
@@ -280,7 +280,14 @@ class PysparseEigenvalueSolver(EigenvalueSolver):
     @standard_call
     def __call__(self, mtx_a, mtx_b=None, n_eigs=None,
                  eigenvectors=None, status=None, conf=None):
-        from pysparse import jdsym, itsolvers, precon
+        imp = try_imports(['from pysparse import jdsym, itsolvers, precon',
+                           'from pysparse.eigen import jdsym;'
+                           ' from pysparse import itsolvers, precon'],
+                          'cannot import pysparse eigensolvers!')
+
+        jdsym = imp['jdsym']
+        itsolvers = imp['itsolvers']
+        precon = imp['precon']
 
         output("solving...")
 
