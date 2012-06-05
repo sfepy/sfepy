@@ -1286,18 +1286,38 @@ class Term(Struct):
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
 
+    def call_get_fargs(self, args, kwargs):
+        try:
+            fargs = self.get_fargs(*args, **kwargs)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
+        return fargs
+
+    def call_function(self, out, fargs):
+        try:
+            status = self.function(out, *fargs)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
+        return status
+
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
                   diff_var=None, **kwargs):
         out = nm.empty(shape, dtype=nm.float64)
 
         if mode == 'eval':
-            status = self.function(out, *fargs)
+            status = self.call_function(out, fargs)
             # Sum over elements but not over components.
             out1 = nm.sum(out, 0).squeeze()
             return out1, status
 
         else:
-            status = self.function(out, *fargs)
+            status = self.call_function(out, fargs)
 
             return out, status
 
@@ -1309,16 +1329,16 @@ class Term(Struct):
 
         # Assuming linear forms. Then the matrix is the
         # same both for real and imaginary part.
-        rstatus = self.function(rout, *fargsd['r'])
+        rstatus = self.call_function(rout, fargsd['r'])
         if (diff_var is None) and len(fargsd) >= 2:
             iout = nm.empty(shape, dtype=nm.float64)
-            istatus = self.function(iout, *fargsd['i'])
+            istatus = self.call_function(iout, fargsd['i'])
 
             if mode == 'eval' and len(fargsd) >= 4:
                 irout = nm.empty(shape, dtype=nm.float64)
-                irstatus = self.function(irout, *fargsd['ir'])
+                irstatus = self.call_function(irout, fargsd['ir'])
                 riout = nm.empty(shape, dtype=nm.float64)
-                ristatus = self.function(riout, *fargsd['ri'])
+                ristatus = self.call_function(riout, fargsd['ri'])
 
                 out = (rout - iout) + (riout + irout) * 1j
                 status = rstatus or istatus or ristatus or irstatus
@@ -1374,7 +1394,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
@@ -1403,7 +1423,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
@@ -1443,7 +1463,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
                 n_row = n_cr * n_enr

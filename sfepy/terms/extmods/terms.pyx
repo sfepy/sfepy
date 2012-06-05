@@ -16,6 +16,9 @@ from sfepy.fem.extmods._fmfield cimport (FMField,
 
 from sfepy.fem.extmods.types cimport int32, float64, complex128
 
+cdef extern from 'common.h':
+    cdef void _errclear 'errclear'()
+
 cdef extern from 'terms.h':
     cdef int32 _dq_state_in_qp \
          'dq_state_in_qp'(FMField *out, FMField *state, int32 offset,
@@ -465,6 +468,9 @@ cdef extern from 'terms.h':
          'mulATB_integrate'(FMField *out,
                             FMField *A, FMField *B,
                             VolumeGeometry *vg)
+
+def errclear():
+    _errclear()
 
 def dq_state_in_qp(np.ndarray out not None,
                    np.ndarray state not None,
