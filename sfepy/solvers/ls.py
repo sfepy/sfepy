@@ -105,12 +105,15 @@ class Umfpack(ScipyDirect):
 # c: 22.02.2008
 class ScipyIterative( LinearSolver ):
     """
-    Interface to scipy iterative solvers.
+    Interface to SciPy iterative solvers.
 
     Notes
     -----
     The `eps_r` tolerance is both absolute and relative - the solvers
     stop when either the relative or the absolute residual is below it.
+
+    A preconditioner can be anything that the SciPy solvers accept (sparse
+    matrix, dense matrix, LinearOperator).
     """
     name = 'ls.scipy_iterative'
 
@@ -126,6 +129,7 @@ class ScipyIterative( LinearSolver ):
                 'kind' : 'ls.scipy_iterative',
 
                 'method' : 'cg',
+                'precond' : None,
                 'i_max' : 1000,
                 'eps_r' : 1e-12,
             }
@@ -134,6 +138,7 @@ class ScipyIterative( LinearSolver ):
         common = LinearSolver.process_conf(conf)
 
         return Struct(method=get('method', 'cg'),
+                      precond=get('precond', None),
                       i_max=get('i_max', 100),
                       eps_a=None,
                       eps_r=get('eps_r', 1e-8)) + common
@@ -164,7 +169,10 @@ class ScipyIterative( LinearSolver ):
         mtx = get_default(mtx, self.mtx)
         status = get_default(status, self.status)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max)
+        precond = get_default(kwargs.get('precond', None), self.conf.precond)
+
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
+                                M=precond)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
