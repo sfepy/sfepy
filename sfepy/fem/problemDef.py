@@ -432,6 +432,10 @@ class ProblemDefinition( Struct ):
         Set the instances of linear and nonlinear solvers that will be
         used in `ProblemDefinition.solve()` call.
         """
+        if (ls is not None) and (nls is not None):
+            if not (nls.lin_solver is ls):
+                raise ValueError('linear solver not used in nonlinear!')
+
         self.solvers = Struct(name='solvers', ls=ls, nls=nls)
 
     ##
