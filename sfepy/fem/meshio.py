@@ -401,8 +401,8 @@ class MeditMeshIO( MeshIO ):
                 continue
 
             else:
-                msg = "corrupted file (line '%s')!" % line
-                raise ValueError( msg )
+                output('skipping unknown entity: %s' % line)
+                continue
 
         fd.close()
 
