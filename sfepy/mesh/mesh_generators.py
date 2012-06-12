@@ -292,16 +292,16 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
     else:
         return oconns, ocoors, ongrps
 
-def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6, ret_ndmap=False):
+def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     """Generate a new mesh by repeating a given periodic element
     along each axis.
 
     Parameters
     ----------
-    grid : array
-        Number of repetition along each axis.
     mesh : Mesh instance
         The input periodic FE mesh.
+    grid : array
+        Number of repetition along each axis.
     scale : float, optional
         Scaling factor.
     eps : float, optional
@@ -316,8 +316,11 @@ def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6, ret_ndmap=False):
     ndmap : array
         Maps: actual node id --> node id in the reference cell
     """
-
     bbox = mesh.get_bounding_box()
+
+    if grid is None:
+        iscale = max(int(1.0 / scale), 1)
+        grid = [iscale] * mesh.dim
 
     conns = mesh.conns[0]
     for ii in mesh.conns[1:]:

@@ -51,7 +51,7 @@ def main():
     output('eps:', options.eps)
 
     mesh_in = Mesh.from_file(filename_in)
-    mesh_out = gen_tiled_mesh(mesh_in, options.scale, options.repeat,
+    mesh_out = gen_tiled_mesh(mesh_in, options.repeat, 1./options.scale,
                               options.eps)
     mesh_out.write(filename_out, io='auto')
     output('done.')
