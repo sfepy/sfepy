@@ -8,7 +8,8 @@ from sfepy.fem.mesh import Mesh
 from sfepy.mesh.mesh_tools import elems_q2t
 
 def gen_block_mesh(dims, shape, centre, name='block'):
-    """Generate a 2D or 3D block mesh. The dimension is determined by the
+    """
+    Generate a 2D or 3D block mesh. The dimension is determined by the
     lenght of the shape argument.
 
     Parameters
@@ -39,45 +40,45 @@ def gen_block_mesh(dims, shape, centre, name='block'):
     x0 = centre - 0.5 * dims
     dd = dims / (shape - 1)
 
-    grid = nm.zeros( shape, dtype = nm.int32 )
-    n_nod = nm.prod( shape )
-    coors = nm.zeros( (n_nod, dim), dtype = nm.float64 )
+    grid = nm.zeros(shape, dtype = nm.int32)
+    n_nod = nm.prod(shape)
+    coors = nm.zeros((n_nod, dim), dtype = nm.float64)
 
-    bar = MyBar( "       nodes:" )
-    bar.init( n_nod )
-    for ii, ic in enumerate( cycle( shape ) ):
+    bar = MyBar("       nodes:")
+    bar.init(n_nod)
+    for ii, ic in enumerate(cycle(shape)):
         grid[tuple(ic)] = ii
         coors[ii] = x0 + ic * dd
         if not (ii % 100):
-            bar.update( ii )
+            bar.update(ii)
     bar.update(ii + 1)
 
-    n_el = nm.prod( shape - 1 )
-    mat_id = nm.zeros( (n_el,), dtype = nm.int32 )
+    n_el = nm.prod(shape - 1)
+    mat_id = nm.zeros((n_el,), dtype = nm.int32)
 
     if (dim == 2):
-        conn = nm.zeros( (n_el, 4), dtype = nm.int32 )
-        bar = MyBar( "       elements:" )
-        bar.init( n_el )
-        for ii, (ix, iy) in enumerate( cycle( shape - 1 ) ):
+        conn = nm.zeros((n_el, 4), dtype = nm.int32)
+        bar = MyBar("       elements:")
+        bar.init(n_el)
+        for ii, (ix, iy) in enumerate(cycle(shape - 1)):
             conn[ii,:] = [grid[ix  ,iy], grid[ix+1,iy  ],
                           grid[ix+1,iy+1], grid[ix  ,iy+1]]
             if not (ii % 100):
-                bar.update( ii )
+                bar.update(ii)
         bar.update(ii + 1)
         desc = '2_4'
 
     else:
-        conn = nm.zeros( (n_el, 8), dtype = nm.int32 )
-        bar = MyBar( "       elements:" )
-        bar.init( n_el )
-        for ii, (ix, iy, iz) in enumerate( cycle( shape - 1 ) ):
+        conn = nm.zeros((n_el, 8), dtype = nm.int32)
+        bar = MyBar("       elements:")
+        bar.init(n_el)
+        for ii, (ix, iy, iz) in enumerate(cycle(shape - 1)):
             conn[ii,:] = [grid[ix  ,iy  ,iz  ], grid[ix+1,iy  ,iz  ],
                           grid[ix+1,iy+1,iz  ], grid[ix  ,iy+1,iz  ],
                           grid[ix  ,iy  ,iz+1], grid[ix+1,iy  ,iz+1],
                           grid[ix+1,iy+1,iz+1], grid[ix  ,iy+1,iz+1]]
             if not (ii % 100):
-                bar.update( ii )
+                bar.update(ii)
         bar.update(ii + 1)
         desc = '3_8'
 
@@ -87,7 +88,8 @@ def gen_block_mesh(dims, shape, centre, name='block'):
 def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                       is_open=False, open_angle=0.0, non_uniform=False,
                       name='cylinder'):
-    """Generate a cylindrical mesh along an axis. Its cross-section can be
+    """
+    Generate a cylindrical mesh along an axis. Its cross-section can be
     ellipsoidal.
 
     Parameters
@@ -165,8 +167,8 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
         rbs = nm.linspace(b1, b2, nr)
 
     # This is 3D only...
-    bar = MyBar( "       nodes:" )
-    bar.init( n_nod )
+    bar = MyBar("       nodes:")
+    bar.init(n_nod)
     ii = 0
     for ix in range(nr):
         a, b = ras[ix], rbs[ix]
@@ -175,7 +177,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
                 grid[ix,iy,iz] = ii
                 coors[ii] = origin + [x, a * nm.cos(fi), b * nm.sin(fi)]
                 if not (ii % 100):
-                    bar.update( ii )
+                    bar.update(ii)
                 ii += 1
 
                 if not is_hollow and (ix == 0):
@@ -188,7 +190,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     n_el = (nr - 1) * nnfi * (nl - 1)
     conn = nm.zeros((n_el, 8), dtype=nm.int32)
 
-    bar = MyBar( "       elements:" )
+    bar = MyBar("       elements:")
     bar.init(n_el)
     ii = 0
     for (ix, iy, iz) in cycle([nr-1, nnfi, nl-1]):
@@ -206,9 +208,9 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
             ii += 1
 
         if not (ii % 100):
-            bar.update( ii )
+            bar.update(ii)
     print
-    mat_id = nm.zeros( (n_el,), dtype = nm.int32 )
+    mat_id = nm.zeros((n_el,), dtype = nm.int32)
     desc = '3_8'
 
     assert_(n_nod == (conn.max() + 1))
@@ -230,23 +232,23 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
 
     if s1.shape != s2.shape:
         raise ValueError, 'incompatible shapes: %s == %s'\
-          % (s1.shape, s2.shape)
+              % (s1.shape, s2.shape)
 
     (nnod0, dim) = coors.shape
     nnod = nnod0 * n_rep - s1.shape[0] * (n_rep - 1)
     (nel0, nnel) = conns.shape
     nel = nel0 * n_rep
 
-    dd = nm.zeros((dim, ), dtype=nm.float64)
+    dd = nm.zeros((dim,), dtype=nm.float64)
     dd[idim] = bb[1] - bb[0]
 
     m1, m2 = match_grid_plane(coors[s1], coors[s2], idim)
 
     oconns = nm.zeros((nel, nnel), dtype=nm.int32)
     ocoors = nm.zeros((nnod, dim), dtype=nm.float64)
-    ongrps = nm.zeros((nnod, ), dtype=nm.int32)
+    ongrps = nm.zeros((nnod,), dtype=nm.int32)
     if ret_ndmap:
-        ndmap = nm.zeros((nnod, ), dtype=nm.int32)
+        ndmap = nm.zeros((nnod,), dtype=nm.int32)
 
     el_off = 0
     nd_off = 0
@@ -259,7 +261,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
             nd_off += nnod0
 
             mapto = s2[m2]
-            mask = nm.ones((nnod0, ), dtype=nm.int32)
+            mask = nm.ones((nnod0,), dtype=nm.int32)
             mask[s1] = 0
             remap0 = nm.cumsum(mask) - 1
             nnod0r = nnod0 - s1.shape[0]
@@ -293,7 +295,8 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
         return oconns, ocoors, ongrps
 
 def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
-    """Generate a new mesh by repeating a given periodic element
+    """
+    Generate a new mesh by repeating a given periodic element
     along each axis.
 
     Parameters
@@ -314,7 +317,7 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     mesh_out : Mesh instance
         FE mesh.
     ndmap : array
-        Maps: actual node id --> node id in the reference cell
+        Maps: actual node id --> node id in the reference cell.
     """
     bbox = mesh.get_bounding_box()
 
@@ -339,10 +342,11 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
     nblk = 1
     for ii, gr in enumerate(grid):
         if ret_ndmap:
-            conns, coors, ngrps, ndmap0 = tiled_mesh1d(conns, coors, ngrps,
-                                                      ii, gr, bbox.transpose()[ii],
-                                                      eps=eps, mybar=(bar, nblk),
-                                                      ret_ndmap=ret_ndmap)
+            (conns, coors,
+             ngrps, ndmap0) = tiled_mesh1d(conns, coors, ngrps,
+                                           ii, gr, bbox.transpose()[ii],
+                                           eps=eps, mybar=(bar, nblk),
+                                           ret_ndmap=ret_ndmap)
             if ndmap is None:
                 ndmap = ndmap0
             else:
@@ -376,22 +380,22 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
 
     defdir = os.path.join(data_dir, 'meshes')
     if mesh_dir is None:
-	mesh_dir = defdir
+        mesh_dir = defdir
 
     def retype(args, types, defaults):
-	args=list(args)
-	args.extend(defaults[len(args):len(defaults)])
-	return tuple([type(value) for type, value in zip(types, args) ])
+        args=list(args)
+        args.extend(defaults[len(args):len(defaults)])
+        return tuple([type(value) for type, value in zip(types, args) ])
 
     if kind == 'sphere':
-	default = [5, 41, args[0]]
-	args = retype(args, [float, int, float], default)
+        default = [5, 41, args[0]]
+        args = retype(args, [float, int, float], default)
         mesh_pattern = os.path.join(mesh_dir, 'sphere-%.2f-%.2f-%i')
 
     else:
         assert_(kind == 'cube')
 
-	args = retype(args,
+        args = retype(args,
                       (int, float, int, float, int, float),
                       (args[0], args[1], args[0], args[1], args[0], args[1]))
         mesh_pattern = os.path.join(mesh_dir, 'cube-%i_%.2f-%i_%.2f-%i_%.2f')
@@ -409,7 +413,7 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
         filename = filename + suffix
         ensure_path(filename)
 
-	output('creating new cube mesh')
+        output('creating new cube mesh')
         output('(%i nodes in %.2f) x (%i nodes in %.2f) x (%i nodes in %.2f)'
                % args)
         output('to file %s...' % filename)
@@ -420,7 +424,7 @@ def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
         output('...done')
 
     else:
-	import subprocess
+        import subprocess
         filename = filename + '.mesh'
         ensure_path(filename)
 
@@ -457,7 +461,7 @@ def gen_mesh_from_string(mesh_name, mesh_dir):
     else:
         args = re.split(',', result.group(2))
         kind = result.group(1)
-	return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, args)
+        return gen_misc_mesh(mesh_dir, result.group(3)=='*', kind, args)
 
 def gen_mesh_from_goem(geo, a=None, quadratic=False, verbose=True,
                        refine=False, polyfilename='./meshgen.poly',
@@ -702,9 +706,9 @@ def gen_mesh_from_voxels(voxels, dims, etype='q'):
     eltab = {'q2': 4, 'q3': 8, 't2': 3, 't3': 4}
 
     mesh = Mesh.from_data('voxel_data',
-                          coors, nm.ones((nnod, ), dtype=nm.int32),
+                          coors, nm.ones((nnod,), dtype=nm.int32),
                           {0: nm.ascontiguousarray(elems)},
-                          {0: nm.ones((nel, ), dtype=nm.int32)},
+                          {0: nm.ones((nel,), dtype=nm.int32)},
                           {0: '%d_%d' % (dim, eltab[eid])})
 
     return mesh
@@ -849,47 +853,47 @@ def main():
     mesh = gen_block_mesh(nm.array((1.0, 2.0, 3.0)),
                           nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                           name='')
-    mesh.write('0.mesh', io = 'auto' )
+    mesh.write('0.mesh', io = 'auto')
 
     mesh = gen_cylinder_mesh(nm.array((1.0, 1.0, 2.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=False, open_angle = 0.0,
                              name='')
-    mesh.write('1.mesh', io = 'auto' )
+    mesh.write('1.mesh', io = 'auto')
     mesh = gen_cylinder_mesh(nm.array((1.0, 1.0, 2.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=True, open_angle = 0.0,
                              name='')
-    mesh.write('2.mesh', io = 'auto' )
+    mesh.write('2.mesh', io = 'auto')
     mesh = gen_cylinder_mesh(nm.array((1.0, 1.0, 2.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=True, open_angle = 0.5,
                              name='')
-    mesh.write('3.mesh', io = 'auto' )
+    mesh.write('3.mesh', io = 'auto')
 
     mesh = gen_cylinder_mesh(nm.array((0.0, 0.0, 2.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=False, open_angle = 0.0,
                              name='')
-    mesh.write('4.mesh', io = 'auto' )
+    mesh.write('4.mesh', io = 'auto')
 
     mesh = gen_cylinder_mesh(nm.array((0.0, 0.0, 1.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=True, open_angle = 0.5,
                              name='')
-    mesh.write('5.mesh', io = 'auto' )
+    mesh.write('5.mesh', io = 'auto')
 
     mesh = gen_cylinder_mesh(nm.array((0.0, 0.0, 1.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=True, open_angle = 0.5, non_uniform=True,
                              name='')
-    mesh.write('6.mesh', io = 'auto' )
+    mesh.write('6.mesh', io = 'auto')
 
     mesh = gen_cylinder_mesh(nm.array((0.5, 0.5, 1.0, 2.0, 3)),
                              nm.array((10,10,10)), nm.array((1.0, 2.0, 3.0)),
                              is_open=True, open_angle = 0.5, non_uniform=True,
                              name='')
-    mesh.write('7.mesh', io = 'auto' )
+    mesh.write('7.mesh', io = 'auto')
 
 if __name__ == '__main__':
     main()
