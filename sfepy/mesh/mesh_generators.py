@@ -222,7 +222,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     return mesh
 
 def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
-                 eps=1e-6, mybar=None):
+                 eps=1e-6, mybar=None, ret_ndmap=False):
     from sfepy.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
@@ -245,6 +245,8 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
     oconns = nm.zeros((nel, nnel), dtype=nm.int32)
     ocoors = nm.zeros((nnod, dim), dtype=nm.float64)
     ongrps = nm.zeros((nnod, ), dtype=nm.int32)
+    if ret_ndmap:
+        ndmap = nm.zeros((nnod, ), dtype=nm.int32)
 
     el_off = 0
     nd_off = 0
@@ -262,6 +264,8 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
             remap0 = nm.cumsum(mask) - 1
             nnod0r = nnod0 - s1.shape[0]
             cidx = nm.where(mask)
+            if ret_ndmap:
+                ndmap[0:nnod0] = nm.arange(nnod0)
 
         else:
             remap = remap0 + nd_off
@@ -272,16 +276,23 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
               (coors[cidx,:] + ii * dd)
             ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx]
             oconns[el_off:(el_off + nel0),:] = remap[conns]
+            if ret_ndmap:
+                ndmap[nd_off:(nd_off + nnod0r)] = cidx[0]
+
             nd_off += nnod0r
 
         el_off += nel0
 
+
         if mybar is not None:
             mybar[0].update(mybar[1])
 
-    return oconns, ocoors, ongrps
+    if ret_ndmap:
+        return oconns, ocoors, ongrps, ndmap
+    else:
+        return oconns, ocoors, ongrps
 
-def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6):
+def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6, ret_ndmap=False):
     """Generate a new mesh by repeating a given periodic element
     along each axis.
 
@@ -295,11 +306,15 @@ def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6):
         Scaling factor.
     eps : float, optional
         Tolerance for boundary detection.
+    ret_ndmap : bool, optional
+        If True, return global node map.
 
     Returns
     -------
-    mesh_out : mesh
+    mesh_out : Mesh instance
         FE mesh.
+    ndmap : array
+        Maps: actual node id --> node id in the reference cell
     """
 
     bbox = mesh.get_bounding_box()
@@ -314,22 +329,38 @@ def gen_tiled_mesh(grid, mesh, scale=1.0, eps=1e-6):
     coors = mesh.coors
     ngrps = mesh.ngroups
     nrep = nm.prod(grid)
+    ndmap = None
 
     bar = MyBar("       repeating:")
     bar.init(nrep)
     nblk = 1
     for ii, gr in enumerate(grid):
-        conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
-                                           ii, gr, bbox.transpose()[ii],
-                                           eps=eps, mybar=(bar, nblk))
+        if ret_ndmap:
+            conns, coors, ngrps, ndmap0 = tiled_mesh1d(conns, coors, ngrps,
+                                                      ii, gr, bbox.transpose()[ii],
+                                                      eps=eps, mybar=(bar, nblk),
+                                                      ret_ndmap=ret_ndmap)
+            if ndmap is None:
+                ndmap = ndmap0
+            else:
+                ndmap = nm.hstack((ndmap, ndmap0))
+
+        else:
+            conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
+                                               ii, gr, bbox.transpose()[ii],
+                                               eps=eps, mybar=(bar, nblk))
         nblk *= gr
+
     bar.update(nblk)
 
     mat_ids = nm.tile(mat_ids, (nrep,))
     mesh_out = Mesh.from_data('tiled mesh', coors * scale, ngrps,
                               [conns], [mat_ids], [mesh.descs[0]])
 
-    return mesh_out
+    if ret_ndmap:
+        return mesh_out, ndmap
+    else:
+        return mesh_out
 
 def gen_misc_mesh(mesh_dir, force_create, kind, args, suffix='.mesh',
                   verbose=False):
