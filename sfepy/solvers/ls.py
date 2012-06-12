@@ -171,8 +171,14 @@ class ScipyIterative( LinearSolver ):
 
         precond = get_default(kwargs.get('precond', None), self.conf.precond)
 
+        if conf.method == 'qmr':
+            prec_args = {'M1' : precond, 'M2' : precond}
+
+        else:
+            prec_args = {'M' : precond}
+
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                M=precond)
+                                **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
