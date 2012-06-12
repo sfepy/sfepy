@@ -9,7 +9,7 @@ from optparse import OptionParser
 import numpy as nm
 
 from sfepy.base.base import output
-from sfepy.fem import gen_block_mesh
+from sfepy.mesh.mesh_generators import gen_block_mesh
 from sfepy.fem.meshio import MeshIO
 
 usage = '%prog [options]\n' + __doc__.rstrip()
