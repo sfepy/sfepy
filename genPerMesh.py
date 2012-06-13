@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-import numpy as nm
 
 from sfepy.base.base import Output
 from sfepy.fem.mesh import Mesh
-from sfepy.fem.mesh_generators import compose_periodic_mesh
+from sfepy.mesh.mesh_generators import gen_tiled_mesh
 from optparse import OptionParser
 
 usage = """%prog [options] filename_in filename_out
@@ -20,8 +19,6 @@ help = {
     'repeat' : 'repetition counts in each axial direction'
                ' [default: %default]',
     'eps'   : 'coordinate precision [default: %default]',
-    'nomvd' : 'omit mesh periodicity test using minimum vertex distance'\
-    + ' (it is demanding in cpu time and memory) [default: %default]',
 }
 
 def parse_repeat(option, opt, value, parser):
@@ -39,9 +36,6 @@ def main():
     parser.add_option("-e", "--eps", type=float, metavar='eps',
                       action="store", dest="eps",
                       default=1e-8, help=help['eps'])
-    parser.add_option("-n", "--no-mvd",
-                      action="store_true", dest="nomvd",
-                      default=False, help=help['nomvd'])
     (options, args) = parser.parse_args()
 
     if (len( args ) == 2):
@@ -57,10 +51,10 @@ def main():
     output('eps:', options.eps)
 
     mesh_in = Mesh.from_file(filename_in)
-    mesh_out = compose_periodic_mesh(mesh_in, options.scale, options.repeat,
-                                     options.eps, check_mvd=not options.nomvd)
+    mesh_out = gen_tiled_mesh(mesh_in, options.repeat, 1./options.scale,
+                              options.eps)
     mesh_out.write(filename_out, io='auto')
     output('done.')
-    
+
 if __name__ == '__main__':
     main()
