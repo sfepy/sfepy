@@ -7,7 +7,6 @@ except (ImportError, AttributeError):
 
 from functions import Functions, Function
 from mesh import Mesh
-from mesh_generators import gen_block_mesh, gen_cylinder_mesh
 from conditions import Conditions
 from domain import Domain
 from region import Region
