@@ -130,6 +130,7 @@ class ScipyIterative( LinearSolver ):
 
                 'method' : 'cg',
                 'precond' : None,
+                'callback' : None,
                 'i_max' : 1000,
                 'eps_r' : 1e-12,
             }
@@ -139,6 +140,7 @@ class ScipyIterative( LinearSolver ):
 
         return Struct(method=get('method', 'cg'),
                       precond=get('precond', None),
+                      callback=get('callback', None),
                       i_max=get('i_max', 100),
                       eps_a=None,
                       eps_r=get('eps_r', 1e-8)) + common
@@ -170,6 +172,7 @@ class ScipyIterative( LinearSolver ):
         status = get_default(status, self.status)
 
         precond = get_default(kwargs.get('precond', None), self.conf.precond)
+        callback = get_default(kwargs.get('callback', None), self.conf.callback)
 
         if conf.method == 'qmr':
             prec_args = {'M1' : precond, 'M2' : precond}
@@ -178,7 +181,7 @@ class ScipyIterative( LinearSolver ):
             prec_args = {'M' : precond}
 
         sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
-                                **prec_args)
+                                callback=callback, **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
