@@ -15,16 +15,17 @@ import time
 import numpy as nm
 
 from sfepy.base.base import output, iter_dict_of_lists, get_default, assert_
-from sfepy.base.base import Struct, basestr, get_default_attr
+from sfepy.base.base import Struct, basestr
 import fea
-from sfepy.fem.mesh import Mesh, make_inverse_connectivity
+from sfepy.fem.mesh import Mesh
 from sfepy.fem.meshio import convert_complex_output
 from sfepy.fem.utils import extend_cell_data, prepare_remap, invert_remap
 from sfepy.fem.fe_surface import FESurface
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.integrals import Integral
 from sfepy.fem.linearizer import get_eval_dofs, get_eval_coors, create_output
-from sfepy.fem.extmods.bases import find_ref_coors, evaluate_in_rc
+from sfepy.fem.global_interp import get_ref_coors
+from sfepy.fem.extmods.bases import evaluate_in_rc
 
 def parse_approx_order(approx_order):
     """
@@ -1172,9 +1173,9 @@ class Field( Struct ):
             The maximum limit distance of a point from the closest
             element allowed for extrapolation.
         cache : Struct, optional
-            To speed up a sequence of evaluations, the inverse
+            To speed up a sequence of evaluations, the field mesh, the inverse
             connectivity of the field mesh and the KDTree instance can
-            be cached as `cache.offsets`, `cache.iconn` and
+            be cached as `cache.mesh`, `cache.offsets`, `cache.iconn` and
             `cache.kdtree`. Optionally, the cache can also contain the
             reference element coordinates as `cache.ref_coors`,
             `cache.cells` and `cache.status`, if the evaluation occurs
@@ -1198,102 +1199,36 @@ class Field( Struct ):
         status : array
             The status, if `ret_status` is True.
         """
-        mesh = self.create_mesh(extra_nodes=False)
-        scoors = mesh.coors
+        output('evaluating in %d points...' % coors.shape[0])
 
-        output('interpolating from %d nodes to %d nodes...' % (scoors.shape[0],
-                                                               coors.shape[0]))
+        ref_coors, cells, status = get_ref_coors(self, coors,
+                                                 strategy=strategy,
+                                                 close_limit=close_limit,
+                                                 cache=cache)
 
-        ref_coors = get_default_attr(cache, 'ref_coors', None)
-        if ref_coors is None:
-            iconn = get_default_attr(cache, 'iconn', None)
-            if iconn is None:
-                offsets, iconn = make_inverse_connectivity(mesh.conns,
-                                                           mesh.n_nod,
-                                                           ret_offsets=True)
+        tt = time.clock()
+        vertex_coorss, nodess, orders, mtx_is = [], [], [], []
+        conns = []
+        for ap in self.aps.itervalues():
+            ps = ap.interp.poly_spaces['v']
 
-                ii = nm.where(offsets[1:] == offsets[:-1])[0]
-                if len(ii):
-                    raise ValueError('some vertices not in any element! (%s)'
-                                     % ii)
+            vertex_coorss.append(ps.geometry.coors)
+            nodess.append(ps.nodes)
+            mtx_is.append(ps.get_mtx_i())
 
-            else:
-                offsets = cache.offsets
+            orders.append(ps.order)
+            conns.append(ap.econn)
 
-        if strategy == 'kdtree':
-            if ref_coors is None:
-                kdtree = get_default_attr(cache, 'kdtree', None)
-                if kdtree is None:
-                    from scipy.spatial import cKDTree as KDTree
+        orders = nm.array(orders, dtype=nm.int32)
 
-                    tt = time.clock()
-                    kdtree = KDTree(scoors)
-                    output('kdtree: %f s' % (time.clock()-tt))
+        # Interpolate to the reference coordinates.
+        vals = nm.empty((coors.shape[0], source_vals.shape[1]),
+                        dtype=source_vals.dtype)
 
-                tt = time.clock()
-                ics = kdtree.query(coors)[1]
-                output('kdtree query: %f s' % (time.clock()-tt))
-
-                tt = time.clock()
-                ics = nm.asarray(ics, dtype=nm.int32)
-
-                vertex_coorss, nodess, mtx_is = [], [], []
-                conns = []
-                for ig, ap in self.aps.iteritems():
-                    ps = ap.interp.gel.interp.poly_spaces['v']
-
-                    vertex_coorss.append(ps.geometry.coors)
-                    nodess.append(ps.nodes)
-                    mtx_is.append(ps.get_mtx_i())
-
-                    conns.append(mesh.conns[ig].copy())
-
-                # Get reference element coordinates corresponding to
-                # destination coordinates.
-                ref_coors = nm.empty_like(coors)
-                cells = nm.empty((coors.shape[0], 2), dtype=nm.int32)
-                status = nm.empty((coors.shape[0],), dtype=nm.int32)
-
-                find_ref_coors(ref_coors, cells, status, coors,
-                            ics, offsets, iconn,
-                            scoors, conns,
-                            vertex_coorss, nodess, mtx_is,
-                            1, close_limit, 1e-15, 100, 1e-8)
-                output('ref. coordinates: %f s' % (time.clock()-tt))
-
-            else:
-                cells = cache.cells
-                status = cache.status
-
-            tt = time.clock()
-            vertex_coorss, nodess, orders, mtx_is = [], [], [], []
-            conns = []
-            for ap in self.aps.itervalues():
-                ps = ap.interp.poly_spaces['v']
-
-                vertex_coorss.append(ps.geometry.coors)
-                nodess.append(ps.nodes)
-                mtx_is.append(ps.get_mtx_i())
-
-                orders.append(ps.order)
-                conns.append(ap.econn)
-
-            orders = nm.array(orders, dtype=nm.int32)
-
-            # Interpolate to the reference coordinates.
-            vals = nm.empty((coors.shape[0], source_vals.shape[1]),
-                            dtype=source_vals.dtype)
-
-            evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
-                           conns, vertex_coorss, nodess, orders, mtx_is,
-                           1e-15)
-            output('interpolation: %f s' % (time.clock()-tt))
-
-        elif strategy == 'crawl':
-            raise NotImplementedError
-
-        else:
-            raise ValueError('unknown search strategy! (%s)' % strategy)
+        evaluate_in_rc(vals, ref_coors, cells, status, source_vals,
+                       conns, vertex_coorss, nodess, orders, mtx_is,
+                       1e-15)
+        output('interpolation: %f s' % (time.clock()-tt))
 
         output('...done')
 
