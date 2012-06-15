@@ -224,7 +224,7 @@ def gen_cylinder_mesh(dims, shape, centre, axis='x', force_hollow=False,
     return mesh
 
 def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
-                 eps=1e-6, mybar=None, ret_ndmap=False):
+                 eps=1e-6, mybar=None, ndmap=False):
     from sfepy.fem.periodic import match_grid_plane
 
     s1 = nm.nonzero(coors[:,idim] < (bb[0] + eps))[0]
@@ -247,8 +247,13 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
     oconns = nm.zeros((nel, nnel), dtype=nm.int32)
     ocoors = nm.zeros((nnod, dim), dtype=nm.float64)
     ongrps = nm.zeros((nnod,), dtype=nm.int32)
-    if ret_ndmap:
-        ndmap = nm.zeros((nnod,), dtype=nm.int32)
+
+    if type(ndmap) is bool:
+        ret_ndmap = ndmap
+
+    else:
+        ret_ndmap= True
+        ndmap_out = nm.zeros((nnod,), dtype=nm.int32)
 
     el_off = 0
     nd_off = 0
@@ -267,7 +272,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
             nnod0r = nnod0 - s1.shape[0]
             cidx = nm.where(mask)
             if ret_ndmap:
-                ndmap[0:nnod0] = nm.arange(nnod0)
+                ndmap_out[0:nnod0] = nm.arange(nnod0)
 
         else:
             remap = remap0 + nd_off
@@ -279,7 +284,7 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
             ongrps[nd_off:(nd_off + nnod0r)] = ngrps[cidx]
             oconns[el_off:(el_off + nel0),:] = remap[conns]
             if ret_ndmap:
-                ndmap[nd_off:(nd_off + nnod0r)] = cidx[0]
+                ndmap_out[nd_off:(nd_off + nnod0r)] = cidx[0]
 
             nd_off += nnod0r
 
@@ -290,7 +295,13 @@ def tiled_mesh1d(conns, coors, ngrps, idim, n_rep, bb,
             mybar[0].update(mybar[1])
 
     if ret_ndmap:
-        return oconns, ocoors, ongrps, ndmap
+        if ndmap is not None:
+            max_nd_ref = nm.max(ndmap)
+            idxs = nm.where(ndmap_out > max_nd_ref)
+            ndmap_out[idxs] = ndmap[ndmap_out[idxs]]
+
+        return oconns, ocoors, ongrps, ndmap_out
+
     else:
         return oconns, ocoors, ongrps
 
@@ -346,7 +357,7 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
              ngrps, ndmap0) = tiled_mesh1d(conns, coors, ngrps,
                                            ii, gr, bbox.transpose()[ii],
                                            eps=eps, mybar=(bar, nblk),
-                                           ret_ndmap=ret_ndmap)
+                                           ndmap=ndmap)
             if ndmap is None:
                 ndmap = ndmap0
             else:
