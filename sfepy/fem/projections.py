@@ -38,6 +38,18 @@ def make_l2_projection(target, source):
     Project `source` field variable to `target` field variable using
     :math:`L^2` dot product.
     """
+    def eval_variable(ts, coors, mode, **kwargs):
+        val = source.evaluate_at(coors)
+        val.shape = val.shape + (1,)
+        return val
+
+    make_l2_projection_data(target, eval_variable)
+
+def make_l2_projection_data(target, eval_data):
+    """
+    Project data given by a material-like `eval_data()` function to `target`
+    field variable using :math:`L^2` dot product.
+    """
     order = target.field.approx_order * 2
     integral = Integral('i', order=order)
 
@@ -46,14 +58,12 @@ def make_l2_projection(target, source):
     lhs = Term.new('dw_volume_dot(v, %s)' % un, integral,
                    target.field.region, v=v, **{un : target})
 
-    def eval_variable(ts, coors, mode, **kwargs):
+    def _eval_data(ts, coors, mode, **kwargs):
         if mode == 'qp':
-            val = source.evaluate_at(coors)
-            val.shape = val.shape + (1,)
-            out = {'val' : val}
-            return out
+            val = eval_data(ts, coors, mode, **kwargs)
+            return {'val' : val}
 
-    m = Material('m', function=eval_variable)
+    m = Material('m', function=_eval_data)
     rhs = Term.new('dw_volume_lvf(m.val, v)', integral, target.field.region,
                    m=m, v=v)
 
