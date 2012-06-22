@@ -358,10 +358,7 @@ def gen_tiled_mesh(mesh, grid=None, scale=1.0, eps=1e-6, ret_ndmap=False):
                                            ii, gr, bbox.transpose()[ii],
                                            eps=eps, mybar=(bar, nblk),
                                            ndmap=ndmap)
-            if ndmap is None:
-                ndmap = ndmap0
-            else:
-                ndmap = nm.hstack((ndmap, ndmap0))
+            ndmap = ndmap0
 
         else:
             conns, coors, ngrps = tiled_mesh1d(conns, coors, ngrps,
