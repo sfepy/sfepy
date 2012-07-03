@@ -376,3 +376,49 @@ class VectorDotGradScalarTerm(Term):
             's_weak' : terms.dw_v_dot_grad_s_sw,
             'eval' : DotProductVolumeTerm.d_dot,
         }[self.mode]
+
+class ScalarDotGradIScalarTerm(Term):
+    r"""
+    Dot product of a scalar and the :math:`i`-th component of gradient of a
+    scalar. The index should be given as a 'special_constant' material
+    parameter.
+
+    :Definition:
+
+    .. math::
+        Z^i = \int_{\Omega} q \nabla_i p
+
+    :Arguments:
+        - material : :math:`i`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+    """
+    name = 'dw_s_dot_grad_i_s'
+    arg_types = ('material', 'virtual', 'state')
+
+    @staticmethod
+    def dw_fun(out, bf, vg, idx):
+        cc = nm.ascontiguousarray
+        bft = cc(nm.tile(bf, (out.shape[0], 1, 1, 1)))
+        status = terms.mulATB_integrate(out, bft,
+                                        cc(vg.bfg[:,:,idx:(idx + 1),:]), vg)
+
+        return status
+
+    def get_fargs(self, material, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if mode == 'weak':
+            ap, vg = self.get_approximation(virtual)
+            aps, vgs = self.get_approximation(state)
+
+            bf = aps.get_base('v', 0, self.integral)
+            idx = int(material[0, 0, 0, 0])
+
+            return bf, vg, idx
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def set_arg_types(self):
+        self.function = self.dw_fun
