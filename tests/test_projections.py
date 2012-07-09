@@ -2,7 +2,7 @@ import os.path as op
 import numpy as nm
 
 import sfepy
-from sfepy.fem import Mesh, Domain, Field, FieldVariable
+from sfepy.fem import Mesh, Domain, H1NodalVolumeField, FieldVariable
 
 from sfepy.base.base import assert_
 from sfepy.base.testing import TestCommon
@@ -17,8 +17,8 @@ class Test(TestCommon):
 
         omega = domain.create_region('Omega', 'all')
 
-        field = Field('linear', nm.float64, 'scalar', omega,
-                      space='H1', poly_space_base='lagrange', approx_order=1)
+        field = H1NodalVolumeField('linear', nm.float64, 'scalar', omega,
+                                   approx_order=1)
 
         test = Test(conf=conf, options=options, omega=omega, field=field)
         return test
@@ -55,8 +55,8 @@ class Test(TestCommon):
         omega = domain.create_region('Omega', 'all')
 
 
-        field = Field('bilinear', nm.float64, 'scalar', omega,
-                      space='H1', poly_space_base='lagrange', approx_order=1)
+        field = H1NodalVolumeField('bilinear', nm.float64, 'scalar', omega,
+                                   approx_order=1)
 
         target = FieldVariable('ut', 'unknown', field, 1)
 

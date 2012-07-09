@@ -6,8 +6,9 @@ import sys
 sys.path.append('.')
 
 from sfepy.base.base import IndexedStruct
-from sfepy.fem import Mesh, Domain, Field, FieldVariable, Material, Integral
-from sfepy.fem import Function, Equation, Equations, ProblemDefinition
+from sfepy.fem import (Mesh, Domain, H1NodalVolumeField, FieldVariable,
+                       Material, Integral, Function, Equation, Equations,
+                       ProblemDefinition)
 from sfepy.terms import Term
 from sfepy.fem.conditions import Conditions, EssentialBC
 from sfepy.solvers.ls import ScipyDirect
@@ -47,8 +48,8 @@ def main():
     gamma2 = domain.create_region('Gamma2',
                                   'nodes in x > %.10f' % (max_x - eps))
 
-    field = Field('fu', nm.float64, 'vector', omega,
-                  space='H1', poly_space_base='lagrange', approx_order=2)
+    field = H1NodalVolumeField('fu', nm.float64, 'vector', omega,
+                               approx_order=2)
 
     u = FieldVariable('u', 'unknown', field, mesh.dim)
     v = FieldVariable('v', 'test', field, mesh.dim, primary_var_name='u')
