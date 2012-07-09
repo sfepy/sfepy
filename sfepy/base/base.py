@@ -977,6 +977,10 @@ def find_subclasses(context, classes, omit_unnamed=False):
                         key = var.name
                         if omit_unnamed and not key:
                             continue
+
+                    elif omit_unnamed:
+                        continue
+
                     else:
                         key = var.__class__.__name__
 
