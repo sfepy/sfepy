@@ -21,8 +21,13 @@ def get_standard_keywords():
     return copy( _required ), copy( _other )
 
 def tuple_to_conf(name, vals, order):
-    """Items in order at indices outside the length of vals are ignored."""
-    conf = Struct(name = name)
+    """
+    Convert a configuration tuple `vals` into a Struct named `name`, with
+    attribute names given in and ordered by `order`.
+
+    Items in `order` at indices outside the length of `vals` are ignored.
+    """
+    conf = Struct(name=name)
     for ii, key in enumerate(order[:len(vals)]):
         setattr(conf, key, vals[ii])
     return conf
