@@ -955,7 +955,7 @@ def use_method_with_name( instance, method, new_name ):
 def insert_as_static_method( cls, name, function ):
     setattr( cls, name, staticmethod( function ) )
 
-def find_subclasses(context, classes, omit_unnamed=False):
+def find_subclasses(context, classes, omit_unnamed=False, name_attr='name'):
     """Find subclasses of the given classes in the given context.
 
     Examples
@@ -973,8 +973,8 @@ def find_subclasses(context, classes, omit_unnamed=False):
         try:
             for cls in classes:
                 if is_derived_class(var, cls):
-                    if hasattr(var, 'name'):
-                        key = var.name
+                    if hasattr(var, name_attr):
+                        key = getattr(var, name_attr)
                         if omit_unnamed and not key:
                             continue
 
@@ -991,7 +991,8 @@ def find_subclasses(context, classes, omit_unnamed=False):
             pass
     return table
 
-def load_classes(filenames, classes, package_name=None, ignore_errors=False):
+def load_classes(filenames, classes, package_name=None, ignore_errors=False,
+                 name_attr='name'):
     """
     For each filename in filenames, load all subclasses of classes listed.
     """
@@ -1009,7 +1010,8 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False):
                 output('reason:\n', sys.exc_info()[1])
                 continue
 
-        table.update(find_subclasses(vars(mod), classes, omit_unnamed=True))
+        table.update(find_subclasses(vars(mod), classes, omit_unnamed=True,
+                                     name_attr=name_attr))
 
     return table
 
