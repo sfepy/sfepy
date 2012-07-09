@@ -144,7 +144,8 @@ def transform_fields( adict ):
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf(key, conf,
-                               ['dtype', 'shape', 'region', 'approx_order'])
+                               ['dtype', 'shape', 'region', 'approx_order',
+                                'space', 'poly_space_base'])
             if c2.dtype in dtypes:
                 c2.dtype = dtypes[c2.dtype]
             d2['field_%s__%d' % (c2.name, ii)] = c2
