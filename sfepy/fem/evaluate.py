@@ -3,7 +3,7 @@ from copy import copy
 from sfepy.base.base import output, get_default, OneTypeList, Struct,\
      get_default_attr, basestr
 from sfepy.fem import Equations, Variables, Region
-from sfepy.fem.fields import setup_dof_conns, setup_extra_data
+from sfepy.fem.fields_base import setup_dof_conns, setup_extra_data
 
 ##
 # 02.10.2007, c
