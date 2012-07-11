@@ -17,7 +17,6 @@ import numpy as nm
 from sfepy.base.base import output, assert_
 from sfepy.base.base import Struct
 import fea
-from sfepy.fem.mesh import Mesh
 from sfepy.fem.utils import prepare_remap
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.global_interp import get_ref_coors
@@ -146,36 +145,6 @@ class H1NodalMixin(Struct):
 
         return n_dof, all_dofs, remaps
 
-    def _setup_esurface(self):
-        """
-        Setup extended surface entities (edges in 2D, faces in 3D),
-        i.e. indices of surface entities into the extended connectivity.
-        """
-        node_desc = self.node_desc
-
-        for ig, ap in self.aps.iteritems():
-            gel = ap.interp.gel
-            ap.efaces = gel.get_surface_entities().copy()
-
-            nd = node_desc.edge
-            if nd is not None:
-                efs = []
-                for eof in gel.get_edges_per_face():
-                    efs.append(nm.concatenate([nd[ie] for ie in eof]))
-                efs = nm.array(efs).squeeze()
-
-                if efs.ndim < 2:
-                    efs = efs[:,nm.newaxis]
-                ap.efaces = nm.hstack((ap.efaces, efs))
-
-            efs = node_desc.face
-            if efs is not None:
-                efs = nm.array(efs).squeeze()
-
-                if efs.ndim < 2:
-                    efs = efs[:,nm.newaxis]
-                ap.efaces = nm.hstack((ap.efaces, efs))
-
     def setup_coors(self, coors=None):
         """
         Setup coordinates of field nodes.
@@ -193,37 +162,6 @@ class H1NodalMixin(Struct):
 
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, coors)
-
-    def create_mesh(self, extra_nodes=True):
-        """
-        Create a mesh from the field region, optionally including the field
-        extra nodes.
-        """
-        mesh = self.domain.mesh
-
-        if self.approx_order != 0:
-            conns, mat_ids, descs = [], [], []
-            for ig, ap in self.aps.iteritems():
-                group = self.domain.groups[ig]
-                if extra_nodes:
-                    conn = ap.econn
-                else:
-                    offset = group.shape.n_ep
-                    conn = ap.econn[:,:offset]
-                conns.append(conn)
-                mat_ids.append(mesh.mat_ids[ig])
-                descs.append(mesh.descs[ig])
-
-            if extra_nodes:
-                coors = self.coors
-
-            else:
-                coors = self.coors[:self.n_vertex_dof]
-
-            mesh = Mesh.from_data(self.name, coors, None, conns,
-                                  mat_ids, descs)
-
-        return mesh
 
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,

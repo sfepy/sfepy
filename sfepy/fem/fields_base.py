@@ -339,6 +339,36 @@ class Field(Struct):
 
         self._setup_esurface()
 
+    def _setup_esurface(self):
+        """
+        Setup extended surface entities (edges in 2D, faces in 3D),
+        i.e. indices of surface entities into the extended connectivity.
+        """
+        node_desc = self.node_desc
+
+        for ig, ap in self.aps.iteritems():
+            gel = ap.interp.gel
+            ap.efaces = gel.get_surface_entities().copy()
+
+            nd = node_desc.edge
+            if nd is not None:
+                efs = []
+                for eof in gel.get_edges_per_face():
+                    efs.append(nm.concatenate([nd[ie] for ie in eof]))
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                ap.efaces = nm.hstack((ap.efaces, efs))
+
+            efs = node_desc.face
+            if efs is not None:
+                efs = nm.array(efs).squeeze()
+
+                if efs.ndim < 2:
+                    efs = efs[:,nm.newaxis]
+                ap.efaces = nm.hstack((ap.efaces, efs))
+
     def setup_coors(self, coors=None):
         """
         Setup coordinates of field nodes. Implemented in subclasses.
@@ -677,9 +707,33 @@ class Field(Struct):
     def create_mesh(self, extra_nodes=True):
         """
         Create a mesh from the field region, optionally including the field
-        extra nodes. Implemented in subclasses.
+        extra nodes.
         """
-        raise ValueError('An abstract Field method called!')
+        mesh = self.domain.mesh
+
+        if self.approx_order != 0:
+            conns, mat_ids, descs = [], [], []
+            for ig, ap in self.aps.iteritems():
+                group = self.domain.groups[ig]
+                if extra_nodes:
+                    conn = ap.econn
+                else:
+                    offset = group.shape.n_ep
+                    conn = ap.econn[:,:offset]
+                conns.append(conn)
+                mat_ids.append(mesh.mat_ids[ig])
+                descs.append(mesh.descs[ig])
+
+            if extra_nodes:
+                coors = self.coors
+
+            else:
+                coors = self.coors[:self.n_vertex_dof]
+
+            mesh = Mesh.from_data(self.name, coors, None, conns,
+                                  mat_ids, descs)
+
+        return mesh
 
     def interp_to_qp(self, dofs):
         """
