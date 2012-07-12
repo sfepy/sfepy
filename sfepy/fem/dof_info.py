@@ -355,8 +355,6 @@ class EquationMap(Struct):
                 dofs, val = bc.dofs
                 ##
                 # Evaluate EBC values.
-                nods = nm.unique(nm.hstack(master_nod_list))
-
                 if type(val) == str:
                     fun = functions[val]
 
@@ -373,7 +371,7 @@ class EquationMap(Struct):
                     fun = lambda coors: aux(ts, coors,
                                             bc=bc, problem=problem)
 
-                vv = field.set_dofs(fun, nods, len(dofs))
+                nods, vv = field.set_dofs(fun, region, len(dofs), clean_msg)
 
                 eq = expand_nodes_to_equations(nods, dofs, self.dof_names)
                 # Duplicates removed here...
