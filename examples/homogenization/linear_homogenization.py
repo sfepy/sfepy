@@ -106,8 +106,8 @@ all_periodic = ['periodic_%s' % ii for ii in ['x', 'y', 'z'][:dim] ]
 #! ---------
 #! Define the integral type Volume/Surface and quadrature rule.
 integrals = {
-    'i1' : ('v', 'gauss_o2_d%d' % dim),
-    'i2' : ('s', 'gauss_o2_d%d' % (dim-1)),
+    'i1' : ('v', 2),
+    'i2' : ('s', 2),
 }
 #! Options
 #! -------

@@ -76,8 +76,8 @@ materials = {
 }
 
 integrals = {
-    'i1' : ('v', 'gauss_o2_d3'),
-    'i2' : ('v', 'gauss_o3_d3'),
+    'i1' : ('v', 2),
+    'i2' : ('v', 3),
 }
 
 ##

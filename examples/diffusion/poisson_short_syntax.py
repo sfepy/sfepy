@@ -39,7 +39,7 @@ ebcs = {
 }
 
 integrals = {
-    'i1' : ('v', 'gauss_o2_d3'),
+    'i1' : ('v', 2),
 }
 
 equations = {

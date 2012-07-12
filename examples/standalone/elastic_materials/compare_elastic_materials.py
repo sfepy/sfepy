@@ -77,12 +77,12 @@ def define():
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
-        'quadrature' : 'gauss_o1_d3',
+        'order' : 1,
     }
     integral_3 = {
         'name' : 'isurf',
-        'kind' : 's4',
-        'quadrature' : 'gauss_o2_d2',
+        'kind' : 's',
+        'order' : 2,
     }
     equations = {
         'linear' : """dw_lin_elastic_iso.i1.Omega( solid.lam, solid.mu_le, v, u )

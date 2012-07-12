@@ -68,7 +68,7 @@ fields = {
 #! Define the integral type Volume/Surface and quadrature rule
 #! (here: dim=3, order=1).
 integrals = {
-    'i1' : ('v', 'gauss_o1_d3'),
+    'i1' : ('v', 1),
 }
 #! Variables
 #! ---------

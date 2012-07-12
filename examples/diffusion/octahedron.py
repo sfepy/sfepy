@@ -87,7 +87,7 @@ ebc_2 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'order' : 1,
 }
 equations = {
     'Temperature' : """dw_diffusion.i1.Omega( coef.K, s, t ) = 0"""

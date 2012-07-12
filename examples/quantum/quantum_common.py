@@ -1,12 +1,5 @@
-import os
-from sfepy.fem import MeshIO
-
 def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
     filename_mesh = mesh
-
-    conf_dir = os.path.dirname(__file__)
-    dim = MeshIO.any_from_filename(filename_mesh,
-                                   prefix_dir=conf_dir).read_dimension()
 
     options = {
         'save_eig_vectors' : None,
@@ -52,15 +45,10 @@ def common(fun_v, mesh='../../tmp/mesh.vtk', n_eigs=5, tau=0.0):
         'approx_order' : 1,
     }
 
-    if dim == 3:
-        quadr = "gauss_o2_d3"
-    else:
-        quadr = "gauss_o2_d2"
-
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
-        'quadrature' : quadr,
+        'order' : 2,
     }
 
     variable_1 = {

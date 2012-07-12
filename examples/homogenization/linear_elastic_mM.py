@@ -66,7 +66,7 @@ fields = {
 }
 
 integrals = {
-    'i1' : ('v', 'gauss_o1_d3'),
+    'i1' : ('v', 1),
 }
 
 variables = {

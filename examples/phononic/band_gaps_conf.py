@@ -198,7 +198,7 @@ class BandGapsConf(Struct):
 
     def define_integrals(self):
         integrals = {
-            'i1' : ('v', 'gauss_o2_d2'),
+            'i1' : ('v', 2),
         }
 
         return integrals

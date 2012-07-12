@@ -83,7 +83,7 @@ lcbc_1 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o2_d3',
+    'order' : 2,
 }
 
 equations = {
