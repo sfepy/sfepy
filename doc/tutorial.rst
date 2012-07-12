@@ -327,7 +327,7 @@ to the right surface.
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
-        'quadrature' : 'gauss_o2_d3',
+        'order' : 2,
     }
 
 Integrals specify which numerical scheme to use. Here we are using a 2nd order
