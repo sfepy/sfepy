@@ -163,6 +163,32 @@ class H1NodalMixin(Struct):
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, coors)
 
+    def set_dofs(self, fun=0.0, nods=None, dpn=None):
+        """
+        Set the values of given DOFs using a function of space coordinates or
+        value `fun`.
+        """
+        if nods is None:
+            nods = nm.arange(self.n_nod, dtype=nm.int32)
+
+        if dpn is None:
+            dpn = self.shape[0]
+
+        if callable(fun):
+            vals = fun(self.get_coor(nods))
+
+        elif nm.isscalar(fun):
+            vals = nm.repeat([fun], nods.shape[0] * dpn)
+
+        elif isinstance(fun, nm.ndarray):
+            assert_(len(fun) == dpn)
+            vals = nm.repeat(fun, nods.shape[0])
+
+        else:
+            raise ValueError('unknown function/value type! (%s)' % type(fun))
+
+        return vals
+
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False):
