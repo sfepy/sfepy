@@ -141,6 +141,41 @@ class Field(Struct):
     _all = None
 
     @staticmethod
+    def from_args(name, dtype, shape, region, approx_order=1,
+                  space='H1', poly_space_base='lagrange'):
+        """
+        Create a Field subclass instance corresponding to a given space.
+
+        Parameters
+        ----------
+        name : str
+            The field name.
+        dtype : numpy.dtype
+            The field data type: float64 or complex128.
+        shape : int/tuple/str
+            The field shape: 1 or (1,) or 'scalar', space dimension (2, or
+            (2,) or 3 or (3,)) or 'vector'. The field shape determines
+            the shape of the FE base functions and can be different from
+            a FieldVariable instance shape. (TODO)
+        region : Region
+            The region where the field is defined.
+        approx_order : int/str
+            The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
+        space : str
+            The function space name.
+        poly_space_base : str
+            The name of polynomial space base.
+
+        Notes
+        -----
+        Assumes one cell type for the whole region!
+        """
+        conf = Struct(name=name, dtype=dtype, shape=shape, region=region.name,
+                      approx_order=approx_order, space=space,
+                      poly_space_base=poly_space_base)
+        return Field.from_conf(conf, {region.name : region})
+
+    @staticmethod
     def from_conf(conf, regions):
         """
         Create a Field subclass instance based on the configuration.
