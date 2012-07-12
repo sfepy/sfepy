@@ -189,28 +189,22 @@ class Field(Struct):
         return obj
 
     def __init__(self, name, dtype, shape, region, approx_order=1):
-        """Create a Field.
+        """
+        Create a Field.
 
-        Parameters
-        ----------
         name : str
-            Object name.
+            The field name.
         dtype : numpy.dtype
-            Field data type: float64 or complex128.
+            The field data type: float64 or complex128.
         shape : int/tuple/str
-            Field shape: 1 or (1,) or 'scalar', space dimension (2, or
+            The field shape: 1 or (1,) or 'scalar', space dimension (2, or
             (2,) or 3 or (3,)) or 'vector'. The field shape determines
             the shape of the FE base functions and can be different from
             a FieldVariable instance shape. (TODO)
-
         region : Region
             The region where the field is defined.
-        space : str
-            The function space name.
-        poly_space_base : str
-            The name of polynomial space base.
         approx_order : int/str
-            FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
+            The FE approximation order, e.g. 0, 1, 2, '1B' (1 with bubble).
 
         Notes
         -----
