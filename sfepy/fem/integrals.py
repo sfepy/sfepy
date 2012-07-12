@@ -3,10 +3,6 @@ import numpy as nm
 from sfepy.base.base import OneTypeList, Container, Struct, basestr
 from quadratures import QuadraturePoints
 
-import re
-
-_match_order_dim = re.compile( '.*_o([0-9]+)_d([0-9]+)$' ).match
-
 class Integrals(Container):
     """
     Container for instances of :class:`Integral`.
@@ -20,15 +16,14 @@ class Integrals(Container):
             if hasattr(desc, 'vals'):
                 aux = Integral(desc.name,
                                kind=desc.kind,
-                               quad_name=desc.quadrature,
                                coors=desc.vals,
                                weights=desc.weights)
 
             else:
                 aux = Integral(desc.name,
                                kind=desc.kind,
-                               quad_name=desc.quadrature)
-                
+                               order=desc.order)
+
             objs.append(aux)
 
         obj = Integrals(objs)
@@ -81,11 +76,9 @@ class Integral(Struct):
     Wrapper class around quadratures.
     """
 
-    def __init__(self, name, kind='v', order=None, quad_name=None,
-                 coors=None, weights=None):
+    def __init__(self, name, kind='v', order=1, coors=None, weights=None):
         self.name = name
         self.kind = kind
-        self.quad_name = quad_name
         self.qps = {}
 
         if coors is None:
@@ -98,15 +91,11 @@ class Integral(Struct):
 
         self.order = 0
 
-        if order is not None:
-            self.order = order
-
-        elif self.quad_name in ('auto', 'custom'):
+        if order in ('auto', 'custom', 'a', 'c'):
             self.order = -1
 
-        elif quad_name is not None:
-            match = _match_order_dim(self.quad_name)
-            self.order, dim = [int( ii ) for ii in match.groups()]
+        else:
+            self.order = int(order)
 
     def get_key(self):
         """
