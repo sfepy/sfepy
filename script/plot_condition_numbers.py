@@ -70,9 +70,9 @@ def main():
     for order in orders:
         output('order:', order, '...')
 
-        field = Field('fu', nm.float64, n_c, omega,
-                      space='H1', poly_space_base=options.basis,
-                      approx_order=order)
+        field = Field.from_args('fu', nm.float64, n_c, omega,
+                                approx_order=order,
+                                space='H1', poly_space_base=options.basis)
 
         to = field.approx_order
         quad_order = 2 * (max(to - order_fix, 0))
