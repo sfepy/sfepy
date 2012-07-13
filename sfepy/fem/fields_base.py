@@ -447,38 +447,47 @@ class Field(Struct):
 
         return dofs[uid[uid >= 0]].ravel()
 
-    def get_dofs_in_region_group(self, region, ig):
+    def get_dofs_in_region_group(self, region, ig, merge=True):
         """
         Return indices of DOFs that belong to the given region and group.
         """
         node_desc = self.node_desc
 
-        dofs = nm.empty((0,), dtype=nm.int32)
+        dofs = []
+
+        vdofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.vertex is not None:
             ii = region.get_vertices(ig)
             vdofs = self.vertex_remap[ii]
-            dofs = nm.concatenate((dofs, vdofs[vdofs >= 0]))
+            vdofs = vdofs[vdofs >= 0]
+        dofs.append(vdofs)
 
+        edofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.edge is not None:
             edofs = self._get_facet_dofs(self.domain.ed,
                                          region.get_edges,
                                          self.edge_remap,
                                          self.edge_dofs, ig)
-            dofs = nm.concatenate((dofs, edofs))
+        dofs.append(edofs)
 
+        fdofs = nm.empty((0,), dtype=nm.int32)
         if node_desc.face is not None:
             fdofs = self._get_facet_dofs(self.domain.fa,
                                          region.get_faces,
                                          self.face_remap,
                                          self.face_dofs, ig)
-            dofs = nm.concatenate((dofs, fdofs))
+        dofs.append(fdofs)
 
+        bdofs = nm.empty((0,), dtype=nm.int32)
         if ((node_desc.bubble is not None)
             and region.can_cells and region.true_cells[ig]):
             ii = region.get_cells(ig)
             group_els = self.bubble_remaps[ig][ii]
             bdofs = self.bubble_dofs[ig][group_els[group_els >= 0]].ravel()
-            dofs = nm.concatenate((dofs, bdofs))
+        dofs.append(bdofs)
+
+        if merge:
+            dofs = nm.concatenate(dofs)
 
         return dofs
 
