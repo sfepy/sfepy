@@ -72,3 +72,10 @@ class FibresActiveTLTerm(HyperElasticTLBase):
     @staticmethod
     def tan_mod_function(out, pars, green_strain):
         fibre_function(out, pars, green_strain, 1)
+
+    def get_eval_shape(self, mat1, mat2, mat3, mat4, mat5, virtual, state,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
+        sym = dim * (dim + 1) / 2
+
+        return (n_el, 1, sym, 1), state.dtype
