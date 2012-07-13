@@ -134,6 +134,38 @@ class H1HierarchicVolumeField(VolumeField):
         for ig, ap in self.aps.iteritems():
             ap.eval_extra_coor(self.coors, coors)
 
+    def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
+        """
+        Set the values of given DOFs using a function of space coordinates or
+        value `fun`.
+        """
+        if region is None:
+            region = self.region
+
+        if dpn is None:
+            dpn = self.shape[0]
+
+        nods = []
+        vals = []
+        for ig in self.igs:
+            if nm.isscalar(fun):
+                # Hack for constants.
+                gnods = self.get_dofs_in_region_group(region, ig, merge=False)
+                n_dof = dpn * sum([nn.shape[0] for nn in gnods])
+                gvals = nm.zeros(n_dof, dtype=nm.dtype(type(fun)))
+                gvals[:gnods[0].shape[0] * dpn] = fun
+
+                nods.append(nm.concatenate(gnods))
+                vals.append(gvals)
+
+            else:
+                raise NotImplementedError
+
+        nods, indx = nm.unique(nm.concatenate(nods), return_index=True)
+        vals = nm.concatenate(vals)[indx]
+
+        return nods, vals
+
     def evaluate_at(self, coors, source_vals, strategy='kdtree',
                     close_limit=0.1, cache=None, ret_cells=False,
                     ret_status=False, ret_ref_coors=False):
