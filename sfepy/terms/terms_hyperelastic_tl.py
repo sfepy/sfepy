@@ -264,7 +264,7 @@ class VolumeTLTerm(HyperElasticTLBase):
             else:
                 fmode = 1
 
-        elif mode == 'eval':
+        elif (mode == 'eval') or (mode == 'el_avg'):
             if term_mode == 'volume':
                 fmode = 2
 
