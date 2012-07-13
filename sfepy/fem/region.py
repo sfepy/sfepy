@@ -356,12 +356,16 @@ class Region( Struct ):
         for ig in digs:
             _try_delete(self.vertices, ig)
             _try_delete(self.cells, ig)
+            _try_delete(self.true_cells, ig)
             _try_delete(self.faces, ig)
+            _try_delete(self.fis, ig)
             _try_delete(self.edges, ig)
             try:
                 self.igs.remove(ig)
             except ValueError:
                 pass
+
+        self.all_vertices = nm.unique(nm.r_[self.vertices.values()])
 
         self.update_shape()
 
