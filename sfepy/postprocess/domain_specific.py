@@ -64,7 +64,7 @@ def _get_scalars(color_name, color_kind, active):
         new_name = '|%s|' % color_name
         active = mlab.pipeline.set_active_attribute(active)
         active.point_vectors_name = color_name
-        active = mlab.pipeline.extract_tensor_components(active)
+        active = mlab.pipeline.extract_vector_norm(active)
 
     elif color_kind == 'scalars':
         new_name = '%s' % color_name
