@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """
-Save polynomial basis on reference elements for visualization.
+Save polynomial basis on reference elements or on a mesh for visualization.
 """
 from optparse import OptionParser
 import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import get_print_info
-from sfepy.fem import Mesh
+from sfepy.fem import Mesh, Domain, Field, FieldVariable
 from sfepy.fem.geometry_element import GeometryElement
 from sfepy.fem.poly_spaces import PolySpace
 from sfepy.fem.linearizer import create_output
@@ -24,6 +24,8 @@ help = {
     'geometry' :
     'reference element geometry, one of "2_3", "2_4", "3_4", "3_8"'
     ' [default: %default]',
+    'mesh' :
+    'name of the mesh file - alternative to --geometry [default: %default]',
 }
 
 def main():
@@ -40,59 +42,98 @@ def main():
     parser.add_option('-g', '--geometry', metavar='name',
                       action='store', dest='geometry',
                       default='2_4', help=help['geometry'])
+    parser.add_option('-m', '--mesh', metavar='mesh',
+                      action='store', dest='mesh',
+                      default=None, help=help['mesh'])
     options, args = parser.parse_args()
 
-    dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
-    output('reference element geometry:')
-    output('  dimension: %d, vertices: %d' % (dim, n_ep))
-
     output('polynomial space:', options.basis)
-
     output('max. order:', options.max_order)
 
-    gel = GeometryElement(options.geometry)
-    gps = PolySpace.any_from_args(None, gel, 1,
-                                  base=options.basis)
-    ps = PolySpace.any_from_args(None, gel, options.max_order,
-                                 base=options.basis)
+    lin = Struct(kind='adaptive', min_level=2, max_level=5, eps=1e-3)
 
-    n_digit, _format = get_print_info(ps.n_nod, fill='0')
-    name_template = 'bf_%s.vtk' % _format
-    for ip in range(ps.n_nod):
-        output('shape function %d...' % ip)
+    if options.mesh is None:
+        dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
+        output('reference element geometry:')
+        output('  dimension: %d, vertices: %d' % (dim, n_ep))
 
-        def eval_dofs(iels, rx, bf):
-            if options.derivative == 0:
-                rvals = bf[None, :, ip:ip+1]
+        gel = GeometryElement(options.geometry)
+        gps = PolySpace.any_from_args(None, gel, 1,
+                                      base=options.basis)
+        ps = PolySpace.any_from_args(None, gel, options.max_order,
+                                     base=options.basis)
 
-            else:
-                bfg = ps.eval_base(rx, diff=True)
-                rvals = bfg[None, ..., ip]
+        n_digit, _format = get_print_info(ps.n_nod, fill='0')
+        name_template = 'bf_%s.vtk' % _format
+        for ip in range(ps.n_nod):
+            output('shape function %d...' % ip)
 
-            return rvals
+            def eval_dofs(iels, rx, bf):
+                if options.derivative == 0:
+                    rvals = bf[None, :, ip:ip+1]
 
-        def eval_coors(iels, rx):
-            bf = gps.eval_base(rx).squeeze()
-            coors = nm.dot(bf, gel.coors)[None, ...]
-            return coors
+                else:
+                    bfg = ps.eval_base(rx, diff=True)
+                    rvals = bfg[None, ..., ip]
 
-        (level, coors, conn,
-         vdofs, mat_ids) = create_output(eval_dofs, eval_coors, 1,
-                                         ps, min_level=2, max_level=5,
-                                         eps=1e-3)
-        out = {
-            'bf' : Struct(name='output_data',
-                          mode='vertex', data=vdofs,
-                          var_name='bf', dofs=None)
-        }
+                return rvals
 
-        mesh = Mesh.from_data('bf_mesh', coors, None, [conn], [mat_ids],
-                              [options.geometry])
+            def eval_coors(iels, rx):
+                bf = gps.eval_base(rx).squeeze()
+                coors = nm.dot(bf, gel.coors)[None, ...]
+                return coors
 
-        name = name_template % ip
-        mesh.write(name, out=out)
+            (level, coors, conn,
+             vdofs, mat_ids) = create_output(eval_dofs, eval_coors, 1,
+                                             ps, min_level=lin.min_level,
+                                             max_level=lin.max_level,
+                                             eps=lin.eps)
+            out = {
+                'bf' : Struct(name='output_data',
+                              mode='vertex', data=vdofs,
+                              var_name='bf', dofs=None)
+            }
 
-        output('...done (%s)' % name)
+            mesh = Mesh.from_data('bf_mesh', coors, None, [conn], [mat_ids],
+                                  [options.geometry])
+
+            name = name_template % ip
+            mesh.write(name, out=out)
+
+            output('...done (%s)' % name)
+
+    else:
+        mesh = Mesh.from_file(options.mesh)
+        output('mesh geometry:')
+        output('  dimension: %d, vertices: %d, elements: %d'
+               % (mesh.dim, mesh.n_nod, mesh.n_el))
+
+        domain = Domain('domain', mesh)
+        omega = domain.create_region('Omega', 'all')
+        field = Field.from_args('f', nm.float64, shape=1, region=omega,
+                                approx_order=options.max_order,
+                                poly_space_base=options.basis)
+        var = FieldVariable('u', 'unknown', field, 1)
+
+        output('dofs: %d' % var.n_dof)
+
+        vec = nm.empty(var.n_dof, dtype=var.dtype)
+        n_digit, _format = get_print_info(var.n_dof, fill='0')
+        name_template = 'dof_%s.vtk' % _format
+        for ip in range(var.n_dof):
+            output('dof %d...' % ip)
+
+            vec.fill(0.0)
+            vec[ip] = 1.0
+
+            var.data_from_any(vec)
+
+            out = var.create_output(vec, linearization=lin)
+
+            name = name_template % ip
+            out['u'].mesh.write(name, out=out)
+
+            output('...done (%s)' % name)
 
 if __name__ == '__main__':
     main()
