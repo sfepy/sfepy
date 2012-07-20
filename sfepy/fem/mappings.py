@@ -46,7 +46,7 @@ def get_physical_qps(region, integral):
     and integral.
     """
     phys_qps = PhysicalQPs(igs=region.igs, n_total=0,
-                           indx={}, rindx={}, qp_indx={},
+                           indx={}, rindx={},
                            n_per_group={}, shape={}, values={},
                            is_uniform=True)
 
@@ -66,10 +66,6 @@ def get_physical_qps(region, integral):
 
         phys_qps.indx[ig] = slice(ii, ii + n_el)
         phys_qps.rindx[ig] = slice(ii * n_qp, (ii + n_el) * n_qp)
-
-        aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_per_group + 1)
-        aux[0] = 0
-        phys_qps.qp_indx[ig] = nm.cumsum(aux)
 
         ii += qps.shape[0]
 
