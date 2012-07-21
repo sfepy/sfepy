@@ -78,9 +78,63 @@ def conv_test( conf, it, err, err0 ):
 
     return status
 
-##
-# 10.10.2007, c
-class Newton( NonlinearSolver ):
+class Newton(NonlinearSolver):
+    r"""
+    Solves a nonlinear system :math:`f(x) = 0` using the Newton method with
+    backtracking line-search, starting with an initial guess :math:`x^0`.
+
+    For common configuration parameters, see :class:`Solver
+    <sfepy.solvers.solvers.Solver>`.
+
+    Parameters
+    ----------
+    i_max : int
+        The maximum number of iterations.
+    eps_a : float
+        The absolute tolerance for the residual, i.e. :math:`||f(x^i)||`.
+    eps_r : float
+        The relative tolerance for the residual, i.e. :math:`||f(x^i)|| /
+        ||f(x^0)||`.
+    macheps : float
+        The float considered to be machine "zero".
+    lin_red : float
+        The linear system solution error should be smaller than (`eps_a` *
+        `lin_red`), otherwise a warning is printed.
+    lin_precision : float or None
+        If not None, the linear system solution tolerances are set in each
+        nonlinear iteration relative to the current residual norm by the
+        `lin_precision` factor. Ignored for direct linear solvers.
+    ls_on : float
+        Start the backtracking line-search by reducing the step, if
+        :math:`||f(x^i)|| / ||f(x^{i-1})||` is larger than `ls_on`.
+    ls_red : 0.0 < float < 1.0
+        The step reduction factor in case of correct residual assembling.
+    ls_red_warp : 0.0 < float < 1.0
+        The step reduction factor in case of failed residual assembling
+        (e.g. the "warp violation" error caused by a negative volume element
+        resulting from too large deformations).
+    ls_min : 0.0 < float < 1.0
+        The minimum step reduction factor.
+    give_up_warp : bool
+        If True, abort on the "warp violation" error.
+    check : 0, 1 or 2
+        If >= 1, check the tangent matrix using finite differences. If 2, plot
+        the resulting sparsity patterns.
+    delta : float
+        If `check >= 1`, the finite difference matrix is taken as :math:`A_{ij}
+        = \frac{f_i(x_j + \delta) - f_i(x_j - \delta)}{2 \delta}`.
+    is_plot : False
+        If True, plot the solution and residual in each step.
+    log : dict or None
+        If not None, log the convergence according to the configuration in the
+        following form::
+
+            {'text' : 'log.txt', 'plot' : 'log.pdf'}
+
+        Each of the dict items can be None.
+    problem : 'nonlinear' or 'linear'
+        Specifies if the problem is linear or non-linear.
+    """
     name = 'nls.newton'
 
     @staticmethod
@@ -100,9 +154,9 @@ class Newton( NonlinearSolver ):
                 'macheps' : 1e-16,
                 'lin_red' : 1e-2, # Linear system error < (eps_a * lin_red).
                 'lin_precision' : None,
+                'ls_on' : 0.99999,
                 'ls_red' : 0.1,
                 'ls_red_warp' : 0.001,
-                'ls_on' : 0.99999,
                 'ls_min' : 1e-5,
                 'give_up_warp' : False,
                 'check' : 0,
@@ -158,8 +212,8 @@ class Newton( NonlinearSolver ):
         """
         Nonlinear system solver call.
 
-        Solves :math:`f(x) = 0` by the Newton method with backtracking
-        linesearch.
+        Solves a nonlinear system :math:`f(x) = 0` using the Newton method with
+        backtracking line-search, starting with an initial guess :math:`x^0`.
 
         Parameters
         ----------
@@ -182,8 +236,9 @@ class Newton( NonlinearSolver ):
         -----
         * The optional parameters except `iter_hook` and `status` need
           to be given either here or upon `Newton` construction.
-        * Setting `conf.problem == 'linear'` means 1 iteration and no
-          rezidual check!
+        * Setting `conf.problem == 'linear'` means a pre-assembled and possibly
+          pre-solved matrix. This is mostly useful for linear time-dependent
+          problems.
         """
         import sfepy.base.plotutils as plu
         conf = get_default( conf, self.conf )
