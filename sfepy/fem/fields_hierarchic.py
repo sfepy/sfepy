@@ -76,9 +76,12 @@ class H1HierarchicVolumeField(VolumeField):
 
             ap.econn[iel[:, None], iep] = gdofs
 
+            # -> to init_econn()?
             ap.ori = nm.zeros_like(ap.econn)
-            ap.ori[iel[:, None], iep] = nm.repeat(ori[:, None],
-                                                  n_dof_per_facet, 1)
+            orders = ap.interp.poly_spaces['v'].node_orders
+            eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
+            eoo = orders[iep] % 2 # Odd orders.
+            ap.ori[iel[:, None], iep] = eori * eoo
 
         n_dof = n_dof_per_facet * n_uid
         assert_(n_dof == nm.prod(all_dofs.shape))
