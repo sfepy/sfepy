@@ -574,7 +574,7 @@ class Field(Struct):
             group = self.domain.groups[ig]
             vertex_conn = ap.econn[:, :group.shape.n_ep]
 
-            eval_dofs = get_eval_dofs(dofs, ap.econn)
+            eval_dofs = get_eval_dofs(dofs, ap.econn, ps, ori=ap.ori)
             eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
 
             (level, _coors, conn,

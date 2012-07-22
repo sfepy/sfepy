@@ -68,8 +68,9 @@ def main():
         for ip in range(ps.n_nod):
             output('shape function %d...' % ip)
 
-            def eval_dofs(iels, rx, bf):
+            def eval_dofs(iels, rx):
                 if options.derivative == 0:
+                    bf = ps.eval_base(rx).squeeze()
                     rvals = bf[None, :, ip:ip+1]
 
                 else:
