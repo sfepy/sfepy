@@ -47,7 +47,7 @@ cdef class CVolumeMapping:
                  np.ndarray[float64, mode='c', ndim=2] coors not None,
                  np.ndarray[int32, mode='c', ndim=2] conn not None,
                  np.ndarray[float64, mode='c', ndim=3] bfgr not None,
-                 np.ndarray[float64, mode='c', ndim=3] ebfgr not None,
+                 np.ndarray[float64, mode='c', ndim=4] ebfgr not None,
                  np.ndarray[float64, mode='c', ndim=1] weights not None):
         """
         Describe the element geometry - compute the reference element
@@ -64,7 +64,7 @@ cdef class CVolumeMapping:
 
         # array2fmfield2(_coors, coors)
         array2fmfield3(_bfgr, bfgr)
-        array2fmfield3(_ebfgr, ebfgr)
+        array2fmfield4(_ebfgr, ebfgr)
         array2fmfield1(_weights, weights)
 
         ret = vg_describe(self.geo, _coors, n_nod, dim, _conn, n_el, n_ep,
