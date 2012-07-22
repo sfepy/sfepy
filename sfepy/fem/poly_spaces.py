@@ -646,6 +646,9 @@ class LobattoTensorProductPolySpace(PolySpace):
         self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
 
+        aux = nm.where(self.nodes > 0, self.nodes, 1)
+        self.node_orders = nm.prod(aux, axis=1)
+
     def _define_nodes(self):
         geometry = self.geometry
         order = self.order
