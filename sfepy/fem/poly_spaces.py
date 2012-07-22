@@ -272,7 +272,7 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(self, coors, diff=False,
+    def eval_base(self, coors, diff=False, ori=None,
                   suppress_errors=False, eps=1e-15):
         """
         Evaluate the basis in points given by coordinates. The real work is
@@ -284,6 +284,8 @@ class PolySpace(Struct):
             The coordinates of points where the basis is evaluated. See Notes.
         diff : bool
             If True, return the first derivative.
+        ori : array_like, optional
+            Optional orientation of element facets for per element basis.
         suppress_errors : bool
             If True, do not report points outside the reference domain.
         eps : float
@@ -309,7 +311,7 @@ class PolySpace(Struct):
                              % coors.ndim)
 
         if (coors.ndim == 2):
-            base = self._eval_base(coors, diff=diff,
+            base = self._eval_base(coors, diff=diff, ori=ori,
                                    suppress_errors=suppress_errors,
                                    eps=eps)
 
@@ -323,7 +325,7 @@ class PolySpace(Struct):
                              bdim, self.n_nod), dtype=nm.float64)
 
             for ii, _coors in enumerate(coors):
-                base[ii] = self._eval_base(_coors, diff=diff,
+                base[ii] = self._eval_base(_coors, diff=diff, ori=ori,
                                            suppress_errors=suppress_errors,
                                            eps=eps)
 
@@ -416,7 +418,7 @@ class LagrangeSimplexPolySpace(PolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base(self, coors, diff=False,
+    def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.bases import eval_lagrange_simplex
@@ -459,7 +461,7 @@ class LagrangeSimplexBPolySpace(LagrangeSimplexPolySpace):
 
         self.n_nod = self.nodes.shape[0]
 
-    def _eval_base(self, coors, diff=False,
+    def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.bases import eval_lagrange_simplex
@@ -571,7 +573,7 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base_debug(self, coors, diff=False,
+    def _eval_base_debug(self, coors, diff=False, ori=None,
                          suppress_errors=False, eps=1e-15):
         """Python version of eval_base()."""
         dim = self.geometry.dim
@@ -612,7 +614,7 @@ class LagrangeTensorProductPolySpace(PolySpace):
 
         return base
 
-    def _eval_base(self, coors, diff=False,
+    def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
         """See PolySpace.eval_base()."""
         from extmods.bases import eval_lagrange_tensor_product as ev
@@ -743,7 +745,7 @@ class LobattoTensorProductPolySpace(PolySpace):
 
         return nodes, nts, node_coors
 
-    def _eval_base(self, coors, diff=False,
+    def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
         """
         See PolySpace.eval_base().
@@ -752,4 +754,11 @@ class LobattoTensorProductPolySpace(PolySpace):
         c_min, c_max = self.bbox[:, 0]
 
         base = ev(coors, self.nodes, c_min, c_max, self.order, diff)
+
+        if ori is not None:
+            ebase = nm.tile(base, (ori.shape[0], 1, 1, 1))
+            ie, ii = nm.where(ori == 1) # Edge DOFs only!
+            ebase[ie, :, :, ii] *= -1.0
+            base = ebase
+
         return base
