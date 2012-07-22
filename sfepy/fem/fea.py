@@ -153,6 +153,7 @@ class Approximation( Struct ):
         self.qp_coors = {}
         self.bf = {}
         self.n_ep = self.interp.get_n_nodes()
+        self.ori = None
 
     def eval_extra_coor(self, coors, mesh_coors):
         """
@@ -167,7 +168,7 @@ class Approximation( Struct ):
         """returns (n_el, n_qp, dim, n_ep)"""
         if integral is not None:
             bf_vg = self.get_base('v', 1, integral)
-            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape
+            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape[-3:]
 
         else:
             return (self.region.shape[self.ig].n_cell,
@@ -270,7 +271,8 @@ class Approximation( Struct ):
             bf_key = (integral.name, key, derivative)
 
         if not self.bf.has_key(bf_key):
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative)
+            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative,
+                                           ori=self.ori)
 
         if base_only:
             return self.bf[bf_key]
@@ -309,7 +311,8 @@ class Approximation( Struct ):
 
             conn = nm.take(group.conn, region.cells[self.ig], axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
-            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     ori=self.ori)
 
             out = vg
 
