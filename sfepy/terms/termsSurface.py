@@ -94,6 +94,46 @@ class SufaceNormalDotTerm(Term):
         else:
             self.function = self.d_fun
 
+class SDSufaceNormalDotTerm(Term):
+    r"""
+    Sensitivity of scalar traction.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} p \ul{c} \cdot \ul{n} \nabla \cdot \ul{\Vcal}
+
+    :Arguments:
+        - material : :math:`\ul{c}`
+        - parameter : :math:`p`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+    """
+    name = 'd_sd_surface_ndot'
+    arg_types = ('material', 'parameter', 'parameter_mesh_velocity')
+    integration = 'surface'
+
+    @staticmethod
+    def d_fun(out, material, val_p, div_mv, sg):
+        aux = dot_sequences(material, sg.normal)
+        aux2 = dot_sequences(aux, div_mv)
+        status = sg.integrate(out, val_p * aux2)
+        return status
+
+    def get_fargs(self, mat, par, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        sg, _ = self.get_mapping(par)
+
+        val_p = self.get(par, 'val')
+        div_mv = self.get(par_mv, 'div')
+
+        return mat, val_p, div_mv, sg
+
+    def get_eval_shape(self, mat, virtual,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(virtual)
+
+        return (n_el, 1, 1, 1), virtual.dtype
+
 class SurfaceJumpTerm(Term):
     r"""
     Interface jump condition.
