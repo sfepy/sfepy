@@ -1,7 +1,7 @@
 import time
 from copy import copy
 
-from sfepy.base.base import (Struct, Container, OneTypeList,
+from sfepy.base.base import (Struct, Container, OneTypeList, assert_,
                              output, get_default_attr, get_default, basestr)
 from functions import ConstantFunction, ConstantFunctionByRegion
 
@@ -121,7 +121,15 @@ class Material( Struct ):
             self.function = function
 
         elif (values is not None) or len(kwargs): # => function is None
-            if isinstance(values[values.keys()[0]], dict):
+            if isinstance(values, dict):
+                key0 = values.keys()[0]
+                assert_(isinstance(key0, str))
+
+            else:
+                key0 = None
+
+            if (key0 and (not key0.startswith('.'))
+                and isinstance(values[key0], dict)):
                 self.function = ConstantFunctionByRegion(values)
 
             else:
