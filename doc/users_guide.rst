@@ -750,6 +750,17 @@ elements, etc.
         'm3' : (None, 'some_function'), # Same as the above line.
     }
 
+* Example, short syntax, different material parameters in regions 'Yc', 'Ym'::
+
+    from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
+    dim = 3
+    materials = {
+        'mat' : ({'D' : {
+            'Ym': stiffness_from_youngpoisson(dim, 7.0e9, 0.4),
+            'Yc': stiffness_from_youngpoisson(dim, 70.0e9, 0.2)}
+        },),
+    }
+
 
 Equations and Terms
 ^^^^^^^^^^^^^^^^^^^
