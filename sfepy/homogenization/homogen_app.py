@@ -60,6 +60,7 @@ class HomogenizationApp( HomogenizationEngine ):
                       coefs=get('coefs', None, 'missing "coefs" in options!'),
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
+                      return_all=get('return_all', False),
                       volume=volume,
                       volumes=volumes)
 
@@ -88,9 +89,6 @@ class HomogenizationApp( HomogenizationEngine ):
 
         for vk, vv in volume.iteritems():
             output('volume: %s = %.2f' % (vk, vv))
-
-        if hasattr(opts, 'return_all'):
-            ret_all = opts.return_all
 
         he = HomogenizationEngine( self.problem, self.options, volume = volume )
 
