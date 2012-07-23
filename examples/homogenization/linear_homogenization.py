@@ -15,7 +15,7 @@ from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part
 
 def recovery_le( pb, corrs, macro ):
-    
+
     out = {}
 
     dim = corrs['corrs_le']['u_00'].shape[1]
@@ -25,21 +25,19 @@ def recovery_le( pb, corrs, macro ):
                            mode = 'vertex', data = mic_u,
                            var_name = 'u', dofs = None )
 
-    stress_Ym, strain_Ym = compute_stress_strain_u( pb, 'i1', 'Ym', 'matrix.D', 'u', mic_u )
-    stress_Ym += compute_mac_stress_part( pb, 'i1', 'Ym', 'matrix.D', 'u', macro['strain'] )
-    stress_Yc, strain_Yc = compute_stress_strain_u( pb, 'i1', 'Yc', 'reinf.D', 'u', mic_u )
-    stress_Yc += compute_mac_stress_part( pb, 'i1', 'Yc', 'reinf.D', 'u', macro['strain'] )
+    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i1', 'Y', 'mat.D', 'u', mic_u )
+    stress_Y += compute_mac_stress_part( pb, 'i1', 'Y', 'mat.D', 'u', macro['strain'] )
 
-    strain = macro['strain'] + strain_Ym + strain_Yc
+    strain = macro['strain'] + strain_Y
 
     out['cauchy_strain'] = Struct( name = 'output_data',
                                    mode = 'cell', data = strain,
                                    dofs = None )
     out['cauchy_stress'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = stress_Ym + stress_Yc,
+                                   mode = 'cell', data = stress_Y,
                                    dofs = None )
     return out
-    
+
 #! Mesh
 #! ----
 filename_mesh = data_dir + '/meshes/3d/matrix_fiber.mesh'
@@ -48,7 +46,7 @@ region_lbn = (0, 0, 0)
 region_rtf = (1, 1, 1)
 #! Regions
 #! -------
-#! Regions, edges, ... 
+#! Regions, edges, ...
 regions = {
     'Y' : ('all', {}),
     'Ym' : ('elements of group 1', {}),
@@ -58,8 +56,8 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials
 #! ---------
 materials = {
-    'matrix' : ({'D' : stiffness_from_youngpoisson(dim, 0.7e9, 0.4)},),
-    'reinf' : ({'D' : stiffness_from_youngpoisson(dim, 70.0e9, 0.2)},),
+    'mat' : ({'D' : {'Ym': stiffness_from_youngpoisson(dim, 7.0e9, 0.4),
+                     'Yc': stiffness_from_youngpoisson(dim, 70.0e9, 0.2)}},),
 }
 #! Fields
 #! ------
@@ -119,7 +117,7 @@ options = {
     'volume' : { 'variables' : ['u'],
                  'expression' : 'd_volume.i1.Y( u )' },
     'output_dir' : 'output',
-    'coefs_filename' : 'output/coefs_le.h5',
+    'coefs_filename' : 'coefs_le',
     'recovery_hook' : 'recovery_le',
 }
 #! Equations
@@ -127,14 +125,11 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """dw_lin_elastic.i1.Ym( matrix.D, v, u )
-    + dw_lin_elastic.i1.Yc( reinf.D, v, u ) =
-    - dw_lin_elastic.i1.Ym( matrix.D, v, Pi )
-    - dw_lin_elastic.i1.Yc( reinf.D, v, Pi )"""
+    """dw_lin_elastic.i1.Y(mat.D, v, u ) =
+     - dw_lin_elastic.i1.Y(mat.D, v, Pi )"""
 }
 #! Expressions for homogenized linear elastic coefficients.
-expr_coefs = """dw_lin_elastic.i1.Ym( matrix.D, Pi1, Pi2 )
-+ dw_lin_elastic.i1.Yc( reinf.D, Pi1, Pi2 )"""
+expr_coefs = """dw_lin_elastic.i1.Y(mat.D, Pi1, Pi2 )"""
 #! Coefficients
 #! ------------
 #! Definition of homogenized acoustic coefficients.

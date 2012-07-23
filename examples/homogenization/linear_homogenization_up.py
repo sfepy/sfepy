@@ -19,12 +19,12 @@ from sfepy.base.base import Struct
 from sfepy.homogenization.recovery import compute_micro_u, compute_stress_strain_u, compute_mac_stress_part, add_stress_p
 
 def recovery_le( pb, corrs, macro ):
-    
+
     out = {}
     dim = corrs['corrs_le']['u_00'].shape[1]
     mic_u = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'u', dim )
     mic_p = - compute_micro_u( corrs['corrs_le'], macro['strain'], 'p', dim )
-    
+
     out['u_mic'] = Struct( name = 'output_data',
                            mode = 'vertex', data = mic_u,
                            var_name = 'u', dofs = None )
@@ -33,21 +33,17 @@ def recovery_le( pb, corrs, macro ):
                                                        :,nm.newaxis],
                            var_name = 'p', dofs = None )
 
-    stress_Ym, strain_Ym = compute_stress_strain_u( pb, 'i1', 'Ym', 'matrix.D', 'u', mic_u )
-    stress_Ym += compute_mac_stress_part( pb, 'i1', 'Ym', 'matrix.D', 'u', macro['strain'] )
-    add_stress_p( stress_Ym, pb, 'i1', 'Ym', 'p', mic_p )    
-    stress_Yc, strain_Yc = compute_stress_strain_u( pb, 'i1', 'Yc', 'reinf.D', 'u', mic_u )
-    stress_Yc += compute_mac_stress_part( pb, 'i1', 'Yc', 'reinf.D', 'u', macro['strain'] )
-    add_stress_p( stress_Yc, pb, 'i1', 'Yc', 'p', mic_p )
+    stress_Y, strain_Y = compute_stress_strain_u( pb, 'i1', 'Y', 'mat.D', 'u', mic_u )
+    stress_Y += compute_mac_stress_part( pb, 'i1', 'Y', 'mat.D', 'u', macro['strain'] )
+    add_stress_p( stress_Y, pb, 'i1', 'Y', 'p', mic_p )
 
-    strain = macro['strain'] + strain_Ym + strain_Yc
-    stress = stress_Ym + stress_Yc
+    strain = macro['strain'] + strain_Y
 
     out['cauchy_strain'] = Struct( name = 'output_data',
                                    mode = 'cell', data = strain,
                                    dofs = None )
     out['cauchy_stress'] = Struct( name = 'output_data',
-                                   mode = 'cell', data = stress,
+                                   mode = 'cell', data = stress_Y,
                                    dofs = None )
     return out
 
@@ -59,7 +55,7 @@ region_lbn = (0, 0, 0)
 region_rtf = (1, 1, 1)
 #! Regions
 #! -------
-#! Regions, edges, ... 
+#! Regions, edges, ...
 regions = {
     'Y' : ('all', {}),
     'Ym' : ('elements of group 1', {}),
@@ -69,10 +65,10 @@ regions.update( define_box_regions( dim, region_lbn, region_rtf ) )
 #! Materials
 #! ---------
 materials = {
-    'matrix' : ({'D' : stiffness_from_youngpoisson_mixed(dim, 0.7e9, 0.4),
-                 'gamma' : 1.0/bulk_from_youngpoisson(0.7e9, 0.4)},),
-    'reinf' : ({'D' : stiffness_from_youngpoisson_mixed(dim, 70.0e9, 0.2),
-                'gamma' : 1.0/bulk_from_youngpoisson(70.0e9, 0.2)},),
+    'mat' : ({'D' : {'Ym': stiffness_from_youngpoisson_mixed(dim, 7.0e9, 0.4),
+                     'Yc': stiffness_from_youngpoisson_mixed(dim, 70.0e9, 0.2)},
+              'gamma': {'Ym': 1.0/bulk_from_youngpoisson(7.0e9, 0.4),
+                        'Yc': 1.0/bulk_from_youngpoisson(70.0e9, 0.2)}},),
 }
 #! Fields
 #! ------
@@ -147,26 +143,18 @@ options = {
 #! Equations for corrector functions.
 equation_corrs = {
     'balance_of_forces' :
-    """  dw_lin_elastic.i1.Ym( matrix.D, v, u )
-       + dw_lin_elastic.i1.Yc( reinf.D, v, u )
-       - dw_stokes.i1.Ym( v, p )
-       - dw_stokes.i1.Yc( v, p ) =
-       - dw_lin_elastic.i1.Ym( matrix.D, v, Pi )
-       - dw_lin_elastic.i1.Yc( reinf.D, v, Pi )""",
+    """  dw_lin_elastic.i1.Y( mat.D, v, u )
+       - dw_stokes.i1.Y( v, p ) =
+       - dw_lin_elastic.i1.Y( mat.D, v, Pi )""",
     'pressure constraint' :
-    """- dw_stokes.i1.Ym( u, q )
-       - dw_stokes.i1.Yc( u, q )
-       - dw_volume_dot.i1.Ym( matrix.gamma, q, p )
-       - dw_volume_dot.i1.Yc( reinf.gamma, q, p ) =
-         dw_stokes.i1.Ym( Pi, q )
-       + dw_stokes.i1.Yc( Pi, q )""",
+    """- dw_stokes.i1.Y( u, q )
+       - dw_volume_dot.i1.Y( mat.gamma, q, p ) =
+       + dw_stokes.i1.Y( Pi, q )""",
 }
 #! Expressions for homogenized linear elastic coefficients.
 expr_coefs = {
-    'Q1' : """  dw_lin_elastic.i1.Ym( matrix.D, Pi1u, Pi2u )
-              + dw_lin_elastic.i1.Yc( reinf.D, Pi1u, Pi2u )""",
-    'Q2' : """  dw_volume_dot.i1.Ym( matrix.gamma, Pi1p, Pi2p )
-              + dw_volume_dot.i1.Yc( reinf.gamma, Pi1p, Pi2p )""",
+    'Q1' : """dw_lin_elastic.i1.Y( mat.D, Pi1u, Pi2u )""",
+    'Q2' : """dw_volume_dot.i1.Y( mat.gamma, Pi1p, Pi2p )""",
 }
 #! Coefficients
 #! ------------
