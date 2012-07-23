@@ -90,9 +90,9 @@ def stiffness_from_lame_mixed(dim, lam, mu):
     where
 
     .. math::
-       \widetilde\lambda = {2\over 3} (\lambda - \mu)
+       \widetilde\lambda = -{2\over 3} \mu
     """
-    lam = 2.0 / 3.0 * (lam - mu)
+    lam = - 2.0 / 3.0 * mu
 
     return stiffness_from_lame(dim, lam, mu)
 
