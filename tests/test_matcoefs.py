@@ -120,12 +120,12 @@ class Test(TestCommon):
         self.report('stiffness_from_lame():', _ok)
         ok = ok and _ok
 
-        d = nm.array([[ 6., -2., -2.,  0.,  0.,  0.],
-                      [-2.,  6., -2.,  0.,  0.,  0.],
-                      [-2., -2.,  6.,  0.,  0.,  0.],
-                      [ 0.,  0.,  0.,  4.,  0.,  0.],
-                      [ 0.,  0.,  0.,  0.,  4.,  0.],
-                      [ 0.,  0.,  0.,  0.,  0.,  4.]])
+        d = 4.0 / 3.0 * nm.array([[ 4., -2., -2.,  0.,  0.,  0.],
+                                  [-2.,  4., -2.,  0.,  0.,  0.],
+                                  [-2., -2.,  4.,  0.,  0.,  0.],
+                                  [ 0.,  0.,  0.,  3.,  0.,  0.],
+                                  [ 0.,  0.,  0.,  0.,  3.,  0.],
+                                  [ 0.,  0.,  0.,  0.,  0.,  3.]])
 
         _ds = mc.stiffness_from_lame_mixed(3, lam, mu)
         assert_(_ds.shape == (3, 6, 6))
@@ -137,7 +137,7 @@ class Test(TestCommon):
         self.report('stiffness_from_lame_mixed():', _ok)
         ok = ok and _ok
 
-        blam = 2.0 / 3.0 * (lam - mu)
+        blam = - mu * 2.0 / 3.0
         _ds = mc.stiffness_from_lame(3, blam, mu)
         assert_(_ds.shape == (3, 6, 6))
 
