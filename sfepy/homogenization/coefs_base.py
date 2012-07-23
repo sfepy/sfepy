@@ -850,7 +850,7 @@ class CoefSymSym(MiniAppBase):
 
             for ic, (irc, icc) in enumerate(iter_sym(dim)):
                 if isinstance(self.set_variables, list):
-                    self.set_variables_default(variables, irr, icr, 'col',
+                    self.set_variables_default(variables, irc, icc, 'col',
                                                self.set_variables, data)
                 else:
                     self.set_variables(variables, irc, icc, 'col', **data)
