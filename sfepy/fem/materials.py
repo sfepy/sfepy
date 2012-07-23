@@ -1,11 +1,9 @@
 import time
 from copy import copy
 
-import numpy as nm
-
 from sfepy.base.base import (Struct, Container, OneTypeList,
                              output, get_default_attr, get_default, basestr)
-from functions import ConstantFunction
+from functions import ConstantFunction, ConstantFunctionByRegion
 
 
 ##
@@ -91,7 +89,7 @@ class Material( Struct ):
         obj =  Material(conf.name, kind, function, values, flags)
 
         return obj
-    
+
     def __init__(self, name, kind='time-dependent',
                  function=None, values=None, flags=None, **kwargs):
         """
@@ -119,10 +117,14 @@ class Material( Struct ):
 
         self.flags = get_default(flags, {})
 
-        if hasattr(function, '__call__'): 
+        if hasattr(function, '__call__'):
             self.function = function
 
         elif (values is not None) or len(kwargs): # => function is None
+            if isinstance(values[values.keys()[0]], dict):
+                self.function = ConstantFunctionByRegion(values)
+
+            else:
                 all_values = {}
                 if values is not None:
                     all_values.update(values)
@@ -219,7 +221,6 @@ class Material( Struct ):
 
         qps = term.get_physical_qps()
         coors = qps.get_merged_values()
-
         data = self.function(ts, coors, mode='qp',
                              equations=equations, term=term, problem=problem,
                              group_indx=qps.rindx,
@@ -344,7 +345,7 @@ class Material( Struct ):
     def set_extra_args(self, **extra_args):
         """Extra arguments passed tu the material function."""
         self.extra_args = extra_args
-        
+
     def get_data( self, key, ig, name ):
         """`name` can be a dict - then a Struct instance with data as
         attributes named as the dict keys is returned."""
@@ -357,7 +358,7 @@ class Material( Struct ):
             for key, item in name.iteritems():
                 setattr( out, key, self._get_data( key, ig, item ) )
             return out
-                       
+
     def _get_data( self, key, ig, name ):
         if name is None:
             msg = 'material arguments must use the dot notation!\n'\
