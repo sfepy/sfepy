@@ -47,7 +47,12 @@ class DotProductVolumeTerm(Term):
     def d_dot(out, mat, val1_qp, val2_qp, geo):
         if mat is None:
             if val1_qp.shape[2] > 1:
-                vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
+                if val2_qp.shape[2] == 1:
+                    aux = dot_sequences(val1_qp, geo.normal, mode='ATB')
+                    vec = dot_sequences(aux, val2_qp, mode='AB')
+
+                else:
+                    vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
 
             else:
                 vec = val1_qp * val2_qp
@@ -68,7 +73,9 @@ class DotProductVolumeTerm(Term):
         return status
 
     def check_shapes(self, mat, virtual, state):
-        assert_(virtual.n_components == state.n_components)
+        assert_((virtual.n_components == state.n_components)
+                or ((virtual.n_components == 1)
+                    and (state.n_components == state.dim)))
 
         if mat is not None:
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
@@ -107,7 +114,11 @@ class DotProductVolumeTerm(Term):
                     fun = terms.dw_volume_dot_scalar
 
                 else:
-                    fun = terms.dw_surface_dot_scalar
+                    if virtual.n_components > 1:
+                        fun = terms.dw_surface_dot_vectornormscalar
+
+                    else:
+                        fun = terms.dw_surface_dot_scalar
 
             return mat, val_qp, vgeo, sgeo, fun, fmode
 
@@ -144,6 +155,7 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
     .. math::
         \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
         \mbox{ , }
+        \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
         \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \\
         \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
         \mbox{ , }

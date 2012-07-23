@@ -252,6 +252,13 @@ cdef extern from 'terms.h':
     cdef int32 _dw_volume_lvf \
          'dw_volume_lvf'(FMField *out, FMField *forceQP, VolumeGeometry *vg)
 
+    cdef int32 _dw_surface_dot_vectornormscalar \
+         'dw_surface_dot_vectornormscalar'(FMField *out,
+                                           FMField *coef, FMField *val_qp,
+                                           SurfaceGeometry *rsg,
+                                           SurfaceGeometry *csg,
+                                           int32 isDiff)
+
     cdef int32 _dw_volume_dot_vector \
          'dw_volume_dot_vector'(FMField *out, FMField *coef, FMField *val_qp,
                                 VolumeGeometry *rvg, VolumeGeometry *cvg,
@@ -1318,6 +1325,24 @@ def dw_volume_lvf(np.ndarray out not None,
     array2fmfield4(_force_qp, force_qp)
 
     ret = _dw_volume_lvf(_out, _force_qp, cmap.geo)
+    return ret
+
+def dw_surface_dot_vectornormscalar(np.ndarray out not None,
+                                    np.ndarray coef not None,
+                                    np.ndarray val_qp not None,
+                                    CSurfaceMapping rcmap not None,
+                                    CSurfaceMapping ccmap not None,
+                                    int32 is_diff):
+
+    cdef int32 ret
+    cdef FMField _out[1], _coef[1], _val_qp[1]
+
+    array2fmfield4(_out, out)
+    array2fmfield4(_coef, coef)
+    array2fmfield4(_val_qp, val_qp)
+
+    ret = _dw_surface_dot_vectornormscalar(_out, _coef, _val_qp,
+                                           rcmap.geo, ccmap.geo, is_diff)
     return ret
 
 def dw_volume_dot_vector(np.ndarray out not None,
