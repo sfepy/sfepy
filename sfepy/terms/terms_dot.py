@@ -156,7 +156,8 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
         \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \\
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+        \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
         \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
