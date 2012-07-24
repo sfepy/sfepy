@@ -82,8 +82,29 @@ class HomogenizationApp( HomogenizationEngine ):
         po = HomogenizationApp.process_options
         self.app_options += po( self.conf.options )
 
-    def call(self, ret_all=False, verbose=False):
+    def call(self, verbose=False, ret_all=None):
+        """
+        Call the homogenization engine and compute the homogenized
+        coefficients.
+
+        Parameters
+        ----------
+        verbose : bool
+            If True, print the computed coefficients.
+        ret_all : bool or None
+            If not None, it can be used to override the 'return_all' option.
+            If True, also the dependencies are returned.
+
+        Returns
+        -------
+        coefs : Coefficients instance
+            The homogenized coefficients.
+        dependencies : dict
+            The dependencies, if `ret_all` is True.
+        """
         opts = self.app_options
+
+        ret_all = get_default(ret_all, opts.return_all)
 
         volume = get_volume_from_options(opts, self.problem)
 
