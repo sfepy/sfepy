@@ -648,6 +648,8 @@ class LobattoTensorProductPolySpace(PolySpace):
 
         aux = nm.where(self.nodes > 0, self.nodes, 1)
         self.node_orders = nm.prod(aux, axis=1)
+        self.edge_indx = nm.where(self.nts[:, 0] == 1)[0]
+        self.face_indx = nm.where(self.nts[:, 0] == 2)[0]
 
     def _define_nodes(self):
         geometry = self.geometry
@@ -760,8 +762,12 @@ class LobattoTensorProductPolySpace(PolySpace):
 
         if ori is not None:
             ebase = nm.tile(base, (ori.shape[0], 1, 1, 1))
-            ie, ii = nm.where(ori == 1) # Edge DOFs only!
+
+            # Orient edge functions.
+            ie, ii = nm.where(ori[:, self.edge_indx] == 1)
+            ii = self.edge_indx[ii]
             ebase[ie, :, :, ii] *= -1.0
+
             base = ebase
 
         return base
