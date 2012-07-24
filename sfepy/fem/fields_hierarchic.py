@@ -8,6 +8,15 @@ from sfepy.fem.fields_base import VolumeField
 class H1HierarchicVolumeField(VolumeField):
     family_name = 'volume_H1_lobatto'
 
+    def _init_econn(self):
+        """
+        Initialize the extended DOF connectivity and facet orientation array.
+        """
+        VolumeField._init_econn(self)
+
+        for ig, ap in self.aps.iteritems():
+            ap.ori = nm.zeros_like(ap.econn)
+
     def _setup_facet_orientations(self):
         self.node_desc = self.interp.describe_nodes()
 
@@ -76,8 +85,6 @@ class H1HierarchicVolumeField(VolumeField):
 
             ap.econn[iel[:, None], iep] = gdofs
 
-            # -> to init_econn()?
-            ap.ori = nm.zeros_like(ap.econn)
             orders = ap.interp.poly_spaces['v'].node_orders
             eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
             eoo = orders[iep] % 2 # Odd orders.
