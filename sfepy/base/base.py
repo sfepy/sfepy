@@ -1070,16 +1070,46 @@ def edit_dict_strings(str_dict, old, new):
 
     return new_dict
 
-##
-# 09.08.2006, c
-def invert_dict( d, is_val_tuple = False ):
+def invert_dict(d, is_val_tuple=False, unique=True):
+    """
+    Invert a dictionary by making its values keys and vice versa.
+
+    Parameters
+    ----------
+    d : dict
+        The input dictionary.
+    is_val_tuple : bool
+        If True, the `d` values are tuples and new keys are the tuple items.
+    unique : bool
+        If True, the `d` values are unique and so the mapping is
+        one to one. If False, the `d` values (possibly) repeat, so the inverted
+        dictionary will have as items lists of corresponding keys.
+
+    Returns
+    -------
+    di : dict
+        The inverted dictionary.
+    """
     di = {}
+
     for key, val in d.iteritems():
-        if is_val_tuple:
-            for v in val:
-                di[v] = key
+        if unique:
+            if is_val_tuple:
+                for v in val:
+                    di[v] = key
+            else:
+                di[val] = key
+
         else:
-            di[val] = key
+            if is_val_tuple:
+                for v in val:
+                    item = di.setdefault(v, [])
+                    item.append(key)
+
+            else:
+                item = di.setdefault(val, [])
+                item.append(key)
+
     return di
 
 def remap_dict(d, map):
