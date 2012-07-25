@@ -27,6 +27,23 @@ def invert_remap(remap):
 
     return inverse
 
+def prepare_translate(old_indices, new_indices):
+    """
+    Prepare vector for translating `old_indices` to `new_indices`.
+
+    Returns
+    -------
+    translate : array
+        The translation vector. Then `new_ar = translate[old_ar]`.
+    """
+    old_indices = nm.asarray(old_indices)
+    new_indices = nm.asarray(new_indices)
+
+    translate = nm.zeros(old_indices.max() + 1, dtype=new_indices.dtype)
+    translate[old_indices] = new_indices
+
+    return translate
+
 def compute_nodal_normals(nodes, region, field, return_imap=False):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
