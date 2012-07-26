@@ -26,9 +26,21 @@ help = {
     ' [default: %default]',
     'mesh' :
     'name of the mesh file - alternative to --geometry [default: %default]',
+    'dofs' :
+    'if given, save only the DOFs specified as a comma-separated list'
+    ' [default: %default]',
     'lin_options' :
     'linearizer options [default: %default]',
 }
+
+def get_dofs(dofs, n_total):
+    if dofs is None:
+        dofs = range(n_total)
+
+    else:
+        dofs = [int(ii) for ii in dofs.split(',')]
+
+    return dofs
 
 def main():
     parser = OptionParser(usage=usage, version='%prog')
@@ -47,6 +59,9 @@ def main():
     parser.add_option('-m', '--mesh', metavar='mesh',
                       action='store', dest='mesh',
                       default=None, help=help['mesh'])
+    parser.add_option('', '--dofs', metavar='dofs',
+                      action='store', dest='dofs',
+                      default=None, help=help['dofs'])
     parser.add_option('-l', '--lin-options', metavar='options',
                       action='store', dest='lin_options',
                       default='min_level=2,max_level=5,eps=1e-3',
@@ -74,7 +89,7 @@ def main():
 
         n_digit, _format = get_print_info(ps.n_nod, fill='0')
         name_template = 'bf_%s.vtk' % _format
-        for ip in range(ps.n_nod):
+        for ip in get_dofs(options.dofs, ps.n_nod):
             output('shape function %d...' % ip)
 
             def eval_dofs(iels, rx):
@@ -130,7 +145,7 @@ def main():
         vec = nm.empty(var.n_dof, dtype=var.dtype)
         n_digit, _format = get_print_info(var.n_dof, fill='0')
         name_template = 'dof_%s.vtk' % _format
-        for ip in range(var.n_dof):
+        for ip in get_dofs(options.dofs, var.n_dof):
             output('dof %d...' % ip)
 
             vec.fill(0.0)
