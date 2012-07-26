@@ -26,6 +26,8 @@ help = {
     ' [default: %default]',
     'mesh' :
     'name of the mesh file - alternative to --geometry [default: %default]',
+    'lin_options' :
+    'linearizer options [default: %default]',
 }
 
 def main():
@@ -45,12 +47,19 @@ def main():
     parser.add_option('-m', '--mesh', metavar='mesh',
                       action='store', dest='mesh',
                       default=None, help=help['mesh'])
+    parser.add_option('-l', '--lin-options', metavar='options',
+                      action='store', dest='lin_options',
+                      default='min_level=2,max_level=5,eps=1e-3',
+                      help=help['lin_options'])
     options, args = parser.parse_args()
 
     output('polynomial space:', options.basis)
     output('max. order:', options.max_order)
 
     lin = Struct(kind='adaptive', min_level=2, max_level=5, eps=1e-3)
+    for opt in options.lin_options.split(','):
+        key, val = opt.split('=')
+        setattr(lin, key, eval(val))
 
     if options.mesh is None:
         dim, n_ep = int(options.geometry[0]), int(options.geometry[2])
