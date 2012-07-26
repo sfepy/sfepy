@@ -172,7 +172,9 @@ class H1HierarchicVolumeField(VolumeField):
                 raise NotImplementedError
 
         nods, indx = nm.unique(nm.concatenate(nods), return_index=True)
-        vals = nm.concatenate(vals)[indx]
+        ii = (nm.tile(dpn * indx, dpn)
+              + nm.tile(nm.arange(dpn, dtype=nm.int32), indx.shape[0]))
+        vals = nm.concatenate(vals)[ii]
 
         return nods, vals
 
