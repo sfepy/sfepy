@@ -1519,7 +1519,7 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
       ERR_CheckGo( ret );
     }
 
-  } else if (mode == 1) {
+  } else if ((mode == 1) || (mode == -1)) {
     fmf_createAlloc( &aux, 1, nQP, nEPp, dim * nEPu );
     aux2->nAlloc = -1;
     fmf_pretend( aux2, 1, nQP, 1, dim * nEPu, NULL );
@@ -1539,6 +1539,10 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
       } else {
 	fmf_sumLevelsMulF( out, aux, vgv->det->val );
       }
+      if (mode == -1) {
+        fmf_mulC(out, -1.0);
+      }
+
       ERR_CheckGo( ret );
     }
   } else if (mode == 2){ // de_volume
