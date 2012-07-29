@@ -1,7 +1,7 @@
 import numpy as nm
 
 from sfepy.base.base import assert_
-from sfepy.fem.utils import prepare_remap
+from sfepy.fem.utils import prepare_remap, prepare_translate
 from sfepy.fem.dof_info import expand_nodes_to_dofs
 from sfepy.fem.fields_base import VolumeField
 
@@ -67,7 +67,18 @@ class H1HierarchicVolumeField(VolumeField):
 
         all_dofs = offset + expand_nodes_to_dofs(lids, n_dof_per_facet)
         for ig, ap in self.aps.iteritems():
-            ori = facets.oris[ig]
+            n_fp = facets.n_fps[ig]
+            if (n_fp == 2) and (ap.interp.gel.name in ['2_4', '3_8']):
+                tp_edges = ap.interp.gel.edges
+                ecs = ap.interp.gel.coors[tp_edges]
+                # True = positive, False = negative edge orientation w.r.t.
+                # reference tensor product axes.
+                tp_edge_ori = (nm.diff(ecs, axis=1).sum(axis=2) > 0).squeeze()
+
+            else:
+                tp_edge_ori = None
+
+            ori = facets.get_orientation(ig, tp_edge_ori)
 
             ii = get_facets(ig)
             g_uid = facets.uid_i[ii]
@@ -80,15 +91,66 @@ class H1HierarchicVolumeField(VolumeField):
             iel = facets.indices[ii, 1]
 
             ies = facets.indices[ii, 2]
-            # DOF columns in econn for each facet.
+            # DOF columns in econn for each facet (repeating same values for
+            # each element.
             iep = facet_desc[ies]
 
             ap.econn[iel[:, None], iep] = gdofs
 
-            orders = ap.interp.poly_spaces['v'].node_orders
-            eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
-            eoo = orders[iep] % 2 # Odd orders.
-            ap.ori[iel[:, None], iep] = eori * eoo
+            if n_fp == 2: # Edges.
+                # ori == 1 means the basis has to be multiplied by -1.
+                ps = ap.interp.poly_spaces['v']
+                orders = ps.node_orders
+                eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
+                eoo = orders[iep] % 2 # Odd orders.
+                ap.ori[iel[:, None], iep] = eori * eoo
+
+            elif n_fp == 3: # Triangular faces.
+                raise NotImplementedError
+
+            else: # Quadrilateral faces.
+                # ori encoding in 3 bits:
+                # 0: axis swap, 1: axis 1 sign, 2: axis 2 sign
+                # 0 = + or False, 1 = - or True
+                # 63 -> 000 = 0
+                #  0 -> 001 = 1
+                # 30 -> 010 = 2
+                # 33 -> 011 = 3
+                # 11 -> 100 = 4
+                #  7 -> 101 = 5
+                # 52 -> 110 = 6
+                # 56 -> 111 = 7
+                # Special cases:
+                # Both orders same and even -> 000
+                # Both orders same and odd -> 0??
+                # Bits 1, 2 are multiplied by (swapped) axial order % 2.
+                new = nm.repeat(nm.arange(8, dtype=nm.int32), 3)
+                translate = prepare_translate([31, 59, 63,
+                                               0, 1, 4,
+                                               22, 30, 62,
+                                               32, 33, 41,
+                                               11, 15, 43,
+                                               3, 6, 7,
+                                               20, 52, 60,
+                                               48, 56, 57], new)
+                ori = translate[ori]
+                eori = nm.repeat(ori[:, None], n_dof_per_facet, 1)
+
+                ps = ap.interp.poly_spaces['v']
+                orders = ps.face_axes_nodes[iep - ps.face_indx[0]]
+                eoo = orders % 2
+                eoo0, eoo1 = eoo[..., 0], eoo[..., 1]
+
+                i0 = nm.where(eori < 4)
+                i1 = nm.where(eori >= 4)
+
+                eori[i0] = nm.bitwise_and(eori[i0], 2*eoo0[i0] + 5)
+                eori[i0] = nm.bitwise_and(eori[i0], eoo1[i0] + 6)
+
+                eori[i1] = nm.bitwise_and(eori[i1], eoo0[i1] + 6)
+                eori[i1] = nm.bitwise_and(eori[i1], 2*eoo1[i1] + 5)
+
+                ap.ori[iel[:, None], iep] = eori
 
         n_dof = n_dof_per_facet * n_uid
         assert_(n_dof == nm.prod(all_dofs.shape))

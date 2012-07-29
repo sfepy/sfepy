@@ -2,7 +2,7 @@ import numpy as nm
 import numpy.linalg as nla
 
 from sfepy.base.base import find_subclasses, assert_, Struct
-from sfepy.linalg import combine
+from sfepy.linalg import combine, insert_strided_axis
 
 # Requires fixed vertex numbering!
 vertex_maps = {3 : [[0, 0, 0],
@@ -642,7 +642,8 @@ class LobattoTensorProductPolySpace(PolySpace):
     def __init__(self, name, geometry, order):
         PolySpace.__init__(self, name, geometry, order)
 
-        self.nodes, self.nts, node_coors = self._define_nodes()
+        aux = self._define_nodes()
+        self.nodes, self.nts, node_coors, self.face_axes, self.sfnodes = aux
         self.node_coors = nm.ascontiguousarray(node_coors)
         self.n_nod = self.nodes.shape[0]
 
@@ -651,19 +652,29 @@ class LobattoTensorProductPolySpace(PolySpace):
         self.edge_indx = nm.where(self.nts[:, 0] == 1)[0]
         self.face_indx = nm.where(self.nts[:, 0] == 2)[0]
 
+        self.face_axes_nodes = self._get_face_axes_nodes(self.face_axes)
+
+    def _get_counts(self):
+        order = self.order
+        dim = self.geometry.dim
+
+        n_nod = (order + 1) ** dim
+        n_per_edge = (order - 1)
+        n_per_face = (order - 1) ** (dim - 1)
+        n_bubble = (order - 1) ** dim
+
+        return n_nod, n_per_edge, n_per_face, n_bubble
+
     def _define_nodes(self):
         geometry = self.geometry
         order = self.order
 
         n_v, dim = geometry.n_vertex, geometry.dim
 
-        n_nod = (order + 1) ** dim
+        n_nod, n_per_edge, n_per_face, n_bubble = self._get_counts()
+
         nodes = nm.zeros((n_nod, dim), nm.int32)
         nts = nm.zeros((n_nod, 2), nm.int32)
-
-        n_per_edge = (order - 1)
-        n_per_face = (order - 1) ** (dim - 1)
-        n_bubble = (order - 1) ** dim
 
         # Vertex nodes.
         nts[0:n_v, 0] = 0
@@ -688,7 +699,13 @@ class LobattoTensorProductPolySpace(PolySpace):
                 ii += n_per_edge
 
         # 3D face nodes.
+        face_axes = []
+        sfnodes = None
         if (dim == 3) and (n_per_face > 0):
+            n_face = len(geometry.faces)
+            sfnodes = nm.zeros((n_per_face * n_face, dim), nm.int32)
+            ii0 = ii
+
             ik = nm.arange(2, order + 1, dtype=nm.int32)
             zo = nm.zeros((n_per_face, 2), dtype=nm.int32)
             zo[:, 1] = 1
@@ -710,11 +727,16 @@ class LobattoTensorProductPolySpace(PolySpace):
                 nodes[ii:ii + n_per_face, irun2] = iy.ravel()
                 nts[ii:ii + n_per_face] = [[2, ifa]]
 
-                print '**', ie, face
-                print ns
+                ij = ii - ii0
+                sfnodes[ij:ij + n_per_face, ifix] = zo[:, ic]
+                sfnodes[ij:ij + n_per_face, irun1] = iy.ravel()
+                sfnodes[ij:ij + n_per_face, irun2] = ix.ravel()
 
-                print ifix, irun1, irun2
+                face_axes.append([irun1, irun2])
+
                 ii += n_per_face
+
+        face_axes = nm.array(face_axes)
 
         # Bubble nodes.
         if n_bubble > 0:
@@ -724,8 +746,6 @@ class LobattoTensorProductPolySpace(PolySpace):
             ii += n_bubble
 
         assert_(ii == n_nod)
-
-        nm.set_printoptions(threshold=10000)
 
         # Coordinates of the "nodes". All nodes on a facet have the same
         # coordinates - the centre of the facet.
@@ -746,9 +766,16 @@ class LobattoTensorProductPolySpace(PolySpace):
             ib = nm.where(nts[:, 0] == 3)[0]
             node_coors[ib] = node_coors[geometry.conn].mean(0)
 
-        ## print nm.concatenate((nts, nodes, node_coors), 1)
+        return nodes, nts, node_coors, face_axes, sfnodes
 
-        return nodes, nts, node_coors
+    def _get_face_axes_nodes(self, face_axes):
+        if not len(face_axes): return None
+
+        nodes = self.nodes[self.face_indx]
+        n_per_face = self._get_counts()[2]
+        anodes = nm.tile(nodes[:n_per_face, face_axes[0]], (6, 1))
+
+        return anodes
 
     def _eval_base(self, coors, diff=False, ori=None,
                    suppress_errors=False, eps=1e-15):
@@ -763,10 +790,34 @@ class LobattoTensorProductPolySpace(PolySpace):
         if ori is not None:
             ebase = nm.tile(base, (ori.shape[0], 1, 1, 1))
 
-            # Orient edge functions.
-            ie, ii = nm.where(ori[:, self.edge_indx] == 1)
-            ii = self.edge_indx[ii]
-            ebase[ie, :, :, ii] *= -1.0
+            if self.edge_indx.shape[0]:
+                # Orient edge functions.
+                ie, ii = nm.where(ori[:, self.edge_indx] == 1)
+                ii = self.edge_indx[ii]
+                ebase[ie, :, :, ii] *= -1.0
+
+            if self.face_indx.shape[0]:
+                # Orient face functions.
+                fori = ori[:, self.face_indx]
+
+                # ... normal axis order
+                ie, ii = nm.where((fori == 1) | (fori == 2))
+                ii = self.face_indx[ii]
+                ebase[ie, :, :, ii] *= -1.0
+
+                # ... swapped axis order
+                sbase = ev(coors, self.sfnodes, c_min, c_max, self.order, diff)
+                sbase = insert_strided_axis(sbase, 0, ori.shape[0])
+
+                # ...overwrite with swapped axes basis.
+                ie, ii = nm.where(fori >= 4)
+                ii2 = self.face_indx[ii]
+                ebase[ie, :, :, ii2] = sbase[ie, :, :, ii]
+
+                # ...deal with orientation.
+                ie, ii = nm.where((fori == 5) | (fori == 6))
+                ii = self.face_indx[ii]
+                ebase[ie, :, :, ii] *= -1.0
 
             base = ebase
 
