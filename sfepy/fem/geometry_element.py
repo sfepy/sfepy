@@ -213,6 +213,41 @@ class GeometryElement(Struct):
 
         return nm.array(epf, dtype=nm.int32)
 
+    def get_conn_permutations(self):
+        """
+        Get all possible connectivity permutations corresponding to different
+        spatial orientations of the geometry element.
+        """
+        if self.dim < 3:
+            perms = [nm.roll(self.conn, -ii) for ii in range(self.n_vertex)]
+            perms = nm.vstack(perms)
+
+        else:
+            _perms3d = {
+                '3_4' : [[0, 1, 2, 3],
+                         [1, 2, 0, 3],
+                         [2, 0, 1, 3],
+                         [1, 3, 2, 0],
+                         [3, 0, 2, 1],
+                         [3, 1, 0, 2],
+                         [2, 1, 3, 0],
+                         [0, 2, 3, 1],
+                         [0, 3, 1, 2]],
+                '3_8' : [[0, 1, 2, 3, 4, 5, 6, 7],
+                         [1, 2, 3, 0, 5, 6, 7, 4],
+                         [2, 3, 0, 1, 6, 7, 4, 5],
+                         [3, 0, 1, 2, 7, 4, 5, 6],
+                         [3, 2, 6, 7, 0, 1, 5, 4],
+                         [7, 6, 5, 4, 3, 2, 1, 0],
+                         [4, 5, 1, 0, 7, 6, 2, 3],
+                         [1, 5, 6, 2, 0, 4, 7, 3],
+                         [5, 4, 7, 6, 1, 0, 3, 2],
+                         [4, 0, 3, 7, 5, 1, 2, 6]],
+            }
+
+            perms = nm.array(_perms3d[self.name], dtype=nm.int32)
+
+        return perms
 
     def create_surface_facet(self):
         """
