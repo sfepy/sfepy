@@ -272,7 +272,7 @@ class PolySpace(Struct):
 
         self.bbox = nm.vstack((geometry.coors.min(0), geometry.coors.max(0)))
 
-    def eval_base(self, coors, diff=False, ori=None,
+    def eval_base(self, coors, diff=False, ori=None, force_axis=False,
                   suppress_errors=False, eps=1e-15):
         """
         Evaluate the basis in points given by coordinates. The real work is
@@ -286,6 +286,9 @@ class PolySpace(Struct):
             If True, return the first derivative.
         ori : array_like, optional
             Optional orientation of element facets for per element basis.
+        force_axis : bool
+            If True, force the resulting array shape to have one more axis even
+            when `ori` is None.
         suppress_errors : bool
             If True, do not report points outside the reference domain.
         eps : float
@@ -295,7 +298,9 @@ class PolySpace(Struct):
         -------
         base : array
             The basis (shape (n_coor, 1, n_base)) or its derivative (shape
-            (n_coor, dim, n_base)) evaluated in the given points.
+            (n_coor, dim, n_base)) evaluated in the given points. An additional
+            axis is pre-pended of length n_cell, if `ori` is given, or of
+            length 1, if `force_axis` is True.
 
         Notes
         -----
@@ -314,6 +319,9 @@ class PolySpace(Struct):
             base = self._eval_base(coors, diff=diff, ori=ori,
                                    suppress_errors=suppress_errors,
                                    eps=eps)
+
+            if (base.ndim == 3) and force_axis:
+                base = nm.ascontiguousarray(base[None, ...])
 
         else: # Several point sets.
             if diff:
