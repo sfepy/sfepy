@@ -265,7 +265,8 @@ class VolumeMapping(Mapping):
 
         bf_g = self.get_base(qp_coors, diff=True)
 
-        ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori)
+        ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
+                                     force_axis=True)
         flag = ori is not None
 
         cmap = CVolumeMapping(self.n_el, qp_coors.shape[0], self.dim,
