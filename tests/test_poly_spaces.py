@@ -36,13 +36,20 @@ class Test(TestCommon):
     def test_continuity(self):
         import sfepy
         from sfepy.base.base import Struct
+        from sfepy.linalg import combine
         from sfepy.fem import Mesh, Domain, Field, FieldVariable, Integral
         from sfepy.fem.global_interp import get_ref_coors
 
         ok = True
-        integral = Integral('i', order=5)
+        order = 5
 
-        for geom in ['2_4', '3_8']:
+        integral = Integral('i', order=order)
+
+        bads = []
+        for geom, poly_space_base in combine([['2_4', '3_8'],
+                                              ['lagrange', 'lobatto']]):
+            self.report('gemoetry: %s, base: %s' % (geom, poly_space_base))
+
             mesh0 = Mesh.from_file('meshes/elements/%s_2.mesh' % geom,
                                    prefix_dir=sfepy.data_dir)
             gel = self.gels[geom]
@@ -59,8 +66,6 @@ class Test(TestCommon):
 
             shift = shifts[geom]
 
-            bads = []
-
             for ir, pr in enumerate(perms):
                 for ic, pc in enumerate(perms):
                     self.report('ir: %d, ic: %d' % (ir, ic))
@@ -76,8 +81,8 @@ class Test(TestCommon):
                     omega = domain.create_region('Omega', 'all')
                     region = domain.create_region('Facet', rsels[geom])
                     field = Field.from_args('f', nm.float64, shape=1,
-                                            region=omega, approx_order=5,
-                                            poly_space_base='lobatto')
+                                            region=omega, approx_order=order,
+                                            poly_space_base=poly_space_base)
                     var = FieldVariable('u', 'unknown', field, 1)
                     self.report('# dofs: %d' % var.n_dof)
 
@@ -105,8 +110,13 @@ class Test(TestCommon):
                         crc, ccells, cstatus = get_ref_coors(field, ccoors,
                                                              cache=cache)
 
-                        rbf = ps.eval_base(rrc, ori=ap.ori[:1])
-                        cbf = ps.eval_base(crc, ori=ap.ori[1:])
+                        if poly_space_base == 'lagrange':
+                            rbf = ps.eval_base(rrc)
+                            cbf = ps.eval_base(crc)
+
+                        else:
+                            rbf = ps.eval_base(rrc, ori=ap.ori[:1])
+                            cbf = ps.eval_base(crc, ori=ap.ori[1:])
 
                         rvals = nm.dot(rbf, evec[0])
                         cvals = nm.dot(cbf, evec[1])
@@ -114,7 +124,7 @@ class Test(TestCommon):
                         _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
                         self.report('dof %d: %s' % (ip, _ok))
                         if not _ok:
-                            bads.append([geom, ir, ic, ip])
+                            bads.append([geom, poly_space_base, ir, ic, ip])
 
                         ok = ok and _ok
 
