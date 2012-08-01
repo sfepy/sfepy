@@ -143,3 +143,66 @@ class Test(TestCommon):
             self.report('%d in total!' % len(bads))
 
         return ok
+
+    def test_gradients(self):
+        from sfepy.fem.mappings import VolumeMapping
+
+        ok = True
+        order = 5
+
+        bads = []
+        for (geom, poly_space_base, qp_weights, mesh, ir, ic,
+             ap, ps, rrc, crc, vec,
+             edofs, fdofs) in _gen_common_data(order, self.gels, self.report):
+            conn = mesh.conns[0]
+            gel = self.gels[geom]
+
+            geo_ps = ap.interp.get_geom_poly_space('v')
+            rmapping = VolumeMapping(mesh.coors, conn[:1],
+                                     poly_space=geo_ps)
+            rori = ap.ori[:1] if ap.ori is not None else None
+            rvg = rmapping.get_mapping(rrc, qp_weights,
+                                       poly_space=ps, ori=rori)
+            rbfg = rvg.bfg
+
+            cmapping = VolumeMapping(mesh.coors, conn[1:],
+                                     poly_space=geo_ps)
+            cori = ap.ori[1:] if ap.ori is not None else None
+            cvg = cmapping.get_mapping(crc, qp_weights,
+                                       poly_space=ps, ori=cori)
+            cbfg = cvg.bfg
+
+            for ip in nm.r_[edofs, fdofs]:
+                vec.fill(0.0)
+                vec[ip] = 1.0
+
+                evec = vec[ap.econn]
+
+                rvals = nm.dot(rbfg, evec[0])[0]
+                cvals = nm.dot(cbfg, evec[1])[0]
+
+                okx = nm.allclose(rvals[:, 0], cvals[:, 0],
+                                  atol=1e-14, rtol=0.0)
+                if gel.dim == 2:
+                    oky = nm.allclose(rvals[:, 1], -cvals[:, 1],
+                                      atol=1e-14, rtol=0.0)
+                    _ok = okx and oky
+
+                else:
+                    oky = nm.allclose(rvals[:, 1], cvals[:, 1],
+                                      atol=1e-14, rtol=0.0)
+                    okz = nm.allclose(rvals[:, 2], -cvals[:, 2],
+                                      atol=1e-14, rtol=0.0)
+                    _ok = okx and oky and okz
+
+                self.report('dof %d: %s' % (ip, _ok))
+                if not _ok:
+                    bads.append([geom, poly_space_base, ir, ic, ip])
+
+                ok = ok and _ok
+
+        if not ok:
+            self.report('gradient continuity errors:\n', bads)
+            self.report('%d in total!' % len(bads))
+
+        return ok
