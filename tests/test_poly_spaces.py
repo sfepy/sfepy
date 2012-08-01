@@ -65,6 +65,10 @@ class Test(TestCommon):
                 pass
 
             shift = shifts[geom]
+            rcoors = nm.ascontiguousarray(qps
+                                          + shift[:1, :] - shift[1:, :])
+            ccoors = nm.ascontiguousarray(qps
+                                          + shift[:1, :] + shift[1:, :])
 
             for ir, pr in enumerate(perms):
                 for ic, pc in enumerate(perms):
@@ -94,29 +98,24 @@ class Test(TestCommon):
                                                           merge=False)
                     edofs, fdofs = nm.unique(dofs[1]), nm.unique(dofs[2])
 
-                    rcoors = nm.ascontiguousarray(qps
-                                                  + shift[:1, :] - shift[1:, :])
-                    ccoors = nm.ascontiguousarray(qps
-                                                  + shift[:1, :] + shift[1:, :])
+                    rrc, rcells, rstatus = get_ref_coors(field, rcoors,
+                                                         cache=cache)
+                    crc, ccells, cstatus = get_ref_coors(field, ccoors,
+                                                         cache=cache)
+
+                    if poly_space_base == 'lagrange':
+                        rbf = ps.eval_base(rrc)
+                        cbf = ps.eval_base(crc)
+
+                    else:
+                        rbf = ps.eval_base(rrc, ori=ap.ori[:1])
+                        cbf = ps.eval_base(crc, ori=ap.ori[1:])
 
                     for ip in nm.r_[edofs, fdofs]:
                         vec.fill(0.0)
                         vec[ip] = 1.0
 
                         evec = vec[ap.econn]
-
-                        rrc, rcells, rstatus = get_ref_coors(field, rcoors,
-                                                             cache=cache)
-                        crc, ccells, cstatus = get_ref_coors(field, ccoors,
-                                                             cache=cache)
-
-                        if poly_space_base == 'lagrange':
-                            rbf = ps.eval_base(rrc)
-                            cbf = ps.eval_base(crc)
-
-                        else:
-                            rbf = ps.eval_base(rrc, ori=ap.ori[:1])
-                            cbf = ps.eval_base(crc, ori=ap.ori[1:])
 
                         rvals = nm.dot(rbf, evec[0])
                         cvals = nm.dot(cbf, evec[1])
