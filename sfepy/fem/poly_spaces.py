@@ -321,7 +321,10 @@ class PolySpace(Struct):
                                    eps=eps)
 
             if (base.ndim == 3) and force_axis:
-                base = nm.ascontiguousarray(base[None, ...])
+                base = base[None, ...]
+
+            if not base.flags['C_CONTIGUOUS']:
+                base = nm.ascontiguousarray(base)
 
         else: # Several point sets.
             if diff:
