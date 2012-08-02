@@ -88,7 +88,11 @@ help = {
     'is_wireframe' :
     'show wireframe of mesh surface for each data',
     'opacity' :
-    'global surface and wireframe opacity in [0.0, 1.0] [default: %default]',
+    'opacity in [0.0, 1.0]. Can be given either globally'
+    ' as a single float, or per module, e.g.'
+    ' "wireframe=0.1,scalar_cut_plane=0.5". Possible keywords are: wireframe,'
+    ' scalar_cut_plane, vector_cut_plane, surface, iso_surface,'
+    ' arrows_surface, glyphs. [default: 1.0]',
     'rel_text_width' :
     'relative text annotation width [default: %default]',
     'watch' :
@@ -145,6 +149,23 @@ def parse_ranges(option, opt, value, parser):
             aux = rng.split(',')
             ranges[aux[0]] = (float(aux[1]), float(aux[2]))
         setattr(parser.values, option.dest, ranges)
+
+def parse_opacity(option, opt, value, parser):
+    try:
+        opacity = float(value)
+        assert_(0.0 <= opacity <= 1.0)
+
+    except:
+        opacity = {}
+
+        for vals in value.split(','):
+            key, val = vals.split('=')
+            val = float(val)
+            assert_(0.0 <= val <= 1.0)
+
+            opacity[key] = val
+
+    setattr(parser.values, option.dest, opacity)
 
 def parse_group_names(option, opt, value, parser):
     if value is not None:
@@ -283,9 +304,9 @@ def main():
     parser.add_option("", "--wireframe",
                       action="store_true", dest="is_wireframe",
                       default=False, help=help['is_wireframe'])
-    parser.add_option("--opacity", type='float', metavar='opacity',
-                      action="store", dest="opacity",
-                      default=1.0, help=help['opacity'])
+    parser.add_option("--opacity", type='str', metavar='opacity',
+                      action="callback", dest="opacity",
+                      callback=parse_opacity, help=help['opacity'])
     parser.add_option("--rel-text-width", type='float', metavar='width',
                       action="store", dest="rel_text_width",
                       default=0.02, help=help['rel_text_width'])

@@ -156,6 +156,37 @@ def get_position_counts(n_data, layout):
         pass
     return n_row, n_col
 
+def get_opacities(opacity):
+    """
+    Provide defaults for all supported opacity settings.
+    """
+    defaults = {
+        'wireframe' : 0.05,
+        'scalar_cut_plane' : 0.5,
+        'vector_cut_plane' : 0.5,
+        'surface' : 1.0,
+        'iso_surface' : 0.3,
+        'arrows_surface' : 0.3,
+        'glyphs' : 1.0
+    }
+    if isinstance(opacity, dict):
+        opacities = opacity
+        default = None
+
+    else:
+        opacities = {}
+        default = opacity
+
+    for key in ['wireframe', 'scalar_cut_plane', 'vector_cut_plane',
+                'surface', 'iso_surface', 'arrows_surface', 'glyphs']:
+        if default is None:
+            opacities.setdefault(key, defaults[key])
+
+        else:
+            opacities.setdefault(key, default)
+
+    return opacities
+
 class Viewer(Struct):
     """Class to automate visualization of various data using Mayavi. It can be
     used via postproc.py or isfepy the most easily.
@@ -321,6 +352,8 @@ class Viewer(Struct):
                             only_names=None,
                             domain_specific=None, **kwargs):
         """Sets self.source, self.is_3d_data """
+        opacities = get_opacities(opacity)
+
         file_source = get_default(file_source, self.file_source,
                                   'file_source not set!')
         filter_names = get_default(filter_names, [])
@@ -444,22 +477,20 @@ class Viewer(Struct):
 
                 if is_3d:
                     if 'cut_plane' in scalar_mode:
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [1, 0, 0],
-                                                   opacity=0.5*opacity)
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [0, 1, 0],
-                                                   opacity=0.5*opacity)
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [0, 0, 1],
-                                                   opacity=0.5*opacity)
+                        op = opacities['scalar_cut_plane']
+                        add_scalar_cut_plane(active, position, [1, 0, 0],
+                                             opacity=op)
+                        add_scalar_cut_plane(active, position, [0, 1, 0],
+                                             opacity=op)
+                        add_scalar_cut_plane(active, position, [0, 0, 1],
+                                             opacity=op)
                     if 'iso_surface' in scalar_mode:
                         active.point_scalars_name = name
-                        iso = add_iso_surface(active, position,
-                                              opacity=0.3*opacity)
+                        add_iso_surface(active, position,
+                                        opacity=opacities['iso_surface'])
                 else:
-                    surf = add_surf(active, position, opacity=opacity)
-                
+                    add_surf(active, position, opacity=opacities['surface'])
+
             elif kind == 'vectors':
                 if family == 'point':
                     active = mlab.pipeline.set_active_attribute(source)
@@ -479,7 +510,7 @@ class Viewer(Struct):
                                         clamping=clamping)
                     if sf is not None:
                         glyphs.glyph.glyph.scale_factor = sf
-                        
+
                 if 'warp' in vector_mode:
                     active = mlab.pipeline.warp_vector(active)
                     active.filter.scale_factor = rel_scaling
@@ -487,19 +518,20 @@ class Viewer(Struct):
                 if 'norm' in vector_mode:
                     active = mlab.pipeline.extract_vector_norm(active)
                     if 'arrows' in vector_mode:
-                        a_opacity = 0.3 * opacity
+                        op = opacities['arrows_surface']
                     else:
-                        a_opacity = opacity
-                    surf = add_surf(active, position, opacity=a_opacity)
+                        op = opacities['surface']
+                    add_surf(active, position, opacity=op)
 
                 if is_3d:
                     if 'cut_plane' in vector_mode:
+                        op = opacities['vector_cut_plane']
                         for normal in [[1, 0, 0], [0, 1, 0], [0, 0, 1]]:
                             vcp = add_vector_cut_plane(active,
                                                        position, normal, bbox,
                                                        rel_scaling=rel_scaling,
                                                        clamping=clamping,
-                                                       opacity=0.5*opacity)
+                                                       opacity=op)
                             if sf is not None:
                                 vcp.glyph.glyph.scale_factor = sf
 
@@ -514,20 +546,18 @@ class Viewer(Struct):
                 is_magnitude = True
                 if is_3d:
                     if 'cut_plane' in scalar_mode:
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [1, 0, 0],
-                                                   opacity=0.5)
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [0, 1, 0],
-                                                   opacity=0.5 )
-                        scp = add_scalar_cut_plane(active,
-                                                   position, [0, 0, 1],
-                                                   opacity=0.5 )
+                        op = opacities['scalar_cut_plane']
+                        add_scalar_cut_plane(active, position, [1, 0, 0],
+                                             opacity=op)
+                        add_scalar_cut_plane(active, position, [0, 1, 0],
+                                             opacity=op)
+                        add_scalar_cut_plane(active, position, [0, 0, 1],
+                                             opacity=op)
                     if 'iso_surface' in scalar_mode:
-                        iso = add_iso_surface(active, position,
-                                              opacity=0.3*opacity)
+                        add_iso_surface(active, position,
+                                        opacity=opacities['iso_surface'])
                 else:
-                    surf = add_surf(active, position, opacity=opacity)
+                    add_surf(active, position, opacity=opacities['surface'])
 
             else:
                 raise ValueError('bad kind! (%s)' % kind)
@@ -537,9 +567,9 @@ class Viewer(Struct):
                 if (kind == 'scalars') or (kind == 'tensors'):
                     lm = mm.scalar_lut_manager
 
-                else: # kind == 'vectors': 
+                else: # kind == 'vectors':
                     lm = mm.vector_lut_manager
-                    
+
                 lm.use_default_range = False
                 lm.data_range = ranges[name]
 
@@ -547,7 +577,8 @@ class Viewer(Struct):
                 add_subdomains_surface(source, position, **subdomains_args)
 
             if is_wireframe:
-                surf = add_surf(source, position, opacity=opacity)
+                surf = add_surf(source, position,
+                                opacity=opacities['wireframe'])
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
@@ -560,18 +591,19 @@ class Viewer(Struct):
                     lm = mm.vector_lut_manager
 
                 self.scalar_bars.append((family, name, lm))
-                
+
             if rel_text_width > (10 * float_eps):
                 position[2] = 0.5 * dx[2]
                 if is_magnitude:
                     name = '|%s|' % name
-                text = add_text(active, position, name,
-                                float(rel_text_width * len(name))
-                                / float(max_label_width), color=self.fgcolor)
+                add_text(active, position, name,
+                         float(rel_text_width * len(name))
+                         / float(max_label_width), color=self.fgcolor)
 
         if not names:
             # No data, so just show the mesh.
-            surf = add_surf(source, (0.0, 0.0, 0.0), opacity=opacity)
+            surf = add_surf(source, (0.0, 0.0, 0.0),
+                            opacity=opacities['surface'])
             surf.actor.property.color = (0.8, 0.8, 0.8)
 
             if is_subdomains:
@@ -579,7 +611,8 @@ class Viewer(Struct):
                                        **subdomains_args)
 
             if is_wireframe:
-                surf = add_surf(source, (0.0, 0.0, 0.0), opacity=opacity)
+                surf = add_surf(source, (0.0, 0.0, 0.0),
+                                opacity=opacities['wireframe'])
                 surf.actor.property.representation = 'wireframe'
                 surf.actor.mapper.scalar_visibility = False
 
