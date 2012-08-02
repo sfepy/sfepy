@@ -150,10 +150,10 @@ class Approximation( Struct ):
         self.surface_data = {}
         self.edge_data = {}
         self.point_data = {}
-        self.qp_coors = {}
-        self.bf = {}
         self.n_ep = self.interp.get_n_nodes()
         self.ori = None
+
+        self.clear_qp_base()
 
     def eval_extra_coor(self, coors, mesh_coors):
         """
@@ -230,6 +230,13 @@ class Approximation( Struct ):
                 conn = nm.take(self.econn, region.cells[self.ig], axis=0)
 
         return conn
+
+    def clear_qp_base(self):
+        """
+        Remove cached quadrature points and base functions.
+        """
+        self.qp_coors = {}
+        self.bf = {}
 
     def get_qp(self, key, integral):
         """
