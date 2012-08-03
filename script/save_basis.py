@@ -7,10 +7,11 @@ import numpy as nm
 
 from sfepy.base.base import output, Struct
 from sfepy.base.ioutils import get_print_info
-from sfepy.fem import Mesh, Domain, Field, FieldVariable
+from sfepy.fem import Mesh, Domain, Field, FieldVariable, Variables
 from sfepy.fem.geometry_element import GeometryElement
 from sfepy.fem.poly_spaces import PolySpace
 from sfepy.fem.linearizer import create_output
+from sfepy.fem.fields_base import create_expression_output
 
 usage = '%prog [options]\n' + __doc__.rstrip()
 
@@ -153,7 +154,17 @@ def main():
 
             var.data_from_any(vec)
 
-            out = var.create_output(vec, linearization=lin)
+            if options.derivative == 0:
+                out = var.create_output(vec, linearization=lin)
+
+            else:
+                out = create_expression_output('ev_grad.ie.Elements(u)',
+                                               'u', 'f', {'f' : field}, None,
+                                               Variables([var]),
+                                               mode='qp', verbose=False,
+                                               min_level=lin.min_level,
+                                               max_level=lin.max_level,
+                                               eps=lin.eps)
 
             name = name_template % ip
             out['u'].mesh.write(name, out=out)
