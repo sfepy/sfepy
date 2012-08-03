@@ -8,8 +8,8 @@ from sfepy.fem.refine import refine_reference
 
 def get_eval_dofs(dofs, dof_conn, ps, ori=None):
     """
-    Get default function for evaluating field DOFs given a list of elements,
-    reference element coordinates and base functions.
+    Get default function for evaluating field DOFs given a list of elements and
+    reference element coordinates.
     """
     def _eval(iels, rx):
         edofs = dofs[dof_conn[iels]]
