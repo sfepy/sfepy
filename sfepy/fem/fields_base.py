@@ -124,6 +124,132 @@ def setup_dof_conns(conn_info, dof_conns=None,
 
     return dof_conns
 
+def get_eval_expression(expression, ig,
+                        fields, materials, variables,
+                        functions=None, mode='eval', term_mode=None,
+                        extra_args=None, verbose=True, kwargs=None):
+    """
+    Get the function for evaluating an expression given a list of elements,
+    and reference element coordinates.
+    """
+    from sfepy.fem.evaluate import eval_in_els_and_qp
+
+    def _eval(iels, coors):
+        val = eval_in_els_and_qp(expression, ig, iels, coors,
+                                 fields, materials, variables,
+                                 functions=functions, mode=mode,
+                                 term_mode=term_mode,
+                                 extra_args=extra_args, verbose=verbose,
+                                 kwargs=kwargs)
+        return val[..., 0]
+
+    return _eval
+
+def create_expression_output(expression, name, primary_field_name,
+                             fields, materials, variables,
+                             functions=None, mode='eval', term_mode=None,
+                             extra_args=None, verbose=True, kwargs=None,
+                             min_level=0, max_level=1, eps=1e-4):
+    """
+    Create output mesh and data for the expression using the adaptive
+    linearizer.
+
+    Parameters
+    ----------
+    expression : str
+        The expression to evaluate.
+    name : str
+        The name of the data.
+    primary_field_name : str
+        The name of field that defines the element groups and polynomial
+        spaces.
+    fields : dict
+        The dictionary of fields used in `variables`.
+    materials : Materials instance
+        The materials used in the expression.
+    variables : Variables instance
+        The variables used in the expression.
+    functions : Functions instance, optional
+        The user functions for materials etc.
+    mode : one of 'eval', 'el_avg', 'qp'
+        The evaluation mode - 'qp' requests the values in quadrature points,
+        'el_avg' element averages and 'eval' means integration over
+        each term region.
+    term_mode : str
+        The term call mode - some terms support different call modes
+        and depending on the call mode different values are
+        returned.
+    extra_args : dict, optional
+        Extra arguments to be passed to terms in the expression.
+    verbose : bool
+        If False, reduce verbosity.
+    kwargs : dict, optional
+        The variables (dictionary of (variable name) : (Variable
+        instance)) to be used in the expression.
+    min_level : int
+        The minimum required level of mesh refinement.
+    max_level : int
+        The maximum level of mesh refinement.
+    eps : float
+        The relative tolerance parameter of mesh adaptivity.
+
+    Returns
+    -------
+    out : dict
+        The output dictionary.
+    """
+    field = fields[primary_field_name]
+    vertex_coors = field.coors[:field.n_vertex_dof, :]
+
+    coors = []
+    vdofs = []
+    conns = []
+    mat_ids = []
+    levels = []
+    offset = 0
+    for ig, ap in field.aps.iteritems():
+        ps = ap.interp.poly_spaces['v']
+        gps = ap.interp.gel.interp.poly_spaces['v']
+        group = field.domain.groups[ig]
+        vertex_conn = ap.econn[:, :group.shape.n_ep]
+
+        eval_dofs = get_eval_expression(expression, ig,
+                                        fields, materials, variables,
+                                        functions=functions,
+                                        mode=mode, extra_args=extra_args,
+                                        verbose=verbose, kwargs=kwargs)
+        eval_coors = get_eval_coors(vertex_coors, vertex_conn, gps)
+
+        (level, _coors, conn,
+         _vdofs, _mat_ids) = create_output(eval_dofs, eval_coors,
+                                           group.shape.n_el, ps,
+                                           min_level=min_level,
+                                           max_level=max_level, eps=eps)
+
+        _mat_ids[:] = field.domain.mesh.mat_ids[ig][0]
+
+        coors.append(_coors)
+        vdofs.append(_vdofs)
+        conns.append(conn + offset)
+        mat_ids.append(_mat_ids)
+        levels.append(level)
+
+        offset += _coors.shape[0]
+
+    coors = nm.concatenate(coors, axis=0)
+    vdofs = nm.concatenate(vdofs, axis=0)
+    mesh = Mesh.from_data('linearized_mesh', coors, None, conns, mat_ids,
+                          field.domain.mesh.descs)
+
+    out = {}
+    out[name] = Struct(name='output_data', mode='vertex',
+                       data=vdofs, var_name=name, dofs=None,
+                       mesh=mesh, levels=levels)
+
+    out = convert_complex_output(out)
+
+    return out
+
 class Field(Struct):
     """
     Base class for finite element fields.

@@ -1,8 +1,10 @@
 from copy import copy
 
+import numpy as nm
+
 from sfepy.base.base import output, get_default, OneTypeList, Struct,\
      get_default_attr, basestr
-from sfepy.fem import Equations, Variables, Region
+from sfepy.fem import Equations, Variables, Region, Integral, Integrals
 from sfepy.fem.fields_base import setup_dof_conns, setup_extra_data
 
 ##
@@ -292,6 +294,75 @@ def eval_equations(equations, variables, preserve_caches=False,
             out = op_lcbc.T * out * op_lcbc
             out = out.tocsr()
             out.sort_indices()
+
+    return out
+
+def eval_in_els_and_qp(expression, ig, iels, coors,
+                       fields, materials, variables,
+                       functions=None, mode='eval', term_mode=None,
+                       extra_args=None, verbose=True, kwargs=None):
+    """
+    Evaluate an expression in given elements and points.
+
+    Parameters
+    ----------
+    expression : str
+        The expression to evaluate.
+    fields : dict
+        The dictionary of fields used in `variables`.
+    materials : Materials instance
+        The materials used in the expression.
+    variables : Variables instance
+        The variables used in the expression.
+    functions : Functions instance, optional
+        The user functions for materials etc.
+    mode : one of 'eval', 'el_avg', 'qp'
+        The evaluation mode - 'qp' requests the values in quadrature points,
+        'el_avg' element averages and 'eval' means integration over
+        each term region.
+    term_mode : str
+        The term call mode - some terms support different call modes
+        and depending on the call mode different values are
+        returned.
+    extra_args : dict, optional
+        Extra arguments to be passed to terms in the expression.
+    verbose : bool
+        If False, reduce verbosity.
+    kwargs : dict, optional
+        The variables (dictionary of (variable name) : (Variable
+        instance)) to be used in the expression.
+
+    Returns
+    -------
+    out : array
+        The result of the evaluation.
+    """
+    weights = nm.ones_like(coors[:, 0])
+    integral = Integral('ie', coors=coors, weights=weights)
+
+    domain = fields.values()[0].domain
+
+    region = Region('Elements', 'given elements', domain, '')
+    region.set_cells({ig : iels})
+    region.complete_description(domain.ed, domain.fa)
+    domain.regions.append(region)
+
+    for field in fields.itervalues():
+        field.clear_mappings(clear_all=True)
+        for ap in field.aps.itervalues():
+            ap.clear_qp_base()
+
+    aux = create_evaluable(expression, fields, materials,
+                           variables.itervalues(), Integrals([integral]),
+                           functions=functions,
+                           mode=mode, extra_args=extra_args, verbose=verbose,
+                           kwargs=kwargs)
+    equations, variables = aux
+
+    out = eval_equations(equations, variables,
+                         preserve_caches=False,
+                         mode=mode, term_mode=term_mode)
+    domain.regions.pop()
 
     return out
 
