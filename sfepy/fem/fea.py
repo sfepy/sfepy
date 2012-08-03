@@ -261,7 +261,7 @@ class Approximation( Struct ):
 
         return self.qp_coors[qpkey]
 
-    def get_base(self, key, derivative, integral,
+    def get_base(self, key, derivative, integral, iels=None,
                  from_geometry=False, base_only=True):
         qp = self.get_qp(key, integral)
 
@@ -278,8 +278,13 @@ class Approximation( Struct ):
             bf_key = (integral.name, key, derivative)
 
         if not self.bf.has_key(bf_key):
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative,
-                                           ori=self.ori)
+            if (iels is not None) and (self.ori is not None):
+                ori = self.ori[iels]
+
+            else:
+                ori = self.ori
+
+            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori)
 
         if base_only:
             return self.bf[bf_key]
@@ -312,11 +317,13 @@ class Approximation( Struct ):
 
             qp = self.get_qp('v', integral)
 
+            iels = region.cells[self.ig]
+
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
-            bf = self.get_base('v', 0, integral)
+            bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(group.conn, region.cells[self.ig], axis=0)
+            conn = nm.take(group.conn, iels, axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
             vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
                                      ori=self.ori)
@@ -366,8 +373,11 @@ class Approximation( Struct ):
             out.qp = qp
             out.ps = ps
             # Update base.
-            out.bf[:] = bf
+            try:
+                out.bf[:] = bf
 
+            except:
+                from debug import debug; debug()
         if return_mapping:
             out = (out, mapping)
 
