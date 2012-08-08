@@ -231,6 +231,31 @@ class Approximation( Struct ):
 
         return conn
 
+    def get_poly_space(self, key, from_geometry=False):
+        """
+        Get the polynomial space.
+
+        Parameters
+        ----------
+        key : 'v' or 's?'
+            The key denoting volume or surface.
+        from_geometry : bool
+            If True, return the polynomial space for affine geometrical
+            interpolation.
+
+        Returns
+        -------
+        ps : PolySpace instance
+            The polynomial space.
+        """
+        if from_geometry:
+            ps = self.interp.get_geom_poly_space(key)
+
+        else:
+            ps = self.interp.poly_spaces[key]
+
+        return ps
+
     def clear_qp_base(self):
         """
         Remove cached quadrature points and base functions.
@@ -265,17 +290,10 @@ class Approximation( Struct ):
                  from_geometry=False, base_only=True):
         qp = self.get_qp(key, integral)
 
-        if from_geometry:
-            if key == 'v':
-                gkey = key
-            else:
-                gkey = 's%d' % self.interp.gel.surface_facet.n_vertex
-            ps = self.interp.gel.interp.poly_spaces[gkey]
-            bf_key = (integral.name, 'g' + key, derivative)
+        ps = self.get_poly_space(key, from_geometry=from_geometry)
 
-        else:
-            ps = self.interp.poly_spaces[key]
-            bf_key = (integral.name, key, derivative)
+        _key = key if not from_geometry else 'g' + key
+        bf_key = (integral.name, _key, derivative)
 
         if not self.bf.has_key(bf_key):
             if (iels is not None) and (self.ori is not None):
