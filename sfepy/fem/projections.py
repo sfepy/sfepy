@@ -84,3 +84,48 @@ def make_l2_projection_data(target, eval_data):
 
     if nls_status.condition != 0:
         output('L2 projection: solver did not converge!')
+
+def make_h1_projection_data(target, eval_data):
+    """
+    Project scalar data given by a material-like `eval_data()` function to a
+    scalar `target` field variable using the :math:`H^1` dot product.
+    """
+    order = target.field.approx_order * 2
+    integral = Integral('i', order=order)
+
+    un = target.name
+    v = FieldVariable('v', 'test', target.field, 1, primary_var_name=un)
+    lhs1 = Term.new('dw_volume_dot(v, %s)' % un, integral,
+                    target.field.region, v=v, **{un : target})
+    lhs2 = Term.new('dw_laplace(v, %s)' % un, integral,
+                    target.field.region, v=v, **{un : target})
+
+    def _eval_data(ts, coors, mode, **kwargs):
+        if mode == 'qp':
+            val = eval_data(ts, coors, mode, 'val', **kwargs)
+            gval = eval_data(ts, coors, mode, 'grad', **kwargs)
+            return {'val' : val, 'gval' : gval}
+
+    m = Material('m', function=_eval_data)
+    rhs1 = Term.new('dw_volume_lvf(m.val, v)', integral, target.field.region,
+                    m=m, v=v)
+    rhs2 = Term.new('dw_diffusion_r(m.gval, v)', integral, target.field.region,
+                    m=m, v=v)
+
+    eq = Equation('projection', lhs1 + lhs2 - rhs1 - rhs2)
+    eqs = Equations([eq])
+
+    ls = ScipyDirect({})
+
+    nls_status = IndexedStruct()
+    nls = Newton({}, lin_solver=ls, status=nls_status)
+
+    pb = ProblemDefinition('aux', equations=eqs, nls=nls, ls=ls)
+
+    pb.time_update()
+
+    # This sets the target variable with the projection solution.
+    pb.solve()
+
+    if nls_status.condition != 0:
+        output('H1 projection: solver did not converge!')
