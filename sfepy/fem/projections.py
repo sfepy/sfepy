@@ -35,8 +35,8 @@ def create_mass_matrix(field):
 
 def make_l2_projection(target, source):
     """
-    Project `source` field variable to `target` field variable using
-    :math:`L^2` dot product.
+    Project a scalar `source` field variable to a scalar `target` field
+    variable using the :math:`L^2` dot product.
     """
     def eval_variable(ts, coors, mode, **kwargs):
         val = source.evaluate_at(coors)
@@ -47,8 +47,8 @@ def make_l2_projection(target, source):
 
 def make_l2_projection_data(target, eval_data):
     """
-    Project data given by a material-like `eval_data()` function to `target`
-    field variable using :math:`L^2` dot product.
+    Project scalar data given by a material-like `eval_data()` function to a
+    scalar `target` field variable using the :math:`L^2` dot product.
     """
     order = target.field.approx_order * 2
     integral = Integral('i', order=order)
