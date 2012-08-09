@@ -12,6 +12,71 @@ import numpy as nm
 
 from sfepy.base.base import assert_, Struct
 
+def _get_grid_1_2(n_nod):
+    return nm.linspace(0.0, 1.0, n_nod)
+
+def _get_grid_2_3(n_nod):
+    from sfepy.mechanics.tensors import sym2dim
+
+    n1d = sym2dim(n_nod)
+
+    ii = nm.linspace(0.0, 1.0, n1d)
+
+    coors = []
+    for iy in xrange(n1d):
+        for ix in xrange(n1d - iy):
+            coors.append([ii[ix], ii[iy]])
+
+    coors = nm.array(coors, dtype=nm.float64)
+
+    return coors
+
+def _get_grid_2_4(n_nod):
+    n1d = int(nm.round(nm.sqrt(n_nod)))
+    assert_((n1d**2) == n_nod)
+
+    ii = nm.linspace(0.0, 1.0, n1d)
+
+    ix, iy = nm.mgrid[:n1d, :n1d]
+    coors = nm.c_[ii[ix].flat, ii[iy].flat]
+
+    return nm.ascontiguousarray(coors)
+
+def _get_grid_3_4(n_nod):
+    sqrt = nm.sqrt
+    pow = nm.power
+    root = (-(-1.0/2.0 + sqrt(3)*1j/2)
+            *pow(-3*n_nod + sqrt(9*pow(n_nod, 2) - 1.0/27.0) + 0j, 1.0/3.0)
+            - 2 - 1/(3*(-1.0/2.0 + sqrt(3)*1j/2)
+                     *pow(-3*n_nod + sqrt(9*pow(n_nod, 2) - 1.0/27.0)+0j,
+                          1.0/3.0)))
+
+    n1d = int(nm.round(root.real)) + 1
+    assert_(((n1d + 2) * (n1d + 1) * (n1d + 0) / 6.) == n_nod)
+
+    ii = nm.linspace(0.0, 1.0, n1d)
+
+    coors = []
+    for iz in xrange(n1d):
+        for iy in xrange(n1d - iz):
+            for ix in xrange(n1d - iy - iz):
+                coors.append([ii[ix], ii[iy], ii[iz]])
+
+    coors = nm.array(coors, dtype=nm.float64)
+
+    return coors
+
+def _get_grid_3_8(n_nod):
+    n1d = int(nm.round(n_nod**(1.0 / 3.0)))
+    assert_((n1d**3) == n_nod)
+
+    ii = nm.linspace(0.0, 1.0, n1d)
+
+    ix, iy, iz = nm.mgrid[:n1d, :n1d, :n1d]
+    coors = nm.c_[ii[ix].flat, ii[iy].flat, ii[iz].flat]
+
+    return nm.ascontiguousarray(coors)
+
 geometry_data = {
     '1_2' : Struct(coors = [[0.0],
                             [1.0]],
@@ -20,6 +85,7 @@ geometry_data = {
                    edges = None,
                    volume = 1.0,
                    orientation = None,
+                   get_grid = _get_grid_1_2,
                    surface_facet_name = None),
 
     '2_3' : Struct(coors = [[0.0, 0.0],
@@ -32,6 +98,7 @@ geometry_data = {
                             [2, 0]],
                    volume = 0.5,
                    orientation = (0, (1, 2), 1, 2),
+                   get_grid = _get_grid_2_3,
                    surface_facet_name = '1_2'),
 
     '2_4' : Struct(coors = [[0.0, 0.0],
@@ -47,6 +114,7 @@ geometry_data = {
                    volume = 1.0,
                    # Not finished...
                    orientation = (0, (1, 3), (0, 1), (3, 2)),
+                   get_grid = _get_grid_2_4,
                    surface_facet_name = '1_2'),
 
     '3_4' : Struct(coors = [[0.0, 0.0, 0.0],
@@ -66,6 +134,7 @@ geometry_data = {
                             [2, 3]],
                    volume = 1.0 / 6.0,
                    orientation = (0, (1, 2, 3), 0, 3),
+                   get_grid = _get_grid_3_4,
                    surface_facet_name = '2_3'),
 
     '3_8' : Struct(coors = [[0.0, 0.0, 0.0],
@@ -98,6 +167,7 @@ geometry_data = {
                    volume = 1.0,
                    # Not finished...
                    orientation = (0, (1, 3, 4), (0, 1, 2, 3), (4, 5, 6, 7) ),
+                   get_grid = _get_grid_3_8,
                    surface_facet_name = '2_4'),
 }
 
@@ -248,6 +318,15 @@ class GeometryElement(Struct):
             perms = nm.array(_perms3d[self.name], dtype=nm.int32)
 
         return perms
+
+    def get_grid(self, n_nod):
+        """
+        Get a grid of `n_nod` interpolation points, including the geometry
+        element vertices. The number of points must correspond to a valid
+        number of FE nodes for each geometry.
+        """
+        gd = geometry_data[self.name]
+        return gd.get_grid(n_nod)
 
     def create_surface_facet(self):
         """
