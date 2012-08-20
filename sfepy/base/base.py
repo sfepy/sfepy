@@ -11,6 +11,8 @@ complex_types = [nm.complex128]
 
 nm.set_printoptions( threshold = 100 )
 
+from sfepy.base.goptions import goptions
+
 sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
@@ -725,7 +727,7 @@ class Output(Struct):
         verbose : bool (in **argv)
             No output if False.
         """
-        verbose = argv.get('verbose', True)
+        verbose = argv.get('verbose', goptions['verbose'])
         if verbose:
             self.output_function(*argc, **argv)
 
