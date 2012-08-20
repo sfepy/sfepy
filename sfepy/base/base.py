@@ -745,7 +745,7 @@ class Output(Struct):
 
         Parameters
         ----------
-        filename : str
+        filename : str or file object
             Print messages into the specified file.
         quiet : bool
             Do not print anything to screen.
@@ -755,6 +755,10 @@ class Output(Struct):
             Append to an existing file instead of overwriting it. Use with
             `filename`.
         """
+        if not isinstance(filename, basestr):
+            # filename is a file descriptor.
+            append = True
+
         self.level = 0
         def output_none(*argc, **argv):
             pass
@@ -771,6 +775,21 @@ class Output(Struct):
             if msg.endswith('...'):
                 self.level += 1
 
+        def print_to_file(filename, msg):
+            if isinstance(filename, basestr):
+                fd = open(filename, 'a')
+
+            else:
+                fd = filename
+
+            print >>fd, self._prefix + ('  ' * self.level) + msg
+
+            if isinstance(filename, basestr):
+                fd.close()
+
+            else:
+                fd.flush()
+
         def output_file(*argc, **argv):
             format = '%s' + ' %s' * (len(argc) - 1)
             msg =  format % argc
@@ -778,9 +797,7 @@ class Output(Struct):
             if msg.startswith('...'):
                 self.level -= 1
 
-            fd = open(filename, 'a')
-            print >>fd, self._prefix + ('  ' * self.level) + msg
-            fd.close()
+            print_to_file(filename, msg)
 
             if msg.endswith('...'):
                 self.level += 1
@@ -794,20 +811,22 @@ class Output(Struct):
 
             print self._prefix + ('  ' * self.level) + msg
 
-            fd = open(filename, 'a')
-            print >>fd, self._prefix + ('  ' * self.level) + msg
-            fd.close()
+            print_to_file(filename, msg)
 
             if msg.endswith('...'):
                 self.level += 1
 
         def reset_file(filename):
-            output_dir = os.path.dirname(filename)
-            if output_dir and not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            if isinstance(filename, basestr):
+                output_dir = os.path.dirname(filename)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
 
-            fd = open( filename, 'w' )
-            fd.close()
+                fd = open( filename, 'w' )
+                fd.close()
+
+            else:
+                raise ValueError('cannot reset a file object!')
 
         if quiet is True:
             if filename is not None:
