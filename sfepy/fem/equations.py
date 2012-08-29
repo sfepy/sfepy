@@ -714,7 +714,7 @@ class Equation( Struct ):
 
             out = val
 
-        elif mode in ('el_avg', 'qp'):
+        elif mode in ('el_avg', 'el', 'qp'):
 
             vals = []
             for term in self.terms:

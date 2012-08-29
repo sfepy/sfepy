@@ -1414,7 +1414,7 @@ class Term(Struct):
 
             val *= self.sign
 
-        elif mode in ('el_avg', 'qp'):
+        elif mode in ('el_avg', 'el', 'qp'):
             vals = None
             iels = nm.empty((0, 2), dtype=nm.int32)
             status = 0
