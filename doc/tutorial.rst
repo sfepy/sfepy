@@ -148,15 +148,6 @@ That is why Dirichlet conditions in FEM terminology are called
 **Essential Boundary Conditions**. These conditions are not a part of the weak
 form and they are used as they are.
 
-Practically in numerical implementation of FEM Dirichlet boundary
-conditions are used as following:
-
-#. First, the system of linear equations are assembled using
-   all terms in weak form.
-
-#. Next, the known Dirichlet values are used to substitute the corresponding
-   row/column in the system of linear equations.
-
 Neumann Boundary Conditions
 """""""""""""""""""""""""""
 
