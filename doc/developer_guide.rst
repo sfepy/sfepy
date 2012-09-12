@@ -799,7 +799,6 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/mappings
    src/sfepy/fem/materials
    src/sfepy/fem/mesh
-   src/sfepy/fem/mesh_generators
    src/sfepy/fem/meshio
    src/sfepy/fem/parseEq
    src/sfepy/fem/parseReg
@@ -829,8 +828,10 @@ sfepy.mesh package
 
    src/sfepy/mesh/femlab
    src/sfepy/mesh/geom_tools
+   src/sfepy/mesh/mesh_generators
    src/sfepy/mesh/mesh_tools
    src/sfepy/mesh/meshutils
+   src/sfepy/mesh/splinebox
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
