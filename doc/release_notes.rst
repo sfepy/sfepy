@@ -1,5 +1,123 @@
 # created: 20.07.2007 (-1)
 
+.. _2012.2-2012.3:
+
+from 2012.2 to 2012.3
+=====================
+
+- terms:
+
+  - fix BulkPressureULTerm and CompressibilityULTerm
+  - move TLMembraneTerm.describe_membrane_geometry() into new
+    describe_geometry()
+  - fix TLMembraneTerm.eval_function() for updated transform_data()
+  - new FibresActiveTLTerm.get_eval_shape()
+  - update VolumeTLTerm.get_fargs() for 'el_avg' mode
+  - fix term evaluation to clear properly the C error flag
+  - new Term.call_get_fargs(), .call_function()
+  - update Term.eval_real(), .eval_complex(), .evaluate()
+  - new SurfaceNormalDotTerm (dw_surface_ndot)
+  - new ScalarDotGradIScalarTerm (dw_s_dot_grad_i_s)
+  - update DotProductSurfaceTerm: allow (vector * normal * scalar) product
+  - new shape sensitivity terms: SDLinearElasticTerm (d_sd_lin_elastic),
+    SDSufaceNormalDotTerm (d_sd_surface_ndot)
+  - support 'el' mode in term evaluation:
+
+    - update SurfaceFluxTerm for 'el' mode, update docstring
+
+  - fix checking of term - integral compatibility
+
+- merge pull request #186 from vlukes/meshtiler:
+
+  - new tiled_mesh() function
+  - move mesh generating functions to sfepy/mesh/mesh_generators.py
+  - update genPerMesh.py
+  - update scripts cylindergen.py and blockgen.py
+
+- visualization:
+
+  - postproc.py: allow finer control of opacity (closes Issue 194)
+  - fix _get_scalars() for vectors
+
+- base:
+
+  - move try_imports() into sfepy.base.base, fix error printing, add docstring
+  - update invert_dict() - add unique argument, add docstring
+  - fix find_subclasses() for no name attribute case
+  - add name_attr argument to find_subclasses(), load_classes()
+  - update Output to accept a file descriptor instead of a file name
+  - update Output for global options, new test_verbose_output()
+  - support global options (closes Issue 190) - new sfepy/base/goptions.py:
+    - new ValidatedDict class, goptions instance
+    - default_goptions with 'verbose' option
+
+- homogenization:
+
+  - fix 'return_all' option in HomogenizationApp
+  - fix CoefSymSym
+
+- fem:
+
+  - new get_ref_coors(), update Field.evaluate_at()
+  - new make_l2_projection_data(), update make_l2_projection()
+  - support 'space' and 'poly_space_base' items in transform_fields()
+  - fix Region.delete_groups() - update also all_vertices etc.
+  - remove unused qp_indx field in PhysicalQPs
+  - fix stiffness_from_lame_mixed()
+  - material parameters can be defined per region using region names:
+
+    - update linear homogenization examples using new material definition
+    - fix Material.__init__() for special and keyword values
+
+  - new SplineBox geometry parametrization
+  - update extend_cell_data() for surface regions
+  - allow different base function values per element:
+
+    - add base function attribute (bf) to VolumeGeometry, SurfaceGeometry
+    - make bf of CVolumeMapping, CSurfaceMapping point to the above bf
+    - add flag argument to {CVolumeMapping, CSurfaceMapping}.__cinit__()
+    - update Approximation.describe_geometry()
+    - new FMF_SetCellX1() macro
+    - update terms for base functions per element
+
+  - define integrals by order instead of quadrature name:
+
+    - update transform_integrals(), Integrals.from_conf(), Integral.__init__()
+    - update tests and examples for new integral definition
+
+- input-output:
+
+  - boundary condition id in Nastran format is used as the node group
+  - update MeditMeshIO.read() to skip unsupported entities
+
+- solvers:
+
+  - update imports in PysparseEigenvalueSolver.__call__() for new Pysparse
+  - update ScipyIterative solver to allow preconditioning
+  - check solver consistency in ProblemDefinition.set_solvers_instances()
+  - fix preconditioner arguments for qmr method in ScipyIterative
+  - update ScipyIterative solver for iteration callback
+  - new standard_call() decorator for linear solvers, checks also data shapes
+  - update docstring of Newton (configuration options, small fixes)
+  - update docstring of Solver (common solver configuration options)
+
+- misc:
+
+  - fix unique_rows() for non-contiguous arrays, add arguments of numpy.unique()
+
+- examples and tests:
+
+  - update ULF hyperelastic examples, change error tolerance, number of
+    iterations
+  - update hyperelastic tests: test |TL - UL| and |UL - UL_mixed|
+
+- docs:
+
+  - update for new integral definition
+  - include special methods of nonlinear solvers
+  - update User's Guide (Problem description file/Materials)
+  - add notes on solving PDEs by FEM in the tutorial part of the documentation
+
 .. _2012.1-2012.2:
 
 from 2012.1 to 2012.2
