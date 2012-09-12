@@ -1,6 +1,11 @@
 News
 ====
 
+* **12.09.2012** Version 2012.3 released (several new terms, material
+  parameters can be defined per region using region names, base function values
+  can be defined per element, support for global options, etc.), see
+  :ref:`release notes <2012.2-2012.3>`.
+
 * **29.05.2012** Version 2012.2 released (reimplement acoustic band gaps code
   using the homogenization engine, high order quadrature rules, unify dot
   product and mass terms, lots of other term updates/fixes, update the PDE
@@ -23,12 +28,5 @@ News
   developer guide, Primer tutorial - a step-by-step walk-through of the
   process to solve a simple mechanics problem, etc.), see
   :ref:`release notes <2011.2-2011.3>`.
-
-* **31.05.2011** Version 2011.2 released (experimental implementation of
-  terms aiming at easier usage and definition of new terms,
-  Mooney-Rivlin membrane term, update build system to use exclusively
-  setup.py, allow switching boundary conditions on/off depending on
-  time, support for variable time step solvers, etc.), see
-  :ref:`release notes <2011.1-2011.2>`.
 
 For historians: see :ref:`archived_news`.
