@@ -190,7 +190,7 @@ class ProblemDefinition( Struct ):
             if options is not None:
                 hook = options.get(hook_name, None)
                 if hook is not None:
-                    hook = getattr(self.conf.funmod, hook)
+                    hook = self.conf.get_function(hook)
                     setattr(self, hook_name, hook)
 
         iter_hook = self.nls_iter_hook

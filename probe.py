@@ -94,11 +94,11 @@ def generate_probes(filename_input, filename_results, options,
                                               init_solvers=False)
 
     if probes is None:
-        gen_probes = getattr(conf.funmod, conf.options.gen_probes)
+        gen_probes = conf.get_function(conf.options.gen_probes)
         probes, labels = gen_probes(problem)
 
     if probe_hooks is None:
-        probe_hooks = {None : getattr(conf.funmod, conf.options.probe_hook)}
+        probe_hooks = {None : conf.get_function(conf.options.probe_hook)}
 
     if options.output_filename_trunk is None:
             options.output_filename_trunk = problem.ofn_trunk

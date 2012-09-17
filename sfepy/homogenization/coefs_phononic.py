@@ -723,7 +723,7 @@ class Eigenmomenta(MiniAppBase):
             progress_bar = None
 
         if opts.transform is not None:
-            fun = getattr(problem.conf.funmod, opts.transform[0])
+            fun = problem.conf.get_function(opts.transform[0])
             def wrap_transform(vec, shape):
                 return fun(vec, shape, *opts.eig_vector_transform[1:])
 

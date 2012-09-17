@@ -508,7 +508,7 @@ def recover_micro_hook( micro_filename, region, macro,
                                       'recovery_hook', None )
 
     if recovery_hook is not None:
-        recovery_hook = getattr( pb.conf.funmod, recovery_hook )
+        recovery_hook = pb.conf.get_function(recovery_hook)
 
         aux = max(pb.domain.shape.n_gr, 2)
         format = get_print_info( aux, fill = '0' )[1] \

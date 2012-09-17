@@ -30,9 +30,9 @@ def try_set_defaults(obj, attr, defaults, recur=False):
 
     return values
 
-def transform_plot_data(datas, plot_transform, funmod):
+def transform_plot_data(datas, plot_transform, conf):
     if plot_transform is not None:
-        fun = getattr(funmod, plot_transform[0])
+        fun = conf.get_function(plot_transform[0])
 
     dmin, dmax = 1e+10, -1e+10
     tdatas = []
@@ -474,7 +474,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             plot_range, teigs = transform_plot_data(bg.logs.eigs,
                                                     opts.plot_transform,
-                                                    self.conf.funmod)
+                                                    self.conf)
             fig = plot_gaps(ii, plot_rsc, bg.gaps, bg.kinds,
                             bg.freq_range_margins, plot_range,
                             clear=True)
@@ -511,7 +511,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             aux = transform_plot_data(pas,
                                       opts.plot_transform_angle,
-                                      self.conf.funmod)
+                                      self.conf)
             plot_range, pas = aux
 
 
@@ -535,7 +535,7 @@ class AcousticBandGapsApp(HomogenizationApp):
 
             aux = transform_plot_data(bg.logs.eigs,
                                       opts.plot_transform_wave,
-                                      self.conf.funmod)
+                                      self.conf)
             plot_range, teigs = aux
 
             plot_labels =  opts.plot_labels_wave
