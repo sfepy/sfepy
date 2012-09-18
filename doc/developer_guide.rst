@@ -738,6 +738,50 @@ in `doc/dev/gitwash/index.rst`, as it is already here.
 Module Index
 ------------
 
+Main scripts
+^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 2
+
+   src/extractor
+   src/homogen
+   src/phonon
+   src/postproc
+   src/probe
+   src/runTests
+   src/schroedinger
+   src/shaper
+   src/simple
+
+Utility scripts
+^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/findSurf
+   src/genPerMesh
+   src/plotPerfusionCoefs
+   src/test_install
+
+   src/script/blockgen
+   src/script/config
+   src/script/convert_mesh
+   src/script/convert
+   src/script/cylindergen
+   src/script/edit_identifiers
+   src/script/edit_neu
+   src/script/evalForms
+   src/script/eval_tl_forms
+   src/script/gen_gallery
+   src/script/gen_lobatto_pyx
+   src/script/gen_term_table
+   src/script/make_spkg
+   src/script/plot_condition_numbers
+   src/script/save_basis
+   src/script/show_authors
+   src/script/spymatrix
+
 sfepy package
 ^^^^^^^^^^^^^
 .. toctree::
