@@ -47,18 +47,9 @@ class Probe(Struct):
         shift coordinates of such vertices so that they never match in the
         nearest node search.
         """
-        Struct.__init__(self, name=name, mesh=mesh, n_point=n_point, **kwargs)
+        Struct.__init__(self, name=name, mesh=mesh, **kwargs)
 
-        if self.n_point is None:
-            self.n_point = -10
-
-        if self.n_point <= 0:
-            self.n_point = max(-self.n_point, 2)
-            self.n_point_required = -1
-
-        else:
-            self.n_point = max(self.n_point, 2)
-            self.n_point_required = self.n_point
+        self.set_n_point(n_point)
 
         self.is_refined = False
 
@@ -96,6 +87,31 @@ class Probe(Struct):
             self.cache.kdtree = KDTree(mesh.coors)
 
         output('kdtree: %f s' % (time.clock()-tt))
+
+    def set_n_point(self, n_point):
+        """
+        Set the number of probe points.
+
+        Parameters
+        ----------
+        n_point : int
+           The (fixed) number of probe points, when positive. When non-positive,
+           the number of points is adaptively increased starting from -n_point,
+           until the neighboring point distance is less than the diameter of the
+           elements enclosing the points. When None, it is set to -10.
+        """
+        if n_point is None:
+            n_point = -10
+
+        if n_point <= 0:
+            n_point = max(-n_point, 2)
+            self.n_point_required = -1
+
+        else:
+            n_point = max(n_point, 2)
+            self.n_point_required = n_point
+
+        self.n_point = n_point
 
     def report(self):
         """Report the probe parameters."""
