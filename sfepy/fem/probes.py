@@ -50,6 +50,7 @@ class Probe(Struct):
         Struct.__init__(self, name=name, mesh=mesh, **kwargs)
 
         self.set_n_point(n_point)
+        self.options = Struct(close_limit=0.1)
 
         self.is_refined = False
 
@@ -113,6 +114,18 @@ class Probe(Struct):
 
         self.n_point = n_point
 
+    def set_options(self, close_limit=0.1):
+        """
+        Set the probe options.
+
+        Parameters
+        ----------
+        close_limit : float
+            The maximum limit distance of a point from the closest
+            element allowed for extrapolation.
+        """
+        self.options.close_limit = close_limit
+
     def report(self):
         """Report the probe parameters."""
         out = [self.__class__.__name__]
@@ -147,14 +160,15 @@ class Probe(Struct):
             The variable to be sampled along the probe.
         """
         refine_flag = None
+        ev = variable.evaluate_at
+
         while True:
             pars, points = self.get_points(refine_flag)
 
-            vals, cells, status = variable.evaluate_at(points,
-                                                       strategy='kdtree',
-                                                       cache=self.cache,
-                                                       ret_status=True)
-            ii = nm.where(status > 0)[0]
+            vals, cells, status = ev(points, strategy='kdtree',
+                                     close_limit=self.options.close_limit,
+                                     cache=self.cache, ret_status=True)
+            ii = nm.where(status > 1)[0]
             vals[ii] = nm.nan
 
             if self.is_refined:
