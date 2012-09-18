@@ -37,6 +37,12 @@ Postprocessing options
 ----------------------
 --postprocess, --radial, --only-names
 
+Notes
+-----
+For extremely thin hexahedral elements the Newton's iteration for finding the
+reference element coordinates might converge to a spurious solution outside
+of the element. To obtain some values even in this case, try increasing the
+--close-limit option value.
 """
 
 help = {
@@ -54,6 +60,9 @@ help = {
     'probe only named data',
     'step' :
     'probe the given time step',
+    'close_limit' :
+    'maximum limit distance of a point from the closest element allowed'
+    ' for extrapolation. [default: %default]',
     'postprocess' :
     'postprocessing mode',
     'radial' :
@@ -114,6 +123,8 @@ def generate_probes(filename_input, filename_results, options,
     edit_pname = re.compile('[^a-zA-Z0-9-_.\[\]]').sub
     for ip, probe in enumerate(probes):
         output(ip, probe.name)
+
+        probe.set_options(close_limit=options.close_limit)
 
         for key, probe_hook in probe_hooks.iteritems():
 
@@ -268,6 +279,9 @@ def main():
     parser.add_option("-s", "--step", type='int', metavar='step',
                       action="store", dest="step",
                       default=0, help=help['step'])
+    parser.add_option("-c", "--close-limit", type='float', metavar='distance',
+                      action="store", dest="close_limit",
+                      default=0.1, help=help['close_limit'])
     parser.add_option("-p", "--postprocess",
                       action="store_true", dest="postprocess",
                       default=False, help=help['postprocess'])
