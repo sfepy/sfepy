@@ -60,6 +60,37 @@ def remove_files(root_dir):
 def get_trunk(filename):
     return op.splitext(op.basename(filename))[0]
 
+def edit_filename(filename, prefix='', suffix='', new_ext=None):
+    """
+    Edit a file name by add a prefix, inserting a suffix in front of a file
+    name extension or replacing the extension.
+
+    Parameters
+    ----------
+    filename : str
+        The file name.
+    prefix : str
+        The prefix to be added.
+    suffix : str
+        The suffix to be inserted.
+    new_ext : str, optional
+        If not None, it replaces the original file name extension.
+
+    Returns
+    -------
+    new_filename : str
+        The new file name.
+    """
+    base, ext = os.path.splitext(filename)
+
+    if new_ext is None:
+        new_filename = base + suffix + ext
+
+    else:
+        new_filename = base + suffix + new_ext
+
+    return new_filename
+
 def get_print_info(n_step, fill=None):
     """
     Returns the max. number of digits in range(n_step) and the corresponding
