@@ -272,14 +272,14 @@ def postprocess(filename_input, filename_results, options):
 def main():
     parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
     parser.add_option('-o', '', metavar='filename',
-                       action='store', dest='output_filename_trunk',
-                       default=None, help=help['filename'])
+                      action='store', dest='output_filename_trunk',
+                      default=None, help=help['filename'])
     parser.add_option('', '--auto-dir',
-                       action='store_true', dest='auto_dir',
-                       default=False, help=help['auto_dir'])
+                      action='store_true', dest='auto_dir',
+                      default=False, help=help['auto_dir'])
     parser.add_option('', '--same-dir',
-                       action='store_true', dest='same_dir',
-                       default=False, help=help['same_dir'])
+                      action='store_true', dest='same_dir',
+                      default=False, help=help['same_dir'])
     parser.add_option('-f', '--format', metavar='format',
                       action='store', dest='output_format',
                       default='png', help=help['output_format'])
