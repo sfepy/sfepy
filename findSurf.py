@@ -13,13 +13,13 @@ With '-m' option, a mesh of the surface is created and saved in
 Try ./find_surf.py --help to see more options.
 """
 import sys
-import os.path as op
 from optparse import OptionParser
 
 import numpy as nm
 import scipy.sparse as sp
 
 import sfepy
+from sfepy.base.ioutils import edit_filename
 from sfepy.fem import Mesh, Domain
 from sfepy.fem.extmods.mesh import create_mesh_graph, graph_components
 
@@ -93,8 +93,8 @@ def main():
         surf_mesh = Mesh.from_surface( surf_faces, mesh )
 
         if options.save_mesh:
-            base, ext = op.splitext( op.basename( filename_in ) )
-            surf_mesh.write( "surf_" + base + '.mesh', io = 'auto' )
+            aux = edit_filename(filename_in, prefix='surf_', new_ext='.mesh')
+            surf_mesh.write(aux, io='auto')
 
         if options.no_surface:
             return

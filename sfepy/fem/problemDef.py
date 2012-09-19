@@ -710,11 +710,10 @@ class ProblemDefinition( Struct ):
                 out = post_process_hook(out, self, state, extend=extend)
 
         if linearization.kind == 'adaptive':
-            base, suffix = op.splitext(filename)
             for key, val in out.iteritems():
                 mesh = val.get('mesh', self.domain.mesh)
-                mesh.write(base + '_' + val.var_name + suffix,
-                           io='auto', out={key : val},
+                aux = io.edit_filename(filename, suffix='_' + val.var_name)
+                mesh.write(aux, io='auto', out={key : val},
                            float_format=self.float_format, **kwargs)
                 if hasattr(val, 'levels'):
                     output('max. refinement per group:', val.levels)
@@ -752,9 +751,8 @@ class ProblemDefinition( Struct ):
                         msg = 'missing var_name attribute in output!'
                         raise ValueError(msg)
 
-                base, suffix = op.splitext( filename )
-                mesh.write(base + '_' + var.name + suffix,
-                           io='auto', out=vout,
+                aux = io.edit_filename(filename, suffix='_' + var.name)
+                mesh.write(aux, io='auto', out=vout,
                            float_format=self.float_format, **kwargs)
         else:
             self.domain.mesh.write(filename, io='auto', out=out,
