@@ -39,7 +39,7 @@ import numpy as nm
 
 import sfepy
 from sfepy.base.base import output, get_default_attr, assert_, Struct
-from sfepy.base.ioutils import read_array
+from sfepy.base.ioutils import read_array, edit_filename
 from sfepy.base.conf import ProblemConf, get_standard_keywords
 from sfepy.fem import MeshIO, ProblemDefinition
 
@@ -145,12 +145,19 @@ def generate_probes(filename_input, filename_results, options,
                 filename = filename_template % ip
 
             if fig is not None:
-                fig.savefig(filename)
-                output('figure ->', os.path.normpath(filename))
+                if isinstance(fig, dict):
+                    for fig_name, fig_fig in fig.iteritems():
+                        fig_filename = edit_filename(filename,
+                                                     suffix='_' + fig_name)
+                        fig_fig.savefig(fig_filename)
+                        output('figure ->', os.path.normpath(fig_filename))
+
+                else:
+                    fig.savefig(filename)
+                    output('figure ->', os.path.normpath(filename))
 
             if results is not None:
-                aux = os.path.splitext(filename)[0]
-                txt_filename = aux + '.txt'
+                txt_filename = edit_filename(filename, new_ext='.txt')
 
                 fd = open(txt_filename, 'w')
                 fd.write('\n'.join(probe.report()) + '\n')
