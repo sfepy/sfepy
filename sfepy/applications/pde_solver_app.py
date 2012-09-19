@@ -41,6 +41,7 @@ def solve_pde(conf, options=None, nls_status=None, **app_options):
     if options is None:
         options = Struct(output_filename_trunk=None,
                          save_ebc=False,
+                         save_ebc_nodes=False,
                          save_regions=False,
                          save_field_meshes=False,
                          save_regions_as_groups=False,
@@ -71,7 +72,10 @@ def save_only(conf, save_names, problem=None):
         problem.save_field_meshes(save_names.field_meshes)
 
     if save_names.ebc is not None:
-        problem.save_ebc(save_names.ebc)
+        problem.save_ebc(save_names.ebc, force=False)
+
+    if save_names.ebc_nodes is not None:
+        problem.save_ebc(save_names.ebc_nodes, force=True)
 
 def solve_stationary(problem, save_results=True, ts=None,
                      post_process_hook=None,
@@ -355,6 +359,9 @@ class PDESolverApp(Application):
         ofn_trunk = problem.ofn_trunk
         self.save_names = Struct(ebc=ofn_trunk + '_ebc.vtk'
                                  if options.save_ebc else None,
+
+                                 ebc_nodes=ofn_trunk + '_ebc_nodes.vtk'
+                                 if options.save_ebc_nodes else None,
 
                                  regions=ofn_trunk + '_region'
                                  if options.save_regions else None,

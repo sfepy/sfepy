@@ -74,6 +74,7 @@ def generate_images(images_dir, examples_dir):
     options = Struct(output_filename_trunk=trunk,
                      output_format='vtk',
                      save_ebc=False,
+                     save_ebc_nodes=False,
                      save_regions=False,
                      save_field_meshes=False,
                      save_regions_as_groups=False,

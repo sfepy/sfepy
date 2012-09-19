@@ -32,7 +32,8 @@ class Test(TestCommon):
             name = output_name_trunk + hp
             solver_options = Struct(output_filename_trunk=name,
                                     output_format='vtk',
-                                    save_ebc=False, save_regions=False,
+                                    save_ebc=False, save_ebc_nodes=False,
+                                    save_regions=False,
                                     save_regions_as_groups=False,
                                     save_field_meshes=False,
                                     solve_not=False)

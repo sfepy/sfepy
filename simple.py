@@ -44,7 +44,12 @@ help = {
     'quiet' :
     'do not print any messages to screen',
     'save_ebc' :
-    'save problem state showing EBC (Dirichlet conditions)',
+    'save a zero solution with applied EBCs (Dirichlet boundary conditions)',
+    'save_ebc_nodes' :
+    'save a zero solution with added non-zeros in EBC (Dirichlet boundary'
+    ' conditions) nodes - scalar variables are shown using colors,'
+    ' vector variables using arrows with non-zero components corresponding'
+    ' to constrained components',
     'save_regions' :
     'save problem regions as meshes',
     'save_regions_as_groups' :
@@ -84,6 +89,9 @@ def main():
     parser.add_option('', '--save-ebc',
                       action='store_true', dest='save_ebc',
                       default=False, help=help['save_ebc'])
+    parser.add_option('', '--save-ebc-nodes',
+                      action='store_true', dest='save_ebc_nodes',
+                      default=False, help=help['save_ebc_nodes'])
     parser.add_option('', '--save-regions',
                       action='store_true', dest='save_regions',
                       default=False, help=help['save_regions'])
