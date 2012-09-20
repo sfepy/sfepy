@@ -37,6 +37,8 @@ help = {
     ' [default: %default]',
     'lin_options' :
     'linearizer options [default: %default]',
+    'plot_dofs' :
+    'plot local and global DOF numberings',
 }
 
 def get_dofs(dofs, n_total):
@@ -75,6 +77,9 @@ def main():
                       action='store', dest='lin_options',
                       default='min_level=2,max_level=5,eps=1e-3',
                       help=help['lin_options'])
+    parser.add_option('', '--plot-dofs',
+                      action='store_true', dest='plot_dofs',
+                      default=False, help=help['plot_dofs'])
     options, args = parser.parse_args()
 
     if len(args) == 1:
@@ -166,6 +171,13 @@ def main():
                                 approx_order=options.max_order,
                                 poly_space_base=options.basis)
         var = FieldVariable('u', 'unknown', field, 1)
+
+        if options.plot_dofs:
+            import sfepy.postprocess.plot_dofs as pd
+            ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
+            ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
+            ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
+            pd.plt.show()
 
         output('dofs: %d' % var.n_dof)
 
