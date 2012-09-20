@@ -29,6 +29,9 @@ help = {
     ' [default: %default]',
     'mesh' :
     'name of the mesh file - alternative to --geometry [default: %default]',
+    'permutations' :
+    'list of geometry element permutations for each element, e.g. 0,1 for'
+    ' two elements, with --mesh option [default: %default]',
     'dofs' :
     'if given, save only the DOFs specified as a comma-separated list'
     ' [default: %default]',
@@ -62,6 +65,9 @@ def main():
     parser.add_option('-m', '--mesh', metavar='mesh',
                       action='store', dest='mesh',
                       default=None, help=help['mesh'])
+    parser.add_option('', '--permutations', metavar='permutations',
+                      action='store', dest='permutations',
+                      default=None, help=help['permutations'])
     parser.add_option('', '--dofs', metavar='dofs',
                       action='store', dest='dofs',
                       default=None, help=help['dofs'])
@@ -143,6 +149,18 @@ def main():
                % (mesh.dim, mesh.n_nod, mesh.n_el))
 
         domain = Domain('domain', mesh)
+
+        if options.permutations:
+            permutations = [int(ii) for ii in options.permutations.split(',')]
+            output('using connectivity permutations:', permutations)
+            for group in domain.iter_groups():
+                perms = group.gel.get_conn_permutations()[permutations]
+                offsets = nm.arange(group.shape.n_el) * group.shape.n_ep
+
+                group.conn[:] = group.conn.take(perms + offsets[:, None])
+
+            domain.setup_facets()
+
         omega = domain.create_region('Omega', 'all')
         field = Field.from_args('f', nm.float64, shape=1, region=omega,
                                 approx_order=options.max_order,
