@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 """
-Save polynomial basis on reference elements or on a mesh for visualization.
+Save polynomial basis on reference elements or on a mesh for visualization into
+a given output directory.
 """
+import os
 from optparse import OptionParser
 import numpy as nm
 
@@ -13,7 +15,7 @@ from sfepy.fem.poly_spaces import PolySpace
 from sfepy.fem.linearizer import create_output
 from sfepy.fem.fields_base import create_expression_output
 
-usage = '%prog [options]\n' + __doc__.rstrip()
+usage = '%prog [options] output_dir\n' + __doc__.rstrip()
 
 help = {
     'basis' :
@@ -69,6 +71,12 @@ def main():
                       help=help['lin_options'])
     options, args = parser.parse_args()
 
+    if len(args) == 1:
+        output_dir = args[0]
+    else:
+        parser.print_help(),
+        return
+
     output('polynomial space:', options.basis)
     output('max. order:', options.max_order)
 
@@ -89,7 +97,7 @@ def main():
                                      base=options.basis)
 
         n_digit, _format = get_print_info(ps.n_nod, fill='0')
-        name_template = 'bf_%s.vtk' % _format
+        name_template = os.path.join(output_dir, 'bf_%s.vtk' % _format)
         for ip in get_dofs(options.dofs, ps.n_nod):
             output('shape function %d...' % ip)
 
@@ -145,7 +153,7 @@ def main():
 
         vec = nm.empty(var.n_dof, dtype=var.dtype)
         n_digit, _format = get_print_info(var.n_dof, fill='0')
-        name_template = 'dof_%s.vtk' % _format
+        name_template = os.path.join(output_dir, 'dof_%s.vtk' % _format)
         for ip in get_dofs(options.dofs, var.n_dof):
             output('dof %d...' % ip)
 
