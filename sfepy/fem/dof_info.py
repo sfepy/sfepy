@@ -355,26 +355,23 @@ class EquationMap(Struct):
                 dofs, val = bc.dofs
                 ##
                 # Evaluate EBC values.
-                nods = nm.unique(nm.hstack(master_nod_list))
-                coor = field.get_coor(nods)
-
                 if type(val) == str:
                     fun = functions[val]
-                    vv = fun(ts, coor, bc=bc, problem=problem)
 
-                elif isinstance(val, Function):
-                    vv = val(ts, coor, bc=bc, problem=problem)
-
-                elif nm.isscalar(val):
-                    vv = nm.repeat([val], nods.shape[0] * len(dofs))
-
-                elif isinstance(val, nm.ndarray):
-                    assert_(len(val) == len(dofs))
-                    vv = nm.repeat(val, nods.shape[0])
+                elif (isinstance(val, Function) or nm.isscalar(val)
+                      or isinstance(val, nm.ndarray)):
+                    fun = val
 
                 else:
                     raise ValueError('unknown value type for EBC %s!'
                                      % bc.name)
+
+                if isinstance(fun, Function):
+                    aux = fun
+                    fun = lambda coors: aux(ts, coors,
+                                            bc=bc, problem=problem)
+
+                nods, vv = field.set_dofs(fun, region, len(dofs), clean_msg)
 
                 eq = expand_nodes_to_equations(nods, dofs, self.dof_names)
                 # Duplicates removed here...

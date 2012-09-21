@@ -13,7 +13,7 @@ class Test(TestCommon):
 
     def test_linearization(self):
         from sfepy.base.base import Struct
-        from sfepy.fem import Mesh, Domain, Field
+        from sfepy.fem import Mesh, Domain, H1NodalVolumeField
         from sfepy import data_dir
 
         geometries = ['2_3', '2_4', '3_4', '3_8']
@@ -38,9 +38,8 @@ class Test(TestCommon):
                     self.report('geometry: %s, approx. order: %d, dpn: %d' %
                                 (geometry, approx_order, dpn))
 
-                    field = Field('fu', nm.float64, dpn, omega,
-                                  space='H1', poly_space_base='lagrange',
-                                  approx_order=approx_order)
+                    field = H1NodalVolumeField('fu', nm.float64, dpn, omega,
+                                               approx_order=approx_order)
 
                     cc = field.get_coor()
                     dofs = nm.zeros((field.n_nod, dpn), dtype=nm.float64)

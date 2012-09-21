@@ -13,7 +13,7 @@ from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
-from fields import fields_from_conf
+from fields_base import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations

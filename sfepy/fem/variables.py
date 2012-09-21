@@ -1194,7 +1194,7 @@ class FieldVariable(Variable):
         Takes reference to a Field instance. Sets dtype according to
         field.dtype. Sets `dim` attribute to spatial dimension.
         """
-        from sfepy.fem.fields import SurfaceField
+        from sfepy.fem.fields_base import SurfaceField
 
         if isinstance(field, SurfaceField):
             self.is_surface = True

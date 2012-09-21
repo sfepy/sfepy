@@ -1,5 +1,6 @@
 r"""
-Laplace equation with boundary conditions given by sine functions.
+Laplace equation with Dirichlet boundary conditions given by a sine function
+and constants.
 
 Find :math:`t` such that:
 
@@ -7,128 +8,129 @@ Find :math:`t` such that:
     \int_{\Omega} c \nabla s \cdot \nabla t
     = 0
     \;, \quad \forall s \;.
+
+This example demonstrates how to use a hierarchical basis approximation - it
+uses the fifth order Lobatto polynomial space for the solution. The adaptive
+linearization is applied in order to save viewable results, see both the
+options keyword and the ``post_process()`` function that computes the solution
+gradient. Use the following commands to view the results (assuming default
+output directory and names)::
+
+  $ ./postproc.py -b -d't,plot_warp_scalar,rel_scaling=1' 2_4_2_refined_t.vtk --wireframe
+  $ ./postproc.py -b 2_4_2_refined_grad.vtk
+
+The :class:`sfepy.fem.meshio.UserMeshIO` class is used to refine the original
+two-element mesh before the actual solution.
 """
+import numpy as nm
+
 from sfepy import data_dir
 
-filename_mesh = data_dir + '/meshes/various_formats/comsol_tri.txt'
+from sfepy.base.base import output
+from sfepy.fem import Mesh, Domain
+from sfepy.fem.meshio import UserMeshIO, MeshIO
+from sfepy.homogenization.utils import define_box_regions
 
-material_1 = {
-    'name' : 'm',
-    'values' : {'val' : 1.0},
-}
+base_mesh = data_dir + '/meshes/elements/2_4_2.mesh'
 
-region_1000 = {
-    'name' : 'Omega',
-    'select' : 'all',
-}
-region_3 = {
-    'name' : 'Gamma_Bottom',
-    'select' : 'nodes in (y < 0.00001)',
-}
-region_4 = {
-    'name' : 'Gamma_Top',
-    'select' : 'nodes in (y > 0.59999)',
-}
+def mesh_hook(mesh, mode):
+    """
+    Load and refine a mesh here.
+    """
+    if mode == 'read':
+        mesh = Mesh.from_file(base_mesh)
+        domain = Domain(mesh.name, mesh)
+        for ii in range(3):
+            output('refine %d...' % ii)
+            domain = domain.refine()
+            output('... %d nodes %d elements'
+                   % (domain.shape.n_nod, domain.shape.n_el))
 
-field_1 = {
-    'name' : 'temperature',
-    'dtype' : 'real',
-    'shape' : (1,),
-    'region' : 'Omega',
-    'approx_order' : 2,
-}
+        domain.mesh.name = '2_4_2_refined'
 
-variable_1 = {
-    'name' : 't',
-    'kind' : 'unknown field',
-    'field' : 'temperature',
-    'order' : 0,
-}
-variable_2 = {
-    'name' : 's',
-    'kind' : 'test field',
-    'field' : 'temperature',
-    'dual' : 't',
-}
+        return domain.mesh
 
-ebc_1 = {
-    'name' : 't1',
-    'region' : 'Gamma_Top',
-    'dofs' : {'t.0' : 'ebc_sin'},
-}
-ebc_2 = {
-    'name' : 't2',
-    'region' : 'Gamma_Bottom',
-    'dofs' : {'t.0' : 'ebc_sin2'},
-}
+    elif mode == 'write':
+        pass
 
-integral_1 = {
-    'name' : 'i1',
-    'kind' : 'v',
-    'order' : 2,
-}
+def post_process(out, pb, state, extend=False):
+    """
+    Calculate gradient of the solution.
+    """
+    from sfepy.fem.fields_base import create_expression_output
 
-equations = {
-    'Temperature' : """dw_laplace.i1.Omega( m.val, s, t )
-                       = 0"""
-}
+    aux = create_expression_output('ev_grad.ie.Elements( t )',
+                                   'grad', 'temperature',
+                                   pb.fields, pb.get_materials(),
+                                   pb.get_variables(), functions=pb.functions,
+                                   mode='qp', verbose=False,
+                                   min_level=0, max_level=5, eps=1e-3)
+    out.update(aux)
 
-solver_0 = {
-    'name' : 'ls',
-    'kind' : 'ls.scipy_direct',
-}
+    return out
 
-solver_1 = {
-    'name' : 'newton',
-    'kind' : 'nls.newton',
+filename_mesh = UserMeshIO(mesh_hook)
 
-    'i_max'      : 1,
-    'eps_a'      : 1e-10,
-    'eps_r'      : 1.0,
-    'macheps'   : 1e-16,
-    'lin_red'    : 1e-2, # Linear system error < (eps_a * lin_red).
-    'ls_red'     : 0.1,
-    'ls_red_warp' : 0.001,
-    'ls_on'      : 1.1,
-    'ls_min'     : 1e-5,
-    'check'     : 0,
-    'delta'     : 1e-6,
-    'is_plot'    : False,
-    'problem'   : 'nonlinear', # 'nonlinear' or 'linear' (ignore i_max)
-}
+# Get the mesh bounding box.
+io = MeshIO.any_from_filename(base_mesh)
+bbox, dim = io.read_bounding_box(ret_dim=True)
 
 options = {
     'nls' : 'newton',
     'ls' : 'ls',
-
-    # Options for saving higher-order variables.
-    # Possible kinds:
-    #    'strip' ... just remove extra DOFs (ignores other linearization
-    #                options)
-    #    'adaptive' ... adaptively refine linear element mesh.
+    'post_process_hook' : 'post_process',
     'linearization' : {
-        'kind' : 'strip',
+        'kind' : 'adaptive',
         'min_level' : 0, # Min. refinement level to achieve everywhere.
-        'max_level' : 3, # Max. refinement level.
-        'eps' : 1e-2, # Relative error tolerance.
+        'max_level' : 5, # Max. refinement level.
+        'eps' : 1e-3, # Relative error tolerance.
     },
-    'output_format' : 'vtk',
 }
 
-import numpy as nm
+materials = {
+    'coef' : ({'val' : 1.0},),
+}
 
-amplitude = 2.0
+regions = {
+    'Omega' : ('all', {}),
+}
+regions.update(define_box_regions(dim, bbox[0], bbox[1], 1e-5))
+
+fields = {
+    'temperature' : ('real', 1, 'Omega', 5, 'H1', 'lobatto'),
+    # Compare with the Lagrange basis.
+    ## 'temperature' : ('real', 1, 'Omega', 5, 'H1', 'lagrange'),
+}
+
+variables = {
+    't' : ('unknown field', 'temperature', 0),
+    's' : ('test field',    'temperature', 't'),
+}
+
+amplitude = 1.0
 def ebc_sin(ts, coor, **kwargs):
-    x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
-    val = amplitude * nm.sin( (coor[:,0] - x0) * 2. * nm.pi )
+    x0 = 0.5 * (coor[:, 1].min() + coor[:, 1].max())
+    val = amplitude * nm.sin( (coor[:, 1] - x0) * 2. * nm.pi )
     return val
 
-def ebc_sin2(ts, coor, **kwargs):
-    x0 = 0.5 * (coor[:,0].min() + coor[:,0].max())
-    val = amplitude * nm.sin( (coor[:,0] - x0) * 3. * nm.pi )
-    return val
+ebcs = {
+    't1' : ('Left', {'t.0' : 'ebc_sin'}),
+    't2' : ('Right', {'t.0' : -0.5}),
+    't3' : ('Top', {'t.0' : 1.0}),
+}
 
 functions = {
     'ebc_sin' : (ebc_sin,),
-    'ebc_sin2' : (ebc_sin2,),
+}
+
+equations = {
+    'Temperature' : """dw_laplace.10.Omega( coef.val, s, t ) = 0"""
+}
+
+solvers = {
+    'ls' : ('ls.scipy_direct', {}),
+    'newton' : ('nls.newton', {
+        'i_max'      : 1,
+        'eps_a'      : 1e-10,
+    }),
 }

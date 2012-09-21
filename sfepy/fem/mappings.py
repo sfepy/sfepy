@@ -247,7 +247,7 @@ class VolumeMapping(Mapping):
     dimension.
     """
 
-    def get_mapping(self, qp_coors, weights, poly_space=None):
+    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
@@ -260,11 +260,13 @@ class VolumeMapping(Mapping):
         poly_space = get_default(poly_space, self.poly_space)
 
         bf_g = self.get_base(qp_coors, diff=True)
-        ebf_g = poly_space.eval_base(qp_coors, diff=True)
 
+        ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
+                                     force_axis=True)
+        flag = ori is not None
 
         cmap = CVolumeMapping(self.n_el, qp_coors.shape[0], self.dim,
-                              poly_space.n_nod)
+                              poly_space.n_nod, flag)
         cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
 
         return cmap

@@ -17,8 +17,15 @@ def dim2sym(dim):
 def sym2dim(sym):
     """
     Given the symmetric storage size, return the space dimension.
+
+    Notes
+    -----
+    This function works for any space dimension.
     """
-    return int((sym / 3) + 1)
+    val = int(-0.5 + nm.sqrt(2 * sym + 0.25))
+    assert_(dim2sym(val) == sym)
+
+    return val
 
 def get_full_indices(dim):
     """

@@ -133,6 +133,7 @@ int32 vg_describe( VolumeGeometry *obj,
     FMF_SetCell( obj->bfGM, iel );
     FMF_SetCell( obj->det, iel );
     FMF_SetCell( obj->volume, iel );
+    FMF_SetCellX1( ebfGR, iel );
 
     for (inod = 0; inod < nEP; inod++) {
       pos = dim*conn[inod];

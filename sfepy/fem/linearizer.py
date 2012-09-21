@@ -3,18 +3,25 @@ Linearization of higher order solutions for the purposes of visualization.
 """
 import numpy as nm
 
+from sfepy.linalg import dot_sequences
 from sfepy.fem.refine import refine_reference
 
-def get_eval_dofs(dofs, dof_conn):
+def get_eval_dofs(dofs, dof_conn, ps, ori=None):
     """
-    Get default function for evaluating field DOFs given a list of elements,
-    reference element coordinates and base functions.
+    Get default function for evaluating field DOFs given a list of elements and
+    reference element coordinates.
     """
-    def _eval(iels, rx, bf):
+    def _eval(iels, rx):
         edofs = dofs[dof_conn[iels]]
 
-        aux = edofs.transpose((0, 2, 1))
-        rvals = nm.dot(aux, bf.T).transpose((0, 2, 1))
+        if ori is not None:
+            eori = ori[iels]
+
+        else:
+            eori = None
+
+        bf = ps.eval_base(rx, ori=eori, force_axis=True)[...,0,:]
+        rvals = dot_sequences(bf, edofs)
 
         return rvals
 
@@ -44,8 +51,8 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
     returned by `eval_coors()`.
     """
 
-    def _get_msd(iels, bf, rx, ree):
-        rvals = eval_dofs(iels, rx, bf)
+    def _get_msd(iels, rx, ree):
+        rvals = eval_dofs(iels, rx)
         rng = rvals.max() - rvals.min()
         n_components = rvals.shape[-1]
 
@@ -63,17 +70,14 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
         return msd, rng
 
     rx0 = ps.geometry.coors
-    bf0 = ps.eval_base(rx0).squeeze()
 
     rc0 = ps.geometry.conn[None, :]
     rx, rc, ree = refine_reference(ps.geometry, 1)
 
     factor = rc.shape[0] / rc0.shape[0]
 
-    bf = ps.eval_base(rx).squeeze()
-
     iels = nm.arange(n_el)
-    msd, rng = _get_msd(iels, bf, rx, ree)
+    msd, rng = _get_msd(iels, rx, ree)
     eps_r = rng * eps
     flag = msd > eps_r
 
@@ -106,7 +110,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
 
             # Each (sub-)element has own coordinates - no shared vertices.
             xes = eval_coors(iels[uie], rx0)
-            des = eval_dofs(iels[uie], rx0, bf0)
+            des = eval_dofs(iels[uie], rx0)
 
             # Vectorize (how??) or use cython?
             cc = []
@@ -148,10 +152,7 @@ def create_output(eval_dofs, eval_coors, n_el, ps, min_level=0, max_level=2,
             rx0 = rx
             rx, rc, ree = refine_reference(ps.geometry, level + 2)
 
-            bf0 = bf
-            bf = ps.eval_base(rx).squeeze()
-
-            msd, rng = _get_msd(iels, bf, rx, ree)
+            msd, rng = _get_msd(iels, rx, ree)
             eps_r = rng * eps
             flag = msd > eps_r
 
