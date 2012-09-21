@@ -248,6 +248,9 @@ class PolySpace(Struct):
 
         key = '%s_%s' % (base, PolySpace.keys[(geometry.dim,
                                                geometry.n_vertex)])
+        if (geometry.name == '1_2') and (key not in table):
+            key = '%s_%s' % (base, 'tensor_product')
+
         if force_bubble:
             key += '_bubble'
 
