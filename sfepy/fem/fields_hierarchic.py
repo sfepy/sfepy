@@ -221,11 +221,24 @@ class H1HierarchicVolumeField(VolumeField):
         vals = []
         for ig in self.igs:
             if nm.isscalar(fun):
-                # Hack for constants.
+                # Hack - use only vertex DOFs.
                 gnods = self.get_dofs_in_region_group(region, ig, merge=False)
                 n_dof = dpn * sum([nn.shape[0] for nn in gnods])
                 gvals = nm.zeros(n_dof, dtype=nm.dtype(type(fun)))
                 gvals[:gnods[0].shape[0] * dpn] = fun
+
+                nods.append(nm.concatenate(gnods))
+                vals.append(gvals)
+
+            elif callable(fun):
+                # Hack - use only vertex DOFs.
+                gnods = self.get_dofs_in_region_group(region, ig, merge=False)
+                n_dof = dpn * sum([nn.shape[0] for nn in gnods])
+
+                vv = fun(self.get_coor(gnods[0]))
+
+                gvals = nm.zeros(n_dof, dtype=vv.dtype)
+                gvals[:gnods[0].shape[0] * dpn] = vv
 
                 nods.append(nm.concatenate(gnods))
                 vals.append(gvals)
