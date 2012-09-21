@@ -1,3 +1,20 @@
+"""
+Test continuity of polynomial basis and its gradients along an edge on
+:math:`y` line (2D) or on a face in :math:`x`-:math:`y` plane (3D) between two
+elements aligned with the coordinate system, stack one on top of the other. The
+evaluation occurs in several points shifted by a very small amount from the
+boundary between the elements into the top and the bottom element.
+
+For H1 space, the basis should be continuous. The components of its gradient
+parallel to the edge/face should be continuous as well, while the perpendicular
+component should have the same absolute value, but different sign in the top
+and the bottom element.
+
+All connectivity permutations of the two elements are tested.
+
+WARNING: Lagrange basis on 3_8 elements fails the test for order >= 3 for many
+connectivity permutations!
+"""
 import numpy as nm
 
 from sfepy.base.testing import TestCommon
@@ -19,7 +36,6 @@ rots = {
     '3_8' : None,
 }
 
-
 def _gen_common_data(order, gels, report):
     import sfepy
     from sfepy.base.base import Struct
@@ -31,7 +47,7 @@ def _gen_common_data(order, gels, report):
 
     for geom, poly_space_base in combine([['2_4', '3_8'],
                                           ['lagrange', 'lobatto']]):
-        report('gemoetry: %s, base: %s' % (geom, poly_space_base))
+        report('geometry: %s, base: %s' % (geom, poly_space_base))
 
         mesh0 = Mesh.from_file('meshes/elements/%s_2.mesh' % geom,
                                prefix_dir=sfepy.data_dir)
@@ -106,10 +122,10 @@ class Test(TestCommon):
 
     def test_continuity(self):
         ok = True
-        order = 5
+        order = 3
 
         bads = []
-
+        bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
              ap, ps, rrc, crc, vec,
              edofs, fdofs) in _gen_common_data(order, self.gels, self.report):
@@ -122,7 +138,11 @@ class Test(TestCommon):
                 rbf = ps.eval_base(rrc, ori=ap.ori[:1])
                 cbf = ps.eval_base(crc, ori=ap.ori[1:])
 
-            for ip in nm.r_[edofs, fdofs]:
+            dofs = nm.r_[edofs, fdofs]
+
+            res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
+            res[0, :] = dofs
+            for ii, ip in enumerate(dofs):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
@@ -132,15 +152,20 @@ class Test(TestCommon):
                 cvals = nm.dot(cbf, evec[1])
 
                 _ok = nm.allclose(rvals, cvals, atol=1e-14, rtol=0.0)
-                self.report('dof %d: %s' % (ip, _ok))
+                res[1, ii] = _ok
                 if not _ok:
                     bads.append([geom, poly_space_base, ir, ic, ip])
+                    bad_families.add((geom, poly_space_base))
 
                 ok = ok and _ok
+
+            self.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
 
         if not ok:
             self.report('continuity errors:\n', bads)
             self.report('%d in total!' % len(bads))
+            self.report('continuity errors occurred in these spaces:\n',
+                        bad_families)
 
         return ok
 
@@ -148,9 +173,10 @@ class Test(TestCommon):
         from sfepy.fem.mappings import VolumeMapping
 
         ok = True
-        order = 5
+        order = 3
 
         bads = []
+        bad_families = set()
         for (geom, poly_space_base, qp_weights, mesh, ir, ic,
              ap, ps, rrc, crc, vec,
              edofs, fdofs) in _gen_common_data(order, self.gels, self.report):
@@ -172,7 +198,11 @@ class Test(TestCommon):
                                        poly_space=ps, ori=cori)
             cbfg = cvg.bfg
 
-            for ip in nm.r_[edofs, fdofs]:
+            dofs = nm.r_[edofs, fdofs]
+
+            res = nm.zeros((2, dofs.shape[0]), dtype=nm.int32)
+            res[0, :] = dofs
+            for ii, ip in enumerate(dofs):
                 vec.fill(0.0)
                 vec[ip] = 1.0
 
@@ -195,14 +225,19 @@ class Test(TestCommon):
                                       atol=1e-14, rtol=0.0)
                     _ok = okx and oky and okz
 
-                self.report('dof %d: %s' % (ip, _ok))
+                res[1, ii] = _ok
                 if not _ok:
                     bads.append([geom, poly_space_base, ir, ic, ip])
+                    bad_families.add((geom, poly_space_base))
 
                 ok = ok and _ok
+
+            self.report('results (dofs, status: 1 ok, 0 failure):\n%s' % res)
 
         if not ok:
             self.report('gradient continuity errors:\n', bads)
             self.report('%d in total!' % len(bads))
+            self.report('gradient continuity errors occurred in these'
+                        ' spaces:\n', bad_families)
 
         return ok
