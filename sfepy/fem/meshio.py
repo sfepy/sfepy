@@ -300,6 +300,8 @@ class UserMeshIO(MeshIO):
         if aux is not None:
             mesh = aux
 
+        self.filename = mesh.name
+
         return mesh
 
     def write(self, filename, mesh, *args, **kwargs):
