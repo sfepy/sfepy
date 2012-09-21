@@ -351,6 +351,11 @@ class Approximation( Struct ):
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
             assert_(field.approx_order > 0)
 
+            if self.ori is not None:
+                msg = 'surface integrals do not work yet with the' \
+                      ' hierarchical basis!'
+                raise ValueError(msg)
+
             sd = domain.surface_groups[self.ig][region.name]
             esd = self.surface_data[region.name]
 
@@ -391,11 +396,8 @@ class Approximation( Struct ):
             out.qp = qp
             out.ps = ps
             # Update base.
-            try:
-                out.bf[:] = bf
+            out.bf[:] = bf
 
-            except:
-                from debug import debug; debug()
         if return_mapping:
             out = (out, mapping)
 
