@@ -759,6 +759,7 @@ Utility scripts
 .. toctree::
    :maxdepth: 2
 
+   src/build_helpers
    src/findSurf
    src/genPerMesh
    src/plotPerfusionCoefs
@@ -767,20 +768,17 @@ Utility scripts
    src/script/blockgen
    src/script/config
    src/script/convert_mesh
-   src/script/convert
    src/script/cylindergen
    src/script/edit_identifiers
-   src/script/edit_neu
    src/script/evalForms
    src/script/eval_tl_forms
    src/script/gen_gallery
    src/script/gen_lobatto_pyx
    src/script/gen_term_table
-   src/script/make_spkg
    src/script/plot_condition_numbers
    src/script/save_basis
    src/script/show_authors
-   src/script/spymatrix
+   src/script/sync_module_docs
 
 sfepy package
 ^^^^^^^^^^^^^
@@ -805,8 +803,10 @@ sfepy.base package
    :maxdepth: 2
 
    src/sfepy/base/base
+   src/sfepy/base/compat
    src/sfepy/base/conf
    src/sfepy/base/getch
+   src/sfepy/base/goptions
    src/sfepy/base/ioutils
    src/sfepy/base/log
    src/sfepy/base/parse_conf
@@ -834,13 +834,17 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/facets
    src/sfepy/fem/fe_surface
    src/sfepy/fem/fea
-   src/sfepy/fem/fields
+   src/sfepy/fem/fields_base
+   src/sfepy/fem/fields_hierarchic
+   src/sfepy/fem/fields_nodal
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
+   src/sfepy/fem/global_interp
    src/sfepy/fem/history
    src/sfepy/fem/linearizer
    src/sfepy/fem/integrals
    src/sfepy/fem/mappings
+   src/sfepy/fem/mass_operator
    src/sfepy/fem/materials
    src/sfepy/fem/mesh
    src/sfepy/fem/meshio
@@ -858,9 +862,11 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/state
    src/sfepy/fem/utils
    src/sfepy/fem/variables
+   src/sfepy/fem/extmods/_fmfield
    src/sfepy/fem/extmods/assemble
    src/sfepy/fem/extmods/bases
    src/sfepy/fem/extmods/lobatto
+   src/sfepy/fem/extmods/lobatto_template
    src/sfepy/fem/extmods/mappings
    src/sfepy/fem/extmods/mesh
 
@@ -892,6 +898,7 @@ sfepy.homogenization package
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/homogen_app
+   src/sfepy/homogenization/micmac
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 
@@ -955,6 +962,7 @@ sfepy.postprocess package
 
    src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
+   src/sfepy/postprocess/plot_dofs
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
@@ -971,6 +979,7 @@ sfepy.solvers package
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
+   src/sfepy/solvers/petsc_worker
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
@@ -1003,4 +1012,7 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
    src/sfepy/terms/terms_new
+   src/sfepy/terms/terms_th
    src/sfepy/terms/utils
+
+   src/sfepy/terms/extmods/terms
