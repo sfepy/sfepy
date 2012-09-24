@@ -963,6 +963,7 @@ sfepy.postprocess package
    src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
    src/sfepy/postprocess/plot_dofs
+   src/sfepy/postprocess/plot_facets.rst
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
