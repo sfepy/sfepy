@@ -41,15 +41,13 @@ tetgen_path
 
 New options should be added both to site_cfg_template.py and Config class below.
 
-Examples:
+Examples::
 
-$ ./config.py python_version
-2.5
-$
+  $ ./config.py python_version
+  2.7
 
-$ ./config.py archlib
-lib
-$
+  $ ./script/config.py system
+  posix
 """
 import sys
 sys.path.append('.')
