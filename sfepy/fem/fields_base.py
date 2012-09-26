@@ -1104,8 +1104,9 @@ class VolumeField(Field):
 
         region = self.region
 
-        remap = prepare_remap(region.all_vertices, region.n_v_max)
-        n_dof = region.all_vertices.shape[0]
+        all_vertices = region.get_vertices_of_cells()
+        remap = prepare_remap(all_vertices, region.n_v_max)
+        n_dof = all_vertices.shape[0]
 
         ##
         # Remap vertex node connectivity to field-local numbering.
