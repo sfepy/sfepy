@@ -145,24 +145,6 @@ class H1NodalMixin(Struct):
 
         return n_dof, all_dofs, remaps
 
-    def setup_coors(self, coors=None):
-        """
-        Setup coordinates of field nodes.
-        """
-        mesh = self.domain.mesh
-        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
-
-        if coors is None:
-            coors = mesh.coors
-
-        # Mesh vertex nodes.
-        if self.n_vertex_dof:
-            indx = self.region.all_vertices
-            self.coors[:self.n_vertex_dof] = nm.take(coors, indx, axis=0)
-
-        for ig, ap in self.aps.iteritems():
-            ap.eval_extra_coor(self.coors, coors)
-
     def set_dofs(self, fun=0.0, region=None, dpn=None, warn=None):
         """
         Set the values of DOFs in a given region using a function of space

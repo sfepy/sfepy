@@ -526,15 +526,27 @@ class Field(Struct):
 
     def setup_coors(self, coors=None):
         """
-        Setup coordinates of field nodes. Implemented in subclasses.
+        Setup coordinates of field nodes.
         """
-        raise ValueError('An abstract Field method called!')
+        mesh = self.domain.mesh
+        self.coors = nm.empty((self.n_nod, mesh.dim), nm.float64)
+
+        if coors is None:
+            coors = mesh.coors
+
+        # Mesh vertex nodes.
+        if self.n_vertex_dof:
+            indx = self.vertex_remap_i
+            self.coors[:self.n_vertex_dof] = nm.take(coors, indx, axis=0)
+
+        for ig, ap in self.aps.iteritems():
+            ap.eval_extra_coor(self.coors, coors)
 
     def get_vertices(self):
         """
         Return indices of vertices belonging to the field region.
         """
-        return self.region.all_vertices
+        return self.vertex_remap_i
 
     def get_dofs_in_region(self, region, merge=False, clean=False,
                            warn=False, igs=None):
