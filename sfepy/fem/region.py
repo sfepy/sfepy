@@ -233,19 +233,9 @@ class Region( Struct ):
 
         self.must_update = False
 
-    ##
-    # 15.06.2006, c
-    def update_vertices( self ):
-        self.all_vertices = nm.zeros( (0,), nm.int32 )
-        self.vertices = {}
-        for ig, group in self.domain.iter_groups( self.igs ):
-            rcells = self.cells[ig]
-            conn = group.conn
-            nods = conn[rcells,:].ravel()
-            aux = nm.unique( nods )
-            self.vertices[ig] = aux
-            self.all_vertices = nm.unique( nm.r_[self.all_vertices, aux] )
-        
+    def update_vertices(self):
+        self.all_vertices, self.vertices = self.get_vertices_of_cells(True)
+
     ##
     # 15.06.2006, c
     def set_vertices( self, vertices ):
@@ -752,6 +742,32 @@ class Region( Struct ):
         else:
             return sum(self.get_n_cells(ig, is_surface=is_surface)
                        for ig in self.igs)
+
+    def get_vertices_of_cells(self, return_per_group=False):
+        """
+        Return all vertices, that are in some cell of the region.
+
+        Parameters
+        ----------
+        return_per_group : bool
+            It True, return also a dict of vertices per element group.
+        """
+        all_vertices = nm.zeros((0,), dtype=nm.int32)
+        vertices = {}
+        for ig, group in self.domain.iter_groups(self.igs):
+            rcells = self.cells[ig]
+            conn = group.conn
+            nods = conn[rcells,:].ravel()
+            vertices[ig] = nm.unique(nods)
+            all_vertices = nm.unique(nm.r_[all_vertices, vertices[ig]])
+
+        if return_per_group:
+            out = all_vertices, vertices
+
+        else:
+            out = all_vertices
+
+        return out
 
     ##
     # 22.02.2007, c
