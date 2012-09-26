@@ -3,13 +3,18 @@ Create pyparsing grammar for problem configuration and options.
 """
 from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        Forward, Empty, quotedString, oneOf, removeQuotes,
-                       delimitedList, nums, alphas, alphas8bit, alphanums)
+                       delimitedList, nums, alphas, alphas8bit, alphanums, Keyword)
 
-def create_bnf():
+import sys
+
+def create_bnf(outer_element = '', freeWord=False):
     cvt_int = lambda toks: int(toks[0])
     cvt_real = lambda toks: float(toks[0])
+    cvt_bool =  lambda toks: toks[0].lower == 'true'
+    cvt_none =  lambda toks: [None]
     cvt_tuple = lambda toks : tuple(toks.asList())
     cvt_dict = lambda toks: dict(toks.asList())
+
 
     # define punctuation as suppressed literals
     (lparen, rparen, lbrack, rbrack,
@@ -17,6 +22,12 @@ def create_bnf():
 
     integer = Combine(Optional(oneOf("+ -")) + Word(nums)).setName("integer")
     integer.setParseAction(cvt_int)
+
+    boolean = Keyword("False", caseless = True)
+    boolean.setParseAction(cvt_bool)
+
+    none = Keyword("None", caseless = True)
+    none.setParseAction(cvt_none)
 
     real = Combine(Optional(oneOf("+ -"))+ Word(nums)
                    + "." + Optional(Word(nums))
@@ -28,22 +39,32 @@ def create_bnf():
     list_str = Forward()
     dict_str = Forward()
 
-    list_item = (real | integer | Group(list_str) | tuple_str | dict_str
+    if freeWord:
+      string = Word(alphas8bit + "_-/.+**" + alphanums)
+    else:
+      string = Word(alphas8bit + alphas, alphas8bit + alphanums + "_" )
+
+    list_item = (none | boolean | real | integer | list_str | tuple_str | dict_str
                  | quotedString.setParseAction(removeQuotes)
-                 | Word(alphas8bit + alphas, alphas8bit + alphanums + "_"))
+                 | string )
     list_item2 = list_item | Empty().setParseAction(lambda: [None])
 
-    tuple_str << (Suppress("(") + Optional(delimitedList(list_item)) +
-                  Optional(Suppress(",")) + Suppress(")"))
-    tuple_str.setParseAction(cvt_tuple)
+    tuple_inner = Optional(delimitedList(list_item)) + Optional(Suppress(","))
+    tuple_inner.setParseAction(cvt_tuple)
+    tuple_str << (Suppress("(") + tuple_inner  + Suppress(")"))
 
-    list_str << (lbrack + Optional(delimitedList(list_item) +
-                                   Optional(Suppress(","))) + rbrack)
+    list_inner = Optional(delimitedList(list_item) + Optional(Suppress(",")))
+    list_inner.setParseAction(lambda toks: list(toks))
+    list_str << (lbrack + list_inner + rbrack)
 
     dict_entry = Group(list_item + colon + list_item2)
     dict_inner = delimitedList(dict_entry) + Optional(Suppress(","))
     dict_inner.setParseAction(cvt_dict)
-
     dict_str << (lbrace + Optional(dict_inner) + rbrace)
 
+    dict_or_tuple =  dict_inner | tuple_inner
+
+    x=locals()
+    if x.has_key(outer_element):
+        return locals()[outer_element]
     return dict_inner

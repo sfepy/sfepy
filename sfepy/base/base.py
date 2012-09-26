@@ -976,7 +976,7 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False):
 
     return table
 
-def update_dict_recursively(dst, src, tuples_too=False):
+def update_dict_recursively(dst, src, tuples_too=False, overwrite_by_none=True):
     """
     Update `dst` dictionary recursively using items in `src` dictionary.
 
@@ -1010,8 +1010,8 @@ def update_dict_recursively(dst, src, tuples_too=False):
              dst[key] = tuple(map(tuplezip,
                                   zip(src[key], dst[key]))[:len(dst[key])])
              continue
-
-        dst[key] = src[key]
+        if overwrite_by_none or not src[key] is None:     
+           dst[key] = src[key]
 
     return dst
 

@@ -423,7 +423,8 @@ class ScipyFMinSolver(OptimizationSolver):
         tt = time.clock()
 
         kwargs = {self._i_max_name[conf.method] : conf.i_max,
-                  'disp' : conf.verbose,
+                  #not present in my version
+                  #'disp' : conf.verbose,
                   'args' : obj_args}
 
         if conf.method in self._has_grad:
