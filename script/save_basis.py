@@ -38,7 +38,7 @@ help = {
     'lin_options' :
     'linearizer options [default: %default]',
     'plot_dofs' :
-    'plot local and global DOF numberings',
+    'plot local and global DOF numberings, with --mesh option',
 }
 
 def get_dofs(dofs, n_total):
@@ -174,6 +174,7 @@ def main():
 
         if options.plot_dofs:
             import sfepy.postprocess.plot_dofs as pd
+            group = domain.groups[0]
             ax = pd.plot_mesh(None, mesh.coors, mesh.conns[0], group.gel.edges)
             ax = pd.plot_global_dofs(ax, field.get_coor(), field.aps[0].econn)
             ax = pd.plot_local_dofs(ax, field.get_coor(), field.aps[0].econn)
