@@ -246,7 +246,7 @@ class ProblemConf( Struct ):
 
     @staticmethod
     def from_file(filename, required=None, other=None, verbose=True,
-                  define_args=None, override=None):
+                  define_args=None, override=None, setup=True):
         """
         Loads the problem definition from a file.
 
@@ -292,14 +292,15 @@ class ProblemConf( Struct ):
         else:
             define_dict = funmod.__dict__
 
-        obj = ProblemConf(define_dict, funmod, filename,
-                          required, other, verbose, override)
+        obj = ProblemConf(define_dict, funmod=funmod, filename=filename,
+                          required=required, other=other, verbose=verbose,
+                          override=override, setup=setup)
 
         return obj
 
     @staticmethod
     def from_file_and_options(filename, options, required=None, other=None,
-                          verbose=True, define_args=None):
+                          verbose=True, define_args=None, setup=True):
         """
         Utility function, a wrapper around ProblemConf.from_file() with
         possible override taken from `options`.
@@ -314,22 +315,22 @@ class ProblemConf( Struct ):
 
         obj = ProblemConf.from_file(filename, required=required, other=other,
                                     verbose=verbose, define_args=define_args,
-                                    override=override)
+                                    override=override, setup=setup)
         return obj
 
     @staticmethod
     def from_module(module, required=None, other=None, verbose=True,
-                    override=None):
+                    override=None, setup=True):
         obj = ProblemConf(module.__dict__, module, module.__name__,
-                          required, other, verbose, override)
+                          required, other, verbose, override, setup=setup)
 
         return obj
 
     @staticmethod
     def from_dict(dict_, funmod, required=None, other=None, verbose=True,
-                  override=None):
+                  override=None, setup=True):
         obj = ProblemConf(dict_, funmod, None, required, other, verbose,
-                          override)
+                          override, setup=setup)
 
         return obj
 
@@ -354,15 +355,19 @@ class ProblemConf( Struct ):
         return out
 
     def __init__(self, define_dict, funmod=None, filename=None,
-                 required=None, other=None, verbose=True, override=None):
+                 required=None, other=None, verbose=True, override=None,
+                 setup=True):
         if override:
+            if isinstance(override, ProblemConf):
+                override = override.__dict__
             define_dict = update_dict_recursively(define_dict, override, True)
 
         self.__dict__.update(define_dict)
         self.verbose = verbose
 
-        self.setup(funmod=funmod, filename=filename,
-                   required=required, other=other)
+        if setup:
+            self.setup(funmod=funmod, filename=filename,
+                       required=required, other=other)
 
 
     def setup( self, define_dict = None, funmod = None, filename = None,
