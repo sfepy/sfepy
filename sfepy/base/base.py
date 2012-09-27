@@ -1036,7 +1036,8 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False,
 
     return table
 
-def update_dict_recursively(dst, src, tuples_too=False):
+def update_dict_recursively(dst, src, tuples_too=False,
+                            overwrite_by_none=True):
     """
     Update `dst` dictionary recursively using items in `src` dictionary.
 
@@ -1048,6 +1049,8 @@ def update_dict_recursively(dst, src, tuples_too=False):
         The source dictionary.
     tuples_too : bool
         If True, recurse also into dictionaries that are members of tuples.
+    overwrite_by_none : bool
+        If False, do not overwrite destination dictionary values by None.
 
     Returns
     -------
@@ -1056,22 +1059,24 @@ def update_dict_recursively(dst, src, tuples_too=False):
     """
     def tuplezip(a):
         if isinstance(a[0], dict) and isinstance(a[1], dict):
-           return update_dict_recursively(a[0], a[1], True)
+            return update_dict_recursively(a[0], a[1], True)
         return a[1]
 
     for key in src:
-        if (key in dst):
-           if isinstance(src[key], dict) and isinstance(dst[key], dict):
-             dst[key] = update_dict_recursively(dst[key], src[key],tuples_too)
-             continue
+        if key in dst:
+            if isinstance(src[key], dict) and isinstance(dst[key], dict):
+                dst[key] = update_dict_recursively(dst[key],
+                                                   src[key], tuples_too)
+                continue
 
-           if tuples_too and isinstance(dst[key], tuple) \
-                  and isinstance(src[key], tuple):
-             dst[key] = tuple(map(tuplezip,
-                                  zip(src[key], dst[key]))[:len(dst[key])])
-             continue
+            if tuples_too and isinstance(dst[key], tuple) \
+                   and isinstance(src[key], tuple):
+                dst[key] = tuple(map(tuplezip,
+                                     zip(src[key], dst[key]))[:len(dst[key])])
+                continue
 
-        dst[key] = src[key]
+        if overwrite_by_none or not src[key] is None:
+            dst[key] = src[key]
 
     return dst
 
