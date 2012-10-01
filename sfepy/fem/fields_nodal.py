@@ -382,3 +382,18 @@ class H1NodalSurfaceField(H1NodalMixin, SurfaceField):
     A field defined on a surface region.
     """
     family_name = 'surface_H1_lagrange'
+
+    def interp_v_vals_to_n_vals(self, vec):
+        """
+        Interpolate a function defined by vertex DOF values using the FE
+        surface geometry base (P1 or Q1) into the extra nodes, i.e. define the
+        extra DOF values.
+        """
+        if not self.node_desc.has_extra_nodes():
+            enod_vol_val = vec.copy()
+
+        else:
+            msg = 'surface nodal fields do not support higher order nodes yet!'
+            raise NotImplementedError(msg)
+
+        return enod_vol_val
