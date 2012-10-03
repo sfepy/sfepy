@@ -1083,16 +1083,34 @@ def update_dict_recursively(dst, src, tuples_too=False,
 def edit_dict_strings(str_dict, old, new):
     """
     Replace substrings `old` with `new` in string values of dictionary
-    `str_dict`.
+    `str_dict`. Both `old` and `new` can be lists of the same length - items
+    in `old` are replaced by items in `new` with the same index.
+
+    Parameters
+    ----------
+    str_dict : dict
+        The dictionary with string values.
+    old : str or list of str
+        The old substring or list of substrings.
+    new : str or list of str
+        The new substring or list of substrings.
 
     Returns
     -------
     new_dict : dict
         The dictionary with edited strings.
     """
-    new_dict = {}
-    for key, val in str_dict.iteritems():
-        new_dict[key] = val.replace(old, new)
+    if isinstance(old, basestr):
+        new_dict = {}
+        for key, val in str_dict.iteritems():
+            new_dict[key] = val.replace(old, new)
+
+    else:
+        assert_(len(old) == len(new))
+
+        new_dict = dict(str_dict)
+        for ii, _old in enumerate(old):
+            new_dict.update(edit_dict_strings(new_dict, _old, new[ii]))
 
     return new_dict
 
