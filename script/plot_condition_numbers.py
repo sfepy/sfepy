@@ -78,12 +78,14 @@ def main():
         quad_order = 2 * (max(to - order_fix, 0))
         output('quadrature order:', quad_order)
 
+        integral = Integral('i', order=quad_order)
+        qp, _ = integral.get_qp(options.geometry)
+        output('number of quadrature points:', qp.shape[0])
+
         u = FieldVariable('u', 'unknown', field, n_c)
         v = FieldVariable('v', 'test', field, n_c, primary_var_name='u')
 
         m = Material('m', lam=1.0, mu=1.0)
-
-        integral = Integral('i', order=quad_order)
 
         if options.matrix_type == 'laplace':
             term = Term.new('dw_laplace(m.mu, v, u)',
