@@ -1089,7 +1089,7 @@ def edit_dict_strings(str_dict, old, new):
     Parameters
     ----------
     str_dict : dict
-        The dictionary with string values.
+        The dictionary with string values or tuples containing strings.
     old : str or list of str
         The old substring or list of substrings.
     new : str or list of str
@@ -1103,7 +1103,20 @@ def edit_dict_strings(str_dict, old, new):
     if isinstance(old, basestr):
         new_dict = {}
         for key, val in str_dict.iteritems():
-            new_dict[key] = val.replace(old, new)
+            if isinstance(val, basestr):
+                new_dict[key] = val.replace(old, new)
+
+            elif isinstance(val, tuple):
+                new_val = []
+                for item in val:
+                    if isinstance(item, basestr):
+                        item = item.replace(old, new)
+                    new_val.append(item)
+
+                new_dict[key] = tuple(new_val)
+
+            else:
+                raise ValueError('unsupported value! (%s)' % type(val))
 
     else:
         assert_(len(old) == len(new))
