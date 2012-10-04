@@ -157,9 +157,10 @@ def import_file(filename, package_name=None):
 
     return mod
 
-def assert_( condition ):
+def assert_( condition, msg = 'assertion failed!'):
     if not condition:
-        raise ValueError( 'assertion failed!' )
+        raise ValueError( msg )
+
 
 ##
 # c: 06.04.2005, r: 05.05.2008
