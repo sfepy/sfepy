@@ -1080,7 +1080,40 @@ def update_dict_recursively(dst, src, tuples_too=False,
 
     return dst
 
-def edit_dict_strings(str_dict, old, new):
+def edit_tuple_strings(str_tuple, old, new, recur=False):
+    """
+    Replace substrings `old` with `new` in items of tuple
+    `str_tuple`. Non-string items are just copied to the new tuple.
+
+    Parameters
+    ----------
+    str_tuple : tuple
+        The tuple with string values.
+    old : str
+        The old substring.
+    new : str
+        The new substring.
+    recur : bool
+        If True, edit items that are tuples recursively.
+
+    Returns
+    -------
+    new_tuple : tuple
+        The tuple with edited strings.
+    """
+    new_tuple = []
+    for item in str_tuple:
+        if isinstance(item, basestr):
+            item = item.replace(old, new)
+
+        elif recur and isinstance(item, tuple):
+            item = edit_tuple_strings(item, old, new, recur=True)
+
+        new_tuple.append(item)
+
+    return tuple(new_tuple)
+
+def edit_dict_strings(str_dict, old, new, recur=False):
     """
     Replace substrings `old` with `new` in string values of dictionary
     `str_dict`. Both `old` and `new` can be lists of the same length - items
@@ -1094,6 +1127,8 @@ def edit_dict_strings(str_dict, old, new):
         The old substring or list of substrings.
     new : str or list of str
         The new substring or list of substrings.
+    recur : bool
+        If True, edit tuple values recursively.
 
     Returns
     -------
@@ -1107,13 +1142,7 @@ def edit_dict_strings(str_dict, old, new):
                 new_dict[key] = val.replace(old, new)
 
             elif isinstance(val, tuple):
-                new_val = []
-                for item in val:
-                    if isinstance(item, basestr):
-                        item = item.replace(old, new)
-                    new_val.append(item)
-
-                new_dict[key] = tuple(new_val)
+                new_dict[key] = edit_tuple_strings(val, old, new, recur=recur)
 
             else:
                 raise ValueError('unsupported value! (%s)' % type(val))
@@ -1123,7 +1152,8 @@ def edit_dict_strings(str_dict, old, new):
 
         new_dict = dict(str_dict)
         for ii, _old in enumerate(old):
-            new_dict.update(edit_dict_strings(new_dict, _old, new[ii]))
+            new_dict.update(edit_dict_strings(new_dict, _old, new[ii],
+                                              recur=recur))
 
     return new_dict
 
