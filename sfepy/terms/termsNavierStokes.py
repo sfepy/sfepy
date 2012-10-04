@@ -119,7 +119,7 @@ class ConvectTerm(Term):
 
         fmode = diff_var is not None
 
-        return grad, val_qp, vg.bf, vg, fmode
+        return grad, val_qp, vg, fmode
 
 class LinearConvectTerm(Term):
     r"""
@@ -158,13 +158,13 @@ class LinearConvectTerm(Term):
                 grad = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return grad, val_qp, vg.bf, vg, fmode
+            return grad, val_qp, vg, fmode
 
         elif mode == 'qp':
             grad = self.get(state, 'grad').transpose((0, 1, 3, 2)).copy()
             fmode = 2
 
-            return grad, val_qp, vg.bf, vg, fmode
+            return grad, val_qp, vg, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'
@@ -237,7 +237,7 @@ class StokesTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, svg.bf, vvg, fmode
+            return coef, val_qp, svg, vvg, fmode
 
         elif mode == 'eval':
             vvg, _ = self.get_mapping(vvar)

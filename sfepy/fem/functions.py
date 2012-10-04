@@ -77,3 +77,49 @@ class ConstantFunction(Function):
 
         Function.__init__(self, name = name, function = get_constants,
                           is_constant = True)
+
+class ConstantFunctionByRegion(Function):
+    """
+    Function with constant values in regions.
+    """
+
+    def __init__(self, values):
+        """
+        Make a function out of a dictionary of constant values per region. When
+        called with coors argument, the values are repeated for each
+        coordinate in each of the given regions.
+        """
+
+        name = '_'.join(['get_constants_by_region'] + values.keys())
+
+        def get_constants(ts=None, coors=None, mode=None,
+                          term=None, problem=None, **kwargs):
+            out = {}
+            if mode == 'qp':
+                qps = term.get_physical_qps()
+
+                for key, val in values.iteritems():
+                    if '.' in key: continue
+                    rval = nm.array(val[val.keys()[0]], dtype=nm.float64,
+                                    ndmin=3)
+                    matdata = nm.zeros((coors.shape[0], ) + rval.shape[1:],
+                                       dtype=nm.float64)
+
+                    for rkey, rval in val.iteritems():
+                        region = problem.domain.regions[rkey]
+                        rval = nm.array(rval, dtype=nm.float64, ndmin=3)
+
+                        for kgrp, elems in region.cells.iteritems():
+                            nqp = qps.shape[kgrp][1]
+                            nel = elems.shape[0]
+                            vmap = nm.tile(elems.reshape((nel,1)) * nqp,
+                                           (1, nqp)) + nm.arange(nqp)
+                            matdata[vmap.reshape(nel * nqp)
+                                    + qps.rindx[kgrp].start] = rval
+
+                    out[key] = matdata
+
+            return out
+
+        Function.__init__(self, name=name, function=get_constants,
+                          is_constant=True)

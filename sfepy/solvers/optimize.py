@@ -408,6 +408,7 @@ class ScipyFMinSolver(OptimizationSolver):
 
     def __call__(self, x0, conf=None, obj_fun=None, obj_fun_grad=None,
                  status=None, obj_args=None):
+        import inspect
 
         if conf is not None:
             self.set_method(conf)
@@ -423,12 +424,13 @@ class ScipyFMinSolver(OptimizationSolver):
         tt = time.clock()
 
         kwargs = {self._i_max_name[conf.method] : conf.i_max,
-                  #not present in my version
-                  #'disp' : conf.verbose,
                   'args' : obj_args}
 
         if conf.method in self._has_grad:
             kwargs['fprime'] = obj_fun_grad
+
+        if 'disp' in inspect.getargspec(self.solver)[0]:
+            kwargs['disp'] = conf.verbose
 
         for key, val in conf.to_dict().iteritems():
             if key not in self._omit:

@@ -154,7 +154,7 @@ material_1 = {
 integral_1 = {
     'name' : 'i3',
     'kind' : 'v',
-    'quadrature' : 'gauss_o3_d%d' % dim,
+    'order' : 3,
 }
 
 ##

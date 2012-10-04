@@ -40,7 +40,7 @@ int32 sub_mul_gradddgrad_scalar( FMField *out,
   - 27.07.2006
 */
 int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
-                       FMField *bf, VolumeGeometry *vg, int32 isDiff )
+                       VolumeGeometry *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *gf = 0, *ftgf = 0, *ftgfu = 0;
@@ -62,15 +62,16 @@ int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
     FMF_SetCell( out, ii );
     FMF_SetCell( gradU, ii );
     FMF_SetCell( vg->det, ii );
+    FMF_SetCellX1( vg->bf, ii );
 
     if (isDiff) {
-      bf_ract( gf, bf, gradU );
-      bf_actt( ftgf, bf, gf );
+      bf_ract( gf, vg->bf, gradU );
+      bf_actt( ftgf, vg->bf, gf );
       fmf_sumLevelsMulF( out, ftgf, vg->det->val );
     } else {
       FMF_SetCell( stateW, ii );
       fmf_mulAB_nn( gfu, gradU, stateW );
-      bf_actt( ftgfu, bf, gfu );
+      bf_actt( ftgfu, vg->bf, gfu );
       fmf_sumLevelsMulF( out, ftgfu, vg->det->val );
     }
     ERR_CheckGo( ret );
@@ -98,7 +99,7 @@ int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
   - 27.07.2006
 */
 int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
-                       FMField *bf, VolumeGeometry *vg, int32 isDiff )
+                       VolumeGeometry *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *vtg = 0, *ftvtg = 0;
@@ -124,7 +125,9 @@ int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
     convect_build_vtg( vtg, vg->bfGM, stateU );
 
     if (isDiff) {
-      bf_actt( ftvtg, bf, vtg );
+      FMF_SetCellX1( vg->bf, ii );
+      bf_actt( ftvtg, vg->bf, vtg );
+
       fmf_sumLevelsTMulF( out, ftvtg, vg->det->val );
     } else {
       FMF_SetCell( stateW, ii );
@@ -156,7 +159,7 @@ int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
 */
 int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
 			FMField *stateU, FMField *gradU,
-			FMField *coef, FMField *bf, VolumeGeometry *vg,
+			FMField *coef, VolumeGeometry *vg,
 			int32 *conn, int32 nEl, int32 nEP,
 			int32 isDiff )
 {
@@ -199,20 +202,21 @@ int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
     FMF_SetCell( vg->bfGM, ii );
     FMF_SetCell( vg->det, ii );
     FMF_SetCell( coef, ii );
+    FMF_SetCellX1( vg->bf, ii );
 
     // u grad u.
     fmf_mulAB_nn( gUfU, gradU, stateU );
     // (u grad u, grad).
     convect_build_vtbg( gUfUTgT, vg->bfGM, gUfU );
     // (u grad u, v grad).
-    bf_actt( fTgUfUTgT, bf, gUfUTgT );
+    bf_actt( fTgUfUTgT, vg->bf, gUfUTgT );
 
     // u grad.
     convect_build_vtg( fUTg, vg->bfGM, stateU );
     // (grad u, u^T grad).
     fmf_mulAB_nn( gUfUTg, gradU, fUTg );
     // (v grad u, u grad).
-    bf_actt( fTgUfUTg, bf, gUfUTg );
+    bf_actt( fTgUfUTg, vg->bf, gUfUTg );
 
     if (isDiff == 1) {
       fmf_addAB_nn( outdqp, fTgUfUTgT, fTgUfUTg );
@@ -261,7 +265,7 @@ int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
   - 30.10.2007, c
 */
 int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
-			 FMField *coef, FMField *bf_w, VolumeGeometry *vg_w,
+			 FMField *coef, VolumeGeometry *vg_w,
 			 int32 *conn_w, int32 nEl_w, int32 nEP_w,
 			 int32 isDiff )
 {
@@ -292,11 +296,12 @@ int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
     FMF_SetCell( vg_w->bfGM, ii );
     FMF_SetCell( vg_w->det, ii );
     FMF_SetCell( coef, ii );
+    FMF_SetCellX1( vg_w->bf, ii );
 
     // (grad p, grad).
     convect_build_vtbg( gPTgT, vg_w->bfGM, gradP );
     // (grad p, v grad).
-    bf_actt( fTgPTgT, bf_w, gPTgT );
+    bf_actt( fTgPTgT, vg_w->bf, gPTgT );
 
     if (isDiff == 1) {
       fmf_sumLevelsMulF( out, fTgPTgT, vg_w->det->val );
@@ -330,7 +335,7 @@ int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
   - 30.10.2007, c
 */
 int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
-			 FMField *coef, FMField *bf_u,
+			 FMField *coef,
 			 VolumeGeometry *vg_u, VolumeGeometry *vg_r,
 			 int32 *conn_r, int32 nEl_r, int32 nEP_r,
 			 int32 isDiff )
@@ -363,12 +368,13 @@ int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
     FMF_SetCell( vg_r->bfGM, ii );
     FMF_SetCell( vg_u->det, ii );
     FMF_SetCell( coef, ii );
+    FMF_SetCellX1( vg_u->bf, ii );
 
     // (grad u, grad).
     fmf_mulATB_nn( gUTg, gradU, vg_r->bfGM );
 
     // (v grad u, grad).
-    bf_actt( fTgUTg, bf_u, gUTg );
+    bf_actt( fTgUTg, vg_u->bf, gUTg );
 
     if (isDiff == 1) {
       fmf_sumLevelsMulF( out, fTgUTg, vg_u->det->val );
@@ -447,7 +453,7 @@ int32 d_of_nsMinGrad( FMField *out, FMField *grad,
 */
 int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
                             float64 weight, float64 bpress,
-			    FMField *bf, SurfaceGeometry *sg, int32 isDiff )
+			    SurfaceGeometry *sg, int32 isDiff )
 {
   int32 ii, iqp, nQP, ret = RET_OK;
   float64 aux;
@@ -478,7 +484,8 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
     for (ii = 0; ii < out->nCell; ii++) {
       FMF_SetCell( out, ii );
       FMF_SetCell( sg->det, ii );
-      fmf_sumLevelsTMulF( out, bf, sg->det->val );
+      FMF_SetCellX1( sg->bf, ii );
+      fmf_sumLevelsTMulF( out, sg->bf, sg->det->val );
 
       ERR_CheckGo( ret );
     }

@@ -3,11 +3,10 @@ Create pyparsing grammar for problem configuration and options.
 """
 from pyparsing import (Word, Group, Suppress, Combine, Optional,
                        Forward, Empty, quotedString, oneOf, removeQuotes,
-                       delimitedList, nums, alphas, alphas8bit, alphanums, Keyword)
+                       delimitedList, nums, alphas, alphas8bit, alphanums,
+                       Keyword)
 
-import sys
-
-def create_bnf(outer_element = '', freeWord=False):
+def create_bnf(allow_tuple=False, free_word=False):
     cvt_int = lambda toks: int(toks[0])
     cvt_real = lambda toks: float(toks[0])
     cvt_bool =  lambda toks: toks[0].lower == 'true'
@@ -39,12 +38,14 @@ def create_bnf(outer_element = '', freeWord=False):
     list_str = Forward()
     dict_str = Forward()
 
-    if freeWord:
-      string = Word(alphas8bit + "_-/.+**" + alphanums)
-    else:
-      string = Word(alphas8bit + alphas, alphas8bit + alphanums + "_" )
+    if free_word:
+        string = Word(alphas8bit + "_-/.+**" + alphanums)
 
-    list_item = (none | boolean | real | integer | list_str | tuple_str | dict_str
+    else:
+        string = Word(alphas8bit + alphas, alphas8bit + alphanums + "_" )
+
+    list_item = (none | boolean | real | integer | list_str | tuple_str
+                 | dict_str
                  | quotedString.setParseAction(removeQuotes)
                  | string )
     list_item2 = list_item | Empty().setParseAction(lambda: [None])
@@ -64,7 +65,8 @@ def create_bnf(outer_element = '', freeWord=False):
 
     dict_or_tuple =  dict_inner | tuple_inner
 
-    x=locals()
-    if x.has_key(outer_element):
-        return locals()[outer_element]
-    return dict_inner
+    if allow_tuple:
+        return dict_or_tuple
+
+    else:
+        return dict_inner

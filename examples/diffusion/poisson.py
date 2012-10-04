@@ -117,12 +117,11 @@ ebc_2 = {
 #$ \end{center}
 #$ where $\nabla u \approx \bm{G} \bm{u}$. Below we use $f = 0$ (Laplace
 #$ equation).
-#! We also define an integral here: 'gauss_o1_d3' says that we wish to use
-#! quadrature of the first order in three space dimensions.
+#! We also define an integral here.
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o2_d3',
+    'order' : 2,
 }
 
 equations = {

@@ -322,10 +322,20 @@ class SurfaceFluxTerm(Term):
     r"""
     Surface flux term.
 
+    Supports 'eval', 'el_avg' and 'el' evaluation modes.
+
     :Definition:
 
     .. math::
         \int_{\Gamma} \ul{n} \cdot K_{ij} \nabla_j \bar{p}
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
+        \cdot K_{ij} \nabla_j \bar{p}\ / \int_{T_K} 1
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ul{n}
+        \cdot K_{ij} \nabla_j \bar{p}
 
     :Arguments:
         - material: :math:`\ul{K}`
@@ -343,7 +353,7 @@ class SurfaceFluxTerm(Term):
 
         grad = self.get(parameter, 'grad')
 
-        fmode = {'eval' : 0, 'el_avg' : 1}.get(mode, 1)
+        fmode = {'eval' : 0, 'el_avg' : 1, 'el' : 0}.get(mode, 0)
 
         return grad, mat, sg, fmode
 

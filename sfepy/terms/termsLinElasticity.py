@@ -93,6 +93,86 @@ class LinearElasticTerm(Term):
         else:
             self.function = terms.d_lin_elastic
 
+class SDLinearElasticTerm(Term):
+    r"""
+    Sensitivity analasys of of linear elasticity.
+
+    :Definition:
+
+    .. math::
+        \int_{\Omega} \hat{D}_{ijkl}\ e_{ij}(\ul{v}) e_{kl}(\ul{u})
+
+    .. math::
+        \hat{D}_{ijkl} = D_{ijkl}(\nabla \cdot \ul{\Vcal}) - D_{ijkq}{\partial \Vcal_l \over \partial x_q} - D_{iqkl}{\partial \Vcal_j \over \partial x_q}
+
+    :Arguments:
+        - material    : :math:`D_{ijkl}`
+        - parameter_w : :math:`\ul{w}`
+        - parameter_u : :math:`\ul{u}`
+        - parameter_mesh_velocity : :math:`\ul{\Vcal}`
+    """
+    name = 'd_sd_lin_elastic'
+    arg_types = ('material', 'parameter_w', 'parameter_u',
+                 'parameter_mesh_velocity')
+    function = terms.d_lin_elastic
+
+    @staticmethod
+    def op_dv(vgrad, sym):
+        nel, nlev, dim, _ = vgrad.shape
+        sd = nm.zeros((nel, nlev, sym, sym), dtype=vgrad.dtype)
+
+        if dim == 2:
+            sd[:,:,0,0] = vgrad[:,:,0,0]
+            sd[:,:,1,1] = vgrad[:,:,1,1]
+            #sd[:,:,2,2] = vgrad[:,:,1,1]
+            #sd[:,:,2,0] = vgrad[:,:,1,0]
+            #sd[:,:,0,2] = vgrad[:,:,0,1]
+            #sd[:,:,2,1] = vgrad[:,:,0,1]
+
+        elif dim == 3:
+            sd[:,:,0,0] = vgrad[:,:,0,0]
+            sd[:,:,1,1] = vgrad[:,:,1,1]
+            sd[:,:,5,5] = vgrad[:,:,1,1]
+            sd[:,:,2,2] = vgrad[:,:,2,2]
+            sd[:,:,3,3] = vgrad[:,:,2,2]
+            sd[:,:,4,4] = vgrad[:,:,2,2]
+            sd[:,:,5,0] = vgrad[:,:,1,0]
+            sd[:,:,0,5] = vgrad[:,:,0,1]
+            sd[:,:,5,1] = vgrad[:,:,0,1]
+            sd[:,:,4,0] = vgrad[:,:,2,0]
+            sd[:,:,4,2] = vgrad[:,:,0,2]
+            sd[:,:,5,3] = vgrad[:,:,0,2]
+            sd[:,:,3,1] = vgrad[:,:,2,1]
+            sd[:,:,4,5] = vgrad[:,:,2,1]
+            sd[:,:,3,2] = vgrad[:,:,1,2]
+            sd[:,:,5,4] = vgrad[:,:,1,2]
+            # ufff... needs to be checked
+        else:
+            exit('not yet implemented!')
+
+        return sd
+
+    def get_fargs(self, mat, par_w, par_u, par_mv,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        vg, _ = self.get_mapping(par_u)
+
+        strain1 = self.get(par_w, 'cauchy_strain')
+        strain2 = self.get(par_u, 'cauchy_strain')
+        div_mv = self.get(par_mv, 'div')
+        grad_mv = self.get(par_mv, 'grad')
+        opd_mv = self.op_dv(grad_mv, mat.shape[-1])
+
+        aux = dot_sequences(mat, opd_mv)
+        mat_mv = mat * div_mv - (aux + aux.transpose((0,1,3,2)))
+
+        return 1.0, strain1, strain2, mat_mv, vg
+
+    def get_eval_shape(self, mat, par_w, par_u, par_mv,
+                       mode=None, term_mode=None, diff_var=None, **kwargs):
+        n_el, n_qp, dim, n_en, n_c = self.get_data_shape(par_u)
+
+        return (n_el, 1, 1, 1), par_u.dtype
+
 class LinearElasticIsotropicTerm(Term):
     r"""
     Isotropic linear elasticity term.

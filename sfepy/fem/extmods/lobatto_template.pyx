@@ -94,4 +94,8 @@ def eval_lobatto_tensor_product(np.ndarray[float64, mode='c', ndim=2]
                         io = n_fun * (nr * ic + ir) + ifun
                         _out[io] *= eval_fun(_xis[dim * ic + ii])
 
+        # Multiply by 2 due to the transformation of coordinates.
+        for ii in range(0, n_coor * nr * n_fun):
+            _out[ii] *= 2.0
+
     return out

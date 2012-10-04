@@ -63,3 +63,26 @@ class Test( TestCommon ):
         assert_( a.f4 == 'new one' )
 
         return True
+
+    def test_verbose_output(self):
+        import StringIO
+        from sfepy.base.base import Output, goptions
+
+        fd = StringIO.StringIO()
+
+        output = Output('test', filename=fd)
+
+        output('test1')
+        goptions['verbose'] = False
+        output('test2')
+        goptions['verbose'] = 1
+        output('test3')
+
+        _ok1 = goptions['verbose'] == True
+        _ok2 = fd.getvalue() == 'test test1\ntest test3\n'
+
+        fd.close()
+
+        ok = _ok1 and _ok2
+
+        return ok

@@ -25,4 +25,4 @@ class ElectricSourceTerm( Term ):
 
         grad = self.get(parameter, 'grad')
 
-        return grad, mat, vg.bf, vg
+        return grad, mat, vg

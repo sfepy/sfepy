@@ -11,6 +11,8 @@ complex_types = [nm.complex128]
 
 nm.set_printoptions( threshold = 100 )
 
+from sfepy.base.goptions import goptions
+
 sfepy_config_dir = os.path.expanduser('~/.sfepy')
 if not os.path.exists(sfepy_config_dir):
     os.makedirs(sfepy_config_dir)
@@ -156,6 +158,39 @@ def import_file(filename, package_name=None):
         sys.path.pop(-1)
 
     return mod
+
+def try_imports(imports, fail_msg=None):
+    """
+    Try import statements until one succeeds.
+
+    Parameters
+    ----------
+    imports : list
+        The list of import statements.
+    fail_msg : str
+        If not None and no statement succeeds, a `ValueError` is raised with
+        the given message, appended to all failed messages.
+
+    Returns
+    -------
+    locals : dict
+        The dictionary of imported modules.
+    """
+    msgs = []
+    for imp in imports:
+        try:
+            exec imp
+            break
+
+        except Exception as inst:
+            msgs.append(str(inst))
+
+    else:
+        if fail_msg is not None:
+            msgs.append(fail_msg)
+            raise ValueError('\n'.join(msgs))
+
+    return locals()
 
 def assert_( condition, msg = 'assertion failed!'):
     if not condition:
@@ -693,7 +728,7 @@ class Output(Struct):
         verbose : bool (in **argv)
             No output if False.
         """
-        verbose = argv.get('verbose', True)
+        verbose = argv.get('verbose', goptions['verbose'])
         if verbose:
             self.output_function(*argc, **argv)
 
@@ -713,7 +748,7 @@ class Output(Struct):
 
         Parameters
         ----------
-        filename : str
+        filename : str or file object
             Print messages into the specified file.
         quiet : bool
             Do not print anything to screen.
@@ -723,6 +758,10 @@ class Output(Struct):
             Append to an existing file instead of overwriting it. Use with
             `filename`.
         """
+        if not isinstance(filename, basestr):
+            # filename is a file descriptor.
+            append = True
+
         self.level = 0
         def output_none(*argc, **argv):
             pass
@@ -739,6 +778,21 @@ class Output(Struct):
             if msg.endswith('...'):
                 self.level += 1
 
+        def print_to_file(filename, msg):
+            if isinstance(filename, basestr):
+                fd = open(filename, 'a')
+
+            else:
+                fd = filename
+
+            print >>fd, self._prefix + ('  ' * self.level) + msg
+
+            if isinstance(filename, basestr):
+                fd.close()
+
+            else:
+                fd.flush()
+
         def output_file(*argc, **argv):
             format = '%s' + ' %s' * (len(argc) - 1)
             msg =  format % argc
@@ -746,9 +800,7 @@ class Output(Struct):
             if msg.startswith('...'):
                 self.level -= 1
 
-            fd = open(filename, 'a')
-            print >>fd, self._prefix + ('  ' * self.level) + msg
-            fd.close()
+            print_to_file(filename, msg)
 
             if msg.endswith('...'):
                 self.level += 1
@@ -762,20 +814,22 @@ class Output(Struct):
 
             print self._prefix + ('  ' * self.level) + msg
 
-            fd = open(filename, 'a')
-            print >>fd, self._prefix + ('  ' * self.level) + msg
-            fd.close()
+            print_to_file(filename, msg)
 
             if msg.endswith('...'):
                 self.level += 1
 
         def reset_file(filename):
-            output_dir = os.path.dirname(filename)
-            if output_dir and not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+            if isinstance(filename, basestr):
+                output_dir = os.path.dirname(filename)
+                if output_dir and not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
 
-            fd = open( filename, 'w' )
-            fd.close()
+                fd = open( filename, 'w' )
+                fd.close()
+
+            else:
+                raise ValueError('cannot reset a file object!')
 
         if quiet is True:
             if filename is not None:
@@ -923,7 +977,7 @@ def use_method_with_name( instance, method, new_name ):
 def insert_as_static_method( cls, name, function ):
     setattr( cls, name, staticmethod( function ) )
 
-def find_subclasses(context, classes, omit_unnamed=False):
+def find_subclasses(context, classes, omit_unnamed=False, name_attr='name'):
     """Find subclasses of the given classes in the given context.
 
     Examples
@@ -941,10 +995,14 @@ def find_subclasses(context, classes, omit_unnamed=False):
         try:
             for cls in classes:
                 if is_derived_class(var, cls):
-                    if hasattr(var, 'name'):
-                        key = var.name
+                    if hasattr(var, name_attr):
+                        key = getattr(var, name_attr)
                         if omit_unnamed and not key:
                             continue
+
+                    elif omit_unnamed:
+                        continue
+
                     else:
                         key = var.__class__.__name__
 
@@ -955,7 +1013,8 @@ def find_subclasses(context, classes, omit_unnamed=False):
             pass
     return table
 
-def load_classes(filenames, classes, package_name=None, ignore_errors=False):
+def load_classes(filenames, classes, package_name=None, ignore_errors=False,
+                 name_attr='name'):
     """
     For each filename in filenames, load all subclasses of classes listed.
     """
@@ -973,11 +1032,13 @@ def load_classes(filenames, classes, package_name=None, ignore_errors=False):
                 output('reason:\n', sys.exc_info()[1])
                 continue
 
-        table.update(find_subclasses(vars(mod), classes, omit_unnamed=True))
+        table.update(find_subclasses(vars(mod), classes, omit_unnamed=True,
+                                     name_attr=name_attr))
 
     return table
 
-def update_dict_recursively(dst, src, tuples_too=False, overwrite_by_none=True):
+def update_dict_recursively(dst, src, tuples_too=False,
+                            overwrite_by_none=True):
     """
     Update `dst` dictionary recursively using items in `src` dictionary.
 
@@ -989,6 +1050,8 @@ def update_dict_recursively(dst, src, tuples_too=False, overwrite_by_none=True):
         The source dictionary.
     tuples_too : bool
         If True, recurse also into dictionaries that are members of tuples.
+    overwrite_by_none : bool
+        If False, do not overwrite destination dictionary values by None.
 
     Returns
     -------
@@ -997,51 +1060,101 @@ def update_dict_recursively(dst, src, tuples_too=False, overwrite_by_none=True):
     """
     def tuplezip(a):
         if isinstance(a[0], dict) and isinstance(a[1], dict):
-           return update_dict_recursively(a[0], a[1], True)
+            return update_dict_recursively(a[0], a[1], True)
         return a[1]
 
     for key in src:
-        if (key in dst):
-           if isinstance(src[key], dict) and isinstance(dst[key], dict):
-             dst[key] = update_dict_recursively(dst[key], src[key],tuples_too)
-             continue
+        if key in dst:
+            if isinstance(src[key], dict) and isinstance(dst[key], dict):
+                dst[key] = update_dict_recursively(dst[key],
+                                                   src[key], tuples_too)
+                continue
 
-           if tuples_too and isinstance(dst[key], tuple) \
-                  and isinstance(src[key], tuple):
-             dst[key] = tuple(map(tuplezip,
-                                  zip(src[key], dst[key]))[:len(dst[key])])
-             continue
-        if overwrite_by_none or not src[key] is None:     
-           dst[key] = src[key]
+            if tuples_too and isinstance(dst[key], tuple) \
+                   and isinstance(src[key], tuple):
+                dst[key] = tuple(map(tuplezip,
+                                     zip(src[key], dst[key]))[:len(dst[key])])
+                continue
+
+        if overwrite_by_none or not src[key] is None:
+            dst[key] = src[key]
 
     return dst
 
 def edit_dict_strings(str_dict, old, new):
     """
     Replace substrings `old` with `new` in string values of dictionary
-    `str_dict`.
+    `str_dict`. Both `old` and `new` can be lists of the same length - items
+    in `old` are replaced by items in `new` with the same index.
+
+    Parameters
+    ----------
+    str_dict : dict
+        The dictionary with string values.
+    old : str or list of str
+        The old substring or list of substrings.
+    new : str or list of str
+        The new substring or list of substrings.
 
     Returns
     -------
     new_dict : dict
         The dictionary with edited strings.
     """
-    new_dict = {}
-    for key, val in str_dict.iteritems():
-        new_dict[key] = val.replace(old, new)
+    if isinstance(old, basestr):
+        new_dict = {}
+        for key, val in str_dict.iteritems():
+            new_dict[key] = val.replace(old, new)
+
+    else:
+        assert_(len(old) == len(new))
+
+        new_dict = dict(str_dict)
+        for ii, _old in enumerate(old):
+            new_dict.update(edit_dict_strings(new_dict, _old, new[ii]))
 
     return new_dict
 
-##
-# 09.08.2006, c
-def invert_dict( d, is_val_tuple = False ):
+def invert_dict(d, is_val_tuple=False, unique=True):
+    """
+    Invert a dictionary by making its values keys and vice versa.
+
+    Parameters
+    ----------
+    d : dict
+        The input dictionary.
+    is_val_tuple : bool
+        If True, the `d` values are tuples and new keys are the tuple items.
+    unique : bool
+        If True, the `d` values are unique and so the mapping is
+        one to one. If False, the `d` values (possibly) repeat, so the inverted
+        dictionary will have as items lists of corresponding keys.
+
+    Returns
+    -------
+    di : dict
+        The inverted dictionary.
+    """
     di = {}
+
     for key, val in d.iteritems():
-        if is_val_tuple:
-            for v in val:
-                di[v] = key
+        if unique:
+            if is_val_tuple:
+                for v in val:
+                    di[v] = key
+            else:
+                di[val] = key
+
         else:
-            di[val] = key
+            if is_val_tuple:
+                for v in val:
+                    item = di.setdefault(v, [])
+                    item.append(key)
+
+            else:
+                item = di.setdefault(val, [])
+                item.append(key)
+
     return di
 
 def remap_dict(d, map):

@@ -6,7 +6,16 @@ import numpy as np
 
 cdef class CVolumeMapping:
 
-    def __cinit__(self, n_el, n_qp, dim, n_ep):
+    def __cinit__(self, n_el, n_qp, dim, n_ep, flag=0):
+        if flag:
+            self.bf = np.empty((n_el, n_qp, 1, n_ep), dtype=np.float64)
+
+        else:
+            self.bf = np.empty((1, n_qp, 1, n_ep), dtype=np.float64)
+
+        array2fmfield4(self._bf, self.bf)
+        self.geo.bf = self._bf
+
         self.bfg = np.empty((n_el, n_qp, dim, n_ep), dtype=np.float64)
         array2fmfield4(self._bfg, self.bfg)
         self.geo.bfGM = self._bfg
@@ -38,7 +47,7 @@ cdef class CVolumeMapping:
                  np.ndarray[float64, mode='c', ndim=2] coors not None,
                  np.ndarray[int32, mode='c', ndim=2] conn not None,
                  np.ndarray[float64, mode='c', ndim=3] bfgr not None,
-                 np.ndarray[float64, mode='c', ndim=3] ebfgr not None,
+                 np.ndarray[float64, mode='c', ndim=4] ebfgr not None,
                  np.ndarray[float64, mode='c', ndim=1] weights not None):
         """
         Describe the element geometry - compute the reference element
@@ -55,7 +64,7 @@ cdef class CVolumeMapping:
 
         # array2fmfield2(_coors, coors)
         array2fmfield3(_bfgr, bfgr)
-        array2fmfield3(_ebfgr, ebfgr)
+        array2fmfield4(_ebfgr, ebfgr)
         array2fmfield1(_weights, weights)
 
         ret = vg_describe(self.geo, _coors, n_nod, dim, _conn, n_el, n_ep,
@@ -144,7 +153,7 @@ cdef class CVolumeMapping:
 
 cdef class CSurfaceMapping:
 
-    def __cinit__(self, n_fa, n_qp, dim, n_fp):
+    def __cinit__(self, n_fa, n_qp, dim, n_fp, flag=0):
         self.normal = np.empty((n_fa, n_qp, dim, 1), dtype=np.float64)
         array2fmfield4(self._normal, self.normal)
         self.geo.normal = self._normal
@@ -156,6 +165,15 @@ cdef class CSurfaceMapping:
         self.area = np.empty((n_fa, 1, 1, 1), dtype=np.float64)
         array2fmfield4(self._area, self.area)
         self.geo.area = self._area
+
+        if flag:
+            self.bf = np.empty((n_fa, n_qp, 1, n_fp), dtype=np.float64)
+
+        else:
+            self.bf = np.empty((1, n_qp, 1, n_fp), dtype=np.float64)
+
+        array2fmfield4(self._bf, self.bf)
+        self.geo.bf = self._bf
 
         self.bfbg = None
         self.geo.bfBGM = NULL

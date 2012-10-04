@@ -21,6 +21,18 @@ class Solver(Struct):
 
     The subclasses have to reimplement __init__() and __call__(). The
     subclasses that implement process_conf() have to call Solver.process_conf().
+
+    All solvers use the following configuration parameters:
+
+    Parameters
+    ----------
+    name : str
+        The name referred to in problem description options.
+    kind : str
+        The solver kind, as given by the `name` class attribute of the Solver
+        subclasses.
+    verbose : bool
+        If True, the solver can print more information about the solution.
     """
 
     @staticmethod

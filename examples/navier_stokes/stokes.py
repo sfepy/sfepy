@@ -126,7 +126,7 @@ variable_4 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o2_d2',
+    'order' : 2,
 }
 
 equations = {

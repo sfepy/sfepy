@@ -12,7 +12,7 @@ class Test(TestCommon):
     @staticmethod
     def from_conf(conf, options):
         import sfepy
-        from sfepy.fem import Mesh, Domain, Field
+        from sfepy.fem import Mesh, Domain, H1NodalVolumeField
         mesh = Mesh.from_file('meshes/2d/rectangle_tri.mesh',
                               prefix_dir=sfepy.data_dir)
         domain = Domain('domain', mesh)
@@ -27,8 +27,8 @@ class Test(TestCommon):
         gamma2 = domain.create_region('Gamma2',
                                       'nodes in x > %.10f' % (max_x - eps))
 
-        field = Field('fu', nm.float64, 'vector', omega,
-                      space='H1', poly_space_base='lagrange', approx_order=2)
+        field = H1NodalVolumeField('fu', nm.float64, 'vector', omega,
+                                   approx_order=2)
 
         test = Test(conf=conf, options=options, dim=dim,
                     omega=omega, gamma1=gamma1, gamma2=gamma2,

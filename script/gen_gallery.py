@@ -12,7 +12,9 @@ import matplotlib.image as image
 import sfepy
 from sfepy.base.base import (get_default, ordered_iteritems,
                              import_file, output, Struct)
-from sfepy.base.ioutils import ensure_path, locate_files, remove_files
+from sfepy.base.ioutils import (ensure_path, locate_files, remove_files,
+                                edit_filename)
+from sfepy.postprocess.domain_specific import DomainSpecificPlot
 
 omits = [
     'linear_elastic_mM.py',
@@ -23,6 +25,26 @@ omits = [
 omit_dirs = [
     re.compile('.*output.*/').match,
 ]
+
+custom = {
+    'diffusion/sinbc.py' : {
+        '_t' : {
+            'is_wireframe' : True,
+            'domain_specific' : {
+                't' : DomainSpecificPlot('plot_warp_scalar',
+                                         ['rel_scaling=1']),
+            },
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
+            'opacity' : {'wireframe' : 0.3},
+        },
+        '_grad' : {
+            'opacity' : {'surface' : 0.3},
+            'view' : (-160, 33, 4, [0.5, 1.22, 0.05]),
+            'roll' : 68,
+        },
+    },
+}
 
 def _omit(filename):
     omit = False
@@ -39,11 +61,26 @@ def _omit(filename):
 
     return omit
 
-def _get_fig_filename(ebase, images_dir):
+def _get_fig_filenames(ebase, images_dir):
     fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
-    fig_filename = os.path.join(images_dir, fig_base + '.png')
 
-    return fig_base, fig_filename
+    yield fig_base
+
+    if ebase in custom:
+        suffixes = sorted(custom[ebase].keys())
+        for suffix in suffixes:
+            fig_filename = os.path.join(images_dir, fig_base + suffix + '.png')
+            yield fig_filename
+
+    else:
+        fig_filename = os.path.join(images_dir, fig_base + '.png')
+        yield fig_filename
+
+def _get_fig_filename(ebase, images_dir, suffix):
+    fig_base = os.path.splitext(ebase)[0].replace(os.path.sep, '-')
+    fig_filename = os.path.join(images_dir, fig_base + suffix + '.png')
+
+    return fig_filename
 
 def _make_sphinx_path(path, relative=False):
     if relative:
@@ -74,10 +111,12 @@ def generate_images(images_dir, examples_dir):
     options = Struct(output_filename_trunk=trunk,
                      output_format='vtk',
                      save_ebc=False,
+                     save_ebc_nodes=False,
                      save_regions=False,
                      save_field_meshes=False,
                      save_regions_as_groups=False,
                      solve_not=False)
+    default_views = {'' : {}}
 
     ensure_path(images_dir + os.path.sep)
 
@@ -104,25 +143,34 @@ def generate_images(images_dir, examples_dir):
             output('***** failed! *****')
 
         if problem is not None:
-            fig_filename = _get_fig_filename(ebase, images_dir)[1]
+            if ebase in custom:
+                views = custom[ebase]
+
+            else:
+                views = default_views
 
             if problem.ts_conf is None:
-                filename = trunk + '.vtk'
+                suffix = None
 
             else:
                 suffix = problem.ts.suffix % problem.ts.step
-                filename = problem.get_output_name(suffix=suffix)
 
-            output('displaying results from "%s"' % filename)
-            output('to "%s"...'
-                   % fig_filename.replace(sfepy.data_dir, '')[1:])
+            filename = problem.get_output_name(suffix=suffix)
 
-            view.filename = filename
-            view(scene=view.scene, show=False, is_scalar_bar=True,
-                 fig_filename=fig_filename)
-            mlab.clf()
+            for suffix, kwargs in views.iteritems():
+                fig_filename = _get_fig_filename(ebase, images_dir, suffix)
 
-            output('...done')
+                fname = edit_filename(filename, suffix=suffix)
+                output('displaying results from "%s"' % fname)
+                output('to "%s"...'
+                       % fig_filename.replace(sfepy.data_dir, '')[1:])
+
+                view.filename = fname
+                view(scene=view.scene, show=False, is_scalar_bar=True,
+                     fig_filename=fig_filename, **kwargs)
+                mlab.clf()
+
+                output('...done')
 
             remove_files(output_dir)
 
@@ -226,21 +274,18 @@ def generate_rst_files(rst_dir, examples_dir, images_dir):
             rst_filename_ns = rst_filename.replace('.rst', '')
             ebase = ex_filename.replace(examples_dir, '')[1:]
 
-            fig_base, fig_filename = _get_fig_filename(ebase, images_dir)
-
-            ifd.write('    %s\n' % rst_filename_ns)
-
-            rst_fig_filename = _make_sphinx_path(fig_filename)
             rst_ex_filename = _make_sphinx_path(ex_filename)
-
             docstring = get_default(import_file(ex_filename).__doc__,
                                     'missing description!')
 
-            if os.path.exists(fig_filename):
-                fig_include = _image % rst_fig_filename
+            ifd.write('    %s\n' % rst_filename_ns)
+            fig_include = ''
+            fig_base = _get_fig_filenames(ebase, images_dir).next()
+            for fig_filename in _get_fig_filenames(ebase, images_dir):
+                rst_fig_filename = _make_sphinx_path(fig_filename)
 
-            else:
-                fig_include = ''
+                if os.path.exists(fig_filename):
+                    fig_include += _image % rst_fig_filename + '\n'
 
             # Example rst file.
             fd = open(full_rst_filename, 'w')
@@ -314,28 +359,29 @@ def generate_gallery_html(output_filename, gallery_dir,
     lines = []
     for dirname, filenames in ordered_iteritems(dir_map):
         full_dirname = os.path.join(rst_dir, dirname)
-        thumbnails_dir_base = thumbnails_dir.replace(gallery_dir, '')[1:]
 
         for ex_filename, rst_filename in filenames:
             full_rst_filename = os.path.join(full_dirname, rst_filename)
 
             ebase = full_rst_filename.replace(rst_dir, '')[1:]
-            (thumbnails_base,
-             thumbnail_filename) = _get_fig_filename(ebase, thumbnails_dir)
-            if not os.path.isfile(thumbnail_filename):
-                # Skip examples with no image (= failed examples).
-                continue
-
-            thumbnail_name = os.path.join(thumbnails_dir_base,
-                                          thumbnails_base + '.png')
+            ebase = edit_filename(ebase, new_ext='.py')
 
             link_base = full_rst_filename.replace(gallery_dir, '')[1:]
             link = os.path.join(link_prefix,
                                 os.path.splitext(link_base)[0] + '.html')
 
-            line = _link_template % (link, thumbnail_name,
-                                     os.path.splitext(ebase)[0])
-            lines.append(line)
+            _get_fig_filenames(ebase, thumbnails_dir).next()
+            for thumbnail_filename in _get_fig_filenames(ebase,
+                                                         thumbnails_dir):
+                if not os.path.isfile(thumbnail_filename):
+                    # Skip examples with no image (= failed examples).
+                    continue
+
+                thumbnail_name = thumbnail_filename.replace(gallery_dir,
+                                                            '')[1:]
+                line = _link_template % (link, thumbnail_name,
+                                         os.path.splitext(ebase)[0])
+                lines.append(line)
 
     fd = open(output_filename, 'w')
     fd.write(_gallery_template % (link_prefix, '\n'.join(lines)))

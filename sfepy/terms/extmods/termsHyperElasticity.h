@@ -86,13 +86,13 @@ int32 dq_tl_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 				     FMField *detF );
 
-int32 dw_tl_volume( FMField *out, FMField *bf, FMField *mtxF,
+int32 dw_tl_volume( FMField *out, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
-		    VolumeGeometry *vg, int32 transpose,
-		    int32 mode );
-int32 dw_ul_volume( FMField *out, FMField *bf, FMField *detF,
-		    VolumeGeometry *vg, int32 transpose,
-		    int32 mode );
+		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+                    int32 transpose, int32 mode );
+int32 dw_ul_volume( FMField *out, FMField *detF,
+		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+                    int32 transpose, int32 mode );
 
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,

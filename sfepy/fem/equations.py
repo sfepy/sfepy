@@ -6,8 +6,7 @@ import scipy.sparse as sp
 
 from sfepy.base.base import output, assert_, get_default, iter_dict_of_lists
 from sfepy.base.base import debug, OneTypeList, Container, Struct
-from sfepy.fem import Materials, Variables
-from sfepy.fem.fields import setup_dof_conns
+from sfepy.fem import Materials, Variables, setup_dof_conns
 from extmods.mesh import create_mesh_graph
 from sfepy.terms import Terms, Term
 
@@ -714,7 +713,7 @@ class Equation( Struct ):
 
             out = val
 
-        elif mode in ('el_avg', 'qp'):
+        elif mode in ('el_avg', 'el', 'qp'):
 
             vals = []
             for term in self.terms:

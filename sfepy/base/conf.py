@@ -21,8 +21,13 @@ def get_standard_keywords():
     return copy( _required ), copy( _other )
 
 def tuple_to_conf(name, vals, order):
-    """Items in order at indices outside the length of vals are ignored."""
-    conf = Struct(name = name)
+    """
+    Convert a configuration tuple `vals` into a Struct named `name`, with
+    attribute names given in and ordered by `order`.
+
+    Items in `order` at indices outside the length of `vals` are ignored.
+    """
+    conf = Struct(name=name)
     for ii, key in enumerate(order[:len(vals)]):
         setattr(conf, key, vals[ii])
     return conf
@@ -123,8 +128,8 @@ def transform_integrals( adict ):
     d2 = {}
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
-            c2 = tuple_to_conf( key, conf, ['kind', 'quadrature'] )
-            if (c2.quadrature == 'custom') and (len(conf) == 4):
+            c2 = tuple_to_conf(key, conf, ['kind', 'order'])
+            if (c2.order == 'custom') and (len(conf) == 4):
                 c2.vals = conf[2]
                 c2.weights = conf[3]
             d2['integral_%s__%d' % (c2.name, ii)] = c2
@@ -139,7 +144,8 @@ def transform_fields( adict ):
     for ii, (key, conf) in enumerate( adict.iteritems() ):
         if isinstance( conf, tuple ):
             c2 = tuple_to_conf(key, conf,
-                               ['dtype', 'shape', 'region', 'approx_order'])
+                               ['dtype', 'shape', 'region', 'approx_order',
+                                'space', 'poly_space_base'])
             if c2.dtype in dtypes:
                 c2.dtype = dtypes[c2.dtype]
             d2['field_%s__%d' % (c2.name, ii)] = c2
@@ -238,13 +244,9 @@ class ProblemConf( Struct ):
     ProblemDefinition.from_conf( conf ).
     """
 
-    def append(pconf):
-        update_dict_recursively(self.__dict__,pconf.__dict__, True, False) 
-    
-
     @staticmethod
     def from_file(filename, required=None, other=None, verbose=True,
-                  define_args=None, override=None, init=True):
+                  define_args=None, override=None, setup=True):
         """
         Loads the problem definition from a file.
 
@@ -275,74 +277,60 @@ class ProblemConf( Struct ):
 
         if "define" in funmod.__dict__:
             if define_args is None:
-                define_dict = funmod.__dict__["define"](override)
-            else: 
+                define_dict = funmod.__dict__["define"]()
+
+            else:
                 if isinstance(define_args, str):
                     define_args = ProblemConf.dict_from_string(define_args)
 
                 if isinstance(define_args, dict):
-                    define_dict = funmod.__dict__["define"](override, **define_args)
+                    define_dict = funmod.__dict__["define"](**define_args)
 
                 else:
-                    define_dict = funmod.__dict__["define"](override, *define_args)
+                    define_dict = funmod.__dict__["define"](*define_args)
 
         else:
             define_dict = funmod.__dict__
 
-        obj = ProblemConf(define_dict=define_dict, funmod=funmod, filename=filename,
-                          required=required, other=other, verbose=verbose, override=override, init=init)
+        obj = ProblemConf(define_dict, funmod=funmod, filename=filename,
+                          required=required, other=other, verbose=verbose,
+                          override=override, setup=setup)
 
         return obj
-
-    @staticmethod
-    def from_options(options, filename=None, required=None, other=None,
-                          verbose=True, define_args=None, init=True):
-        define_dict = ProblemConf.dict_from_string(options.conf)
-        if options.app_options:
-            if not 'options' in override:
-                define_dict['options'] = {}
-
-            override_options = ProblemConf.dict_from_string(options.app_options)
-            define_dict['options'].update(override_options)
-
-        obj = ProblemConf(define_dict, filename=filename, \
-                          required=required, other=other, verbose=verbose, \
-                          init=init)
-        
-        return obj
-    
 
     @staticmethod
     def from_file_and_options(filename, options, required=None, other=None,
-                          verbose=True, define_args=None, init=True):
+                          verbose=True, define_args=None, setup=True):
         """
         Utility function, a wrapper around ProblemConf.from_file() with
         possible override taken from `options`.
         """
-        obj2 = ProblemConf.from_options(options, init=False, verbose=verbose)
+        override = ProblemConf.dict_from_string(options.conf)
+        if options.app_options:
+            if not 'options' in override:
+                override['options'] = {}
+
+            override_options = ProblemConf.dict_from_string(options.app_options)
+            override['options'].update(override_options)
+
         obj = ProblemConf.from_file(filename, required=required, other=other,
                                     verbose=verbose, define_args=define_args,
-                                    init = False, override=obj2)
-        obj.append(obj2)
-
-        if init:
-           self.setup(filename=filename, required=required, other=other)
-
+                                    override=override, setup=setup)
         return obj
 
     @staticmethod
     def from_module(module, required=None, other=None, verbose=True,
-                    override=None):
+                    override=None, setup=True):
         obj = ProblemConf(module.__dict__, module, module.__name__,
-                          required, other, verbose, override)
+                          required, other, verbose, override, setup=setup)
 
         return obj
 
     @staticmethod
     def from_dict(dict_, funmod, required=None, other=None, verbose=True,
-                  override=None):
+                  override=None, setup=True):
         obj = ProblemConf(dict_, funmod, None, required, other, verbose,
-                          override)
+                          override, setup=setup)
 
         return obj
 
@@ -367,23 +355,24 @@ class ProblemConf( Struct ):
         return out
 
     def __init__(self, define_dict, funmod=None, filename=None,
-                 required=None, other=None, verbose=True, override=None, init=True):
+                 required=None, other=None, verbose=True, override=None,
+                 setup=True):
         if override:
             if isinstance(override, ProblemConf):
-        		   override = override.__dict__
+                override = override.__dict__
             define_dict = update_dict_recursively(define_dict, override, True)
 
         self.__dict__.update(define_dict)
         self.verbose = verbose
-        
-        if init:  
-           self.setup(funmod=funmod, filename=filename,
-                   required=required, other=other)
+
+        if setup:
+            self.setup(funmod=funmod, filename=filename,
+                       required=required, other=other)
 
 
     def setup( self, define_dict = None, funmod = None, filename = None,
                required = None, other = None ):
-                 
+
         define_dict = get_default( define_dict, self.__dict__ )
 
         self._filename = filename
@@ -414,7 +403,6 @@ class ProblemConf( Struct ):
                         left_over.remove( key )
 
         missing = []
-      
         if items is not None:
             for item in items:
                 found = False

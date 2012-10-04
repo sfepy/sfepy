@@ -64,8 +64,8 @@ functions = {
 }
 
 integrals = {
-    'ivol' : ('v', 'gauss_o2_d2'),
-    'isurf' : ('s2', 'gauss_o2_d1'),
+    'ivol' : ('v', 2),
+    'isurf' : ('s', 2),
 }
 
 equations = {

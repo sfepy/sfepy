@@ -13,7 +13,7 @@ from sfepy.base.conf import transform_variables, transform_materials
 from functions import Functions
 from mesh import Mesh
 from domain import Domain
-from fields import fields_from_conf
+from fields_base import fields_from_conf
 from variables import Variables, Variable
 from materials import Materials, Material
 from equations import Equations
@@ -190,7 +190,7 @@ class ProblemDefinition( Struct ):
             if options is not None:
                 hook = options.get(hook_name, None)
                 if hook is not None:
-                    hook = getattr(self.conf.funmod, hook)
+                    hook = self.conf.get_function(hook)
                     setattr(self, hook_name, hook)
 
         iter_hook = self.nls_iter_hook
@@ -432,6 +432,10 @@ class ProblemDefinition( Struct ):
         Set the instances of linear and nonlinear solvers that will be
         used in `ProblemDefinition.solve()` call.
         """
+        if (ls is not None) and (nls is not None):
+            if not (nls.lin_solver is ls):
+                raise ValueError('linear solver not used in nonlinear!')
+
         self.solvers = Struct(name='solvers', ls=ls, nls=nls)
 
     ##
@@ -706,11 +710,10 @@ class ProblemDefinition( Struct ):
                 out = post_process_hook(out, self, state, extend=extend)
 
         if linearization.kind == 'adaptive':
-            base, suffix = op.splitext(filename)
             for key, val in out.iteritems():
                 mesh = val.get('mesh', self.domain.mesh)
-                mesh.write(base + '_' + val.var_name + suffix,
-                           io='auto', out={key : val},
+                aux = io.edit_filename(filename, suffix='_' + val.var_name)
+                mesh.write(aux, io='auto', out={key : val},
                            float_format=self.float_format, **kwargs)
                 if hasattr(val, 'levels'):
                     output('max. refinement per group:', val.levels)
@@ -748,9 +751,8 @@ class ProblemDefinition( Struct ):
                         msg = 'missing var_name attribute in output!'
                         raise ValueError(msg)
 
-                base, suffix = op.splitext( filename )
-                mesh.write(base + '_' + var.name + suffix,
-                           io='auto', out=vout,
+                aux = io.edit_filename(filename, suffix='_' + var.name)
+                mesh.write(aux, io='auto', out=vout,
                            float_format=self.float_format, **kwargs)
         else:
             self.domain.mesh.write(filename, io='auto', out=out,

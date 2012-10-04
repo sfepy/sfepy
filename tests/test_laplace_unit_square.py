@@ -74,13 +74,13 @@ ebc_2 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o2_d2',
+    'order' : 2,
 }
 
 integral_2 = {
     'name' : 'i2',
-    'kind' : 's3',
-    'quadrature' : 'gauss_o1_d1',
+    'kind' : 's',
+    'order' : 1,
 }
 
 equations = {

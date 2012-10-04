@@ -10,16 +10,16 @@
   - 01.12.2006
 */
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
-		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
+		    FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
 		    int32 isDiff )
 {
   int32 ii, nEPU, nEP, dim, nQP, ret = RET_OK;
   FMField *dfp = 0, *gtdfp = 0, *gtd = 0, *gtdf = 0;
 
-  nQP = vg->bfGM->nLev;
-  dim = vg->bfGM->nRow;
-  nEPU = vg->bfGM->nCol;
-  nEP = bf->nCol;
+  nQP = vvg->bfGM->nLev;
+  dim = vvg->bfGM->nRow;
+  nEPU = vvg->bfGM->nCol;
+  nEP = svg->bf->nCol;
 
 /*   fmf_print( mtxD, stdout, 0 ); */
 
@@ -35,18 +35,19 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->bfGM, ii );
-    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( vvg->bfGM, ii );
+    FMF_SetCell( vvg->det, ii );
 
     if (isDiff == 1) {
-      form_sdcc_actOpGT_M3( gtd, vg->bfGM, mtxD );
-      fmf_mulAB_nn( gtdf, gtd, bf );
-      fmf_sumLevelsMulF( out, gtdf, vg->det->val );
+      FMF_SetCellX1( svg->bf, ii );
+      form_sdcc_actOpGT_M3( gtd, vvg->bfGM, mtxD );
+      fmf_mulAB_nn( gtdf, gtd, svg->bf );
+      fmf_sumLevelsMulF( out, gtdf, vvg->det->val );
     } else {
       FMF_SetCell( pressure_qp, ii );
       fmf_mulAB_nn( dfp, mtxD, pressure_qp );
-      form_sdcc_actOpGT_VS3( gtdfp, vg->bfGM, dfp );
-      fmf_sumLevelsMulF( out, gtdfp, vg->det->val );
+      form_sdcc_actOpGT_VS3( gtdfp, vvg->bfGM, dfp );
+      fmf_sumLevelsMulF( out, gtdfp, vvg->det->val );
     }
     ERR_CheckGo( ret );
   }
@@ -74,18 +75,18 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   - 01.12.2006
 */
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
-		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		   int32 isDiff )
+		   FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+                   int32 isDiff )
 {
   int32 ii, nEPP, nEP, dim, sym, nQP, ret = RET_OK;
   FMField *dtg = 0, *ftdtg = 0, *dtgu = 0, *ftdtgu = 0;
   FMField drow[1];
 
-  nQP = vg->bfGM->nLev;
-  nEP = vg->bfGM->nCol;
-  dim = vg->bfGM->nRow;
+  nQP = vvg->bfGM->nLev;
+  nEP = vvg->bfGM->nCol;
+  dim = vvg->bfGM->nRow;
   sym = (dim + 1) * dim / 2;
-  nEPP = bf->nCol;
+  nEPP = svg->bf->nCol;
 
 /*   fmf_print( mtxD, stdout, 0 ); */
 
@@ -103,19 +104,20 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
   for (ii = 0; ii < out->nCell; ii++) {
     FMF_SetCell( out, ii );
     FMF_SetCell( mtxD, ii );
-    FMF_SetCell( vg->bfGM, ii );
-    FMF_SetCell( vg->det, ii );
+    FMF_SetCell( vvg->bfGM, ii );
+    FMF_SetCell( vvg->det, ii );
+    FMF_SetCellX1( svg->bf, ii );
 
     if (isDiff == 1) {
       drow->val = mtxD->val;
-      form_sdcc_actOpG_RM3( dtg, drow, vg->bfGM );
-      fmf_mulATB_nn( ftdtg, bf, dtg );
-      fmf_sumLevelsMulF( out, ftdtg, vg->det->val );
+      form_sdcc_actOpG_RM3( dtg, drow, vvg->bfGM );
+      fmf_mulATB_nn( ftdtg, svg->bf, dtg );
+      fmf_sumLevelsMulF( out, ftdtg, vvg->det->val );
     } else {
       FMF_SetCell( strain, ii );
       fmf_mulATB_nn( dtgu, mtxD, strain );
-      fmf_mulATB_nn( ftdtgu, bf, dtgu );
-      fmf_sumLevelsMulF( out, ftdtgu, vg->det->val );
+      fmf_mulATB_nn( ftdtgu, svg->bf, dtgu );
+      fmf_sumLevelsMulF( out, ftdtgu, vvg->det->val );
     }
     ERR_CheckGo( ret );
   }

@@ -573,28 +573,30 @@ Variables use the FE approximation given by the specified field:
 Integrals
 ^^^^^^^^^
 
-Define the integral type and quadrature rule. This keyword is optional.
+Define the integral type and quadrature rule. This keyword is optional, as the
+integration orders can be specified directly in equations, see below.
 
 * Long syntax::
 
         integral_<number> = {
             'name' : <name>,
             'kind' : <kind>,
-            'quadrature' : <rule>
+            'order' : <order>,
         }
 
   where
 
     * <name> - the integral name - it has to begin with 'i'!
     * <kind> - volume 'v' or surface 's' integral
-    * <rule> - <family>_o<order>_d<dimension>, available quadratures are in sfe/fem/quadratures.py - it is still preliminary and incomplete
+    * <order> - the order of polynomials to integrate, or 'custom' for
+      integrals with explicitly given values and weights
 
   * Example, long syntax::
 
         integral_1 = {
             'name' : 'i1',
             'kind' : 'v',
-            'quadrature' : 'gauss_o2_d2', # <quadrature name>
+            'order' : 2,
         }
 
         import numpy as nm
@@ -602,7 +604,7 @@ Define the integral type and quadrature rule. This keyword is optional.
         integral_2 = {
             'name' : 'i2',
             'kind' : 'v',
-            'quadrature' : 'custom', # <quadrature name>
+            'order' : 'custom',
             'vals'    : zip(nm.linspace( 1e-10, 0.5, N ),
                             nm.linspace( 1e-10, 0.5, N )),
             'weights' : [1./N] * N,
@@ -611,7 +613,7 @@ Define the integral type and quadrature rule. This keyword is optional.
 * Short syntax::
 
         integrals = {
-            <name> : (<kind>, <rule>)
+            <name> : (<kind>, <order>)
         }
 
   * Example, short syntax::
@@ -619,7 +621,7 @@ Define the integral type and quadrature rule. This keyword is optional.
         import numpy as nm
         N = 2
         integrals = {
-            'i1' : ('v', 'gauss_o2_d3'),
+            'i1' : ('v', 2),
             'i2' : ('v', 'custom', zip(nm.linspace( 1e-10, 0.5, N ),
                                        nm.linspace( 1e-10, 0.5, N )),
                     [1./N] * N),
@@ -746,6 +748,17 @@ elements, etc.
         'm' : ({'val' : [0.0, -1.0, 0.0]},),
         'm2' : 'some_function',
         'm3' : (None, 'some_function'), # Same as the above line.
+    }
+
+* Example, short syntax, different material parameters in regions 'Yc', 'Ym'::
+
+    from sfepy.mechanics.matcoefs import stiffness_from_youngpoisson
+    dim = 3
+    materials = {
+        'mat' : ({'D' : {
+            'Ym': stiffness_from_youngpoisson(dim, 7.0e9, 0.4),
+            'Yc': stiffness_from_youngpoisson(dim, 70.0e9, 0.2)}
+        },),
     }
 
 

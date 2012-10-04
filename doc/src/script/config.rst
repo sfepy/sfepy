@@ -1,6 +1,6 @@
-sfepy.fem.fields module
+script/config.py script
 =======================
 
-.. automodule:: sfepy.fem.fields
+.. automodule:: config
    :members:
    :undoc-members:

@@ -9,8 +9,8 @@ fields = {
 }
 
 integrals = {
-    'i1' : ('v', 'gauss_o2_d3'),
-    'i2' : ('s', 'gauss_o2_d2'),
+    'i1' : ('v', 2),
+    'i2' : ('s', 2),
 }
 
 regions = {

@@ -13,24 +13,24 @@ BEGIN_C_DECLS
 
 
 int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
-                       FMField *bf, VolumeGeometry *vg, int32 isDiff );
+                       VolumeGeometry *vg, int32 isDiff );
 
 int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
-                       FMField *bf, VolumeGeometry *vg, int32 isDiff );
+                       VolumeGeometry *vg, int32 isDiff );
 
 int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
 			FMField *stateU, FMField *gradU,
-			FMField *coef, FMField *bf, VolumeGeometry *vg,
+			FMField *coef, VolumeGeometry *vg,
 			int32 *conn, int32 nEl, int32 nEP,
 			int32 isDiff );
 
 int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
-			 FMField *coef, FMField *bf_w, VolumeGeometry *vg_w,
+			 FMField *coef, VolumeGeometry *vg_w,
 			 int32 *conn_w, int32 nEl_w, int32 nEP_w,
 			 int32 isDiff );
 
 int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
-			 FMField *coef, FMField *bf_u,
+			 FMField *coef,
 			 VolumeGeometry *vg_u, VolumeGeometry *vg_r,
 			 int32 *conn_r, int32 nEl_r, int32 nEP_r,
 			 int32 isDiff );
@@ -40,7 +40,7 @@ int32 d_of_nsMinGrad( FMField *out, FMField *grad,
 
 int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
                             float64 weight, float64 bpress,
-			    FMField *bf, SurfaceGeometry *sg, int32 isDiff );
+			    SurfaceGeometry *sg, int32 isDiff );
 
 int32 d_sd_div( FMField *out, FMField *divU, FMField *gradU,
                 FMField *stateP, FMField *divMV, FMField *gradMV,

@@ -79,13 +79,13 @@ material_1 = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'order' : 1,
 }
 
 integral_2 = {
     'name' : 'i2',
     'kind' : 'v',
-    'quadrature' : 'gauss_o2_d3',
+    'order' : 2,
 }
 
 equations = {

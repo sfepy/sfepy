@@ -60,6 +60,7 @@ class HomogenizationApp( HomogenizationEngine ):
                       coefs=get('coefs', None, 'missing "coefs" in options!'),
                       requirements=get('requirements', None,
                                        'missing "requirements" in options!'),
+                      return_all=get('return_all', False),
                       volume=volume,
                       volumes=volumes)
 
@@ -81,16 +82,34 @@ class HomogenizationApp( HomogenizationEngine ):
         po = HomogenizationApp.process_options
         self.app_options += po( self.conf.options )
 
-    def call(self, ret_all=False, verbose=False):
+    def call(self, verbose=False, ret_all=None):
+        """
+        Call the homogenization engine and compute the homogenized
+        coefficients.
+
+        Parameters
+        ----------
+        verbose : bool
+            If True, print the computed coefficients.
+        ret_all : bool or None
+            If not None, it can be used to override the 'return_all' option.
+            If True, also the dependencies are returned.
+
+        Returns
+        -------
+        coefs : Coefficients instance
+            The homogenized coefficients.
+        dependencies : dict
+            The dependencies, if `ret_all` is True.
+        """
         opts = self.app_options
+
+        ret_all = get_default(ret_all, opts.return_all)
 
         volume = get_volume_from_options(opts, self.problem)
 
         for vk, vv in volume.iteritems():
             output('volume: %s = %.2f' % (vk, vv))
-
-        if hasattr(opts, 'return_all'):
-            ret_all = opts.return_all
 
         he = HomogenizationEngine( self.problem, self.options, volume = volume )
 

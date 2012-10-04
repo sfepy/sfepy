@@ -150,9 +150,10 @@ class Approximation( Struct ):
         self.surface_data = {}
         self.edge_data = {}
         self.point_data = {}
-        self.qp_coors = {}
-        self.bf = {}
         self.n_ep = self.interp.get_n_nodes()
+        self.ori = None
+
+        self.clear_qp_base()
 
     def eval_extra_coor(self, coors, mesh_coors):
         """
@@ -167,7 +168,7 @@ class Approximation( Struct ):
         """returns (n_el, n_qp, dim, n_ep)"""
         if integral is not None:
             bf_vg = self.get_base('v', 1, integral)
-            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape
+            return (self.region.shape[self.ig].n_cell,) + bf_vg.shape[-3:]
 
         else:
             return (self.region.shape[self.ig].n_cell,
@@ -230,6 +231,38 @@ class Approximation( Struct ):
 
         return conn
 
+    def get_poly_space(self, key, from_geometry=False):
+        """
+        Get the polynomial space.
+
+        Parameters
+        ----------
+        key : 'v' or 's?'
+            The key denoting volume or surface.
+        from_geometry : bool
+            If True, return the polynomial space for affine geometrical
+            interpolation.
+
+        Returns
+        -------
+        ps : PolySpace instance
+            The polynomial space.
+        """
+        if from_geometry:
+            ps = self.interp.get_geom_poly_space(key)
+
+        else:
+            ps = self.interp.poly_spaces[key]
+
+        return ps
+
+    def clear_qp_base(self):
+        """
+        Remove cached quadrature points and base functions.
+        """
+        self.qp_coors = {}
+        self.bf = {}
+
     def get_qp(self, key, integral):
         """
         Get quadrature points and weights corresponding to the given key
@@ -253,24 +286,23 @@ class Approximation( Struct ):
 
         return self.qp_coors[qpkey]
 
-    def get_base(self, key, derivative, integral,
+    def get_base(self, key, derivative, integral, iels=None,
                  from_geometry=False, base_only=True):
         qp = self.get_qp(key, integral)
 
-        if from_geometry:
-            if key == 'v':
-                gkey = key
-            else:
-                gkey = 's%d' % self.interp.gel.surface_facet.n_vertex
-            ps = self.interp.gel.interp.poly_spaces[gkey]
-            bf_key = (integral.name, 'g' + key, derivative)
+        ps = self.get_poly_space(key, from_geometry=from_geometry)
 
-        else:
-            ps = self.interp.poly_spaces[key]
-            bf_key = (integral.name, key, derivative)
+        _key = key if not from_geometry else 'g' + key
+        bf_key = (integral.name, _key, derivative)
 
         if not self.bf.has_key(bf_key):
-            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative)
+            if (iels is not None) and (self.ori is not None):
+                ori = self.ori[iels]
+
+            else:
+                ori = self.ori
+
+            self.bf[bf_key] = ps.eval_base(qp.vals, diff=derivative, ori=ori)
 
         if base_only:
             return self.bf[bf_key]
@@ -303,18 +335,26 @@ class Approximation( Struct ):
 
             qp = self.get_qp('v', integral)
 
+            iels = region.cells[self.ig]
+
             geo_ps = self.interp.get_geom_poly_space('v')
             ps = self.interp.poly_spaces['v']
-            bf = self.get_base('v', 0, integral)
+            bf = self.get_base('v', 0, integral, iels=iels)
 
-            conn = nm.take(group.conn, region.cells[self.ig], axis=0)
+            conn = nm.take(group.conn, iels, axis=0)
             mapping = VolumeMapping(coors, conn, poly_space=geo_ps)
-            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
+            vg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     ori=self.ori)
 
             out = vg
 
         elif (gtype == 'surface') or (gtype == 'surface_extra'):
             assert_(field.approx_order > 0)
+
+            if self.ori is not None:
+                msg = 'surface integrals do not work yet with the' \
+                      ' hierarchical basis!'
+                raise ValueError(msg)
 
             sd = domain.surface_groups[self.ig][region.name]
             esd = self.surface_data[region.name]
@@ -355,8 +395,8 @@ class Approximation( Struct ):
             out.integral = integral
             out.qp = qp
             out.ps = ps
-            # Store base.
-            out.bf = bf
+            # Update base.
+            out.bf[:] = bf
 
         if return_mapping:
             out = (out, mapping)

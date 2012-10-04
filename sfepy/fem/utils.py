@@ -27,6 +27,23 @@ def invert_remap(remap):
 
     return inverse
 
+def prepare_translate(old_indices, new_indices):
+    """
+    Prepare vector for translating `old_indices` to `new_indices`.
+
+    Returns
+    -------
+    translate : array
+        The translation vector. Then `new_ar = translate[old_ar]`.
+    """
+    old_indices = nm.asarray(old_indices)
+    new_indices = nm.asarray(new_indices)
+
+    translate = nm.zeros(old_indices.max() + 1, dtype=new_indices.dtype)
+    translate[old_indices] = new_indices
+
+    return translate
+
 def compute_nodal_normals(nodes, region, field, return_imap=False):
     """Nodal normals are computed by simple averaging of element normals of
     elements every node is contained in. """
@@ -82,36 +99,70 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
     else:
         return normals
 
-def extend_cell_data( data, domain, rname, val = None ):
-    """Extend cell data defined in a region rname to the whole domain using the
-    value val, or the smallest value in data if val is None."""
+def extend_cell_data(data, domain, rname, val=None, is_surface=False):
+    """
+    Extend cell data defined in a region to the whole domain.
+
+    Parameters
+    ----------
+    data : array
+        The data defined in the region.
+    domain : Domain instance
+        The FE domain.
+    rname : str
+        The region name.
+    val : float, optional
+        The value for filling cells not covered by the region. If not given,
+        the smallest value in data is used.
+    is_surface : bool
+        If True, the data are defined on a surface region. In that case the
+        values are averaged into the cells containing the region surface faces.
+
+    Returns
+    -------
+    edata : array
+        The data extended to all domain elements.
+    """
     n_el = domain.shape.n_el
     if data.shape[0] == n_el: return data
 
     if val is None:
         if data.shape[2] > 1: # Vector.
-            val = nm.amin( nm.abs( data ) )
+            val = nm.amin(nm.abs(data))
         else: # Scalar.
-            val = nm.amin( data )
+            val = nm.amin(data)
 
-    edata = nm.empty( (n_el,) + data.shape[1:], dtype = nm.float64 )
-    edata.fill( val )
+    edata = nm.empty((n_el,) + data.shape[1:], dtype = nm.float64)
+    edata.fill(val)
 
     region = domain.regions[rname]
-    offs = region.get_cell_offsets()
     eoffs = domain.get_cell_offsets()
-##     print offs
-##     print eoffs
-##     print domain.mat_ids_to_i_gs
-##     pause()
 
-    for group in domain.iter_groups():
-        ig = group.ig
-        ii = eoffs[ig]
-        if ig in region.igs:
-            n_cell = region.shape[ig].n_cell
-            ir = offs[ig]
-            edata[ii+region.cells[ig]] = data[ir:ir+n_cell]
+    if not is_surface:
+        offs = region.get_cell_offsets()
+        for group in domain.iter_groups():
+            ig = group.ig
+            ii = eoffs[ig]
+            if ig in region.igs:
+                n_cell = region.shape[ig].n_cell
+                ir = offs[ig]
+                edata[ii+region.cells[ig]] = data[ir:ir+n_cell]
+
+    else:
+        for group in domain.iter_groups():
+            ig = group.ig
+            ii = eoffs[ig]
+            if ig in region.igs:
+                cells = region.cells[ig]
+                ucells = nm.unique(cells)
+
+                avg = nm.bincount(cells, minlength=group.shape.n_el)[ucells]
+                for ic in xrange(data.shape[2]):
+                    evals = nm.bincount(cells, weights=data[:, 0, ic, 0],
+                                        minlength=group.shape.n_el)[ucells]
+
+                    edata[ii+ucells, 0, ic, 0] = evals / avg
+
     return edata
 
 def refine_mesh(filename, level):

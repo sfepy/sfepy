@@ -23,20 +23,16 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
 			    int32 isDiff );
 
 int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,
-                           FMField *bf, VolumeGeometry *vg,
-                           int32 isDiff );
+                           VolumeGeometry *vg, int32 isDiff );
 
 int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
-		      FMField *bf, VolumeGeometry *vg,
-		      int32 isDiff );
+		      VolumeGeometry *vg, int32 isDiff );
 
 int32 dw_div( FMField *out, FMField *coef, FMField *div,
-	      FMField *bf, VolumeGeometry *vg,
-	      int32 isDiff );
+	      VolumeGeometry *svg, VolumeGeometry *vvg, int32 isDiff );
 
 int32 dw_grad( FMField *out, FMField *coef, FMField *state,
-	       FMField *bf, VolumeGeometry *vg,
-	       int32 isDiff );
+	       VolumeGeometry *svg, VolumeGeometry *vvg, int32 isDiff );
 
 int32 dw_st_pspg_c( FMField *out,
 		    FMField *stateB, FMField *stateU,

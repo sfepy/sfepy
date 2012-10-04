@@ -160,7 +160,7 @@ def main():
                 gp = fix_path('meshes/quantum/square.geo')
                 os.system("cp %s tmp/mesh.geo" % gp)
                 os.system("gmsh -2 tmp/mesh.geo -format mesh")
-                mtv = fix_path('script/mesh_to_vtk.py')
+                mtv = fix_path('script/convert_mesh.py')
                 os.system("%s tmp/mesh.mesh %s" % (mtv, mesh_filename))
             else:
                 output("dimension: 3")

@@ -323,8 +323,7 @@ class BulkPressureULTerm(HyperElasticULBase):
             else:
                 vgs, _ = self.get_mapping(state_p)
 
-                fargs =  (self.weak_dp_function,
-                          -vgs.bf, fd.det_f, vgv, 1, 1)
+                fargs =  (self.weak_dp_function, fd.det_f, vgs, vgv, 1, -1)
 
             return fargs
 
@@ -555,8 +554,8 @@ class VolumeULTerm(HyperElasticULBase):
     function = staticmethod(terms.dw_ul_volume)
     def get_fargs(self, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
-        vgv, _ = self.get_mapping(virtual)
-        vgs, _ = self.get_mapping(state)
+        vgs, _ = self.get_mapping(virtual)
+        vgv, _ = self.get_mapping(state)
 
         fd = self.get_family_data(state, 'ul_common', self.family_data_names)
 
@@ -582,7 +581,7 @@ class VolumeULTerm(HyperElasticULBase):
             raise ValueError('unsupported evaluation mode in %s! (%s)'
                              % (self.name, mode))
 
-        return vgv.bf, fd.det_f, vgs, 0, fmode
+        return fd.det_f, vgs, vgv, 0, fmode
 
     def get_eval_shape(self, virtual, state,
                        mode=None, term_mode=None, diff_var=None, **kwargs):
@@ -614,6 +613,7 @@ class CompressibilityULTerm(HyperElasticULBase):
     def get_fargs(self, bulk, virtual, state, parameter_u,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vgp, _ = self.get_mapping(virtual)
+        vgs, _ = self.get_mapping(state)
         vgu, _ = self.get_mapping(parameter_u)
 
         fd = self.get_family_data(parameter_u, 'ul_common', self.family_data_names)
@@ -629,7 +629,7 @@ class CompressibilityULTerm(HyperElasticULBase):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vgp.bf, vgp.bf, vgp, fmode
+            return coef, val_qp, vgp, vgs, fmode
 
         else:
             raise ValueError('unsupported evaluation mode in %s! (%s)'

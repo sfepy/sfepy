@@ -655,7 +655,7 @@ variable. This term is implemented as follows::
 
         @staticmethod
         def function(out, mat, bf, geo):
-            bf_t = nm.tile(bf.transpose((0, 2, 1)), (out.shape[0], 1, 1, 1))
+            bf_t = nm.tile(bf.transpose((0, 1, 3, 2)), (out.shape[0], 1, 1, 1))
             bf_t = nm.ascontiguousarray(bf_t)
             status = geo.integrate(out, mat * bf_t)
 
@@ -738,6 +738,48 @@ in `doc/dev/gitwash/index.rst`, as it is already here.
 Module Index
 ------------
 
+Main scripts
+^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 2
+
+   src/extractor
+   src/homogen
+   src/phonon
+   src/postproc
+   src/probe
+   src/runTests
+   src/schroedinger
+   src/shaper
+   src/simple
+
+Utility scripts
+^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 2
+
+   src/build_helpers
+   src/findSurf
+   src/genPerMesh
+   src/plotPerfusionCoefs
+   src/test_install
+
+   src/script/blockgen
+   src/script/config
+   src/script/convert_mesh
+   src/script/cylindergen
+   src/script/edit_identifiers
+   src/script/evalForms
+   src/script/eval_tl_forms
+   src/script/gen_gallery
+   src/script/gen_lobatto_pyx
+   src/script/gen_term_table
+   src/script/plot_condition_numbers
+   src/script/save_basis
+   src/script/show_authors
+   src/script/sync_module_docs
+
 sfepy package
 ^^^^^^^^^^^^^
 .. toctree::
@@ -761,8 +803,10 @@ sfepy.base package
    :maxdepth: 2
 
    src/sfepy/base/base
+   src/sfepy/base/compat
    src/sfepy/base/conf
    src/sfepy/base/getch
+   src/sfepy/base/goptions
    src/sfepy/base/ioutils
    src/sfepy/base/log
    src/sfepy/base/parse_conf
@@ -790,16 +834,19 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/facets
    src/sfepy/fem/fe_surface
    src/sfepy/fem/fea
-   src/sfepy/fem/fields
+   src/sfepy/fem/fields_base
+   src/sfepy/fem/fields_hierarchic
+   src/sfepy/fem/fields_nodal
    src/sfepy/fem/functions
    src/sfepy/fem/geometry_element
+   src/sfepy/fem/global_interp
    src/sfepy/fem/history
    src/sfepy/fem/linearizer
    src/sfepy/fem/integrals
    src/sfepy/fem/mappings
+   src/sfepy/fem/mass_operator
    src/sfepy/fem/materials
    src/sfepy/fem/mesh
-   src/sfepy/fem/mesh_generators
    src/sfepy/fem/meshio
    src/sfepy/fem/parseEq
    src/sfepy/fem/parseReg
@@ -815,9 +862,11 @@ refer directly to the code base until the code stabilizes.
    src/sfepy/fem/state
    src/sfepy/fem/utils
    src/sfepy/fem/variables
+   src/sfepy/fem/extmods/_fmfield
    src/sfepy/fem/extmods/assemble
    src/sfepy/fem/extmods/bases
    src/sfepy/fem/extmods/lobatto
+   src/sfepy/fem/extmods/lobatto_template
    src/sfepy/fem/extmods/mappings
    src/sfepy/fem/extmods/mesh
 
@@ -829,8 +878,10 @@ sfepy.mesh package
 
    src/sfepy/mesh/femlab
    src/sfepy/mesh/geom_tools
+   src/sfepy/mesh/mesh_generators
    src/sfepy/mesh/mesh_tools
    src/sfepy/mesh/meshutils
+   src/sfepy/mesh/splinebox
 
 sfepy.homogenization package
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -847,6 +898,7 @@ sfepy.homogenization package
    src/sfepy/homogenization/convolutions
    src/sfepy/homogenization/engine
    src/sfepy/homogenization/homogen_app
+   src/sfepy/homogenization/micmac
    src/sfepy/homogenization/recovery
    src/sfepy/homogenization/utils
 
@@ -910,6 +962,8 @@ sfepy.postprocess package
 
    src/sfepy/postprocess/dataset_manager
    src/sfepy/postprocess/domain_specific
+   src/sfepy/postprocess/plot_dofs
+   src/sfepy/postprocess/plot_facets.rst
    src/sfepy/postprocess/sources
    src/sfepy/postprocess/time_history
    src/sfepy/postprocess/utils
@@ -926,6 +980,7 @@ sfepy.solvers package
    src/sfepy/solvers/nls
    src/sfepy/solvers/optimize
    src/sfepy/solvers/oseen
+   src/sfepy/solvers/petsc_worker
    src/sfepy/solvers/semismooth_newton
    src/sfepy/solvers/solvers
    src/sfepy/solvers/ts
@@ -958,4 +1013,7 @@ sfepy.terms package
    src/sfepy/terms/terms_hyperelastic_ul
    src/sfepy/terms/terms_membrane
    src/sfepy/terms/terms_new
+   src/sfepy/terms/terms_th
    src/sfepy/terms/utils
+
+   src/sfepy/terms/extmods/terms

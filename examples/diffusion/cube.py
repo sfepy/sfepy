@@ -38,7 +38,7 @@ if filename_mesh.find('cube_medium_hexa.mesh') >= 0:
     integral_1 = {
         'name' : 'i1',
         'kind' : 'v',
-        'quadrature' : 'gauss_o1_d3',
+        'order' : 1,
     }
     solver_0 = {
         'name' : 'ls',

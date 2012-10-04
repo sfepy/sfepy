@@ -193,6 +193,36 @@ def inverse_element_mapping(coors, e_coors, eval_base, ref_coors,
 
     return xi
 
+def get_perpendiculars(vec):
+    """
+    For a given vector, get a unit vector perpendicular to it in 2D, or get two
+    mutually perpendicular unit vectors perpendicular to it in 3D.
+    """
+    nvec = nm.linalg.norm(vec)
+    vec /= nvec
+
+    if vec.shape[0] == 2:
+        out = nm.array([vec[1], -vec[0]], dtype=nm.float64)
+
+    else:
+        aux = nm.array([0.0, 0.0, 1.0], dtype=nm.float64)
+
+        v1 = nm.cross(vec, aux)
+        if nm.linalg.norm(v1) < 0.1:
+            # vec and aux close to being co-linear.
+            aux = nm.array([0.0, 1.0, 0.0], dtype=nm.float64)
+
+            v1 = nm.cross(vec, aux)
+
+        v1 /= nm.linalg.norm(v1)
+
+        v2 = nm.cross(vec, v1)
+        v2 /= nm.linalg.norm(v2)
+
+        out = (v1, v2)
+
+    return out
+
 def rotation_matrix2d(angle):
     """
     Construct a 2D (plane) rotation matrix corresponding to `angle`.

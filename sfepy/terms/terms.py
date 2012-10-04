@@ -416,8 +416,7 @@ class Term(Struct):
             integrals = Integrals()
 
         obj = constructor(desc.name, desc.args, None, region)
-        obj.set_integral(integrals.get(desc.integral,
-                                       *obj.get_integral_info()))
+        obj.set_integral(integrals.get(desc.integral, obj.get_integral_info()))
         obj.sign = desc.sign
 
         return obj
@@ -429,13 +428,6 @@ class Term(Struct):
         self._kwargs = kwargs
         self._integration = self.integration
         self.sign = 1.0
-
-        kind = self.get_integral_info()
-        if integral is not None:
-            if kind != integral.kind:
-                msg = "integral kind for term %s must be '%s'! (is '%s')" \
-                      % (name, kind, integral.kind)
-                raise ValueError(msg)
 
         self.set_integral(integral)
 
@@ -487,6 +479,12 @@ class Term(Struct):
         self.integral = integral
         if self.integral is not None:
             self.integral_name = self.integral.name
+
+            kind = self.get_integral_info()
+            if kind != integral.kind:
+                msg = "integral kind for term %s must be '%s'! (is '%s')" \
+                      % (self.name, kind, integral.kind)
+                raise ValueError(msg)
 
     def setup(self):
         self.char_fun = CharacteristicFunction(self.region)
@@ -1286,18 +1284,38 @@ class Term(Struct):
         for mat in materials:
             mat.time_update(None, [Struct(terms=[self])])
 
+    def call_get_fargs(self, args, kwargs):
+        try:
+            fargs = self.get_fargs(*args, **kwargs)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
+        return fargs
+
+    def call_function(self, out, fargs):
+        try:
+            status = self.function(out, *fargs)
+
+        except RuntimeError:
+            terms.errclear()
+            raise ValueError
+
+        return status
+
     def eval_real(self, shape, fargs, mode='eval', term_mode=None,
                   diff_var=None, **kwargs):
         out = nm.empty(shape, dtype=nm.float64)
 
         if mode == 'eval':
-            status = self.function(out, *fargs)
+            status = self.call_function(out, fargs)
             # Sum over elements but not over components.
             out1 = nm.sum(out, 0).squeeze()
             return out1, status
 
         else:
-            status = self.function(out, *fargs)
+            status = self.call_function(out, fargs)
 
             return out, status
 
@@ -1309,16 +1327,16 @@ class Term(Struct):
 
         # Assuming linear forms. Then the matrix is the
         # same both for real and imaginary part.
-        rstatus = self.function(rout, *fargsd['r'])
+        rstatus = self.call_function(rout, fargsd['r'])
         if (diff_var is None) and len(fargsd) >= 2:
             iout = nm.empty(shape, dtype=nm.float64)
-            istatus = self.function(iout, *fargsd['i'])
+            istatus = self.call_function(iout, fargsd['i'])
 
             if mode == 'eval' and len(fargsd) >= 4:
                 irout = nm.empty(shape, dtype=nm.float64)
-                irstatus = self.function(irout, *fargsd['ir'])
+                irstatus = self.call_function(irout, fargsd['ir'])
                 riout = nm.empty(shape, dtype=nm.float64)
-                ristatus = self.function(riout, *fargsd['ri'])
+                ristatus = self.call_function(riout, fargsd['ri'])
 
                 out = (rout - iout) + (riout + irout) * 1j
                 status = rstatus or istatus or ristatus or irstatus
@@ -1374,7 +1392,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
@@ -1394,7 +1412,7 @@ class Term(Struct):
 
             val *= self.sign
 
-        elif mode in ('el_avg', 'qp'):
+        elif mode in ('el_avg', 'el', 'qp'):
             vals = None
             iels = nm.empty((0, 2), dtype=nm.int32)
             status = 0
@@ -1403,7 +1421,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 shape, dtype = self.get_eval_shape(*_args, **kwargs)
 
@@ -1443,7 +1461,7 @@ class Term(Struct):
                 self.check_shapes(*args)
 
                 _args = tuple(args) + (mode, term_mode, diff_var)
-                fargs = self.get_fargs(*_args, **kwargs)
+                fargs = self.call_get_fargs(_args, kwargs)
 
                 n_elr, n_qpr, dim, n_enr, n_cr = self.get_data_shape(varr)
                 n_row = n_cr * n_enr

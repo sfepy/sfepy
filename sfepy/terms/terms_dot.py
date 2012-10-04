@@ -40,14 +40,19 @@ class DotProductVolumeTerm(Term):
 
     @staticmethod
     def dw_dot(out, mat, val_qp, vgeo, sgeo, fun, fmode):
-        status = fun(out, mat, val_qp, vgeo.bf, sgeo.bf, vgeo, fmode)
+        status = fun(out, mat, val_qp, vgeo, sgeo, fmode)
         return status
 
     @staticmethod
     def d_dot(out, mat, val1_qp, val2_qp, geo):
         if mat is None:
             if val1_qp.shape[2] > 1:
-                vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
+                if val2_qp.shape[2] == 1:
+                    aux = dot_sequences(val1_qp, geo.normal, mode='ATB')
+                    vec = dot_sequences(aux, val2_qp, mode='AB')
+
+                else:
+                    vec = dot_sequences(val1_qp, val2_qp, mode='ATB')
 
             else:
                 vec = val1_qp * val2_qp
@@ -68,7 +73,9 @@ class DotProductVolumeTerm(Term):
         return status
 
     def check_shapes(self, mat, virtual, state):
-        assert_(virtual.n_components == state.n_components)
+        assert_((virtual.n_components == state.n_components)
+                or ((virtual.n_components == 1)
+                    and (state.n_components == state.dim)))
 
         if mat is not None:
             n_el, n_qp, dim, n_en, n_c = self.get_data_shape(state)
@@ -107,7 +114,11 @@ class DotProductVolumeTerm(Term):
                     fun = terms.dw_volume_dot_scalar
 
                 else:
-                    fun = terms.dw_surface_dot_scalar
+                    if virtual.n_components > 1:
+                        fun = terms.dw_surface_dot_vectornormscalar
+
+                    else:
+                        fun = terms.dw_surface_dot_scalar
 
             return mat, val_qp, vgeo, sgeo, fun, fmode
 
@@ -144,7 +155,9 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
     .. math::
         \int_\Gamma q p \mbox{ , } \int_\Gamma \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w} \\
+        \int_\Gamma \ul{v} \cdot \ul{n} p \mbox{ , }
+        \int_\Gamma p r \mbox{ , } \int_\Gamma \ul{u} \cdot \ul{w}
+        \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
         \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
         \mbox{ , }
         \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
@@ -227,13 +240,13 @@ class DotSProductVolumeOperatorWTHTerm(THTerm):
                 for ii, mat in enumerate(mats):
                     val_qp = self.get(state, 'val', step=-ii)
                     mat = nm.tile(mat, (n_el, n_qp, 1, 1))
-                    yield ii, (ts.dt * mat, val_qp, vg.bf, vg.bf, vg, 0)
+                    yield ii, (ts.dt * mat, val_qp, vg, vg, 0)
             fargs = iter_kernel
 
         else:
             val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
             mat = nm.tile(mats[0], (n_el, n_qp, 1, 1))
-            fargs = ts.dt * mat, val_qp, vg.bf, vg.bf, vg, 1
+            fargs = ts.dt * mat, val_qp, vg, vg, 1
 
         return fargs
 
@@ -272,12 +285,11 @@ class DotSProductVolumeOperatorWETHTerm(ETHTerm):
             key += tuple(self.arg_names[ii] for ii in [1, 2, 4])
             data = self.get_eth_data(key, state, mat1, val_qp)
 
-            fargs = (ts.dt * mat0, data.history + data.values,
-                     vg.bf, vg.bf, vg, 0)
+            fargs = (ts.dt * mat0, data.history + data.values, vg, vg, 0)
 
         else:
             aux = nm.array([0], ndmin=4, dtype=nm.float64)
-            fargs = ts.dt * mat0, aux, vg.bf, vg.bf, vg, 1
+            fargs = ts.dt * mat0, aux, vg, vg, 1
 
         return fargs
 
@@ -351,7 +363,7 @@ class VectorDotGradScalarTerm(Term):
                 val_qp = nm.array([0], ndmin=4, dtype=nm.float64)
                 fmode = 1
 
-            return coef, val_qp, vvg.bf, vvg, svg, fmode
+            return coef, val_qp, vvg, svg, fmode
 
         elif mode == 'eval':
             vvg, _ = self.get_mapping(vvar)
@@ -377,3 +389,49 @@ class VectorDotGradScalarTerm(Term):
             's_weak' : terms.dw_v_dot_grad_s_sw,
             'eval' : DotProductVolumeTerm.d_dot,
         }[self.mode]
+
+class ScalarDotGradIScalarTerm(Term):
+    r"""
+    Dot product of a scalar and the :math:`i`-th component of gradient of a
+    scalar. The index should be given as a 'special_constant' material
+    parameter.
+
+    :Definition:
+
+    .. math::
+        Z^i = \int_{\Omega} q \nabla_i p
+
+    :Arguments:
+        - material : :math:`i`
+        - virtual  : :math:`q`
+        - state    : :math:`p`
+    """
+    name = 'dw_s_dot_grad_i_s'
+    arg_types = ('material', 'virtual', 'state')
+
+    @staticmethod
+    def dw_fun(out, bf, vg, idx):
+        cc = nm.ascontiguousarray
+        bft = cc(nm.tile(bf, (out.shape[0], 1, 1, 1)))
+        status = terms.mulATB_integrate(out, bft,
+                                        cc(vg.bfg[:,:,idx:(idx + 1),:]), vg)
+
+        return status
+
+    def get_fargs(self, material, virtual, state,
+                  mode=None, term_mode=None, diff_var=None, **kwargs):
+        if mode == 'weak':
+            ap, vg = self.get_approximation(virtual)
+            aps, vgs = self.get_approximation(state)
+
+            bf = aps.get_base('v', 0, self.integral)
+            idx = int(material[0, 0, 0, 0])
+
+            return bf, vg, idx
+
+        else:
+            raise ValueError('unsupported evaluation mode in %s! (%s)'
+                             % (self.name, mode))
+
+    def set_arg_types(self):
+        self.function = self.dw_fun

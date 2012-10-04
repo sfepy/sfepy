@@ -27,6 +27,7 @@ int32 dq_state_in_qp( FMField *out, FMField *state, int32 offset,
 
   for (ii = 0; ii < nEl; ii++) {
     FMF_SetCell( out, ii );
+    FMF_SetCellX1( bf, ii );
 
     ele_extractNodalValuesDBD( st, state, conn + nEP * ii );
     bf_act( out, bf, st );
@@ -144,14 +145,14 @@ int32 dq_div_vector( FMField *out, FMField *state, int32 offset,
 #undef __FUNC__
 #define __FUNC__ "d_volume_surface"
 int32 d_volume_surface( FMField *out, FMField *in,
-			FMField *bf, SurfaceGeometry *sg,
+			SurfaceGeometry *sg,
 			int32 *conn, int32 nEl, int32 nEP )
 {
   int32 ii, dim, nQP, nFP, ret = RET_OK;
   FMField *lcoor, *aux, *aux2;
   float64 val;
 
-  nFP = bf->nCol;
+  nFP = sg->bf->nCol;
   nQP = sg->det->nLev;
   dim = sg->normal->nRow;
   val = 1.0/dim;
@@ -164,9 +165,10 @@ int32 d_volume_surface( FMField *out, FMField *in,
     FMF_SetCell( out, ii );
     FMF_SetCell( sg->normal, ii );
     FMF_SetCell( sg->det, ii );
+    FMF_SetCellX1( sg->bf, ii );
 
     ele_extractNodalValuesNBN( lcoor, in, conn + nEP * ii );
-    fmf_mulAB_n1( aux, bf, lcoor );
+    fmf_mulAB_n1( aux, sg->bf, lcoor );
     fmf_mulAB_nn( aux2, aux, sg->normal );
     fmf_sumLevelsMulF( out, aux2, sg->det->val );
     fmf_mulC( out, val );
@@ -185,13 +187,13 @@ int32 d_volume_surface( FMField *out, FMField *in,
 #define __FUNC__ "di_surface_moment"
 
 int32 di_surface_moment( FMField *out, FMField *in,
-			 FMField *bf, SurfaceGeometry *sg,
+			 SurfaceGeometry *sg,
 			 int32 *conn, int32 nEl, int32 nEP )
 {
   int32 ii, dim, nQP, nFP, ret = RET_OK;
   FMField *lcoor, *aux, *aux2;
 
-  nFP = bf->nCol;
+  nFP = sg->bf->nCol;
   nQP = sg->det->nLev;
   dim = sg->normal->nRow;
 
@@ -203,9 +205,10 @@ int32 di_surface_moment( FMField *out, FMField *in,
     FMF_SetCell( out, ii );
     FMF_SetCell( sg->normal, ii );
     FMF_SetCell( sg->det, ii );
+    FMF_SetCellX1( sg->bf, ii );
 
     ele_extractNodalValuesNBN( lcoor, in, conn + nEP * ii );
-    fmf_mulAB_n1( aux, bf, lcoor );
+    fmf_mulAB_n1( aux, sg->bf, lcoor );
     fmf_mulAB_nn( aux2, sg->normal, aux );
     fmf_sumLevelsMulF( out, aux2, sg->det->val );
 

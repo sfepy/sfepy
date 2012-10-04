@@ -261,6 +261,32 @@ class Facets(Struct):
         self.signed_oris = signed_oris
         self.ori_maps = ori_maps
 
+    def get_orientation(self, ig, tp_edge_ori=None):
+        """
+        Get the orientation flag in group `ig`.
+
+        Parameters
+        ----------
+        ig : int
+            The group index.
+        tp_edge_ori : array, optional
+            If given, use the tensor edge orientation to fix the flag - the
+            flag is flipped for edges, where `tp_edge_ori` is False.
+
+        Returns
+        -------
+        ori : array
+            The orientation flag.
+        """
+        ori = self.oris[ig]
+        if tp_edge_ori is not None:
+            n_facet = self.single_facets[ig].shape[0]
+            n_el = ori.shape[0] / n_facet
+            aux = nm.tile(tp_edge_ori, n_el)
+            ori = nm.where(aux, ori, 1 - ori)
+
+        return ori
+
     def setup_unique(self):
         """
         `sorted_facets` == `permuted_facets[perm]`

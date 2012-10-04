@@ -46,7 +46,7 @@ def get_physical_qps(region, integral):
     and integral.
     """
     phys_qps = PhysicalQPs(igs=region.igs, n_total=0,
-                           indx={}, rindx={}, qp_indx={},
+                           indx={}, rindx={},
                            n_per_group={}, shape={}, values={},
                            is_uniform=True)
 
@@ -66,10 +66,6 @@ def get_physical_qps(region, integral):
 
         phys_qps.indx[ig] = slice(ii, ii + n_el)
         phys_qps.rindx[ig] = slice(ii * n_qp, (ii + n_el) * n_qp)
-
-        aux = nm.tile(nm.array(qps.shape[1], dtype=nm.int32), n_per_group + 1)
-        aux[0] = 0
-        phys_qps.qp_indx[ig] = nm.cumsum(aux)
 
         ii += qps.shape[0]
 
@@ -251,7 +247,7 @@ class VolumeMapping(Mapping):
     dimension.
     """
 
-    def get_mapping(self, qp_coors, weights, poly_space=None):
+    def get_mapping(self, qp_coors, weights, poly_space=None, ori=None):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
@@ -264,11 +260,13 @@ class VolumeMapping(Mapping):
         poly_space = get_default(poly_space, self.poly_space)
 
         bf_g = self.get_base(qp_coors, diff=True)
-        ebf_g = poly_space.eval_base(qp_coors, diff=True)
 
+        ebf_g = poly_space.eval_base(qp_coors, diff=True, ori=ori,
+                                     force_axis=True)
+        flag = ori is not None
 
         cmap = CVolumeMapping(self.n_el, qp_coors.shape[0], self.dim,
-                              poly_space.n_nod)
+                              poly_space.n_nod, flag)
         cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
 
         return cmap

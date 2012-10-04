@@ -1,19 +1,7 @@
 #!/usr/bin/env python
-# 12.01.2007, c 
-import os
-import re
-from optparse import OptionParser
-
-import numpy as nm
-
-import sfepy
-from sfepy.base.base import output, get_default_attr, assert_, Struct
-from sfepy.base.ioutils import read_array
-from sfepy.base.conf import ProblemConf, get_standard_keywords
-from sfepy.fem import MeshIO, ProblemDefinition
-
-usage = """%prog [generation options] <input file> <results file>
-%prog [postprocessing options] <probe file> <figure file>
+# 12.01.2007, c
+"""
+Probe finite element solutions in points defined by various geometrical probes.
 
 Generation mode
 ---------------
@@ -21,7 +9,7 @@ Probe the data in the results file corresponding to the problem defined in the
 input file. The input file options must contain 'gen_probes' and 'probe_hook'
 keys, pointing to proper functions accessible from the input file scope.
 
-For each probe returned by gen_probes() a data plot figure and a text
+For each probe returned by `gen_probes()` a data plot figure and a text
 file with the data plotted are saved, see the options below.
 
 Generation options
@@ -37,7 +25,27 @@ Postprocessing options
 ----------------------
 --postprocess, --radial, --only-names
 
+Notes
+-----
+For extremely thin hexahedral elements the Newton's iteration for finding the
+reference element coordinates might converge to a spurious solution outside
+of the element. To obtain some values even in this case, try increasing the
+--close-limit option value.
 """
+import os
+from optparse import OptionParser
+
+import numpy as nm
+
+import sfepy
+from sfepy.base.base import output, get_default_attr, assert_, Struct
+from sfepy.base.ioutils import read_array, edit_filename
+from sfepy.base.conf import ProblemConf, get_standard_keywords
+from sfepy.fem import MeshIO, ProblemDefinition
+
+usage = """%prog [generation options] <input file> <results file>
+%prog [postprocessing options] <probe file> <figure file>
+""" + __doc__.rstrip()
 
 help = {
     'filename' :
@@ -54,6 +62,9 @@ help = {
     'probe only named data',
     'step' :
     'probe the given time step',
+    'close_limit' :
+    'maximum limit distance of a point from the closest element allowed'
+    ' for extrapolation. [default: %default]',
     'postprocess' :
     'postprocessing mode',
     'radial' :
@@ -63,15 +74,17 @@ help = {
 def generate_probes(filename_input, filename_results, options,
                     conf=None, problem=None, probes=None, labels=None,
                     probe_hooks=None):
-    """Generate probe figures and data files."""
+    """
+    Generate probe figures and data files.
+    """
     if conf is None:
         required, other = get_standard_keywords()
-        conf = ProblemConf.from_file( filename_input, required, other )
+        conf = ProblemConf.from_file(filename_input, required, other)
 
     opts = conf.options
 
     if options.auto_dir:
-        output_dir = get_default_attr( opts, 'output_dir', '.' )
+        output_dir = get_default_attr(opts, 'output_dir', '.')
         filename_results = os.path.join(output_dir, filename_results)
 
     output('results in: %s' % filename_results)
@@ -94,11 +107,11 @@ def generate_probes(filename_input, filename_results, options,
                                               init_solvers=False)
 
     if probes is None:
-        gen_probes = getattr(conf.funmod, conf.options.gen_probes)
+        gen_probes = conf.get_function(conf.options.gen_probes)
         probes, labels = gen_probes(problem)
 
     if probe_hooks is None:
-        probe_hooks = {None : getattr(conf.funmod, conf.options.probe_hook)}
+        probe_hooks = {None : conf.get_function(conf.options.probe_hook)}
 
     if options.output_filename_trunk is None:
             options.output_filename_trunk = problem.ofn_trunk
@@ -111,9 +124,10 @@ def generate_probes(filename_input, filename_results, options,
 
     output_dir = os.path.dirname(filename_results)
 
-    edit_pname = re.compile('[^a-zA-Z0-9-_.\[\]]').sub
     for ip, probe in enumerate(probes):
         output(ip, probe.name)
+
+        probe.set_options(close_limit=options.close_limit)
 
         for key, probe_hook in probe_hooks.iteritems():
 
@@ -131,12 +145,19 @@ def generate_probes(filename_input, filename_results, options,
                 filename = filename_template % ip
 
             if fig is not None:
-                fig.savefig(filename)
-                output('figure ->', os.path.normpath(filename))
+                if isinstance(fig, dict):
+                    for fig_name, fig_fig in fig.iteritems():
+                        fig_filename = edit_filename(filename,
+                                                     suffix='_' + fig_name)
+                        fig_fig.savefig(fig_filename)
+                        output('figure ->', os.path.normpath(fig_filename))
+
+                else:
+                    fig.savefig(filename)
+                    output('figure ->', os.path.normpath(filename))
 
             if results is not None:
-                aux = os.path.splitext(filename)[0]
-                txt_filename = aux + '.txt'
+                txt_filename = edit_filename(filename, new_ext='.txt')
 
                 fd = open(txt_filename, 'w')
                 fd.write('\n'.join(probe.report()) + '\n')
@@ -156,7 +177,9 @@ def generate_probes(filename_input, filename_results, options,
                 output('data ->', os.path.normpath(txt_filename))
 
 def read_header(fd):
-    """Read the probe data header from file descriptor fd."""
+    """
+    Read the probe data header from file descriptor fd.
+    """
     header = Struct(name='probe_data_header')
     header.probe_class = fd.readline().strip()
 
@@ -176,7 +199,9 @@ def read_header(fd):
     return header
 
 def get_data_name(fd):
-    """Try to read next data name in file fd."""
+    """
+    Try to read next data name in file fd.
+    """
     name = None
     while 1:
         try:
@@ -192,9 +217,10 @@ def get_data_name(fd):
             yield name
 
 def integrate_along_line(x, y, is_radial=False):
-    """Integrate numerically (trapezoidal rule) a function $y=y(x)$.
+    """
+    Integrate numerically (trapezoidal rule) a function :math:`y=y(x)`.
 
-    If is_radial is True, multiply each $y$ by $4 \pi x^2$.
+    If is_radial is True, multiply each :math:`y` by :math:`4 \pi x^2`.
     """
     dx = nm.diff(x)
     ay = 0.5 * (y[:-1] + y[1:])
@@ -209,11 +235,13 @@ def integrate_along_line(x, y, is_radial=False):
     return val
 
 def postprocess(filename_input, filename_results, options):
-    """Postprocess probe data files - replot, integrate data."""
+    """
+    Postprocess probe data files - replot, integrate data.
+    """
     from matplotlib import pyplot as plt
 
     only_names = options.only_names
-    
+
     fd = open(filename_input, 'r')
 
     header = read_header(fd)
@@ -249,35 +277,37 @@ def postprocess(filename_input, filename_results, options):
     fd.close()
 
 def main():
-    parser = OptionParser(usage = usage, version = "%prog " + sfepy.__version__)
-    parser.add_option( "-o", "", metavar = 'filename',
-                       action = "store", dest = "output_filename_trunk",
-                       default = None, help = help['filename'] )
-    parser.add_option( "", "--auto-dir",
-                       action = "store_true", dest = "auto_dir",
-                       default = False, help = help['auto_dir'] )
-    parser.add_option( "", "--same-dir",
-                       action = "store_true", dest = "same_dir",
-                       default = False, help = help['same_dir'] )
-    parser.add_option("-f", "--format", metavar='format',
-                      action="store", dest="output_format",
-                      default="png", help=help['output_format'])
-    parser.add_option("--only-names", metavar='list of names',
-                      action="store", dest="only_names",
+    parser = OptionParser(usage=usage, version='%prog ' + sfepy.__version__)
+    parser.add_option('-o', '', metavar='filename',
+                      action='store', dest='output_filename_trunk',
+                      default=None, help=help['filename'])
+    parser.add_option('', '--auto-dir',
+                      action='store_true', dest='auto_dir',
+                      default=False, help=help['auto_dir'])
+    parser.add_option('', '--same-dir',
+                      action='store_true', dest='same_dir',
+                      default=False, help=help['same_dir'])
+    parser.add_option('-f', '--format', metavar='format',
+                      action='store', dest='output_format',
+                      default='png', help=help['output_format'])
+    parser.add_option('--only-names', metavar='list of names',
+                      action='store', dest='only_names',
                       default=None, help=help['only_names'])
-    parser.add_option("-s", "--step", type='int', metavar='step',
-                      action="store", dest="step",
+    parser.add_option('-s', '--step', type='int', metavar='step',
+                      action='store', dest='step',
                       default=0, help=help['step'])
-    parser.add_option("-p", "--postprocess",
-                      action="store_true", dest="postprocess",
+    parser.add_option('-c', '--close-limit', type='float', metavar='distance',
+                      action='store', dest='close_limit',
+                      default=0.1, help=help['close_limit'])
+    parser.add_option('-p', '--postprocess',
+                      action='store_true', dest='postprocess',
                       default=False, help=help['postprocess'])
-    parser.add_option("--radial",
-                      action="store_true", dest="radial",
+    parser.add_option('--radial',
+                      action='store_true', dest='radial',
                       default=False, help=help['radial'])
     options, args = parser.parse_args()
-#    print options; pause()
 
-    if (len( args ) == 2):
+    if (len(args) == 2):
         filename_input, filename_results = args
     else:
         parser.print_help(),

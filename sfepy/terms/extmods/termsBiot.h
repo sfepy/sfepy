@@ -12,12 +12,12 @@ BEGIN_C_DECLS
 #include "geometry.h"
 
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
-		    FMField *bf, FMField *mtxD, VolumeGeometry *vg,
+		    FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
 		    int32 isDiff );
 
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
-		   FMField *bf, FMField *mtxD, VolumeGeometry *vg,
-		   int32 isDiff );
+		   FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+                   int32 isDiff );
 
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
 		  FMField *mtxD, VolumeGeometry *vg );

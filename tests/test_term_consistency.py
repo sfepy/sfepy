@@ -26,8 +26,8 @@ regions = {
 }
 
 integrals = {
-    'i1' : ('v', 'gauss_o2_d2'),
-    'isurf' : ('s', 'gauss_o1_d1'),
+    'i1' : ('v', 2),
+    'isurf' : ('s', 1),
 }
 
 materials = {

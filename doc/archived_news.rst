@@ -3,6 +3,13 @@
 Archived News
 =============
 
+* **31.05.2011** Version 2011.2 released (experimental implementation of
+  terms aiming at easier usage and definition of new terms,
+  Mooney-Rivlin membrane term, update build system to use exclusively
+  setup.py, allow switching boundary conditions on/off depending on
+  time, support for variable time step solvers, etc.), see
+  :ref:`release notes <2011.1-2011.2>`.
+
 * **24.03.2011** Version 2011.1 released (discontinuous approximations,
   user-defined material nonlinearities, improved surface approximations,
   speed-up mesh reading, extensive clean-up - less code, many bugfixes

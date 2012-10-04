@@ -31,6 +31,7 @@ typedef struct VolumeGeometry {
   int32 nQP;
   int32 dim;
   int32 nEP;
+  FMField *bf;
   FMField *bfGM;
   FMField *det; // detJMR or detJSR.
   FMField *volume;
@@ -69,6 +70,7 @@ typedef struct SurfaceGeometry {
   FMField *normal;
   FMField *det; // detJMR.
 
+  FMField *bf;
   FMField *bfBGM;
   FMField *detF;
   FMField *mtxFI;

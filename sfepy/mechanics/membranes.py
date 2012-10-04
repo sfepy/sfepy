@@ -3,6 +3,7 @@ import numpy as nm
 from sfepy.base.base import assert_
 from sfepy.linalg import norm_l2_along_axis as norm
 from sfepy.linalg import dot_sequences, insert_strided_axis
+from sfepy.fem.poly_spaces import PolySpace
 from sfepy.fem.mappings import VolumeMapping
 from sfepy.mechanics.tensors import dim2sym
 
@@ -81,6 +82,50 @@ def create_mapping(coors, gel, order):
     mapping = VolumeMapping(seq_coors, seq_conn, gel=gel, order=1)
 
     return mapping
+
+def describe_geometry(ig, field, region, integral):
+    """
+    Describe membrane geometry in a given region.
+
+    Parameters
+    ----------
+    ig : int
+        The element group index.
+    field : Field instance
+        The field defining the FE approximation.
+    region : Region instance
+        The surface region to describe.
+    integral : Integral instance
+        The integral defining the quadrature points.
+
+    Returns
+    -------
+    mtx_t : array
+        The transposed transformation matrix :math:`T`, see
+        :func:`create_transformation_matrix`.
+    membrane_geo : CVolumeMapping instance
+        The mapping from transformed elements to a reference elements.
+    """
+    # Coordinates of element vertices.
+    sg, _ = field.get_mapping(ig, region, integral, 'surface')
+    sd = field.aps[ig].surface_data[region.name]
+    coors = field.coors[sd.econn[:, :sg.n_fp]]
+
+    # Coordinate transformation matrix (transposed!).
+    mtx_t = create_transformation_matrix(coors)
+
+    # Transform coordinates to the local coordinate system.
+    coors_loc = dot_sequences((coors - coors[:, 0:1, :]), mtx_t)
+
+    # Mapping from transformed elements to reference elements.
+    gel = field.gel.surface_facet
+    vm = create_mapping(coors_loc, gel, 1)
+
+    qp = integral.get_qp(gel.name)
+    ps = PolySpace.any_from_args(None, gel, field.approx_order)
+    membrane_geo = vm.get_mapping(qp[0], qp[1], poly_space=ps)
+
+    return mtx_t, membrane_geo
 
 def describe_deformation(el_disps, bfg):
     """

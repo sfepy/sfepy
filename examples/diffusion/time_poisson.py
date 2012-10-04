@@ -77,7 +77,7 @@ ics = {
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'order' : 1,
 }
 
 equations = {

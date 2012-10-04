@@ -74,7 +74,7 @@ cdef _get_barycentric_coors(_f.FMField *bc, _f.FMField *coors,
                     error = True
 
             if check_errors and error:
-                msg = 'point %d outside of element!' % ir
+                msg = 'point %d outside of element! (%.e)' % (ir, val)
                 raise ValueError(msg)
 
             bc.val[n_v*ir+ic] = val

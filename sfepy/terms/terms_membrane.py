@@ -4,7 +4,6 @@ from sfepy.base.base import assert_
 from sfepy.linalg import dot_sequences
 from sfepy.mechanics.tensors import dim2sym, transform_data
 import sfepy.mechanics.membranes as membranes
-from sfepy.fem.poly_spaces import PolySpace
 from sfepy.terms.terms import Term
 
 def eval_membrane_mooney_rivlin(a1, a2, mtx_c, c33, mode):
@@ -158,7 +157,7 @@ class TLMembraneTerm(Term):
             out_qp[..., 3, 0] = stress[..., 2, 0]
 
         status = geo.integrate(out, out_qp, fmode)
-        out[:] = transform_data(out, mtx=mtx_t)
+        out[:, 0, :, 0] = transform_data(out.squeeze(), mtx=mtx_t)
 
         return status
 
@@ -170,28 +169,6 @@ class TLMembraneTerm(Term):
         self.membrane_geo = {}.fromkeys(igs, None)
         self.bfg = {}.fromkeys(igs, None)
 
-    def describe_membrane_geometry(self, ig, field, sg, sd):
-        # Coordinates of element vertices.
-        coors = field.coors[sd.econn[:, :sg.n_fp]]
-
-        # Coordinate transformation matrix (transposed!).
-        self.mtx_t[ig] = membranes.create_transformation_matrix(coors)
-
-        # Transform coordinates to the local coordinate system.
-        coors_loc = dot_sequences((coors - coors[:, 0:1, :]), self.mtx_t[ig])
-
-        # Mapping from transformed element to reference element.
-        gel = field.gel.surface_facet
-        vm = membranes.create_mapping(coors_loc, gel, 1)
-
-        qp = self.integral.get_qp(gel.name)
-        ps = PolySpace.any_from_args(None, gel, field.approx_order)
-        self.membrane_geo[ig] = vm.get_mapping(qp[0], qp[1], poly_space=ps)
-
-        # Transformed base function gradient w.r.t. material coordinates
-        # in quadrature points.
-        self.bfg[ig] = self.membrane_geo[ig].bfg
-
     def get_fargs(self, a1, a2, h0, virtual, state,
                   mode=None, term_mode=None, diff_var=None, **kwargs):
         vv, vu = virtual, state
@@ -201,7 +178,12 @@ class TLMembraneTerm(Term):
 
         ig = self.char_fun.ig
         if self.mtx_t[ig] is None:
-            self.describe_membrane_geometry(ig, vu.field, sg, sd)
+            aux = membranes.describe_geometry(ig, vu.field,
+                                              self.region, self.integral)
+            self.mtx_t[ig], self.membrane_geo[ig] = aux
+            # Transformed base function gradient w.r.t. material coordinates
+            # in quadrature points.
+            self.bfg[ig] = self.membrane_geo[ig].bfg
 
         mtx_t = self.mtx_t[ig]
         bfg = self.bfg[ig]

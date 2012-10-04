@@ -29,6 +29,7 @@ cdef extern from 'geometry.h':
         int32 nQP
         int32 dim
         int32 nEP
+        FMField *bf
         FMField *bfGM
         FMField *det # detJMR or detJSR.
         FMField *volume
@@ -60,6 +61,7 @@ cdef extern from 'geometry.h':
         int32 nFP
         FMField *normal
         FMField *det # detJMR.
+        FMField *bf
         FMField *bfBGM
 
         FMField *area
@@ -84,8 +86,9 @@ cdef extern from 'geometry.h':
 cdef class CVolumeMapping:
     cdef VolumeGeometry geo[1]
 
-    cdef FMField _bfg[1], _det[1], _volume[1]
+    cdef FMField _bf[1], _bfg[1], _det[1], _volume[1]
 
+    cdef public np.ndarray bf
     cdef public np.ndarray bfg
     cdef public np.ndarray det
     cdef public np.ndarray volume
@@ -97,16 +100,16 @@ cdef class CVolumeMapping:
     cdef public object integral
     cdef public object qp
     cdef public object ps
-    cdef public object bf
 
 cdef class CSurfaceMapping:
     cdef SurfaceGeometry geo[1]
 
-    cdef FMField _normal[1], _det[1], _area[1], _bfbg[1]
+    cdef FMField _normal[1], _det[1], _area[1], _bf[1], _bfbg[1]
 
     cdef public np.ndarray normal
     cdef public np.ndarray det
     cdef public np.ndarray area
+    cdef public np.ndarray bf
     cdef public np.ndarray bfbg
 
     cdef public tuple shape
@@ -116,4 +119,3 @@ cdef class CSurfaceMapping:
     cdef public object integral
     cdef public object qp
     cdef public object ps
-    cdef public object bf

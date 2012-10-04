@@ -151,20 +151,33 @@ def assemble1d(ar_out, indx, ar_in):
 
         ar_out[aux.row] += aux.data
 
-def unique_rows(ar):
+def unique_rows(ar, return_index=False, return_inverse=False):
     """
-    Return unique rows of a two-dimensional array `ar`.
+    Return unique rows of a two-dimensional array `ar`. The arguments follow
+    `numpy.unique()`.
     """
-    ar = nm.asanyarray(ar)
+    ar = nm.ascontiguousarray(ar)
 
     # View the rows as a 1D structured array.
     arv = ar.view(ar.shape[1] * [('', ar.dtype)])
-    uarv = nm.unique(arv)
+    out = nm.unique(arv, return_index=return_index,
+                    return_inverse=return_inverse)
+    if isinstance(out, tuple):
+        uarv = out[0]
+
+    else:
+        uarv = out
 
     # Restore the original dimensions.
     uar = uarv.view(ar.dtype).reshape((-1, ar.shape[1]))
 
-    return uar
+    if isinstance(out, tuple):
+        out = (uar,) + out[1:]
+
+    else:
+        out = uar
+
+    return out
 
 def argsort_rows(seq):
     """

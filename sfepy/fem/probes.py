@@ -47,18 +47,12 @@ class Probe(Struct):
         shift coordinates of such vertices so that they never match in the
         nearest node search.
         """
-        Struct.__init__(self, name=name, mesh=mesh, n_point=n_point, **kwargs)
+        Struct.__init__(self, name=name, mesh=mesh, **kwargs)
 
-        if self.n_point is None:
-            self.n_point = -10
+        self.set_n_point(n_point)
 
-        if self.n_point <= 0:
-            self.n_point = max(-self.n_point, 2)
-            self.n_point_required = -1
-
-        else:
-            self.n_point = max(self.n_point, 2)
-            self.n_point_required = self.n_point
+        self.options = Struct()
+        self.set_options(close_limit=0.1, size_hint=None)
 
         self.is_refined = False
 
@@ -97,6 +91,49 @@ class Probe(Struct):
 
         output('kdtree: %f s' % (time.clock()-tt))
 
+    def set_n_point(self, n_point):
+        """
+        Set the number of probe points.
+
+        Parameters
+        ----------
+        n_point : int
+           The (fixed) number of probe points, when positive. When non-positive,
+           the number of points is adaptively increased starting from -n_point,
+           until the neighboring point distance is less than the diameter of the
+           elements enclosing the points. When None, it is set to -10.
+        """
+        if n_point is None:
+            n_point = -10
+
+        if n_point <= 0:
+            n_point = max(-n_point, 2)
+            self.n_point_required = -1
+
+        else:
+            n_point = max(n_point, 2)
+            self.n_point_required = n_point
+
+        self.n_point0 = self.n_point = n_point
+
+    def set_options(self, close_limit=None, size_hint=None):
+        """
+        Set the probe options.
+
+        Parameters
+        ----------
+        close_limit : float
+            The maximum limit distance of a point from the closest
+            element allowed for extrapolation.
+        size_hint : float
+            Element size hint for the refinement of probe parametrization.
+        """
+        if close_limit is not None:
+            self.options.close_limit = close_limit
+
+        if size_hint is not None:
+            self.options.size_hint = size_hint
+
     def report(self):
         """Report the probe parameters."""
         out = [self.__class__.__name__]
@@ -131,14 +168,17 @@ class Probe(Struct):
             The variable to be sampled along the probe.
         """
         refine_flag = None
+        ev = variable.evaluate_at
+
+        self.reset_refinement()
+
         while True:
             pars, points = self.get_points(refine_flag)
 
-            vals, cells, status = variable.evaluate_at(points,
-                                                       strategy='kdtree',
-                                                       cache=self.cache,
-                                                       ret_status=True)
-            ii = nm.where(status > 0)[0]
+            vals, cells, status = ev(points, strategy='kdtree',
+                                     close_limit=self.options.close_limit,
+                                     cache=self.cache, ret_status=True)
+            ii = nm.where(status > 1)[0]
             vals[ii] = nm.nan
 
             if self.is_refined:
@@ -152,6 +192,13 @@ class Probe(Struct):
         self.is_refined = True
 
         return pars, vals
+
+    def reset_refinement(self):
+        """
+        Reset the probe refinement state.
+        """
+        self.is_refined = False
+        self.n_point = self.n_point0
 
     def refine_points(self, variable, points, cells):
         """
@@ -168,8 +215,12 @@ class Probe(Struct):
             refine_flag = nm.array([False])
 
         else:
-            ed = variable.get_element_diameters(cells, 0)
-            pd = 0.5 * (ed[1:] + ed[:-1])
+            if self.options.size_hint is None:
+                ed = variable.get_element_diameters(cells, 0)
+                pd = 0.5 * (ed[1:] + ed[:-1])
+
+            else:
+                pd = self.options.size_hint
 
             dist = norm_l2_along_axis(points[1:] - points[:-1])
 

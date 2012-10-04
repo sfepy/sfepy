@@ -142,7 +142,7 @@ def stress_strain( out, problem, state, extend = False ):
 integral_1 = {
     'name' : 'i1',
     'kind' : 'v',
-    'quadrature' : 'gauss_o1_d3',
+    'order' : 1,
 }
 equations = {
     'balance' : """dw_tl_he_neohook.i1.Omega( solid.mu, v, u )

@@ -1,3 +1,5 @@
+import time
+
 import numpy as nm
 import warnings
 
@@ -5,20 +7,35 @@ import scipy.sparse as sps
 
 warnings.simplefilter('ignore', sps.SparseEfficiencyWarning)
 
-from sfepy.base.base import output, get_default, assert_, Struct
+from sfepy.base.base import output, get_default, assert_, try_imports, Struct
 from sfepy.solvers.solvers import make_get_conf, LinearSolver
 
-def try_imports(imports, fail_msg=None):
-    for imp in imports:
-        try:
-            exec imp
-            break
-        except:
-            pass
-        else:
-            if fail_msg is not None:
-                raise ValueError(fail_msg)
-    return locals()
+def standard_call(call):
+    """
+    Decorator handling argument preparation and timing for linear solvers.
+    """
+    def _standard_call(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
+                       i_max=None, mtx=None, status=None, **kwargs):
+        tt = time.clock()
+
+        conf = get_default(conf, self.conf)
+        mtx = get_default(mtx, self.mtx)
+        status = get_default(status, self.status)
+
+        assert_(mtx.shape[0] == mtx.shape[1] == rhs.shape[0])
+        if x0 is not None:
+            assert_(x0.shape[0] == rhs.shape[0])
+
+        result = call(self, rhs, x0, conf, eps_a, eps_r, i_max, mtx, status,
+                      **kwargs)
+
+        ttt = time.clock() - tt
+        if status is not None:
+            status['time'] = ttt
+
+        return result
+
+    return _standard_call
 
 class ScipyDirect(LinearSolver):
     name = 'ls.scipy_direct'
@@ -86,11 +103,9 @@ class ScipyDirect(LinearSolver):
             if self.mtx is not None:
                 self.solve = self.sls.factorized(self.mtx)
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        conf = get_default(conf, self.conf)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
         if self.solve is not None:
             # Matrix is already prefactorized.
@@ -117,12 +132,15 @@ class Umfpack(ScipyDirect):
 # c: 22.02.2008
 class ScipyIterative( LinearSolver ):
     """
-    Interface to scipy iterative solvers.
+    Interface to SciPy iterative solvers.
 
     Notes
     -----
     The `eps_r` tolerance is both absolute and relative - the solvers
     stop when either the relative or the absolute residual is below it.
+
+    A preconditioner can be anything that the SciPy solvers accept (sparse
+    matrix, dense matrix, LinearOperator).
     """
     name = 'ls.scipy_iterative'
 
@@ -138,6 +156,8 @@ class ScipyIterative( LinearSolver ):
                 'kind' : 'ls.scipy_iterative',
 
                 'method' : 'cg',
+                'precond' : None,
+                'callback' : None,
                 'i_max' : 1000,
                 'eps_r' : 1e-12,
             }
@@ -146,6 +166,8 @@ class ScipyIterative( LinearSolver ):
         common = LinearSolver.process_conf(conf)
 
         return Struct(method=get('method', 'cg'),
+                      precond=get('precond', None),
+                      callback=get('callback', None),
                       i_max=get('i_max', 100),
                       eps_a=None,
                       eps_r=get('eps_r', 1e-8)) + common
@@ -168,15 +190,24 @@ class ScipyIterative( LinearSolver ):
             -1 : 'illegal input or breakdown',
         }
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        conf = get_default(conf, self.conf)
+
         eps_r = get_default(eps_r, self.conf.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
-        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max)
+        precond = get_default(kwargs.get('precond', None), self.conf.precond)
+        callback = get_default(kwargs.get('callback', None), self.conf.callback)
+
+        if conf.method == 'qmr':
+            prec_args = {'M1' : precond, 'M2' : precond}
+
+        else:
+            prec_args = {'M' : precond}
+
+        sol, info = self.solver(mtx, rhs, x0=x0, tol=eps_r, maxiter=i_max,
+                                callback=callback, **prec_args)
         output('%s convergence: %s (%s)'
                % (self.conf.method,
                   info, self.converged_reasons[nm.sign(info)]))
@@ -242,12 +273,11 @@ class PyAMGSolver( LinearSolver ):
             if self.mtx is not None:
                 self.mg = self.solver( self.mtx )
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        conf = get_default(conf, self.conf)
+
         eps_r = get_default(eps_r, self.eps_r)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
         if (self.mg is None) or (mtx is not self.mtx):
             self.mg = self.solver(mtx)
@@ -340,14 +370,13 @@ class PETScKrylovSolver( LinearSolver ):
         sol, rhs = pmtx.getVecs()
         return pmtx, sol, rhs
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        conf = get_default(conf, self.conf)
+
         eps_a = get_default(eps_a, self.eps_a)
         eps_r = get_default(eps_r, self.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
         # There is no use in caching matrix in the solver - always set as new.
         pmtx, psol, prhs = self.set_matrix(mtx)
@@ -414,18 +443,16 @@ class PETScParallelKrylovSolver(PETScKrylovSolver):
         return Struct(n_proc=get('n_proc', 1),
                       sub_precond=get('sub_precond', 'icc')) + common
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-        import os, sys, shutil, tempfile, time
+        import os, sys, shutil, tempfile
         from sfepy import base_dir, data_dir
         from sfepy.base.ioutils import ensure_path
 
-        conf = get_default(conf, self.conf)
         eps_a = get_default(eps_a, self.eps_a)
         eps_r = get_default(eps_r, self.eps_r)
         i_max = get_default(i_max, self.conf.i_max)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
         petsc = self.petsc
 
@@ -568,12 +595,9 @@ class SchurGeneralized(ScipyDirect):
             vec0 = aux_state.get_reduced()
             conf.idxs[bk] = nm.where(nm.isnan(vec0))[0]
 
+    @standard_call
     def __call__(self, rhs, x0=None, conf=None, eps_a=None, eps_r=None,
                  i_max=None, mtx=None, status=None, **kwargs):
-
-        conf = get_default(conf, self.conf)
-        mtx = get_default(mtx, self.mtx)
-        status = get_default(status, self.status)
 
         mtxi= self.orig_conf.idxs
         mtxslc_s = {}

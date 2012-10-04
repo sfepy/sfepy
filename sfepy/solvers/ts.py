@@ -23,8 +23,8 @@ class TimeStepper( Struct ):
 
     @staticmethod
     def from_conf( conf ):
-        return TimeStepper(conf.t0, conf.t1, conf.dt, conf.n_step,
-                           conf.quasistatic)
+        return TimeStepper(conf.t0, conf.t1, dt=conf.dt, n_step=conf.n_step,
+                           is_quasistatic=conf.quasistatic)
 
     def __init__(self, t0, t1, dt=None, n_step=None, step=None,
                  is_quasistatic=False):

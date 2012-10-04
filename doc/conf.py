@@ -214,6 +214,7 @@ latex_documents = [
 #latex_preamble = ''
 latex_preamble = r"""
 \usepackage{bm}
+\usepackage{amsfonts}
 \def\dt{{\Delta t}}
 \def\pdiff#1#2{\frac{\partial {#1}}{\partial {#2}}}
 \def\tdiff#1#2{\frac{{\rm d} {#1}}{{\rm d} {#2}}}
