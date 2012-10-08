@@ -769,10 +769,11 @@ class ProblemDefinition( Struct ):
         epbcs = Conditions.from_conf(self.conf.epbcs, self.domain.regions)
 
         try:
-            variables.equation_mapping(ebcs, epbcs, self.ts, self.functions)
-        except Exception, e:
-            output( 'cannot make equation mapping!' )
-            output( 'reason: %s' % e )
+            variables.equation_mapping(ebcs, epbcs, self.ts, self.functions,
+                                       problem=self)
+        except:
+            output('cannot make equation mapping!')
+            raise
 
         state = self.create_state()
         state.fill(default)
