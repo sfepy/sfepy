@@ -103,7 +103,7 @@ def describe_geometry(ig, field, region, integral):
     mtx_t : array
         The transposed transformation matrix :math:`T`, see
         :func:`create_transformation_matrix`.
-    membrane_geo : CVolumeMapping instance
+    membrane_geo : CMapping instance
         The mapping from transformed elements to a reference elements.
     """
     # Coordinates of element vertices.

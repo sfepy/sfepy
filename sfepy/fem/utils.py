@@ -1,7 +1,7 @@
 import numpy as nm
 
 import sfepy.linalg as la
-from extmods.mappings import CSurfaceMapping
+from extmods.mappings import CMapping
 
 def prepare_remap(indices, n_full):
     """
@@ -77,8 +77,8 @@ def compute_nodal_normals(nodes, region, field, return_imap=False):
         coors = ps.node_coors
         bf_sg = ps.eval_base(coors, diff=True)
 
-        cmap = CSurfaceMapping(n_fa, n_fp, dim, n_fp)
-        cmap.describe(field.get_coor(), econn, bf_sg, weights)
+        cmap = CMapping(n_fa, n_fp, dim, n_fp, mode='surface')
+        cmap.describe(field.get_coor(), econn, bf_sg, None, weights)
 
         e_normals = cmap.normal.squeeze()
 

@@ -1538,13 +1538,7 @@ class FieldVariable(Variable):
             bf = la.insert_strided_axis(ebf, 0, ap.econn.shape[0])
             self.bfs[geo_key] = bf
 
-            if integral.kind == 'v':
-                bfg = geo.bfg
-
-            else:
-                    bfg = geo.bfbg
-
-            self.bfgs[geo_key] = bfg
+            self.bfgs[geo_key] = geo.bfg
 
     def clear_current_group(self):
         """

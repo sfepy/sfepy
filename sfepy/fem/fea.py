@@ -368,8 +368,8 @@ class Approximation( Struct ):
             conn = sd.get_connectivity()
 
             mapping = SurfaceMapping(coors, conn, poly_space=geo_ps)
-            sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps)
-
+            sg = mapping.get_mapping(qp.vals, qp.weights, poly_space=ps,
+                                     mode=gtype)
             if gtype == 'surface_extra':
                 sg.alloc_extra_data(self.get_v_data_shape()[2])
 
