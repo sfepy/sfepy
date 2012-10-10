@@ -10,13 +10,16 @@
 */
 int32 map_print( Mapping *obj, FILE *file, int32 mode )
 {
-  int32 ii;
+  int32 ii, only_one = 0;
   char *modes[] = {"volume", "surface", "surface_extra"};
 
   fprintf( file, "Mapping: mode %s, nEl "FI32", nQP "FI32", dim: "
            FI32", nEP: "FI32"\n",
            modes[obj->mode], obj->nEl, obj->nQP, obj->dim, obj->nEP );
   fprintf( file, "totalVolume: %.5f\n", obj->totalVolume );
+
+  only_one = mode == 2;
+  mode = Min(mode, 1);
 
   for (ii = 0; ii < obj->det->nCell; ii++) {
     FMF_SetCell( obj->det, ii );
@@ -38,6 +41,9 @@ int32 map_print( Mapping *obj, FILE *file, int32 mode )
 
       fprintf( file, FI32 " normal:\n", ii );
       fmf_print( obj->normal, file, mode );
+    }
+    if (only_one) {
+      break;
     }
   }
 
@@ -65,8 +71,8 @@ int32 map_describe( Mapping *obj,
         (dim == obj->dim) &&
         (nQP == obj->nQP) &&
         (nEP == bfGR->nCol) &&
-        (ebfGR->nCol == obj->nEP))) {
-    map_print( obj, stdout, 1 );
+        ((obj->mode != MM_Volume) || (ebfGR->nCol == obj->nEP)))) {
+    map_print( obj, stdout, 2 );
     errput( "size mismatch!\n" );
     return( RET_Fail );
   }
@@ -183,7 +189,7 @@ int32 _s_describe( Mapping *obj,
       }
     }
 
-/*      fmf_print( faceCoor, stdout, 0 ); */
+    /* fmf_print( faceCoor, stdout, 0 ); */
     fmf_mulAB_n1( mtxRMS, bfGR, faceCoor );
     /* Surface jacobian and normal. */
     switch (dim) {
@@ -254,7 +260,7 @@ int32 map_integrate( Mapping *obj, FMField *out, FMField *in,
   FMField *vn = 0;
 
   if ((obj->mode == MM_Volume) || (mode < 3) || (in->nRow == 1)) {
-    for (iel = 0; iel < obj->bfGM->nCell; iel++) {
+    for (iel = 0; iel < obj->det->nCell; iel++) {
       FMF_SetCell( obj->det, iel );
       FMF_SetCell( in, iel );
       FMF_SetCell( out, iel );
