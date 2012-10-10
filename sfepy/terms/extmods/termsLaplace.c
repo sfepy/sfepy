@@ -208,7 +208,7 @@ int32 laplace_act_gt_m( FMField *out, FMField *gc, FMField *mtx )
   - 09.12.2005
 */
 int32 dw_laplace( FMField *out, FMField *grad,
-		  FMField *coef, VolumeGeometry *vg,
+		  FMField *coef, Mapping *vg,
 		  int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
@@ -258,7 +258,7 @@ int32 dw_laplace( FMField *out, FMField *grad,
 #undef __FUNC__
 #define __FUNC__ "d_laplace"
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg )
+		 FMField *coef, Mapping *vg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *dgp2 = 0, *gp1tdgp2 = 0;
@@ -298,7 +298,7 @@ int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
   - c: 03.08.2006, r: 23.01.2008
 */
 int32 dw_diffusion( FMField *out, FMField *grad,
-		    FMField *mtxD, VolumeGeometry *vg,
+		    FMField *mtxD, Mapping *vg,
 		    int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
@@ -357,7 +357,7 @@ int32 dw_diffusion( FMField *out, FMField *grad,
   - c: 12.03.2007, r: 23.01.2008
 */
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg )
+		   FMField *mtxD, Mapping *vg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *dgp2 = 0, *gp1tdgp2 = 0;
@@ -397,7 +397,7 @@ int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
   @par Revision history:
   - c: 23.04.2007, r: 23.01.2008
 */
-int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg )
+int32 dw_permeability_r( FMField *out, FMField *mtxD, Mapping *vg )
 {
   int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gtd = 0;
@@ -429,7 +429,7 @@ int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg )
 #undef __FUNC__
 #define __FUNC__ "d_surface_flux"
 int32 d_surface_flux( FMField *out, FMField *grad,
-                      FMField *mtxD, SurfaceGeometry *sg, int32 mode )
+                      FMField *mtxD, Mapping *sg, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *dgp = 0, *ntdgp = 0;
@@ -452,8 +452,8 @@ int32 d_surface_flux( FMField *out, FMField *grad,
 
     fmf_sumLevelsMulF( out, ntdgp, sg->det->val );
     if (mode == 1) {
-      FMF_SetCell( sg->area, ii );
-      fmf_mulC( out, 1.0 / sg->area->val[0] );
+      FMF_SetCell( sg->volume, ii );
+      fmf_mulC( out, 1.0 / sg->volume->val[0] );
     }
     ERR_CheckGo( ret );
   }

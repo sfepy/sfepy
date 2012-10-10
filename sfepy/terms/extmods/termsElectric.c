@@ -5,7 +5,7 @@
 #undef __FUNC__
 #define __FUNC__ "dw_electric_source"
 int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
-			  VolumeGeometry *vg )
+			  Mapping *vg )
 {
   int32 ii, nQP, nEP, ret = RET_OK;
   FMField *gp2 = 0, *bftgp2 = 0;

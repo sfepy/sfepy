@@ -10,7 +10,7 @@
   - 01.12.2006
 */
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
-		    FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+		    FMField *mtxD, Mapping *svg, Mapping *vvg,
 		    int32 isDiff )
 {
   int32 ii, nEPU, nEP, dim, nQP, ret = RET_OK;
@@ -75,7 +75,7 @@ int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
   - 01.12.2006
 */
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
-		   FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+		   FMField *mtxD, Mapping *svg, Mapping *vvg,
                    int32 isDiff )
 {
   int32 ii, nEPP, nEP, dim, sym, nQP, ret = RET_OK;
@@ -144,7 +144,7 @@ int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
   - c: 05.03.2008, r: 05.03.2008
 */
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
-		  FMField *mtxD, VolumeGeometry *vg )
+		  FMField *mtxD, Mapping *vg )
 {
   int32 ii, nQP, ret = RET_OK;
   FMField *dtgu = 0, *pftdtgu = 0;

@@ -5,8 +5,8 @@
 #define __FUNC__ "dw_surface_dot_vectornormscalar"
 int32 dw_surface_dot_vectornormscalar(FMField *out,
                                       FMField *coef, FMField *val_qp,
-                                      SurfaceGeometry *rsg,
-                                      SurfaceGeometry *csg,
+                                      Mapping *rsg,
+                                      Mapping *csg,
                                       int32 isDiff)
 {
   int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
@@ -60,7 +60,7 @@ int32 dw_surface_dot_vectornormscalar(FMField *out,
   - 21.11.2006, c
 */
 int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
-                            VolumeGeometry *rvg, VolumeGeometry *cvg,
+                            Mapping *rvg, Mapping *cvg,
                             int32 isDiff )
 {
   int32 ii, dim, nc, nQP, nEPR, nEPC, ret = RET_OK;
@@ -141,7 +141,7 @@ int32 dw_volume_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
 #undef __FUNC__
 #define __FUNC__ "dw_surface_dot_vector"
 int32 dw_surface_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
-                             SurfaceGeometry *rsg, SurfaceGeometry *csg,
+                             Mapping *rsg, Mapping *csg,
                              int32 isDiff )
 {
   int32 ii, dim, nQP, nEPR, nEPC, ret = RET_OK;
@@ -200,7 +200,7 @@ int32 dw_surface_dot_vector( FMField *out, FMField *coef, FMField *val_qp,
   - 01.02.2008, c
 */
 int32 dw_volume_dot_scalar( FMField *out, FMField *coef, FMField *val_qp,
-                            VolumeGeometry *rvg, VolumeGeometry *cvg,
+                            Mapping *rvg, Mapping *cvg,
                             int32 isDiff )
 {
   int32 ii, nQP, nEPR, nEPC, ret = RET_OK;
@@ -257,7 +257,7 @@ int32 dw_volume_dot_scalar( FMField *out, FMField *coef, FMField *val_qp,
   - 09.03.2009, c
 */
 int32 dw_surface_dot_scalar( FMField *out, FMField *coef, FMField *val_qp,
-                             SurfaceGeometry *rsg, SurfaceGeometry *csg,
+                             Mapping *rsg, Mapping *csg,
                              int32 isDiff )
 {
   int32 ii, nQP, nEPR, nEPC, ret = RET_OK;
@@ -310,7 +310,7 @@ int32 dw_surface_dot_scalar( FMField *out, FMField *coef, FMField *val_qp,
 #undef __FUNC__
 #define __FUNC__ "dw_v_dot_grad_s_vw"
 int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
-                          VolumeGeometry *vvg, VolumeGeometry *svg,
+                          Mapping *vvg, Mapping *svg,
                           int32 isDiff )
 {
   int32 ii, nc, nEPV, nEPS, dim, nQP, ret = RET_OK;
@@ -378,7 +378,7 @@ int32 dw_v_dot_grad_s_vw( FMField *out, FMField *coef, FMField *grad,
 #undef __FUNC__
 #define __FUNC__ "dw_v_dot_grad_s_sw"
 int32 dw_v_dot_grad_s_sw( FMField *out, FMField *coef, FMField *val_qp,
-                          VolumeGeometry *vvg, VolumeGeometry *svg,
+                          Mapping *vvg, Mapping *svg,
                           int32 isDiff )
 {
   int32 ii, nc, nEPV, nEPS, dim, nQP, ret = RET_OK;

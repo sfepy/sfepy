@@ -9,7 +9,7 @@
   - 06.09.2006, c
   - 11.10.2006
 */
-int32 dw_surface_ltr( FMField *out, FMField *traction, SurfaceGeometry *sg )
+int32 dw_surface_ltr( FMField *out, FMField *traction, Mapping *sg )
 {
   int32 ii, dim, sym, nQP, nFP, ret = RET_OK;
   FMField *outQP = 0, *pn = 0, *stn = 0;

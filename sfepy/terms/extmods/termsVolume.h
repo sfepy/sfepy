@@ -9,9 +9,9 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
-int32 dw_volume_lvf( FMField *out, FMField *forceQP, VolumeGeometry *vg );
+int32 dw_volume_lvf( FMField *out, FMField *forceQP, Mapping *vg );
 
 END_C_DECLS
 

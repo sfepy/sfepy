@@ -40,7 +40,7 @@ int32 sub_mul_gradddgrad_scalar( FMField *out,
   - 27.07.2006
 */
 int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
-                       VolumeGeometry *vg, int32 isDiff )
+                       Mapping *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *gf = 0, *ftgf = 0, *ftgfu = 0;
@@ -99,7 +99,7 @@ int32 dw_adj_convect1( FMField *out, FMField *stateW, FMField *gradU,
   - 27.07.2006
 */
 int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
-                       VolumeGeometry *vg, int32 isDiff )
+                       Mapping *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *vtg = 0, *ftvtg = 0;
@@ -159,7 +159,7 @@ int32 dw_adj_convect2( FMField *out, FMField *stateW, FMField *stateU,
 */
 int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
 			FMField *stateU, FMField *gradU,
-			FMField *coef, VolumeGeometry *vg,
+			FMField *coef, Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP,
 			int32 isDiff )
 {
@@ -265,7 +265,7 @@ int32 dw_st_adj_supg_c( FMField *out, FMField *stateW,
   - 30.10.2007, c
 */
 int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
-			 FMField *coef, VolumeGeometry *vg_w,
+			 FMField *coef, Mapping *vg_w,
 			 int32 *conn_w, int32 nEl_w, int32 nEP_w,
 			 int32 isDiff )
 {
@@ -336,7 +336,7 @@ int32 dw_st_adj1_supg_p( FMField *out, FMField *stateW, FMField *gradP,
 */
 int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
 			 FMField *coef,
-			 VolumeGeometry *vg_u, VolumeGeometry *vg_r,
+			 Mapping *vg_u, Mapping *vg_r,
 			 int32 *conn_r, int32 nEl_r, int32 nEP_r,
 			 int32 isDiff )
 {
@@ -410,7 +410,7 @@ int32 dw_st_adj2_supg_p( FMField *out, FMField *gradU, FMField *stateR,
   - 27.07.2006
 */
 int32 d_of_nsMinGrad( FMField *out, FMField *grad,
-		      FMField *viscosity, VolumeGeometry *vg )
+		      FMField *viscosity, Mapping *vg )
 {
   int32 ii, nQP, ret = RET_OK;
   float64 aux;
@@ -453,7 +453,7 @@ int32 d_of_nsMinGrad( FMField *out, FMField *grad,
 */
 int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
                             float64 weight, float64 bpress,
-			    SurfaceGeometry *sg, int32 isDiff )
+			    Mapping *sg, int32 isDiff )
 {
   int32 ii, iqp, nQP, ret = RET_OK;
   float64 aux;
@@ -510,7 +510,7 @@ int32 d_of_nsSurfMinDPress( FMField *out, FMField *pressure,
 */
 int32 d_sd_div( FMField *out, FMField *divU, FMField *gradU,
                 FMField *stateP, FMField *divMV, FMField *gradMV,
-                VolumeGeometry *vg_u, int32 mode )
+                Mapping *vg_u, int32 mode )
 {
   int32 ii, nQP, ret = RET_OK;
   FMField *aux11 = 0;
@@ -558,7 +558,7 @@ int32 d_sd_div( FMField *out, FMField *divU, FMField *gradU,
 */
 int32 d_sd_div_grad( FMField *out, FMField *gradU, FMField *gradW,
                      FMField *divMV, FMField *gradMV, FMField *viscosity,
-		     VolumeGeometry *vg_u, int32 mode )
+		     Mapping *vg_u, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *uvel = 0, *aux = 0, *aux1 = 0, *aux2 = 0, *aux3 = 0;
@@ -648,7 +648,7 @@ int32 d_sd_div_grad( FMField *out, FMField *gradU, FMField *gradW,
 */
 int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
 		    FMField *stateW, FMField *divMV, FMField *gradMV,
-		    VolumeGeometry *vg_u, int32 mode )
+		    Mapping *vg_u, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *aux11 = 0, *aux = 0, *fwgu = 0, *fwgugmv = 0;
@@ -720,7 +720,7 @@ int32 d_sd_convect( FMField *out, FMField *stateU, FMField *gradU,
   - 27.02.2006
 */
 int32 d_sd_volume_dot( FMField *out, FMField *stateP, FMField *stateQ,
-                       FMField *divMV, VolumeGeometry *vg, int32 mode )
+                       FMField *divMV, Mapping *vg, int32 mode )
 {
   int32 ii, nQP, ret = RET_OK;
   FMField *pq = 0;
@@ -763,7 +763,7 @@ int32 d_sd_volume_dot( FMField *out, FMField *stateP, FMField *stateQ,
 int32 d_sd_st_grad_div( FMField *out, FMField *divU, FMField *gradU,
 			FMField *divW, FMField *gradW, FMField *divMV,
 			FMField *gradMV, FMField *coef,
-			VolumeGeometry *vg_u, int32 mode )
+			Mapping *vg_u, int32 mode )
 {
   int32 ii, nQP, ret = RET_OK;
   FMField *scalar1 = 0, *scalar2 = 0;
@@ -829,7 +829,7 @@ int32 d_sd_st_grad_div( FMField *out, FMField *divU, FMField *gradU,
 */
 int32 d_sd_st_supg_c( FMField *out, FMField *stateB, FMField *gradU,
                       FMField *gradW, FMField *divMV, FMField *gradMV,
-		      FMField *coef, VolumeGeometry *vg_u, int32 mode )
+		      FMField *coef, Mapping *vg_u, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *fBgU = 0, *fBgW = 0, *fBgMV = 0, *fBgMVgU = 0, *fBgMVgW = 0;
@@ -922,7 +922,7 @@ int32 d_sd_st_supg_c( FMField *out, FMField *stateB, FMField *gradU,
 */
 int32 d_sd_st_pspg_c( FMField *out, FMField *stateB, FMField *gradU,
 		      FMField *gradR, FMField *divMV, FMField *gradMV,
-		      FMField *coef, VolumeGeometry *vg_u, int32 mode )
+		      FMField *coef, Mapping *vg_u, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *fBgU = 0, *fBgMV = 0, *fBgMVgU = 0, *gMVgR = 0;
@@ -1009,7 +1009,7 @@ int32 d_sd_st_pspg_c( FMField *out, FMField *stateB, FMField *gradU,
 */
 int32 d_sd_st_pspg_p( FMField *out, FMField *gradR, FMField *gradP,
 		      FMField *divMV, FMField *gradMV, FMField *coef,
-		      VolumeGeometry *vg_p, int32 mode )
+		      Mapping *vg_p, int32 mode )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *gMVgR = 0, *gMVgP = 0;

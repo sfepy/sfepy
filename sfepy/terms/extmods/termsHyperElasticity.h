@@ -5,22 +5,22 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
 int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 			   FMField *trC, FMField *in2C, FMField *vecInvCS,
 			   FMField *vecES,
-			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, Mapping *vg,
 			   int32 *conn, int32 nEl, int32 nEP );
 
 int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 			   FMField *trB, FMField *in2B, FMField *vecES,
-			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, Mapping *vg,
 			   int32 *conn, int32 nEl, int32 nEP );
 
 int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 				   FMField *state, int32 offset,
-				   SurfaceGeometry *sg,
+				   Mapping *sg,
 				   int32 *fis, int32 nFa, int32 nFP,
 				   int32 *conn, int32 nEl, int32 nEP);
 
@@ -68,12 +68,12 @@ int32 dq_ul_he_tan_mod_mooney_rivlin( FMField *out, FMField *mat,
 int32 dw_he_rtm( FMField *out,
 		 FMField *stress, FMField *tan_mod,
 		 FMField *mtxF, FMField *detF,
-		 VolumeGeometry *vg,
+		 Mapping *vg,
 		 int32 isDiff, int32 mode_ul );
 
 int32 de_he_rtm( FMField *out,
 		 FMField *stress, FMField *detF,
-		 VolumeGeometry *vg,
+		 Mapping *vg,
 		 int32 *elList, int32 elList_nRow,
 		 int32 mode_ul );
 
@@ -88,24 +88,24 @@ int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 
 int32 dw_tl_volume( FMField *out, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
-		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+		    Mapping *vgs, Mapping *vgv,
                     int32 transpose, int32 mode );
 int32 dw_ul_volume( FMField *out, FMField *detF,
-		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+		    Mapping *vgs, Mapping *vgv,
                     int32 transpose, int32 mode );
 
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,
 		       FMField *mtxF, FMField *detF,
-		       VolumeGeometry *vg, int32 mode );
+		       Mapping *vg, int32 mode );
 
 int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
-			      FMField *bf, SurfaceGeometry *sg,
+			      FMField *bf, Mapping *sg,
 			      int32 *fis, int32 nFa, int32 nFP,
 			      int32 mode );
 
-int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
+int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
 		   int32 *conn, int32 nEl, int32 nEP,
 		   int32 *elList, int32 elList_nRow, int32 mode );
 

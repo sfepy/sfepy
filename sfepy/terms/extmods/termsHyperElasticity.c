@@ -266,7 +266,7 @@ int32 form_tlcc_buildOpKtsC_VS3( FMField *out, FMField *tau, FMField *gc )
 int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
 			FMField *trC, FMField *in2C, FMField *vecInvCS,
 			FMField *vecES,
-			FMField *state, int32 offset, VolumeGeometry *vg,
+			FMField *state, int32 offset, Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP, int32 mode_ul)
 {
   int32 ii, id, iqp, nQP, dim, ret = RET_OK;
@@ -346,7 +346,7 @@ int32 dq_finite_strain( FMField *mtxF, FMField *detF, FMField *vecCS,
 int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 			   FMField *trC, FMField *in2C, FMField *vecInvCS,
 			   FMField *vecES,
-			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, Mapping *vg,
 			   int32 *conn, int32 nEl, int32 nEP )
 {
   return( dq_finite_strain( mtxF, detF, vecCS, trC, in2C, vecInvCS, vecES,
@@ -357,7 +357,7 @@ int32 dq_finite_strain_tl( FMField *mtxF, FMField *detF, FMField *vecCS,
 #define __FUNC__ "dq_finite_strain_ul"
 int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 			   FMField *trB, FMField *in2B, FMField *vecES,
-			   FMField *state, int32 offset, VolumeGeometry *vg,
+			   FMField *state, int32 offset, Mapping *vg,
 			   int32 *conn, int32 nEl, int32 nEP )
 {
   return( dq_finite_strain( mtxF, detF, vecBS, trB, in2B, 0, vecES,
@@ -368,7 +368,7 @@ int32 dq_finite_strain_ul( FMField *mtxF, FMField *detF, FMField *vecBS,
 #define __FUNC__ "dq_tl_finite_strain_surface"
 int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 				   FMField *state, int32 offset,
-				   SurfaceGeometry *sg,
+				   Mapping *sg,
 				   int32 *fis, int32 nFa, int32 nFP,
 				   int32 *conn, int32 nEl, int32 nEP)
 {
@@ -377,22 +377,22 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 
   state->val = FMF_PtrFirst( state ) + offset;
 
-  nQP = sg->bfBGM->nLev;
-  dim = sg->bfBGM->nRow;
+  nQP = sg->bfGM->nLev;
+  dim = sg->bfGM->nRow;
 
   fmf_createAlloc( &st, 1, 1, nEP, dim );
 
   for (ii = 0; ii < nFa; ii++) {
     iel = fis[ii*nFP+0];
     
-    FMF_SetCell( sg->bfBGM, ii );
+    FMF_SetCell( sg->bfGM, ii );
     FMF_SetCell( mtxF, ii );
     FMF_SetCell( mtxFI, ii );
     FMF_SetCell( detF, ii );
 
     // Deformation gradient.
     ele_extractNodalValuesNBN( st, state, conn + nEP * iel );
-    fmf_mulATBT_1n( mtxF, st, sg->bfBGM );
+    fmf_mulATBT_1n( mtxF, st, sg->bfGM );
     for (iqp = 0; iqp < nQP; iqp++) {
       for (id = 0; id < dim; id++) {
 	mtxF->val[dim*(dim*iqp+id)+id] += 1.0;
@@ -422,7 +422,7 @@ int32 dq_tl_finite_strain_surface( FMField *mtxF, FMField *detF, FMField *mtxFI,
 int32 dw_he_rtm( FMField *out,
 		 FMField *stress, FMField *tan_mod,
 		 FMField *mtxF, FMField *detF,
-		 VolumeGeometry *vg,
+		 Mapping *vg,
 		 int32 isDiff, int32 mode_ul )
 {
   int32 ii, j, sym, nRow, nQP, nEP, ret = RET_OK, dim;
@@ -541,7 +541,7 @@ int32 dw_he_rtm( FMField *out,
 #define __FUNC__ "de_he_rtm"
 int32 de_he_rtm( FMField *out,
 		 FMField *stress, FMField *detF,
-		 VolumeGeometry *vg,
+		 Mapping *vg,
 		 int32 *elList, int32 elList_nRow,
 		 int32 mode_ul )
 {
@@ -1396,7 +1396,7 @@ int32 dq_ul_tan_mod_bulk_pressure_u( FMField *out, FMField *pressure_qp,
 #define __FUNC__ "dw_tl_volume"
 int32 dw_tl_volume( FMField *out, FMField *mtxF,
 		    FMField *vecInvCS, FMField *detF,
-		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+		    Mapping *vgs, Mapping *vgv,
                     int32 transpose, int32 mode )
 {
   int32 ii, nQP, nEP, nRow, sym, ret = RET_OK;
@@ -1490,7 +1490,7 @@ int32 dw_tl_volume( FMField *out, FMField *mtxF,
 #undef __FUNC__
 #define __FUNC__ "dw_ul_volume"
 int32 dw_ul_volume( FMField *out, FMField *detF,
-		    VolumeGeometry *vgs, VolumeGeometry *vgv,
+		    Mapping *vgs, Mapping *vgv,
                     int32 transpose, int32 mode )
 {
   int32 ii, iqp, nQP, nEPu, nEPp, dim, ret = RET_OK;
@@ -1581,7 +1581,7 @@ int32 dw_ul_volume( FMField *out, FMField *detF,
 int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 		       FMField *mtxD, FMField *ref_porosity,
 		       FMField *mtxF, FMField *detF,
-		       VolumeGeometry *vg, int32 mode )
+		       Mapping *vg, int32 mode )
 {
   int32 ii, iqp, dim, nEP, nQP, ret = RET_OK;
   float64 val;
@@ -1689,7 +1689,7 @@ int32 dw_tl_diffusion( FMField *out, FMField *pressure_grad,
 #define __FUNC__ "dw_tl_surface_traction"
 int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 			      FMField *detF, FMField *mtxFI,
-			      FMField *bf, SurfaceGeometry *sg,
+			      FMField *bf, Mapping *sg,
 			      int32 *fis, int32 nFa, int32 nFP,
 			      int32 mode )
 {
@@ -1700,7 +1700,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 
   dim = mtxFI->nRow;
   nQP = mtxFI->nLev;
-  nEP = sg->bfBGM->nCol;
+  nEP = sg->bfGM->nCol;
 
 /*    output( "%d %d %d\n", dim, nQP, nEP ); */
 
@@ -1735,9 +1735,9 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
       fmf_sumLevelsMulF( out, trq, sg->det->val );
 
     } else {
-      FMF_SetCell( sg->bfBGM, ii );
+      FMF_SetCell( sg->bfGM, ii );
 
-      fmf_mulATB_nn( bfBGS, mtxFI, sg->bfBGM );
+      fmf_mulATB_nn( bfBGS, mtxFI, sg->bfGM );
 
       for (iqp = 0; iqp < nQP; iqp++) {
 	pn2 = FMF_PtrLevel( n2, iqp );
@@ -1780,7 +1780,7 @@ int32 dw_tl_surface_traction( FMField *out, FMField *traction,
 
 #undef __FUNC__
 #define __FUNC__ "dq_def_grad"
-int32 dq_def_grad( FMField *out, FMField *state, VolumeGeometry *vg,
+int32 dq_def_grad( FMField *out, FMField *state, Mapping *vg,
 		   int32 *conn, int32 nEl, int32 nEP,
 		   int32 *elList, int32 elList_nRow, int32 mode )
 {

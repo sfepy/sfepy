@@ -5,10 +5,10 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
 int32 mulATB_integrate(FMField *out, FMField *A, FMField *B,
-		       VolumeGeometry *vg);
+		       Mapping *vg);
 
 END_C_DECLS
 

@@ -4,7 +4,7 @@
 #undef __FUNC__
 #define __FUNC__ "mulATB_integrate"
 int32 mulATB_integrate(FMField *out, FMField *A, FMField *B,
-		       VolumeGeometry *vg)
+		       Mapping *vg)
 {
   int32 ii, ret = RET_OK;
   FMField *aux = 0;

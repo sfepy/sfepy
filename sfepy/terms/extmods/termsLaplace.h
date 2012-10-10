@@ -9,22 +9,22 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
 int32 dw_laplace( FMField *out, FMField *grad,
-		  FMField *coef, VolumeGeometry *vg,
+		  FMField *coef, Mapping *vg,
                   int32 isDiff );
 int32 d_laplace( FMField *out, FMField *gradP1, FMField *gradP2,
-		 FMField *coef, VolumeGeometry *vg );
+		 FMField *coef, Mapping *vg );
 
 int32 dw_diffusion( FMField *out, FMField *grad,
-		    FMField *mtxD, VolumeGeometry *vg,
+		    FMField *mtxD, Mapping *vg,
 		    int32 isDiff );
 int32 d_diffusion( FMField *out, FMField *gradP1, FMField *gradP2,
-		   FMField *mtxD, VolumeGeometry *vg );
-int32 dw_permeability_r( FMField *out, FMField *mtxD, VolumeGeometry *vg );
+		   FMField *mtxD, Mapping *vg );
+int32 dw_permeability_r( FMField *out, FMField *mtxD, Mapping *vg );
 int32 d_surface_flux( FMField *out, FMField *grad,
-                      FMField *mtxD, SurfaceGeometry *sg, int32 mode );
+                      FMField *mtxD, Mapping *sg, int32 mode );
 
 END_C_DECLS
 

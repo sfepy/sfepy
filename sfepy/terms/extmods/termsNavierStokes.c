@@ -453,7 +453,7 @@ int32 convect_build_vtg( FMField *out, FMField *gc, FMField *fv )
   - 14.12.2005
 */
 int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
-			    FMField *viscosity, VolumeGeometry *vg,
+			    FMField *viscosity, Mapping *vg,
 			    int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
@@ -508,7 +508,7 @@ int32 term_ns_asm_div_grad( FMField *out, FMField *grad,
   - 30.07.2007
 */
 int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,
-                           VolumeGeometry *vg, int32 isDiff )
+                           Mapping *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *guf = 0, *ftguf = 0, *utg = 0, *ftutg = 0, *gufu = 0;
@@ -578,7 +578,7 @@ int32 term_ns_asm_convect( FMField *out, FMField *grad, FMField *state,
   - 30.07.2007
 */
 int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
-		      VolumeGeometry *vg, int32 isDiff )
+		      Mapping *vg, int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *btg = 0, *ftbtg = 0, *gufb = 0, *ftgufb = 0;
@@ -639,7 +639,7 @@ int32 dw_lin_convect( FMField *out, FMField *grad, FMField *stateB,
   - 14.12.2005, c
 */
 int32 dw_div( FMField *out, FMField *coef, FMField *div,
-	      VolumeGeometry *svg, VolumeGeometry *vvg, int32 isDiff )
+	      Mapping *svg, Mapping *vvg, int32 isDiff )
 {
   int32 ii, nEPP, dim, nQP, nEP, ret = RET_OK;
   FMField *ftgu = 0, *ftg = 0;
@@ -696,7 +696,7 @@ int32 dw_div( FMField *out, FMField *coef, FMField *div,
   - c: 15.12.2005, r: 31.03.2008
 */
 int32 dw_grad( FMField *out, FMField *coef, FMField *state,
-	       VolumeGeometry *svg, VolumeGeometry *vvg, int32 isDiff )
+	       Mapping *svg, Mapping *vvg, int32 isDiff )
 {
   int32 ii, nEPU, dim, nQP, nEP, ret = RET_OK;
   FMField *gtfp = 0, *gtf = 0;
@@ -755,7 +755,7 @@ int32 dw_grad( FMField *out, FMField *coef, FMField *state,
 int32 dw_st_pspg_c( FMField *out,
 		    FMField *stateB, FMField *stateU,
 		    FMField *coef,
-		    VolumeGeometry *vg_p, VolumeGeometry *vg_u,
+		    Mapping *vg_p, Mapping *vg_u,
 		    int32 *conn, int32 nEl, int32 nEP,
 		    int32 isDiff )
 {
@@ -831,7 +831,7 @@ int32 dw_st_pspg_c( FMField *out,
 int32 dw_st_supg_p( FMField *out,
 		    FMField *stateB, FMField *gradP,
 		    FMField *coef,
-		    VolumeGeometry *vg_u, VolumeGeometry *vg_p,
+		    Mapping *vg_u, Mapping *vg_p,
 		    int32 isDiff )
 {
   int32 ii, dim, nQP, nEP_u, nEP_p, ret = RET_OK;
@@ -893,7 +893,7 @@ int32 dw_st_supg_p( FMField *out,
 */
 int32 dw_st_supg_c( FMField *out,
 		    FMField *stateB, FMField *stateU,
-		    FMField *coef, VolumeGeometry *vg,
+		    FMField *coef, Mapping *vg,
 		    int32 *conn, int32 nEl, int32 nEP,
 		    int32 isDiff )
 {
@@ -964,7 +964,7 @@ int32 dw_st_supg_c( FMField *out,
   - 26.07.2007, c
 */
 int32 dw_st_grad_div( FMField *out, FMField *div,
-		      FMField *coef, VolumeGeometry *vg,
+		      FMField *coef, Mapping *vg,
 		      int32 isDiff )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;

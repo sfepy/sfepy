@@ -9,10 +9,10 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
 int32 dw_electric_source( FMField *out, FMField *grad, FMField *coef,
-			  VolumeGeometry *vg );
+			  Mapping *vg );
 
 END_C_DECLS
 

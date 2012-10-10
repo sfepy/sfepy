@@ -5,7 +5,7 @@
 #undef __FUNC__
 #define __FUNC__ "dw_piezo_coupling"
 int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
-			 FMField *mtxG, VolumeGeometry *vg,
+			 FMField *mtxG, Mapping *vg,
 			 int32 mode )
 {
   int32 ii, nEPU, nEPP, dim, sym, nQP, ret = RET_OK;
@@ -83,7 +83,7 @@ int32 dw_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
 #undef __FUNC__
 #define __FUNC__ "d_piezo_coupling"
 int32 d_piezo_coupling( FMField *out, FMField *strain, FMField *charge_grad,
-			FMField *mtxG, VolumeGeometry *vg )
+			FMField *mtxG, Mapping *vg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *ge = 0, *gptge = 0;

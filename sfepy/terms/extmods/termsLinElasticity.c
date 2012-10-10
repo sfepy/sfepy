@@ -207,7 +207,7 @@ int32 mat_le_stress( FMField *stress, FMField *strain,
   - 07.03.2006, c
 */
 int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
-			  FMField *lam, FMField *mu, VolumeGeometry *vg,
+			  FMField *lam, FMField *mu, Mapping *vg,
 			  int32 isDiff )
 {
   int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
@@ -280,7 +280,7 @@ int32 dw_lin_elastic_iso( FMField *out, FMField *strain,
   - 29.11.2006
 */
 int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
-		      FMField *mtxD, VolumeGeometry *vg,
+		      FMField *mtxD, Mapping *vg,
 		      int32 isDiff )
 {
   int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
@@ -350,7 +350,7 @@ int32 dw_lin_elastic( FMField *out, float64 coef, FMField *strain,
   - 02.03.2007, c
 */
 int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
-		     FMField *strainU, FMField *mtxD, VolumeGeometry *vg )
+		     FMField *strainU, FMField *mtxD, Mapping *vg )
 {
   int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
   FMField *std = 0, *stds = 0;
@@ -389,7 +389,7 @@ int32 d_lin_elastic( FMField *out, float64 coef, FMField *strainV,
 
 #undef __FUNC__
 #define __FUNC__ "dw_lin_prestress"
-int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg )
+int32 dw_lin_prestress( FMField *out, FMField *stress, Mapping *vg )
 {
   int32 ii, dim, nQP, nEP, ret = RET_OK;
   FMField *res = 0;
@@ -420,7 +420,7 @@ int32 dw_lin_prestress( FMField *out, FMField *stress, VolumeGeometry *vg )
 #undef __FUNC__
 #define __FUNC__ "dw_lin_strain_fib"
 int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
-			 VolumeGeometry *vg )
+			 Mapping *vg )
 {
   int32 ii, dim, sym, nQP, nEP, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;
@@ -460,7 +460,7 @@ int32 dw_lin_strain_fib( FMField *out, FMField *mtxD, FMField *mat,
   - 21.09.2006, c
 */
 int32 de_cauchy_strain( FMField *out, FMField *strain,
-			VolumeGeometry *vg, int32 mode )
+			Mapping *vg, int32 mode )
 {
   int32 ii, dim, sym, nQP, ret = RET_OK;
 
@@ -492,7 +492,7 @@ int32 de_cauchy_strain( FMField *out, FMField *strain,
   - c: 25.03.2008
 */
 int32 de_cauchy_stress( FMField *out, FMField *strain,
-			FMField *mtxD,  VolumeGeometry *vg,
+			FMField *mtxD,  Mapping *vg,
 			int32 mode )
 {
   int32 ii, dim, sym, nQP, ret = RET_OK;
@@ -532,7 +532,7 @@ int32 de_cauchy_stress( FMField *out, FMField *strain,
   - 30.07.2007, from dw_hdpm_cache()
 */
 int32 dq_cauchy_strain( FMField *out, FMField *state, int32 offset,
-			VolumeGeometry *vg,
+			Mapping *vg,
 			int32 *conn, int32 nEl, int32 nEP )
 {
   int32 ii, dim, sym, nQP, ret = RET_OK;

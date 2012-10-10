@@ -10,7 +10,7 @@
   @par Revision history:
   - c: 18.09.2006, r: 12.05.2008
 */
-int32 dw_volume_lvf( FMField *out, FMField *forceQP, VolumeGeometry *vg )
+int32 dw_volume_lvf( FMField *out, FMField *forceQP, Mapping *vg )
 {
   int32 ii, dim, nQP, nFEP, ret = RET_OK;
   FMField *outQP = 0;

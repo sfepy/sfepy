@@ -6,7 +6,7 @@
 int32 d_diffusion_sa( FMField *out,
 		      FMField *grad_q, FMField *grad_p,
 		      FMField *grad_w, FMField *div_w,
-		      FMField *mtxD, VolumeGeometry *vg )
+		      FMField *mtxD, Mapping *vg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *aux2 = 0, *aux3 = 0, *aux4 = 0, *out0 = 0;
@@ -65,7 +65,7 @@ int32 d_diffusion_sa( FMField *out,
 #undef __FUNC__
 #define __FUNC__ "dw_surf_laplace"
 int32 dw_surf_laplace( FMField *out, FMField *grad, FMField *coef,
-		       FMField *gbf, SurfaceGeometry *sg,
+		       FMField *gbf, Mapping *sg,
 		       int32 isDiff )
 {
   int32 ii, nEP, dim, nQP, ret = RET_OK;
@@ -114,7 +114,7 @@ int32 dw_surf_laplace( FMField *out, FMField *grad, FMField *coef,
 #undef __FUNC__
 #define __FUNC__ "d_surf_laplace"
 int32 d_surf_laplace( FMField *out, FMField *gradP, FMField *gradQ, FMField *coef,
-		      SurfaceGeometry *sg )
+		      Mapping *sg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;
@@ -152,7 +152,7 @@ int32 d_surf_laplace( FMField *out, FMField *gradP, FMField *gradQ, FMField *coe
 #undef __FUNC__
 #define __FUNC__ "dw_surf_lcouple"
 int32 dw_surf_lcouple( FMField *out, FMField *state, FMField *coef,
-		       FMField *bf, FMField *gbf, SurfaceGeometry *sg,
+		       FMField *bf, FMField *gbf, Mapping *sg,
 		       int32 isDiff )
 {
   int32 ii, nEP, dim, nQP, ret = RET_OK;
@@ -201,7 +201,7 @@ int32 dw_surf_lcouple( FMField *out, FMField *state, FMField *coef,
 #undef __FUNC__
 #define __FUNC__ "d_surf_lcouple"
 int32 d_surf_lcouple( FMField *out, FMField *stateP, FMField *gradQ, FMField *coef,
-		      SurfaceGeometry *sg )
+		      Mapping *sg )
 {
   int32 ii, dim, nQP, ret = RET_OK;
   FMField *aux1 = 0, *aux2 = 0;

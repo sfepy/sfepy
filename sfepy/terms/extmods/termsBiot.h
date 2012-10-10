@@ -9,18 +9,18 @@
 BEGIN_C_DECLS
 
 #include "fmfield.h"
-#include "geometry.h"
+#include "refmaps.h"
 
 int32 dw_biot_grad( FMField *out, float64 coef, FMField *pressure_qp,
-		    FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+		    FMField *mtxD, Mapping *svg, Mapping *vvg,
 		    int32 isDiff );
 
 int32 dw_biot_div( FMField *out, float64 coef, FMField *strain,
-		   FMField *mtxD, VolumeGeometry *svg, VolumeGeometry *vvg,
+		   FMField *mtxD, Mapping *svg, Mapping *vvg,
                    int32 isDiff );
 
 int32 d_biot_div( FMField *out, float64 coef, FMField *state, FMField *strain,
-		  FMField *mtxD, VolumeGeometry *vg );
+		  FMField *mtxD, Mapping *vg );
 
 END_C_DECLS
 
