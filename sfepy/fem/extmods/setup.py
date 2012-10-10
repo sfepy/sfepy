@@ -18,7 +18,7 @@ def configuration(parent_package='', top_path=None):
     if '-DDEBUG_FMF' in site_config.debug_flags():
         defines.append(('DEBUG_FMF', None))
 
-    common_src = ['fmfield.c', 'geometry.c', 'geommech.c', 'common_python.c']
+    common_src = ['fmfield.c', 'refmaps.c', 'geommech.c', 'common_python.c']
 
     config.add_library('sfepy_common',
                        sources=common_src,
