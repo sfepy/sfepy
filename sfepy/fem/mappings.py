@@ -5,7 +5,7 @@ import numpy as nm
 
 from sfepy.base.base import output, get_default, Struct
 from sfepy.fem.poly_spaces import PolySpace
-from sfepy.fem.extmods.mappings import CVolumeMapping, CSurfaceMapping
+from sfepy.fem.extmods.mappings import CMapping
 
 class PhysicalQPs(Struct):
     """
@@ -254,7 +254,7 @@ class VolumeMapping(Mapping):
 
         Returns
         -------
-        cmap : CVolumeMapping instance
+        cmap : CMapping instance
             The volume mapping.
         """
         poly_space = get_default(poly_space, self.poly_space)
@@ -265,8 +265,8 @@ class VolumeMapping(Mapping):
                                      force_axis=True)
         flag = ori is not None
 
-        cmap = CVolumeMapping(self.n_el, qp_coors.shape[0], self.dim,
-                              poly_space.n_nod, flag)
+        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
+                        poly_space.n_nod, mode='volume', flag=flag)
         cmap.describe(self.coors, self.conn, bf_g, ebf_g, weights)
 
         return cmap
@@ -277,14 +277,14 @@ class SurfaceMapping(Mapping):
     dimension higher by one.
     """
 
-    def get_mapping(self, qp_coors, weights, poly_space=None):
+    def get_mapping(self, qp_coors, weights, poly_space=None, mode='surface'):
         """
         Get the mapping for given quadrature points, weights, and
         polynomial space.
 
         Returns
         -------
-        cmap : CSurfaceMapping instance
+        cmap : CMapping instance
             The surface mapping.
         """
         poly_space = get_default(poly_space, self.poly_space)
@@ -294,8 +294,8 @@ class SurfaceMapping(Mapping):
         if nm.allclose(bf_g, 0.0):
             raise ValueError('zero base function gradient!')
 
-        cmap = CSurfaceMapping(self.n_el, qp_coors.shape[0], self.dim,
-                               poly_space.n_nod)
-        cmap.describe(self.coors, self.conn, bf_g, weights)
+        cmap = CMapping(self.n_el, qp_coors.shape[0], self.dim,
+                        poly_space.n_nod, mode=mode)
+        cmap.describe(self.coors, self.conn, bf_g, None, weights)
 
         return cmap
