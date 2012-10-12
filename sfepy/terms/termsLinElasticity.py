@@ -478,6 +478,33 @@ class CauchyStrainTerm(Term):
 
         return (n_el, n_qp, dim * (dim + 1) / 2, 1), parameter.dtype
 
+class CauchyStrainSTerm(CauchyStrainTerm):
+    r"""
+    Evaluate Cauchy strain tensor on a surface region.
+
+    See :class:`CauchyStrainTerm`.
+
+    Supports 'eval', 'el_avg' and 'qp' evaluation modes.
+
+    :Definition:
+
+    .. math::
+        \int_{\Gamma} \ull{e}(\ul{w})
+
+    .. math::
+        \mbox{vector for } K \from \Ical_h: \int_{T_K} \ull{e}(\ul{w}) /
+        \int_{T_K} 1
+
+    .. math::
+        \ull{e}(\ul{w})|_{qp}
+
+    :Arguments:
+        - parameter : :math:`\ul{w}`
+    """
+    name = 'ev_cauchy_strain_s'
+    arg_types = ('parameter',)
+    integration = 'surface_extra'
+
 class CauchyStressTerm(Term):
     r"""
     Evaluate Cauchy stress tensor.
