@@ -103,22 +103,15 @@ class DotProductVolumeTerm(Term):
                 fmode = 1
 
             if state.n_components > 1:
-                if self.integration == 'volume':
-                    fun = terms.dw_volume_dot_vector
-
-                else:
-                    fun = terms.dw_surface_dot_vector
+                fun = terms.dw_volume_dot_vector
 
             else:
-                if self.integration == 'volume':
+                if ((self.integration == 'volume')
+                    or (virtual.n_components == 1)):
                     fun = terms.dw_volume_dot_scalar
 
                 else:
-                    if virtual.n_components > 1:
-                        fun = terms.dw_surface_dot_vectornormscalar
-
-                    else:
-                        fun = terms.dw_surface_dot_scalar
+                    fun = terms.dw_surface_dot_vectornormscalar
 
             return mat, val_qp, vgeo, sgeo, fun, fmode
 
@@ -160,15 +153,18 @@ class DotProductSurfaceTerm(DotProductVolumeTerm):
         \mbox{ , } \int_\Gamma \ul{w} \cdot \ul{n} p \\
         \int_\Gamma c q p \mbox{ , } \int_\Gamma c \ul{v} \cdot \ul{u}
         \mbox{ , }
-        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w}
+        \int_\Gamma c p r \mbox{ , } \int_\Gamma c \ul{u} \cdot \ul{w} \\
+        \int_\Gamma \ul{v} \cdot \ull{M} \cdot \ul{u}
+        \mbox{ , }
+        \int_\Gamma \ul{u} \cdot \ull{M} \cdot \ul{w}
 
     :Arguments 1:
-        - material : :math:`c` (optional)
+        - material : :math:`c` or :math:`\ull{M}` (optional)
         - virtual  : :math:`q` or :math:`\ul{v}`
         - state    : :math:`p` or :math:`\ul{u}`
 
     :Arguments 2:
-        - material    : :math:`c` (optional)
+        - material    : :math:`c` or :math:`\ull{M}` (optional)
         - parameter_1 : :math:`p` or :math:`\ul{u}`
         - parameter_2 : :math:`r` or :math:`\ul{w}`
     """

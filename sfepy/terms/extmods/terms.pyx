@@ -258,19 +258,9 @@ cdef extern from 'terms.h':
                                 Mapping *rvg, Mapping *cvg,
                                 int32 isDiff)
 
-    cdef int32 _dw_surface_dot_vector \
-         'dw_surface_dot_vector'(FMField *out, FMField *coef, FMField *val_qp,
-                                 Mapping *rsg, Mapping *csg,
-                                 int32 isDiff)
-
     cdef int32 _dw_volume_dot_scalar \
          'dw_volume_dot_scalar'(FMField *out, FMField *coef, FMField *val_qp,
                                 Mapping *rvg, Mapping *cvg,
-                                int32 isDiff)
-
-    cdef int32 _dw_surface_dot_scalar \
-        'dw_surface_dot_scalar'(FMField *out, FMField *coef, FMField *val_qp,
-                                Mapping *rsg, Mapping *csg,
                                 int32 isDiff)
 
     cdef int32 _dw_v_dot_grad_s_vw \
@@ -1341,23 +1331,6 @@ def dw_volume_dot_vector(np.ndarray out not None,
                                 rcmap.geo, ccmap.geo, is_diff)
     return ret
 
-def dw_surface_dot_vector(np.ndarray out not None,
-                          np.ndarray coef not None,
-                          np.ndarray val_qp not None,
-                          CMapping rcmap not None,
-                          CMapping ccmap not None,
-                          int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_coef, coef)
-    array2fmfield4(_val_qp, val_qp)
-
-    ret = _dw_surface_dot_vector(_out, _coef, _val_qp,
-                                 rcmap.geo, ccmap.geo, is_diff)
-    return ret
-
 def dw_volume_dot_scalar(np.ndarray out not None,
                          np.ndarray coef not None,
                          np.ndarray val_qp not None,
@@ -1373,23 +1346,6 @@ def dw_volume_dot_scalar(np.ndarray out not None,
 
     ret = _dw_volume_dot_scalar(_out, _coef, _val_qp,
                                 rcmap.geo, ccmap.geo, is_diff)
-    return ret
-
-def dw_surface_dot_scalar(np.ndarray out not None,
-                          np.ndarray coef not None,
-                          np.ndarray val_qp not None,
-                          CMapping rcmap not None,
-                          CMapping ccmap not None,
-                          int32 is_diff):
-    cdef int32 ret
-    cdef FMField _out[1], _coef[1], _val_qp[1]
-
-    array2fmfield4(_out, out)
-    array2fmfield4(_coef, coef)
-    array2fmfield4(_val_qp, val_qp)
-
-    ret = _dw_surface_dot_scalar(_out, _coef, _val_qp,
-                                 rcmap.geo, ccmap.geo, is_diff)
     return ret
 
 def dw_v_dot_grad_s_vw(np.ndarray out not None,
